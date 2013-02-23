@@ -2,6 +2,7 @@
 using Microsoft.VisualStudio.Text;
 using Xunit;
 using Vim.Extensions;
+using System.Linq;
 
 namespace Vim.UnitTest
 {
@@ -99,6 +100,39 @@ namespace Vim.UnitTest
                 _vimTextBuffer.LastVisualSelection = FSharpOption.Create(VisualSelection.CreateForward(visualSpan));
                 Assert.False(_vimTextBuffer.SetLocalMark(LocalMark.LastSelectionStart, 0, 4));
                 Assert.Equal(0, _vimTextBuffer.GetLocalMark(LocalMark.LastSelectionStart).Value.Position.Position);
+            }
+        }
+
+        public sealed class ClearTest : VimTextBufferTest
+        {
+            [Fact]
+            public void ShouldRemoveLocalMarks()
+            {
+                Create("cat");
+                var marks = Letter.All.Select(LocalMark.NewLetter);
+                foreach (var mark in marks)
+                {
+                    _vimTextBuffer.SetLocalMark(mark, 0, 0);
+                    Assert.True(_vimTextBuffer.GetLocalMark(mark).IsSome());
+                }
+
+                _vimTextBuffer.Clear();
+
+                foreach (var mark in marks)
+                {
+                    Assert.False(_vimTextBuffer.GetLocalMark(mark).IsSome());
+                }
+            }
+
+            [Fact]
+            public void ShouldClearFields()
+            {
+                Create("cat");
+                _vimTextBuffer.LastEditPoint = FSharpOption.Create(_textBuffer.GetPoint(0));
+                _vimTextBuffer.LastInsertExitPoint = FSharpOption.Create(_textBuffer.GetPoint(0));
+                _vimTextBuffer.Clear();
+                Assert.True(_vimTextBuffer.LastEditPoint.IsNone());
+                Assert.True(_vimTextBuffer.LastInsertExitPoint.IsNone());
             }
         }
     }

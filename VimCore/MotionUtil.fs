@@ -312,8 +312,8 @@ type MatchingTokenUtil() =
                 elif c = endChar then 
 
                     if index = target then
-                        // We are currently at the targetted char and it's an end marker
-                        // so whatever the begining marker is is the matching token
+                        // We are currently at the targeted char and it's an end marker
+                        // so whatever the beginning marker is is the matching token
                         if stack.Count > 0 then
                             found <- stack.Peek() |> Some
 

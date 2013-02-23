@@ -8,6 +8,7 @@ open Microsoft.VisualStudio.Text.Classification
 open Microsoft.VisualStudio.Utilities
 open System.ComponentModel.Composition
 open System.Collections.Generic
+open System.Diagnostics
 
 /// This is the type responsible for tracking a line + column across edits to the
 /// underlying ITextBuffer.  In a perfect world this would be implemented as an 
@@ -48,81 +49,109 @@ type internal TrackingLineColumn
 
     member x.Column = _column
 
+    member x.IsValid = Option.isSome _line
+
     member x.SurviveDeletes = 
         match _mode with
         | LineColumnTrackingMode.Default -> false
         | LineColumnTrackingMode.SurviveDeletes -> true
 
-    member private x.VirtualSnapshotPoint = 
+    member x.VirtualPoint = 
         match _line with
         | None -> None
         | Some line -> Some (VirtualSnapshotPoint(line, _column))
 
+    member x.Point = 
+        match x.VirtualPoint with
+        | None -> None
+        | Some point -> Some point.Position
+
+    member x.Close () =
+        _onClose x
+        _line <- None
+        _lastValidVersion <- None
+
     /// Update the internal tracking information based on the new ITextSnapshot
     member x.UpdateForChange (e : TextContentChangedEventArgs) =
+        match _line with 
+        | Some snapshotLine -> x.AdjustForChange snapshotLine e
+        | None -> x.CheckForUndo e
+
+    /// The change occurred and we are in a valid state.  Update our cached data against 
+    /// this change
+    ///
+    /// Note: This method occurs on a hot path, especially in macro playback, hence we
+    /// take great care to avoid allocations on this path whenever possible
+    member x.AdjustForChange (oldLine : ITextSnapshotLine) (e : TextContentChangedEventArgs) =
+    
         let newSnapshot = e.After
         let changes = e.Changes
 
-        // We have a valid line.  Need to update against this set of changes
-        let withValidLine (oldLine : ITextSnapshotLine) =
+        // Is this change a delete of the entire line 
+        let isLineDelete (change : ITextChange) = 
+            change.LineCountDelta < 0 &&
+            change.OldSpan.Contains(oldLine.ExtentIncludingLineBreak.Span)
 
-            // For whatever reason this is now invalid.  Store the last good information so we can
-            // recover during an undo operation
-            let makeInvalid () = 
-                _line <- None
-                _lastValidVersion <- Some (oldLine.Snapshot.Version.VersionNumber, oldLine.LineNumber)
+        if (not x.SurviveDeletes) && x.IsLineDeletedByChange oldLine e.Changes then
+            // If this shouldn't survive a full line deletion and there is a deletion
+            // then we are invalid
+            x.MarkInvalid oldLine
+        else
 
-            // Is this change a delete of the entire line 
-            let isLineDelete (change : ITextChange) = 
-                change.LineCountDelta < 0 &&
-                change.OldSpan.Contains(oldLine.ExtentIncludingLineBreak.Span)
+            // Calculate the line number delta for this given change. All we care about here
+            // is the line number.  So changes line shortening the line don't matter for 
+            // us because the column position is fixed
+            let mutable delta = 0
+            for change in changes do
+                if change.LineCountDelta <> 0 && change.OldPosition <= oldLine.Start.Position then
+                    // The change occurred before our line and there is a delta.  This is the 
+                    // delta we need to apply to our line number
+                    delta <- delta + change.LineCountDelta
 
-            if (not x.SurviveDeletes) && Seq.exists isLineDelete e.Changes then
-                // If this shouldn't survive a full line deletion and there is a deletion
-                // then we are invalid
-                makeInvalid()
+            let number = oldLine.LineNumber + delta
+            if number >= 0 && number < newSnapshot.LineCount then
+                _line <- Some (newSnapshot.GetLineFromLineNumber number) 
             else
+                x.MarkInvalid oldLine
 
-                // Calculate the line number delta for this given change. All we care about here
-                // is the line number.  So changes line shortening the line don't matter for 
-                // us.
-                let getLineNumberDelta (change : ITextChange) =
-                    if change.LineCountDelta = 0 || change.OldPosition > oldLine.Start.Position then
-                        // If there is no line change or this change occurred after the start 
-                        // of our line then there is nothing to process
-                        0
-                    else 
-                        // The change occurred before our line and there is a delta.  This is the 
-                        // delta we need to apply to our line number
-                        change.LineCountDelta
+    /// Is the specified line deleted by this change
+    member x.IsLineDeletedByChange (snapshotLine : ITextSnapshotLine) (changes : INormalizedTextChangeCollection) =
 
-                // Calculate the line delta
-                let delta = 
-                    e.Changes
-                    |> Seq.map getLineNumberDelta
-                    |> Seq.sum
-                let number = oldLine.LineNumber + delta
-                match SnapshotUtil.TryGetLine newSnapshot number with
-                | None -> makeInvalid()
-                | Some line -> _line <- Some line
+        if changes.IncludesLineChanges then
+            let span = snapshotLine.ExtentIncludingLineBreak.Span
 
-        // This line was deleted at some point in the past and hence we're invalid.  If the 
-        // current change is an Undo back to the last version where we were valid then we
-        // become valid again
-        let checkUndo lastVersion lastLineNumber = 
+            let mutable isDeleted = false
+            for change in changes do
+                if change.LineCountDelta < 0 && change.OldSpan.Contains span then  
+                    isDeleted <- true
+
+            isDeleted
+        else
+            false
+
+    /// This line was deleted at some point in the past and hence we're invalid.  If the 
+    /// current change is an Undo back to the last version where we were valid then we
+    /// become valid again
+    member x.CheckForUndo (e : TextContentChangedEventArgs) = 
+        Debug.Assert(not x.IsValid)
+        match _lastValidVersion with
+        | Some (version, lineNumber) ->
+            let newSnapshot = e.After
             let newVersion = e.AfterVersion
-            if newVersion.ReiteratedVersionNumber = lastVersion && lastLineNumber <= newSnapshot.LineCount then 
-                _line <- Some (newSnapshot.GetLineFromLineNumber(lastLineNumber))
+            if newVersion.ReiteratedVersionNumber = version && lineNumber <= newSnapshot.LineCount then 
+                _line <- Some (newSnapshot.GetLineFromLineNumber(lineNumber))
                 _lastValidVersion <- None
+        | None -> ()
 
-        match _line, _lastValidVersion with
-        | Some line, _ -> withValidLine line
-        | None, Some (version,lineNumber) -> checkUndo version lineNumber
-        | _ -> ()
+    /// For whatever reason this is now invalid.  Store the last good information so we can
+    /// recover during an undo operation
+    member x.MarkInvalid (snapshotLine : ITextSnapshotLine) =
+        _line <- None
+        _lastValidVersion <- Some (snapshotLine.Snapshot.Version.VersionNumber, snapshotLine.LineNumber)
 
     override x.ToString() =
-        match x.VirtualSnapshotPoint with
-        | Some(point) ->
+        match x.VirtualPoint with
+        | Some point ->
             let line,_ = SnapshotPointUtil.GetLineColumn point.Position
             sprintf "%d,%d - %s" line _column (point.ToString())
         | None -> "Invalid"
@@ -130,15 +159,9 @@ type internal TrackingLineColumn
     interface ITrackingLineColumn with
         member x.TextBuffer = _textBuffer
         member x.TrackingMode = _mode
-        member x.VirtualPoint = x.VirtualSnapshotPoint
-        member x.Point = 
-            match x.VirtualSnapshotPoint with
-            | None -> None
-            | Some point -> Some point.Position
-        member x.Close () =
-            _onClose x
-            _line <- None
-            _lastValidVersion <- None
+        member x.VirtualPoint = x.VirtualPoint
+        member x.Point = x.Point
+        member x.Close() = x.Close()
 
 /// Implementation of ITrackingVisualSpan which is used to track a VisualSpan across edits
 /// to the ITextBuffer
