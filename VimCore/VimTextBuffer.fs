@@ -81,7 +81,7 @@ type internal VimTextBuffer
                 | None -> None
                 | Some point -> 
                     let line, column = SnapshotPointUtil.GetLineColumn point
-                    let trackingLineColumn = _bufferTrackingService.CreateLineColumn _textBuffer line column LineColumnTrackingMode.Default
+                    let trackingLineColumn = _bufferTrackingService.CreateLineColumn _textBuffer line column LineColumnTrackingMode.LastEditPoint
                     Some trackingLineColumn
 
     /// Get all of the local marks in the IVimTextBuffer.

@@ -43,6 +43,10 @@ type LineColumnTrackingMode =
     /// and just treat it as a delta adjustment
     | SurviveDeletes 
 
+    /// Same as Survives delete but it resets the column to 0 in this 
+    /// case
+    | LastEditPoint
+
 /// Tracks a line number and column across edits to the ITextBuffer.  This auto tracks
 /// and will return information against the current ITextSnapshot for the 
 /// ITextBuffer

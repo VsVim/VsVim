@@ -446,7 +446,6 @@ namespace Vim.UnitTest
                 _vimBuffer.ProcessNotation("big <Esc>dd");
                 Assert.True(_vimBuffer.VimTextBuffer.LastInsertExitPoint.IsNone());
             }
-
         }
 
         public sealed class LastEditPointTest : InsertModeIntegrationTest
@@ -474,7 +473,7 @@ namespace Vim.UnitTest
 
                 _vimBuffer.ProcessNotation("`.");
 
-                Assert.Equal(8, _textView.Caret.Position.BufferPosition.GetColumn());
+                Assert.Equal(7, _textView.Caret.Position.BufferPosition.GetColumn());
                 Assert.Equal(1, _textView.GetCaretLine().LineNumber);
             }
 
@@ -525,6 +524,57 @@ namespace Vim.UnitTest
                 Create("a big dog");
                 _textBuffer.Delete(new Span(2, 3));
                 Assert.Equal(2, LastEditPoint.Value);
+            }
+
+            [Fact]
+            public void MiddleOfLine()
+            {
+                Create("cat", "dg", "fish");
+                _textView.MoveCaretToLine(1, 1);
+                _vimBuffer.ProcessNotation("o<Esc>");
+                _textView.MoveCaretToLine(0);
+                _vimBuffer.ProcessNotation("`.");
+                Assert.Equal(_textBuffer.GetPointInLine(1, 1), _textView.GetCaretPoint());
+            }
+
+            [Fact]
+            public void BeginningOfLine()
+            {
+                Create("cat", "og", "fish");
+                _textView.MoveCaretToLine(1, 0);
+                _vimBuffer.ProcessNotation("d<Esc>");
+                _textView.MoveCaretToLine(0);
+                _vimBuffer.ProcessNotation("`.");
+                Assert.Equal(_textBuffer.GetPointInLine(1, 0), _textView.GetCaretPoint());
+            }
+
+            [Fact]
+            public void TypingCompleteWord()
+            {
+                Create("cat", "", "fish");
+                _textView.MoveCaretToLine(1, 0);
+                _vimBuffer.ProcessNotation("dog<Esc>");
+                _textView.MoveCaretToLine(0);
+                _vimBuffer.ProcessNotation("`.");
+                Assert.Equal(_textBuffer.GetPointInLine(1, 2), _textView.GetCaretPoint());
+            }
+
+            [Fact]
+            public void DeleteLineContainingLastEditPoint()
+            {
+                Create("cat", "", "fish");
+                _textView.MoveCaretToLine(1, 0);
+                _vimBuffer.ProcessNotation("dog<Esc>ddk`.");
+                Assert.Equal(_textBuffer.GetPointInLine(1, 0), _textView.GetCaretPoint());
+            }
+
+            [Fact]
+            public void DeleteManyLineContainingLastEditPoint()
+            {
+                Create("pig", "cat", "", "fish", "tree");
+                _textView.MoveCaretToLine(2, 0);
+                _vimBuffer.ProcessNotation("dog<Esc>k2dd`.");
+                Assert.Equal(_textBuffer.GetPointInLine(1, 0), _textView.GetCaretPoint());
             }
         }
 

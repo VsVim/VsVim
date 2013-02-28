@@ -406,7 +406,6 @@ type internal InsertMode
 
         // Save the last edit point before moving the column to the left
         _vimBuffer.VimTextBuffer.LastInsertExitPoint <- Some x.CaretPoint
-        _vimBuffer.VimTextBuffer.LastEditPoint <- Some x.CaretPoint
 
         // Don't move the caret for block inserts.  It's explicitly positioned 
         let moveCaretLeft = 
@@ -418,11 +417,14 @@ type internal InsertMode
         // Run the mode cleanup command.  This must be done as a command.  Many commands call
         // into insert mode expecting to link with at least one following command (cw, o, ct,
         // etc ...).  Ending insert with an explicit link previous command guarantees these 
-        // commands are completed and not left hanging open for subsequente commands to link
+        // commands are completed and not left hanging open for subsequent commands to link
         // to.  
         let keyInputSet = KeyNotationUtil.StringToKeyInputSet "<Left>"
         let commandFlags = CommandFlags.Repeatable ||| CommandFlags.LinkedWithPreviousCommand
         x.RunInsertCommand (InsertCommand.CompleteMode moveCaretLeft) keyInputSet commandFlags |> ignore
+
+        // The last edit point is the position of the cursor after it moves to the left
+        _vimBuffer.VimTextBuffer.LastEditPoint <- Some x.CaretPoint
 
         ProcessResult.OfModeKind ModeKind.Normal
 

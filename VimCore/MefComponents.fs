@@ -41,6 +41,8 @@ type internal TrackingLineColumn
     /// can become valid again
     let mutable _lastValidVersion : (int * int) option  = None
 
+    let mutable _column = _column
+
     member x.TextBuffer = _textBuffer
 
     member x.Line 
@@ -50,11 +52,6 @@ type internal TrackingLineColumn
     member x.Column = _column
 
     member x.IsValid = Option.isSome _line
-
-    member x.SurviveDeletes = 
-        match _mode with
-        | LineColumnTrackingMode.Default -> false
-        | LineColumnTrackingMode.SurviveDeletes -> true
 
     member x.VirtualPoint = 
         match _line with
@@ -72,7 +69,7 @@ type internal TrackingLineColumn
         _lastValidVersion <- None
 
     /// Update the internal tracking information based on the new ITextSnapshot
-    member x.UpdateForChange (e : TextContentChangedEventArgs) =
+    member x.OnBufferChanged (e : TextContentChangedEventArgs) =
         match _line with 
         | Some snapshotLine -> x.AdjustForChange snapshotLine e
         | None -> x.CheckForUndo e
@@ -83,36 +80,43 @@ type internal TrackingLineColumn
     /// Note: This method occurs on a hot path, especially in macro playback, hence we
     /// take great care to avoid allocations on this path whenever possible
     member x.AdjustForChange (oldLine : ITextSnapshotLine) (e : TextContentChangedEventArgs) =
-    
+        let changes = e.Changes
+        match _mode with
+        | LineColumnTrackingMode.Default ->
+            if x.IsLineDeletedByChange oldLine changes then
+                // If this shouldn't survive a full line deletion and there is a deletion
+                // then we are invalid
+                x.MarkInvalid oldLine
+            else
+                x.AdjustForChangeCore oldLine e
+        | LineColumnTrackingMode.LastEditPoint ->
+            if x.IsLineDeletedByChange oldLine changes then
+                _column <- 0
+
+            let newSnapshot = e.After
+            let number = min oldLine.LineNumber (newSnapshot.LineCount - 1)
+            _line <- Some (newSnapshot.GetLineFromLineNumber number)
+        | LineColumnTrackingMode.SurviveDeletes -> x.AdjustForChangeCore oldLine e
+
+    member x.AdjustForChangeCore (oldLine : ITextSnapshotLine) (e : TextContentChangedEventArgs) =
         let newSnapshot = e.After
         let changes = e.Changes
 
-        // Is this change a delete of the entire line 
-        let isLineDelete (change : ITextChange) = 
-            change.LineCountDelta < 0 &&
-            change.OldSpan.Contains(oldLine.ExtentIncludingLineBreak.Span)
+        // Calculate the line number delta for this given change. All we care about here
+        // is the line number.  So changes line shortening the line don't matter for 
+        // us because the column position is fixed
+        let mutable delta = 0
+        for change in changes do
+            if change.LineCountDelta <> 0 && change.OldPosition <= oldLine.Start.Position then
+                // The change occurred before our line and there is a delta.  This is the 
+                // delta we need to apply to our line number
+                delta <- delta + change.LineCountDelta
 
-        if (not x.SurviveDeletes) && x.IsLineDeletedByChange oldLine e.Changes then
-            // If this shouldn't survive a full line deletion and there is a deletion
-            // then we are invalid
-            x.MarkInvalid oldLine
+        let number = oldLine.LineNumber + delta
+        if number >= 0 && number < newSnapshot.LineCount then
+            _line <- Some (newSnapshot.GetLineFromLineNumber number) 
         else
-
-            // Calculate the line number delta for this given change. All we care about here
-            // is the line number.  So changes line shortening the line don't matter for 
-            // us because the column position is fixed
-            let mutable delta = 0
-            for change in changes do
-                if change.LineCountDelta <> 0 && change.OldPosition <= oldLine.Start.Position then
-                    // The change occurred before our line and there is a delta.  This is the 
-                    // delta we need to apply to our line number
-                    delta <- delta + change.LineCountDelta
-
-            let number = oldLine.LineNumber + delta
-            if number >= 0 && number < newSnapshot.LineCount then
-                _line <- Some (newSnapshot.GetLineFromLineNumber number) 
-            else
-                x.MarkInvalid oldLine
+            x.MarkInvalid oldLine
 
     /// Is the specified line deleted by this change
     member x.IsLineDeletedByChange (snapshotLine : ITextSnapshotLine) (changes : INormalizedTextChangeCollection) =
@@ -345,7 +349,7 @@ type internal BufferTrackingService() =
 
     member x.OnBufferChanged (e : TextContentChangedEventArgs) = 
         match x.FindTrackedData e.Before.TextBuffer with
-        | Some trackedData -> trackedData.List |> Seq.iter (fun trackingLineColumn -> trackingLineColumn.UpdateForChange e)
+        | Some trackedData -> trackedData.List |> Seq.iter (fun trackingLineColumn -> trackingLineColumn.OnBufferChanged e)
         | None -> ()
 
     member x.Create (textBuffer : ITextBuffer) lineNumber column mode = 
