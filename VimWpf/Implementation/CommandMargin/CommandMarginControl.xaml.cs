@@ -166,7 +166,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             }
         }
 
-        private void commandLineInput_PreviewKeyDown(object sender, KeyEventArgs e)
+        private void OnCommandLineInputPreviewKeyDown(object sender, KeyEventArgs e)
         {
             switch (e.Key)
             {
@@ -199,7 +199,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             }
         }
 
-        private void commandLineInput_TextChanged(object sender, TextChangedEventArgs e)
+        private void OnCommandLineInputTextChanged(object sender, TextChangedEventArgs e)
         {
             if (!_isEditDisable && 0 == commandLineInput.Text.Trim().Length)
             {
@@ -207,7 +207,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             }
         }
 
-        private void commandLineInput_SelectionChanged(object sender, RoutedEventArgs e)
+        private void OnCommandLineInputSelectionChanged(object sender, RoutedEventArgs e)
         {
             if (commandLineInput.Text.Length > 0)
             {

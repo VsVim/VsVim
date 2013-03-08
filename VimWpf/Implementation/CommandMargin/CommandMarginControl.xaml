@@ -46,9 +46,9 @@
             IsReadOnly="{Binding Path=IsCommandEditionDisable}"
             Foreground="{Binding Path=TextForeground}"
             Background="{Binding Path=TextBackground}"
-            PreviewKeyDown="commandLineInput_PreviewKeyDown"
-            TextChanged="commandLineInput_TextChanged"
-            SelectionChanged="commandLineInput_SelectionChanged"
+            PreviewKeyDown="OnCommandLineInputPreviewKeyDown"
+            TextChanged="OnCommandLineInputTextChanged"
+            SelectionChanged="OnCommandLineInputSelectionChanged"
             />
 
         <Button
