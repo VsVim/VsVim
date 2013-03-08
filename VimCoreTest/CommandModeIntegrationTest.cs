@@ -28,12 +28,18 @@ namespace Vim.UnitTest
             _commandMode = _vimBuffer.CommandMode;
         }
 
+        /// <summary>
+        /// Run the command.  A colon will be inserted before the command
+        /// </summary>
         protected void RunCommand(string command)
         {
             _vimBuffer.Process(':');
             _vimBuffer.Process(command, enter: true);
         }
 
+        /// <summary>
+        /// Run a command without prefixing it with a colon (:)
+        /// </summary>
         protected void RunCommandRaw(string command)
         {
             _vimBuffer.Process(command, enter: true);
@@ -502,6 +508,18 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
+            /// Make sure that we can handle a space between the :substitute command name 
+            /// and the pattern
+            /// </summary>
+            [Fact]
+            public void SpaceAfterCommandName()
+            {
+                Create("ca t");
+                RunCommandRaw(":s / /");
+                Assert.Equal("cat", _textBuffer.GetLine(0).GetText());
+            }
+
+            /// <summary>
             /// Integration test for issue #973.  The key problem here is that the regex built
             /// from the substitute was ignoring the ignorecase and smartcase options.  It was 
             /// instead creating literally from the substitute flags
@@ -513,6 +531,17 @@ namespace Vim.UnitTest
                 _vimBuffer.GlobalSettings.IgnoreCase = true;
                 RunCommandRaw(":%s/vols.first()/target/g");
                 Assert.Equal("target", _textBuffer.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// Make sure that we can handle a space before the substitute command 
+            /// </summary>
+            [Fact]
+            public void Issue1057()
+            {
+                Create("ca t");
+                RunCommandRaw(": s / /");
+                Assert.Equal("cat", _textBuffer.GetLine(0).GetText());
             }
         }
 

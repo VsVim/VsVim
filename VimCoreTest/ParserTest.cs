@@ -548,6 +548,18 @@ namespace Vim.UnitTest
                 AssertSubstituteRepeat("smagic", SubstituteFlags.Magic);
                 AssertSubstituteRepeat("smagic g", SubstituteFlags.ReplaceAll | SubstituteFlags.Magic);
             }
+
+            [Fact]
+            public void SpaceBeforeCommandName()
+            {
+                AssertSubstitute(" s/ /", " ", "");
+            }
+
+            [Fact]
+            public void SpaceBetweenNameAndPattern()
+            {
+                AssertSubstitute("s / /", " ", "");
+            }
         }
 
         public sealed class SetTest : ParserTest
