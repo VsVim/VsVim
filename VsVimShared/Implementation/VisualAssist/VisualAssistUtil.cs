@@ -93,8 +93,8 @@ namespace VsVim.Implementation.VisualAssist
             }
             catch
             {
-                // If the registry entry doesn't exist then it's not properly set
-                return false;
+                // If the registry entry doesn't exist then it's properly set
+                return true;
             }
         }
 
