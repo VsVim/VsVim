@@ -891,6 +891,7 @@ type Parser
             elif x.IsCurrentCharValue '/' then
 
                 // It's one of the forward pattern specifiers
+                let mark = _tokenizer.Mark
                 _tokenizer.MoveNextToken()
                 if x.IsCurrentCharValue '/' then
                     Some LineSpecifier.NextLineWithPreviousPattern
@@ -899,20 +900,23 @@ type Parser
                 elif x.IsCurrentCharValue '&' then
                     Some LineSpecifier.NextLineWithPreviousSubstitutePattern
                 else
-                    // Parse out the pattern.  The closing delimeter is required her
+                    // Parse out the pattern.  The closing delimiter is required her
                     let pattern, foundDelimeter = x.ParsePattern '/'
                     if foundDelimeter then
                         Some (LineSpecifier.NextLineWithPattern pattern)
                     else
+                        _tokenizer.MoveToMark mark
                         None
 
             elif x.IsCurrentCharValue '?' then
                 // It's the ? previous search pattern
+                let mark = _tokenizer.Mark
                 _tokenizer.MoveNextToken()
                 let pattern, foundDelimeter = x.ParsePattern '?'
                 if foundDelimeter then
                     Some (LineSpecifier.PreviousLineWithPattern pattern)
                 else
+                    _tokenizer.MoveToMark mark
                     None
 
             elif x.IsCurrentCharValue '+' then

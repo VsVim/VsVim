@@ -999,7 +999,7 @@ type VimInterpreter
                 let point = 
                     span.Start 
                     |> SnapshotPointUtil.GetContainingLine 
-                    |> SnapshotLineUtil.GetStart
+                    |> SnapshotLineUtil.GetFirstNonBlankOrStart
                 TextViewUtil.MoveCaretToPoint _textView point
                 _commonOperations.EnsureCaretOnScreenAndTextExpanded()
             | SearchResult.NotFound _ ->

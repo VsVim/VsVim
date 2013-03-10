@@ -220,6 +220,56 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class IncrementalSearchTest : CommandModeIntegrationTest
+        {
+            /// <summary>
+            /// Make sure that we can handle the incremental search command from the command line 
+            /// Issue 1034
+            /// </summary>
+            [Fact]
+            public void ForwardSimple()
+            {
+                Create("cat", "dog", "fish");
+                RunCommandRaw(":/dog");
+                Assert.Equal(_textBuffer.GetLine(1).Start, _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// Make sure that we can handle the incremental search command from the command line 
+            /// </summary>
+            [Fact]
+            public void BackwardSimple()
+            {
+                Create("cat", "dog", "fish");
+                _textView.MoveCaretToLine(2);
+                RunCommandRaw(":?dog");
+                Assert.Equal(_textBuffer.GetLine(1).Start, _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// Make sure the match goes to the first non-whitespace character on the line 
+            /// </summary>
+            [Fact]
+            public void MatchNotOnColumnZero()
+            {
+                Create("cat", " dog", "fish");
+                RunCommandRaw(":/dog");
+                Assert.Equal(_textBuffer.GetPointInLine(1, 1), _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// The caret should not move to the word but instead to the first non-blank character
+            /// of the line
+            /// </summary>
+            [Fact]
+            public void MatchNotStartOfLine()
+            {
+                Create("cat", " big dog", "fish");
+                RunCommandRaw(":/dog");
+                Assert.Equal(_textBuffer.GetPointInLine(1, 1), _textView.GetCaretPoint());
+            }
+        }
+
         public sealed class LineEdittingTest : CommandModeIntegrationTest
         {
             private readonly HistoryList _commandHistoryList;
