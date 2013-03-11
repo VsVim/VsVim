@@ -20,6 +20,7 @@ namespace VsVim.Implementation.NavigateTo
         void INavigateToItemProvider.StartSearch(INavigateToCallback callback, string searchValue)
         {
             _threadCommunicator.StartSearch();
+            callback.Done();
         }
 
         void INavigateToItemProvider.StopSearch()
