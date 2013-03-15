@@ -10,7 +10,7 @@ using Xunit;
 
 namespace VsVim.UnitTest
 {
-    public sealed class ResharperExternalEditAdapterTest : VimTestBase
+    public abstract class ResharperExternalEditAdapterTest : VimTestBase
     {
         sealed class VsTextAdornmentTag : ITag
         {
@@ -30,55 +30,58 @@ namespace VsVim.UnitTest
             _adapter = _adapterRaw;
         }
 
-        /// <summary>
-        /// Ensure that the R# adapter doesn't pick up on IVsTextMarker instances
-        /// </summary>
-        [Fact]
-        public void IsExternalEditMarker_None()
+        public sealed class IsExternalEditMarkerTest : ResharperExternalEditAdapterTest
         {
-            Create("cat", "dog", "tree");
-            for (var i = 0; i < (int)(MARKERTYPE.DEF_MARKER_COUNT); i++)
+            /// <summary>
+            /// Ensure that the R# adapter doesn't pick up on IVsTextMarker instances
+            /// </summary>
+            [Fact]
+            public void None()
             {
-                var span = _textBuffer.GetLineRange(0).Extent.ToTextSpan();
-                var marker = MockObjectFactory.CreateVsTextLineMarker(span, i, _factory);
-                Assert.False(_adapter.IsExternalEditMarker(marker.Object));
+                Create("cat", "dog", "tree");
+                for (var i = 0; i < (int)(MARKERTYPE.DEF_MARKER_COUNT); i++)
+                {
+                    var span = _textBuffer.GetLineRange(0).Extent.ToTextSpan();
+                    var marker = MockObjectFactory.CreateVsTextLineMarker(span, i, _factory);
+                    Assert.False(_adapter.IsExternalEditMarker(marker.Object));
+                }
             }
-        }
 
-        [Fact]
-        public void IsExternalEditMarker_NormalTagIsNot()
-        {
-            Create("");
-            var tag = _factory.Create<ITag>();
-            Assert.False(_adapter.IsExternalEditTag(tag.Object));
-        }
+            [Fact]
+            public void NormalTagIsNot()
+            {
+                Create("");
+                var tag = _factory.Create<ITag>();
+                Assert.False(_adapter.IsExternalEditTag(tag.Object));
+            }
 
-        [Fact]
-        public void IsExternalEditMarker_RightTagWithAttributes()
-        {
-            Create("");
-            var array = new[]
+            [Fact]
+            public void RightTagWithAttributes()
+            {
+                Create("");
+                var array = new[]
                             {
                                 ResharperExternalEditAdapter.ExternalEditAttribute1,
                                 ResharperExternalEditAdapter.ExternalEditAttribute2,
                                 ResharperExternalEditAdapter.ExternalEditAttribute3,
                             };
-            foreach (var item in array)
-            {
-                var tag = new VsTextAdornmentTag {myAttributeId = item};
-                Assert.True(_adapter.IsExternalEditTag(tag));
+                foreach (var item in array)
+                {
+                    var tag = new VsTextAdornmentTag { myAttributeId = item };
+                    Assert.True(_adapter.IsExternalEditTag(tag));
+                }
             }
-        }
 
-        [Fact]
-        public void IsExternalEditMarker_RightTagWithWrongAttributes()
-        {
-            Create("");
-            var array = new[] {"dog", "cat"};
-            foreach (var item in array)
+            [Fact]
+            public void RightTagWithWrongAttributes()
             {
-                var tag = new VsTextAdornmentTag {myAttributeId = item};
-                Assert.False(_adapter.IsExternalEditTag(tag));
+                Create("");
+                var array = new[] { "dog", "cat" };
+                foreach (var item in array)
+                {
+                    var tag = new VsTextAdornmentTag { myAttributeId = item };
+                    Assert.False(_adapter.IsExternalEditTag(tag));
+                }
             }
         }
     }
