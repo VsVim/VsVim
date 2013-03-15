@@ -101,13 +101,34 @@ namespace VsVim.Implementation.Resharper
                 return false;
             }
 
-            // The various JetBrains products reuse at a code base level certain constructs
-            // such as ITagger<T> implementations.  For example both R# and dotTrace and 
-            // dotCover use the VsDocumentMarkerTaggerProvider.  If multiple products are
-            // installed then MEF composition will return them in a non-deterministic 
-            // order.  They all have the same fully qualified name.  The only way to 
-            // distinguish them is to look at the assembly name containing the type
-            bool sawName = false;
+            bool sawName;
+            if (TryGetSpecificTagger(textBuffer, out sawName, out tagger))
+            {
+                return true;
+            }
+
+            if (sawName && TryGetGeneralTagger(textBuffer, out tagger))
+            {
+                return true;
+            }
+
+            tagger = null;
+            return false;
+        }
+
+        /// <summary>
+        /// The various JetBrains products reuse at a code base level certain constructs
+        /// such as ITagger<T> implementations.  For example both R# and dotTrace and 
+        /// dotCover use the VsDocumentMarkerTaggerProvider.  If multiple products are
+        /// installed then MEF composition will return them in a non-deterministic 
+        /// order.  They all have the same fully qualified name.  The only way to 
+        /// distinguish them is to look at the assembly name containing the type
+        /// </summary>
+        private bool TryGetSpecificTagger(ITextBuffer textBuffer, out bool sawName, out ITagger<ITag> tagger)
+        {
+            sawName = false;
+            tagger = null;
+
             foreach (var pair in TaggerProviders)
             {
                 var provider = pair.Value;
@@ -132,24 +153,32 @@ namespace VsVim.Implementation.Resharper
                 }
             }
 
-            // It's unclear if the Vs 2010 portion changes in R# builds for Vs 2012 or not.  Once
-            // a R# 7.0 build is available we can verify this to be the case or not.  Until then
-            // assume the name does change and bind to the short name here.  Will at least 
-            // work for customers with only R# installed on VS11
-            if (sawName)
+            return false;
+        }
+
+        /// <summary>
+        /// This method is to try to account for Resharper versions that are not released at
+        /// this time.  Instead of looking for the version specific names we just look at the
+        /// jet brains assembly that have the correct tagger name
+        ///
+        /// One problem here is that the tagger implementations are shared between a couple
+        /// of JetBrains products including dotCover.  Hence we need to keep in mind both the
+        /// assembly and tagger name here
+        /// </summary>
+        private bool TryGetGeneralTagger(ITextBuffer textBuffer, out ITagger<ITag> tagger)
+        {
+            foreach (var pair in TaggerProviders)
             {
-                foreach (var pair in TaggerProviders)
+                var provider = pair.Value;
+                var providerType = provider.GetType();
+                if (providerType.Name == ResharperTaggerProviderName &&
+                    providerType.Assembly.FullName.StartsWith("JetBrains", StringComparison.OrdinalIgnoreCase))
                 {
-                    var provider = pair.Value;
-                    var providerType = provider.GetType();
-                    if (providerType.Name == ResharperTaggerProviderName)
+                    var taggerResult = provider.SafeCreateTagger<ITag>(textBuffer);
+                    if (taggerResult.IsSuccess)
                     {
-                        var taggerResult = provider.SafeCreateTagger<ITag>(textBuffer);
-                        if (taggerResult.IsSuccess)
-                        {
-                            tagger = taggerResult.Value;
-                            return true;
-                        }
+                        tagger = taggerResult.Value;
+                        return true;
                     }
                 }
             }
