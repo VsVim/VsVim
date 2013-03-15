@@ -2,7 +2,7 @@
 using Microsoft.VisualStudio.TextManager.Interop;
 using Microsoft.VisualStudio.Text.Editor;
 
-namespace VsVim.Implementation.ExternalEdit
+namespace VsVim
 {
     internal interface IExternalEditAdapter
     {

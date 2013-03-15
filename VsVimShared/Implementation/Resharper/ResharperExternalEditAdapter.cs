@@ -10,7 +10,7 @@ using Microsoft.VisualStudio.Text.Tagging;
 using Microsoft.VisualStudio.TextManager.Interop;
 using Vim;
 
-namespace VsVim.Implementation.ExternalEdit
+namespace VsVim.Implementation.Resharper
 {
     [Export(typeof(IResharperUtil))]
     [Export(typeof(IExternalEditAdapter))]
