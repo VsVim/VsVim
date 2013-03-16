@@ -39,7 +39,7 @@ namespace Vim.UnitTest
             Assert.Equal(opt.Value, keyInputSet);
         }
 
-        public sealed class Single : KeyNotationUtilTest
+        public sealed class SingleTest : KeyNotationUtilTest
         {
             [Fact]
             public void LessThanChar()
@@ -205,7 +205,7 @@ namespace Vim.UnitTest
             }
         }
 
-        public sealed class Many : KeyNotationUtilTest
+        public sealed class ManyTest : KeyNotationUtilTest
         {
             [Fact]
             public void TwoAlpha()
@@ -278,7 +278,52 @@ namespace Vim.UnitTest
             }
         }
 
-        public sealed class Misc : KeyNotationUtilTest
+        public sealed class CharLiteralTest : KeyNotationUtilTest
+        {
+            [Fact]
+            public void Simple()
+            {
+                var keyInut = KeyNotationUtil.StringToKeyInput("<Char-97>");
+                Assert.Equal('a', keyInut.Char);
+            }
+
+            [Fact]
+            public void SimpleDifferentCase()
+            {
+                var keyInut = KeyNotationUtil.StringToKeyInput("<cHAR-97>");
+                Assert.Equal('a', keyInut.Char);
+            }
+
+            [Fact]
+            public void Letters()
+            {
+                int baseCase = (int)'a';
+                for (int i = 0; i < 26; i++)
+                {
+                    string msg = String.Format("<Char-{0}>", baseCase + i);
+                    var keyInput = KeyNotationUtil.StringToKeyInput(msg);
+
+                    var target = (char)(baseCase + i);
+                    Assert.Equal(target, keyInput.Char);
+                }
+            }
+
+            [Fact]
+            public void OctalValue()
+            {
+                var keyInut = KeyNotationUtil.StringToKeyInput("<Char-0141>");
+                Assert.Equal('a', keyInut.Char);
+            }
+
+            [Fact]
+            public void HexidecimalValue()
+            {
+                var keyInut = KeyNotationUtil.StringToKeyInput("<Char-0x61>");
+                Assert.Equal('a', keyInut.Char);
+            }
+        }
+
+        public sealed class MiscTest : KeyNotationUtilTest
         {
             /// <summary>
             /// Case shouldn't matter
@@ -357,7 +402,7 @@ namespace Vim.UnitTest
             }
         }
 
-        public sealed class GetDisplayName : KeyNotationUtilTest
+        public sealed class GetDisplayNameTest : KeyNotationUtilTest
         {
             /// <summary>
             /// When displaying the Control + alpha keys we should be displaying it in the C-X 

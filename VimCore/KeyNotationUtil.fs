@@ -125,7 +125,7 @@ module KeyNotationUtil =
                 //  3. Invalid combo <b-a>, <foo
                 //
                 // The first 2 need to be treated as a single entry while the third need 
-                // te be treaed as separate key strokes
+                // to be treated as separate key strokes
                 match rest |> List.tryFindIndex (fun c -> c = '>') with
                 | None -> 
                     // Easiest case of #3.  Treat them all as separate entries
@@ -139,7 +139,7 @@ module KeyNotationUtil =
                         inner rest (fun next -> withData (str :: next))
 
                     if isModifier then
-                        // Need to determine if it's a valid modfier or not.  
+                        // Need to determine if it's a valid modifier or not.  
                         let isValid = 
                             let c = List.nth rest 1
                             match CharUtil.ToLower c with 
@@ -167,10 +167,12 @@ module KeyNotationUtil =
 
         inner (data |> List.ofSeq) (fun all -> all)
 
-    let TryStringToKeyInput (data : string) = 
+    /// Convert the given special key name + modifier into a KeyInput value 
+    let ConvertSpecialKeyName data modifier = 
 
-        // Convert the string into a keyinput 
-        let convertToRaw data =
+        // Convert the string into a KeyInput value by consulting the 
+        // SpecialKeyMap 
+        let keyInput = 
             let comparableData = ComparableString.CreateOrdinalIgnoreCase data
             match Map.tryFind comparableData SpecialKeyMap with
             | Some keyInput -> Some keyInput
@@ -178,29 +180,64 @@ module KeyNotationUtil =
                 if StringUtil.length data = 1 then KeyInputUtil.CharToKeyInput data.[0] |> Some
                 else None
 
-        // Convert and then apply the modifier
-        let convertAndApply data modifier = 
-            let keyInput = convertToRaw data 
-            match keyInput with 
-            | None -> None
-            | Some keyInput -> 
+        match keyInput with 
+        | None -> None
+        | Some keyInput -> 
 
-                // This is one place where we don't want to always smooth out the modifiers with
-                // ApplyModifiers.  Even though it doesn't make any sense to create a mappping
-                // for say Shift + # it's completely legal to do so.  It produces a KeyInput which
-                // can't be matched on keyboards.  But it will appear in the map list.  
-                //
-                // The exception to this rule is letters.  They are still smoothed out and this can
-                // be verified experimentally
-                if Option.isSome keyInput.RawChar && CharUtil.IsLetterOrDigit keyInput.Char then
-                    KeyInputUtil.ApplyModifiers keyInput modifier |> Some
-                elif Util.IsFlagSet modifier KeyModifiers.Shift then
-                    KeyInputUtil.ChangeKeyModifiersDangerous keyInput modifier |> Some
-                else
-                    KeyInputUtil.ApplyModifiers keyInput modifier |> Some
+            // This is one place where we don't want to always smooth out the modifiers with
+            // ApplyModifiers.  Even though it doesn't make any sense to create a mapping
+            // for say Shift + # it's completely legal to do so.  It produces a KeyInput which
+            // can't be matched on keyboards.  But it will appear in the map list.  
+            //
+            // The exception to this rule is letters.  They are still smoothed out and this can
+            // be verified experimentally
+            if Option.isSome keyInput.RawChar && CharUtil.IsLetterOrDigit keyInput.Char then
+                KeyInputUtil.ApplyModifiers keyInput modifier |> Some
+            elif Util.IsFlagSet modifier KeyModifiers.Shift then
+                KeyInputUtil.ChangeKeyModifiersDangerous keyInput modifier |> Some
+            else
+                KeyInputUtil.ApplyModifiers keyInput modifier |> Some
 
-        // Inside the <
-        let rec insideLessThanGreaterThan (data : string) index modifier = 
+    /// Try and convert a <char-...> notation into a KeyInput value 
+    let TryCharNotationToKeyInput (data : string) = 
+        Contract.Assert (data.[0] = '<')
+        Contract.Assert (StringUtil.last data = '>')
+
+        // The actual number string will begin immediately following the - in the 
+        // notation and end at the >
+        let prefixLength = 6
+        let length = data.Length - (prefixLength + 1)
+        let numberString = data.Substring(prefixLength, length)
+
+        // TODO: Need to unify the handling of number parsing in this code base.  It's done here,
+        // in CommandUtil for the <C-A> command and in the parser 
+        let numberBase = 
+            if numberString.StartsWith("0x") then
+                16
+            elif numberString.StartsWith("0") then
+                8
+            else
+                10
+
+        try
+            let number = System.Convert.ToByte(numberString, numberBase)
+            let c = CharUtil.OfAsciiValue number 
+            KeyInputUtil.CharToKeyInput c |> Some
+        with
+            | _ -> None
+
+    /// Try and convert a key notation that is bracketed with < and > to a KeyInput value
+    let TryKeyNotationToKeyInput (data : string) = 
+        Contract.Assert (data.[0] = '<')
+        Contract.Assert (StringUtil.last data = '>')
+
+        let isCharLiteral = 
+            let comparer = CharComparer.IgnoreCase
+            StringUtil.isSubstringAt data "char-" 1 CharComparer.IgnoreCase
+
+        if isCharLiteral then
+            TryCharNotationToKeyInput data
+        else
             let lastDashIndex = data.LastIndexOf('-')
             let rec inner index modifier = 
                 if index >= String.length data then 
@@ -222,15 +259,20 @@ module KeyNotationUtil =
                     // Need to remove the final > before converting.  
                     let length = ((String.length data) - index) - 1 
                     let rest = data.Substring(index, length)
-                    convertAndApply rest modifier
-            inner index modifier
+                    ConvertSpecialKeyName rest modifier
+            inner 1 KeyModifiers.None
+
+    /// Try and convert the given string value into a KeyInput.  If the value is wrapped in 
+    /// < and > then it will be interpreted as a special key modifier as defined by 
+    /// :help key-notation
+    let TryStringToKeyInput (data : string) = 
 
         match StringUtil.charAtOption 0 data with
         | None -> None
         | Some '<' -> 
             if String.length data = 1 then '<' |> KeyInputUtil.CharToKeyInput |> Some
             elif StringUtil.last data <> '>' then None
-            else insideLessThanGreaterThan data 1 KeyModifiers.None
+            else TryKeyNotationToKeyInput data 
         | Some c -> 
             if data.Length = 1 then KeyInputUtil.CharToKeyInput data.[0] |> Some
             else None
@@ -245,7 +287,7 @@ module KeyNotationUtil =
         | Some list -> list |> KeyInputSetUtil.OfList |> Some
         | None -> None
 
-    /// Convert tho String to a KeyInputSet 
+    /// Convert the String to a KeyInputSet 
     let StringToKeyInputSet data = 
         data
         |> SplitIntoKeyNotationEntries

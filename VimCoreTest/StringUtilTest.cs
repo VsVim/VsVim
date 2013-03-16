@@ -17,7 +17,7 @@ namespace Vim.UnitTest
                     var original = toFind[i];
                     var changed = Char.IsUpper(original) ? Char.ToLower(original) : Char.ToUpper(original);
                     var toFindChanged = toFind.Replace(original, changed);
-                    var replace = StringUtil.ReplaceNoCase(source, toFindChanged, toReplace);
+                    var replace = StringUtil.replaceNoCase(source, toFindChanged, toReplace);
                     Assert.Equal(expected, replace);
                 }
             }

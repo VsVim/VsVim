@@ -301,6 +301,25 @@ module internal MapUtil =
     /// Get the set of keys in the Map
     let keys (map:Map<'TKey,'TValue>) = map |> Seq.map (fun pair -> pair.Key)
 
+
+[<RequireQualifiedAccess>]
+type internal CharComparer =
+    | Exact
+    | IgnoreCase
+
+    with
+
+    member x.IsEqual left right = 
+        if left = right then
+            true
+        else
+            match x with
+            | Exact -> false
+            | IgnoreCase ->
+                let left = System.Char.ToLower left
+                let right = System.Char.ToLower right
+                left = right
+
 module internal CharUtil =
 
     let MinValue = System.Char.MinValue

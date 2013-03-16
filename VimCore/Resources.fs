@@ -7,7 +7,7 @@ module internal Resources =
     let SelectionTracker_AlreadyRunning = "Already running"
     let SelectionTracker_NotRunning = "Not Running"
     let VisualMode_Banner = "--Visual--"
-    let KeyNotationUtil_InvalidNotation notation = sprintf "%s is an invalid key notatin" notation
+    let KeyNotationUtil_InvalidNotation notation = sprintf "%s is an invalid key notation" notation
 
     let KeyInput_InvalidVimKey = "Invalid Vim Key provided"
     let KeyInput_DuplicateCharRepresentation = "Duplicate char representation detected"
