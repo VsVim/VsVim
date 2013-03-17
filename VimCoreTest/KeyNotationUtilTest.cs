@@ -276,6 +276,33 @@ namespace Vim.UnitTest
                 Assert.Equal(KeyInputUtil.CharWithControlToKeyInput('a'), list[0]);
                 Assert.Equal(KeyInputUtil.ApplyModifiersToVimKey(VimKey.Enter, KeyModifiers.Control | KeyModifiers.Shift), list[1]);
             }
+
+            [Fact]
+            public void SimpleTwoChars()
+            {
+                var keyInputSet = KeyNotationUtil.StringToKeyInputSet("ab");
+                Assert.Equal(
+                    new[] { "a", "b" },
+                    keyInputSet.KeyInputs.Select(KeyNotationUtil.GetDisplayName));
+            }
+
+            [Fact]
+            public void SplitIntoKeyNotationEntries2()
+            {
+                var keyInputSet = KeyNotationUtil.StringToKeyInputSet("<C-j>b");
+                Assert.Equal(
+                    new[] { "<NL>", "b" },
+                    keyInputSet.KeyInputs.Select(KeyNotationUtil.GetDisplayName));
+            }
+
+            [Fact]
+            public void SplitIntoKeyNotationEntries4()
+            {
+                var keyInputSet = KeyNotationUtil.StringToKeyInputSet("<C-j><C-b>");
+                Assert.Equal(
+                    new[] { "<NL>", "<C-B>" },
+                    keyInputSet.KeyInputs.Select(KeyNotationUtil.GetDisplayName));
+            }
         }
 
         public sealed class CharLiteralTest : KeyNotationUtilTest
@@ -341,46 +368,6 @@ namespace Vim.UnitTest
             }
 
             [Fact]
-            public void SplitIntoKeyNotationEntries1()
-            {
-                Assert.Equal(
-                    new[] { "a", "b" },
-                    KeyNotationUtil.SplitIntoKeyNotationEntries("ab"));
-            }
-
-            [Fact]
-            public void SplitIntoKeyNotationEntries2()
-            {
-                Assert.Equal(
-                    new[] { "<C-j>", "b" },
-                    KeyNotationUtil.SplitIntoKeyNotationEntries("<C-j>b"));
-            }
-
-            [Fact]
-            public void SplitIntoKeyNotationEntries3()
-            {
-                Assert.Equal(
-                    new[] { "<C-J>", "b" },
-                    KeyNotationUtil.SplitIntoKeyNotationEntries("<C-J>b"));
-            }
-
-            [Fact]
-            public void SplitIntoKeyNotationEntries4()
-            {
-                Assert.Equal(
-                    new[] { "<C-J>", "<C-b>" },
-                    KeyNotationUtil.SplitIntoKeyNotationEntries("<C-J><C-b>"));
-            }
-
-            [Fact]
-            public void SplitIntoKeyNotationEntries_InvalidModifierTreatesLessThanLiterally()
-            {
-                Assert.Equal(
-                    new[] { "<", "b", "-", "j", ">" },
-                    KeyNotationUtil.SplitIntoKeyNotationEntries("<b-j>"));
-            }
-
-            [Fact]
             public void TryStringToKeyInput_BadModifier()
             {
                 Assert.True(KeyNotationUtil.TryStringToKeyInput("<b-j>").IsNone());
@@ -399,6 +386,24 @@ namespace Vim.UnitTest
             public void BackslasheInRight()
             {
                 AssertMany(@"/\v", KeyInputSetUtil.OfCharArray('/', '\\', 'v'));
+            }
+
+            [Fact]
+            public void TagNotSpecialName()
+            {
+                var keyInputList = KeyNotationUtil.StringToKeyInputSet("<dest>");
+                Assert.Equal(
+                    new[] { '<', 'd', 'e', 's', 't', '>' },
+                    keyInputList.KeyInputs.Select(x => x.Char));
+            }
+
+            [Fact]
+            public void UnmatchedLessThan()
+            {
+                var keyInputList = KeyNotationUtil.StringToKeyInputSet("<<s-a>");
+                Assert.Equal(
+                    new[] { '<', 'A' },
+                    keyInputList.KeyInputs.Select(x => x.Char));
             }
         }
 

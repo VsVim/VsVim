@@ -131,7 +131,7 @@ type Mapper
                     result := KeyMappingResult.Mapped lhs
                     isDone := true
                 else
-                    // First character is unmappable but the rest is still eligable for 
+                    // First character can't be mapped but the rest is still eligible for 
                     // mapping after that character is complete 
                     let mapped = KeyInputSet.OneKeyInput lhs.FirstKeyInput.Value
                     let remaining = lhs.Rest |> KeyInputSetUtil.OfList

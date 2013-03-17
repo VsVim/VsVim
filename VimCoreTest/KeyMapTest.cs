@@ -673,6 +673,13 @@ namespace Vim.UnitTest
                 var res = _map.GetKeyMapping(KeyInputUtil.ApplyModifiersToChar(' ', KeyModifiers.Shift), KeyRemapMode.Insert);
                 Assert.Equal(KeyInputUtil.EscapeKey, res.Single());
             }
+
+            [Fact]
+            public void Issue1059()
+            {
+                Assert.True(_map.MapWithNoRemap("/v", "<hello>", KeyRemapMode.Insert));
+                AssertMapping("/v", "<hello>", KeyRemapMode.Insert);
+            }
         }
     }
 }

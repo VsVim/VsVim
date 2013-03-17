@@ -29,6 +29,9 @@ type ComparableString ( _value : string, _comparer : System.StringComparer ) =
 
 /// Utility class for converting Key notations into KeyInput and vice versa
 /// :help key-notation for all of the key codes
+///
+/// TODO: Too many string allocations in this type.  Need to cut that down by passing
+/// around a CharSpan style type instead of individual string entries
 module KeyNotationUtil =
 
     let ManualKeyList = 
@@ -99,73 +102,6 @@ module KeyNotationUtil =
         |> Seq.map (fun (k,v) -> k.Substring(1,k.Length-2), v)
         |> Seq.map (fun (k,v) -> (ComparableString.CreateOrdinalIgnoreCase k),v)
         |> Map.ofSeq
-
-    /// Break up a string into a set of key notation entries
-    let SplitIntoKeyNotationEntries (data : string) =
-
-        let rec inner (rest : char list) withData =
-
-            // Check and see if a list starts with a given prefix 
-            let rec startsWith c = 
-                match rest with
-                | [] -> false
-                | h :: _ -> c =h 
-
-            // Just finishes the continuation.  Consider throwing here in the future
-            let error() = 
-                let str = rest |> StringUtil.ofCharList
-                withData [str]
-
-            if startsWith '<' then
-
-                // When a '<' char there are a couple of possibilities to consider. 
-                //
-                //  1. Modifier combination <C-a>, <S-b>, <CS-A>, etc ...
-                //  2. Named combination <lt>, <Home>, etc ...
-                //  3. Invalid combo <b-a>, <foo
-                //
-                // The first 2 need to be treated as a single entry while the third need 
-                // to be treated as separate key strokes
-                match rest |> List.tryFindIndex (fun c -> c = '>') with
-                | None -> 
-                    // Easiest case of #3.  Treat them all as separate entries
-                    inner rest.Tail (fun next -> withData ("<" :: next))
-                | Some closeIndex ->
-                    let isModifier = rest.Length >= 3 && List.nth rest 2 = '-'
-                    let processGroup() = 
-                        let length = closeIndex + 1
-                        let str = rest |> Seq.take length |> StringUtil.ofCharSeq
-                        let rest = rest |> ListUtil.skip length
-                        inner rest (fun next -> withData (str :: next))
-
-                    if isModifier then
-                        // Need to determine if it's a valid modifier or not.  
-                        let isValid = 
-                            let c = List.nth rest 1
-                            match CharUtil.ToLower c with 
-                            | 'c' -> true
-                            | 's' -> true
-                            | 'm' -> true
-                            | 'a' -> true
-                            | 'd' -> true
-                            | _ -> false
-                        if isValid then 
-                            // It's a valid grouping
-                            processGroup()
-                        else
-                            // Invalid modifier is another case of #3.  Treat them separately
-                            inner rest.Tail (fun next -> withData ("<" :: next))
-                    else 
-                        // It's a word in a <> string 
-                        processGroup()
-            else 
-                match ListUtil.tryHead rest with
-                | None -> withData []
-                | Some (h, t) -> 
-                    let str = h |> StringUtil.ofChar
-                    inner t (fun next -> withData (str :: next))
-
-        inner (data |> List.ofSeq) (fun all -> all)
 
     /// Convert the given special key name + modifier into a KeyInput value 
     let ConvertSpecialKeyName data modifier = 
@@ -265,17 +201,32 @@ module KeyNotationUtil =
     /// Try and convert the given string value into a KeyInput.  If the value is wrapped in 
     /// < and > then it will be interpreted as a special key modifier as defined by 
     /// :help key-notation
-    let TryStringToKeyInput (data : string) = 
+    let TryStringToKeyInputCore (data : string) = 
+        if data.Length = 0 then
+            None
+        elif data.[0] = '<' then
+            let closeIndex = data.IndexOf('>')
+            if closeIndex < 0 then
+                (KeyInputUtil.CharToKeyInput '<', 1) |> Some
+            else 
+                let tag = data.Substring(0, closeIndex + 1)
+                match TryKeyNotationToKeyInput tag with
+                | Some keyInput -> (keyInput, tag.Length) |> Some
+                | None -> (KeyInputUtil.CharToKeyInput '<', 1) |> Some
+        else
+            let keyInput = KeyInputUtil.CharToKeyInput data.[0]
+            (keyInput, 1) |> Some
 
-        match StringUtil.charAtOption 0 data with
+    /// Try and convert the given string value into a single KeyInput value.  If the conversion
+    /// fails or is more than 1 KeyInput in length then None will be returned
+    let TryStringToKeyInput (data : string) = 
+        match TryStringToKeyInputCore data with
+        | Some (keyInput, length) ->
+            if length = data.Length then
+                Some keyInput
+            else
+                None
         | None -> None
-        | Some '<' -> 
-            if String.length data = 1 then '<' |> KeyInputUtil.CharToKeyInput |> Some
-            elif StringUtil.last data <> '>' then None
-            else TryKeyNotationToKeyInput data 
-        | Some c -> 
-            if data.Length = 1 then KeyInputUtil.CharToKeyInput data.[0] |> Some
-            else None
 
     let StringToKeyInput data = 
         match TryStringToKeyInput data with 
@@ -283,16 +234,24 @@ module KeyNotationUtil =
         | None -> invalidArg "data" (Resources.KeyNotationUtil_InvalidNotation data)
 
     let TryStringToKeyInputSet data = 
-        match data |> SplitIntoKeyNotationEntries |> List.map TryStringToKeyInput |> SeqUtil.allOrNone with
-        | Some list -> list |> KeyInputSetUtil.OfList |> Some
-        | None -> None
+        let rec inner rest acc =
+            match TryStringToKeyInputCore rest with
+            | None -> acc [] 
+            | Some (keyInput, length) ->
+                if length = rest.Length then
+                    acc [keyInput]
+                else
+                    let rest = rest.Substring(length)
+                    inner rest (fun tail -> acc (keyInput :: tail))
+        match inner data (fun x -> x) with
+        | [] -> None
+        | list -> Some (KeyInputSetUtil.OfList list) 
 
     /// Convert the String to a KeyInputSet 
     let StringToKeyInputSet data = 
-        data
-        |> SplitIntoKeyNotationEntries
-        |> Seq.map StringToKeyInput
-        |> KeyInputSetUtil.OfSeq
+        match TryStringToKeyInputSet data with 
+        | Some list -> list
+        | None -> invalidArg "data" (Resources.KeyNotationUtil_InvalidNotation data)
 
     let TryGetSpecialKeyName (keyInput : KeyInput) = 
 

@@ -211,6 +211,40 @@ namespace Vim.UnitTest
                 _vimBuffer.Process("ix");
                 Assert.Equal("axa", _textBuffer.GetLine(0).GetText());
             }
+
+            /// <summary>
+            /// When a &lt; or &gt; tag is not a special name it should be interpreted character
+            /// by character 
+            /// </summary>
+            [Fact]
+            public void TagNotASpecialName()
+            {
+                Create("");
+                _vimBuffer.Process(VimKey.Escape);
+                _vimBuffer.Process(@":inoremap a <dest>", enter: true);
+                _vimBuffer.Process("ia");
+                Assert.Equal("<dest>", _textBuffer.GetLine(0).GetText());
+            }
+
+            [Fact]
+            public void UnmatchedLessThan()
+            {
+                Create("");
+                _vimBuffer.Process(VimKey.Escape);
+                _vimBuffer.Process(@":inoremap a <<s-a>", enter: true);
+                _vimBuffer.Process("ia");
+                Assert.Equal("<A", _textBuffer.GetLine(0).GetText());
+            }
+
+            [Fact]
+            public void Issue1059()
+            {
+                Create("");
+                _vimBuffer.Process(VimKey.Escape);
+                _vimBuffer.Process(@":imap /v VARCHAR(MAX) = '<%= ""test"" %>'", enter: true);
+                _vimBuffer.Process("i/v");
+                Assert.Equal(@"VARCHAR(MAX) = '<%= ""test"" %>'", _textBuffer.GetLine(0).GetText());
+            }
         }
 
         public sealed class PasteTest : InsertModeIntegrationTest
