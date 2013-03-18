@@ -320,6 +320,120 @@ type internal CharComparer =
                 let right = System.Char.ToLower right
                 left = right
 
+    member x.Compare (left : char) (right : char) = 
+        if left = right then
+            0
+        else
+            match x with
+            | Exact -> 
+                left.CompareTo(right)
+            | IgnoreCase ->
+                let left = System.Char.ToLower left
+                let right = System.Char.ToLower right
+                left.CompareTo(right)
+
+    member x.GetHashCode (c : char) = 
+        let c = 
+            match x with
+            | Exact -> c
+            | IgnoreCase -> System.Char.ToLower c
+        int c
+
+/// Thin wrapper around System.String which allows us to compare values in a 
+/// case insensitive + allocation free manner.  
+[<Struct>]
+[<CustomComparison>]
+[<CustomEquality>]
+type internal CharSpan 
+    (
+        _value : string, 
+        _index : int,
+        _length : int,
+        _comparer : CharComparer
+    ) = 
+
+    new (value : string, comparer : CharComparer) = 
+        CharSpan(value, 0, value.Length, comparer)
+
+    member x.Length = _length
+
+    member x.CharAt index = 
+        let index = _index + index
+        _value.[index]
+
+    member x.StringComparison = 
+        match _comparer with
+        | CharComparer.Exact -> System.StringComparison.Ordinal
+        | CharComparer.IgnoreCase -> System.StringComparison.OrdinalIgnoreCase
+
+    member x.StringComparer = 
+        match _comparer with
+        | CharComparer.Exact -> System.StringComparer.Ordinal
+        | CharComparer.IgnoreCase -> System.StringComparer.OrdinalIgnoreCase
+
+    member x.CompareTo (other : CharSpan) = 
+        let diff = x.Length - other.Length
+        if diff <> 0 then
+            diff
+        else
+            let mutable index = 0 
+            let mutable value = 0 
+            while index < x.Length && value = 0 do
+                let comp = _comparer.Compare (x.CharAt index) (other.CharAt index)
+                if comp <> 0 then
+                    value <- comp
+
+                index <- index + 1
+            value
+
+    member x.GetSubSpan index length = 
+        CharSpan(_value, index + _index, length, _comparer)
+
+    member x.IndexOf (c : char) = 
+        let mutable index = 0
+        let mutable found = -1
+        while index < x.Length && found < 0 do
+            if _comparer.IsEqual c (x.CharAt index) then
+                found <- index
+            index <- index + 1
+        found
+
+    member x.LastIndexOf c = 
+        let mutable index = x.Length - 1
+        let mutable found = -1
+        while index >= 0 && found < 0 do
+            if _comparer.IsEqual c (x.CharAt index) then
+                found <- index
+            index <- index - 1
+        found
+
+    member x.EqualsString str = 
+        let other = CharSpan(str, _comparer)
+        0 = x.CompareTo other
+
+    override x.Equals(obj) =
+        match obj with
+        | :? CharSpan as other -> 0 = x.CompareTo other
+        | _ -> false
+
+    override x.ToString() = _value.Substring(_index, _length)
+
+    override x.GetHashCode() = 
+        let mutable hashCode = 0
+        for i = 0 to _length - 1 do
+            let current = _comparer.GetHashCode (x.CharAt i)
+            hashCode <- hashCode ||| current
+        hashCode
+
+    interface System.IComparable with
+        member x.CompareTo yObj =
+            match yObj with
+            | :? CharSpan as other -> x.CompareTo other
+            | _ -> invalidArg "yObj" "Cannot compare values of different types"
+
+    interface System.IEquatable<CharSpan> with
+        member x.Equals other = 0 = x.CompareTo other
+
 module internal CharUtil =
 
     let MinValue = System.Char.MinValue

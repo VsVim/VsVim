@@ -1,37 +1,11 @@
 ﻿#light
 
 namespace Vim
-
-/// Thin wrapper around System.String which takes a specific comparer value
-/// Useful for creating a case insensitive string key for a Map
-type ComparableString ( _value : string, _comparer : System.StringComparer ) = 
-
-    member x.Value = _value
-                    
-    override x.GetHashCode() = _value.GetHashCode()
-    override x.Equals(obj) =
-        match obj with
-        | :? ComparableString as other -> _comparer.Equals(_value, other.Value)
-        | _ -> false
-
-    override x.ToString() = _value
-
-    interface System.IComparable with
-        member x.CompareTo yObj =
-            match yObj with
-            | :? ComparableString as other -> _comparer.Compare(_value, other.Value)
-            | _ -> invalidArg "yObj" "Cannot compare values of different types"  
-
-    interface System.IEquatable<KeyInput> with
-        member x.Equals other = _comparer.Equals(_value, other)
-
-    static member CreateOrdinalIgnoreCase value = ComparableString(value, System.StringComparer.OrdinalIgnoreCase)
+open System
+open System.Collections.Generic
 
 /// Utility class for converting Key notations into KeyInput and vice versa
 /// :help key-notation for all of the key codes
-///
-/// TODO: Too many string allocations in this type.  Need to cut that down by passing
-/// around a CharSpan style type instead of individual string entries
 module KeyNotationUtil =
 
     let ManualKeyList = 
@@ -99,24 +73,28 @@ module KeyNotationUtil =
     let SpecialKeyMap = 
         ManualKeyList
         |> Seq.append FunctionKeys
-        |> Seq.map (fun (k,v) -> k.Substring(1,k.Length-2), v)
-        |> Seq.map (fun (k,v) -> (ComparableString.CreateOrdinalIgnoreCase k),v)
+        |> Seq.map (fun (tagName, value) -> 
+            let key = CharSpan(tagName, 1, tagName.Length - 2, CharComparer.IgnoreCase)
+            (key, value))
         |> Map.ofSeq
 
     /// Convert the given special key name + modifier into a KeyInput value 
-    let ConvertSpecialKeyName data modifier = 
+    let ConvertSpecialKeyName (dataCharSpan : CharSpan) modifier = 
+
+        let keyInput = 
+            match Map.tryFind dataCharSpan SpecialKeyMap with
+            | Some keyInput -> Some keyInput
+            | None ->
+                if dataCharSpan.Length = 1 then
+                    // Happens when you have a modifier + single letter inside a tag.  Just use the
+                    // character conversion here 
+                    KeyInputUtil.CharToKeyInput (dataCharSpan.CharAt 0) |> Some
+                else
+                    None
 
         // Convert the string into a KeyInput value by consulting the 
         // SpecialKeyMap 
-        let keyInput = 
-            let comparableData = ComparableString.CreateOrdinalIgnoreCase data
-            match Map.tryFind comparableData SpecialKeyMap with
-            | Some keyInput -> Some keyInput
-            | None -> 
-                if StringUtil.length data = 1 then KeyInputUtil.CharToKeyInput data.[0] |> Some
-                else None
-
-        match keyInput with 
+        match keyInput with
         | None -> None
         | Some keyInput -> 
 
@@ -135,15 +113,16 @@ module KeyNotationUtil =
                 KeyInputUtil.ApplyModifiers keyInput modifier |> Some
 
     /// Try and convert a <char-...> notation into a KeyInput value 
-    let TryCharNotationToKeyInput (data : string) = 
-        Contract.Assert (data.[0] = '<')
-        Contract.Assert (StringUtil.last data = '>')
+    let TryCharNotationToKeyInput (dataCharSpan : CharSpan) = 
+        Contract.Assert(dataCharSpan.CharAt 0 = '<')
+        Contract.Assert(dataCharSpan.CharAt (dataCharSpan.Length - 1) = '>')
 
         // The actual number string will begin immediately following the - in the 
         // notation and end at the >
         let prefixLength = 6
-        let length = data.Length - (prefixLength + 1)
-        let numberString = data.Substring(prefixLength, length)
+        let length = dataCharSpan.Length - (prefixLength + 1)
+        let numberCharSpan = dataCharSpan.GetSubSpan 6 length
+        let numberString = numberCharSpan.ToString()
 
         // TODO: Need to unify the handling of number parsing in this code base.  It's done here,
         // in CommandUtil for the <C-A> command and in the parser 
@@ -163,24 +142,27 @@ module KeyNotationUtil =
             | _ -> None
 
     /// Try and convert a key notation that is bracketed with < and > to a KeyInput value
-    let TryKeyNotationToKeyInput (data : string) = 
-        Contract.Assert (data.[0] = '<')
-        Contract.Assert (StringUtil.last data = '>')
+    let TryKeyNotationToKeyInput (dataCharSpan : CharSpan) = 
+        Contract.Assert(dataCharSpan.CharAt 0 = '<')
+        Contract.Assert(dataCharSpan.CharAt (dataCharSpan.Length - 1) = '>')
 
         let isCharLiteral = 
-            let comparer = CharComparer.IgnoreCase
-            StringUtil.isSubstringAt data "char-" 1 CharComparer.IgnoreCase
+            if dataCharSpan.Length > 6 then
+                let charSpan = dataCharSpan.GetSubSpan 0 6
+                charSpan.EqualsString "<char-"
+            else
+                false
 
         if isCharLiteral then
-            TryCharNotationToKeyInput data
+            TryCharNotationToKeyInput dataCharSpan
         else
-            let lastDashIndex = data.LastIndexOf('-')
+            let lastDashIndex = dataCharSpan.LastIndexOf '-'
             let rec inner index modifier = 
-                if index >= String.length data then 
+                if index >= dataCharSpan.Length then
                     None
                 else if lastDashIndex >= 0 && index <= lastDashIndex then
                     let modifier = 
-                        match data.[index] |> CharUtil.ToLower with
+                        match dataCharSpan.CharAt index |> CharUtil.ToLower with
                         | 'c' -> KeyModifiers.Control ||| modifier |> Some
                         | 's' -> KeyModifiers.Shift ||| modifier |> Some
                         | 'a' -> KeyModifiers.Alt ||| modifier |> Some
@@ -193,34 +175,35 @@ module KeyNotationUtil =
                     | None -> None
                 else 
                     // Need to remove the final > before converting.  
-                    let length = ((String.length data) - index) - 1 
-                    let rest = data.Substring(index, length)
-                    ConvertSpecialKeyName rest modifier
+                    let length = (dataCharSpan.Length - index) - 1 
+                    let tagCharSpan = dataCharSpan.GetSubSpan index length
+                    ConvertSpecialKeyName tagCharSpan modifier
             inner 1 KeyModifiers.None
 
     /// Try and convert the given string value into a KeyInput.  If the value is wrapped in 
     /// < and > then it will be interpreted as a special key modifier as defined by 
     /// :help key-notation
-    let TryStringToKeyInputCore (data : string) = 
-        if data.Length = 0 then
+    let TryStringToKeyInputCore (dataCharSpan : CharSpan) =
+        if dataCharSpan.Length = 0 then
             None
-        elif data.[0] = '<' then
-            let closeIndex = data.IndexOf('>')
+        elif dataCharSpan.CharAt 0 = '<' then
+            let closeIndex = dataCharSpan.IndexOf '>'
             if closeIndex < 0 then
                 (KeyInputUtil.CharToKeyInput '<', 1) |> Some
             else 
-                let tag = data.Substring(0, closeIndex + 1)
+                let tag = dataCharSpan.GetSubSpan 0 (closeIndex + 1)
                 match TryKeyNotationToKeyInput tag with
                 | Some keyInput -> (keyInput, tag.Length) |> Some
                 | None -> (KeyInputUtil.CharToKeyInput '<', 1) |> Some
         else
-            let keyInput = KeyInputUtil.CharToKeyInput data.[0]
+            let keyInput = KeyInputUtil.CharToKeyInput (dataCharSpan.CharAt 0)
             (keyInput, 1) |> Some
 
     /// Try and convert the given string value into a single KeyInput value.  If the conversion
     /// fails or is more than 1 KeyInput in length then None will be returned
     let TryStringToKeyInput (data : string) = 
-        match TryStringToKeyInputCore data with
+        let dataCharSpan = CharSpan(data, CharComparer.IgnoreCase)
+        match TryStringToKeyInputCore dataCharSpan with
         | Some (keyInput, length) ->
             if length = data.Length then
                 Some keyInput
@@ -234,16 +217,18 @@ module KeyNotationUtil =
         | None -> invalidArg "data" (Resources.KeyNotationUtil_InvalidNotation data)
 
     let TryStringToKeyInputSet data = 
-        let rec inner rest acc =
-            match TryStringToKeyInputCore rest with
+        let rec inner index acc =
+            let dataCharSpan = CharSpan(data, index, data.Length - index, CharComparer.IgnoreCase)
+            match TryStringToKeyInputCore dataCharSpan with
             | None -> acc [] 
             | Some (keyInput, length) ->
-                if length = rest.Length then
+                if index + length = data.Length then
                     acc [keyInput]
                 else
-                    let rest = rest.Substring(length)
-                    inner rest (fun tail -> acc (keyInput :: tail))
-        match inner data (fun x -> x) with
+                    let index = index + length
+                    inner index (fun tail -> acc (keyInput :: tail))
+
+        match inner 0 (fun x -> x) with
         | [] -> None
         | list -> Some (KeyInputSetUtil.OfList list) 
 
@@ -254,7 +239,6 @@ module KeyNotationUtil =
         | None -> invalidArg "data" (Resources.KeyNotationUtil_InvalidNotation data)
 
     let TryGetSpecialKeyName (keyInput : KeyInput) = 
-
         let found = 
             SpecialKeyMap
             |> Seq.tryFind (fun pair -> 
@@ -267,7 +251,7 @@ module KeyNotationUtil =
         | None -> None
         | Some pair ->
             let extra : KeyModifiers = Util.UnsetFlag keyInput.KeyModifiers pair.Value.KeyModifiers
-            Some (pair.Key.Value, extra)
+            Some (pair.Key.ToString(), extra)
 
     /// Get the display name for the specified KeyInput value.
     let GetDisplayName (keyInput : KeyInput) = 
