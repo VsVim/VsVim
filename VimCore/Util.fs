@@ -26,9 +26,9 @@ module internal Util =
         System.Enum.GetValues(typeof<'T>) |> Seq.cast<'T>
 
     /// Type safe helper method for creating a WeakReference<'T>
-    let CreateWeakReference<'T when 'T : not struct> (value : 'T) = 
+    let CreateWeakReference<'T when 'T : not struct> (value : 'T) =
         let weakRef = System.WeakReference(value)
-        WeakReference<'T>(weakRef)
+        Vim.WeakReference<'T>(weakRef)
 
     /// Vim is fairly odd in that it considers the top line of the file to be both line numbers
     /// 1 and 0.  The next line is 2.  The editor is a zero based index though so we need

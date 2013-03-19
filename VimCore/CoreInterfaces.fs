@@ -2350,16 +2350,16 @@ type BindResult<'T> =
 
     /// Used to compose to BindResult<'T> functions together by forwarding from
     /// one to the other once the value is completed
-    member x.Map mapFunc =
+    member x.Map (mapFunc : 'T -> BindResult<'U>) : BindResult<'U> =
         match x with
-        | Complete value -> mapFunc value
-        | NeedMoreInput bindData -> NeedMoreInput (bindData.Map mapFunc)
+        | Complete value -> mapFunc value 
+        | NeedMoreInput (bindData : BindData<'T>) -> NeedMoreInput (bindData.Map mapFunc)
         | Error -> Error
         | Cancelled -> Cancelled
 
     /// Used to convert a BindResult<'T>.Completed to BindResult<'U>.Completed through a conversion
     /// function
-    member x.Convert convertFunc = 
+    member x.Convert (convertFunc : 'T -> 'U) : BindResult<'U> = 
         x.Map (fun value -> convertFunc value |> BindResult.Complete)
 
 and BindData<'T> = {
@@ -2393,15 +2393,9 @@ and BindData<'T> = {
     static member CreateForSimple bindFunc =
         { KeyRemapMode = None; BindFunction = bindFunc }
 
-    /// Often types bindings need to compose together because we need an inner binding
-    /// to succeed so we can create a projected value.  This function will allow us
-    /// to translate a BindData<'T>.Completed -> BindData<'U>.Completed
-    member x.Convert convertFunc = 
-        x.Map (fun value -> convertFunc value |> BindResult.Complete)
-
     /// Very similar to the Convert function.  This will instead map a BindData<'T>.Completed
     /// to a BindData<'U> of any form 
-    member x.Map mapFunc = 
+    member x.Map<'U> (mapFunc : 'T -> BindResult<'U>) : BindData<'U> = 
 
         let rec inner bindFunction keyInput = 
             match x.BindFunction keyInput with
@@ -2411,6 +2405,12 @@ and BindData<'T> = {
             | BindResult.NeedMoreInput bindData -> BindResult.NeedMoreInput (bindData.Map mapFunc)
 
         { KeyRemapMode = x.KeyRemapMode; BindFunction = inner x.BindFunction }
+
+    /// Often types bindings need to compose together because we need an inner binding
+    /// to succeed so we can create a projected value.  This function will allow us
+    /// to translate a BindResult<'T>.Completed -> BindResult<'U>.Completed
+    member x.Convert (convertFunc : 'T -> 'U) : BindData<'U> = 
+        x.Map (fun value -> convertFunc value |> BindResult.Complete)
 
 /// Several types of BindData<'T> need to take an action when a binding begins against
 /// themselves.  This action needs to occur before the first KeyInput value is processed

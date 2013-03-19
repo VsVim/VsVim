@@ -2,16 +2,30 @@
 <Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <Is32Bit>False</Is32Bit>
-    <Is32Bit Condition="'$(PROCESSOR_ARCHITECTURE)' == 'x86'">True</Is32Bit>
+    <Is32Bit Condition=" '$(PROCESSOR_ARCHITECTURE)' == 'x86' ">True</Is32Bit>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(Is32Bit)' == 'True'">
+  <PropertyGroup Condition=" '$(Is32Bit)' == 'True' ">
     <Vs2010InstallDir>$(registry:HKEY_LOCAL_MACHINE\Software\Microsoft\VisualStudio\10.0@InstallDir)</Vs2010InstallDir>
     <Vs2012InstallDir>$(registry:HKEY_LOCAL_MACHINE\Software\Microsoft\VisualStudio\11.0@InstallDir)</Vs2012InstallDir>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(Is32Bit)' == 'False'">
+  <PropertyGroup Condition=" '$(Is32Bit)' == 'False' ">
     <Vs2010InstallDir>$(registry:HKEY_LOCAL_MACHINE\Software\Wow6432Node\Microsoft\VisualStudio\10.0@InstallDir)</Vs2010InstallDir>
     <Vs2012InstallDir>$(registry:HKEY_LOCAL_MACHINE\Software\Wow6432Node\Microsoft\VisualStudio\11.0@InstallDir)</Vs2012InstallDir>
+  </PropertyGroup>
+
+  <PropertyGroup Condition=" '$(VisualStudioVersion)' == '10.0' ">
+    <FSharpRefVersion>4.0.0.0</FSharpRefVersion>
+    <EditorRefVersion>10.0.0.0</EditorRefVersion>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <VsInstallDir>$(Vs2010InstallDir)</VsInstallDir>
+  </PropertyGroup>
+
+  <PropertyGroup Condition=" '$(VisualStudioVersion)' == '11.0' ">
+    <FSharpRefVersion>4.3.0.0</FSharpRefVersion>
+    <EditorRefVersion>11.0.0.0</EditorRefVersion>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <VsInstallDir>$(Vs2012InstallDir)</VsInstallDir>
   </PropertyGroup>
 </Project>
