@@ -103,6 +103,7 @@ namespace Vim.UI.Wpf
                 }
             }
 
+            VimTrace.TraceInfo("VimKeyProcessor::TextInput Handled={0}", handled);
             args.Handled = handled;
             base.TextInput(args);
         }
