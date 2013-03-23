@@ -114,6 +114,7 @@
     <Compile Include="RegisterValueTest.cs" />
     <Compile Include="StringUtilTest.cs" />
     <Compile Include="TestableProtectedOperations.cs" />
+    <Compile Include="TextObjectUtilTest.cs" />
     <Compile Include="TokenStreamTest.cs" />
     <Compile Include="VimBufferTest.cs" />
     <Compile Include="SelectModeIntegrationTest.cs" />

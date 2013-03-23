@@ -108,6 +108,8 @@
     <Compile Include="VimTextBuffer.fs" />
     <Compile Include="VimBuffer.fsi" />
     <Compile Include="VimBuffer.fs" />
+    <Compile Include="TextObjectUtil.fsi" />
+    <Compile Include="TextObjectUtil.fs" />
     <Compile Include="MotionUtil.fsi" />
     <Compile Include="MotionUtil.fs" />
     <Compile Include="SearchService.fsi" />
