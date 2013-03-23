@@ -46,6 +46,10 @@ type internal TextObjectUtil
         _textBuffer : ITextBuffer
     ) = 
 
+    let mutable _versionCached = _textBuffer.CurrentSnapshot.Version.VersionNumber
+    let _isSentenceEndMap = Dictionary<SentenceKind * int, bool>()
+    let _isSentenceStartMap = Dictionary<SentenceKind * int, bool>()
+
     /// Set of characters which represent the end of a sentence. 
     static let SentenceEndChars = ['.'; '!'; '?']
 
@@ -54,6 +58,13 @@ type internal TextObjectUtil
 
     /// Current ITextSnapshot for the ITextBuffer
     member x.CurrentSnapshot = _textBuffer.CurrentSnapshot
+
+    member x.CheckCache() = 
+        let version = _textBuffer.CurrentSnapshot.Version.VersionNumber
+        if version <> _versionCached then
+            _isSentenceEndMap.Clear()
+            _isSentenceStartMap.Clear()
+            _versionCached <- version
 
     /// Is this line a blank line with no blank lines above it 
     member x.IsBlankLineWithNoBlankAbove line = 
@@ -119,6 +130,21 @@ type internal TextObjectUtil
     /// Is this the end point of the span of an actual sentence.  Considers sentence, paragraph and 
     /// section semantics
     member x.IsSentenceEnd sentenceKind (column : SnapshotColumn) = 
+        x.CheckCache()
+
+        // The IsSentenceEnd function is used heavily on a given ITextSnapshot to determine information
+        // about a sentence.  Profiling shows that it does contribute significantly to performance in
+        // large file scenarios.  Caching the result here saves significantly on perf
+        let key = (sentenceKind, column.Point.Position)
+        let found, value = _isSentenceEndMap.TryGetValue key 
+        if found then
+            value
+        else
+            let value = x.IsSentenceEndCore sentenceKind column 
+            _isSentenceEndMap.Add(key, value)
+            value
+
+    member x.IsSentenceEndCore sentenceKind (column : SnapshotColumn) = 
 
         // Is the char for the provided point in the given list.  Make sure to 
         // account for the snapshot end point here as it makes the remaining 
@@ -216,7 +242,21 @@ type internal TextObjectUtil
 
     /// Is the start of a sentence.  This doesn't consider section or paragraph boundaries
     /// but specifically items related to the start of a sentence
-    member x.IsSentenceStartOnly sentenceKind point = 
+    member x.IsSentenceStartOnly sentenceKind (point : SnapshotPoint) = 
+        x.CheckCache()
+
+        let key = (sentenceKind, point.Position)
+        let found, value = _isSentenceStartMap.TryGetValue key 
+        if found then
+            value
+        else
+            let value = x.IsSentenceStartOnlyCore sentenceKind point
+            _isSentenceStartMap.Add(key, value)
+            value
+
+    /// Is the start of a sentence.  This doesn't consider section or paragraph boundaries
+    /// but specifically items related to the start of a sentence
+    member x.IsSentenceStartOnlyCore sentenceKind point = 
 
         let snapshot = SnapshotPointUtil.GetSnapshot point
 
