@@ -1187,7 +1187,7 @@ namespace Vim.UnitTest
         {
             Create("hello world");
             _operations.NavigateToPoint(new VirtualSnapshotPoint(_textBuffer.GetPoint(3)));
-            Assert.Equal(3, _textView.GetCaretPoint().GetColumn());
+            Assert.Equal(3, _textView.GetCaretPoint().GetColumn().Column);
         }
 
         /// <summary>

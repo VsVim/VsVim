@@ -11,6 +11,38 @@ open Microsoft.VisualStudio.Text.Outlining
 open Microsoft.VisualStudio.Utilities
 open StringBuilderExtensions
 
+/// This is the representation of a point within a particular line.  It's common
+/// to represent a column in vim and using a SnapshotPoint isn't always the best
+/// representation.  Finding the containing ITextSnapshotLine for a given 
+/// SnapshotPoint is an allocating operation and often shows up as a critical 
+/// metric in profiling.  This structure pairs the two together in a type safe fashion
+[<Struct>]
+[<NoEquality>]
+[<NoComparison>]
+type SnapshotColumn 
+    (
+        _snapshotLine : ITextSnapshotLine,
+        _column : int
+    ) =
+
+    new (point : SnapshotPoint) = 
+        let line = point.GetContainingLine()
+        let column = point.Position - line.Start.Position
+        SnapshotColumn(line, column)
+
+    member x.IsStartOfLine = _column = 0
+
+    member x.Line = _snapshotLine
+
+    member x.Snapshot = _snapshotLine.Snapshot
+
+    member x.Point = _snapshotLine.Start.Add(_column)
+
+    member x.Column = _column
+
+    override x.ToString() = 
+        x.Point.ToString()
+
 /// Contains operations to help fudge the Editor APIs to be more F# friendly.  Does not
 /// include any Vim specific logic
 module SnapshotUtil = 
@@ -382,7 +414,13 @@ module SnapshotLineUtil =
     let GetSnapshot (line : ITextSnapshotLine) = line.Snapshot
 
     /// Length of the line
-    let GetLength (line:ITextSnapshotLine) = line.Length
+    let GetLength (line : ITextSnapshotLine) = line.Length
+
+    /// Length of the line including the line break
+    let GetLengthIncludingLineBreak (line : ITextSnapshotLine) = line.LengthIncludingLineBreak
+
+    /// Get the length of the line break
+    let GetLineBreakLength (line:ITextSnapshotLine) = line.LengthIncludingLineBreak - line.Length
 
     /// Get the start point
     let GetStart (line:ITextSnapshotLine) = line.Start
@@ -406,8 +444,32 @@ module SnapshotLineUtil =
     /// Get the points on the particular line including the line break
     let GetPointsIncludingLineBreak path line = line |> GetExtentIncludingLineBreak |> SnapshotSpanUtil.GetPoints path
 
-    /// Get the length of the line break
-    let GetLineBreakLength (line:ITextSnapshotLine) = line.LengthIncludingLineBreak - line.Length
+    /// Get the columns in the line in the path
+    let private GetColumnsCore path includeLineBreak line = 
+        let length = 
+            if includeLineBreak then
+                GetLengthIncludingLineBreak line
+            else 
+                GetLength line
+        let max = length - 1
+        match path with 
+        | Path.Forward ->
+            seq { 
+                for i = 0 to max do
+                    yield SnapshotColumn(line, i)
+            }
+        | Path.Backward ->
+            seq { 
+                for i = 0 to max do
+                    let column = (length - 1) - i
+                    yield SnapshotColumn(line, column)
+            }
+
+    /// Get the columns in the specified direction 
+    let GetColumns path line = GetColumnsCore path false line
+
+    /// Get the columns in the specified direction including the line break
+    let GetColumnsIncludingLineBreak path line = GetColumnsCore path true line
 
     /// Get the line break span 
     let GetLineBreakSpan line = 
@@ -1471,3 +1533,33 @@ type TextLine = {
             let rest : TextLine list = Seq.unfold getForIndex index |> List.ofSeq
 
             NonEmptyCollection(firstLine, rest)
+
+module SnapshotColumnUtil =
+
+    let GetPoint (column : SnapshotColumn) = column.Point
+
+    let GetLine (column : SnapshotColumn) = column.Line
+    
+    /// Get the columns from the given point in a forward motion 
+    let private GetColumnsCore path includeLineBreak point = 
+        let snapshot = SnapshotPointUtil.GetSnapshot point
+        let startLineNumber = SnapshotPointUtil.GetLineNumber point
+        let filter = 
+            match path with 
+            | Path.Forward -> fun (c : SnapshotColumn) -> c.Point.Position >= point.Position
+            | Path.Backward -> fun (c : SnapshotColumn) -> c.Point.Position <= point.Position
+
+        SnapshotUtil.GetLines snapshot startLineNumber path
+        |> Seq.collect (fun line -> 
+            if includeLineBreak then
+                SnapshotLineUtil.GetColumnsIncludingLineBreak path line
+            else
+                SnapshotLineUtil.GetColumns path line)
+        |> Seq.filter filter
+
+    let GetColumns path point = GetColumnsCore path false point
+
+    let GetColumnsIncludingLineBreak path point = GetColumnsCore path true point
+
+    let CreateFromPoint point = SnapshotColumn(point)
+

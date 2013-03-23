@@ -449,7 +449,7 @@ namespace Vim.UnitTest
                 Create("cat dog");
                 _vimBuffer.ProcessNotation("vllU");
                 Assert.Equal("CAT dog", _textBuffer.GetLine(0).GetText());
-                Assert.Equal(0, _textView.GetCaretPoint().GetColumn());
+                Assert.Equal(0, _textView.GetCaretPoint().GetColumn().Column);
             }
 
             [Fact]
@@ -458,7 +458,7 @@ namespace Vim.UnitTest
                 Create("CAT dog");
                 _vimBuffer.ProcessNotation("vllu");
                 Assert.Equal("cat dog", _textBuffer.GetLine(0).GetText());
-                Assert.Equal(0, _textView.GetCaretPoint().GetColumn());
+                Assert.Equal(0, _textView.GetCaretPoint().GetColumn().Column);
             }
 
             [Fact]
@@ -467,7 +467,7 @@ namespace Vim.UnitTest
                 Create("cat dog");
                 _vimBuffer.ProcessNotation("vllg?");
                 Assert.Equal("png dog", _textBuffer.GetLine(0).GetText());
-                Assert.Equal(0, _textView.GetCaretPoint().GetColumn());
+                Assert.Equal(0, _textView.GetCaretPoint().GetColumn().Column);
             }
         }
 

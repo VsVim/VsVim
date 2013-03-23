@@ -744,18 +744,20 @@ type internal MotionUtil
     member x.GetParagraphs path point = 
 
         // Get the full span of a paragraph given a start point
-        let getFullSpanFromStartPoint point =
-            Contract.Assert (x.IsParagraphStart point)
+        let getFullSpanFromStartColumn (column : SnapshotColumn) =
+            Contract.Assert (x.IsParagraphStart column)
+            let point = column.Point
             let snapshot = SnapshotPointUtil.GetSnapshot point
             let endPoint =
                 point 
                 |> SnapshotPointUtil.AddOne
-                |> SnapshotPointUtil.GetPointsIncludingLineBreak Path.Forward
-                |> Seq.skipWhile (fun p -> not (x.IsParagraphStart p))
+                |> SnapshotColumnUtil.GetColumnsIncludingLineBreak Path.Forward
+                |> Seq.skipWhile (fun c -> not (x.IsParagraphStart c))
+                |> Seq.map SnapshotColumnUtil.GetPoint
                 |> SeqUtil.headOrDefault (SnapshotUtil.GetEndPoint snapshot)
             SnapshotSpan(point, endPoint)
 
-        x.GetTextObjectsCore point path x.IsParagraphStart getFullSpanFromStartPoint
+        x.GetTextObjectsCore point path x.IsParagraphStart getFullSpanFromStartColumn
 
     /// Get the SnapshotLineRange values for the section values starting from the given SnapshotPoint 
     /// in the specified direction.  Note: The full span of the section will be returned if the 
@@ -848,51 +850,56 @@ type internal MotionUtil
     /// Get the SnapshotSpan values for the sentence values starting from the given SnapshotPoint 
     /// in the specified direction.  Note: The full span of the section will be returned if the 
     /// provided SnapshotPoint is in the middle of it
-    member x.GetSentences sentenceKind path point = 
+    member x.GetSentences sentenceKind path (point : SnapshotPoint) =
 
         // Get the full span of a sentence given the particular start point
-        let getFullSpanFromStartPoint point = 
-            Contract.Assert (x.IsSentenceStart sentenceKind point)
+        let getFullSpanFromStartColumn (column : SnapshotColumn) =
+            Contract.Assert (x.IsSentenceStart sentenceKind column)
 
-            let snapshot = SnapshotPointUtil.GetSnapshot point
+            let point = column.Point
+            let snapshot = column.Snapshot
 
             // Move forward until we hit the end point and then move one past it so the end
             // point is included in the span
             let endPoint = 
                 point
                 |> SnapshotPointUtil.AddOne
-                |> SnapshotPointUtil.GetPointsIncludingLineBreak Path.Forward
-                |> Seq.skipWhile (fun p -> not (x.IsSentenceEnd sentenceKind p))
+                |> SnapshotColumnUtil.GetColumnsIncludingLineBreak Path.Forward
+                |> Seq.skipWhile (fun c -> not (x.IsSentenceEnd sentenceKind c))
+                |> Seq.map (fun c -> c.Point)
                 |> SeqUtil.headOrDefault (SnapshotUtil.GetEndPoint snapshot)
             SnapshotSpan(point, endPoint)
 
-        x.GetTextObjectsCore point path (x.IsSentenceStart sentenceKind) getFullSpanFromStartPoint
+        x.GetTextObjectsCore point path (x.IsSentenceStart sentenceKind) getFullSpanFromStartColumn
 
     /// Get the text objects core from the given point in the given direction
-    member x.GetTextObjectsCore point path isStartPoint getSpanFromStartPoint = 
+    member x.GetTextObjectsCore (point : SnapshotPoint) path (isStartColumn : SnapshotColumn -> bool) (getSpanFromStartColumn : SnapshotColumn -> SnapshotSpan) = 
 
+        let column = SnapshotColumnUtil.CreateFromPoint point
         let snapshot = SnapshotPointUtil.GetSnapshot point
-        let isNotStartPoint point = not (isStartPoint point)
+        let isNotStartColumn column = not (isStartColumn column)
 
         // Wrap the get full span method to deal with <end>.  
-        let getSpanFromStartPoint point = 
-            if SnapshotPointUtil.IsEndPoint point then
-                SnapshotSpan(point, 0)
+        let getSpanFromStartColumn (column : SnapshotColumn) = 
+            if SnapshotPointUtil.IsEndPoint column.Point then
+                SnapshotSpan(column.Point, 0)
             else
-                getSpanFromStartPoint point
+                getSpanFromStartColumn column
 
         // Get the section start going backwards from the given point.
         let getStartBackward point = 
             point 
-            |> SnapshotPointUtil.GetPointsIncludingLineBreak Path.Backward
-            |> Seq.skipWhile isNotStartPoint
+            |> SnapshotColumnUtil.GetColumnsIncludingLineBreak Path.Backward
+            |> Seq.skipWhile isNotStartColumn
+            |> Seq.map SnapshotColumnUtil.GetPoint
             |> SeqUtil.headOrDefault (SnapshotPoint(snapshot, 0))
 
         // Get the section start going forward from the given point 
         let getStartForward point = 
             point
-            |> SnapshotPointUtil.GetPointsIncludingLineBreak Path.Forward
-            |> Seq.skipWhile isNotStartPoint
+            |> SnapshotColumnUtil.GetColumnsIncludingLineBreak Path.Forward
+            |> Seq.skipWhile isNotStartColumn
+            |> Seq.map SnapshotColumnUtil.GetPoint
             |> SeqUtil.headOrDefault (SnapshotUtil.GetEndPoint snapshot)
 
         // Search includes the section which contains the start point so go ahead and get it
@@ -901,11 +908,12 @@ type internal MotionUtil
 
             // Get the next object.  The provided point should either be <end> or point 
             // to the start of a section
-            let getNext point =
+            let getNext point = 
                 if SnapshotPointUtil.IsEndPoint point then
                     None
                 else
-                    let span = getSpanFromStartPoint point
+                    let column = SnapshotColumn(point)
+                    let span = getSpanFromStartColumn column
                     let startPoint = getStartForward span.End
                     Some (span, startPoint)
 
@@ -915,7 +923,8 @@ type internal MotionUtil
             // space chunks and the provided point 
             let startPoint = 
                 let startPoint = getStartBackward point
-                let span = getSpanFromStartPoint startPoint
+                let startColumn = SnapshotColumn(startPoint)
+                let span = getSpanFromStartColumn startColumn
                 if point.Position >= span.End.Position then
                     getStartForward span.End
                 else
@@ -933,7 +942,8 @@ type internal MotionUtil
                     None
                 else
                     let startPoint = point |> SnapshotPointUtil.SubtractOne |> getStartBackward
-                    let span = getSpanFromStartPoint startPoint
+                    let startColumn = SnapshotColumn(startPoint)
+                    let span = getSpanFromStartColumn startColumn
                     Some (span, startPoint)
 
             Seq.unfold getPrevious point
@@ -950,9 +960,9 @@ type internal MotionUtil
 
     /// Is this point the start of a paragraph.  Considers both paragraph and section 
     /// start points
-    member x.IsParagraphStart point =
-        let line = SnapshotPointUtil.GetContainingLine point
-        if line.Start = point then
+    member x.IsParagraphStart (column : SnapshotColumn) =
+        if column.IsStartOfLine then
+            let line = column.Line
             x.IsParagraphStartOnly line || x.IsSectionStart SectionKind.Default line
         else
             false
@@ -1001,7 +1011,7 @@ type internal MotionUtil
 
     /// Is this the end point of the span of an actual sentence.  Considers sentence, paragraph and 
     /// section semantics
-    member x.IsSentenceEnd sentenceKind point = 
+    member x.IsSentenceEnd sentenceKind (column : SnapshotColumn) = 
 
         // Is the char for the provided point in the given list.  Make sure to 
         // account for the snapshot end point here as it makes the remaining 
@@ -1052,9 +1062,6 @@ type internal MotionUtil
             else
                 false
 
-        /// The line containing the SnapshotPoint
-        let line = SnapshotPointUtil.GetContainingLine point
-
         /// Is this line a sentence line?  A sentence line is a sentence which is caused by
         /// a paragraph, section boundary or blank line
         /// Is this point the start of a sentence line?  A sentence line is a sentence which is 
@@ -1076,12 +1083,13 @@ type internal MotionUtil
             let line = SnapshotPointUtil.GetContainingLine point
             isSentenceLine line && SnapshotLineUtil.IsLastPointIncludingLineBreak line point
 
-        if isSentenceLine line && line.Start = point then
+        let line = column.Line
+        if isSentenceLine line && line.Start = column.Point then
             // If this point is the start of a sentence line then it's the end point of the
             // previous sentence span. 
             true
         else
-            match SnapshotPointUtil.TrySubtractOne point with
+            match SnapshotPointUtil.TrySubtractOne column.Point with
             | None -> 
                 // Start of buffer is not the end of a sentence
                 false 
@@ -1092,12 +1100,12 @@ type internal MotionUtil
 
     /// Is this point the star of a sentence.  Considers sentences, paragraphs and section
     /// boundaries
-    member x.IsSentenceStart sentenceKind point = 
-        if x.IsSentenceStartOnly sentenceKind point then
+    member x.IsSentenceStart sentenceKind (column : SnapshotColumn) = 
+        if x.IsSentenceStartOnly sentenceKind column.Point then
             true
         else
-            let line = SnapshotPointUtil.GetContainingLine point
-            if line.Start = point then
+            if column.IsStartOfLine then
+                let line = column.Line
                 x.IsParagraphStartOnly line || x.IsSectionStart SectionKind.Default line
             else
                 false
@@ -1109,24 +1117,25 @@ type internal MotionUtil
         let snapshot = SnapshotPointUtil.GetSnapshot point
 
         // Get the point after the last sentence
-        let priorEndPoint = 
+        let priorEndColumn = 
             point
-            |> SnapshotPointUtil.GetPointsIncludingLineBreak Path.Backward
+            |> SnapshotColumnUtil.GetColumnsIncludingLineBreak Path.Backward
             |> Seq.filter (x.IsSentenceEnd sentenceKind)
             |> SeqUtil.tryHeadOnly
 
-        match priorEndPoint with 
+        match priorEndColumn with 
         | None -> 
             // No prior end point so the start of this sentence is the start of the 
             // ITextBuffer
             SnapshotPointUtil.IsStartPoint point 
-        | Some priorEndPoint -> 
+        | Some priorEndColumn -> 
             // Move past the white space until we get the start point.  Don't need 
             // to consider line breaks because we are only dealing with sentence 
             // specific items.  Methods like IsSentenceStart deal with line breaks
             // by including paragraphs
             let startPoint =
-                priorEndPoint 
+                priorEndColumn
+                |> SnapshotColumnUtil.GetPoint 
                 |> SnapshotPointUtil.GetPoints Path.Forward
                 |> Seq.skipWhile SnapshotPointUtil.IsWhiteSpaceOrInsideLineBreak
                 |> SeqUtil.headOrDefault (SnapshotUtil.GetEndPoint x.CurrentSnapshot)

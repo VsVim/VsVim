@@ -870,9 +870,20 @@ namespace Vim.UnitTest
             return GetLine(snapshot, snapshot.LineCount - 1);
         }
 
+        public static SnapshotColumn GetColumn(this ITextSnapshot snapshot, int position)
+        {
+            var point = new SnapshotPoint(snapshot, position);
+            return new SnapshotColumn(point);
+        }
+
         #endregion
 
         #region ITextBuffer
+
+        public static SnapshotColumn GetColumn(this ITextBuffer textBuffer, int position)
+        {
+            return GetColumn(textBuffer.CurrentSnapshot, position);
+        }
 
         public static SnapshotPoint GetStartPoint(this ITextBuffer textBuffer)
         {
@@ -1461,10 +1472,9 @@ namespace Vim.UnitTest
             return true;
         }
 
-        public static int GetColumn(this SnapshotPoint point)
+        public static SnapshotColumn GetColumn(this SnapshotPoint point)
         {
-            var line = point.GetContainingLine();
-            return point.Position - line.Start.Position;
+            return new SnapshotColumn(point);
         }
     }
 }

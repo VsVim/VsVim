@@ -1299,7 +1299,7 @@ namespace Vim.UnitTest
             public void IsSentenceEnd_SingleSpace()
             {
                 Create("a!b. c");
-                Assert.True(_motionUtil.IsSentenceEnd(SentenceKind.Default, _textBuffer.GetPoint(4)));
+                Assert.True(_motionUtil.IsSentenceEnd(SentenceKind.Default, _textBuffer.GetColumn(4)));
             }
 
             /// <summary>
@@ -1309,7 +1309,7 @@ namespace Vim.UnitTest
             public void IsSentenceEnd_ManyTrailingCharacters()
             {
                 Create("a?)]' b.");
-                Assert.True(_motionUtil.IsSentenceEnd(SentenceKind.Default, _textBuffer.GetPoint(5)));
+                Assert.True(_motionUtil.IsSentenceEnd(SentenceKind.Default, _textBuffer.GetColumn(5)));
             }
 
             /// <summary>
@@ -1319,7 +1319,7 @@ namespace Vim.UnitTest
             public void IsSentenceEnd_StartOfBuffer()
             {
                 Create("dog. cat");
-                Assert.False(_motionUtil.IsSentenceEnd(SentenceKind.Default, _textBuffer.GetPoint(0)));
+                Assert.False(_motionUtil.IsSentenceEnd(SentenceKind.Default, _textBuffer.GetColumn(0)));
             }
 
             /// <summary>
@@ -1329,7 +1329,7 @@ namespace Vim.UnitTest
             public void IsSentenceEnd_BlankLine()
             {
                 Create("dog", "", "bear");
-                Assert.True(_motionUtil.IsSentenceEnd(SentenceKind.Default, _textView.GetLine(1).Start));
+                Assert.True(_motionUtil.IsSentenceEnd(SentenceKind.Default, _textView.GetLine(1).Start.GetColumn()));
             }
 
             [Fact]
@@ -1339,7 +1339,8 @@ namespace Vim.UnitTest
                 for (var i = 1; i < _textBuffer.CurrentSnapshot.Length; i++)
                 {
                     var point = _textBuffer.GetPoint(i);
-                    var test = _motionUtil.IsSentenceEnd(SentenceKind.Default, point);
+                    var column = point.GetColumn();
+                    var test = _motionUtil.IsSentenceEnd(SentenceKind.Default, column);
                     Assert.False(test);
                 }
             }
@@ -1369,7 +1370,7 @@ namespace Vim.UnitTest
             public void IsSentenceStart_BlankLine()
             {
                 Create("dog.  ", "", "");
-                Assert.True(_motionUtil.IsSentenceStart(SentenceKind.Default, _textBuffer.GetLine(1).Start));
+                Assert.True(_motionUtil.IsSentenceStart(SentenceKind.Default, _textBuffer.GetLine(1).Start.GetColumn()));
             }
 
             [Fact]
@@ -2228,7 +2229,7 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
-            /// Make sure we function properly with consequitive sets of parens
+            /// Make sure we function properly with consecutive sets of parens
             /// </summary>
             [Fact]
             public void MatchingToken_ParensConsecutiveSetsFromEnd()
@@ -2241,7 +2242,7 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
-            /// Make sure we function properly with consequitive sets of parens
+            /// Make sure we function properly with consecutive sets of parens
             /// </summary>
             [Fact]
             public void MatchingToken_ParensConsecutiveSetsFromEnd2()
