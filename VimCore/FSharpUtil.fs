@@ -24,7 +24,7 @@ and internal ToggleHandler<'T>
     let mutable _handler : System.IDisposable option = None
     override x.Add() = 
         match _handler with
-        | Some(_) -> failwith "Already subcribed"
+        | Some(_) -> failwith "Already subscribed"
         | None -> _handler <- _source |> Observable.subscribe _func |> Option.Some
     override x.Remove() =
         match _handler with

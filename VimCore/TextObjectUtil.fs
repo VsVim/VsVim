@@ -40,6 +40,38 @@ type internal SectionKind =
     /// settings
     | OnOpenBraceOrBelowCloseBrace
 
+/// This key is used on a perf sensitive path.  Using a simple tuple causes the 
+/// hashing mechanism to be boxing.  This shows up heavily on profiles hence we
+/// use a custom type here to avoid the allocation when using as a key
+[<Struct>]
+[<CustomEquality>]
+[<NoComparison>]
+type SentenceKey 
+    (
+        _sentenceKind : SentenceKind,
+        _position : int
+    ) =
+
+    member x.SentenceKind = _sentenceKind
+
+    member x.Position = _position
+
+    member x.Equals (other : SentenceKey) =
+        x.EqualsCore other
+
+    member x.EqualsCore (other : SentenceKey) = 
+        _sentenceKind = other.SentenceKind && _position = other.Position
+    
+    override x.Equals(obj) =
+        match obj with
+        | :? SentenceKey as other -> x.EqualsCore other
+        | _ -> false
+
+    override x.GetHashCode() = _position
+
+    interface System.IEquatable<SentenceKey> with
+        member x.Equals other = x.EqualsCore other
+
 type internal TextObjectUtil
     (
         _globalSettings : IVimGlobalSettings,
@@ -47,8 +79,8 @@ type internal TextObjectUtil
     ) = 
 
     let mutable _versionCached = _textBuffer.CurrentSnapshot.Version.VersionNumber
-    let _isSentenceEndMap = Dictionary<SentenceKind * int, bool>()
-    let _isSentenceStartMap = Dictionary<SentenceKind * int, bool>()
+    let _isSentenceEndMap = Dictionary<SentenceKey, bool>()
+    let _isSentenceStartMap = Dictionary<SentenceKey, bool>()
 
     /// Set of characters which represent the end of a sentence. 
     static let SentenceEndChars = ['.'; '!'; '?']
@@ -135,9 +167,9 @@ type internal TextObjectUtil
         // The IsSentenceEnd function is used heavily on a given ITextSnapshot to determine information
         // about a sentence.  Profiling shows that it does contribute significantly to performance in
         // large file scenarios.  Caching the result here saves significantly on perf
-        let key = (sentenceKind, column.Point.Position)
-        let found, value = _isSentenceEndMap.TryGetValue key 
-        if found then
+        let key = SentenceKey(sentenceKind, column.Point.Position)
+        let mutable value = false
+        if _isSentenceEndMap.TryGetValue(key, &value) then
             value
         else
             let value = x.IsSentenceEndCore sentenceKind column 
@@ -194,8 +226,6 @@ type internal TextObjectUtil
 
         /// Is this line a sentence line?  A sentence line is a sentence which is caused by
         /// a paragraph, section boundary or blank line
-        /// Is this point the start of a sentence line?  A sentence line is a sentence which is 
-        /// caused by a paragraph, section boundary or a blank line.
         let isSentenceLine line =
             x.IsTextMacroMatchLine line _globalSettings.Paragraphs ||
             x.IsTextMacroMatchLine line _globalSettings.Sections ||
@@ -211,10 +241,10 @@ type internal TextObjectUtil
         //  b
         let isSentenceLineLast point =
             let line = SnapshotPointUtil.GetContainingLine point
-            isSentenceLine line && SnapshotLineUtil.IsLastPointIncludingLineBreak line point
+            SnapshotLineUtil.IsLastPointIncludingLineBreak line point && isSentenceLine line
 
         let line = column.Line
-        if isSentenceLine line && line.Start = column.Point then
+        if column.IsStartOfLine && isSentenceLine line then
             // If this point is the start of a sentence line then it's the end point of the
             // previous sentence span. 
             true
@@ -245,9 +275,9 @@ type internal TextObjectUtil
     member x.IsSentenceStartOnly sentenceKind (point : SnapshotPoint) = 
         x.CheckCache()
 
-        let key = (sentenceKind, point.Position)
-        let found, value = _isSentenceStartMap.TryGetValue key 
-        if found then
+        let key = SentenceKey(sentenceKind, point.Position)
+        let mutable value = false
+        if _isSentenceStartMap.TryGetValue(key, &value) then
             value
         else
             let value = x.IsSentenceStartOnlyCore sentenceKind point
