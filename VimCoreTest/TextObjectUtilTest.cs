@@ -138,19 +138,32 @@ namespace Vim.UnitTest
 
         public class IsSentenceStartTest : TextObjectUtilTest
         {
+            private bool IsSentenceStart(SnapshotPoint point)
+            {
+                var column = point.GetColumn();
+                return _textObjectUtil.IsSentenceStart(SentenceKind.Default, column);
+            }
+
             [Fact]
             public void DoubleEmptyLine()
             {
                 Create("a", "", "", "b");
-                Assert.True(_textObjectUtil.IsSentenceStart(SentenceKind.Default, _textBuffer.GetPointInLine(1, 0).GetColumn()));
-                Assert.False(_textObjectUtil.IsSentenceStart(SentenceKind.Default, _textBuffer.GetPointInLine(2, 0).GetColumn()));
+                Assert.True(IsSentenceStart(_textBuffer.GetPointInLine(1, 0)));
+                Assert.False(IsSentenceStart(_textBuffer.GetPointInLine(2, 0)));
             }
 
             [Fact]
             public void AfterDoubleEmptyLine()
             {
                 Create("a", "", "", "b");
-                Assert.True(_textObjectUtil.IsSentenceStart(SentenceKind.Default, _textBuffer.GetPointInLine(3, 0).GetColumn()));
+                Assert.True(IsSentenceStart(_textBuffer.GetPointInLine(3, 0)));
+            }
+
+            [Fact]
+            public void Complex()
+            {
+                Create(" f", "", " c", "", " d");
+                Assert.True(IsSentenceStart(_textBuffer.GetPointInLine(2, 1)));
             }
         }
     }

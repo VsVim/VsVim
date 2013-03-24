@@ -213,21 +213,25 @@ type internal TextObjectUtil
     /// Is the start of a sentence.  This doesn't consider section or paragraph boundaries
     /// but specifically items related to the start of a sentence
     member x.IsSentenceStartOnly sentenceKind (column : SnapshotColumn) = 
+        let mutable adjustedColumn = column 
+        while adjustedColumn.Column > 0 && SnapshotPointUtil.IsBlank (adjustedColumn.Point.Subtract(1)) do
+            adjustedColumn <- adjustedColumn.Subtract 1
+
         let point = column.Point
         if SnapshotPointUtil.IsStartPoint point then
             // The start of the ITextBuffer is the start of a sentence
             true
-        elif column.IsStartOfLine && x.IsBlankLineWithNoBlankAbove column.Line then
-            true
-        elif column.IsStartOfLine && x.IsLineAboveBlank column.Line && not (x.IsSentenceEndWhiteSpace column.Point) then
+        elif adjustedColumn.IsStartOfLine && x.IsBlankLineWithNoBlankAbove adjustedColumn.Line then
             true
         elif x.IsSentenceEndWhiteSpace point then
             // Sentence white space isn't the start of a sentence
             false
+        elif adjustedColumn.IsStartOfLine && x.IsLineAboveBlank adjustedColumn.Line then
+            true
         else
             // Move backwards while we are on white space
             let mutable current = point.Subtract 1
-            while x.IsSentenceEndWhiteSpace current do
+            while x.IsSentenceEndWhiteSpace current && current.Position > 0 do
                 current <- current.Subtract 1
 
             if point.Position = current.Position then

@@ -3751,6 +3751,36 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class SentenceMotionTest : NormalModeIntegrationTest
+        {
+            [Fact]
+            public void SentenceOnNotFirstColumn()
+            {
+                Create(" c", "", " d");
+                _textView.MoveCaretTo(1);
+                _vimBuffer.Process(')');
+                Assert.Equal(_textBuffer.GetLine(1).Start, _textView.GetCaretPoint());
+            }
+
+            [Fact]
+            public void SentenceOnNotFirstColumnSecondLine()
+            {
+                Create(" f", " c", "", " d");
+                _textView.MoveCaretToLine(1, 1);
+                _vimBuffer.Process(')');
+                Assert.Equal(_textBuffer.GetLine(2).Start, _textView.GetCaretPoint());
+            }
+
+            [Fact]
+            public void Complex()
+            {
+                Create(" f", "", " c", "", " d");
+                _textView.MoveCaretToLine(2, 1);
+                _vimBuffer.Process(')');
+                Assert.Equal(_textBuffer.GetLine(3).Start, _textView.GetCaretPoint());
+            }
+        }
+
         public sealed class AddTest : NormalModeIntegrationTest
         {
             /// <summary>
