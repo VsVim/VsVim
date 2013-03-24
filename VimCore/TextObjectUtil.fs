@@ -82,11 +82,14 @@ type internal TextObjectUtil
     let _isSentenceEndMap = Dictionary<SentenceKey, bool>()
     let _isSentenceStartMap = Dictionary<SentenceKey, bool>()
 
-    /// Set of characters which represent the end of a sentence. 
+    /// List of characters which represent the end of a sentence. 
     static let SentenceEndChars = ['.'; '!'; '?']
 
-    /// Set of characters which can validly follow a sentence 
+    /// List of characters which can validly follow a sentence 
     static let SentenceTrailingChars = [')';']'; '"'; '\'']
+
+    /// List of all characters which can appear at the end of a sentence
+    static let SentenceEndAndTrailingChars = List.append SentenceEndChars SentenceTrailingChars
 
     /// Current ITextSnapshot for the ITextBuffer
     member x.CurrentSnapshot = _textBuffer.CurrentSnapshot
@@ -178,85 +181,68 @@ type internal TextObjectUtil
 
     member x.IsSentenceEndCore sentenceKind (column : SnapshotColumn) = 
 
-        // Is the char for the provided point in the given list.  Make sure to 
-        // account for the snapshot end point here as it makes the remaining 
-        // logic easier 
-        let isCharInList list point = 
-            match SnapshotPointUtil.TryGetChar point with
-            | None -> false
-            | Some c -> ListUtil.contains c list 
-
-        // Is this a valid white space item to end the sentence
-        let isWhiteSpaceEnd point = 
-            SnapshotPointUtil.IsWhiteSpace point || 
-            SnapshotPointUtil.IsInsideLineBreak point ||
-            SnapshotPointUtil.IsEndPoint point
-
-        // Is it SnapshotPoint pointing to an end char which actually ends
-        // the sentence
-        let isEndNoTrailing point = 
-            if isCharInList SentenceEndChars point then
-                point |> SnapshotPointUtil.AddOne |> isWhiteSpaceEnd
-            else
-                false
-
-        // Is it a trailing character which properly ends a sentence
-        let isTrailing point = 
-            if isCharInList SentenceTrailingChars point then
-
-                // Need to see if we are preceded by an end character first
-                let isPrecededByEnd = 
-                    if SnapshotPointUtil.IsStartPoint point then 
-                        false
-                    else
-                        point 
-                        |> SnapshotPointUtil.SubtractOne
-                        |> SnapshotPointUtil.GetPointsIncludingLineBreak Path.Backward
-                        |> Seq.skipWhile (isCharInList SentenceTrailingChars)
-                        |> SeqUtil.tryHeadOnly
-                        |> Option.map (isCharInList SentenceEndChars)
-                        |> OptionUtil.getOrDefault false
-
-                if isPrecededByEnd then
-                    point |> SnapshotPointUtil.AddOne |> isWhiteSpaceEnd
-                else
-                    false
-            else
-                false
-
-        /// Is this line a sentence line?  A sentence line is a sentence which is caused by
-        /// a paragraph, section boundary or blank line
-        let isSentenceLine line =
-            x.IsTextMacroMatchLine line _globalSettings.Paragraphs ||
-            x.IsTextMacroMatchLine line _globalSettings.Sections ||
-            x.IsBlankLineWithNoBlankAbove line
-
-        // Is this the last point on a sentence line?  The last point on the sentence line is the 
-        // final character of the line break.  This is key to understand: the line break on a sentence
-        // line is not considered white space!!!  This can be verified by placing the caret on the 'b' in 
-        // the following and doing a 'yas'
-        //
-        //  a
-        //  
-        //  b
-        let isSentenceLineLast point =
-            let line = SnapshotPointUtil.GetContainingLine point
-            SnapshotLineUtil.IsLastPointIncludingLineBreak line point && isSentenceLine line
-
         let line = column.Line
-        if column.IsStartOfLine && isSentenceLine line then
+        if column.IsStartOfLine && x.IsSentenceLine line then
             // If this point is the start of a sentence line then it's the end point of the
             // previous sentence span. 
             true
+        elif column.Point.Position = 0 then
+            // Start of buffer is not the end of a sentence
+            false
         else
-            match SnapshotPointUtil.TrySubtractOne column.Point with
-            | None -> 
-                // Start of buffer is not the end of a sentence
-                false 
-            | Some point -> 
-                match sentenceKind with
-                | SentenceKind.Default -> isEndNoTrailing point || isTrailing point || isSentenceLineLast point
-                | SentenceKind.NoTrailingCharacters -> isEndNoTrailing point || isSentenceLineLast point
+            let columnBefore = column.Subtract 1
+
+            // Is this the last point on a sentence line?  The last point on the sentence line is the 
+            // final character of the line break.  This is key to understand: the line break on a sentence
+            // line is not considered white space!!!  This can be verified by placing the caret on the 'b' in 
+            // the following and doing a 'yas'
+            //
+            //  a
+            //  
+            //  b
+            let line = columnBefore.Line
+            if SnapshotLineUtil.IsLastPointIncludingLineBreak line columnBefore.Point && x.IsSentenceLine line then
+                true
+            else
+                x.IsSentenceEndSimple sentenceKind column
+
+    /// Checks for a simple end of a sentence.  Only checks for the characters case and
+    /// will ignore items like sentence lines and new lines
+    member x.IsSentenceEndSimple sentenceKind (column : SnapshotColumn) = 
+
+        if not (x.IsSentenceEndWhiteSpace column.Point) then
+            // If the column doesn't begin in the white space that ends a sentence then
+            // this can't possible be the end of a simple sentence
+            false
+        else
+            // Is the char for the provided point in the given list.  Make sure to 
+            // account for the snapshot end point here as it makes the remaining 
+            // logic easier 
+            let snapshot = column.Snapshot
+            let isCharInList list position = 
+                let point = SnapshotPoint(snapshot, position)
+                let c = point.GetChar()
+                ListUtil.contains c list 
+
+            let mutable position = column.Point.Position - 1
+
+            // First move past the trailing characters if supported by the kind
+            match sentenceKind with
+            | SentenceKind.NoTrailingCharacters -> ()
+            | SentenceKind.Default ->
+                while position >= 0 && isCharInList SentenceTrailingChars position do
+                    position <- position - 1
+
+            if position < 0 then 
+                false
+            else 
+                isCharInList SentenceEndChars position
+
+    // Is this a valid white space item to end the sentence
+    member x.IsSentenceEndWhiteSpace point =
+        SnapshotPointUtil.IsWhiteSpace point || 
+        SnapshotPointUtil.IsInsideLineBreak point ||
+        SnapshotPointUtil.IsEndPoint point
 
     /// Is this point the star of a sentence.  Considers sentences, paragraphs and section
     /// boundaries
@@ -269,6 +255,13 @@ type internal TextObjectUtil
                 x.IsParagraphStartOnly line || x.IsSectionStart SectionKind.Default line
             else
                 false
+
+    /// Is this line a sentence line?  A sentence line is a sentence which is caused by
+    /// a paragraph, section boundary or blank line
+    member x.IsSentenceLine line =
+        x.IsTextMacroMatchLine line _globalSettings.Paragraphs ||
+        x.IsTextMacroMatchLine line _globalSettings.Sections ||
+        x.IsBlankLineWithNoBlankAbove line
 
     /// Is the start of a sentence.  This doesn't consider section or paragraph boundaries
     /// but specifically items related to the start of a sentence

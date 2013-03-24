@@ -40,6 +40,13 @@ type SnapshotColumn
 
     member x.Column = _column
 
+    member x.Subtract count = 
+        if count <= _column then
+            SnapshotColumn(_snapshotLine, _column - count)
+        else
+            let point = x.Point.Subtract count
+            SnapshotColumn(point)
+
     override x.ToString() = 
         x.Point.ToString()
 
