@@ -112,7 +112,6 @@
     <Compile Include="HistoryListTest.cs" />
     <Compile Include="MatchingTokenUtilTest.cs" />
     <Compile Include="RegisterValueTest.cs" />
-    <Compile Include="SentenceKeyTest.cs" />
     <Compile Include="StringUtilTest.cs" />
     <Compile Include="TestableProtectedOperations.cs" />
     <Compile Include="TextObjectUtilTest.cs" />

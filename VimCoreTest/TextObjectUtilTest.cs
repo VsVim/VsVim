@@ -52,10 +52,10 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
-            /// A blank line is a complete sentence so the EndLine value is the end of the sentence
+            /// A Empty line is a complete sentence so the EndLine value is the end of the sentence
             /// </summary>
             [Fact]
-            public void BlankLine()
+            public void EmptyLine()
             {
                 Create("dog", "", "bear");
                 Assert.True(_textObjectUtil.IsSentenceEnd(SentenceKind.Default, _textBuffer.GetLine(1).Start.GetColumn()));
@@ -73,16 +73,21 @@ namespace Vim.UnitTest
                     Assert.False(test);
                 }
             }
-
         }
 
         public sealed class IsSentenceStartOnlyTest : TextObjectUtilTest
         {
+            private bool IsSentenceStartOnly(SnapshotPoint point)
+            {
+                var column = point.GetColumn();
+                return _textObjectUtil.IsSentenceStartOnly(SentenceKind.Default, column);
+            }
+
             [Fact]
             public void AfterTrailingChars()
             {
                 Create("a?)]' b.");
-                Assert.True(_textObjectUtil.IsSentenceStartOnly(SentenceKind.Default, _textBuffer.GetPoint(6)));
+                Assert.True(IsSentenceStartOnly(_textBuffer.GetPoint(6)));
             }
 
             /// <summary>
@@ -92,18 +97,60 @@ namespace Vim.UnitTest
             public void SecondChar()
             {
                 Create("dog. cat");
-                Assert.True(_textObjectUtil.IsSentenceStartOnly(SentenceKind.Default, _textBuffer.GetPoint(0)));
-                Assert.False(_textObjectUtil.IsSentenceStartOnly(SentenceKind.Default, _textBuffer.GetPoint(1)));
+                Assert.True(IsSentenceStartOnly(_textBuffer.GetPoint(0)));
+                Assert.False(IsSentenceStartOnly(_textBuffer.GetPoint(1)));
             }
 
             /// <summary>
-            /// A blank line is a sentence start
+            /// A Empty line is a sentence start
             /// </summary>
             [Fact]
-            public void BlankLine()
+            public void EmptyLine()
             {
                 Create("dog.  ", "", "");
-                Assert.True(_textObjectUtil.IsSentenceStart(SentenceKind.Default, _textBuffer.GetLine(1).Start.GetColumn()));
+                Assert.True(IsSentenceStartOnly(_textBuffer.GetPointInLine(1, 0)));
+            }
+
+            /// <summary>
+            /// The second Empty line isn't a sentence start
+            /// </summary>
+            [Fact]
+            public void DoubleEmptyLine()
+            {
+                Create("d. ", "", "");
+                Assert.False(IsSentenceStartOnly(_textBuffer.GetPointInLine(2, 0)));
+            }
+
+            [Fact]
+            public void AfterDoubleEmptyLine()
+            {
+                Create("a", "", "", "b");
+                Assert.True(IsSentenceStartOnly(_textBuffer.GetPointInLine(3, 0)));
+            }
+
+            [Fact]
+            public void StartOfLineAfterSentence()
+            {
+                Create("a!", "b.");
+                Assert.True(IsSentenceStartOnly(_textBuffer.GetPointInLine(1, 0)));
+            }
+        }
+
+        public class IsSentenceStartTest : TextObjectUtilTest
+        {
+            [Fact]
+            public void DoubleEmptyLine()
+            {
+                Create("a", "", "", "b");
+                Assert.True(_textObjectUtil.IsSentenceStart(SentenceKind.Default, _textBuffer.GetPointInLine(1, 0).GetColumn()));
+                Assert.False(_textObjectUtil.IsSentenceStart(SentenceKind.Default, _textBuffer.GetPointInLine(2, 0).GetColumn()));
+            }
+
+            [Fact]
+            public void AfterDoubleEmptyLine()
+            {
+                Create("a", "", "", "b");
+                Assert.True(_textObjectUtil.IsSentenceStart(SentenceKind.Default, _textBuffer.GetPointInLine(3, 0).GetColumn()));
             }
         }
     }

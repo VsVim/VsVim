@@ -40,47 +40,11 @@ type internal SectionKind =
     /// settings
     | OnOpenBraceOrBelowCloseBrace
 
-/// This key is used on a perf sensitive path.  Using a simple tuple causes the 
-/// hashing mechanism to be boxing.  This shows up heavily on profiles hence we
-/// use a custom type here to avoid the allocation when using as a key
-[<Struct>]
-[<CustomEquality>]
-[<NoComparison>]
-type SentenceKey 
-    (
-        _sentenceKind : SentenceKind,
-        _position : int
-    ) =
-
-    member x.SentenceKind = _sentenceKind
-
-    member x.Position = _position
-
-    member x.Equals (other : SentenceKey) =
-        x.EqualsCore other
-
-    member x.EqualsCore (other : SentenceKey) = 
-        _sentenceKind = other.SentenceKind && _position = other.Position
-    
-    override x.Equals(obj) =
-        match obj with
-        | :? SentenceKey as other -> x.EqualsCore other
-        | _ -> false
-
-    override x.GetHashCode() = _position
-
-    interface System.IEquatable<SentenceKey> with
-        member x.Equals other = x.EqualsCore other
-
 type internal TextObjectUtil
     (
         _globalSettings : IVimGlobalSettings,
         _textBuffer : ITextBuffer
     ) = 
-
-    let mutable _versionCached = _textBuffer.CurrentSnapshot.Version.VersionNumber
-    let _isSentenceEndMap = Dictionary<SentenceKey, bool>()
-    let _isSentenceStartMap = Dictionary<SentenceKey, bool>()
 
     /// List of characters which represent the end of a sentence. 
     static let SentenceEndChars = ['.'; '!'; '?']
@@ -88,26 +52,20 @@ type internal TextObjectUtil
     /// List of characters which can validly follow a sentence 
     static let SentenceTrailingChars = [')';']'; '"'; '\'']
 
-    /// List of all characters which can appear at the end of a sentence
-    static let SentenceEndAndTrailingChars = List.append SentenceEndChars SentenceTrailingChars
-
     /// Current ITextSnapshot for the ITextBuffer
     member x.CurrentSnapshot = _textBuffer.CurrentSnapshot
 
-    member x.CheckCache() = 
-        let version = _textBuffer.CurrentSnapshot.Version.VersionNumber
-        if version <> _versionCached then
-            _isSentenceEndMap.Clear()
-            _isSentenceStartMap.Clear()
-            _versionCached <- version
+    /// Is the line above the specified line blank
+    member x.IsLineAboveBlank (line : ITextSnapshotLine) = 
+        let number = line.LineNumber - 1
+        match SnapshotUtil.TryGetLine line.Snapshot number with
+        | None -> true
+        | Some line -> SnapshotLineUtil.IsBlankOrEmpty line
 
     /// Is this line a blank line with no blank lines above it 
     member x.IsBlankLineWithNoBlankAbove line = 
-        if 0 = SnapshotLineUtil.GetLength line then
-            let number = line.LineNumber - 1
-            match SnapshotUtil.TryGetLine line.Snapshot number with
-            | None -> true
-            | Some line -> line.Length <> 0
+        if SnapshotLineUtil.IsBlankOrEmpty line then
+            not (x.IsLineAboveBlank line)
         else
             false
 
@@ -165,22 +123,6 @@ type internal TextObjectUtil
     /// Is this the end point of the span of an actual sentence.  Considers sentence, paragraph and 
     /// section semantics
     member x.IsSentenceEnd sentenceKind (column : SnapshotColumn) = 
-        x.CheckCache()
-
-        // The IsSentenceEnd function is used heavily on a given ITextSnapshot to determine information
-        // about a sentence.  Profiling shows that it does contribute significantly to performance in
-        // large file scenarios.  Caching the result here saves significantly on perf
-        let key = SentenceKey(sentenceKind, column.Point.Position)
-        let mutable value = false
-        if _isSentenceEndMap.TryGetValue(key, &value) then
-            value
-        else
-            let value = x.IsSentenceEndCore sentenceKind column 
-            _isSentenceEndMap.Add(key, value)
-            value
-
-    member x.IsSentenceEndCore sentenceKind (column : SnapshotColumn) = 
-
         let line = column.Line
         if column.IsStartOfLine && x.IsSentenceLine line then
             // If this point is the start of a sentence line then it's the end point of the
@@ -209,34 +151,39 @@ type internal TextObjectUtil
     /// Checks for a simple end of a sentence.  Only checks for the characters case and
     /// will ignore items like sentence lines and new lines
     member x.IsSentenceEndSimple sentenceKind (column : SnapshotColumn) = 
-
         if not (x.IsSentenceEndWhiteSpace column.Point) then
             // If the column doesn't begin in the white space that ends a sentence then
             // this can't possible be the end of a simple sentence
             false
         else
-            // Is the char for the provided point in the given list.  Make sure to 
-            // account for the snapshot end point here as it makes the remaining 
-            // logic easier 
-            let snapshot = column.Snapshot
-            let isCharInList list position = 
-                let point = SnapshotPoint(snapshot, position)
-                let c = point.GetChar()
-                ListUtil.contains c list 
+            let point = column.Point.Subtract 1
+            x.IsSentenceLastSimple sentenceKind point
 
-            let mutable position = column.Point.Position - 1
+    /// Checks for the last character of a simple sentence.  Only checks for the characters 
+    /// case and will ignore items like sentence lines
+    member x.IsSentenceLastSimple sentenceKind (point : SnapshotPoint) = 
+        // Is the char for the provided point in the given list.  Make sure to 
+        // account for the snapshot end point here as it makes the remaining 
+        // logic easier 
+        let snapshot = point.Snapshot
+        let isCharInList list position = 
+            let point = SnapshotPoint(snapshot, position)
+            let c = point.GetChar()
+            ListUtil.contains c list 
 
-            // First move past the trailing characters if supported by the kind
-            match sentenceKind with
-            | SentenceKind.NoTrailingCharacters -> ()
-            | SentenceKind.Default ->
-                while position >= 0 && isCharInList SentenceTrailingChars position do
-                    position <- position - 1
+        let mutable position = point.Position
 
-            if position < 0 then 
-                false
-            else 
-                isCharInList SentenceEndChars position
+        // First move past the trailing characters if supported by the kind
+        match sentenceKind with
+        | SentenceKind.NoTrailingCharacters -> ()
+        | SentenceKind.Default ->
+            while position >= 0 && isCharInList SentenceTrailingChars position do
+                position <- position - 1
+
+        if position < 0 then 
+            false
+        else 
+            isCharInList SentenceEndChars position
 
     // Is this a valid white space item to end the sentence
     member x.IsSentenceEndWhiteSpace point =
@@ -247,7 +194,7 @@ type internal TextObjectUtil
     /// Is this point the star of a sentence.  Considers sentences, paragraphs and section
     /// boundaries
     member x.IsSentenceStart sentenceKind (column : SnapshotColumn) = 
-        if x.IsSentenceStartOnly sentenceKind column.Point then
+        if x.IsSentenceStartOnly sentenceKind column then
             true
         else
             if column.IsStartOfLine then
@@ -265,49 +212,32 @@ type internal TextObjectUtil
 
     /// Is the start of a sentence.  This doesn't consider section or paragraph boundaries
     /// but specifically items related to the start of a sentence
-    member x.IsSentenceStartOnly sentenceKind (point : SnapshotPoint) = 
-        x.CheckCache()
-
-        let key = SentenceKey(sentenceKind, point.Position)
-        let mutable value = false
-        if _isSentenceStartMap.TryGetValue(key, &value) then
-            value
+    member x.IsSentenceStartOnly sentenceKind (column : SnapshotColumn) = 
+        let point = column.Point
+        if SnapshotPointUtil.IsStartPoint point then
+            // The start of the ITextBuffer is the start of a sentence
+            true
+        elif column.IsStartOfLine && x.IsBlankLineWithNoBlankAbove column.Line then
+            true
+        elif column.IsStartOfLine && x.IsLineAboveBlank column.Line && not (x.IsSentenceEndWhiteSpace column.Point) then
+            true
+        elif x.IsSentenceEndWhiteSpace point then
+            // Sentence white space isn't the start of a sentence
+            false
         else
-            let value = x.IsSentenceStartOnlyCore sentenceKind point
-            _isSentenceStartMap.Add(key, value)
-            value
+            // Move backwards while we are on white space
+            let mutable current = point.Subtract 1
+            while x.IsSentenceEndWhiteSpace current do
+                current <- current.Subtract 1
 
-    /// Is the start of a sentence.  This doesn't consider section or paragraph boundaries
-    /// but specifically items related to the start of a sentence
-    member x.IsSentenceStartOnlyCore sentenceKind point = 
-
-        let snapshot = SnapshotPointUtil.GetSnapshot point
-
-        // Get the point after the last sentence
-        let priorEndColumn = 
-            point
-            |> SnapshotColumnUtil.GetColumnsIncludingLineBreak Path.Backward
-            |> Seq.filter (x.IsSentenceEnd sentenceKind)
-            |> SeqUtil.tryHeadOnly
-
-        match priorEndColumn with 
-        | None -> 
-            // No prior end point so the start of this sentence is the start of the 
-            // ITextBuffer
-            SnapshotPointUtil.IsStartPoint point 
-        | Some priorEndColumn -> 
-            // Move past the white space until we get the start point.  Don't need 
-            // to consider line breaks because we are only dealing with sentence 
-            // specific items.  Methods like IsSentenceStart deal with line breaks
-            // by including paragraphs
-            let startPoint =
-                priorEndColumn
-                |> SnapshotColumnUtil.GetPoint 
-                |> SnapshotPointUtil.GetPoints Path.Forward
-                |> Seq.skipWhile SnapshotPointUtil.IsWhiteSpaceOrInsideLineBreak
-                |> SeqUtil.headOrDefault (SnapshotUtil.GetEndPoint x.CurrentSnapshot)
-
-            startPoint.Position = point.Position
+            if point.Position = current.Position then
+                // If the character before isn't sentence white space then this can't be 
+                // a sentence so bail out 
+                false
+            else
+                let current = current.Add 1
+                let column = SnapshotColumn(current)
+                x.IsSentenceEnd sentenceKind column
     
     /// This function is used to match nroff macros for both section and paragraph sections.  It 
     /// determines if the line starts with the proper macro string
