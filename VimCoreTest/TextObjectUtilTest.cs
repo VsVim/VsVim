@@ -21,6 +21,11 @@ namespace Vim.UnitTest
 
         public sealed class IsSentenceEndTest : TextObjectUtilTest
         {
+            private bool IsSentenceEnd(SnapshotPoint point)
+            {
+                return _textObjectUtil.IsSentenceEnd(SentenceKind.Default, point.GetColumn());
+            }
+
             /// <summary>
             /// A single space after a '.' should make the '.' the sentence end
             /// </summary>
@@ -72,6 +77,17 @@ namespace Vim.UnitTest
                     var test = _textObjectUtil.IsSentenceEnd(SentenceKind.Default, column);
                     Assert.False(test);
                 }
+            }
+
+            /// <summary>
+            /// A blank line is a sentence hence the first point after a blank line is the end of a
+            /// sentence
+            /// </summary>
+            [Fact]
+            public void BlankAfterBlank()
+            {
+                Create("", "  test");
+                Assert.True(IsSentenceEnd(_textBuffer.GetPointInLine(1, 0)));
             }
         }
 
@@ -164,6 +180,117 @@ namespace Vim.UnitTest
             {
                 Create(" f", "", " c", "", " d");
                 Assert.True(IsSentenceStart(_textBuffer.GetPointInLine(2, 1)));
+            }
+
+            /// <summary>
+            /// The 'test' here is the start of a sentence.  The first sentence in the ITextBuffer
+            /// in fact
+            /// </summary>
+            [Fact]
+            public void WhiteSpaceStartOfBuffer()
+            {
+                Create("  test");
+                Assert.True(IsSentenceStart(_textBuffer.GetPointInLine(0, 2)));
+            }
+
+            [Fact]
+            public void WhiteSpaceAfterEmptyLine()
+            {
+                Create("", "  test");
+                Assert.True(IsSentenceStart(_textBuffer.GetPointInLine(1, 2)));
+            }
+
+            [Fact]
+            public void EmptyAtStartOfBuffer()
+            {
+                Create("", "  test");
+                Assert.True(IsSentenceStart(_textBuffer.GetPointInLine(0, 0)));
+            }
+        }
+
+        public sealed class IsEmptyLineWithNoEmptyAboveTest : TextObjectUtilTest
+        {
+            private bool IsEmptyLineWithNoEmptyAbove(int lineNumber)
+            {
+                var line = _textBuffer.GetLine(lineNumber);
+                return _textObjectUtil.IsEmptyLineWithNoEmptyAbove(line);
+            }
+
+            [Fact]
+            public void FirstLineIsEmpty()
+            {
+                Create("", "  test");
+                Assert.True(IsEmptyLineWithNoEmptyAbove(0));
+                Assert.False(IsEmptyLineWithNoEmptyAbove(1));
+            }
+
+            [Fact]
+            public void SecondLineIsEmpty()
+            {
+                Create("cat", "", "  test");
+                Assert.True(IsEmptyLineWithNoEmptyAbove(1));
+            }
+
+            /// <summary>
+            /// A blank line is not an empty one.  It must have length 0 
+            /// </summary>
+            [Fact]
+            public void BlankLineIsNotEmpty()
+            {
+                Create("cat", " ");
+                Assert.False(IsEmptyLineWithNoEmptyAbove(1));
+            }
+
+            [Fact]
+            public void DoubleEmpty()
+            {
+                Create("", "", "cat");
+                Assert.True(IsEmptyLineWithNoEmptyAbove(0));
+                Assert.False(IsEmptyLineWithNoEmptyAbove(1));
+            }
+
+            [Fact]
+            public void BlankAndEmptyLines()
+            {
+                Create("", " ", "", "cat");
+                Assert.True(IsEmptyLineWithNoEmptyAbove(0));
+                Assert.True(IsEmptyLineWithNoEmptyAbove(2));
+            }
+        }
+
+        public sealed class IsSentenceWhiteSpaceTest : TextObjectUtilTest
+        {
+            private bool IsSentenceWhiteSpace(SnapshotPoint point)
+            {
+                return _textObjectUtil.IsSentenceWhiteSpace(SentenceKind.Default, point.GetColumn());
+            }
+
+            [Fact]
+            public void Simple()
+            {
+                Create("cat. dog");
+                Assert.True(IsSentenceWhiteSpace(_textBuffer.GetPoint(4)));
+                Assert.False(IsSentenceWhiteSpace(_textBuffer.GetPoint(5)));
+            }
+
+            /// <summary>
+            /// Ignore the spaces which occur in the middle of sentences
+            /// </summary>
+            [Fact]
+            public void IgnoreWhiteSpaceInMiddle()
+            {
+                Create("cat dog.");
+                Assert.False(IsSentenceWhiteSpace(_textBuffer.GetPoint(3)));
+            }
+
+            /// <summary>
+            /// An empty line is a sentence and hence isn't white space between a sentence
+            /// </summary>
+            [Fact]
+            public void EmptyLineIsNotWhiteSpace()
+            {
+                Create("d.", "", "c");
+                Assert.False(IsSentenceWhiteSpace(_textBuffer.GetPointInLine(1, 0)));
             }
         }
     }

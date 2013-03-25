@@ -1096,18 +1096,28 @@ type internal MotionUtil
     ///   - http://groups.google.com/group/vim_use/t/d3f28cf801dc2030 
     member x.AllSentence count =
 
-        let kind = SentenceKind.NoTrailingCharacters
-        let all = x.GetSentences kind Path.Forward x.CaretPoint |> Seq.truncate count |> List.ofSeq
+        // When the provided point is in the white space trailing a sentence the GetSentences command
+        // will start by returning the sentence which exists before the white space.  In the case of 
+        // AllSentence we don't want this behavior and want to start with the following sentence.  
+        let sentenceKind = SentenceKind.NoTrailingCharacters
+        let searchPoint = 
+            let mutable column = SnapshotColumn(x.CaretPoint)
+            while _textObjectUtil.IsSentenceWhiteSpace sentenceKind column && not (SnapshotPointUtil.IsEndPoint column.Point) do
+                column <- column.Add 1
+            column.Point
+
+        let sentences = x.GetSentences sentenceKind Path.Forward searchPoint |> Seq.truncate count |> List.ofSeq
+
         let span = 
-            match all with
+            match sentences with
             | [] ->
                 // Corner case where there are simply no objects going forward.  Return
                 // an empty span
                 SnapshotSpan(x.CaretPoint, 0)
-            | head :: _ ->
+            | head :: tail ->
 
                 let span = 
-                    let last = List.nth all (all.Length - 1)
+                    let last = List.nth sentences (sentences.Length - 1)
                     SnapshotSpan(head.Start, last.End)
 
                 // The 'as' motion considers anything between the SnapshotSpan of a sentence to
@@ -1117,25 +1127,31 @@ type internal MotionUtil
                 // The white space after the sentence is the gap between this sentence and the next
                 // sentence
                 let whiteSpaceAfter =
-                    match x.GetSentences kind Path.Forward span.End |> SeqUtil.tryHeadOnly with
-                    | None -> None
-                    | Some nextSpan -> if span.End.Position < nextSpan.Start.Position then Some (SnapshotSpan(span.End, nextSpan.Start)) else None
+                    let mutable column = SnapshotColumn(span.End)
+                    while not (_textObjectUtil.IsSentenceStart sentenceKind column) && not (SnapshotPointUtil.IsEndPoint column.Point) do
+                        column <- column.Add 1
+
+                    if SnapshotPointUtil.IsEndPoint column.Point || span.End.Position = column.Point.Position then
+                        None
+                    else
+                        Some column.Point
 
                 // Include the preceding white space in the Span
                 let includePrecedingWhiteSpace () =
-                    let startPoint = 
-                        span.Start 
-                        |> x.GetSentences kind Path.Backward
-                        |> Seq.map SnapshotSpanUtil.GetEndPoint
-                        |> SeqUtil.headOrDefault (SnapshotUtil.GetStartPoint x.CurrentSnapshot)
-                    SnapshotSpan(startPoint, span.End)
+                    let mutable column = SnapshotColumn(span.Start)
+                    let mutable before = column.Subtract 1
+                    while column.Point.Position > 0 && _textObjectUtil.IsSentenceWhiteSpace sentenceKind before do
+                        column <- before
+                        before <- column.Subtract 1
+
+                    SnapshotSpan(column.Point, span.End)
 
                 // Now we need to do the standard adjustments listed at the bottom of 
                 // ':help text-objects'.
                 match isCaretInWhiteSpace, whiteSpaceAfter with
                 | true, _ -> includePrecedingWhiteSpace()
                 | false, None -> includePrecedingWhiteSpace()
-                | false, Some spaceSpan-> SnapshotSpan(span.Start, spaceSpan.End)
+                | false, Some spaceEnd -> SnapshotSpan(span.Start, spaceEnd)
 
         MotionResult.Create span true MotionKind.CharacterWiseExclusive
 

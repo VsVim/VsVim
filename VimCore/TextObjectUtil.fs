@@ -55,17 +55,20 @@ type internal TextObjectUtil
     /// Current ITextSnapshot for the ITextBuffer
     member x.CurrentSnapshot = _textBuffer.CurrentSnapshot
 
-    /// Is the line above the specified line blank
-    member x.IsLineAboveBlank (line : ITextSnapshotLine) = 
+    /// Is the line above the specified line empty
+    member x.IsLineAboveEmpty (line : ITextSnapshotLine) = 
         let number = line.LineNumber - 1
         match SnapshotUtil.TryGetLine line.Snapshot number with
         | None -> true
-        | Some line -> SnapshotLineUtil.IsBlankOrEmpty line
+        | Some line -> SnapshotLineUtil.IsEmpty line
 
-    /// Is this line a blank line with no blank lines above it 
-    member x.IsBlankLineWithNoBlankAbove line = 
-        if SnapshotLineUtil.IsBlankOrEmpty line then
-            not (x.IsLineAboveBlank line)
+    /// Is this line an empty line with no empty lines above it 
+    member x.IsEmptyLineWithNoEmptyAbove line = 
+        if SnapshotLineUtil.IsEmpty line then
+            if line.LineNumber = 0 then
+                true
+            else
+                not (x.IsLineAboveEmpty line)
         else
             false
 
@@ -86,7 +89,7 @@ type internal TextObjectUtil
 
         SnapshotPointUtil.IsStartPoint startPoint ||
         x.IsTextMacroMatchLine line _globalSettings.Paragraphs ||
-        x.IsBlankLineWithNoBlankAbove line
+        x.IsEmptyLineWithNoEmptyAbove line
 
     /// Is this line the start of a section.  Section boundaries can only occur at the
     /// start of a line or in a couple of scenarios around braces
@@ -208,7 +211,7 @@ type internal TextObjectUtil
     member x.IsSentenceLine line =
         x.IsTextMacroMatchLine line _globalSettings.Paragraphs ||
         x.IsTextMacroMatchLine line _globalSettings.Sections ||
-        x.IsBlankLineWithNoBlankAbove line
+        x.IsEmptyLineWithNoEmptyAbove line
 
     /// Is the start of a sentence.  This doesn't consider section or paragraph boundaries
     /// but specifically items related to the start of a sentence
@@ -221,12 +224,12 @@ type internal TextObjectUtil
         if SnapshotPointUtil.IsStartPoint point then
             // The start of the ITextBuffer is the start of a sentence
             true
-        elif adjustedColumn.IsStartOfLine && x.IsBlankLineWithNoBlankAbove adjustedColumn.Line then
+        elif adjustedColumn.IsStartOfLine && x.IsEmptyLineWithNoEmptyAbove adjustedColumn.Line then
             true
         elif x.IsSentenceEndWhiteSpace point then
             // Sentence white space isn't the start of a sentence
             false
-        elif adjustedColumn.IsStartOfLine && x.IsLineAboveBlank adjustedColumn.Line then
+        elif adjustedColumn.IsStartOfLine && x.IsLineAboveEmpty adjustedColumn.Line then
             true
         else
             // Move backwards while we are on white space
@@ -242,6 +245,17 @@ type internal TextObjectUtil
                 let current = current.Add 1
                 let column = SnapshotColumn(current)
                 x.IsSentenceEnd sentenceKind column
+
+    /// Is the SnapshotPoint in the white space between sentences
+    member x.IsSentenceWhiteSpace sentenceKind (column : SnapshotColumn) =
+        if column.IsStartOfLine && x.IsEmptyLineWithNoEmptyAbove column.Line then
+            false
+        else
+            let mutable current = column 
+            while not (x.IsSentenceEnd sentenceKind current) && x.IsSentenceEndWhiteSpace current.Point && current.Point.Position > 0 do
+                current <- current.Subtract 1
+
+            x.IsSentenceEnd sentenceKind current
     
     /// This function is used to match nroff macros for both section and paragraph sections.  It 
     /// determines if the line starts with the proper macro string
@@ -467,7 +481,11 @@ type internal TextObjectUtil
                 let startColumn = SnapshotColumn(startPoint)
                 let span = getSpanFromStartColumn startColumn
                 if point.Position >= span.End.Position then
-                    getStartForward span.End
+                    let forwardPoint = getStartForward span.End
+                    if forwardPoint.Position > point.Position then
+                        startPoint
+                    else
+                        forwardPoint
                 else
                     startPoint
             Seq.unfold getNext startPoint

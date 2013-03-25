@@ -40,6 +40,13 @@ type SnapshotColumn
 
     member x.Column = _column
 
+    member x.Add count = 
+        if count + _column < _snapshotLine.LengthIncludingLineBreak then
+            SnapshotColumn(_snapshotLine, _column + count)
+        else
+            let point = x.Point.Add count
+            SnapshotColumn(point)
+
     member x.Subtract count = 
         if count <= _column then
             SnapshotColumn(_snapshotLine, _column - count)

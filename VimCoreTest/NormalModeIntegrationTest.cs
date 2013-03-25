@@ -3751,7 +3751,45 @@ namespace Vim.UnitTest
             }
         }
 
-        public sealed class SentenceMotionTest : NormalModeIntegrationTest
+        public sealed class AllSentenceTextObject : NormalModeIntegrationTest
+        {
+            [Fact]
+            public void Simple()
+            {
+                Create("dog. cat. bear.");
+                _vimBuffer.Process("yas");
+                Assert.Equal("dog. ", UnnamedRegister.StringValue);
+            }
+
+            /// <summary>
+            /// When starting in the white space include it in the motion instead of the trailing
+            /// white space
+            /// </summary>
+            [Fact]
+            public void FromWhiteSpace()
+            {
+                Create("dog. cat. bear.");
+                _textView.MoveCaretTo(4);
+                _vimBuffer.Process("yas");
+                Assert.Equal(" cat.", UnnamedRegister.StringValue);
+            }
+
+            [Fact]
+            public void EmptyLinesAreSentences()
+            {
+                Create("dog.  ", "", "cat.");
+                _textView.MoveCaretToLine(1);
+                _vimBuffer.Process("yas");
+                Assert.Equal("  " + Environment.NewLine, UnnamedRegister.StringValue);
+                _textView.MoveCaretTo(0);
+                _vimBuffer.Process("P");
+                Assert.Equal(
+                    new[] { "  ", "dog.  ", "", "cat." },
+                    _textBuffer.GetLines());
+            }
+        }
+
+        public sealed class SentenceTextObject : NormalModeIntegrationTest
         {
             [Fact]
             public void SentenceOnNotFirstColumn()
@@ -3778,6 +3816,112 @@ namespace Vim.UnitTest
                 _textView.MoveCaretToLine(2, 1);
                 _vimBuffer.Process(')');
                 Assert.Equal(_textBuffer.GetLine(3).Start, _textView.GetCaretPoint());
+            }
+
+            [Fact]
+            public void WhiteSpaceAfterEmptyLine()
+            {
+                Create("", "  test");
+                _vimBuffer.Process(')');
+                Assert.Equal(_textBuffer.GetPointInLine(1, 2), _textView.GetCaretPoint());
+            }
+
+            [Fact]
+            public void WhiteSpaceAfterEmptyLine2()
+            {
+                Create("", "  test");
+                _textView.MoveCaretToLine(1);
+                _vimBuffer.Process(')');
+                Assert.Equal(_textBuffer.GetPointInLine(1, 2), _textView.GetCaretPoint());
+            }
+
+            [Fact]
+            public void BlanksAfterSentence()
+            {
+                Create("cat.", "  test");
+                _vimBuffer.Process(')');
+                Assert.Equal(_textBuffer.GetPointInLine(1, 2), _textView.GetCaretPoint());
+            }
+
+            [Fact]
+            public void WhiteSpaceStartOfBuffer()
+            {
+                Create("  t", "d.", "c", "e");
+                _vimBuffer.Process(')');
+                Assert.Equal(_textBuffer.GetPointInLine(2, 0), _textView.GetCaretPoint());
+            }
+
+            [Fact]
+            public void HtmlBlocks()
+            {
+                var text = 
+@"
+  <dl>
+    <li>Here we are</li>
+    <li>Here we are</li>
+  </dl>
+
+  <dl>
+    <li>Here we are</li>
+    <li>Here we are</li>
+  </dl>
+
+  <dl>
+    <li>Here we are</li>
+    <li>Here we are</li>
+  </dl>
+";
+
+                Create(text);
+                _vimBuffer.Process(')');
+                Assert.Equal(_textBuffer.GetPointInLine(1, 2), _textView.GetCaretPoint());
+                _vimBuffer.Process(')');
+                Assert.Equal(_textBuffer.GetPointInLine(5, 0), _textView.GetCaretPoint());
+                _vimBuffer.Process(')');
+                Assert.Equal(_textBuffer.GetPointInLine(6, 2), _textView.GetCaretPoint());
+                _vimBuffer.Process(')');
+                Assert.Equal(_textBuffer.GetPointInLine(10, 0), _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// An empty line is a sentence.  It's technically a paragraph but paragraph boundaries
+            /// count as sentence boundaries
+            /// </summary>
+            [Fact]
+            public void EmptyLineIsSentence()
+            {
+                Create("cat", "", " dog");
+                _vimBuffer.Process(')');
+                Assert.Equal(_textBuffer.GetPointInLine(1, 0), _textView.GetCaretPoint());
+                _vimBuffer.Process(')');
+                Assert.Equal(_textBuffer.GetPointInLine(2, 1), _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// A blank line is not a sentence boundary.  A blank line is a line which has only white
+            /// space as the content.  It's not a paragraph boundary and hence isn't a sentence
+            /// </summary>
+            [Fact]
+            public void BlankLineIsNotSentence()
+            {
+                Create("cat", " ", " dog");
+                _vimBuffer.Process(')');
+                Assert.Equal(_textBuffer.GetPointInLine(2, 3), _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// If the ')' begins in the white space between sentences then we need to move to the 
+            /// start of the next sentence.
+            /// </summary>
+            [Fact]
+            public void StartInWhiteSpace()
+            {
+                Create("cat.  dog.  fish.");
+                _textView.MoveCaretTo(5);
+                _vimBuffer.Process(')');
+                Assert.Equal(6, _textView.GetCaretPoint().Position);
+                _vimBuffer.Process(')');
+                Assert.Equal(12, _textView.GetCaretPoint().Position);
             }
         }
 

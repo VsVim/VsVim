@@ -62,3 +62,9 @@ type internal TextObjectUtil =
     /// in the specified direction.  Note: The full span of the section will be returned if the 
     /// provided SnapshotPoint is in the middle of it
     member GetSentences : sentenceKind : SentenceKind -> path : Path -> point : SnapshotPoint -> SnapshotSpan seq
+
+    /// Is the SnapshotPoint the start of a sentence 
+    member IsSentenceStart : sentenceKind : SentenceKind -> column : SnapshotColumn -> bool
+
+    /// Is the SnapshotPoint in the white space between sentences
+    member IsSentenceWhiteSpace : sentenceKind : SentenceKind -> column : SnapshotColumn -> bool

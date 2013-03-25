@@ -4,6 +4,7 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
+using Microsoft.VisualStudio.Text.Editor.OptionsExtensionMethods;
 using System.Diagnostics;
 using Vim;
 
@@ -50,6 +51,7 @@ namespace VimTestApp
             var textView = _vimComponentHost.TextEditorFactoryService.CreateTextView(
                 _textBuffer,
                 textViewRoleSet);
+            textView.Options.SetOptionValue(DefaultTextViewOptions.UseVisibleWhitespaceId, true);
             return _vimComponentHost.TextEditorFactoryService.CreateTextViewHost(textView, true);
         }
 

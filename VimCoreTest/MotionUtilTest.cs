@@ -134,7 +134,105 @@ namespace Vim.UnitTest
             }
         }
 
-        public sealed class QuotedStringTests : MotionUtilTest
+        public sealed class AllSentenceTest : MotionUtilTest
+        {
+            /// <summary>
+            /// Should take the trailing white space
+            /// </summary>
+            [Fact]
+            public void Simple()
+            {
+                Create("dog. cat. bear.");
+                var data = _motionUtil.AllSentence(1);
+                Assert.Equal("dog. ", data.Span.GetText());
+            }
+
+            /// <summary>
+            /// Take the leading white space when there is a preceding sentence and no trailing 
+            /// white space
+            /// </summary>
+            [Fact]
+            public void NoTrailingWhiteSpace()
+            {
+                Create("dog. cat.");
+                _textView.MoveCaretTo(5);
+                var data = _motionUtil.AllSentence(1);
+                Assert.Equal(" cat.", data.Span.GetText());
+            }
+
+            /// <summary>
+            /// When starting in the white space include it in the motion instead of the trailing
+            /// white space
+            /// </summary>
+            [Fact]
+            public void FromWhiteSpace()
+            {
+                Create("dog. cat. bear.");
+                _textView.MoveCaretTo(4);
+                var data = _motionUtil.AllSentence(1);
+                Assert.Equal(" cat.", data.Span.GetText());
+            }
+
+            /// <summary>
+            /// When the trailing white space goes across new lines then we should still be including
+            /// that 
+            /// </summary>
+            [Fact]
+            public void WhiteSpaceAcrossNewLine()
+            {
+                Create("dog.  ", "  cat");
+                var data = _motionUtil.AllSentence(1);
+                Assert.Equal("dog.  " + Environment.NewLine + "  ", data.Span.GetText());
+            }
+
+            /// <summary>
+            /// This is intended to make sure that 'as' goes through the standard exclusive adjustment
+            /// operation.  Even though it technically extends into the next line ':help exclusive-linewise'
+            /// dictates it should be changed into a line wise motion
+            /// </summary>
+            [Fact]
+            public void OneSentencePerLine()
+            {
+                Create("dog.", "cat.");
+                var data = _motionUtil.GetMotion(Motion.AllSentence).Value;
+                Assert.Equal(OperationKind.LineWise, data.OperationKind);
+                Assert.Equal("dog." + Environment.NewLine, data.Span.GetText());
+            }
+
+            /// <summary>
+            /// Blank lines are sentences so don't include them as white space.  The gap between the '.'
+            /// and the blank line is white space though and should be included in the motion
+            /// </summary>
+            [Fact]
+            public void DontJumpBlankLinesAsWhiteSpace()
+            {
+                Create("dog.", "", "cat.");
+                var data = _motionUtil.GetMotion(Motion.AllSentence).Value;
+                Assert.Equal(OperationKind.LineWise, data.OperationKind);
+                Assert.Equal("dog." + Environment.NewLine, data.Span.GetText());
+            }
+
+            /// <summary>
+            /// Blank lines are sentences so treat them as such.  Note: A blank line includes the entire blank
+            /// line.  But when operating on a blank line it often appears that it doesn't due to the 
+            /// rules around motion adjustments spelled out in ':help exclusive'.  Namely if an exclusive motion
+            /// ends in column 0 then it gets moved back to the end of the previous line and becomes inclusive
+            /// </summary>
+            [Fact]
+            public void BlankLinesAreSentences()
+            {
+                Create("dog.  ", "", "cat.");
+                _textView.MoveCaretToLine(1);
+                var data = _motionUtil.AllSentence(1);
+                Assert.Equal("  " + Environment.NewLine + Environment.NewLine, data.Span.GetText());
+
+                // Make sure it's adjusted properly for the exclusive exception
+                data = _motionUtil.GetMotion(Motion.AllSentence).Value;
+                Assert.Equal("  " + Environment.NewLine, data.Span.GetText());
+            }
+        }
+
+        public sealed class QuotedStringTest : MotionUtilTest
         {
             [Fact]
             public void ItSelectsQuotesAlongWithInnerText()
@@ -625,101 +723,6 @@ namespace Vim.UnitTest
                 var data = _motionUtil.FirstNonBlankOnLine(2);
                 Assert.Equal(_textView.GetLineRange(0, 1), data.LineRange);
                 Assert.Equal(1, data.CaretColumn.AsInLastLine().Item);
-            }
-
-            /// <summary>
-            /// Should take the trailing white space
-            /// </summary>
-            [Fact]
-            public void AllSentence_Simple()
-            {
-                Create("dog. cat. bear.");
-                var data = _motionUtil.AllSentence(1);
-                Assert.Equal("dog. ", data.Span.GetText());
-            }
-
-            /// <summary>
-            /// Take the leading white space when there is a preceding sentence and no trailing 
-            /// white space
-            /// </summary>
-            [Fact]
-            public void AllSentence_NoTrailingWhiteSpace()
-            {
-                Create("dog. cat.");
-                _textView.MoveCaretTo(5);
-                var data = _motionUtil.AllSentence(1);
-                Assert.Equal(" cat.", data.Span.GetText());
-            }
-
-            /// <summary>
-            /// When starting in the white space include it in the motion instead of the trailing
-            /// white space
-            /// </summary>
-            [Fact]
-            public void AllSentence_FromWhiteSpace()
-            {
-                Create("dog. cat. bear.");
-                _textView.MoveCaretTo(4);
-                var data = _motionUtil.AllSentence(1);
-                Assert.Equal(" cat.", data.Span.GetText());
-            }
-
-            /// <summary>
-            /// When the trailing white space goes across new lines then we should still be including
-            /// that 
-            /// </summary>
-            [Fact]
-            public void AllSentence_WhiteSpaceAcrossNewLine()
-            {
-                Create("dog.  ", "  cat");
-                var data = _motionUtil.AllSentence(1);
-                Assert.Equal("dog.  " + Environment.NewLine + "  ", data.Span.GetText());
-            }
-
-            /// <summary>
-            /// This is intended to make sure that 'as' goes through the standard exclusive adjustment
-            /// operation.  Even though it technically extends into the next line ':help exclusive-linewise'
-            /// dictates it should be changed into a line wise motion
-            /// </summary>
-            [Fact]
-            public void AllSentence_OneSentencePerLine()
-            {
-                Create("dog.", "cat.");
-                var data = _motionUtil.GetMotion(Motion.AllSentence).Value;
-                Assert.Equal(OperationKind.LineWise, data.OperationKind);
-                Assert.Equal("dog." + Environment.NewLine, data.Span.GetText());
-            }
-
-            /// <summary>
-            /// Blank lines are sentences so don't include them as white space.  The gap between the '.'
-            /// and the blank line is white space though and should be included in the motion
-            /// </summary>
-            [Fact]
-            public void AllSentence_DontJumpBlankLinesAsWhiteSpace()
-            {
-                Create("dog.", "", "cat.");
-                var data = _motionUtil.GetMotion(Motion.AllSentence).Value;
-                Assert.Equal(OperationKind.LineWise, data.OperationKind);
-                Assert.Equal("dog." + Environment.NewLine, data.Span.GetText());
-            }
-
-            /// <summary>
-            /// Blank lines are sentences so treat them as such.  Note: A blank line includes the entire blank
-            /// line.  But when operating on a blank line it often appears that it doesn't due to the 
-            /// rules around motion adjustments spelled out in ':help exclusive'.  Namely if an exclusive motion
-            /// ends in column 0 then it gets moved back to the end of the previous line and becomes inclusive
-            /// </summary>
-            [Fact]
-            public void AllSentence_BlankLinesAreSentences()
-            {
-                Create("dog.  ", "", "cat.");
-                _textView.MoveCaretToLine(1);
-                var data = _motionUtil.AllSentence(1);
-                Assert.Equal("  " + Environment.NewLine + Environment.NewLine, data.Span.GetText());
-
-                // Make sure it's adjusted properly for the exclusive exception
-                data = _motionUtil.GetMotion(Motion.AllSentence).Value;
-                Assert.Equal("  " + Environment.NewLine, data.Span.GetText());
             }
 
             /// <summary>
