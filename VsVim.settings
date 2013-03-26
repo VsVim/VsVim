@@ -20,6 +20,9 @@
     <EditorRefVersion>10.0.0.0</EditorRefVersion>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <VsInstallDir>$(Vs2010InstallDir)</VsInstallDir>
+    <RefNameVisualStudioSettings>Microsoft.VisualStudio.Settings, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL</RefNameVisualStudioSettings>
+    <DefineConstants>VSVIM_2010</DefineConstants>
+    <VsXamlSuffix></VsXamlSuffix>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(VisualStudioVersion)' == '11.0' ">
@@ -27,5 +30,8 @@
     <EditorRefVersion>11.0.0.0</EditorRefVersion>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <VsInstallDir>$(Vs2012InstallDir)</VsInstallDir>
+    <RefNameVisualStudioSettings>Microsoft.VisualStudio.Settings.11.0, Version=11.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL</RefNameVisualStudioSettings>
+    <DefineConstants>VSVIM_2012</DefineConstants>
+    <VsXamlSuffix>11</VsXamlSuffix>
   </PropertyGroup>
 </Project>
