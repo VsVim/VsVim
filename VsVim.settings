@@ -1,37 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
   <PropertyGroup>
-    <Is32Bit>False</Is32Bit>
-    <Is32Bit Condition=" '$(PROCESSOR_ARCHITECTURE)' == 'x86' ">True</Is32Bit>
-  </PropertyGroup>
-
-  <PropertyGroup Condition=" '$(Is32Bit)' == 'True' ">
-    <Vs2010InstallDir>$(registry:HKEY_LOCAL_MACHINE\Software\Microsoft\VisualStudio\10.0@InstallDir)</Vs2010InstallDir>
-    <Vs2012InstallDir>$(registry:HKEY_LOCAL_MACHINE\Software\Microsoft\VisualStudio\11.0@InstallDir)</Vs2012InstallDir>
-  </PropertyGroup>
-
-  <PropertyGroup Condition=" '$(Is32Bit)' == 'False' ">
-    <Vs2010InstallDir>$(registry:HKEY_LOCAL_MACHINE\Software\Wow6432Node\Microsoft\VisualStudio\10.0@InstallDir)</Vs2010InstallDir>
-    <Vs2012InstallDir>$(registry:HKEY_LOCAL_MACHINE\Software\Wow6432Node\Microsoft\VisualStudio\11.0@InstallDir)</Vs2012InstallDir>
+    <VsVimEmptyAppConfig>$(MSBuildThisFileDirectory)References\Vs2010\App.config</VsVimEmptyAppConfig>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(VisualStudioVersion)' == '10.0' ">
-    <FSharpRefVersion>4.0.0.0</FSharpRefVersion>
-    <EditorRefVersion>10.0.0.0</EditorRefVersion>
-    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
-    <VsInstallDir>$(Vs2010InstallDir)</VsInstallDir>
-    <RefNameVisualStudioSettings>Microsoft.VisualStudio.Settings, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL</RefNameVisualStudioSettings>
-    <DefineConstants>VSVIM_2010</DefineConstants>
-    <VsXamlSuffix></VsXamlSuffix>
+    <VsVimAppConfig>$(MSBuildThisFileDirectory)References\Vs2010\App.config</VsVimAppConfig>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(VisualStudioVersion)' == '11.0' ">
-    <FSharpRefVersion>4.3.0.0</FSharpRefVersion>
-    <EditorRefVersion>11.0.0.0</EditorRefVersion>
-    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
-    <VsInstallDir>$(Vs2012InstallDir)</VsInstallDir>
-    <RefNameVisualStudioSettings>Microsoft.VisualStudio.Settings.11.0, Version=11.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL</RefNameVisualStudioSettings>
-    <DefineConstants>VSVIM_2012</DefineConstants>
-    <VsXamlSuffix>11</VsXamlSuffix>
+    <VsVimAppConfig>$(MSBuildThisFileDirectory)References\Vs2012\App.config</VsVimAppConfig>
   </PropertyGroup>
+
+  <!-- Most projects build against the 2010 reference assemblies so make sure to include that in the path -->
+  <PropertyGroup>
+    <ReferencePath>$(ReferencePath);$(MSBuildThisFileDirectory)References\Vs2010</ReferencePath>
+  </PropertyGroup>
+
 </Project>
