@@ -3,6 +3,18 @@
 
   <PropertyGroup>
     <VsVimEmptyAppConfig>$(MSBuildThisFileDirectory)References\Vs2010\App.config</VsVimEmptyAppConfig>
+    <Is32Bit>False</Is32Bit>
+    <Is32Bit Condition="'$(PROCESSOR_ARCHITECTURE)' == 'x86'">True</Is32Bit>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Is32Bit)' == 'True'">
+    <Vs2010InstallDir>$(registry:HKEY_LOCAL_MACHINE\Software\Microsoft\VisualStudio\10.0@InstallDir)</Vs2010InstallDir>
+    <Vs2012InstallDir>$(registry:HKEY_LOCAL_MACHINE\Software\Microsoft\VisualStudio\11.0@InstallDir)</Vs2012InstallDir>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Is32Bit)' == 'False'">
+    <Vs2010InstallDir>$(registry:HKEY_LOCAL_MACHINE\Software\Wow6432Node\Microsoft\VisualStudio\10.0@InstallDir)</Vs2010InstallDir>
+    <Vs2012InstallDir>$(registry:HKEY_LOCAL_MACHINE\Software\Wow6432Node\Microsoft\VisualStudio\11.0@InstallDir)</Vs2012InstallDir>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(VisualStudioVersion)' == '10.0' ">
