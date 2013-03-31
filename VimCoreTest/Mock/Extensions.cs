@@ -3,7 +3,6 @@ using System.Linq;
 using System.Windows;
 using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio;
-using Microsoft.VisualStudio.Editor;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Moq;
