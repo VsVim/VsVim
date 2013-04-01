@@ -65,7 +65,3 @@ VsVim.Vs2012.pdb
 # Profiling Output
 *.vsp
 
-# Misc build files
-VimCoreTest/App.config
-VimWpfTest/App.config
-VimTestApp/App.config

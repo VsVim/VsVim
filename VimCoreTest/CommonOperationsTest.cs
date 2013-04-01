@@ -178,7 +178,6 @@ namespace Vim.UnitTest
             Assert.Equal(OperationKind.LineWise, UnnamedRegister.OperationKind);
         }
 
-
         /// <summary>
         /// Verify the deleting of lines where the count causes the deletion to cross 
         /// over a fold

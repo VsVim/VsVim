@@ -17,6 +17,7 @@ using Vim.UI.Wpf.Implementation.Misc;
 using Vim.UI.Wpf.Implementation.WordCompletion;
 using Vim.UnitTest.Exports;
 using Vim.UnitTest.Mock;
+using System.Windows;
 
 namespace Vim.UnitTest
 {
@@ -29,7 +30,7 @@ namespace Vim.UnitTest
     public abstract class VimTestBase : EditorHost, IDisposable
     {
         [ThreadStatic]
-        private static CompositionContainer _vimCompositionContainer;
+        private static CompositionContainer s_vimCompositionContainer;
 
         private IVim _vim;
         private IVimBufferFactory _vimBufferFactory;
@@ -137,6 +138,14 @@ namespace Vim.UnitTest
 
         protected VimTestBase()
         {
+            // Parts of the core editor in Vs2012 depend on there being an Application.Current value else
+            // they will throw a NullReferenceException.  Create one here to ensure the unit tests successfully
+            // pass
+            if (Application.Current == null) 
+            {
+                new Application();
+            }
+
             _vim = CompositionContainer.GetExportedValue<IVim>();
             _vimBufferFactory = CompositionContainer.GetExportedValue<IVimBufferFactory>();
             _vimErrorDetector = CompositionContainer.GetExportedValue<IVimErrorDetector>();
@@ -349,14 +358,14 @@ namespace Vim.UnitTest
 
         protected override CompositionContainer GetOrCreateCompositionContainer()
         {
-            if (_vimCompositionContainer == null)
+            if (s_vimCompositionContainer == null)
             {
                 var list = GetVimCatalog();
                 var catalog = new AggregateCatalog(list.ToArray());
-                _vimCompositionContainer = new CompositionContainer(catalog);
+                s_vimCompositionContainer = new CompositionContainer(catalog);
             }
 
-            return _vimCompositionContainer;
+            return s_vimCompositionContainer;
         }
 
         protected static List<ComposablePartCatalog> GetVimCatalog()
