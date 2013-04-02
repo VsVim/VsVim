@@ -286,6 +286,14 @@ namespace Vim.UnitTest
             util.RunAll(skipOperators:skipOperators, skipEquatable:skipEquatable);
         }
 
+        public static void RunAll<T>(
+            Func<T, T, bool> compEqualsOperator,
+            Func<T, T, bool> compNotEqualsOperator,
+            params EqualityUnit<T>[] values)
+        {
+            RunAll(compEqualsOperator, compNotEqualsOperator, skipOperators: false, skipEquatable: false, values: values);
+        }
+
         public static void RunAll<T>(params EqualityUnit<T>[] values)
         {
             RunAll(null, null, true, false, values);

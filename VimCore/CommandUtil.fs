@@ -2089,7 +2089,7 @@ type internal CommandUtil
                                     let transaction = _undoRedoOperations.CreateUndoTransaction "Macro Run"
                                     map.Add(buffer.TextBuffer, transaction)
                                     transaction.AddBeforeTextBufferChangePrimitive()
-            
+
                                 // Actually run the KeyInput.  If processing the KeyInput value results
                                 // in an error then we should stop processing the macro
                                 match buffer.Process keyInput with

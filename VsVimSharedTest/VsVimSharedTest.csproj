@@ -79,6 +79,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="CommandIdTest.cs" />
     <Compile Include="CSharpAdapterTest.cs" />
     <Compile Include="HostFactoryTest.cs" />
     <Compile Include="MindScapeTest.cs" />
@@ -138,7 +139,6 @@
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <Import Project="$(SolutionDir)\.nuget\nuget.targets" />
-
   <!-- Add the appropriate app.config to the created binaries -->
   <Target Name="AfterBuild">
     <Copy SourceFiles="$(VsVimAppConfig)" DestinationFiles="$(OutputPath)\$(AssemblyName).dll.config" />

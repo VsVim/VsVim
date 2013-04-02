@@ -222,7 +222,7 @@ type IUndoRedoOperations =
     abstract Close : unit -> unit
 
     /// Creates an Undo Transaction
-    abstract CreateUndoTransaction : name:string -> IUndoTransaction
+    abstract CreateUndoTransaction : name : string -> IUndoTransaction
 
     /// Creates a linked undo transaction
     abstract CreateLinkedUndoTransaction : unit -> ILinkedUndoTransaction

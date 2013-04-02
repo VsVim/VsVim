@@ -6,7 +6,7 @@ namespace VsVim
     /// Id of an EnvDTE.Command object.  The Name portion of a Command is optional and doesn't
     /// figure into the name.  The Guid and ID are unique to a command
     /// </summary>
-    public struct CommandId
+    public struct CommandId : IEquatable<CommandId>
     {
         public readonly Guid Group;
 
@@ -16,6 +16,36 @@ namespace VsVim
         {
             Group = group;
             Id = id;
+        }
+
+        public bool Equals(CommandId other)
+        {
+            return Id == other.Id && Group == other.Group;
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (obj is CommandId)
+            {
+                return Equals((CommandId)obj);
+            }
+
+            return false;
+        }
+
+        public override int GetHashCode()
+        {
+            return (int)Id ^ Group.GetHashCode();
+        }
+
+        public static bool operator ==(CommandId left, CommandId right)
+        {
+            return left.Equals(right);
+        }
+
+        public static bool operator !=(CommandId left, CommandId right)
+        {
+            return !left.Equals(right);
         }
     }
 

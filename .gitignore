@@ -57,10 +57,10 @@ TestResults/
 _ReSharper.VsVim
 
 # Copied into a source directory for ease of build
-VsVim.Dev11.dll
-VsVim.Dev11.pdb
-VsVim.Vs2012.dll
-VsVim.Vs2012.pdb
+VsVim/VsVim.Dev11.dll
+VsVim/VsVim.Dev11.pdb
+VsVim/VsVim.Vs2012.dll
+VsVim/VsVim.Vs2012.pdb
 
 # Profiling Output
 *.vsp
