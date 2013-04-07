@@ -1142,33 +1142,31 @@ type Parser
         _tokenizer.MoveNextToken()
 
         let builder = System.Text.StringBuilder()
-        let moveNextChar () = _tokenizer.MoveNextChar()
-        let rec inner () = 
+        let mutable result = ParseResult.Failed Resources.Parser_MissingQuote
+        let mutable isDone = false
+        while not isDone do
             match _tokenizer.CurrentChar with
-            | None -> ParseResult.Failed Resources.Parser_MissingQuote
+            | None -> isDone <- true
             | Some '\\' -> 
                 // Need to peek ahead to see if this is a back slash to be inserted or if it's
                 // escaping a single quote
-                moveNextChar ()
+                _tokenizer.MoveNextChar()
                 match _tokenizer.CurrentChar with 
                 | Some '\'' ->
                     builder.AppendChar '\''
-                    moveNextChar ()
-                    inner ()
+                    _tokenizer.MoveNextChar()
                 | _ ->
                     builder.AppendChar '\\'
-                    inner ()
             | Some '\'' ->
                 // Found the terminating character
-                builder.ToString()
-                |> VariableValue.String
-                |> ParseResult.Succeeded
+                _tokenizer.MoveNextChar()
+                result <- builder.ToString() |> VariableValue.String |> ParseResult.Succeeded
+                isDone <- true
             | Some c ->
                 builder.AppendChar c
-                moveNextChar ()
-                inner ()
+                _tokenizer.MoveNextChar()
 
-        inner ()
+        result
 
     /// Parse out the 'tabnext' command
     member x.ParseTabNext() =   
@@ -1403,6 +1401,7 @@ type Parser
         x.SkipBlanks()
         match _tokenizer.CurrentTokenKind with
         | TokenKind.Word name ->
+            use flags = _tokenizer.SetTokenizerFlagsScoped TokenizerFlags.SkipBlanks
             _tokenizer.MoveNextToken()
             match _tokenizer.CurrentChar with
             | Some '=' ->

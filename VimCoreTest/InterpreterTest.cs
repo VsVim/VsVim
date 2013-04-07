@@ -566,6 +566,38 @@ namespace Vim.UnitTest
                 ParseAndRun(@"let x=42");
                 AssertValue("x", 42);
             }
+
+            [Fact]
+            public void SpaceBeforeNumber()
+            {
+                Create("");
+                ParseAndRun(@"let x= 42");
+                AssertValue("x", 42);
+            }
+
+            [Fact]
+            public void SpaceBeforeString()
+            {
+                Create("");
+                ParseAndRun(@"let x= 'oo'");
+                AssertValue("x", VariableValue.NewString("oo"));
+            }
+
+            [Fact]
+            public void SpaceBeforeEquals()
+            {
+                Create("");
+                ParseAndRun(@"let x =42");
+                AssertValue("x", 42);
+            }
+
+            [Fact]
+            public void SpaceInAllLocations()
+            {
+                Create("");
+                ParseAndRun(@"let x = 42");
+                AssertValue("x", 42);
+            }
         }
 
         public sealed class UnletTest : InterpreterTest
