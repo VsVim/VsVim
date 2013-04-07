@@ -2,7 +2,10 @@
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.Linq;
+using System.Reflection;
+using System.Windows;
 using System.Windows.Input;
+using EnvDTE;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.Editor;
 using Microsoft.VisualStudio.Shell;
@@ -19,6 +22,8 @@ namespace VsVim.Implementation.Misc
     [Export(typeof(IVsAdapter))]
     internal sealed class VsAdapter : IVsAdapter
     {
+        private static readonly object s_findUIAdornmentLayerKey = new object();
+
         private readonly IVsEditorAdaptersFactoryService _editorAdaptersFactoryService;
         private readonly IEditorOptionsFactoryService _editorOptionsFactoryService;
         private readonly IIncrementalSearchFactoryService _incrementalSearchFactoryService;
@@ -28,6 +33,7 @@ namespace VsVim.Implementation.Misc
         private readonly IServiceProvider _serviceProvider;
         private readonly IVsMonitorSelection _monitorSelection;
         private readonly IPowerToolsUtil _powerToolsUtil;
+        private readonly VisualStudioVersion _visualStudioVersion;
 
         internal bool InDebugMode
         {
@@ -75,6 +81,9 @@ namespace VsVim.Implementation.Misc
             _uiShell = _serviceProvider.GetService<SVsUIShell, IVsUIShell>();
             _monitorSelection = _serviceProvider.GetService<SVsShellMonitorSelection, IVsMonitorSelection>();
             _powerToolsUtil = powerToolsUtil;
+
+            var dte = serviceProvider.GetService<SDTE, _DTE>();
+            _visualStudioVersion = dte.GetVisualStudioVersion();
         }
 
         internal Result<IVsTextLines> GetTextLines(ITextBuffer textBuffer)
@@ -311,7 +320,59 @@ namespace VsVim.Implementation.Misc
                 return true;
             }
 
+            if (_visualStudioVersion != VisualStudioVersion.Vs2010 && IsIncrementalSearchActive2012(textView))
+            {
+                return true;
+            }
+
             return _powerToolsUtil.IsQuickFindActive;
+        }
+
+        /// <summary>
+        /// Visual Studio 2012 introduced a new form of incremental search in the find / replace UI
+        /// implementation.  It doesn't implement the IIncrementalSearch interface and doesn't expose
+        /// whether or not it's active via any public API.
+        ///
+        /// The best way to find if it's active is to look for the adornment itself and see if it or
+        /// it's descendant has focus.  Because Visual Studio is using WPF hosted in a HWND it doesn't
+        /// actually have keyboard focus, just normal focus
+        /// </summary>
+        internal bool IsIncrementalSearchActive2012(ITextView textView)
+        {
+            var wpfTextView = textView as IWpfTextView;
+            if (wpfTextView == null)
+            {
+                return false;
+            }
+
+            var adornmentLayer = wpfTextView.GetAdornmentLayerNoThrow("FindUIAdornmentLayer", s_findUIAdornmentLayerKey);
+            if (adornmentLayer == null)
+            {
+                return false;
+            }
+
+            foreach (var element in adornmentLayer.Elements)
+            {
+                var adornment = element.Adornment;
+                if (adornment.Visibility == Visibility.Visible &&
+                    adornment.GetType().Name == "FindUI")
+                {
+
+                    var scope = FocusManager.GetFocusScope(adornment);
+                    if (scope == null)
+                    {
+                        continue;
+                    }
+
+                    var focusedElement = FocusManager.GetFocusedElement(scope) as UIElement;
+                    if (focusedElement != null && focusedElement != wpfTextView.VisualElement && focusedElement.IsDescendantOf(adornment))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
         }
 
         #region IVsAdapter

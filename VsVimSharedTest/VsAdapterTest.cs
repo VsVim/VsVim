@@ -1,4 +1,5 @@
-﻿using Microsoft.VisualStudio;
+﻿using EnvDTE;
+using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.Editor;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
@@ -14,14 +15,15 @@ namespace VsVim.UnitTest
 {
     public class VsAdapterTest : VimTestBase
     {
-        protected readonly MockRepository _factory;
-        protected readonly Mock<IVsEditorAdaptersFactoryService> _editorAdapterFactory;
-        protected readonly Mock<IEditorOptionsFactoryService> _editorOptionsFactory;
-        protected readonly Mock<IIncrementalSearchFactoryService> _incrementalSearchFactoryService;
+        private readonly MockRepository _factory;
+        private readonly Mock<IVsEditorAdaptersFactoryService> _editorAdapterFactory;
+        private readonly Mock<IEditorOptionsFactoryService> _editorOptionsFactory;
+        private readonly Mock<IIncrementalSearchFactoryService> _incrementalSearchFactoryService;
+        private readonly Mock<_DTE> _dte;
         internal readonly Mock<IPowerToolsUtil> _powerToolsUtil;
-        protected readonly Mock<SVsServiceProvider> _serviceProvider;
+        private readonly Mock<SVsServiceProvider> _serviceProvider;
         internal readonly VsAdapter _adapterRaw;
-        protected readonly IVsAdapter _adapter;
+        private readonly IVsAdapter _adapter;
 
         public VsAdapterTest()
         {
@@ -34,6 +36,8 @@ namespace VsVim.UnitTest
             _serviceProvider.MakeService<SVsTextManager, IVsTextManager>(_factory);
             _serviceProvider.MakeService<SVsUIShell, IVsUIShell>(_factory);
             _serviceProvider.MakeService<SVsRunningDocumentTable, IVsRunningDocumentTable>(_factory);
+            _dte = _serviceProvider.MakeService<SDTE, _DTE>(_factory);
+            _dte.SetupGet(x => x.Version).Returns("10.0");
             _adapterRaw = new VsAdapter(
                 _editorAdapterFactory.Object,
                 _editorOptionsFactory.Object,
@@ -104,6 +108,20 @@ namespace VsVim.UnitTest
                 Assert.True(_adapter.IsReadOnly(_textView.TextBuffer));
                 Assert.True(_adapter.IsReadOnly(_textView));
                 _factory.Verify();
+            }
+        }
+
+        public sealed class IsIncrementalSearchActive2012 : VsAdapterTest
+        {
+            /// <summary>
+            /// Test the case where the ITextView doesn't have the FindUILayer adornment layer and hence
+            /// it's possible that the query will fail 
+            /// </summary>
+            [Fact]
+            public void Simple()
+            {
+                var textView = CreateTextView();
+                Assert.False(_adapterRaw.IsIncrementalSearchActive2012(textView));
             }
         }
 

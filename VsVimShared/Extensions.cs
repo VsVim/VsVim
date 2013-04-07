@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Windows.Media;
@@ -825,6 +826,36 @@ namespace VsVim
             }
 
             return GetVisibleSnapshotSpans(textView);
+        }
+
+        #endregion
+
+        #region IWpfTextView
+
+        /// <summary>
+        /// There is no way to query for an IAdornmentLayer which returns null on a missing layer.  There is 
+        /// only the throwing version.  Wrap it here for the cases where we have to probe for a layer
+        ///
+        /// This is wrapped with DebuggerNonUserCode to prevent the Exception Assistant from popping up
+        /// while running this method
+        /// </summary>
+        [DebuggerNonUserCode]
+        public static IAdornmentLayer GetAdornmentLayerNoThrow(this IWpfTextView textView, string name, object key)
+        {
+            try
+            {
+                string found;
+                if (textView.Properties.TryGetPropertySafe(key, out found) && StringComparer.Ordinal.Equals(name, found))
+                {
+                    return null;
+                }
+                return textView.GetAdornmentLayer(name);
+            }
+            catch
+            {
+                textView.Properties.AddProperty(key, name);
+                return null;
+            }
         }
 
         #endregion
