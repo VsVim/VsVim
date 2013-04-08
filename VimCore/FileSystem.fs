@@ -2,6 +2,7 @@
 
 namespace Vim
 open System.IO
+open System.Collections.Generic
 open System.ComponentModel.Composition
 
 [<Export(typeof<IFileSystem>)>]
@@ -26,12 +27,20 @@ type internal FileSystem() =
         // at a future time
         // 
         // http://blogs.msdn.com/b/jaredpar/archive/2009/12/10/the-file-system-is-unpredictable.aspx 
-        if System.String.IsNullOrEmpty path then None
+        if System.String.IsNullOrEmpty path then 
+            None
         elif System.IO.File.Exists path then 
             try
-                System.IO.File.ReadAllLines(path) |> Some
+                use streamReader = new StreamReader(path, true)
+                let list = List<string>()
+                let mutable line = streamReader.ReadLine()
+                while line <> null do
+                    list.Add line
+                    line <- streamReader.ReadLine()
+
+                Some (list.ToArray())
             with
-                _ -> None
+                | _ -> None
         else
             None
 

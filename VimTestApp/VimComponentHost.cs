@@ -14,9 +14,16 @@ namespace VimTestApp
         [ThreadStatic]
         private static CompositionContainer _vimCompositionContainer;
 
+        private readonly IVim _vim;
+
+        internal IVim Vim
+        {
+            get { return _vim; }
+        }
+
         internal VimComponentHost()
         {
-
+            _vim = CompositionContainer.GetExportedValue<IVim>();
         }
 
         protected override CompositionContainer GetOrCreateCompositionContainer()

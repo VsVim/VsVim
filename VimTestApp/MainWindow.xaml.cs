@@ -7,6 +7,7 @@ using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Editor.OptionsExtensionMethods;
 using System.Diagnostics;
 using Vim;
+using Vim.Extensions;
 
 namespace VimTestApp
 {
@@ -18,6 +19,20 @@ namespace VimTestApp
         private readonly VimComponentHost _vimComponentHost;
         private readonly List<IWpfTextViewHost> _textViewHostList = new List<IWpfTextViewHost>();
         private readonly ITextBuffer _textBuffer;
+
+        // TODO: This is hacky.  We should track the active window and use that
+        private IVimBuffer ActiveVimBuffer
+        {
+            get
+            {
+                if (_textViewHostList.Count == 0)
+                {
+                    return null;
+                }
+
+                return _vimComponentHost.Vim.GetVimBuffer(_textViewHostList[0].TextView).Value;
+            }
+        }
 
         public MainWindow()
         {
@@ -113,5 +128,20 @@ namespace VimTestApp
 
             return grid;
         }
+
+        #region Issue 1074 Helpers
+
+        private void OnLeaderSetClick(object sender, RoutedEventArgs e)
+        {
+            ActiveVimBuffer.Process(@":let mapleader='ö'", enter: true);
+            ActiveVimBuffer.Process(@":nmap <Leader>x ihit it<Esc>", enter: true);
+        }
+
+        private void OnLeaderTypeClick(object sender, RoutedEventArgs e)
+        {
+            ActiveVimBuffer.Process(@"ö", enter: false);
+        }
+
+        #endregion
     }
 }
