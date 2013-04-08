@@ -1737,7 +1737,7 @@ type Parser
                 | "vglobal" -> x.ParseGlobalCore lineRange false
                 | "vmap"-> noRange (fun () -> x.ParseMapKeys false [KeyRemapMode.Visual;KeyRemapMode.Select])
                 | "vmapclear" -> noRange (fun () -> x.ParseMapClear false [KeyRemapMode.Visual; KeyRemapMode.Select])
-                | "vscmd" -> noRange (fun () -> x.ParseVisualStudioCommand ())
+                | "vscmd" -> x.ParseVisualStudioCommand()
                 | "vsplit" -> x.ParseSplit LineCommand.VerticalSplit lineRange
                 | "vnoremap"-> noRange (fun () -> x.ParseMapKeysNoRemap false [KeyRemapMode.Visual;KeyRemapMode.Select])
                 | "vunmap" -> noRange (fun () -> x.ParseMapUnmap false [KeyRemapMode.Visual;KeyRemapMode.Select])

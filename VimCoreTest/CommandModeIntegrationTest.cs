@@ -595,6 +595,47 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class VisualStudioCommandTest : CommandModeIntegrationTest
+        {
+            [Fact]
+            public void SimpleCommand()
+            {
+                Create("");
+                var didRun = false;
+                _vimHost.RunVisualStudioCommandFunc = (commandName, argument) =>
+                    {
+                        didRun = true;
+                        Assert.Equal("Edit.Comment", commandName);
+                        Assert.Equal("", argument);
+                    };
+                RunCommandRaw(":vsc Edit.Comment");
+                Assert.True(didRun);
+            }
+
+            /// <summary>
+            /// While we don't actually pass the range down to the Visual Studio Command function, the 
+            /// underlying commands themselves can act on the active selection (think comment).  Given that
+            /// : will always prefix a range if there is a selection we should support the range to make
+            /// key mappings easier to use
+            /// </summary>
+            [Fact]
+            public void Range()
+            {
+                Create("cat", "dog");
+                _vimBuffer.VimTextBuffer.SetLocalMark(LocalMark.NewLetter(Letter.A), 0, 1);
+                _vimBuffer.VimTextBuffer.SetLocalMark(LocalMark.NewLetter(Letter.B), 0, 1);
+                var didRun = false;
+                _vimHost.RunVisualStudioCommandFunc = (commandName, argument) =>
+                    {
+                        didRun = true;
+                        Assert.Equal("Edit.Comment", commandName);
+                        Assert.Equal("", argument);
+                    };
+                RunCommandRaw(":'a,'bvsc Edit.Comment");
+                Assert.True(didRun);
+            }
+        }
+
         public sealed class YankTest : CommandModeIntegrationTest
         {
             private void AssertLines(params string[] lines)
