@@ -7,6 +7,8 @@ using Microsoft.VisualStudio.TextManager.Interop;
 using Moq;
 using Xunit;
 using VsVim.UnitTest.Mock;
+using Microsoft.VisualStudio.Text.Editor;
+using Microsoft.VisualStudio.Utilities;
 
 namespace VsVim.UnitTest
 {
@@ -118,6 +120,52 @@ namespace VsVim.UnitTest
                 codeWindow.MakeSplit(adapter, factory: _factory);
                 Assert.True(codeWindow.Object.IsSplit());
                 _factory.Verify();
+            }
+        }
+
+        public sealed class GetAdornmentLayerNoThrowTest : ExtensionsTest
+        {
+            private static readonly object LayerKey = new object();
+            private static readonly string LayerName = "MyAdornmentLayer";
+            private readonly Mock<IWpfTextView> _wpfTextView;
+            private readonly PropertyCollection _propertyCollection;
+
+            public GetAdornmentLayerNoThrowTest()
+            {
+                _propertyCollection = new PropertyCollection();
+                _wpfTextView = _factory.Create<IWpfTextView>();
+                _wpfTextView.SetupGet(x => x.Properties).Returns(_propertyCollection);
+            }
+
+            [Fact]
+            public void FirstTimeLayerNotPresent()
+            {
+                _wpfTextView.Setup(x => x.GetAdornmentLayer(LayerName)).Throws(new Exception());
+                Assert.Null(_wpfTextView.Object.GetAdornmentLayerNoThrow(LayerName, LayerKey));
+            }
+
+            /// <summary>
+            /// The second time around using the same name and key shouldn't call the GetLayer 
+            /// method.  No need to keep throwing exceptions and catching them.  It just needlessly
+            /// affects perf and kills the debugging experience 
+            /// </summary>
+            [Fact]
+            public void SecondTimeLayerNotPresent()
+            {
+                _wpfTextView.Setup(x => x.GetAdornmentLayer(LayerName)).Throws(new Exception());
+                Assert.Null(_wpfTextView.Object.GetAdornmentLayerNoThrow(LayerName, LayerKey));
+                var calledAgain = false;
+                _wpfTextView.Setup(x => x.GetAdornmentLayer(LayerName)).Callback(() => { calledAgain = true; }).Throws(new Exception());
+                Assert.Null(_wpfTextView.Object.GetAdornmentLayerNoThrow(LayerName, LayerKey));
+                Assert.False(calledAgain);
+            }
+
+            [Fact]
+            public void HasTheLayer()
+            {
+                var layer = _factory.Create<IAdornmentLayer>().Object;
+                _wpfTextView.Setup(x => x.GetAdornmentLayer(LayerName)).Returns(layer);
+                Assert.Same(layer, _wpfTextView.Object.GetAdornmentLayerNoThrow(LayerName, LayerKey));
             }
         }
     }
