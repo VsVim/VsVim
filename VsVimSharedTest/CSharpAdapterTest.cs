@@ -6,7 +6,7 @@ using VsVim.Implementation.Misc;
 
 namespace VsVim.UnitTest
 {
-    public sealed class CSharpAdapterTest : EditorHost
+    public abstract class CSharpAdapterTest : EditorHost
     {
         private readonly CSharpAdapter _adapter;
 
@@ -22,23 +22,25 @@ namespace VsVim.UnitTest
             return TextEditorFactoryService.CreateTextView(textBuffer);
         }
 
-        /// <summary>
-        /// If there is no selection then nothing to override
-        /// </summary>
-        [Fact]
-        public void IsInsertModePreferred_NoSelection()
+        public sealed class IsInsertModePreferredTest : CSharpAdapterTest
         {
-            var textView = CreateCSharpTextView();
-            Assert.False(_adapter.IsInsertModePreferred(textView));
-        }
+            /// <summary>
+            /// If there is no selection then nothing to override
+            /// </summary>
+            [Fact]
+            public void NoSelection()
+            {
+                var textView = CreateCSharpTextView();
+                Assert.False(_adapter.IsInsertModePreferred(textView));
+            }
 
-        /// <summary>
-        /// Set of patterns which should match
-        /// </summary>
-        [Fact]
-        public void IsInsertModePreferred_EventPattern_Is()
-        {
-            var all = new[] 
+            /// <summary>
+            /// Set of patterns which should match
+            /// </summary>
+            [Fact]
+            public void EventPattern_Is()
+            {
+                var all = new[] 
                 {
                     new { Text = "foo += new EventHandler(bar)", NameLength = 3 },
                     new { Text = "foo += new EventHandler(bar_foo)", NameLength = 7 },
@@ -46,40 +48,56 @@ namespace VsVim.UnitTest
                     new { Text = "foo += new Event.Handler(bar_foo)", NameLength = 7 },
                     new { Text = "foo+=new Event.Handler(bar_foo)", NameLength = 7 },
                     new { Text = "+= new EventHandler(bar)", NameLength = 3 },
+                    new { Text = "+= Form1_Click;", NameLength = 11 },
                 };
 
-            var textView = CreateCSharpTextView();
-            foreach (var item in all)
-            {
-                var text = item.Text;
-                textView.SetText(text);
-                var span = new SnapshotSpan(textView.TextSnapshot, text.Length - item.NameLength - 1, item.NameLength);
-                textView.Selection.Select(span, isReversed: false);
-                Assert.True(_adapter.IsInsertModePreferred(textView));
+                var textView = CreateCSharpTextView();
+                foreach (var item in all)
+                {
+                    var text = item.Text;
+                    textView.SetText(text);
+                    var span = new SnapshotSpan(textView.TextSnapshot, text.Length - item.NameLength - 1, item.NameLength);
+                    textView.Selection.Select(span, isReversed: false);
+                    Assert.True(_adapter.IsInsertModePreferred(textView));
+                }
             }
-        }
 
-        /// <summary>
-        /// Set of patterns which shouldn't match
-        /// </summary>
-        [Fact]
-        public void IsInsertModePreferred_EventPattern_Not()
-        {
-            var all = new[] 
+            /// <summary>
+            /// Set of patterns which shouldn't match
+            /// </summary>
+            [Fact]
+            public void EventPattern_Not()
+            {
+                var all = new[] 
                 {
                     new { Text = "new EventHandler(foo", NameLength = 3 },
                     new { Text = "+= EventHandler(foo", NameLength = 3 },
                     new { Text = "+= someExpr", NameLength = 8 }
                 };
 
-            var textView = CreateCSharpTextView();
-            foreach (var item in all)
+                var textView = CreateCSharpTextView();
+                foreach (var item in all)
+                {
+                    var text = item.Text;
+                    textView.SetText(text);
+                    var span = new SnapshotSpan(textView.TextSnapshot, text.Length - item.NameLength, item.NameLength);
+                    textView.Selection.Select(span, isReversed: false);
+                    Assert.False(_adapter.IsInsertModePreferred(textView));
+                }
+            }
+
+            /// <summary>
+            /// In Visual Studio 2012 the event add pattern has a different default that we need to 
+            /// recognize 
+            /// </summary>
+            [Fact]
+            public void VisualStudio2012EventPattern()
             {
-                var text = item.Text;
-                textView.SetText(text);
-                var span = new SnapshotSpan(textView.TextSnapshot, text.Length - item.NameLength, item.NameLength);
+                var textView = CreateCSharpTextView();
+                textView.SetText("x += Form1_Click;");
+                var span = textView.TextBuffer.GetSpan(5, 11);
                 textView.Selection.Select(span, isReversed: false);
-                Assert.False(_adapter.IsInsertModePreferred(textView));
+                Assert.True(_adapter.IsInsertModePreferred(textView));
             }
         }
     }

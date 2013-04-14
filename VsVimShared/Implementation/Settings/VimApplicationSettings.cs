@@ -12,23 +12,126 @@ namespace VsVim.Implementation.Settings
     [Export(typeof(IVimApplicationSettings))]
     internal sealed class VimApplicationSettings : IVimApplicationSettings
     {
-        private const string CollectionPath = "VsVim";
-        private const string HaveUpdatedKeyBindingsName = "HaveUpdatedKeyBindings";
-        private const string IgnoredConflictingKeyBindingName = "IgnoredConflictingKeyBinding";
-        private const string RemovedBindingsName = "RemovedBindings";
-        private const string LegacySettingsMigratedName = "LegacySettingsMigrated";
-        private const string ErrorGetFormat = "Cannot get setting {0}";
-        private const string ErrorSetFormat = "Cannot set setting {0}";
+        internal const string CollectionPath = "VsVim";
+        internal const string HaveUpdatedKeyBindingsName = "HaveUpdatedKeyBindings";
+        internal const string IgnoredConflictingKeyBindingName = "IgnoredConflictingKeyBinding";
+        internal const string RemovedBindingsName = "RemovedBindings";
+        internal const string LegacySettingsMigratedName = "LegacySettingsMigrated";
+        internal const string ErrorGetFormat = "Cannot get setting {0}";
+        internal const string ErrorSetFormat = "Cannot set setting {0}";
 
         private readonly WritableSettingsStore _settingsStore;
         private readonly IProtectedOperations _protectedOperations;
+        private readonly bool _legacySettingsSupported;
+
+        private bool LegacySettingsMigrated
+        {
+            get
+            {
+                if (_legacySettingsSupported)
+                {
+                    return GetBoolean(LegacySettingsMigratedName, false);
+                }
+
+                return true;
+            }
+            set
+            {
+                if (_legacySettingsSupported)
+                {
+                    SetBoolean(LegacySettingsMigratedName, value);
+                }
+            }
+        }
 
         [ImportingConstructor]
         internal VimApplicationSettings(SVsServiceProvider vsServiceProvider, [EditorUtilsImport] IProtectedOperations protectedOperations)
+            : this(vsServiceProvider.GetVisualStudioVersion(), vsServiceProvider.GetWritableSettingsStore(), protectedOperations)
         {
-            var shellSettingsManager = new ShellSettingsManager(vsServiceProvider);
-            _settingsStore = shellSettingsManager.GetWritableSettingsStore(SettingsScope.UserSettings);
+
+        }
+
+        internal VimApplicationSettings(VisualStudioVersion visualStudioVersion, WritableSettingsStore settingsStore, IProtectedOperations protectedOperations)
+        {
+            _settingsStore = settingsStore;
             _protectedOperations = protectedOperations;
+
+            // Legacy settings were only supported on Visual Studio 2010 and 2012.  For any other version there is no
+            // need to modify the legacy settings
+            switch (visualStudioVersion)
+            {
+                case VisualStudioVersion.Vs2010:
+                case VisualStudioVersion.Vs2012:
+                    _legacySettingsSupported = true;
+                    break;
+                default:
+                    // Intentionally do nothing 
+                    break;
+            }
+        }
+
+        internal bool GetBoolean(string propertyName, bool defaultValue)
+        {
+            EnsureCollectionExists();
+            try
+            {
+                if (!_settingsStore.PropertyExists(CollectionPath, propertyName))
+                {
+                    return defaultValue;
+                }
+
+                return _settingsStore.GetBoolean(CollectionPath, propertyName);
+            }
+            catch (Exception e)
+            {
+                Report(String.Format(ErrorGetFormat, propertyName), e);
+                return defaultValue;
+            }
+        }
+
+        internal void SetBoolean(string propertyName, bool value)
+        {
+            EnsureCollectionExists();
+            try
+            {
+                _settingsStore.SetBoolean(CollectionPath, propertyName, value);
+            }
+            catch (Exception e)
+            {
+                Report(String.Format(ErrorSetFormat, propertyName), e);
+            }
+        }
+
+        internal string GetString(string propertyName, string defaultValue)
+        {
+            EnsureCollectionExists();
+            try
+            {
+                if (!_settingsStore.PropertyExists(CollectionPath, propertyName))
+                {
+                    return defaultValue;
+                }
+
+                return _settingsStore.GetString(CollectionPath, propertyName);
+            }
+            catch (Exception e)
+            {
+                Report(String.Format(ErrorGetFormat, propertyName), e);
+                return defaultValue;
+            }
+        }
+
+        internal void SetString(string propertyName, string value)
+        {
+            EnsureCollectionExists();
+            try
+            {
+                _settingsStore.SetString(CollectionPath, propertyName, value);
+            }
+            catch (Exception e)
+            {
+                Report(String.Format(ErrorSetFormat, propertyName), e);
+            }
         }
 
         private void EnsureCollectionExists()
@@ -51,70 +154,6 @@ namespace VsVim.Implementation.Settings
             message = message + ": " + e.Message;
             var exception = new Exception(message, e);
             _protectedOperations.Report(exception);
-        }
-
-        private bool GetBoolean(string propertyName, bool defaultValue)
-        {
-            EnsureCollectionExists();
-            try
-            {
-                if (!_settingsStore.PropertyExists(CollectionPath, propertyName))
-                {
-                    return defaultValue;
-                }
-
-                return _settingsStore.GetBoolean(CollectionPath, propertyName);
-            }
-            catch (Exception e)
-            {
-                Report(String.Format(ErrorGetFormat, propertyName), e);
-                return defaultValue;
-            }
-        }
-
-        private void SetBoolean(string propertyName, bool value)
-        {
-            EnsureCollectionExists();
-            try
-            {
-                _settingsStore.SetBoolean(CollectionPath, propertyName, value);
-            }
-            catch (Exception e)
-            {
-                Report(String.Format(ErrorSetFormat, propertyName), e);
-            }
-        }
-
-        private string GetString(string propertyName, string defaultValue)
-        {
-            EnsureCollectionExists();
-            try
-            {
-                if (!_settingsStore.PropertyExists(CollectionPath, propertyName))
-                {
-                    return defaultValue;
-                }
-
-                return _settingsStore.GetString(CollectionPath, propertyName);
-            }
-            catch (Exception e)
-            {
-                Report(String.Format(ErrorGetFormat, propertyName), e);
-                return defaultValue;
-            }
-        }
-
-        private void SetString(string propertyName, string value)
-        {
-            EnsureCollectionExists();
-            try
-            {
-                _settingsStore.SetString(CollectionPath, propertyName, value);
-            }
-            catch (Exception e)
-            {
-                Report(String.Format(ErrorSetFormat, propertyName), e);
-            }
         }
 
         private ReadOnlyCollection<CommandKeyBinding> GetRemovedBindings()
@@ -146,8 +185,8 @@ namespace VsVim.Implementation.Settings
 
         bool IVimApplicationSettings.LegacySettingsMigrated
         {
-            get { return GetBoolean(LegacySettingsMigratedName, defaultValue: false); }
-            set { SetBoolean(LegacySettingsMigratedName, value); }
+            get { return LegacySettingsMigrated; }
+            set { LegacySettingsMigrated = value; }
         }
 
         ReadOnlyCollection<CommandKeyBinding> IVimApplicationSettings.RemovedBindings

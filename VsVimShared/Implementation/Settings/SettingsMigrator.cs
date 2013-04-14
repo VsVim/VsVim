@@ -62,9 +62,9 @@ namespace VsVim.Implementation.Settings
 
         /// <summary>
         /// The ILegacySettings implementation incorrectly believed that every VS command had a unique
-        /// name asociated with it (this is one of the primary problems with the implementation).  This is
+        /// name associated with it (this is one of the primary problems with the implementation).  This is
         /// not true as commands can, and do, duplicate names.  They are unique based on the combination
-        /// of Command ID and Group Guid (today this is captured in CommandId).
+        /// of Command ID and Group GUID (today this is captured in CommandId).
         /// 
         /// Hence the migration code is working with incomplete data and must use a heuristic.  We simply
         /// use name matching to determine what the correct CommandId is for a given setting
@@ -120,7 +120,7 @@ namespace VsVim.Implementation.Settings
 
         void IVimBufferCreationListener.VimBufferCreated(IVimBuffer vimBuffer)
         {
-            // This work only needs to be done once and consumes noticable cycles while
+            // This work only needs to be done once and consumes noticeable cycles while
             // operating.  Skip this if settings are already migrated
             if (!NeedsMigration)
             {

@@ -13,9 +13,15 @@ namespace VsVim.Implementation.Misc
     internal sealed class CSharpAdapter : IVisualModeSelectionOverride
     {
         /// <summary>
-        /// This regex is intended to match the C# generated event handler pattern
+        /// This regex is intended to match the C# generated event handler pattern.  This is the pattern which is 
+        /// used in Visual Studio 2010
         /// </summary>
-        private static readonly Regex s_eventSyntaxRegex = new Regex(@"\+=\s*new\s+[a-z.]+\s*\([a-z_]*", RegexOptions.IgnoreCase);
+        private static readonly Regex s_fullEventSyntaxRegex = new Regex(@"\+=\s*new\s+[a-z0-9.]+\s*\([a-z0-9_]*\)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+        /// <summary>
+        /// This regex matches the shorter event pattern.  This is the default in Visual Studio 2012
+        /// </summary>
+        private static readonly Regex s_shortEventSyntaxRegex = new Regex(@"\+=\s*[a-z0-9_.]+\s*;", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
         internal bool IsInsertModePreferred(ITextView textView)
         {
@@ -36,22 +42,31 @@ namespace VsVim.Implementation.Misc
             }
 
             var span = textView.Selection.StreamSelectionSpan.SnapshotSpan;
+
             var lineRange = SnapshotLineRangeUtil.CreateForSpan(span);
             if (lineRange.Count != 1)
             {
                 return false;
             }
 
-            var beforeSpan = new SnapshotSpan(lineRange.Start, span.End);
+            // Include the character after the selection.  Needed to disambiguate a couple
+            // of cases
+            var endPoint = span.End;
+            if (endPoint.Position < lineRange.End.Position)
+            {
+                endPoint = endPoint.Add(1);
+            }
+
+            var beforeSpan = new SnapshotSpan(lineRange.Start, endPoint);
             return IsPreceededByEventAddSyntax(beforeSpan);
         }
 
         /// <summary>
-        /// Is the provided SnapshotPoint preceeded by the '+= SomeEventType(Some_HandlerName' line
+        /// Is the provided SnapshotPoint preceded by the '+= SomeEventType(Some_HandlerName' line
         /// </summary>
         private bool IsPreceededByEventAddSyntax(SnapshotSpan span)
         {
-            // First find the + character
+            // First find the last + character
             var snapshot = span.Snapshot;
             SnapshotPoint? plusPoint = null;
             for (int i = span.Length - 1; i >= 0; i--)
@@ -71,7 +86,10 @@ namespace VsVim.Implementation.Misc
             }
 
             var eventSpan = new SnapshotSpan(plusPoint.Value, span.End);
-            return s_eventSyntaxRegex.IsMatch(eventSpan.GetText());
+            var eventText = eventSpan.GetText();
+            return 
+                s_fullEventSyntaxRegex.IsMatch(eventText) ||
+                s_shortEventSyntaxRegex.IsMatch(eventText);
         }
 
         #region IVisualModeSelectionOverride

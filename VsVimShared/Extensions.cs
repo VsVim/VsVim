@@ -11,7 +11,10 @@ using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.Editor;
 using Microsoft.VisualStudio.OLE.Interop;
+using Microsoft.VisualStudio.Settings;
+using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
+using Microsoft.VisualStudio.Shell.Settings;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Classification;
 using Microsoft.VisualStudio.Text.Editor;
@@ -1122,6 +1125,22 @@ namespace VsVim
         {
             var color = GetBackgroundColor(map, name, defaultColor);
             return new SolidColorBrush(color);
+        }
+
+        #endregion
+
+        #region SVsServiceProvider
+
+        public static VisualStudioVersion GetVisualStudioVersion(this SVsServiceProvider vsServiceProvider)
+        {
+            var dte = vsServiceProvider.GetService<SDTE, _DTE>();
+            return dte.GetVisualStudioVersion();
+        }
+
+        public static WritableSettingsStore GetWritableSettingsStore(this SVsServiceProvider vsServiceProvider)
+        {
+            var shellSettingsManager = new ShellSettingsManager(vsServiceProvider);
+            return shellSettingsManager.GetWritableSettingsStore(SettingsScope.UserSettings);
         }
 
         #endregion

@@ -70,20 +70,18 @@ namespace VsVim.Implementation.Misc
             IEditorOptionsFactoryService editorOptionsFactoryService,
             IIncrementalSearchFactoryService incrementalSearchFactoryService,
             IPowerToolsUtil powerToolsUtil,
-            SVsServiceProvider serviceProvider)
+            SVsServiceProvider vsServiceProvider)
         {
             _incrementalSearchFactoryService = incrementalSearchFactoryService;
             _editorAdaptersFactoryService = editorAdaptersFactoryService;
             _editorOptionsFactoryService = editorOptionsFactoryService;
-            _serviceProvider = serviceProvider;
+            _serviceProvider = vsServiceProvider;
             _textManager = _serviceProvider.GetService<SVsTextManager, IVsTextManager>();
             _table = new RunningDocumentTable(_serviceProvider);
             _uiShell = _serviceProvider.GetService<SVsUIShell, IVsUIShell>();
             _monitorSelection = _serviceProvider.GetService<SVsShellMonitorSelection, IVsMonitorSelection>();
             _powerToolsUtil = powerToolsUtil;
-
-            var dte = serviceProvider.GetService<SDTE, _DTE>();
-            _visualStudioVersion = dte.GetVisualStudioVersion();
+            _visualStudioVersion = vsServiceProvider.GetVisualStudioVersion();
         }
 
         internal Result<IVsTextLines> GetTextLines(ITextBuffer textBuffer)
