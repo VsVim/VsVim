@@ -4,6 +4,7 @@ namespace Vim
 open System.IO
 open System.Collections.Generic
 open System.ComponentModel.Composition
+open System.Text
 
 [<Export(typeof<IFileSystem>)>]
 type internal FileSystem() =
@@ -12,6 +13,71 @@ type internal FileSystem() =
     let _environmentVariables = ["%HOME%"; "%HOMEDRIVE%%HOMEPATH%"; "%VIM%"; "%USERPROFILE%"]
 
     let _fileNames = [".vsvimrc"; "_vsvimrc"; ".vimrc"; "_vimrc" ]
+
+    /// Read all of the lines from the given StreamReader.  This will return whether or not 
+    /// an exception occurred during processing and if not the lines that were read
+    /// Read all of the lines from the file at the given path.  If this fails None
+    /// will be returned
+    member x.ReadAllLinesCore (streamReader : StreamReader) =
+        let list = List<string>()
+        let mutable line = streamReader.ReadLine()
+        while line <> null do
+            list.Add line
+            line <- streamReader.ReadLine()
+
+        list
+
+    /// This will attempt to read the path using first the encoding dictated by the BOM and 
+    /// if there is no BOM it will try UTF8.  If either encoding encounters errors trying to
+    /// process the file then this function will also fail
+    member x.ReadAllLinesBomAndUtf8 (path : string) = 
+        let encoding = UTF8Encoding(false, true)
+        use streamReader = new StreamReader(path, encoding, true)
+        x.ReadAllLinesCore streamReader
+
+    /// Read the lines with the Latin1 encoding.  
+    member x.ReadAllLinesLatin1 (path : string) = 
+        let encoding = Encoding.GetEncoding("Latin1")
+        use streamReader = new StreamReader(path, encoding, false)
+        x.ReadAllLinesCore streamReader
+
+    /// Forced utf8 encoding
+    member x.ReadAllLinesUtf8 (path : string) = 
+        let encoding = Encoding.UTF8
+        use streamReader = new StreamReader(path, encoding, false)
+        x.ReadAllLinesCore streamReader
+
+    /// Now we do the work to support various file encodings.  We prefer the following order
+    /// of encodings
+    ///
+    ///  1. BOM 
+    ///  2. UTF8
+    ///  3. Latin1
+    ///  4. Forced UTF8 and accept decoding errors
+    ///
+    /// Ideally we would precisely emulate vim here.  However replicating all of their encoding
+    /// error detection logic and mixing it with the .Net encoders is quite a bit of work.  This
+    /// pattern lets us get the vast majority of cases with a much smaller amount of work
+    member x.ReadAllLinesWithEncoding (path: string) =
+        let all = 
+            [| 
+                x.ReadAllLinesBomAndUtf8; 
+                x.ReadAllLinesLatin1;
+                x.ReadAllLinesUtf8;
+            |]
+
+        let mutable lines : List<string> option = None
+        let mutable i = 0
+        while i < all.Length && Option.isNone lines do
+            try
+                let current = all.[i]
+                lines <- Some (current path)
+            with
+                | _ -> ()
+
+            i <- i + 1
+
+        lines
 
     /// Read all of the lines from the file at the given path.  If this fails None
     /// will be returned
@@ -30,17 +96,11 @@ type internal FileSystem() =
         if System.String.IsNullOrEmpty path then 
             None
         elif System.IO.File.Exists path then 
-            try
-                use streamReader = new StreamReader(path, true)
-                let list = List<string>()
-                let mutable line = streamReader.ReadLine()
-                while line <> null do
-                    list.Add line
-                    line <- streamReader.ReadLine()
 
-                Some (list.ToArray())
-            with
-                | _ -> None
+            match x.ReadAllLinesWithEncoding path with
+            | None -> None
+            | Some list -> list.ToArray() |> Some
+
         else
             None
 
