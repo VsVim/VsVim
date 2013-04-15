@@ -13,23 +13,23 @@ namespace Vim.UnitTest
 {
     public abstract class InterpreterTest : VimTestBase
     {
-        protected IVimBufferData _vimBufferData;
-        protected IVimBuffer _vimBuffer;
-        protected IVimTextBuffer _vimTextBuffer;
-        protected ITextBuffer _textBuffer;
-        protected ITextView _textView;
-        protected IVimData _vimData;
+        private IVimBufferData _vimBufferData;
+        private IVimBuffer _vimBuffer;
+        private IVimTextBuffer _vimTextBuffer;
+        private ITextBuffer _textBuffer;
+        private ITextView _textView;
+        private IVimData _vimData;
         internal VimInterpreter _interpreter;
-        protected TestableStatusUtil _statusUtil;
-        protected IVimGlobalSettings _globalSettings;
-        protected IVimLocalSettings _localSettings;
-        protected IVimWindowSettings _windowSettings;
-        protected IKeyMap _keyMap;
+        private TestableStatusUtil _statusUtil;
+        private IVimGlobalSettings _globalSettings;
+        private IVimLocalSettings _localSettings;
+        private IVimWindowSettings _windowSettings;
+        private IKeyMap _keyMap;
 
         /// <summary>
         /// A valid directory in the file system
         /// </summary>
-        protected static string ValidDirectoryPath
+        private static string ValidDirectoryPath
         {
             get { return Environment.GetFolderPath(Environment.SpecialFolder.UserProfile); }
         }
@@ -37,12 +37,12 @@ namespace Vim.UnitTest
         /// <summary>
         /// An invalid directory in the file system
         /// </summary>
-        protected static string InvalidDirectoryPath
+        private static string InvalidDirectoryPath
         {
             get { return @"q:\invalid\path"; }
         }
 
-        protected void Create(params string[] lines)
+        private void Create(params string[] lines)
         {
             _statusUtil = new TestableStatusUtil();
             _vimData = Vim.VimData;
@@ -68,8 +68,13 @@ namespace Vim.UnitTest
         /// <summary>
         /// Parse and run the specified command
         /// </summary>
-        protected void ParseAndRun(string command)
+        private void ParseAndRun(string command)
         {
+            if (command.Length > 0 && command[0] == ':')
+            {
+                command = command.Substring(1);
+            }
+
             var parseResult = VimUtil.ParseLineCommand(command);
             Assert.True(parseResult.IsSucceeded);
             _interpreter.RunLineCommand(parseResult.AsSucceeded().Item);
@@ -295,6 +300,42 @@ namespace Vim.UnitTest
                 ParseAndRun(@"s/\n//");
                 Assert.Equal("catdog", _textBuffer.GetLine(0).GetText());
                 Assert.Equal("fish", _textBuffer.GetLine(1).GetText());
+            }
+        }
+
+        public sealed class RunCommandTest : InterpreterTest
+        {
+            private string _command;
+            private string _arguments;
+
+            public RunCommandTest()
+            {
+                VimHost.RunCommandFunc = (command, arguments, vimData) =>
+                    {
+                        _command = command;
+                        _arguments = arguments;
+
+                        return string.Empty;
+                    };
+                Create();
+            }
+
+            [Fact]
+            public void SimpleArgument()
+            {
+                ParseAndRun(":!echo test");
+                Assert.Equal("/c echo test", _arguments);
+            }
+
+            /// <summary>
+            /// Quotes should not be interpreted as comments when parsing out the arguments of 
+            /// a shell command
+            /// </summary>
+            [Fact]
+            public void QuotedArgument()
+            {
+                ParseAndRun(@":!echo ""test""");
+                Assert.Equal(@"/c echo ""test""", _arguments);
             }
         }
 

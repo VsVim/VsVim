@@ -318,6 +318,9 @@ type Parser
     /// called doesn't match the predicate
     member x.ParseWhileEx flags predicate =
         use reset = _tokenizer.SetTokenizerFlagsScoped flags
+        x.ParseWhile predicate
+
+    member x.ParseWhile predicate = 
         let builder = System.Text.StringBuilder()
         let rec inner () =
             let token = _tokenizer.CurrentToken
@@ -335,8 +338,6 @@ type Parser
             None
         else
             builder.ToString() |> Some
-
-    member x.ParseWhile predicate = x.ParseWhileEx TokenizerFlags.None predicate
 
     member x.ParseNumber() =
         match _tokenizer.CurrentTokenKind with
@@ -1094,6 +1095,7 @@ type Parser
 
     /// Parse out the shell command
     member x.ParseShellCommand () =
+        use resetFlags = _tokenizer.SetTokenizerFlagsScoped TokenizerFlags.AllowDoubleQuote
         let command = x.ParseRestOfLine()
         LineCommand.ShellCommand command |> ParseResult.Succeeded
 
