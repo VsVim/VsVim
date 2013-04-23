@@ -36,6 +36,7 @@ namespace Vim.UnitTest.Mock
         public Func<string, string, IVimData, string> RunCommandFunc { get; set; }
         public Action<string, string> RunVisualStudioCommandFunc { get; set; }
         public Action<QuickFix, int, bool> RunQuickFixFunc { get; set; }
+        public Func<string, string, bool> RunSaveTextAs { get; set; }
         public ITextBuffer LastSaved { get; set; }
         public ITextView LastClosed { get; set; }
         public bool ShouldCreateVimBufferImpl { get; set; }
@@ -82,6 +83,7 @@ namespace Vim.UnitTest.Mock
             RunCommandFunc = delegate { throw new NotImplementedException(); };
             RunVisualStudioCommandFunc = delegate { throw new NotImplementedException(); };
             RunQuickFixFunc = delegate { throw new NotImplementedException(); };
+            RunSaveTextAs = delegate { throw new NotImplementedException(); };
             IsDirtyFunc = null;
             LastClosed = null;
             LastSaved = null;
@@ -134,7 +136,7 @@ namespace Vim.UnitTest.Mock
 
         bool IVimHost.SaveTextAs(string text, string filePath)
         {
-            throw new NotImplementedException();
+            return RunSaveTextAs(text, filePath);
         }
 
         HostResult IVimHost.SplitViewHorizontally(ITextView textView)

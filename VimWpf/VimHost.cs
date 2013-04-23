@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Media;
 using System.Windows;
@@ -11,6 +12,7 @@ using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Formatting;
 using Microsoft.VisualStudio.Text.Operations;
 using Vim.Extensions;
+using Path = Vim.Path;
 
 namespace Vim.UI.Wpf
 {
@@ -227,7 +229,18 @@ namespace Vim.UI.Wpf
             return true;
         }
 
-        public abstract bool SaveTextAs(string text, string filePath);
+        public virtual bool SaveTextAs(string text, string filePath)
+        {
+            try
+            {
+                File.WriteAllText(filePath, text);
+                return true;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
 
         public abstract void ShowOpenFileDialog();
 

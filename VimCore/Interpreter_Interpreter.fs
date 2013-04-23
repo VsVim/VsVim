@@ -3,7 +3,6 @@ namespace Vim.Interpreter
 open EditorUtils
 open Microsoft.VisualStudio.Text
 open Vim
-open Vim.VimHostExtensions
 open Vim.StringBuilderExtensions
 open System.Collections.Generic
 open System.ComponentModel.Composition
@@ -1340,13 +1339,16 @@ type VimInterpreter
     member x.RunWrite lineRange hasBang fileOptionList filePath =
         if not (List.isEmpty fileOptionList) then
             _statusUtil.OnError (Resources.Interpreter_OptionNotSupported "[++opt]")
-        elif Option.isSome filePath then
-            _statusUtil.OnError (Resources.Interpreter_OptionNotSupported "[filePath]")
         else
-            if not hasBang && _vimHost.IsReadOnly _textBuffer then
-                _statusUtil.OnError Resources.Interpreter_ReadOnlyOptionIsSet
-            else
-                _vimHost.Save _textBuffer |> ignore
+            match filePath with
+            | Some filePath -> 
+                let text = _textBuffer.CurrentSnapshot.GetText()
+                _vimHost.SaveTextAs text filePath |> ignore
+            | None ->
+                if not hasBang && _vimHost.IsReadOnly _textBuffer then
+                    _statusUtil.OnError Resources.Interpreter_ReadOnlyOptionIsSet
+                else
+                    _vimHost.Save _textBuffer |> ignore
         RunResult.Completed
 
     /// Run the 'wall' command

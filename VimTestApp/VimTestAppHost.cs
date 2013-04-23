@@ -95,11 +95,6 @@ namespace VimTestApp
 
         }
 
-        public override bool SaveTextAs(string text, string filePath)
-        {
-            return false;
-        }
-
         public override void ShowOpenFileDialog()
         {
 

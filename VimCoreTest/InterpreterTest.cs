@@ -19,7 +19,7 @@ namespace Vim.UnitTest
         private ITextBuffer _textBuffer;
         private ITextView _textView;
         private IVimData _vimData;
-        internal VimInterpreter _interpreter;
+        private VimInterpreter _interpreter;
         private TestableStatusUtil _statusUtil;
         private IVimGlobalSettings _globalSettings;
         private IVimLocalSettings _localSettings;
@@ -687,6 +687,43 @@ namespace Vim.UnitTest
                 ParseAndRun(@"unlet x y");
                 Assert.Equal(1, VariableMap.Count);
                 Assert.True(VariableMap.ContainsKey("z"));
+            }
+        }
+
+        public sealed class WriteTest : InterpreterTest
+        {
+            private string _text;
+            private string _filePath;
+
+            public WriteTest()
+            {
+                VimHost.RunSaveTextAs = (text, filePath) =>
+                    {
+                        _text = text;
+                        _filePath = filePath;
+                        return true;
+                    };
+            }
+
+            /// <summary>
+            /// Make sure the file path option is supported
+            /// </summary>
+            [Fact]
+            public void FilePath()
+            {
+                Create("cat");
+                ParseAndRun("w foo.txt");
+                Assert.Equal("cat", _text);
+                Assert.Equal("foo.txt", _filePath);
+            }
+
+            [Fact]
+            public void NoPath()
+            {
+                Create("cat");
+                ParseAndRun("w");
+                Assert.Same(_textBuffer, VimHost.LastSaved);
+                Assert.Null(_filePath);
             }
         }
 

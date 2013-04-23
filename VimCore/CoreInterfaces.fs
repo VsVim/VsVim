@@ -3229,10 +3229,10 @@ type IVimHost =
     abstract RunVisualStudioCommand : commandName : string -> argument : string -> unit
 
     /// Save the provided ITextBuffer instance
-    abstract Save : ITextBuffer -> bool 
+    abstract Save : textBuffer : ITextBuffer -> bool 
 
     /// Save the current document as a new file with the specified name
-    abstract SaveTextAs : text:string -> filePath : string -> bool 
+    abstract SaveTextAs : text : string -> filePath : string -> bool 
 
     /// Called by Vim when it encounters a new ITextView and needs to know if it should 
     /// create an IVimBuffer for it
@@ -3855,7 +3855,3 @@ module VimExtensions =
         modeKind = ModeKind.Insert ||
         modeKind = ModeKind.Replace
 
-module internal VimHostExtensions =
-    type IVimHost with 
-        member x.SaveAs (textView:ITextView) filePath = 
-            x.SaveTextAs (textView.TextSnapshot.GetText()) filePath
