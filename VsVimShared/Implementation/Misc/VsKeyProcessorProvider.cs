@@ -18,14 +18,16 @@ namespace VsVim.Implementation.Misc
         private readonly IVsAdapter _adapter;
         private readonly IVim _vim;
         private readonly IKeyUtil _keyUtil;
+        private readonly IReportDesignerUtil _reportDesignerUtil;
 
         [ImportingConstructor]
-        internal VsKeyProcessorProvider(IVim vim, IVsAdapter adapter, IVimBufferCoordinatorFactory bufferCoordinatorFactory, IKeyUtil keyUtil)
+        internal VsKeyProcessorProvider(IVim vim, IVsAdapter adapter, IVimBufferCoordinatorFactory bufferCoordinatorFactory, IKeyUtil keyUtil, IReportDesignerUtil reportDesignerUtil)
         {
             _vim = vim;
             _adapter = adapter;
             _bufferCoordinatorFactory = bufferCoordinatorFactory;
             _keyUtil = keyUtil;
+            _reportDesignerUtil = reportDesignerUtil;
         }
 
         KeyProcessor IKeyProcessorProvider.GetAssociatedProcessor(IWpfTextView wpfTextView)
@@ -38,7 +40,7 @@ namespace VsVim.Implementation.Misc
 
             var vimBuffer = opt.Value;
             var vimBufferCoordinator = _bufferCoordinatorFactory.GetVimBufferCoordinator(vimBuffer);
-            return new VsKeyProcessor(_adapter, vimBufferCoordinator, _keyUtil);
+            return new VsKeyProcessor(_adapter, vimBufferCoordinator, _keyUtil, _reportDesignerUtil);
         }
     }
 }

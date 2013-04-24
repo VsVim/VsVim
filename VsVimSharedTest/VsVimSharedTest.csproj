@@ -84,6 +84,7 @@
     <Compile Include="CSharpAdapterTest.cs" />
     <Compile Include="HostFactoryTest.cs" />
     <Compile Include="MindScapeTest.cs" />
+    <Compile Include="ReportDesignerUtilTest.cs" />
     <Compile Include="ResultTest.cs" />
     <Compile Include="SettingSerializerTest.cs" />
     <Compile Include="SettingsMigratorTest.cs" />

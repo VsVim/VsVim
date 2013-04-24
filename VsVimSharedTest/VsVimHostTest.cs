@@ -12,6 +12,7 @@ using Xunit;
 using Vim;
 using Vim.UnitTest;
 using System.Collections.Generic;
+using Microsoft.VisualStudio;
 
 namespace VsVim.UnitTest
 {
@@ -43,10 +44,15 @@ namespace VsVim.UnitTest
             _textManager = _factory.Create<ITextManager>();
             _textManager.SetupGet(x => x.TextViews).Returns(new List<ITextView>());
 
+            var vsMonitorSelection = _factory.Create<IVsMonitorSelection>();
+            uint cookie = 42;
+            vsMonitorSelection.Setup(x => x.AdviseSelectionEvents(It.IsAny<IVsSelectionEvents>(), out cookie)).Returns(VSConstants.S_OK);
+
             var sp = _factory.Create<SVsServiceProvider>();
             sp.Setup(x => x.GetService(typeof(_DTE))).Returns(_dte.Object);
             sp.Setup(x => x.GetService(typeof(SVsUIShell))).Returns(_shell.Object);
             sp.Setup(x => x.GetService(typeof(IVsExtensibility))).Returns(_factory.Create<IVsExtensibility>().Object);
+            sp.Setup(x => x.GetService(typeof(SVsShellMonitorSelection))).Returns(vsMonitorSelection.Object);
             _hostRaw = new VsVimHost(
                 _adapter.Object,
                 _factory.Create<ITextBufferFactoryService>().Object,

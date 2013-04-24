@@ -286,6 +286,7 @@ namespace VsVim.UnitTest.Utils
         private readonly Mock<IVsAdapter> _vsAdapter;
         private readonly Mock<IDisplayWindowBroker> _displayWindowBroker;
         private readonly Mock<IResharperUtil> _resharperUtil;
+        private readonly Mock<IReportDesignerUtil> _reportDesignerUtil;
         private readonly TestableSynchronizationContext _testableSynchronizationContext;
         private readonly IKeyUtil _keyUtil;
         private bool _simulateStandardKeyMappings;
@@ -321,6 +322,9 @@ namespace VsVim.UnitTest.Utils
 
             _resharperUtil = _factory.Create<IResharperUtil>();
             _resharperUtil.SetupGet(x => x.IsInstalled).Returns(simulateResharper);
+
+            _reportDesignerUtil = _factory.Create<IReportDesignerUtil>();
+            _reportDesignerUtil.Setup(x => x.IsExpressionView(_wpfTextView)).Returns(false);
 
             _displayWindowBroker = _factory.Create<IDisplayWindowBroker>();
             _displayWindowBroker.SetupGet(x => x.IsCompletionActive).Returns(false);
@@ -371,7 +375,7 @@ namespace VsVim.UnitTest.Utils
             // Create the input controller.  Make sure that the VsVim one is ahead in the list
             // from the default Visual Studio one.  We can guarantee this is true due to MEF 
             // ordering of the components
-            _vsKeyProcessorSimulation.KeyProcessors.Add(new VsKeyProcessor(_vsAdapter.Object, bufferCoordinator, _keyUtil));
+            _vsKeyProcessorSimulation.KeyProcessors.Add(new VsKeyProcessor(_vsAdapter.Object, bufferCoordinator, _keyUtil, _reportDesignerUtil.Object));
             _vsKeyProcessorSimulation.KeyProcessors.Add(new SimulationKeyProcessor(bufferCoordinator.VimBuffer.TextView));
         }
 

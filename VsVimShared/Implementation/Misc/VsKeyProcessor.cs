@@ -17,6 +17,7 @@ namespace VsVim.Implementation.Misc
     {
         private readonly IVsAdapter _adapter;
         private readonly IVimBufferCoordinator _bufferCoordinator;
+        private readonly IReportDesignerUtil _reportDesignerUtil;
         private int _keyDownCount;
         private Lazy<PropertyInfo> _searchInProgressInfo;
 
@@ -25,10 +26,11 @@ namespace VsVim.Implementation.Misc
             get { return _keyDownCount; }
         }
 
-        internal VsKeyProcessor(IVsAdapter adapter, IVimBufferCoordinator bufferCoordinator, IKeyUtil keyUtil)
+        internal VsKeyProcessor(IVsAdapter adapter, IVimBufferCoordinator bufferCoordinator, IKeyUtil keyUtil, IReportDesignerUtil reportDesignerUtil)
             : base(bufferCoordinator.VimBuffer, keyUtil)
         {
             _adapter = adapter;
+            _reportDesignerUtil = reportDesignerUtil;
             _bufferCoordinator = bufferCoordinator;
             _searchInProgressInfo = new Lazy<PropertyInfo>(FindSearchInProgressPropertyInfo);
         }
@@ -61,6 +63,17 @@ namespace VsVim.Implementation.Misc
             if (VimBuffer.ModeKind.IsAnyInsert() && 
                 !VimBuffer.CanProcessAsCommand(keyInput) &&
                 (int)keyInput.Char > 0x1f)
+            {
+                return false;
+            }
+
+            // The report designer will process certain key strokes both through IOleCommandTarget and 
+            // then back through the KeyProcessor interface.  This happens because they call into IOleCommandTarget
+            // from Control.PreProcessMessage and if the execution succeeds they return false.  This 
+            // causes it to continue to be processed as a normal message and hence leads to this 
+            // interface.  Don't process any of these keys twice 
+            if (_reportDesignerUtil.IsExpressionView(TextView) &&
+                _reportDesignerUtil.IsSpecialHandled(keyInput))
             {
                 return false;
             }

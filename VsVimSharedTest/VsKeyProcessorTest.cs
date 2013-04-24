@@ -1,4 +1,5 @@
-﻿using System.Windows.Input;
+﻿using System;
+using System.Windows.Input;
 using Microsoft.VisualStudio.Editor;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.TextManager.Interop;
@@ -213,14 +214,15 @@ namespace VsVim.UnitTest
 
         #endregion
 
-        protected MockRepository _factory;
-        protected IWpfTextView _wpfTextView;
-        protected Mock<IVimBuffer> _mockVimBuffer;
-        protected Mock<IVsAdapter> _vsAdapter;
-        protected Mock<IVsEditorAdaptersFactoryService> _editorAdaptersFactoryService;
+        private MockRepository _factory;
+        private IWpfTextView _wpfTextView;
+        private Mock<IVimBuffer> _mockVimBuffer;
+        private Mock<IVsAdapter> _vsAdapter;
+        private Mock<IVsEditorAdaptersFactoryService> _editorAdaptersFactoryService;
+        private Mock<IReportDesignerUtil> _reportDesignerUtil;
         internal MockAdapter _mockAdapter;
         internal IVimBufferCoordinator _bufferCoordinator;
-        protected MockKeyboardDevice _device;
+        private MockKeyboardDevice _device;
 
         internal VsKeyProcessor VsKeyProcessor
         {
@@ -239,13 +241,15 @@ namespace VsVim.UnitTest
             _vsAdapter.Setup(x => x.IsIncrementalSearchActive(It.IsAny<ITextView>())).Returns(false);
             _vsAdapter.SetupGet(x => x.EditorAdapter).Returns(_editorAdaptersFactoryService.Object);
             _vsAdapter.Setup(x => x.IsReadOnly(_wpfTextView)).Returns(false);
+            _reportDesignerUtil = _factory.Create<IReportDesignerUtil>();
+            _reportDesignerUtil.Setup(x => x.IsExpressionView(_wpfTextView)).Returns(false);
             _mockVimBuffer = MockObjectFactory.CreateVimBuffer(_wpfTextView);
             _mockVimBuffer.Setup(x => x.CanProcess(It.IsAny<KeyInput>())).Returns(true);
             _mockVimBuffer.Setup(x => x.Process(It.IsAny<KeyInput>())).Returns(ProcessResult.NewHandled(ModeSwitch.NoSwitch));
             _mockVimBuffer.SetupGet(x => x.ModeKind).Returns(ModeKind.Normal);
             _bufferCoordinator = new VimBufferCoordinator(_mockVimBuffer.Object);
             _device = new MockKeyboardDevice();
-            return new VsKeyProcessor(_vsAdapter.Object, _bufferCoordinator, KeyUtil);
+            return new VsKeyProcessor(_vsAdapter.Object, _bufferCoordinator, KeyUtil, _reportDesignerUtil.Object);
         }
 
         public sealed class VsKeyDownTest : VsKeyProcessorTest
@@ -519,6 +523,42 @@ namespace VsVim.UnitTest
                 _processor.KeyDown(e);
                 Assert.Equal(0, VsKeyProcessor.KeyDownCount);
                 Assert.False(_mockAdapter.SearchInProgress);
+            }
+        }
+
+        public sealed class ReportDesignerTest : VsKeyProcessorTest
+        {
+            /// <summary>
+            /// If it isn't an expression view then it should be processed even if the key is in the 
+            /// required set 
+            /// </summary>
+            [Fact]
+            public void NullCase()
+            {
+                _reportDesignerUtil.Setup(x => x.IsExpressionView(_wpfTextView)).Returns(false);
+                var e = _device.CreateKeyEventArgs(Key.Back);
+                _processor.KeyDown(e);
+                Assert.True(e.Handled);
+            }
+
+            [Fact]
+            public void NotSpecialKey()
+            {
+                _reportDesignerUtil.Setup(x => x.IsExpressionView(_wpfTextView)).Returns(true);
+                _reportDesignerUtil.Setup(x => x.IsSpecialHandled(It.IsAny<KeyInput>())).Returns(false);
+                var e = _device.CreateKeyEventArgs(Key.Back);
+                _processor.KeyDown(e);
+                Assert.True(e.Handled);
+            }
+
+            [Fact]
+            public void SpecialKey()
+            {
+                _reportDesignerUtil.Setup(x => x.IsExpressionView(_wpfTextView)).Returns(true);
+                _reportDesignerUtil.Setup(x => x.IsSpecialHandled(It.IsAny<KeyInput>())).Returns(true);
+                var e = _device.CreateKeyEventArgs(Key.Back);
+                _processor.KeyDown(e);
+                Assert.False(e.Handled);
             }
         }
     }
