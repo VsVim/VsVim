@@ -161,8 +161,10 @@ namespace Vim.UnitTest
             {
                 var textView = CreateTextView("");
                 _vimHost.Setup(x => x.ShouldCreateVimBuffer(textView)).Returns(true);
-                var vimBuffer = _vim.GetOrCreateVimBufferForHost(textView);
-                Assert.True(vimBuffer.IsSome());
+
+                IVimBuffer vimBuffer;
+                Assert.True(_vim.TryGetOrCreateVimBufferForHost(textView, out vimBuffer));
+                Assert.NotNull(vimBuffer);
             }
     
             /// <summary>
@@ -173,8 +175,9 @@ namespace Vim.UnitTest
             {
                 var textView = CreateTextView("");
                 _vimHost.Setup(x => x.ShouldCreateVimBuffer(textView)).Returns(false);
-                var vimBuffer = _vim.GetOrCreateVimBufferForHost(textView);
-                Assert.False(vimBuffer.IsSome());
+
+                IVimBuffer vimBuffer;
+                Assert.False(_vim.TryGetOrCreateVimBufferForHost(textView, out vimBuffer));
             }
     
             /// <summary>
@@ -187,8 +190,10 @@ namespace Vim.UnitTest
                 var textView = CreateTextView("");
                 _vim.CreateVimBuffer(textView);
                 _vimHost.Setup(x => x.ShouldCreateVimBuffer(textView)).Returns(false);
-                var vimBuffer = _vim.GetOrCreateVimBufferForHost(textView);
-                Assert.True(vimBuffer.IsSome());
+
+                IVimBuffer vimBuffer;
+                Assert.True(_vim.TryGetOrCreateVimBufferForHost(textView, out vimBuffer));
+                Assert.NotNull(vimBuffer);
             }
     
             /// <summary>
@@ -202,7 +207,9 @@ namespace Vim.UnitTest
                 var textView = CreateTextView("");
                 var vimTextBuffer = _vim.CreateVimTextBuffer(textView.TextBuffer);
                 _vimHost.Setup(x => x.ShouldCreateVimBuffer(textView)).Returns(true);
-                var vimBuffer = _vim.GetOrCreateVimBufferForHost(textView).Value;
+
+                IVimBuffer vimBuffer;
+                Assert.True(_vim.TryGetOrCreateVimBufferForHost(textView, out vimBuffer));
                 Assert.Same(textView, vimBuffer.TextView);
                 Assert.Same(vimTextBuffer, vimBuffer.VimTextBuffer);
             }
@@ -249,8 +256,10 @@ namespace Vim.UnitTest
             public void GetVimBuffer_ReturnNoneForViewThatHasNoBuffer()
             {
                 var textView = CreateTextView();
-                var ret = _vim.GetVimBuffer(textView);
-                Assert.True(ret.IsNone());
+
+                IVimBuffer vimBuffer;
+                Assert.False(_vim.TryGetVimBuffer(textView, out vimBuffer));
+                Assert.Null(vimBuffer);
             }
 
             [Fact]
@@ -258,9 +267,10 @@ namespace Vim.UnitTest
             {
                 var textView = CreateTextView();
                 var bufferFromCreate = _vim.CreateVimBuffer(textView);
-                var bufferFromGet = _vim.GetVimBuffer(textView);
-                Assert.True(bufferFromGet.IsSome());
-                Assert.Same(bufferFromGet.Value, bufferFromCreate);
+
+                IVimBuffer bufferFromGet;
+                Assert.True(_vim.TryGetVimBuffer(textView, out bufferFromGet));
+                Assert.Same(bufferFromCreate, bufferFromGet);
             }
 
             [Fact]
@@ -389,8 +399,9 @@ namespace Vim.UnitTest
                 var textView = CreateTextView();
                 _vim.CreateVimBuffer(textView);
                 Assert.True(_vim.RemoveVimBuffer(textView));
-                var ret = _vim.GetVimBuffer(textView);
-                Assert.True(ret.IsNone());
+
+                IVimBuffer vimBuffer;
+                Assert.False(_vim.TryGetVimBuffer(textView, out vimBuffer));
             }
 
             [Fact]

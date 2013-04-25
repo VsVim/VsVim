@@ -144,13 +144,13 @@ namespace VsVim.Implementation.VisualAssist
                 return null;
             }
 
-            var opt = _vim.GetOrCreateVimBufferForHost(wpfTextView);
-            if (opt.IsNone())
+            IVimBuffer vimBuffer;
+            if (!_vim.TryGetOrCreateVimBufferForHost(wpfTextView, out vimBuffer))
             {
                 return null;
             }
 
-            return new VisualAssistKeyProcessor(opt.Value);
+            return new VisualAssistKeyProcessor(vimBuffer);
         }
 
         #endregion

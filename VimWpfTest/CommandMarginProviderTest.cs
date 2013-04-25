@@ -39,7 +39,9 @@ namespace Vim.UI.Wpf.UnitTest
         {
             var textView = CreateTextView();
             var wpfTextViewHost = TextEditorFactoryService.CreateTextViewHost(textView, setFocus: false);
-            _vim.Setup(x => x.GetOrCreateVimBufferForHost(textView)).Returns(FSharpOption<IVimBuffer>.None);
+
+            IVimBuffer vimBuffer = null;
+            _vim.Setup(x => x.TryGetOrCreateVimBufferForHost(textView, out vimBuffer)).Returns(false);
             Assert.Null(_commandMarginProvider.CreateMargin(wpfTextViewHost, _factory.Create<IWpfTextViewMargin>().Object));
         }
     }

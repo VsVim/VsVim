@@ -30,7 +30,9 @@ namespace VimTestApp
                     return null;
                 }
 
-                return _vimComponentHost.Vim.GetVimBuffer(_textViewHostList[0].TextView).Value;
+                IVimBuffer vimBuffer;
+                _vimComponentHost.Vim.TryGetVimBuffer(_textViewHostList[0].TextView, out vimBuffer);
+                return vimBuffer;
             }
         }
 

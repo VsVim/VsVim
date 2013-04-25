@@ -40,14 +40,14 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
 
         IWpfTextViewMargin IWpfTextViewMarginProvider.CreateMargin(IWpfTextViewHost wpfTextViewHost, IWpfTextViewMargin marginContainer)
         {
-            var option = _vim.GetOrCreateVimBufferForHost(wpfTextViewHost.TextView);
-            if (option.IsNone())
+            IVimBuffer vimBuffer;
+            if (!_vim.TryGetOrCreateVimBufferForHost(wpfTextViewHost.TextView, out vimBuffer))
             {
                 return null;
             }
 
             var editorFormatMap = _editorFormatMapService.GetEditorFormatMap(wpfTextViewHost.TextView);
-			return new CommandMargin(wpfTextViewHost.TextView.VisualElement, option.Value, editorFormatMap, _optionsProviderFactories);
+			return new CommandMargin(wpfTextViewHost.TextView.VisualElement, vimBuffer, editorFormatMap, _optionsProviderFactories);
         }
 
         #endregion

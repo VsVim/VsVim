@@ -9,6 +9,7 @@ open Microsoft.VisualStudio.Text.Outlining
 open Microsoft.VisualStudio.Utilities
 open System.Diagnostics
 open System.Runtime.CompilerServices
+open System.Runtime.InteropServices
 open System.Collections.Generic
 open Vim.Interpreter
 
@@ -3359,10 +3360,10 @@ and IVim =
     abstract VimRcState : VimRcState
 
     /// Create an IVimBuffer for the given ITextView
-    abstract CreateVimBuffer : ITextView -> IVimBuffer
+    abstract CreateVimBuffer : textView: ITextView -> IVimBuffer
 
     /// Create an IVimTextBuffer for the given ITextBuffer
-    abstract CreateVimTextBuffer : ITextBuffer -> IVimTextBuffer
+    abstract CreateVimTextBuffer : textBuffer: ITextBuffer -> IVimTextBuffer
 
     /// Close all IVimBuffer instances in the system
     abstract CloseAllVimBuffers : unit -> unit
@@ -3370,26 +3371,11 @@ and IVim =
     /// Get the IVimInterpreter for the specified IVimBuffer
     abstract GetVimInterpreter : vimBuffer : IVimBuffer -> IVimInterpreter
 
-    /// Get the IVimBuffer associated with the given ITextView
-    abstract GetVimBuffer : ITextView -> IVimBuffer option
-
-    /// Get the IVimTextBuffer associated with the given ITextBuffer
-    abstract GetVimTextBuffer : ITextBuffer -> IVimTextBuffer option
-
     /// Get or create an IVimBuffer for the given ITextView
-    abstract GetOrCreateVimBuffer : ITextView -> IVimBuffer
-
-    /// Get or create an IVimBuffer for the given ITextView.  The creation of the IVimBuffer will
-    /// only occur if the host returns true from IVimHost::ShouldCreateVimBuffer.  
-    ///
-    /// MEF component load ordering isn't defined and it's very possible that components like the 
-    /// ITagger implementations will be called long before the host has a chance to create the 
-    /// IVimBuffer instance.  This method removes the ordering concerns and maintains control of 
-    /// creation in the IVimHost
-    abstract GetOrCreateVimBufferForHost : ITextView -> IVimBuffer option
+    abstract GetOrCreateVimBuffer : textView: ITextView -> IVimBuffer
 
     /// Get or create an IVimTextBuffer for the given ITextBuffer
-    abstract GetOrCreateVimTextBuffer : ITextBuffer -> IVimTextBuffer
+    abstract GetOrCreateVimTextBuffer : textBuffer: ITextBuffer -> IVimTextBuffer
 
     /// Load the VimRc file.  If the file was previously loaded a new load will be 
     /// attempted.  Returns true if a VimRc was actually loaded.
@@ -3398,6 +3384,21 @@ and IVim =
     /// Remove the IVimBuffer associated with the given view.  This will not actually close
     /// the IVimBuffer but instead just removes it's association with the given view
     abstract RemoveVimBuffer : ITextView -> bool
+
+    /// Get the IVimBuffer associated with the given ITextView
+    abstract TryGetVimBuffer : textView : ITextView * [<Out>] vimBuffer : IVimBuffer byref -> bool
+
+    /// Get the IVimTextBuffer associated with the given ITextBuffer
+    abstract TryGetVimTextBuffer : textBuffer : ITextBuffer * [<Out>] vimTextBuffer : IVimTextBuffer byref -> bool
+
+    /// Get or create an IVimBuffer for the given ITextView.  The creation of the IVimBuffer will
+    /// only occur if the host returns true from IVimHost::ShouldCreateVimBuffer.  
+    ///
+    /// MEF component load ordering isn't defined and it's very possible that components like the 
+    /// ITagger implementations will be called long before the host has a chance to create the 
+    /// IVimBuffer instance.  This method removes the ordering concerns and maintains control of 
+    /// creation in the IVimHost
+    abstract TryGetOrCreateVimBufferForHost : textView : ITextView * [<Out>] vimBuffer : IVimBuffer byref -> bool
 
 and SwitchModeKindEventArgs
     (
@@ -3854,4 +3855,21 @@ module VimExtensions =
     let IsAnyInsert modeKind = 
         modeKind = ModeKind.Insert ||
         modeKind = ModeKind.Replace
+
+module internal VimCoreExtensions =
+    
+    type IVim with
+        member x.GetVimBuffer textView =
+            let found, vimBuffer = x.TryGetVimBuffer textView
+            if found then
+                Some vimBuffer
+            else
+                None
+
+        member x.GetOrCreateVimBufferForHost textView =
+            let found, vimBuffer = x.TryGetOrCreateVimBufferForHost textView
+            if found then
+                Some vimBuffer
+            else
+                None
 

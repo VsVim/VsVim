@@ -8,6 +8,7 @@ open Microsoft.VisualStudio.Text.Outlining
 open Microsoft.VisualStudio.Text.Classification
 open System.ComponentModel.Composition
 open System.Collections.Generic
+open System.Runtime.InteropServices
 open Vim.Modes
 open Vim.Interpreter
 
@@ -479,46 +480,27 @@ type internal Vim
         _bufferCreationListeners |> Seq.iter (fun x -> x.Value.VimBufferCreated vimBuffer)
         vimBuffer
 
-    member x.GetVimTextBuffer (textBuffer : ITextBuffer) =
-        PropertyCollectionUtil.GetValue<IVimTextBuffer> _vimTextBufferKey textBuffer.Properties
-
     member x.GetVimInterpreter (vimBuffer : IVimBuffer) = 
         let tuple = _vimBufferMap.TryGetValue vimBuffer.TextView
         match tuple with 
         | (true, (_, vimInterpreter, _)) -> vimInterpreter
         | (false, _) -> _interpreterFactory.CreateVimInterpreter vimBuffer _fileSystem
 
-    member x.GetVimBuffer textView =
-        let tuple = _vimBufferMap.TryGetValue textView
-        match tuple with 
-        | (true, (buffer, _, _)) -> Some buffer
-        | (false, _) -> None
-
     member x.GetOrCreateVimTextBuffer textBuffer =
-        match x.GetVimTextBuffer textBuffer with
-        | Some vimTextBuffer ->
+        let success, vimTextBuffer = x.TryGetVimTextBuffer textBuffer
+        if success then
             vimTextBuffer
-        | None ->
+        else
             let settings = x.GetLocalSettingsForNewTextBuffer()
             x.CreateVimTextBuffer textBuffer (Some settings)
 
     member x.GetOrCreateVimBuffer textView =
-        match x.GetVimBuffer textView with
-        | Some buffer -> 
-            buffer
-        | None -> 
+        let success, vimBuffer = x.TryGetVimBuffer textView
+        if success then
+            vimBuffer
+        else
             let settings = x.GetWindowSettingsForNewBuffer()
             x.CreateVimBuffer textView (Some settings)
-
-    member x.GetOrCreateVimBufferForHost textView =
-        match x.GetVimBuffer textView with
-        | Some vimBuffer -> Some vimBuffer
-        | None ->
-            if _vimHost.ShouldCreateVimBuffer textView then
-                let settings = x.GetWindowSettingsForNewBuffer()
-                x.CreateVimBuffer textView (Some settings) |> Some
-            else
-                None
 
     member x.MaybeLoadVimRc() =
         if x.AutoLoadVimRc then
@@ -576,6 +558,33 @@ type internal Vim
             bag.DisposeAll()
         _vimBufferMap.Remove textView
 
+    member x.TryGetVimBuffer(textView : ITextView, [<Out>] vimBuffer : IVimBuffer byref) =
+        let tuple = _vimBufferMap.TryGetValue textView
+        match tuple with 
+        | (true, (buffer, _, _)) -> 
+            vimBuffer <- buffer
+            true
+        | (false, _) -> 
+            false
+
+    member x.TryGetOrCreateVimBufferForHost(textView : ITextView, [<Out>] vimBuffer : IVimBuffer byref) =
+        if x.TryGetVimBuffer(textView, &vimBuffer) then
+            true
+        elif _vimHost.ShouldCreateVimBuffer textView then
+            let settings = x.GetWindowSettingsForNewBuffer()
+            vimBuffer <- x.CreateVimBuffer textView (Some settings) 
+            true
+        else
+            false
+
+    member x.TryGetVimTextBuffer(textBuffer : ITextBuffer, [<Out>] vimTextBuffer : IVimTextBuffer byref) =
+        match PropertyCollectionUtil.GetValue<IVimTextBuffer> _vimTextBufferKey textBuffer.Properties with
+        | Some found ->
+            vimTextBuffer <- found
+            true
+        | None ->
+            false
+
     /// Toggle disabled mode for all active IVimBuffer instances to sync up with the current
     /// state of _isDisabled
     member x.UpdatedDisabledMode() = 
@@ -615,11 +624,11 @@ type internal Vim
         member x.CreateVimTextBuffer textBuffer = x.CreateVimTextBuffer textBuffer (Some (x.GetLocalSettingsForNewTextBuffer()))
         member x.GetVimInterpreter vimBuffer = x.GetVimInterpreter vimBuffer
         member x.GetOrCreateVimBuffer textView = x.GetOrCreateVimBuffer textView
-        member x.GetOrCreateVimBufferForHost textView = x.GetOrCreateVimBufferForHost textView
         member x.GetOrCreateVimTextBuffer textBuffer = x.GetOrCreateVimTextBuffer textBuffer
-        member x.RemoveVimBuffer textView = x.RemoveVimBuffer textView
-        member x.GetVimBuffer textView = x.GetVimBuffer textView
-        member x.GetVimTextBuffer textBuffer = x.GetVimTextBuffer textBuffer
         member x.LoadVimRc() = x.LoadVimRc()
+        member x.RemoveVimBuffer textView = x.RemoveVimBuffer textView
+        member x.TryGetOrCreateVimBufferForHost(textView, vimBuffer) = x.TryGetOrCreateVimBufferForHost(textView, &vimBuffer)
+        member x.TryGetVimBuffer(textView, vimBuffer) = x.TryGetVimBuffer(textView, &vimBuffer)
+        member x.TryGetVimTextBuffer(textBuffer, vimBuffer) = x.TryGetVimTextBuffer(textBuffer, &vimBuffer)
 
 

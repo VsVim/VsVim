@@ -28,7 +28,8 @@ namespace Vim.UnitTest
             var view = CreateTextView("foo bar");
             var vimBuffer = _vim.CreateVimBuffer(view);
             Assert.True(_vim.RemoveVimBuffer(view));
-            Assert.True(_vim.GetVimBuffer(view).IsNone());
+
+            Assert.False(_vim.TryGetVimBuffer(view, out vimBuffer));
         }
 
         [Fact]
@@ -36,8 +37,10 @@ namespace Vim.UnitTest
         {
             var view = CreateTextView("foo bar");
             var vimBuffer = _vim.CreateVimBuffer(view);
-            Assert.True(_vim.GetVimBuffer(view).IsSome());
-            Assert.Same(view, _vim.GetVimBuffer(view).Value.TextView);
+
+            IVimBuffer found;
+            Assert.True(_vim.TryGetVimBuffer(view, out found));
+            Assert.Same(view, found.TextView);
         }
 
         [Fact]

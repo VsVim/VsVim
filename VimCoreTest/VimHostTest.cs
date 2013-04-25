@@ -18,7 +18,9 @@ namespace Vim.UnitTest
         {
             VimHost.ShouldCreateVimBufferImpl = false;
             var textView = CreateTextView();
-            Assert.True(Vim.GetVimBuffer(textView).IsNone());
+            IVimBuffer vimBuffer;
+            Assert.False(Vim.TryGetVimBuffer(textView, out vimBuffer));
+            Assert.Null(vimBuffer);
         }
     }
 }

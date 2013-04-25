@@ -9,6 +9,7 @@ open Microsoft.VisualStudio.Text.Editor
 open Microsoft.VisualStudio.Text.Outlining
 open Microsoft.VisualStudio.Text.Formatting
 open RegexPatternUtil
+open VimCoreExtensions
 
 [<RequireQualifiedAccess>]
 [<NoComparison>]

@@ -10,6 +10,7 @@ open Microsoft.VisualStudio.Utilities
 open System.ComponentModel.Composition
 open System.Collections.ObjectModel
 open System.Threading
+open VimCoreExtensions
 
 /// Tagger for incremental searches
 type IncrementalSearchTaggerSource (_vimBuffer : IVimBuffer) as this =

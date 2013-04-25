@@ -9,6 +9,7 @@ open StringBuilderExtensions
 open Vim
 open Vim.Interpreter
 open System.Text.RegularExpressions
+open VimCoreExtensions
 
 [<Sealed>]
 [<Export(typeof<IVimBufferCreationListener>)>]

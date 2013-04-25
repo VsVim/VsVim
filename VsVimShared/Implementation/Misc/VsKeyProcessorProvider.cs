@@ -32,13 +32,12 @@ namespace VsVim.Implementation.Misc
 
         KeyProcessor IKeyProcessorProvider.GetAssociatedProcessor(IWpfTextView wpfTextView)
         {
-            var opt = _vim.GetOrCreateVimBufferForHost(wpfTextView);
-            if (opt.IsNone())
+            IVimBuffer vimBuffer;
+            if (!_vim.TryGetOrCreateVimBufferForHost(wpfTextView, out vimBuffer))
             {
                 return null;
             }
 
-            var vimBuffer = opt.Value;
             var vimBufferCoordinator = _bufferCoordinatorFactory.GetVimBufferCoordinator(vimBuffer);
             return new VsKeyProcessor(_adapter, vimBufferCoordinator, _keyUtil, _reportDesignerUtil);
         }

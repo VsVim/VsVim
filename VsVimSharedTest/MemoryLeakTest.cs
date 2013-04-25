@@ -319,7 +319,8 @@ namespace VsVim.UnitTest
                 var factory = container.GetExportedValue<ITextEditorFactoryService>();
                 var textView = factory.CreateTextView();
                 var vim = container.GetExportedValue<IVim>();
-                Assert.True(vim.GetVimBuffer(textView).IsNone());
+                IVimBuffer vimBuffer;
+                Assert.False(vim.TryGetVimBuffer(textView, out vimBuffer));
             }
             finally
             {
