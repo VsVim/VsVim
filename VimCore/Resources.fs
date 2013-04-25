@@ -97,5 +97,6 @@ module internal Resources =
     let Interpreter_CantOpenFile filePath = sprintf "Can't open file %s" filePath
     let Interpreter_CantRunCommand command = sprintf "Can't run command %s" command
     let Interpreter_NoSuchVariable name = sprintf "No such variable: %s" name
+    let Interpreter_UndefinedVariable name = sprintf "Undefined variable: %s" name
 
 

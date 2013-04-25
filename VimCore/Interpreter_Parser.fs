@@ -1226,6 +1226,37 @@ type Parser
 
         LineCommand.QuitWithWrite (lineRange, hasBang, fileOptionList, fileName) |> ParseResult.Succeeded
 
+    /// Parse out a variable name from the system.  This handles the scoping prefix 
+    member x.ParseVariableName() = 
+
+        let parseNameScope name = 
+            match name with
+            | "g" -> Some NameScope.Global
+            | "b" -> Some NameScope.Buffer
+            | "w" -> Some NameScope.Window
+            | "t" -> Some NameScope.Tab
+            | "s" -> Some NameScope.Script
+            | "l" -> Some NameScope.Function
+            | "v" -> Some NameScope.Vim
+            | _ -> None
+
+        use flags = _tokenizer.SetTokenizerFlagsScoped TokenizerFlags.SkipBlanks
+        match _tokenizer.CurrentTokenKind with
+        | TokenKind.Word word ->
+            _tokenizer.MoveNextToken()
+            match _tokenizer.CurrentChar with
+            | Some ':' -> 
+                match _tokenizer.CurrentTokenKind, parseNameScope word with
+                | TokenKind.Word name, Some nameScope -> 
+                    _tokenizer.MoveNextToken()
+                    let name = { NameScope = nameScope; Name = name } 
+                    ParseResult.Succeeded name
+                | _ -> ParseResult.Failed Resources.Parser_Error
+            | _ ->
+                let name = { NameScope = NameScope.Global; Name = word }
+                ParseResult.Succeeded name
+        | _ -> ParseResult.Failed Resources.Parser_Error
+
     /// Parse out a visual studio command.  The format is "commandName argument".  The command
     /// name can use letters, numbers and a period.  The rest of the line after will be taken
     /// as the argument
@@ -1398,20 +1429,38 @@ type Parser
         let joinKind = if hasBang then JoinKind.KeepEmptySpaces else JoinKind.RemoveEmptySpaces
         LineCommand.Join (lineRange, joinKind) |> ParseResult.Succeeded
 
-    /// Pares out the :let command
+    /// Parse out the :let command
     member x.ParseLet () = 
-        x.SkipBlanks()
+        use flags = _tokenizer.SetTokenizerFlagsScoped TokenizerFlags.SkipBlanks
+
+        // Handle the case where let is being used for display.  
+        //  let x y z 
+        let parseDisplayLet firstName = 
+            let rec inner cont = 
+                if _tokenizer.IsAtEndOfLine then
+                    cont []
+                else
+                    match x.ParseVariableName() with
+                    | ParseResult.Succeeded name -> inner (fun rest -> cont (name :: rest))
+                    | ParseResult.Failed msg -> ParseResult.Failed msg
+
+            inner (fun rest ->
+                let names = firstName :: rest
+                ParseResult.Succeeded (LineCommand.DisplayLet names))
+
         match _tokenizer.CurrentTokenKind with
         | TokenKind.Word name ->
-            use flags = _tokenizer.SetTokenizerFlagsScoped TokenizerFlags.SkipBlanks
-            _tokenizer.MoveNextToken()
-            match _tokenizer.CurrentChar with
-            | Some '=' ->
-                _tokenizer.MoveNextToken()
-                match x.ParseSingleValue() with
-                | ParseResult.Failed msg -> ParseResult.Failed msg
-                | ParseResult.Succeeded value -> LineCommand.Let (name, value) |> ParseResult.Succeeded
-            | _ -> ParseResult.Failed "Error"
+            match x.ParseVariableName() with
+            | ParseResult.Succeeded name ->
+                match _tokenizer.CurrentChar with
+                | Some '=' ->
+                    _tokenizer.MoveNextToken()
+                    match x.ParseSingleValue() with
+                    | ParseResult.Succeeded value -> LineCommand.Let (name, value) |> ParseResult.Succeeded
+                    | ParseResult.Failed msg -> ParseResult.Failed msg
+                | _ -> parseDisplayLet name
+            | ParseResult.Failed msg -> ParseResult.Failed msg
+        | TokenKind.EndOfLine -> ParseResult.Succeeded (LineCommand.DisplayLet [])
         | _ -> ParseResult.Failed "Error"
 
     /// Parse out the :make command.  The arguments here other than ! are undefined.  Just

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using Vim.Extensions;
 using Vim.Interpreter;
@@ -126,6 +127,37 @@ namespace Vim.UnitTest
                 Assert.Equal(EventKind.BufEnter, autoCommand.EventKinds.Single());
                 Assert.Equal(new[] { "*.html", "*.cs" }, autoCommand.Patterns);
                 Assert.Equal("set ts=4", autoCommand.LineCommandText);
+            }
+        }
+
+        public sealed class DisplayLetTest : ParserTest
+        {
+            private List<VariableName> Parse(string line)
+            {
+                var lineCommand = ParseLineCommand(line);
+                Assert.True(lineCommand.IsDisplayLet);
+                return ((LineCommand.DisplayLet)lineCommand).Item.ToList();
+            }
+
+            [Fact]
+            public void Empty()
+            {
+                var list = Parse("let");
+                Assert.Equal(0, list.Count);
+            }
+
+            [Fact]
+            public void SingleVariable()
+            {
+                var list = Parse("let x");
+                Assert.Equal(new[] { "x" }, list.Select(x => x.Name));
+            }
+
+            [Fact]
+            public void MultiVariable()
+            {
+                var list = Parse("let x y");
+                Assert.Equal(new[] { "x", "y" }, list.Select(x => x.Name));
             }
         }
 

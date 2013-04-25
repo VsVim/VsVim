@@ -515,6 +515,20 @@ type VimInterpreter
         _statusUtil.OnStatusLong lines
         RunResult.Completed
 
+    member x.RunDisplayLets (names : VariableName list) = 
+        let list = List<string>()
+        for name in names do
+            let found, value = _variableMap.TryGetValue name.Name
+            let msg =  
+                if found then
+                    sprintf "%s %O" name.Name value
+                else
+                    Resources.Interpreter_UndefinedVariable name.Name
+                
+            list.Add(msg)
+        _statusUtil.OnStatusLong list
+        RunResult.Completed
+
     /// Display the specified marks
     member x.RunDisplayMarks (marks : Mark list) = 
         if not (List.isEmpty marks) then
@@ -723,8 +737,10 @@ type VimInterpreter
         RunResult.Completed
 
     /// Run the let command
-    member x.RunLet name value =
-        _variableMap.[name] <- value
+    member x.RunLet (name : VariableName) value =
+        // TODO: At this point we are treating all variables as if they were global.  Need to 
+        // take into account the NameScope at this level too
+        _variableMap.[name.Name] <- value
         RunResult.Completed
 
     /// Run the host make command 
@@ -1400,6 +1416,7 @@ type VimInterpreter
         | LineCommand.Delete (lineRange, registerName) -> x.RunDelete lineRange (getRegister registerName)
         | LineCommand.DisplayKeyMap (keyRemapModes, keyNotationOption) -> x.RunDisplayKeyMap keyRemapModes keyNotationOption
         | LineCommand.DisplayRegisters registerName -> x.RunDisplayRegisters registerName
+        | LineCommand.DisplayLet variables -> x.RunDisplayLets variables
         | LineCommand.DisplayMarks marks -> x.RunDisplayMarks marks
         | LineCommand.Fold lineRange -> x.RunFold lineRange
         | LineCommand.Global (lineRange, pattern, matchPattern, lineCommand) -> x.RunGlobal lineRange pattern matchPattern lineCommand

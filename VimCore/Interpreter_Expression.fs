@@ -5,6 +5,23 @@ open EditorUtils
 open Microsoft.VisualStudio.Text
 open Vim
 
+// Represents the scope that a name is attached to.  A "let" name for example can 
+// be attached to various scopes
+[<RequireQualifiedAccess>]
+type NameScope =
+    | Global
+    | Buffer
+    | Window
+    | Tab
+    | Script
+    | Function
+    | Vim
+
+type VariableName = { 
+    NameScope : NameScope
+    Name : string 
+}
+
 [<RequireQualifiedAccess>]
 type VariableType =
     | Number
@@ -389,6 +406,9 @@ and [<RequireQualifiedAccess>] LineCommand =
     /// key notation if it's provided
     | DisplayKeyMap of KeyRemapMode list * string option
 
+    /// Display the specified let value
+    | DisplayLet of VariableName list
+
     /// The :edit command.  The values range as follows
     ///  - ! option present
     ///  - The provided ++opt
@@ -440,7 +460,7 @@ and [<RequireQualifiedAccess>] LineCommand =
     | JumpToLastLine
 
     // Let command.  The first item is the name and the second is the value
-    | Let of string * VariableValue
+    | Let of VariableName * VariableValue
 
     /// Make command.  The options are as follows
     ///   - The ! option
