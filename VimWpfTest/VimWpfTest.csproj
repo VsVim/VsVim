@@ -68,6 +68,7 @@
     <Compile Include="AlternateKeyUtilTest.cs" />
     <Compile Include="BlockCaretControllerTest.cs" />
     <Compile Include="BlockCaretTest.cs" />
+    <Compile Include="CommandMarginProviderTest.cs" />
     <Compile Include="WpfIntegrationTest.cs" />
     <Compile Include="CommandMarginControllerTest.cs" />
     <Compile Include="DisplayWindowBrokerTest.cs" />
@@ -102,7 +103,6 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="$(SolutionDir)\.nuget\nuget.targets" />
-
   <!-- Add the appropriate app.config to the created binaries -->
   <Target Name="AfterBuild">
     <Copy SourceFiles="$(VsVimAppConfig)" DestinationFiles="$(OutputPath)\$(AssemblyName).dll.config" />

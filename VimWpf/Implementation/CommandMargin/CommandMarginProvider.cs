@@ -6,6 +6,7 @@ using System.Linq;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Utilities;
 using Microsoft.VisualStudio.Text.Classification;
+using Vim.Extensions;
 
 namespace Vim.UI.Wpf.Implementation.CommandMargin
 {
@@ -34,11 +35,21 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             _optionsProviderFactories = optionsProviderFactories.ToList().AsReadOnly();
         }
 
-        public IWpfTextViewMargin CreateMargin(IWpfTextViewHost wpfTextViewHost, IWpfTextViewMargin marginContainer)
+
+        #region IWpfTextViewMarginProvider
+
+        IWpfTextViewMargin IWpfTextViewMarginProvider.CreateMargin(IWpfTextViewHost wpfTextViewHost, IWpfTextViewMargin marginContainer)
         {
-            var buffer = _vim.GetOrCreateVimBuffer(wpfTextViewHost.TextView);
+            var option = _vim.GetOrCreateVimBufferForHost(wpfTextViewHost.TextView);
+            if (option.IsNone())
+            {
+                return null;
+            }
+
             var editorFormatMap = _editorFormatMapService.GetEditorFormatMap(wpfTextViewHost.TextView);
-			return new CommandMargin(wpfTextViewHost.TextView.VisualElement, buffer, editorFormatMap, _optionsProviderFactories);
+			return new CommandMargin(wpfTextViewHost.TextView.VisualElement, option.Value, editorFormatMap, _optionsProviderFactories);
         }
+
+        #endregion
     }
 }
