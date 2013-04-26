@@ -25,7 +25,7 @@ namespace Vim.UnitTest
             public void WordStart()
             {
                 Create("hello world");
-                Assert.Equal('h', _tokenizer.CurrentChar.Value);
+                Assert.Equal('h', _tokenizer.CurrentChar);
             }
 
             /// <summary>
@@ -35,7 +35,7 @@ namespace Vim.UnitTest
             public void Digit()
             {
                 Create("42 world");
-                Assert.Equal('4', _tokenizer.CurrentChar.Value);
+                Assert.Equal('4', _tokenizer.CurrentChar);
             }
 
             /// <summary>
@@ -46,7 +46,7 @@ namespace Vim.UnitTest
             {
                 Create("hello");
                 _tokenizer.MoveNextToken();
-                Assert.True(_tokenizer.CurrentChar.IsNone());
+                Assert.True(_tokenizer.IsAtEndOfLine);
             }
         }
 
@@ -228,9 +228,9 @@ namespace Vim.UnitTest
                 _tokenizer.MoveNextToken();
                 _tokenizer.MoveNextToken();
                 Assert.True(_tokenizer.IsAtEndOfLine);
-                Assert.True(_tokenizer.CurrentChar.IsNone());
+                Assert.Equal((char)0, _tokenizer.CurrentChar);
                 _tokenizer.TokenizerFlags = TokenizerFlags.AllowDoubleQuote;
-                Assert.Equal('"', _tokenizer.CurrentChar.Value);
+                Assert.Equal('"', _tokenizer.CurrentChar);
                 Assert.True(_tokenizer.CurrentTokenKind.IsCharacter);
             }
         }

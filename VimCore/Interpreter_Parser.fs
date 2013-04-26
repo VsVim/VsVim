@@ -346,11 +346,6 @@ type Parser
             Some number
         | _ -> None
 
-    member x.IsCurrentCharValue c = 
-        match _tokenizer.CurrentChar with
-        | Some currentChar -> currentChar = c
-        | None -> false
-
     /// Parse out a key notation argument.  Different than a word because it can accept items
     /// which are not letters such as numbers, <, >, etc ...
     member x.ParseKeyNotation() = 
@@ -522,16 +517,14 @@ type Parser
 
     /// Parse out a register value from the text.  This will not parse out numbered register
     member x.ParseRegisterName () = 
-        match _tokenizer.CurrentChar with
-        | None -> None
-        | Some c ->
-            if CharUtil.IsDigit c then
-                None
-            else
-                let name = RegisterName.OfChar c
-                if Option.isSome name then
-                    _tokenizer.MoveNextChar()
-                name
+        let c = _tokenizer.CurrentChar 
+        if CharUtil.IsDigit c then
+            None
+        else
+            let name = RegisterName.OfChar c
+            if Option.isSome name then
+                _tokenizer.MoveNextChar()
+            name
 
     /// Used to parse out the flags for substitute commands.  Will not modify the 
     /// stream if there are no flags
@@ -650,11 +643,11 @@ type Parser
                     | None -> ParseResult.Failed standardError
                     | Some eventKind ->
                         _tokenizer.MoveNextToken()
-                        match _tokenizer.CurrentChar with
-                        | Some ',' -> 
+                        if _tokenizer.CurrentChar = ',' then
                             _tokenizer.MoveNextToken()
                             inner (fun item -> rest (eventKind :: item))
-                        | _ -> rest [eventKind]
+                        else
+                            rest [eventKind]
                 | _ -> rest []
                     
             inner (fun list -> ParseResult.Succeeded list)
@@ -827,7 +820,7 @@ type Parser
     /// Parse a {pattern} out of the text.  The text will be consumed until the unescaped value 
     /// 'delimiter' is provided or the end of the input is reached.  The method will return a tuple
     /// of the pattern and a bool.  The bool will represent whether or not the delimiter was found.
-    /// If the delimeter is found then it will be consumed
+    /// If the delimiter is found then it will be consumed
     member x.ParsePattern delimiter = 
 
         // Need to reset to account for the case where the pattern begins with a 
@@ -836,22 +829,23 @@ type Parser
         let moveNextChar () = _tokenizer.MoveNextChar()
         let builder = System.Text.StringBuilder()
         let rec inner () = 
-            match _tokenizer.CurrentChar with
-            | None ->
+            if _tokenizer.IsAtEndOfLine then
                 // Hit the end without finding 'delimiter'. 
                 builder.ToString(), false
-            | Some c ->
+            else    
+                let c = _tokenizer.CurrentChar
                 if c = delimiter then 
                     moveNextChar ()
                     builder.ToString(), true
                 elif c = '\\' then
                     moveNextChar ()
 
-                    match _tokenizer.CurrentChar with
-                    | None -> ()
-                    | Some c ->
+                    if _tokenizer.IsAtEndOfLine then
+                        ()
+                    else
+                        let c = _tokenizer.CurrentChar
                         if c <> delimiter then
-                            // If the next char is not the delimeter then we have to assume the '\'
+                            // If the next char is not the delimiter then we have to assume the '\'
                             // is part of an escape for the pattern itself (\(, \1, etc ..) and we
                             // need to leave it in.  
                             builder.AppendChar '\\'
@@ -874,31 +868,31 @@ type Parser
     member x.ParseLineSpecifier () =
 
         let lineSpecifier = 
-            if x.IsCurrentCharValue '.' then
+            if _tokenizer.CurrentChar = '.' then
                 _tokenizer.MoveNextToken()
                 Some LineSpecifier.CurrentLine
-            elif x.IsCurrentCharValue '\'' then
+            elif _tokenizer.CurrentChar = '\'' then
                 _tokenizer.MoveNextToken()
 
-                match _tokenizer.CurrentChar |> OptionUtil.map2 Mark.OfChar with
+                match Mark.OfChar _tokenizer.CurrentChar with
                 | None -> None
                 | Some mark -> 
                     _tokenizer.MoveNextChar()
                     LineSpecifier.MarkLine mark |> Some
 
-            elif x.IsCurrentCharValue '$' || x.IsCurrentCharValue '%' then
+            elif _tokenizer.CurrentChar = '$' || _tokenizer.CurrentChar = '%' then
                 _tokenizer.MoveNextToken()
                 Some LineSpecifier.LastLine
-            elif x.IsCurrentCharValue '/' then
+            elif _tokenizer.CurrentChar = '/' then
 
                 // It's one of the forward pattern specifiers
                 let mark = _tokenizer.Mark
                 _tokenizer.MoveNextToken()
-                if x.IsCurrentCharValue '/' then
+                if _tokenizer.CurrentChar = '/' then
                     Some LineSpecifier.NextLineWithPreviousPattern
-                elif x.IsCurrentCharValue '?' then
+                elif _tokenizer.CurrentChar = '?' then
                     Some LineSpecifier.PreviousLineWithPreviousPattern
-                elif x.IsCurrentCharValue '&' then
+                elif _tokenizer.CurrentChar = '&' then
                     Some LineSpecifier.NextLineWithPreviousSubstitutePattern
                 else
                     // Parse out the pattern.  The closing delimiter is required her
@@ -909,7 +903,7 @@ type Parser
                         _tokenizer.MoveToMark mark
                         None
 
-            elif x.IsCurrentCharValue '?' then
+            elif _tokenizer.CurrentChar = '?' then
                 // It's the ? previous search pattern
                 let mark = _tokenizer.Mark
                 _tokenizer.MoveNextToken()
@@ -920,10 +914,10 @@ type Parser
                     _tokenizer.MoveToMark mark
                     None
 
-            elif x.IsCurrentCharValue '+' then
+            elif _tokenizer.CurrentChar = '+' then
                 _tokenizer.MoveNextToken()
                 x.ParseNumber() |> Option.map LineSpecifier.AdjustmentOnCurrent
-            elif x.IsCurrentCharValue '-' then
+            elif _tokenizer.CurrentChar = '-' then
                 _tokenizer.MoveNextToken()
                 x.ParseNumber() |> Option.map (fun number -> LineSpecifier.AdjustmentOnCurrent -number)
             else 
@@ -949,9 +943,9 @@ type Parser
 
                 Some (LineSpecifier.LineSpecifierWithAdjustment (lineSpecifier, number))
 
-            if x.IsCurrentCharValue '+' then
+            if _tokenizer.CurrentChar = '+' then
                 parseAdjustment false
-            elif x.IsCurrentCharValue '-' then
+            elif _tokenizer.CurrentChar = '-' then
                 parseAdjustment true
             else
                 Some lineSpecifier
@@ -959,7 +953,7 @@ type Parser
     /// Parse out any valid range node.  This will consider % and any other 
     /// range expression
     member x.ParseLineRange () : LineRangeSpecifier =
-        if x.IsCurrentCharValue '%' then
+        if _tokenizer.CurrentChar = '%' then
             _tokenizer.MoveNextToken()
             LineRangeSpecifier.EntireBuffer
         else
@@ -967,8 +961,8 @@ type Parser
             | None -> LineRangeSpecifier.None
             | Some left ->
 
-                if x.IsCurrentCharValue ',' || x.IsCurrentCharValue ';' then
-                    let isSemicolon = x.IsCurrentCharValue ';'
+                if _tokenizer.CurrentChar = ',' || _tokenizer.CurrentChar = ';' then
+                    let isSemicolon = _tokenizer.CurrentChar = ';'
                     _tokenizer.MoveNextToken()
                     match x.ParseLineSpecifier() with
                     | None -> LineRangeSpecifier.SingleLine left
@@ -1108,10 +1102,10 @@ type Parser
         let builder = System.Text.StringBuilder()
         let moveNextChar () = _tokenizer.MoveNextChar()
         let rec inner afterEscape = 
-            match _tokenizer.CurrentChar with
-            | None -> ParseResult.Failed Resources.Parser_MissingQuote
-            | Some c -> 
-
+            if _tokenizer.IsAtEndOfLine then
+                ParseResult.Failed Resources.Parser_MissingQuote
+            else
+                let c = _tokenizer.CurrentChar
                 moveNextChar()
                 if afterEscape then
                     match c with
@@ -1146,25 +1140,24 @@ type Parser
         let builder = System.Text.StringBuilder()
         let mutable result = ParseResult.Failed Resources.Parser_MissingQuote
         let mutable isDone = false
-        while not isDone do
+        while not isDone && not _tokenizer.IsAtEndOfLine do
             match _tokenizer.CurrentChar with
-            | None -> isDone <- true
-            | Some '\\' -> 
+            | '\\' ->
                 // Need to peek ahead to see if this is a back slash to be inserted or if it's
                 // escaping a single quote
                 _tokenizer.MoveNextChar()
                 match _tokenizer.CurrentChar with 
-                | Some '\'' ->
+                | '\'' ->
                     builder.AppendChar '\''
                     _tokenizer.MoveNextChar()
                 | _ ->
                     builder.AppendChar '\\'
-            | Some '\'' ->
+            | '\'' ->
                 // Found the terminating character
                 _tokenizer.MoveNextChar()
                 result <- builder.ToString() |> VariableValue.String |> ParseResult.Succeeded
                 isDone <- true
-            | Some c ->
+            | c ->
                 builder.AppendChar c
                 _tokenizer.MoveNextChar()
 
@@ -1244,15 +1237,14 @@ type Parser
         match _tokenizer.CurrentTokenKind with
         | TokenKind.Word word ->
             _tokenizer.MoveNextToken()
-            match _tokenizer.CurrentChar with
-            | Some ':' -> 
+            if _tokenizer.CurrentChar = ':' then
                 match _tokenizer.CurrentTokenKind, parseNameScope word with
                 | TokenKind.Word name, Some nameScope -> 
                     _tokenizer.MoveNextToken()
                     let name = { NameScope = nameScope; Name = name } 
                     ParseResult.Succeeded name
                 | _ -> ParseResult.Failed Resources.Parser_Error
-            | _ ->
+            else
                 let name = { NameScope = NameScope.Global; Name = word }
                 ParseResult.Succeeded name
         | _ -> ParseResult.Failed Resources.Parser_Error
@@ -1452,13 +1444,13 @@ type Parser
         | TokenKind.Word name ->
             match x.ParseVariableName() with
             | ParseResult.Succeeded name ->
-                match _tokenizer.CurrentChar with
-                | Some '=' ->
+                if _tokenizer.CurrentChar = '=' then
                     _tokenizer.MoveNextToken()
                     match x.ParseSingleValue() with
                     | ParseResult.Succeeded value -> LineCommand.Let (name, value) |> ParseResult.Succeeded
                     | ParseResult.Failed msg -> ParseResult.Failed msg
-                | _ -> parseDisplayLet name
+                else
+                    parseDisplayLet name
             | ParseResult.Failed msg -> ParseResult.Failed msg
         | TokenKind.EndOfLine -> ParseResult.Succeeded (LineCommand.DisplayLet [])
         | _ -> ParseResult.Failed "Error"
@@ -1500,7 +1492,7 @@ type Parser
             // Can still be the file or command variety.  The ! or lack there of will
             // differentiate it at this point
             x.SkipBlanks()
-            if x.IsCurrentCharValue '!' then
+            if _tokenizer.CurrentChar = '!' then
                 _tokenizer.MoveNextToken()
                 let command = x.ParseRestOfLine()
                 LineCommand.ReadCommand (lineRange, command) |> ParseResult.Succeeded
@@ -1539,10 +1531,10 @@ type Parser
                     _tokenizer.MoveNextToken()
                     parseNext (SetArgument.AssignSetting (name, ""))
 
-                match _tokenizer.CurrentChar with
-                | None -> empty ()
-                | Some ' ' -> empty ()
-                | Some c -> 
+                if _tokenizer.IsAtEndOfLine || _tokenizer.CurrentChar = ' ' then
+                    empty ()
+                else
+                    let c = _tokenizer.CurrentChar
                     if CharUtil.IsLetterOrDigit c then
                         let value = _tokenizer.CurrentToken.TokenText
                         _tokenizer.MoveNextToken()
@@ -1559,7 +1551,7 @@ type Parser
             // with the index pointed at the first character
             let parseCompoundOperator name argumentFunc = 
                 _tokenizer.MoveNextToken()
-                if x.IsCurrentCharValue '=' then
+                if _tokenizer.CurrentChar = '=' then
                     _tokenizer.MoveNextChar()
                     parseSetValue name argumentFunc
                 else
@@ -1571,7 +1563,7 @@ type Parser
                 ParseResult.Succeeded (LineCommand.Set list)
             | TokenKind.Word "all" ->
                 _tokenizer.MoveNextToken()
-                if x.IsCurrentCharValue '&' then
+                if _tokenizer.CurrentChar = '&' then
                     _tokenizer.MoveNextToken()
                     parseNext SetArgument.ResetAllToDefault
                 else
@@ -1622,7 +1614,7 @@ type Parser
         let fileName = x.ParseRestOfLine()
         ParseResult.Succeeded (LineCommand.Source (hasBang, fileName))
 
-    /// Parse out the :split commnad
+    /// Parse out the :split command
     member x.ParseSplit splitType lineRange =
         x.SkipBlanks()
         let fileOptionList = x.ParseFileOptions()

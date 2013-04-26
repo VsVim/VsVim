@@ -192,9 +192,9 @@ type internal Tokenizer
 
     member x.CurrentChar = 
         if x.IsAtEndOfLine || _currentToken.StartIndex >= _text.Length then
-            None
+            char 0
         else
-            Some _text.[_currentToken.StartIndex]
+            _text.[_currentToken.StartIndex]
 
     member x.IsAtEndOfLine = x.CurrentTokenKind = TokenKind.EndOfLine
 

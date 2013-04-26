@@ -46,9 +46,8 @@ type internal Tokenizer =
     /// Current TokenKind
     member CurrentTokenKind : TokenKind
 
-    /// Current chararacter the tokenizer is looking at if it's not at the end of the 
-    /// line
-    member CurrentChar : char option
+    /// Current character that the tokenizer is pointing at
+    member CurrentChar : char
 
     /// Move to the next token in the stream.  Double quotes will be treated as a 
     /// comment

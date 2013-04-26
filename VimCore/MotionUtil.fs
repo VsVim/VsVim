@@ -83,7 +83,7 @@ type MatchingTokenUtil() =
         if startsWithPound then 
             let tokenizer = Tokenizer(lineText, TokenizerFlags.SkipBlanks)
             match tokenizer.CurrentChar with
-            | Some '#' ->
+            | '#' ->
                 let start = tokenizer.CurrentToken.StartIndex
                 tokenizer.MoveNextToken()
 
