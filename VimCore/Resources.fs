@@ -86,8 +86,9 @@ module internal Resources =
     let Parser_NoBangAllowed = "No ! allowed"
     let Parser_InvalidArgument = "Invalid Argument"
     let Parser_MissingQuote = "Missing quote"
+    let Parser_FunctionName name = sprintf "Function name must start with a capital or contain a colon: %s" name
 
-    let Interpreter_Error = "An error was encountered interpretting the expression"
+    let Interpreter_Error = "An error was encountered interpreting the expression"
     let Interpreter_CantFindDirectory x = sprintf "Can't find directory \"%s\" in cdpath" x
     let Interpreter_OptionNotSupported x = sprintf "Option is not supported: '%s'" x
     let Interpreter_UnableToMapKeys lhs rhs = sprintf "Unable to map keys: %s %s" lhs rhs
@@ -98,5 +99,6 @@ module internal Resources =
     let Interpreter_CantRunCommand command = sprintf "Can't run command %s" command
     let Interpreter_NoSuchVariable name = sprintf "No such variable: %s" name
     let Interpreter_UndefinedVariable name = sprintf "Undefined variable: %s" name
+    let Interpreter_FunctionNotSupported = "function definitions are not supported"
 
 

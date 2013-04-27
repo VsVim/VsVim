@@ -160,6 +160,7 @@ type internal TokenStream() =
     member x.Reset text =
         _text <- text
         _index <- 0
+
 [<Sealed>]
 [<Class>]
 [<DebuggerDisplay("{ToString(),nq}")>]
@@ -225,7 +226,8 @@ type internal Tokenizer
                 length,
                 tokenKind)
 
-    member x.MoveToMark mark = x.MoveToIndex mark
+    member x.MoveToMark mark = 
+        x.MoveToIndex mark
 
     member x.MoveNextToken() = 
         let index = _currentToken.StartIndex + _currentToken.Length

@@ -46,8 +46,14 @@ type ParserBuilder
         | None -> ParseResult.Failed _errorMessage
         | Some value -> rest value
 
-    member x.Return value =
+    member x.Return (value : 'T) =
         ParseResult.Succeeded value
+
+    member x.Return (parseResult : ParseResult<'T>) =
+        parseResult
+
+    member x.Return (msg : string) = 
+        ParseResult.Failed msg
 
     member x.ReturnFrom value = 
         value
@@ -81,9 +87,11 @@ type Parser
         ("edit", "e")
         ("else", "el")
         ("elseif", "elsei")
+        ("endfunction", "endf")
         ("endif", "en")
         ("exit", "exi")
         ("fold", "fo")
+        ("function", "fu")
         ("global", "g")
         ("history", "his")
         ("if", "if")
@@ -269,6 +277,11 @@ type Parser
 
     member x.NextLine() =
         if _lineIndex + 1 >= _lines.Length then
+            // If this is the last line we should at least move the tokenizer to the end
+            // of the line
+            while not _tokenizer.IsAtEndOfLine do
+                _tokenizer.MoveNextToken()
+
             false
         else
             _lineIndex <- _lineIndex + 1
@@ -307,11 +320,11 @@ type Parser
     /// Parse out the '!'.  Returns true if a ! was found and consumed
     /// actually skipped
     member x.ParseBang () = 
-        match _tokenizer.CurrentTokenKind with
-        | TokenKind.Character '!' ->
+        if _tokenizer.CurrentChar = '!' then
             _tokenizer.MoveNextToken()
             true
-        | _ -> false
+        else
+            false
 
     /// Parse out the text until the given predicate returns false or the end
     /// of the line is reached.  None is return if the current token when
@@ -798,6 +811,100 @@ type Parser
         let fileName = x.ParseRestOfLine()
 
         LineCommand.Edit (hasBang, fileOptionList, commandOption, fileName) |> ParseResult.Succeeded
+
+    /// Parse out the :function command
+    member x.ParseFunction() = 
+
+        // Parse out the name of the function.  It must start with a capitol letter or
+        // be preceded by the s: prefix 
+        let parseFunctionName () = 
+
+            match _tokenizer.CurrentTokenKind with
+            | TokenKind.Word "s" ->
+                // Handle the s:name prefix
+                _tokenizer.MoveNextToken()
+                if _tokenizer.CurrentChar = ':' then
+                    _tokenizer.MoveNextToken()
+                    match _tokenizer.CurrentTokenKind with
+                    | TokenKind.Word word -> 
+                        _tokenizer.MoveNextToken()
+                        ParseResult.Succeeded word
+                    | _ -> ParseResult.Failed Resources.Parser_Error
+                else
+                    ParseResult.Failed Resources.Parser_Error
+            | TokenKind.Word word ->
+                if CharUtil.IsLower word.[0] then
+                    ParseResult.Failed (Resources.Parser_FunctionName word)
+                else
+                    _tokenizer.MoveNextToken()
+                    ParseResult.Succeeded word
+            | _ -> ParseResult.Failed Resources.Parser_Error
+
+        // Parse out the data between the () in the function definition
+        let parseArgList () = 
+            let rec inner cont = 
+                match _tokenizer.CurrentTokenKind with 
+                | TokenKind.Word word -> 
+                    _tokenizer.MoveNextToken()
+                    if _tokenizer.CurrentChar = ',' then   
+                        _tokenizer.MoveNextChar()
+                        inner (fun rest -> cont (word :: rest))
+                    else
+                        cont []
+                | _ -> cont [] 
+            inner (fun x -> x) 
+
+        // Parse out the function arguments 
+        let parseFunctionArguments () =
+            if _tokenizer.CurrentChar <> '(' then
+                ParseResult.Failed Resources.Parser_Error
+            else
+                _tokenizer.MoveNextToken()
+                let args = parseArgList ()
+                if _tokenizer.CurrentChar = ')' then
+                    _tokenizer.MoveNextToken()
+                    ParseResult.Succeeded args
+                else
+                    ParseResult.Failed Resources.Parser_Error
+
+        // Parse out the lines in the function
+        let parseLines () = 
+            let rec inner cont = 
+                let name = x.TryExpand _tokenizer.CurrentToken.TokenText
+                if name = "endfunction" then
+                    x.NextLine() |> ignore
+                    cont [] 
+                else
+                    match x.ParseSingleCommandCore(), x.NextLine() with
+                    | ParseResult.Failed msg, _ -> ParseResult.Failed msg
+                    | _, false -> ParseResult.Failed Resources.Parser_Error
+                    | ParseResult.Succeeded lineCommand, true -> inner (fun rest -> cont (lineCommand :: rest))
+            inner (fun x -> ParseResult.Succeeded x)
+
+        let hasBang = x.ParseBang()
+
+        // Start ignoring blanks after parsing out the '!'.  The '!' must appear directly next to the 
+        // function name or it is not a valid construct
+        use flags = _tokenizer.SetTokenizerFlagsScoped TokenizerFlags.SkipBlanks
+
+        _parserBuilder { 
+            let! name = parseFunctionName ()
+            let! args = parseFunctionArguments ()
+            if x.NextLine() then
+                let! lines = parseLines ()
+                let func = { 
+                    Name = name
+                    Arguments = args
+                    IsRange = false
+                    IsAbort = false
+                    IsDictionary = false
+                    IsForced = hasBang
+                    LineCommands = lines
+                }
+                return LineCommand.DefineFunction func
+            else
+                return Resources.Parser_Error
+        }
 
     /// Parse out the :[digit] command
     member x.ParseJumpToLine lineRange =
@@ -1717,6 +1824,7 @@ type Parser
                 | "edit" -> noRange x.ParseEdit
                 | "exit" -> x.ParseQuitAndWrite lineRange
                 | "fold" -> x.ParseFold lineRange
+                | "function" -> noRange (fun () -> x.ParseFunction())
                 | "global" -> x.ParseGlobal lineRange
                 | "history" -> noRange (fun () -> x.ParseHistory())
                 | "if" -> noRange x.ParseIf

@@ -258,6 +258,91 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class FunctionTest : ParserTest
+        {
+            private void AssertFunc(string functionText, string name = null, int lineCount = -1, bool? isForced = null)
+            {
+                var parser = CreateParser();
+                var parseResult = parser.ParseLineCommands(functionText.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries));
+                Assert.True(parseResult.IsSucceeded);
+                var lineCommand = parseResult.AsSucceeded().Item.Single();
+                Assert.True(lineCommand is LineCommand.DefineFunction);
+                var func = ((LineCommand.DefineFunction)lineCommand).Item;
+                if (name != null)
+                {
+                    Assert.Equal(name, func.Name);
+                }
+
+                if (lineCount >= 0)
+                {
+                    Assert.Equal(lineCount, func.LineCommands.Length);
+                }
+
+                if (isForced.HasValue)
+                {
+                    Assert.Equal(isForced.Value, func.IsForced);
+                }
+            }
+
+            private void AssertNotFunc(string functionText)
+            {
+                var parser = CreateParser();
+                var parseResult = parser.ParseLineCommands(functionText.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries));
+                Assert.False(parseResult.IsSucceeded);
+            }
+
+            [Fact]
+            public void NoLines()
+            {
+                var text = @"
+function First()
+endfunction";
+                AssertFunc(text, "First", 0, isForced: false);
+            }
+
+            /// <summary>
+            /// A ! is allowed to follow the function word 
+            /// </summary>
+            [Fact]
+            public void BangAfterFunction()
+            {
+                var text = @"
+function! First()
+endfunction";
+                AssertFunc(text, "First", 0, isForced: true);
+            }
+
+            /// <summary>
+            /// A ! is allowed to follow the function word but it must be directly beside it
+            /// </summary>
+            [Fact]
+            public void BangAfterFunctionWithSpace()
+            {
+                var text = @"
+function ! First()
+endfunction";
+                AssertNotFunc(text);
+            }
+
+            [Fact]
+            public void NameMustStartWithCap()
+            {
+                var text = @"
+function first()
+endfunction";
+                AssertNotFunc(text);
+            }
+
+            [Fact]
+            public void NameCanBeLowerAfterColon()
+            {
+                var text = @"
+function s:first()
+endfunction";
+                AssertFunc(text, "first", 0);
+            }
+        }
+
         public sealed class NumberTest : ParserTest
         {
             private VariableValue ParseNumberValue(string text)

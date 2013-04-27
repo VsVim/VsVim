@@ -422,6 +422,10 @@ type VimInterpreter
             _commonOperations.DeleteLines lineRange.StartLine lineRange.Count register
             RunResult.Completed)
 
+    member x.RunDefineFunction func = 
+        _statusUtil.OnError Resources.Interpreter_FunctionNotSupported
+        RunResult.Completed
+
     /// Display the given map modes
     member x.RunDisplayKeyMap keyRemapModes keyNotationOption = 
         // Get the printable info for the set of modes
@@ -1414,6 +1418,7 @@ type VimInterpreter
         | LineCommand.Close hasBang -> x.RunClose hasBang
         | LineCommand.Edit (hasBang, fileOptions, commandOption, filePath) -> x.RunEdit hasBang fileOptions commandOption filePath
         | LineCommand.Delete (lineRange, registerName) -> x.RunDelete lineRange (getRegister registerName)
+        | LineCommand.DefineFunction (func) -> x.RunDefineFunction func
         | LineCommand.DisplayKeyMap (keyRemapModes, keyNotationOption) -> x.RunDisplayKeyMap keyRemapModes keyNotationOption
         | LineCommand.DisplayRegisters registerName -> x.RunDisplayRegisters registerName
         | LineCommand.DisplayLet variables -> x.RunDisplayLets variables

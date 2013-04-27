@@ -5,8 +5,8 @@ open EditorUtils
 open Microsoft.VisualStudio.Text
 open Vim
 
-// Represents the scope that a name is attached to.  A "let" name for example can 
-// be attached to various scopes
+/// Represents the scope that a name is attached to.  A "let" name for example can 
+/// be attached to various scopes
 [<RequireQualifiedAccess>]
 type NameScope =
     | Global
@@ -326,17 +326,41 @@ type CommandOption =
     | StartAtPattern of string
     | ExecuteLineCommand of LineCommand
 
+and Function = {
+
+    /// Name of the function
+    Name : string
+
+    /// Arguments to the function
+    Arguments : string list
+
+    /// Is the function responsible for its ranges
+    IsRange : bool
+
+    /// Is the function supposed to abort on the first error
+    IsAbort : bool
+
+    /// Is the function intended to be invoked from a dictionary
+    IsDictionary : bool
+
+    /// Is this a forced definition of the function
+    IsForced : bool
+
+    // Line commands that compose the function
+    LineCommands : LineCommand list
+}
+
 /// The ConditionalBlock type is used to represent if / else if / else blocks
 /// of commands.  If the expression value 
 and [<RequireQualifiedAccess>] ConditionalBlock =
 
-    // An if or elseif block with the expression true list and false block 
+    /// An if or elseif block with the expression true list and false block 
     | Conditional of Expression * LineCommand list * ConditionalBlock 
 
-    // An else block 
+    /// An else block 
     | Unconditional of LineCommand list
 
-    // Used when there is just an if / endif pair. 
+    /// Used when there is just an if / endif pair. 
     | Empty
 
     with 
@@ -393,6 +417,9 @@ and [<RequireQualifiedAccess>] LineCommand =
 
     /// The :delete command
     | Delete of LineRangeSpecifier * RegisterName option
+
+    /// Definition of a function 
+    | DefineFunction of Function
 
     /// Display the contents of registers.  Unless a specific register name is 
     /// given all registers will be displayed
@@ -568,7 +595,7 @@ and [<RequireQualifiedAccess>] LineCommand =
     /// Undo the last change
     | Undo
 
-    // Unlet a value.  
+    /// Unlet a value.  
     | Unlet of bool * string list
 
     /// Unmap the key notation in the given modes
