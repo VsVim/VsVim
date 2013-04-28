@@ -37,12 +37,12 @@ namespace Vim.UnitTest
             }
         }
 
-        public sealed class VimIntegrationTest : DisabledModeTest
+        public sealed class DisabledModeIntegrationTest : DisabledModeTest
         {
             private readonly IVimBuffer _vimBuffer1;
             private readonly IVimBuffer _vimBuffer2;
 
-            public VimIntegrationTest()
+            public DisabledModeIntegrationTest()
             {
                 _vimBuffer1 = CreateVimBuffer("vim buffer 1");
                 _vimBuffer2 = CreateVimBuffer("vim buffer 2");

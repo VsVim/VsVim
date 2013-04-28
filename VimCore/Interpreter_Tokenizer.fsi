@@ -66,6 +66,6 @@ type internal Tokenizer =
     member SetTokenizerFlagsScoped : tokenizerFlags : TokenizerFlags -> ResetTokenizerFlags
 
     /// Reset the tokenizer with the specified string and flags.  It will begin parsing
-    /// this text from the begining
+    /// this text from the beginning
     member Reset : text : string -> tokenizerFlags : TokenizerFlags -> unit
 

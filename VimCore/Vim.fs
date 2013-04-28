@@ -530,15 +530,17 @@ type internal Vim
                     let textView = _vimHost.CreateHiddenTextView()
         
                     try
-                        // For the vimcr IVimBuffer we go straight to the factory methods.  We don't want
+                        // For the vimrc IVimBuffer we go straight to the factory methods.  We don't want
                         // to notify any consumers that this IVimBuffer is ever created.  It should be 
                         // transparent to them and showing it just causes confusion.  
                         let vimTextBuffer = _bufferFactoryService.CreateVimTextBuffer textView.TextBuffer x
                         let vimBufferData = _bufferFactoryService.CreateVimBufferData vimTextBuffer textView
                         let vimBuffer = _bufferFactoryService.CreateVimBuffer vimBufferData
 
-                        let mode = vimBuffer.CommandMode
-                        fileContents.Lines |> Seq.iter (fun input -> mode.RunCommand input |> ignore)
+                        // Actually parse and run all of the commands
+                        let vimInterpreter = x.GetVimInterpreter vimBuffer
+                        vimInterpreter.RunScript(fileContents.Lines)
+
                         _vimRcLocalSettings <- LocalSettings.Copy vimBuffer.LocalSettings
                         _vimRcWindowSettings <- WindowSettings.Copy vimBuffer.WindowSettings
                         _vimRcState <- VimRcState.LoadSucceeded fileContents.FilePath

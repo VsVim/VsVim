@@ -9,11 +9,15 @@ namespace Vim.UnitTest
 {
     public abstract class ParserTest
     {
-        protected Parser CreateParser(params string[] text)
+        protected Parser CreateParser(params string[] lines)
         {
-            var parser = new Parser(new VimData());
-            parser.Reset(text);
-            return parser;
+            return new Parser(new VimData(), lines);
+        }
+
+        protected Parser CreateParserOfLines(string text)
+        {
+            var lines = text.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries);
+            return CreateParser(lines);
         }
 
         /// <summary>
@@ -161,6 +165,70 @@ namespace Vim.UnitTest
             }
         }
 
+        /// <summary>
+        /// Handle edge cases in the parser.  Mostly an implementation test of the critical functions around lines
+        /// </summary>
+        public abstract class EdgeCasesTest : ParserTest
+        {
+            public sealed class CreationTest : EdgeCasesTest
+            {
+                [Fact]
+                public void AllBlankLines()
+                {
+                    var parser = CreateParser("", "", "    ");
+                    Assert.True(parser.IsDone);
+                }
+
+                [Fact]
+                public void AllCommentLines()
+                {
+                    var parser = CreateParser(@""" this is a comment", @"    "" another comment");
+                    Assert.True(parser.IsDone);
+                }
+
+                [Fact]
+                public void AllCommentAndBlankLines()
+                {
+                    var parser = CreateParser(@""" this is a comment", "   ");
+                    Assert.True(parser.IsDone);
+                }
+
+                [Fact]
+                public void MovePasteInitialBlanks()
+                {
+                    var parser = CreateParser("   ", "cat", "dog");
+                    Assert.Equal("cat", parser.Tokenizer.CurrentToken.TokenText);
+                }
+            }
+
+            public sealed class MoveNextLineTest : EdgeCasesTest
+            {
+                [Fact]
+                public void PastBlank()
+                {
+                    var parser = CreateParser("cat", " ", "dog");
+                    Assert.True(parser.MoveToNextLine());
+                    Assert.Equal("dog", parser.Tokenizer.CurrentToken.TokenText);
+                }
+
+                [Fact]
+                public void PastComment()
+                {
+                    var parser = CreateParser("cat", @""" comment ", "dog");
+                    Assert.True(parser.MoveToNextLine());
+                    Assert.Equal("dog", parser.Tokenizer.CurrentToken.TokenText);
+                }
+
+                [Fact]
+                public void OnlyBlankLinesRemaining()
+                {
+                    var parser = CreateParser("cat", @""" comment ");
+                    Assert.False(parser.MoveToNextLine());
+                    Assert.True(parser.IsDone);
+                }
+            }
+        }
+
         public sealed class IfTest : ParserTest
         {
             private void AssertIf(LineCommand lineCommand, params int[] expected)
@@ -262,10 +330,12 @@ namespace Vim.UnitTest
         {
             private void AssertFunc(string functionText, string name = null, int lineCount = -1, bool? isForced = null)
             {
-                var parser = CreateParser();
-                var parseResult = parser.ParseLineCommands(functionText.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries));
+                var parser = CreateParserOfLines(functionText);
+                var parseResult = parser.ParseNextLineCommand();
                 Assert.True(parseResult.IsSucceeded);
-                var lineCommand = parseResult.AsSucceeded().Item.Single();
+                Assert.True(parser.IsDone);
+
+                var lineCommand = parseResult.AsSucceeded().Item;
                 Assert.True(lineCommand is LineCommand.DefineFunction);
                 var func = ((LineCommand.DefineFunction)lineCommand).Item;
                 if (name != null)
@@ -286,8 +356,8 @@ namespace Vim.UnitTest
 
             private void AssertNotFunc(string functionText)
             {
-                var parser = CreateParser();
-                var parseResult = parser.ParseLineCommands(functionText.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries));
+                var parser = CreateParserOfLines(functionText);
+                var parseResult = parser.ParseNextLineCommand();
                 Assert.False(parseResult.IsSucceeded);
             }
 
@@ -340,6 +410,78 @@ endfunction";
 function s:first()
 endfunction";
                 AssertFunc(text, "first", 0);
+            }
+
+            /// <summary>
+            /// Make sure the code can handle blank lines 
+            /// </summary>
+            [Fact]
+            public void BlankLineCommands()
+            {
+                var text = @"
+function s:first()
+
+
+
+endfunction";
+                AssertFunc(text, "first");
+            }
+
+            /// <summary>
+            /// If a command inside the function has a parse error the entire function should still be parsed
+            /// out.  The next parse should occur on the following line.  
+            /// </summary>
+            [Fact]
+            public void InternalParseErrors()
+            {
+                var text = @"
+function Test() 
+  this is a parse error
+  this is another parse error
+endfunction
+let x = 42
+";
+                var parser = CreateParserOfLines(text);
+
+                // Parse out the bad function data
+                var first = parser.ParseNextLineCommand();
+                Assert.True(first.IsFailed);
+
+                // Now parse out the :let command
+                var second = parser.ParseNextLineCommand();
+                Assert.True(second.IsSucceeded);
+                Assert.True(second.AsSucceeded().Item.IsLet);
+            }
+
+            [Fact]
+            public void Issue1086()
+            {
+                var text = @"
+function! <SID>StripTrailingWhitespace()
+    "" Preparation: save last search, and cursor position.
+    let _s=@/
+    let l = line(""."")
+    let c = col(""."")
+    "" Do the business:
+    %s/\s\+$//e
+    "" Clean up: restore previous search history, and cursor position
+    let @/=_s
+    call cursor(l, c)
+endfunction
+let x = 42
+";
+
+                var parser = CreateParserOfLines(text);
+
+                // For the moment we are unable to parse this function because it has inner commands that we 
+                // don't support.  However it should still fail as a single entity and not cause us to parse
+                // the next command from the middle of the function 
+                var functionResult = parser.ParseNextLineCommand();
+                Assert.True(functionResult.IsFailed);
+
+                var letResult = parser.ParseNextLineCommand();
+                Assert.True(letResult.IsSucceeded);
+                Assert.True(letResult.AsSucceeded().Item.IsLet);
             }
         }
 

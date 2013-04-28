@@ -1484,11 +1484,20 @@ type VimInterpreter
         | Some lineRange ->
             func lineRange
 
+    // Actually parse and run all of the commands which are included in the script
+    member x.RunScript lines = 
+        let parser = Parser(_vimData, lines)
+        while not parser.IsDone do
+            match parser.ParseNextLineCommand() with
+            | ParseResult.Failed _ -> ()
+            | ParseResult.Succeeded lineCommand -> x.RunLineCommand lineCommand |> ignore
+
     interface IVimInterpreter with
         member x.GetLine lineSpecifier = x.GetLine lineSpecifier
         member x.GetLineRange lineRange = x.GetLineRange lineRange
         member x.RunLineCommand lineCommand = x.RunLineCommand lineCommand
         member x.RunExpression expression = x.RunExpression expression
+        member x.RunScript lines = x.RunScript lines
 
 [<Export(typeof<IVimInterpreterFactory>)>]
 type VimInterpreterFactory

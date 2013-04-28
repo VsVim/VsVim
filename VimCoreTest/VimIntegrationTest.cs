@@ -1,8 +1,11 @@
 ﻿using System;
+using System.IO;
 using Microsoft.VisualStudio.Text.Editor;
 using Moq;
 using Xunit;
 using Vim.Extensions;
+using Path = System.IO.Path;
+using Microsoft.FSharp.Core;
 
 namespace Vim.UnitTest
 {
@@ -85,6 +88,62 @@ namespace Vim.UnitTest
                 vimBuffer2.Process(GlobalSettings.DisableAllCommand);
                 Assert.Equal(ModeKind.Normal, vimBuffer1.ModeKind);
                 Assert.Equal(ModeKind.Normal, vimBuffer2.ModeKind);
+            }
+        }
+
+        public sealed class VimRcTest : VimTestBase
+        {
+            private readonly Mock<IFileSystem> _fileSystem;
+            private readonly IFileSystem _originalFileSystem;
+            private readonly Vim _vim;
+            private readonly IVimGlobalSettings _globalSettings;
+
+            public VimRcTest()
+            {
+                _vim = (Vim)Vim;
+                _globalSettings = Vim.GlobalSettings;
+                _fileSystem = new Mock<IFileSystem>();
+                _originalFileSystem = _vim._fileSystem;
+                _vim._fileSystem = _fileSystem.Object;
+                VimHost.CreateHiddenTextViewFunc = () => TextEditorFactoryService.CreateTextView();
+            }
+
+            public override void Dispose()
+            {
+                base.Dispose();
+                _vim._fileSystem = _originalFileSystem;
+            }
+
+            private void Run(string vimRcText)
+            {
+                var lines = vimRcText.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries);
+                _fileSystem.Setup(x => x.LoadVimRcContents()).Returns(new FSharpOption<FileContents>(new FileContents("_vimrc", lines)));
+                Assert.True(Vim.LoadVimRc().IsLoadSucceeded);
+            }
+
+            [Fact]
+            public void Simple()
+            {
+                Assert.False(_globalSettings.HighlightSearch);
+                Run("set hlsearch");
+                Assert.True(_globalSettings.HighlightSearch);
+            }
+
+            /// <summary>
+            /// Don't run the contents of a function body.  They should only be parsed here 
+            /// </summary>
+            [Fact]
+            public void FunctionContents()
+            {
+                var text = @"
+function Test() 
+  set hlsearch
+endfunction
+let x = 42
+";
+                Run(text);
+                Assert.False(_globalSettings.HighlightSearch);
+                Assert.Equal(42, Vim.VariableMap["x"].AsNumber().Item);
             }
         }
     }

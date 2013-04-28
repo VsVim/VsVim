@@ -2,6 +2,7 @@
 
 namespace Vim.Interpreter
 open Vim
+open System.Collections.Generic
 open StringBuilderExtensions
 
 [<RequireQualifiedAccess>]
@@ -266,6 +267,28 @@ type Parser
         ]
         |> Map.ofList
 
+    new (vimData, lines) as this =
+        Parser(vimData)
+        then
+            this.Reset lines
+
+    member x.IsDone = _tokenizer.IsAtEndOfLine && _lineIndex  + 1 >= _lines.Length
+
+    member x.IsTokenSequence texts = 
+        let mark = _tokenizer.Mark
+        let mutable all = true
+        for text in texts do
+            if _tokenizer.CurrentToken.TokenText = text then
+                _tokenizer.MoveNextToken()
+            else
+                all <- false
+
+        if not all then
+            _tokenizer.MoveToMark mark
+
+        all
+
+    /// Reset the parser to the given set of input lines.  
     member x.Reset (lines : string[]) = 
         _lines <- 
             if lines.Length = 0 then
@@ -275,18 +298,45 @@ type Parser
         _lineIndex <- 0
         _tokenizer.Reset _lines.[0] TokenizerFlags.None
 
-    member x.NextLine() =
-        if _lineIndex + 1 >= _lines.Length then
-            // If this is the last line we should at least move the tokenizer to the end
-            // of the line
-            while not _tokenizer.IsAtEndOfLine do
-                _tokenizer.MoveNextToken()
+        // It's possible the first line of the new input is blank.  Need to move past that and settle on 
+        // a real line to be processed
+        if x.IsCurrentLineBlank() then
+            x.MoveToNextLine() |> ignore
 
-            false
-        else
-            _lineIndex <- _lineIndex + 1
-            _tokenizer.Reset _lines.[_lineIndex] TokenizerFlags.None
-            true
+    /// Is the current line blank 
+    member x.IsCurrentLineBlank() = 
+        let mark = _tokenizer.Mark
+        let mutable allBlank = true
+        while not _tokenizer.IsAtEndOfLine && allBlank do
+            if _tokenizer.CurrentTokenKind = TokenKind.Blank then
+                _tokenizer.MoveNextToken()
+            else
+                allBlank <- false
+
+        _tokenizer.MoveToMark mark
+        allBlank
+
+    /// Move to the next line of the input.  This will move past blank lines and return true if 
+    /// the result is a non-blank line which can be processed
+    member x.MoveToNextLine() = 
+
+        let doMove () =
+            if _lineIndex + 1 >= _lines.Length then
+                // If this is the last line we should at least move the tokenizer to the end
+                // of the line
+                x.MoveToEndOfLine()
+            else
+                _lineIndex <- _lineIndex + 1
+                _tokenizer.Reset _lines.[_lineIndex] TokenizerFlags.None
+
+        // Move at least one line
+        doMove ()
+
+        // Now move through all of the blank lines which could appear on the next line
+        while not x.IsDone && x.IsCurrentLineBlank() do
+            doMove ()
+
+        not x.IsDone
 
     member x.Tokenizer = _tokenizer
 
@@ -819,21 +869,14 @@ type Parser
         // be preceded by the s: prefix 
         let parseFunctionName () = 
 
+            // Lower case names are allowed when the name is prefixed with <SID> or s: 
+            let allowLowerCase = 
+                x.IsTokenSequence [| "<"; "SID"; ">" |] ||
+                x.IsTokenSequence [| "s"; ":" |]
+                
             match _tokenizer.CurrentTokenKind with
-            | TokenKind.Word "s" ->
-                // Handle the s:name prefix
-                _tokenizer.MoveNextToken()
-                if _tokenizer.CurrentChar = ':' then
-                    _tokenizer.MoveNextToken()
-                    match _tokenizer.CurrentTokenKind with
-                    | TokenKind.Word word -> 
-                        _tokenizer.MoveNextToken()
-                        ParseResult.Succeeded word
-                    | _ -> ParseResult.Failed Resources.Parser_Error
-                else
-                    ParseResult.Failed Resources.Parser_Error
             | TokenKind.Word word ->
-                if CharUtil.IsLower word.[0] then
+                if not allowLowerCase && CharUtil.IsLower word.[0] then
                     ParseResult.Failed (Resources.Parser_FunctionName word)
                 else
                     _tokenizer.MoveNextToken()
@@ -867,19 +910,36 @@ type Parser
                 else
                     ParseResult.Failed Resources.Parser_Error
 
-        // Parse out the lines in the function
+        // Is the current line the "endfunction" line
+        let isCurrentLineEndFunction () = 
+            let name = x.TryExpand _tokenizer.CurrentToken.TokenText
+            name = "endfunction"
+
+        // Parse out the lines in the function.  If any of the lines inside the function register as a 
+        // parse error we still need to continue parsing the function (even though it should ultimately
+        // fail).  If we bail out of parsing early then it will cause the "next" command to be a 
+        // line which is a part of the function.  
         let parseLines () = 
-            let rec inner cont = 
-                let name = x.TryExpand _tokenizer.CurrentToken.TokenText
-                if name = "endfunction" then
-                    x.NextLine() |> ignore
-                    cont [] 
+
+            let lines = List<LineCommand>()
+            let mutable anyFailed = false
+            let mutable foundEndFunction = false
+            while not x.IsDone && not foundEndFunction do
+                if isCurrentLineEndFunction () then
+                    foundEndFunction <- true
+                    x.MoveToEndOfLine()
                 else
-                    match x.ParseSingleCommandCore(), x.NextLine() with
-                    | ParseResult.Failed msg, _ -> ParseResult.Failed msg
-                    | _, false -> ParseResult.Failed Resources.Parser_Error
-                    | ParseResult.Succeeded lineCommand, true -> inner (fun rest -> cont (lineCommand :: rest))
-            inner (fun x -> ParseResult.Succeeded x)
+                    match x.ParseSingleCommandCore() with
+                    | ParseResult.Failed _ -> anyFailed <- true
+                    | ParseResult.Succeeded lineCommand -> lines.Add lineCommand
+
+                    x.MoveToNextLine() |> ignore
+
+            if anyFailed then
+                ParseResult.Failed Resources.Parser_Error
+            else
+                let allLines = List.ofSeq lines
+                ParseResult.Succeeded allLines
 
         let hasBang = x.ParseBang()
 
@@ -890,7 +950,7 @@ type Parser
         _parserBuilder { 
             let! name = parseFunctionName ()
             let! args = parseFunctionArguments ()
-            if x.NextLine() then
+            if x.MoveToNextLine() then
                 let! lines = parseLines ()
                 let func = { 
                     Name = name
@@ -1471,7 +1531,7 @@ type Parser
                         | ParseResult.Failed msg -> onError msg
                         | ParseResult.Succeeded lineCommand ->
                             builder.Add lineCommand
-                            if x.NextLine() then
+                            if x.MoveToNextLine() then
                                 inner ()
                             else
                                 onError standardError)
@@ -1482,21 +1542,21 @@ type Parser
 
             let onEndIf () = 
                 x.MoveToEndOfLine()
-                x.NextLine() |> ignore
+                x.MoveToNextLine() |> ignore
 
             match nextConditionalKind with
             | NextConditionalKind.EndIf ->
                 onEndIf ()
                 onSuccess ConditionalBlock.Empty
             | NextConditionalKind.ElseIf expr ->
-                if x.NextLine() then
+                if x.MoveToNextLine() then
                     parseBlockCommands (fun lineCommands nextConditionalKind -> 
                         parseNextConditional nextConditionalKind (fun conditionalBlock ->
                             onSuccess (ConditionalBlock.Conditional (expr, lineCommands, conditionalBlock))))
                 else
                     onError standardError
             | NextConditionalKind.Else ->
-                if x.NextLine() then
+                if x.MoveToNextLine() then
                     parseBlockCommands (fun lineCommands nextConditionalKind ->
                         match nextConditionalKind with
                         | NextConditionalKind.Else -> onError standardError
@@ -1511,7 +1571,7 @@ type Parser
         match x.ParseExpressionCore() with
         | ParseResult.Failed msg -> ParseResult.Failed msg
         | ParseResult.Succeeded expr -> 
-            if x.NextLine() then
+            if x.MoveToNextLine() then
                 parseBlockCommands (fun lineCommands nextConditionalKind -> 
                     parseNextConditional nextConditionalKind (fun conditionalBlock ->
                         let block = ConditionalBlock.Conditional (expr, lineCommands, conditionalBlock)
@@ -1975,6 +2035,11 @@ type Parser
             | _ -> return expr
         }
 
+    member x.ParseNextLineCommand() = 
+        let parseResult = x.ParseSingleCommandCore()
+        x.MoveToNextLine() |> ignore
+        parseResult
+
     member x.ParseRange rangeText = 
         x.Reset [|rangeText|]
         x.ParseLineRange(), x.ParseRestOfLine()
@@ -1993,7 +2058,7 @@ type Parser
             match x.ParseSingleCommandCore() with
             | ParseResult.Failed msg -> ParseResult.Failed msg
             | ParseResult.Succeeded lineCommand -> 
-                if x.NextLine() then    
+                if x.MoveToNextLine() then    
                     inner (fun item -> rest (lineCommand :: item))
                 else
                     rest [lineCommand]

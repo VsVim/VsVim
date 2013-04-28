@@ -634,3 +634,6 @@ type IVimInterpreter =
     /// Run the Expression
     abstract RunExpression : expression : Expression -> VariableValue
 
+    /// Run the given script 
+    abstract RunScript : lines : string[] -> unit
+

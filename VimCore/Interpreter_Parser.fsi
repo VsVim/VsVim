@@ -14,6 +14,12 @@ type Parser =
 
     new: vimData : IVimData -> Parser
 
+    new: vimData : IVimData * lines : string[] -> Parser
+
+    member IsDone : bool
+
+    member ParseNextLineCommand : unit -> ParseResult<LineCommand>
+
     member ParseRange : rangeText : string -> LineRangeSpecifier * string
 
     member ParseExpression : expressionText : string -> ParseResult<Expression>
