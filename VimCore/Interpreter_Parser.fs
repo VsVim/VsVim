@@ -935,11 +935,33 @@ type Parser
 
                     x.MoveToNextLine() |> ignore
 
-            if anyFailed then
+            if anyFailed || not foundEndFunction then
                 ParseResult.Failed Resources.Parser_Error
             else
                 let allLines = List.ofSeq lines
                 ParseResult.Succeeded allLines
+
+        // Parse out the abort, dict and range modifiers which can follow a function definition
+        let parseModifiers () = 
+
+            let rec inner isAbort isDict isRange = 
+                match _tokenizer.CurrentTokenKind with
+                | TokenKind.Word "abort" -> 
+                    _tokenizer.MoveNextToken()
+                    inner true isDict isRange 
+                | TokenKind.Word "dict" -> 
+                    _tokenizer.MoveNextToken()
+                    inner isAbort true isRange 
+                | TokenKind.Word "range" -> 
+                    _tokenizer.MoveNextToken()
+                    inner isAbort isDict true
+                | TokenKind.EndOfLine ->
+                    (isAbort, isDict, isRange, false)
+                | _ -> 
+                    x.MoveToEndOfLine()
+                    (isAbort, isDict, isRange, true)
+
+            inner false false false
 
         let hasBang = x.ParseBang()
 
@@ -950,18 +972,24 @@ type Parser
         _parserBuilder { 
             let! name = parseFunctionName ()
             let! args = parseFunctionArguments ()
+            let isAbort, isDict, isRange, isError = parseModifiers ()
+
             if x.MoveToNextLine() then
                 let! lines = parseLines ()
-                let func = { 
-                    Name = name
-                    Arguments = args
-                    IsRange = false
-                    IsAbort = false
-                    IsDictionary = false
-                    IsForced = hasBang
-                    LineCommands = lines
-                }
-                return LineCommand.DefineFunction func
+
+                if isError then
+                    return Resources.Parser_Error
+                else
+                    let func = { 
+                        Name = name
+                        Arguments = args
+                        IsRange = isRange
+                        IsAbort = isAbort
+                        IsDictionary = isDict
+                        IsForced = hasBang
+                        LineCommands = lines
+                    }
+                    return LineCommand.DefineFunction func
             else
                 return Resources.Parser_Error
         }

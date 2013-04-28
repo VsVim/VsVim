@@ -361,6 +361,14 @@ namespace Vim.UnitTest
                 Assert.False(parseResult.IsSucceeded);
             }
 
+            private Function ParseFunction(string functionText)
+            {
+                var parser = CreateParserOfLines(functionText);
+                var parseResult = parser.ParseNextLineCommand();
+                Assert.True(parseResult.IsSucceeded && parseResult.AsSucceeded().Item.IsDefineFunction);
+                return ((LineCommand.DefineFunction)parseResult.AsSucceeded().Item).Item;
+            }
+
             [Fact]
             public void NoLines()
             {
@@ -451,6 +459,58 @@ let x = 42
                 var second = parser.ParseNextLineCommand();
                 Assert.True(second.IsSucceeded);
                 Assert.True(second.AsSucceeded().Item.IsLet);
+            }
+
+            [Fact]
+            public void IsAbort()
+            {
+                var text = @"
+function Test() abort
+endfunction
+";
+
+                var function = ParseFunction(text);
+                Assert.True(function.IsAbort);
+
+            }
+
+            [Fact]
+            public void IsRange()
+            {
+                var text = @"
+function Test() range
+endfunction
+";
+
+                var function = ParseFunction(text);
+                Assert.True(function.IsRange);
+
+            }
+
+            [Fact]
+            public void IsDict()
+            {
+                var text = @"
+function Test() dict
+endfunction
+";
+
+                var function = ParseFunction(text);
+                Assert.True(function.IsDictionary);
+
+            }
+
+            [Fact]
+            public void IsSeveral()
+            {
+                var text = @"
+function Test() dict abort
+endfunction
+";
+
+                var function = ParseFunction(text);
+                Assert.True(function.IsDictionary);
+                Assert.True(function.IsAbort);
             }
 
             [Fact]
