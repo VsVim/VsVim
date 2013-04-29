@@ -119,10 +119,22 @@ namespace VsVim.Implementation.ConflictingKey
             foreach (var cur in _keyBindingList.Where(binding => binding.HandledByVsVim).SelectMany(data => data.Bindings))
             {
                 EnvDTE.Command command;
-                if (_snapshot.TryGetCommand(cur.Id, out command))
+                ReadOnlyCollection<CommandKeyBinding> bindings;
+                if (!_snapshot.TryGetCommandData(cur.Id, out command, out bindings))
                 {
-                    command.SafeResetBindings();
+                    continue;
                 }
+
+                // Remove the bindings from the command which are currently in conflict with 
+                // Vim.  Do not remove all bindings because a command can contain bindings that don't
+                // conflict with vim in any way 
+                var keepBindings = bindings
+                    .Select(x => x.KeyBinding)
+                    .Where(x => !_snapshot.VimFirstKeyInputs.Contains(x.FirstKeyStroke.AggregateKeyInput))
+                    .Select(x => x.CommandString)
+                    .ToList();
+
+                command.SafeSetBindings(keepBindings);
             }
 
             // Restore all commands we are not handling

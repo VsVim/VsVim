@@ -44,7 +44,7 @@ namespace VsVim
         /// <summary>
         /// Find all of the key bindings which have been removed
         /// </summary>
-        internal static List<CommandKeyBinding> FindKeyBindingsMarkedAsRemoved(this ILegacySettings settings, CommandsSnapshot commandsSnapshot)
+        internal static List<CommandKeyBinding> FindKeyBindingsMarkedAsRemoved(this ILegacySettings settings, CommandListSnapshot commandsSnapshot)
         {
             var list = new List<CommandKeyBinding>();
             if (!settings.HaveUpdatedKeyBindings)

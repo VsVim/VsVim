@@ -72,7 +72,7 @@
   <ItemGroup>
     <Compile Include="CommandKeyBinding.cs" />
     <Compile Include="CommandKeyBindingSnapshot.cs" />
-    <Compile Include="CommandsSnapshot.cs" />
+    <Compile Include="CommandListSnapshot.cs" />
     <Compile Include="Constants.cs" />
     <Compile Include="EditCommand.cs" />
     <Compile Include="EditCommandKind.cs" />

@@ -3,17 +3,23 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using EnvDTE;
+using EditorUtils;
 
 namespace VsVim
 {
     /// <summary>
     /// Snapshot of the state of the DTE.Commands and their KeyBindings
     /// </summary>
-    public sealed class CommandsSnapshot
+    public sealed class CommandListSnapshot
     {
-        private readonly Dictionary<CommandId, Command> _commandMap = new Dictionary<CommandId, Command>();
+        struct CommandData
+        {
+            internal Command Command;
+            internal ReadOnlyCollection<CommandKeyBinding> CommandKeyBindings;
+        }
+
+        private readonly Dictionary<CommandId, CommandData> _commandMap = new Dictionary<CommandId, CommandData>();
         private readonly ReadOnlyCollection<CommandKeyBinding> _commandKeyBindings;
-        private readonly HashSet<KeyBinding> _keyBindings;
 
         public ReadOnlyCollection<CommandKeyBinding> CommandKeyBindings
         {
@@ -25,11 +31,12 @@ namespace VsVim
             get { return _commandKeyBindings.Select(x =>x.KeyBinding); }
         }
 
-        public CommandsSnapshot(_DTE dte) : this(dte.Commands.GetCommands())
+        public CommandListSnapshot(_DTE dte) : this(dte.Commands.GetCommands())
         {
+
         }
 
-        public CommandsSnapshot(IEnumerable<Command> commands)
+        public CommandListSnapshot(IEnumerable<Command> commands)
         {
             var list = new List<CommandKeyBinding>();
             foreach (var command in commands)
@@ -40,21 +47,59 @@ namespace VsVim
                     continue;
                 }
 
-                _commandMap[commandId] = command;
-                list.AddRange(command.GetCommandKeyBindings());
+                var commandKeybindings = command.GetCommandKeyBindings().ToReadOnlyCollection();
+                var commandData = new CommandData()
+                {
+                    Command = command,
+                    CommandKeyBindings = commandKeybindings
+                };
+
+                _commandMap[commandId] = commandData;
+                list.AddRange(commandData.CommandKeyBindings);
             }
-            _commandKeyBindings = list.AsReadOnly();
-            _keyBindings = new HashSet<KeyBinding>(KeyBindings);
+
+            _commandKeyBindings = list.ToReadOnlyCollectionShallow();
         }
 
-        public bool IsKeyBindingActive(KeyBinding binding)
+        /// <summary>
+        /// Is the specified command active with the given binding
+        /// </summary>
+        public bool IsActive(CommandKeyBinding commandKeyBinding)
         {
-            return _keyBindings.Contains(binding);
+            CommandData commandData;
+            if (!_commandMap.TryGetValue(commandKeyBinding.Id, out commandData))
+            {
+                return false;
+            }
+
+            return commandData.CommandKeyBindings.Contains(commandKeyBinding);
         }
 
         public bool TryGetCommand(CommandId id, out Command command)
         {
-            return _commandMap.TryGetValue(id, out command);
+            ReadOnlyCollection<CommandKeyBinding> bindings;
+            return TryGetCommandData(id, out command, out bindings);
+        }
+
+        public bool TryGetCommandKeyBindings(CommandId id, out ReadOnlyCollection<CommandKeyBinding> bindings)
+        {
+            Command command;
+            return TryGetCommandData(id, out command, out bindings);
+        }
+
+        public bool TryGetCommandData(CommandId id, out Command command, out ReadOnlyCollection<CommandKeyBinding> bindings)
+        {
+            CommandData commandData;
+            if (!_commandMap.TryGetValue(id, out commandData))
+            {
+                command = null;
+                bindings = null;
+                return false;
+            }
+
+            command = commandData.Command;
+            bindings = commandData.CommandKeyBindings;
+            return true;
         }
     }
 }

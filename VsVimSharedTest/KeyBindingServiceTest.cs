@@ -22,12 +22,12 @@ namespace VsVim.UnitTest
         private Mock<IVimApplicationSettings> _vimApplicationSettings;
         private KeyBindingService _serviceRaw;
         private IKeyBindingService _service;
-        private CommandsSnapshot _commandsSnapshot;
+        private CommandListSnapshot _commandListSnapshot;
 
         private void Create(params string[] args)
         {
             _dte = MockObjectFactory.CreateDteWithCommands(args);
-            _commandsSnapshot = new CommandsSnapshot(_dte.Object);
+            _commandListSnapshot = new CommandListSnapshot(_dte.Object);
             var sp = MockObjectFactory.CreateVsServiceProvider(
                 Tuple.Create(typeof(SDTE), (object)(_dte.Object)),
                 Tuple.Create(typeof(SVsShell), (object)(new Mock<IVsShell>(MockBehavior.Strict)).Object));
@@ -135,7 +135,8 @@ namespace VsVim.UnitTest
         {
             Create("::ctrl+h");
             var snapshot = new CommandKeyBindingSnapshot(
-                new CommandsSnapshot(_dte.Object),
+                new CommandListSnapshot(_dte.Object),
+                new KeyInput[] { },
                 Enumerable.Empty<CommandKeyBinding>(),
                 Enumerable.Empty<CommandKeyBinding>());
             _serviceRaw.UpdateConflictingState(ConflictingKeyBindingState.FoundConflicts, snapshot);
@@ -149,7 +150,8 @@ namespace VsVim.UnitTest
         {
             Create("::ctrl+h");
             var snapshot = new CommandKeyBindingSnapshot(
-                new CommandsSnapshot(_dte.Object),
+                new CommandListSnapshot(_dte.Object),
+                new KeyInput[] { },
                 Enumerable.Empty<CommandKeyBinding>(),
                 Enumerable.Empty<CommandKeyBinding>());
             _serviceRaw.UpdateConflictingState(ConflictingKeyBindingState.FoundConflicts, snapshot);
@@ -163,7 +165,7 @@ namespace VsVim.UnitTest
         {
             Create("::ctrl+h");
             var inputs = new KeyInput[] { KeyInputUtil.CharWithControlToKeyInput('h') };
-            var list = _serviceRaw.FindConflictingCommandKeyBindings(_commandsSnapshot, new HashSet<KeyInput>(inputs));
+            var list = _serviceRaw.FindConflictingCommandKeyBindings(_commandListSnapshot, new HashSet<KeyInput>(inputs));
             Assert.Equal(1, list.Count);
         }
 
@@ -172,7 +174,7 @@ namespace VsVim.UnitTest
         {
             Create("::h");
             var inputs = new KeyInput[] { KeyInputUtil.CharToKeyInput('z') };
-            var list = _serviceRaw.FindConflictingCommandKeyBindings(_commandsSnapshot, new HashSet<KeyInput>(inputs));
+            var list = _serviceRaw.FindConflictingCommandKeyBindings(_commandListSnapshot, new HashSet<KeyInput>(inputs));
             Assert.Equal(0, list.Count);
         }
 
@@ -184,7 +186,7 @@ namespace VsVim.UnitTest
         {
             Create("::ctrl+z, h");
             var inputs = new KeyInput[] { KeyInputUtil.CharWithControlToKeyInput('z') };
-            var list = _serviceRaw.FindConflictingCommandKeyBindings(_commandsSnapshot, new HashSet<KeyInput>(inputs));
+            var list = _serviceRaw.FindConflictingCommandKeyBindings(_commandListSnapshot, new HashSet<KeyInput>(inputs));
             Assert.Equal(1, list.Count);
         }
 
@@ -196,7 +198,7 @@ namespace VsVim.UnitTest
         {
             Create("::h, z");
             var inputs = new KeyInput[] { KeyInputUtil.CharToKeyInput('z') };
-            var list = _serviceRaw.FindConflictingCommandKeyBindings(_commandsSnapshot, new HashSet<KeyInput>(inputs));
+            var list = _serviceRaw.FindConflictingCommandKeyBindings(_commandListSnapshot, new HashSet<KeyInput>(inputs));
             Assert.Equal(0, list.Count);
         }
 
@@ -205,7 +207,7 @@ namespace VsVim.UnitTest
         {
             Create("::a", "::ctrl+z, h");
             var inputs = new KeyInput[] { KeyInputUtil.CharWithControlToKeyInput('z') };
-            var list = _serviceRaw.FindConflictingCommandKeyBindings(_commandsSnapshot, new HashSet<KeyInput>(inputs));
+            var list = _serviceRaw.FindConflictingCommandKeyBindings(_commandListSnapshot, new HashSet<KeyInput>(inputs));
             Assert.Equal(1, list.Count);
         }
 
@@ -216,7 +218,7 @@ namespace VsVim.UnitTest
             var inputs = new KeyInput[] { 
                 KeyInputUtil.CharWithControlToKeyInput('a'),
                 KeyInputUtil.CharWithControlToKeyInput('z') };
-            var list = _serviceRaw.FindConflictingCommandKeyBindings(_commandsSnapshot, new HashSet<KeyInput>(inputs));
+            var list = _serviceRaw.FindConflictingCommandKeyBindings(_commandListSnapshot, new HashSet<KeyInput>(inputs));
             Assert.Equal(2, list.Count);
         }
 
@@ -225,7 +227,7 @@ namespace VsVim.UnitTest
         {
             Create("balgh::a", "aoeu::z");
             var inputs = new KeyInput[] { KeyInputUtil.CharToKeyInput('z'), KeyInputUtil.CharToKeyInput('a') };
-            var list = _serviceRaw.FindConflictingCommandKeyBindings(_commandsSnapshot, new HashSet<KeyInput>(inputs));
+            var list = _serviceRaw.FindConflictingCommandKeyBindings(_commandListSnapshot, new HashSet<KeyInput>(inputs));
             Assert.Equal(0, list.Count);
         }
 
@@ -240,7 +242,7 @@ namespace VsVim.UnitTest
         {
             Create("::ctrl+shift+f", "::ctrl+f");
             var inputs = new[] { KeyInputUtil.CharWithControlToKeyInput('f') };
-            var list = _serviceRaw.FindConflictingCommandKeyBindings(_commandsSnapshot, new HashSet<KeyInput>(inputs));
+            var list = _serviceRaw.FindConflictingCommandKeyBindings(_commandListSnapshot, new HashSet<KeyInput>(inputs));
             Assert.Equal(1, list.Count);
         }
 
