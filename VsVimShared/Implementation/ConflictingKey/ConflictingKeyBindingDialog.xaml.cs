@@ -46,7 +46,7 @@ namespace VsVim.Implementation.ConflictingKey
 
             foreach (var firstKey in allFirstKeys)
             {
-                var data = new KeyBindingData(handledByVsVim[firstKey].Union(handledByVs[firstKey]));
+                var data = new KeyBindingData(handledByVsVim[firstKey].Union(handledByVs[firstKey]).ToReadOnlyCollection());
                 data.HandledByVsVim = handledByVsVim.Contains(firstKey);
                 _keyBindingList.Add(data);
 

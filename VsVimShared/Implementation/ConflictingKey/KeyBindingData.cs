@@ -10,6 +10,7 @@ namespace VsVim.Implementation.ConflictingKey
         private readonly KeyBindingHandledByOption _visualStudioOption;
         private readonly KeyBindingHandledByOption _vsVimOption;
         private readonly ObservableCollection<KeyBindingHandledByOption> _handledByOptions = new ObservableCollection<KeyBindingHandledByOption>();
+        private readonly ReadOnlyCollection<CommandKeyBinding> _bindings;
 
         public static readonly DependencyProperty KeyNameProperty = DependencyProperty.Register(
             "KeyName",
@@ -44,25 +45,35 @@ namespace VsVim.Implementation.ConflictingKey
             get { return _handledByOptions; }
         }
 
-        public IEnumerable<CommandKeyBinding> Bindings { get; private set; }
+        public ReadOnlyCollection<CommandKeyBinding> Bindings
+        {
+            get { return _bindings; }
+        }
 
         public KeyBindingData()
         {
 
         }
 
-        public KeyBindingData(IEnumerable<CommandKeyBinding> bindings)
+        public KeyBindingData(ReadOnlyCollection<CommandKeyBinding> bindings)
         {
             // All bindings passed have the same KeyInput as their first key, so get it
             var firstKeyInput = bindings.First().KeyBinding.FirstKeyStroke;
             KeyName = KeyBinding.CreateKeyBindingStringForSingleKeyStroke(firstKeyInput);
 
-            Bindings = bindings.ToArray();
+            _bindings = bindings;
             _handledByOptions.AddRange(
                 new[] {
                      _visualStudioOption = new KeyBindingHandledByOption("Visual Studio", bindings.Select(binding => binding.Name)),
                      _vsVimOption = new KeyBindingHandledByOption("VsVim", Enumerable.Empty<string>())
                 });
+        }
+
+        public override string ToString()
+        {
+            return string.Format("{0} - Handled by {1}",
+                KeyName,
+                HandledByVsVim ? "VsVim" : "Visual Studio");
         }
     }
 }

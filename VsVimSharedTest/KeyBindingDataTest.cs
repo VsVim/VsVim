@@ -5,6 +5,7 @@ using System.Text;
 using Xunit;
 using VsVim;
 using VsVim.Implementation.ConflictingKey;
+using System.Collections.ObjectModel;
 
 namespace VsVim.UnitTest
 {
@@ -15,7 +16,7 @@ namespace VsVim.UnitTest
         {
             var binding = KeyBinding.Parse("Global::Ctrl+Left Arrow");
             var command = new CommandKeyBinding(new CommandId(), "Foo", binding);
-            var data = new KeyBindingData(new CommandKeyBinding[] { command });
+            var data = new KeyBindingData(new ReadOnlyCollection<CommandKeyBinding>(new CommandKeyBinding[] { command }));
             Assert.Equal("Ctrl+Left Arrow", data.KeyName);
             Assert.False(data.HandledByVsVim);
         }

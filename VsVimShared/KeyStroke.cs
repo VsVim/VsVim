@@ -22,7 +22,7 @@ namespace VsVim
         private readonly KeyModifiers _keyModifiers;
 
         /// <summary>
-        /// Actualy Key being entered
+        /// Actual Key being entered
         /// </summary>
         public KeyInput KeyInput
         {
@@ -76,6 +76,11 @@ namespace VsVim
         public override bool Equals(object obj)
         {
             return Equals(obj as KeyStroke);
+        }
+
+        public override string ToString()
+        {
+            return string.Format("{0} - {1}", KeyInput, KeyModifiers);
         }
 
         public bool Equals(KeyStroke other)
