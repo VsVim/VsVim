@@ -10,7 +10,7 @@ using System.Windows.Controls;
 
 namespace Vim.UI.Wpf.Implementation.CharDisplay
 {
-    internal sealed class CharDisplayTaggerSource : IBasicTaggerSource<IntraTextAdornmentTag>
+    internal sealed class CharDisplayTaggerSource : IBasicTaggerSource<IntraTextAdornmentTag>, IDisposable
     {
         private readonly ITextView _textView;
         private readonly Dictionary<int, UIElement> _adornmentCache = new Dictionary<int, UIElement>();
@@ -20,7 +20,11 @@ namespace Vim.UI.Wpf.Implementation.CharDisplay
         {
             _textView = textView;
             _textView.TextBuffer.Changed += OnTextBufferChanged;
-            _textView.Closed += OnTextViewClosed;
+        }
+
+        private void Dispose()
+        {
+            _textView.TextBuffer.Changed -= OnTextBufferChanged;
         }
 
         internal ReadOnlyCollection<ITagSpan<IntraTextAdornmentTag>> GetTags(SnapshotSpan span)
@@ -88,11 +92,6 @@ namespace Vim.UI.Wpf.Implementation.CharDisplay
             }
 
             return false;
-        }
-
-        private void OnTextViewClosed(object sender, EventArgs e)
-        {
-            _textView.TextBuffer.Changed -= OnTextBufferChanged;
         }
 
         private void RaiseChanged()
@@ -183,6 +182,15 @@ namespace Vim.UI.Wpf.Implementation.CharDisplay
         ITextSnapshot IBasicTaggerSource<IntraTextAdornmentTag>.TextSnapshot
         {
             get { return _textView.TextSnapshot; }
+        }
+
+        #endregion
+
+        #region IDisposable
+
+        void IDisposable.Dispose()
+        {
+            Dispose();            
         }
 
         #endregion
