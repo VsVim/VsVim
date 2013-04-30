@@ -48,6 +48,7 @@ namespace Vim.UI.Wpf.Implementation.CharDisplay
                 {
                     var textBox = new TextBox();
                     textBox.Text = "^]";
+                    textBox.BorderThickness = new Thickness(0);
                     textBox.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
                     adornment = textBox;
                     _adornmentCache[index] = textBox;
