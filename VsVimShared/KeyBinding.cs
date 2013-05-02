@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
 using Vim;
+using EditorUtils;
 
 namespace VsVim
 {
@@ -12,36 +14,31 @@ namespace VsVim
     /// </summary>
     public sealed class KeyBinding : IEquatable<KeyBinding>
     {
-        private readonly Lazy<string> _commandString;
-
         public readonly string Scope;
-        public readonly IEnumerable<KeyStroke> KeyStrokes;
-
-        public KeyStroke FirstKeyStroke
-        {
-            get { return KeyStrokes.First(); }
-        }
+        public readonly ReadOnlyCollection<KeyStroke> KeyStrokes;
 
         /// <summary>
         /// Visual Studio string which is the equivalent of this KeyBinding instance
         /// </summary>
-        public string CommandString
+        public readonly string CommandString;
+
+        public KeyStroke FirstKeyStroke
         {
-            get { return _commandString.Value; }
+            get { return KeyStrokes[0]; }
         }
 
         public KeyBinding(string scope, KeyStroke stroke)
         {
             Scope = scope;
-            KeyStrokes = Enumerable.Repeat(stroke, 1);
-            _commandString = new Lazy<string>(CreateCommandString);
+            KeyStrokes = new ReadOnlyCollection<KeyStroke>(new[] { stroke });
+            CommandString = CreateCommandString(scope, KeyStrokes);
         }
 
         public KeyBinding(string scope, IEnumerable<KeyStroke> strokes)
         {
             Scope = scope;
-            KeyStrokes = strokes.ToList();
-            _commandString = new Lazy<string>(CreateCommandString);
+            KeyStrokes = strokes.ToReadOnlyCollection();
+            CommandString = CreateCommandString(Scope, KeyStrokes);
         }
 
         #region Equality
@@ -82,13 +79,13 @@ namespace VsVim
 
         #endregion
 
-        private string CreateCommandString()
+        private static string CreateCommandString(string scope, IEnumerable<KeyStroke> keyStrokes)
         {
             var builder = new StringBuilder();
-            builder.Append(Scope);
+            builder.Append(scope);
             builder.Append("::");
             var isFirst = true;
-            foreach (var stroke in KeyStrokes)
+            foreach (var stroke in keyStrokes)
             {
                 if (!isFirst)
                 {

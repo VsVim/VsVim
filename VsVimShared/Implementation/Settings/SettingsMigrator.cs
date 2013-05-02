@@ -47,7 +47,7 @@ namespace VsVim.Implementation.Settings
             _protectedOperations = protectedOperations;
         }
 
-        private void DoMigration(IVimBuffer vimBuffer)
+        internal void DoMigration(IVimBuffer vimBuffer)
         {
             if (!NeedsMigration || vimBuffer.IsClosed)
             {
@@ -55,9 +55,15 @@ namespace VsVim.Implementation.Settings
             }
 
             var removedBindings = FindRemovedBindings();
+            DoMigration(removedBindings);
+        }
+
+        internal void DoMigration(ReadOnlyCollection<CommandKeyBinding> removedBindings)
+        {
             _vimApplicationSettings.HaveUpdatedKeyBindings = _legacySettings.HaveUpdatedKeyBindings;
             _vimApplicationSettings.IgnoredConflictingKeyBinding = _legacySettings.IgnoredConflictingKeyBinding;
             _vimApplicationSettings.RemovedBindings = removedBindings;
+            _vimApplicationSettings.LegacySettingsMigrated = true;
         }
 
         /// <summary>

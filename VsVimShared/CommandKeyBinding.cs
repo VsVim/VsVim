@@ -1,5 +1,6 @@
 ﻿
 using System;
+using System.Diagnostics;
 namespace VsVim
 {
     /// <summary>
@@ -36,6 +37,11 @@ namespace VsVim
         public override int GetHashCode()
         {
             return (int)Id ^ Group.GetHashCode();
+        }
+
+        public override string ToString()
+        {
+            return string.Format("{0} - {1}", Group, Id);
         }
 
         public static bool operator ==(CommandId left, CommandId right)

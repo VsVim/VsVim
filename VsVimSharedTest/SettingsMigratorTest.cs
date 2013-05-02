@@ -64,7 +64,7 @@ namespace VsVim.Shared.UnitTest
             }
         }
 
-        public sealed class LegacySettingsUsed : SettingsMigratorTest
+        public sealed class LegacySettingsUsedTest : SettingsMigratorTest
         {
             [Fact]
             public void Default()
@@ -93,6 +93,17 @@ namespace VsVim.Shared.UnitTest
                 var list = new List<CommandBindingSetting>(new[] { binding });
                 _legacySettings.SetupGet(x => x.RemovedBindings).Returns(list.AsReadOnly());
                 Assert.True(_settingsMigrator.LegacySettingsUsed);
+            }
+        }
+
+        public sealed class DoMigrationTest : SettingsMigratorTest
+        {
+            [Fact]
+            public void CompleteMigration()
+            {
+                var list = new ReadOnlyCollection<CommandKeyBinding>(new CommandKeyBinding[] { });
+                _settingsMigrator.DoMigration(list);
+                Assert.True(_vimApplicationSettings.Object.LegacySettingsMigrated);
             }
         }
     }
