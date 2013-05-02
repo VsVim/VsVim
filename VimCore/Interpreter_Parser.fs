@@ -1453,6 +1453,7 @@ type Parser
             match token.TokenKind with 
             | TokenKind.Word _ -> true
             | TokenKind.Character '.' -> true
+            | TokenKind.Character '_' -> true
             | _ -> false)
         match command with 
         | None -> ParseResult.Failed Resources.Parser_Error
