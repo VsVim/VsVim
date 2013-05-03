@@ -3,8 +3,10 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel.Composition;
 using EditorUtils;
+using EnvDTE;
 using Microsoft.VisualStudio.Settings;
 using Microsoft.VisualStudio.Shell;
+using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Shell.Settings;
 
 namespace VsVim.Implementation.Settings
@@ -45,10 +47,16 @@ namespace VsVim.Implementation.Settings
         }
 
         [ImportingConstructor]
-        internal VimApplicationSettings(SVsServiceProvider vsServiceProvider, [EditorUtilsImport] IProtectedOperations protectedOperations)
+        internal VimApplicationSettings(
+            SVsServiceProvider vsServiceProvider, 
+            ILegacySettings legacySettings,
+            [EditorUtilsImport] IProtectedOperations protectedOperations)
             : this(vsServiceProvider.GetVisualStudioVersion(), vsServiceProvider.GetWritableSettingsStore(), protectedOperations)
         {
-
+            // Migrate the old settings at startup 
+            var dte = vsServiceProvider.GetService<SDTE, _DTE>();
+            var settingsMigrator = new SettingsMigrator(dte, this, legacySettings);
+            settingsMigrator.DoMigration();
         }
 
         internal VimApplicationSettings(VisualStudioVersion visualStudioVersion, WritableSettingsStore settingsStore, IProtectedOperations protectedOperations)

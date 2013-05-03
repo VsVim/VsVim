@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using EditorUtils;
+using EnvDTE;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using Moq;
@@ -18,27 +19,20 @@ namespace VsVim.Shared.UnitTest
         protected readonly MockRepository _factory;
         protected readonly Mock<IVimApplicationSettings> _vimApplicationSettings;
         protected readonly Mock<ILegacySettings> _legacySettings;
-        protected readonly Mock<IProtectedOperations> _protectedOperations;
         internal readonly SettingsMigrator _settingsMigrator;
 
-        protected SettingsMigratorTest(MockRepository factory = null, SVsServiceProvider serviceProvider = null)
+        protected SettingsMigratorTest(MockRepository factory = null)
         {
             _factory = factory ?? new MockRepository(MockBehavior.Strict);
             _vimApplicationSettings = _factory.Create<IVimApplicationSettings>(MockBehavior.Loose);
             _legacySettings = _factory.Create<ILegacySettings>(MockBehavior.Loose);
             _legacySettings.SetupGet(x => x.RemovedBindings).Returns(EmptyBindings);
-            _protectedOperations = _factory.Create<IProtectedOperations>();
-            if (serviceProvider == null)
-            {
-                var dte = MockObjectFactory.CreateDteWithCommands();
-                serviceProvider = MockObjectFactory.CreateVsServiceProvider(Tuple.Create<Type, object>(typeof(SDTE), dte.Object)).Object;
-            }
+            var dte = MockObjectFactory.CreateDteWithCommands();
 
             _settingsMigrator = new SettingsMigrator(
-                serviceProvider,
+                dte.Object,
                 _vimApplicationSettings.Object,
-                _legacySettings.Object,
-                _protectedOperations.Object);
+                _legacySettings.Object);
         }
 
         public sealed class NeedsMigrationTest : SettingsMigratorTest

@@ -14,13 +14,11 @@ namespace VsVim.Implementation.Settings
     /// This class is used to migrate the old ILegacySettings information into the IVimApplicationSettings
     /// storage.  It should only ever run once on an installation
     /// </summary>
-    [Export(typeof(IVimBufferCreationListener))]
-    internal sealed class SettingsMigrator : IVimBufferCreationListener
+    internal sealed class SettingsMigrator 
     {
         private readonly _DTE _dte;
         private readonly IVimApplicationSettings _vimApplicationSettings;
         private readonly ILegacySettings _legacySettings;
-        private readonly IProtectedOperations _protectedOperations;
 
         /// <summary>
         /// Was ILegacySettings ever used on this installation
@@ -38,18 +36,16 @@ namespace VsVim.Implementation.Settings
             get { return !_vimApplicationSettings.LegacySettingsMigrated && LegacySettingsUsed; }
         }
 
-        [ImportingConstructor]
-        internal SettingsMigrator(SVsServiceProvider serviceProvider, IVimApplicationSettings vimApplicationSettings, ILegacySettings legacySettings, [EditorUtilsImport] IProtectedOperations protectedOperations)
+        internal SettingsMigrator(_DTE dte, IVimApplicationSettings vimApplicationSettings, ILegacySettings legacySettings)
         {
-            _dte = serviceProvider.GetService<SDTE, _DTE>();
+            _dte = dte;
             _vimApplicationSettings = vimApplicationSettings;
             _legacySettings = legacySettings;
-            _protectedOperations = protectedOperations;
         }
 
-        internal void DoMigration(IVimBuffer vimBuffer)
+        internal void DoMigration()
         {
-            if (!NeedsMigration || vimBuffer.IsClosed)
+            if (!NeedsMigration)
             {
                 return;
             }
@@ -121,21 +117,5 @@ namespace VsVim.Implementation.Settings
 
             return list.ToReadOnlyCollectionShallow();
         }
-
-        #region IVimBufferCreationListener
-
-        void IVimBufferCreationListener.VimBufferCreated(IVimBuffer vimBuffer)
-        {
-            // This work only needs to be done once and consumes noticeable cycles while
-            // operating.  Skip this if settings are already migrated
-            if (!NeedsMigration)
-            {
-                return;
-            }
-
-            _protectedOperations.BeginInvoke(() => DoMigration(vimBuffer), DispatcherPriority.ApplicationIdle);
-        }
-
-        #endregion
     }
 }
