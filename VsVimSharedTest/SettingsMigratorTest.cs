@@ -101,6 +101,7 @@ namespace VsVim.Shared.UnitTest
             [Fact]
             public void CompleteMigration()
             {
+                _vimApplicationSettings.SetupProperty(x => x.LegacySettingsMigrated);
                 var list = new ReadOnlyCollection<CommandKeyBinding>(new CommandKeyBinding[] { });
                 _settingsMigrator.DoMigration(list);
                 Assert.True(_vimApplicationSettings.Object.LegacySettingsMigrated);

@@ -28,27 +28,16 @@ namespace VsVim.Implementation.Misc
         private ConflictingKeyBindingState _state;
         private HashSet<KeyInput> _vimFirstKeyInputSet;
 
-        [ImportingConstructor]
-        internal KeyBindingService(SVsServiceProvider serviceProvider, IOptionsDialogService service, [EditorUtilsImport] IProtectedOperations protectedOperations, IVimApplicationSettings vimApplicationSettings)
+        internal HashSet<KeyInput> VimFirstKeyInputSet
         {
-            _dte = serviceProvider.GetService<SDTE, _DTE>();
-            _vsShell = serviceProvider.GetService<SVsShell, IVsShell>();
-            _optionsDialogService = service;
-            _protectedOperations = protectedOperations;
-            _vimApplicationSettings = vimApplicationSettings;
-            _importantScopeSet = new Lazy<HashSet<string>>(CreateImportantScopeSet);
-        }
-
-        internal void UpdateConflictingState(ConflictingKeyBindingState state, CommandKeyBindingSnapshot snapshot)
-        {
-            _vimFirstKeyInputSet = null;
-            ConflictingKeyBindingState = state;
+            get { return _vimFirstKeyInputSet; }
+            set { _vimFirstKeyInputSet = value; }
         }
 
         internal ConflictingKeyBindingState ConflictingKeyBindingState
         {
             get { return _state; }
-            private set
+            set
             {
                 if (_state != value)
                 {
@@ -62,14 +51,22 @@ namespace VsVim.Implementation.Misc
             }
         }
 
+        [ImportingConstructor]
+        internal KeyBindingService(SVsServiceProvider serviceProvider, IOptionsDialogService service, [EditorUtilsImport] IProtectedOperations protectedOperations, IVimApplicationSettings vimApplicationSettings)
+        {
+            _dte = serviceProvider.GetService<SDTE, _DTE>();
+            _vsShell = serviceProvider.GetService<SVsShell, IVsShell>();
+            _optionsDialogService = service;
+            _protectedOperations = protectedOperations;
+            _vimApplicationSettings = vimApplicationSettings;
+            _importantScopeSet = new Lazy<HashSet<string>>(CreateImportantScopeSet);
+        }
+
         internal event EventHandler ConflictingKeyBindingStateChanged;
 
-        internal void RunConflictingKeyBindingStateCheck(IVimBuffer buffer)
+        internal void RunConflictingKeyBindingStateCheck(IVimBuffer vimBuffer)
         {
-            // Create the set of KeyInput values which are handled by VsVim
-            var needed = buffer.AllModes.Select(x => x.CommandNames).SelectMany(x => x).ToList();
-            needed.Add(KeyInputSet.NewOneKeyInput(buffer.LocalSettings.GlobalSettings.DisableAllCommand));
-            _vimFirstKeyInputSet = new HashSet<KeyInput>(needed.Select(x => x.KeyInputs.First()));
+            _vimFirstKeyInputSet = CreateVimFirstKeyInputSet(vimBuffer);
 
             // Calculate the current conflicting state.  Can't cache the snapshot here because we don't 
             // receive any notifications when key bindings change in Visual Studio.  Have to assume they 
@@ -107,7 +104,7 @@ namespace VsVim.Implementation.Misc
         /// <summary>
         /// Compute the set of keys that conflict with and have been already been removed.
         /// </summary>
-        internal CommandKeyBindingSnapshot CreateCommandKeyBindingSnapshot(IVimBuffer buffer)
+        internal HashSet<KeyInput> CreateVimFirstKeyInputSet(IVimBuffer buffer)
         {
             // Get the list of all KeyInputs that are the first key of a VsVim command
             var hashSet = new HashSet<KeyInput>(
@@ -116,6 +113,9 @@ namespace VsVim.Implementation.Misc
                 .SelectMany(x => x)
                 .Where(x => x.KeyInputs.Length > 0)
                 .Select(x => x.KeyInputs.First()));
+
+            // Include the key used to disable VsVim
+            hashSet.Add(buffer.LocalSettings.GlobalSettings.DisableAllCommand);
 
             // Need to get the custom key bindings in the list.  It's very common for users 
             // to use for example function keys (<F2>, <F3>, etc ...) in their mappings which
@@ -129,21 +129,27 @@ namespace VsVim.Implementation.Misc
                 }
             }
 
-            // Include the key used to disable VsVim
-            hashSet.Add(buffer.LocalSettings.GlobalSettings.DisableAllCommand);
+            return hashSet;
+        }
 
+        /// <summary>
+        /// Compute the set of keys that conflict with and have been already been removed.
+        /// </summary>
+        internal CommandKeyBindingSnapshot CreateCommandKeyBindingSnapshot(IVimBuffer vimBuffer)
+        {
+            var hashSet = CreateVimFirstKeyInputSet(vimBuffer);
             return CreateCommandKeyBindingSnapshot(hashSet);
         }
 
-        internal CommandKeyBindingSnapshot CreateCommandKeyBindingSnapshot(HashSet<KeyInput> needed)
+        internal CommandKeyBindingSnapshot CreateCommandKeyBindingSnapshot(HashSet<KeyInput> vimFirstKeyInputSet)
         {
             var commandListSnapshot = new CommandListSnapshot(_dte);
-            var conflicting = FindConflictingCommandKeyBindings(commandListSnapshot, needed);
+            var conflicting = FindConflictingCommandKeyBindings(commandListSnapshot, vimFirstKeyInputSet);
             var removed = FindRemovedKeyBindings(commandListSnapshot);
 
             return new CommandKeyBindingSnapshot(
                 commandListSnapshot,
-                needed,
+                vimFirstKeyInputSet,
                 removed,
                 conflicting);
         }

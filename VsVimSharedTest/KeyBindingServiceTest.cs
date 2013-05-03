@@ -125,7 +125,7 @@ namespace VsVim.UnitTest
         public void ResolveAnyConflicts2()
         {
             Create();
-            _serviceRaw.UpdateConflictingState(ConflictingKeyBindingState.ConflictsIgnoredOrResolved, null);
+            _serviceRaw.ConflictingKeyBindingState = ConflictingKeyBindingState.ConflictsIgnoredOrResolved;
             _service.ResolveAnyConflicts();
             Assert.Equal(ConflictingKeyBindingState.ConflictsIgnoredOrResolved, _serviceRaw.ConflictingKeyBindingState);
         }
@@ -134,13 +134,9 @@ namespace VsVim.UnitTest
         public void ResolveAnyConflicts3()
         {
             Create("::ctrl+h");
-            var snapshot = new CommandKeyBindingSnapshot(
-                new CommandListSnapshot(_dte.Object),
-                new KeyInput[] { },
-                Enumerable.Empty<CommandKeyBinding>(),
-                Enumerable.Empty<CommandKeyBinding>());
-            _serviceRaw.UpdateConflictingState(ConflictingKeyBindingState.FoundConflicts, snapshot);
-            _optionsDialogService.Setup(x => x.ShowConflictingKeyBindingsDialog(snapshot)).Returns(true).Verifiable();
+            _serviceRaw.ConflictingKeyBindingState = ConflictingKeyBindingState.FoundConflicts;
+            _serviceRaw.VimFirstKeyInputSet = new HashSet<KeyInput>();
+            _optionsDialogService.Setup(x => x.ShowConflictingKeyBindingsDialog(It.IsAny<CommandKeyBindingSnapshot>())).Returns(true).Verifiable();
             _serviceRaw.ResolveAnyConflicts();
             Assert.Equal(ConflictingKeyBindingState.ConflictsIgnoredOrResolved, _service.ConflictingKeyBindingState);
         }
@@ -149,13 +145,9 @@ namespace VsVim.UnitTest
         public void ResolveAnyConflicts4()
         {
             Create("::ctrl+h");
-            var snapshot = new CommandKeyBindingSnapshot(
-                new CommandListSnapshot(_dte.Object),
-                new KeyInput[] { },
-                Enumerable.Empty<CommandKeyBinding>(),
-                Enumerable.Empty<CommandKeyBinding>());
-            _serviceRaw.UpdateConflictingState(ConflictingKeyBindingState.FoundConflicts, snapshot);
-            _optionsDialogService.Setup(x => x.ShowConflictingKeyBindingsDialog(snapshot)).Returns(false).Verifiable();
+            _serviceRaw.ConflictingKeyBindingState = ConflictingKeyBindingState.FoundConflicts;
+            _serviceRaw.VimFirstKeyInputSet = new HashSet<KeyInput>();
+            _optionsDialogService.Setup(x => x.ShowConflictingKeyBindingsDialog(It.IsAny<CommandKeyBindingSnapshot>())).Returns(false).Verifiable();
             _serviceRaw.ResolveAnyConflicts();
             Assert.Equal(ConflictingKeyBindingState.FoundConflicts, _service.ConflictingKeyBindingState);
         }
