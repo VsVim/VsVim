@@ -595,7 +595,7 @@ namespace Vim.UnitTest
             }
         }
 
-        public sealed class VisualStudioCommandTest : CommandModeIntegrationTest
+        public sealed class RunVisualStudioCommandTest : CommandModeIntegrationTest
         {
             [Fact]
             public void SimpleCommand()
@@ -609,6 +609,24 @@ namespace Vim.UnitTest
                         Assert.Equal("", argument);
                     };
                 RunCommandRaw(":vsc Edit.Comment");
+                Assert.True(didRun);
+            }
+
+            /// <summary>
+            /// It is legal for visual studio commands to have underscores in the name
+            /// </summary>
+            [Fact]
+            public void NameWithUnderscore()
+            {
+                Create("");
+                var didRun = false;
+                _vimHost.RunVisualStudioCommandFunc = (commandName, argument) =>
+                    {
+                        didRun = true;
+                        Assert.Equal("Edit_Comment", commandName);
+                        Assert.Equal("", argument);
+                    };
+                RunCommandRaw(":vsc Edit_Comment");
                 Assert.True(didRun);
             }
 
