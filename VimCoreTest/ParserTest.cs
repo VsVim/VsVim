@@ -227,6 +227,34 @@ namespace Vim.UnitTest
                     Assert.True(parser.IsDone);
                 }
             }
+
+            /// <summary>
+            /// Need to be able to handle the colon being the first thing in a parser command
+            /// </summary>
+            public sealed class ColonPrefixTest : EdgeCasesTest
+            {
+                [Fact]
+                public void Simple()
+                {
+                    var parser = CreateParser(":let x = 4");
+                    var parseResult = parser.ParseNextLineCommand();
+                    Assert.True(parseResult.IsSucceeded);
+                    Assert.True(parseResult.AsSucceeded().Item.IsLet);
+                }
+
+                [Fact]
+                public void Multiline()
+                {
+                    var parser = CreateParser(":let x = 4", ":set hlsearch");
+                    var parseResult = parser.ParseNextLineCommand();
+                    Assert.True(parseResult.IsSucceeded);
+                    Assert.True(parseResult.AsSucceeded().Item.IsLet);
+
+                    parseResult = parser.ParseNextLineCommand();
+                    Assert.True(parseResult.IsSucceeded);
+                    Assert.True(parseResult.AsSucceeded().Item.IsSet);
+                }
+            }
         }
 
         public sealed class IfTest : ParserTest

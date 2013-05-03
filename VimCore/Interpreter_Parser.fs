@@ -1863,7 +1863,10 @@ type Parser
     /// Parse out a single expression
     member x.ParseSingleCommandCore() = 
 
-        x.SkipBlanks()
+        // Skip the white space and : at the beginning of the line
+        while _tokenizer.CurrentChar = ':' || _tokenizer.CurrentTokenKind = TokenKind.Blank do
+            _tokenizer.MoveNextChar()
+
         let lineRange = x.ParseLineRange()
 
         let noRange parseFunc = 

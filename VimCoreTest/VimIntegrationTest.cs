@@ -145,6 +145,25 @@ let x = 42
                 Assert.False(_globalSettings.HighlightSearch);
                 Assert.Equal(42, Vim.VariableMap["x"].AsNumber().Item);
             }
+
+            /// <summary>
+            /// Make sure this code can handle the case where the vimrc file has colons at the start of the
+            /// lines.  Introduced a bug during the development of 1.4.0 that regressed this because of a 
+            /// combination of other features
+            /// </summary>
+            [Fact]
+            public void HasColons()
+            {
+                var text = @"
+:set incsearch
+:set ts=4
+:set sw=4
+";
+                Run(text);
+                Assert.True(_globalSettings.IncrementalSearch);
+                Assert.Equal(4, _vim._vimRcLocalSettings.TabStop);
+                Assert.Equal(4, _vim._vimRcLocalSettings.ShiftWidth);
+            }
         }
     }
 }

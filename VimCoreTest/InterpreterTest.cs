@@ -339,6 +339,36 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class RunScriptTest : InterpreterTest
+        {
+            private void RunScript(params string[] lines)
+            {
+                _interpreter.RunScript(lines);
+            }
+
+            [Fact]
+            public void Simple()
+            {
+                Create("");
+                RunScript(
+                    ":set incsearch",
+                    ":set ts=4");
+                Assert.True(_globalSettings.IncrementalSearch);
+                Assert.Equal(4, _localSettings.TabStop);
+            }
+
+            [Fact]
+            public void SimpleWithoutColons()
+            {
+                Create("");
+                RunScript(
+                    "set incsearch",
+                    "set ts=4");
+                Assert.True(_globalSettings.IncrementalSearch);
+                Assert.Equal(4, _localSettings.TabStop);
+            }
+        }
+
         public sealed class SetTest : InterpreterTest
         {
             /// <summary>
