@@ -26,12 +26,7 @@ namespace VsVim.Implementation.Misc
         private readonly IVimApplicationSettings _vimApplicationSettings;
         private Lazy<HashSet<string>> _importantScopeSet;
         private ConflictingKeyBindingState _state;
-        private CommandKeyBindingSnapshot _snapshot;
-
-        internal CommandKeyBindingSnapshot CommandKeyBindingSnapshotOptional
-        {
-            get { return _snapshot; }
-        }
+        private HashSet<KeyInput> _vimFirstKeyInputSet;
 
         [ImportingConstructor]
         internal KeyBindingService(SVsServiceProvider serviceProvider, IOptionsDialogService service, [EditorUtilsImport] IProtectedOperations protectedOperations, IVimApplicationSettings vimApplicationSettings)
@@ -46,7 +41,7 @@ namespace VsVim.Implementation.Misc
 
         internal void UpdateConflictingState(ConflictingKeyBindingState state, CommandKeyBindingSnapshot snapshot)
         {
-            _snapshot = snapshot;
+            _vimFirstKeyInputSet = null;
             ConflictingKeyBindingState = state;
         }
 
@@ -74,12 +69,13 @@ namespace VsVim.Implementation.Misc
             // Create the set of KeyInput values which are handled by VsVim
             var needed = buffer.AllModes.Select(x => x.CommandNames).SelectMany(x => x).ToList();
             needed.Add(KeyInputSet.NewOneKeyInput(buffer.LocalSettings.GlobalSettings.DisableAllCommand));
-            var set = new HashSet<KeyInput>(needed.Select(x => x.KeyInputs.First()));
+            _vimFirstKeyInputSet = new HashSet<KeyInput>(needed.Select(x => x.KeyInputs.First()));
 
-            // Take a snapshot based on the current state of the DTE commands and store it
-            // and the conflicting state
-            _snapshot = CreateCommandKeyBindingSnapshot(set);
-            ConflictingKeyBindingState = _snapshot.Conflicting.Any()
+            // Calculate the current conflicting state.  Can't cache the snapshot here because we don't 
+            // receive any notifications when key bindings change in Visual Studio.  Have to assume they 
+            // change at all times
+            var snapshot = CreateCommandKeyBindingSnapshot(_vimFirstKeyInputSet);
+            ConflictingKeyBindingState = snapshot.Conflicting.Any()
                 ? ConflictingKeyBindingState.FoundConflicts
                 : ConflictingKeyBindingState.ConflictsIgnoredOrResolved;
         }
@@ -87,17 +83,17 @@ namespace VsVim.Implementation.Misc
         internal void ResetConflictingKeyBindingState()
         {
             ConflictingKeyBindingState = ConflictingKeyBindingState.HasNotChecked;
-            _snapshot = null;
         }
 
         internal void ResolveAnyConflicts()
         {
-            if (_snapshot == null || _state != ConflictingKeyBindingState.FoundConflicts)
+            if (_vimFirstKeyInputSet == null || _state != ConflictingKeyBindingState.FoundConflicts)
             {
                 return;
             }
 
-            if (_optionsDialogService.ShowConflictingKeyBindingsDialog(_snapshot))
+            var snapshot = CreateCommandKeyBindingSnapshot(_vimFirstKeyInputSet);
+            if (_optionsDialogService.ShowConflictingKeyBindingsDialog(snapshot))
             {
                 ConflictingKeyBindingState = ConflictingKeyBindingState.ConflictsIgnoredOrResolved;
             }
@@ -215,9 +211,9 @@ namespace VsVim.Implementation.Misc
                 return true;
             }
 
-            // In Vim ctlr+shift+f is exactly the same command as ctrl+f.  Vim simply ignores the 
+            // In Vim Ctrl+Shift+f is exactly the same command as ctrl+f.  Vim simply ignores the 
             // shift key when processing a control command with an alpha character.  Visual Studio
-            // though does differentiate.  Ctrl+f is differente than Ctrl+Shift+F.  So don't 
+            // though does differentiate.  Ctrl+f is different than Ctrl+Shift+F.  So don't 
             // process any alpha commands which have both Ctrl and Shift as Vim wouldn't 
             // ever hit them
             if (Char.IsLetter(first.Char) && first.KeyModifiers == (KeyModifiers.Shift | KeyModifiers.Control))
