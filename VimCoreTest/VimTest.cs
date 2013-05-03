@@ -150,9 +150,24 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class FocussedBufferTest : VimTest
+        {
+            /// <summary>
+            /// If the ITextView doesn't have an IVimBuffer associated with it then it should still 
+            /// return None
+            /// </summary>
+            [Fact]
+            public void UnknownTextView()
+            {
+                var textView = _factory.Create<ITextView>().Object;
+                _vimHost.Setup(x => x.GetFocusedTextView()).Returns(FSharpOption.Create(textView));
+                var option = _vim.FocusedBuffer;
+                Assert.True(option.IsNone());
+            }
+        }
+
         public sealed class GetOrCreateVimBufferForHostTest : VimTest
         {
-    
             /// <summary>
             /// If the host allows it then the IVimBuffer should be created 
             /// </summary>

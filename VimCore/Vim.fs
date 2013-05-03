@@ -198,7 +198,7 @@ type internal VimBufferFactory
         let buffer = bufferRaw :> IVimBuffer
 
         let vim = vimBufferData.Vim
-        let createCommandRunner kind = CommandRunner (textView, vim.RegisterMap, capture, commandUtil, vimBufferData.StatusUtil, kind) :>ICommandRunner
+        let createCommandRunner kind countKeyRemapMode = CommandRunner (textView, vim.RegisterMap, capture, commandUtil, vimBufferData.StatusUtil, kind, countKeyRemapMode) :>ICommandRunner
         let broker = _completionWindowBrokerFactoryService.CreateDisplayWindowBroker textView
         let bufferOptions = _editorOptionsFactoryService.GetOptions(textView.TextBuffer)
         let visualOptsFactory visualKind = Modes.Visual.SelectionTracker(textView, vim.GlobalSettings, incrementalSearch, visualKind) :> Modes.Visual.ISelectionTracker
@@ -208,7 +208,7 @@ type internal VimBufferFactory
             VisualKind.All
             |> Seq.map (fun visualKind -> 
                 let tracker = visualOptsFactory visualKind
-                ((Modes.Visual.VisualMode(vimBufferData, commonOperations, motionUtil, visualKind, createCommandRunner visualKind, capture, tracker)) :> IMode) )
+                ((Modes.Visual.VisualMode(vimBufferData, commonOperations, motionUtil, visualKind, createCommandRunner visualKind KeyRemapMode.Visual, capture, tracker)) :> IMode) )
 
         let selectModeSeq = 
             VisualKind.All
@@ -226,7 +226,7 @@ type internal VimBufferFactory
         let editOptions = _editorOptionsFactoryService.GetOptions(textView)
         let modeList = 
             [
-                ((Modes.Normal.NormalMode(vimBufferData, commonOperations, motionUtil, createCommandRunner VisualKind.Character, capture)) :> IMode)
+                ((Modes.Normal.NormalMode(vimBufferData, commonOperations, motionUtil, createCommandRunner VisualKind.Character KeyRemapMode.Normal, capture)) :> IMode)
                 ((Modes.Command.CommandMode(buffer, commonOperations)) :> IMode)
                 ((Modes.Insert.InsertMode(buffer, commonOperations, broker, editOptions, undoRedoOperations, textChangeTracker, insertUtil, false, _keyboardDevice, _mouseDevice, wordUtil, _wordCompletionSessionFactoryService)) :> IMode)
                 ((Modes.Insert.InsertMode(buffer, commonOperations, broker, editOptions, undoRedoOperations, textChangeTracker, insertUtil, true, _keyboardDevice, _mouseDevice, wordUtil, _wordCompletionSessionFactoryService)) :> IMode)
@@ -377,9 +377,13 @@ type internal Vim
         | None -> 
             None
         | Some textView -> 
-            let found, (vimBuffer, _, _) = _vimBufferMap.TryGetValue(textView)
-            if found then Some vimBuffer
-            else None
+            
+            let found, tuple = _vimBufferMap.TryGetValue(textView)
+            if found then 
+                let (vimBuffer, _, _) = tuple
+                Some vimBuffer
+            else 
+                None
 
     /// Get the IVimLocalSettings which should be the basis for a newly created IVimTextBuffer
     member x.GetLocalSettingsForNewTextBuffer () =

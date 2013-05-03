@@ -1637,38 +1637,6 @@ namespace Vim.UnitTest
                 Assert.True(_vimBuffer.NormalMode.KeyRemapMode.IsNone());
             }
 
-            /// <summary>
-            /// Make sure that we don't regress issue 522.  In this particular case the user
-            /// has defined apparent recursive mappings and we need to make sure they aren't
-            /// treated as such
-            ///
-            /// Strictly speaking the ounmap calls aren't necessary but keeping them here for 
-            /// completeness with the sample
-            /// </summary>
-            [Fact]
-            public void Regression_Issue522()
-            {
-                Create("cat", "dog");
-                _vimBuffer.Process(":map j gj", enter: true);
-                _vimBuffer.Process(":ounmap j", enter: true);
-                _vimBuffer.Process(":map k gk", enter: true);
-                _vimBuffer.Process(":ounmap k", enter: true);
-                _vimBuffer.Process("j");
-                Assert.Equal(_textBuffer.GetLine(1).Start, _textView.GetCaretPoint());
-            }
-
-            [Fact]
-            public void Regression_Issue896()
-            {
-                Create("");
-                _vimBuffer.Process(":nnoremap <Esc> :nohl<Enter><Esc>", enter: true);
-
-                var ran = false;
-                _vimData.HighlightSearchOneTimeDisabled += delegate { ran = true; };
-                _vimBuffer.Process(VimKey.Escape);
-                Assert.True(ran);
-            }
-
             [Fact]
             public void ProcessBufferedKeyInputsShouldMap()
             {
@@ -1679,32 +1647,6 @@ namespace Vim.UnitTest
                 Assert.Equal(1, _vimBuffer.BufferedKeyInputs.Length);
                 _vimBuffer.ProcessBufferedKeyInputs();
                 Assert.Equal("short", _textBuffer.GetLine(0).GetText());
-            }
-
-            /// <summary>
-            /// Make sure the ambiguous case (:help map-ambiguous) is done correctly in the
-            /// face of operators
-            /// </summary>
-            [Fact]
-            public void Regression_Issue880_Part1()
-            {
-                Create("cat", "dog");
-                _vimBuffer.Process(":nnoremap c y", enter: true);
-                _vimBuffer.Process(":nnoremap cc yy", enter: true);
-                _vimBuffer.Process("cc");
-                Assert.Equal("cat\r\n", UnnamedRegister.StringValue);
-            }
-
-            /// <summary>
-            /// Make sure that we properly handle the mapping during operator pending
-            /// </summary>
-            [Fact]
-            public void Regression_Issue880_Part3()
-            {
-                Create("cat", "dog");
-                _vimBuffer.Process(":nnoremap w e", enter: true);
-                _vimBuffer.Process("yw");
-                Assert.Equal("cat", UnnamedRegister.StringValue);
             }
 
             /// <summary>
@@ -1762,6 +1704,104 @@ namespace Vim.UnitTest
                 _vimBuffer.Process(":nmap <BS> a and backspace", enter: true);
                 _vimBuffer.ProcessNotation("<C-H><BS>");
                 Assert.Equal("control h and backspace", _textBuffer.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// After the count the key mapping mode should still be set to normal
+            /// </summary>
+            [Fact]
+            public void NormalAfterCount()
+            {
+                Create("");
+                _vimBuffer.Process("2");
+                Assert.True(_normalMode.KeyRemapMode.Is(KeyRemapMode.Normal));
+            }
+
+            /// <summary>
+            /// After the register the key mapping mode is not defined
+            /// </summary>
+            [Fact]
+            public void NoneAfterRegister()
+            {
+                Create("");
+                _vimBuffer.Process("\"");
+                Assert.True(_normalMode.KeyRemapMode.IsNone());
+            }
+
+            /// <summary>
+            /// Make sure that we don't regress issue 522.  In this particular case the user
+            /// has defined apparent recursive mappings and we need to make sure they aren't
+            /// treated as such
+            ///
+            /// Strictly speaking the ounmap calls aren't necessary but keeping them here for 
+            /// completeness with the sample
+            /// </summary>
+            [Fact]
+            public void Issue522()
+            {
+                Create("cat", "dog");
+                _vimBuffer.Process(":map j gj", enter: true);
+                _vimBuffer.Process(":ounmap j", enter: true);
+                _vimBuffer.Process(":map k gk", enter: true);
+                _vimBuffer.Process(":ounmap k", enter: true);
+                _vimBuffer.Process("j");
+                Assert.Equal(_textBuffer.GetLine(1).Start, _textView.GetCaretPoint());
+            }
+
+            [Fact]
+            public void Issue896()
+            {
+                Create("");
+                _vimBuffer.Process(":nnoremap <Esc> :nohl<Enter><Esc>", enter: true);
+
+                var ran = false;
+                _vimData.HighlightSearchOneTimeDisabled += delegate { ran = true; };
+                _vimBuffer.Process(VimKey.Escape);
+                Assert.True(ran);
+            }
+
+
+            /// <summary>
+            /// Make sure the ambiguous case (:help map-ambiguous) is done correctly in the
+            /// face of operators
+            /// </summary>
+            [Fact]
+            public void Issue880_Part1()
+            {
+                Create("cat", "dog");
+                _vimBuffer.Process(":nnoremap c y", enter: true);
+                _vimBuffer.Process(":nnoremap cc yy", enter: true);
+                _vimBuffer.Process("cc");
+                Assert.Equal("cat\r\n", UnnamedRegister.StringValue);
+            }
+
+            /// <summary>
+            /// Make sure that we properly handle the mapping during operator pending
+            /// </summary>
+            [Fact]
+            public void Issue880_Part2()
+            {
+                Create("cat", "dog");
+                _vimBuffer.Process(":nnoremap w e", enter: true);
+                _vimBuffer.Process("yw");
+                Assert.Equal("cat", UnnamedRegister.StringValue);
+            }
+
+
+            /// <summary>
+            /// Make sure that key mapping correctly takse effect after a count.  For example when trying
+            /// to replay a macro with a count 
+            /// </summary>
+            [Fact]
+            public void Issue1083()
+            {
+                Create("");
+                var keyInputSet = KeyNotationUtil.StringToKeyInputSet("il<Esc>");
+                RegisterMap.GetRegister('q').UpdateValue(keyInputSet.KeyInputs.ToArray());
+                _vimBuffer.Process(":nmap <space> @q", enter: true);
+                _vimBuffer.ProcessNotation("2<Space>");
+                Assert.Equal("ll", _textBuffer.CurrentSnapshot.GetText());
+                Assert.Equal(0, _textView.GetCaretPoint().Position);
             }
         }
 

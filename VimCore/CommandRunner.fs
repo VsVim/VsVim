@@ -21,10 +21,11 @@ type internal CommandRunner
     ( 
         _textView : ITextView,
         _registerMap : IRegisterMap,
-        _capture : IMotionCapture,
+        _motionCapture : IMotionCapture,
         _commandUtil : ICommandUtil,
         _statusUtil : IStatusUtil,
-        _visualKind : VisualKind
+        _visualKind : VisualKind,
+        _countKeyRemapMode : KeyRemapMode
     ) =
 
     /// Represents the empty state for processing commands.  Holds all of the default
@@ -69,7 +70,7 @@ type internal CommandRunner
         let rec inner (num:string) (ki:KeyInput) = 
             if ki.IsDigit then
                 let num = num + ki.Char.ToString()
-                BindResult.NeedMoreInput { KeyRemapMode = None; BindFunction = inner num }
+                BindResult.NeedMoreInput { KeyRemapMode = Some _countKeyRemapMode; BindFunction = inner num }
             else
                 let count = System.Int32.Parse(num)
                 completeFunc count ki
@@ -155,7 +156,7 @@ type internal CommandRunner
                 else
                     // Not the special case so just do a normal motion mapping.  We have the count at 
                     // this point so go straight for the motion
-                    let result = _capture.GetMotion keyInput
+                    let result = _motionCapture.GetMotion keyInput
                     result.Convert (fun motion -> convertMotion motion countOpt))
 
         if Util.IsFlagSet commandBinding.CommandFlags CommandFlags.Delete then
@@ -163,7 +164,7 @@ type internal CommandRunner
         elif Util.IsFlagSet commandBinding.CommandFlags CommandFlags.Yank then
             doSpecialBinding NormalCommand.YankLines 'y'
         else
-            let result = _capture.GetMotionAndCount keyInput
+            let result = _motionCapture.GetMotionAndCount keyInput
             result.Convert (fun (motion, motionCount) -> convertMotion motion motionCount)
 
     /// Bind the Command instance

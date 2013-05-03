@@ -441,6 +441,19 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class KeyMappingTest : VisualModeIntegrationTest
+        {
+            [Fact]
+            public void VisualAfterCount()
+            {
+                Create("cat dog");
+                _vimBuffer.Process(":vmap <space> l", enter: true);
+                _vimBuffer.ProcessNotation("v2<Space>");
+                Assert.Equal(2, _textView.GetCaretPoint().Position);
+                Assert.Equal("cat", _textView.GetSelectionSpan().GetText());
+            }
+        }
+
         public sealed class ChangeCase : VisualModeIntegrationTest
         {
             [Fact]

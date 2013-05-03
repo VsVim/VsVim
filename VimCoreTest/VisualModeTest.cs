@@ -52,7 +52,8 @@ namespace Vim.UnitTest
                 capture,
                 _commandUtil.Object,
                 (new Mock<IStatusUtil>()).Object,
-                VisualKind.Character);
+                VisualKind.Character,
+                KeyRemapMode.Visual);
             _modeRaw = new VisualMode(vimBufferData, _operations.Object, motionUtil, visualKind, runner, capture, _tracker.Object);
             _mode = _modeRaw;
             _mode.OnEnter(ModeArgument.None);

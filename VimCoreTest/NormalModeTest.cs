@@ -62,7 +62,8 @@ namespace Vim.UnitTest
                 capture,
                 _commandUtil.Object,
                 vimBufferData.StatusUtil,
-                VisualKind.Character);
+                VisualKind.Character,
+                KeyRemapMode.Normal);
             _modeRaw = new NormalMode(
                 vimBufferData,
                 operations,
