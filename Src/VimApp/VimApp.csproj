@@ -9,8 +9,8 @@
     <ProjectGuid>{8DB1C327-21A1-448B-A7A1-23EEF6BAA785}</ProjectGuid>
     <OutputType>WinExe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>VimTestApp</RootNamespace>
-    <AssemblyName>VimTestApp</AssemblyName>
+    <RootNamespace>VimApp</RootNamespace>
+    <AssemblyName>VimApp</AssemblyName>
     <FileAlignment>512</FileAlignment>
     <ProjectTypeGuids>{60dc8134-eba5-43b8-bcc9-bb4bc16c2548};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
     <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\</SolutionDir>
@@ -63,7 +63,7 @@
     <Compile Include="DefaultKeyProcessorProvider.cs" />
     <Compile Include="Extensions.cs" />
     <Compile Include="VimComponentHost.cs" />
-    <Compile Include="VimTestAppHost.cs" />
+    <Compile Include="VimAppHost.cs" />
     <ApplicationDefinition Include="App.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>

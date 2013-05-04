@@ -4,7 +4,7 @@ using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Operations;
 using Vim;
 
-namespace VimTestApp
+namespace VimApp
 {
     [Export(typeof(IVimHost))]
     [Export(typeof(DefaultVimHost))]

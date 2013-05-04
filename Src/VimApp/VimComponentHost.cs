@@ -7,7 +7,7 @@ using Microsoft.VisualStudio.Text;
 using Vim;
 using Vim.UI.Wpf;
 
-namespace VimTestApp
+namespace VimApp
 {
     sealed class VimComponentHost : EditorHost
     {

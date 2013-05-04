@@ -9,7 +9,7 @@ using System.Diagnostics;
 using Vim;
 using Vim.Extensions;
 
-namespace VimTestApp
+namespace VimApp
 {
     /// <summary>
     /// Interaction logic for MainWindow.xaml

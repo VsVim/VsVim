@@ -16,7 +16,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VimWpf", "Src\VimWpf\VimWpf
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VimWpfTest", "Test\VimWpfTest\VimWpfTest.csproj", "{797C1463-3984-47BE-8CD2-4FF68D1E30DA}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VimTestApp", "Src\VimTestApp\VimTestApp.csproj", "{8DB1C327-21A1-448B-A7A1-23EEF6BAA785}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VimApp", "Src\VimApp\VimApp.csproj", "{8DB1C327-21A1-448B-A7A1-23EEF6BAA785}"
 EndProject
 Global
 	GlobalSection(TestCaseManagementSettings) = postSolution

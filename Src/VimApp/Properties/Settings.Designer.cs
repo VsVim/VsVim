@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace VimTestApp.Properties
+namespace VimApp.Properties
 {
 
 

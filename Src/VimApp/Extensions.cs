@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using Vim;
 
-namespace VimTestApp
+namespace VimApp
 {
     internal static class Extensions
     {
