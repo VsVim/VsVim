@@ -171,7 +171,7 @@ build-release Test\VsVimSharedTest\VsVimSharedTest.csproj
 build-release Src\VsSpecific\Vs2012\Vs2012.csproj
 
 # Copy the 2012 specfic components into the location expected by the build system
-copy Src\VsSpecific\Vs2012\bin\Release\VsVim.Vs2012.dll VsVim
+copy Src\VsSpecific\Vs2012\bin\Release\VsVim.Vs2012.dll Src\VsVim
 
 # Now build the final output project
 build-release Src\VsVim\VsVim.csproj
