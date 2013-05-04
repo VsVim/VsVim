@@ -8,15 +8,15 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		VsVim.nunit = VsVim.nunit
 	EndProjectSection
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "VimCore", "VimCore\VimCore.fsproj", "{06BE08E7-8626-40BD-877B-8D2DCA6BA451}"
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "VimCore", "Src\VimCore\VimCore.fsproj", "{06BE08E7-8626-40BD-877B-8D2DCA6BA451}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VimCoreTest", "VimCoreTest\VimCoreTest.csproj", "{B4FC7C81-E500-47C8-A884-2DBB7CA77123}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VimCoreTest", "Test\VimCoreTest\VimCoreTest.csproj", "{B4FC7C81-E500-47C8-A884-2DBB7CA77123}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VimWpf", "VimWpf\VimWpf.csproj", "{65A749E0-F1B1-4E43-BE73-25072EE398C6}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VimWpf", "Src\VimWpf\VimWpf.csproj", "{65A749E0-F1B1-4E43-BE73-25072EE398C6}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VimWpfTest", "VimWpfTest\VimWpfTest.csproj", "{797C1463-3984-47BE-8CD2-4FF68D1E30DA}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VimWpfTest", "Test\VimWpfTest\VimWpfTest.csproj", "{797C1463-3984-47BE-8CD2-4FF68D1E30DA}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VimTestApp", "VimTestApp\VimTestApp.csproj", "{8DB1C327-21A1-448B-A7A1-23EEF6BAA785}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VimTestApp", "Src\VimTestApp\VimTestApp.csproj", "{8DB1C327-21A1-448B-A7A1-23EEF6BAA785}"
 EndProject
 Global
 	GlobalSection(TestCaseManagementSettings) = postSolution

@@ -28,6 +28,7 @@
   <!-- Most projects build against the 2010 reference assemblies so make sure to include that in the path -->
   <PropertyGroup>
     <ReferencePath>$(ReferencePath);$(MSBuildThisFileDirectory)References\Vs2010</ReferencePath>
+    <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">$(MSBuildThisFileDirectory)</SolutionDir>
   </PropertyGroup>
 
 </Project>
