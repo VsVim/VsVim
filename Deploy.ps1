@@ -72,9 +72,9 @@ function test-vsixcontents() {
 # Run all of the unit tests
 function test-unittests() { 
     $all = 
-        "VimCoreTest\bin\Release\Vim.Core.UnitTest.dll",
-        "VimWpfTest\bin\Release\Vim.UI.Wpf.UnitTest.dll",
-        "VsVimSharedTest\bin\Release\VsVim.Shared.UnitTest.dll"
+        "Test\VimCoreTest\bin\Release\Vim.Core.UnitTest.dll",
+        "Test\VimWpfTest\bin\Release\Vim.UI.Wpf.UnitTest.dll",
+        "Test\VsVimSharedTest\bin\Release\VsVim.Shared.UnitTest.dll"
     $xunit = join-path $scriptPath "Tools\xunit.console.clr4.x86.exe"
 
     write-host "Running Unit Tests"
@@ -92,7 +92,7 @@ function test-unittests() {
 function test-version() {
     write-host "Testing Version Numbers"
     $version = $null;
-    foreach ($line in gc "VimCore\Constants.fs") {
+    foreach ($line in gc "Src\VimCore\Constants.fs") {
         if ($line -match 'let VersionNumber = "([\d.]*)"') {
             $version = $matches[1]
             break
@@ -104,7 +104,7 @@ function test-version() {
         return
     }
 
-    $data = [xml](gc "VsVim\source.extension.vsixmanifest")
+    $data = [xml](gc "Src\VsVim\source.extension.vsixmanifest")
     $manifestVersion = $data.Vsix.Identifier.Version
     if ($manifestVersion -ne $version) { 
         $msg = "The version {0} doesn't match up with the manifest version of {1}" -f $version, $manifestVersion
@@ -145,12 +145,12 @@ function publish-vsix() {
 # First step is to clean out all of the projects 
 if (-not $fast) { 
     write-host "Cleaning Projects"
-    build-clean Vs2010\Vs2010.csproj
-    build-clean Vs2012\Vs2012.csproj
-    build-clean VsVim\VsVim.csproj
+    build-clean Src\VsSpecific\Vs2010\Vs2010.csproj
+    build-clean Src\VsSpecific\Vs2012\Vs2012.csproj
+    build-clean Src\VsVim\VsVim.csproj
 
     if (test-path "VsVim\VsVim.Vs2012.dll") {
-        rm VsVim\VsVim.Vs2012.dll
+        rm Src\VsVim\VsVim.Vs2012.dll
     }
 }
 
@@ -161,22 +161,22 @@ test-version
 # Build all of the relevant projects.  Both the deployment binaries and the 
 # test infrastructure
 write-host "Building Projects"
-build-release VimCoreTest\VimCoreTest.csproj
-build-release VimWpfTest\VimWpfTest.csproj
-build-release VsVimSharedTest\VsVimSharedTest.csproj
+build-release Test\VimCoreTest\VimCoreTest.csproj
+build-release Test\VimWpfTest\VimWpfTest.csproj
+build-release Test\VsVimSharedTest\VsVimSharedTest.csproj
 
 # Next step is to build the 2012 components.  We need to get the 2012 specific DLL
 # to deploy with the standard install
-build-release Vs2012\Vs2012.csproj
+build-release Src\VsSpecific\Vs2012\Vs2012.csproj
 
 # Copy the 2012 specfic components into the location expected by the build system
-copy Vs2012\bin\Release\VsVim.Vs2012.dll VsVim
+copy Src\VsSpecific\Vs2012\bin\Release\VsVim.Vs2012.dll VsVim
 
 # Now build the final output project
-build-release VsVim\VsVim.csproj
+build-release Src\VsVim\VsVim.csproj
 
 write-host "Verifying the Vsix Contents"
-$vsixPath = "VsVim\bin\Release\VsVim.vsix"
+$vsixPath = "Src\VsVim\bin\Release\VsVim.vsix"
 test-vsixcontents $vsixPath
 test-unittests
 publish-vsix $vsixPath 
