@@ -12,8 +12,20 @@ namespace Vim.UI.Wpf.Implementation.CharDisplay
 {
     internal sealed class CharDisplayTaggerSource : IBasicTaggerSource<IntraTextAdornmentTag>, IDisposable
     {
+        private struct AdornmentData
+        {
+            internal readonly int Position;
+            internal readonly UIElement Adornment;
+
+            internal AdornmentData(int position, UIElement adornment)
+            {
+                Position = position;
+                Adornment = adornment;
+            }
+        }
+
         private readonly ITextView _textView;
-        private readonly Dictionary<int, UIElement> _adornmentCache = new Dictionary<int, UIElement>();
+        private readonly List<AdornmentData> _adornmentCache = new List<AdornmentData>();
         private EventHandler _changedEvent;
 
         internal CharDisplayTaggerSource(ITextView textView)
@@ -40,8 +52,8 @@ namespace Vim.UI.Wpf.Implementation.CharDisplay
             var snapshot = span.Snapshot;
             for (int i = 0; i < span.Length; i++)
             {
-                var index = i + offset;
-                var c = snapshot[index];
+                var position = i + offset;
+                var c = snapshot[position];
 
                 string text;
                 if (!TryGetDisplayText(c, out text))
@@ -50,35 +62,91 @@ namespace Vim.UI.Wpf.Implementation.CharDisplay
                 }
 
                 UIElement adornment;
-                if (!_adornmentCache.TryGetValue(index, out adornment))
+                int cacheIndex;
+                if (TryFindIndex(position, out cacheIndex))
+                {
+                    adornment = _adornmentCache[cacheIndex].Adornment;
+                }
+                else 
                 {
                     var textBox = new TextBox();
                     textBox.Text = text;
                     textBox.BorderThickness = new Thickness(0);
                     textBox.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
                     adornment = textBox;
-                    _adornmentCache[index] = textBox;
+                    _adornmentCache.Insert(cacheIndex, new AdornmentData(position, adornment));
                 }
 
                 var tag = new IntraTextAdornmentTag(adornment, null);
-                var adornmentSpan = new SnapshotSpan(snapshot, index, 1);
+                var adornmentSpan = new SnapshotSpan(snapshot, position, 1);
                 var tagSpan = new TagSpan<IntraTextAdornmentTag>(adornmentSpan, tag);
                 list.Add(tagSpan);
             }
         }
 
-        private void OnTextBufferChanged(object sender, TextContentChangedEventArgs e)
+        private bool TryFindIndex(int position, out int index)
         {
-            foreach (var change in e.Changes)
+            if (_adornmentCache.Count == 0)
             {
-                if (CheckForChange(change.OldText) || CheckForChange(change.NewText))
+                index = 0;
+                return false;
+            }
+
+            // TODO: make this a binary search.  Works for now to let us know if this is the source of 
+            // the redraw issue
+            for (int i = 0; i < _adornmentCache.Count; i++)
+            {
+                if (_adornmentCache[i].Position == position)
                 {
-                    RaiseChanged();
-                    return;
+                    index = i;
+                    return true;
+                }
+
+                if (position < _adornmentCache[i].Position)
+                {
+                    index = i;
+                    return false;
                 }
             }
 
-            _adornmentCache.Clear();
+            index = _adornmentCache.Count - 1;
+            return false;
+        }
+
+        private void OnTextBufferChanged(object sender, TextContentChangedEventArgs e)
+        {
+            foreach (var textChange in e.Changes)
+            {
+                OnTextChange(textChange);
+            }
+        }
+
+        private void OnTextChange(ITextChange textChange)
+        {
+            int index = 0;
+
+            // Move past the keys that don't matter 
+            while (index < _adornmentCache.Count && _adornmentCache[index].Position < textChange.OldPosition)
+            {
+                index++;
+            }
+
+            if (textChange.Delta < 0)
+            {
+                // Remove the items which were in the deleted 
+                while (index < _adornmentCache.Count && _adornmentCache[index].Position < textChange.OldEnd)
+                {
+                    _adornmentCache.RemoveAt(index);
+                }
+            }
+
+            // Now adjust everything after the possible delete by the new value
+            while (index < _adornmentCache.Count)
+            {
+                var old = _adornmentCache[index];
+                _adornmentCache[index] = new AdornmentData(old.Position + textChange.Delta, old.Adornment);
+                index++;
+            }
         }
 
         private bool CheckForChange(string text)
