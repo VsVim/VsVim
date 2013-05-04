@@ -1,4 +1,5 @@
-$script:scriptPath = split-path -parent $MyInvocation.MyCommand.Definition 
+[string]$script:rootPath = split-path -parent $MyInvocation.MyCommand.Definition 
+[string]$script:rootPath = resolve-path (join-path $rootPath "..")
 
 function Get-ProgramFiles32() {
     if ( test-path (join-path $env:WinDir "SysWow64") ) {
@@ -23,7 +24,7 @@ write-host "Uninstalling VsVim"
 
 $dest = join-path (resolve-path ~\) 'Dogfood'
 mkdir $dest -ErrorAction SilentlyContinue
-pushd $scriptPath
+pushd $rootPath
 copy VsVim\bin\Debug\* $dest
 
 $target = join-path $dest "VsVim.vsix"

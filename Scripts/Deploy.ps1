@@ -1,6 +1,7 @@
 param ([switch]$fast = $false)
-$script:scriptPath = split-path -parent $MyInvocation.MyCommand.Definition 
-cd $scriptPath
+[string]$script:rootPath = split-path -parent $MyInvocation.MyCommand.Definition 
+[string]$script:rootPath = resolve-path (join-path $rootPath "..")
+cd $rootPath
 
 $msbuild = join-path ${env:SystemRoot} "microsoft.net\framework\v4.0.30319\msbuild.exe"
 if (-not (test-path $msbuild)) {
@@ -75,7 +76,7 @@ function test-unittests() {
         "Test\VimCoreTest\bin\Release\Vim.Core.UnitTest.dll",
         "Test\VimWpfTest\bin\Release\Vim.UI.Wpf.UnitTest.dll",
         "Test\VsVimSharedTest\bin\Release\VsVim.Shared.UnitTest.dll"
-    $xunit = join-path $scriptPath "Tools\xunit.console.clr4.x86.exe"
+    $xunit = join-path $rootPath "Tools\xunit.console.clr4.x86.exe"
 
     write-host "Running Unit Tests"
     foreach ($file in $all) { 

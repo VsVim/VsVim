@@ -1,4 +1,5 @@
-$script:scriptPath = split-path -parent $MyInvocation.MyCommand.Definition 
+[string]$script:rootPath = split-path -parent $MyInvocation.MyCommand.Definition 
+[string]$script:rootPath = resolve-path (join-path $rootPath "..")
 $sourceDirs = "VimCore","VimWpf","VsVim"
 $testDirs = "VimUnitTestUtils","VimCoreTest","VimWpfTest","VsVimTest"
 
@@ -20,7 +21,7 @@ function countCSharp() {
     $lines.Count
 }
 
-pushd $scriptPath
+pushd $rootPath
 
 $fsSourceFileCount = 0
 $fsTestFileCount = 0
