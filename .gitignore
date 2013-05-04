@@ -23,15 +23,16 @@
 *.psess
 TestResult.xml
 
-# NUnit files
+# Extra files to be ignored
 *.VisualState.xml
+*.DotSettings
 
 # Resharper
 _ReSharper.*
 _ReSharper.VsVim
 
 # Productivity Power Tools
-VsVim.sln.docstates
+*.docstates
 
 # This solution uses NuGet package restore so don't check in
 # the actual binaries
