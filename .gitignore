@@ -28,6 +28,7 @@ TestResult.xml
 
 # Resharper
 _ReSharper.*
+_ReSharper.VsVim
 
 # Productivity Power Tools
 VsVim.sln.docstates
@@ -47,20 +48,17 @@ Deploy/
 *crunchsolution.cache
 
 # Directories 
-*/obj/
-*/bin/
-*/bin10/
-*/bin11/
-TestResults/
-*/Debug/
-*/Release/
-_ReSharper.VsVim
+Debug/
+Release/
+bin/
+obj/
+TestsResults/
 
 # Copied into a source directory for ease of build
-VsVim/VsVim.Dev11.dll
-VsVim/VsVim.Dev11.pdb
-VsVim/VsVim.Vs2012.dll
-VsVim/VsVim.Vs2012.pdb
+VsVim.Dev11.dll
+VsVim.Dev11.pdb
+VsVim.Vs2012.dll
+VsVim.Vs2012.pdb
 
 # Profiling Output
 *.vsp
