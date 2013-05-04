@@ -49,7 +49,7 @@
   <ItemGroup>
     <Reference Include="EditorUtils, Version=1.1.0.0, Culture=neutral, PublicKeyToken=3d1514c4742e0252, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\packages\EditorUtils.1.1.0.0\lib\net40\EditorUtils.dll</HintPath>
+      <HintPath>..\..\packages\EditorUtils.1.1.0.0\lib\net40\EditorUtils.dll</HintPath>
     </Reference>
     <Reference Include="envdte, Version=8.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
     <Reference Include="envdte100, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
@@ -132,7 +132,7 @@
       <Project>{65A749E0-F1B1-4E43-BE73-25072EE398C6}</Project>
       <Name>VimWpf</Name>
     </ProjectReference>
-    <ProjectReference Include="..\Vs2012\Vs2012.csproj">
+    <ProjectReference Include="..\VsSpecific\Vs2012\Vs2012.csproj">
       <Project>{60316861-7561-4b07-8a16-212e00a2856e}</Project>
       <Name>Vs2012</Name>
     </ProjectReference>

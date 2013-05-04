@@ -37,7 +37,7 @@
   <ItemGroup>
     <Reference Include="EditorUtils, Version=1.1.0.0, Culture=neutral, PublicKeyToken=3d1514c4742e0252, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\packages\EditorUtils.1.1.0.0\lib\net40\EditorUtils.dll</HintPath>
+      <HintPath>..\..\..\packages\EditorUtils.1.1.0.0\lib\net40\EditorUtils.dll</HintPath>
     </Reference>
     <Reference Include="FSharp.Core, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
     <Reference Include="Microsoft.VisualStudio.CoreUtility, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
@@ -73,11 +73,11 @@
     <Compile Include="SharedServiceVersionFactory.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\VimCore\VimCore.fsproj">
+    <ProjectReference Include="..\..\VimCore\VimCore.fsproj">
       <Project>{06BE08E7-8626-40BD-877B-8D2DCA6BA451}</Project>
       <Name>VimCore</Name>
     </ProjectReference>
-    <ProjectReference Include="..\VsVimShared\VsVimShared.csproj">
+    <ProjectReference Include="..\..\VsVimShared\VsVimShared.csproj">
       <Project>{979DEDC6-25E2-494B-9E8F-6E42078C601C}</Project>
       <Name>VsVimShared</Name>
     </ProjectReference>

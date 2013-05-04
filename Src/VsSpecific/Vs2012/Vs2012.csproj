@@ -66,11 +66,11 @@
     <Compile Include="SharedServiceVersionFactory.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\VimCore\VimCore.fsproj">
+    <ProjectReference Include="..\..\VimCore\VimCore.fsproj">
       <Project>{06BE08E7-8626-40BD-877B-8D2DCA6BA451}</Project>
       <Name>VimCore</Name>
     </ProjectReference>
-    <ProjectReference Include="..\VsVimShared\VsVimShared.csproj">
+    <ProjectReference Include="..\..\VsVimShared\VsVimShared.csproj">
       <Project>{979DEDC6-25E2-494B-9E8F-6E42078C601C}</Project>
       <Name>VsVimShared</Name>
     </ProjectReference>
