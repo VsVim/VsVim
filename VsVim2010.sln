@@ -8,19 +8,19 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		VsVim.nunit = VsVim.nunit
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Vs2010Vsix", "VsVim\Vs2010Vsix.csproj", "{11710F28-88D6-44DD-99DB-1F0AAA8CDAA0}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Vs2010Vsix", "Src\VsVim\Vs2010Vsix.csproj", "{11710F28-88D6-44DD-99DB-1F0AAA8CDAA0}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "VimCore", "VimCore\VimCore.fsproj", "{06BE08E7-8626-40BD-877B-8D2DCA6BA451}"
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "VimCore", "Src\VimCore\VimCore.fsproj", "{06BE08E7-8626-40BD-877B-8D2DCA6BA451}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VimCoreTest", "VimCoreTest\VimCoreTest.csproj", "{B4FC7C81-E500-47C8-A884-2DBB7CA77123}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VimCoreTest", "Test\VimCoreTest\VimCoreTest.csproj", "{B4FC7C81-E500-47C8-A884-2DBB7CA77123}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VsVimSharedTest", "VsVimSharedTest\VsVimSharedTest.csproj", "{0C79E8E6-EBBF-4342-B4C2-DCCF212A776B}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VsVimSharedTest", "Test\VsVimSharedTest\VsVimSharedTest.csproj", "{0C79E8E6-EBBF-4342-B4C2-DCCF212A776B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VimWpf", "VimWpf\VimWpf.csproj", "{65A749E0-F1B1-4E43-BE73-25072EE398C6}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VimWpf", "Src\VimWpf\VimWpf.csproj", "{65A749E0-F1B1-4E43-BE73-25072EE398C6}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VimWpfTest", "VimWpfTest\VimWpfTest.csproj", "{797C1463-3984-47BE-8CD2-4FF68D1E30DA}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VimWpfTest", "Test\VimWpfTest\VimWpfTest.csproj", "{797C1463-3984-47BE-8CD2-4FF68D1E30DA}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VsVimShared", "VsVimShared\VsVimShared.csproj", "{979DEDC6-25E2-494B-9E8F-6E42078C601C}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VsVimShared", "Src\VsVimShared\VsVimShared.csproj", "{979DEDC6-25E2-494B-9E8F-6E42078C601C}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{DDBAAD63-C24D-4357-B6DA-F94577AB3E20}"
 	ProjectSection(SolutionItems) = preProject
@@ -28,7 +28,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{DDBAAD
 		.nuget\NuGet.targets = .nuget\NuGet.targets
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Vs2010", "Vs2010\Vs2010.csproj", "{0DE4170C-224D-47CF-BE00-B88AA14EC804}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Vs2010", "Src\VsSpecific\Vs2010\Vs2010.csproj", "{0DE4170C-224D-47CF-BE00-B88AA14EC804}"
 EndProject
 Global
 	GlobalSection(TestCaseManagementSettings) = postSolution
