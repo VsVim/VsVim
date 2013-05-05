@@ -22,6 +22,11 @@ namespace Vim.UI.Wpf.Implementation.CharDisplay
                 Position = position;
                 Adornment = adornment;
             }
+
+            public override string ToString()
+            {
+                return Position.ToString();
+            }
         }
 
         private readonly ITextView _textView;
@@ -89,6 +94,12 @@ namespace Vim.UI.Wpf.Implementation.CharDisplay
             }
         }
 
+        /// <summary>
+        /// Try find the index into the adornment cache for the specified buffer position.  If the method 
+        /// returns true then "index" will represent a valid index into the cache.  If it returns false
+        /// then "position" isn't in the cache but "index" will still represent the position where it should
+        /// be inserted
+        /// </summary>
         private bool TryFindIndex(int position, out int index)
         {
             if (_adornmentCache.Count == 0)
@@ -97,24 +108,34 @@ namespace Vim.UI.Wpf.Implementation.CharDisplay
                 return false;
             }
 
-            // TODO: make this a binary search.  Works for now to let us know if this is the source of 
-            // the redraw issue
-            for (int i = 0; i < _adornmentCache.Count; i++)
+            int min = 0;
+            int max = _adornmentCache.Count - 1;
+            int mid;
+            int current;
+
+            do
             {
-                if (_adornmentCache[i].Position == position)
+                mid = (min + max) / 2;
+                current = _adornmentCache[mid].Position;
+
+                if (current == position)
                 {
-                    index = i;
+                    index = mid;
                     return true;
                 }
 
-                if (position < _adornmentCache[i].Position)
+                if (position < current)
                 {
-                    index = i;
-                    return false;
+                    max = mid - 1;
                 }
-            }
+                else
+                {
+                    min = mid + 1;
+                }
+            } while (min <= max);
 
-            index = _adornmentCache.Count - 1;
+            // Search failed, calculate the insert position
+            index = position < current ? mid : mid + 1;
             return false;
         }
 

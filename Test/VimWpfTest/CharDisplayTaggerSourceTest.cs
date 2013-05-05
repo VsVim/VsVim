@@ -26,6 +26,14 @@ namespace Vim.UI.Wpf.UnitTest
 
         public sealed class GetTagsTest : CharDisplayTaggerSourceTest
         {
+            private void AssertCache()
+            {
+                for (int i = 0; i + 1 < _source.AdornmentCache.Count; i++)
+                {
+                    Assert.True(_source.AdornmentCache[i].Position < _source.AdornmentCache[i + 1].Position);
+                }
+            }
+
             [Fact]
             public void NoTags()
             {
@@ -53,6 +61,70 @@ namespace Vim.UI.Wpf.UnitTest
                 Create("dog", "cat");
                 var tags = _source.GetTags(_textBuffer.GetExtent());
                 Assert.Equal(0, tags.Count);
+            }
+
+            /// <summary>
+            /// Ask for the tags in descending order.  This will cause the cache to be populated backwards 
+            /// </summary>
+            [Fact]
+            public void LineOrderDescending()
+            {
+                Create(Enumerable.Repeat("d" + (char)29 + "g", 100).ToArray());
+                var snapshot = _textBuffer.CurrentSnapshot;
+                for (int i = snapshot.LineCount - 1; i >= 0; i--)
+                {
+                    var line = snapshot.GetLine(i);
+                    var tags = _source.GetTags(line.Extent);
+                    Assert.Equal(tags.Select(x => x.Span), new[] { new SnapshotSpan(line.Start.Add(1), 1) });
+                    AssertCache();
+                }
+            }
+
+            /// <summary>
+            /// Ask for the tags in ascending order.  This will cause the cache to be populated in order
+            /// </summary>
+            [Fact]
+            public void LineOrderAscending()
+            {
+                Create(Enumerable.Repeat("d" + (char)29 + "g", 100).ToArray());
+                var snapshot = _textBuffer.CurrentSnapshot;
+                for (int i = 0; i < snapshot.LineCount; i++)
+                {
+                    var line = snapshot.GetLine(i);
+                    var tags = _source.GetTags(line.Extent);
+                    Assert.Equal(tags.Select(x => x.Span), new[] { new SnapshotSpan(line.Start.Add(1), 1) });
+                    AssertCache();
+                }
+            }
+
+            /// <summary>
+            /// Ask for the tags in alternating order.  This will cause the cache to be populated in alternating
+            /// order
+            /// </summary>
+            [Fact]
+            public void LineOrderAlternating()
+            {
+                Create(Enumerable.Repeat("d" + (char)29 + "g", 100).ToArray());
+                var snapshot = _textBuffer.CurrentSnapshot;
+                for (int i = 1; i <= snapshot.LineCount; i++)
+                {
+                    int index;
+                    if (i % 2 == 0)
+                    {
+                        index = snapshot.LineCount - (i / 2);
+                    }
+                    else
+                    {
+                        index = (i - 1) / 2;
+                    }
+
+                    var line = snapshot.GetLine(index);
+                    var tags = _source.GetTags(line.Extent);
+                    Assert.Equal(tags.Select(x => x.Span), new[] { new SnapshotSpan(line.Start.Add(1), 1) });
+                    AssertCache();
+                }
+
+                Assert.Equal(100, _source.AdornmentCache.Count);
             }
         }
 
