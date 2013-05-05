@@ -12,7 +12,7 @@ namespace Vim.UI.Wpf.Implementation.CharDisplay
 {
     internal sealed class CharDisplayTaggerSource : IBasicTaggerSource<IntraTextAdornmentTag>, IDisposable
     {
-        private struct AdornmentData
+        internal struct AdornmentData
         {
             internal readonly int Position;
             internal readonly UIElement Adornment;
@@ -27,6 +27,11 @@ namespace Vim.UI.Wpf.Implementation.CharDisplay
         private readonly ITextView _textView;
         private readonly List<AdornmentData> _adornmentCache = new List<AdornmentData>();
         private EventHandler _changedEvent;
+
+        internal List<AdornmentData> AdornmentCache
+        {
+            get { return _adornmentCache; }
+        }
 
         internal CharDisplayTaggerSource(ITextView textView)
         {
