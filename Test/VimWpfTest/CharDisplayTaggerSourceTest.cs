@@ -126,6 +126,20 @@ namespace Vim.UI.Wpf.UnitTest
 
                 Assert.Equal(100, _source.AdornmentCache.Count);
             }
+
+            /// <summary>
+            /// When asked for tags on an earlier snapshot we should simply ignore the request.  For non-adornment tags
+            /// it's important to provide this information.  But for adornment taggers it isn't worth it.  
+            /// </summary>
+            [Fact]
+            public void EarlierSnapshot()
+            {
+                Create("" + (char)29);
+                var snapshot = _textBuffer.CurrentSnapshot;
+                _textBuffer.Insert(0, "hello world");
+                var tags = _source.GetTags(new SnapshotSpan(snapshot, 0, 1));
+                Assert.Equal(0, tags.Count);
+            }
         }
 
         /// <summary>

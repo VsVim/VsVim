@@ -29,6 +29,7 @@ namespace Vim.UI.Wpf.Implementation.CharDisplay
             }
         }
 
+        private static readonly ReadOnlyCollection<ITagSpan<IntraTextAdornmentTag>> EmptyTagColllection = new ReadOnlyCollection<ITagSpan<IntraTextAdornmentTag>>(new List<ITagSpan<IntraTextAdornmentTag>>());
         private readonly ITextView _textView;
         private readonly List<AdornmentData> _adornmentCache = new List<AdornmentData>();
         private EventHandler _changedEvent;
@@ -51,13 +52,17 @@ namespace Vim.UI.Wpf.Implementation.CharDisplay
 
         internal ReadOnlyCollection<ITagSpan<IntraTextAdornmentTag>> GetTags(SnapshotSpan span)
         {
-            var list = new List<ITagSpan<IntraTextAdornmentTag>>();
-            GetTags(span, list);
-            return list.ToReadOnlyCollectionShallow();
+            if (span.Snapshot != _textView.TextBuffer.CurrentSnapshot)
+            {
+                return EmptyTagColllection;
+            }
+
+            return GetTagsCore(span);
         }
 
-        private void GetTags(SnapshotSpan span, List<ITagSpan<IntraTextAdornmentTag>> list)
+        private ReadOnlyCollection<ITagSpan<IntraTextAdornmentTag>> GetTagsCore(SnapshotSpan span)
         {
+            var list = new List<ITagSpan<IntraTextAdornmentTag>>();
             var offset = span.Start.Position;
             var snapshot = span.Snapshot;
             for (int i = 0; i < span.Length; i++)
@@ -92,6 +97,8 @@ namespace Vim.UI.Wpf.Implementation.CharDisplay
                 var tagSpan = new TagSpan<IntraTextAdornmentTag>(adornmentSpan, tag);
                 list.Add(tagSpan);
             }
+
+            return list.ToReadOnlyCollectionShallow();
         }
 
         /// <summary>
@@ -173,19 +180,6 @@ namespace Vim.UI.Wpf.Implementation.CharDisplay
                 _adornmentCache[index] = new AdornmentData(old.Position + textChange.Delta, old.Adornment);
                 index++;
             }
-        }
-
-        private bool CheckForChange(string text)
-        {
-            foreach (var c in text)
-            {
-                if (IsRelevant(c))
-                {
-                    return true;
-                }
-            }
-
-            return false;
         }
 
         private void RaiseChanged()
