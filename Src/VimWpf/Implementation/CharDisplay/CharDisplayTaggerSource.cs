@@ -71,7 +71,7 @@ namespace Vim.UI.Wpf.Implementation.CharDisplay
                 var c = snapshot[position];
 
                 string text;
-                if (!TryGetDisplayText(c, out text))
+                if (!ControlCharUtil.TryGetDisplayText(c, out text))
                 {
                     continue;
                 }
@@ -189,69 +189,6 @@ namespace Vim.UI.Wpf.Implementation.CharDisplay
             {
                 e(this, EventArgs.Empty);
             }
-        }
-
-        private static bool IsRelevant(char c)
-        {
-            var i = (int)c;
-            return IsRelevant(i);
-        }
-
-        private static bool IsRelevant(int i)
-        {
-            return i <= 31;
-        }
-
-        private static bool TryGetDisplayText(char c, out string text)
-        {
-            int i = (int)c;
-            if (!IsRelevant(i))
-            {
-                text = null;
-                return false;
-            }
-
-            text = null;
-            switch (i)
-            {
-                case 0: text = "^@"; break;
-                case 1: text = "^A"; break;
-                case 2: text = "^B"; break;
-                case 3: text = "^C"; break;
-                case 4: text = "^D"; break;
-                case 5: text = "^E"; break;
-                case 6: text = "^F"; break;
-                case 7: text = "^G"; break;
-                case 8: text = "^H"; break;
-                    /*
-                    don't transform line break characters at the moment
-                case 9: text = "^I"; break;
-                case 10: text = "^J"; break;
-                case 11: text = "^K"; break;
-                case 12: text = "^L"; break;
-                case 13: text = "^M"; break;
-                    */
-                case 14: text = "^N"; break;
-                case 15: text = "^O"; break;
-                case 16: text = "^P"; break;
-                case 17: text = "^Q"; break;
-                case 18: text = "^R"; break;
-                case 19: text = "^S"; break;
-                case 20: text = "^T"; break;
-                case 21: text = "^U"; break;
-                case 22: text = "^V"; break;
-                case 23: text = "^W"; break;
-                case 24: text = "^X"; break;
-                case 25: text = "^Y"; break;
-                case 26: text = "^Z"; break;
-                case 27: text = "^["; break;
-                case 28: text = "^\\"; break;
-                case 29: text = "^]"; break;
-                case 30: text = "^^"; break;
-                case 31: text = "^_"; break;
-            }
-
-            return text != null;
         }
 
         #region IBasicTaggerSource<IntraTextAdornmentTag>

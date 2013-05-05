@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -36,6 +37,7 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
         private readonly ITextView _textView;
         private readonly IProtectedOperations _protectedOperations;
         private readonly IEditorFormatMap _formatMap;
+        private readonly IClassificationFormatMap _classificationFormatMap;
         private readonly IAdornmentLayer _layer;
         private readonly Object _tag = new object();
         private readonly DispatcherTimer _blinkTimer;
@@ -115,12 +117,13 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
             }
         }
 
-        internal BlockCaret(ITextView view, IEditorFormatMap formatMap, IAdornmentLayer layer, IProtectedOperations protectedOperations)
+        internal BlockCaret(ITextView view, IClassificationFormatMap classificationFormatMap, IEditorFormatMap formatMap, IAdornmentLayer layer, IProtectedOperations protectedOperations)
         {
             _textView = view;
             _formatMap = formatMap;
             _layer = layer;
             _protectedOperations = protectedOperations;
+            _classificationFormatMap = classificationFormatMap;
 
             _textView.LayoutChanged += OnCaretEvent;
             _textView.GotAggregateFocus += OnCaretEvent;
@@ -138,8 +141,8 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
             _blinkTimer.IsEnabled = caretBlinkTime != null;
         }
 
-        internal BlockCaret(IWpfTextView view, string adornmentLayerName, IEditorFormatMap formatMap, IProtectedOperations protectedOperations) :
-            this(view, formatMap, view.GetAdornmentLayer(adornmentLayerName), protectedOperations)
+        internal BlockCaret(IWpfTextView view, string adornmentLayerName, IClassificationFormatMap classificationFormatMap, IEditorFormatMap formatMap, IProtectedOperations protectedOperations) :
+            this(view, classificationFormatMap, formatMap, view.GetAdornmentLayer(adornmentLayerName), protectedOperations)
         {
 
         }
@@ -253,6 +256,14 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
                 if (point.Position < _textView.TextSnapshot.Length && point.GetChar() != '\t')
                 {
                     var bounds = line.GetCharacterBounds(point);
+                    if (bounds.Width == 0 && Char.IsControl(point.GetChar()))
+                    {
+                        // TODO: need to clean this up a bit
+                        var textRunProperties = _classificationFormatMap.DefaultTextProperties;
+                        var formattedText = new FormattedText("^", CultureInfo.CurrentUICulture, FlowDirection.RightToLeft, textRunProperties.Typeface, textRunProperties.FontRenderingEmSize, Brushes.Black);
+                        var width = formattedText.Width;
+                        bounds = new TextBounds(bounds.Leading, bounds.Top, width, bounds.Height, bounds.TextTop, bounds.TextHeight);
+                    }
                     caretSize = new Size(bounds.Width, bounds.Height);
                 }
                 else

@@ -15,6 +15,7 @@ namespace Vim.UI.Wpf.UnitTest
         private Mock<ITextCaret> _caret;
         private Mock<IEditorFormatMap> _formatMap;
         private Mock<IAdornmentLayer> _layer;
+        private Mock<IClassificationFormatMap> _classificationFormatMap;
         private BlockCaret _blockCaretRaw;
         private IBlockCaret _blockCaret;
 
@@ -24,8 +25,9 @@ namespace Vim.UI.Wpf.UnitTest
             _textview = new Mock<ITextView>(MockBehavior.Strict);
             _textview.SetupGet(x => x.Caret).Returns(_caret.Object);
             _formatMap = new Mock<IEditorFormatMap>(MockBehavior.Strict);
+            _classificationFormatMap = new Mock<IClassificationFormatMap>(MockBehavior.Strict);
             _layer = new Mock<IAdornmentLayer>(MockBehavior.Strict);
-            _blockCaretRaw = new BlockCaret(_textview.Object, _formatMap.Object, _layer.Object, ProtectedOperations);
+            _blockCaretRaw = new BlockCaret(_textview.Object, _classificationFormatMap.Object, _formatMap.Object, _layer.Object, ProtectedOperations);
             _blockCaret = _blockCaretRaw;
         }
 
