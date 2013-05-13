@@ -608,9 +608,9 @@ type MotionArgument = {
         let motionCount = x.MotionCount |> OptionUtil.getOrDefault 1
         operatorCount * motionCount
 
-/// Char searches are interesting because they are definide in one IVimBuffer
+/// Char searches are interesting because they are defined in one IVimBuffer
 /// and can be repeated in any IVimBuffer.  Use a discriminated union here 
-/// to name the motion without tieing it to a given IVimBuffer or ITextView 
+/// to name the motion without binding it to a given IVimBuffer or ITextView 
 /// which would increase the chance of an accidental memory leak
 [<RequireQualifiedAccess>]
 type CharSearchKind  =
@@ -670,7 +670,7 @@ type Motion =
     /// not return a value
     | AllSentence
 
-    /// Move to the begining of the line.  Interestingly since this command is bound to the '0' it 
+    /// Move to the beginning of the line.  Interestingly since this command is bound to the '0' it 
     /// can't be associated with a count.  Doing a command like 30 binds as count 30 vs. count 3 
     /// for command '0'
     | BeginingOfLine
@@ -755,12 +755,12 @@ type Motion =
     | LineInMiddleOfVisibleWindow
 
     /// Get the motion to the specified mark.  This is typically accessed via
-    /// the ` (backtick) operator and results in an exclusive motion
+    /// the ` (back tick) operator and results in an exclusive motion
     | Mark of LocalMark
 
     /// Get the motion to the line of the specified mark.  This is typically
     /// accessed via the ' (single quote) operator and results in a 
-    /// linewise motion
+    /// line wise motion
     | MarkLine of LocalMark
 
     /// Get the matching token from the next token on the line.  This is used to implement
@@ -850,7 +850,7 @@ type ModeKind =
     | SelectBlock = 11
     | ExternalEdit = 12
 
-    /// Initial mode for an IVimBuffer.  It will maintain this mode until the underyling
+    /// Initial mode for an IVimBuffer.  It will maintain this mode until the underlying
     /// ITextView completes it's initialization and allows the IVimBuffer to properly 
     /// transition to the mode matching it's underlying IVimTextBuffer
     | Uninitialized = 13
@@ -1071,7 +1071,7 @@ module KeyInputSetUtil =
 [<RequireQualifiedAccess>]
 type KeyMappingResult =
 
-    /// The values were mappend completely and require no further mapping. This 
+    /// The values were mapped completely and require no further mapping. This 
     /// could be a result of a no-op mapping though
     | Mapped of KeyInputSet
 
@@ -1137,7 +1137,7 @@ type CharacterSpan
                 _lastLineLength
 
         // The original SnapshotSpan could extend into the line break and hence we must
-        // consider that here.  The most common case for this occuring is when the caret
+        // consider that here.  The most common case for this occurring is when the caret
         // in visual mode is on the first column of an empty line.  In that case the caret
         // is really in the line break so End is one past that
         let endPoint = SnapshotLineUtil.GetOffsetOrEndIncludingLineBreak offset lastLine
@@ -1248,7 +1248,7 @@ type BlockSpan
     static member op_Equality(this,other) = System.Collections.Generic.EqualityComparer<BlockSpan>.Default.Equals(this,other)
     static member op_Inequality(this,other) = not (System.Collections.Generic.EqualityComparer<BlockSpan>.Default.Equals(this,other))
 
-    /// Create a BlockSpan for the given SnapshotSpan.  The returned BlockSpan will have a minumum of 1 for
+    /// Create a BlockSpan for the given SnapshotSpan.  The returned BlockSpan will have a minimum of 1 for
     /// height and width.  The start of the BlockSpan is not necessarily the Start of the SnapshotSpan
     /// as an End column which occurs before the start could cause the BlockSpan start to be before the 
     /// SnapshotSpan start
