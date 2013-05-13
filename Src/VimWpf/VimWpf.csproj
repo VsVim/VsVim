@@ -56,6 +56,7 @@
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="IControlCharUtil.cs" />
     <Compile Include="IKeyUtil.cs" />
     <Compile Include="Implementation\CharDisplay\CharDisplayTaggerSource.cs" />
     <Compile Include="Implementation\CharDisplay\CharDisplayTaggerSourceFactory.cs" />

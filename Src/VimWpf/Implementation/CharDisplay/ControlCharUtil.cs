@@ -1,13 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.Composition;
 using System.Linq;
 using System.Text;
 
 namespace Vim.UI.Wpf.Implementation.CharDisplay
 {
-    internal sealed class ControlCharUtil
+    [Export(typeof(IControlCharUtil))]
+    internal sealed class ControlCharUtil : IControlCharUtil
     {
-        internal static bool IsRelevant(char c)
+        internal static bool IsDisplayControlChar(char c)
         {
             var i = (int)c;
             return IsRelevant(i);
@@ -35,10 +37,10 @@ namespace Vim.UI.Wpf.Implementation.CharDisplay
                 return false;
             }
 
-            return TryGetAlternateText(i, out text);
+            return TryGetDisplayText(i, out text);
         }
 
-        internal static bool TryGetAlternateText(int i, out string text)
+        internal static bool TryGetDisplayText(int i, out string text)
         {
             text = null;
             switch (i)
@@ -80,5 +82,18 @@ namespace Vim.UI.Wpf.Implementation.CharDisplay
             return text != null;
         }
 
+        #region IControlCharUtil
+
+        bool IControlCharUtil.IsDisplayControlChar(char c)
+        {
+            return IsDisplayControlChar(c);
+        }
+
+        bool IControlCharUtil.TryGetDisplayText(char c, out string text)
+        {
+            return TryGetDisplayText(c, out text);
+        }
+
+        #endregion
     }
 }

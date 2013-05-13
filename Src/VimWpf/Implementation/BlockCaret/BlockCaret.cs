@@ -41,8 +41,10 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
         private readonly IAdornmentLayer _layer;
         private readonly Object _tag = new object();
         private readonly DispatcherTimer _blinkTimer;
+        private readonly IControlCharUtil _controlCharUtil;
         private CaretData? _caretData;
         private CaretDisplay _caretDisplay;
+        private FormattedText _formattedText;
         private bool _isDestroyed;
         private double _caretOpacity = 0.65;
 
@@ -74,6 +76,19 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
                     _caretOpacity = value;
                     UpdateCaret();
                 }
+            }
+        }
+
+        public FormattedText FormattedText
+        {
+            get
+            {
+                if (_formattedText == null)
+                {
+                    _formattedText = CreateFormattedText();
+                }
+
+                return _formattedText;
             }
         }
 
@@ -117,13 +132,14 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
             }
         }
 
-        internal BlockCaret(ITextView view, IClassificationFormatMap classificationFormatMap, IEditorFormatMap formatMap, IAdornmentLayer layer, IProtectedOperations protectedOperations)
+        internal BlockCaret(ITextView textView, IClassificationFormatMap classificationFormatMap, IEditorFormatMap formatMap, IAdornmentLayer layer, IControlCharUtil controlCharUtil, IProtectedOperations protectedOperations)
         {
-            _textView = view;
+            _textView = textView;
             _formatMap = formatMap;
             _layer = layer;
             _protectedOperations = protectedOperations;
             _classificationFormatMap = classificationFormatMap;
+            _controlCharUtil = controlCharUtil;
 
             _textView.LayoutChanged += OnCaretEvent;
             _textView.GotAggregateFocus += OnCaretEvent;
@@ -141,14 +157,14 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
             _blinkTimer.IsEnabled = caretBlinkTime != null;
         }
 
-        internal BlockCaret(IWpfTextView view, string adornmentLayerName, IClassificationFormatMap classificationFormatMap, IEditorFormatMap formatMap, IProtectedOperations protectedOperations) :
-            this(view, classificationFormatMap, formatMap, view.GetAdornmentLayer(adornmentLayerName), protectedOperations)
+        internal BlockCaret(IWpfTextView textView, string adornmentLayerName, IClassificationFormatMap classificationFormatMap, IEditorFormatMap formatMap, IControlCharUtil controlCharUtil, IProtectedOperations protectedOperations) :
+            this(textView, classificationFormatMap, formatMap, textView.GetAdornmentLayer(adornmentLayerName), controlCharUtil, protectedOperations)
         {
 
         }
 
         /// <summary>
-        /// Get the number of miliseconds for the caret blink time.  Null is returned if the 
+        /// Get the number of milliseconds for the caret blink time.  Null is returned if the 
         /// caret should not blink
         /// </summary>
         private int? GetCaretBlinkTime()
@@ -236,47 +252,50 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
             }
         }
 
+        private FormattedText CreateFormattedText()
+        {
+            var textRunProperties = _classificationFormatMap.DefaultTextProperties;
+            return new FormattedText("^", CultureInfo.CurrentUICulture, FlowDirection.RightToLeft, textRunProperties.Typeface, textRunProperties.FontRenderingEmSize, Brushes.Black);
+        }
+
         /// <summary>
         /// Calculate the dimensions of the caret
         /// </summary>
         private Size CalculateCaretSize()
         {
-            const double defaultWidth = 5.0;
-            const double defaultHeight = 10.0;
+            double defaultWidth = FormattedText.Width;
+            double defaultHeight = FormattedText.Height;
 
             var caret = _textView.Caret;
             var line = caret.ContainingTextViewLine;
-            Size caretSize;
+            double width = defaultWidth;
+            double height = line.IsValid ? line.Height : defaultHeight;
             if (IsRealCaretVisible)
             {
                 // Get the size of the character to which we need to paint the caret.  Special case
                 // tab here because it's too big.  When there is a tab we use the default height
                 // and width
                 var point = caret.Position.BufferPosition;
-                if (point.Position < _textView.TextSnapshot.Length && point.GetChar() != '\t')
+                if (point.Position >= _textView.TextSnapshot.Length || point.GetChar() == '\t')
                 {
-                    var bounds = line.GetCharacterBounds(point);
-                    if (bounds.Width == 0 && Char.IsControl(point.GetChar()))
-                    {
-                        // TODO: need to clean this up a bit
-                        var textRunProperties = _classificationFormatMap.DefaultTextProperties;
-                        var formattedText = new FormattedText("^", CultureInfo.CurrentUICulture, FlowDirection.RightToLeft, textRunProperties.Typeface, textRunProperties.FontRenderingEmSize, Brushes.Black);
-                        var width = formattedText.Width;
-                        bounds = new TextBounds(bounds.Leading, bounds.Top, width, bounds.Height, bounds.TextTop, bounds.TextHeight);
-                    }
-                    caretSize = new Size(bounds.Width, bounds.Height);
+                    width = defaultWidth;
                 }
                 else
                 {
-                    caretSize = new Size(defaultWidth, line.IsValid ? line.Height : defaultHeight);
+                    var bounds = line.GetCharacterBounds(point);
+                    if (_controlCharUtil.IsDisplayControlChar(point.GetChar()))
+                    {
+                        width = defaultWidth;
+                    }
+                    else
+                    {
+                        width = bounds.Width;
+                        height = bounds.Height;
+                    }
                 }
             }
-            else
-            {
-                caretSize = new Size(defaultWidth, line.IsValid ? line.Height : defaultHeight);
-            }
 
-            return caretSize;
+            return new Size(width, height);
         }
 
         private Tuple<Rect, double> CalculateCaretRectAndDisplayOffset()

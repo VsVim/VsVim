@@ -14,6 +14,7 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
         private readonly IClassificationFormatMapService _classificationFormatMapService;
         private readonly IEditorFormatMapService _formatMapService;
         private readonly IProtectedOperations _protectedOperations;
+        private readonly IControlCharUtil _controlCharUtil;
 
 #pragma warning disable 169
         [Export(typeof(AdornmentLayerDefinition))]
@@ -23,10 +24,11 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
 #pragma warning restore 169
 
         [ImportingConstructor]
-        internal BlockCaretFactoryService(IClassificationFormatMapService classificationFormatMapService, IEditorFormatMapService formatMapService, [EditorUtilsImport] IProtectedOperations protectedOperations)
+        internal BlockCaretFactoryService(IClassificationFormatMapService classificationFormatMapService, IEditorFormatMapService formatMapService, IControlCharUtil controlCharUtil, [EditorUtilsImport] IProtectedOperations protectedOperations)
         {
             _classificationFormatMapService = classificationFormatMapService;
             _formatMapService = formatMapService;
+            _controlCharUtil = controlCharUtil;
             _protectedOperations = protectedOperations;
         }
 
@@ -34,7 +36,7 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
         {
             var classificationFormaptMap = _classificationFormatMapService.GetClassificationFormatMap(textView);
             var formatMap = _formatMapService.GetEditorFormatMap(textView);
-            return new BlockCaret(textView, BlockCaretAdornmentLayerName,  classificationFormaptMap, formatMap, _protectedOperations);
+            return new BlockCaret(textView, BlockCaretAdornmentLayerName,  classificationFormaptMap, formatMap, _controlCharUtil, _protectedOperations);
         }
 
         #region IVimBufferCreationListener
