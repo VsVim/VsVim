@@ -10,6 +10,8 @@ using Vim;
 using Vim.Extensions;
 using System.Text;
 using System;
+using Microsoft.VisualStudio.Text.Classification;
+using Microsoft.VisualStudio.Text.Formatting;
 
 namespace VimApp
 {
@@ -21,6 +23,7 @@ namespace VimApp
         private readonly VimComponentHost _vimComponentHost;
         private readonly List<IWpfTextViewHost> _textViewHostList = new List<IWpfTextViewHost>();
         private readonly ITextBuffer _textBuffer;
+        private readonly IClassificationFormatMapService _classificationFormatMapService;
 
         // TODO: This is hacky.  We should track the active window and use that
         private IVimBuffer ActiveVimBuffer
@@ -48,11 +51,13 @@ namespace VimApp
 
             _vimComponentHost = new VimComponentHost();
             _vimComponentHost.CompositionContainer.GetExportedValue<DefaultVimHost>().MainWindow = this;
+            _classificationFormatMapService = _vimComponentHost.CompositionContainer.GetExportedValue<IClassificationFormatMapService>();
 
             _textBuffer = _vimComponentHost.TextBufferFactoryService.CreateTextBuffer();
             var textViewHost = CreateTextViewHost();
             _textViewHostList.Add(textViewHost);
             m_dockPanel.Children.Add(textViewHost.HostControl);
+
         }
 
         /// <summary>
@@ -71,7 +76,15 @@ namespace VimApp
                 _textBuffer,
                 textViewRoleSet);
             textView.Options.SetOptionValue(DefaultTextViewOptions.UseVisibleWhitespaceId, true);
-            return _vimComponentHost.TextEditorFactoryService.CreateTextViewHost(textView, true);
+            var textViewHost = _vimComponentHost.TextEditorFactoryService.CreateTextViewHost(textView, true);
+
+            var classificationFormatMap = _classificationFormatMapService.GetClassificationFormatMap(textViewHost.TextView);
+            classificationFormatMap.DefaultTextProperties = TextFormattingRunProperties.CreateTextFormattingRunProperties(
+                new Typeface(new FontFamily("Consolas"), FontStyles.Normal, FontWeights.Normal, FontStretches.Normal),
+                14,
+                Colors.Black);
+
+            return textViewHost;
         }
 
         internal void SplitViewHorizontally(ITextView textView)
