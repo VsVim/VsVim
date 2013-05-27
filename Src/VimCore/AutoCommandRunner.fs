@@ -97,6 +97,8 @@ type internal AutoCommandRunner
         // different than edit focus.  For now just raise it once here.  
         x.RunAutoCommands vimBuffer EventKind.BufEnter
 
+        x.RunAutoCommands vimBuffer EventKind.FileType
+
         x.RunAutoCommands vimBuffer EventKind.BufWinEnter
 
         let bag = DisposableBag()
