@@ -1345,6 +1345,20 @@ namespace Vim.UnitTest
 
         #endregion
 
+        #region IVimData
+
+        public static void AddAutoCommand(this IVimData vimData, EventKind eventKind, string pattern, string command)
+        {
+            var autoCommand = new AutoCommand(
+                AutoCommandGroup.Default,
+                eventKind,
+                command,
+                pattern);
+            vimData.AutoCommands = vimData.AutoCommands.Concat(new[] { autoCommand }).ToFSharpList();
+        }
+
+        #endregion
+
         /// <summary>
         /// Run the specified motion with default arguments
         /// </summary>
