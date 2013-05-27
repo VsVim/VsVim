@@ -550,6 +550,41 @@ namespace Vim.UnitTest
                 ParseAndRun(@"set blah?");
                 Assert.Equal(Resources.CommandMode_UnknownOption("blah"), _statusUtil.LastError);
             }
+
+            [Fact]
+            public void CommaSettingSingle()
+            {
+                Create("");
+                ParseAndRun(@"set slm=mouse");
+                Assert.Equal(SelectModeOptions.Mouse, _globalSettings.SelectModeOptions);
+            }
+
+            [Fact]
+            public void CommaSettingMultiple()
+            {
+                Create("");
+                ParseAndRun(@"set slm=mouse,key");
+                Assert.Equal(SelectModeOptions.Mouse | SelectModeOptions.Keyboard, _globalSettings.SelectModeOptions);
+            }
+
+            /// <summary>
+            /// In this scenario the quotes should be interpreted as a comment
+            /// </summary>
+            [Fact]
+            public void CommaSettingWithQuotes()
+            {
+                Create("");
+                ParseAndRun(@"set slm=""mouse,key""");
+                Assert.Equal(SelectModeOptions.None, _globalSettings.SelectModeOptions);
+            }
+
+            [Fact]
+            public void NumberValue()
+            {
+                Create("");
+                ParseAndRun(@"set ts=3");
+                Assert.Equal(3, _localSettings.TabStop);
+            }
         }
 
         public sealed class HistoryTest : InterpreterTest

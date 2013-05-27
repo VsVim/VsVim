@@ -1722,21 +1722,19 @@ type Parser
             // Parse out an operator.  Parse out the value and use the specified setting name
             // and argument function as the argument
             let parseSetValue name argumentFunc = 
-
-                let empty () = 
+                if _tokenizer.IsAtEndOfLine || _tokenizer.CurrentChar = ' ' then
                     _tokenizer.MoveNextToken()
                     parseNext (SetArgument.AssignSetting (name, ""))
-
-                if _tokenizer.IsAtEndOfLine || _tokenizer.CurrentChar = ' ' then
-                    empty ()
                 else
-                    let c = _tokenizer.CurrentChar
-                    if CharUtil.IsLetterOrDigit c then
-                        let value = _tokenizer.CurrentToken.TokenText
-                        _tokenizer.MoveNextToken()
-                        parseNext (argumentFunc (name, value))
-                    else
-                        ParseResult.Failed Resources.Parser_Error
+                    let value = x.ParseWhile (fun token -> 
+                        match token.TokenKind with
+                        | TokenKind.Word _ -> true
+                        | TokenKind.Character c -> CharUtil.IsLetterOrDigit c || c = ','
+                        | TokenKind.Number number -> true
+                        | _ -> false)
+                    match value with 
+                    | None -> ParseResult.Failed Resources.Parser_Error
+                    | Some value -> parseNext (argumentFunc (name, value))
 
             // Parse out a simple assignment.  Move past the assignment char and get the value
             let parseAssign name = 
