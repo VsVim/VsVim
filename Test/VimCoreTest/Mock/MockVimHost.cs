@@ -10,6 +10,8 @@ namespace Vim.UnitTest.Mock
 {
     public class MockVimHost : IVimHost
     {
+        public static readonly object FileNameKey = new object();
+
         private event EventHandler<TextViewEventArgs> _isVisibleChanged;
 #pragma warning disable 67
         private event EventHandler<TextViewChangedEventArgs> _activeTextViewChanged;
@@ -41,7 +43,6 @@ namespace Vim.UnitTest.Mock
         public ITextView LastClosed { get; set; }
         public bool ShouldCreateVimBufferImpl { get; set; }
         public VimRcState VimRcState { get; private set; }
-        public string FileName { get; set; } 
 
         /// <summary>
         /// Data from the last GoToNextTab call
@@ -88,7 +89,6 @@ namespace Vim.UnitTest.Mock
             LastClosed = null;
             LastSaved = null;
             ShouldCreateVimBufferImpl = false;
-            FileName = string.Empty;
         }
 
         void IVimHost.Beep()
@@ -110,7 +110,14 @@ namespace Vim.UnitTest.Mock
 
         string IVimHost.GetName(ITextBuffer textBuffer)
         {
-            return FileName ?? String.Empty;
+            string name = null;
+            object value;
+            if (textBuffer.Properties.TryGetPropertySafe(FileNameKey, out value))
+            {
+                name = value as string;
+            }
+
+            return name ?? "";
         }
 
         void IVimHost.ShowOpenFileDialog()

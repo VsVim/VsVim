@@ -27,20 +27,13 @@ namespace Vim.UnitTest
             VimData.AutoCommands = VimData.AutoCommands.Concat(new[] { autoCommand }).ToFSharpList();
         }
 
-        private IVimBuffer Create(string fileName, params string[] lines)
-        {
-            VimHost.FileName = fileName;
-            var vimBuffer = CreateVimBuffer(lines);
-            return vimBuffer;
-        }
-
         public sealed class BufEnterTest : AutoCommandRunnerIntegrationTest
         {
             [Fact]
             public void SimpleMatching()
             {
                 AddAutoCommand(EventKind.BufEnter, "*.html", "set ts=14");
-                var vimBuffer = Create("foo.html");
+                var vimBuffer = CreateVimBufferWithName("foo.html");
                 Assert.Equal(14, vimBuffer.LocalSettings.TabStop);
             }
         }
@@ -51,17 +44,17 @@ namespace Vim.UnitTest
             public void NoEventsOnDisable()
             {
                 AddAutoCommand(EventKind.BufEnter, "*.html", "set ts=12");
-                _globalSettings.IsAutoCommandEnabled = false;
-                var vimBuffer = Create("foo.html");
+                _globalSettings.AutoCommand = false;
+                var vimBuffer = CreateVimBufferWithName("foo.html");
                 Assert.Equal(8, vimBuffer.LocalSettings.TabStop);
             }
 
             [Fact]
             public void NoEventsOnDisableClose()
             {
-                _globalSettings.IsAutoCommandEnabled = false;
+                _globalSettings.AutoCommand = false;
                 AddAutoCommand(EventKind.BufWinLeave, "*.html", "set ts=12");
-                var vimBuffer = Create("foo.html");
+                var vimBuffer = CreateVimBufferWithName("foo.html");
                 vimBuffer.Close();
                 Assert.Equal(8, vimBuffer.LocalSettings.TabStop);
             }
@@ -69,10 +62,10 @@ namespace Vim.UnitTest
             [Fact]
             public void DisableChange()
             {
-                _globalSettings.IsAutoCommandEnabled = false;
+                _globalSettings.AutoCommand = false;
                 AddAutoCommand(EventKind.BufWinLeave, "*.html", "set ts=12");
-                var vimBuffer = Create("foo.html");
-                _globalSettings.IsAutoCommandEnabled = true;
+                var vimBuffer = CreateVimBufferWithName("foo.html");
+                _globalSettings.AutoCommand = true;
                 vimBuffer.Close();
                 Assert.Equal(12, vimBuffer.LocalSettings.TabStop);
             }

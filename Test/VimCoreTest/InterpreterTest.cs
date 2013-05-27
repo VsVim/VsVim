@@ -7,6 +7,7 @@ using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Vim.Extensions;
 using Vim.Interpreter;
+using Vim.UnitTest.Mock;
 using Xunit;
 
 namespace Vim.UnitTest
@@ -42,7 +43,7 @@ namespace Vim.UnitTest
             get { return @"q:\invalid\path"; }
         }
 
-        private void Create(params string[] lines)
+        protected virtual void Create(params string[] lines)
         {
             _statusUtil = new TestableStatusUtil();
             _vimData = Vim.VimData;
@@ -150,7 +151,13 @@ namespace Vim.UnitTest
 
             public DisplayMarkTest()
             {
-                VimHost.FileName = "test.txt";
+
+            }
+
+            protected override void Create(params string[] lines)
+            {
+                base.Create(lines);
+                _textBuffer.Properties[MockVimHost.FileNameKey] = "test.txt";
             }
 
             public void Verify(char mark, int line, int column, int index = 1)

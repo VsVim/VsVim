@@ -252,6 +252,18 @@ type internal GlobalSettings() =
                     
         List.ofSeq list
 
+    /// The ability to run autocmd can be overridden in 2 ways
+    ///
+    ///  1. Explicitly disabling autocmd support
+    ///  2. Enabling editor defaults over those in the _vimrc
+    ///
+    /// Auto commands exist essentially to override settings on a per file type
+    /// basis.  Hence if the user explicitly chooses Visual Studio defaults (via
+    /// #2) we disable auto commands as well.  It would be confusing to do 
+    /// otherwise
+    member x.IsAutoCommandEnabled = 
+        _map.GetBoolValue AutoCommandName && not (_map.GetBoolValue UseEditorDefaultsName)
+
     member x.SelectionKind = 
         match _map.GetStringValue SelectionName with
         | "inclusive" -> SelectionKind.Inclusive
@@ -267,6 +279,9 @@ type internal GlobalSettings() =
         member x.GetSetting settingName = _map.GetSetting settingName
 
         // IVimGlobalSettings 
+        member x.AutoCommand
+            with get() = _map.GetBoolValue AutoCommandName
+            and set value = _map.TrySetValue AutoCommandName (SettingValue.Toggle value) |> ignore
         member x.Backspace 
             with get() = _map.GetStringValue BackspaceName
             and set value = _map.TrySetValue BackspaceName (SettingValue.String value) |> ignore
@@ -295,9 +310,7 @@ type internal GlobalSettings() =
         member x.IncrementalSearch
             with get() = _map.GetBoolValue IncrementalSearchName
             and set value = _map.TrySetValue IncrementalSearchName (SettingValue.Toggle value) |> ignore
-        member x.IsAutoCommandEnabled
-            with get() = _map.GetBoolValue AutoCommandName
-            and set value = _map.TrySetValue AutoCommandName (SettingValue.Toggle value) |> ignore
+        member x.IsAutoCommandEnabled = x.IsAutoCommandEnabled
         member x.IsSelectionInclusive = x.SelectionKind = SelectionKind.Inclusive
         member x.IsSelectionPastLine = 
             match _map.GetStringValue SelectionName with

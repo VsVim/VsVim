@@ -6,6 +6,7 @@ using Xunit;
 using Vim.Extensions;
 using Path = System.IO.Path;
 using Microsoft.FSharp.Core;
+using Vim.UnitTest.Mock;
 
 namespace Vim.UnitTest
 {
@@ -163,6 +164,37 @@ let x = 42
                 Assert.True(_globalSettings.IncrementalSearch);
                 Assert.Equal(4, _vim._vimRcLocalSettings.TabStop);
                 Assert.Equal(4, _vim._vimRcLocalSettings.ShiftWidth);
+            }
+
+            /// <summary>
+            /// Make sure that we handle autocmd correctly when it comes from the _vimrc file 
+            /// </summary>
+            [Fact]
+            public void SimpleAutoCommand()
+            {
+                var text = @"
+autocmd BufEnter *.html set ts=12
+";
+                Run(text);
+                var vimBuffer = CreateVimBufferWithName("test.html");
+                Assert.Equal(12, vimBuffer.LocalSettings.TabStop);
+            }
+
+            /// <summary>
+            /// If the user has specified that visual studio settings should override vim settings then we don't
+            /// want autocmd running.  They exist only to override settings hence they would be overriding Visual 
+            /// Studio settings
+            /// </summary>
+            [Fact]
+            public void AutoCommandRespectUseVisualStudioSettings()
+            {
+                var text = @"
+set vsvim_useeditordefaults
+autocmd BufEnter *.html set ts=12
+";
+                Run(text);
+                var vimBuffer = CreateVimBufferWithName("test.html");
+                Assert.NotEqual(12, vimBuffer.LocalSettings.TabStop);
             }
         }
     }
