@@ -21,6 +21,7 @@ type internal AutoCommandRunner
 
     let _vimData = _vim.VimData
     let _vimHost = _vim.VimHost
+    let _globalSettings = _vim.GlobalSettings
     
     do 
         _vim.VimHost.ActiveTextViewChanged
@@ -66,17 +67,18 @@ type internal AutoCommandRunner
 
     /// Run the specified AutoCommand against the IVimBuffer in question 
     member x.RunAutoCommands (vimBuffer : IVimBuffer) eventKind = 
-        let fileName = _vimHost.GetName vimBuffer.TextBuffer
-        let autoCommandList = x.GetAutoCommands fileName eventKind
-        if autoCommandList.Length > 0 then
-            let vimInterpreter = _vim.GetVimInterpreter vimBuffer
-            let parser = Parser(_vimData)
+        if _globalSettings.IsAutoCommandEnabled then
+            let fileName = _vimHost.GetName vimBuffer.TextBuffer
+            let autoCommandList = x.GetAutoCommands fileName eventKind
+            if autoCommandList.Length > 0 then
+                let vimInterpreter = _vim.GetVimInterpreter vimBuffer
+                let parser = Parser(_vimData)
 
-            autoCommandList
-            |> Seq.iter (fun autoCommand -> 
-                match parser.ParseLineCommand autoCommand.LineCommandText with
-                | ParseResult.Failed _ -> ()
-                | ParseResult.Succeeded lineCommand -> vimInterpreter.RunLineCommand lineCommand |> ignore)
+                autoCommandList
+                |> Seq.iter (fun autoCommand -> 
+                    match parser.ParseLineCommand autoCommand.LineCommandText with
+                    | ParseResult.Failed _ -> ()
+                    | ParseResult.Succeeded lineCommand -> vimInterpreter.RunLineCommand lineCommand |> ignore)
 
     /// Called when the active ITextView changes according to the host
     member x.OnActiveTextViewChanged (e : TextViewChangedEventArgs) =

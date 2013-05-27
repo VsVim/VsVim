@@ -11,6 +11,7 @@ open System.Runtime.CompilerServices
 open System.Collections.Generic
 
 module GlobalSettingNames = 
+    let AutoCommandName = "vsvim_autocmd"
     let BackspaceName = "backspace"
     let CaretOpacityName = "vsvimcaret"
     let CurrentDirectoryPathName = "cdpath"
@@ -286,6 +287,9 @@ and IVimGlobalSettings =
     /// Whether or not incremental searches should be highlighted and focused 
     /// in the ITextBuffer
     abstract IncrementalSearch : bool with get, set
+
+    /// Is 'autocmd' support
+    abstract IsAutoCommandEnabled : bool with get, set
 
     /// Is the 'indent' option inside of Backspace set
     abstract IsBackspaceIndent : bool with get

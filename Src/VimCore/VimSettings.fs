@@ -114,6 +114,7 @@ type internal GlobalSettings() =
 
     static let _globalSettings = 
         [|
+            (AutoCommandName, AutoCommandName, SettingValue.Toggle true)
             (BackspaceName, "bs", SettingValue.String "")
             (CaretOpacityName, CaretOpacityName, SettingValue.Number 65)
             (ClipboardName, "cb", SettingValue.String "")
@@ -294,6 +295,9 @@ type internal GlobalSettings() =
         member x.IncrementalSearch
             with get() = _map.GetBoolValue IncrementalSearchName
             and set value = _map.TrySetValue IncrementalSearchName (SettingValue.Toggle value) |> ignore
+        member x.IsAutoCommandEnabled
+            with get() = _map.GetBoolValue AutoCommandName
+            and set value = _map.TrySetValue AutoCommandName (SettingValue.Toggle value) |> ignore
         member x.IsSelectionInclusive = x.SelectionKind = SelectionKind.Inclusive
         member x.IsSelectionPastLine = 
             match _map.GetStringValue SelectionName with
