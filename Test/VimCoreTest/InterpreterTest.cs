@@ -7,6 +7,7 @@ using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Vim.Extensions;
 using Vim.Interpreter;
+using Vim.UnitTest.Mock;
 using Xunit;
 
 namespace Vim.UnitTest
@@ -42,7 +43,7 @@ namespace Vim.UnitTest
             get { return @"q:\invalid\path"; }
         }
 
-        private void Create(params string[] lines)
+        protected virtual void Create(params string[] lines)
         {
             _statusUtil = new TestableStatusUtil();
             _vimData = Vim.VimData;
@@ -150,7 +151,13 @@ namespace Vim.UnitTest
 
             public DisplayMarkTest()
             {
-                VimHost.FileName = "test.txt";
+
+            }
+
+            protected override void Create(params string[] lines)
+            {
+                base.Create(lines);
+                _textBuffer.Properties[MockVimHost.FileNameKey] = "test.txt";
             }
 
             public void Verify(char mark, int line, int column, int index = 1)
@@ -542,6 +549,41 @@ namespace Vim.UnitTest
                 _vimBuffer.LocalSettings.ExpandTab = false;
                 ParseAndRun(@"set blah?");
                 Assert.Equal(Resources.CommandMode_UnknownOption("blah"), _statusUtil.LastError);
+            }
+
+            [Fact]
+            public void CommaSettingSingle()
+            {
+                Create("");
+                ParseAndRun(@"set slm=mouse");
+                Assert.Equal(SelectModeOptions.Mouse, _globalSettings.SelectModeOptions);
+            }
+
+            [Fact]
+            public void CommaSettingMultiple()
+            {
+                Create("");
+                ParseAndRun(@"set slm=mouse,key");
+                Assert.Equal(SelectModeOptions.Mouse | SelectModeOptions.Keyboard, _globalSettings.SelectModeOptions);
+            }
+
+            /// <summary>
+            /// In this scenario the quotes should be interpreted as a comment
+            /// </summary>
+            [Fact]
+            public void CommaSettingWithQuotes()
+            {
+                Create("");
+                ParseAndRun(@"set slm=""mouse,key""");
+                Assert.Equal(SelectModeOptions.None, _globalSettings.SelectModeOptions);
+            }
+
+            [Fact]
+            public void NumberValue()
+            {
+                Create("");
+                ParseAndRun(@"set ts=3");
+                Assert.Equal(3, _localSettings.TabStop);
             }
         }
 

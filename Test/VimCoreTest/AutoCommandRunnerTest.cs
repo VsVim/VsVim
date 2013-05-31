@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using Vim.Extensions;
 using Vim.Interpreter;
 using Xunit;
 
@@ -10,32 +9,53 @@ namespace Vim.UnitTest
 {
     public abstract class AutoCommandRunnerTest : VimTestBase
     {
-        protected void AddAutoCommand(EventKind eventKind, string pattern, string command)
+        private readonly AutoCommandRunner _autoCommandRunner;
+
+        protected AutoCommandRunnerTest()
         {
-            var autoCommand = new AutoCommand(
-                AutoCommandGroup.Default,
-                eventKind,
-                command,
-                pattern);
-            VimData.AutoCommands = VimData.AutoCommands.Concat(new[] { autoCommand }).ToFSharpList();
+            _autoCommandRunner = new AutoCommandRunner(Vim);
         }
 
-        private IVimBuffer Create(string fileName, params string[] lines)
+        public sealed class RunAutoCommandsTest : AutoCommandRunnerTest
         {
-            VimHost.FileName = fileName;
-            var vimBuffer = CreateVimBuffer(lines);
-            VimHost.FileName = "";
-            return vimBuffer;
-        }
-
-        public sealed class BufEnterTest : AutoCommandRunnerTest
-        {
+            /// <summary>
+            /// When disabled don't run any commands
+            /// </summary>
             [Fact]
-            public void SimpleMatching()
+            public void IgnoreWhenDisabled()
             {
-                AddAutoCommand(EventKind.BufEnter, "*.html", "set ts=14");
-                var vimBuffer = Create("foo.html");
-                Assert.Equal(14, vimBuffer.LocalSettings.TabStop);
+                Vim.GlobalSettings.AutoCommand = false;
+                VimData.AddAutoCommand(EventKind.FileType, "xml", "set ts=12");
+                var vimBuffer = CreateVimBufferWithName("foo.xml");
+                _autoCommandRunner.RunAutoCommands(vimBuffer, EventKind.FileType);
+                Assert.Equal(8, vimBuffer.LocalSettings.TabStop);
+            }
+
+            [Fact]
+            public void WrongPattern()
+            {
+                VimData.AddAutoCommand(EventKind.FileType, "xml", "set ts=12");
+                var vimBuffer = CreateVimBufferWithName("foo.html");
+                _autoCommandRunner.RunAutoCommands(vimBuffer, EventKind.FileType);
+                Assert.Equal(8, vimBuffer.LocalSettings.TabStop);
+            }
+
+            [Fact]
+            public void Simple()
+            {
+                VimData.AddAutoCommand(EventKind.FileType, "xml", "set ts=12");
+                var vimBuffer = CreateVimBufferWithName("foo.xml");
+                _autoCommandRunner.RunAutoCommands(vimBuffer, EventKind.FileType);
+                Assert.Equal(12, vimBuffer.LocalSettings.TabStop);
+            }
+
+            [Fact]
+            public void SimpleWithAltPattern()
+            {
+                VimData.AddAutoCommand(EventKind.FileType, "*xml", "set ts=12");
+                var vimBuffer = CreateVimBufferWithName("foo.xml");
+                _autoCommandRunner.RunAutoCommands(vimBuffer, EventKind.FileType);
+                Assert.Equal(12, vimBuffer.LocalSettings.TabStop);
             }
         }
 

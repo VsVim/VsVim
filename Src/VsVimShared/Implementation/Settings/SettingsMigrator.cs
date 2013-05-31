@@ -20,22 +20,6 @@ namespace VsVim.Implementation.Settings
         private readonly IVimApplicationSettings _vimApplicationSettings;
         private readonly ILegacySettings _legacySettings;
 
-        /// <summary>
-        /// Was ILegacySettings ever used on this installation
-        /// </summary>
-        internal bool LegacySettingsUsed
-        {
-            get { return _legacySettings.HaveUpdatedKeyBindings || _legacySettings.IgnoredConflictingKeyBinding || _legacySettings.RemovedBindings.Count > 0; }
-        }
-
-        /// <summary>
-        /// Do we need to perform a migration of the settings
-        /// </summary>
-        internal bool NeedsMigration
-        {
-            get { return !_vimApplicationSettings.LegacySettingsMigrated && LegacySettingsUsed; }
-        }
-
         internal SettingsMigrator(_DTE dte, IVimApplicationSettings vimApplicationSettings, ILegacySettings legacySettings)
         {
             _dte = dte;
@@ -45,11 +29,6 @@ namespace VsVim.Implementation.Settings
 
         internal void DoMigration()
         {
-            if (!NeedsMigration)
-            {
-                return;
-            }
-
             var removedBindings = FindRemovedBindings();
             DoMigration(removedBindings);
         }
@@ -59,7 +38,6 @@ namespace VsVim.Implementation.Settings
             _vimApplicationSettings.HaveUpdatedKeyBindings = _legacySettings.HaveUpdatedKeyBindings;
             _vimApplicationSettings.IgnoredConflictingKeyBinding = _legacySettings.IgnoredConflictingKeyBinding;
             _vimApplicationSettings.RemovedBindings = removedBindings;
-            _vimApplicationSettings.LegacySettingsMigrated = true;
         }
 
         /// <summary>

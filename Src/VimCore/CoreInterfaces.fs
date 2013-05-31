@@ -1310,7 +1310,7 @@ type VisualSpan =
         | VisualSpan.Line range -> [range.ExtentIncludingLineBreak] |> Seq.ofList
         | VisualSpan.Block blockSpan -> blockSpan.BlockSpans :> SnapshotSpan seq
 
-    member x.SpansWithOverlap (localSetting:IVimLocalSettings) = 
+    member x.SpansWithOverlap (localSetting : IVimLocalSettings) = 
         match x with 
         | VisualSpan.Block blockSpan -> seq (blockSpan.BlockSpansWithOverlap(localSetting))
         | _ -> (Seq.map (fun x -> (0, x, 0))) x.Spans

@@ -26,7 +26,7 @@ namespace VsVim.Implementation.Settings
         private readonly IProtectedOperations _protectedOperations;
         private readonly bool _legacySettingsSupported;
 
-        private bool LegacySettingsMigrated
+        internal bool LegacySettingsMigrated
         {
             get
             {
@@ -53,10 +53,8 @@ namespace VsVim.Implementation.Settings
             [EditorUtilsImport] IProtectedOperations protectedOperations)
             : this(vsServiceProvider.GetVisualStudioVersion(), vsServiceProvider.GetWritableSettingsStore(), protectedOperations)
         {
-            // Migrate the old settings at startup 
             var dte = vsServiceProvider.GetService<SDTE, _DTE>();
-            var settingsMigrator = new SettingsMigrator(dte, this, legacySettings);
-            settingsMigrator.DoMigration();
+            MigrateLegacySettings(dte, legacySettings);
         }
 
         internal VimApplicationSettings(VisualStudioVersion visualStudioVersion, WritableSettingsStore settingsStore, IProtectedOperations protectedOperations)
@@ -75,6 +73,24 @@ namespace VsVim.Implementation.Settings
                 default:
                     // Intentionally do nothing 
                     break;
+            }
+        }
+
+        /// <summary>
+        /// Migrate the legacy settings into our new storage if necessary
+        /// </summary>
+        internal void MigrateLegacySettings(_DTE dte, ILegacySettings legacySettings)
+        {
+            if (!LegacySettingsMigrated)
+            {
+                var legacySettingsUsed = legacySettings.HaveUpdatedKeyBindings || legacySettings.IgnoredConflictingKeyBinding || legacySettings.RemovedBindings.Count > 0;
+                if (legacySettingsUsed)
+                {
+                    var settingsMigrator = new SettingsMigrator(dte, this, legacySettings);
+                    settingsMigrator.DoMigration();
+                }
+
+                LegacySettingsMigrated = true;
             }
         }
 
@@ -189,12 +205,6 @@ namespace VsVim.Implementation.Settings
         {
             get { return GetBoolean(IgnoredConflictingKeyBindingName, defaultValue: false); }
             set { SetBoolean(IgnoredConflictingKeyBindingName, value); }
-        }
-
-        bool IVimApplicationSettings.LegacySettingsMigrated
-        {
-            get { return LegacySettingsMigrated; }
-            set { LegacySettingsMigrated = value; }
         }
 
         ReadOnlyCollection<CommandKeyBinding> IVimApplicationSettings.RemovedBindings

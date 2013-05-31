@@ -19,11 +19,6 @@ namespace VsVim
         bool IgnoredConflictingKeyBinding { get; set; }
 
         /// <summary>
-        /// The legacy settings have been migrated to this usage
-        /// </summary>
-        bool LegacySettingsMigrated { get; set; } 
-
-        /// <summary>
         /// The set of CommandKeyBinding that VsVim unbound in the conflicting key dialog
         /// </summary>
         ReadOnlyCollection<CommandKeyBinding> RemovedBindings { get; set; }

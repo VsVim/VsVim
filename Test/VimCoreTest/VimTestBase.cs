@@ -331,6 +331,13 @@ namespace Vim.UnitTest
             return _vimBufferFactory.CreateVimBuffer(vimBufferData);
         }
 
+        protected IVimBuffer CreateVimBufferWithName(string fileName, params string[] lines)
+        {
+            var textView = CreateTextView(lines);
+            textView.TextBuffer.Properties[MockVimHost.FileNameKey] = fileName;
+            return _vim.CreateVimBuffer(textView);
+        }
+
         protected ITextStructureNavigator CreateTextStructureNavigator(ITextBuffer textBuffer, WordKind kind)
         {
             return WordUtilFactory.GetWordUtil(textBuffer).CreateTextStructureNavigator(kind);
