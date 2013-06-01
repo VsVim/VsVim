@@ -667,7 +667,7 @@ type internal CommandUtil
         CommandResult.Completed ModeSwitch.SwitchPreviousMode
 
     /// Delete the highlighted text from the buffer and put it into the specified 
-    /// register.  The caret should be positioned at the begining of the text for
+    /// register.  The caret should be positioned at the beginning of the text for
     /// undo / redo
     member x.DeleteSelection register (visualSpan : VisualSpan) = 
         let startPoint = visualSpan.Start
@@ -1104,6 +1104,32 @@ type internal CommandUtil
                 x.MoveCaretFollowingJoin range)
 
             CommandResult.Completed ModeSwitch.SwitchPreviousMode
+
+    /// Invert the current selection 
+    member x.InvertSelection (visualSpan : VisualSpan) (streamSelectionSpan : VirtualSnapshotSpan) =
+
+        // Do the selection change with the new values.  The only elements that must be correct
+        // are the anchor point and caret position.  The selection tracker will be responsible
+        // for properly setting to the character, line, block, etc ... once the command completes
+        let changeSelection anchorPoint caretPoint = 
+            let extendIntoLineBreak = streamSelectionSpan.End.IsInVirtualSpace
+            let visualSelection = VisualSelection.CreateForPoints visualSpan.VisualKind anchorPoint caretPoint
+            let visualSelection = visualSelection.AdjustForExtendIntoLineBreak extendIntoLineBreak
+            TextViewUtil.MoveCaretToPoint _textView caretPoint
+            visualSelection.Select _textView
+
+        match visualSpan with
+        | VisualSpan.Character characterSpan -> 
+            if characterSpan.Length > 1 then 
+                let last = Option.get characterSpan.Last
+                if x.CaretPoint.Position > characterSpan.Start.Position then
+                    changeSelection x.CaretPoint characterSpan.Start
+                else
+                    changeSelection characterSpan.Start last
+
+        | _ -> ()
+
+        CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Switch to insert mode after the caret 
     member x.InsertAfterCaret count = 
@@ -2216,6 +2242,8 @@ type internal CommandUtil
     /// Run a VisualCommand against the buffer
     member x.RunVisualCommand command (data : CommandData) (visualSpan : VisualSpan) = 
 
+        let streamSelectionSpan = _textView.Selection.StreamSelectionSpan
+
         // Clear the selection before actually running any Visual Commands.  Selection is one 
         // of the items which is preserved along with caret position when we use an edit transaction
         // with the change primitives (EditWithUndoTransaction).  We don't want the selection to 
@@ -2236,6 +2264,7 @@ type internal CommandUtil
         | VisualCommand.FormatLines -> x.FormatLinesVisual visualSpan
         | VisualCommand.FoldSelection -> x.FoldSelection visualSpan
         | VisualCommand.JoinSelection kind -> x.JoinSelection kind visualSpan
+        | VisualCommand.InvertSelection -> x.InvertSelection visualSpan streamSelectionSpan
         | VisualCommand.MoveCaretToTextObject (motion, textObjectKind)-> x.MoveCaretToTextObject motion textObjectKind visualSpan
         | VisualCommand.OpenFoldInSelection -> x.OpenFoldInSelection visualSpan
         | VisualCommand.OpenAllFoldsInSelection -> x.OpenAllFoldsInSelection visualSpan
@@ -2597,7 +2626,7 @@ type internal CommandUtil
             _commonOperations.Beep()
             CommandResult.Completed ModeSwitch.NoSwitch
 
-        // The archor point is the original anchor point of the visual session
+        // The anchor point is the original anchor point of the visual session
         let anchorPoint = 
             _vimBufferData.VisualCaretStartPoint
             |> OptionUtil.map2 (TrackingPointUtil.GetPoint x.CurrentSnapshot)

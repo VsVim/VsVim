@@ -21,6 +21,6 @@ type ISelectionTracker =
     /// Start tracking the selection
     abstract Start : unit -> unit
 
-    /// Reset the selectiond and stop tracking
+    /// Reset the selection and stop tracking
     abstract Stop : unit -> unit
 

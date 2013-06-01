@@ -52,6 +52,7 @@ type internal VisualMode
                 yield ("gP", CommandFlags.Repeatable, VisualCommand.PutOverSelection true)
                 yield ("g?", CommandFlags.Repeatable, VisualCommand.ChangeCase ChangeCharacterKind.Rot13)
                 yield ("J", CommandFlags.Repeatable, VisualCommand.JoinSelection JoinKind.RemoveEmptySpaces)
+                yield ("o", CommandFlags.Movement ||| CommandFlags.ResetAnchorPoint, VisualCommand.InvertSelection)
                 yield ("p", CommandFlags.Repeatable, VisualCommand.PutOverSelection false)
                 yield ("P", CommandFlags.Repeatable, VisualCommand.PutOverSelection false)
                 yield ("R", CommandFlags.Repeatable ||| CommandFlags.LinkedWithNextCommand, VisualCommand.ChangeLineSelection false)
@@ -222,6 +223,10 @@ type internal VisualMode
 
                     if Util.IsFlagSet commandRanData.CommandBinding.CommandFlags CommandFlags.ResetCaret then
                         x.ResetCaret()
+
+                    if Util.IsFlagSet commandRanData.CommandBinding.CommandFlags CommandFlags.ResetAnchorPoint then
+                        _selectionTracker.Stop()
+                        _selectionTracker.Start()
 
                     match commandRanData.CommandResult with
                     | CommandResult.Error ->

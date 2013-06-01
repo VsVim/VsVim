@@ -1911,7 +1911,7 @@ namespace Vim.UnitTest
                 Create("the brown dog");
                 var span = new SnapshotSpan(_textView.GetPoint(4), _textView.GetPoint(9));
                 Assert.Equal("brown", span.GetText());
-                var visualSelection = VisualSelection.NewCharacter(CharacterSpan.CreateForSpan(span), Path.Backward);
+                var visualSelection = VisualSelection.NewCharacter(new CharacterSpan(span), Path.Backward);
                 _vimTextBuffer.LastVisualSelection = FSharpOption.Create(visualSelection);
                 _vimBuffer.Process("y`>");
                 Assert.Equal("the brown", _vimBuffer.RegisterMap.GetRegister(RegisterName.Unnamed).StringValue);

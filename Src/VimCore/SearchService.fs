@@ -191,7 +191,7 @@ type internal SearchService
 
     /// Search for the given pattern from the specified point. 
     [<UsedInBackgroundThread()>]
-    static member FindNextPatternCore (searchServiceData : SearchServiceData) patternData startPoint wordNavigator count =
+    static member FindNextPatternCore (searchServiceData : SearchServiceData) (patternData : PatternData) startPoint wordNavigator count =
 
         // Find the real place to search.  When going forward we should start after
         // the caret and before should start before. This prevents the text 

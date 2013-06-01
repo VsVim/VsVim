@@ -92,6 +92,7 @@ namespace Vim.UnitTest
             var realView = CreateTextView("foo bar baz");
             var selection = new Mock<ITextSelection>(MockBehavior.Strict);
             selection.SetupGet(x => x.IsEmpty).Returns(false).Verifiable();
+            selection.SetupGet(x => x.IsReversed).Returns(false).Verifiable();
             selection.SetupGet(x => x.AnchorPoint).Returns(new VirtualSnapshotPoint(realView.TextSnapshot, 0));
             selection.SetupProperty(x => x.Mode);
             var view = new Mock<ITextView>(MockBehavior.Strict);

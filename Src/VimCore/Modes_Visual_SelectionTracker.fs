@@ -15,8 +15,12 @@ type internal SelectionTracker
         _visualKind : VisualKind
     ) as this =
 
-    /// The anchor point we are currently tracking 
+    /// The anchor point we are currently tracking.  This is always included in the selection which
+    /// is created by this type 
     let mutable _anchorPoint : SnapshotPoint option = None
+
+    /// Should the selection be extended into the line break 
+    let mutable _extendIntoLineBreak : bool = false
 
     /// When we are in the middle of an incremental search this will 
     /// track the most recent search result
@@ -44,20 +48,30 @@ type internal SelectionTracker
         if x.IsRunning then invalidOp Vim.Resources.SelectionTracker_AlreadyRunning
         _textChangedHandler.Add()
 
-        _anchorPoint <- 
-            let selection = _textView.Selection
-            if selection.IsEmpty then
+        let selection = _textView.Selection
+        if selection.IsEmpty then
 
-                // Set the selection.  If this is line mode we need to select the entire line 
-                // here
-                let caretPoint = TextViewUtil.GetCaretPoint _textView
-                let visualSelection = VisualSelection.CreateInitial _visualKind caretPoint
-                visualSelection.VisualSpan.Select _textView Path.Forward
+            // Set the selection.  If this is line mode we need to select the entire line 
+            // here
+            let caretPoint = TextViewUtil.GetCaretPoint _textView
+            let visualSelection = VisualSelection.CreateInitial _visualKind caretPoint
+            visualSelection.VisualSpan.Select _textView Path.Forward
 
-                Some caretPoint
-            else 
-                _textView.Selection.Mode <- _visualKind.TextSelectionMode
-                Some selection.AnchorPoint.Position
+            _anchorPoint <- Some caretPoint
+            _extendIntoLineBreak <- false
+        else 
+            // The selection is already set and we need to track it.  The anchor point in
+            // vim is always included in the selection but in the ITextSelection it is 
+            // not when the selection is reversed.  We need to account for this when 
+            // setting our anchor point 
+            _textView.Selection.Mode <- _visualKind.TextSelectionMode
+            let anchorPoint = selection.AnchorPoint.Position
+            _anchorPoint <- 
+                if selection.IsReversed then
+                    SnapshotPointUtil.SubtractOneOrCurrent anchorPoint |> Some
+                else
+                    Some anchorPoint
+            _extendIntoLineBreak <- _visualKind = VisualKind.Character && selection.AnchorPoint.IsInVirtualSpace
 
     /// Called when selection should no longer be tracked.  Must be paired with Start calls or
     /// we will stay attached to certain event handlers
@@ -87,6 +101,7 @@ type internal SelectionTracker
             // Update the selection only.  Don't move the caret here.  It's either properly positioned
             // or we're simulating the selection based on incremental search
             let visualSelection = VisualSelection.CreateForPoints _visualKind anchorPoint simulatedCaretPoint
+            let visualSelection = visualSelection.AdjustForExtendIntoLineBreak _extendIntoLineBreak
             let visualSelection = visualSelection.AdjustForSelectionKind _globalSettings.SelectionKind
             visualSelection.Select _textView
 

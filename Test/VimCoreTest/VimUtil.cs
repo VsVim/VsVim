@@ -290,7 +290,7 @@ namespace Vim.UnitTest
 
         internal static VisualSpan CreateVisualSpanCharacter(SnapshotSpan span)
         {
-            return VisualSpan.NewCharacter(CharacterSpan.CreateForSpan(span));
+            return VisualSpan.NewCharacter(new CharacterSpan(span));
         }
 
         internal static ParseResult<LineCommand> ParseLineCommand(string text)

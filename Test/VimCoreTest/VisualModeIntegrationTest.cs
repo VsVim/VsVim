@@ -46,7 +46,7 @@ namespace Vim.UnitTest
 
         protected void EnterMode(SnapshotSpan span)
         {
-            var characterSpan = CharacterSpan.CreateForSpan(span);
+            var characterSpan = new CharacterSpan(span);
             var visualSelection = VisualSelection.NewCharacter(characterSpan, Path.Forward);
             visualSelection.SelectAndMoveCaret(_textView);
             Assert.False(_context.IsEmpty);
@@ -119,6 +119,98 @@ namespace Vim.UnitTest
             }
         }
 
+        public abstract class DeleteSelectionTest : VisualModeIntegrationTest
+        {
+            public sealed class CharacterTest : DeleteSelectionTest
+            {
+                /// <summary>
+                /// When an entire line is selected in character wise mode and then deleted
+                /// it should not be a line delete but instead delete the contents of the 
+                /// line.
+                /// </summary>
+                [Fact]
+                public void LineContents()
+                {
+                    Create("cat", "dog");
+                    EnterMode(ModeKind.VisualCharacter, _textView.GetLineSpan(0, 3));
+                    _vimBuffer.Process("x");
+                    Assert.Equal("", _textView.GetLine(0).GetText());
+                    Assert.Equal("dog", _textView.GetLine(1).GetText());
+                }
+
+                /// <summary>
+                /// If the character wise selection extents into the line break then the 
+                /// entire line should be deleted
+                /// </summary>
+                [Fact]
+                public void LineContentsFromBreak()
+                {
+                    Create("cat", "dog");
+                    _globalSettings.VirtualEdit = "onemore";
+                    EnterMode(ModeKind.VisualCharacter, _textView.GetLine(0).ExtentIncludingLineBreak);
+                    _vimBuffer.Process("x");
+                    Assert.Equal("dog", _textView.GetLine(0).GetText());
+                }
+            }
+
+            public sealed class MiscTest : DeleteSelectionTest
+            {
+                /// <summary>
+                /// The 'e' motion should result in a selection that encompasses the entire word
+                /// </summary>
+                [Fact]
+                public void EndOfWord()
+                {
+                    Create("the dog. cat");
+                    _textView.MoveCaretTo(4);
+                    _vimBuffer.Process("vex");
+                    Assert.Equal("dog", UnnamedRegister.StringValue);
+                    Assert.Equal(4, _textView.GetCaretPoint().Position);
+                }
+
+                /// <summary>
+                /// The 'e' motion should result in a selection that encompasses the entire word
+                /// </summary>
+                [Fact]
+                public void EndOfWord_Block()
+                {
+                    Create("the dog. end", "the cat. end", "the fish. end");
+                    _textView.MoveCaretTo(4);
+                    _vimBuffer.Process(KeyInputUtil.CharWithControlToKeyInput('q'));
+                    _vimBuffer.Process("jex");
+                    Assert.Equal("the . end", _textBuffer.GetLine(0).GetText());
+                    Assert.Equal("the . end", _textBuffer.GetLine(1).GetText());
+                    Assert.Equal("the fish. end", _textBuffer.GetLine(2).GetText());
+                }
+
+                /// <summary>
+                /// The 'w' motion should result in a selection that encompasses the entire word
+                /// </summary>
+                [Fact]
+                public void Word()
+                {
+                    Create("the dog. cat");
+                    _textView.MoveCaretTo(4);
+                    _vimBuffer.Process("vwx");
+                    Assert.Equal("dog.", UnnamedRegister.StringValue);
+                    Assert.Equal(4, _textView.GetCaretPoint().Position);
+                }
+
+                /// <summary>
+                /// The 'e' motion should select up to and including the end of the word
+                ///
+                /// https://github.com/jaredpar/VsVim/issues/568
+                /// </summary>
+                [Fact]
+                public void EndOfWordMotion()
+                {
+                    Create("ThisIsALongWord. ThisIsAnotherLongWord!");
+                    _vimBuffer.Process("vex");
+                    Assert.Equal(". ThisIsAnotherLongWord!", _textBuffer.GetLine(0).GetText());
+                }
+            }
+        }
+
         public sealed class ExclusiveSelection : VisualModeIntegrationTest
         {
             protected override void Create(params string[] lines)
@@ -161,47 +253,6 @@ namespace Vim.UnitTest
                 _textView.MoveCaretTo(4);
                 _vimBuffer.Process("Ve");
                 Assert.Equal(7, _textView.GetCaretPoint().Position);
-            }
-
-            /// <summary>
-            /// The 'e' motion should result in a selection that encompasses the entire word
-            /// </summary>
-            [Fact]
-            public void Delete_EndOfWord()
-            {
-                Create("the dog. cat");
-                _textView.MoveCaretTo(4);
-                _vimBuffer.Process("vex");
-                Assert.Equal("dog", UnnamedRegister.StringValue);
-                Assert.Equal(4, _textView.GetCaretPoint().Position);
-            }
-
-            /// <summary>
-            /// The 'e' motion should result in a selection that encompasses the entire word
-            /// </summary>
-            [Fact]
-            public void Delete_EndOfWord_Block()
-            {
-                Create("the dog. end", "the cat. end", "the fish. end");
-                _textView.MoveCaretTo(4);
-                _vimBuffer.Process(KeyInputUtil.CharWithControlToKeyInput('q'));
-                _vimBuffer.Process("jex");
-                Assert.Equal("the . end", _textBuffer.GetLine(0).GetText());
-                Assert.Equal("the . end", _textBuffer.GetLine(1).GetText());
-                Assert.Equal("the fish. end", _textBuffer.GetLine(2).GetText());
-            }
-
-            /// <summary>
-            /// The 'w' motion should result in a selection that encompasses the entire word
-            /// </summary>
-            [Fact]
-            public void Delete_Word()
-            {
-                Create("the dog. cat");
-                _textView.MoveCaretTo(4);
-                _vimBuffer.Process("vwx");
-                Assert.Equal("dog", UnnamedRegister.StringValue);
-                Assert.Equal(4, _textView.GetCaretPoint().Position);
             }
 
             /// <summary>
@@ -441,6 +492,73 @@ namespace Vim.UnitTest
             }
         }
 
+        public abstract class InvertSelectionTest : VisualModeIntegrationTest
+        {
+            public sealed class CharacterWiseTest : InvertSelectionTest
+            {
+                [Fact]
+                public void Simple()
+                {
+                    Create("cat and the dog");
+                    _vimBuffer.Process("vlllo");
+                    Assert.Equal(0, _textView.GetCaretPoint().Position);
+                    Assert.Equal(4, _textView.Selection.AnchorPoint.Position);
+                    Assert.Equal("cat ", _textView.GetSelectionSpan().GetText());
+                }
+
+                [Fact]
+                public void SingleCharacterSelected()
+                {
+                    Create("cat");
+                    _vimBuffer.Process("voooo");
+                    Assert.Equal(0, _textView.GetCaretPoint().Position);
+                    Assert.Equal(0, _textView.Selection.AnchorPoint.Position);
+                    Assert.Equal("c", _textView.GetSelectionSpan().GetText());
+                }
+
+                [Fact]
+                public void BackAndForth()
+                {
+                    Create("cat and the dog");
+                    _vimBuffer.Process("vllloo");
+                    Assert.Equal(3, _textView.GetCaretPoint().Position);
+                    Assert.Equal(0, _textView.Selection.AnchorPoint.Position);
+                    Assert.Equal("cat ", _textView.GetSelectionSpan().GetText());
+                }
+
+                [Fact]
+                public void Multiline()
+                {
+                    Create("cat", "dog");
+                    _vimBuffer.Process("lvjo");
+                    var span = _textView.GetSelectionSpan();
+                    Assert.Equal("at" + Environment.NewLine + "do", span.GetText());
+                    Assert.True(_textView.Selection.IsReversed);
+                    Assert.Equal(1, _textView.GetCaretPoint().Position);
+                }
+
+                [Fact]
+                public void PastEndOfLine()
+                {
+                    Create("cat", "dog");
+                    _vimBuffer.GlobalSettings.VirtualEdit = "onemore";
+                    _vimBuffer.Process("vlllo");
+                    Assert.Equal(4, _textView.Selection.StreamSelectionSpan.Length);
+                    Assert.Equal(0, _textView.GetCaretPoint().Position);
+                }
+
+                [Fact]
+                public void PastEndOfLineReverse()
+                {
+                    Create("cat", "dog");
+                    _vimBuffer.GlobalSettings.VirtualEdit = "onemore";
+                    _vimBuffer.Process("vllloo");
+                    Assert.Equal(4, _textView.Selection.StreamSelectionSpan.Length);
+                    Assert.Equal(3, _textView.GetCaretPoint().Position);
+                }
+            }
+        }
+
         public sealed class KeyMappingTest : VisualModeIntegrationTest
         {
             [Fact]
@@ -536,48 +654,6 @@ namespace Vim.UnitTest
                 Assert.Equal("dog", _textView.GetLine(1).GetText());
                 Assert.Equal(0, _textView.GetCaretPoint().Position);
                 Assert.False(_textView.GetCaretVirtualPoint().IsInVirtualSpace);
-            }
-
-            /// <summary>
-            /// When an entire line is selected in character wise mode and then deleted
-            /// it should not be a line delete but instead delete the contents of the 
-            /// line.
-            /// </summary>
-            [Fact]
-            public void Delete_CharacterWise_LineContents()
-            {
-                Create("cat", "dog");
-                EnterMode(ModeKind.VisualCharacter, _textView.GetLineSpan(0, 3));
-                _vimBuffer.Process("x");
-                Assert.Equal("", _textView.GetLine(0).GetText());
-                Assert.Equal("dog", _textView.GetLine(1).GetText());
-            }
-
-            /// <summary>
-            /// If the character wise selection extents into the line break then the 
-            /// entire line should be deleted
-            /// </summary>
-            [Fact]
-            public void Delete_CharacterWise_LineContentsFromBreak()
-            {
-                Create("cat", "dog");
-                _globalSettings.VirtualEdit = "onemore";
-                EnterMode(ModeKind.VisualCharacter, _textView.GetLine(0).ExtentIncludingLineBreak);
-                _vimBuffer.Process("x");
-                Assert.Equal("dog", _textView.GetLine(0).GetText());
-            }
-
-            /// <summary>
-            /// The 'e' motion should select up to and including the end of the word
-            ///
-            /// https://github.com/jaredpar/VsVim/issues/568
-            /// </summary>
-            [Fact]
-            public void Delete_EndOfWordMotion()
-            {
-                Create("ThisIsALongWord. ThisIsAnotherLongWord!");
-                _vimBuffer.Process("vex");
-                Assert.Equal(". ThisIsAnotherLongWord!", _textBuffer.GetLine(0).GetText());
             }
 
             /// <summary>
@@ -1652,47 +1728,81 @@ namespace Vim.UnitTest
                 Assert.Equal(7, _textView.GetCaretPoint().Position);
             }
 
-            /// <summary>
-            /// The yank selection command should exit visual mode after the operation
-            /// </summary>
-            [Fact]
-            public void YankSelection_ShouldExitVisualMode()
+        }
+
+        public abstract class YankSelectionTest : VisualModeIntegrationTest
+        {
+            public sealed class CharacterTest : YankSelectionTest
             {
-                Create("cat", "dog");
-                EnterMode(ModeKind.VisualCharacter, _textView.GetLine(0).Extent);
-                _vimBuffer.Process("y");
-                Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
-                Assert.True(_textView.Selection.IsEmpty);
+                [Fact]
+                public void InsideLineBreak()
+                {
+                    Create("cat dog", "bear");
+                    _globalSettings.VirtualEdit = "onemore";
+                    _textView.MoveCaretTo(4);
+                    _vimBuffer.Process("vllly");
+                    Assert.Equal("dog" + Environment.NewLine, UnnamedRegister.StringValue);
+                }
+
+                /// <summary>
+                /// When the caret ends on an empty line then that line is included when the
+                /// yank is performed
+                /// </summary>
+                [Fact]
+                public void EmptyLine()
+                {
+                    Create("the dog", "", "cat");
+                    _textView.MoveCaretTo(4);
+                    _vimBuffer.Process("vjy");
+                    Assert.Equal("dog" + Environment.NewLine + Environment.NewLine, UnnamedRegister.StringValue);
+                }
             }
 
-            /// <summary>
-            /// Ensure that after yanking and leaving Visual Mode that the proper value is
-            /// maintained for LastVisualSelection.  It should be the selection before the command
-            /// was executed
-            /// </summary>
-            [Fact]
-            public void YankSelection_LastVisualSelection()
+            public sealed class MiscTest : YankSelectionTest
             {
-                Create("cat", "dog", "fish");
-                var span = _textView.GetLineRange(0, 1).ExtentIncludingLineBreak;
-                EnterMode(ModeKind.VisualLine, span);
-                _vimBuffer.Process('y');
-                Assert.True(_vimTextBuffer.LastVisualSelection.IsSome());
-                Assert.Equal(span, _vimTextBuffer.LastVisualSelection.Value.VisualSpan.EditSpan.OverarchingSpan);
-            }
+                /// <summary>
+                /// The yank selection command should exit visual mode after the operation
+                /// </summary>
+                [Fact]
+                public void YankSelection_ShouldExitVisualMode()
+                {
+                    Create("cat", "dog");
+                    EnterMode(ModeKind.VisualCharacter, _textView.GetLine(0).Extent);
+                    _vimBuffer.Process("y");
+                    Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
+                    Assert.True(_textView.Selection.IsEmpty);
+                }
 
-            /// <summary>
-            /// The yank line selection command should exit visual mode after the operation
-            /// </summary>
-            [Fact]
-            public void YankLineSelection_ShouldExitVisualMode()
-            {
-                Create("cat", "dog");
-                EnterMode(ModeKind.VisualCharacter, _textView.GetLine(0).Extent);
-                _vimBuffer.Process("Y");
-                Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
-                Assert.True(_textView.Selection.IsEmpty);
+                /// <summary>
+                /// Ensure that after yanking and leaving Visual Mode that the proper value is
+                /// maintained for LastVisualSelection.  It should be the selection before the command
+                /// was executed
+                /// </summary>
+                [Fact]
+                public void YankSelection_LastVisualSelection()
+                {
+                    Create("cat", "dog", "fish");
+                    var span = _textView.GetLineRange(0, 1).ExtentIncludingLineBreak;
+                    EnterMode(ModeKind.VisualLine, span);
+                    _vimBuffer.Process('y');
+                    Assert.True(_vimTextBuffer.LastVisualSelection.IsSome());
+                    Assert.Equal(span, _vimTextBuffer.LastVisualSelection.Value.VisualSpan.EditSpan.OverarchingSpan);
+                }
+
+                /// <summary>
+                /// The yank line selection command should exit visual mode after the operation
+                /// </summary>
+                [Fact]
+                public void YankLineSelection_ShouldExitVisualMode()
+                {
+                    Create("cat", "dog");
+                    EnterMode(ModeKind.VisualCharacter, _textView.GetLine(0).Extent);
+                    _vimBuffer.Process("Y");
+                    Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
+                    Assert.True(_textView.Selection.IsEmpty);
+                }
             }
         }
+
     }
 }

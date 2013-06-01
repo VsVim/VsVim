@@ -1126,7 +1126,7 @@ namespace Vim.UnitTest
 
                 Action<SnapshotSpan> action = span =>
                 {
-                    var characterSpan = CharacterSpan.CreateForSpan(span);
+                    var characterSpan = new CharacterSpan(span);
                     var visual = VisualSpan.NewCharacter(characterSpan);
                     var stored = StoredVisualSpan.OfVisualSpan(visual);
                     var restored = _commandUtil.CalculateVisualSpan(stored);
@@ -1182,7 +1182,7 @@ namespace Vim.UnitTest
                 var span = new SnapshotSpan(_textBuffer.GetPoint(0), _textBuffer.GetLine(1).Start.Add(1));
                 var stored = StoredVisualSpan.OfVisualSpan(VimUtil.CreateVisualSpanCharacter(span));
                 var restored = _commandUtil.CalculateVisualSpan(stored);
-                Assert.Equal(span, restored.AsCharacter().Item.Span);
+                Assert.Equal(_textBuffer.GetSpan(0, 7), restored.AsCharacter().Item.Span);
             }
 
             /// <summary>

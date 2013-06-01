@@ -992,7 +992,7 @@ namespace Vim.UnitTest
         /// </summary>
         public static void SelectAndMoveCaret(this ITextView textView, SnapshotSpan span)
         {
-            var characterSpan = CharacterSpan.CreateForSpan(span);
+            var characterSpan = new CharacterSpan(span);
             var visualSelection = VisualSelection.CreateForward(VisualSpan.NewCharacter(characterSpan));
             visualSelection.SelectAndMoveCaret(textView);
         }
@@ -1380,6 +1380,10 @@ namespace Vim.UnitTest
             selection.Select(snapshotSpan);
         }
 
+        /// <summary>
+        /// If you don't explicitly use VirtualSnapshotPoint values then the selection APIs will truncate
+        /// line break selections.  
+        /// </summary>
         public static void Select(this ITextSelection selection, SnapshotPoint startPoint, SnapshotPoint endPoint)
         {
             selection.Select(new VirtualSnapshotPoint(startPoint), new VirtualSnapshotPoint(endPoint));
