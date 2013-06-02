@@ -2256,8 +2256,9 @@ type VisualCommand =
     /// Join the selected lines
     | JoinSelection of JoinKind
 
-    /// Invert the selection by swapping the caret and anchor points
-    | InvertSelection
+    /// Invert the selection by swapping the caret and anchor points.  When true it means that block mode should
+    /// be special cased to invert the column only 
+    | InvertSelection of bool
 
     /// Move the caret to the result of the given Motion.  This movement is from a 
     /// text-object selection.  Certain motions 

@@ -626,6 +626,53 @@ namespace Vim.UnitTest
                     Assert.Equal(2, blockSpan.Width);
                 }
             }
+
+            public sealed class BlockColumnOnlyTest : InvertSelectionTest
+            {
+                [Fact]
+                public void Simple()
+                {
+                    Create("cat", "dog", "tree");
+                    _vimBuffer.ProcessNotation("<C-q>ljO");
+                    Assert.Equal(_textView.GetPointInLine(1, 0), _textView.GetCaretPoint().Position);
+                    var blockSpan = _textView.GetSelectionBlockSpan();
+                    Assert.Equal(2, blockSpan.Height);
+                    Assert.Equal(2, blockSpan.Width);
+                }
+
+                [Fact]
+                public void SimpleBackAndForth()
+                {
+                    Create("cat", "dog", "tree");
+                    _vimBuffer.ProcessNotation("<C-q>ljOO");
+                    Assert.Equal(_textView.GetPointInLine(1, 1), _textView.GetCaretPoint().Position);
+                    var blockSpan = _textView.GetSelectionBlockSpan();
+                    Assert.Equal(2, blockSpan.Height);
+                    Assert.Equal(2, blockSpan.Width);
+                }
+
+                [Fact]
+                public void SimpleReverse()
+                {
+                    Create("cat", "dog", "tree");
+                    _vimBuffer.ProcessNotation("<C-q>ljoO");
+                    Assert.Equal(_textView.GetPointInLine(0, 1), _textView.GetCaretPoint().Position);
+                    var blockSpan = _textView.GetSelectionBlockSpan();
+                    Assert.Equal(2, blockSpan.Height);
+                    Assert.Equal(2, blockSpan.Width);
+                }
+
+                [Fact]
+                public void SimpleReverseAndForth()
+                {
+                    Create("cat", "dog", "tree");
+                    _vimBuffer.ProcessNotation("<C-q>ljoOO");
+                    Assert.Equal(_textView.GetPointInLine(0, 0), _textView.GetCaretPoint().Position);
+                    var blockSpan = _textView.GetSelectionBlockSpan();
+                    Assert.Equal(2, blockSpan.Height);
+                    Assert.Equal(2, blockSpan.Width);
+                }
+            }
         }
 
         public sealed class KeyMappingTest : VisualModeIntegrationTest

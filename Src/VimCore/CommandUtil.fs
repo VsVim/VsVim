@@ -1106,7 +1106,7 @@ type internal CommandUtil
             CommandResult.Completed ModeSwitch.SwitchPreviousMode
 
     /// Invert the current selection 
-    member x.InvertSelection (visualSpan : VisualSpan) (streamSelectionSpan : VirtualSnapshotSpan) =
+    member x.InvertSelection (visualSpan : VisualSpan) (streamSelectionSpan : VirtualSnapshotSpan) columnOnlyInBlock =
 
         // Do the selection change with the new values.  The only elements that must be correct
         // are the anchor point and caret position.  The selection tracker will be responsible
@@ -1119,21 +1119,34 @@ type internal CommandUtil
             visualSelection.Select _textView
             _vimBufferData.VisualAnchorPoint <- Some (anchorPoint.Snapshot.CreateTrackingPoint(anchorPoint.Position, PointTrackingMode.Negative))
 
-        let normal () = 
-            match _vimBufferData.VisualAnchorPoint |> OptionUtil.map2 (TrackingPointUtil.GetPoint x.CurrentSnapshot) with
-            | None -> ()
-            | Some anchorPoint -> changeSelection x.CaretPoint anchorPoint
+        match _vimBufferData.VisualAnchorPoint |> OptionUtil.map2 (TrackingPointUtil.GetPoint x.CurrentSnapshot) with
+        | None -> ()
+        | Some anchorPoint ->
+            match visualSpan with
+            | VisualSpan.Character characterSpan -> 
+                if characterSpan.Length > 1 then 
+                    let last = Option.get characterSpan.Last
+                    if x.CaretPoint.Position > characterSpan.Start.Position then
+                        changeSelection x.CaretPoint characterSpan.Start
+                    else
+                        changeSelection characterSpan.Start last
+            | VisualSpan.Line _ -> 
+                changeSelection x.CaretPoint anchorPoint
+            | VisualSpan.Block blockSpan -> 
+                if columnOnlyInBlock then
+                    // In this mode the caret simple jumps to the other end of the selection on the same
+                    // line.  It doesn't switch caret + anchor, just the side the caret is on
+                    let caretOffset, anchorOffset = 
+                        if (SnapshotPointUtil.GetColumn x.CaretPoint) >= (SnapshotPointUtil.GetColumn anchorPoint) then 
+                            blockSpan.Column, (blockSpan.Width + blockSpan.Column) - 1
+                        else
+                            (blockSpan.Width + blockSpan.Column) - 1, blockSpan.Column
 
-        match visualSpan with
-        | VisualSpan.Character characterSpan -> 
-            if characterSpan.Length > 1 then 
-                let last = Option.get characterSpan.Last
-                if x.CaretPoint.Position > characterSpan.Start.Position then
-                    changeSelection x.CaretPoint characterSpan.Start
+                    let newCaretPoint = SnapshotLineUtil.GetOffsetOrEnd caretOffset x.CaretLine
+                    let newAnchorPoint = SnapshotLineUtil.GetOffsetOrEnd anchorOffset (anchorPoint.GetContainingLine())
+                    changeSelection newAnchorPoint newCaretPoint
                 else
-                    changeSelection characterSpan.Start last
-        | VisualSpan.Line _ -> normal ()
-        | VisualSpan.Block _ -> normal () 
+                    changeSelection x.CaretPoint anchorPoint
 
         CommandResult.Completed ModeSwitch.NoSwitch
 
@@ -2270,7 +2283,7 @@ type internal CommandUtil
         | VisualCommand.FormatLines -> x.FormatLinesVisual visualSpan
         | VisualCommand.FoldSelection -> x.FoldSelection visualSpan
         | VisualCommand.JoinSelection kind -> x.JoinSelection kind visualSpan
-        | VisualCommand.InvertSelection -> x.InvertSelection visualSpan streamSelectionSpan
+        | VisualCommand.InvertSelection columnOnlyInBlock -> x.InvertSelection visualSpan streamSelectionSpan columnOnlyInBlock
         | VisualCommand.MoveCaretToTextObject (motion, textObjectKind)-> x.MoveCaretToTextObject motion textObjectKind visualSpan
         | VisualCommand.OpenFoldInSelection -> x.OpenFoldInSelection visualSpan
         | VisualCommand.OpenAllFoldsInSelection -> x.OpenAllFoldsInSelection visualSpan
