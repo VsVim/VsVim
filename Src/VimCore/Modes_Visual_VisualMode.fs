@@ -189,7 +189,10 @@ type internal VisualMode
                     x.CaretPoint.Position
                 else 
                     _textView.Selection.AnchorPoint.Position.Position
-        _vimBufferData.VisualCaretStartPoint <- x.CurrentSnapshot.CreateTrackingPoint(caretPosition, PointTrackingMode.Negative) |> Some
+
+        let caretTrackingPoint = x.CurrentSnapshot.CreateTrackingPoint(caretPosition, PointTrackingMode.Negative) |> Some
+        _vimBufferData.VisualCaretStartPoint <- caretTrackingPoint
+        _vimBufferData.VisualAnchorPoint <- caretTrackingPoint
 
         _selectionTracker.Start()
 
@@ -225,8 +228,9 @@ type internal VisualMode
                         x.ResetCaret()
 
                     if Util.IsFlagSet commandRanData.CommandBinding.CommandFlags CommandFlags.ResetAnchorPoint then
-                        _selectionTracker.Stop()
-                        _selectionTracker.Start()
+                        match _vimBufferData.VisualAnchorPoint |>  OptionUtil.map2 (TrackingPointUtil.GetPoint x.CurrentSnapshot) with
+                        | None -> ()
+                        | Some anchorPoint -> _selectionTracker.UpdateSelectionWithAnchorPoint anchorPoint
 
                     match commandRanData.CommandResult with
                     | CommandResult.Error ->

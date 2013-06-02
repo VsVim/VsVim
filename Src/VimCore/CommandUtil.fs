@@ -1117,6 +1117,12 @@ type internal CommandUtil
             let visualSelection = visualSelection.AdjustForExtendIntoLineBreak extendIntoLineBreak
             TextViewUtil.MoveCaretToPoint _textView caretPoint
             visualSelection.Select _textView
+            _vimBufferData.VisualAnchorPoint <- Some (anchorPoint.Snapshot.CreateTrackingPoint(anchorPoint.Position, PointTrackingMode.Negative))
+
+        let normal () = 
+            match _vimBufferData.VisualAnchorPoint |> OptionUtil.map2 (TrackingPointUtil.GetPoint x.CurrentSnapshot) with
+            | None -> ()
+            | Some anchorPoint -> changeSelection x.CaretPoint anchorPoint
 
         match visualSpan with
         | VisualSpan.Character characterSpan -> 
@@ -1126,8 +1132,8 @@ type internal CommandUtil
                     changeSelection x.CaretPoint characterSpan.Start
                 else
                     changeSelection characterSpan.Start last
-
-        | _ -> ()
+        | VisualSpan.Line _ -> normal ()
+        | VisualSpan.Block _ -> normal () 
 
         CommandResult.Completed ModeSwitch.NoSwitch
 

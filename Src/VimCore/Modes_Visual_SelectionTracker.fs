@@ -105,6 +105,13 @@ type internal SelectionTracker
             let visualSelection = visualSelection.AdjustForSelectionKind _globalSettings.SelectionKind
             visualSelection.Select _textView
 
+    /// Update the selection based on the current state of the ITextView
+    member x.UpdateSelectionWithAnchorPoint anchorPoint = 
+        if not x.IsRunning then invalidOp Resources.SelectionTracker_NotRunning
+
+        _anchorPoint <- Some anchorPoint
+        x.UpdateSelection()
+
     /// When the text is changed it invalidates the anchor point.  It needs to be forwarded to
     /// the next version of the buffer.  If it's not present then just go to point 0
     member x.OnTextChanged (args : TextContentChangedEventArgs) =
@@ -123,3 +130,4 @@ type internal SelectionTracker
         member x.Start () = x.Start()
         member x.Stop () = x.Stop()
         member x.UpdateSelection() = x.UpdateSelection()
+        member x.UpdateSelectionWithAnchorPoint anchorPoint = x.UpdateSelectionWithAnchorPoint anchorPoint

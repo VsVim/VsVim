@@ -22,6 +22,7 @@ type VimBufferData
 
     let mutable _currentDirectory : string option = None
     let mutable _visualCaretStartPoint : ITrackingPoint option = None
+    let mutable _visualAnchorPoint : ITrackingPoint option = None 
 
     interface IVimBufferData with
         member x.CurrentDirectory 
@@ -30,6 +31,9 @@ type VimBufferData
         member x.VisualCaretStartPoint 
             with get() = _visualCaretStartPoint
             and set value = _visualCaretStartPoint <- value
+        member x.VisualAnchorPoint 
+            with get() = _visualAnchorPoint
+            and set value = _visualAnchorPoint <- value
         member x.JumpList = _jumpList
         member x.TextView = _textView
         member x.TextBuffer = _textView.TextBuffer
@@ -42,7 +46,7 @@ type VimBufferData
         member x.Vim = _vimTextBuffer.Vim
 
 /// Implementation of the uninitialized mode.  This is designed to handle the ITextView
-/// while it's in an uninitalized state.  It shouldn't touch the ITextView in any way.  
+/// while it's in an uninitialized state.  It shouldn't touch the ITextView in any way.  
 /// This is why it doesn't even contain a reference to it
 type UninitializedMode(_vimTextBuffer : IVimTextBuffer) =
     interface IMode with

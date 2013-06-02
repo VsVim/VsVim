@@ -3363,6 +3363,12 @@ type IVimBufferData =
     /// the actual location of the caret vs. the anchor point.
     abstract VisualCaretStartPoint : ITrackingPoint option with get, set
 
+    /// This is the anchor point for the visual mode selection.  It is different than the anchor
+    /// point in ITextSelection.  The ITextSelection anchor point is always the start or end
+    /// of the visual selection.  While the anchor point for visual mode selection may be in 
+    /// the middle (in say line wise mode)
+    abstract VisualAnchorPoint : ITrackingPoint option with get, set
+
     /// The IJumpList associated with the IVimBuffer
     abstract JumpList : IJumpList
 

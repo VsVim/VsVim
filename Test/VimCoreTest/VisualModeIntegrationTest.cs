@@ -557,6 +557,75 @@ namespace Vim.UnitTest
                     Assert.Equal(3, _textView.GetCaretPoint().Position);
                 }
             }
+
+            public sealed class LineWiseTest : InvertSelectionTest
+            {
+                [Fact]
+                public void Simple()
+                {
+                    Create("cat", "dog", "tree");
+                    _vimBuffer.ProcessNotation("Vjo");
+                    Assert.Equal(0, _textView.GetCaretPoint());
+                    var span = _textView.GetSelectionSpan();
+                    Assert.Equal("cat" + Environment.NewLine + "dog" + Environment.NewLine, span.GetText());
+                }
+
+                [Fact]
+                public void BackAndForth()
+                {
+                    Create("cat", "dog", "tree");
+                    _vimBuffer.ProcessNotation("Vjoo");
+                    Assert.Equal(_textBuffer.GetLine(1).Start, _textView.GetCaretPoint());
+                    var span = _textView.GetSelectionSpan();
+                    Assert.Equal("cat" + Environment.NewLine + "dog" + Environment.NewLine, span.GetText());
+                }
+
+                [Fact]
+                public void SimpleNonZeroStart()
+                {
+                    Create("cat", "dog", "tree");
+                    _vimBuffer.ProcessNotation("lVjo");
+                    Assert.Equal(1, _textView.GetCaretPoint());
+                    var span = _textView.GetSelectionSpan();
+                    Assert.Equal("cat" + Environment.NewLine + "dog" + Environment.NewLine, span.GetText());
+                }
+
+                [Fact]
+                public void StartOnEmptyLine()
+                {
+                    Create("cat", "", "dog", "tree");
+                    _textView.MoveCaretTo(_textBuffer.GetLine(1).Start);
+                    _vimBuffer.ProcessNotation("Vjo");
+                    Assert.Equal(_textBuffer.GetLine(1).Start, _textView.GetCaretPoint());
+                    var span = _textView.GetSelectionSpan();
+                    Assert.Equal(Environment.NewLine + "dog" + Environment.NewLine, span.GetText());
+                }
+            }
+
+            public sealed class BlockTest : InvertSelectionTest
+            {
+                [Fact]
+                public void Simple()
+                {
+                    Create("cat", "dog", "tree");
+                    _vimBuffer.ProcessNotation("<C-q>ljo");
+                    Assert.Equal(0, _textView.GetCaretPoint().Position);
+                    var blockSpan = _textView.GetSelectionBlockSpan();
+                    Assert.Equal(2, blockSpan.Height);
+                    Assert.Equal(2, blockSpan.Width);
+                }
+
+                [Fact]
+                public void SimpleBackAndForth()
+                {
+                    Create("cat", "dog", "tree");
+                    _vimBuffer.ProcessNotation("<C-q>ljoo");
+                    Assert.Equal(_textView.GetPointInLine(1, 1), _textView.GetCaretPoint().Position);
+                    var blockSpan = _textView.GetSelectionBlockSpan();
+                    Assert.Equal(2, blockSpan.Height);
+                    Assert.Equal(2, blockSpan.Width);
+                }
+            }
         }
 
         public sealed class KeyMappingTest : VisualModeIntegrationTest
