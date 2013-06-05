@@ -7,6 +7,8 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
+using Microsoft.VisualStudio.Text.Classification;
+using System.Windows.Media;
 
 namespace Vim.UI.Wpf.Implementation.CharDisplay
 {
@@ -31,7 +33,10 @@ namespace Vim.UI.Wpf.Implementation.CharDisplay
 
         private static readonly ReadOnlyCollection<ITagSpan<IntraTextAdornmentTag>> EmptyTagColllection = new ReadOnlyCollection<ITagSpan<IntraTextAdornmentTag>>(new List<ITagSpan<IntraTextAdornmentTag>>());
         private readonly ITextView _textView;
+        private readonly IEditorFormatMap _editorFormatMap;
         private readonly List<AdornmentData> _adornmentCache = new List<AdornmentData>();
+        private Brush _foregroundBrush;
+        private Brush _backgroundBrush;
         private EventHandler _changedEvent;
 
         internal List<AdornmentData> AdornmentCache
@@ -39,15 +44,20 @@ namespace Vim.UI.Wpf.Implementation.CharDisplay
             get { return _adornmentCache; }
         }
 
-        internal CharDisplayTaggerSource(ITextView textView)
+        internal CharDisplayTaggerSource(ITextView textView, IEditorFormatMap editorFormatMap)
         {
             _textView = textView;
+            _editorFormatMap = editorFormatMap;
+            UpdateBrushes();
+
             _textView.TextBuffer.Changed += OnTextBufferChanged;
+            _editorFormatMap.FormatMappingChanged += OnFormatMappingChanged;
         }
 
         private void Dispose()
         {
             _textView.TextBuffer.Changed -= OnTextBufferChanged;
+            _editorFormatMap.FormatMappingChanged -= OnFormatMappingChanged;
         }
 
         internal ReadOnlyCollection<ITagSpan<IntraTextAdornmentTag>> GetTags(SnapshotSpan span)
@@ -88,6 +98,8 @@ namespace Vim.UI.Wpf.Implementation.CharDisplay
                     textBox.Text = text;
                     textBox.BorderThickness = new Thickness(0);
                     textBox.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+                    textBox.Foreground = _foregroundBrush;
+                    textBox.FontWeight = FontWeights.Bold;
                     adornment = textBox;
                     _adornmentCache.Insert(cacheIndex, new AdornmentData(position, adornment));
                 }
@@ -144,6 +156,27 @@ namespace Vim.UI.Wpf.Implementation.CharDisplay
             // Search failed, calculate the insert position
             index = position < current ? mid : mid + 1;
             return false;
+        }
+
+        private void UpdateBrushes()
+        {
+            var map = _editorFormatMap.GetProperties(ControlCharFormatDefinition.Name);
+            _foregroundBrush = map.GetForegroundBrush(ControlCharFormatDefinition.DefaultForegroundBrush);
+            _backgroundBrush = map.GetForegroundBrush(ControlCharFormatDefinition.DefaultBackgroundBrush);
+        }
+
+        private void OnFormatMappingChanged(object sender, FormatItemsEventArgs e)
+        {
+            foreach (var key in e.ChangedItems)
+            {
+                if (key == ControlCharFormatDefinition.Name)
+                {
+                    UpdateBrushes();
+                    _adornmentCache.Clear();
+                    RaiseChanged();
+                    break;
+                }
+            }
         }
 
         private void OnTextBufferChanged(object sender, TextContentChangedEventArgs e)

@@ -8,6 +8,8 @@ using Vim.UI.Wpf.Implementation.CharDisplay;
 using Vim.UnitTest;
 using Xunit;
 using EditorUtils;
+using Microsoft.VisualStudio.Text.Classification;
+using Moq;
 
 namespace Vim.UI.Wpf.UnitTest
 {
@@ -21,7 +23,7 @@ namespace Vim.UI.Wpf.UnitTest
         {
             _textView = CreateTextView(lines);
             _textBuffer = _textView.TextBuffer;
-            _source = new CharDisplayTaggerSource(_textView);
+            _source = new CharDisplayTaggerSource(_textView, new Mock<IEditorFormatMap>(MockBehavior.Loose).Object);
         }
 
         public sealed class GetTagsTest : CharDisplayTaggerSourceTest

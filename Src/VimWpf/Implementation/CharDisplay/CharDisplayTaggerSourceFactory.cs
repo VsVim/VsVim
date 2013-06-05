@@ -4,6 +4,7 @@ using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Tagging;
 using Microsoft.VisualStudio.Utilities;
 using System.ComponentModel.Composition;
+using Microsoft.VisualStudio.Text.Classification;
 
 namespace Vim.UI.Wpf.Implementation.CharDisplay
 {
@@ -15,11 +16,19 @@ namespace Vim.UI.Wpf.Implementation.CharDisplay
     {
         private readonly object _key = new object();
         private readonly ITaggerFactory _taggerFactory;
+        private readonly IEditorFormatMapService _editorFormatMapService;
 
         [ImportingConstructor]
-        internal CharDisplayTaggerSourceFactory([EditorUtilsImport]ITaggerFactory taggerFactory)
+        internal CharDisplayTaggerSourceFactory([EditorUtilsImport]ITaggerFactory taggerFactory, IEditorFormatMapService editorFormatMapService)
         {
             _taggerFactory = taggerFactory;
+            _editorFormatMapService = editorFormatMapService;
+        }
+
+        private CharDisplayTaggerSource CreateCharDisplayTaggerSource(ITextView textView)
+        {
+            var editorFormatMap = _editorFormatMapService.GetEditorFormatMap(textView);
+            return new CharDisplayTaggerSource(textView, editorFormatMap);
         }
 
         // TODO: should only do this for vim supported buffers
@@ -31,38 +40,9 @@ namespace Vim.UI.Wpf.Implementation.CharDisplay
             return _taggerFactory.CreateBasicTagger(
                 textView.Properties,
                 _key,
-                () => new CharDisplayTaggerSource(textView)) as ITagger<T>;
+                () => CreateCharDisplayTaggerSource(textView)) as ITagger<T>;
         }
 
         #endregion
     }
-
-/*
-[<Export(typeof<IViewTaggerProvider>)>]
-[<ContentType(Constants.AnyContentType)>]
-[<TextViewRole(PredefinedTextViewRoles.Document)>]
-[<TagType(typeof<TextMarkerTag>)>]
-type HighlightIncrementalSearchTaggerProvider
-    [<ImportingConstructor>]
-    ( 
-        _vim : IVim,
-        [<EditorUtilsImport>] _taggerFactory : ITaggerFactory
-    ) = 
-
-    let _key = obj()
-
-    interface IViewTaggerProvider with 
-        member x.CreateTagger<'T when 'T :> ITag> ((textView : ITextView), textBuffer) = 
-            if textView.TextBuffer = textBuffer then
-                match _vim.GetOrCreateVimBufferForHost textView with
-                | None -> null
-                | Some vimBuffer ->
-                    let tagger = _taggerFactory.CreateAsyncTagger(textView.Properties, _key, fun () ->
-                        let wordNavigator = vimBuffer.WordNavigator
-                        let taggerSource = new HighlightSearchTaggerSource(textView, vimBuffer.GlobalSettings, _vim.VimData, _vim.VimHost)
-                        taggerSource :> IAsyncTaggerSource<HighlightSearchData , TextMarkerTag>)
-                    tagger :> obj :?> ITagger<'T>
-            else
-                null
-    */
 }
