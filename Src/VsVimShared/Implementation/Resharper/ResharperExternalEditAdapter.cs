@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
-using System.Reflection;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Text;
@@ -16,18 +15,15 @@ namespace VsVim.Implementation.Resharper
     [Export(typeof(IExternalEditAdapter))]
     internal sealed class ResharperExternalEditAdapter : IExternalEditAdapter, IResharperUtil
     {
-        internal const string ExternalEditAttribute1 = "ReSharper Template Editor Template Keyword";
-        internal const string ExternalEditAttribute2 = "ReSharper LiveTemplates Current HotSpot";
-        internal const string ExternalEditAttribute3 = "ReSharper LiveTemplates Current HotSpot mirror";
         internal const string ResharperTaggerProviderName = "VsDocumentMarkupTaggerProvider";
-        internal const string ResharperAssemblyName2010 = "JetBrains.Platform.ReSharper.VsIntegration.DevTen";
-        internal const string ResharperAssemblyName2012 = "JetBrains.Platform.ReSharper.VisualStudio.v10.v11";
+
+        private ReSharperVersion _reSharperVersion;
 
         private static readonly Guid Resharper5Guid = new Guid("0C6E6407-13FC-4878-869A-C8B4016C57FE");
-        private static FieldInfo AttributeIdFieldInfo;
 
         private readonly Dictionary<Type, bool> _tagMap = new Dictionary<Type, bool>();
         private readonly bool _isResharperInstalled;
+        private IReSharperEditTagDetector _reSharperEditEditTagDetector;
 
         /// <summary>
         /// Need to have an Import on a property vs. a constructor parameter to break a dependency
@@ -135,9 +131,8 @@ namespace VsVim.Implementation.Resharper
                 var providerType = provider.GetType();
                 if (providerType.Name == ResharperTaggerProviderName)
                 {
-                    var fullName = providerType.Assembly.FullName;
-                    if (fullName.StartsWith(ResharperAssemblyName2010) ||
-                        fullName.StartsWith(ResharperAssemblyName2012))
+                    _reSharperVersion = ResharperVersionUtility.DetectFromAssembly(providerType.Assembly);
+                    if (_reSharperVersion != ReSharperVersion.Unknown)
                     {
                         var taggerResult = provider.SafeCreateTagger<ITag>(textBuffer);
                         if (taggerResult.IsSuccess)
@@ -187,34 +182,24 @@ namespace VsVim.Implementation.Resharper
             return false;
         }
 
-        private static bool IsEditTag(ITag tag)
+        private bool IsEditTag(ITag tag)
         {
-            // Cache the FieldInfo since we will be using it a lot
-            if (AttributeIdFieldInfo == null)
+            if (_reSharperEditEditTagDetector == null)
             {
-                AttributeIdFieldInfo = tag.GetType().GetField("myAttributeId", BindingFlags.Instance | BindingFlags.NonPublic);
+                switch (_reSharperVersion)
+                {
+                    case ReSharperVersion.Version7AndEarlier:
+                        _reSharperEditEditTagDetector = new ReSharperV7EditTagDetector();
+                        break;
+                    case ReSharperVersion.Version8:
+                        _reSharperEditEditTagDetector = new ReSharperV8EditTagDetector();
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException();
+                }
             }
 
-            if (AttributeIdFieldInfo == null)
-            {
-                return false;
-            }
-
-            var value = AttributeIdFieldInfo.GetValue(tag) as string;
-            if (value == null)
-            {
-                return false;
-            }
-
-            switch (value)
-            {
-                case ExternalEditAttribute1:
-                case ExternalEditAttribute2:
-                case ExternalEditAttribute3:
-                    return true;
-                default:
-                    return false;
-            }
+            return _reSharperEditEditTagDetector.IsEditTag(tag);
         }
 
         #region IResharperUtil
