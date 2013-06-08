@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
@@ -20,32 +21,34 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
             internal readonly double CaretOpacity;
             internal readonly Image Image;
             internal readonly Color? Color;
-            internal readonly SnapshotPoint Point;
+            internal readonly Size Size;
             internal readonly double YDisplayOffset;
 
-            internal CaretData(CaretDisplay caretDisplay, double caretOpacity, Image image, Color? color, SnapshotPoint point, double displayOffset)
+            internal CaretData(CaretDisplay caretDisplay, double caretOpacity, Image image, Color? color, Size size, double displayOffset)
             {
                 CaretDisplay = caretDisplay;
                 CaretOpacity = caretOpacity;
                 Image = image;
                 Color = color;
-                Point = point;
+                Size = size;
                 YDisplayOffset = displayOffset;
             }
         }
 
         private readonly ITextView _textView;
         private readonly IProtectedOperations _protectedOperations;
-        private readonly IEditorFormatMap _formatMap;
+        private readonly IEditorFormatMap _editorFormatMap;
         private readonly IClassificationFormatMap _classificationFormatMap;
-        private readonly IAdornmentLayer _layer;
-        private readonly Object _tag = new object();
+        private readonly IAdornmentLayer _adornmentLayer;
+        private readonly object _tag = new object();
         private readonly DispatcherTimer _blinkTimer;
         private readonly IControlCharUtil _controlCharUtil;
         private CaretData? _caretData;
         private CaretDisplay _caretDisplay;
         private FormattedText _formattedText;
+        private bool _isAdornmentPresent;
         private bool _isDestroyed;
+        private bool _isUpdating;
         private double _caretOpacity = 0.65;
 
         public ITextView TextView
@@ -115,28 +118,11 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
             }
         }
 
-        private bool NeedRecreateCaret
-        {
-            get
-            {
-                if (_caretData.HasValue)
-                {
-                    var data = _caretData.Value;
-                    return data.Color != TryCalculateCaretColor()
-                        || data.Point != _textView.Caret.Position.BufferPosition
-                        || data.CaretDisplay != _caretDisplay
-                        || data.CaretOpacity != _caretOpacity;
-                }
-
-                return true;
-            }
-        }
-
         internal BlockCaret(ITextView textView, IClassificationFormatMap classificationFormatMap, IEditorFormatMap formatMap, IAdornmentLayer layer, IControlCharUtil controlCharUtil, IProtectedOperations protectedOperations)
         {
             _textView = textView;
-            _formatMap = formatMap;
-            _layer = layer;
+            _editorFormatMap = formatMap;
+            _adornmentLayer = layer;
             _protectedOperations = protectedOperations;
             _classificationFormatMap = classificationFormatMap;
             _controlCharUtil = controlCharUtil;
@@ -144,7 +130,7 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
             _textView.LayoutChanged += OnCaretEvent;
             _textView.GotAggregateFocus += OnCaretEvent;
             _textView.LostAggregateFocus += OnCaretEvent;
-            _textView.Caret.PositionChanged += OnCaretEvent;
+            _textView.Caret.PositionChanged += OnCaretPositionChanged;
             _textView.Closed += OnTextViewClosed;
 
             var caretBlinkTime = GetCaretBlinkTime();
@@ -180,7 +166,7 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
 
             try
             {
-                return checked((int) blinkTime);
+                return checked((int)blinkTime);
             }
             catch (Exception)
             {
@@ -202,22 +188,46 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
             }
         }
 
+        /// <summary>
+        /// Whenever the caret moves it should become both visible and reset the blink timer.  This is the
+        /// behavior of gVim.  It can be demonstrated by simply moving the caret horizontally along a 
+        /// line of text.  If the interval between the movement commands is shorter than the blink timer
+        /// the caret will always be visible
+        /// </summary>
+        private void OnCaretPositionChanged(object sender, EventArgs e)
+        {
+            if (_blinkTimer.IsEnabled)
+            {
+                _blinkTimer.IsEnabled = false;
+                _blinkTimer.IsEnabled = true;
+            }
+
+            // If the caret is invisible, make it visible
+            if (_caretData.HasValue && _caretData.Value.CaretDisplay != CaretDisplay.NormalCaret)
+            {
+                _caretData.Value.Image.Opacity = _caretOpacity;
+            }
+
+            UpdateCaret();
+        }
+
+
         private void OnTextViewClosed(object sender, EventArgs e)
         {
             _blinkTimer.IsEnabled = false;
         }
 
-        private void DestroyBlockCaretDisplay()
+        private void OnBlockCaretAdornmentRemoved(object sender, UIElement element)
         {
-            _layer.RemoveAdornmentsByTag(_tag);
-            _caretData = null;
+            _isAdornmentPresent = false;
         }
 
-        private void MaybeDestroyBlockCaretDisplay()
+        private void EnsureAdornmentRemoved()
         {
-            if (_caretData.HasValue)
+            if (_isAdornmentPresent)
             {
-                DestroyBlockCaretDisplay();
+                _adornmentLayer.RemoveAdornmentsByTag(_tag);
+                Debug.Assert(!_isAdornmentPresent);
             }
         }
 
@@ -227,7 +237,7 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
         private Color? TryCalculateCaretColor()
         {
             const string key = EditorFormatDefinition.ForegroundColorId;
-            var properties = _formatMap.GetProperties(BlockCaretFormatDefinition.Name);
+            var properties = _editorFormatMap.GetProperties(BlockCaretFormatDefinition.Name);
             if (properties.Contains(key))
             {
                 return (Color)properties[key];
@@ -241,15 +251,11 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
             return new Point(_textView.Caret.Left, _textView.Caret.Top);
         }
 
-        private void MoveCaretImageToCaret()
+        private void MoveCaretImageToCaret(CaretData caretData)
         {
             var point = GetRealCaretVisualPoint();
-            if (_caretData.HasValue)
-            {
-                var data = _caretData.Value;
-                Canvas.SetLeft(data.Image, point.X);
-                Canvas.SetTop(data.Image, point.Y + data.YDisplayOffset);
-            }
+            Canvas.SetLeft(caretData.Image, point.X);
+            Canvas.SetTop(caretData.Image, point.Y + caretData.YDisplayOffset);
         }
 
         private FormattedText CreateFormattedText()
@@ -356,53 +362,98 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
             drawingImage.Freeze();
 
             var image = new Image { Opacity = _caretOpacity, Source = drawingImage };
-            var point = _textView.Caret.Position.BufferPosition;
-            return new CaretData(_caretDisplay, _caretOpacity, image, color, point, tuple.Item2);
+            return new CaretData(_caretDisplay, _caretOpacity, image, color, rect.Size, tuple.Item2);
         }
 
-        private void CreateBlockCaretDisplay()
+        /// <summary>
+        /// This determines if the image which is used to represent the caret is stale and needs
+        /// to be recreated.  
+        /// </summary>
+        private bool IsAdornmentStale(CaretData caretData)
         {
-            var data = CreateCaretData();
-            _caretData = data;
-            _layer.AddAdornment(
-                AdornmentPositioningBehavior.TextRelative,
-                new SnapshotSpan(data.Point, 0),
-                _tag,
-                data.Image,
-                (x, y) => { _caretData = null; });
+            // Size is represented in floating point so strict equality comparison will almost 
+            // always return false.  Use a simple epsilon to test the difference
 
-            if (_caretDisplay != CaretDisplay.NormalCaret)
+            if ( caretData.Color != TryCalculateCaretColor() ||
+                caretData.CaretDisplay != _caretDisplay ||
+                caretData.CaretOpacity != _caretOpacity)
             {
-                _textView.Caret.IsHidden = true;
-                MoveCaretImageToCaret();
-
-                // Restart the timer so the block caret doesn't immediately disappear
-                if (_blinkTimer.IsEnabled)
-                {
-                    _blinkTimer.IsEnabled = false;
-                    _blinkTimer.IsEnabled = true;
-                }
+                return true;
             }
-            else
+
+            var epsilon = 0.001;
+            var size = CalculateCaretRectAndDisplayOffset().Item1.Size;
+            if (Math.Abs(size.Height - caretData.Size.Height) > epsilon ||
+                Math.Abs(size.Width - caretData.Size.Width) > epsilon)
             {
+                return true;
+            }
+
+            return false;
+        }
+
+        private void EnsureCaretDisplayed()
+        {
+            // For normal caret we just use the standard caret.  Make sure the adornment is removed and 
+            // let the normal caret win
+            if (CaretDisplay == CaretDisplay.NormalCaret)
+            {
+                EnsureAdornmentRemoved();
                 _textView.Caret.IsHidden = false;
+                return;
+            }
+
+            _textView.Caret.IsHidden = true;
+
+            if (_caretData == null || IsAdornmentStale(_caretData.Value))
+            {
+                EnsureAdornmentRemoved();
+                _caretData = CreateCaretData();
+            }
+
+            var caretData = _caretData.Value;
+
+            MoveCaretImageToCaret(caretData);
+            if (!_isAdornmentPresent)
+            {
+                var caretPoint = _textView.Caret.Position.BufferPosition;
+                _isAdornmentPresent = true;
+                _adornmentLayer.AddAdornment(
+                    AdornmentPositioningBehavior.TextRelative,
+                    new SnapshotSpan(caretPoint, 0),
+                    _tag,
+                    caretData.Image,
+                    OnBlockCaretAdornmentRemoved);
             }
         }
 
         private void UpdateCaret()
         {
+            if (_isUpdating)
+            {
+                return;
+            }
+
+            _isUpdating = true;
+            try
+            {
+                UpdateCaretCore();
+            }
+            finally
+            {
+                _isUpdating = false;
+            }
+        }
+
+        private void UpdateCaretCore()
+        {
             if (!IsRealCaretVisible)
             {
-                MaybeDestroyBlockCaretDisplay();
-            }
-            else if (NeedRecreateCaret)
-            {
-                MaybeDestroyBlockCaretDisplay();
-                CreateBlockCaretDisplay();
+                EnsureAdornmentRemoved();
             }
             else
             {
-                MoveCaretImageToCaret();
+                EnsureCaretDisplayed();
             }
         }
 
@@ -414,14 +465,14 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
         {
             _isDestroyed = true;
             _blinkTimer.IsEnabled = false;
-            MaybeDestroyBlockCaretDisplay();
+            EnsureAdornmentRemoved();
 
             if (!_textView.IsClosed)
             {
                 _textView.LayoutChanged -= OnCaretEvent;
                 _textView.GotAggregateFocus -= OnCaretEvent;
                 _textView.LostAggregateFocus -= OnCaretEvent;
-                _textView.Caret.PositionChanged -= OnCaretEvent;
+                _textView.Caret.PositionChanged -= OnCaretPositionChanged;
                 _textView.Caret.IsHidden = false;
                 _textView.Closed -= OnTextViewClosed;
             }
