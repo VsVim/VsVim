@@ -18,12 +18,14 @@ namespace Vim.UI.Wpf.UnitTest
         private ITextView _textView;
         private ITextBuffer _textBuffer;
         private CharDisplayTaggerSource _source;
+        private IBasicTaggerSource<IntraTextAdornmentTag> _basicTaggerSource;
 
-        private void Create(params string[] lines)
+        protected virtual void Create(params string[] lines)
         {
             _textView = CreateTextView(lines);
             _textBuffer = _textView.TextBuffer;
-            _source = new CharDisplayTaggerSource(_textView, new Mock<IEditorFormatMap>(MockBehavior.Loose).Object);
+            _source = new CharDisplayTaggerSource(_textView, new Mock<IEditorFormatMap>(MockBehavior.Loose).Object, Vim.GlobalSettings);
+            _basicTaggerSource = _source;
         }
 
         public sealed class GetTagsTest : CharDisplayTaggerSourceTest
@@ -142,6 +144,16 @@ namespace Vim.UI.Wpf.UnitTest
                 var tags = _source.GetTags(new SnapshotSpan(snapshot, 0, 1));
                 Assert.Equal(0, tags.Count);
             }
+
+            [Fact]
+            public void SingleTagDisplayDisabled()
+            {
+                Create("d" + (char)29 + "g");
+                Vim.GlobalSettings.ControlChars = false;
+                var tags = _source.GetTags(_textBuffer.GetSpan(0, 3));
+                Assert.Equal(0, tags.Count);
+            }
+
         }
 
         /// <summary>
@@ -188,6 +200,33 @@ namespace Vim.UI.Wpf.UnitTest
                 _textBuffer.Insert(3, "" + (char)29);
                 var tags = _source.GetTags(_textBuffer.GetExtent());
                 Assert.Equal(tags.Select(x => x.Span), new[] { _textBuffer.GetSpan(1, 1), _textBuffer.GetSpan(3, 1) });
+            }
+        }
+
+        public sealed class ChangedTest : CharDisplayTaggerSourceTest
+        {
+            private int _changedCount;
+
+            protected override void Create(params string[] lines)
+            {
+                base.Create(lines);
+                _basicTaggerSource.Changed += (x, y) => { _changedCount++; };
+            }
+
+            [Fact]
+            public void OnControlCharsChanged()
+            {
+                Create("hello world");
+                Vim.GlobalSettings.ControlChars = false;
+                Assert.Equal(1, _changedCount);
+            }
+
+            [Fact]
+            public void OnControlCharsNotChanged()
+            {
+                Create("hello world");
+                Vim.GlobalSettings.ControlChars = Vim.GlobalSettings.ControlChars;
+                Assert.Equal(0, _changedCount);
             }
         }
     }

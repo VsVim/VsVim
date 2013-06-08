@@ -17,13 +17,11 @@ namespace Vim.UI.Wpf.Implementation.CharDisplay
         internal const string Name = "vsvim_controlchar";
 
         internal static readonly Brush DefaultForegroundBrush = new SolidColorBrush(Colors.Blue);
-        internal static readonly Brush DefaultBackgroundBrush = new SolidColorBrush(Colors.White);
 
         internal ControlCharFormatDefinition()
         {
             this.DisplayName = "VsVim Control Characters";
             this.ForegroundBrush = DefaultForegroundBrush.Clone();
-            this.BackgroundBrush = DefaultBackgroundBrush.Clone();
         }
     }
 }

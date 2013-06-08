@@ -17,26 +17,31 @@ namespace Vim.UI.Wpf.Implementation.CharDisplay
         private readonly object _key = new object();
         private readonly ITaggerFactory _taggerFactory;
         private readonly IEditorFormatMapService _editorFormatMapService;
+        private readonly IVim _vim;
 
         [ImportingConstructor]
-        internal CharDisplayTaggerSourceFactory([EditorUtilsImport]ITaggerFactory taggerFactory, IEditorFormatMapService editorFormatMapService)
+        internal CharDisplayTaggerSourceFactory(IVim vim, [EditorUtilsImport]ITaggerFactory taggerFactory, IEditorFormatMapService editorFormatMapService)
         {
             _taggerFactory = taggerFactory;
             _editorFormatMapService = editorFormatMapService;
+            _vim = vim;
         }
 
         private CharDisplayTaggerSource CreateCharDisplayTaggerSource(ITextView textView)
         {
             var editorFormatMap = _editorFormatMapService.GetEditorFormatMap(textView);
-            return new CharDisplayTaggerSource(textView, editorFormatMap);
+            return new CharDisplayTaggerSource(textView, editorFormatMap, _vim.GlobalSettings);
         }
-
-        // TODO: should only do this for vim supported buffers
 
         #region IViewTaggerProvider
 
         ITagger<T> IViewTaggerProvider.CreateTagger<T>(ITextView textView, ITextBuffer textBuffer)
         {
+            if (textView.TextBuffer != textBuffer || !_vim.VimHost.ShouldCreateVimBuffer(textView))
+            {
+                return null;
+            }
+
             return _taggerFactory.CreateBasicTagger(
                 textView.Properties,
                 _key,

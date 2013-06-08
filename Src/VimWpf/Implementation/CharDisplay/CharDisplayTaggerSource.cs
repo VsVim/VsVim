@@ -34,9 +34,9 @@ namespace Vim.UI.Wpf.Implementation.CharDisplay
         private static readonly ReadOnlyCollection<ITagSpan<IntraTextAdornmentTag>> EmptyTagColllection = new ReadOnlyCollection<ITagSpan<IntraTextAdornmentTag>>(new List<ITagSpan<IntraTextAdornmentTag>>());
         private readonly ITextView _textView;
         private readonly IEditorFormatMap _editorFormatMap;
+        private readonly IVimGlobalSettings _globalSettings;
         private readonly List<AdornmentData> _adornmentCache = new List<AdornmentData>();
         private Brush _foregroundBrush;
-        private Brush _backgroundBrush;
         private EventHandler _changedEvent;
 
         internal List<AdornmentData> AdornmentCache
@@ -44,25 +44,33 @@ namespace Vim.UI.Wpf.Implementation.CharDisplay
             get { return _adornmentCache; }
         }
 
-        internal CharDisplayTaggerSource(ITextView textView, IEditorFormatMap editorFormatMap)
+        internal CharDisplayTaggerSource(ITextView textView, IEditorFormatMap editorFormatMap, IVimGlobalSettings globalSettings)
         {
             _textView = textView;
             _editorFormatMap = editorFormatMap;
+            _globalSettings = globalSettings;
             UpdateBrushes();
 
             _textView.TextBuffer.Changed += OnTextBufferChanged;
             _editorFormatMap.FormatMappingChanged += OnFormatMappingChanged;
+            _globalSettings.SettingChanged += OnSettingChanged;
         }
 
         private void Dispose()
         {
             _textView.TextBuffer.Changed -= OnTextBufferChanged;
             _editorFormatMap.FormatMappingChanged -= OnFormatMappingChanged;
+            _globalSettings.SettingChanged -= OnSettingChanged;
         }
 
         internal ReadOnlyCollection<ITagSpan<IntraTextAdornmentTag>> GetTags(SnapshotSpan span)
         {
             if (span.Snapshot != _textView.TextBuffer.CurrentSnapshot)
+            {
+                return EmptyTagColllection;
+            }
+
+            if (!_globalSettings.ControlChars)
             {
                 return EmptyTagColllection;
             }
@@ -162,7 +170,6 @@ namespace Vim.UI.Wpf.Implementation.CharDisplay
         {
             var map = _editorFormatMap.GetProperties(ControlCharFormatDefinition.Name);
             _foregroundBrush = map.GetForegroundBrush(ControlCharFormatDefinition.DefaultForegroundBrush);
-            _backgroundBrush = map.GetForegroundBrush(ControlCharFormatDefinition.DefaultBackgroundBrush);
         }
 
         private void OnFormatMappingChanged(object sender, FormatItemsEventArgs e)
@@ -176,6 +183,15 @@ namespace Vim.UI.Wpf.Implementation.CharDisplay
                     RaiseChanged();
                     break;
                 }
+            }
+        }
+
+        private void OnSettingChanged(object sender, SettingEventArgs e)
+        {
+            if (e.Setting.Name == GlobalSettingNames.ControlCharsName && e.IsValueChanged)
+            {
+                _adornmentCache.Clear();
+                RaiseChanged();
             }
         }
 

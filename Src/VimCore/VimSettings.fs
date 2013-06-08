@@ -39,7 +39,7 @@ type internal SettingsMap
     member x.ReplaceSetting settingName setting = 
         _settings <- _settings |> Map.add settingName setting
 
-        let args = SettingEventArgs(setting)
+        let args = SettingEventArgs(setting, true)
         _settingChangedEvent.Trigger x args
 
     member x.TrySetValue settingNameOrAbbrev (value : SettingValue) =
@@ -47,11 +47,12 @@ type internal SettingsMap
         match x.GetSetting settingNameOrAbbrev with
         | None -> false
         | Some setting ->
+            let isValueChanged = value <> setting.Value
             match setting.LiveSettingValue.UpdateValue value with
             | Some value ->
                 let setting = { setting with LiveSettingValue = value }
                 _settings <- _settings |> Map.add setting.Name setting
-                _settingChangedEvent.Trigger x (SettingEventArgs(setting))
+                _settingChangedEvent.Trigger x (SettingEventArgs(setting, isValueChanged))
                 true
             | None -> false
 
@@ -118,6 +119,7 @@ type internal GlobalSettings() =
             (BackspaceName, "bs", SettingValue.String "")
             (CaretOpacityName, CaretOpacityName, SettingValue.Number 65)
             (ClipboardName, "cb", SettingValue.String "")
+            (ControlCharsName, ControlCharsName, SettingValue.Toggle true)
             (CurrentDirectoryPathName, "cd", SettingValue.String ",,")
             (HighlightSearchName, "hls", SettingValue.Toggle false)
             (HistoryName, "hi", SettingValue.Number(Constants.DefaultHistoryLength))
@@ -288,6 +290,9 @@ type internal GlobalSettings() =
         member x.CaretOpacity
             with get() = _map.GetNumberValue CaretOpacityName
             and set value = _map.TrySetValue CaretOpacityName (SettingValue.Number value) |> ignore
+        member x.ControlChars
+            with get() = _map.GetBoolValue ControlCharsName
+            and set value = _map.TrySetValue ControlCharsName (SettingValue.Toggle value) |> ignore
         member x.Clipboard
             with get() = _map.GetStringValue ClipboardName
             and set value = _map.TrySetValue ClipboardName (SettingValue.String value) |> ignore

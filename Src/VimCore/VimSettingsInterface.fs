@@ -14,6 +14,7 @@ module GlobalSettingNames =
     let AutoCommandName = "vsvim_autocmd"
     let BackspaceName = "backspace"
     let CaretOpacityName = "vsvimcaret"
+    let ControlCharsName = "vsvim_controlchars"
     let CurrentDirectoryPathName = "cdpath"
     let ClipboardName = "clipboard"
     let HighlightSearchName = "hlsearch"
@@ -211,10 +212,16 @@ type Setting = {
     /// Is the setting value currently set to the default value
     member x.IsValueDefault = x.LiveSettingValue.IsValueDefault
 
-type SettingEventArgs(_setting : Setting) =
+type SettingEventArgs(_setting : Setting, _isValueChanged : bool) =
     inherit System.EventArgs()
 
+    /// The affected setting
     member x.Setting = _setting
+
+    /// Determine if the value changed or not.  The event is raised for sets that don't change the
+    /// value because there is a lot of vim specific behavior that depends on this (:noh).  This
+    /// will help the handlers which want to look for actual changes
+    member x.IsValueChanged = _isValueChanged;
 
 /// Represent the setting supported by the Vim implementation.  This class **IS** mutable
 /// and the values will change.  Setting names are case sensitive but the exposed property
@@ -253,6 +260,10 @@ and IVimGlobalSettings =
     /// Opacity of the caret.  This must be an integer between values 0 and 100 which
     /// will be converted into a double for the opacity of the caret
     abstract CaretOpacity : int with get, set
+
+    /// Whether or not control characters will display as they do in gVim.  For example should
+    /// (char)29 display as an invisible character or ^] 
+    abstract ControlChars : bool with get, set
 
     /// List of paths which will be searched by the :cd and :ld commands
     abstract CurrentDirectoryPath : string with get, set
