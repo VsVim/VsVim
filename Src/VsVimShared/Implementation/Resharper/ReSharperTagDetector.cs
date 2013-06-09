@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using Microsoft.VisualStudio.Text.Tagging;
 
 namespace VsVim.Implementation.Resharper
@@ -57,41 +58,55 @@ namespace VsVim.Implementation.Resharper
 
     internal class ReSharperV8EditTagDetector : ResharperEditTagDetectorBase
     {
-        private readonly Dictionary<ITag, object> _highlighterInstances = new Dictionary<ITag, object>();
+        /// <summary>
+        /// Cache the highlighter instances we get with Reflection, use a ConditionalWeakTable (uses weak references) 
+        /// to prevent keeping a reference to internal ReSharper instances
+        /// </summary>
+        private readonly ConditionalWeakTable<ITag, object> _highlighterInstances = new ConditionalWeakTable<ITag, object>();
 
+        /// <summary>
+        /// Cache reflection info for the "myHighligher" field in the ITag type
+        /// This is for a specific type and is thus safe in terms of leaks etc.
+        /// </summary>
+        public FieldInfo HighlighterFieldInfo { get; private set; }
+        
+        /// <summary>
+        /// Cache reflection info for AttributeId string property
+        /// This is for a specific type and is thus safe in terms of leaks etc.
+        /// </summary>
         public PropertyInfo AttributeIdPropertyInfo { get; private set; }
 
         public override bool IsEditTag(ITag tag)
         {
-            object highlighterInstance = null;
- 
-            // Cache the PropertyInfo since we will be using it a lot
+            // In ReSharper 8 the tag implementation (JetBrains.VsIntegration.DevTen.Markup.VsTextAdornmentTag) 
+            // has the JetBrains.TextControl.DocumentMarkup.IHighlighter implementation 
+            // (JetBrains.VsIntegration.DevTen.Markup.Vs10Highlighter) as a readonly field "myHighlighter"
+
+            var highlighterInstance = _highlighterInstances.GetValue(tag, delegate
+            {
+                Type tagType = tag.GetType();
+
+                HighlighterFieldInfo = tagType.GetField("myHighlighter",
+                    BindingFlags.Instance | BindingFlags.NonPublic);
+
+                if (HighlighterFieldInfo != null)
+                {
+                    return HighlighterFieldInfo.GetValue(tag);
+                }
+                return null;
+            });
+
+            // Cache the PropertyInfo for the AttributeId as well since we will be using it a lot
             if (AttributeIdPropertyInfo == null)
             {
-                Type type = tag.GetType();
-
-                // cache the highlighter instances
-                if (!_highlighterInstances.TryGetValue(tag, out highlighterInstance))
+                if (highlighterInstance != null)
                 {
-                    // In ReSharper 8 the tag implementation (JetBrains.VsIntegration.DevTen.Markup.VsTextAdornmentTag) 
-                    // has the JetBrains.TextControl.DocumentMarkup.IHighlighter implementation 
-                    // (JetBrains.VsIntegration.DevTen.Markup.Vs10Highlighter) as a readonly field "myHighlighter"
-                    FieldInfo highlighterFieldInfo = type.GetField("myHighlighter",
-                        BindingFlags.Instance | BindingFlags.NonPublic);
-
-                    if (highlighterFieldInfo != null)
-                    {
-                        // this is safe to cache because the field is readonly
-                        highlighterInstance = highlighterFieldInfo.GetValue(tag);
-                        _highlighterInstances[tag] = highlighterInstance;
-
-                        // the IHighlighter interface has a string property "AttributeId" which is used for detection
-                        AttributeIdPropertyInfo = highlighterInstance.GetType().GetProperty("AttributeId",
-                            BindingFlags.Instance | BindingFlags.Public);
-                    }
+                    // the IHighlighter interface has a string property "AttributeId" which is used for detection
+                    AttributeIdPropertyInfo = highlighterInstance.GetType().GetProperty("AttributeId",
+                        BindingFlags.Instance | BindingFlags.Public);
                 }
             }
-
+            
             if (AttributeIdPropertyInfo == null)
             {
                 return false;
