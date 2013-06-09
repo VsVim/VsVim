@@ -285,7 +285,7 @@ namespace VsVim.UnitTest.Utils
         private readonly MockRepository _factory;
         private readonly Mock<IVsAdapter> _vsAdapter;
         private readonly Mock<IDisplayWindowBroker> _displayWindowBroker;
-        private readonly Mock<IResharperUtil> _resharperUtil;
+        private readonly Mock<IReSharperUtil> _resharperUtil;
         private readonly Mock<IReportDesignerUtil> _reportDesignerUtil;
         private readonly TestableSynchronizationContext _testableSynchronizationContext;
         private readonly IKeyUtil _keyUtil;
@@ -320,7 +320,7 @@ namespace VsVim.UnitTest.Utils
             _vsAdapter.Setup(x => x.IsReadOnly(It.IsAny<ITextView>())).Returns(false);
             _vsAdapter.Setup(x => x.IsIncrementalSearchActive(_wpfTextView)).Returns(false);
 
-            _resharperUtil = _factory.Create<IResharperUtil>();
+            _resharperUtil = _factory.Create<IReSharperUtil>();
             _resharperUtil.SetupGet(x => x.IsInstalled).Returns(simulateResharper);
 
             _reportDesignerUtil = _factory.Create<IReportDesignerUtil>();

@@ -28,7 +28,7 @@ namespace VsVim.UnitTest
         protected readonly Mock<IDisplayWindowBroker> _broker;
         protected readonly Mock<ITextManager> _textManager;
         protected readonly IOleCommandTarget _target;
-        internal readonly Mock<IResharperUtil> _resharperUtil;
+        internal readonly Mock<IReSharperUtil> _resharperUtil;
         internal readonly VsCommandTarget _targetRaw;
         internal readonly IVimBufferCoordinator _bufferCoordinator;
 
@@ -42,7 +42,7 @@ namespace VsVim.UnitTest
             _factory = new MockRepository(MockBehavior.Strict);
 
             // By default Resharper isn't loaded
-            _resharperUtil = _factory.Create<IResharperUtil>();
+            _resharperUtil = _factory.Create<IReSharperUtil>();
             _resharperUtil.SetupGet(x => x.IsInstalled).Returns(false);
 
             _nextTarget = _factory.Create<IOleCommandTarget>(MockBehavior.Strict);

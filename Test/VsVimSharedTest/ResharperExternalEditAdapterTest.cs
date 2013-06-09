@@ -5,7 +5,7 @@ using Microsoft.VisualStudio.TextManager.Interop;
 using Moq;
 using Vim.UnitTest;
 using VsVim.Implementation.ExternalEdit;
-using VsVim.Implementation.Resharper;
+using VsVim.Implementation.ReSharper;
 using VsVim.UnitTest.Mock;
 using Xunit;
 
@@ -19,7 +19,7 @@ namespace VsVim.UnitTest
         }
 
         private ITextBuffer _textBuffer;
-        private ResharperExternalEditAdapter _adapterRaw;
+        private ReSharperExternalEditAdapter _adapterRaw;
         private IExternalEditAdapter _adapter;
         private MockRepository _factory;
 
@@ -27,7 +27,7 @@ namespace VsVim.UnitTest
         {
             _textBuffer = CreateTextBuffer(lines);
             _factory = new MockRepository(MockBehavior.Strict);
-            _adapterRaw = new ResharperExternalEditAdapter(true);
+            _adapterRaw = new ReSharperExternalEditAdapter(true);
             _adapter = _adapterRaw;
         }
 
@@ -60,11 +60,12 @@ namespace VsVim.UnitTest
             public void RightTagWithAttributes()
             {
                 Create("");
+                _adapterRaw.SetReSharperVersion(ReSharperVersion.Version7AndEarlier);
                 var array = new[]
                             {
-                                ResharperExternalEditAdapter.ExternalEditAttribute1,
-                                ResharperExternalEditAdapter.ExternalEditAttribute2,
-                                ResharperExternalEditAdapter.ExternalEditAttribute3,
+                                ReSharperEditTagDetectorBase.ExternalEditAttribute1,
+                                ReSharperEditTagDetectorBase.ExternalEditAttribute2,
+                                ReSharperEditTagDetectorBase.ExternalEditAttribute3,
                             };
                 foreach (var item in array)
                 {

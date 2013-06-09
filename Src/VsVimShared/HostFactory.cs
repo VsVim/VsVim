@@ -29,7 +29,7 @@ namespace VsVim
     {
         private readonly HashSet<IVimBuffer> _toSyncSet = new HashSet<IVimBuffer>();
         private readonly Dictionary<IVimBuffer, VsCommandTarget> _vimBufferToCommandTargetMap = new Dictionary<IVimBuffer, VsCommandTarget>();
-        private readonly IResharperUtil _resharperUtil;
+        private readonly IReSharperUtil _resharperUtil;
         private readonly IDisplayWindowBrokerFactoryService _displayWindowBrokerFactoryServcie;
         private readonly IVim _vim;
         private readonly IVsEditorAdaptersFactoryService _adaptersFactory;
@@ -44,7 +44,7 @@ namespace VsVim
         public HostFactory(
             IVim vim,
             IVsEditorAdaptersFactoryService adaptersFactory,
-            IResharperUtil resharperUtil,
+            IReSharperUtil resharperUtil,
             IDisplayWindowBrokerFactoryService displayWindowBrokerFactoryService,
             ITextManager textManager,
             IVsAdapter adapter,

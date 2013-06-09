@@ -4,14 +4,14 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using Microsoft.VisualStudio.Text.Tagging;
 
-namespace VsVim.Implementation.Resharper
+namespace VsVim.Implementation.ReSharper
 {
     internal interface IReSharperEditTagDetector
     {
         bool IsEditTag(ITag tag);
     }
 
-    internal abstract class ResharperEditTagDetectorBase : IReSharperEditTagDetector
+    internal abstract class ReSharperEditTagDetectorBase : IReSharperEditTagDetector
     {
         internal const string ExternalEditAttribute1 = "ReSharper Template Editor Template Keyword";
         internal const string ExternalEditAttribute2 = "ReSharper LiveTemplates Current HotSpot";
@@ -20,9 +20,9 @@ namespace VsVim.Implementation.Resharper
         public abstract bool IsEditTag(ITag tag);
     }
 
-    internal class ReSharperV7EditTagDetector : ResharperEditTagDetectorBase
+    internal sealed class ReSharperV7EditTagDetector : ReSharperEditTagDetectorBase
     {
-        public FieldInfo AttributeIdFieldInfo { get; private set; }
+        internal FieldInfo AttributeIdFieldInfo { get; private set; }
 
         public override bool IsEditTag(ITag tag)
         {
@@ -56,7 +56,7 @@ namespace VsVim.Implementation.Resharper
         }
     }
 
-    internal class ReSharperV8EditTagDetector : ResharperEditTagDetectorBase
+    internal sealed class ReSharperV8EditTagDetector : ReSharperEditTagDetectorBase
     {
         /// <summary>
         /// Cache the highlighter instances we get with Reflection, use a ConditionalWeakTable (uses weak references) 
@@ -68,13 +68,13 @@ namespace VsVim.Implementation.Resharper
         /// Cache reflection info for the "myHighligher" field in the ITag type
         /// This is for a specific type and is thus safe in terms of leaks etc.
         /// </summary>
-        public FieldInfo HighlighterFieldInfo { get; private set; }
+        internal FieldInfo HighlighterFieldInfo { get; private set; }
         
         /// <summary>
         /// Cache reflection info for AttributeId string property
         /// This is for a specific type and is thus safe in terms of leaks etc.
         /// </summary>
-        public PropertyInfo AttributeIdPropertyInfo { get; private set; }
+        internal PropertyInfo AttributeIdPropertyInfo { get; private set; }
 
         public override bool IsEditTag(ITag tag)
         {
@@ -128,5 +128,20 @@ namespace VsVim.Implementation.Resharper
                     return false;
             }
         }
+    }
+
+    /// <summary>
+    /// Used in the cases where the version of R# cannot be detected 
+    /// </summary>
+    internal sealed class ReSharperUnknownEditTagDetector : IReSharperEditTagDetector
+    {
+        #region IReSharperEditTagDetector
+
+        bool IReSharperEditTagDetector.IsEditTag(ITag tag)
+        {
+            return false;
+        }
+
+        #endregion
     }
 }

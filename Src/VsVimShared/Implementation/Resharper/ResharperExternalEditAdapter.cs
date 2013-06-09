@@ -9,20 +9,18 @@ using Microsoft.VisualStudio.Text.Tagging;
 using Microsoft.VisualStudio.TextManager.Interop;
 using Vim;
 
-namespace VsVim.Implementation.Resharper
+namespace VsVim.Implementation.ReSharper
 {
-    [Export(typeof(IResharperUtil))]
+    [Export(typeof(IReSharperUtil))]
     [Export(typeof(IExternalEditAdapter))]
-    internal sealed class ResharperExternalEditAdapter : IExternalEditAdapter, IResharperUtil
+    internal sealed class ReSharperExternalEditAdapter : IExternalEditAdapter, IReSharperUtil
     {
         internal const string ResharperTaggerProviderName = "VsDocumentMarkupTaggerProvider";
-
-        private ReSharperVersion _reSharperVersion;
-
         private static readonly Guid Resharper5Guid = new Guid("0C6E6407-13FC-4878-869A-C8B4016C57FE");
 
         private readonly Dictionary<Type, bool> _tagMap = new Dictionary<Type, bool>();
         private readonly bool _isResharperInstalled;
+        private ReSharperVersion? _reSharperVersion;
         private IReSharperEditTagDetector _reSharperEditTagDetector;
 
         /// <summary>
@@ -33,13 +31,13 @@ namespace VsVim.Implementation.Resharper
         internal List<Lazy<ITaggerProvider>> TaggerProviders { get; set; }
 
         [ImportingConstructor]
-        internal ResharperExternalEditAdapter(SVsServiceProvider serviceProvider)
+        internal ReSharperExternalEditAdapter(SVsServiceProvider serviceProvider)
         {
             var vsShell = serviceProvider.GetService<SVsShell, IVsShell>();
             _isResharperInstalled = vsShell.IsPackageInstalled(Resharper5Guid);
         }
 
-        internal ResharperExternalEditAdapter(bool isResharperInstalled)
+        internal ReSharperExternalEditAdapter(bool isResharperInstalled)
         {
             _isResharperInstalled = isResharperInstalled;
         }
@@ -58,6 +56,25 @@ namespace VsVim.Implementation.Resharper
         internal bool IsExternalEditTag(ITag tag)
         {
             return IsVsAdornmentTagType(tag.GetType()) && IsEditTag(tag);
+        }
+
+        internal void SetReSharperVersion(ReSharperVersion reSharperVersion)
+        {
+            _reSharperVersion = reSharperVersion;
+            switch (reSharperVersion)
+            {
+                case ReSharperVersion.Version7AndEarlier:
+                    _reSharperEditTagDetector = new ReSharperV7EditTagDetector();
+                    break;
+                case ReSharperVersion.Version8:
+                    _reSharperEditTagDetector = new ReSharperV8EditTagDetector();
+                    break;
+                case ReSharperVersion.Unknown:
+                    _reSharperEditTagDetector = new ReSharperUnknownEditTagDetector();
+                    break;
+                default:
+                    throw new Exception("Wrong enum value");
+            }
         }
 
         private bool IsVsAdornmentTagType(Type type)
@@ -131,8 +148,8 @@ namespace VsVim.Implementation.Resharper
                 var providerType = provider.GetType();
                 if (providerType.Name == ResharperTaggerProviderName)
                 {
-                    _reSharperVersion = ResharperVersionUtility.DetectFromAssembly(providerType.Assembly);
-                    if (_reSharperVersion != ReSharperVersion.Unknown)
+                    EnsureReShaprerVersion(providerType);
+                    if (_reSharperVersion.Value != ReSharperVersion.Unknown)
                     {
                         var taggerResult = provider.SafeCreateTagger<ITag>(textBuffer);
                         if (taggerResult.IsSuccess)
@@ -152,7 +169,7 @@ namespace VsVim.Implementation.Resharper
         }
 
         /// <summary>
-        /// This method is to try to account for Resharper versions that are not released at
+        /// This method is to try to account for ReSharper versions that are not released at
         /// this time.  Instead of looking for the version specific names we just look at the
         /// jet brains assembly that have the correct tagger name
         ///
@@ -184,27 +201,24 @@ namespace VsVim.Implementation.Resharper
 
         private bool IsEditTag(ITag tag)
         {
-            if (_reSharperEditTagDetector == null)
+            EnsureReShaprerVersion(tag.GetType());
+            return _reSharperEditTagDetector.IsEditTag(tag);
+        }
+
+        private void EnsureReShaprerVersion(Type type)
+        {
+            if (_reSharperVersion.HasValue)
             {
-                switch (_reSharperVersion)
-                {
-                    case ReSharperVersion.Version7AndEarlier:
-                        _reSharperEditTagDetector = new ReSharperV7EditTagDetector();
-                        break;
-                    case ReSharperVersion.Version8:
-                        _reSharperEditTagDetector = new ReSharperV8EditTagDetector();
-                        break;
-                    default:
-                        throw new ArgumentOutOfRangeException();
-                }
+                Contract.Requires(_reSharperEditTagDetector != null);
+                return;
             }
 
-            return _reSharperEditTagDetector.IsEditTag(tag);
+            SetReSharperVersion(ResharperVersionUtility.DetectFromAssembly(type.Assembly));
         }
 
         #region IResharperUtil
 
-        bool IResharperUtil.IsInstalled
+        bool IReSharperUtil.IsInstalled
         {
             get { return _isResharperInstalled; }
         }

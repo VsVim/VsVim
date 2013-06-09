@@ -55,7 +55,7 @@ namespace VsVim
         private readonly ITextManager _textManager;
         private readonly IVsAdapter _vsAdapter;
         private readonly IDisplayWindowBroker _broker;
-        private readonly IResharperUtil _resharperUtil;
+        private readonly IReSharperUtil _resharperUtil;
         private readonly IKeyUtil _keyUtil;
         private IOleCommandTarget _nextTarget;
 
@@ -64,7 +64,7 @@ namespace VsVim
             ITextManager textManager,
             IVsAdapter vsAdapter,
             IDisplayWindowBroker broker,
-            IResharperUtil resharperUtil,
+            IReSharperUtil resharperUtil,
             IKeyUtil keyUtil)
         {
             _vimBuffer = bufferCoordinator.VimBuffer;
@@ -575,7 +575,7 @@ namespace VsVim
             ITextManager textManager,
             IVsAdapter adapter,
             IDisplayWindowBroker broker,
-            IResharperUtil resharperUtil,
+            IReSharperUtil resharperUtil,
             IKeyUtil keyUtil)
         {
             var vsCommandTarget = new VsCommandTarget(bufferCoordinator, textManager, adapter, broker, resharperUtil, keyUtil);

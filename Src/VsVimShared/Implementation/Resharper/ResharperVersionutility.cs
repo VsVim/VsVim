@@ -1,6 +1,6 @@
 ﻿using System.Reflection;
 
-namespace VsVim.Implementation.Resharper
+namespace VsVim.Implementation.ReSharper
 {
     internal class ResharperVersionUtility
     {

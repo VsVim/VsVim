@@ -38,7 +38,7 @@ namespace VsVim.Shared.UnitTest
             _hostFactory = new HostFactory(
                 Vim,
                 _vsEditorAdaptersFactoryService.Object,
-                _mockFactory.Create<IResharperUtil>().Object,
+                _mockFactory.Create<IReSharperUtil>().Object,
                 _mockFactory.Create<IDisplayWindowBrokerFactoryService>(MockBehavior.Loose).Object,
                 _mockFactory.Create<ITextManager>(MockBehavior.Loose).Object,
                 vsAdapter.Object,
