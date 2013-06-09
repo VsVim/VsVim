@@ -23,7 +23,7 @@ namespace VsVim.Implementation.Resharper
 
         private readonly Dictionary<Type, bool> _tagMap = new Dictionary<Type, bool>();
         private readonly bool _isResharperInstalled;
-        private IReSharperEditTagDetector _reSharperEditEditTagDetector;
+        private IReSharperEditTagDetector _reSharperEditTagDetector;
 
         /// <summary>
         /// Need to have an Import on a property vs. a constructor parameter to break a dependency
@@ -184,22 +184,22 @@ namespace VsVim.Implementation.Resharper
 
         private bool IsEditTag(ITag tag)
         {
-            if (_reSharperEditEditTagDetector == null)
+            if (_reSharperEditTagDetector == null)
             {
                 switch (_reSharperVersion)
                 {
                     case ReSharperVersion.Version7AndEarlier:
-                        _reSharperEditEditTagDetector = new ReSharperV7EditTagDetector();
+                        _reSharperEditTagDetector = new ReSharperV7EditTagDetector();
                         break;
                     case ReSharperVersion.Version8:
-                        _reSharperEditEditTagDetector = new ReSharperV8EditTagDetector();
+                        _reSharperEditTagDetector = new ReSharperV8EditTagDetector();
                         break;
                     default:
                         throw new ArgumentOutOfRangeException();
                 }
             }
 
-            return _reSharperEditEditTagDetector.IsEditTag(tag);
+            return _reSharperEditTagDetector.IsEditTag(tag);
         }
 
         #region IResharperUtil
