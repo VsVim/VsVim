@@ -180,8 +180,8 @@ type internal TrackingVisualSpan =
     /// of
     | Line of ITrackingLineColumn * int
 
-    /// Tracks the origin of the block selection, it's width by height
-    | Block of ITrackingLineColumn * int * int
+    /// Tracks the origin of the block selection, it's tabstop by width by height
+    | Block of ITrackingLineColumn * int * int * int
 
     with
 
@@ -189,7 +189,7 @@ type internal TrackingVisualSpan =
         match x with
         | Character (trackingLineColumn, _, _) -> trackingLineColumn
         | Line (trackingLineColumn, _) -> trackingLineColumn
-        | Block (trackingLineColumn, _, _) -> trackingLineColumn
+        | Block (trackingLineColumn, _, _, _) -> trackingLineColumn
 
     member x.TextBuffer =
         x.TrackingLineColumn.TextBuffer
@@ -210,8 +210,8 @@ type internal TrackingVisualSpan =
                 let line = SnapshotPointUtil.GetContainingLine point
                 SnapshotLineRangeUtil.CreateForLineAndMaxCount line count 
                 |> VisualSpan.Line
-            | Block (_, width, height) ->
-                let blockSpan = BlockSpan(point, width, height)
+            | Block (_, tabStop, width, height) ->
+                let blockSpan = BlockSpan(point, tabStop, width, height)
                 VisualSpan.Block blockSpan
             |> Some
 
@@ -219,7 +219,7 @@ type internal TrackingVisualSpan =
         match x with
         | Character (trackingLineColumn, _, _) -> trackingLineColumn.Close()
         | Line (trackingLineColumn, _) -> trackingLineColumn.Close()
-        | Block (trackingLineColumn, _, _) -> trackingLineColumn.Close()
+        | Block (trackingLineColumn, _, _, _) -> trackingLineColumn.Close()
 
     static member Create (bufferTrackingService : IBufferTrackingService) visualSpan =
         match visualSpan with
@@ -251,7 +251,7 @@ type internal TrackingVisualSpan =
 
                 bufferTrackingService.CreateLineColumn textBuffer lineNumber column LineColumnTrackingMode.Default
 
-            TrackingVisualSpan.Block (trackingLineColumn, blockSpan.Width, blockSpan.Height)
+            TrackingVisualSpan.Block (trackingLineColumn, blockSpan.TabStop, blockSpan.WidthSpaces, blockSpan.Height)
 
     interface ITrackingVisualSpan with
         member x.TextBuffer = x.TextBuffer

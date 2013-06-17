@@ -9,7 +9,8 @@ open Microsoft.VisualStudio.Text.Outlining
 open Microsoft.VisualStudio.Utilities
 open StringBuilderExtensions
 
-module ColumnWiseUtils =
+module internal ColumnWiseUtil =
+
     /// Determines whether the given character occupies space on screen when displayed.
     /// For instance, combining diacritics occupy the space of the previous character,
     /// while control characters are simply not displayed.
@@ -60,7 +61,7 @@ module ColumnWiseUtils =
                 //(ucs >= 0x30000 && ucs <= 0x3fffd)));
 
     /// Determines the character width when displayed, computed according to the various local settings.
-    let GetCharacterWidth c (localSettings : IVimLocalSettings) =
+    let GetCharacterWidth c tabStop =
         // TODO: for surrogate pairs, we need to be able to match characters specified as strings.
         // E.g. if System.Char.IsHighSurrogate(c) then
         //    let fullchar = point.Snapshot.GetSpan(point.Position, 1).GetText()
@@ -68,7 +69,7 @@ module ColumnWiseUtils =
 
         match c with
         | '\u0000' -> 1
-        | '\t' -> localSettings.TabStop
+        | '\t' -> tabStop
         | _ when IsNonSpacingCharacter c -> 0
         | _ when IsWideCharacter c -> 2
         | _ -> 1
@@ -77,7 +78,7 @@ module ColumnWiseUtils =
     // overlaps the specified column into the line, as well as the position of 
     // that column inside then character. Returns End if it goes beyond the last 
     // point in the string
-    let GetPointForSpacesWithOverlap line spacesCount localsettings = 
+    let GetPointForSpacesWithOverlap line spacesCount tabStop = 
         let snapshot = SnapshotLineUtil.GetSnapshot line
         let endPosition = line |> SnapshotLineUtil.GetEnd |> SnapshotPointUtil.GetPosition
         // The following retrieves the location of the character that is
@@ -94,7 +95,7 @@ module ColumnWiseUtils =
                 (0, endPosition, 0)
             else 
                 let point = SnapshotPoint(snapshot, position)
-                let charWidth = GetCharacterWidth (SnapshotPointUtil.GetChar point) localsettings
+                let charWidth = GetCharacterWidth (SnapshotPointUtil.GetChar point) tabStop
                 let remaining = spacesCount - charWidth
 
                 if spacesCount = 0 && charWidth <> 0 then
@@ -110,6 +111,30 @@ module ColumnWiseUtils =
     // Get the point in the given line which is just before the character that 
     // overlaps the specified column into the line. Returns End if it goes 
     // beyond the last point in the string
-    let GetPointForSpaces line spacesCount localsettings = 
-        let _, result, _ = GetPointForSpacesWithOverlap line spacesCount localsettings
+    let GetPointForSpaces line spacesCount tabStop = 
+        let _, result, _ = GetPointForSpacesWithOverlap line spacesCount tabStop
         result
+
+    let GetSpacesForPoint point tabStop = 
+        let c = SnapshotPointUtil.GetChar point
+        GetCharacterWidth c tabStop
+
+    let GetSpacesForSpan span tabStop = 
+        span
+        |> SnapshotSpanUtil.GetPoints Path.Forward
+        |> Seq.map (fun point -> GetSpacesForPoint point tabStop)
+        |> Seq.sum
+
+    /// Get the count of spaces to get to the specified absolute column offset.  This will count
+    /// tabs as counting for 'tabstop' spaces
+    let GetSpacesToColumn line column tabStop = 
+        SnapshotLineUtil.GetSpanInLine line 0 column
+        |> SnapshotSpanUtil.GetPoints Path.Forward
+        |> Seq.map (fun point -> GetSpacesForPoint point tabStop)
+        |> Seq.sum
+
+    /// Get the count of spaces to get to the specified point in it's line when tabs are expanded
+    let GetSpacesToPoint point tabStop = 
+        let line = SnapshotPointUtil.GetContainingLine point
+        let column = point.Position - line.Start.Position 
+        GetSpacesToColumn line column tabStop

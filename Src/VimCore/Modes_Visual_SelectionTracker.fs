@@ -10,10 +10,12 @@ open Vim
 type internal SelectionTracker
     (
         _textView : ITextView,
-        _globalSettings : IVimGlobalSettings, 
+        _localSettings : IVimLocalSettings,
         _incrementalSearch : IIncrementalSearch,
         _visualKind : VisualKind
     ) as this =
+
+    let _globalSettings = _localSettings.GlobalSettings
 
     /// The anchor point we are currently tracking.  This is always included in the selection which
     /// is created by this type 
@@ -54,7 +56,7 @@ type internal SelectionTracker
             // Set the selection.  If this is line mode we need to select the entire line 
             // here
             let caretPoint = TextViewUtil.GetCaretPoint _textView
-            let visualSelection = VisualSelection.CreateInitial _visualKind caretPoint
+            let visualSelection = VisualSelection.CreateInitial _visualKind caretPoint _localSettings
             visualSelection.VisualSpan.Select _textView Path.Forward
 
             _anchorPoint <- Some caretPoint
@@ -100,7 +102,7 @@ type internal SelectionTracker
 
             // Update the selection only.  Don't move the caret here.  It's either properly positioned
             // or we're simulating the selection based on incremental search
-            let visualSelection = VisualSelection.CreateForPoints _visualKind anchorPoint simulatedCaretPoint
+            let visualSelection = VisualSelection.CreateForPoints _visualKind anchorPoint simulatedCaretPoint _localSettings
             let visualSelection = visualSelection.AdjustForExtendIntoLineBreak _extendIntoLineBreak
             let visualSelection = visualSelection.AdjustForSelectionKind _globalSettings.SelectionKind
             visualSelection.Select _textView

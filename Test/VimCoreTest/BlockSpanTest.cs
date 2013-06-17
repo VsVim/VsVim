@@ -20,7 +20,7 @@ namespace Vim.UnitTest
         public void EndPoint_SingleLine()
         {
             Create("cat", "dog");
-            var blockSpan = new BlockSpan(_textBuffer.GetPoint(0), 2, 1);
+            var blockSpan = new BlockSpan(_textBuffer.GetPoint(0), 4, 2, 1);
             Assert.Equal(_textBuffer.GetLine(0).Start.Add(2), blockSpan.End);
         }
 
@@ -31,7 +31,7 @@ namespace Vim.UnitTest
         public void EndPoint_MultiLine()
         {
             Create("cat", "dog", "fish");
-            var blockSpan = new BlockSpan(_textBuffer.GetPoint(0), 2, 2);
+            var blockSpan = new BlockSpan(_textBuffer.GetPoint(0), 4, 2, 2);
             Assert.Equal(_textBuffer.GetLine(1).Start.Add(2), blockSpan.End);
         }
 
@@ -47,11 +47,11 @@ namespace Vim.UnitTest
                 (left, right) => left != right,
                 false,
                 false,
-                EqualityUnit.Create(new BlockSpan(_textBuffer.GetPoint(0), 2, 2))
-                    .WithEqualValues(new BlockSpan(_textBuffer.GetPoint(0), 2, 2))
+                EqualityUnit.Create(new BlockSpan(_textBuffer.GetPoint(0), 4, 2, 2))
+                    .WithEqualValues(new BlockSpan(_textBuffer.GetPoint(0), 4, 2, 2))
                     .WithNotEqualValues(
-                        new BlockSpan(_textBuffer.GetPoint(1), 2, 2),
-                        new BlockSpan(_textBuffer.GetPoint(1), 2, 3)));
+                        new BlockSpan(_textBuffer.GetPoint(1), 4, 2, 2),
+                        new BlockSpan(_textBuffer.GetPoint(1),  4,2, 3)));
         }
     }
 }

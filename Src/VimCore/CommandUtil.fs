@@ -189,7 +189,7 @@ type internal CommandUtil
         | StoredVisualSpan.Block (width, height) ->
             // Need to rehydrate spans of length 'length' on 'count' lines from the 
             // current caret position
-            let blockSpan = BlockSpan(x.CaretPoint, width, height)
+            let blockSpan = BlockSpan(x.CaretPoint, _localSettings.TabStop, width, height)
             VisualSpan.Block blockSpan
 
     /// Change the characters in the given span via the specified change kind
@@ -677,7 +677,7 @@ type internal CommandUtil
         TextViewUtil.MoveCaretToPoint _textView startPoint
         x.EditWithUndoTransaciton "DeleteSelection" (fun () ->
             use edit = _textBuffer.CreateEdit()
-            visualSpan.SpansWithOverlap _localSettings |> Seq.iter (fun (pre, span, post) -> 
+            visualSpan.SpansWithOverlap |> Seq.iter (fun (pre, span, post) -> 
 
                 // If the last included point in the SnapshotSpan is inside the line break
                 // portion of a line then extend the SnapshotSpan to encompass the full
@@ -1113,7 +1113,7 @@ type internal CommandUtil
         // for properly setting to the character, line, block, etc ... once the command completes
         let changeSelection anchorPoint caretPoint = 
             let extendIntoLineBreak = streamSelectionSpan.End.IsInVirtualSpace
-            let visualSelection = VisualSelection.CreateForPoints visualSpan.VisualKind anchorPoint caretPoint
+            let visualSelection = VisualSelection.CreateForPoints visualSpan.VisualKind anchorPoint caretPoint _localSettings
             let visualSelection = visualSelection.AdjustForExtendIntoLineBreak extendIntoLineBreak
             TextViewUtil.MoveCaretToPoint _textView caretPoint
             visualSelection.Select _textView
@@ -1136,14 +1136,15 @@ type internal CommandUtil
                 if columnOnlyInBlock then
                     // In this mode the caret simple jumps to the other end of the selection on the same
                     // line.  It doesn't switch caret + anchor, just the side the caret is on
-                    let caretOffset, anchorOffset = 
+                    let caretSpaces, anchorSpaces = 
                         if (SnapshotPointUtil.GetColumn x.CaretPoint) >= (SnapshotPointUtil.GetColumn anchorPoint) then 
-                            blockSpan.Column, (blockSpan.Width + blockSpan.Column) - 1
+                            blockSpan.ColumnSpaces, (blockSpan.WidthSpaces + blockSpan.ColumnSpaces) - 1
                         else
-                            (blockSpan.Width + blockSpan.Column) - 1, blockSpan.Column
+                            (blockSpan.WidthSpaces + blockSpan.ColumnSpaces) - 1, blockSpan.ColumnSpaces
 
-                    let newCaretPoint = SnapshotLineUtil.GetOffsetOrEnd caretOffset x.CaretLine
-                    let newAnchorPoint = SnapshotLineUtil.GetOffsetOrEnd anchorOffset (anchorPoint.GetContainingLine())
+                    let tabStop = _localSettings.TabStop
+                    let newCaretPoint = ColumnWiseUtil.GetPointForSpaces x.CaretLine caretSpaces tabStop
+                    let newAnchorPoint = ColumnWiseUtil.GetPointForSpaces (anchorPoint.GetContainingLine()) anchorSpaces tabStop
                     changeSelection newAnchorPoint newCaretPoint
                 else
                     changeSelection x.CaretPoint anchorPoint
@@ -1458,7 +1459,7 @@ type internal CommandUtil
             CommandResult.Error
 
         let setSelection span =
-            let visualSpan = VisualSpan.CreateForSpan span desiredVisualKind
+            let visualSpan = VisualSpan.CreateForSpan span desiredVisualKind _localSettings
             let visualSelection = VisualSelection.CreateForward visualSpan
             let argument = ModeArgument.InitialVisualSelection (visualSelection, None)
             x.SwitchMode desiredVisualKind.VisualModeKind argument
@@ -1473,7 +1474,7 @@ type internal CommandUtil
             let isInitialSelection = 
                 match visualSpan with
                 | VisualSpan.Character characterSpan -> characterSpan.Length <= 1
-                | VisualSpan.Block blockSpan -> blockSpan.Width <= 1
+                | VisualSpan.Block blockSpan -> blockSpan.WidthSpaces <= 1
                 | VisualSpan.Line lineRange -> lineRange.Count = 1
 
             // TODO: Backwards motions
@@ -1512,7 +1513,7 @@ type internal CommandUtil
             match _motionUtil.GetMotion motion argument with
             | None -> onError ()
             | Some motionResult -> 
-                let blockVisualSpan = VisualSpan.CreateForSpan motionResult.Span desiredVisualKind
+                let blockVisualSpan = VisualSpan.CreateForSpan motionResult.Span desiredVisualKind _localSettings
                 if visualSpan <> blockVisualSpan then
                     // Selection is not yet the entire block so just expand to the block 
                     setSelection motionResult.Span
@@ -2607,7 +2608,7 @@ type internal CommandUtil
         if not (_commonOperations.MoveCaret caretMovement) then
             CommandResult.Error
         else
-            let visualSelection = VisualSelection.CreateForPoints VisualKind.Character anchorPoint x.CaretPoint
+            let visualSelection = VisualSelection.CreateForPoints VisualKind.Character anchorPoint x.CaretPoint _localSettings
             let modeKind = 
                 if Util.IsFlagSet _globalSettings.SelectModeOptions SelectModeOptions.Keyboard then
                     ModeKind.SelectCharacter
@@ -2661,7 +2662,7 @@ type internal CommandUtil
                     x.SwitchMode ModeKind.Normal ModeArgument.None
                 else
                     let caretPoint = x.CaretPoint
-                    let newVisualSelection = VisualSelection.CreateForPoints newVisualKind anchorPoint caretPoint
+                    let newVisualSelection = VisualSelection.CreateForPoints newVisualKind anchorPoint caretPoint _localSettings
                     let modeArgument = ModeArgument.InitialVisualSelection (newVisualSelection, Some anchorPoint)
 
                     x.SwitchMode newVisualSelection.VisualKind.VisualModeKind modeArgument

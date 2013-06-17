@@ -22,6 +22,7 @@ type internal CommandRunner
         _textView : ITextView,
         _registerMap : IRegisterMap,
         _motionCapture : IMotionCapture,
+        _localSettings : IVimLocalSettings,
         _commandUtil : ICommandUtil,
         _statusUtil : IStatusUtil,
         _visualKind : VisualKind,
@@ -50,7 +51,7 @@ type internal CommandRunner
     let mutable _inBind = false
 
     /// Try and get the VisualSpan for the provided kind
-    member x.GetVisualSpan kind = VisualSpan.CreateForSelection _textView kind
+    member x.GetVisualSpan kind = VisualSpan.CreateForSelection _textView kind _localSettings
 
     /// Used to wait for the character after the " which signals the Register.  When the register
     /// is found it will be passed to completeFunc
