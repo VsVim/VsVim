@@ -60,6 +60,7 @@ namespace Vim.UnitTest
                 _textView,
                 Vim.RegisterMap,
                 capture,
+                vimBufferData.LocalSettings,
                 _commandUtil.Object,
                 vimBufferData.StatusUtil,
                 VisualKind.Character,

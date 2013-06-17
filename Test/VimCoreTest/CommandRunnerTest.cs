@@ -38,6 +38,7 @@ namespace Vim.UnitTest
                 _textView,
                 _registerMap,
                 motionCapture,
+                vimBufferData.LocalSettings,
                 _commandUtil,
                 new StatusUtil(),
                 VisualKind.Character,

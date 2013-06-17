@@ -1113,7 +1113,7 @@ type internal CommandUtil
         // for properly setting to the character, line, block, etc ... once the command completes
         let changeSelection anchorPoint caretPoint = 
             let extendIntoLineBreak = streamSelectionSpan.End.IsInVirtualSpace
-            let visualSelection = VisualSelection.CreateForPoints visualSpan.VisualKind anchorPoint caretPoint _localSettings
+            let visualSelection = VisualSelection.CreateForPoints visualSpan.VisualKind anchorPoint caretPoint _localSettings.TabStop
             let visualSelection = visualSelection.AdjustForExtendIntoLineBreak extendIntoLineBreak
             TextViewUtil.MoveCaretToPoint _textView caretPoint
             visualSelection.Select _textView
@@ -1459,7 +1459,7 @@ type internal CommandUtil
             CommandResult.Error
 
         let setSelection span =
-            let visualSpan = VisualSpan.CreateForSpan span desiredVisualKind _localSettings
+            let visualSpan = VisualSpan.CreateForSpan span desiredVisualKind _localSettings.TabStop
             let visualSelection = VisualSelection.CreateForward visualSpan
             let argument = ModeArgument.InitialVisualSelection (visualSelection, None)
             x.SwitchMode desiredVisualKind.VisualModeKind argument
@@ -1513,7 +1513,7 @@ type internal CommandUtil
             match _motionUtil.GetMotion motion argument with
             | None -> onError ()
             | Some motionResult -> 
-                let blockVisualSpan = VisualSpan.CreateForSpan motionResult.Span desiredVisualKind _localSettings
+                let blockVisualSpan = VisualSpan.CreateForSpan motionResult.Span desiredVisualKind _localSettings.TabStop
                 if visualSpan <> blockVisualSpan then
                     // Selection is not yet the entire block so just expand to the block 
                     setSelection motionResult.Span
@@ -2608,7 +2608,7 @@ type internal CommandUtil
         if not (_commonOperations.MoveCaret caretMovement) then
             CommandResult.Error
         else
-            let visualSelection = VisualSelection.CreateForPoints VisualKind.Character anchorPoint x.CaretPoint _localSettings
+            let visualSelection = VisualSelection.CreateForPoints VisualKind.Character anchorPoint x.CaretPoint _localSettings.TabStop
             let modeKind = 
                 if Util.IsFlagSet _globalSettings.SelectModeOptions SelectModeOptions.Keyboard then
                     ModeKind.SelectCharacter
@@ -2662,7 +2662,7 @@ type internal CommandUtil
                     x.SwitchMode ModeKind.Normal ModeArgument.None
                 else
                     let caretPoint = x.CaretPoint
-                    let newVisualSelection = VisualSelection.CreateForPoints newVisualKind anchorPoint caretPoint _localSettings
+                    let newVisualSelection = VisualSelection.CreateForPoints newVisualKind anchorPoint caretPoint _localSettings.TabStop
                     let modeArgument = ModeArgument.InitialVisualSelection (newVisualSelection, Some anchorPoint)
 
                     x.SwitchMode newVisualSelection.VisualKind.VisualModeKind modeArgument

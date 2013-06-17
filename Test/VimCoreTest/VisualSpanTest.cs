@@ -29,7 +29,7 @@ namespace Vim.UnitTest
                 {
                     Create("cat", "dog");
                     _textView.Selection.Select(_textBuffer.GetPoint(0), _textBuffer.GetPoint(5));
-                    var visualSpan = VisualSpan.CreateForSelection(_textView, VisualKind.Character);
+                    var visualSpan = VisualSpan.CreateForSelection(_textView, VisualKind.Character, tabStop: 4);
                     var characterSpan = visualSpan.AsCharacter().Item;
                     Assert.True(characterSpan.IncludeLastLineLineBreak);
                     Assert.Equal(1, characterSpan.LineCount);
@@ -41,7 +41,7 @@ namespace Vim.UnitTest
                     Create("cat", "", "dog");
                     _textView.Selection.Select(_textBuffer.GetPoint(0), _textBuffer.GetPoint(6));
                     Assert.Equal(1, _textView.Selection.StreamSelectionSpan.End.Position.GetContainingLine().LineNumber);
-                    var visualSpan = VisualSpan.CreateForSelection(_textView, VisualKind.Character);
+                    var visualSpan = VisualSpan.CreateForSelection(_textView, VisualKind.Character, tabStop: 4);
                     var characterSpan = visualSpan.AsCharacter().Item;
                     Assert.Equal(2, characterSpan.LineCount);
                     Assert.True(characterSpan.IncludeLastLineLineBreak);
@@ -68,7 +68,7 @@ namespace Vim.UnitTest
                 public void SimpleCaretPastTab()
                 {
                     Create("trucker", "\tcat");
-                    var blockSpan = new BlockSpan(_textBuffer.GetPoint(1), 4, 2);
+                    var blockSpan = new BlockSpan(_textBuffer.GetPoint(1), 2, 4, 2);
                     var visualSpan = VisualSpan.NewBlock(blockSpan);
                     visualSpan.Select(_textView, Path.Forward);
                     Assert.Equal(
@@ -84,7 +84,7 @@ namespace Vim.UnitTest
                 public void SimpleCaretPastTab2()
                 {
                     Create("trucker", "\tcat");
-                    var blockSpan = new BlockSpan(_textBuffer.GetPoint(1), 5, 2);
+                    var blockSpan = new BlockSpan(_textBuffer.GetPoint(1), 2, 5, 2);
                     var visualSpan = VisualSpan.NewBlock(blockSpan);
                     visualSpan.Select(_textView, Path.Forward);
                     Assert.Equal(
@@ -104,7 +104,7 @@ namespace Vim.UnitTest
                 public void CaretInTabAnchorAboveTab()
                 {
                     Create("trucker", "\tcat");
-                    var blockSpan = new BlockSpan(_textBuffer.GetPoint(1), 1, 2);
+                    var blockSpan = new BlockSpan(_textBuffer.GetPoint(1), 2, 1, 2);
                     var visualSpan = VisualSpan.NewBlock(blockSpan);
                     visualSpan.Select(_textView, Path.Forward);
                     Assert.Equal(
@@ -227,9 +227,9 @@ namespace Vim.UnitTest
                 public void Simple()
                 {
                     Create("big dog", "big cat", "big tree", "big fish");
-                    var blockSpan = _textBuffer.GetBlockSpan(1, 2, 0, 2);
+                    var blockSpan = _textBuffer.GetBlockSpan(1, _vimBuffer.LocalSettings.TabStop, 0, 2);
 
-                    foreach (var spanWithOverlap in blockSpan.BlockSpansWithOverlap(_vimBuffer.LocalSettings))
+                    foreach (var spanWithOverlap in blockSpan.BlockSpansWithOverlap)
                     {
                         Assert.Equal(0, spanWithOverlap.Item1);
                         Assert.Equal(0, spanWithOverlap.Item3);
@@ -243,8 +243,8 @@ namespace Vim.UnitTest
                 public void Full()
                 {
                     Create("big dog", "bあ cat", "bい tree", "bう fish");
-                    var blockSpan = _textBuffer.GetBlockSpan(1, 2, 0, 2);
-                    var spans = blockSpan.BlockSpansWithOverlap(_vimBuffer.LocalSettings);
+                    var blockSpan = _textBuffer.GetBlockSpan(1, _vimBuffer.LocalSettings.TabStop, 0, 2);
+                    var spans = blockSpan.BlockSpansWithOverlap;
 
                     foreach (var spanWithOverlap in spans)
                     {
@@ -263,12 +263,12 @@ namespace Vim.UnitTest
                 public void Partial()
                 {
                     Create("aiueo", "あいうえお");
-                    var blockSpan = _textBuffer.GetBlockSpan(1, 2, 0, 2);
+                    var blockSpan = _textBuffer.GetBlockSpan(1, _vimBuffer.LocalSettings.TabStop, 0, 2);
                     var expected = new List<Tuple<int, int>> {
                         Tuple.Create(0, 0),
                         Tuple.Create(1, 1),
                         Tuple.Create(0, 0) };
-                    var actual = blockSpan.BlockSpansWithOverlap(_vimBuffer.LocalSettings);
+                    var actual = blockSpan.BlockSpansWithOverlap;
 
                     Assert.Equal(expected[0].Item1, actual.Head.Item1);
                     Assert.Equal("iu", actual.Head.Item2.GetText());
@@ -287,11 +287,11 @@ namespace Vim.UnitTest
                 {
                     string[] lines = new string[] { "hello", "h\u0327e\u0301\u200bllo\u030a\u0305" };
                     Create(lines);
-                    var blockSpan = _textBuffer.GetBlockSpan(0, 5, 0, 2);
+                    var blockSpan = _textBuffer.GetBlockSpan(0, 5, 0, 2, tabStop: _vimBuffer.LocalSettings.TabStop);
                     var expected = new List<Tuple<int, int>> {
                         Tuple.Create(0, 0),
                         Tuple.Create(0, _vimBuffer.LocalSettings.TabStop - 1) };
-                    var actual = blockSpan.BlockSpansWithOverlap(_vimBuffer.LocalSettings);
+                    var actual = blockSpan.BlockSpansWithOverlap;
 
                     Assert.Equal(lines[1], actual.Rest.Head.Item2.GetText());
                 }
@@ -303,11 +303,11 @@ namespace Vim.UnitTest
                 public void VeryWideCharacter()
                 {
                     Create("aiueo", "\t");
-                    var blockSpan = _textBuffer.GetBlockSpan(0, 1, 0, 2);
+                    var blockSpan = _textBuffer.GetBlockSpan(0, 1, 0, 2, tabStop: _vimBuffer.LocalSettings.TabStop);
                     var expected = new List<Tuple<int, int>> {
                         Tuple.Create(0, 0),
                         Tuple.Create(0, _vimBuffer.LocalSettings.TabStop - 1) };
-                    var actual = blockSpan.BlockSpansWithOverlap(_vimBuffer.LocalSettings);
+                    var actual = blockSpan.BlockSpansWithOverlap;
 
                     Assert.Equal(expected[0].Item1, actual.Head.Item1);
                     Assert.Equal(expected[0].Item2, actual.Head.Item3);
@@ -327,7 +327,7 @@ namespace Vim.UnitTest
             public void CreateForSelection_Character_Empty()
             {
                 Create("hello world");
-                var visualSpan = VisualSpan.CreateForSelection(_textView, VisualKind.Character);
+                var visualSpan = VisualSpan.CreateForSelection(_textView, VisualKind.Character, _vimBuffer.LocalSettings.TabStop);
                 Assert.Equal(0, visualSpan.EditSpan.OverarchingSpan.Length);
             }
 
@@ -339,8 +339,8 @@ namespace Vim.UnitTest
             public void CreateForSelection_Block_Empty()
             {
                 Create("hello world");
-                var visualSpan = VisualSpan.CreateForSelection(_textView, VisualKind.Block);
-                var blockSpan = new BlockSpan(_textBuffer.GetPoint(0), 0, 1);
+                var visualSpan = VisualSpan.CreateForSelection(_textView, VisualKind.Block, _vimBuffer.LocalSettings.TabStop);
+                var blockSpan = new BlockSpan(_textBuffer.GetPoint(0), _vimBuffer.LocalSettings.TabStop, 0, 1);
                 Assert.Equal(blockSpan, visualSpan.AsBlock().Item);
             }
 
@@ -351,7 +351,7 @@ namespace Vim.UnitTest
             public void CreateForSelection_Line_Empty()
             {
                 Create("hello world");
-                var visualSpan = VisualSpan.CreateForSelection(_textView, VisualKind.Line);
+                var visualSpan = VisualSpan.CreateForSelection(_textView, VisualKind.Line, _vimBuffer.LocalSettings.TabStop);
                 Assert.Equal(_textBuffer.GetLineRange(0), visualSpan.AsLine().Item);
             }
 
@@ -363,8 +363,8 @@ namespace Vim.UnitTest
             {
                 Create("dog cat");
                 var point = _textBuffer.GetPoint(2);
-                var visualSpan = VisualSpan.CreateForSelectionPoints(VisualKind.Block, point, point);
-                var blockSpan = new BlockSpan(point, 0, 1);
+                var visualSpan = VisualSpan.CreateForSelectionPoints(VisualKind.Block, point, point, _vimBuffer.LocalSettings.TabStop);
+                var blockSpan = new BlockSpan(point, _vimBuffer.LocalSettings.TabStop, 0, 1);
                 Assert.Equal(blockSpan, visualSpan.AsBlock().Item);
             }
 
@@ -372,8 +372,8 @@ namespace Vim.UnitTest
             public void CreateForSelectionPoints_Block_Backwards()
             {
                 Create("big cat", "big dog");
-                var visualSpan = VisualSpan.CreateForSelectionPoints(VisualKind.Block, _textBuffer.GetPoint(2), _textBuffer.GetPoint(0));
-                var blockSpan = new BlockSpan(_textBuffer.GetPoint(0), 2, 1);
+                var visualSpan = VisualSpan.CreateForSelectionPoints(VisualKind.Block, _textBuffer.GetPoint(2), _textBuffer.GetPoint(0), _vimBuffer.LocalSettings.TabStop);
+                var blockSpan = new BlockSpan(_textBuffer.GetPoint(0), _vimBuffer.LocalSettings.TabStop, 2, 1);
                 Assert.Equal(blockSpan, visualSpan.AsBlock().Item);
             }
 
@@ -385,8 +385,8 @@ namespace Vim.UnitTest
             public void CreateForSelectionPoints_Block_BackwardsMultipleLines()
             {
                 Create("big cat", "big dog");
-                var visualSpan = VisualSpan.CreateForSelectionPoints(VisualKind.Block, _textBuffer.GetPoint(2), _textBuffer.GetPointInLine(1, 1));
-                var blockSpan = new BlockSpan(_textBuffer.GetPoint(1), 1, 2);
+                var visualSpan = VisualSpan.CreateForSelectionPoints(VisualKind.Block, _textBuffer.GetPoint(2), _textBuffer.GetPointInLine(1, 1), _vimBuffer.LocalSettings.TabStop);
+                var blockSpan = new BlockSpan(_textBuffer.GetPoint(1), _vimBuffer.LocalSettings.TabStop, 1, 2);
                 Assert.Equal(blockSpan, visualSpan.AsBlock().Item);
             }
 
@@ -398,8 +398,8 @@ namespace Vim.UnitTest
             public void CreateForSelectionPoints_Block_ForwardsMultipleLines()
             {
                 Create("big cat", "big dog");
-                var visualSpan = VisualSpan.CreateForSelectionPoints(VisualKind.Block, _textBuffer.GetPoint(1), _textBuffer.GetPointInLine(1, 3));
-                var blockSpan = new BlockSpan(_textBuffer.GetPoint(1), 2, 2);
+                var visualSpan = VisualSpan.CreateForSelectionPoints(VisualKind.Block, _textBuffer.GetPoint(1), _textBuffer.GetPointInLine(1, 3), _vimBuffer.LocalSettings.TabStop);
+                var blockSpan = new BlockSpan(_textBuffer.GetPoint(1), _vimBuffer.LocalSettings.TabStop,2, 2);
                 Assert.Equal(blockSpan, visualSpan.AsBlock().Item);
             }
 
@@ -411,7 +411,7 @@ namespace Vim.UnitTest
             {
                 Create("dog cat");
                 var point = _textBuffer.GetPoint(2);
-                var visualSpan = VisualSpan.CreateForSelectionPoints(VisualKind.Character, point, point);
+                var visualSpan = VisualSpan.CreateForSelectionPoints(VisualKind.Character, point, point, _vimBuffer.LocalSettings.TabStop);
                 Assert.Equal(point, visualSpan.AsCharacter().Item.Start);
                 Assert.Equal(0, visualSpan.AsCharacter().Item.Length);
             }
@@ -426,7 +426,7 @@ namespace Vim.UnitTest
             {
                 Create("cat", "dog", "tree");
                 var point = _textBuffer.GetLine(1).Start;
-                var visualSpan = VisualSpan.CreateForSelectionPoints(VisualKind.Line, point, point);
+                var visualSpan = VisualSpan.CreateForSelectionPoints(VisualKind.Line, point, point, _vimBuffer.LocalSettings.TabStop);
                 Assert.Equal(_textBuffer.GetLineRange(1), visualSpan.AsLine().LineRange);
             }
 
@@ -439,7 +439,7 @@ namespace Vim.UnitTest
             {
                 Create("cat", "dog");
                 var point = new SnapshotPoint(_textBuffer.CurrentSnapshot, _textBuffer.CurrentSnapshot.Length);
-                var visualSpan = VisualSpan.CreateForSelectionPoints(VisualKind.Line, point, point);
+                var visualSpan = VisualSpan.CreateForSelectionPoints(VisualKind.Line, point, point, _vimBuffer.LocalSettings.TabStop);
                 Assert.Equal(1, visualSpan.AsLine().LineRange.LastLineNumber);
             }
         }

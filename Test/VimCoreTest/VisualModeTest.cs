@@ -50,6 +50,7 @@ namespace Vim.UnitTest
                 _textView,
                 Vim.RegisterMap,
                 capture,
+                vimBufferData.LocalSettings,
                 _commandUtil.Object,
                 (new Mock<IStatusUtil>()).Object,
                 VisualKind.Character,

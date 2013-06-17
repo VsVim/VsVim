@@ -1,10 +1,11 @@
 ﻿using EditorUtils;
 using Microsoft.VisualStudio.Text;
+using System.Reflection;
 using Xunit;
 
 namespace Vim.UnitTest
 {
-    public sealed class BlockSpanTest : VimTestBase
+    public abstract class BlockSpanTest : VimTestBase
     {
         private ITextBuffer _textBuffer;
 
@@ -13,45 +14,89 @@ namespace Vim.UnitTest
             _textBuffer = CreateTextBuffer(lines);
         }
 
-        /// <summary>
-        /// Make sure the end point is correct for a single line BlockSpanData
-        /// </summary>
-        [Fact]
-        public void EndPoint_SingleLine()
+        public sealed class ColumnSpacesTest : BlockSpanTest
         {
-            Create("cat", "dog");
-            var blockSpan = new BlockSpan(_textBuffer.GetPoint(0), 4, 2, 1);
-            Assert.Equal(_textBuffer.GetLine(0).Start.Add(2), blockSpan.End);
+            [Fact]
+            public void StartOfLine()
+            {
+                Create("cat dog");
+                var blockSpan = new BlockSpan(_textBuffer.GetPoint(0), tabStop: 4, width: 1, height: 1);
+                Assert.Equal(0, blockSpan.ColumnSpaces);
+            }
+
+            [Fact]
+            public void InsideLine()
+            {
+                Create("cat dog");
+                var blockSpan = new BlockSpan(_textBuffer.GetPoint(1), tabStop: 4, width: 1, height: 1);
+                Assert.Equal(1, blockSpan.ColumnSpaces);
+            }
+
+            [Fact]
+            public void TabStart()
+            {
+                Create("\tcat dog");
+                var blockSpan = new BlockSpan(_textBuffer.GetPoint(1), tabStop: 4, width: 1, height: 1);
+                Assert.Equal(4, blockSpan.ColumnSpaces);
+            }
         }
 
-        /// <summary>
-        /// Make sure the end point is correct for a multiline BlockSpanData
-        /// </summary>
-        [Fact]
-        public void EndPoint_MultiLine()
+        public sealed class EndTest : BlockSpanTest
         {
-            Create("cat", "dog", "fish");
-            var blockSpan = new BlockSpan(_textBuffer.GetPoint(0), 4, 2, 2);
-            Assert.Equal(_textBuffer.GetLine(1).Start.Add(2), blockSpan.End);
+            /// <summary>
+            /// Make sure the end point is correct for a single line BlockSpanData
+            /// </summary>
+            [Fact]
+            public void SingleLine()
+            {
+                Create("cat", "dog");
+                var blockSpan = new BlockSpan(_textBuffer.GetPoint(0), 4, 2, 1);
+                Assert.Equal(_textBuffer.GetLine(0).Start.Add(2), blockSpan.End);
+            }
+
+            /// <summary>
+            /// Make sure the end point is correct for a multiline BlockSpanData
+            /// </summary>
+            [Fact]
+            public void MultiLine()
+            {
+                Create("cat", "dog", "fish");
+                var blockSpan = new BlockSpan(_textBuffer.GetPoint(0), 4, 2, 2);
+                Assert.Equal(_textBuffer.GetLine(1).Start.Add(2), blockSpan.End);
+            }
         }
 
-        /// <summary>
-        /// Make sure operator equality functions as expected
-        /// </summary>
-        [Fact]
-        public void Equality_Operator()
+        public sealed class MiscTest : BlockSpanTest
         {
-            Create("cat", "dog");
-            EqualityUtil.RunAll(
-                (left, right) => left == right,
-                (left, right) => left != right,
-                false,
-                false,
-                EqualityUnit.Create(new BlockSpan(_textBuffer.GetPoint(0), 4, 2, 2))
-                    .WithEqualValues(new BlockSpan(_textBuffer.GetPoint(0), 4, 2, 2))
-                    .WithNotEqualValues(
-                        new BlockSpan(_textBuffer.GetPoint(1), 4, 2, 2),
-                        new BlockSpan(_textBuffer.GetPoint(1),  4,2, 3)));
+            /// <summary>
+            /// Make sure operator equality functions as expected
+            /// </summary>
+            [Fact]
+            public void Equality_Operator()
+            {
+                Create("cat", "dog");
+                EqualityUtil.RunAll(
+                    (left, right) => left == right,
+                    (left, right) => left != right,
+                    false,
+                    false,
+                    EqualityUnit.Create(new BlockSpan(_textBuffer.GetPoint(0), 4, 2, 2))
+                        .WithEqualValues(new BlockSpan(_textBuffer.GetPoint(0), 4, 2, 2))
+                        .WithNotEqualValues(
+                            new BlockSpan(_textBuffer.GetPoint(1), 4, 2, 2),
+                            new BlockSpan(_textBuffer.GetPoint(1), 4, 2, 3)));
+            }
+
+            /// <summary>
+            /// Make sure we don't screw up the trick to get the correct number of fields
+            /// in the type
+            /// </summary>
+            [Fact]
+            public void FieldCount()
+            {
+                var type = typeof(BlockSpan);
+                Assert.Equal(4, type.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance).Length);
+            }
         }
     }
 }

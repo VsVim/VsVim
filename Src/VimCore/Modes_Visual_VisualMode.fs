@@ -210,7 +210,7 @@ type internal VisualMode
         // Save the VisualSelection before executing the command.  Many commands which exit
         // visual mode such as 'y' change the selection during execution.  We want to restore
         // to the selection before the command executed so save it now
-        let lastVisualSelection = VisualSelection.CreateForSelection _textView _visualKind _globalSettings.SelectionKind _vimBufferData.LocalSettings
+        let lastVisualSelection = VisualSelection.CreateForSelection _textView _visualKind _globalSettings.SelectionKind _vimBufferData.LocalSettings.TabStop
 
         let result = 
             if ki = KeyInputUtil.EscapeKey && x.ShouldHandleEscape then
@@ -335,7 +335,7 @@ type internal VisualMode
     interface IVisualMode with
         member x.CommandRunner = _runner
         member x.KeyRemapMode = x.KeyRemapMode
-        member x.VisualSelection = VisualSelection.CreateForSelection _textView _visualKind _globalSettings.SelectionKind _vimBufferData.LocalSettings
+        member x.VisualSelection = VisualSelection.CreateForSelection _textView _visualKind _globalSettings.SelectionKind _vimBufferData.LocalSettings.TabStop
         member x.SyncSelection () = x.SyncSelection()
 
 

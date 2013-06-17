@@ -76,7 +76,7 @@ module internal ColumnWiseUtil =
 
     // Get the point in the given line which is just before the character that 
     // overlaps the specified column into the line, as well as the position of 
-    // that column inside then character. Returns End if it goes beyond the last 
+    // that column inside the character. Returns End if it goes beyond the last 
     // point in the string
     let GetPointForSpacesWithOverlap line spacesCount tabStop = 
         let snapshot = SnapshotLineUtil.GetSnapshot line

@@ -36,7 +36,7 @@ namespace Vim.UnitTest
                     {
                         var visualSelection = VisualSelection.NewBlock(blockSpanData, blockCaretLocation);
                         visualSelection.SelectAndMoveCaret(_textView);
-                        var currentVisualSelection = VisualSelection.CreateForSelection(_textView, VisualKind.Block, SelectionKind.Inclusive);
+                        var currentVisualSelection = VisualSelection.CreateForSelection(_textView, VisualKind.Block, SelectionKind.Inclusive, tabStop: 4);
                         Assert.Equal(visualSelection, currentVisualSelection);
                     }
                 }
@@ -54,7 +54,7 @@ namespace Vim.UnitTest
                     {
                         var visualSelection = VisualSelection.NewBlock(blockSpan, blockCaretLocation);
                         visualSelection.SelectAndMoveCaret(_textView);
-                        var currentVisualSelection = VisualSelection.CreateForSelection(_textView, VisualKind.Block, SelectionKind.Inclusive);
+                        var currentVisualSelection = VisualSelection.CreateForSelection(_textView, VisualKind.Block, SelectionKind.Inclusive, tabStop: 4);
                         Assert.Equal(visualSelection, currentVisualSelection);
                     }
                 }
@@ -75,7 +75,7 @@ namespace Vim.UnitTest
                     {
                         var visualSelection = VisualSelection.NewCharacter(characterSpan, path);
                         visualSelection.SelectAndMoveCaret(_textView);
-                        var currentVisualSelection = VisualSelection.CreateForSelection(_textView, VisualKind.Character, SelectionKind.Inclusive);
+                        var currentVisualSelection = VisualSelection.CreateForSelection(_textView, VisualKind.Character, SelectionKind.Inclusive, tabStop: 4);
                         Assert.Equal(visualSelection, currentVisualSelection);
                     }
                 }
@@ -93,7 +93,7 @@ namespace Vim.UnitTest
                     {
                         var visualSelection = VisualSelection.NewCharacter(characterSpan, path);
                         visualSelection.SelectAndMoveCaret(_textView);
-                        var currentVisualSelection = VisualSelection.CreateForSelection(_textView, VisualKind.Character, SelectionKind.Inclusive);
+                        var currentVisualSelection = VisualSelection.CreateForSelection(_textView, VisualKind.Character, SelectionKind.Inclusive, tabStop: 4);
                         Assert.Equal(visualSelection, currentVisualSelection);
                     }
                 }
@@ -115,7 +115,7 @@ namespace Vim.UnitTest
                     {
                         var visualSelection = VisualSelection.NewLine(lineRange, Path.Backward, column);
                         visualSelection.SelectAndMoveCaret(_textView);
-                        var currentVisualSelection = VisualSelection.CreateForSelection(_textView, VisualKind.Line, SelectionKind.Inclusive);
+                        var currentVisualSelection = VisualSelection.CreateForSelection(_textView, VisualKind.Line, SelectionKind.Inclusive, tabStop: 4);
                         Assert.Equal(visualSelection, currentVisualSelection);
                     }
                 }
@@ -136,7 +136,7 @@ namespace Vim.UnitTest
                         {
                             var visualSelection = VisualSelection.NewLine(lineRange, path, column);
                             visualSelection.SelectAndMoveCaret(_textView);
-                            var currentVisualSelection = VisualSelection.CreateForSelection(_textView, VisualKind.Line, SelectionKind.Inclusive);
+                            var currentVisualSelection = VisualSelection.CreateForSelection(_textView, VisualKind.Line, SelectionKind.Inclusive, tabStop: 4);
                             Assert.Equal(visualSelection, currentVisualSelection);
                         }
                     }
@@ -259,7 +259,7 @@ namespace Vim.UnitTest
                 Create("hello world");
                 var span = new SnapshotSpan(_textView.GetLine(0).Start, 2);
                 _textView.SelectAndMoveCaret(span);
-                var visualSelection = VisualSelection.CreateForSelection(_textView, VisualKind.Character, SelectionKind.Inclusive);
+                var visualSelection = VisualSelection.CreateForSelection(_textView, VisualKind.Character, SelectionKind.Inclusive, tabStop: 4);
                 Assert.Equal(span, visualSelection.VisualSpan.EditSpan.OverarchingSpan);
                 Assert.Equal(VisualKind.Character, visualSelection.VisualKind);
                 Assert.True(visualSelection.IsCharacterForward);
@@ -290,7 +290,7 @@ namespace Vim.UnitTest
                 public void Backwards()
                 {
                     Create("cats dogs");
-                    var visualSelection = VisualSelection.CreateForPoints(VisualKind.Character, _textBuffer.GetPoint(3), _textBuffer.GetPoint(1));
+                    var visualSelection = VisualSelection.CreateForPoints(VisualKind.Character, _textBuffer.GetPoint(3), _textBuffer.GetPoint(1), tabStop: 4);
                     Assert.Equal("ats", visualSelection.VisualSpan.EditSpan.OverarchingSpan.GetText());
                 }
 
@@ -301,7 +301,7 @@ namespace Vim.UnitTest
                 public void BackwardsInlcudeAnchor()
                 {
                     Create("cats dogs");
-                    var visualSelection = VisualSelection.CreateForPoints(VisualKind.Character, _textBuffer.GetPoint(3), _textBuffer.GetPoint(0));
+                    var visualSelection = VisualSelection.CreateForPoints(VisualKind.Character, _textBuffer.GetPoint(3), _textBuffer.GetPoint(0), tabStop: 4);
                     var characterSpan = visualSelection.AsCharacter().Item1;
                     Assert.Equal(0, characterSpan.Start.Position);
                     Assert.Equal(3, characterSpan.Last.Value.Position);
@@ -312,7 +312,7 @@ namespace Vim.UnitTest
                 public void BackwardIntoLineBreak()
                 {
                     Create("cat", "dog");
-                    var visualSelection = VisualSelection.CreateForPoints(VisualKind.Character, _textBuffer.GetPoint(3), _textBuffer.GetPoint(0));
+                    var visualSelection = VisualSelection.CreateForPoints(VisualKind.Character, _textBuffer.GetPoint(3), _textBuffer.GetPoint(0), tabStop: 4);
                     var character = visualSelection.AsCharacter();
                     Assert.True(character.Item1.IncludeLastLineLineBreak);
                     Assert.Equal(Path.Backward, character.Item2);
@@ -322,7 +322,7 @@ namespace Vim.UnitTest
                 public void ForwardIntoLineBreak()
                 {
                     Create("cat", "dog");
-                    var visualSelection = VisualSelection.CreateForPoints(VisualKind.Character, _textBuffer.GetPoint(0), _textBuffer.GetPoint(3));
+                    var visualSelection = VisualSelection.CreateForPoints(VisualKind.Character, _textBuffer.GetPoint(0), _textBuffer.GetPoint(3), tabStop: 4);
                     var character = visualSelection.AsCharacter();
                     Assert.True(character.Item1.IncludeLastLineLineBreak);
                     Assert.Equal(Path.Forward, character.Item2);
@@ -335,7 +335,7 @@ namespace Vim.UnitTest
                 public void ForwardIntoLineBreak2()
                 {
                     Create("cat", "dog");
-                    var visualSelection = VisualSelection.CreateForPoints(VisualKind.Character, _textBuffer.GetPoint(0), _textBuffer.GetPoint(4));
+                    var visualSelection = VisualSelection.CreateForPoints(VisualKind.Character, _textBuffer.GetPoint(0), _textBuffer.GetPoint(4), tabStop: 4);
                     var character = visualSelection.AsCharacter();
                     Assert.True(character.Item1.IncludeLastLineLineBreak);
                     Assert.Equal(Path.Forward, character.Item2);
@@ -351,7 +351,7 @@ namespace Vim.UnitTest
                 public void Backwards()
                 {
                     Create("cats dogs");
-                    var visualSelection = VisualSelection.CreateForPoints(VisualKind.Line, _textBuffer.GetPoint(3), _textBuffer.GetPoint(1));
+                    var visualSelection = VisualSelection.CreateForPoints(VisualKind.Line, _textBuffer.GetPoint(3), _textBuffer.GetPoint(1), tabStop: 4);
                     Assert.Equal(_textBuffer.GetLineRange(0), visualSelection.AsLine().Item1);
                 }
 
@@ -364,7 +364,7 @@ namespace Vim.UnitTest
                 public void CaretAtStart()
                 {
                     Create("cat", "dog", "bear");
-                    var visualSpan = VisualSelection.CreateForPoints(VisualKind.Line, _textBuffer.GetPoint(0), caretPoint: _textBuffer.GetPointInLine(1, 0));
+                    var visualSpan = VisualSelection.CreateForPoints(VisualKind.Line, _textBuffer.GetPoint(0), caretPoint: _textBuffer.GetPointInLine(1, 0), tabStop: 4);
                     Assert.Equal(_textBuffer.GetLineRange(0, 1), visualSpan.AsLine().Item1);
                 }
             }
@@ -378,7 +378,7 @@ namespace Vim.UnitTest
                 public void Backwards()
                 {
                     Create("cats dogs");
-                    var visualSelection = VisualSelection.CreateForPoints(VisualKind.Block, _textBuffer.GetPoint(3), _textBuffer.GetPoint(1));
+                    var visualSelection = VisualSelection.CreateForPoints(VisualKind.Block, _textBuffer.GetPoint(3), _textBuffer.GetPoint(1), tabStop: 4);
                     Assert.Equal(_textBuffer.GetSpan(1, 3), visualSelection.AsBlock().Item1.BlockSpans.Head);
                 }
 
@@ -391,7 +391,7 @@ namespace Vim.UnitTest
                 public void BackwardSeveralLines()
                 {
                     Create("big cat", "big dog");
-                    var visualSelection = VisualSelection.CreateForPoints(VisualKind.Block, _textBuffer.GetPoint(2), _textBuffer.GetPointInLine(1, 1));
+                    var visualSelection = VisualSelection.CreateForPoints(VisualKind.Block, _textBuffer.GetPoint(2), _textBuffer.GetPointInLine(1, 1), tabStop: 4);
                     Assert.Equal(_textBuffer.GetBlockSpan(1, 2, 0, 2), visualSelection.AsBlock().Item1);
                 }
             }
@@ -426,7 +426,7 @@ namespace Vim.UnitTest
                 var otherVisualSelection = visualSelection.AdjustForSelectionKind(SelectionKind.Exclusive);
                 var otherBlockSpan = otherVisualSelection.AsBlock().Item1;
                 Assert.Equal(blockSpan.Start, otherBlockSpan.Start);
-                Assert.Equal(1, otherBlockSpan.Width);
+                Assert.Equal(1, otherBlockSpan.WidthSpaces);
                 Assert.Equal(2, otherBlockSpan.Height);
             }
 

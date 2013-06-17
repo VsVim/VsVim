@@ -56,7 +56,7 @@ type internal SelectionTracker
             // Set the selection.  If this is line mode we need to select the entire line 
             // here
             let caretPoint = TextViewUtil.GetCaretPoint _textView
-            let visualSelection = VisualSelection.CreateInitial _visualKind caretPoint _localSettings
+            let visualSelection = VisualSelection.CreateInitial _visualKind caretPoint _localSettings.TabStop
             visualSelection.VisualSpan.Select _textView Path.Forward
 
             _anchorPoint <- Some caretPoint
@@ -102,7 +102,7 @@ type internal SelectionTracker
 
             // Update the selection only.  Don't move the caret here.  It's either properly positioned
             // or we're simulating the selection based on incremental search
-            let visualSelection = VisualSelection.CreateForPoints _visualKind anchorPoint simulatedCaretPoint _localSettings
+            let visualSelection = VisualSelection.CreateForPoints _visualKind anchorPoint simulatedCaretPoint _localSettings.TabStop
             let visualSelection = visualSelection.AdjustForExtendIntoLineBreak _extendIntoLineBreak
             let visualSelection = visualSelection.AdjustForSelectionKind _globalSettings.SelectionKind
             visualSelection.Select _textView

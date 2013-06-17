@@ -219,7 +219,7 @@ namespace Vim.UnitTest
                 var textBuffer = CreateTextBuffer("cat");
                 foreach (var visualKind in VisualKind.All)
                 {
-                    var visualSpan = VisualSpan.CreateForSpan(textBuffer.GetSpan(0, 1), visualKind);
+                    var visualSpan = VisualSpan.CreateForSpan(textBuffer.GetSpan(0, 1), visualKind, tabStop: 4);
                     var trackingVisualSpan = _bufferTrackingService.CreateVisualSpan(visualSpan);
                     Assert.True(_bufferTrackingService.HasTrackingItems(textBuffer));
                     trackingVisualSpan.Close();
@@ -233,7 +233,7 @@ namespace Vim.UnitTest
                 var textBuffer = CreateTextBuffer("cat");
                 foreach (var visualKind in VisualKind.All)
                 {
-                    var visualSpan = VisualSpan.CreateForSpan(textBuffer.GetSpan(0, 1), visualKind);
+                    var visualSpan = VisualSpan.CreateForSpan(textBuffer.GetSpan(0, 1), visualKind, tabStop: 4);
                     var visualSelection = VisualSelection.Create(visualSpan, Path.Forward, textBuffer.GetPoint(0));
                     var trackingVisualSelection = _bufferTrackingService.CreateVisualSelection(visualSelection);
                     Assert.True(_bufferTrackingService.HasTrackingItems(textBuffer));

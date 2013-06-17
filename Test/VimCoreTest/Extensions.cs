@@ -905,11 +905,11 @@ namespace Vim.UnitTest
             return textBuffer.CurrentSnapshot.GetLineFromLineNumber(lineNumber);
         }
 
-        public static BlockSpan GetBlockSpan(this ITextBuffer textBuffer, int column, int length, int startLine = 0, int lineCount = 1)
+        public static BlockSpan GetBlockSpan(this ITextBuffer textBuffer, int column, int length, int startLine = 0, int lineCount = 1, int tabStop = 4)
         {
             var line = textBuffer.GetLine(startLine);
             var startPoint = line.Start.Add(column);
-            return new BlockSpan(startPoint, length, lineCount);
+            return new BlockSpan(startPoint, tabStop, length, lineCount);
         }
 
         public static NonEmptyCollection<SnapshotSpan> GetBlock(this ITextBuffer textBuffer, int column, int length, int startLine = 0, int lineCount = 1)
@@ -1462,12 +1462,12 @@ namespace Vim.UnitTest
             return textView.Selection.StreamSelectionSpan.SnapshotSpan;
         }
 
-        public static BlockSpan GetSelectionBlockSpan(this ITextView textView)
+        public static BlockSpan GetSelectionBlockSpan(this ITextView textView, int tabStop = 4)
         {
             Assert.Equal(TextSelectionMode.Box, textView.Selection.Mode);
             var spans = textView.Selection.SelectedSpans;
             var first = spans[0];
-            return new BlockSpan(first.Start, first.Length, spans.Count);
+            return new BlockSpan(first.Start, tabStop, first.Length, spans.Count);
         }
 
         public static Register GetRegister(this IRegisterMap map, char c)

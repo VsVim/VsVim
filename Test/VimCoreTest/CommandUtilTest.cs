@@ -169,7 +169,7 @@ namespace Vim.UnitTest
             {
                 Create("cat", "dog", "tree");
                 var range = _textBuffer.GetLineRange(0, 1);
-                var visualSpan = VisualSpan.CreateForSpan(range.Extent, VisualKind.Character);
+                var visualSpan = VisualSpan.CreateForSpan(range.Extent, VisualKind.Character, tabStop: 4);
                 _foldManager.Setup(x => x.CloseAllFolds(visualSpan.LineRange.Extent)).Verifiable();
                 _commandUtil.CloseAllFoldsInSelection(visualSpan);
                 _foldManager.Verify();
@@ -199,7 +199,7 @@ namespace Vim.UnitTest
                     var point = _textBuffer.GetPointInLine(i, 0);
                     _foldManager.Setup(x => x.CloseFold(point, 1)).Verifiable();
                 }
-                _commandUtil.CloseFoldInSelection(VisualSpan.CreateForSpan(range.Extent, VisualKind.Character));
+                _commandUtil.CloseFoldInSelection(VisualSpan.CreateForSpan(range.Extent, VisualKind.Character, tabStop: 4));
                 _foldManager.Verify();
             }
 
@@ -249,7 +249,7 @@ namespace Vim.UnitTest
             {
                 Create("cat", "dog", "tree");
                 var range = _textBuffer.GetLineRange(0, 1);
-                var visualSpan = VisualSpan.CreateForSpan(range.Extent, VisualKind.Character);
+                var visualSpan = VisualSpan.CreateForSpan(range.Extent, VisualKind.Character, tabStop: 4);
                 _foldManager.Setup(x => x.DeleteAllFolds(visualSpan.LineRange.Extent)).Verifiable();
                 _commandUtil.DeleteAllFoldInSelection(visualSpan);
                 _foldManager.Verify();
@@ -287,7 +287,7 @@ namespace Vim.UnitTest
             {
                 Create("cat", "dog", "tree");
                 var range = _textBuffer.GetLineRange(0, 1);
-                var visualSpan = VisualSpan.CreateForSpan(range.Extent, VisualKind.Character);
+                var visualSpan = VisualSpan.CreateForSpan(range.Extent, VisualKind.Character, tabStop: 4);
                 _foldManager.Setup(x => x.CreateFold(range)).Verifiable();
                 _commandUtil.FoldSelection(visualSpan);
                 _foldManager.Verify();
@@ -325,7 +325,7 @@ namespace Vim.UnitTest
             {
                 Create("cat", "dog", "tree");
                 var range = _textBuffer.GetLineRange(0, 1);
-                var visualSpan = VisualSpan.CreateForSpan(range.Extent, VisualKind.Character);
+                var visualSpan = VisualSpan.CreateForSpan(range.Extent, VisualKind.Character, tabStop: 4);
                 _commonOperations.Setup(x => x.FormatLines(range)).Verifiable();
                 _commandUtil.FormatLinesVisual(visualSpan);
                 _commonOperations.Verify();
@@ -512,7 +512,7 @@ namespace Vim.UnitTest
             public void EditBlockSpanWithLinkedChange_Throw()
             {
                 Create("cat", "dog");
-                var blockSpan = BlockSpan.CreateForSpan(_textBuffer.GetSpan(0, 2));
+                var blockSpan = BlockSpan.CreateForSpan(_textBuffer.GetSpan(0, 2), tabStop: 4);
                 var transaction = new Mock<ILinkedUndoTransaction>(MockBehavior.Strict);
                 transaction.Setup(x => x.Dispose()).Verifiable();
                 _undoRedoOperations
@@ -1526,7 +1526,7 @@ namespace Vim.UnitTest
             public void JoinSelection_ExtendDown()
             {
                 Create("cat", "dog", "tree");
-                var visualSpan = VisualSpan.CreateForSpan(_textBuffer.GetLineRange(0, 0).Extent, VisualKind.Character);
+                var visualSpan = VisualSpan.CreateForSpan(_textBuffer.GetLineRange(0, 0).Extent, VisualKind.Character, tabStop: 4);
                 _commandUtil.JoinSelection(JoinKind.RemoveEmptySpaces, visualSpan);
                 Assert.Equal(new[] { "cat dog", "tree" }, _textBuffer.GetLines());
             }
@@ -1538,7 +1538,7 @@ namespace Vim.UnitTest
             public void JoinSelection_Simple()
             {
                 Create("cat", "dog", "tree");
-                var visualSpan = VisualSpan.CreateForSpan(_textBuffer.GetLineRange(0, 1).Extent, VisualKind.Character);
+                var visualSpan = VisualSpan.CreateForSpan(_textBuffer.GetLineRange(0, 1).Extent, VisualKind.Character, tabStop: 4);
                 _commandUtil.JoinSelection(JoinKind.RemoveEmptySpaces, visualSpan);
                 Assert.Equal(new[] { "cat dog", "tree" }, _textBuffer.GetLines());
             }
@@ -1550,7 +1550,7 @@ namespace Vim.UnitTest
             public void JoinSelection_NotPossible()
             {
                 Create("cat", "dog", "tree");
-                var visualSpan = VisualSpan.CreateForSpan(_textBuffer.GetLineRange(2, 2).Extent, VisualKind.Character);
+                var visualSpan = VisualSpan.CreateForSpan(_textBuffer.GetLineRange(2, 2).Extent, VisualKind.Character, tabStop: 4);
                 _commandUtil.JoinSelection(JoinKind.KeepEmptySpaces, visualSpan);
                 Assert.Equal(1, _vimHost.BeepCount);
                 Assert.Equal(new[] { "cat", "dog", "tree" }, _textBuffer.GetLines());

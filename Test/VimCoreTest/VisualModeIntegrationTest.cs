@@ -670,7 +670,7 @@ namespace Vim.UnitTest
                     Assert.Equal(0, _textView.GetCaretPoint().Position);
                     var blockSpan = _textView.GetSelectionBlockSpan();
                     Assert.Equal(2, blockSpan.Height);
-                    Assert.Equal(2, blockSpan.Width);
+                    Assert.Equal(2, blockSpan.WidthSpaces);
                 }
 
                 [Fact]
@@ -681,7 +681,7 @@ namespace Vim.UnitTest
                     Assert.Equal(_textView.GetPointInLine(1, 1), _textView.GetCaretPoint().Position);
                     var blockSpan = _textView.GetSelectionBlockSpan();
                     Assert.Equal(2, blockSpan.Height);
-                    Assert.Equal(2, blockSpan.Width);
+                    Assert.Equal(2, blockSpan.WidthSpaces);
                 }
             }
 
@@ -695,7 +695,7 @@ namespace Vim.UnitTest
                     Assert.Equal(_textView.GetPointInLine(1, 0), _textView.GetCaretPoint().Position);
                     var blockSpan = _textView.GetSelectionBlockSpan();
                     Assert.Equal(2, blockSpan.Height);
-                    Assert.Equal(2, blockSpan.Width);
+                    Assert.Equal(2, blockSpan.WidthSpaces);
                 }
 
                 [Fact]
@@ -706,7 +706,7 @@ namespace Vim.UnitTest
                     Assert.Equal(_textView.GetPointInLine(1, 1), _textView.GetCaretPoint().Position);
                     var blockSpan = _textView.GetSelectionBlockSpan();
                     Assert.Equal(2, blockSpan.Height);
-                    Assert.Equal(2, blockSpan.Width);
+                    Assert.Equal(2, blockSpan.WidthSpaces);
                 }
 
                 [Fact]
@@ -717,7 +717,7 @@ namespace Vim.UnitTest
                     Assert.Equal(_textView.GetPointInLine(0, 1), _textView.GetCaretPoint().Position);
                     var blockSpan = _textView.GetSelectionBlockSpan();
                     Assert.Equal(2, blockSpan.Height);
-                    Assert.Equal(2, blockSpan.Width);
+                    Assert.Equal(2, blockSpan.WidthSpaces);
                 }
 
                 [Fact]
@@ -728,7 +728,7 @@ namespace Vim.UnitTest
                     Assert.Equal(_textView.GetPointInLine(0, 0), _textView.GetCaretPoint().Position);
                     var blockSpan = _textView.GetSelectionBlockSpan();
                     Assert.Equal(2, blockSpan.Height);
-                    Assert.Equal(2, blockSpan.Width);
+                    Assert.Equal(2, blockSpan.WidthSpaces);
                 }
             }
         }
@@ -976,7 +976,7 @@ namespace Vim.UnitTest
                 Create("hello world");
                 _vimBuffer.ProcessNotation("<C-Q>");
                 Assert.Equal(ModeKind.VisualBlock, _vimBuffer.ModeKind);
-                var blockSpan = new BlockSpan(_textBuffer.GetPoint(0), 1, 1);
+                var blockSpan = new BlockSpan(_textBuffer.GetPoint(0), 2, 1, 1);
                 Assert.Equal(blockSpan, _textView.GetSelectionBlockSpan());
             }
 
@@ -992,7 +992,7 @@ namespace Vim.UnitTest
                 _textView.MoveCaretTo(point);
                 _vimBuffer.ProcessNotation("<C-Q>");
                 Assert.Equal(ModeKind.VisualBlock, _vimBuffer.ModeKind);
-                var blockSpan = new BlockSpan(point, 1, 1);
+                var blockSpan = new BlockSpan(point, 2, 1, 1);
                 Assert.Equal(blockSpan, _textView.GetSelectionBlockSpan());
             }
 
@@ -1006,7 +1006,7 @@ namespace Vim.UnitTest
                 _textView.MoveCaretTo(2);
                 _vimBuffer.ProcessNotation("<C-Q>jh");
                 Assert.Equal(ModeKind.VisualBlock, _vimBuffer.ModeKind);
-                var blockSpan = new BlockSpan(_textView.GetPoint(1), 2, 2);
+                var blockSpan = new BlockSpan(_textView.GetPoint(1), 2, 2, 2);
                 Assert.Equal(blockSpan, _textView.GetSelectionBlockSpan());
             }
 
@@ -1198,7 +1198,7 @@ namespace Vim.UnitTest
                 var visualSelection = VisualSelection.CreateForward(visualSpan);
                 _vimBuffer.SwitchMode(ModeKind.VisualCharacter, ModeArgument.NewInitialVisualSelection(visualSelection, FSharpOption<SnapshotPoint>.None));
                 _context.RunAll();
-                Assert.Equal(visualSelection, VisualSelection.CreateForSelection(_textView, VisualKind.Character, SelectionKind.Inclusive));
+                Assert.Equal(visualSelection, VisualSelection.CreateForSelection(_textView, VisualKind.Character, SelectionKind.Inclusive, tabStop: 4));
             }
 
             /// <summary>
@@ -1213,7 +1213,7 @@ namespace Vim.UnitTest
                 var visualSelection = VisualSelection.NewLine(lineRange, Path.Forward, 1);
                 _vimBuffer.SwitchMode(ModeKind.VisualLine, ModeArgument.NewInitialVisualSelection(visualSelection, FSharpOption<SnapshotPoint>.None));
                 _context.RunAll();
-                Assert.Equal(visualSelection, VisualSelection.CreateForSelection(_textView, VisualKind.Line, SelectionKind.Inclusive));
+                Assert.Equal(visualSelection, VisualSelection.CreateForSelection(_textView, VisualKind.Line, SelectionKind.Inclusive, tabStop: 4));
             }
 
             /// <summary>
@@ -1228,7 +1228,7 @@ namespace Vim.UnitTest
                 var visualSelection = VisualSelection.NewBlock(blockSpan, BlockCaretLocation.BottomLeft);
                 _vimBuffer.SwitchMode(ModeKind.VisualBlock, ModeArgument.NewInitialVisualSelection(visualSelection, FSharpOption<SnapshotPoint>.None));
                 _context.RunAll();
-                Assert.Equal(visualSelection, VisualSelection.CreateForSelection(_textView, VisualKind.Block, SelectionKind.Inclusive));
+                Assert.Equal(visualSelection, VisualSelection.CreateForSelection(_textView, VisualKind.Block, SelectionKind.Inclusive, tabStop: 4));
             }
 
             /// <summary>
