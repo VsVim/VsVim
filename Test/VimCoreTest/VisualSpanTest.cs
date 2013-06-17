@@ -13,7 +13,7 @@ namespace Vim.UnitTest
         private ITextView _textView;
         private ITextBuffer _textBuffer;
 
-        private void Create(params string[] lines)
+        protected virtual void Create(params string[] lines)
         {
             _vimBuffer = CreateVimBuffer(lines);
             _textView = _vimBuffer.TextView;
@@ -51,6 +51,72 @@ namespace Vim.UnitTest
 
         public abstract class SelectTest : VisualSpanTest
         {
+            /// <summary>
+            /// When there are unexpanded tabs in the ITextView the block selection needs to treat
+            /// the tabs as the equivalent number of spaces.  
+            /// </summary>
+            public sealed class BlockWithTabTest : SelectTest
+            {
+                protected override void Create(params string[] lines)
+                {
+                    base.Create(lines);
+                    _vimBuffer.LocalSettings.TabStop = 4;
+                    _vimBuffer.LocalSettings.ExpandTab = false;
+                }
+
+                [Fact]
+                public void SimpleCaretPastTab()
+                {
+                    Create("trucker", "\tcat");
+                    var blockSpan = new BlockSpan(_textBuffer.GetPoint(1), 4, 2);
+                    var visualSpan = VisualSpan.NewBlock(blockSpan);
+                    visualSpan.Select(_textView, Path.Forward);
+                    Assert.Equal(
+                        new[]
+                        {
+                            _textBuffer.GetLineSpan(0, 1, 4),
+                            _textBuffer.GetLineSpan(1, 1, 2)
+                        },
+                        _textView.Selection.SelectedSpans);
+                }
+
+                [Fact]
+                public void SimpleCaretPastTab2()
+                {
+                    Create("trucker", "\tcat");
+                    var blockSpan = new BlockSpan(_textBuffer.GetPoint(1), 5, 2);
+                    var visualSpan = VisualSpan.NewBlock(blockSpan);
+                    visualSpan.Select(_textView, Path.Forward);
+                    Assert.Equal(
+                        new[]
+                        {
+                            _textBuffer.GetLineSpan(0, 1, 5),
+                            _textBuffer.GetLineSpan(1, 1, 3)
+                        },
+                        _textView.Selection.SelectedSpans);
+                }
+
+                /// <summary>
+                /// When the caret is in in the tab and the anchor is visually above the tab.  Then the 
+                /// anchor is visually moved to encompass the entire tab
+                /// </summary>
+                [Fact]
+                public void CaretInTabAnchorAboveTab()
+                {
+                    Create("trucker", "\tcat");
+                    var blockSpan = new BlockSpan(_textBuffer.GetPoint(1), 1, 2);
+                    var visualSpan = VisualSpan.NewBlock(blockSpan);
+                    visualSpan.Select(_textView, Path.Forward);
+                    Assert.Equal(
+                        new[]
+                        {
+                            _textBuffer.GetLineSpan(0, 1, 4),
+                            _textBuffer.GetLineSpan(1, 1, 1)
+                        },
+                        _textView.Selection.SelectedSpans);
+                }
+            }
+
             public sealed class CharacterTest : SelectTest
             {
                 /// <summary>

@@ -71,6 +71,64 @@ namespace Vim.UnitTest
             _vimBuffer.SwitchMode(ModeKind.VisualBlock, ModeArgument.None);
         }
 
+        /// <summary>
+        /// Standard block selection tests
+        /// </summary>
+        public abstract class BlockSelectionTest : VisualModeIntegrationTest
+        {
+            public sealed class TabTest : BlockSelectionTest
+            {
+                protected override void Create(params string[] lines)
+                {
+                    base.Create(lines);
+                    _vimBuffer.LocalSettings.TabStop = 4;
+                    _vimBuffer.LocalSettings.ExpandTab = false;
+                }
+
+                [Fact]
+                public void CaretInTab()
+                {
+                    Create("cat", "\tdog");
+                    _vimBuffer.ProcessNotation("<C-Q>j");
+                    Assert.Equal(
+                        new[]
+                        {
+                            _textBuffer.GetLineSpan(0, 3),
+                            _textBuffer.GetLineSpan(1, 1)
+                        },
+                        _textView.Selection.SelectedSpans);
+                }
+
+                [Fact]
+                public void CaretInTabAnchorNonZero()
+                {
+                    Create("cat", "\tdog");
+                    _vimBuffer.ProcessNotation("ll<C-Q>j");
+                    Assert.Equal(
+                        new[]
+                        {
+                            _textBuffer.GetLineSpan(0, 3),
+                            _textBuffer.GetLineSpan(1, 1)
+                        },
+                        _textView.Selection.SelectedSpans);
+                }
+
+                [Fact]
+                public void CaretPastTab()
+                {
+                    Create("kitty", "\tdog");
+                    _vimBuffer.ProcessNotation("ll<C-Q>jl");
+                    Assert.Equal(
+                        new[]
+                        {
+                            _textBuffer.GetLineSpan(0, 2, 3),
+                            _textBuffer.GetLineSpan(1, 2, 1)
+                        },
+                        _textView.Selection.SelectedSpans);
+                }
+            }
+        }
+
         public sealed class ChangeLineSelectionTest : VisualModeIntegrationTest
         {
             /// <summary>
