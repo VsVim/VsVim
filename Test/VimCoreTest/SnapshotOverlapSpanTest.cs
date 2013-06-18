@@ -60,6 +60,18 @@ namespace Vim.UnitTest
                         new SnapshotOverlapPoint(_textBuffer.GetPoint(4), before: 3, width: 4));
                     Assert.Equal("t   ", span.GetText());
                 }
+
+                /// <summary>
+                /// Make sure the text calculation is correct when the Start and End are within the 
+                /// same point 
+                /// </summary>
+                [Fact]
+                public void WithinSingle()
+                {
+                    Create("\tcat");
+                    var span = ColumnWiseUtil.GetSpanFromSpaceAndCount(_textBuffer.GetLine(0), start: 1, count: 3, tabStop: 12);
+                    Assert.Equal("   ", span.GetText());
+                }
             }
 
             public sealed class WideCharacterTest : GetTextTest
@@ -141,6 +153,60 @@ namespace Vim.UnitTest
                     new SnapshotOverlapPoint(_textBuffer.GetPoint(0), before: 0, width: 8),
                     new SnapshotOverlapPoint(_textBuffer.GetPoint(0), before: 2, width: 8));
                 Assert.Equal(0, span.InnerSpan.Length);
+            }
+        }
+
+        public abstract class HasOverlapTest : SnapshotOverlapSpanTest
+        {
+            public sealed class WideCharacterTest : HasOverlapTest
+            {
+                [Fact]
+                public void Complete()
+                {
+                    Create("あいうえお");
+                    var span = ColumnWiseUtil.GetSpanFromSpaceAndCount(_textBuffer.GetLine(0), start: 0, count: 2, tabStop: 4);
+                    Assert.False(span.HasOverlap);
+                    Assert.Equal(span.OverarchingSpan, span.InnerSpan);
+                }
+
+                /// <summary>
+                /// This will overlap partially through the い character
+                /// </summary>
+                [Fact]
+                public void PartialInEnd()
+                {
+                    Create("あいうえお");
+                    var span = ColumnWiseUtil.GetSpanFromSpaceAndCount(_textBuffer.GetLine(0), start: 0, count: 3, tabStop: 4);
+                    Assert.True(span.HasOverlap);
+                }
+
+                /// <summary>
+                /// This will overlap partially through the あ character
+                /// </summary>
+                [Fact]
+                public void PartialInStart()
+                {
+                    Create("あいうえお");
+                    var span = ColumnWiseUtil.GetSpanFromSpaceAndCount(_textBuffer.GetLine(0), start: 1, count: 3, tabStop: 4);
+                    Assert.True(span.HasOverlap);
+                }
+            }
+
+            public sealed class TabTest : HasOverlapTest
+            {
+                /// <summary>
+                /// When the span is completely within a single character then there is definitely an 
+                /// overlap 
+                /// </summary>
+                [Fact]
+                public void WithinSingleCharacter()
+                {
+                    Create("\tcat");
+                    var span = ColumnWiseUtil.GetSpanFromSpaceAndCount(_textBuffer.GetLine(0), start: 1, count: 3, tabStop: 12);
+                    Assert.True(span.HasOverlap);
+                    Assert.Equal("   ", span.GetText());
+                    Assert.Equal(1, span.Start.SpacesBefore);
+                }
             }
         }
     }

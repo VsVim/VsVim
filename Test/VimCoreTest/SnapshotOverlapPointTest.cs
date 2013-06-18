@@ -92,7 +92,8 @@ namespace Vim.UnitTest
             {
                 private void AssertPoint(SnapshotOverlapPoint point, char c)
                 {
-                    Assert.False(point.HasOverlap);
+                    Assert.Equal(0, point.SpacesAfter);
+                    Assert.Equal(0, point.SpacesBefore);
                     Assert.Equal(1, point.Width);
                     Assert.Equal(c, point.Point.GetChar());
                 }
@@ -127,7 +128,8 @@ namespace Vim.UnitTest
                     Create("\tあcat");
                     var point = new SnapshotOverlapPoint(_textBuffer.GetEndPoint());
                     Assert.Equal(0, point.Width);
-                    Assert.False(point.HasOverlap);
+                    Assert.Equal(0, point.SpacesAfter);
+                    Assert.Equal(0, point.SpacesBefore);
                 }
             }
         }

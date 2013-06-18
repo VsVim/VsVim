@@ -50,9 +50,6 @@ type SnapshotOverlapPoint =
     /// The number of spaces in the overlap point after this space 
     member x.SpacesAfter = max 0 ((x._width - 1) - x._before)
 
-    /// Does this structure have any overlap
-    member x.HasOverlap = x.SpacesAfter <> 0 || x.SpacesBefore <> 0
-
     /// The SnapshotPoint in which this overlap occurs
     member x.Point = x._point
 
@@ -67,7 +64,12 @@ type SnapshotOverlapPoint =
     override x.ToString() = 
         sprintf "Point: %s Width: %d Before: %d After: %d" (x.Point.ToString()) x.Width x.SpacesBefore x.SpacesAfter
 
-and [<StructuralEquality>] [<NoComparison>] [<Struct>] [<DebuggerDisplay("{ToString()}")>] SnapshotOverlapSpan = 
+and 
+    [<StructuralEquality>] 
+    [<NoComparison>] 
+    [<Struct>] 
+    [<DebuggerDisplay("{ToString()}")>] 
+    SnapshotOverlapSpan = 
 
     val private _start : SnapshotOverlapPoint
     val private _end : SnapshotOverlapPoint 
@@ -87,7 +89,13 @@ and [<StructuralEquality>] [<NoComparison>] [<Struct>] [<DebuggerDisplay("{ToStr
     member x.End = x._end
 
     /// Does this structure have any overlap
-    member x.HasOverlap = x.Start.HasOverlap || x.End.HasOverlap
+    member x.HasOverlap = x.HasOverlapStart || x.HasOverlapEnd
+
+    /// Does this structure have any overlap at the start
+    member x.HasOverlapStart = x.Start.SpacesBefore > 0 
+
+    /// Does this structure have any overlap at the end 
+    member x.HasOverlapEnd = x.End.SpacesBefore > 0 
 
     member x.OverarchingStart = x._start.Point
 
@@ -126,27 +134,34 @@ and [<StructuralEquality>] [<NoComparison>] [<Struct>] [<DebuggerDisplay("{ToStr
 
         let builder = StringBuilder()
 
-        // First add in the spaces for the start if it is an overlap point 
-        let mutable position = x.Start.Point.Position
-        if x.Start.SpacesBefore > 0 then
-            for i = 0 to x.Start.SpacesAfter do
+        if x.Start.Point.Position = x.End.Point.Position then
+            // Special case the scenario where the span is within a single SnapshotPoint
+            // value.  Just create the correct number of spaces here 
+            let count = x.End.SpacesBefore - x.Start.SpacesBefore 
+            for i = 1 to count do 
                 builder.AppendChar ' '
-            position <- position + 1
+        else
+            // First add in the spaces for the start if it is an overlap point 
+            let mutable position = x.Start.Point.Position
+            if x.Start.SpacesBefore > 0 then
+                for i = 0 to x.Start.SpacesAfter do
+                    builder.AppendChar ' '
+                position <- position + 1
 
-        // Next add in the middle SnapshotPoint values which don't have any overlap
-        // to consider.  Don't use InnerSpan.GetText() here as it will unnecessarily
-        // allocate an extra string 
-        while position < x.End.Point.Position do
-            let point = SnapshotUtil.GetPoint x.Snapshot position
-            let c = point.GetChar()
-            builder.AppendChar c
-            position <- position + 1
+            // Next add in the middle SnapshotPoint values which don't have any overlap
+            // to consider.  Don't use InnerSpan.GetText() here as it will unnecessarily
+            // allocate an extra string 
+            while position < x.End.Point.Position do
+                let point = SnapshotUtil.GetPoint x.Snapshot position
+                let c = point.GetChar()
+                builder.AppendChar c
+                position <- position + 1
 
-        // Lastly add in the spaces on the end point.  Remember End is exclusive so 
-        // only add spaces which come before
-        if x.End.HasOverlap then
-            for i = 0 to (x.End.SpacesBefore - 1) do
-                builder.AppendChar ' '
+            // Lastly add in the spaces on the end point.  Remember End is exclusive so 
+            // only add spaces which come before
+            if x.End.SpacesBefore > 0 then
+                for i = 0 to (x.End.SpacesBefore - 1) do
+                    builder.AppendChar ' '
 
         builder.ToString()
 

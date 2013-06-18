@@ -1247,7 +1247,7 @@ type BlockSpan =
     /// Get the EndPoint (exclusive) of the BlockSpan
     member x.End = 
         let point = x.OverlapEnd
-        if point.HasOverlap then
+        if point.SpacesBefore > 0 then
             SnapshotPointUtil.AddOneOrCurrent point.Point
         else
             point.Point
@@ -1480,7 +1480,7 @@ type VisualSpan =
             let endLine = blockSpan.End.GetContainingLine()
             let endPoint = blockSpan.OverlapEnd
             let startPoint =
-                if endPoint.HasOverlap then
+                if endPoint.SpacesBefore > 0 then
                     let startColumn = SnapshotPointUtil.GetColumn blockSpan.Start
                     let endColumn = SnapshotPointUtil.GetColumn endPoint.Point
                     let column = min startColumn endColumn

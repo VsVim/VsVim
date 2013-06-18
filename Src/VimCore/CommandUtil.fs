@@ -698,7 +698,7 @@ type internal CommandUtil
 
                 let pre = overlapSpan.Start.SpacesBefore
                 let post = 
-                    if overlapSpan.End.HasOverlap then
+                    if overlapSpan.HasOverlapEnd then
                         overlapSpan.End.SpacesAfter + 1
                     else
                         0
