@@ -678,8 +678,7 @@ type internal CommandUtil
         x.EditWithUndoTransaciton "DeleteSelection" (fun () ->
             use edit = _textBuffer.CreateEdit()
             visualSpan.OverlapSpans |> Seq.iter (fun overlapSpan ->
-                // TODO: This should use the overlaps properly 
-                let span = overlapSpan.InnerSpan
+                let span = overlapSpan.OverarchingSpan
 
                 // If the last included point in the SnapshotSpan is inside the line break
                 // portion of a line then extend the SnapshotSpan to encompass the full
@@ -697,14 +696,20 @@ type internal CommandUtil
                         else
                             span
 
-                let pre = overlapSpan.Start.SpacesAfter
-                let post = overlapSpan.End.SpacesBefore
+                let pre = overlapSpan.Start.SpacesBefore
+                let post = 
+                    if overlapSpan.End.HasOverlap then
+                        overlapSpan.End.SpacesAfter + 1
+                    else
+                        0
+
                 match pre + post with
                 | 0 -> edit.Delete(span.Span) |> ignore
                 | _ -> edit.Replace(span.Span, String.replicate (pre + post) " ") |> ignore)
             let snapshot = edit.Apply()
             TextViewUtil.MoveCaretToPosition _textView startPoint.Position)
 
+        // BTODO: The wrong text is being put into the register here.  It should include the overlap data
         let operationKind = visualSpan.OperationKind
         let value = x.CreateRegisterValue (StringData.OfEditSpan visualSpan.EditSpan) operationKind
         _registerMap.SetRegisterValue register RegisterOperation.Delete value

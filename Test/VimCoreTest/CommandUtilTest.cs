@@ -1394,7 +1394,7 @@ namespace Vim.UnitTest
                        "あいうえお", 
                        "ijklmnop");
                 _textView.MoveCaretToLine(1);
-                var span = _textView.GetVisualSpanBlock(column: 3, length: 2, startLine: 0, lineCount: 3);
+                var span = _textView.GetVisualSpanBlock(column: 3, length: 2, startLine: 0, lineCount: 3, tabStop: _localSettings.TabStop);
                 _commandUtil.DeleteSelection(UnnamedRegister, span);
                 Assert.Equal("abcfgh", _textView.GetLine(0).GetText());
                 Assert.Equal("あ  えお", _textView.GetLine(1).GetText());

@@ -917,9 +917,9 @@ namespace Vim.UnitTest
             return GetBlockSpan(textBuffer, column, length, startLine, lineCount).BlockSpans;
         }
 
-        public static VisualSpan GetVisualSpanBlock(this ITextBuffer textBuffer, int column, int length, int startLine = 0, int lineCount = 1)
+        public static VisualSpan GetVisualSpanBlock(this ITextBuffer textBuffer, int column, int length, int startLine = 0, int lineCount = 1, int tabStop = 4)
         {
-            var blockSpanData = GetBlockSpan(textBuffer, column, length, startLine, lineCount);
+            var blockSpanData = GetBlockSpan(textBuffer, column, length, startLine, lineCount, tabStop);
             return VisualSpan.NewBlock(blockSpanData);
         }
 
@@ -997,9 +997,9 @@ namespace Vim.UnitTest
             visualSelection.SelectAndMoveCaret(textView);
         }
 
-        public static VisualSpan GetVisualSpanBlock(this ITextView textView, int column, int length, int startLine = 0, int lineCount = 1)
+        public static VisualSpan GetVisualSpanBlock(this ITextView textView, int column, int length, int startLine = 0, int lineCount = 1, int tabStop = 4)
         {
-            return GetVisualSpanBlock(textView.TextBuffer, column, length, startLine, lineCount);
+            return GetVisualSpanBlock(textView.TextBuffer, column, length, startLine, lineCount, tabStop);
         }
 
         public static BlockSpan GetBlockSpan(this ITextView textView, int column, int length, int startLine = 0, int lineCount = 1)
