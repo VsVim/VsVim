@@ -1138,9 +1138,9 @@ type internal CommandUtil
                     // line.  It doesn't switch caret + anchor, just the side the caret is on
                     let caretSpaces, anchorSpaces = 
                         if (SnapshotPointUtil.GetColumn x.CaretPoint) >= (SnapshotPointUtil.GetColumn anchorPoint) then 
-                            blockSpan.ColumnSpaces, (blockSpan.WidthSpaces + blockSpan.ColumnSpaces) - 1
+                            blockSpan.ColumnSpaces, (blockSpan.Spaces + blockSpan.ColumnSpaces) - 1
                         else
-                            (blockSpan.WidthSpaces + blockSpan.ColumnSpaces) - 1, blockSpan.ColumnSpaces
+                            (blockSpan.Spaces + blockSpan.ColumnSpaces) - 1, blockSpan.ColumnSpaces
 
                     let tabStop = _localSettings.TabStop
                     let newCaretPoint = ColumnWiseUtil.GetPointForSpaces x.CaretLine caretSpaces tabStop
@@ -1474,7 +1474,7 @@ type internal CommandUtil
             let isInitialSelection = 
                 match visualSpan with
                 | VisualSpan.Character characterSpan -> characterSpan.Length <= 1
-                | VisualSpan.Block blockSpan -> blockSpan.WidthSpaces <= 1
+                | VisualSpan.Block blockSpan -> blockSpan.Spaces <= 1
                 | VisualSpan.Line lineRange -> lineRange.Count = 1
 
             // TODO: Backwards motions

@@ -7,7 +7,117 @@ open Microsoft.VisualStudio.Text.Editor.OptionsExtensionMethods
 open Microsoft.VisualStudio.Text.Operations
 open Microsoft.VisualStudio.Text.Outlining
 open Microsoft.VisualStudio.Utilities
+open System.Diagnostics
+open System.Text
 open StringBuilderExtensions
+
+/// The Text Editor interfaces only have granularity down to the character in the 
+/// ITextBuffer.  However Vim needs to go a bit deeper in certain scenarios like 
+/// BlockSpan's.  It needs to understand spaces within a single SnapshotPoint when
+/// there are multiple logical characters (like tabs).  This structure represents
+/// a value within a SnapshotPoint
+[<StructuralEquality>]
+[<NoComparison>]
+[<Struct>]
+[<DebuggerDisplay("{ToString()}")>]
+type SnapshotOverlapPoint =
+
+    val private _point : SnapshotPoint
+    val private _before : int
+    val private _width : int
+
+    new (point : SnapshotPoint, before : int, width : int) = 
+        if width <= 0 then
+            invalidArg "width" "Width must be greater than 0"
+        { _point = point; _before = before; _width = width }
+
+    /// The number of spaces in the overlap point before this space
+    member x.SpacesBefore = x._before
+
+    /// The number of spaces in the overlap point after this space 
+    member x.SpacesAfter = (x._width - 1) - x._before
+
+    /// The SnapshotPoint in which this overlap occurs
+    member x.Point = x._point
+
+    /// Number of spaces this SnapshotOverlapPoint occupies
+    member x.Width = x._width
+
+    member x.Snapshot = x._point.Snapshot
+
+    static member op_Equality(this,other) = System.Collections.Generic.EqualityComparer<SnapshotOverlapPoint>.Default.Equals(this,other)
+    static member op_Inequality(this,other) = not (System.Collections.Generic.EqualityComparer<SnapshotOverlapPoint>.Default.Equals(this,other))
+
+[<StructuralEquality>]
+[<NoComparison>]
+[<Struct>]
+[<DebuggerDisplay("{ToString()}")>]
+type SnapshotOverlapSpan = 
+
+    val private _start : SnapshotOverlapPoint
+    val private _end : SnapshotOverlapPoint 
+
+    new (startPoint : SnapshotOverlapPoint, endPoint : SnapshotOverlapPoint) = 
+        if startPoint.Point.Position + startPoint.SpacesBefore > endPoint.Point.Position + endPoint.SpacesBefore then
+            invalidArg "endPoint" "End cannot be before the start"
+        { _start = startPoint; _end = endPoint }
+
+    member x.Start = x._start
+
+    member x.End = x._end
+
+    member x.OverarchingStart = x._start.Point
+
+    member x.OverarchingEnd = 
+        if x.End.SpacesBefore = 0 then
+           x.End.Point
+        else
+            SnapshotPointUtil.AddOneOrCurrent x.End.Point
+
+    /// A SnapshotSpan which fully encompasses this overlap span 
+    member x.OverarchingSpan = SnapshotSpan(x.OverarchingStart, x.OverarchingEnd)
+
+    member x.Snapshot = x._start.Snapshot
+
+    /// Get the text contained in this SnapshotOverlapSpan.
+    ///
+    /// TODO: Handle Unicode splits.  Right now we just handle tabs 
+    member x.GetText() = 
+        let startOverlapPoint = x.Start
+        let endOverlapPoint = x.End
+        let getBeforeText (builder : StringBuilder) = 
+            match SnapshotPointUtil.TryGetChar startOverlapPoint.Point with
+            | Some '\t' ->
+                if startOverlapPoint.SpacesBefore = 0 then  
+                    builder.AppendChar '\t'
+                else
+                    for i = 0 to startOverlapPoint.SpacesAfter do
+                        builder.AppendChar ' '
+            | Some c -> builder.AppendChar c
+            | None -> ()
+
+        let getAfterText (builder : StringBuilder) = 
+            if endOverlapPoint.SpacesBefore > 0 then
+                match SnapshotPointUtil.TryGetChar endOverlapPoint.Point with
+                | Some '\t' -> 
+                        for i = 0 to (endOverlapPoint.SpacesBefore - 1) do
+                            builder.AppendChar ' '
+                | Some c -> builder.AppendChar c
+                | None -> ()
+
+        let snapshot = x.Snapshot
+        let getMiddleText (builder : StringBuilder) = 
+            let mutable position = startOverlapPoint.Point.Position + 1
+            while position < endOverlapPoint.Point.Position do
+                let point = SnapshotUtil.GetPoint snapshot position 
+                builder.AppendChar (point.GetChar())
+                position <- position + 1
+                    
+        let builder = StringBuilder()
+        getBeforeText builder
+        getMiddleText builder
+        getAfterText builder
+        builder.ToString()
 
 module internal ColumnWiseUtil =
 
@@ -138,3 +248,4 @@ module internal ColumnWiseUtil =
         let line = SnapshotPointUtil.GetContainingLine point
         let column = point.Position - line.Start.Position 
         GetSpacesToColumn line column tabStop
+

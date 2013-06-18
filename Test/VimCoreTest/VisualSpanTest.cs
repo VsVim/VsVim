@@ -59,23 +59,43 @@ namespace Vim.UnitTest
             {
                 protected override void Create(params string[] lines)
                 {
-                    base.Create(lines);
-                    _vimBuffer.LocalSettings.TabStop = 4;
-                    _vimBuffer.LocalSettings.ExpandTab = false;
+                    Create(2, lines);
                 }
 
+                private void Create(int tabStop, params string[] lines)
+                {
+                    base.Create();
+                    _vimBuffer.LocalSettings.TabStop = tabStop;
+                    _vimBuffer.LocalSettings.ExpandTab = false;
+                    _textView.SetText(lines);
+
+                    // Need to force a layout here to get it to respect the tab settings
+                    var host = TextEditorFactoryService.CreateTextViewHost((IWpfTextView)_textView, setFocus: false);
+                    host.HostControl.UpdateLayout();
+                }
+
+                /// <summary>
+                /// In this scenario the caret has moved past the tab and onto the start of the next 
+                /// letter. The selection will encompass the tab and the letter 
+                ///     trucker
+                ///       cat
+                /// </summary>
                 [Fact]
                 public void SimpleCaretPastTab()
                 {
                     Create("trucker", "\tcat");
-                    var blockSpan = new BlockSpan(_textBuffer.GetPoint(1), 2, 4, 2);
+                    var blockSpan = new BlockSpan(_textBuffer.GetPoint(1), tabStop: 2, spaces: 2, height: 2);
                     var visualSpan = VisualSpan.NewBlock(blockSpan);
                     visualSpan.Select(_textView, Path.Forward);
+
+                    // It may seem odd for the second span to start on column 1 since the tab is partially
+                    // included in the line.  However Visual Studio has this behavior.  It won't select a 
+                    // character at the start / end of a selection unless it's completely included 
                     Assert.Equal(
                         new[]
                         {
-                            _textBuffer.GetLineSpan(0, 1, 4),
-                            _textBuffer.GetLineSpan(1, 1, 2)
+                            _textBuffer.GetLineSpan(0, 1, 2),
+                            _textBuffer.GetLineSpan(1, 1, 1)
                         },
                         _textView.Selection.SelectedSpans);
                 }
@@ -84,14 +104,14 @@ namespace Vim.UnitTest
                 public void SimpleCaretPastTab2()
                 {
                     Create("trucker", "\tcat");
-                    var blockSpan = new BlockSpan(_textBuffer.GetPoint(1), 2, 5, 2);
+                    var blockSpan = new BlockSpan(_textBuffer.GetPoint(1), tabStop: 2, spaces: 3, height: 2);
                     var visualSpan = VisualSpan.NewBlock(blockSpan);
                     visualSpan.Select(_textView, Path.Forward);
                     Assert.Equal(
                         new[]
                         {
-                            _textBuffer.GetLineSpan(0, 1, 5),
-                            _textBuffer.GetLineSpan(1, 1, 3)
+                            _textBuffer.GetLineSpan(0, 1, 3),
+                            _textBuffer.GetLineSpan(1, 1, 2)
                         },
                         _textView.Selection.SelectedSpans);
                 }
@@ -103,15 +123,15 @@ namespace Vim.UnitTest
                 [Fact]
                 public void CaretInTabAnchorAboveTab()
                 {
-                    Create("trucker", "\tcat");
-                    var blockSpan = new BlockSpan(_textBuffer.GetPoint(1), 2, 1, 2);
+                    Create(4, "trucker", "\tcat");
+                    var blockSpan = new BlockSpan(_textBuffer.GetPoint(1), tabStop: 4, spaces: 1, height: 2);
                     var visualSpan = VisualSpan.NewBlock(blockSpan);
                     visualSpan.Select(_textView, Path.Forward);
                     Assert.Equal(
                         new[]
                         {
-                            _textBuffer.GetLineSpan(0, 1, 4),
-                            _textBuffer.GetLineSpan(1, 1, 1)
+                            _textBuffer.GetLineSpan(0, 0, 4),
+                            _textBuffer.GetLineSpan(1, 0, 1)
                         },
                         _textView.Selection.SelectedSpans);
                 }

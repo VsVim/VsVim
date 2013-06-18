@@ -20,7 +20,7 @@ namespace Vim.UnitTest
             public void StartOfLine()
             {
                 Create("cat dog");
-                var blockSpan = new BlockSpan(_textBuffer.GetPoint(0), tabStop: 4, width: 1, height: 1);
+                var blockSpan = new BlockSpan(_textBuffer.GetPoint(0), tabStop: 4, spaces: 1, height: 1);
                 Assert.Equal(0, blockSpan.ColumnSpaces);
             }
 
@@ -28,7 +28,7 @@ namespace Vim.UnitTest
             public void InsideLine()
             {
                 Create("cat dog");
-                var blockSpan = new BlockSpan(_textBuffer.GetPoint(1), tabStop: 4, width: 1, height: 1);
+                var blockSpan = new BlockSpan(_textBuffer.GetPoint(1), tabStop: 4, spaces: 1, height: 1);
                 Assert.Equal(1, blockSpan.ColumnSpaces);
             }
 
@@ -36,7 +36,7 @@ namespace Vim.UnitTest
             public void TabStart()
             {
                 Create("\tcat dog");
-                var blockSpan = new BlockSpan(_textBuffer.GetPoint(1), tabStop: 4, width: 1, height: 1);
+                var blockSpan = new BlockSpan(_textBuffer.GetPoint(1), tabStop: 4, spaces: 1, height: 1);
                 Assert.Equal(4, blockSpan.ColumnSpaces);
             }
         }
@@ -63,6 +63,19 @@ namespace Vim.UnitTest
                 Create("cat", "dog", "fish");
                 var blockSpan = new BlockSpan(_textBuffer.GetPoint(0), 4, 2, 2);
                 Assert.Equal(_textBuffer.GetLine(1).Start.Add(2), blockSpan.End);
+            }
+
+            /// <summary>
+            /// When End is partially through a tab then it should actually be the
+            /// point after the SnapshotPoint it is partially through.  Selection
+            /// depends on this
+            /// </summary>
+            [Fact]
+            public void EndPartiallyThroughTab()
+            {
+                Create("cat", "\tdog");
+                var blockSpan = new BlockSpan(_textBuffer.GetPoint(0), tabStop: 4, spaces: 1, height: 2);
+                Assert.Equal(_textBuffer.GetPointInLine(1, 1), blockSpan.End);
             }
         }
 

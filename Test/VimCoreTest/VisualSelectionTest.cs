@@ -426,7 +426,7 @@ namespace Vim.UnitTest
                 var otherVisualSelection = visualSelection.AdjustForSelectionKind(SelectionKind.Exclusive);
                 var otherBlockSpan = otherVisualSelection.AsBlock().Item1;
                 Assert.Equal(blockSpan.Start, otherBlockSpan.Start);
-                Assert.Equal(1, otherBlockSpan.WidthSpaces);
+                Assert.Equal(1, otherBlockSpan.Spaces);
                 Assert.Equal(2, otherBlockSpan.Height);
             }
 

@@ -251,7 +251,7 @@ type internal TrackingVisualSpan =
 
                 bufferTrackingService.CreateLineColumn textBuffer lineNumber column LineColumnTrackingMode.Default
 
-            TrackingVisualSpan.Block (trackingLineColumn, blockSpan.TabStop, blockSpan.WidthSpaces, blockSpan.Height)
+            TrackingVisualSpan.Block (trackingLineColumn, blockSpan.TabStop, blockSpan.Spaces, blockSpan.Height)
 
     interface ITrackingVisualSpan with
         member x.TextBuffer = x.TextBuffer

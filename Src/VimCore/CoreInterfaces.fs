@@ -1214,11 +1214,11 @@ type BlockSpan =
 
     val private _startPoint : SnapshotPoint
     val private _tabStop : int
-    val private _widthSpaces : int
+    val private _spaces : int
     val private _height : int
 
-    new (startPoint, tabStop, width, height) = 
-        { _startPoint = startPoint; _tabStop = tabStop; _widthSpaces = width; _height = height }
+    new (startPoint, tabStop, spaces, height) = 
+        { _startPoint = startPoint; _tabStop = tabStop; _spaces = spaces; _height = height }
 
     /// The SnapshotPoint which begins this BlockSpan
     member x.Start = x._startPoint
@@ -1232,9 +1232,7 @@ type BlockSpan =
 
     /// How many spaces does this BlockSpan occupy?  Be careful to treat this value as spaces, not columns.  The
     /// different being that tabs count as 'tabStop' spaces but only 1 column.  
-    ///
-    /// TODO: rename to width
-    member x.WidthSpaces = x._widthSpaces
+    member x.Spaces = x._spaces
 
     /// How many lines does this BlockSpan encompass
     member x.Height = x._height
@@ -1244,7 +1242,7 @@ type BlockSpan =
         let line = 
             let lineNumber = SnapshotPointUtil.GetLineNumber x.Start
             SnapshotUtil.GetLineOrLast x.Snasphot (lineNumber + (x._height - 1))
-        let spaces = x.ColumnSpaces + x.WidthSpaces
+        let spaces = x.ColumnSpaces + x.Spaces
         ColumnWiseUtil.GetPointForSpaces line spaces x._tabStop
 
     /// What is the tab stop this BlockSpan is created off of
@@ -1265,7 +1263,7 @@ type BlockSpan =
             | None -> ()
             | Some line -> 
                 let startPoint = ColumnWiseUtil.GetPointForSpaces line offset x._tabStop
-                let endPoint = ColumnWiseUtil.GetPointForSpaces line (offset + x.WidthSpaces) x._tabStop
+                let endPoint = ColumnWiseUtil.GetPointForSpaces line (offset + x.Spaces) x._tabStop
                 let span = SnapshotSpan(startPoint, endPoint)
                 list.Add(span)
 
@@ -1287,7 +1285,7 @@ type BlockSpan =
             | Some line -> 
                 let pre, startPoint, _  = ColumnWiseUtil.GetPointForSpacesWithOverlap line offset x._tabStop   
                 let _, endPoint, post = 
-                    match ColumnWiseUtil.GetPointForSpacesWithOverlap line (offset + x.WidthSpaces) x._tabStop with
+                    match ColumnWiseUtil.GetPointForSpacesWithOverlap line (offset + x.Spaces) x._tabStop with
                     | 0, endPoint, post -> (0, endPoint, post)
                     | _, endPoint, post -> (0, endPoint.Add(1), post)
                     
@@ -1298,7 +1296,7 @@ type BlockSpan =
         |> Option.get
 
     override x.ToString() =
-        sprintf "Point: %s Width: %d Height: %d" (x.Start.ToString()) x._widthSpaces x._height
+        sprintf "Point: %s Spaces: %d Height: %d" (x.Start.ToString()) x._spaces x._height
 
     static member op_Equality(this,other) = System.Collections.Generic.EqualityComparer<BlockSpan>.Default.Equals(this,other)
     static member op_Inequality(this,other) = not (System.Collections.Generic.EqualityComparer<BlockSpan>.Default.Equals(this,other))
@@ -1462,13 +1460,36 @@ type VisualSpan =
         | Line lineRange ->
             selectSpan lineRange.Start lineRange.EndIncludingLineBreak
         | Block blockSpan ->
+            // In general the Start and End accurately represent the selection points.  The cases where
+            // it doesn't is when the start of any of the line spans starts on a non-zero space within
+            // a SnapshotPoint.  The clearest example of this is when the caret is above, but not at either
+            // end of a tab character (assume tabstop = 4)
+            //
+            //  truck
+            //  \t  cat
+            //
+            // In this example if the anchor point is 'r' and the caret is under 'u' then the block span of
+            // the second line is the 2nd and 3rd space.  The tab itself is a single SnapshotPoint and the start
+            // is on the 2nd space of that single point.  
+            //
+            // In cases like that the selection will begin at the furthest left SnsapshotPoint which the 
+            // selection is partial within
+            let startSpaces = 
+                let overlap = 
+                    blockSpan.BlockSpansWithOverlap
+                    |> Seq.map (fun (left, _, _) -> left)
+                    |> Seq.max
+                max 0 (blockSpan.ColumnSpaces - overlap)
+            let startPoint = 
+                let line = blockSpan.Start.GetContainingLine()
+                ColumnWiseUtil.GetPointForSpaces line startSpaces blockSpan.TabStop
 
             // When calculating the actual columns to put the selection on here we need to consider
             // all tabs as the equivalent number of spaces 
         
             textView.Selection.Mode <- TextSelectionMode.Box
             textView.Selection.Select(
-                VirtualSnapshotPoint(blockSpan.Start),
+                VirtualSnapshotPoint(startPoint),
                 VirtualSnapshotPoint(blockSpan.End))
 
     override x.ToString() =
@@ -1614,7 +1635,7 @@ type VisualSelection =
             | Block (blockSpan, blockCaretLocation) -> 
                 // The width of a block span decreases by 1 in exclusive.  The minimum though
                 // is still 1
-                let width = max (blockSpan.WidthSpaces - 1) 1
+                let width = max (blockSpan.Spaces - 1) 1
                 let blockSpan = BlockSpan(blockSpan.Start, blockSpan.TabStop, width, blockSpan.Height)
                 VisualSelection.Block (blockSpan, blockCaretLocation)
 
@@ -1777,7 +1798,7 @@ type VisualSelection =
                     CharacterSpan(characterSpan.Start, endPoint) |> VisualSpan.Character
                 | VisualSpan.Line _ -> visualSpan
                 | VisualSpan.Block blockSpan ->
-                    let width = blockSpan.WidthSpaces + 1
+                    let width = blockSpan.Spaces + 1
                     let blockSpan = BlockSpan(blockSpan.Start, blockSpan.TabStop, width, blockSpan.Height)
                     VisualSpan.Block blockSpan
 
@@ -2651,7 +2672,7 @@ type StoredVisualSpan =
         | VisualSpan.Line range ->
             StoredVisualSpan.Line range.Count
         | VisualSpan.Block blockSpan -> 
-            StoredVisualSpan.Block (blockSpan.WidthSpaces, blockSpan.Height)
+            StoredVisualSpan.Block (blockSpan.Spaces, blockSpan.Height)
 
 /// Contains information about an executed Command.  This instance *will* be stored
 /// for long periods of time and used to repeat a Command instance across multiple
