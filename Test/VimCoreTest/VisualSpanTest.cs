@@ -249,10 +249,10 @@ namespace Vim.UnitTest
                     Create("big dog", "big cat", "big tree", "big fish");
                     var blockSpan = _textBuffer.GetBlockSpan(1, _vimBuffer.LocalSettings.TabStop, 0, 2);
 
-                    foreach (var spanWithOverlap in blockSpan.BlockSpansWithOverlap)
+                    foreach (var spanWithOverlap in blockSpan.BlockOverlapSpans)
                     {
-                        Assert.Equal(0, spanWithOverlap.Item1);
-                        Assert.Equal(0, spanWithOverlap.Item3);
+                        Assert.Equal(0, spanWithOverlap.Start.SpacesAfter);
+                        Assert.Equal(0, spanWithOverlap.End.SpacesBefore);
                     }
                 }
 
@@ -263,17 +263,18 @@ namespace Vim.UnitTest
                 public void Full()
                 {
                     Create("big dog", "bあ cat", "bい tree", "bう fish");
-                    var blockSpan = _textBuffer.GetBlockSpan(1, _vimBuffer.LocalSettings.TabStop, 0, 2);
-                    var spans = blockSpan.BlockSpansWithOverlap;
+                    var blockSpan = _textBuffer.GetBlockSpan(column: 1, length: 2, startLine: 0, lineCount: 2, tabStop: _vimBuffer.LocalSettings.TabStop);
+                    var spans = blockSpan.BlockOverlapSpans;
 
                     foreach (var spanWithOverlap in spans)
                     {
-                        Assert.Equal(0, spanWithOverlap.Item1);
-                        Assert.Equal(0, spanWithOverlap.Item3);
+                        Assert.Equal(0, spanWithOverlap.Start.SpacesBefore);
+                        Assert.Equal(0, spanWithOverlap.End.SpacesAfter);
                     }
 
-                    Assert.Equal("ig", spans.Head.Item2.GetText());
-                    Assert.Equal("あ", spans.Rest.Head.Item2.GetText());
+                    var col = spans.ToReadOnlyCollection();
+                    Assert.Equal("ig", col[0].GetText());
+                    Assert.Equal("あ", col[1].GetText());
                 }
 
                 /// <summary>
@@ -283,20 +284,17 @@ namespace Vim.UnitTest
                 public void Partial()
                 {
                     Create("aiueo", "あいうえお");
-                    var blockSpan = _textBuffer.GetBlockSpan(1, _vimBuffer.LocalSettings.TabStop, 0, 2);
-                    var expected = new List<Tuple<int, int>> {
-                        Tuple.Create(0, 0),
-                        Tuple.Create(1, 1),
-                        Tuple.Create(0, 0) };
-                    var actual = blockSpan.BlockSpansWithOverlap;
+                    var blockSpan = _textBuffer.GetBlockSpan(column: 1, length: 2, startLine: 0, lineCount: 2, tabStop: _vimBuffer.LocalSettings.TabStop);
+                    var col = blockSpan.BlockOverlapSpans.ToReadOnlyCollection();
 
-                    Assert.Equal(expected[0].Item1, actual.Head.Item1);
-                    Assert.Equal("iu", actual.Head.Item2.GetText());
-                    Assert.Equal(expected[0].Item2, actual.Head.Item3);
+                    Assert.False(col[0].HasOverlap);
+                    Assert.Equal("iu", col[0].InnerSpan.GetText());
 
-                    Assert.Equal(expected[1].Item1, actual.Rest.Head.Item1);
-                    Assert.Equal("あい", actual.Rest.Head.Item2.GetText());
-                    Assert.Equal(expected[1].Item2, actual.Rest.Head.Item3);
+                    Assert.True(col[1].HasOverlap);
+                    Assert.Equal(1, col[1].Start.SpacesBefore);
+                    Assert.Equal(0, col[1].End.SpacesAfter);
+                    Assert.Equal(1, col[1].End.SpacesBefore);
+                    Assert.Equal("あい", col[1].OverarchingSpan.GetText());
                 }
 
                 /// <summary>
@@ -311,9 +309,9 @@ namespace Vim.UnitTest
                     var expected = new List<Tuple<int, int>> {
                         Tuple.Create(0, 0),
                         Tuple.Create(0, _vimBuffer.LocalSettings.TabStop - 1) };
-                    var actual = blockSpan.BlockSpansWithOverlap;
+                    var actual = blockSpan.BlockOverlapSpans;
 
-                    Assert.Equal(lines[1], actual.Rest.Head.Item2.GetText());
+                    Assert.Equal(lines[1], actual.Rest.Head.InnerSpan.GetText());
                 }
 
                 /// <summary>
@@ -327,13 +325,12 @@ namespace Vim.UnitTest
                     var expected = new List<Tuple<int, int>> {
                         Tuple.Create(0, 0),
                         Tuple.Create(0, _vimBuffer.LocalSettings.TabStop - 1) };
-                    var actual = blockSpan.BlockSpansWithOverlap;
+                    var col = blockSpan.BlockOverlapSpans.ToReadOnlyCollection();
 
-                    Assert.Equal(expected[0].Item1, actual.Head.Item1);
-                    Assert.Equal(expected[0].Item2, actual.Head.Item3);
+                    Assert.False(col[0].HasOverlap);
 
-                    Assert.Equal(expected[1].Item1, actual.Rest.Head.Item1);
-                    Assert.Equal(expected[1].Item2, actual.Rest.Head.Item3);
+                    Assert.Equal(0, col[1].Start.SpacesBefore);
+                    Assert.Equal(1, col[1].End.SpacesBefore);
                 }
             }
         }

@@ -90,5 +90,39 @@ namespace Vim.UnitTest
                 Assert.Equal(_textBuffer.GetPoint(2), span.OverarchingEnd);
             }
         }
+
+        public sealed class OverarchingSpanTest : SnapshotOverlapSpanTest
+        {
+            /// <summary>
+            /// When the Start and End are in the same SnapshotPoint then the overarching span should 
+            /// be a single character
+            /// </summary>
+            [Fact]
+            public void Single()
+            {
+                Create("\tcat");
+                var span = new SnapshotOverlapSpan(
+                    new SnapshotOverlapPoint(_textBuffer.GetPoint(0), before: 0, width: 8),
+                    new SnapshotOverlapPoint(_textBuffer.GetPoint(0), before: 2, width: 8));
+                Assert.Equal(1, span.OverarchingSpan.Length);
+            }
+        }
+
+        public sealed class InnerSpanTest : SnapshotOverlapSpanTest
+        {
+            /// <summary>
+            /// When the Start and End are in the same SnapshotPoint then the InnerSpan should be 
+            /// empty 
+            /// </summary>
+            [Fact]
+            public void Empty()
+            {
+                Create("\t");
+                var span = new SnapshotOverlapSpan(
+                    new SnapshotOverlapPoint(_textBuffer.GetPoint(0), before: 0, width: 8),
+                    new SnapshotOverlapPoint(_textBuffer.GetPoint(0), before: 2, width: 8));
+                Assert.Equal(0, span.InnerSpan.Length);
+            }
+        }
     }
 }

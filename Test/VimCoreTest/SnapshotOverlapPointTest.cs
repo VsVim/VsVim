@@ -70,6 +70,19 @@ namespace Vim.UnitTest
                     Assert.Equal(0, point.SpacesAfter);
                 }
             }
+
+            public sealed class EndTest : CtorTest
+            {
+                [Fact]
+                public void EndOfBuffer()
+                {
+                    Create("cat");
+                    var point = new SnapshotOverlapPoint(_textBuffer.GetEndPoint(), 0, 0);
+                    Assert.Equal(0, point.Width);
+                    Assert.Equal(0, point.SpacesBefore);
+                    Assert.Equal(0, point.SpacesAfter);
+                }
+            }
         }
     }
 }

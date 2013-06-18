@@ -1237,13 +1237,20 @@ type BlockSpan =
     /// How many lines does this BlockSpan encompass
     member x.Height = x._height
 
-    /// Get the EndPoint (exclusive) of the BlockSpan
-    member x.End = 
+    member x.OverlapEnd = 
         let line = 
             let lineNumber = SnapshotPointUtil.GetLineNumber x.Start
             SnapshotUtil.GetLineOrLast x.Snasphot (lineNumber + (x._height - 1))
         let spaces = x.ColumnSpaces + x.Spaces
-        ColumnWiseUtil.GetPointForSpaces line spaces x._tabStop
+        ColumnWiseUtil.GetPointForSpacesWithOverlap line spaces x._tabStop
+
+    /// Get the EndPoint (exclusive) of the BlockSpan
+    member x.End = 
+        let point = x.OverlapEnd
+        if point.HasOverlap then
+            SnapshotPointUtil.AddOneOrCurrent point.Point
+        else
+            point.Point
 
     /// What is the tab stop this BlockSpan is created off of
     member x.TabStop = x._tabStop
@@ -1274,22 +1281,19 @@ type BlockSpan =
     /// Get a NonEmptyCollection indicating of the SnapshotSpan that each line of
     /// this block spans, along with the offset (measured in cells) of the block
     /// with respect to the start point and end point.
-    member x.BlockSpansWithOverlap : NonEmptyCollection<int * SnapshotSpan * int> =
+    member x.BlockOverlapSpans : NonEmptyCollection<SnapshotOverlapSpan> =
         let snapshot = SnapshotPointUtil.GetSnapshot x.Start
         let offset = x.ColumnSpaces
         let lineNumber = SnapshotPointUtil.GetLineNumber x.Start
-        let list = System.Collections.Generic.List<int * SnapshotSpan * int>()
+        let list = System.Collections.Generic.List<SnapshotOverlapSpan>()
         for i = lineNumber to ((x._height - 1) + lineNumber) do
             match SnapshotUtil.TryGetLine snapshot i with
             | None -> ()
             | Some line -> 
-                let pre, startPoint, _  = ColumnWiseUtil.GetPointForSpacesWithOverlap line offset x._tabStop   
-                let _, endPoint, post = 
-                    match ColumnWiseUtil.GetPointForSpacesWithOverlap line (offset + x.Spaces) x._tabStop with
-                    | 0, endPoint, post -> (0, endPoint, post)
-                    | _, endPoint, post -> (0, endPoint.Add(1), post)
-                    
-                list.Add (pre, SnapshotSpanUtil.Create startPoint endPoint, post)
+                let startPoint = ColumnWiseUtil.GetPointForSpacesWithOverlap line offset x._tabStop
+                let endPoint = ColumnWiseUtil.GetPointForSpacesWithOverlap line (offset + x.Spaces) x._tabStop 
+                let span = SnapshotOverlapSpan(startPoint, endPoint)
+                list.Add(span)
 
         list
         |> NonEmptyCollectionUtil.OfSeq 
@@ -1362,10 +1366,10 @@ type VisualSpan =
         | VisualSpan.Line range -> [range.ExtentIncludingLineBreak] |> Seq.ofList
         | VisualSpan.Block blockSpan -> blockSpan.BlockSpans :> SnapshotSpan seq
 
-    member x.SpansWithOverlap =
+    member x.OverlapSpans =
         match x with 
-        | VisualSpan.Block blockSpan -> seq (blockSpan.BlockSpansWithOverlap)
-        | _ -> (Seq.map (fun x -> (0, x, 0))) x.Spans
+        | VisualSpan.Block blockSpan -> seq (blockSpan.BlockOverlapSpans)
+        | _ -> x.Spans |> Seq.map (fun span -> SnapshotOverlapSpan(span))
 
     /// Returns the EditSpan for this VisualSpan
     member x.EditSpan = 
@@ -1461,28 +1465,29 @@ type VisualSpan =
             selectSpan lineRange.Start lineRange.EndIncludingLineBreak
         | Block blockSpan ->
             // In general the Start and End accurately represent the selection points.  The cases where
-            // it doesn't is when the start of any of the line spans starts on a non-zero space within
-            // a SnapshotPoint.  The clearest example of this is when the caret is above, but not at either
-            // end of a tab character (assume tabstop = 4)
+            // it doesn't is when the caret ends inside of a point when spaces are considered. The
+            // clearest example of this is when the caret is inside a tab (assume tabstop = 4)
             //
             //  truck
             //  \t  cat
             //
-            // In this example if the anchor point is 'r' and the caret is under 'u' then the block span of
-            // the second line is the 2nd and 3rd space.  The tab itself is a single SnapshotPoint and the start
-            // is on the 2nd space of that single point.  
+            // In this example if the anchor point is 'r' and the caret is under 'u' (2 space selection) then 
+            // the block span of the second line is the 2nd and 3rd space.  The tab itself is a single 
+            // SnapshotPoint numbering 4 spaces.  Hence the caret will be in the middle of a SnapshotPoint
             //
-            // In cases like that the selection will begin at the furthest left SnsapshotPoint which the 
-            // selection is partial within
-            let startSpaces = 
-                let overlap = 
-                    blockSpan.BlockSpansWithOverlap
-                    |> Seq.map (fun (left, _, _) -> left)
-                    |> Seq.max
-                max 0 (blockSpan.ColumnSpaces - overlap)
-            let startPoint = 
-                let line = blockSpan.Start.GetContainingLine()
-                ColumnWiseUtil.GetPointForSpaces line startSpaces blockSpan.TabStop
+            // When this happens the anchor point is reset to min of the column of the SnapshotPoint the
+            // caret resides in or the column of the anchor point
+            let endLine = blockSpan.End.GetContainingLine()
+            let endPoint = blockSpan.OverlapEnd
+            let startPoint =
+                if endPoint.HasOverlap then
+                    let startColumn = SnapshotPointUtil.GetColumn blockSpan.Start
+                    let endColumn = SnapshotPointUtil.GetColumn endPoint.Point
+                    let column = min startColumn endColumn
+                    let startLine = blockSpan.Start.GetContainingLine()
+                    SnapshotLineUtil.GetOffsetOrEnd column startLine
+                else
+                    blockSpan.Start
 
             // When calculating the actual columns to put the selection on here we need to consider
             // all tabs as the equivalent number of spaces 
