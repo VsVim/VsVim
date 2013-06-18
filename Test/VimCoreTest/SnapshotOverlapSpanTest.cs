@@ -61,6 +61,25 @@ namespace Vim.UnitTest
                     Assert.Equal("t   ", span.GetText());
                 }
             }
+
+            public sealed class WideCharacterTest : GetTextTest
+            {
+                [Fact]
+                public void Complete()
+                {
+                    Create("あいうえお");
+                    var span = new SnapshotOverlapSpan(_textBuffer.GetSpan(0, 2));
+                    Assert.Equal("あい", span.GetText());
+                }
+
+                [Fact]
+                public void Partial()
+                {
+                    Create("あいうえお");
+                    var span = ColumnWiseUtil.GetSpanFromSpaceAndCount(_textBuffer.GetLine(0), start: 1, count: 4, tabStop: 4);
+                    Assert.Equal(" い ", span.GetText());
+                }
+            }
         }
 
         public sealed class OverarchingEndTest : SnapshotOverlapSpanTest

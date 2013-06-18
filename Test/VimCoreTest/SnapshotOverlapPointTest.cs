@@ -83,6 +83,53 @@ namespace Vim.UnitTest
                     Assert.Equal(0, point.SpacesAfter);
                 }
             }
+
+            /// <summary>
+            /// When creating a SnapshotOverlapPoint over a SnapshotPoint just treat it as if it 
+            /// is a non-overlapping single width value
+            /// </summary>
+            public sealed class PointTest : CtorTest
+            {
+                private void AssertPoint(SnapshotOverlapPoint point, char c)
+                {
+                    Assert.False(point.HasOverlap);
+                    Assert.Equal(1, point.Width);
+                    Assert.Equal(c, point.Point.GetChar());
+                }
+
+                [Fact]
+                public void Tab()
+                {
+                    Create("\tcat");
+                    var point = new SnapshotOverlapPoint(_textBuffer.GetPoint(0));
+                    AssertPoint(point, '\t');
+                }
+
+                [Fact]
+                public void Normal()
+                {
+                    Create("\tcat");
+                    var point = new SnapshotOverlapPoint(_textBuffer.GetPoint(1));
+                    AssertPoint(point, 'c');
+                }
+
+                [Fact]
+                public void Wide()
+                {
+                    Create("\tあcat");
+                    var point = new SnapshotOverlapPoint(_textBuffer.GetPoint(1));
+                    AssertPoint(point, 'あ');
+                }
+
+                [Fact]
+                public void EndOfBuffer()
+                {
+                    Create("\tあcat");
+                    var point = new SnapshotOverlapPoint(_textBuffer.GetEndPoint());
+                    Assert.Equal(0, point.Width);
+                    Assert.False(point.HasOverlap);
+                }
+            }
         }
     }
 }

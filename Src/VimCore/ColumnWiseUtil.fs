@@ -26,10 +26,23 @@ type SnapshotOverlapPoint =
     val private _before : int
     val private _width : int
 
-    new (point : SnapshotPoint, before : int, width : int) = 
+    // BTODO: This constructor should be hidden behind a signature file.  No one should ever call it
+    // directly.  It is too easy to get the 'width' wrong
+    internal new (point : SnapshotPoint, before : int, width : int) = 
         if width < 0 then
             invalidArg "width" "Width must be positive"
         { _point = point; _before = before; _width = width }
+
+    /// Create a SnapshotOverlapPoint over a SnapshotPoint value.  Even if the character underneath
+    /// the SnapshotPoint is wide this will treate it as a width 0 character.  It will never see it
+    /// as an overlap 
+    new (point : SnapshotPoint) =
+        let width = 
+            if SnapshotPointUtil.IsEndPoint point then
+                0
+            else
+                1
+        { _point = point; _before = 0; _width = width }
 
     /// The number of spaces in the overlap point before this space
     member x.SpacesBefore = x._before
@@ -54,11 +67,7 @@ type SnapshotOverlapPoint =
     override x.ToString() = 
         sprintf "Point: %s Width: %d Before: %d After: %d" (x.Point.ToString()) x.Width x.SpacesBefore x.SpacesAfter
 
-[<StructuralEquality>]
-[<NoComparison>]
-[<Struct>]
-[<DebuggerDisplay("{ToString()}")>]
-type SnapshotOverlapSpan = 
+and [<StructuralEquality>] [<NoComparison>] [<Struct>] [<DebuggerDisplay("{ToString()}")>] SnapshotOverlapSpan = 
 
     val private _start : SnapshotOverlapPoint
     val private _end : SnapshotOverlapPoint 
@@ -69,9 +78,8 @@ type SnapshotOverlapSpan =
         { _start = startPoint; _end = endPoint }
 
     new (span : SnapshotSpan) =
-        // TODO: Need to get the widths right here 
-        let startPoint = SnapshotOverlapPoint(span.Start, 0, 1)
-        let endPoint = SnapshotOverlapPoint(span.End, 0, 1)
+        let startPoint = SnapshotOverlapPoint(span.Start)
+        let endPoint = SnapshotOverlapPoint(span.End)
         { _start = startPoint; _end = endPoint }
 
     member x.Start = x._start
@@ -112,55 +120,46 @@ type SnapshotOverlapSpan =
 
     member x.Snapshot = x._start.Snapshot
 
-    /// Get the text contained in this SnapshotOverlapSpan.
-    ///
-    /// TODO: Handle Unicode splits.  Right now we just handle tabs 
+    /// Get the text contained in this SnapshotOverlapSpan.  All overlap points are expressed
+    /// with the appropriate number of spaces 
     member x.GetText() = 
-        let startOverlapPoint = x.Start
-        let endOverlapPoint = x.End
-        let getBeforeText (builder : StringBuilder) = 
-            match SnapshotPointUtil.TryGetChar startOverlapPoint.Point with
-            | Some '\t' ->
-                if startOverlapPoint.SpacesBefore = 0 then  
-                    builder.AppendChar '\t'
-                else
-                    for i = 0 to startOverlapPoint.SpacesAfter do
-                        builder.AppendChar ' '
-            | Some c -> builder.AppendChar c
-            | None -> ()
 
-        let getAfterText (builder : StringBuilder) = 
-            if endOverlapPoint.SpacesBefore > 0 then
-                match SnapshotPointUtil.TryGetChar endOverlapPoint.Point with
-                | Some '\t' -> 
-                        for i = 0 to (endOverlapPoint.SpacesBefore - 1) do
-                            builder.AppendChar ' '
-                | Some c -> builder.AppendChar c
-                | None -> ()
-
-        let snapshot = x.Snapshot
-        let getMiddleText (builder : StringBuilder) = 
-            let mutable position = startOverlapPoint.Point.Position + 1
-            while position < endOverlapPoint.Point.Position do
-                let point = SnapshotUtil.GetPoint snapshot position 
-                builder.AppendChar (point.GetChar())
-                position <- position + 1
-                    
         let builder = StringBuilder()
-        getBeforeText builder
-        getMiddleText builder
-        getAfterText builder
+
+        // First add in the spaces for the start if it is an overlap point 
+        let mutable position = x.Start.Point.Position
+        if x.Start.SpacesBefore > 0 then
+            for i = 0 to x.Start.SpacesAfter do
+                builder.AppendChar ' '
+            position <- position + 1
+
+        // Next add in the middle SnapshotPoint values which don't have any overlap
+        // to consider.  Don't use InnerSpan.GetText() here as it will unnecessarily
+        // allocate an extra string 
+        while position < x.End.Point.Position do
+            let point = SnapshotUtil.GetPoint x.Snapshot position
+            let c = point.GetChar()
+            builder.AppendChar c
+            position <- position + 1
+
+        // Lastly add in the spaces on the end point.  Remember End is exclusive so 
+        // only add spaces which come before
+        if x.End.HasOverlap then
+            for i = 0 to (x.End.SpacesBefore - 1) do
+                builder.AppendChar ' '
+
         builder.ToString()
 
     override x.ToString() = 
         x.OverarchingSpan.ToString()
 
-module internal ColumnWiseUtil =
+// TODO: The methods of this type should be combined with SnapshotLineUtil
+and internal ColumnWiseUtil =
 
     /// Determines whether the given character occupies space on screen when displayed.
     /// For instance, combining diacritics occupy the space of the previous character,
     /// while control characters are simply not displayed.
-    let IsNonSpacingCharacter c =
+    static member IsNonSpacingCharacter c =
         // based on http://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c
         // TODO: this should be checked for consistency with
         //       Visual studio handling of each character.
@@ -177,7 +176,7 @@ module internal ColumnWiseUtil =
         | _ -> (c = '\u200b') || ('\u1160' <= c && c <= '\u11ff')
 
     /// Determines if the given character occupies a single or two cells on screen.
-    let IsWideCharacter c =
+    static member IsWideCharacter c =
         // based on http://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c
         // TODO: this should be checked for consistency with
         //       Visual studio handling of each character.
@@ -207,7 +206,7 @@ module internal ColumnWiseUtil =
                 //(ucs >= 0x30000 && ucs <= 0x3fffd)));
 
     /// Determines the character width when displayed, computed according to the various local settings.
-    let GetCharacterWidth c tabStop =
+    static member GetCharacterWidth c tabStop =
         // TODO: for surrogate pairs, we need to be able to match characters specified as strings.
         // E.g. if System.Char.IsHighSurrogate(c) then
         //    let fullchar = point.Snapshot.GetSpan(point.Position, 1).GetText()
@@ -216,15 +215,22 @@ module internal ColumnWiseUtil =
         match c with
         | '\u0000' -> 1
         | '\t' -> tabStop
-        | _ when IsNonSpacingCharacter c -> 0
-        | _ when IsWideCharacter c -> 2
+        | _ when ColumnWiseUtil.IsNonSpacingCharacter c -> 0
+        | _ when ColumnWiseUtil.IsWideCharacter c -> 2
         | _ -> 1
+
+    static member GetPointWidth point tabStop = 
+        if SnapshotPointUtil.IsEndPoint point then
+            0
+        else
+            let c = point.GetChar()
+            ColumnWiseUtil.GetCharacterWidth c tabStop
 
     // Get the point in the given line which is just before the character that 
     // overlaps the specified column into the line, as well as the position of 
     // that column inside the character. Returns End if it goes beyond the last 
     // point in the string
-    let GetPointForSpacesWithOverlap line spacesCount tabStop = 
+    static member GetPointForSpacesWithOverlap line spacesCount tabStop = 
         let snapshot = SnapshotLineUtil.GetSnapshot line
         let endPoint = line |> SnapshotLineUtil.GetEnd
         // The following retrieves the location of the character that is
@@ -241,7 +247,7 @@ module internal ColumnWiseUtil =
                 (0, endPoint, 0)
             else 
                 let point = SnapshotPoint(snapshot, position)
-                let charWidth = GetCharacterWidth (SnapshotPointUtil.GetChar point) tabStop
+                let charWidth = ColumnWiseUtil.GetCharacterWidth (SnapshotPointUtil.GetChar point) tabStop
                 let remaining = spacesCount - charWidth
 
                 if spacesCount = 0 && charWidth <> 0 then
@@ -257,31 +263,37 @@ module internal ColumnWiseUtil =
     // Get the point in the given line which is just before the character that 
     // overlaps the specified column into the line. Returns End if it goes 
     // beyond the last point in the string
-    let GetPointForSpaces line spacesCount tabStop = 
-        let overlapPoint = GetPointForSpacesWithOverlap line spacesCount tabStop
+    static member GetPointForSpaces line spacesCount tabStop = 
+        let overlapPoint = ColumnWiseUtil.GetPointForSpacesWithOverlap line spacesCount tabStop
         overlapPoint.Point
 
-    let GetSpacesForPoint point tabStop = 
+    static member GetSpacesForPoint point tabStop = 
         let c = SnapshotPointUtil.GetChar point
-        GetCharacterWidth c tabStop
+        ColumnWiseUtil.GetCharacterWidth c tabStop
 
-    let GetSpacesForSpan span tabStop = 
+    static member GetSpacesForSpan span tabStop = 
         span
         |> SnapshotSpanUtil.GetPoints Path.Forward
-        |> Seq.map (fun point -> GetSpacesForPoint point tabStop)
+        |> Seq.map (fun point -> ColumnWiseUtil.GetSpacesForPoint point tabStop)
         |> Seq.sum
 
     /// Get the count of spaces to get to the specified absolute column offset.  This will count
     /// tabs as counting for 'tabstop' spaces
-    let GetSpacesToColumn line column tabStop = 
+    static member GetSpacesToColumn line column tabStop = 
         SnapshotLineUtil.GetSpanInLine line 0 column
         |> SnapshotSpanUtil.GetPoints Path.Forward
-        |> Seq.map (fun point -> GetSpacesForPoint point tabStop)
+        |> Seq.map (fun point -> ColumnWiseUtil.GetSpacesForPoint point tabStop)
         |> Seq.sum
 
     /// Get the count of spaces to get to the specified point in it's line when tabs are expanded
-    let GetSpacesToPoint point tabStop = 
+    static member GetSpacesToPoint point tabStop = 
         let line = SnapshotPointUtil.GetContainingLine point
         let column = point.Position - line.Start.Position 
-        GetSpacesToColumn line column tabStop
+        ColumnWiseUtil.GetSpacesToColumn line column tabStop
+
+    static member GetSpanFromSpaceAndCount line start count tabStop = 
+        let startPoint = ColumnWiseUtil.GetPointForSpacesWithOverlap line start tabStop
+        let endPoint = ColumnWiseUtil.GetPointForSpacesWithOverlap line (start + count) tabStop
+        SnapshotOverlapSpan(startPoint, endPoint)
+
 
