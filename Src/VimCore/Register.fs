@@ -52,7 +52,7 @@ type StringData =
     static member OfEditSpan editSpan =
         match editSpan with
         | EditSpan.Single span -> StringData.OfSpan span
-        | EditSpan.Block col -> col |> NonEmptyCollectionUtil.Map SnapshotSpanUtil.GetText |> StringData.Block 
+        | EditSpan.Block col -> col |> NonEmptyCollectionUtil.Map (fun span -> span.GetText()) |> StringData.Block 
 
 [<RequireQualifiedAccess>]
 type NumberedRegister = 

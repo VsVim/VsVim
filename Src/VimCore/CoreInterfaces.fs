@@ -1376,7 +1376,7 @@ type VisualSpan =
         match x with
         | VisualSpan.Character characterSpan -> EditSpan.Single characterSpan.Span
         | VisualSpan.Line range -> EditSpan.Single range.ExtentIncludingLineBreak
-        | VisualSpan.Block blockSpan -> EditSpan.Block blockSpan.BlockSpans
+        | VisualSpan.Block blockSpan -> EditSpan.Block blockSpan.BlockOverlapSpans
 
     /// Returns the SnapshotLineRange for the VisualSpan.  For Character this will
     /// just expand out the Span.  For Line this is an identity.  For Block it will

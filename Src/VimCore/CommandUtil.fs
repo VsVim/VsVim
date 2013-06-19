@@ -10,6 +10,7 @@ open Microsoft.VisualStudio.Text.Outlining
 open Microsoft.VisualStudio.Text.Formatting
 open RegexPatternUtil
 open VimCoreExtensions
+open ITextEditExtensions
 
 [<RequireQualifiedAccess>]
 [<NoComparison>]
@@ -412,23 +413,24 @@ type internal CommandUtil
             (EditSpan.Single range.Extent, commandResult)
 
         // The special casing of block deletion is handled here
-        let deleteBlock (col : NonEmptyCollection<SnapshotSpan>) = 
+        let deleteBlock (col : NonEmptyCollection<SnapshotOverlapSpan>) = 
 
             // First step is to change the SnapshotSpan instances to extent from the start to the
             // end of the current line 
             let col = col |> NonEmptyCollectionUtil.Map (fun span -> 
-                let line = SnapshotPointUtil.GetContainingLine span.Start
-                SnapshotSpan(span.Start, line.End))
+                let line = SnapshotPointUtil.GetContainingLine span.Start.Point
+                let span = SnapshotSpan(span.Start.Point, line.End)
+                SnapshotOverlapSpan(span))
 
             // Caret should be positioned at the start of the span for undo
-            TextViewUtil.MoveCaretToPoint _textView col.Head.Start
+            TextViewUtil.MoveCaretToPoint _textView col.Head.Start.Point
 
             let commandResult = x.EditWithLinkedChange "ChangeLines" (fun () ->
                 let edit = _textBuffer.CreateEdit()
-                col |> Seq.iter (fun span -> edit.Delete(span.Span) |> ignore)
+                col |> Seq.iter (fun span -> edit.Delete(span) |> ignore)
                 edit.Apply() |> ignore
 
-                TextViewUtil.MoveCaretToPosition _textView col.Head.Start.Position)
+                TextViewUtil.MoveCaretToPosition _textView col.Head.Start.Point.Position)
 
             (EditSpan.Block col, commandResult)
 
@@ -440,7 +442,7 @@ type internal CommandUtil
             | VisualSpan.Line range -> 
                 deleteRange range
             | VisualSpan.Block blockSpan -> 
-                if specialCaseBlock then deleteBlock blockSpan.BlockSpans
+                if specialCaseBlock then deleteBlock blockSpan.BlockOverlapSpans
                 else visualSpan.EditSpan.OverarchingSpan |> SnapshotLineRangeUtil.CreateForSpan |> deleteRange
 
         let value = x.CreateRegisterValue (StringData.OfEditSpan editSpan) OperationKind.LineWise
@@ -638,16 +640,19 @@ type internal CommandUtil
                         edit.Delete(range.ExtentIncludingLineBreak.Span) |> ignore
                         EditSpan.Single range.ExtentIncludingLineBreak
                     | VisualSpan.Block blockSpan -> 
-                        let collection = blockSpan.BlockSpans
 
-                        collection
-                        |> Seq.iter (fun span -> 
-                            // Delete from the start of the span until the end of the containing
-                            // line
-                            let span = 
-                                let line = SnapshotPointUtil.GetContainingLine span.Start
-                                SnapshotSpan(span.Start, line.End)
-                            edit.Delete(span.Span) |> ignore)
+                        // The delete is from the start of the block selection util the end of 
+                        // te containing line 
+                        let collection = 
+                            blockSpan.BlockOverlapSpans
+                            |> NonEmptyCollectionUtil.Map (fun span ->
+                                let line = SnapshotPointUtil.GetContainingLine span.Start.Point
+                                let endPoint = SnapshotOverlapPoint(line.End)
+                                SnapshotOverlapSpan(span.Start, endPoint))
+
+                        // Actually perform the deletion
+                        collection |> Seq.iter (fun span -> edit.Delete(span) |> ignore)
+
                         EditSpan.Block collection
     
                 edit.Apply() |> ignore
@@ -696,16 +701,8 @@ type internal CommandUtil
                         else
                             span
 
-                let pre = overlapSpan.Start.SpacesBefore
-                let post = 
-                    if overlapSpan.HasOverlapEnd then
-                        overlapSpan.End.SpacesAfter + 1
-                    else
-                        0
+                edit.Delete(overlapSpan) |> ignore)
 
-                match pre + post with
-                | 0 -> edit.Delete(span.Span) |> ignore
-                | _ -> edit.Replace(span.Span, String.replicate (pre + post) " ") |> ignore)
             let snapshot = edit.Apply()
             TextViewUtil.MoveCaretToPosition _textView startPoint.Position)
 
@@ -1777,14 +1774,14 @@ type internal CommandUtil
 
                 // Cursor needs to be positioned at the start of the range for undo so
                 // move the caret now
-                let col = blockSpan.BlockSpans
+                let col = blockSpan.BlockOverlapSpans
                 let span = col.Head
-                TextViewUtil.MoveCaretToPoint _textView span.Start
+                TextViewUtil.MoveCaretToPoint _textView span.Start.Point
                 x.EditWithUndoTransaciton "Put" (fun () ->
 
                     // Delete all of the items in the collection
                     use edit = _textBuffer.CreateEdit()
-                    col |> Seq.iter (fun span -> edit.Delete(span.Span) |> ignore)
+                    col |> Seq.iter (fun span -> edit.Delete(span) |> ignore)
                     edit.Apply() |> ignore
 
                     // Now do a standard put operation.  The point of the put varies a bit 
@@ -1793,11 +1790,11 @@ type internal CommandUtil
                         match operationKind with
                         | OperationKind.CharacterWise -> 
                             // Put occurs at the start of the original span
-                            SnapshotUtil.GetPoint x.CurrentSnapshot span.Start.Position
+                            SnapshotUtil.GetPoint x.CurrentSnapshot span.Start.Point.Position
                         | OperationKind.LineWise -> 
                             // Put occurs on the line after the last edit
                             let lastSpan = col |> SeqUtil.last
-                            let number = lastSpan.Start |> SnapshotPointUtil.GetContainingLine |> SnapshotLineUtil.GetLineNumber
+                            let number = lastSpan.Start.Point |> SnapshotPointUtil.GetContainingLine |> SnapshotLineUtil.GetLineNumber
                             SnapshotUtil.GetLine x.CurrentSnapshot number |> SnapshotLineUtil.GetEndIncludingLineBreak
                     x.PutCore point stringData operationKind moveCaretAfterText
 

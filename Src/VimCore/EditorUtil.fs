@@ -19,7 +19,7 @@ module internal SnapshotCoreUtil =
     let IsEndPoint (point : SnapshotPoint) = 
         point.Position = point.Snapshot.Length
 
-    let AddOneOrCurrent point =
+    let AddOneOrCurrent (point : SnapshotPoint) =
         if IsEndPoint point then
             point
         else
@@ -880,7 +880,7 @@ module SnapshotPointUtil =
     /// Try and subtract 1 from the given point unless it's the start of the buffer in which
     /// case return the passed in value
     let SubtractOneOrCurrent point = 
-        SnapshotCoreUtil.AddOneOrCurrent point
+        SnapshotCoreUtil.SubtractOneOrCurrent point
 
     /// Is the SnapshotPoint the provided char
     let IsChar c point =
@@ -1527,7 +1527,7 @@ type EditSpan =
     | Single of SnapshotSpan 
 
     /// Occurs during block edits
-    | Block of NonEmptyCollection<SnapshotSpan>
+    | Block of NonEmptyCollection<SnapshotOverlapSpan>
 
     with
 
@@ -1536,6 +1536,15 @@ type EditSpan =
     member x.Spans =
         match x with
         | Single span -> NonEmptyCollection(span, List.empty) 
+        | Block col -> col |> NonEmptyCollectionUtil.Map (fun span -> span.OverarchingSpan)
+
+    /// View the data as a collection of overlap spans.  For Single values this just creates a
+    /// collection with a single element
+    member x.OverlapSpans =
+        match x with
+        | Single span -> 
+            let span = SnapshotOverlapSpan(span) 
+            NonEmptyCollection(span, List.empty) 
         | Block col -> col
 
     /// Returns the overarching span of the entire EditSpan value.  For Single values
@@ -1544,7 +1553,7 @@ type EditSpan =
     member x.OverarchingSpan =
         match x with 
         | Single span -> span
-        | Block col -> SnapshotSpanUtil.GetOverarchingSpan col
+        | Block col -> col |> NonEmptyCollectionUtil.Map (fun span -> span.OverarchingSpan) |> SnapshotSpanUtil.GetOverarchingSpan 
 
     /// Provide an implicit conversion from SnapshotSpan.  Useful from C# code
     static member op_Implicit span = EditSpan.Single span
@@ -1747,4 +1756,24 @@ module SnapshotColumnUtil =
     let GetColumnsIncludingLineBreak path point = GetColumnsCore path true point
 
     let CreateFromPoint point = SnapshotColumn(point)
+
+module internal ITextEditExtensions =
+
+    type ITextEdit with
+
+        /// Delete the overlapped span from the ITextBuffer.  If there is any overlap then the
+        /// remaining spaces will be filed with ' ' 
+        member x.Delete (overlapSpan : SnapshotOverlapSpan) = 
+            let pre = overlapSpan.Start.SpacesBefore
+            let post = 
+                if overlapSpan.HasOverlapEnd then
+                    overlapSpan.End.SpacesAfter + 1
+                else
+                    0
+
+            let span = overlapSpan.OverarchingSpan
+            match pre + post with
+            | 0 -> x.Delete(span.Span) 
+            | _ -> x.Replace(span.Span, String.replicate (pre + post) " ") 
+
 
