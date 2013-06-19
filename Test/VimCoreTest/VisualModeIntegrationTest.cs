@@ -44,6 +44,14 @@ namespace Vim.UnitTest
             ((MockVimHost)_vimBuffer.Vim.VimHost).FocusedTextView = _textView;
         }
 
+        protected virtual void Create(int tabStop, params string[] lines)
+        {
+            Create();
+            UpdateTabStop(_vimBuffer, tabStop);
+            _textView.SetText(lines);
+            _textView.MoveCaretTo(0);
+        }
+
         protected void EnterMode(SnapshotSpan span)
         {
             var characterSpan = new CharacterSpan(span);
@@ -310,6 +318,37 @@ namespace Vim.UnitTest
                     EnterMode(ModeKind.VisualCharacter, _textView.GetLine(0).ExtentIncludingLineBreak);
                     _vimBuffer.Process("x");
                     Assert.Equal("dog", _textView.GetLine(0).GetText());
+                }
+            }
+
+            public sealed class BlockTest : DeleteSelectionTest
+            {
+                [Fact]
+                public void Simple()
+                {
+                    Create(4, "cat", "dog", "fish");
+                    _vimBuffer.ProcessNotation("<C-q>jjx");
+                    Assert.Equal(new[]
+                        {
+                            "at",
+                            "og",
+                            "ish"
+                        },
+                        _textBuffer.GetLines());
+                }
+
+                [Fact]
+                public void PartialTab()
+                {
+                    Create(4, "cat", "\tdog", "fish");
+                    _vimBuffer.ProcessNotation("<C-q>jjx");
+                    Assert.Equal(new[]
+                        {
+                            "at",
+                            "   dog",
+                            "ish"
+                        },
+                        _textBuffer.GetLines());
                 }
             }
 
@@ -1928,11 +1967,24 @@ namespace Vim.UnitTest
             }
 
             [Fact]
+            public void Issue679()
+            {
+                Create(4, "  <div>", "\t<b>Reason:</b>", "\t@Model.Foo", "  </div>");
+                _vimBuffer.ProcessNotation("<c-q>ljjjjx");
+                Assert.Equal(new[]
+                    {
+                       "<div>",
+                       "  <b>Reason:</b>",
+                       "  @Model.Foo",
+                       "</div>"
+                    },
+                    _textBuffer.GetLines());
+            }
+
+            [Fact]
             public void Issue903()
             {
-                Create();
-                UpdateTabStop(_vimBuffer, 4);
-                _textView.SetText("some line1", "\tsome line 2");
+                Create(4, "some line1", "\tsome line 2");
                 _textView.MoveCaretTo(8);
                 _vimBuffer.ProcessNotation("<c-q>j");
                 Assert.Equal(new[]
