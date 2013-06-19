@@ -9,7 +9,27 @@ open Microsoft.VisualStudio.Text.Editor.OptionsExtensionMethods
 open Microsoft.VisualStudio.Text.Operations
 open Microsoft.VisualStudio.Text.Outlining
 open Microsoft.VisualStudio.Utilities
+open System.Diagnostics
+open System.Text
 open StringBuilderExtensions
+
+/// This module exists purely to break type dependency issues created below.  
+module internal SnapshotCoreUtil = 
+
+    let IsEndPoint (point : SnapshotPoint) = 
+        point.Position = point.Snapshot.Length
+
+    let AddOneOrCurrent point =
+        if IsEndPoint point then
+            point
+        else
+            point.Add(1)
+
+    let SubtractOneOrCurrent (point : SnapshotPoint) = 
+        if point.Position = 0 then
+            point
+        else
+            point.Subtract(1)
 
 /// This is the representation of a point within a particular line.  It's common
 /// to represent a column in vim and using a SnapshotPoint isn't always the best
@@ -56,6 +76,162 @@ type SnapshotColumn
 
     override x.ToString() = 
         x.Point.ToString()
+
+/// The Text Editor interfaces only have granularity down to the character in the 
+/// ITextBuffer.  However Vim needs to go a bit deeper in certain scenarios like 
+/// BlockSpan's.  It needs to understand spaces within a single SnapshotPoint when
+/// there are multiple logical characters (like tabs).  This structure represents
+/// a value within a SnapshotPoint
+[<StructuralEquality>]
+[<NoComparison>]
+[<Struct>]
+[<DebuggerDisplay("{ToString()}")>]
+type SnapshotOverlapPoint =
+
+    val private _point : SnapshotPoint
+    val private _before : int
+    val private _width : int
+
+    // BTODO: This constructor should be hidden behind a signature file.  No one should ever call it
+    // directly.  It is too easy to get the 'width' wrong
+    internal new (point : SnapshotPoint, before : int, width : int) = 
+        if width < 0 then
+            invalidArg "width" "Width must be positive"
+        { _point = point; _before = before; _width = width }
+
+    /// Create a SnapshotOverlapPoint over a SnapshotPoint value.  Even if the character underneath
+    /// the SnapshotPoint is wide this will treate it as a width 0 character.  It will never see it
+    /// as an overlap 
+    new (point : SnapshotPoint) =
+        let width = 
+            if SnapshotCoreUtil.IsEndPoint point then
+                0
+            else
+                1
+        { _point = point; _before = 0; _width = width }
+
+    /// The number of spaces in the overlap point before this space
+    member x.SpacesBefore = x._before
+
+    /// The number of spaces in the overlap point after this space 
+    member x.SpacesAfter = max 0 ((x._width - 1) - x._before)
+
+    /// The SnapshotPoint in which this overlap occurs
+    member x.Point = x._point
+
+    /// Number of spaces this SnapshotOverlapPoint occupies
+    member x.Width = x._width
+
+    member x.Snapshot = x._point.Snapshot
+
+    static member op_Equality(this,other) = System.Collections.Generic.EqualityComparer<SnapshotOverlapPoint>.Default.Equals(this,other)
+    static member op_Inequality(this,other) = not (System.Collections.Generic.EqualityComparer<SnapshotOverlapPoint>.Default.Equals(this,other))
+
+    override x.ToString() = 
+        sprintf "Point: %s Width: %d Before: %d After: %d" (x.Point.ToString()) x.Width x.SpacesBefore x.SpacesAfter
+
+[<StructuralEquality>] 
+[<NoComparison>] 
+[<Struct>] 
+[<DebuggerDisplay("{ToString()}")>] 
+type SnapshotOverlapSpan = 
+
+    val private _start : SnapshotOverlapPoint
+    val private _end : SnapshotOverlapPoint 
+
+    new (startPoint : SnapshotOverlapPoint, endPoint : SnapshotOverlapPoint) = 
+        if startPoint.Point.Position + startPoint.SpacesBefore > endPoint.Point.Position + endPoint.SpacesBefore then
+            invalidArg "endPoint" "End cannot be before the start"
+        { _start = startPoint; _end = endPoint }
+
+    new (span : SnapshotSpan) =
+        let startPoint = SnapshotOverlapPoint(span.Start)
+        let endPoint = SnapshotOverlapPoint(span.End)
+        { _start = startPoint; _end = endPoint }
+
+    member x.Start = x._start
+
+    member x.End = x._end
+
+    /// Does this structure have any overlap
+    member x.HasOverlap = x.HasOverlapStart || x.HasOverlapEnd
+
+    /// Does this structure have any overlap at the start
+    member x.HasOverlapStart = x.Start.SpacesBefore > 0 
+
+    /// Does this structure have any overlap at the end 
+    member x.HasOverlapEnd = x.End.SpacesBefore > 0 
+
+    member x.OverarchingStart = x._start.Point
+
+    member x.OverarchingEnd = 
+        if x.End.SpacesBefore = 0 then
+           x.End.Point
+        else
+            SnapshotCoreUtil.AddOneOrCurrent x.End.Point
+
+    /// A SnapshotSpan which fully encompasses this overlap span 
+    member x.OverarchingSpan = SnapshotSpan(x.OverarchingStart, x.OverarchingEnd)
+
+    /// This is the SnapshotSpan which contains the SnapshotPoint values which have 
+    /// full coverage.  The edges which have overlap are excluded from this span
+    member x.InnerSpan =    
+        let startPoint = 
+            if x.Start.SpacesBefore = 0 then
+                x.Start.Point
+            else
+                SnapshotCoreUtil.AddOneOrCurrent x.Start.Point
+        let endPoint = 
+            if x.End.SpacesBefore = 0 then
+                x.End.Point
+            else
+                SnapshotCoreUtil.SubtractOneOrCurrent x.End.Point
+        if startPoint.Position <= endPoint.Position then
+            SnapshotSpan(startPoint, endPoint)
+        else
+            SnapshotSpan(startPoint, startPoint)
+
+    member x.Snapshot = x._start.Snapshot
+
+    /// Get the text contained in this SnapshotOverlapSpan.  All overlap points are expressed
+    /// with the appropriate number of spaces 
+    member x.GetText() = 
+
+        let builder = StringBuilder()
+
+        if x.Start.Point.Position = x.End.Point.Position then
+            // Special case the scenario where the span is within a single SnapshotPoint
+            // value.  Just create the correct number of spaces here 
+            let count = x.End.SpacesBefore - x.Start.SpacesBefore 
+            for i = 1 to count do 
+                builder.AppendChar ' '
+        else
+            // First add in the spaces for the start if it is an overlap point 
+            let mutable position = x.Start.Point.Position
+            if x.Start.SpacesBefore > 0 then
+                for i = 0 to x.Start.SpacesAfter do
+                    builder.AppendChar ' '
+                position <- position + 1
+
+            // Next add in the middle SnapshotPoint values which don't have any overlap
+            // to consider.  Don't use InnerSpan.GetText() here as it will unnecessarily
+            // allocate an extra string 
+            while position < x.End.Point.Position do
+                let point = SnapshotPoint(x.Snapshot, position)
+                let c = point.GetChar()
+                builder.AppendChar c
+                position <- position + 1
+
+            // Lastly add in the spaces on the end point.  Remember End is exclusive so 
+            // only add spaces which come before
+            if x.End.SpacesBefore > 0 then
+                for i = 0 to (x.End.SpacesBefore - 1) do
+                    builder.AppendChar ' '
+
+        builder.ToString()
+
+    override x.ToString() = 
+        x.OverarchingSpan.ToString()
 
 /// Contains operations to help fudge the Editor APIs to be more F# friendly.  Does not
 /// include any Vim specific logic
@@ -637,8 +813,7 @@ module SnapshotPointUtil =
 
     /// Is this the end of the Snapshot
     let IsEndPoint point = 
-        let snapshot = GetSnapshot point
-        point = SnapshotUtil.GetEndPoint snapshot
+        SnapshotCoreUtil.IsEndPoint point
 
     /// Is the passed in SnapshotPoint inside the line break portion of the line
     let IsInsideLineBreak point = 
@@ -692,9 +867,7 @@ module SnapshotPointUtil =
     /// Add 1 to the given snapshot point unless it's the end of the buffer in which case just
     /// return the passed in value
     let AddOneOrCurrent point =
-        match TryAddOne point with
-        | None -> point
-        | Some(point) -> point
+        SnapshotCoreUtil.AddOneOrCurrent point
 
     /// Subtract the count from the SnapshotPoint
     let SubtractOne (point:SnapshotPoint) =  point.Subtract(1)
@@ -707,9 +880,7 @@ module SnapshotPointUtil =
     /// Try and subtract 1 from the given point unless it's the start of the buffer in which
     /// case return the passed in value
     let SubtractOneOrCurrent point = 
-        match TrySubtractOne point with
-        | Some (point) -> point
-        | None -> point
+        SnapshotCoreUtil.AddOneOrCurrent point
 
     /// Is the SnapshotPoint the provided char
     let IsChar c point =
