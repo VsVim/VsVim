@@ -393,5 +393,24 @@ namespace Vim.UnitTest
 
             return list;
         }
+
+        protected void UpdateTabStop(IVimBuffer vimBuffer, int tabStop)
+        {
+            vimBuffer.LocalSettings.TabStop = tabStop;
+            vimBuffer.LocalSettings.ExpandTab = false;
+            UpdateLayout(vimBuffer.TextView);
+        }
+
+        protected void UpdateLayout(ITextView textView, int? tabStop = null)
+        {
+            if (tabStop.HasValue)
+            {
+                textView.Options.SetOptionValue(DefaultOptions.TabSizeOptionId, tabStop.Value);
+            }
+
+            // Need to force a layout here to get it to respect the tab settings
+            var host = TextEditorFactoryService.CreateTextViewHost((IWpfTextView)textView, setFocus: false);
+            host.HostControl.UpdateLayout();
+        }
     }
 }

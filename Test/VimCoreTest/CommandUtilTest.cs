@@ -1235,8 +1235,8 @@ namespace Vim.UnitTest
             {
                 Create("the", "dog", "kicked", "the", "ball");
 
-                var blockSpanData = _textView.GetBlockSpan(0, 1, 0, 2);
-                var visualSpan = VisualSpan.NewBlock(blockSpanData);
+                var blockSpan = _textBuffer.GetBlockSpan(0, 1, 0, 2, tabStop: _localSettings.TabStop);
+                var visualSpan = VisualSpan.NewBlock(blockSpan);
                 var stored = StoredVisualSpan.OfVisualSpan(visualSpan);
                 var restored = _commandUtil.CalculateVisualSpan(stored);
                 Assert.Equal(visualSpan, restored);

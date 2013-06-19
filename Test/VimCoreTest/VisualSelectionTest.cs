@@ -11,7 +11,7 @@ namespace Vim.UnitTest
         private ITextView _textView;
         private ITextBuffer _textBuffer;
 
-        private void Create(params string[] lines)
+        protected virtual void Create(params string[] lines)
         {
             _textView = CreateTextView(lines);
             _textBuffer = _textView.TextBuffer;
@@ -371,6 +371,18 @@ namespace Vim.UnitTest
 
             public sealed class BlockTest : CreateForPointsTest
             {
+                protected override void Create(params string[] lines)
+                {
+                    Create(2, lines);
+                }
+
+                private void Create(int tabStop, params string[] lines)
+                {
+                    base.Create();
+                    UpdateLayout(_textView, tabStop: tabStop);
+                    _textView.SetText(lines);
+                }
+                
                 /// <summary>
                 /// Ensure that a backwards block span includes the entire line
                 /// </summary>
@@ -378,7 +390,11 @@ namespace Vim.UnitTest
                 public void Backwards()
                 {
                     Create("cats dogs");
-                    var visualSelection = VisualSelection.CreateForPoints(VisualKind.Block, _textBuffer.GetPoint(3), _textBuffer.GetPoint(1), tabStop: 4);
+                    var visualSelection = VisualSelection.CreateForPoints(
+                        VisualKind.Block, 
+                        _textBuffer.GetPoint(3), 
+                        _textBuffer.GetPoint(1), 
+                        tabStop: 4);
                     Assert.Equal(_textBuffer.GetSpan(1, 3), visualSelection.AsBlock().Item1.BlockSpans.Head);
                 }
 
@@ -391,8 +407,60 @@ namespace Vim.UnitTest
                 public void BackwardSeveralLines()
                 {
                     Create("big cat", "big dog");
-                    var visualSelection = VisualSelection.CreateForPoints(VisualKind.Block, _textBuffer.GetPoint(2), _textBuffer.GetPointInLine(1, 1), tabStop: 4);
+                    var visualSelection = VisualSelection.CreateForPoints(
+                        VisualKind.Block, 
+                        _textBuffer.GetPoint(2), 
+                        _textBuffer.GetPointInLine(1, 1), 
+                        tabStop: 4);
                     Assert.Equal(_textBuffer.GetBlockSpan(1, 2, 0, 2), visualSelection.AsBlock().Item1);
+                }
+
+                /// <summary>
+                /// Having the caret on column zero presents a few problems.  It can very easily be treated as 
+                /// 'end' and hence not included causing the line count to be off.  Make sure that it is 
+                /// included 
+                /// </summary>
+                [Fact]
+                public void BackwardsCaretOnColumnZero()
+                {
+                    Create("cat", "dog");
+                    var visualSelection = VisualSelection.CreateForPoints(
+                        VisualKind.Block,
+                        _textBuffer.GetPointInLine(0, 1),
+                        _textBuffer.GetPointInLine(1, 0),
+                        tabStop: 4);
+                    var blockSpan = new BlockSpan(_textBuffer.GetPoint(0), tabStop: 4, spaces: 2, height: 2);
+                    Assert.Equal(blockSpan, visualSelection.AsBlock().Item1);
+                }
+
+                /// <summary>
+                /// Make sure the API is correctly using spaces and not columns.  Otherwise selections like the 
+                /// following look backwards.  Column wise it is backwards but spaces wise it is forwards
+                /// </summary>
+                [Fact]
+                public void EnsureUsingSpaces()
+                {
+                    Create(4, "cat", "\tdog");
+                    var visualSelection = VisualSelection.CreateForPoints(
+                        VisualKind.Block,
+                        _textBuffer.GetPointInLine(0, 2),
+                        _textBuffer.GetPointInLine(1, 1),
+                        tabStop: 4);
+                    var blockSpan = new BlockSpan(_textBuffer.GetPointInLine(0, 2), tabStop: 4, spaces: 3, height: 2);
+                    Assert.Equal(blockSpan, visualSelection.AsBlock().Item1);
+                }
+
+                [Fact]
+                public void ForwardSimple()
+                {
+                    Create("cats", "dogs");
+                    var visualSelection = VisualSelection.CreateForPoints(
+                        VisualKind.Block,
+                        _textBuffer.GetPointInLine(0, 1),
+                        _textBuffer.GetPointInLine(1, 3),
+                        tabStop: 4);
+                    var blockSpan = new BlockSpan(_textBuffer.GetPointInLine(0, 1), tabStop: 4, spaces: 3, height: 2);
+                    Assert.Equal(blockSpan, visualSelection.AsBlock().Item1);
                 }
             }
         }

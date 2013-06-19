@@ -76,13 +76,22 @@ namespace Vim.UnitTest
         /// </summary>
         public abstract class BlockSelectionTest : VisualModeIntegrationTest
         {
+            private int _tabStop;
+
+            protected override void Create(params string[] lines)
+            {
+                base.Create(lines);
+                _tabStop = _vimBuffer.LocalSettings.TabStop;
+            }
+
             public sealed class TabTest : BlockSelectionTest
             {
                 protected override void Create(params string[] lines)
                 {
-                    base.Create(lines);
-                    _vimBuffer.LocalSettings.TabStop = 4;
-                    _vimBuffer.LocalSettings.ExpandTab = false;
+                    base.Create();
+                    UpdateTabStop(_vimBuffer, 4);
+                    _vimBuffer.TextView.SetText(lines);
+                    _textView.MoveCaretTo(0);
                 }
 
                 [Fact]
@@ -104,6 +113,7 @@ namespace Vim.UnitTest
                 {
                     Create("cat", "\tdog");
                     _vimBuffer.ProcessNotation("ll<C-Q>j");
+
                     Assert.Equal(
                         new[]
                         {
@@ -113,18 +123,110 @@ namespace Vim.UnitTest
                         _textView.Selection.SelectedSpans);
                 }
 
+                /// <summary>
+                /// The caret is past the tab.  Hence the selection for the first line should
+                /// be correct.
+                /// </summary>
                 [Fact]
                 public void CaretPastTab()
                 {
                     Create("kitty", "\tdog");
                     _vimBuffer.ProcessNotation("ll<C-Q>jl");
+
+                    // In a strict vim interpretation both '\t' and 'd' would be selected in the 
+                    // second line.  The Visual Studio editor won't have this selection and instead
+                    // will not select the tab since it's only partially selected.  Hence only the
+                    // 'd' will end up selected
                     Assert.Equal(
                         new[]
                         {
                             _textBuffer.GetLineSpan(0, 2, 3),
-                            _textBuffer.GetLineSpan(1, 2, 1)
+                            _textBuffer.GetLineSpan(1, 1, 1)
                         },
                         _textView.Selection.SelectedSpans);
+                }
+            }
+
+            public sealed class MiscTest : BlockSelectionTest
+            {
+                /// <summary>
+                /// Make sure the CTRL-Q command causes the block selection to start out as a single width
+                /// column
+                /// </summary>
+                [Fact]
+                public void InitialState()
+                {
+                    Create("hello world");
+                    _vimBuffer.ProcessNotation("<C-Q>");
+                    Assert.Equal(ModeKind.VisualBlock, _vimBuffer.ModeKind);
+                    var blockSpan = new BlockSpan(_textBuffer.GetPoint(0), tabStop: _tabStop, spaces: 1, height: 1);
+                    Assert.Equal(blockSpan, _vimBuffer.GetSelectionBlockSpan());
+                }
+
+                /// <summary>
+                /// Make sure the CTRL-Q command causes the block selection to start out as a single width 
+                /// column from places other than the start of the document
+                /// </summary>
+                [Fact]
+                public void InitialNonStartPoint()
+                {
+                    Create("big cats", "big dogs", "big trees");
+                    var point = _textBuffer.GetPointInLine(1, 3);
+                    _textView.MoveCaretTo(point);
+                    _vimBuffer.ProcessNotation("<C-Q>");
+                    Assert.Equal(ModeKind.VisualBlock, _vimBuffer.ModeKind);
+                    var blockSpan = new BlockSpan(point, tabStop: _tabStop, spaces: 1, height: 1);
+                    Assert.Equal(blockSpan, _vimBuffer.GetSelectionBlockSpan());
+                }
+
+                /// <summary>
+                /// A left movement in block selection should move the selection to the left
+                /// </summary>
+                [Fact]
+                public void Backwards()
+                {
+                    Create("big cats", "big dogs");
+                    _textView.MoveCaretTo(2);
+                    _vimBuffer.ProcessNotation("<C-Q>jh");
+                    Assert.Equal(ModeKind.VisualBlock, _vimBuffer.ModeKind);
+                    var blockSpan = new BlockSpan(_textView.GetPoint(1), tabStop: _tabStop, spaces: 2, height: 2);
+                    Assert.Equal(blockSpan, _vimBuffer.GetSelectionBlockSpan());
+                }
+            }
+
+            public sealed class ExclusiveTest : BlockSelectionTest
+            {
+                /// <summary>
+                /// When selection is exclusive there should still be a single column selected in block
+                /// mode even if the original width is 1
+                /// </summary>
+                [Fact]
+                public void OneWidthBlock()
+                {
+                    Create("the dog", "the cat");
+                    _textView.MoveCaretTo(1);
+                    _globalSettings.Selection = "exclusive";
+                    _vimBuffer.Process(KeyInputUtil.CharWithControlToKeyInput('q'));
+                    _vimBuffer.Process('j');
+                    var blockSpan = _textBuffer.GetBlockSpan(1, 1, 0, 2, tabStop: _tabStop);
+                    Assert.Equal(blockSpan, _vimBuffer.GetSelectionBlockSpan());
+                    Assert.Equal(_textView.GetPointInLine(1, 1), _textView.GetCaretPoint());
+                }
+
+                /// <summary>
+                /// When selection is exclusive block selection should shrink by one in width
+                /// </summary>
+                [Fact]
+                public void TwoWidthBlock()
+                {
+                    Create("the dog", "the cat");
+                    _textView.MoveCaretTo(1);
+                    _globalSettings.Selection = "exclusive";
+                    _vimBuffer.Process(KeyInputUtil.CharWithControlToKeyInput('q'));
+                    _vimBuffer.Process("jl");
+                    var blockSpan = _textBuffer.GetBlockSpan(1, 1, 0, 2, tabStop: _tabStop);
+                    Assert.Equal(blockSpan, _vimBuffer.GetSelectionBlockSpan());
+                    Assert.Equal(_textView.GetPointInLine(1, 2), _textView.GetCaretPoint());
                 }
             }
         }
@@ -134,7 +236,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Even a visual character change is still a linewise delete
             /// </summary>
-            [Fact] 
+            [Fact]
             public void CharacterIsLineWise()
             {
                 Create("cat", "dog");
@@ -158,7 +260,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Even a visual character change is still a linewise delete
             /// </summary>
-            [Fact] 
+            [Fact]
             public void CharacterIsLineWise()
             {
                 Create("cat", "dog");
@@ -668,7 +770,7 @@ namespace Vim.UnitTest
                     Create("cat", "dog", "tree");
                     _vimBuffer.ProcessNotation("<C-q>ljo");
                     Assert.Equal(0, _textView.GetCaretPoint().Position);
-                    var blockSpan = _textView.GetSelectionBlockSpan();
+                    var blockSpan = _vimBuffer.GetSelectionBlockSpan();
                     Assert.Equal(2, blockSpan.Height);
                     Assert.Equal(2, blockSpan.Spaces);
                 }
@@ -679,7 +781,7 @@ namespace Vim.UnitTest
                     Create("cat", "dog", "tree");
                     _vimBuffer.ProcessNotation("<C-q>ljoo");
                     Assert.Equal(_textView.GetPointInLine(1, 1), _textView.GetCaretPoint().Position);
-                    var blockSpan = _textView.GetSelectionBlockSpan();
+                    var blockSpan = _vimBuffer.GetSelectionBlockSpan();
                     Assert.Equal(2, blockSpan.Height);
                     Assert.Equal(2, blockSpan.Spaces);
                 }
@@ -693,7 +795,7 @@ namespace Vim.UnitTest
                     Create("cat", "dog", "tree");
                     _vimBuffer.ProcessNotation("<C-q>ljO");
                     Assert.Equal(_textView.GetPointInLine(1, 0), _textView.GetCaretPoint().Position);
-                    var blockSpan = _textView.GetSelectionBlockSpan();
+                    var blockSpan = _vimBuffer.GetSelectionBlockSpan();
                     Assert.Equal(2, blockSpan.Height);
                     Assert.Equal(2, blockSpan.Spaces);
                 }
@@ -704,7 +806,7 @@ namespace Vim.UnitTest
                     Create("cat", "dog", "tree");
                     _vimBuffer.ProcessNotation("<C-q>ljOO");
                     Assert.Equal(_textView.GetPointInLine(1, 1), _textView.GetCaretPoint().Position);
-                    var blockSpan = _textView.GetSelectionBlockSpan();
+                    var blockSpan = _vimBuffer.GetSelectionBlockSpan();
                     Assert.Equal(2, blockSpan.Height);
                     Assert.Equal(2, blockSpan.Spaces);
                 }
@@ -715,7 +817,7 @@ namespace Vim.UnitTest
                     Create("cat", "dog", "tree");
                     _vimBuffer.ProcessNotation("<C-q>ljoO");
                     Assert.Equal(_textView.GetPointInLine(0, 1), _textView.GetCaretPoint().Position);
-                    var blockSpan = _textView.GetSelectionBlockSpan();
+                    var blockSpan = _vimBuffer.GetSelectionBlockSpan();
                     Assert.Equal(2, blockSpan.Height);
                     Assert.Equal(2, blockSpan.Spaces);
                 }
@@ -726,7 +828,7 @@ namespace Vim.UnitTest
                     Create("cat", "dog", "tree");
                     _vimBuffer.ProcessNotation("<C-q>ljoOO");
                     Assert.Equal(_textView.GetPointInLine(0, 0), _textView.GetCaretPoint().Position);
-                    var blockSpan = _textView.GetSelectionBlockSpan();
+                    var blockSpan = _vimBuffer.GetSelectionBlockSpan();
                     Assert.Equal(2, blockSpan.Height);
                     Assert.Equal(2, blockSpan.Spaces);
                 }
@@ -846,7 +948,7 @@ namespace Vim.UnitTest
             {
                 Create("cat", "dog", "tree");
                 _vimBuffer.Process("VjJ");
-                Assert.Equal(new [] { "cat dog", "tree" }, _textBuffer.GetLines());
+                Assert.Equal(new[] { "cat dog", "tree" }, _textBuffer.GetLines());
             }
 
             [Fact]
@@ -854,7 +956,7 @@ namespace Vim.UnitTest
             {
                 Create("cat", "dog", "tree");
                 _vimBuffer.Process("VjgJ");
-                Assert.Equal(new [] { "catdog", "tree" }, _textBuffer.GetLines());
+                Assert.Equal(new[] { "catdog", "tree" }, _textBuffer.GetLines());
             }
 
             [Fact]
@@ -964,83 +1066,6 @@ namespace Vim.UnitTest
                 _context.RunAll();
                 _vimBuffer.Process("ly");
                 Assert.Equal("  wo", _vimBuffer.RegisterMap.GetRegister(RegisterName.Unnamed).StringValue);
-            }
-
-            /// <summary>
-            /// Make sure the CTRL-Q command causes the block selection to start out as a single width
-            /// column
-            /// </summary>
-            [Fact]
-            public void Select_Block_InitialState()
-            {
-                Create("hello world");
-                _vimBuffer.ProcessNotation("<C-Q>");
-                Assert.Equal(ModeKind.VisualBlock, _vimBuffer.ModeKind);
-                var blockSpan = new BlockSpan(_textBuffer.GetPoint(0), 2, 1, 1);
-                Assert.Equal(blockSpan, _textView.GetSelectionBlockSpan());
-            }
-
-            /// <summary>
-            /// Make sure the CTRL-Q command causes the block selection to start out as a single width 
-            /// column from places other than the start of the document
-            /// </summary>
-            [Fact]
-            public void Select_Block_InitialNonStartPoint()
-            {
-                Create("big cats", "big dogs", "big trees");
-                var point = _textBuffer.GetPointInLine(1, 3);
-                _textView.MoveCaretTo(point);
-                _vimBuffer.ProcessNotation("<C-Q>");
-                Assert.Equal(ModeKind.VisualBlock, _vimBuffer.ModeKind);
-                var blockSpan = new BlockSpan(point, 2, 1, 1);
-                Assert.Equal(blockSpan, _textView.GetSelectionBlockSpan());
-            }
-
-            /// <summary>
-            /// A left movement in block selection should move the selection to the left
-            /// </summary>
-            [Fact]
-            public void Select_Block_Backwards()
-            {
-                Create("big cats", "big dogs");
-                _textView.MoveCaretTo(2);
-                _vimBuffer.ProcessNotation("<C-Q>jh");
-                Assert.Equal(ModeKind.VisualBlock, _vimBuffer.ModeKind);
-                var blockSpan = new BlockSpan(_textView.GetPoint(1), 2, 2, 2);
-                Assert.Equal(blockSpan, _textView.GetSelectionBlockSpan());
-            }
-
-            /// <summary>
-            /// When selection is exclusive there should still be a single column selected in block
-            /// mode even if the original width is 1
-            /// </summary>
-            [Fact]
-            public void Select_Exclusive_OneWidthBlock()
-            {
-                Create("the dog", "the cat");
-                _textView.MoveCaretTo(1);
-                _globalSettings.Selection = "exclusive";
-                _vimBuffer.Process(KeyInputUtil.CharWithControlToKeyInput('q'));
-                _vimBuffer.Process('j');
-                var blockSpan = _textBuffer.GetBlockSpan(1, 1, 0, 2);
-                Assert.Equal(blockSpan, _textView.GetSelectionBlockSpan());
-                Assert.Equal(_textView.GetPointInLine(1, 1), _textView.GetCaretPoint());
-            }
-
-            /// <summary>
-            /// When selection is exclusive block selection should shrink by one in width
-            /// </summary>
-            [Fact]
-            public void Select_Exclusive_TwoWidthBlock()
-            {
-                Create("the dog", "the cat");
-                _textView.MoveCaretTo(1);
-                _globalSettings.Selection = "exclusive";
-                _vimBuffer.Process(KeyInputUtil.CharWithControlToKeyInput('q'));
-                _vimBuffer.Process("jl");
-                var blockSpan = _textBuffer.GetBlockSpan(1, 1, 0, 2);
-                Assert.Equal(blockSpan, _textView.GetSelectionBlockSpan());
-                Assert.Equal(_textView.GetPointInLine(1, 2), _textView.GetCaretPoint());
             }
 
             /// <summary>
@@ -1902,6 +1927,21 @@ namespace Vim.UnitTest
                 Assert.Equal(7, _textView.GetCaretPoint().Position);
             }
 
+            [Fact]
+            public void Issue903()
+            {
+                Create();
+                UpdateTabStop(_vimBuffer, 4);
+                _textView.SetText("some line1", "\tsome line 2");
+                _textView.MoveCaretTo(8);
+                _vimBuffer.ProcessNotation("<c-q>j");
+                Assert.Equal(new[]
+                    {
+                        _textBuffer.GetLineSpan(0, 8, 1),
+                        _textBuffer.GetLineSpan(1, 5, 1)
+                    },
+                    _textView.Selection.SelectedSpans);
+            }
         }
 
         public abstract class YankSelectionTest : VisualModeIntegrationTest
@@ -1977,6 +2017,5 @@ namespace Vim.UnitTest
                 }
             }
         }
-
     }
 }

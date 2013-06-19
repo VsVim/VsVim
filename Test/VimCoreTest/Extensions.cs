@@ -851,6 +851,16 @@ namespace Vim.UnitTest
             return buffer.RegisterMap.GetRegister(name);
         }
 
+        public static BlockSpan GetSelectionBlockSpan(this IVimBuffer vimBuffer)
+        {
+            return GetSelectionBlockSpan(vimBuffer.TextView, vimBuffer.LocalSettings.TabStop);
+        }
+
+        public static BlockSpan GetBlockSpan(this IVimBuffer vimBuffer, int column, int length, int startLine = 0, int lineCount = 1)
+        {
+            return GetBlockSpan(vimBuffer.TextBuffer, column, length, startLine, lineCount, vimBuffer.LocalSettings.TabStop);
+        }
+
         #endregion
 
         #region ITextSnapshot
@@ -1462,7 +1472,7 @@ namespace Vim.UnitTest
             return textView.Selection.StreamSelectionSpan.SnapshotSpan;
         }
 
-        public static BlockSpan GetSelectionBlockSpan(this ITextView textView, int tabStop = 4)
+        public static BlockSpan GetSelectionBlockSpan(this ITextView textView, int tabStop)
         {
             Assert.Equal(TextSelectionMode.Box, textView.Selection.Mode);
             var spans = textView.Selection.SelectedSpans;

@@ -1748,19 +1748,27 @@ type VisualSelection =
     static member CreateForPoints visualKind (anchorPoint : SnapshotPoint) (caretPoint : SnapshotPoint) tabStop =
 
         let createBlock () =
-            let anchorColumn = SnapshotPointUtil.GetColumn anchorPoint
-            let caretColumn = SnapshotPointUtil.GetColumn caretPoint
-            if anchorColumn <= caretColumn then
-                // It's a forward block selection.  The active point needs to be one column past the 
-                // caret in order to ensure the caret is selected 
-                let activePoint = SnapshotPointUtil.AddOneOrCurrent caretPoint
-                VisualSpan.CreateForSelectionPoints VisualKind.Block anchorPoint activePoint tabStop, Path.Forward
-            else
-                // It's a backward selection.  The caretPoint is in a lesser column and hence will
-                // be included.  Need to adjust the anchor point though by one to put it in the 
-                // selection
-                let anchorPoint = SnapshotPointUtil.AddOneOrCurrent anchorPoint
-                VisualSpan.CreateForSelectionPoints VisualKind.Block anchorPoint caretPoint tabStop , Path.Backward
+            let anchorSpaces = ColumnWiseUtil.GetSpacesToPoint anchorPoint tabStop
+            let caretSpaces = ColumnWiseUtil.GetSpacesToPoint caretPoint tabStop
+            let spaces = (abs (caretSpaces - anchorSpaces)) + 1
+            let column = min anchorSpaces caretSpaces
+            
+            let startPoint = 
+                let first, _ = SnapshotPointUtil.OrderAscending anchorPoint caretPoint
+                let line = SnapshotPointUtil.GetContainingLine first
+                ColumnWiseUtil.GetPointForSpaces line column tabStop
+
+            let height = 
+                let anchorLine = anchorPoint.GetContainingLine()
+                let caretLine = caretPoint.GetContainingLine()
+                (abs (anchorLine.LineNumber - caretLine.LineNumber)) + 1
+
+            let path = 
+                if anchorSpaces <= caretSpaces then Path.Forward
+                else Path.Backward
+
+            let blockSpan = BlockSpan(startPoint, tabStop, spaces, height)
+            VisualSpan.Block blockSpan, path
 
         let createNormal () = 
 
