@@ -296,7 +296,7 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
                     else
                     {
                         width = bounds.Width;
-                        height = bounds.Height;
+                        height = bounds.TextHeight;
                     }
                 }
             }
