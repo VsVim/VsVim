@@ -15,6 +15,7 @@
 *.pdb 
 *.msi 
 *.vspx
+*.mdf
 
 # Project Files
 *.user
