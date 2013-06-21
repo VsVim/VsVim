@@ -14,7 +14,7 @@ open System.Text
 open StringBuilderExtensions
 
 /// This module exists purely to break type dependency issues created below.  
-module internal SnapshotCoreUtil = 
+module internal EditorCoreUtil =
 
     let IsEndPoint (point : SnapshotPoint) = 
         point.Position = point.Snapshot.Length
@@ -104,7 +104,7 @@ type SnapshotOverlapPoint =
     /// as an overlap 
     new (point : SnapshotPoint) =
         let width = 
-            if SnapshotCoreUtil.IsEndPoint point then
+            if EditorCoreUtil.IsEndPoint point then
                 0
             else
                 1
@@ -168,7 +168,7 @@ type SnapshotOverlapSpan =
         if x.End.SpacesBefore = 0 then
            x.End.Point
         else
-            SnapshotCoreUtil.AddOneOrCurrent x.End.Point
+            EditorCoreUtil.AddOneOrCurrent x.End.Point
 
     /// A SnapshotSpan which fully encompasses this overlap span 
     member x.OverarchingSpan = SnapshotSpan(x.OverarchingStart, x.OverarchingEnd)
@@ -180,12 +180,12 @@ type SnapshotOverlapSpan =
             if x.Start.SpacesBefore = 0 then
                 x.Start.Point
             else
-                SnapshotCoreUtil.AddOneOrCurrent x.Start.Point
+                EditorCoreUtil.AddOneOrCurrent x.Start.Point
         let endPoint = 
             if x.End.SpacesBefore = 0 then
                 x.End.Point
             else
-                SnapshotCoreUtil.SubtractOneOrCurrent x.End.Point
+                EditorCoreUtil.SubtractOneOrCurrent x.End.Point
         if startPoint.Position <= endPoint.Position then
             SnapshotSpan(startPoint, endPoint)
         else
@@ -600,6 +600,7 @@ module VirtualSnapshotSpanUtil =
 /// Contains operations to help fudge the Editor APIs to be more F# friendly.  Does not
 /// include any Vim specific logic
 module SnapshotLineUtil =
+
     /// ITextSnapshot the ITextSnapshotLine is associated with
     let GetSnapshot (line : ITextSnapshotLine) = line.Snapshot
 
@@ -698,17 +699,17 @@ module SnapshotLineUtil =
         if span.Length = 0 then None
         else span.End.Subtract(1) |> Some
 
-    /// Get a SnapshotPoint representing 'offset' characters into the line or the 
-    /// End point of the line
-    let GetOffsetOrEnd offset (line : ITextSnapshotLine) = 
-        if line.Start.Position + offset >= line.End.Position then line.End
-        else line.Start.Add(offset)
+    /// Get a SnapshotPoint representing the nth characters into the line or the 
+    /// End point of the line.  This is done using positioning 
+    let GetColumnOrEnd column (line : ITextSnapshotLine) = 
+        if line.Start.Position + column >= line.End.Position then line.End
+        else line.Start.Add(column)
 
     /// Get a SnapshotPoint representing 'offset' characters into the line or it's
     /// line break or the EndIncludingLineBreak of the line
-    let GetOffsetOrEndIncludingLineBreak offset (line : ITextSnapshotLine) = 
-        if line.Start.Position + offset >= line.EndIncludingLineBreak.Position then line.EndIncludingLineBreak
-        else line.Start.Add(offset)
+    let GetColumnOrEndIncludingLineBreak column (line : ITextSnapshotLine) = 
+        if line.Start.Position + column >= line.EndIncludingLineBreak.Position then line.EndIncludingLineBreak
+        else line.Start.Add(column)
 
     /// Is this the last included point on the ITextSnapshotLine
     let IsLastPoint (line : ITextSnapshotLine) point = 
@@ -813,7 +814,7 @@ module SnapshotPointUtil =
 
     /// Is this the end of the Snapshot
     let IsEndPoint point = 
-        SnapshotCoreUtil.IsEndPoint point
+        EditorCoreUtil.IsEndPoint point
 
     /// Is the passed in SnapshotPoint inside the line break portion of the line
     let IsInsideLineBreak point = 
@@ -867,7 +868,7 @@ module SnapshotPointUtil =
     /// Add 1 to the given snapshot point unless it's the end of the buffer in which case just
     /// return the passed in value
     let AddOneOrCurrent point =
-        SnapshotCoreUtil.AddOneOrCurrent point
+        EditorCoreUtil.AddOneOrCurrent point
 
     /// Subtract the count from the SnapshotPoint
     let SubtractOne (point:SnapshotPoint) =  point.Subtract(1)
@@ -880,7 +881,7 @@ module SnapshotPointUtil =
     /// Try and subtract 1 from the given point unless it's the start of the buffer in which
     /// case return the passed in value
     let SubtractOneOrCurrent point = 
-        SnapshotCoreUtil.SubtractOneOrCurrent point
+        EditorCoreUtil.SubtractOneOrCurrent point
 
     /// Is the SnapshotPoint the provided char
     let IsChar c point =

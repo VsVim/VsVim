@@ -260,7 +260,7 @@ type internal CommandUtil
         x.EditWithUndoTransaciton "Change" (fun () ->
 
             let span = 
-                let endPoint = SnapshotLineUtil.GetOffsetOrEnd (x.CaretColumn + count) x.CaretLine
+                let endPoint = SnapshotLineUtil.GetColumnOrEnd (x.CaretColumn + count) x.CaretLine
                 SnapshotSpan(x.CaretPoint, endPoint)
 
             let editSpan = EditSpan.Single span
@@ -547,7 +547,7 @@ type internal CommandUtil
         // Check for the case where the caret is past the end of the line.  Can happen
         // when 've=onemore'
         if x.CaretPoint.Position < x.CaretLine.End.Position then
-            let endPoint = SnapshotLineUtil.GetOffsetOrEnd (x.CaretColumn + count) x.CaretLine
+            let endPoint = SnapshotLineUtil.GetColumnOrEnd (x.CaretColumn + count) x.CaretLine
             let span = SnapshotSpan(x.CaretPoint, endPoint)
 
             // Use a transaction so we can guarantee the caret is in the correct
@@ -2570,7 +2570,7 @@ type internal CommandUtil
                 // to the end of the line and complete the command.  Nothing should be deleted
                 TextViewUtil.MoveCaretToPoint _textView x.CaretLine.End
             else
-                let endPoint = SnapshotLineUtil.GetOffsetOrEnd (x.CaretColumn + count) x.CaretLine
+                let endPoint = SnapshotLineUtil.GetColumnOrEnd (x.CaretColumn + count) x.CaretLine
                 let span = SnapshotSpan(x.CaretPoint, endPoint)
     
                 // Use a transaction so we can guarantee the caret is in the correct

@@ -1178,7 +1178,7 @@ type CharacterSpan =
         // consider that here.  The most common case for this occurring is when the caret
         // in visual mode is on the first column of an empty line.  In that case the caret
         // is really in the line break so End is one past that
-        let endPoint = SnapshotLineUtil.GetOffsetOrEndIncludingLineBreak offset lastLine
+        let endPoint = SnapshotLineUtil.GetColumnOrEndIncludingLineBreak offset lastLine
 
         // Make sure that we don't create a negative SnapshotSpan.  Really we should
         // be verifying the arguments to ensure we don't but until we do fix up
@@ -1321,7 +1321,7 @@ type BlockSpan =
                 span.Start, width
             else 
                 let startLine = SnapshotPointUtil.GetContainingLine span.Start
-                let start = SnapshotLineUtil.GetOffsetOrEnd endColumnSpaces startLine
+                let start = SnapshotLineUtil.GetColumnOrEnd endColumnSpaces startLine
                 let width = abs width
                 start, width
 
@@ -1485,7 +1485,7 @@ type VisualSpan =
                     let endColumn = SnapshotPointUtil.GetColumn endPoint.Point
                     let column = min startColumn endColumn
                     let startLine = blockSpan.Start.GetContainingLine()
-                    SnapshotLineUtil.GetOffsetOrEnd column startLine
+                    SnapshotLineUtil.GetColumnOrEnd column startLine
                 else
                     blockSpan.Start
 

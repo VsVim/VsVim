@@ -419,7 +419,7 @@ type internal CommonOperations
                 | MotionKind.LineWise, CaretColumn.InLastLine column -> 
                     // If we are moving linewise, but to a specific column, use
                     // that column as the target of the motion
-                    SnapshotLineUtil.GetOffsetOrEnd column line
+                    SnapshotLineUtil.GetColumnOrEnd column line
                 | _, _ -> 
                     result.Span.Start
             else
@@ -452,9 +452,9 @@ type internal CommonOperations
                     | CaretColumn.None -> 
                         line.End
                     | CaretColumn.InLastLine column ->
-                        SnapshotLineUtil.GetOffsetOrEnd column line
+                        SnapshotLineUtil.GetColumnOrEnd column line
                     | CaretColumn.ScreenColumn column ->
-                        SnapshotLineUtil.GetOffsetOrEnd (SnapshotPointUtil.GetColumn (x.GetPointForSpaces line column)) line
+                        SnapshotLineUtil.GetColumnOrEnd (SnapshotPointUtil.GetColumn (x.GetPointForSpaces line column)) line
                     | CaretColumn.AfterLastLine ->
                         getAfterLastLine()
 
