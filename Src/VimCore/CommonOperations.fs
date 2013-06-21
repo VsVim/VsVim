@@ -138,21 +138,21 @@ type internal CommonOperations
 
     /// Get the spaces for the given character
     member x.GetSpacesForCharAtPoint point = 
-        ColumnWiseUtil.GetSpacesForPoint point _localSettings.TabStop
+        SnapshotPointUtil.GetCharacterWidth point _localSettings.TabStop
 
     /// Get the count of spaces to get to the specified absolute column offset.  This will count
     /// tabs as counting for 'tabstop' spaces
     member x.GetSpacesToColumn line column = 
-        ColumnWiseUtil.GetSpacesToColumn line column _localSettings.TabStop
+        SnapshotLineUtil.GetSpacesToColumn line column _localSettings.TabStop
 
     /// Get the count of spaces to get to the specified point in it's line when tabs are expanded
     member x.GetSpacesToPoint point = 
-        ColumnWiseUtil.GetSpacesToPoint point _localSettings.TabStop
+        SnapshotPointUtil.GetSpacesToPoint point _localSettings.TabStop
 
     // Get the point in the given line which is count "spaces" into the line.  Returns End if 
     // it goes beyond the last point in the string
     member x.GetPointForSpaces line spacesCount = 
-        ColumnWiseUtil.GetPointForSpaces line spacesCount _localSettings.TabStop
+        SnapshotLineUtil.GetSpaceOrEnd line spacesCount _localSettings.TabStop
 
     /// Get the new line text which should be used for inserts at the provided point.  This is done
     /// by looking at the current line and potentially the line above and simply re-using it's

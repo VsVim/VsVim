@@ -1148,8 +1148,8 @@ type internal CommandUtil
                             (blockSpan.Spaces + blockSpan.ColumnSpaces) - 1, blockSpan.ColumnSpaces
 
                     let tabStop = _localSettings.TabStop
-                    let newCaretPoint = ColumnWiseUtil.GetPointForSpaces x.CaretLine caretSpaces tabStop
-                    let newAnchorPoint = ColumnWiseUtil.GetPointForSpaces (anchorPoint.GetContainingLine()) anchorSpaces tabStop
+                    let newCaretPoint = SnapshotLineUtil.GetSpaceOrEnd x.CaretLine caretSpaces tabStop
+                    let newAnchorPoint = SnapshotLineUtil.GetSpaceOrEnd (anchorPoint.GetContainingLine()) anchorSpaces tabStop
                     changeSelection newAnchorPoint newCaretPoint
                 else
                     changeSelection x.CaretPoint anchorPoint

@@ -31,6 +31,13 @@ module internal EditorCoreUtil =
         else
             point.Subtract(1)
 
+    let GetCharacterWidth (point : SnapshotPoint) tabStop = 
+        if IsEndPoint point then 
+            0
+        else
+            let c = point.GetChar()
+            CharUtil.GetCharacterWidth c tabStop
+
 /// This is the representation of a point within a particular line.  It's common
 /// to represent a column in vim and using a SnapshotPoint isn't always the best
 /// representation.  Finding the containing ITextSnapshotLine for a given 
@@ -699,18 +706,6 @@ module SnapshotLineUtil =
         if span.Length = 0 then None
         else span.End.Subtract(1) |> Some
 
-    /// Get a SnapshotPoint representing the nth characters into the line or the 
-    /// End point of the line.  This is done using positioning 
-    let GetColumnOrEnd column (line : ITextSnapshotLine) = 
-        if line.Start.Position + column >= line.End.Position then line.End
-        else line.Start.Add(column)
-
-    /// Get a SnapshotPoint representing 'offset' characters into the line or it's
-    /// line break or the EndIncludingLineBreak of the line
-    let GetColumnOrEndIncludingLineBreak column (line : ITextSnapshotLine) = 
-        if line.Start.Position + column >= line.EndIncludingLineBreak.Position then line.EndIncludingLineBreak
-        else line.Start.Add(column)
-
     /// Is this the last included point on the ITextSnapshotLine
     let IsLastPoint (line : ITextSnapshotLine) point = 
         if line.Length = 0 then point = line.Start
@@ -777,6 +772,69 @@ module SnapshotLineUtil =
             else
                 line.Start.Add offset
         SnapshotSpan(startPoint, endPoint)
+
+    /// Get a SnapshotPoint representing the nth characters into the line or the 
+    /// End point of the line.  This is done using positioning 
+    let GetColumnOrEnd column (line : ITextSnapshotLine) = 
+        if line.Start.Position + column >= line.End.Position then line.End
+        else line.Start.Add(column)
+
+    /// Get a SnapshotPoint representing 'offset' characters into the line or it's
+    /// line break or the EndIncludingLineBreak of the line
+    let GetColumnOrEndIncludingLineBreak column (line : ITextSnapshotLine) = 
+        if line.Start.Position + column >= line.EndIncludingLineBreak.Position then line.EndIncludingLineBreak
+        else line.Start.Add(column)
+
+    // Get the point in the given line which is just before the character that 
+    // overlaps the specified column into the line, as well as the position of 
+    // that column inside the character. Returns End if it goes beyond the last 
+    // point in the string
+    let GetSpaceWithOverlapOrEnd line spacesCount tabStop = 
+        let snapshot = GetSnapshot line
+        let endPoint = GetEnd line
+
+        // The following retrieves the location of the character that is
+        // spacesCount cells inside the line. The result is a triple 
+        // (pre, position, post) where
+        //    position is the position in the snapshot of the character that 
+        //       overlaps the spacesCount-th cell 
+        //    pre is the number of cells that the character spans before the
+        //       spacesCount-th cell
+        //    post is the number of cells that the character spans after the
+        //       spacesCount-th cell
+        let rec inner position spacesCount = 
+            if position = endPoint.Position then
+                (0, endPoint, 0)
+            else 
+                let point = SnapshotPoint(snapshot, position)
+                let c = point.GetChar()
+                let charWidth = CharUtil.GetCharacterWidth c tabStop
+                let remaining = spacesCount - charWidth
+
+                if spacesCount = 0 && charWidth <> 0 then
+                    (0, point, charWidth)
+                elif remaining < 0 then
+                    (spacesCount, point, charWidth)
+                else
+                    inner (position + 1) remaining
+
+        let (before, point, width) = inner line.Start.Position spacesCount
+        SnapshotOverlapPoint(point, before, width)
+
+    // Get the point in the given line which is just before the character that 
+    // overlaps the specified column into the line. Returns End if it goes 
+    // beyond the last point in the string
+    let GetSpaceOrEnd line spacesCount tabStop = 
+        let overlapPoint = GetSpaceWithOverlapOrEnd line spacesCount tabStop
+        overlapPoint.Point
+
+    /// Get the count of spaces to get to the specified absolute column offset.  This will count
+    /// tabs as counting for 'tabstop' spaces
+    let GetSpacesToColumn line column tabStop = 
+        GetSpanInLine line 0 column
+        |> SnapshotSpanUtil.GetPoints Path.Forward
+        |> Seq.map (fun point -> EditorCoreUtil.GetCharacterWidth point tabStop)
+        |> Seq.sum
 
 [<RequireQualifiedAccess>]
 type PointKind =
@@ -1119,6 +1177,14 @@ module SnapshotPointUtil =
             | Some(lastPoint) -> PointKind.EndPoint(lastPoint,point)
             | None -> PointKind.ZeroLength(point)
         else PointKind.Normal point
+
+    /// Get the count of spaces to get to the specified point in it's line when tabs are expanded
+    let GetSpacesToPoint point tabStop = 
+        let column = SnapshotColumn(point)
+        SnapshotLineUtil.GetSpacesToColumn column.Line column.Column tabStop
+
+    let GetCharacterWidth point tabStop = 
+        EditorCoreUtil.GetCharacterWidth point tabStop
 
 module VirtualSnapshotPointUtil =
     

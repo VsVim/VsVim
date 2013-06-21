@@ -1228,7 +1228,7 @@ type BlockSpan =
     member x.Column = SnapshotPointUtil.GetColumn x.Start
 
     /// In what space does this BlockSpan begin
-    member x.ColumnSpaces = ColumnWiseUtil.GetSpacesToPoint x._startPoint x._tabStop
+    member x.ColumnSpaces = SnapshotPointUtil.GetSpacesToPoint x._startPoint x._tabStop
 
     /// How many spaces does this BlockSpan occupy?  Be careful to treat this value as spaces, not columns.  The
     /// different being that tabs count as 'tabStop' spaces but only 1 column.  
@@ -1242,7 +1242,7 @@ type BlockSpan =
             let lineNumber = SnapshotPointUtil.GetLineNumber x.Start
             SnapshotUtil.GetLineOrLast x.Snasphot (lineNumber + (x._height - 1))
         let spaces = x.ColumnSpaces + x.Spaces
-        ColumnWiseUtil.GetPointForSpacesWithOverlap line spaces x._tabStop
+        SnapshotLineUtil.GetSpaceWithOverlapOrEnd line spaces x._tabStop
 
     /// Get the EndPoint (exclusive) of the BlockSpan
     member x.End = 
@@ -1269,8 +1269,8 @@ type BlockSpan =
             match SnapshotUtil.TryGetLine snapshot i with
             | None -> ()
             | Some line -> 
-                let startPoint = ColumnWiseUtil.GetPointForSpaces line offset x._tabStop
-                let endPoint = ColumnWiseUtil.GetPointForSpaces line (offset + x.Spaces) x._tabStop
+                let startPoint = SnapshotLineUtil.GetSpaceOrEnd line offset x._tabStop
+                let endPoint = SnapshotLineUtil.GetSpaceOrEnd line (offset + x.Spaces) x._tabStop
                 let span = SnapshotSpan(startPoint, endPoint)
                 list.Add(span)
 
@@ -1290,8 +1290,8 @@ type BlockSpan =
             match SnapshotUtil.TryGetLine snapshot i with
             | None -> ()
             | Some line -> 
-                let startPoint = ColumnWiseUtil.GetPointForSpacesWithOverlap line offset x._tabStop
-                let endPoint = ColumnWiseUtil.GetPointForSpacesWithOverlap line (offset + x.Spaces) x._tabStop 
+                let startPoint = SnapshotLineUtil.GetSpaceWithOverlapOrEnd line offset x._tabStop
+                let endPoint = SnapshotLineUtil.GetSpaceWithOverlapOrEnd line (offset + x.Spaces) x._tabStop 
                 let span = SnapshotOverlapSpan(startPoint, endPoint)
                 list.Add(span)
 
@@ -1311,8 +1311,8 @@ type BlockSpan =
     /// SnapshotSpan start
     static member CreateForSpan (span : SnapshotSpan) tabStop =
         let startPoint, width = 
-            let startColumnSpaces = ColumnWiseUtil.GetSpacesToPoint span.Start tabStop
-            let endColumnSpaces = ColumnWiseUtil.GetSpacesToPoint span.End tabStop
+            let startColumnSpaces = SnapshotPointUtil.GetSpacesToPoint span.Start tabStop
+            let endColumnSpaces = SnapshotPointUtil.GetSpacesToPoint span.End tabStop
             let width = endColumnSpaces - startColumnSpaces 
 
             if width = 0 then
@@ -1748,15 +1748,15 @@ type VisualSelection =
     static member CreateForPoints visualKind (anchorPoint : SnapshotPoint) (caretPoint : SnapshotPoint) tabStop =
 
         let createBlock () =
-            let anchorSpaces = ColumnWiseUtil.GetSpacesToPoint anchorPoint tabStop
-            let caretSpaces = ColumnWiseUtil.GetSpacesToPoint caretPoint tabStop
+            let anchorSpaces = SnapshotPointUtil.GetSpacesToPoint anchorPoint tabStop
+            let caretSpaces = SnapshotPointUtil.GetSpacesToPoint caretPoint tabStop
             let spaces = (abs (caretSpaces - anchorSpaces)) + 1
             let column = min anchorSpaces caretSpaces
             
             let startPoint = 
                 let first, _ = SnapshotPointUtil.OrderAscending anchorPoint caretPoint
                 let line = SnapshotPointUtil.GetContainingLine first
-                ColumnWiseUtil.GetPointForSpaces line column tabStop
+                SnapshotLineUtil.GetSpaceOrEnd line column tabStop
 
             let height = 
                 let anchorLine = anchorPoint.GetContainingLine()

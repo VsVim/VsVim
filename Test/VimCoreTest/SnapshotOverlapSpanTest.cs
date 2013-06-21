@@ -17,6 +17,13 @@ namespace Vim.UnitTest
             _textBuffer = CreateTextBuffer(lines);
         }
 
+        SnapshotOverlapSpan GetSpanFromSpaceAndCount(ITextSnapshotLine line, int start, int count, int tabStop)
+        {
+            var startPoint = SnapshotLineUtil.GetSpaceWithOverlapOrEnd(line, start, tabStop);
+            var endPoint = SnapshotLineUtil.GetSpaceWithOverlapOrEnd(line, start + count, tabStop);
+            return new SnapshotOverlapSpan(startPoint, endPoint);
+        }
+
         public abstract class GetTextTest : SnapshotOverlapSpanTest
         {
             public sealed class TabTest : GetTextTest
@@ -69,7 +76,7 @@ namespace Vim.UnitTest
                 public void WithinSingle()
                 {
                     Create("\tcat");
-                    var span = ColumnWiseUtil.GetSpanFromSpaceAndCount(_textBuffer.GetLine(0), start: 1, count: 3, tabStop: 12);
+                    var span = GetSpanFromSpaceAndCount(_textBuffer.GetLine(0), start: 1, count: 3, tabStop: 12);
                     Assert.Equal("   ", span.GetText());
                 }
             }
@@ -88,7 +95,7 @@ namespace Vim.UnitTest
                 public void Partial()
                 {
                     Create("あいうえお");
-                    var span = ColumnWiseUtil.GetSpanFromSpaceAndCount(_textBuffer.GetLine(0), start: 1, count: 4, tabStop: 4);
+                    var span = GetSpanFromSpaceAndCount(_textBuffer.GetLine(0), start: 1, count: 4, tabStop: 4);
                     Assert.Equal(" い ", span.GetText());
                 }
             }
@@ -164,7 +171,7 @@ namespace Vim.UnitTest
                 public void Complete()
                 {
                     Create("あいうえお");
-                    var span = ColumnWiseUtil.GetSpanFromSpaceAndCount(_textBuffer.GetLine(0), start: 0, count: 2, tabStop: 4);
+                    var span = GetSpanFromSpaceAndCount(_textBuffer.GetLine(0), start: 0, count: 2, tabStop: 4);
                     Assert.False(span.HasOverlap);
                     Assert.Equal(span.OverarchingSpan, span.InnerSpan);
                 }
@@ -176,7 +183,7 @@ namespace Vim.UnitTest
                 public void PartialInEnd()
                 {
                     Create("あいうえお");
-                    var span = ColumnWiseUtil.GetSpanFromSpaceAndCount(_textBuffer.GetLine(0), start: 0, count: 3, tabStop: 4);
+                    var span = GetSpanFromSpaceAndCount(_textBuffer.GetLine(0), start: 0, count: 3, tabStop: 4);
                     Assert.True(span.HasOverlap);
                 }
 
@@ -187,7 +194,7 @@ namespace Vim.UnitTest
                 public void PartialInStart()
                 {
                     Create("あいうえお");
-                    var span = ColumnWiseUtil.GetSpanFromSpaceAndCount(_textBuffer.GetLine(0), start: 1, count: 3, tabStop: 4);
+                    var span = GetSpanFromSpaceAndCount(_textBuffer.GetLine(0), start: 1, count: 3, tabStop: 4);
                     Assert.True(span.HasOverlap);
                 }
             }
@@ -202,7 +209,7 @@ namespace Vim.UnitTest
                 public void WithinSingleCharacter()
                 {
                     Create("\tcat");
-                    var span = ColumnWiseUtil.GetSpanFromSpaceAndCount(_textBuffer.GetLine(0), start: 1, count: 3, tabStop: 12);
+                    var span = GetSpanFromSpaceAndCount(_textBuffer.GetLine(0), start: 1, count: 3, tabStop: 12);
                     Assert.True(span.HasOverlap);
                     Assert.Equal("   ", span.GetText());
                     Assert.Equal(1, span.Start.SpacesBefore);
