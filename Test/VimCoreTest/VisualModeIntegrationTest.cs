@@ -1998,6 +1998,64 @@ namespace Vim.UnitTest
 
         public abstract class YankSelectionTest : VisualModeIntegrationTest
         {
+            public sealed class BlockTest : YankSelectionTest
+            {
+                private void AssertRegister(params string[] lines)
+                {
+                    var data = UnnamedRegister.StringData;
+                    Assert.True(data.IsBlock);
+                    Assert.Equal(lines, ((StringData.Block)data).Item);
+                }
+
+                [Fact]
+                public void Simple()
+                {
+                    Create("cat", "dog");
+                    _vimBuffer.ProcessNotation("<c-q>ljy");
+                    AssertRegister("ca", "do");
+                }
+
+                [Fact]
+                public void SimpleNonZeroColumn()
+                {
+                    Create("cats", "dogs");
+                    _vimBuffer.ProcessNotation("l<c-q>ljy");
+                    AssertRegister("at", "og");
+                }
+
+                [Fact]
+                public void SimpleWidthOneSelection()
+                {
+                    Create("cats", "dogs");
+                    _vimBuffer.ProcessNotation("l<c-q>jy");
+                    AssertRegister("a", "o");
+                }
+
+                [Fact]
+                public void PartialTab()
+                {
+                    Create(4, "trucker", "\tdog");
+                    _vimBuffer.ProcessNotation("ll<c-q>lljy");
+                    AssertRegister("uck", "  d");
+                }
+
+                [Fact]
+                public void CompleteTab()
+                {
+                    Create(4, "trucker", "\tdog");
+                    _vimBuffer.ProcessNotation("<c-q>lllljy");
+                    AssertRegister("truck", "\td");
+                }
+
+                [Fact]
+                public void PartialTabInMiddleLine()
+                {
+                    Create(4, "trucker", "\tdog", "fisher");
+                    _vimBuffer.ProcessNotation("ll<c-q>lljjy");
+                    AssertRegister("uck", "  d", "she");
+                }
+            }
+
             public sealed class CharacterTest : YankSelectionTest
             {
                 [Fact]
@@ -2022,15 +2080,12 @@ namespace Vim.UnitTest
                     _vimBuffer.Process("vjy");
                     Assert.Equal("dog" + Environment.NewLine + Environment.NewLine, UnnamedRegister.StringValue);
                 }
-            }
 
-            public sealed class MiscTest : YankSelectionTest
-            {
                 /// <summary>
                 /// The yank selection command should exit visual mode after the operation
                 /// </summary>
                 [Fact]
-                public void YankSelection_ShouldExitVisualMode()
+                public void ShouldExitVisualMode()
                 {
                     Create("cat", "dog");
                     EnterMode(ModeKind.VisualCharacter, _textView.GetLine(0).Extent);
@@ -2038,14 +2093,17 @@ namespace Vim.UnitTest
                     Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
                     Assert.True(_textView.Selection.IsEmpty);
                 }
+            }
 
+            public sealed class LineTest : YankSelectionTest
+            {
                 /// <summary>
                 /// Ensure that after yanking and leaving Visual Mode that the proper value is
                 /// maintained for LastVisualSelection.  It should be the selection before the command
                 /// was executed
                 /// </summary>
                 [Fact]
-                public void YankSelection_LastVisualSelection()
+                public void LastVisualSelection()
                 {
                     Create("cat", "dog", "fish");
                     var span = _textView.GetLineRange(0, 1).ExtentIncludingLineBreak;
@@ -2059,7 +2117,7 @@ namespace Vim.UnitTest
                 /// The yank line selection command should exit visual mode after the operation
                 /// </summary>
                 [Fact]
-                public void YankLineSelection_ShouldExitVisualMode()
+                public void ShouldExitVisualMode()
                 {
                     Create("cat", "dog");
                     EnterMode(ModeKind.VisualCharacter, _textView.GetLine(0).Extent);
