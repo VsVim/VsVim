@@ -2,8 +2,11 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel.Composition;
+using System.Globalization;
+using System.Linq;
 using EditorUtils;
 using EnvDTE;
+using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.Settings;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
@@ -19,6 +22,7 @@ namespace VsVim.Implementation.Settings
         internal const string IgnoredConflictingKeyBindingName = "IgnoredConflictingKeyBinding";
         internal const string RemovedBindingsName = "RemovedBindings";
         internal const string LegacySettingsMigratedName = "LegacySettingsMigrated";
+        internal const string KeyMappingIssueFixedName = "EnterDeletekeyMappingIssue";
         internal const string ErrorGetFormat = "Cannot get setting {0}";
         internal const string ErrorSetFormat = "Cannot set setting {0}";
 
@@ -48,7 +52,7 @@ namespace VsVim.Implementation.Settings
 
         [ImportingConstructor]
         internal VimApplicationSettings(
-            SVsServiceProvider vsServiceProvider, 
+            SVsServiceProvider vsServiceProvider,
             ILegacySettings legacySettings,
             [EditorUtilsImport] IProtectedOperations protectedOperations)
             : this(vsServiceProvider.GetVisualStudioVersion(), vsServiceProvider.GetWritableSettingsStore(), protectedOperations)
@@ -205,6 +209,12 @@ namespace VsVim.Implementation.Settings
         {
             get { return GetBoolean(IgnoredConflictingKeyBindingName, defaultValue: false); }
             set { SetBoolean(IgnoredConflictingKeyBindingName, value); }
+        }
+
+        bool IVimApplicationSettings.KeyMappingIssueFixed
+        {
+            get { return GetBoolean(KeyMappingIssueFixedName, defaultValue: false); }
+            set { SetBoolean(KeyMappingIssueFixedName, value); }
         }
 
         ReadOnlyCollection<CommandKeyBinding> IVimApplicationSettings.RemovedBindings

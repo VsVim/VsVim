@@ -35,6 +35,7 @@ namespace VsVim.UnitTest
             _vimApplicationSettings = new Mock<IVimApplicationSettings>(MockBehavior.Strict);
             _vimApplicationSettings.SetupGet(x => x.IgnoredConflictingKeyBinding).Returns(false);
             _vimApplicationSettings.SetupGet(x => x.HaveUpdatedKeyBindings).Returns(false);
+            _vimApplicationSettings.SetupGet(x => x.KeyMappingIssueFixed).Returns(true);
 
             var list = new List<CommandKeyBinding>();
             _vimApplicationSettings.SetupGet(x => x.RemovedBindings).Returns(list.AsReadOnly());

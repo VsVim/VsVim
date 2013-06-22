@@ -113,47 +113,56 @@ namespace VsVim.Implementation.ConflictingKey
 
         private void UpdateKeyBindings()
         {
-            var keyBindingsByHandled = _keyBindingList.ToLookup(data => data.HandledByVsVim);
+            // This process can both add and remove bindings to Visual Studio commands.  We need to look at 
+            // each command individually and build up the correct key binding for that particular command
+            // based on the current state of the model 
+            var commandIdList = _keyBindingList
+                .SelectMany(x => x.Bindings)
+                .Select(x => x.Id)
+                .Distinct()
+                .ToList();
 
-            // For commands being handled by VsVim, we shall remove any other bindings
-            foreach (var cur in _keyBindingList.Where(binding => binding.HandledByVsVim).SelectMany(data => data.Bindings))
+            // Create a HashSet<string> of all key strokes that we've determined to be handled by 
+            // VsVim through this UI.  
+            var comparer = StringComparer.OrdinalIgnoreCase;
+            var vsVimSet = new HashSet<string>(
+                _keyBindingList.Where(x => x.HandledByVsVim).SelectMany(x => x.Bindings).Select(x => x.KeyBinding.CommandString).Distinct(comparer),
+                comparer);
+
+            foreach (var commandId in commandIdList)
             {
+                // First step is to find the Visual Studio command we are binding to and it's existing 
+                // binding information
                 EnvDTE.Command command;
-                ReadOnlyCollection<CommandKeyBinding> bindings;
-                if (!_snapshot.TryGetCommandData(cur.Id, out command, out bindings))
+                ReadOnlyCollection<CommandKeyBinding> currentBindingList;
+                if (!_snapshot.TryGetCommandData(commandId, out command, out currentBindingList))
                 {
                     continue;
                 }
 
-                // Remove the bindings from the command which are currently in conflict with 
-                // Vim.  Do not remove all bindings because a command can contain bindings that don't
-                // conflict with vim in any way 
-                var keepBindings = bindings
-                    .Select(x => x.KeyBinding)
-                    .Where(x => !_snapshot.VimFirstKeyInputs.Contains(x.FirstKeyStroke.AggregateKeyInput))
-                    .Select(x => x.CommandString)
+                // Next get the KeyBinding values which are required by the model itself.  This will be all 
+                // of the KeyBinding values the UI decided needed to be handled by Visual Studio
+                var vsBindingList = _keyBindingList
+                    .Where(x => !x.HandledByVsVim)
+                    .SelectMany(x => x.Bindings)
+                    .Where(x => x.Id == commandId)
+                    .Select(x => x.KeyBinding.CommandString)
                     .ToList();
 
-                command.SafeSetBindings(keepBindings);
-            }
-
-            // Restore all commands we are not handling
-            foreach (var cur in _keyBindingList.Where(binding => !binding.HandledByVsVim).SelectMany(data => data.Bindings))
-            {
-                EnvDTE.Command command;
-                if (_snapshot.TryGetCommand(cur.Id, out command))
+                // Now we need to look at the current bindings and find the ones that are completely unrelated
+                // to this process that need to be kept.  For example VsVim would never care about handling 
+                // Ctrl+Shift+F5 but it's possible the user bound it to Edit.BreakLine.  We don't want to remove
+                // that binding as a part of transferring say Ctrl-[ to VsVim.
+                foreach (var currentBinding in currentBindingList)
                 {
-                    // It's very possible that the user has added new mappings to a given key since we stored
-                    // the original mappings.  Make sure we don't erase those values here and instead append the
-                    // previous binding we stored back to the command
-                    var bindingList = command.GetBindings().ToList();
-                    var commandString = cur.KeyBinding.CommandString;
-                    if (!bindingList.Contains(commandString, StringComparer.OrdinalIgnoreCase))
+                    var commandString = currentBinding.KeyBinding.CommandString;
+                    if (!vsVimSet.Contains(commandString))
                     {
-                        bindingList.Add(commandString);
-                        command.SafeSetBindings(bindingList);
+                        vsBindingList.Add(commandString);
                     }
                 }
+
+                command.SafeSetBindings(vsBindingList);
             }
 
             _vimApplicationSettings.RemovedBindings =

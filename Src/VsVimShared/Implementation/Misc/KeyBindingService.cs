@@ -60,6 +60,8 @@ namespace VsVim.Implementation.Misc
             _protectedOperations = protectedOperations;
             _vimApplicationSettings = vimApplicationSettings;
             _importantScopeSet = new Lazy<HashSet<string>>(CreateImportantScopeSet);
+
+            FixKeyMappingIssue(_dte, vimApplicationSettings);
         }
 
         internal event EventHandler ConflictingKeyBindingStateChanged;
@@ -237,42 +239,68 @@ namespace VsVim.Implementation.Misc
         /// </summary>
         private HashSet<string> CreateImportantScopeSet()
         {
+            string globalScopeName;
+            string textEditorScopeName;
+            if (!TryGetMainScopeNames(out globalScopeName, out textEditorScopeName))
+            {
+                return CreateDefaultImportantScopeSet();
+            }
+
+            var set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            set.Add(globalScopeName);
+            set.Add(textEditorScopeName);
+
+            // No scope is considered interesting as well
+            set.Add("");
+            return set;
+        }
+
+        /// <summary>
+        /// Get the localized names of "Global" and "Text Editor" scope.  I wish there was a prettier way of doing 
+        /// this.  However there is no API available which provides this information.  We need to directly 
+        /// query some registry values here
+        /// </summary>
+        private bool TryGetMainScopeNames(out string globalScopeName, out string textEditorScopeName)
+        {
+            globalScopeName = null;
+            textEditorScopeName = null;
             try
             {
                 using (var rootKey = VSRegistry.RegistryRoot(__VsLocalRegistryType.RegType_Configuration, writable: false))
                 {
                     using (var keyBindingsKey = rootKey.OpenSubKey("KeyBindingTables"))
                     {
-                        var set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
                         // For "Global".  The id in the registry here is incorrect for Vs 2010
                         // so hard code the known value
-                        set.Add(GetKeyBindingScopeName(
-                            keyBindingsKey,
-                            "{5efc7975-14bc-11cf-9b2b-00aa00573819}",
-                            13018,
-                            "Global"));
+                        if (!TryGetKeyBindingScopeName(keyBindingsKey, "{5efc7975-14bc-11cf-9b2b-00aa00573819}", 13018, out globalScopeName))
+                        {
+                            return false;
+                        }
 
-                        // For "Text Editor"
-                        set.Add(GetKeyBindingScopeName(
-                            keyBindingsKey,
-                            "{8B382828-6202-11D1-8870-0000F87579D2}",
-                            null,
-                            "Text Editor"));
-
-                        // No scope is considered interesting as well
-                        set.Add("");
-                        return set;
+                        // For "Text Editor".  Many locals don't define this key so it's still considered a success 
+                        // if we get only the global name.  Just fill in the default here
+                        if (!TryGetKeyBindingScopeName(keyBindingsKey, "{8B382828-6202-11D1-8870-0000F87579D2}", null, out textEditorScopeName))
+                        {
+                            textEditorScopeName = "Text Editor";
+                        }
                     }
                 }
+
+                return true;
             }
             catch (Exception)
             {
-                return CreateDefaultImportantScopeSet();
+                return false;
             }
         }
 
-        private string GetKeyBindingScopeName(RegistryKey keyBindingsKey, string subKeyName, uint? id, string defaultValue)
+        private bool TryGetMainScopeNames(out string globalScopeName)
+        {
+            string textEditorName;
+            return TryGetMainScopeNames(out globalScopeName, out textEditorName);
+        }
+
+        private bool TryGetKeyBindingScopeName(RegistryKey keyBindingsKey, string subKeyName, uint? id, out string localizedScopeName)
         {
             try
             {
@@ -289,14 +317,14 @@ namespace VsVim.Implementation.Misc
                     }
 
                     var package = Guid.Parse((string)subKey.GetValue("Package"));
-                    string value;
-                    ErrorHandler.ThrowOnFailure(_vsShell.LoadPackageString(ref package, resourceId, out value));
-                    return !String.IsNullOrEmpty(value) ? value : defaultValue;
+                    ErrorHandler.ThrowOnFailure(_vsShell.LoadPackageString(ref package, resourceId, out localizedScopeName));
+                    return !string.IsNullOrEmpty(localizedScopeName);
                 }
             }
             catch (Exception)
             {
-                return defaultValue;
+                localizedScopeName = null;
+                return false;
             }
         }
 
@@ -311,6 +339,64 @@ namespace VsVim.Implementation.Misc
             set.Add("Text Editor");
             set.Add("");
             return set;
+        }
+
+        /// <summary>
+        /// Version 1.4.0 of VsVim introduced a bug which would strip the Visual Studio mappings for the 
+        /// Enter and Backspace key if the user ran the key bindings dialog.  This meant that neither key
+        /// would work in places that VsVim didn't run (immediate window, command window, etc ...).  This
+        /// bug is fixed so that it won't happen going forward.  But we need to fix machines that we already
+        /// messed up with the next install
+        /// </summary>
+        private void FixKeyMappingIssue(_DTE dte, IVimApplicationSettings vimApplicationSettings)
+        {
+            if (vimApplicationSettings.KeyMappingIssueFixed)
+            {
+                return;
+            }
+
+            try
+            {
+                // Make sure we write out the string for the localized scope name
+                string globalScopeName;
+                if (!TryGetMainScopeNames(out globalScopeName))
+                {
+                    return;
+                }
+
+                foreach (var command in dte.Commands.GetCommands())
+                {
+                    CommandId commandId;
+                    if (!command.TryGetCommandId(out commandId))
+                    {
+                        continue;
+                    }
+
+                    if (VSConstants.VSStd2K == commandId.Group)
+                    {
+                        switch ((VSConstants.VSStd2KCmdID)commandId.Id)
+                        {
+                            case VSConstants.VSStd2KCmdID.RETURN:
+                                if (!command.GetBindings().Any())
+                                {
+                                    command.SafeSetBindings(KeyBinding.Parse(globalScopeName + "::Enter"));
+                                }
+                                break;
+                            case VSConstants.VSStd2KCmdID.BACKSPACE:
+                                if (!command.GetBindings().Any())
+                                {
+                                    command.SafeSetBindings(KeyBinding.Parse(globalScopeName + "::Bkspce"));
+                                }
+                                break;
+                        }
+                    }
+                }
+
+            }
+            finally
+            {
+                vimApplicationSettings.KeyMappingIssueFixed = true;
+            }
         }
 
         #region IKeyBindingService

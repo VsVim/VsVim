@@ -19,6 +19,11 @@ namespace VsVim
         bool IgnoredConflictingKeyBinding { get; set; }
 
         /// <summary>
+        /// Is the bad key mapping issue introduced in 1.4.0 fixed on this installation
+        /// </summary>
+        bool KeyMappingIssueFixed { get; set; }
+
+        /// <summary>
         /// The set of CommandKeyBinding that VsVim unbound in the conflicting key dialog
         /// </summary>
         ReadOnlyCollection<CommandKeyBinding> RemovedBindings { get; set; }
