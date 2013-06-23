@@ -501,74 +501,106 @@ namespace Vim.UnitTest
             }
         }
 
-        public sealed class BlockInsert : VisualModeIntegrationTest
+        public abstract class BlockInsert : VisualModeIntegrationTest
         {
             /// <summary>
-            /// The block insert should add the text to every column
+            /// Simulate intellisense scenarios and make sure that we correctly insert the resulting
+            /// text
             /// </summary>
-            [Fact]
-            public void Simple()
+            public sealed class IntellisenseTest : VisualModeIntegrationTest
             {
-                Create("dog", "cat", "fish");
-                _vimBuffer.ProcessNotation("<C-q>j<S-i>the <Esc>");
-                Assert.Equal("the dog", _textBuffer.GetLine(0).GetText());
-                Assert.Equal("the cat", _textBuffer.GetLine(1).GetText());
+                [Fact]
+                public void Issue1108()
+                {
+                    Create(
+@" string Prop1
+ string Prop2
+ string Prop3");
+                    _vimBuffer.ProcessNotation("<C-Q>jjIpr");
+
+                    // No simulate the intellisense operation here.  It will delete the "matched" text
+                    // and replace with the "completed" text
+                    _textBuffer.Replace(new Span(0, 2), "protected");
+                    _vimBuffer.ProcessNotation("<Esc>");
+                    Assert.Equal(new [] 
+                        {
+                            "protected string Prop1",
+                            "protected string Prop2",
+                            "protected string Prop3"
+                        }, 
+                        _textBuffer.GetLines());
+                }
             }
 
-            /// <summary>
-            /// The caret should be positioned at the start of the block span when the insertion
-            /// starts
-            /// </summary>
-            [Fact]
-            public void CaretPosition()
+            public sealed class MiscTest : VisualModeIntegrationTest
             {
-                Create("dog", "cat", "fish");
-                _vimBuffer.ProcessNotation("<C-q>jl<S-i>");
-                Assert.Equal(0, _textView.GetCaretPoint().Position);
-                Assert.Equal(ModeKind.Insert, _vimBuffer.ModeKind);
-            }
+                /// <summary>
+                /// The block insert should add the text to every column
+                /// </summary>
+                [Fact]
+                public void Simple()
+                {
+                    Create("dog", "cat", "fish");
+                    _vimBuffer.ProcessNotation("<C-q>j<S-i>the <Esc>");
+                    Assert.Equal("the dog", _textBuffer.GetLine(0).GetText());
+                    Assert.Equal("the cat", _textBuffer.GetLine(1).GetText());
+                }
 
-            /// <summary>
-            /// The block insert shouldn't add text to any of the columns which didn't extend into 
-            /// the original selection
-            /// </summary>
-            [Fact]
-            public void EmptyColumn()
-            {
-                Create("dog", "", "fish");
-                _vimBuffer.ProcessNotation("l<C-q>jjl<S-i> the <Esc>");
-                Assert.Equal("d the og", _textBuffer.GetLine(0).GetText());
-                Assert.Equal("", _textBuffer.GetLine(1).GetText());
-                Assert.Equal("f the ish", _textBuffer.GetLine(2).GetText());
-                Assert.Equal(1, _textView.GetCaretPoint().Position);
-            }
+                /// <summary>
+                /// The caret should be positioned at the start of the block span when the insertion
+                /// starts
+                /// </summary>
+                [Fact]
+                public void CaretPosition()
+                {
+                    Create("dog", "cat", "fish");
+                    _vimBuffer.ProcessNotation("<C-q>jl<S-i>");
+                    Assert.Equal(0, _textView.GetCaretPoint().Position);
+                    Assert.Equal(ModeKind.Insert, _vimBuffer.ModeKind);
+                }
 
-            /// <summary>
-            /// The undo of a block insert should undo all of the inserts
-            /// </summary>
-            [Fact]
-            public void Undo()
-            {
-                Create("dog", "cat", "fish");
-                _vimBuffer.ProcessNotation("<C-q>j<S-i>the <Esc>");
-                Assert.Equal("the dog", _textBuffer.GetLine(0).GetText());
-                Assert.Equal("the cat", _textBuffer.GetLine(1).GetText());
-                _vimBuffer.Process('u');
-                Assert.Equal("dog", _textBuffer.GetLine(0).GetText());
-                Assert.Equal("cat", _textBuffer.GetLine(1).GetText());
-                Assert.Equal(0, _textView.GetCaretPoint().Position);
-            }
+                /// <summary>
+                /// The block insert shouldn't add text to any of the columns which didn't extend into 
+                /// the original selection
+                /// </summary>
+                [Fact]
+                public void EmptyColumn()
+                {
+                    Create("dog", "", "fish");
+                    _vimBuffer.ProcessNotation("l<C-q>jjl<S-i> the <Esc>");
+                    Assert.Equal("d the og", _textBuffer.GetLine(0).GetText());
+                    Assert.Equal("", _textBuffer.GetLine(1).GetText());
+                    Assert.Equal("f the ish", _textBuffer.GetLine(2).GetText());
+                    Assert.Equal(1, _textView.GetCaretPoint().Position);
+                }
 
-            /// <summary>
-            /// Delete actions aren't repeated
-            /// </summary>
-            [Fact]
-            public void DontRepeatDelete()
-            {
-                Create("dog", "cat", "fish");
-                _vimBuffer.ProcessNotation("<C-q>j<S-i><Del><Esc>");
-                Assert.Equal("og", _textView.GetLine(0).GetText());
-                Assert.Equal("cat", _textView.GetLine(1).GetText());
+                /// <summary>
+                /// The undo of a block insert should undo all of the inserts
+                /// </summary>
+                [Fact]
+                public void Undo()
+                {
+                    Create("dog", "cat", "fish");
+                    _vimBuffer.ProcessNotation("<C-q>j<S-i>the <Esc>");
+                    Assert.Equal("the dog", _textBuffer.GetLine(0).GetText());
+                    Assert.Equal("the cat", _textBuffer.GetLine(1).GetText());
+                    _vimBuffer.Process('u');
+                    Assert.Equal("dog", _textBuffer.GetLine(0).GetText());
+                    Assert.Equal("cat", _textBuffer.GetLine(1).GetText());
+                    Assert.Equal(0, _textView.GetCaretPoint().Position);
+                }
+
+                /// <summary>
+                /// Delete actions aren't repeated
+                /// </summary>
+                [Fact]
+                public void DontRepeatDelete()
+                {
+                    Create("dog", "cat", "fish");
+                    _vimBuffer.ProcessNotation("<C-q>j<S-i><Del><Esc>");
+                    Assert.Equal("og", _textView.GetLine(0).GetText());
+                    Assert.Equal("cat", _textView.GetLine(1).GetText());
+                }
             }
         }
 
