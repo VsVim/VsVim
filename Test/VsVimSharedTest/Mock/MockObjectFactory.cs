@@ -25,15 +25,19 @@ namespace VsVim.UnitTest.Mock
 
         public static Mock<EnvDTE.Command> CreateCommand(int id, string name, params string[] bindings)
         {
+            return CreateCommand(Guid.NewGuid(), id, name, bindings);
+        }
+
+        public static Mock<EnvDTE.Command> CreateCommand(Guid guid, int id, string name, params string[] bindings)
+        {
             object binding = bindings.Length == 1
                 ? (object)bindings[0]
                 : bindings;
-            var guid = Guid.NewGuid().ToString();
             var mock = new Mock<EnvDTE.Command>(MockBehavior.Strict);
-            mock.Setup(x => x.Bindings).Returns(binding);
+            mock.SetupProperty(x => x.Bindings, binding);
             mock.Setup(x => x.Name).Returns(name);
             mock.Setup(x => x.LocalizedName).Returns(name);
-            mock.Setup(x => x.Guid).Returns(guid);
+            mock.Setup(x => x.Guid).Returns(guid.ToString());
             mock.Setup(x => x.ID).Returns(id);
             return mock;
         }
@@ -67,10 +71,10 @@ namespace VsVim.UnitTest.Mock
             return mock;
         }
 
-        public static Mock<_DTE> CreateDteWithCommands(params string[] args)
+        public static Mock<_DTE> CreateDteWithCommands(IEnumerable<EnvDTE.Command> col = null)
         {
-            var commandList = CreateCommandList(args).Select(x => x.Object).ToList();
-            var commands = CreateCommands(commandList);
+            col = col ?? new EnvDTE.Command[] { };
+            var commands = CreateCommands(col.ToList());
             var dte = new Mock<_DTE>();
             dte.SetupGet(x => x.Commands).Returns(commands.Object);
             return dte;

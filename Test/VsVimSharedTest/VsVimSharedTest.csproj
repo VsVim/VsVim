@@ -86,6 +86,7 @@
     <Compile Include="MindScapeTest.cs" />
     <Compile Include="ReportDesignerUtilTest.cs" />
     <Compile Include="ResultTest.cs" />
+    <Compile Include="ScopeDataTest.cs" />
     <Compile Include="SettingSerializerTest.cs" />
     <Compile Include="SettingsMigratorTest.cs" />
     <Compile Include="UnitTestExtensions.cs" />

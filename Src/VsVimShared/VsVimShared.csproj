@@ -81,6 +81,7 @@
     <Compile Include="Implementation\ExternalEdit\ExternalEditorManager.cs" />
     <Compile Include="IExternalEditAdapter.cs" />
     <Compile Include="Implementation\Misc\ReportDesignerUtil.cs" />
+    <Compile Include="Implementation\Misc\ScopeData.cs" />
     <Compile Include="Implementation\Resharper\ResharperExternalEditAdapter.cs" />
     <Compile Include="Implementation\ExternalEdit\SnippetExternalEditAdapter.cs" />
     <Compile Include="HostFactory.cs" />
