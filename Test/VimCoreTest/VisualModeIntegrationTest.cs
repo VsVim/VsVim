@@ -501,13 +501,13 @@ namespace Vim.UnitTest
             }
         }
 
-        public abstract class BlockInsert : VisualModeIntegrationTest
+        public abstract class BlockInsertTest : VisualModeIntegrationTest
         {
             /// <summary>
             /// Simulate intellisense scenarios and make sure that we correctly insert the resulting
             /// text
             /// </summary>
-            public sealed class IntellisenseTest : VisualModeIntegrationTest
+            public sealed class IntellisenseTest : BlockInsertTest
             {
                 /// <summary>
                 /// Pretend there was nothing to delete, it just got inserted by hitting Ctrl+Space 
@@ -558,7 +558,74 @@ namespace Vim.UnitTest
                 }
             }
 
-            public sealed class MiscTest : VisualModeIntegrationTest
+            public sealed class PartialTabEditTest : BlockInsertTest
+            {
+                [Fact]
+                public void SimpleMiddle()
+                {
+                    Create(4, "trucker", "\tdog", "tester");
+                    _vimBuffer.ProcessNotation("ll<c-q>jjjIa<Esc>");
+                    Assert.Equal(new[] 
+                        {
+                            "traucker",
+                            "  a  dog",
+                            "teaster"
+                        },
+                        _textBuffer.GetLines());
+                    Assert.Equal(2, _textView.GetCaretPoint().Position);
+                }
+
+                /// <summary>
+                /// When the selection is at the start of the tab then the tab should be 
+                /// kept because it is not being split 
+                /// </summary>
+                [Fact]
+                public void SimpleStartOfLine()
+                {
+                    Create(4, "trucker", "\tdog", "tester");
+                    _vimBuffer.ProcessNotation("<c-q>jjjIa<Esc>");
+                    Assert.Equal(new[] 
+                        {
+                            "atrucker",
+                            "a\tdog",
+                            "atester"
+                        },
+                        _textBuffer.GetLines());
+                    Assert.Equal(0, _textView.GetCaretPoint().Position);
+                }
+
+                [Fact]
+                public void SimpleOneSpaceIn()
+                {
+                    Create(4, "trucker", "\tdog", "tester");
+                    _vimBuffer.ProcessNotation("l<c-q>jjjIa<Esc>");
+                    Assert.Equal(new[] 
+                        {
+                            "tarucker",
+                            " a   dog",
+                            "taester"
+                        },
+                        _textBuffer.GetLines());
+                    Assert.Equal(1, _textView.GetCaretPoint().Position);
+                }
+
+                [Fact]
+                public void SimpleLastSpaceInTab()
+                {
+                    Create(4, "trucker", "\tdog", "tester");
+                    _vimBuffer.ProcessNotation("lll<c-q>jjjIa<Esc>");
+                    Assert.Equal(new[] 
+                        {
+                            "truacker",
+                            "   a dog",
+                            "tesater"
+                        },
+                        _textBuffer.GetLines());
+                    Assert.Equal(3, _textView.GetCaretPoint().Position);
+                }
+            }
+
+            public sealed class MiscTest : BlockInsertTest
             {
                 /// <summary>
                 /// The block insert should add the text to every column
