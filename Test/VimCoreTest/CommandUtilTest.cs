@@ -942,7 +942,7 @@ namespace Vim.UnitTest
             {
                 Create("");
                 var textChange = TextChange.NewInsert("h");
-                var command = InsertCommand.NewExtraTextChange(textChange);
+                var command = InsertCommand.OfTextChange(textChange);
                 _vimData.LastCommand = FSharpOption.Create(StoredCommand.NewInsertCommand(command, CommandFlags.Repeatable));
                 _commandUtil.RepeatLastCommand(VimUtil.CreateCommandData());
                 Assert.Equal("h", _textBuffer.GetLine(0).GetText());
@@ -956,7 +956,7 @@ namespace Vim.UnitTest
             {
                 Create("");
                 var textChange = TextChange.NewInsert("h");
-                var command = InsertCommand.NewExtraTextChange(textChange);
+                var command = InsertCommand.OfTextChange(textChange);
                 _vimData.LastCommand = FSharpOption.Create(StoredCommand.NewInsertCommand(command, CommandFlags.Repeatable));
                 _commandUtil.RepeatLastCommand(VimUtil.CreateCommandData(count: 3));
                 Assert.Equal("hhh", _textBuffer.GetLine(0).GetText());

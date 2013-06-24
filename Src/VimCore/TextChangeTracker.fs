@@ -168,7 +168,7 @@ type internal TextChangeTracker
 
         if canMerge then 
             // Change is legal.  Merge it with the existing one and move on
-            let mergedChange = TextChange.Merge oldTextChange newTextChange 
+            let mergedChange = TextChange.CreateReduced oldTextChange newTextChange 
             _currentTextChange <- Some (mergedChange, newChange)
         else
             // If we can't merge then the previous change is complete and we can switch our focus to 

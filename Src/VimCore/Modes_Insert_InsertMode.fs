@@ -371,8 +371,7 @@ type internal InsertMode
         finally
             // Make sure to close out the transaction
             match _sessionData.Transaction with
-            | None -> 
-                ()
+            | None -> ()
             | Some transaction -> 
                 transaction.Complete()
                 _sessionData <- { _sessionData with Transaction = None }
@@ -686,32 +685,13 @@ type internal InsertMode
             if _keyboard.IsArrowKeyDown then
                 _textChangeTracker.CompleteChange()
 
-    member x.OnAfterRunInsertCommand command =
+    member x.OnAfterRunInsertCommand (insertCommand : InsertCommand) =
 
-        let commandTextChange = 
-            match command with 
-            | InsertCommand.Back ->  Some (TextChange.DeleteLeft 1)
-            | InsertCommand.Combined _ -> None
-            | InsertCommand.CompleteMode _ -> None
-            | InsertCommand.Delete -> Some (TextChange.DeleteRight 1)
-            | InsertCommand.DeleteAllIndent -> None
-            | InsertCommand.DeleteWordBeforeCursor -> None
-            | InsertCommand.DirectInsert c -> Some (TextChange.Insert (c.ToString()))
-            | InsertCommand.DirectReplace c -> Some (TextChange.Combination ((TextChange.DeleteRight 1), (TextChange.Insert (c.ToString()))))
-            | InsertCommand.ExtraTextChange textChange -> Some textChange
-            | InsertCommand.InsertCharacterAboveCaret -> None
-            | InsertCommand.InsertCharacterBelowCaret -> None
-            | InsertCommand.InsertNewLine -> Some (TextChange.Insert (EditUtil.NewLine _editorOptions))
-            | InsertCommand.InsertTab -> Some (TextChange.Insert "\t")
-            | InsertCommand.InsertText text -> Some (TextChange.Insert text)
-            | InsertCommand.MoveCaret _ -> None
-            | InsertCommand.MoveCaretByWord _ -> None
-            | InsertCommand.ShiftLineLeft -> None
-            | InsertCommand.ShiftLineRight -> None
+        let commandTextChange = insertCommand.TextChange _editorOptions
 
         let insertTextChange = 
             match _sessionData.InsertTextChange, commandTextChange with
-            | Some left, Some right -> TextChange.Merge left right |> Some
+            | Some left, Some right -> TextChange.CreateReduced left right |> Some
             | None, Some right -> Some right
             | _ -> None
         _sessionData <- { _sessionData with InsertTextChange = insertTextChange }
@@ -725,7 +705,7 @@ type internal InsertMode
                     // and move to a normal insert
                     InsertKind.Normal
                 | Some otherTextChange ->
-                    let textChange = TextChange.Merge textChange otherTextChange
+                    let textChange = TextChange.CreateReduced textChange otherTextChange
                     InsertKind.Repeat (count, addNewLines, textChange)
 
             _sessionData <- { _sessionData with InsertKind = insertKind }
@@ -742,7 +722,7 @@ type internal InsertMode
 
         let textChange = args.TextChange
         let command = 
-            let textChangeCommand = InsertCommand.ExtraTextChange textChange
+            let textChangeCommand = InsertCommand.OfTextChange textChange
             x.OnAfterRunInsertCommand textChangeCommand
             match _sessionData.CombinedEditCommand with
             | None -> textChangeCommand

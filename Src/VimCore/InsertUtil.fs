@@ -48,7 +48,7 @@ type internal InsertUtil
 
     /// Run the specified action with a wrapped undo transaction.  This is often necessary when
     /// an edit command manipulates the caret
-    member x.EditWithUndoTransaciton<'T> (name : string) (action : unit -> 'T) : 'T = 
+    member x.EditWithUndoTransaction<'T> (name : string) (action : unit -> 'T) : 'T = 
         _undoRedoOperations.EditWithUndoTransaction name action
 
     /// Used for the several commands which make an edit here and need the edit to be linked
@@ -57,7 +57,7 @@ type internal InsertUtil
         let transaction = _undoRedoOperations.CreateLinkedUndoTransaction()
 
         try
-            x.EditWithUndoTransaciton name action
+            x.EditWithUndoTransaction name action
         with
             | _ ->
                 // If the above throws we can't leave the transaction open else it will
@@ -66,11 +66,84 @@ type internal InsertUtil
                 transaction.Dispose()
                 reraise()
 
-    /// Apply the TextChange to the ITextBuffer 'count' times as a single operation.
-    member x.ApplyTextChange textChange addNewLines =
+    /// Apply the TextChange to the given ITextEdit at the specified position.  This will
+    /// return the position of the edit after the operation completes.  None is returned
+    /// if the edit cannot be completed 
+    member x.ApplyTextChangeCore (textEdit : ITextEdit) (position : int) (bounds : Span) (textChange : TextChange) addNewLines =
 
+        let textChange = textChange.Reduce
+
+        // Note that when doing edits in this method that all delete and insert need to be 
+        // calculated against the original layout.  For example if you have insert "dog" 
+        // followed by delete right 3, the delete right should occur from the original 
+        // start position.  This is just how ITextEdit works 
+        //
+        // After a TextChange structure is reduced we should be able to break it down into
+        // the 3 components that we care about: new text, delete left, delete right 
+        // and perform those actions independently
+        let insertText = ref ""
+        let deleteLeft = ref 0
+        let deleteRight = ref 0 
+        let caretPosition = ref position
+
+        let rec build textChange = 
+            match textChange with
+            | TextChange.Insert text ->
+                let text = 
+                    if addNewLines then
+                        let newLine = _operations.GetNewLineText x.CaretPoint
+                        newLine + text
+                    else 
+                        text
+                insertText.Value <- insertText.Value + text
+                caretPosition.Value <- caretPosition.Value + text.Length
+            | TextChange.DeleteRight count -> 
+                deleteRight.Value <- deleteRight.Value + count
+            | TextChange.DeleteLeft count -> 
+                deleteLeft.Value <- deleteLeft.Value + count
+                caretPosition.Value <- caretPosition.Value - count
+            | TextChange.Combination (left, right) ->
+                build left
+                build right
+        build textChange
+
+        let mutable error = false
+
+        if not (StringUtil.isNullOrEmpty insertText.Value) then
+            if not (textEdit.Insert(position, insertText.Value)) then
+                error <- true
+
+        if deleteRight.Value > 0 then
+
+            // Delete 'count * deleteCount' more characters.  Make sure that we don't
+            // go off the end of the specified bounds
+            let maxCount = bounds.End - position
+            let realCount = min maxCount deleteRight.Value
+            if not (textEdit.Delete(position, realCount)) then
+                error <- true
+
+
+        if deleteLeft.Value > 0 then
+            // Delete 'count' characters to the left of the caret.  Make sure that
+            // we don't delete outside the specified bounds
+            let start, count = 
+                let diff = position - deleteLeft.Value
+                if diff < bounds.Start then
+                    bounds.Start, position - bounds.Start
+                else
+                    diff, deleteLeft.Value
+
+            if not (textEdit.Delete(start, count)) then
+                error <- true
+
+        if error then
+            None
+        else
+            Some caretPosition.Value
+
+        (*
         // Apply a single change to the ITextBuffer as a transaction 
-        let rec applyChange textChange = 
+        let rec applyChange caretPosition textChange = 
             match textChange with
             | TextChange.Insert text -> 
                 // Insert the same text 'count' times at the cursor
@@ -81,41 +154,57 @@ type internal InsertUtil
                     else 
                         text
 
-                let caretPoint = TextViewUtil.GetCaretPoint _textView
-                let span = SnapshotSpan(caretPoint, 0)
-                _textBuffer.Replace(span.Span, text) |> ignore
-
-                // Now make sure to position the caret at the end of the inserted
-                // text so the next edit will occur after.
-                TextViewUtil.MoveCaretToPosition _textView (caretPoint.Position + text.Length)
+                if textEdit.Insert(originalPosition, text) then
+                    // The position of the edit is after the inserted text
+                    caretPosition + text.Length |> Some
+                else
+                    None
             | TextChange.DeleteRight count -> 
 
-                // Delete 'count * deleteCount' more characters
-                let caretPoint = TextViewUtil.GetCaretPoint _textView
-                let count = min (_textView.TextSnapshot.Length - caretPoint.Position) count
-                let span = Span(caretPoint.Position, count)
-                _textBuffer.Delete(span) |> ignore
-
-                // Now make sure the caret is still at the same position
-                TextViewUtil.MoveCaretToPosition _textView caretPoint.Position
+                // Delete 'count * deleteCount' more characters.  Make sure that we don't
+                // go off the end of the specified bounds
+                let maxCount = bounds.End - originalPosition
+                let realCount = min maxCount count
+                if textEdit.Delete(originalPosition, realCount) then
+                    // After a delete the caret remains in the same position 
+                    Some caretPosition
+                else
+                    None
 
             | TextChange.DeleteLeft count -> 
 
-                // Delete 'count' characters to the left of the caret
-                let caretPoint = TextViewUtil.GetCaretPoint _textView
-                let startPosition = 
-                    let position = caretPoint.Position - count
-                    max 0 position
-                let span = Span(startPosition, count)
-                _textBuffer.Delete(span) |> ignore
+                // Delete 'count' characters to the left of the caret.  Make sure that
+                // we don't delete outside the specified bounds
+                let start, count = 
+                    let diff = originalPosition - count 
+                    if diff < bounds.Start then
+                        bounds.Start, originalPosition - bounds.Start
+                    else
+                        diff, count
 
-                TextViewUtil.MoveCaretToPosition _textView startPosition
-
+                if textEdit.Delete(start, count) then
+                    let caretPosition = max 0 (caretPosition - count)
+                    Some start
+                else
+                    None
             | TextChange.Combination (left, right) ->
-                applyChange left 
-                applyChange right
+                match applyChange caretPosition left with
+                | Some caretPosition -> applyChange caretPosition right
+                | None -> None
 
-        applyChange textChange
+        applyChange originalPosition textChange
+        *)
+
+    /// Apply the TextChange to the ITextBuffer 'count' times as a single operation.
+    member x.ApplyTextChange textChange addNewLines =
+
+        use textEdit = _textBuffer.CreateEdit()
+        let bounds = Span(0, x.CurrentSnapshot.Length)
+        match x.ApplyTextChangeCore textEdit x.CaretPoint.Position bounds textChange addNewLines with
+        | Some position -> 
+            let snapshot = textEdit.Apply()
+            TextViewUtil.MoveCaretToPosition _textView position
+        | None -> textEdit.Cancel()
 
     /// Delete the character before the cursor
     ///
@@ -146,6 +235,28 @@ type internal InsertUtil
         _editorOperations.Delete() |> ignore
         CommandResult.Completed ModeSwitch.NoSwitch
 
+    /// Delete count characters to the left of the caret
+    member x.DeleteLeft count = 
+        let span = 
+            let diff = x.CaretPoint.Position - count
+            if diff < 0 then
+                let count = diff + count
+                Span(0, count)
+            else
+                Span(diff, count)
+
+        _textBuffer.Delete(span) |> ignore
+        CommandResult.Completed ModeSwitch.NoSwitch
+
+    /// Delete count characters to the right of the caret
+    member x.DeleteRight count = 
+        let start = x.CaretPoint.Position
+        let maxCount = x.CurrentSnapshot.Length - start
+        let realCount = min maxCount count
+        let span = Span(start, realCount)
+        _textBuffer.Delete(span) |> ignore
+        CommandResult.Completed ModeSwitch.NoSwitch
+
     /// Delete all of the indentation on the current line.  This should not affect caret
     /// position
     member x.DeleteAllIndent () =
@@ -160,7 +271,7 @@ type internal InsertUtil
 
     /// Delete the word before the cursor
     ///
-    /// TODO: This needs to respect the IsBackspaceStart subption. 
+    /// TODO: This needs to respect the IsBackspaceStart sub option. 
     member x.DeleteWordBeforeCursor () =
 
         // Called when the caret is positioned at the start of the line.  The line break 
@@ -169,7 +280,7 @@ type internal InsertUtil
             if x.CaretLineNumber = 0 || not _globalSettings.IsBackspaceEol then
                 _operations.Beep()
             else
-                x.EditWithUndoTransaciton "Delete Word Before Cursor" (fun () ->
+                x.EditWithUndoTransaction "Delete Word Before Cursor" (fun () ->
                     let line = SnapshotUtil.GetLine x.CurrentSnapshot (x.CaretLineNumber - 1)
                     let span = Span.FromBounds(line.End.Position, line.EndIncludingLineBreak.Position)
                     _textBuffer.Delete span |> ignore
@@ -196,7 +307,7 @@ type internal InsertUtil
                 | Some span -> span.Start
 
             // Delete the span and position the caret at it's original start
-            x.EditWithUndoTransaciton "Delete Word Before Cursor" (fun () ->
+            x.EditWithUndoTransaction "Delete Word Before Cursor" (fun () ->
                 let span = SnapshotSpan(start, x.CaretPoint)
                 _textBuffer.Delete span.Span |> ignore
                 TextViewUtil.MoveCaretToPosition _textView span.Start.Position)
@@ -232,7 +343,7 @@ type internal InsertUtil
             CommandResult.Error
         | Some point -> 
             let text = SnapshotPointUtil.GetChar point |> StringUtil.ofChar
-            x.EditWithUndoTransaciton "Insert Character Above" (fun () ->
+            x.EditWithUndoTransaction "Insert Character Above" (fun () ->
                 let position = x.CaretPoint.Position
                 _textBuffer.Insert(position, text) |> ignore
                 TextViewUtil.MoveCaretToPosition _textView (position + 1))
@@ -249,7 +360,7 @@ type internal InsertUtil
     /// Insert a new line into the ITextBuffer.  Make sure to indent the text
     member x.InsertNewLine() =
         let newLineText = _operations.GetNewLineText x.CaretPoint
-        x.EditWithUndoTransaciton "New Line" (fun () -> 
+        x.EditWithUndoTransaction "New Line" (fun () -> 
             let contextLine = x.CaretLine
             _textBuffer.Insert(x.CaretPoint.Position, newLineText) |> ignore
 
@@ -280,7 +391,7 @@ type internal InsertUtil
     /// the appropriate number of spaces
     member x.InsertTab () =
 
-        x.EditWithUndoTransaciton "Insert Tab" (fun () -> 
+        x.EditWithUndoTransaction "Insert Tab" (fun () -> 
 
             let text = 
                 if _localSettings.ExpandTab then
@@ -312,7 +423,7 @@ type internal InsertUtil
     /// the cursor to the end of the insert
     member x.InsertText (text : string)=
 
-        x.EditWithUndoTransaciton "Insert Text" (fun () -> 
+        x.EditWithUndoTransaction "Insert Text" (fun () -> 
 
             let position = x.CaretPoint.Position + text.Length
             _textBuffer.Insert(x.CaretPoint.Position, text) |> ignore
@@ -377,43 +488,64 @@ type internal InsertUtil
                 x.ApplyTextChange textChange addNewLines)
 
     /// Repeat the edits for the other lines in the block span.
-    member x.RepeatBlock (command : InsertCommand) (blockSpan : BlockSpan) =
+    member x.RepeatBlock (insertCommand : InsertCommand) (blockSpan : BlockSpan) =
 
-        match command.GetInsertText _editorOptions with
-        | None -> ()
-        | Some text ->
+        // Need to apply the edits to all of the other lines in the span.  Block edits
+        // don't apply if the user inserts a new line into the buffer.  Check for that
+        // early on
+        let originalSnapshot = blockSpan.Snasphot
+        let currentSnapshot = x.CurrentSnapshot
 
-            // Need to apply the edits to all of the other lines in the span.  Remember that
-            // BlockSpan is on the original ITextSnapshot.  Hence we need to adjust for the 
-            // newly inserted lines
+        let doApply textChange = 
             use textEdit = _textBuffer.CreateEdit()
-            let lineCount = EditUtil.GetLineBreakCount text
-            let originalSnapshot = blockSpan.Snasphot
-            let currentSnapshot = x.CurrentSnapshot
-            let originalLineNumber = SnapshotPointUtil.GetLineNumber blockSpan.Start
+            let mutable abortChange = false
+
+            let startLineNumber = SnapshotPointUtil.GetLineNumber blockSpan.Start
             for i = 1 to (blockSpan.Height - 1) do 
 
-                let originalLine = 
-                    let number = originalLineNumber + i
-                    SnapshotUtil.GetLine originalSnapshot number
+                let lineNumber = startLineNumber + i
+                let currentLine = SnapshotUtil.GetLine currentSnapshot lineNumber
 
                 // Only apply the edit to lines which were included in the original selection
-                if originalLine.Length > blockSpan.Column then
-                    let number = originalLineNumber + i + lineCount
-                    match SnapshotUtil.TryGetLine currentSnapshot number with
-                    | None -> ()
-                    | Some currentLine ->
-                        if currentLine.Length > blockSpan.Column then
-                            let position = currentLine.Start.Position + blockSpan.Column
-                            textEdit.Insert(position, text) |> ignore
+                if currentLine.Length > blockSpan.Column then
+                    let position = currentLine.Start.Position + blockSpan.Column
+                    let bounds = Span(position, currentLine.End.Position - position)
+                    match x.ApplyTextChangeCore textEdit position bounds textChange false with
+                    | Some _ -> ()
+                    | None -> abortChange <- true
 
-            textEdit.Apply() |> ignore
+            if abortChange then
+                textEdit.Cancel()
+            else
+                textEdit.Apply() |> ignore
 
-        // Once the edit is complete we need to move the caret back to the original 
-        // insertion point which is the start of the BlockSpan.
-        match TrackingPointUtil.GetPointInSnapshot blockSpan.Start PointTrackingMode.Negative x.CurrentSnapshot with
+                // Once the edit is complete we need to move the caret back to the original 
+                // insertion point which is the start of the BlockSpan.
+                match TrackingPointUtil.GetPointInSnapshot blockSpan.Start PointTrackingMode.Negative x.CurrentSnapshot with
+                | None -> ()
+                | Some point -> x.EditWithUndoTransaction "Move Caret" (fun () -> TextViewUtil.MoveCaretToPoint _textView point)
+
+        // Unfortunately the ITextEdit implementation doesn't properly reduce the changes that are
+        // applied to it.  For example if you add 2 characters, delete them and then insert text
+        // at the original start point you will not end up with simply the new text.  
+        //
+        // To account for this we reduce the InsertCommand to the smallest possible TextChange value
+        // and apply that change 
+        match insertCommand.TextChange _editorOptions with
+        | Some textChange -> 
+            // Only a subset of changes are actually repeated for block edits.  These rules aren't available
+            // anywhere I can find and have been figured out through experimentation
+            let sameLineCount = originalSnapshot.LineCount = currentSnapshot.LineCount
+            let isDelete = 
+                match textChange with
+                | TextChange.Insert _ -> false
+                | TextChange.DeleteLeft _ -> true
+                | TextChange.DeleteRight _ -> true
+                | TextChange.Combination _ -> false
+
+            if sameLineCount && not isDelete then
+                doApply textChange.Reduce
         | None -> ()
-        | Some point -> x.EditWithUndoTransaciton "Move Caret" (fun () -> TextViewUtil.MoveCaretToPoint _textView point)
 
     member x.RunInsertCommandCore command addNewLines = 
 
@@ -426,6 +558,8 @@ type internal InsertUtil
             | InsertCommand.Combined (left, right) -> x.Combined left right
             | InsertCommand.CompleteMode moveCaretLeft -> x.CompleteMode moveCaretLeft
             | InsertCommand.Delete -> x.Delete()
+            | InsertCommand.DeleteLeft count -> x.DeleteLeft count
+            | InsertCommand.DeleteRight count -> x.DeleteRight count
             | InsertCommand.DeleteAllIndent -> x.DeleteAllIndent() 
             | InsertCommand.DeleteWordBeforeCursor -> x.DeleteWordBeforeCursor()
             | InsertCommand.DirectInsert c -> x.DirectInsert c
@@ -439,7 +573,6 @@ type internal InsertUtil
             | InsertCommand.MoveCaretByWord direction -> x.MoveCaretByWord direction
             | InsertCommand.ShiftLineLeft -> x.ShiftLineLeft ()
             | InsertCommand.ShiftLineRight -> x.ShiftLineRight ()
-            | InsertCommand.ExtraTextChange textChange -> x.ExtraTextChange textChange addNewLines
 
     member x.RunInsertCommand command = 
         x.RunInsertCommandCore command false

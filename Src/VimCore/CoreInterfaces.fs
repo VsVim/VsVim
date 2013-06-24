@@ -275,48 +275,111 @@ type TextChange =
         | Insert _ -> x
         | Combination (_, right) -> right.LastChange
 
+    member x.IsEmpty = 
+        match x with 
+        | Insert text -> StringUtil.isNullOrEmpty text
+        | DeleteLeft count -> count = 0
+        | DeleteRight count -> count = 0
+        | Combination (left, right) -> left.IsEmpty && right.IsEmpty
+
+    member x.Reduce = 
+        match x with 
+        | Combination (left, right) -> 
+            match TextChange.ReduceCore left right with
+            | Some reduced -> reduced
+            | None -> x
+        | _ -> x
+
     /// Merge two TextChange values together.  The goal is to produce a the smallest TextChange
-    /// value possible
-    static member Merge left right =
+    /// value possible.  This will return Some if a reduction is made and None if there is 
+    /// no possible reduction
+    static member private ReduceCore left right =
 
-        let noMerge () = Combination (left, right)
+        // This is called for combination merges.  Some progress was made but it's possible further
+        // progress could be made by reducing the specified values.  If further progress can be made
+        // keep it else keep at least the progress already made
+        let tryReduceAgain left right = 
+            let value = 
+                match TextChange.ReduceCore left right with
+                | None -> Combination (left, right) 
+                | Some reducedTextChange -> reducedTextChange
+            Some value 
 
-        let mergeInsert (text : string) =
-            match right with
-            | DeleteLeft count -> 
-                if count > text.Length then
-                    DeleteLeft (count - text.Length)
+        // Insert can only merge with a previous insert operation.  It can't 
+        // merge with any deletes that came before it
+        let reduceInsert before (text : string) =
+            match before with
+            | Insert otherText -> Some (Insert (otherText + text))
+            | _ -> None 
+
+        // DeleteLeft can merge with deletes and previous insert operations. 
+        let reduceDeleteLeft before count = 
+            match before with
+            | Insert otherText -> 
+                if count <= otherText.Length then
+                    let text = otherText.Substring(0, otherText.Length - count)
+                    Some (Insert text)
                 else
-                    let text = text.Substring(0, text.Length - count)
-                    Insert text
-            | DeleteRight count -> noMerge ()
-            | Insert otherText -> Insert (text + otherText)
-            | Combination _ -> noMerge ()
+                    let count = count - otherText.Length
+                    Some (DeleteLeft count)
+            | DeleteLeft beforeCount -> Some (DeleteLeft (count + beforeCount))
+            | _ -> None
 
-        let mergeDeleteLeft count = 
+        // Delete right can merge only with other DeleteRight operations
+        let reduceDeleteRight before count = 
+            match before with 
+            | DeleteRight beforeCount -> Some (DeleteRight (beforeCount + count))
+            | _ -> None 
+
+        // The item on the left isn't a Combination item.  So do simple merge semantics
+        let simpleMerge () = 
             match right with
-            | DeleteLeft otherCount -> DeleteLeft (count + otherCount)
-            | DeleteRight _ -> noMerge ()
-            | Insert _ -> noMerge ()
-            | Combination _ -> noMerge()
+            | Insert text -> reduceInsert left text
+            | DeleteLeft count -> reduceDeleteLeft left count
+            | DeleteRight count -> reduceDeleteRight left count 
+            | Combination (rightSubLeft, rightSubRight) ->
+                // First just see if the combination itself can be reduced 
+                match TextChange.ReduceCore rightSubLeft rightSubRight with
+                | Some reducedTextChange -> tryReduceAgain left reducedTextChange
+                | None -> 
+                    match TextChange.ReduceCore left rightSubLeft with
+                    | None -> None
+                    | Some reducedTextChange -> tryReduceAgain reducedTextChange rightSubRight
 
-        let mergeDeleteRight count = 
-            match right with
-            | DeleteRight otherCount -> DeleteRight (count + otherCount)
-            | DeleteLeft _ -> noMerge ()
-            | Insert _ -> noMerge ()
-            | Combination _ -> noMerge()
+        // The item on the left is a Combination item.  
+        let complexMerge leftSubLeft leftSubRight = 
 
-        match left with
-        | Insert text -> mergeInsert text
-        | DeleteLeft count -> mergeDeleteLeft count
-        | DeleteRight count -> mergeDeleteRight count
-        | Combination _ -> noMerge()
+            // First check if the left can be merged against itself.  This can easily happen
+            // for hand built trees
+            match TextChange.ReduceCore leftSubLeft leftSubRight with
+            | Some reducedTextChange -> tryReduceAgain reducedTextChange right
+            | None -> 
+                // It can't be reduced.  Still a change that the right can be reduced against 
+                // the subRight value 
+                match TextChange.ReduceCore leftSubRight right with
+                | None -> None
+                | Some reducedTextChange -> tryReduceAgain leftSubLeft reducedTextChange
+
+        if left.IsEmpty then
+            Some right
+        elif right.IsEmpty then
+            Some left
+        else
+            match left with
+            | Insert _ -> simpleMerge ()
+            | DeleteLeft _ -> simpleMerge ()
+            | DeleteRight _ -> simpleMerge ()
+            | Combination (leftSubLeft, leftSubRight) -> complexMerge leftSubLeft leftSubRight
 
     static member Replace str =
         let left = str |> StringUtil.length |> TextChange.DeleteLeft
         let right = TextChange.Insert str
         TextChange.Combination (left, right)
+
+    static member CreateReduced left right = 
+        match TextChange.ReduceCore left right with
+        | None -> Combination (left, right)
+        | Some textChange -> textChange
 
 type TextChangeEventArgs(_textChange : TextChange) =
     inherit System.EventArgs()
@@ -2361,6 +2424,12 @@ type InsertCommand  =
     /// Delete the character under the caret
     | Delete
 
+    /// Delete count characters to the left of the caret
+    | DeleteLeft of int 
+
+    /// Delete count characters to the right of the caret
+    | DeleteRight of int
+
     /// Delete all indentation on the current line
     | DeleteAllIndent
 
@@ -2370,7 +2439,7 @@ type InsertCommand  =
     /// Direct insert of the specified char
     | DirectInsert of char
 
-    /// Direct replacement of the spceified char
+    /// Direct replacement of the specified char
     | DirectReplace of char
 
     /// Insert the character which is immediately above the caret
@@ -2400,41 +2469,44 @@ type InsertCommand  =
     /// Shift the current line one indent width to the right
     | ShiftLineRight
 
-    /// This covers edits which weren't directly typed by the user.  It covers
-    /// a range of scenarios including
-    ///  - Repeated portion of count / block edits
-    ///  - Edits which occur outside of Vim
-    | ExtraTextChange of TextChange
-
     with
 
-    /// For insert only commands this will hold the insert text
-    member x.GetInsertText editorOptions = 
-        let rec inner command = 
-            match command with
-            | Back -> None
-            | Combined (left, right) ->
-                match inner left, inner right with
-                | Some left, Some right -> left + right |> Some
-                | _ -> None
-            | CompleteMode _ -> None
-            | Delete -> None
-            | DeleteAllIndent -> None
-            | DeleteWordBeforeCursor -> None
-            | DirectInsert c -> Some (c.ToString())
-            | DirectReplace c -> Some (c.ToString())
-            | InsertCharacterAboveCaret -> None
-            | InsertCharacterBelowCaret -> None
-            | InsertNewLine -> EditUtil.NewLine editorOptions |> Some
-            | InsertTab -> Some "\t"
-            | InsertText text -> Some text
-            | MoveCaret _ -> None
-            | MoveCaretByWord _ -> None
-            | ShiftLineLeft -> None
-            | ShiftLineRight -> None
-            | ExtraTextChange textChange -> textChange.InsertText 
+    /// Convert a TextChange value into the appropriate InsertCommand structure
+    static member OfTextChange textChange = 
+        match textChange with
+        | TextChange.Insert text -> InsertCommand.InsertText text
+        | TextChange.DeleteLeft count -> InsertCommand.DeleteLeft count
+        | TextChange.DeleteRight count -> InsertCommand.DeleteRight count
+        | TextChange.Combination (left, right) ->
+            let leftCommand = InsertCommand.OfTextChange left
+            let rightCommand = InsertCommand.OfTextChange right
+            InsertCommand.Combined (leftCommand, rightCommand)
 
-        inner x
+    /// Convert this InsertCommand to a TextChange object
+    member x.TextChange editorOptions = 
+        match x with 
+        | InsertCommand.Back ->  Some (TextChange.DeleteLeft 1)
+        | InsertCommand.Combined (left, right) -> 
+            match left.TextChange editorOptions, right.TextChange editorOptions with
+            | Some l, Some r -> TextChange.Combination (l, r) |> Some
+            | _ -> None
+        | InsertCommand.CompleteMode _ -> None
+        | InsertCommand.Delete -> Some (TextChange.DeleteRight 1)
+        | InsertCommand.DeleteLeft count -> Some (TextChange.DeleteLeft count)
+        | InsertCommand.DeleteRight count -> Some (TextChange.DeleteRight count)
+        | InsertCommand.DeleteAllIndent -> None
+        | InsertCommand.DeleteWordBeforeCursor -> None
+        | InsertCommand.DirectInsert c -> Some (TextChange.Insert (c.ToString()))
+        | InsertCommand.DirectReplace c -> Some (TextChange.Combination ((TextChange.DeleteRight 1), (TextChange.Insert (c.ToString()))))
+        | InsertCommand.InsertCharacterAboveCaret -> None
+        | InsertCommand.InsertCharacterBelowCaret -> None
+        | InsertCommand.InsertNewLine -> Some (TextChange.Insert (EditUtil.NewLine editorOptions))
+        | InsertCommand.InsertTab -> Some (TextChange.Insert "\t")
+        | InsertCommand.InsertText text -> Some (TextChange.Insert text)
+        | InsertCommand.MoveCaret _ -> None
+        | InsertCommand.MoveCaretByWord _ -> None
+        | InsertCommand.ShiftLineLeft -> None
+        | InsertCommand.ShiftLineRight -> None
 
 /// Commands which can be executed by the user
 [<RequireQualifiedAccess>]

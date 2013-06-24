@@ -1,4 +1,5 @@
 ﻿using EditorUtils;
+using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Xunit;
 
@@ -9,8 +10,9 @@ namespace Vim.UnitTest
     /// </summary>
     public abstract class InsertUtilTest : VimTestBase
     {
-        private IVimBuffer _buffer;
+        private IVimBuffer _vimBuffer;
         private ITextView _textView;
+        private ITextBuffer _textBuffer;
         private InsertUtil _insertUtilRaw;
         private IInsertUtil _insertUtil;
         private IVimLocalSettings _localSettings;
@@ -25,13 +27,104 @@ namespace Vim.UnitTest
         private void Create(params string[] lines)
         {
             _textView = CreateTextView(lines);
-            _buffer = Vim.CreateVimBuffer(_textView);
-            _globalSettings = _buffer.GlobalSettings;
-            _localSettings = _buffer.LocalSettings;
+            _textBuffer = _textView.TextBuffer;
+            _vimBuffer = Vim.CreateVimBuffer(_textView);
+            _globalSettings = _vimBuffer.GlobalSettings;
+            _localSettings = _vimBuffer.LocalSettings;
 
-            var operations = CommonOperationsFactory.GetCommonOperations(_buffer.VimBufferData);
-            _insertUtilRaw = new InsertUtil(_buffer.VimBufferData, operations);
+            var operations = CommonOperationsFactory.GetCommonOperations(_vimBuffer.VimBufferData);
+            _insertUtilRaw = new InsertUtil(_vimBuffer.VimBufferData, operations);
             _insertUtil = _insertUtilRaw;
+        }
+
+        public abstract class ApplyTextChangeTest : InsertUtilTest
+        {
+            public sealed class DeleteRightTest : ApplyTextChangeTest
+            {
+                [Fact]
+                public void PastEndOfBuffer()
+                {
+                    Create("cat dog");
+                    _textView.MoveCaretTo(3);
+                    _insertUtilRaw.ApplyTextChange(TextChange.NewDeleteRight(10), addNewLines: false);
+                    Assert.Equal("cat", _textBuffer.GetLine(0).GetText());
+                }
+
+                [Fact]
+                public void Normal()
+                {
+                    Create("cat dog");
+                    _insertUtilRaw.ApplyTextChange(TextChange.NewDeleteRight(4), addNewLines: false);
+                    Assert.Equal("dog", _textBuffer.GetLine(0).GetText());
+                    Assert.Equal(0, _textView.GetCaretPoint().Position);
+                }
+
+                [Fact]
+                public void AtEndOfBuffer()
+                {
+                    Create("cat");
+                    _textView.MoveCaretTo(3);
+                    _insertUtilRaw.ApplyTextChange(TextChange.NewDeleteRight(4), addNewLines: false);
+                    Assert.Equal("cat", _textBuffer.GetLine(0).GetText());
+                    Assert.Equal(3, _textView.GetCaretPoint().Position);
+                }
+            }
+
+            public sealed class CombinationTest : ApplyTextChangeTest
+            {
+                /// <summary>
+                /// Insert text at the end of the buffer then delete to the right.  The trick here is
+                /// to make the length of the inserted text such that the insert position would be 
+                /// off the end of the ITextBuffer.  Need to make sure that the delete happens on 
+                /// the original ITextBuffer position, not the caret position 
+                /// </summary>
+                [Fact]
+                public void InsertThenDeletePastEndOfOriginalBuffer()
+                {
+                    Create("cat");
+                    _insertUtilRaw.ApplyTextChange(
+                        TextChange.NewCombination(
+                            TextChange.NewInsert("trucker"),
+                            TextChange.NewDeleteRight(3)),
+                        addNewLines: false);
+                    Assert.Equal("trucker", _textBuffer.GetLine(0).GetText());
+                    Assert.Equal(7, _textView.GetCaretPoint().Position);
+                }
+
+                /// <summary>
+                /// Use delete right and insert to replace some text 
+                /// </summary>
+                [Fact]
+                public void ReplaceSimple()
+                {
+                    Create("cat");
+                    _insertUtilRaw.ApplyTextChange(
+                        TextChange.NewCombination(
+                            TextChange.NewDeleteRight(1),
+                            TextChange.NewInsert("b")),
+                        addNewLines: false);
+                    Assert.Equal("bat", _textBuffer.GetLine(0).GetText());
+                }
+
+                /// <summary>
+                /// Use delete right and insert to replace some text 
+                /// </summary>
+                [Fact]
+                public void ReplaceBig()
+                {
+                    Create("cat");
+                    _insertUtilRaw.ApplyTextChange(
+                        TextChange.NewCombination(
+                            TextChange.NewCombination(
+                                TextChange.NewDeleteRight(1),
+                                TextChange.NewInsert("b")),
+                            TextChange.NewCombination(
+                                TextChange.NewDeleteRight(1),
+                                TextChange.NewInsert("i"))),
+                        addNewLines: false);
+                    Assert.Equal("bit", _textBuffer.GetLine(0).GetText());
+                }
+            }
         }
 
         public sealed class CompleteModeTest : InsertUtilTest
@@ -189,7 +282,7 @@ namespace Vim.UnitTest
             public void FromVirtualSpace()
             {
                 Create("", "dog");
-                _buffer.LocalSettings.ShiftWidth = 4;
+                _vimBuffer.LocalSettings.ShiftWidth = 4;
                 _textView.MoveCaretTo(0, 8);
 
                 _insertUtilRaw.ShiftLineLeft();
@@ -209,7 +302,7 @@ namespace Vim.UnitTest
             public void CaretIsMovedToBeginningOfLineIfInVirtualSpaceAfterEndOfLine()
             {
                 Create("    foo");
-                _buffer.LocalSettings.ShiftWidth = 2;
+                _vimBuffer.LocalSettings.ShiftWidth = 2;
                 _textView.MoveCaretTo(0, 16);
 
                 _insertUtilRaw.ShiftLineLeft();

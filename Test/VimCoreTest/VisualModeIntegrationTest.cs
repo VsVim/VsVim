@@ -509,6 +509,32 @@ namespace Vim.UnitTest
             /// </summary>
             public sealed class IntellisenseTest : VisualModeIntegrationTest
             {
+                /// <summary>
+                /// Pretend there was nothing to delete, it just got inserted by hitting Ctrl+Space 
+                /// and selecting the value
+                /// </summary>
+                [Fact]
+                public void SimpleIntellisense()
+                {
+                    Create(
+@" string Prop1
+ string Prop2
+ string Prop3");
+                    _vimBuffer.ProcessNotation("<C-Q>jjI");
+
+                    // No simulate the intellisense operation here.  It will delete the "matched" text
+                    // and replace with the "completed" text
+                    _textBuffer.Replace(new Span(0, 0), "protected");
+                    _vimBuffer.ProcessNotation("<Esc>");
+                    Assert.Equal(new [] 
+                        {
+                            "protected string Prop1",
+                            "protected string Prop2",
+                            "protected string Prop3"
+                        }, 
+                        _textBuffer.GetLines());
+                }
+
                 [Fact]
                 public void Issue1108()
                 {
