@@ -31,7 +31,7 @@ type VimRegexOptions =
 [<RequireQualifiedAccess>]
 type CaseSpecifier =
 
-    /// Neither \c or \C was spceified
+    /// Neither \c or \C was specified
     | None
 
     /// Pattern contained the \c modifier
@@ -58,7 +58,7 @@ type ReplaceData = {
 [<Sealed>]
 type VimRegex =
 
-    /// The Case Specifier for this VimRegex
+    /// The Case Specified for this VimRegex
     member CaseSpecifier : CaseSpecifier
 
     /// The pattern includes a new line reference (\n not $).  
@@ -82,7 +82,7 @@ type VimRegex =
 
     /// Matches the regex against the specified input and does the replacement 
     /// as specified.  If there is currently no regex then None will be returned
-    member ReplaceAll : input:string -> replacement:string -> replaceData : ReplaceData -> string 
+    member ReplaceAll : input : string -> replacement : string -> replaceData : ReplaceData -> string 
 
 module VimRegexFactory = 
 

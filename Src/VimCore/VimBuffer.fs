@@ -440,10 +440,10 @@ type internal VimBuffer
                         processResult := ProcessResult.Error
                         KeyInputSet.Empty
 
-                // The MaxMapCount value is a hueristic which VsVim implements to avoid an infinite
+                // The MaxMapCount value is a heuristic which VsVim implements to avoid an infinite
                 // loop processing recursive input.  In a perfect world we would implement 
                 // Ctrl-C support and allow users to break out of this loop but right now we don't
-                // and this is a hueristic to prevent hanging the IDE until then
+                // and this is a heuristic to prevent hanging the IDE until then
                 if remainingSet.Value.Length > 0 && mapCount.Value = _vim.GlobalSettings.MaxMapCount then
                     x.RaiseErrorMessage Resources.Vim_RecursiveMapping
                     processResult := ProcessResult.Error
@@ -472,7 +472,7 @@ type internal VimBuffer
             else
 
                 // Combine this KeyInput with the buffered KeyInput values and clear it out.  If 
-                // this KeyInput needs more input then it will be rebuffered
+                // this KeyInput needs more input then it will be re-buffered
                 let keyInputSet = 
                     match _bufferedKeyInput with
                     | None -> KeyInputSet.OneKeyInput keyInput
