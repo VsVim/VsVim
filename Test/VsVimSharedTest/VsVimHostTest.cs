@@ -16,7 +16,7 @@ using Microsoft.VisualStudio;
 
 namespace VsVim.UnitTest
 {
-    public sealed class VsVimHostTest : VimTestBase
+    public abstract class VsVimHostTest : VimTestBase
     {
         private VsVimHost _hostRaw;
         private IVimHost _host;
@@ -68,109 +68,124 @@ namespace VsVim.UnitTest
             _host = _hostRaw;
         }
 
-        [Fact]
-        public void GotoDefinition1()
+        public abstract class GoToDefinitionTest : VsVimHostTest
         {
-            Create();
-            var textView = CreateTextView("");
-            _textManager.SetupGet(x => x.ActiveTextViewOptional).Returns(textView);
-            Assert.False(_host.GoToDefinition());
+            public sealed class NormalTest : GoToDefinitionTest
+            {
+                [Fact]
+                public void GotoDefinition1()
+                {
+                    Create();
+                    var textView = CreateTextView("");
+                    _textManager.SetupGet(x => x.ActiveTextViewOptional).Returns(textView);
+                    Assert.False(_host.GoToDefinition());
+                }
+
+                [Fact]
+                public void GotoDefinition2()
+                {
+                    Create();
+                    var textView = CreateTextView("");
+                    _textManager.SetupGet(x => x.ActiveTextViewOptional).Returns(textView);
+                    _dte.Setup(x => x.ExecuteCommand(VsVimHost.CommandNameGoToDefinition, String.Empty)).Throws(new Exception());
+                    Assert.False(_host.GoToDefinition());
+                }
+
+                [Fact]
+                public void GotoDefinition3()
+                {
+                    Create();
+                    var textView = CreateTextView("");
+                    _textManager.SetupGet(x => x.ActiveTextViewOptional).Returns(textView);
+                    _dte.Setup(x => x.ExecuteCommand(VsVimHost.CommandNameGoToDefinition, String.Empty));
+                    Assert.True(_host.GoToDefinition());
+                }
+
+                /// <summary>
+                /// For most languages the word which is targeted should not be included in the 
+                /// command
+                /// </summary>
+                [Fact]
+                public void GotoDefinition_Normal()
+                {
+                    Create();
+                    var ct = GetOrCreateContentType("csharp", "code");
+                    var textView = CreateTextView(ct, "hello world");
+                    _textManager.SetupGet(x => x.ActiveTextViewOptional).Returns(textView);
+                    _dte.Setup(x => x.ExecuteCommand(VsVimHost.CommandNameGoToDefinition, ""));
+                    Assert.True(_host.GoToDefinition());
+                }
+            }
+
+            public sealed class CPlusPlusTest : GoToDefinitionTest
+            {
+                /// <summary>
+                /// The C++ implementation of the goto definition command requires that the word which 
+                /// it should target be passed along as an argument to the command
+                /// </summary>
+                [Fact]
+                public void Simple()
+                {
+                    Create();
+                    var ct = GetOrCreateContentType(VsVim.Constants.CPlusPlusContentType, "code");
+                    var textView = CreateTextView(ct, "hello world");
+                    var wordUtil = WordUtilFactory.GetWordUtil(textView.TextBuffer);
+                    _textManager.SetupGet(x => x.ActiveTextViewOptional).Returns(textView);
+                    _dte.Setup(x => x.ExecuteCommand(VsVimHost.CommandNameGoToDefinition, "hello"));
+                    Assert.True(_host.GoToDefinition());
+                }
+            }
         }
 
-        [Fact]
-        public void GotoDefinition2()
+        public sealed class NavigateToTest : VsVimHostTest
         {
-            Create();
-            var textView = CreateTextView("");
-            _textManager.SetupGet(x => x.ActiveTextViewOptional).Returns(textView);
-            _dte.Setup(x => x.ExecuteCommand(VsVimHost.CommandNameGoToDefinition, String.Empty)).Throws(new Exception());
-            Assert.False(_host.GoToDefinition());
+            [Fact]
+            public void Simple()
+            {
+                Create();
+                var buffer = CreateTextBuffer("foo", "bar");
+                var point = new VirtualSnapshotPoint(buffer.CurrentSnapshot, 2);
+                _textManager.Setup(x => x.NavigateTo(point)).Returns(true);
+                _host.NavigateTo(new VirtualSnapshotPoint(buffer.CurrentSnapshot, 2));
+                _textManager.Verify();
+            }
         }
 
-        [Fact]
-        public void GotoDefinition3()
+        public sealed class MiscTest : VsVimHostTest
         {
-            Create();
-            var textView = CreateTextView("");
-            _textManager.SetupGet(x => x.ActiveTextViewOptional).Returns(textView);
-            _dte.Setup(x => x.ExecuteCommand(VsVimHost.CommandNameGoToDefinition, String.Empty));
-            Assert.True(_host.GoToDefinition());
-        }
+            [Fact]
+            public void GetName1()
+            {
+                Create();
+                var buffer = new Mock<ITextBuffer>();
+                _editorAdaptersFactoryService.Setup(x => x.GetBufferAdapter(buffer.Object)).Returns((IVsTextBuffer)null);
+                Assert.Equal("", _host.GetName(buffer.Object));
+            }
 
-        /// <summary>
-        /// The C++ implementation of the goto definition command requires that the word which 
-        /// it should target be passed along as an argument to the command
-        /// </summary>
-        [Fact]
-        public void GotoDefinition_CPlusPlus()
-        {
-            Create();
-            var ct = GetOrCreateContentType(VsVim.Constants.CPlusPlusContentType, "code");
-            var textView = CreateTextView(ct, "hello world");
-            var wordUtil = WordUtilFactory.GetWordUtil(textView.TextBuffer);
-            _textManager.SetupGet(x => x.ActiveTextViewOptional).Returns(textView);
-            _dte.Setup(x => x.ExecuteCommand(VsVimHost.CommandNameGoToDefinition, "hello"));
-            Assert.True(_host.GoToDefinition());
-        }
+            [Fact]
+            public void GetName2()
+            {
+                Create();
+                var buffer = new Mock<ITextBuffer>(MockBehavior.Strict);
+                var vsTextBuffer = (new Mock<IVsTextLines>(MockBehavior.Strict));
+                var userData = vsTextBuffer.As<IVsUserData>();
+                var moniker = VsVim.Constants.VsUserDataFileNameMoniker;
+                object ret = "foo";
+                userData.Setup(x => x.GetData(ref moniker, out ret)).Returns(0);
+                _editorAdaptersFactoryService.Setup(x => x.GetBufferAdapter(buffer.Object)).Returns(vsTextBuffer.Object);
+                Assert.Equal("foo", _host.GetName(buffer.Object));
+            }
 
-        /// <summary>
-        /// For most languages the word which is targeted should not be included in the 
-        /// command
-        /// </summary>
-        [Fact]
-        public void GotoDefinition_Normal()
-        {
-            Create();
-            var ct = GetOrCreateContentType("csharp", "code");
-            var textView = CreateTextView(ct, "hello world");
-            _textManager.SetupGet(x => x.ActiveTextViewOptional).Returns(textView);
-            _dte.Setup(x => x.ExecuteCommand(VsVimHost.CommandNameGoToDefinition, ""));
-            Assert.True(_host.GoToDefinition());
-        }
-
-        [Fact]
-        public void NavigateTo1()
-        {
-            Create();
-            var buffer = CreateTextBuffer("foo", "bar");
-            var point = new VirtualSnapshotPoint(buffer.CurrentSnapshot, 2);
-            _textManager.Setup(x => x.NavigateTo(point)).Returns(true);
-            _host.NavigateTo(new VirtualSnapshotPoint(buffer.CurrentSnapshot, 2));
-            _textManager.Verify();
-        }
-
-        [Fact]
-        public void GetName1()
-        {
-            Create();
-            var buffer = new Mock<ITextBuffer>();
-            _editorAdaptersFactoryService.Setup(x => x.GetBufferAdapter(buffer.Object)).Returns((IVsTextBuffer)null);
-            Assert.Equal("", _host.GetName(buffer.Object));
-        }
-
-        [Fact]
-        public void GetName2()
-        {
-            Create();
-            var buffer = new Mock<ITextBuffer>(MockBehavior.Strict);
-            var vsTextBuffer = (new Mock<IVsTextLines>(MockBehavior.Strict));
-            var userData = vsTextBuffer.As<IVsUserData>();
-            var moniker = VsVim.Constants.VsUserDataFileNameMoniker;
-            object ret = "foo";
-            userData.Setup(x => x.GetData(ref moniker, out ret)).Returns(0);
-            _editorAdaptersFactoryService.Setup(x => x.GetBufferAdapter(buffer.Object)).Returns(vsTextBuffer.Object);
-            Assert.Equal("foo", _host.GetName(buffer.Object));
-        }
-
-        /// <summary>
-        /// Settings shouldn't be automatically synchronized for new IVimBuffer instances in the
-        /// code base.  They are custom handled by HostFactory
-        /// </summary>
-        [Fact]
-        public void AutoSynchronizeSettings()
-        {
-            Create();
-            Assert.False(_host.AutoSynchronizeSettings);
+            /// <summary>
+            /// Settings shouldn't be automatically synchronized for new IVimBuffer instances in the
+            /// code base.  They are custom handled by HostFactory
+            /// </summary>
+            [Fact]
+            public void AutoSynchronizeSettings()
+            {
+                Create();
+                Assert.False(_host.AutoSynchronizeSettings);
+            }
         }
     }
 }
