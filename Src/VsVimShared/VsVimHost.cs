@@ -107,6 +107,44 @@ namespace VsVim
         }
 
         /// <summary>
+        /// Get the C++ identifier which exists under the caret 
+        /// </summary>
+        private static string GetCPlusPlusIdentifier(ITextView textView)
+        {
+            var snapshot = textView.TextSnapshot;
+            Func<int, bool> isValid = (position) => 
+            {
+                if (position < 0 || position >= snapshot.Length)
+                {
+                    return false;
+                }
+
+                var c = snapshot[position];
+                return Char.IsLetter(c) || Char.IsDigit(c) || c == '_';
+            };
+
+            var start = textView.Caret.Position.BufferPosition.Position;
+            if (!isValid(start))
+            {
+                return null;
+            }
+
+            var end = start + 1;
+            while (isValid(end))
+            {
+                end++;
+            }
+
+            while (isValid(start - 1))
+            {
+                start--;
+            }
+
+            var span = new SnapshotSpan(snapshot, start, end - start);
+            return span.GetText();
+        }
+
+        /// <summary>
         /// The C++ project system requires that the target of GoToDefinition be passed
         /// as an argument to the command.  
         /// </summary>
@@ -114,12 +152,7 @@ namespace VsVim
         {
             if (target == null)
             {
-                var caretPoint = textView.Caret.Position.BufferPosition;
-                var wordUtil = _wordUtilFactory.GetWordUtil(textView.TextBuffer);
-                var span = wordUtil.GetFullWordSpan(WordKind.NormalWord, caretPoint);
-                target = span.IsSome()
-                    ? span.Value.GetText()
-                    : null;
+                target = GetCPlusPlusIdentifier(textView);
             }
 
             if (target != null)

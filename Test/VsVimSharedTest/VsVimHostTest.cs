@@ -1,5 +1,6 @@
 ﻿using System;
 using EnvDTE;
+using EditorUtils;
 using Microsoft.VisualStudio.Editor;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
@@ -106,7 +107,7 @@ namespace VsVim.UnitTest
                 /// command
                 /// </summary>
                 [Fact]
-                public void GotoDefinition_Normal()
+                public void Normal()
                 {
                     Create();
                     var ct = GetOrCreateContentType("csharp", "code");
@@ -119,6 +120,17 @@ namespace VsVim.UnitTest
 
             public sealed class CPlusPlusTest : GoToDefinitionTest
             {
+                private ITextView _textView;
+
+                private void CreateWithText(params string[] lines)
+                {
+                    Create();
+
+                    var contentType = GetOrCreateContentType(VsVim.Constants.CPlusPlusContentType, "code");
+                    _textView = CreateTextView(contentType, lines);
+                    _textManager.SetupGet(x => x.ActiveTextViewOptional).Returns(_textView);
+                }
+
                 /// <summary>
                 /// The C++ implementation of the goto definition command requires that the word which 
                 /// it should target be passed along as an argument to the command
@@ -126,13 +138,43 @@ namespace VsVim.UnitTest
                 [Fact]
                 public void Simple()
                 {
-                    Create();
-                    var ct = GetOrCreateContentType(VsVim.Constants.CPlusPlusContentType, "code");
-                    var textView = CreateTextView(ct, "hello world");
-                    var wordUtil = WordUtilFactory.GetWordUtil(textView.TextBuffer);
-                    _textManager.SetupGet(x => x.ActiveTextViewOptional).Returns(textView);
-                    _dte.Setup(x => x.ExecuteCommand(VsVimHost.CommandNameGoToDefinition, "hello"));
+                    CreateWithText("hello world");
+                    _dte.Setup(x => x.ExecuteCommand(VsVimHost.CommandNameGoToDefinition, "hello")).Verifiable();
                     Assert.True(_host.GoToDefinition());
+                    _dte.Verify();
+                }
+
+                [Fact]
+                public void MiddleOfIdentifier()
+                {
+                    CreateWithText("cat; dog");
+                    _textView.MoveCaretTo(1);
+                    _dte.Setup(x => x.ExecuteCommand(VsVimHost.CommandNameGoToDefinition, "cat")).Verifiable();
+                    Assert.True(_host.GoToDefinition());
+                    _dte.Verify();
+                }
+
+                [Fact]
+                public void MiddleOfLongIdentifier()
+                {
+                    CreateWithText("big_cat; dog");
+                    _textView.MoveCaretTo(1);
+                    _dte.Setup(x => x.ExecuteCommand(VsVimHost.CommandNameGoToDefinition, "big_cat")).Verifiable();
+                    Assert.True(_host.GoToDefinition());
+                    _dte.Verify();
+                }
+
+                /// <summary>
+                /// The code should pass valid C++ identifiers to the GoToDefinition command.  It should not be 
+                /// using a full vim word (:help WORD) as it can include many non-legal C++ identifiers
+                /// </summary>
+                [Fact]
+                public void Issue1122()
+                {
+                    CreateWithText("cat; dog");
+                    _dte.Setup(x => x.ExecuteCommand(VsVimHost.CommandNameGoToDefinition, "cat")).Verifiable();
+                    Assert.True(_host.GoToDefinition());
+                    _dte.Verify();
                 }
             }
         }
