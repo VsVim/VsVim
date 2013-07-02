@@ -66,10 +66,10 @@ namespace Vim.UI.Wpf.UnitTest
         }
 
         [Fact]
-        public void IsInReplace1()
+        public void InReplace1()
         {
             var mode = new Mock<INormalMode>();
-            mode.SetupGet(x => x.IsInReplace).Returns(true);
+            mode.SetupGet(x => x.InReplace).Returns(true);
             _buffer.SetupGet(x => x.NormalMode).Returns(mode.Object);
             _buffer.SetupGet(x => x.ModeKind).Returns(ModeKind.Normal);
 
@@ -82,10 +82,10 @@ namespace Vim.UI.Wpf.UnitTest
         /// Replace wins over operator pending
         /// </summary>
         [Fact]
-        public void IsInReplace2()
+        public void InReplace2()
         {
             var mode = new Mock<INormalMode>();
-            mode.SetupGet(x => x.IsInReplace).Returns(true);
+            mode.SetupGet(x => x.InReplace).Returns(true);
             mode.SetupGet(x => x.KeyRemapMode).Returns(FSharpOption.Create(KeyRemapMode.Normal)).Verifiable();
             _buffer.SetupGet(x => x.NormalMode).Returns(mode.Object);
             _buffer.SetupGet(x => x.ModeKind).Returns(ModeKind.Normal);

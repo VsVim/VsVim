@@ -197,6 +197,8 @@ namespace Vim.UnitTest
             _vim.VimData.AutoCommandGroups = FSharpList<AutoCommandGroup>.Empty;
 
             _vim.KeyMap.ClearAll();
+            _vim.KeyMap.IsZeroMappingEnabled = true;
+
             _vim.CloseAllVimBuffers();
             _vim.IsDisabled = false;
 

@@ -2910,7 +2910,10 @@ type ICommandRunner =
     /// the {char} argument to f,F,t or T the Language mapping will be used
     abstract KeyRemapMode : KeyRemapMode option
 
-    /// Is the command runner currently binding a command which needs to explicitly handly escape
+    /// True when in the middle of a count operation
+    abstract InCount : bool
+
+    /// Is the command runner currently binding a command which needs to explicitly handle escape
     abstract IsHandlingEscape : bool
 
     /// True if waiting on more input
@@ -2952,6 +2955,9 @@ type KeyMapping = {
 
 /// Manages the key map for Vim.  Responsible for handling all key remappings
 type IKeyMap =
+
+    /// Is the mapping of the 0 key currently enabled
+    abstract IsZeroMappingEnabled : bool with get, set 
 
     /// Get all mappings for the specified mode
     abstract GetKeyMappingsForMode : KeyRemapMode -> KeyMapping list
@@ -3965,8 +3971,11 @@ and INormalMode =
     /// Mode keys need to be remapped with currently
     abstract KeyRemapMode : KeyRemapMode option
 
+    /// Is normal mode in the middle of a count operation
+    abstract InCount : bool
+
     /// Is normal mode in the middle of a character replace operation
-    abstract IsInReplace : bool
+    abstract InReplace : bool
 
     inherit IMode
 
@@ -4012,6 +4021,9 @@ and IVisualMode =
 
     /// Mode keys need to be remapped with currently
     abstract KeyRemapMode : KeyRemapMode option
+
+    /// Is visual mode in the middle of a count operation
+    abstract InCount : bool
 
     /// The current Visual Selection
     abstract VisualSelection : VisualSelection

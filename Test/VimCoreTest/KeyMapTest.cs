@@ -494,6 +494,46 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class ZeroCountTest : KeyMapTest
+        {
+            private void Map(string lhs, string rhs)
+            {
+                Assert.True(_map.MapWithRemap(lhs, rhs, KeyRemapMode.Normal));
+            }
+
+            [Fact]
+            public void Default()
+            {
+                Map("0", "cat");
+                AssertPartialMapping("0", "c", "at");
+            }
+
+            [Fact]
+            public void Simple()
+            {
+                Map("0", "cat");
+                _map.IsZeroMappingEnabled = false;
+                AssertMapping("0", "0");
+            }
+
+            [Fact]
+            public void Complex()
+            {
+                Map("01", "cat");
+                _map.IsZeroMappingEnabled = false;
+                AssertPartialMapping("01", "0", "1");
+            }
+
+            [Fact]
+            public void MapToZeroStillDisableZero()
+            {
+                Map("0", "cat");
+                Map("a", "0");
+                _map.IsZeroMappingEnabled = false;
+                AssertMapping("a", "0");
+            }
+        }
+
         public sealed class MiscTest : KeyMapTest
         {
             private void MapWithRemap(string lhs, string rhs)

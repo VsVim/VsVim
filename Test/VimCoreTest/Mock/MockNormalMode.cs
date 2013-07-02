@@ -8,7 +8,7 @@ namespace Vim.UnitTest.Mock
     {
         public IVimBuffer VimBufferImpl = null;
         public ICommandRunner CommandRunnerImpl = null;
-        public bool IsInReplaceImpl = false;
+        public bool InReplaceImpl = false;
 
         public string Command
         {
@@ -60,9 +60,14 @@ namespace Vim.UnitTest.Mock
             get { return VimBufferImpl; }
         }
 
-        public bool IsInReplace
+        public bool InReplace
         {
-            get { return IsInReplaceImpl; }
+            get { return InReplaceImpl; }
+        }
+
+        public bool InCount
+        {
+            get { return false; }
         }
 
         public ICommandRunner CommandRunner

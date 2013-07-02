@@ -1530,7 +1530,7 @@ namespace Vim.UnitTest
                     Create(str);
                     _vimBuffer.Process(":nmap b 3", enter: true);
                     _vimBuffer.Process(":nmap a 10b", enter: true);
-                    _vimBuffer.Process("la");
+                    _vimBuffer.Process("al");
                     Assert.Equal(103, _textView.GetCaretPoint().Position);
                 }
 
@@ -4516,9 +4516,9 @@ namespace Vim.UnitTest
             {
                 Create("hello world");
                 _vimBuffer.Process('r');
-                Assert.True(_normalMode.IsInReplace);
+                Assert.True(_normalMode.InReplace);
                 _vimBuffer.Process(VimKey.Back);
-                Assert.False(_normalMode.IsInReplace);
+                Assert.False(_normalMode.InReplace);
                 Assert.Equal("hello world", _textBuffer.GetLine(0).GetText());
             }
 
@@ -4530,9 +4530,9 @@ namespace Vim.UnitTest
             {
                 Create("hello world");
                 _vimBuffer.Process('r');
-                Assert.True(_normalMode.IsInReplace);
+                Assert.True(_normalMode.InReplace);
                 _vimBuffer.Process(VimKey.Back);
-                Assert.False(_normalMode.IsInReplace);
+                Assert.False(_normalMode.InReplace);
                 Assert.Equal("hello world", _textBuffer.GetLine(0).GetText());
             }
 

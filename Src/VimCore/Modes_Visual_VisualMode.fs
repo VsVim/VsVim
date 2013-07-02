@@ -335,6 +335,7 @@ type internal VisualMode
     interface IVisualMode with
         member x.CommandRunner = _runner
         member x.KeyRemapMode = x.KeyRemapMode
+        member x.InCount = _runner.InCount
         member x.VisualSelection = VisualSelection.CreateForSelection _textView _visualKind _globalSettings.SelectionKind _vimBufferData.LocalSettings.TabStop
         member x.SyncSelection () = x.SyncSelection()
 

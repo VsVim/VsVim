@@ -50,6 +50,9 @@ type internal CommandRunner
     /// True during the running of a particular KeyInput 
     let mutable _inBind = false
 
+    /// True during the binding of the count
+    let mutable _inCount = false
+
     /// Try and get the VisualSpan for the provided kind
     member x.GetVisualSpan kind = VisualSpan.CreateForSelection _textView kind _localSettings.TabStop
 
@@ -70,9 +73,11 @@ type internal CommandRunner
 
         let rec inner (num:string) (ki:KeyInput) = 
             if ki.IsDigit then
+                _inCount <- true
                 let num = num + ki.Char.ToString()
                 BindResult.NeedMoreInput { KeyRemapMode = Some _countKeyRemapMode; BindFunction = inner num }
             else
+                _inCount <- false
                 let count = System.Int32.Parse(num)
                 completeFunc count ki
 
@@ -332,6 +337,7 @@ type internal CommandRunner
     member x.ResetState () =
         _data <- _emptyData
         _runBindData <- None
+        _inCount <- false
 
     interface ICommandRunner with
         member x.Commands = _commandMap |> Seq.map (fun pair -> pair.Value)
@@ -340,6 +346,7 @@ type internal CommandRunner
             | None -> false
             | Some flags -> Util.IsFlagSet flags CommandFlags.HandlesEscape
         member x.IsWaitingForMoreInput = Option.isSome _runBindData
+        member x.InCount = _inCount
         member x.KeyRemapMode = 
             match _runBindData with
             | None -> None

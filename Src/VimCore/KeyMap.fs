@@ -21,7 +21,8 @@ type Mapper
     (
         _keyInputSet : KeyInputSet,
         _modeMap : RemapModeMap,
-        _globalSettings : IVimGlobalSettings
+        _globalSettings : IVimGlobalSettings,
+        _isZeroMappingEnabled : bool
     ) =
 
     /// During the processing of mapping input we found a match for the inputKeySet to the 
@@ -71,6 +72,11 @@ type Mapper
 
         mappedSet, remainingSet
 
+    static member IsFirstKeyInputZero (keyInputSet : KeyInputSet) =
+        match keyInputSet.FirstKeyInput with
+        | Some keyInput -> keyInput = KeyInputUtil.CharToKeyInput '0' 
+        | _ -> false
+
     /// Get the mapping for the specified lhs in the particular map
     member x.GetKeyMapping()  =
 
@@ -84,6 +90,19 @@ type Mapper
             result := KeyMappingResult.NeedsMoreInput _keyInputSet
             isDone := true
 
+        // Called when there is a successful mapping of the data.  Once we map anything 
+        // definitively then we are done.  The rest of the data (if any) shouldn't be processed
+        // until the calling code has time to process the definitively mapped set of 
+        // keys.  Doing so could change the key mapping mode and hence change how we map 
+        // the remaining keys
+        let successfulMap (mappedKeyInputSet : KeyInputSet) (remainingKeyInputSet : KeyInputSet) = 
+            if remainingKeyInputSet.Length = 0 then
+                result := KeyMappingResult.Mapped mappedKeyInputSet
+            else
+                result := KeyMappingResult.PartiallyMapped (mappedKeyInputSet, remainingKeyInputSet)
+
+            isDone := true
+
         let processMapping lhs keyMapping =
             depth := depth.Value + 1
             if depth.Value = _globalSettings.MaxMapDepth then
@@ -91,21 +110,18 @@ type Mapper
                 // Recursive
                 result := KeyMappingResult.Recursive
                 isDone := true
+            elif not _isZeroMappingEnabled && Mapper.IsFirstKeyInputZero lhs then
+                // 0 mapping is disabled and we have a 0 input so we are done
+                let mappedKeyInputSet = KeyInputUtil.CharToKeyInput '0' |> KeyInputSet.OneKeyInput
+                let remainingKeyInputSet = lhs.Rest |> KeyInputSetUtil.OfList
+                successfulMap mappedKeyInputSet remainingKeyInputSet
             else
                 let mapped, remaining = x.ProcessMapping lhs keyMapping
                 mappedSet := mapped
                 remainingSet := remaining
 
                 if mappedSet.Value.Length > 0 then
-                    // Once we mapped something definitively then we are done.  The rest of 
-                    // the mapping (if there is any) shouldn't be processed until the definitively
-                    // mapped keys are processed
-                    if remainingSet.Value.Length = 0 then
-                        result := KeyMappingResult.Mapped mappedSet.Value
-                    else
-                        result := KeyMappingResult.PartiallyMapped (mappedSet.Value, remainingSet.Value)
-
-                    isDone := true
+                    successfulMap mapped remaining
 
         while not isDone.Value do
             Contract.Assert(mappedSet.Value.Length = 0)
@@ -156,6 +172,11 @@ type internal KeyMap
     ) =
 
     let mutable _map : Map<KeyRemapMode, RemapModeMap> = Map.empty
+    let mutable _isZeroMappingEnabled = true
+
+    member x.IsZeroMappingEnabled 
+        with get() = _isZeroMappingEnabled
+        and set value = _isZeroMappingEnabled <- value
 
     member x.MapWithNoRemap lhs rhs mode = x.MapCore lhs rhs mode false
     member x.MapWithRemap lhs rhs mode = x.MapCore lhs rhs mode true
@@ -242,10 +263,13 @@ type internal KeyMap
     /// mapping
     member x.GetKeyMapping (keyInputSet : KeyInputSet) mode =
         let modeMap = x.GetRemapModeMap mode
-        let mapper = Mapper(keyInputSet, modeMap, _globalSettings)
+        let mapper = Mapper(keyInputSet, modeMap, _globalSettings, _isZeroMappingEnabled)
         mapper.GetKeyMapping()
 
     interface IKeyMap with
+        member x.IsZeroMappingEnabled 
+            with get() = x.IsZeroMappingEnabled
+            and set value = x.IsZeroMappingEnabled <- value
         member x.GetKeyMappingsForMode mode = x.GetKeyMappingsForMode mode 
         member x.GetKeyMapping ki mode = x.GetKeyMapping ki mode
         member x.MapWithNoRemap lhs rhs mode = x.MapWithNoRemap lhs rhs mode

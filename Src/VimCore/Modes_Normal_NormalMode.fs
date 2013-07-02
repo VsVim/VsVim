@@ -8,7 +8,7 @@ open Microsoft.VisualStudio.Text.Editor
 
 type internal NormalModeData = {
     Command : string
-    IsInReplace : bool
+    InReplace : bool
 }
 
 type internal NormalMode 
@@ -29,7 +29,7 @@ type internal NormalMode
     /// Reset state for data in Normal Mode
     static let EmptyData = {
         Command = StringUtil.empty
-        IsInReplace = false
+        InReplace = false
     }
 
     /// Set of all char's Vim is interested in 
@@ -261,10 +261,10 @@ type internal NormalMode
     /// Bind the character in a replace character command: 'r'.  
     member x.BindReplaceChar () =
         let func () = 
-            _data <- { _data with IsInReplace = true }
+            _data <- { _data with InReplace = true }
 
             let bind (keyInput : KeyInput) = 
-                _data <- { _data with IsInReplace = false }
+                _data <- { _data with InReplace = false }
                 match keyInput.Key with
                 | VimKey.Escape -> BindResult.Cancelled
                 | VimKey.Back -> BindResult.Cancelled
@@ -373,7 +373,8 @@ type internal NormalMode
 
     interface INormalMode with 
         member x.KeyRemapMode = x.KeyRemapMode
-        member x.IsInReplace = _data.IsInReplace
+        member x.InCount = _runner.InCount
+        member x.InReplace = _data.InReplace
         member x.VimTextBuffer = _vimTextBuffer
         member x.Command = x.Command
         member x.CommandRunner = _runner

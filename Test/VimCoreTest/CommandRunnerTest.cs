@@ -146,6 +146,39 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class CountTest : CommandRunnerTest
+        {
+            public CountTest()
+            {
+                Create("");
+                _runner.Add(VimUtil.CreateNormalBinding("dd"));
+            }
+
+            [Fact]
+            public void Default()
+            {
+                Assert.False(_runner.InCount);
+            }
+
+            [Fact]
+            public void Simple()
+            {
+                _runner.Run('1');
+                Assert.True(_runner.InCount);
+                _runner.Run('d');
+                Assert.False(_runner.InCount);
+                Assert.True(_runner.IsWaitingForMoreInput);
+            }
+
+            [Fact]
+            public void ResetState()
+            {
+                _runner.Run('1');
+                _runner.ResetState();
+                Assert.False(_runner.InCount);
+            }
+        }
+
         public sealed class RunTest : CommandRunnerTest
         {
             [Fact]

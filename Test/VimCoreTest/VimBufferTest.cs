@@ -31,6 +31,7 @@ namespace Vim.UnitTest
             var mode = _factory.Create<INormalMode>(behavior);
             mode.SetupGet(x => x.ModeKind).Returns(ModeKind.Normal);
             mode.SetupGet(x => x.KeyRemapMode).Returns(FSharpOption.Create(KeyRemapMode.Normal));
+            mode.SetupGet(x => x.InCount).Returns(false);
             mode.Setup(x => x.OnLeave());
             mode.Setup(x => x.OnClose());
             _vimBufferRaw.RemoveMode(_vimBufferRaw.NormalMode);

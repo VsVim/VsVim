@@ -193,6 +193,15 @@ type internal VimBuffer
         | ModeKind.VisualLine -> x.VisualLineMode.KeyRemapMode
         | _ -> None
 
+    /// Is this buffer currently in the middle of a count operation
+    member x.InCount = 
+        match _modeMap.Mode.ModeKind with
+        | ModeKind.Normal -> x.NormalMode.InCount
+        | ModeKind.VisualBlock -> x.VisualBlockMode.InCount
+        | ModeKind.VisualCharacter -> x.VisualCharacterMode.InCount
+        | ModeKind.VisualLine -> x.VisualLineMode.InCount
+        | _ -> false
+
     member x.VimBufferData = _vimBufferData
 
     /// Add an IMode into the IVimBuffer instance
@@ -303,6 +312,16 @@ type internal VimBuffer
             // Stop listening to events
             _bag.DisposeAll()
 
+    /// Get the key mapping for the given KeyInputSet and KeyRemapMode.  This will take into
+    /// account whether the buffer is currently in the middle of a count operation.  In this
+    /// state the 0 key is not ever mapped
+    member x.GetKeyMappingCore keyInputSet keyRemapMode = 
+        try
+            _keyMap.IsZeroMappingEnabled <- not x.InCount
+            _keyMap.GetKeyMapping keyInputSet keyRemapMode
+        finally
+            _keyMap.IsZeroMappingEnabled <- true
+
     /// Get the correct mapping of the given KeyInput value in the current state of the 
     /// IVimBuffer.  This will consider any buffered KeyInput values 
     member x.GetKeyInputMapping keyInput =
@@ -314,7 +333,7 @@ type internal VimBuffer
 
         match x.KeyRemapMode with
         | None -> KeyMappingResult.Mapped keyInputSet
-        | Some keyRemapMode -> _keyMap.GetKeyMapping keyInputSet keyRemapMode
+        | Some keyRemapMode -> x.GetKeyMappingCore keyInputSet keyRemapMode
 
     member x.OnVimTextBufferSwitchedMode modeKind modeArgument =
         if x.Mode.ModeKind <> modeKind then
@@ -418,7 +437,7 @@ type internal VimBuffer
                 remainingSet.Value.FirstKeyInput.Value |> KeyInputSet.OneKeyInput |> processSet
                 remainingSet := remainingSet.Value.Rest |> KeyInputSetUtil.OfList
             | Some keyRemapMode ->
-                let keyMappingResult = _keyMap.GetKeyMapping remainingSet.Value keyRemapMode
+                let keyMappingResult = x.GetKeyMappingCore remainingSet.Value keyRemapMode
                 remainingSet := 
                     match keyMappingResult with
                     | KeyMappingResult.Mapped mappedKeyInputSet -> 

@@ -87,7 +87,7 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
                 case ModeKind.Normal:
                     {
                         var mode = _buffer.NormalMode;
-                        if (mode.IsInReplace)
+                        if (mode.InReplace)
                         {
                             kind = CaretDisplay.QuarterBlock;
                         }
