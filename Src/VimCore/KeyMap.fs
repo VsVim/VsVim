@@ -56,7 +56,7 @@ type Mapper
         //  :nmap aa one
         //  :nmap aaa two 
         //
-        // The user can then type aak and we will end up with a remaining KeyInputSet of k 
+        // The user can then type 'aak' and we will end up with a remaining KeyInputSet of k 
         // here which must still be mapped
         let remainingSet = 
             if lhs.Length > keyMapping.Left.Length then

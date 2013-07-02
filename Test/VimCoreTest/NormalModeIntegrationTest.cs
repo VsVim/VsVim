@@ -1493,7 +1493,91 @@ namespace Vim.UnitTest
                 }
             }
 
-            public sealed class MiscTest : KeyMappingTest
+            public sealed class CountTest : KeyMappingTest
+            {
+                /// <summary>
+                /// After the count the key mapping mode should still be set to normal
+                /// </summary>
+                [Fact]
+                public void NormalAfterCount()
+                {
+                    Create("");
+                    _vimBuffer.Process("2");
+                    Assert.True(_normalMode.KeyRemapMode.Is(KeyRemapMode.Normal));
+                }
+
+                /// <summary>
+                /// The 0 key shouldn't respect any key mappings when in the middle of a 
+                /// count operation
+                /// </summary>
+                [Fact]
+                public void DontMapZero()
+                {
+                    Create("the dog chases the cat around the tree again");
+                    _vimBuffer.Process(":nmap 0 ^", enter: true);
+                    _vimBuffer.Process("10l");
+                    Assert.Equal(10, _textView.GetCaretPoint().Position);
+                }
+
+                /// <summary>
+                /// Even though 0 itself doesn't map we do map strings that come after the
+                /// 0 key
+                /// </summary>
+                [Fact]
+                public void ComplexMapAfterZero()
+                {
+                    var str = new string('z', 1000);
+                    Create(str);
+                    _vimBuffer.Process(":nmap b 3", enter: true);
+                    _vimBuffer.Process(":nmap a 10b", enter: true);
+                    _vimBuffer.Process("la");
+                    Assert.Equal(103, _textView.GetCaretPoint().Position);
+                }
+
+                /// <summary>
+                /// Zero does map when it is a part of a larger string
+                /// </summary>
+                [Fact]
+                public void ComplexMapWithZero()
+                {
+                    var str = new string('z', 1000);
+                    Create(str);
+                    _vimBuffer.Process(":nmap 10 20", enter: true);
+                    _vimBuffer.Process("10l");
+                    Assert.Equal(20, _textView.GetCaretPoint().Position);
+                }
+
+                /// <summary>
+                /// Another strange case
+                /// </summary>
+                [Fact]
+                public void ComplexOther()
+                {
+                    var str = new string('z', 1000);
+                    Create(str);
+                    _vimBuffer.Process(":nmap 0a 20", enter: true);
+                    _vimBuffer.Process("10a");
+                    Assert.Equal(ModeKind.Insert, _vimBuffer.ModeKind);
+                }
+
+                /// <summary>
+                /// The 0 key can be mapped to during a count but it can't be mapped any
+                /// further.  In this case the first 'a' will map fully to 1 because it
+                /// is not inside a count.  The second 'a' will stop at 0 because it is 
+                /// inside a count and hence all 0 mapping is disabled
+                /// </summary>
+                [Fact]
+                public void DontMapZeroInsideMapping()
+                {
+                    Create("the dog chases the cat around the tree again");
+                    _vimBuffer.Process(":nmap 0 1", enter: true);
+                    _vimBuffer.Process(":nmap a 0", enter: true);
+                    _vimBuffer.Process("aal");
+                    Assert.Equal(10, _textView.GetCaretPoint().Position);
+                }
+            }
+
+            public sealed class KeyMappingMiscTest : KeyMappingTest
             {
                 [Fact]
                 public void ToCharDoesNotUseMap()
@@ -1709,17 +1793,6 @@ namespace Vim.UnitTest
                     _vimBuffer.Process(":nmap <BS> a and backspace", enter: true);
                     _vimBuffer.ProcessNotation("<C-H><BS>");
                     Assert.Equal("control h and backspace", _textBuffer.GetLine(0).GetText());
-                }
-
-                /// <summary>
-                /// After the count the key mapping mode should still be set to normal
-                /// </summary>
-                [Fact]
-                public void NormalAfterCount()
-                {
-                    Create("");
-                    _vimBuffer.Process("2");
-                    Assert.True(_normalMode.KeyRemapMode.Is(KeyRemapMode.Normal));
                 }
 
                 /// <summary>

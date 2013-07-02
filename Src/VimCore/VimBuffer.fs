@@ -184,10 +184,10 @@ type internal VimBuffer
     /// Current KeyRemapMode which should be used when calculating keyboard mappings
     member x.KeyRemapMode = 
         match _modeMap.Mode.ModeKind with
-        | ModeKind.Insert -> Some (KeyRemapMode.Insert)
-        | ModeKind.Replace -> Some (KeyRemapMode.Insert)
+        | ModeKind.Insert -> Some KeyRemapMode.Insert
+        | ModeKind.Replace -> Some KeyRemapMode.Insert
         | ModeKind.Normal -> x.NormalMode.KeyRemapMode
-        | ModeKind.Command -> Some(KeyRemapMode.Command)
+        | ModeKind.Command -> Some KeyRemapMode.Command
         | ModeKind.VisualBlock -> x.VisualBlockMode.KeyRemapMode
         | ModeKind.VisualCharacter -> x.VisualCharacterMode.KeyRemapMode
         | ModeKind.VisualLine -> x.VisualLineMode.KeyRemapMode
@@ -198,7 +198,7 @@ type internal VimBuffer
     /// Add an IMode into the IVimBuffer instance
     member x.AddMode mode = _modeMap.AddMode mode
 
-    /// Vim treats keypad keys exactly like thier non-keypad equivalent (keypad 
+    /// Vim treats keypad keys exactly like their non-keypad equivalent (keypad 
     /// + is the same as a normal +).  The keypad does participate in key mapping
     /// but once key mapping is finished the keypad keys are mapped back to their
     /// non-keypad equivalent for processing

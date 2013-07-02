@@ -2936,6 +2936,8 @@ type ICommandRunner =
     abstract CommandRan : IDelegateEvent<System.EventHandler<CommandRunDataEventArgs>>
 
 /// Information about a single key mapping
+[<NoComparison>]
+[<NoEquality>]
 type KeyMapping = {
 
     // The LHS of the key mapping
@@ -2944,7 +2946,7 @@ type KeyMapping = {
     // The RHS of the key mapping
     Right : KeyInputSet 
 
-    // Does the expansion partipciate in remapping
+    // Does the expansion participate in remapping
     AllowRemap : bool
 }
 
