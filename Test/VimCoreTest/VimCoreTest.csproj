@@ -74,6 +74,7 @@
     <Compile Include="CharacterSpanTest.cs" />
     <Compile Include="CharUtilTest.cs" />
     <Compile Include="ClipboardRegisterValueBackingTest.cs" />
+    <Compile Include="CodeHygieneTest.cs" />
     <Compile Include="CommandModeIntegrationTest.cs" />
     <Compile Include="CommandModeTest.cs" />
     <Compile Include="CommandNameTest.cs" />

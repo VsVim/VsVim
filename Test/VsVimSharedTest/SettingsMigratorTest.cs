@@ -10,7 +10,7 @@ using VsVim.Implementation.Settings;
 using VsVim.UnitTest.Mock;
 using Xunit;
 
-namespace VsVim.Shared.UnitTest
+namespace VsVim.UnitTest
 {
     public abstract class SettingsMigratorTest 
     {

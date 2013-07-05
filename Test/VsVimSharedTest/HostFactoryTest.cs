@@ -13,7 +13,7 @@ using Vim.UnitTest;
 using VsVim.Implementation.Misc;
 using Xunit;
 
-namespace VsVim.Shared.UnitTest
+namespace VsVim.UnitTest
 {
     public abstract class HostFactoryTest : VimTestBase
     {

@@ -5,7 +5,7 @@ using System.Text;
 using VsVim.Implementation.Misc;
 using Xunit;
 
-namespace VsVim.Shared.UnitTest
+namespace VsVim.UnitTest
 {
     public abstract class ScopeDataTest
     {

@@ -11,7 +11,7 @@ using VsVim.Implementation.Settings;
 using VsVim.UnitTest.Mock;
 using Xunit;
 
-namespace VsVim.Shared.UnitTest
+namespace VsVim.UnitTest
 {
     public abstract class VimApplicationSettingsTest
     {
@@ -272,7 +272,7 @@ namespace VsVim.Shared.UnitTest
 
             protected CollectionPathTest() : base(settingsStore: (new Mock<WritableSettingsStore>(MockBehavior.Strict).Object))
             {
-                _settingsStore = Mock.Get(_writableSettingsStore);
+                _settingsStore = Moq.Mock.Get(_writableSettingsStore);
             }
 
             protected abstract void DoOperation();

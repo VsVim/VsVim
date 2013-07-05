@@ -69,6 +69,7 @@
     <Compile Include="BlockCaretControllerTest.cs" />
     <Compile Include="BlockCaretTest.cs" />
     <Compile Include="CharDisplayTaggerSourceTest.cs" />
+    <Compile Include="CodeHygieneTest.cs" />
     <Compile Include="CommandMarginProviderTest.cs" />
     <Compile Include="WpfIntegrationTest.cs" />
     <Compile Include="CommandMarginControllerTest.cs" />
