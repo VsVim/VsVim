@@ -306,6 +306,50 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class KeyMappingTest : MacroIntegrationTest
+        {
+            /// <summary>
+            /// During macro evaluation what is typed is what should be recorded, not what is actually
+            /// processed by the buffer.  If the user types 'h' but it is mapped to 'u' then 'h' should
+            /// be recorded
+            /// </summary>
+            [Fact]
+            public void RecordTyped()
+            {
+                Create("cat dog");
+                _textView.MoveCaretTo(4);
+                _vimBuffer.Process(":noremap l h", enter: true);
+                _vimBuffer.Process("qfllq");
+                Assert.Equal(2, _textView.GetCaretPoint().Position);
+                Assert.Equal("ll", _vimBuffer.GetRegister('f').StringValue);
+            }
+
+            /// <summary>
+            /// The macro replay should consider mappings as they exist during the replay.  If the mappings
+            /// change after a record occurs then the behavior of the replay should demonstrate that
+            /// change 
+            /// </summary>
+            [Fact]
+            public void ConsiderMappingDuringReplay()
+            {
+                Create("cat");
+                _vimBuffer.GetRegister('c').UpdateValue("ibig ");
+                _vimBuffer.Process("@c");
+                Assert.Equal("big cat", _textBuffer.GetLine(0).GetText());
+            }
+
+            [Fact]
+            public void Issue1117()
+            {
+                Create("cat", "dog", "fish", "hello", "world", "ok");
+                _vimBuffer.Process(":noremap h k", enter: true);
+                _vimBuffer.Process(":noremap k j", enter: true);
+                _textView.MoveCaretToLine(5);
+                _vimBuffer.Process("qfhhq@f");
+                Assert.Equal(1, _textView.GetCaretPoint().GetContainingLine().LineNumber); 
+            }
+        }
+
         public sealed class MiscTest : MacroIntegrationTest
         {
             /// <summary>
