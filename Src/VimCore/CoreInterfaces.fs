@@ -3207,7 +3207,7 @@ type HistoryList () =
     /// The count of actual items currently stored in the collection
     member x.Count = _list.Length
 
-    /// This is a truncating list.  As items exceed the set Limit the eariest items will
+    /// This is a truncating list.  As items exceed the set Limit the eeriest items will
     /// be removed from the collection.  The total count represents the number of items
     /// that have ever been added, not the current count
     member x.TotalCount = _totalCount

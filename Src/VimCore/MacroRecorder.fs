@@ -7,10 +7,13 @@ type internal MacroRecorder (_registerMap : IRegisterMap) =
     /// middle of recording.
     let mutable _recordData : (Register * KeyInput list) option = None
 
-    /// Need to be careful to only record keystrokes which happen after we start
-    /// recording.  Don't for instance want to record the KeyStroke for the stored
-    /// register.
-    let mutable _recordKeyStroke = false
+    /// This records whether or not the KeyInputEnd event is valid or not for 
+    /// recording.  The macro recorder needs to be careful to not record key
+    /// strokes that it only sees partial events for.  It will always see the
+    /// partial key event for the register (KeyInputEnd) and the macro stop
+    /// command 'q' (KeyInputStart).  Neither of these should be recorded.  Only
+    /// keys which the recorder fully sees while recording should be considered
+    let mutable _isKeyInputEndValid = false
 
     let _recordingStartedEvent = StandardEvent<RecordRegisterEventArgs>()
     let _recordingStoppedEvent = StandardEvent()
@@ -31,7 +34,6 @@ type internal MacroRecorder (_registerMap : IRegisterMap) =
             if isAppend then register.RegisterValue.KeyInputs |> List.rev
             else List.empty
         _recordData <- Some (register, list)
-        _recordKeyStroke <- false
         
         let args = RecordRegisterEventArgs(register, isAppend)
         _recordingStartedEvent.Trigger x args
@@ -45,34 +47,25 @@ type internal MacroRecorder (_registerMap : IRegisterMap) =
         let value = RegisterValue(list)
         _registerMap.SetRegisterValue register RegisterOperation.Yank value
         _recordData <- None
-        _recordKeyStroke <- false
         _recordingStoppedEvent.Trigger x
 
     /// Need to track the KeyInputProcessed event for every IVimBuffer in the system
     member x.OnVimBufferCreated (buffer : IVimBuffer) =
         let bag = DisposableBag()
-        buffer.KeyInputProcessed.Subscribe x.OnKeyInputProcessed |> bag.Add
         buffer.KeyInputStart.Subscribe x.OnKeyInputStart |> bag.Add
+        buffer.KeyInputEnd.Subscribe x.OnKeyInputEnd |> bag.Add
         buffer.Closed.AddHandler (fun _ _ -> bag.DisposeAll())
 
-    /// Called whenever a KeyInput is processed.  Capture this if we are currently
-    /// recording
-    member x.OnKeyInputProcessed (args : KeyInputProcessedEventArgs) =
-        let keyInput = args.KeyInput
-        if not _recordKeyStroke then
-            ()
-        else
-            match _recordData with 
-            | None ->
-                // Not recording so we don't care
-                ()
-            | Some (register, list) ->
-                let list = keyInput :: list
-                _recordData <- Some (register, list)
+    member x.OnKeyInputStart _ = 
+        _isKeyInputEndValid <- Option.isSome _recordData
 
-    /// Called whenever a KeyInput is started
-    member x.OnKeyInputStart _ =
-        _recordKeyStroke <- true
+    member x.OnKeyInputEnd (args : KeyInputEventArgs) =
+        if _isKeyInputEndValid then
+            match _recordData with
+            | None -> () 
+            | Some (register, list) -> 
+                let list = args.KeyInput :: list
+                _recordData <- Some (register, list)
 
     interface IVimBufferCreationListener with
         member x.VimBufferCreated buffer = x.OnVimBufferCreated buffer
