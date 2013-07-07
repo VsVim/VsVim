@@ -323,10 +323,21 @@ type internal CommandUtil
                         result.Span
                 | None -> result.Span
 
-        // Use an undo transaction to preserve the caret position.  It should be at the start
-        // of the last line inside the span being deleted after the undo / redo.  So move it
-        // before and after the delete occurs
-        let point = span |> SnapshotSpanUtil.GetLastLine |> SnapshotLineUtil.GetStart
+        // Use an undo transaction to preserve the caret position.  Experiments show that the rules
+        // for caret undo should be 
+        //  1. start of the change if motion is character wise
+        //  2. start of second line if motion is line wise
+        let point = 
+            match result.MotionKind with
+            | MotionKind.CharacterWiseExclusive -> span.Start
+            | MotionKind.CharacterWiseInclusive -> span.Start
+            | MotionKind.LineWise -> 
+                let startLine = SnapshotSpanUtil.GetStartLine span
+                let line = 
+                    SnapshotUtil.TryGetLine span.Snapshot (startLine.LineNumber + 1)
+                    |> OptionUtil.getOrDefault startLine
+                line.Start
+
         TextViewUtil.MoveCaretToPoint _textView point
         let commandResult = 
             x.EditWithLinkedChange "Change" (fun () ->

@@ -2310,6 +2310,56 @@ namespace Vim.UnitTest
                 Assert.Equal(new[] { "cat", "dog", "fish" }, _textBuffer.GetLines());
                 Assert.Equal(_textBuffer.GetLine(1).Start, _textView.GetCaretPoint());
             }
+
+            /// <summary>
+            /// The undo of a line wise change of several lines should move the caret back to the
+            /// start of the second line.  I can find no documentation for this behavior but 
+            /// experiments show this is the intended behavior
+            /// </summary>
+            [Fact]
+            public void UndoLineWiseManyLines()
+            {
+                Create("cat", "dog", "fish", "tree");
+                _vimBuffer.ProcessNotation("c/tr<CR><Esc>u");
+                Assert.Equal(new[] { "cat", "dog", "fish", "tree" }, _textBuffer.GetLines());
+                Assert.Equal(_textBuffer.GetLine(1).Start, _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// Very similar to the above test case.  This time though we start at the 'a' in 
+            /// 'cat'.  This changes the motion into a character wise motion.  Hence the undo
+            /// goes back to the start of the change not the second line 
+            /// </summary>
+            [Fact]
+            public void UndoCharacterWiseManyLines()
+            {
+                Create("cat", "dog", "fish", "tree");
+                _vimBuffer.ProcessNotation("lc/tr<CR><Esc>u");
+                Assert.Equal(new[] { "cat", "dog", "fish", "tree" }, _textBuffer.GetLines());
+                Assert.Equal(_textBuffer.GetPointInLine(0, 1), _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// Even though the caret starts in the middle of the word it should be reset back to
+            /// the start of the motion in an undo
+            /// </summary>
+            [Fact]
+            public void UndoWholeWord()
+            {
+                Create("big cat dog");
+                _textView.MoveCaretTo(5);
+                _vimBuffer.ProcessNotation("caw<Esc>u");
+                Assert.Equal(4, _textView.GetCaretPoint().Position);
+            }
+
+            [Fact]
+            public void Issue1128()
+            {
+                Create("cat dog fish");
+                _textView.MoveCaretTo(4);
+                _vimBuffer.ProcessNotation("cw<Esc>u");
+                Assert.Equal(4, _textView.GetCaretPoint().Position);
+            }
         }
 
         public sealed class IncrementalSearchTest : NormalModeIntegrationTest
