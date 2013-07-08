@@ -33,6 +33,9 @@ type IDisplayWindowBrokerFactoryService  =
     abstract CreateDisplayWindowBroker : ITextView -> IDisplayWindowBroker
 
 /// What type of tracking are we doing
+[<RequireQualifiedAccess>]
+[<NoComparison>]
+[<NoEquality>]
 type LineColumnTrackingMode = 
 
     /// By default a 1TrackingLineColumn will be deleted if the line it 
@@ -233,6 +236,8 @@ type IClipboardDevice =
     abstract Text : string with get, set
 
 [<RequireQualifiedAccess>]
+[<NoComparison>]
+[<NoEquality>]
 type Result = 
     | Succeeded
     | Failed of string

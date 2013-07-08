@@ -24,7 +24,7 @@ type internal DisabledMode(_vimBufferData : IVimBufferData) =
         member x.VimTextBuffer = _vimBufferData.VimTextBuffer
         member x.HelpMessage = x.HelpString
         member x.ModeKind = ModeKind.Disabled        
-        member x.CommandNames = Seq.singleton _globalSettings.DisableAllCommand |> Seq.map OneKeyInput
+        member x.CommandNames = Seq.singleton _globalSettings.DisableAllCommand |> Seq.map KeyInputSet.OneKeyInput
         member x.CanProcess ki = ki = _globalSettings.DisableAllCommand
         member x.Process keyInput = x.Process keyInput
         member x.OnEnter _  = ()

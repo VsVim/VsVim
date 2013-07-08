@@ -4,6 +4,7 @@ open Microsoft.VisualStudio.Text
 open System.Diagnostics
 
 [<RequireQualifiedAccess>]
+[<NoComparison>]
 type WordKind = 
     | NormalWord
     | BigWord
@@ -84,7 +85,9 @@ type SubstituteData = {
 }
 
 /// Represents the different type of operations that are available for Motions
+[<RequireQualifiedAccess>]
 [<DebuggerDisplay("{ToString(),nq}")>]
+[<NoComparison>]
 type OperationKind = 
     | CharacterWise 
     | LineWise 
@@ -298,6 +301,9 @@ type Direction =
     | Left
     | Right
 
+[<RequireQualifiedAccess>]
+[<StructuralEquality>]
+[<NoComparison>]
 type Path =
     | Forward
     | Backward
@@ -320,6 +326,8 @@ type Path =
         if isForward then Path.Forward 
         else Path.Backward
 
+[<RequireQualifiedAccess>]
+[<NoComparison>]
 type SearchKind = 
      | Forward
      | ForwardWithWrap
@@ -377,6 +385,8 @@ type SearchKind =
         | Path.Backward -> if wrap then SearchKind.BackwardWithWrap else SearchKind.Backward
 
 [<RequireQualifiedAccess>]
+[<NoComparison>]
+[<NoEquality>]
 type RunResult = 
     | Completed
     | SubstituteConfirm of SnapshotSpan * SnapshotLineRange * SubstituteData

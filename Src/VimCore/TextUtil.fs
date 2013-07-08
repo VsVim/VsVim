@@ -3,6 +3,9 @@ namespace Vim
 open System
 open Microsoft.VisualStudio.Text
 
+[<RequireQualifiedAccess>]
+[<NoComparison>]
+[<NoEquality>]
 type internal TextDirection =
     | Neither
     | Left 

@@ -152,6 +152,7 @@ type VimRegex
         _regex.Replace(input, replacement, replaceData.Count) 
 
 [<RequireQualifiedAccess>]
+[<NoComparison>]
 type MagicKind = 
     | NoMagic
     | Magic

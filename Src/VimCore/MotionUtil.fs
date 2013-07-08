@@ -11,6 +11,7 @@ open Vim.StringBuilderExtensions
 open Vim.Interpreter
 
 [<RequireQualifiedAccess>]
+[<NoComparison>]
 type DirectiveKind = 
     | If
     | Elif
@@ -30,13 +31,13 @@ type Directive = {
 
     override x.ToString() = sprintf "%O - %O" x.Kind x.Span
 
-
 type DirectiveBlock = {
     Directives : List<Directive>
     IsComplete : bool
 }
 
 [<RequireQualifiedAccess>]
+[<NoComparison>]
 type MatchingTokenKind =
 
     /// A #if, #else, etc ... directive value

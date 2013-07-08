@@ -3,6 +3,8 @@
 namespace Vim
 open Microsoft.VisualStudio.Text.Editor
 
+[<NoComparison>]
+[<NoEquality>]
 type internal CommandRunnerData = {
 
     /// Name of the current command
@@ -32,7 +34,7 @@ type internal CommandRunner
     /// Represents the empty state for processing commands.  Holds all of the default
     /// values
     let _emptyData = { 
-        KeyInputSet = Empty
+        KeyInputSet = KeyInputSet.Empty
         Inputs = List.empty
         CommandFlags = None
     }

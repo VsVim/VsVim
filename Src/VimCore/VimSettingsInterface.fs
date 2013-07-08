@@ -67,6 +67,7 @@ module WindowSettingNames =
 
 /// Types of number formats supported by CTRL-A CTRL-A
 [<RequireQualifiedAccess>]
+[<NoComparison>]
 type NumberFormat =
     | Alpha
     | Decimal
@@ -98,6 +99,8 @@ type KeyModelOptions =
 
 /// The type of path values which can appear for 'cdpath' or 'path'
 [<RequireQualifiedAccess>]
+[<NoComparison>]
+[<StructuralEquality>]
 type PathOption =
 
     /// An actual named path
@@ -110,11 +113,13 @@ type PathOption =
     | CurrentFile
 
 [<RequireQualifiedAccess>]
+[<NoComparison>]
 type SelectionKind =
     | Inclusive
     | Exclusive
 
 [<RequireQualifiedAccess>]
+[<NoComparison>]
 type SettingKind =
     | Number
     | String

@@ -153,6 +153,9 @@ type EventKind =
     | MenuPopup
     | User
 
+[<RequireQualifiedAccess>]
+[<NoComparison>]
+[<StructuralEquality>]
 type AutoCommandGroup = 
     | Default
     | Named of string 

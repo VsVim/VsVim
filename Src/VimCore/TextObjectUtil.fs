@@ -11,6 +11,7 @@ open Vim.StringBuilderExtensions
 open Vim.Interpreter
 
 [<RequireQualifiedAccess>]
+[<NoComparison>]
 type internal SentenceKind = 
 
     /// Default behavior of a sentence as defined by ':help sentence'
@@ -24,6 +25,7 @@ type internal SentenceKind =
     | NoTrailingCharacters
 
 [<RequireQualifiedAccess>]
+[<NoComparison>]
 type internal SectionKind =
 
     /// By default a section break happens on a form feed in the first 

@@ -14,6 +14,7 @@ open System.Collections.Generic
 open Vim.Interpreter
 
 [<RequireQualifiedAccess>]
+[<NoComparison>]
 type CaretMovement =
     | Up
     | Right
@@ -50,11 +51,14 @@ type VimRcState =
     | LoadFailed
 
 [<RequireQualifiedAccess>]
+[<NoComparison>]
+[<NoEquality>]
 type HostResult =
     | Success
     | Error of string
 
 [<RequireQualifiedAccess>]
+[<NoComparison>]
 type ChangeCharacterKind =
     /// Switch the characters to upper case
     | ToUpperCase
@@ -483,6 +487,7 @@ type ISearchService =
 
 /// Column information about the caret in relation to this Motion Result
 [<RequireQualifiedAccess>]
+[<NoComparison>]
 type CaretColumn = 
 
     /// No column information was provided
@@ -536,6 +541,7 @@ type MotionResultFlags =
 
 /// Information about the type of the motion this was.
 [<RequireQualifiedAccess>]
+[<NoComparison>]
 type MotionKind =
 
     | CharacterWiseInclusive
@@ -637,6 +643,7 @@ type MotionResult = {
 /// Context on how the motion is being used.  Several motions (]] for example)
 /// change behavior based on how they are being used
 [<RequireQualifiedAccess>]
+[<NoComparison>]
 type MotionContext =
     | Movement
     | AfterOperator
@@ -676,6 +683,7 @@ type MotionArgument = {
 /// to name the motion without binding it to a given IVimBuffer or ITextView 
 /// which would increase the chance of an accidental memory leak
 [<RequireQualifiedAccess>]
+[<NoComparison>]
 type CharSearchKind  =
 
     /// Used for the 'f' and 'F' motion.  To the specified char 
@@ -709,6 +717,7 @@ type BlockKind =
         | CurlyBracket -> '{', '}'
 
 [<RequireQualifiedAccess>]
+[<NoComparison>]
 type UnmatchedTokenKind =
     | Paren
     | CurlyBracket
@@ -979,7 +988,9 @@ type VisualKind =
 /// in fact likely due to certain virtual key codes which are unable to be mapped,
 /// for KeyInput values will map to a single char.  Hence to maintain proper semantics
 /// we have to use KeyInput values directly.
-[<CustomEquality; CustomComparison>]
+[<RequireQualifiedAccess>]
+[<CustomEquality>]
+[<CustomComparison>]
 [<DebuggerDisplay("{ToString(),nq}")>]
 type KeyInputSet =
     | Empty
@@ -1111,7 +1122,7 @@ module KeyInputSetUtil =
             | 2 -> KeyInputSet.TwoKeyInputs ((List.nth list 0),(List.nth list 1))
             | _ -> KeyInputSet.ManyKeyInputs list
 
-    let OfChar c = c |> KeyInputUtil.CharToKeyInput |> OneKeyInput
+    let OfChar c = c |> KeyInputUtil.CharToKeyInput |> KeyInputSet.OneKeyInput
 
     let OfCharArray ([<System.ParamArray>] arr) = 
         arr
@@ -1132,6 +1143,8 @@ module KeyInputSetUtil =
         OfList all
 
 [<RequireQualifiedAccess>]
+[<NoComparison>]
+[<NoEquality>]
 type KeyMappingResult =
 
     /// The values were mapped completely and require no further mapping. This 
@@ -1392,6 +1405,7 @@ type BlockSpan =
         BlockSpan(startPoint, tabStop, width, height)
 
 [<RequireQualifiedAccess>]
+[<NoComparison>]
 type BlockCaretLocation =
     | TopLeft
     | TopRight
@@ -1909,6 +1923,7 @@ type VisualSelection =
 /// Most text object entries have specific effects on Visual Mode.  They are 
 /// described below
 [<RequireQualifiedAccess>]
+[<NoComparison>]
 type TextObjectKind = 
     | None
     | LineToCharacter
@@ -1948,6 +1963,9 @@ type ModeArgument =
     /// match to process and the range is the full range to consider for a replace
     | Substitute of SnapshotSpan * SnapshotLineRange * SubstituteData
 
+[<RequireQualifiedAccess>]
+[<NoComparison>]
+[<NoEquality>]
 type ModeSwitch =
     | NoSwitch
     | SwitchMode of ModeKind
@@ -1959,6 +1977,7 @@ type ModeSwitch =
     | SwitchModeOneTimeCommand
 
 [<RequireQualifiedAccess>]
+[<NoComparison>]
 type CommandResult =   
 
     /// The command completed and requested a switch to the provided Mode which 
@@ -2059,8 +2078,8 @@ type PingData (_func : CommandData -> CommandResult) =
 
 /// Normal mode commands which can be executed by the user
 [<RequireQualifiedAccess>]
-[<StructuralEquality>]
 [<NoComparison>]
+[<StructuralEquality>]
 type NormalCommand = 
 
     /// Add 'count' to the word close to the caret
@@ -2321,6 +2340,8 @@ type NormalCommand =
 
 /// Visual mode commands which can be executed by the user 
 [<RequireQualifiedAccess>]
+[<NoComparison>]
+[<StructuralEquality>]
 type VisualCommand = 
 
     /// Change the case of the selected text in the specified manner
@@ -2404,8 +2425,8 @@ type VisualCommand =
 
 /// Insert mode commands that can be executed by the user
 [<RequireQualifiedAccess>]
-[<StructuralEquality>]
 [<NoComparison>]
+[<StructuralEquality>]
 type InsertCommand  =
 
     /// Backspace at the current caret position
@@ -3327,6 +3348,7 @@ type IVimData =
     abstract HighlightSearchOneTimeDisabled : IDelegateEvent<System.EventHandler>
 
 [<RequireQualifiedAccess>]
+[<NoComparison>]
 type QuickFix =
     | Next
     | Previous

@@ -60,6 +60,8 @@ module internal CommonUtil =
 /// column to jump to if there is enough space on the line
 ///
 [<RequireQualifiedAccess>]
+[<NoComparison>]
+[<NoEquality>]
 type MaintainCaretColumn = 
 
     /// There is no saved caret column. 

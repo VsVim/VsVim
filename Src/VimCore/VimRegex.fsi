@@ -29,6 +29,7 @@ type VimRegexOptions =
 
 /// Case specifier found in the rege (\c, \C or nothing)
 [<RequireQualifiedAccess>]
+[<NoComparison>]
 type CaseSpecifier =
 
     /// Neither \c or \C was specified

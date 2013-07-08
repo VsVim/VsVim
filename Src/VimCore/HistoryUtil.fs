@@ -3,6 +3,8 @@ namespace Vim
 
 /// Records our current history search information
 [<RequireQualifiedAccess>]
+[<NoComparison>]
+[<NoEquality>]
 type HistoryState =
     | Empty 
     | Index of (string list) * int
@@ -17,6 +19,8 @@ type HistoryUtilData<'TData, 'TResult> = {
 }
 
 [<RequireQualifiedAccess>]
+[<NoComparison>]
+[<NoEquality>]
 type HistoryCommand =
     | Previous
     | Next

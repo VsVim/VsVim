@@ -1895,10 +1895,9 @@ type internal CommandUtil
             let command, doMoveLeft = 
                 match command with
                 | InsertCommand.Combined (leftCommand, rightCommand) ->
-                    if leftCommand = InsertCommand.MoveCaret Direction.Left then
-                        rightCommand, true
-                    else
-                        command, false
+                    match leftCommand with 
+                    | InsertCommand.MoveCaret Direction.Left -> rightCommand, true
+                    | _ -> command, false
                 | _ -> command, false
 
             // Run the commands in sequence.  Only continue onto the second if the first 

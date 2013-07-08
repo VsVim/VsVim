@@ -233,7 +233,7 @@ type internal MotionCapture
                     else 
                         let bindData = { KeyRemapMode = None; BindFunction = inner name }
                         BindResult.NeedMoreInput bindData
-        inner Empty keyInput
+        inner KeyInputSet.Empty keyInput
 
     /// Get the Motion value and associated count beginning with the specified KeyInput value
     member x.GetMotionAndCount keyInput =

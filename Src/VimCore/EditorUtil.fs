@@ -836,16 +836,6 @@ module SnapshotLineUtil =
         |> Seq.map (fun point -> EditorCoreUtil.GetCharacterWidth point tabStop)
         |> Seq.sum
 
-[<RequireQualifiedAccess>]
-type PointKind =
-    /// Normal valid point within the ITextSnapshot.  Point in question is the argument
-    | Normal of SnapshotPoint
-    /// End point of a non-zero length buffer.  Data is a tuple of the last valid
-    /// point in the Snapshot and the end point
-    | EndPoint of SnapshotPoint * SnapshotPoint
-    /// This is a zero length buffer.  Point in question is the argument
-    | ZeroLength of SnapshotPoint
-
 /// Contains operations to help fudge the Editor APIs to be more F# friendly.  Does not
 /// include any Vim specific logic
 module SnapshotPointUtil =
@@ -1170,14 +1160,6 @@ module SnapshotPointUtil =
         if left.Position < right.Position then left,right
         else right,left
 
-    /// Get the PointKind information about this SnapshotPoint
-    let GetPointKind point = 
-        if IsEndPoint point then 
-            match TrySubtractOne point with 
-            | Some(lastPoint) -> PointKind.EndPoint(lastPoint,point)
-            | None -> PointKind.ZeroLength(point)
-        else PointKind.Normal point
-
     /// Get the count of spaces to get to the specified point in it's line when tabs are expanded
     let GetSpacesToPoint point tabStop = 
         let column = SnapshotColumn(point)
@@ -1385,8 +1367,6 @@ module TextViewUtil =
     let GetCaretPoint (textView:ITextView) = textView.Caret.Position.BufferPosition
 
     let GetCaretVirtualPoint (textView:ITextView) = textView.Caret.Position.VirtualBufferPosition
-
-    let GetCaretPointKind textView = textView |> GetCaretPoint |> SnapshotPointUtil.GetPointKind
 
     let GetCaretLine textView = GetCaretPoint textView |> SnapshotPointUtil.GetContainingLine
 

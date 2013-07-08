@@ -828,7 +828,7 @@ type internal InsertMode
         member x.ActiveWordCompletionSession = x.ActiveWordCompletionSession
         member x.IsInPaste = x.IsInPaste
         member x.VimTextBuffer = _vimBuffer.VimTextBuffer
-        member x.CommandNames =  _commandMap |> Seq.map (fun p -> p.Key) |> Seq.map OneKeyInput
+        member x.CommandNames =  _commandMap |> Seq.map (fun p -> p.Key) |> Seq.map KeyInputSet.OneKeyInput
         member x.ModeKind = x.ModeKind
         member x.CanProcess keyInput = x.CanProcess keyInput
         member x.IsDirectInsert keyInput = x.IsDirectInsert keyInput

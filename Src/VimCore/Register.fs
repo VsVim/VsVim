@@ -422,6 +422,7 @@ module RegisterNameUtil =
 
 [<DebuggerDisplay("{ToString(),nq}")>]
 [<RequireQualifiedAccess>]
+[<NoComparison>]
 type RegisterOperation = 
     | Delete
     | Yank
