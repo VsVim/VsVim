@@ -5,6 +5,7 @@ using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Operations;
+using Microsoft.VisualStudio.Text.Outlining;
 using Moq;
 using Vim.Extensions;
 using Vim.UnitTest.Mock;
@@ -14,21 +15,22 @@ namespace Vim.UnitTest
 {
     public abstract class CommandUtilTest : VimTestBase
     {
-        protected MockRepository _factory;
-        protected MockVimHost _vimHost;
-        protected IMacroRecorder _macroRecorder;
-        protected Mock<IStatusUtil> _statusUtil;
-        protected TestableBulkOperations _bulkOperations;
-        protected IVimGlobalSettings _globalSettings;
-        protected IVimLocalSettings _localSettings;
-        protected IVimWindowSettings _windowSettings;
-        protected IMotionUtil _motionUtil;
-        protected IVimData _vimData;
-        protected IWpfTextView _textView;
-        protected ITextBuffer _textBuffer;
-        protected IVimTextBuffer _vimTextBuffer;
-        protected IJumpList _jumpList;
-        protected LocalMark _localMarkA = LocalMark.NewLetter(Letter.A);
+        private MockRepository _factory;
+        private MockVimHost _vimHost;
+        private IMacroRecorder _macroRecorder;
+        private Mock<IStatusUtil> _statusUtil;
+        private TestableBulkOperations _bulkOperations;
+        private IVimGlobalSettings _globalSettings;
+        private IVimLocalSettings _localSettings;
+        private IVimWindowSettings _windowSettings;
+        private IMotionUtil _motionUtil;
+        private IVimData _vimData;
+        private IWpfTextView _textView;
+        private ITextBuffer _textBuffer;
+        private IVimTextBuffer _vimTextBuffer;
+        private IJumpList _jumpList;
+        private LocalMark _localMarkA = LocalMark.NewLetter(Letter.A);
+        private IOutliningManager _outliningManager;
         internal CommandUtil _commandUtil;
 
         protected void Create(params string[] lines)
@@ -65,6 +67,9 @@ namespace Vim.UnitTest
                 foldManager,
                 new InsertUtil(vimBufferData, operations),
                 _bulkOperations);
+
+            var outliningManagerService = CompositionContainer.GetExportedValue<IOutliningManagerService>();
+            _outliningManager = outliningManagerService.GetOutliningManager(_textView);
         }
 
         protected static string CreateLinesWithLineBreak(params string[] lines)
@@ -114,6 +119,13 @@ namespace Vim.UnitTest
             var commandData = CommandData.Default;
             _commandUtil.RunNormalCommand(command, commandData);
         }
+
+        protected void RunVisualCommand(VisualCommand command, VisualSpan visualSpan)
+        {
+            var commandData = CommandData.Default;
+            _commandUtil.RunVisualCommand(command, commandData, visualSpan);
+        }
+
 
         public sealed class CreateRegisterValueTest : CommandUtilTest
         {
@@ -582,6 +594,53 @@ namespace Vim.UnitTest
                 Assert.Equal(
                     new[] { "   ", " dog    ", "fish" },
                     _textBuffer.GetLines());
+            }
+        }
+
+        public sealed class RepeatLastSubstituteTest : CommandUtilTest
+        {
+            [Fact]
+            public void Simple()
+            {
+                Create("cat dog fish");
+                _vimData.LastSubstituteData = FSharpOption.Create(new SubstituteData("cat", "bat", SubstituteFlags.None));
+                _commandUtil.RepeatLastSubstitute(useSameFlags: false);
+                Assert.Equal("bat dog fish", _textBuffer.GetLine(0).GetText());
+            }
+
+            [Fact]
+            public void NoLastData()
+            {
+                Create("cat dog fish");
+                _vimData.LastSubstituteData = FSharpOption<SubstituteData>.None;
+                _commandUtil.RepeatLastSubstitute(useSameFlags: false);
+                Assert.Equal(1, VimHost.BeepCount);
+            }
+
+            [Fact]
+            public void UseSameFlagsTrue()
+            {
+                Create("cat cat fish");
+                _vimData.LastSubstituteData = FSharpOption.Create(new SubstituteData("cat", "bat", SubstituteFlags.ReplaceAll));
+                _commandUtil.RepeatLastSubstitute(useSameFlags: true);
+                Assert.Equal("bat bat fish", _textBuffer.GetLine(0).GetText());
+            }
+
+            [Fact]
+            public void UseSameFlagsFalse()
+            {
+                Create("cat cat fish");
+                _vimData.LastSubstituteData = FSharpOption.Create(new SubstituteData("cat", "bat", SubstituteFlags.ReplaceAll));
+                _commandUtil.RepeatLastSubstitute(useSameFlags: false);
+                Assert.Equal("bat cat fish", _textBuffer.GetLine(0).GetText());
+            }
+
+            [Fact]
+            public void AsCommand()
+            {
+                Create("cat dog fish");
+                _vimData.LastSubstituteData = FSharpOption.Create(new SubstituteData("cat", "bat", SubstituteFlags.None));
+                RunNormalCommand(NormalCommand.NewRepeatLastSubstitute(false));
             }
         }
 
@@ -2570,6 +2629,36 @@ namespace Vim.UnitTest
                 var text = lines.Aggregate((x, y) => x + Environment.NewLine + y) + Environment.NewLine;
                 Assert.Equal(text, UnnamedRegister.StringValue);
                 Assert.Equal(OperationKind.LineWise, UnnamedRegister.OperationKind);
+            }
+        }
+
+        public sealed class OpenFoldInSelectionTest : CommandUtilTest
+        {
+            private IFoldManager _foldManager;
+
+            protected override IFoldManager CreateFoldManager(ITextView textView)
+            {
+                _foldManager = base.CreateFoldManager(textView);
+                return _foldManager;
+            }
+
+            [Fact]
+            public void Simple()
+            {
+                Create("cat", "dog", "bear", "fish", "pig");
+                _foldManager.CreateFold(_textView.GetLineRange(1, 2));
+                _commandUtil.OpenFoldInSelection(VisualSpan.NewLine(_textBuffer.GetLineRange(0, 3)));
+                Assert.True(_outliningManager.GetAllRegions(_textBuffer.GetExtent()).All((c) => !c.IsCollapsed));
+            }
+
+            [Fact]
+            public void AsCommand()
+            {
+                Create("cat", "dog", "bear", "fish", "pig");
+                _foldManager.CreateFold(_textView.GetLineRange(1, 2));
+                var visualSpan = VisualSpan.NewLine(_textBuffer.GetLineRange(0, 3));
+                RunVisualCommand(VisualCommand.OpenFoldInSelection, visualSpan);
+                Assert.True(_outliningManager.GetAllRegions(_textBuffer.GetExtent()).All((c) => !c.IsCollapsed));
             }
         }
     }

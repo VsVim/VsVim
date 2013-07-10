@@ -1973,11 +1973,10 @@ type internal CommandUtil
             finally
                 _inRepeatLastChange <- false
 
-    /// Repeat the last subsitute command.
+    /// Repeat the last substitute command.
     member x.RepeatLastSubstitute useSameFlags = 
         match _vimData.LastSubstituteData with
-        | None ->
-            _commonOperations.Beep()
+        | None -> _commonOperations.Beep()
         | Some data ->
             let range = SnapshotLineRangeUtil.CreateForLine x.CaretLine
             let flags = 
