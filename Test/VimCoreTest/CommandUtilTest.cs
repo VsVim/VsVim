@@ -109,6 +109,12 @@ namespace Vim.UnitTest
             return CommonOperationsFactory.GetCommonOperations(vimBufferData);
         }
 
+        protected void RunNormalCommand(NormalCommand command)
+        {
+            var commandData = CommandData.Default;
+            _commandUtil.RunNormalCommand(command, commandData);
+        }
+
         public sealed class CreateRegisterValueTest : CommandUtilTest
         {
             [Fact]
@@ -670,6 +676,149 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class ScrollLinesTest : CommandUtilTest
+        {
+            IFoldManager _foldManager;
+
+            protected override IFoldManager CreateFoldManager(ITextView textView)
+            {
+                _foldManager = base.CreateFoldManager(textView);
+                return _foldManager;
+            }
+
+            /// <summary>
+            /// Should be beeping at the last line in the ITextBuffer
+            /// </summary>
+            [Fact]
+            public void Down_BeepAtLastLine()
+            {
+                Create("dog", "cat");
+                _textView.MoveCaretToLine(1);
+                _commandUtil.ScrollLines(ScrollDirection.Down, true, FSharpOption<int>.None);
+                Assert.Equal(1, _vimHost.BeepCount);
+            }
+
+            /// <summary>
+            /// Make sure the scroll lines down will hit the bottom of the screen
+            /// </summary>
+            [Fact]
+            public void Down_ToBottom()
+            {
+                Create("a", "b", "c", "d");
+                _textView.MakeOneLineVisible();
+                for (var i = 0; i < 5; i++)
+                {
+                    _commandUtil.ScrollLines(ScrollDirection.Down, true, FSharpOption<int>.None);
+                }
+                Assert.Equal(_textView.GetLine(3).Start, _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// Make sure the scroll option is used if it's one of the parameters
+            /// </summary>
+            [Fact]
+            public void Down_UseScrollOption()
+            {
+                Create("a", "b", "c", "d", "e");
+                _textView.MakeOneLineVisible();
+                _windowSettings.Scroll = 3;
+                _commandUtil.ScrollLines(ScrollDirection.Down, true, FSharpOption<int>.None);
+                Assert.Equal(3, _textView.GetCaretLine().LineNumber);
+            }
+
+            /// <summary>
+            /// If the scroll option is set to be consulted an an explicit count is given then that
+            /// count should be used and the scroll option should be set to that value
+            /// </summary>
+            [Fact]
+            public void Down_ScrollOptionWithCount()
+            {
+                Create("a", "b", "c", "d", "e");
+                _textView.MakeOneLineVisible();
+                _windowSettings.Scroll = 3;
+                _commandUtil.ScrollLines(ScrollDirection.Down, true, FSharpOption.Create(2));
+                Assert.Equal(2, _textView.GetCaretLine().LineNumber);
+                Assert.Equal(2, _windowSettings.Scroll);
+            }
+
+            /// <summary>
+            /// With no scroll or count then the value of 1 should be used and the scroll option
+            /// shouldn't be updated
+            /// </summary>
+            [Fact]
+            public void Down_NoScrollOrCount()
+            {
+                Create("a", "b", "c", "d", "e");
+                _textView.MakeOneLineVisible();
+                _windowSettings.Scroll = 3;
+                _commandUtil.ScrollLines(ScrollDirection.Down, false, FSharpOption<int>.None);
+                Assert.Equal(1, _textView.GetCaretLine().LineNumber);
+                Assert.Equal(3, _windowSettings.Scroll);
+            }
+
+            /// <summary>
+            /// Make sure that scroll lines down handles a fold as a single line
+            /// </summary>
+            [Fact]
+            public void Down_OverFold()
+            {
+                Create("a", "b", "c", "d", "e");
+                _textView.MakeOneLineVisible();
+                _foldManager.CreateFold(_textBuffer.GetLineRange(1, 2));
+                _commandUtil.ScrollLines(ScrollDirection.Down, false, FSharpOption.Create(2));
+                Assert.Equal(3, _textView.GetCaretLine().LineNumber);
+            }
+
+            /// <summary>
+            /// Should be beeping at the first line in the ITextBuffer
+            /// </summary>
+            [Fact]
+            public void Up_BeepAtFirstLine()
+            {
+                Create("dog", "cat");
+                _commandUtil.ScrollLines(ScrollDirection.Up, true, FSharpOption<int>.None);
+                Assert.Equal(1, _vimHost.BeepCount);
+            }
+        }
+
+        public sealed class ScrollPagesTest : CommandUtilTest
+        {
+            public ScrollPagesTest()
+            {
+                Create("a", "b", "c", "d", "e");
+                _textView.MakeOneLineVisible();
+            }
+
+            [Fact]
+            public void SimpleDown()
+            {
+                _commandUtil.ScrollPages(ScrollDirection.Down, count: 1);
+                Assert.Equal(1, _textView.GetCaretLine().LineNumber);
+            }
+
+            [Fact]
+            public void SimpleUp()
+            {
+                _commandUtil.ScrollPages(ScrollDirection.Down, count: 2);
+                _commandUtil.ScrollPages(ScrollDirection.Up, count: 1);
+                Assert.Equal(1, _textView.GetCaretLine().LineNumber);
+            }
+
+            [Fact]
+            public void FromCommand()
+            {
+                RunNormalCommand(NormalCommand.NewScrollPages(ScrollDirection.Down));
+                Assert.Equal(1, _textView.GetCaretLine().LineNumber);
+            }
+
+            [Fact]
+            public void BadDirection()
+            {
+                _commandUtil.ScrollPages((ScrollDirection)int.MaxValue, 1);
+                Assert.Equal(1, VimHost.BeepCount);
+            }
+        }
+
         public sealed class MiscTest : CommandUtilTest
         {
             IFoldManager _foldManager;
@@ -775,99 +924,6 @@ namespace Vim.UnitTest
                 _commandUtil.CloseBuffer();
                 Assert.Null(_vimHost.LastSaved);
                 Assert.Equal(_textView, _vimHost.LastClosed);
-            }
-            /// <summary>
-            /// Should be beeping at the last line in the ITextBuffer
-            /// </summary>
-            [Fact]
-            public void ScrollLines_Down_BeepAtLastLine()
-            {
-                Create("dog", "cat");
-                _textView.MoveCaretToLine(1);
-                _commandUtil.ScrollLines(ScrollDirection.Down, true, FSharpOption<int>.None);
-                Assert.Equal(1, _vimHost.BeepCount);
-            }
-
-            /// <summary>
-            /// Make sure the scroll lines down will hit the bottom of the screen
-            /// </summary>
-            [Fact]
-            public void ScrollLines_Down_ToBottom()
-            {
-                Create("a", "b", "c", "d");
-                _textView.MakeOneLineVisible();
-                for (var i = 0; i < 5; i++)
-                {
-                    _commandUtil.ScrollLines(ScrollDirection.Down, true, FSharpOption<int>.None);
-                }
-                Assert.Equal(_textView.GetLine(3).Start, _textView.GetCaretPoint());
-            }
-
-            /// <summary>
-            /// Make sure the scroll option is used if it's one of the parameters
-            /// </summary>
-            [Fact]
-            public void ScrollLines_Down_UseScrollOption()
-            {
-                Create("a", "b", "c", "d", "e");
-                _textView.MakeOneLineVisible();
-                _windowSettings.Scroll = 3;
-                _commandUtil.ScrollLines(ScrollDirection.Down, true, FSharpOption<int>.None);
-                Assert.Equal(3, _textView.GetCaretLine().LineNumber);
-            }
-
-            /// <summary>
-            /// If the scroll option is set to be consulted an an explicit count is given then that
-            /// count should be used and the scroll option should be set to that value
-            /// </summary>
-            [Fact]
-            public void ScrollLines_Down_ScrollOptionWithCount()
-            {
-                Create("a", "b", "c", "d", "e");
-                _textView.MakeOneLineVisible();
-                _windowSettings.Scroll = 3;
-                _commandUtil.ScrollLines(ScrollDirection.Down, true, FSharpOption.Create(2));
-                Assert.Equal(2, _textView.GetCaretLine().LineNumber);
-                Assert.Equal(2, _windowSettings.Scroll);
-            }
-
-            /// <summary>
-            /// With no scroll or count then the value of 1 should be used and the scroll option
-            /// shouldn't be updated
-            /// </summary>
-            [Fact]
-            public void ScrollLines_Down_NoScrollOrCount()
-            {
-                Create("a", "b", "c", "d", "e");
-                _textView.MakeOneLineVisible();
-                _windowSettings.Scroll = 3;
-                _commandUtil.ScrollLines(ScrollDirection.Down, false, FSharpOption<int>.None);
-                Assert.Equal(1, _textView.GetCaretLine().LineNumber);
-                Assert.Equal(3, _windowSettings.Scroll);
-            }
-
-            /// <summary>
-            /// Make sure that scroll lines down handles a fold as a single line
-            /// </summary>
-            [Fact]
-            public void ScrollLines_Down_OverFold()
-            {
-                Create("a", "b", "c", "d", "e");
-                _textView.MakeOneLineVisible();
-                _foldManager.CreateFold(_textBuffer.GetLineRange(1, 2));
-                _commandUtil.ScrollLines(ScrollDirection.Down, false, FSharpOption.Create(2));
-                Assert.Equal(3, _textView.GetCaretLine().LineNumber);
-            }
-
-            /// <summary>
-            /// Should be beeping at the first line in the ITextBuffer
-            /// </summary>
-            [Fact]
-            public void ScrollLines_Up_BeepAtFirstLine()
-            {
-                Create("dog", "cat");
-                _commandUtil.ScrollLines(ScrollDirection.Up, true, FSharpOption<int>.None);
-                Assert.Equal(1, _vimHost.BeepCount);
             }
 
             [Fact]
@@ -1373,8 +1429,8 @@ namespace Vim.UnitTest
             [Fact]
             public void DeleteSelection_WideCharacters()
             {
-                Create("abcdefgh", 
-                       "あいうえお", 
+                Create("abcdefgh",
+                       "あいうえお",
                        "ijklmnop");
                 _textView.MoveCaretToLine(1);
                 var span = _textView.GetVisualSpanBlock(column: 2, length: 2, startLine: 0, lineCount: 3);
@@ -1390,8 +1446,8 @@ namespace Vim.UnitTest
             [Fact]
             public void DeleteSelection_WideCharactersAreHalfRemoved()
             {
-                Create("abcdefgh", 
-                       "あいうえお", 
+                Create("abcdefgh",
+                       "あいうえお",
                        "ijklmnop");
                 _textView.MoveCaretToLine(1);
                 var span = _textView.GetVisualSpanBlock(column: 3, length: 2, startLine: 0, lineCount: 3, tabStop: _localSettings.TabStop);

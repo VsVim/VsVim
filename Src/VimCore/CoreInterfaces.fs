@@ -2061,6 +2061,8 @@ type CommandData = {
     /// Return the provided count or the default value of 1
     member x.CountOrDefault = Util.CountOrDefault x.Count
 
+    static member Default = { Count = None; RegisterName = None }
+
 /// We want the NormalCommand discriminated union to have structural equality in order
 /// to ease testing requirements.  In order to do this and support Ping we need a 
 /// separate type here to wrap the Func to be comparable.  Does so in a reference 
