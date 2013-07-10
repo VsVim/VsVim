@@ -15,5 +15,8 @@ VsVim.sln will only work on machines with both Visual Studio 2010 and 2012 insta
 Branching Structure
 ===
 
- - master: This is the branch used for the majority of feature development.  
- - refactor: Used for longer term refactoring
+ - master: Stable branch 
+ - staging: Used for releasing new versions
+ - fixes*: Both short and long term fixes
+ - dead*: Branches which will never integrate with master again.  
+
