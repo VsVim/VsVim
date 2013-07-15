@@ -460,8 +460,8 @@ endfunction";
                 }
 
                 /// <summary>
-                /// If a command inside the function has a parse error the entire function should still be parsed
-                /// out.  The next parse should occur on the following line.  
+                /// A parse error inside a function should still produce a function value.  The bad command should 
+                /// just be stored inside the function 
                 /// </summary>
                 [Fact]
                 public void InternalParseErrors()
@@ -469,22 +469,24 @@ endfunction";
                     var text = @"
 function Test() 
   this is a parse error
-  this is another parse error
+  let y = 13
 endfunction
 let x = 42
 ";
 
-                    // PTODO: This test is wrong.  this should return a function which has parse errors as
-                    // inner commands
                     var parser = CreateParserOfLines(text);
 
-                    // Parse out the bad function data
-                    var first = parser.ParseNextCommand();
-                    Assert.True(first.Failed);
+                    // The first command should be the completed function.  
+                    var functionCommand = parser.ParseNextCommand();
+                    Assert.True(functionCommand.IsFunction);
+                    var functionCommands = ((LineCommand.Function)functionCommand).Item.LineCommands;
+                    Assert.True(functionCommands[0].IsParseError);
+                    Assert.True(functionCommands[1].IsLet);
+
 
                     // Now parse out the :let command
-                    var second = parser.ParseNextCommand();
-                    Assert.True(second.IsLet);
+                    var letCommand = parser.ParseNextCommand();
+                    Assert.True(letCommand.IsLet);
                 }
 
                 [Fact]
@@ -520,16 +522,15 @@ let x = 42
 
                     var parser = CreateParserOfLines(text);
 
-                    // PTODO: Once again this should parse the function but view the commands inside as errors
-
                     // For the moment we are unable to parse this function because it has inner commands that we 
-                    // don't support.  However it should still fail as a single entity and not cause us to parse
-                    // the next command from the middle of the function 
-                    var functionResult = parser.ParseNextCommand();
-                    Assert.True(functionResult.Failed);
+                    // don't support.  However we should still parse the function as a function even though we
+                    // don't support the inner commands
+                    var functionCommand = parser.ParseNextCommand();
+                    Assert.True(functionCommand.IsFunction);
 
-                    var letResult = parser.ParseNextCommand();
-                    Assert.True(letResult.IsLet);
+                    // Now parse out the :let command
+                    var letCommand = parser.ParseNextCommand();
+                    Assert.True(letCommand.IsLet);
                 }
             }
 

@@ -1016,22 +1016,17 @@ type Parser
         // fail).  If we bail out of parsing early then it will cause the "next" command to be a 
         // line which is a part of the function.  
         let lines = List<LineCommand>()
-        let mutable anyFailed = false
         let mutable foundEndFunction = false
         while not x.IsDone && not foundEndFunction do
-            let lineCommand = x.ParseSingleCommand()
-            match lineCommand with
-            | LineCommand.ParseError _ -> anyFailed <- true
+            match x.ParseSingleCommand() with
             | LineCommand.FunctionEnd -> foundEndFunction <- true
-            | _  -> ()
-
-            // Intentionally putting parse errors into the set of commands for a function.  The parse 
-            // errors aren't emitted as errors until the function is run.  Hence they need to be stored
-            // as errors in the function
-            if not foundEndFunction then
+            | lineCommand -> 
+                // Intentionally putting parse errors into the set of commands for a function.  The parse 
+                // errors aren't emitted as errors until the function is run.  Hence they need to be stored
+                // as errors in the function
                 lines.Add(lineCommand)
 
-        match functionDefinition, anyFailed || not foundEndFunction with
+        match functionDefinition, not foundEndFunction with
         | Some functionDefinition, false -> 
             let func = { 
                 Definition = functionDefinition
