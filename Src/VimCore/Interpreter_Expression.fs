@@ -342,7 +342,7 @@ type FunctionDefinition = {
     IsForced : bool
 }
 
-/// Represents te values or the '+cmd' which can occur on commads like :edit
+/// Represents the values or the '+cmd' which can occur on commands like :edit
 [<RequireQualifiedAccess>]
 type CommandOption =
     | StartAtLastLine
@@ -360,31 +360,21 @@ and Function = {
 }
 
 /// The ConditionalBlock type is used to represent if / else if / else blocks
-/// of commands.  If the expression value 
-and [<RequireQualifiedAccess>] ConditionalBlock =
+/// of commands.  
+and ConditionalBlock = {
 
-    /// An if or elseif block with the expression true list and false block 
-    | Conditional of Expression * LineCommand list * ConditionalBlock 
+    /// The conditional which must be true in order for the LineCommand list
+    /// to be executed.  If there is no condition then the LineCommand list 
+    /// is unconditionally executed
+    Conditional : Expression option
 
-    /// An else block 
-    | Unconditional of LineCommand list
+    /// The LineCommand values that make up this conditional block
+    LineCommands : LineCommand list
 
-    /// Used when there is just an if / endif pair. 
-    | Empty
+}
 
-    with 
-
-    member x.LineCommands =
-        match x with
-        | Conditional (_, lineCommands, _) -> lineCommands
-        | Unconditional lineCommands -> lineCommands
-        | Empty -> List.Empty
-
-    member x.Next =
-        match x with
-        | Conditional (_, _, next) -> Some next
-        | Unconditional lineCommands -> None
-        | Empty -> None
+with
+    static member Empty = { Conditional = None; LineCommands = List.Empty }
 
 and [<RequireQualifiedAccess>] Expression =
 
@@ -416,12 +406,12 @@ and [<RequireQualifiedAccess>] LineCommand =
     | Close of bool
 
     /// Copy the specific line range to the given position.  The first line range is the 
-    /// source and the second is the desitination.  The last entry is an optional count
+    /// source and the second is the destination.  The last entry is an optional count
     /// which can be specified
     | CopyTo of LineRangeSpecifier * LineRangeSpecifier * int option
 
     /// Move the specific line range to the given position.  The first line range is the 
-    /// source and the second is the desitination
+    /// source and the second is the destination
     | MoveTo of LineRangeSpecifier * LineRangeSpecifier * int option
 
     /// The :delete command
@@ -490,7 +480,19 @@ and [<RequireQualifiedAccess>] LineCommand =
     | HorizontalSplit of LineRangeSpecifier * FileOption list * CommandOption option
 
     /// The if command
-    | If of ConditionalBlock
+    | If of ConditionalBlock list
+
+    /// The :if definition command
+    | IfStart of Expression
+
+    /// The :endif definition
+    | IfEnd
+
+    /// The :else definition 
+    | Else
+
+    /// The :elseif definition 
+    | ElseIf of Expression
 
     /// Join the lines in the specified range.  Optionally provides a count of lines to 
     /// start the join after the line range

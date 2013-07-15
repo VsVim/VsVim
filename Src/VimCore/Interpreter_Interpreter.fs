@@ -695,26 +695,21 @@ type VimInterpreter
         RunResult.Completed
 
     /// Run the if command
-    member x.RunIf conditionalBlock =
+    member x.RunIf (conditionalBlockList : ConditionalBlock list)  =
         let expressionInterpreter = ExpressionInterpreter(_statusUtil)
 
-        let runAll lineCommands = 
-            Seq.iter (fun lineCommand -> x.RunLineCommand lineCommand |> ignore) lineCommands
-        
-        let rec inner conditionalBlock =
-            match conditionalBlock with
-            | ConditionalBlock.Conditional (expr, lineCommands, next) ->
+        let shouldRun (conditionalBlock : ConditionalBlock) =
+            match conditionalBlock.Conditional with
+            | None -> true
+            | Some expr -> 
                 match expressionInterpreter.GetExpressionAsNumber expr with
-                | None -> ()
-                | Some value -> 
-                    if value <> 0 then
-                        runAll lineCommands
-                    else 
-                        inner next
-            | ConditionalBlock.Unconditional lineCommands -> runAll lineCommands
-            | ConditionalBlock.Empty -> ()
+                | None -> false
+                | Some value -> value <> 0
 
-        inner conditionalBlock
+        match List.tryFind shouldRun conditionalBlockList with
+        | None -> ()
+        | Some conditionalBlock -> conditionalBlock.LineCommands |> Seq.iter (fun lineCommand -> x.RunLineCommand lineCommand |> ignore)
+        
         RunResult.Completed
 
     /// Join the lines in the specified range
@@ -1420,8 +1415,10 @@ type VimInterpreter
         | LineCommand.CopyTo (sourceLineRange, destLineRange, count) -> x.RunCopyTo sourceLineRange destLineRange count
         | LineCommand.ClearKeyMap (keyRemapModes, mapArgumentList) -> x.RunClearKeyMap keyRemapModes mapArgumentList
         | LineCommand.Close hasBang -> x.RunClose hasBang
-        | LineCommand.Edit (hasBang, fileOptions, commandOption, filePath) -> x.RunEdit hasBang fileOptions commandOption filePath
         | LineCommand.Delete (lineRange, registerName) -> x.RunDelete lineRange (getRegister registerName)
+        | LineCommand.Edit (hasBang, fileOptions, commandOption, filePath) -> x.RunEdit hasBang fileOptions commandOption filePath
+        | LineCommand.Else -> cantRun ()
+        | LineCommand.ElseIf _ -> cantRun ()
         | LineCommand.Function func -> x.RunFunction func
         | LineCommand.FunctionStart _ -> cantRun ()
         | LineCommand.FunctionEnd _ -> cantRun ()
@@ -1432,6 +1429,8 @@ type VimInterpreter
         | LineCommand.Fold lineRange -> x.RunFold lineRange
         | LineCommand.Global (lineRange, pattern, matchPattern, lineCommand) -> x.RunGlobal lineRange pattern matchPattern lineCommand
         | LineCommand.History -> x.RunHistory()
+        | LineCommand.IfStart _ -> cantRun ()
+        | LineCommand.IfEnd -> cantRun ()
         | LineCommand.If conditionalBlock -> x.RunIf conditionalBlock
         | LineCommand.GoToFirstTab -> x.RunGoToFirstTab()
         | LineCommand.GoToLastTab -> x.RunGoToLastTab()

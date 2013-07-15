@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Microsoft.FSharp.Collections;
 using Vim.Extensions;
 using Vim.Interpreter;
 using Xunit;
@@ -262,25 +263,13 @@ namespace Vim.UnitTest
             private void AssertIf(LineCommand lineCommand, params int[] expected)
             {
                 Assert.True(lineCommand.IsIf);
-                AssertIf(lineCommand.AsIf().Item, expected, 0);
+                AssertIf(lineCommand.AsIf().Item.ToList(), expected, 0);
             }
 
-            private void AssertIf(ConditionalBlock conditionalBlock, int[] expected, int index)
+            private void AssertIf(List<ConditionalBlock> conditionalBlockList, int[] expected, int index)
             {
-                if (conditionalBlock.IsEmpty)
-                {
-                    Assert.True(index == expected.Length);
-                }
-                else
-                {
-                    Assert.True(index < expected.Length);
-                    Assert.Equal(expected[index], conditionalBlock.LineCommands.Length);
-                    if (!conditionalBlock.IsUnconditional)
-                    {
-                        Assert.True(conditionalBlock.Next.IsSome());
-                        AssertIf(conditionalBlock.Next.Value, expected, index + 1);
-                    }
-                }
+                Assert.True(index < expected.Length);
+                Assert.Equal(conditionalBlockList[index].LineCommands.Length, expected[index]);
             }
 
             private void AssertBadParse(params string[] lines)
