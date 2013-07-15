@@ -165,6 +165,7 @@ type AutoCommand = {
 
     EventKind : EventKind
 
+    // PTODO: Can this just be a LineCommand now that it has ParseError in it
     LineCommandText : string
 
     Pattern : string
@@ -522,6 +523,9 @@ and [<RequireQualifiedAccess>] LineCommand =
     /// This is a line command that does nothing on execution
     | Nop
 
+    /// There was a parse error on the specified line
+    | ParseError of string
+
     /// Print out the specified line range 
     | Print of LineRangeSpecifier * LineCommandFlags
 
@@ -635,6 +639,16 @@ and [<RequireQualifiedAccess>] LineCommand =
 
     /// Yank the line range into the given register with the specified count
     | Yank of LineRangeSpecifier * RegisterName option * int option
+
+with 
+
+    member x.Succeeded = 
+        match x with
+        | ParseError _ -> false
+        | _ -> true
+
+    member x.Failed = 
+        not x.Succeeded
 
 /// Engine which interprets Vim commands and expressions
 type IVimInterpreter =

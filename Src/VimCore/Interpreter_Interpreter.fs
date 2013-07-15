@@ -775,6 +775,10 @@ type VimInterpreter
         _vimData.RaiseHighlightSearchOneTimeDisable()
         RunResult.Completed
 
+    member x.RunParseError msg =
+        _statusUtil.OnError msg
+        RunResult.Completed 
+
     /// Print out the contents of the specified range
     member x.RunPrint lineRange lineCommandFlags = 
         
@@ -1215,13 +1219,7 @@ type VimInterpreter
             let filePath = SystemUtil.ResolvePath filePath
             match _fileSystem.ReadAllLines filePath with
             | None -> _statusUtil.OnError (Resources.CommandMode_CouldNotOpenFile filePath)
-            | Some lines ->
-                let parser = Parser(_vimData)
-                lines 
-                |> Seq.iter (fun line ->
-                    match parser.ParseLineCommand line with
-                    | ParseResult.Failed msg -> _statusUtil.OnError msg
-                    | ParseResult.Succeeded lineCommand -> x.RunLineCommand lineCommand |> ignore)
+            | Some lines -> x.RunScript lines
 
         RunResult.Completed
 
@@ -1446,6 +1444,7 @@ type VimInterpreter
         | LineCommand.MoveTo (sourceLineRange, destLineRange, count) -> x.RunMoveTo sourceLineRange destLineRange count
         | LineCommand.NoHighlightSearch -> x.RunNoHighlightSearch()
         | LineCommand.Nop -> RunResult.Completed
+        | LineCommand.ParseError msg -> x.RunParseError msg
         | LineCommand.Print (lineRange, lineCommandFlags)-> x.RunPrint lineRange lineCommandFlags
         | LineCommand.PrintCurrentDirectory -> x.RunPrintCurrentDirectory()
         | LineCommand.PutAfter (lineRange, registerName) -> x.RunPut lineRange (getRegister registerName) true
@@ -1493,9 +1492,8 @@ type VimInterpreter
     member x.RunScript lines = 
         let parser = Parser(_vimData, lines)
         while not parser.IsDone do
-            match parser.ParseNextCommand() with
-            | ParseResult.Failed _ -> ()
-            | ParseResult.Succeeded lineCommand -> x.RunLineCommand lineCommand |> ignore
+            let lineCommand = parser.ParseNextCommand()
+            x.RunLineCommand lineCommand |> ignore
 
     interface IVimInterpreter with
         member x.GetLine lineSpecifier = x.GetLine lineSpecifier

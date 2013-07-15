@@ -76,9 +76,8 @@ namespace Vim.UnitTest
                 command = command.Substring(1);
             }
 
-            var parseResult = VimUtil.ParseLineCommand(command);
-            Assert.True(parseResult.IsSucceeded);
-            _interpreter.RunLineCommand(parseResult.AsSucceeded().Item);
+            var lineCommand = VimUtil.ParseLineCommand(command);
+            _interpreter.RunLineCommand(lineCommand);
         }
 
         public sealed class CopyTest : InterpreterTest
@@ -1012,9 +1011,8 @@ namespace Vim.UnitTest
             {
                 var parser = new Parser(new VimData());
                 parser.Reset(lines);
-                var parseResult = parser.ParseSingleCommand();
-                Assert.True(parseResult.IsSucceeded);
-                _interpreter.RunLineCommand(parseResult.AsSucceeded().Item);
+                var lineCommand = parser.ParseSingleCommand();
+                _interpreter.RunLineCommand(lineCommand);
             }
 
             [Fact]

@@ -73,9 +73,8 @@ namespace Vim.UnitTest
                 command = command.Substring(1);
             }
 
-            var parseResult = VimUtil.ParseLineCommand(command);
-            Assert.True(parseResult.IsSucceeded);
-            _interpreter.RunLineCommand(parseResult.AsSucceeded().Item);
+            var lineCommand = VimUtil.ParseLineCommand(command);
+            _interpreter.RunLineCommand(lineCommand);
         }
 
         /// <summary>

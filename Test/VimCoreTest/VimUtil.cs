@@ -293,7 +293,7 @@ namespace Vim.UnitTest
             return VisualSpan.NewCharacter(new CharacterSpan(span));
         }
 
-        internal static ParseResult<LineCommand> ParseLineCommand(string text)
+        internal static LineCommand ParseLineCommand(string text)
         {
             var parser = new Parser(new VimData());
             return parser.ParseLineCommand(text);

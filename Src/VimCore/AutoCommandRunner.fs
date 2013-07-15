@@ -76,9 +76,9 @@ type internal AutoCommandRunner
 
                 autoCommandList
                 |> Seq.iter (fun autoCommand -> 
-                    match parser.ParseLineCommand autoCommand.LineCommandText with
-                    | ParseResult.Failed _ -> ()
-                    | ParseResult.Succeeded lineCommand -> vimInterpreter.RunLineCommand lineCommand |> ignore)
+                    parser.ParseLineCommand autoCommand.LineCommandText 
+                    |> vimInterpreter.RunLineCommand
+                    |> ignore)
 
     /// Called when the active ITextView changes according to the host
     member x.OnActiveTextViewChanged (e : TextViewChangedEventArgs) =

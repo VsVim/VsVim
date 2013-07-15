@@ -40,13 +40,9 @@ type internal CommandMode
             else
                 command
 
-        match _parser.ParseLineCommand command with
-        | ParseResult.Failed msg -> 
-            _statusUtil.OnError msg
-            RunResult.Completed
-        | ParseResult.Succeeded lineCommand -> 
-            let vimInterpreter = _buffer.Vim.GetVimInterpreter _buffer
-            vimInterpreter.RunLineCommand lineCommand
+        let lineCommand = _parser.ParseLineCommand command 
+        let vimInterpreter = _buffer.Vim.GetVimInterpreter _buffer
+        vimInterpreter.RunLineCommand lineCommand
 
     // Command mode can be validly entered with the selection active.  Consider
     // hitting ':' in Visual Mode.  The selection should be cleared when leaving

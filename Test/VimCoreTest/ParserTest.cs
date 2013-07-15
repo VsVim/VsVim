@@ -26,16 +26,14 @@ namespace Vim.UnitTest
         /// </summary>
         protected void AssertParseLineCommandError(string command, string error)
         {
-            var parseResult = VimUtil.ParseLineCommand(command);
-            Assert.True(parseResult.IsFailed);
-            Assert.Equal(error, parseResult.AsFailed().Item);
+            var lineCommand = VimUtil.ParseLineCommand(command);
+            Assert.True(lineCommand.IsParseError);
+            Assert.Equal(error, lineCommand.AsParseError().Item);
         }
 
         protected LineCommand ParseLineCommand(string text)
         {
-            var parseResult = VimUtil.ParseLineCommand(text);
-            Assert.True(parseResult.IsSucceeded);
-            return parseResult.AsSucceeded().Item;
+            return VimUtil.ParseLineCommand(text);
         }
 
         public sealed class StringLiteralTest : ParserTest
@@ -238,22 +236,19 @@ namespace Vim.UnitTest
                 public void Simple()
                 {
                     var parser = CreateParser(":let x = 4");
-                    var parseResult = parser.ParseNextCommand();
-                    Assert.True(parseResult.IsSucceeded);
-                    Assert.True(parseResult.AsSucceeded().Item.IsLet);
+                    var lineCommand = parser.ParseNextCommand();
+                    Assert.True(lineCommand.IsLet);
                 }
 
                 [Fact]
                 public void Multiline()
                 {
                     var parser = CreateParser(":let x = 4", ":set hlsearch");
-                    var parseResult = parser.ParseNextCommand();
-                    Assert.True(parseResult.IsSucceeded);
-                    Assert.True(parseResult.AsSucceeded().Item.IsLet);
+                    var lineCommand = parser.ParseNextCommand();
+                    Assert.True(lineCommand.IsLet);
 
-                    parseResult = parser.ParseNextCommand();
-                    Assert.True(parseResult.IsSucceeded);
-                    Assert.True(parseResult.AsSucceeded().Item.IsSet);
+                    lineCommand = parser.ParseNextCommand();
+                    Assert.True(lineCommand.IsSet);
                 }
             }
         }
@@ -277,16 +272,14 @@ namespace Vim.UnitTest
                 var parser = new Parser(new VimData());
                 parser.Reset(lines);
                 var result = parser.ParseSingleCommand();
-                Assert.True(result.IsFailed);
+                Assert.True(result.IsParseError);
             }
 
             private LineCommand Parse(params string[] lines)
             {
                 var parser = new Parser(new VimData());
                 parser.Reset(lines);
-                var result = parser.ParseSingleCommand();
-                Assert.True(result.IsSucceeded);
-                return result.AsSucceeded().Item;
+                return parser.ParseSingleCommand();
             }
 
             [Fact]
@@ -348,11 +341,7 @@ namespace Vim.UnitTest
             private void AssertFunc(string functionText, string name = null, int lineCount = -1, bool? isForced = null)
             {
                 var parser = CreateParserOfLines(functionText);
-                var parseResult = parser.ParseNextCommand();
-                Assert.True(parseResult.IsSucceeded);
-                Assert.True(parser.IsDone);
-
-                var lineCommand = parseResult.AsSucceeded().Item;
+                var lineCommand = parser.ParseNextCommand();
                 Assert.True(lineCommand is LineCommand.Function);
                 var func = ((LineCommand.Function)lineCommand).Item;
                 if (name != null)
@@ -374,32 +363,32 @@ namespace Vim.UnitTest
             private void AssertNotFunc(string functionText)
             {
                 var parser = CreateParserOfLines(functionText);
-                var parseResult = parser.ParseNextCommand();
-                Assert.False(parseResult.IsSucceeded);
+                var lineCommand = parser.ParseNextCommand();
+                Assert.True(lineCommand.IsParseError);
             }
 
             private Function ParseFunction(string functionText)
             {
                 var parser = CreateParserOfLines(functionText);
-                var parseResult = parser.ParseNextCommand();
-                Assert.True(parseResult.IsSucceeded && parseResult.AsSucceeded().Item.IsFunction);
-                return ((LineCommand.Function)parseResult.AsSucceeded().Item).Item;
+                var lineCommand = parser.ParseNextCommand();
+                Assert.True(lineCommand.IsFunction);
+                return ((LineCommand.Function)lineCommand).Item;
             }
 
             private FunctionDefinition ParseFunctionDefinition(string definitionText)
             {
                 var parser = CreateParserOfLines(definitionText);
-                var parseResult = parser.ParseNextLine();
-                Assert.True(parseResult.IsSucceeded && parseResult.AsSucceeded().Item.IsFunctionStart);
-                return ((LineCommand.FunctionStart)parseResult.AsSucceeded().Item).Item.Value;
+                var lineCommand = parser.ParseNextLine();
+                Assert.True(lineCommand.IsFunctionStart);
+                return ((LineCommand.FunctionStart)lineCommand).Item.Value;
             }
 
             private void AssertBadFunctionDefinition(string definitionText)
             {
                 var parser = CreateParserOfLines(definitionText);
-                var parseResult = parser.ParseNextLine();
-                Assert.True(parseResult.IsSucceeded && parseResult.AsSucceeded().Item.IsFunctionStart);
-                Assert.True(((LineCommand.FunctionStart)parseResult.AsSucceeded().Item).Item.IsNone());
+                var lineCommand = parser.ParseNextLine();
+                Assert.True(lineCommand.IsFunctionStart);
+                Assert.True(((LineCommand.FunctionStart)lineCommand).Item.IsNone());
             }
 
             public sealed class CompleteTest : FunctionTest
@@ -484,16 +473,18 @@ function Test()
 endfunction
 let x = 42
 ";
+
+                    // PTODO: This test is wrong.  this should return a function which has parse errors as
+                    // inner commands
                     var parser = CreateParserOfLines(text);
 
                     // Parse out the bad function data
                     var first = parser.ParseNextCommand();
-                    Assert.True(first.IsFailed);
+                    Assert.True(first.Failed);
 
                     // Now parse out the :let command
                     var second = parser.ParseNextCommand();
-                    Assert.True(second.IsSucceeded);
-                    Assert.True(second.AsSucceeded().Item.IsLet);
+                    Assert.True(second.IsLet);
                 }
 
                 [Fact]
@@ -529,15 +520,16 @@ let x = 42
 
                     var parser = CreateParserOfLines(text);
 
+                    // PTODO: Once again this should parse the function but view the commands inside as errors
+
                     // For the moment we are unable to parse this function because it has inner commands that we 
                     // don't support.  However it should still fail as a single entity and not cause us to parse
                     // the next command from the middle of the function 
                     var functionResult = parser.ParseNextCommand();
-                    Assert.True(functionResult.IsFailed);
+                    Assert.True(functionResult.Failed);
 
                     var letResult = parser.ParseNextCommand();
-                    Assert.True(letResult.IsSucceeded);
-                    Assert.True(letResult.AsSucceeded().Item.IsLet);
+                    Assert.True(letResult.IsLet);
                 }
             }
 
@@ -1519,8 +1511,8 @@ let x = 42
             [Fact]
             public void Parse_Close_Trailing()
             {
-                var parseResult = VimUtil.ParseLineCommand("close foo");
-                Assert.True(parseResult.IsFailed(Resources.CommandMode_TrailingCharacters));
+                var lineCommand = VimUtil.ParseLineCommand("close foo");
+                Assert.True(lineCommand.IsParseError(Resources.CommandMode_TrailingCharacters));
             }
 
             /// <summary>

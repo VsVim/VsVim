@@ -118,6 +118,14 @@ namespace Vim.UnitTest
         }
 
         /// <summary>
+        /// LineCommand as ParseError
+        /// </summary>
+        public static LineCommand.ParseError AsParseError(this LineCommand lineCommand)
+        {
+            return (LineCommand.ParseError)lineCommand;
+        }
+
+        /// <summary>
         /// LineCommand as ReadCommand
         /// </summary>
         public static LineCommand.ReadCommand AsReadCommand(this LineCommand lineCommand)
@@ -383,6 +391,11 @@ namespace Vim.UnitTest
         public static Expression.ConstantValue AsConstantValue(this Expression expr)
         {
             return (Expression.ConstantValue)expr;
+        }
+
+        public static bool IsParseError(this LineCommand lineCommand, string message)
+        {
+            return lineCommand.IsParseError && lineCommand.AsParseError().Item == message;
         }
 
         #endregion
