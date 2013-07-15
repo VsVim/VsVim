@@ -321,15 +321,7 @@ type BinaryKind =
     | Modulo
     | Subtract
 
-/// Represents te values or the '+cmd' which can occur on commads like :edit
-[<RequireQualifiedAccess>]
-type CommandOption =
-    | StartAtLastLine
-    | StartAtLine of int
-    | StartAtPattern of string
-    | ExecuteLineCommand of LineCommand
-
-and Function = {
+type FunctionDefinition = {
 
     /// Name of the function
     Name : string
@@ -348,6 +340,20 @@ and Function = {
 
     /// Is this a forced definition of the function
     IsForced : bool
+}
+
+/// Represents te values or the '+cmd' which can occur on commads like :edit
+[<RequireQualifiedAccess>]
+type CommandOption =
+    | StartAtLastLine
+    | StartAtLine of int
+    | StartAtPattern of string
+    | ExecuteLineCommand of LineCommand
+
+and Function = {
+
+    /// The definition of the function 
+    Definition : FunctionDefinition
 
     // Line commands that compose the function
     LineCommands : LineCommand list
@@ -421,8 +427,15 @@ and [<RequireQualifiedAccess>] LineCommand =
     /// The :delete command
     | Delete of LineRangeSpecifier * RegisterName option
 
-    /// Definition of a function 
-    | DefineFunction of Function
+    /// The beginning of a function definition.  When 'None' is present that means there was
+    /// an error parsing the function definition.
+    | FunctionStart of FunctionDefinition option
+
+    /// The :endfunc member
+    | FunctionEnd
+
+    /// A complete function 
+    | Function of Function
 
     /// Display the contents of registers.  Unless a specific register name is 
     /// given all registers will be displayed

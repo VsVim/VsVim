@@ -422,7 +422,7 @@ type VimInterpreter
             _commonOperations.DeleteLines lineRange.StartLine lineRange.Count register
             RunResult.Completed)
 
-    member x.RunDefineFunction func = 
+    member x.RunFunction (func : Function) = 
         _statusUtil.OnError Resources.Interpreter_FunctionNotSupported
         RunResult.Completed
 
@@ -1408,6 +1408,10 @@ type VimInterpreter
             |> OptionUtil.getOrDefault RegisterName.Unnamed
             |> _registerMap.GetRegister
 
+        let cantRun () =    
+            _statusUtil.OnError Resources.Interpreter_Error
+            RunResult.Completed
+
         match lineCommand with
         | LineCommand.AddAutoCommand autoCommandDefinition -> x.RunAddAutoCommand autoCommandDefinition
         | LineCommand.Behave model -> x.RunBehave model
@@ -1418,7 +1422,9 @@ type VimInterpreter
         | LineCommand.Close hasBang -> x.RunClose hasBang
         | LineCommand.Edit (hasBang, fileOptions, commandOption, filePath) -> x.RunEdit hasBang fileOptions commandOption filePath
         | LineCommand.Delete (lineRange, registerName) -> x.RunDelete lineRange (getRegister registerName)
-        | LineCommand.DefineFunction (func) -> x.RunDefineFunction func
+        | LineCommand.Function func -> x.RunFunction func
+        | LineCommand.FunctionStart _ -> cantRun ()
+        | LineCommand.FunctionEnd _ -> cantRun ()
         | LineCommand.DisplayKeyMap (keyRemapModes, keyNotationOption) -> x.RunDisplayKeyMap keyRemapModes keyNotationOption
         | LineCommand.DisplayRegisters registerName -> x.RunDisplayRegisters registerName
         | LineCommand.DisplayLet variables -> x.RunDisplayLets variables
@@ -1488,7 +1494,7 @@ type VimInterpreter
     member x.RunScript lines = 
         let parser = Parser(_vimData, lines)
         while not parser.IsDone do
-            match parser.ParseNextLineCommand() with
+            match parser.ParseNextCommand() with
             | ParseResult.Failed _ -> ()
             | ParseResult.Succeeded lineCommand -> x.RunLineCommand lineCommand |> ignore
 

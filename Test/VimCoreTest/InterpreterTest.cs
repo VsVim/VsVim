@@ -1012,7 +1012,7 @@ namespace Vim.UnitTest
             {
                 var parser = new Parser(new VimData());
                 parser.Reset(lines);
-                var parseResult = parser.ParseSingleCommandCore();
+                var parseResult = parser.ParseSingleCommand();
                 Assert.True(parseResult.IsSucceeded);
                 _interpreter.RunLineCommand(parseResult.AsSucceeded().Item);
             }

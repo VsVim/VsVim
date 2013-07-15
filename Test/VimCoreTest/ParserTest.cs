@@ -237,7 +237,7 @@ namespace Vim.UnitTest
                 public void Simple()
                 {
                     var parser = CreateParser(":let x = 4");
-                    var parseResult = parser.ParseNextLineCommand();
+                    var parseResult = parser.ParseNextCommand();
                     Assert.True(parseResult.IsSucceeded);
                     Assert.True(parseResult.AsSucceeded().Item.IsLet);
                 }
@@ -246,11 +246,11 @@ namespace Vim.UnitTest
                 public void Multiline()
                 {
                     var parser = CreateParser(":let x = 4", ":set hlsearch");
-                    var parseResult = parser.ParseNextLineCommand();
+                    var parseResult = parser.ParseNextCommand();
                     Assert.True(parseResult.IsSucceeded);
                     Assert.True(parseResult.AsSucceeded().Item.IsLet);
 
-                    parseResult = parser.ParseNextLineCommand();
+                    parseResult = parser.ParseNextCommand();
                     Assert.True(parseResult.IsSucceeded);
                     Assert.True(parseResult.AsSucceeded().Item.IsSet);
                 }
@@ -287,7 +287,7 @@ namespace Vim.UnitTest
             {
                 var parser = new Parser(new VimData());
                 parser.Reset(lines);
-                var result = parser.ParseSingleCommandCore();
+                var result = parser.ParseSingleCommand();
                 Assert.True(result.IsFailed);
             }
 
@@ -295,7 +295,7 @@ namespace Vim.UnitTest
             {
                 var parser = new Parser(new VimData());
                 parser.Reset(lines);
-                var result = parser.ParseSingleCommandCore();
+                var result = parser.ParseSingleCommand();
                 Assert.True(result.IsSucceeded);
                 return result.AsSucceeded().Item;
             }
@@ -354,21 +354,21 @@ namespace Vim.UnitTest
             }
         }
 
-        public sealed class FunctionTest : ParserTest
+        public abstract class FunctionTest : ParserTest
         {
             private void AssertFunc(string functionText, string name = null, int lineCount = -1, bool? isForced = null)
             {
                 var parser = CreateParserOfLines(functionText);
-                var parseResult = parser.ParseNextLineCommand();
+                var parseResult = parser.ParseNextCommand();
                 Assert.True(parseResult.IsSucceeded);
                 Assert.True(parser.IsDone);
 
                 var lineCommand = parseResult.AsSucceeded().Item;
-                Assert.True(lineCommand is LineCommand.DefineFunction);
-                var func = ((LineCommand.DefineFunction)lineCommand).Item;
+                Assert.True(lineCommand is LineCommand.Function);
+                var func = ((LineCommand.Function)lineCommand).Item;
                 if (name != null)
                 {
-                    Assert.Equal(name, func.Name);
+                    Assert.Equal(name, func.Definition.Name);
                 }
 
                 if (lineCount >= 0)
@@ -378,173 +378,152 @@ namespace Vim.UnitTest
 
                 if (isForced.HasValue)
                 {
-                    Assert.Equal(isForced.Value, func.IsForced);
+                    Assert.Equal(isForced.Value, func.Definition.IsForced);
                 }
             }
 
             private void AssertNotFunc(string functionText)
             {
                 var parser = CreateParserOfLines(functionText);
-                var parseResult = parser.ParseNextLineCommand();
+                var parseResult = parser.ParseNextCommand();
                 Assert.False(parseResult.IsSucceeded);
             }
 
             private Function ParseFunction(string functionText)
             {
                 var parser = CreateParserOfLines(functionText);
-                var parseResult = parser.ParseNextLineCommand();
-                Assert.True(parseResult.IsSucceeded && parseResult.AsSucceeded().Item.IsDefineFunction);
-                return ((LineCommand.DefineFunction)parseResult.AsSucceeded().Item).Item;
+                var parseResult = parser.ParseNextCommand();
+                Assert.True(parseResult.IsSucceeded && parseResult.AsSucceeded().Item.IsFunction);
+                return ((LineCommand.Function)parseResult.AsSucceeded().Item).Item;
             }
 
-            [Fact]
-            public void NoLines()
+            private FunctionDefinition ParseFunctionDefinition(string definitionText)
             {
-                var text = @"
+                var parser = CreateParserOfLines(definitionText);
+                var parseResult = parser.ParseNextLine();
+                Assert.True(parseResult.IsSucceeded && parseResult.AsSucceeded().Item.IsFunctionStart);
+                return ((LineCommand.FunctionStart)parseResult.AsSucceeded().Item).Item.Value;
+            }
+
+            private void AssertBadFunctionDefinition(string definitionText)
+            {
+                var parser = CreateParserOfLines(definitionText);
+                var parseResult = parser.ParseNextLine();
+                Assert.True(parseResult.IsSucceeded && parseResult.AsSucceeded().Item.IsFunctionStart);
+                Assert.True(((LineCommand.FunctionStart)parseResult.AsSucceeded().Item).Item.IsNone());
+            }
+
+            public sealed class CompleteTest : FunctionTest
+            {
+                [Fact]
+                public void NoLines()
+                {
+                    var text = @"
 function First()
 endfunction";
-                AssertFunc(text, "First", 0, isForced: false);
-            }
+                    AssertFunc(text, "First", 0, isForced: false);
+                }
 
-            /// <summary>
-            /// A ! is allowed to follow the function word 
-            /// </summary>
-            [Fact]
-            public void BangAfterFunction()
-            {
-                var text = @"
+                /// <summary>
+                /// A ! is allowed to follow the function word 
+                /// </summary>
+                [Fact]
+                public void BangAfterFunction()
+                {
+                    var text = @"
 function! First()
 endfunction";
-                AssertFunc(text, "First", 0, isForced: true);
-            }
+                    AssertFunc(text, "First", 0, isForced: true);
+                }
 
-            /// <summary>
-            /// A ! is allowed to follow the function word but it must be directly beside it
-            /// </summary>
-            [Fact]
-            public void BangAfterFunctionWithSpace()
-            {
-                var text = @"
+                /// <summary>
+                /// A ! is allowed to follow the function word but it must be directly beside it
+                /// </summary>
+                [Fact]
+                public void BangAfterFunctionWithSpace()
+                {
+                    var text = @"
 function ! First()
 endfunction";
-                AssertNotFunc(text);
-            }
+                    AssertNotFunc(text);
+                }
 
-            [Fact]
-            public void NameMustStartWithCap()
-            {
-                var text = @"
+                [Fact]
+                public void NameMustStartWithCap()
+                {
+                    var text = @"
 function first()
 endfunction";
-                AssertNotFunc(text);
-            }
+                    AssertNotFunc(text);
+                }
 
-            [Fact]
-            public void NameCanBeLowerAfterColon()
-            {
-                var text = @"
+                [Fact]
+                public void NameCanBeLowerAfterColon()
+                {
+                    var text = @"
 function s:first()
 endfunction";
-                AssertFunc(text, "first", 0);
-            }
+                    AssertFunc(text, "first", 0);
+                }
 
-            /// <summary>
-            /// Make sure the code can handle blank lines 
-            /// </summary>
-            [Fact]
-            public void BlankLineCommands()
-            {
-                var text = @"
+                /// <summary>
+                /// Make sure the code can handle blank lines 
+                /// </summary>
+                [Fact]
+                public void BlankLineCommands()
+                {
+                    var text = @"
 function s:first()
 
 
 
 endfunction";
-                AssertFunc(text, "first");
-            }
+                    AssertFunc(text, "first");
+                }
 
-            /// <summary>
-            /// If a command inside the function has a parse error the entire function should still be parsed
-            /// out.  The next parse should occur on the following line.  
-            /// </summary>
-            [Fact]
-            public void InternalParseErrors()
-            {
-                var text = @"
+                /// <summary>
+                /// If a command inside the function has a parse error the entire function should still be parsed
+                /// out.  The next parse should occur on the following line.  
+                /// </summary>
+                [Fact]
+                public void InternalParseErrors()
+                {
+                    var text = @"
 function Test() 
   this is a parse error
   this is another parse error
 endfunction
 let x = 42
 ";
-                var parser = CreateParserOfLines(text);
+                    var parser = CreateParserOfLines(text);
 
-                // Parse out the bad function data
-                var first = parser.ParseNextLineCommand();
-                Assert.True(first.IsFailed);
+                    // Parse out the bad function data
+                    var first = parser.ParseNextCommand();
+                    Assert.True(first.IsFailed);
 
-                // Now parse out the :let command
-                var second = parser.ParseNextLineCommand();
-                Assert.True(second.IsSucceeded);
-                Assert.True(second.AsSucceeded().Item.IsLet);
-            }
+                    // Now parse out the :let command
+                    var second = parser.ParseNextCommand();
+                    Assert.True(second.IsSucceeded);
+                    Assert.True(second.AsSucceeded().Item.IsLet);
+                }
 
-            [Fact]
-            public void IsAbort()
-            {
-                var text = @"
-function Test() abort
-endfunction
-";
-
-                var function = ParseFunction(text);
-                Assert.True(function.IsAbort);
-
-            }
-
-            [Fact]
-            public void IsRange()
-            {
-                var text = @"
-function Test() range
-endfunction
-";
-
-                var function = ParseFunction(text);
-                Assert.True(function.IsRange);
-
-            }
-
-            [Fact]
-            public void IsDict()
-            {
-                var text = @"
-function Test() dict
-endfunction
-";
-
-                var function = ParseFunction(text);
-                Assert.True(function.IsDictionary);
-
-            }
-
-            [Fact]
-            public void IsSeveral()
-            {
-                var text = @"
+                [Fact]
+                public void IsSeveral()
+                {
+                    var text = @"
 function Test() dict abort
 endfunction
 ";
 
-                var function = ParseFunction(text);
-                Assert.True(function.IsDictionary);
-                Assert.True(function.IsAbort);
-            }
+                    var function = ParseFunction(text);
+                    Assert.True(function.Definition.IsDictionary);
+                    Assert.True(function.Definition.IsAbort);
+                }
 
-            [Fact]
-            public void Issue1086()
-            {
-                var text = @"
+                [Fact]
+                public void Issue1086()
+                {
+                    var text = @"
 function! <SID>StripTrailingWhitespace()
     "" Preparation: save last search, and cursor position.
     let _s=@/
@@ -559,17 +538,58 @@ endfunction
 let x = 42
 ";
 
-                var parser = CreateParserOfLines(text);
+                    var parser = CreateParserOfLines(text);
 
-                // For the moment we are unable to parse this function because it has inner commands that we 
-                // don't support.  However it should still fail as a single entity and not cause us to parse
-                // the next command from the middle of the function 
-                var functionResult = parser.ParseNextLineCommand();
-                Assert.True(functionResult.IsFailed);
+                    // For the moment we are unable to parse this function because it has inner commands that we 
+                    // don't support.  However it should still fail as a single entity and not cause us to parse
+                    // the next command from the middle of the function 
+                    var functionResult = parser.ParseNextCommand();
+                    Assert.True(functionResult.IsFailed);
 
-                var letResult = parser.ParseNextLineCommand();
-                Assert.True(letResult.IsSucceeded);
-                Assert.True(letResult.AsSucceeded().Item.IsLet);
+                    var letResult = parser.ParseNextCommand();
+                    Assert.True(letResult.IsSucceeded);
+                    Assert.True(letResult.AsSucceeded().Item.IsLet);
+                }
+            }
+
+            public sealed class DefinitionTest : FunctionTest
+            {
+                [Fact]
+                public void IsAbort()
+                {
+                    var definition = ParseFunctionDefinition(@"function Test() abort");
+                    Assert.True(definition.IsAbort);
+                }
+
+                [Fact]
+                public void IsRange()
+                {
+                    var definition = ParseFunctionDefinition(@"function Test() range");
+                    Assert.True(definition.IsRange);
+                }
+
+                [Fact]
+                public void IsDict()
+                {
+                    var definition = ParseFunctionDefinition(@"function Test() dict");
+                    Assert.True(definition.IsDictionary);
+                }
+
+                [Fact]
+                public void IsForced()
+                {
+                    var definition = ParseFunctionDefinition(@"function! Test() dict");
+                    Assert.True(definition.IsForced);
+                }
+
+                /// <summary>
+                /// The bang must be immediately after the function.  There can be no spaces
+                /// </summary>
+                [Fact]
+                public void BangMustBeAfterFunction()
+                {
+                    AssertBadFunctionDefinition(@"function ! Test()"); 
+                }
             }
         }
 

@@ -18,7 +18,14 @@ type Parser =
 
     member IsDone : bool
 
-    member ParseNextLineCommand : unit -> ParseResult<LineCommand>
+    /// Parse the next complete command from the source.  Command pairs like :func and :endfunc
+    /// will be returned as a single Function command.  
+    member ParseNextCommand : unit -> ParseResult<LineCommand>
+
+    /// Parse the next line from the source.  Command pairs like :func and :endfunc will
+    /// not be returned as a single command.  Instead they will be returned as the individual
+    /// items
+    member ParseNextLine : unit -> ParseResult<LineCommand>
 
     member ParseRange : rangeText : string -> LineRangeSpecifier * string
 

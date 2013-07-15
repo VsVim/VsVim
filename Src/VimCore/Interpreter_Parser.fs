@@ -520,7 +520,7 @@ type Parser
                 let pattern = x.ParseRestOfLine()
                 CommandOption.StartAtPattern pattern |> Some
             | TokenKind.Character c ->
-                match x.ParseSingleCommandCore() with
+                match x.ParseSingleLine() with
                 | ParseResult.Failed _ -> 
                     _tokenizer.MoveToMark mark
                     None
@@ -532,7 +532,7 @@ type Parser
         | _ ->
             None
 
-    /// Parse out the '++opt' paramter to some commands.
+    /// Parse out the '++opt' parameter to some commands.
     member x.ParseFileOptions () : FileOption list =
 
         // TODO: Need to implement parsing out FileOption list
@@ -545,7 +545,7 @@ type Parser
         let rec inner withResult = 
             let mark = _tokenizer.Mark
 
-            // Finish without changinging anything.
+            // Finish without changing anything.
             let finish() =
                 _tokenizer.MoveToMark mark
                 withResult []
@@ -863,7 +863,7 @@ type Parser
         LineCommand.Edit (hasBang, fileOptionList, commandOption, fileName) |> ParseResult.Succeeded
 
     /// Parse out the :function command
-    member x.ParseFunction() = 
+    member x.ParseFunctionStart() = 
 
         // Parse out the name of the function.  It must start with a capitol letter or
         // be preceded by the s: prefix 
@@ -910,37 +910,6 @@ type Parser
                 else
                     ParseResult.Failed Resources.Parser_Error
 
-        // Is the current line the "endfunction" line
-        let isCurrentLineEndFunction () = 
-            let name = x.TryExpand _tokenizer.CurrentToken.TokenText
-            name = "endfunction"
-
-        // Parse out the lines in the function.  If any of the lines inside the function register as a 
-        // parse error we still need to continue parsing the function (even though it should ultimately
-        // fail).  If we bail out of parsing early then it will cause the "next" command to be a 
-        // line which is a part of the function.  
-        let parseLines () = 
-
-            let lines = List<LineCommand>()
-            let mutable anyFailed = false
-            let mutable foundEndFunction = false
-            while not x.IsDone && not foundEndFunction do
-                if isCurrentLineEndFunction () then
-                    foundEndFunction <- true
-                    x.MoveToEndOfLine()
-                else
-                    match x.ParseSingleCommandCore() with
-                    | ParseResult.Failed _ -> anyFailed <- true
-                    | ParseResult.Succeeded lineCommand -> lines.Add lineCommand
-
-                    x.MoveToNextLine() |> ignore
-
-            if anyFailed || not foundEndFunction then
-                ParseResult.Failed Resources.Parser_Error
-            else
-                let allLines = List.ofSeq lines
-                ParseResult.Succeeded allLines
-
         // Parse out the abort, dict and range modifiers which can follow a function definition
         let parseModifiers () = 
 
@@ -969,30 +938,60 @@ type Parser
         // function name or it is not a valid construct
         use flags = _tokenizer.SetTokenizerFlagsScoped TokenizerFlags.SkipBlanks
 
-        _parserBuilder { 
+        let parseResult = _parserBuilder { 
             let! name = parseFunctionName ()
             let! args = parseFunctionArguments ()
             let isAbort, isDict, isRange, isError = parseModifiers ()
 
-            if x.MoveToNextLine() then
-                let! lines = parseLines ()
-
-                if isError then
-                    return Resources.Parser_Error
-                else
-                    let func = { 
-                        Name = name
-                        Arguments = args
-                        IsRange = isRange
-                        IsAbort = isAbort
-                        IsDictionary = isDict
-                        IsForced = hasBang
-                        LineCommands = lines
-                    }
-                    return LineCommand.DefineFunction func
-            else
-                return Resources.Parser_Error
+            let func = { 
+                Name = name
+                Arguments = args
+                IsRange = isRange
+                IsAbort = isAbort
+                IsDictionary = isDict
+                IsForced = hasBang
+            }
+            return LineCommand.FunctionStart (Some func)
         }
+        match parseResult with 
+        | ParseResult.Succeeded _ -> parseResult
+        | ParseResult.Failed _ -> 
+            x.MoveToEndOfLine()
+            LineCommand.FunctionStart None |> ParseResult.Succeeded
+
+    /// Parse out the :endfunc command
+    member x.ParseFunctionEnd() = 
+        ParseResult.Succeeded LineCommand.FunctionEnd
+
+    /// Parse the rest of the function given the FuntionDefinition value.  This value will be None
+    /// when there was an error parsing out the function header.  Even when there is an error we 
+    /// still must parse out the statements inside of it.  If we don't then a simple parsing error
+    /// on a function header can lead to all of the statements inside it being executed promptly
+    member x.ParseFunction (functionDefinition : FunctionDefinition option) = 
+
+        // Parse out the lines in the function.  If any of the lines inside the function register as a 
+        // parse error we still need to continue parsing the function (even though it should ultimately
+        // fail).  If we bail out of parsing early then it will cause the "next" command to be a 
+        // line which is a part of the function.  
+        let lines = List<LineCommand>()
+        let mutable anyFailed = false
+        let mutable foundEndFunction = false
+        while not x.IsDone && not foundEndFunction do
+            match x.ParseSingleCommand() with
+            | ParseResult.Failed _ -> anyFailed <- true
+            | ParseResult.Succeeded lineCommand -> 
+                match lineCommand with
+                | LineCommand.FunctionEnd -> foundEndFunction <- true
+                | _ -> lines.Add(lineCommand)
+
+        match functionDefinition, anyFailed || not foundEndFunction with
+        | Some functionDefinition, false -> 
+            let func = { 
+                Definition = functionDefinition
+                LineCommands = List.ofSeq lines
+            }
+            LineCommand.Function func |> ParseResult.Succeeded
+        | _ -> ParseResult.Failed Resources.Parser_Error
 
     /// Parse out the :[digit] command
     member x.ParseJumpToLine lineRange =
@@ -1513,7 +1512,7 @@ type Parser
             _tokenizer.MoveNextToken()
             let pattern, foundDelimiter = x.ParsePattern delimiter
             if foundDelimiter then
-                let command = x.ParseSingleCommandCore()
+                let command = x.ParseSingleLine()
                 match command with 
                 | ParseResult.Failed msg -> ParseResult.Failed msg
                 | ParseResult.Succeeded command -> LineCommand.Global (lineRange, pattern, matchPattern, command) |> ParseResult.Succeeded
@@ -1556,11 +1555,11 @@ type Parser
                     match nextConditionalKind with
                     | Some nextConditionalKind -> onSuccess nextConditionalKind
                     | None -> 
-                        match x.ParseSingleCommandCore() with
+                        match x.ParseSingleCommand() with
                         | ParseResult.Failed msg -> onError msg
                         | ParseResult.Succeeded lineCommand ->
                             builder.Add lineCommand
-                            if x.MoveToNextLine() then
+                            if not x.IsDone then
                                 inner ()
                             else
                                 onError standardError)
@@ -1858,8 +1857,11 @@ type Parser
             // Simple case.  No marks to parse out.  Just return them all
             LineCommand.DisplayMarks List.empty |> ParseResult.Succeeded
 
-    /// Parse out a single expression
-    member x.ParseSingleCommandCore() = 
+    /// Parse a single line.  This will not attempt to link related LineCommand values like :function
+    /// and :endfunc.  Instead it will return the result of the current LineCommand
+    ///
+    /// PTODO: Why have this return ParseResult?  Why not have a LineCommand for error instead? 
+    member x.ParseSingleLine() = 
 
         // Skip the white space and : at the beginning of the line
         while _tokenizer.CurrentChar = ':' || _tokenizer.CurrentTokenKind = TokenKind.Blank do
@@ -1873,18 +1875,21 @@ type Parser
             | _ -> ParseResult.Failed Resources.Parser_NoRangeAllowed
 
         let handleParseResult parseResult =
-            match parseResult with
-            | ParseResult.Failed _ ->
-                // If there is already a failure don't look any deeper.
-                parseResult
-            | ParseResult.Succeeded _ ->
-                x.SkipBlanks()
-
-                // If there are still characters then it's illegal trailing characters
-                if not _tokenizer.IsAtEndOfLine then
-                    ParseResult.Failed Resources.CommandMode_TrailingCharacters
-                else
+            let parseResult = 
+                match parseResult with
+                | ParseResult.Failed _ ->
+                    // If there is already a failure don't look any deeper.
                     parseResult
+                | ParseResult.Succeeded _ ->
+                    x.SkipBlanks()
+
+                    // If there are still characters then it's illegal trailing characters
+                    if not _tokenizer.IsAtEndOfLine then
+                        ParseResult.Failed Resources.CommandMode_TrailingCharacters
+                    else
+                        parseResult
+            x.MoveToNextLine() |> ignore
+            parseResult
 
         let handleCount parseFunc = 
             match lineRange with
@@ -1912,9 +1917,10 @@ type Parser
                 | "delete" -> x.ParseDelete lineRange
                 | "display" -> noRange x.ParseDisplayRegisters 
                 | "edit" -> noRange x.ParseEdit
+                | "endfunction" -> noRange x.ParseFunctionEnd
                 | "exit" -> x.ParseQuitAndWrite lineRange
                 | "fold" -> x.ParseFold lineRange
-                | "function" -> noRange (fun () -> x.ParseFunction())
+                | "function" -> noRange x.ParseFunctionStart
                 | "global" -> x.ParseGlobal lineRange
                 | "history" -> noRange (fun () -> x.ParseHistory())
                 | "if" -> noRange x.ParseIf
@@ -2018,6 +2024,21 @@ type Parser
         | _ -> 
             x.ParseJumpToLine lineRange |> handleParseResult
 
+    /// Parse out a single command.  Unlike ParseSingleLine this will parse linked commands.  So
+    /// it won't ever return LineCommand.FuntionStart but instead will return LineCommand.Function
+    /// instead
+    ///
+    /// PTODO: Need to change 'if' parsing to use this as well
+    member x.ParseSingleCommand() = 
+
+        let parseResult = x.ParseSingleLine()
+        match parseResult with
+        | ParseResult.Failed _-> parseResult
+        | ParseResult.Succeeded lineCommand -> 
+            match lineCommand with 
+            | LineCommand.FunctionStart functionDefinition -> x.ParseFunction functionDefinition 
+            | _ -> parseResult
+
     /// Parse out a single expression
     member x.ParseSingleExpression() =
         match x.ParseSingleValue() with
@@ -2065,9 +2086,12 @@ type Parser
             | _ -> return expr
         }
 
-    member x.ParseNextLineCommand() = 
-        let parseResult = x.ParseSingleCommandCore()
-        x.MoveToNextLine() |> ignore
+    member x.ParseNextCommand() = 
+        let parseResult = x.ParseSingleCommand()
+        parseResult
+
+    member x.ParseNextLine() = 
+        let parseResult = x.ParseSingleLine()
         parseResult
 
     member x.ParseRange rangeText = 
@@ -2080,15 +2104,15 @@ type Parser
 
     member x.ParseLineCommand commandText =
         x.Reset [|commandText|]
-        x.ParseSingleCommandCore()
+        x.ParseSingleCommand()
 
     member x.ParseLineCommands lines =
         x.Reset lines
         let rec inner rest =    
-            match x.ParseSingleCommandCore() with
+            match x.ParseSingleCommand() with
             | ParseResult.Failed msg -> ParseResult.Failed msg
             | ParseResult.Succeeded lineCommand -> 
-                if x.MoveToNextLine() then    
+                if not x.IsDone then
                     inner (fun item -> rest (lineCommand :: item))
                 else
                     rest [lineCommand]
