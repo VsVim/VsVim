@@ -900,7 +900,7 @@ type Parser
 
     /// Parse out the :function command
     ///
-    /// PTODO: having the option on the definition is wrong.  Just make it a non-option and
+    /// TODO: having the option on the definition is wrong.  Just make it a non-option and
     /// hammer the parser in tests.  If there are cases we can't handle then return an incomplete
     /// parser definition.  For legitimate parse errors though we should error just like Vim
     member x.ParseFunctionStart() = 
@@ -997,7 +997,6 @@ type Parser
 
         match lineCommand with 
         | LineCommand.ParseError _ -> 
-            // PTODO: Don't use an option here, just fail here
             x.MoveToEndOfLine()
             LineCommand.FunctionStart None
         | _ -> lineCommand
@@ -1839,9 +1838,7 @@ type Parser
 
     /// Parse a single line.  This will not attempt to link related LineCommand values like :function
     /// and :endfunc.  Instead it will return the result of the current LineCommand
-    ///
-    /// PTODO: Why have this return ParseResult?  Why not have a LineCommand for error instead? 
-    member x.ParseSingleLine() : LineCommand = 
+    member x.ParseSingleLine() =
 
         // Skip the white space and : at the beginning of the line
         while _tokenizer.CurrentChar = ':' || _tokenizer.CurrentTokenKind = TokenKind.Blank do
@@ -2107,14 +2104,9 @@ and ConditionalParser
 
     member x.Parse() =
 
-        // PTODO: Hiding all of our errors down here.  These need to be surfaced to the 
-        // user
         let mutable isDone = false
-        let mutable anyError = false
         while not _parser.IsDone && not isDone do
             match _parser.ParseSingleCommand() with
-            | LineCommand.ParseError _ -> 
-                anyError <- true
             | LineCommand.Else -> 
                 x.CreateConditionalBlock()
             | LineCommand.ElseIf expr -> 
@@ -2125,7 +2117,7 @@ and ConditionalParser
                 isDone <- true
             | lineCommand -> _currentCommands.Add(lineCommand)
 
-        if anyError || not isDone then
+        if not isDone then
             LineCommand.ParseError "Unmatched Conditional Block"
         else
             _builder |> List.ofSeq |> LineCommand.If 

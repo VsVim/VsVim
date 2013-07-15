@@ -165,7 +165,6 @@ type AutoCommand = {
 
     EventKind : EventKind
 
-    // PTODO: Can this just be a LineCommand now that it has ParseError in it
     LineCommandText : string
 
     Pattern : string
