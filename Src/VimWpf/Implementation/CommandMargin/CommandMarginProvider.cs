@@ -35,7 +35,6 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             _optionsProviderFactories = optionsProviderFactories.ToList().AsReadOnly();
         }
 
-
         #region IWpfTextViewMarginProvider
 
         IWpfTextViewMargin IWpfTextViewMarginProvider.CreateMargin(IWpfTextViewHost wpfTextViewHost, IWpfTextViewMargin marginContainer)
