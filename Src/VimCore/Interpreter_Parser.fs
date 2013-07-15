@@ -907,16 +907,11 @@ type Parser
 
         // Parse out the name of the function.  It must start with a capitol letter or
         // be preceded by the s: prefix 
-        let parseFunctionName () = 
+        let parseFunctionName isScriptLocal =
 
-            // Lower case names are allowed when the name is prefixed with <SID> or s: 
-            let allowLowerCase = 
-                x.IsTokenSequence [| "<"; "SID"; ">" |] ||
-                x.IsTokenSequence [| "s"; ":" |]
-                
             match _tokenizer.CurrentTokenKind with
             | TokenKind.Word word ->
-                if not allowLowerCase && CharUtil.IsLower word.[0] then
+                if not isScriptLocal && CharUtil.IsLower word.[0] then
                     ParseResult.Failed (Resources.Parser_FunctionName word)
                 else
                     _tokenizer.MoveNextToken()
@@ -979,7 +974,12 @@ type Parser
         use flags = _tokenizer.SetTokenizerFlagsScoped TokenizerFlags.SkipBlanks
 
         let lineCommand = _lineCommandBuilder { 
-            let! name = parseFunctionName ()
+            // Lower case names are allowed when the name is prefixed with <SID> or s: 
+            let isScriptLocal = 
+                x.IsTokenSequence [| "<"; "SID"; ">" |] ||
+                x.IsTokenSequence [| "s"; ":" |]
+                
+            let! name = parseFunctionName isScriptLocal
             let! args = parseFunctionArguments ()
             let isAbort, isDict, isRange, isError = parseModifiers ()
 
@@ -990,6 +990,7 @@ type Parser
                 IsAbort = isAbort
                 IsDictionary = isDict
                 IsForced = hasBang
+                IsScriptLocal = isScriptLocal
             }
             return LineCommand.FunctionStart (Some func)
         }

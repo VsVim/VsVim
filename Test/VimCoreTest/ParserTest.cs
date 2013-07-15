@@ -572,6 +572,23 @@ let x = 42
                 {
                     AssertBadFunctionDefinition(@"function ! Test()"); 
                 }
+
+                /// <summary>
+                /// A function can begin with a lower case if it is a script local function
+                /// </summary>
+                [Fact]
+                public void ScriptLocal()
+                {
+                    var definition = ParseFunctionDefinition(@"function s:test()");
+                    Assert.True(definition.IsScriptLocal);
+                }
+
+                [Fact]
+                public void ScriptIdPrefix()
+                {
+                    var definition = ParseFunctionDefinition(@"function <SID>test()");
+                    Assert.True(definition.IsScriptLocal);
+                }
             }
         }
 

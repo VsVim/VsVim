@@ -341,6 +341,9 @@ type FunctionDefinition = {
 
     /// Is this a forced definition of the function
     IsForced : bool
+
+    /// Is this a script local function (begins with s:)
+    IsScriptLocal : bool
 }
 
 /// Represents the values or the '+cmd' which can occur on commands like :edit
