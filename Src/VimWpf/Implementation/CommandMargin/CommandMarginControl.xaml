@@ -39,7 +39,7 @@
             />
 
         <TextBox 
-            x:Name="commandLineInput"
+            x:Name="_commandLineInput"
             Grid.Row="0"
             Grid.Column="1"
             Text="{Binding Path=StatusLine}" 

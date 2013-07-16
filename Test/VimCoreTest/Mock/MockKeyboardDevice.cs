@@ -1,4 +1,5 @@
-﻿using System.Windows;
+﻿using System;
+using System.Windows;
 using System.Windows.Input;
 
 namespace Vim.UnitTest.Mock
@@ -16,11 +17,13 @@ namespace Vim.UnitTest.Mock
         public MockKeyboardDevice()
             : this(InputManager.Current)
         {
+
         }
 
         public MockKeyboardDevice(InputManager manager)
             : base(manager)
         {
+
         }
 
         protected override KeyStates GetKeyStatesFromSystem(Key key)
@@ -62,6 +65,39 @@ namespace Vim.UnitTest.Mock
             ModifierKeysImpl = modKeys;
             arg.RoutedEvent = s_testEvent;
             return arg;
+        }
+
+        public KeyEventArgs CreateKeyEventArgs(KeyInput keyInput)
+        {
+            if (keyInput.KeyModifiers != KeyModifiers.None)
+            {
+                throw new Exception();
+            }
+
+            switch (keyInput.Key)
+            {
+                case VimKey.Left:
+                    return CreateKeyEventArgs(Key.Left);
+                case VimKey.Right:
+                    return CreateKeyEventArgs(Key.Right);
+                case VimKey.Up:
+                    return CreateKeyEventArgs(Key.Up);
+                case VimKey.Down:
+                    return CreateKeyEventArgs(Key.Down);
+                case VimKey.Escape:
+                    return CreateKeyEventArgs(Key.Escape);
+            }
+
+            if (char.IsLetter(keyInput.Char))
+            {
+                var c = char.ToLower(keyInput.Char);
+                var key = (Key)(c - Key.A);
+                return CreateKeyEventArgs(
+                    key,
+                    char.IsUpper(keyInput.Char) ? ModifierKeys.Shift : ModifierKeys.None);
+            }
+
+            throw new Exception();
         }
     }
 }

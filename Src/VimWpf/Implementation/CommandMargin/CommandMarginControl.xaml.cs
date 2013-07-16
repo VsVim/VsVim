@@ -3,6 +3,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using WpfKeyboard = System.Windows.Input.Keyboard;
 
 namespace Vim.UI.Wpf.Implementation.CommandMargin
 {
@@ -110,24 +111,44 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
         /// <summary>
         /// Give the command line edit control focus
         /// </summary>
-        public void FocusCommandLine(bool moveCaretToEnd)
+        public void BeginCommandLineEdit(bool moveCaretToEnd)
         {
-            commandLineInput.Focus();
-
+            WpfKeyboard.Focus(_commandLineInput);
             UpdateCaretPosition(moveCaretToEnd);
         }
 
-        public void UpdateCaretPosition(bool moveToEnd)
+        public void UpdateCaretPosition(bool moveCaretToEnd)
         {
-            if (commandLineInput.IsFocused) // We also use this when navigation through history
+            if (!_commandLineInput.IsKeyboardFocused)
             {
-                var l = commandLineInput.Text.Length;
-                commandLineInput.Select(
-                    moveToEnd ?
-                        l :		            // Move caret to the last character 
-                        Math.Min(l, 1),     // Move caret after the command prefix
-                    0);
+                return;
             }
+
+            var text = _commandLineInput.Text;
+            int index;
+            if (String.IsNullOrEmpty(text))
+            {
+                // Handle the odd case of no text.  This shouldn't be possible because this control shouldn't be 
+                // engaged without a : or / on the command line.  Handle it anyways to be safe
+                // through vim but 
+                index = 0;
+            }
+            else
+            { 
+                if (moveCaretToEnd)
+                {
+                    // Case where <Left> is pressed.  Put the caret before the last editable value.  Don't let the 
+                    // caret get before the : character
+                    index = Math.Max(1, text.Length - 1);
+                }
+                else
+                {
+                    // Case where <Home> is pressed.  Put the caret after the : character
+                    index = 1;
+                }
+            }
+
+            _commandLineInput.Select(start: index, length: 0);
         }
 
         private void DoCancelCommandEdition()
@@ -162,11 +183,57 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             var savedEvent = RunCommandEdition;
             if (savedEvent != null)
             {
-                savedEvent(this, new CommandMarginEventArgs() { Command = commandLineInput.Text });
+                savedEvent(this, new CommandMarginEventArgs() { Command = _commandLineInput.Text });
             }
         }
 
         private void OnCommandLineInputPreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            HandleKeyEvent(e);
+        }
+
+        private void OnCommandLineInputTextChanged(object sender, TextChangedEventArgs e)
+        {
+            if (!_isEditDisable && 0 == _commandLineInput.Text.Trim().Length)
+            {
+                DoCancelCommandEdition();
+            }
+        }
+
+        private void OnCommandLineInputSelectionChanged(object sender, RoutedEventArgs e)
+        {
+            if (_commandLineInput.Text.Length > 0)
+            {
+                // Prevent modifications to the command prefix
+                var sl = _commandLineInput.SelectionLength;
+
+                if (sl > 0)
+                {
+                    if (0 == _commandLineInput.SelectionStart)
+                    {
+                        _commandLineInput.CaretIndex = 1;
+                        _commandLineInput.SelectionStart = 1;
+                        _commandLineInput.SelectionLength = sl - 1;
+                    }
+                    else
+                    {
+                        if (0 == _commandLineInput.CaretIndex)
+                        {
+                            _commandLineInput.CaretIndex = 1;
+                        }
+                    }
+                }
+                else
+                {
+                    if (0 == _commandLineInput.CaretIndex)
+                    {
+                        _commandLineInput.CaretIndex = 1;
+                    }
+                }
+            }
+        }
+
+        internal void HandleKeyEvent(KeyEventArgs e)
         {
             switch (e.Key)
             {
@@ -175,7 +242,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
                     break;
 
                 case Key.Return:
-                    DoRunCommandEdition(commandLineInput.Text.Trim());
+                    DoRunCommandEdition(_commandLineInput.Text.Trim());
                     break;
 
                 case Key.Up:
@@ -187,56 +254,15 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
                     break;
 
                 case Key.Back:
-                    if (commandLineInput.Text.Trim().Length > 1)
+                    if (_commandLineInput.Text.Trim().Length > 1)
                     {
                         // Prevent erasing the command prefix, unless it is the only character
-                        if (1 == commandLineInput.CaretIndex)
+                        if (1 == _commandLineInput.CaretIndex)
                         {
                             e.Handled = true;
                         }
                     }
                     break;
-            }
-        }
-
-        private void OnCommandLineInputTextChanged(object sender, TextChangedEventArgs e)
-        {
-            if (!_isEditDisable && 0 == commandLineInput.Text.Trim().Length)
-            {
-                DoCancelCommandEdition();
-            }
-        }
-
-        private void OnCommandLineInputSelectionChanged(object sender, RoutedEventArgs e)
-        {
-            if (commandLineInput.Text.Length > 0)
-            {
-                // Prevent modifications to the command prefix
-                var sl = commandLineInput.SelectionLength;
-
-                if (sl > 0)
-                {
-                    if (0 == commandLineInput.SelectionStart)
-                    {
-                        commandLineInput.CaretIndex = 1;
-                        commandLineInput.SelectionStart = 1;
-                        commandLineInput.SelectionLength = sl - 1;
-                    }
-                    else
-                    {
-                        if (0 == commandLineInput.CaretIndex)
-                        {
-                            commandLineInput.CaretIndex = 1;
-                        }
-                    }
-                }
-                else
-                {
-                    if (0 == commandLineInput.CaretIndex)
-                    {
-                        commandLineInput.CaretIndex = 1;
-                    }
-                }
             }
         }
     }

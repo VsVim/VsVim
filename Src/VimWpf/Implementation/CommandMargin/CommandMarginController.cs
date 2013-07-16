@@ -268,17 +268,17 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             {
                 case VimKey.Home:
                     // Enable command line edition
-                    _margin.FocusCommandLine(moveCaretToEnd: false);
+                    _margin.BeginCommandLineEdit(moveCaretToEnd: false);
                     args.Handled = true;
                     break;
                 case VimKey.Left:
-                    _margin.FocusCommandLine(moveCaretToEnd: true);
+                    _margin.BeginCommandLineEdit(moveCaretToEnd: true);
                     args.Handled = true;
                     break;
                 case VimKey.Up:
                 case VimKey.Down:
                     // User is navigation through history, move caret to the end of the entry
-                    _margin.UpdateCaretPosition(true);
+                    _margin.UpdateCaretPosition(moveCaretToEnd: true);
                     break;
             }
         }
