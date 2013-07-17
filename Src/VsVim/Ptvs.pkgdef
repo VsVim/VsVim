@@ -1,0 +1,12 @@
+﻿[$RootKey$\RuntimeConfiguration\dependentAssembly\bindingRedirection\{3b4ac0b8-fa7b-4482-950a-51998f1b2c2e}]
+"name"="FSharp.Core"
+"publicKeyToken"="b03f5f7f11d50a3a"
+"culture"="neutral"
+"oldVersion"="1.0.0.0-5.0.0.0"
+"newVersion"="4.0.0.0"
+
+
+[$RootKey$\BindingPaths\{122ab5d4-e5f4-4eaa-9130-5879f071d9d1}]
+"$PackageFolder$"=""
+
+

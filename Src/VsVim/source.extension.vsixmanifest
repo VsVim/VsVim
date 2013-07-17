@@ -42,5 +42,7 @@
     <MefComponent>|Vs2010|</MefComponent>
     <MefComponent>EditorUtils.dll</MefComponent>
     <MefComponent>VsVim.Vs2012.dll</MefComponent>
+    <VsPackage>Colors.pkgdef</VsPackage>
+    <VsPackage>Ptvs.pkgdef</VsPackage>
   </Content>
 </Vsix>
