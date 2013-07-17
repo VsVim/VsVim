@@ -152,11 +152,97 @@ type internal InsertUtil
             TextViewUtil.MoveCaretToPosition _textView position
         | None -> textEdit.Cancel()
 
+    /// Apply the given TextChange to the specified BlockSpan 
+    member x.ApplyBlockInsert (textChange : TextChange) startLineNumber spaces height = 
+
+        // Don't edit past the end of the ITextBuffer 
+        let height = 
+            let maxHeight = x.CurrentSnapshot.LineCount - startLineNumber
+            min maxHeight height
+
+        // It is possible that a repeat of a block edit will begin part of the way through
+        // a wide character (think a 4 space tab).  If any edits have this behavior the first
+        // pass will break them up into the appropriate number of spaces
+        let fixOverlapEdits () = 
+            use textEdit = _textBuffer.CreateEdit()
+
+            let currentSnapshot = x.CurrentSnapshot
+            for i = 0 to (height - 1) do 
+
+                let lineNumber = startLineNumber + i
+                let currentLine = SnapshotUtil.GetLine currentSnapshot lineNumber
+                let point = SnapshotLineUtil.GetSpaceWithOverlapOrEnd currentLine spaces _localSettings.TabStop
+                if point.SpacesBefore > 0 then
+                    let text = StringUtil.repeatChar point.Width ' '
+                    let span = Span(point.Point.Position, 1)
+                    textEdit.Replace(span, text) |> ignore
+
+            if textEdit.HasEffectiveChanges then 
+                textEdit.Apply() |> ignore
+            else
+                textEdit.Cancel()
+
+        // Actually apply the edit to the lines in the block selection
+        let doApply textChange = 
+            use textEdit = _textBuffer.CreateEdit()
+            let mutable abortChange = false
+
+            let currentSnapshot = x.CurrentSnapshot
+            for i = 0 to (height - 1) do
+
+                let lineNumber = startLineNumber + i
+                let currentLine = SnapshotUtil.GetLine currentSnapshot lineNumber
+
+                // Only apply the edit to lines which were included in the original selection
+                let point = SnapshotLineUtil.GetSpaceOrEnd currentLine spaces _localSettings.TabStop
+                if not (SnapshotPointUtil.IsInsideLineBreak point) then
+                    let position = point.Position
+                    let bounds = Span(position, currentLine.End.Position - position)
+                    match x.ApplyTextChangeCore textEdit position bounds textChange false with
+                    | Some _ -> ()
+                    | None -> abortChange <- true
+
+            if abortChange then
+                textEdit.Cancel()
+            else
+                textEdit.Apply() |> ignore
+
+        // Unfortunately the ITextEdit implementation doesn't properly reduce the changes that are
+        // applied to it.  For example if you add 2 characters, delete them and then insert text
+        // at the original start point you will not end up with simply the new text.  
+        //
+        // To account for this we reduce the TextChange to the smallest possible TextChange value
+        // and apply that change 
+        let textChange = textChange.Reduce
+
+        // Only a subset of changes are actually repeated for block edits.  These rules aren't available
+        // anywhere I can find and have been figured out through experimentation
+        let isDelete = 
+            match textChange with
+            | TextChange.Insert _ -> false
+            | TextChange.DeleteLeft _ -> true
+            | TextChange.DeleteRight _ -> true
+            | TextChange.Combination _ -> false
+
+        if not isDelete then
+            fixOverlapEdits ()
+            doApply textChange 
+            Some textChange
+        else
+            None
+
     /// Delete the character before the cursor
     ///
     /// TODO: This needs to respect the 'backspace' option
     member x.Back () = 
         _editorOperations.Backspace() |> ignore
+        CommandResult.Completed ModeSwitch.NoSwitch
+
+    /// Block insert the specified text at the caret point over the specified number of lines
+    member x.BlockInsert textChange height = 
+        let line, column = SnapshotPointUtil.GetLineColumn x.CaretPoint
+        let spaces = SnapshotLineUtil.GetSpacesToColumn x.CaretLine column _localSettings.TabStop
+        x.ApplyBlockInsert textChange line spaces height |> ignore
         CommandResult.Completed ModeSwitch.NoSwitch
 
     member x.Combined left right =
@@ -439,93 +525,20 @@ type internal InsertUtil
         // Need to apply the edits to all of the other lines in the span.  Block edits
         // don't apply if the user inserts a new line into the buffer.  Check for that
         // early on
-        let originalSnapshot = blockSpan.Snasphot
-
-        // It is possible that a repeat of a block edit will begin part of the way through
-        // a wide character (think a 4 space tab).  If any edits have this behavior the first
-        // pass will break them up into the appropriate number of spaces
-        let fixOverlapEdits () = 
-            use textEdit = _textBuffer.CreateEdit()
-
-            let currentSnapshot = x.CurrentSnapshot
-            let startLineNumber = SnapshotPointUtil.GetLineNumber blockSpan.Start
-            for i = 1 to (blockSpan.Height - 1) do 
-
-                let lineNumber = startLineNumber + i
-                let currentLine = SnapshotUtil.GetLine currentSnapshot lineNumber
-                let point = SnapshotLineUtil.GetSpaceWithOverlapOrEnd currentLine blockSpan.ColumnSpaces _localSettings.TabStop
-                if point.SpacesBefore > 0 then
-                    let text = StringUtil.repeatChar point.Width ' '
-                    let span = Span(point.Point.Position, 1)
-                    textEdit.Replace(span, text) |> ignore
-
-            if textEdit.HasEffectiveChanges then 
-                textEdit.Apply() |> ignore
-            else
-                textEdit.Cancel()
-
-        // Actually apply the edit to the lines in the block selection
-        let doApply textChange = 
-            use textEdit = _textBuffer.CreateEdit()
-            let mutable abortChange = false
-
-            let currentSnapshot = x.CurrentSnapshot
-            let startLineNumber = SnapshotPointUtil.GetLineNumber blockSpan.Start
-            for i = 1 to (blockSpan.Height - 1) do 
-
-                let lineNumber = startLineNumber + i
-                let currentLine = SnapshotUtil.GetLine currentSnapshot lineNumber
-
-                // Only apply the edit to lines which were included in the original selection
-                if currentLine.Length > blockSpan.Column then
-                    let position = currentLine.Start.Position + blockSpan.Column
-                    let bounds = Span(position, currentLine.End.Position - position)
-                    match x.ApplyTextChangeCore textEdit position bounds textChange false with
-                    | Some _ -> ()
-                    | None -> abortChange <- true
-
-            if abortChange then
-                textEdit.Cancel()
-            else
-                textEdit.Apply() |> ignore
-
-                // Once the edit is complete we need to move the caret back to the original 
-                // insertion point which is the start of the BlockSpan.
-                match TrackingPointUtil.GetPointInSnapshot blockSpan.Start PointTrackingMode.Negative x.CurrentSnapshot with
-                | None -> ()
-                | Some point -> x.EditWithUndoTransaction "Move Caret" (fun () -> TextViewUtil.MoveCaretToPoint _textView point)
-
-        let doChange textChange = 
+        let isRepeatable = blockSpan.Snasphot.LineCount = x.CurrentSnapshot.LineCount && blockSpan.Height > 1 
+        match isRepeatable, insertCommand.TextChange _editorOptions with
+        | true, Some textChange -> 
             x.EditWithUndoTransaction "Repeat Block Edit" (fun () ->
-                fixOverlapEdits ()
-                doApply textChange 
+                let startLineNumber = (SnapshotPointUtil.GetLineNumber blockSpan.Start) + 1
+                let textChange = x.ApplyBlockInsert textChange startLineNumber blockSpan.ColumnSpaces (blockSpan.Height - 1)
 
                 // insertion point which is the start of the BlockSpan.
                 match TrackingPointUtil.GetPointInSnapshot blockSpan.Start PointTrackingMode.Negative x.CurrentSnapshot with
                 | None -> ()
-                | Some point -> TextViewUtil.MoveCaretToPoint _textView point)
-
-        // Unfortunately the ITextEdit implementation doesn't properly reduce the changes that are
-        // applied to it.  For example if you add 2 characters, delete them and then insert text
-        // at the original start point you will not end up with simply the new text.  
-        //
-        // To account for this we reduce the InsertCommand to the smallest possible TextChange value
-        // and apply that change 
-        match insertCommand.TextChange _editorOptions with
-        | Some textChange -> 
-            // Only a subset of changes are actually repeated for block edits.  These rules aren't available
-            // anywhere I can find and have been figured out through experimentation
-            let sameLineCount = originalSnapshot.LineCount = x.CurrentSnapshot.LineCount
-            let isDelete = 
-                match textChange with
-                | TextChange.Insert _ -> false
-                | TextChange.DeleteLeft _ -> true
-                | TextChange.DeleteRight _ -> true
-                | TextChange.Combination _ -> false
-
-            if sameLineCount && not isDelete then
-                doChange textChange.Reduce
-        | None -> ()
+                | Some point -> TextViewUtil.MoveCaretToPoint _textView point
+                
+                textChange)
+        | _ -> None
 
     member x.RunInsertCommandCore command addNewLines = 
 
@@ -535,6 +548,7 @@ type internal InsertUtil
         else
             match command with
             | InsertCommand.Back -> x.Back()
+            | InsertCommand.BlockInsert (textChange, count) -> x.BlockInsert textChange count
             | InsertCommand.Combined (left, right) -> x.Combined left right
             | InsertCommand.CompleteMode moveCaretLeft -> x.CompleteMode moveCaretLeft
             | InsertCommand.Delete -> x.Delete()

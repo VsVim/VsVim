@@ -360,13 +360,22 @@ type internal InsertMode
         _textChangeTracker.CompleteChange()
 
         try
-            match _sessionData.InsertKind with
-            | InsertKind.Normal -> ()
-            | InsertKind.Repeat (count, addNewLines, textChange)-> _insertUtil.RepeatEdit textChange addNewLines (count - 1)
-            | InsertKind.Block blockSpan -> 
-                match _sessionData.CombinedEditCommand with
-                | None -> ()
-                | Some command -> _insertUtil.RepeatBlock command blockSpan
+            match _sessionData.InsertKind, _sessionData.CombinedEditCommand with
+            | InsertKind.Normal, _ -> ()
+            | InsertKind.Repeat (count, addNewLines, textChange), _ -> _insertUtil.RepeatEdit textChange addNewLines (count - 1)
+            | InsertKind.Block blockSpan, None -> ()
+            | InsertKind.Block blockSpan, Some command -> 
+                // The RepeatBlock command will be performing edits on the ITextBuffer.  We don't want to 
+                // track these changes.  They instead will be tracked by the InsertCommand that we return
+                try 
+                    _textChangeTracker.TrackCurrentChange <- false
+                    let combinedCommand = 
+                        match _insertUtil.RepeatBlock command blockSpan with
+                        | Some textChange -> InsertCommand.BlockInsert (textChange, blockSpan.Height) |> Some
+                        | None -> None
+                    _sessionData <- { _sessionData with CombinedEditCommand = combinedCommand } 
+                finally 
+                    _textChangeTracker.TrackCurrentChange <- true
 
         finally
             // Make sure to close out the transaction
