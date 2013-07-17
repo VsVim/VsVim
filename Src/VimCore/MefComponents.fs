@@ -380,14 +380,14 @@ type internal ChangeTracker
 
     let _vimData = _vim.VimData
 
-    member x.OnVimBufferCreated (buffer : IVimBuffer) =
+    member x.OnVimBufferCreated (vimBuffer : IVimBuffer) =
         let handler = x.OnCommandRan
-        buffer.NormalMode.CommandRunner.CommandRan |> Event.add handler
-        buffer.VisualLineMode.CommandRunner.CommandRan |> Event.add handler
-        buffer.VisualBlockMode.CommandRunner.CommandRan |> Event.add handler
-        buffer.VisualCharacterMode.CommandRunner.CommandRan |> Event.add handler
-        buffer.InsertMode.CommandRan |> Event.add handler
-        buffer.ReplaceMode.CommandRan |> Event.add handler
+        vimBuffer.NormalMode.CommandRunner.CommandRan |> Event.add handler
+        vimBuffer.VisualLineMode.CommandRunner.CommandRan |> Event.add handler
+        vimBuffer.VisualBlockMode.CommandRunner.CommandRan |> Event.add handler
+        vimBuffer.VisualCharacterMode.CommandRunner.CommandRan |> Event.add handler
+        vimBuffer.InsertMode.CommandRan |> Event.add handler
+        vimBuffer.ReplaceMode.CommandRan |> Event.add handler
 
     member x.OnCommandRan (args : CommandRunDataEventArgs) = 
         let data = args.CommandRunData

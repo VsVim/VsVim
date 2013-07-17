@@ -398,7 +398,7 @@ type internal InsertMode
 
     member x.ProcessEscape () =
 
-        this.ApplyAfterEdits()
+        x.ApplyAfterEdits()
 
         if _broker.IsCompletionActive || _broker.IsSignatureHelpActive || _broker.IsQuickInfoActive then
             _broker.DismissDisplayWindows()

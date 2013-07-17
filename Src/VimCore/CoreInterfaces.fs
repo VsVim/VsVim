@@ -2751,7 +2751,7 @@ type internal IInsertUtil =
     abstract RepeatEdit : textChange : TextChange -> addNewLines : bool -> count : int -> unit
 
     /// Repeat the given edit series. 
-    abstract RepeatBlock : InsertCommand -> blockSpan : BlockSpan -> unit
+    abstract RepeatBlock : command : InsertCommand -> blockSpan : BlockSpan -> unit
 
 /// Contains the stored information about a Visual Span.  This instance *will* be 
 /// stored for long periods of time and used to repeat a Command instance across
