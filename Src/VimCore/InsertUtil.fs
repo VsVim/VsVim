@@ -141,60 +141,6 @@ type internal InsertUtil
         else
             Some caretPosition.Value
 
-        (*
-        // Apply a single change to the ITextBuffer as a transaction 
-        let rec applyChange caretPosition textChange = 
-            match textChange with
-            | TextChange.Insert text -> 
-                // Insert the same text 'count' times at the cursor
-                let text = 
-                    if addNewLines then
-                        let newLine = _operations.GetNewLineText x.CaretPoint
-                        newLine + text
-                    else 
-                        text
-
-                if textEdit.Insert(originalPosition, text) then
-                    // The position of the edit is after the inserted text
-                    caretPosition + text.Length |> Some
-                else
-                    None
-            | TextChange.DeleteRight count -> 
-
-                // Delete 'count * deleteCount' more characters.  Make sure that we don't
-                // go off the end of the specified bounds
-                let maxCount = bounds.End - originalPosition
-                let realCount = min maxCount count
-                if textEdit.Delete(originalPosition, realCount) then
-                    // After a delete the caret remains in the same position 
-                    Some caretPosition
-                else
-                    None
-
-            | TextChange.DeleteLeft count -> 
-
-                // Delete 'count' characters to the left of the caret.  Make sure that
-                // we don't delete outside the specified bounds
-                let start, count = 
-                    let diff = originalPosition - count 
-                    if diff < bounds.Start then
-                        bounds.Start, originalPosition - bounds.Start
-                    else
-                        diff, count
-
-                if textEdit.Delete(start, count) then
-                    let caretPosition = max 0 (caretPosition - count)
-                    Some start
-                else
-                    None
-            | TextChange.Combination (left, right) ->
-                match applyChange caretPosition left with
-                | Some caretPosition -> applyChange caretPosition right
-                | None -> None
-
-        applyChange originalPosition textChange
-        *)
-
     /// Apply the TextChange to the ITextBuffer 'count' times as a single operation.
     member x.ApplyTextChange textChange addNewLines =
 
