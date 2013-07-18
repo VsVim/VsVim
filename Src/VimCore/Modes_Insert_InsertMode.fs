@@ -371,7 +371,7 @@ type internal InsertMode
                     _textChangeTracker.TrackCurrentChange <- false
                     let combinedCommand = 
                         match _insertUtil.RepeatBlock command blockSpan with
-                        | Some textChange -> InsertCommand.BlockInsert (textChange, blockSpan.Height) |> Some
+                        | Some text -> InsertCommand.BlockInsert (text, blockSpan.Height) |> Some
                         | None -> None
                     _sessionData <- { _sessionData with CombinedEditCommand = combinedCommand } 
                 finally 

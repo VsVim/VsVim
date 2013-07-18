@@ -2436,12 +2436,7 @@ type InsertCommand  =
 
     /// Block edit of the specified TextChange value.  The int represents the number of 
     /// lines on which this block insert should take place
-    ///
-    /// BTODO: Not really happy about this.  A block insert can only be done on a positive text change
-    /// AFAIK.  It can't be a delete so representing it with a TextChange is wrong.  It should just 
-    /// be a string.  But the rest of the block insert code operates on TextChange hence we will stick
-    /// with it for now
-    | BlockInsert of TextChange * int
+    | BlockInsert of string * int
 
     /// This is an insert command which is a combination of other insert commands
     | Combined of InsertCommand * InsertCommand
@@ -2761,7 +2756,7 @@ type internal IInsertUtil =
     abstract RepeatEdit : textChange : TextChange -> addNewLines : bool -> count : int -> unit
 
     /// Repeat the given edit series. 
-    abstract RepeatBlock : command : InsertCommand -> blockSpan : BlockSpan -> TextChange option 
+    abstract RepeatBlock : command : InsertCommand -> blockSpan : BlockSpan -> string option
 
 /// Contains the stored information about a Visual Span.  This instance *will* be 
 /// stored for long periods of time and used to repeat a Command instance across

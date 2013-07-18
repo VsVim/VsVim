@@ -734,6 +734,30 @@ namespace Vim.UnitTest
                     Assert.Equal(new[] { "xcat", "xdog", "x fish" }, _textBuffer.GetLines());
                 }
 
+                /// <summary>
+                /// Make sure that we handle deletes properly.  So long as it leaves us with a new bit of text then
+                /// we can repeat it
+                /// </summary>
+                [Fact]
+                public void HandleDeletes()
+                {
+                    Create("cat", "dog", "fish", "store");
+                    _vimBuffer.ProcessNotation("<C-q>j<S-i>xy<BS><Esc>jj.");
+                    Assert.Equal(new[] { "xcat", "xdog", "xfish" , "xstore" }, _textBuffer.GetLines());
+                }
+
+                /// <summary>
+                /// Make sure the code properly handles the case where the insert results in 0 text being added
+                /// to the file.  This should cause us to not do anything even on repeat
+                /// </summary>
+                [Fact]
+                public void HandleEmptyInsertString()
+                {
+                    Create("cat", "dog", "fish", "store");
+                    _vimBuffer.ProcessNotation("<C-q>j<S-i>xy<BS><BS><Esc>jj.");
+                    Assert.Equal(new[] { "cat", "dog", "fish" , "store" }, _textBuffer.GetLines());
+                }
+
                 [Fact]
                 public void Issue1136()
                 {
