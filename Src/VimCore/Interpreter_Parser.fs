@@ -2095,21 +2095,31 @@ and ConditionalParser
         _initialExpr : Expression
     ) = 
 
+    static let StateBeforeElse = 1
+    static let StateAfterElse = 2
+
     let mutable _currentExpr = Some _initialExpr
     let mutable _currentCommands = List<LineCommand>()
     let mutable _builder = List<ConditionalBlock>()
+    let mutable _state = StateBeforeElse
 
     member x.IsDone =
         _parser.IsDone
 
     member x.Parse() =
 
+        let mutable error : string option = None
         let mutable isDone = false
-        while not _parser.IsDone && not isDone do
+        while not _parser.IsDone && not isDone && Option.isNone error do
             match _parser.ParseSingleCommand() with
             | LineCommand.Else -> 
+                if _state = StateAfterElse then
+                    error <- Some Resources.Parser_MultipleElse
                 x.CreateConditionalBlock()
+                _state <- StateAfterElse
             | LineCommand.ElseIf expr -> 
+                if _state = StateAfterElse then
+                    error <- Some Resources.Parser_ElseIfAfterElse
                 x.CreateConditionalBlock()
                 _currentExpr <- Some expr
             | LineCommand.IfEnd ->  
@@ -2117,10 +2127,10 @@ and ConditionalParser
                 isDone <- true
             | lineCommand -> _currentCommands.Add(lineCommand)
 
-        if not isDone then
-            LineCommand.ParseError "Unmatched Conditional Block"
-        else
-            _builder |> List.ofSeq |> LineCommand.If 
+        match isDone, error with
+        | _, Some msg -> LineCommand.ParseError msg
+        | false, None -> LineCommand.ParseError "Unmatched Conditional Block"
+        | true, None -> _builder |> List.ofSeq |> LineCommand.If 
                 
     member x.CreateConditionalBlock() = 
         let conditionalBlock = {
