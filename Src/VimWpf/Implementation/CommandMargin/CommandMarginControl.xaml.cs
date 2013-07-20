@@ -20,8 +20,6 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
     /// </summary>
     public partial class CommandMarginControl : UserControl
     {
-        private bool _isEditDisable = true;
-
         public static readonly DependencyProperty StatusLineProperty = DependencyProperty.Register(
             "StatusLine",
             typeof(string),
@@ -32,8 +30,8 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             typeof(Visibility),
             typeof(CommandMarginControl));
 
-        public static readonly DependencyProperty IsCommandEditionDisableProperty = DependencyProperty.Register(
-            "IsCommandEditionDisable",
+        public static readonly DependencyProperty IsEditReadOnlyProperty = DependencyProperty.Register(
+            "IsEditReadOnly",
             typeof(bool),
             typeof(CommandMarginControl),
             new PropertyMetadata(true));
@@ -59,10 +57,10 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             set { SetValue(StatusLineProperty, value); }
         }
 
-        public bool IsCommandEditionDisable
+        public bool IsEditReadOnly
         {
-            get { return (bool)GetValue(IsCommandEditionDisableProperty); }
-            set { _isEditDisable = value; SetValue(IsCommandEditionDisableProperty, value); }
+            get { return (bool)GetValue(IsEditReadOnlyProperty); }
+            set { SetValue(IsEditReadOnlyProperty, value); }
         }
 
         public Visibility IsRecording
@@ -83,9 +81,19 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             set { SetValue(TextBackgroundProperty, value); }
         }
 
+        public bool IsEditEnabled
+        {
+            get { return !IsEditReadOnly; }
+        }
+
+        public TextBox CommandLineTextBox
+        {
+            get { return _commandLineInput; }
+        }
+
         public event EventHandler OptionsClicked;
-        public event EventHandler CancelCommandEdition;
-        public event EventHandler RunCommandEdition;
+        public event EventHandler CommandCancelled;
+        public event EventHandler<CommandMarginEventArgs> CommandCompleted;
         public event EventHandler HistoryGoPrevious;
         public event EventHandler HistoryGoNext;
 
@@ -114,12 +122,13 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
         public void BeginCommandLineEdit(bool moveCaretToEnd)
         {
             WpfKeyboard.Focus(_commandLineInput);
+            IsEditReadOnly = false;
             UpdateCaretPosition(moveCaretToEnd);
         }
 
         public void UpdateCaretPosition(bool moveCaretToEnd)
         {
-            if (!_commandLineInput.IsKeyboardFocused)
+            if (IsEditReadOnly)
             {
                 return;
             }
@@ -151,16 +160,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             _commandLineInput.Select(start: index, length: 0);
         }
 
-        private void DoCancelCommandEdition()
-        {
-            var savedEvent = CancelCommandEdition;
-            if (savedEvent != null)
-            {
-                savedEvent(this, EventArgs.Empty);
-            }
-        }
-
-        private void DoHistoryGoPrevious()
+        private void OnHistoryGoPrevious()
         {
             var savedEvent = HistoryGoPrevious;
             if (savedEvent != null)
@@ -169,7 +169,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             }
         }
 
-        private void DoHistoryGoNext()
+        private void OnHistoryGoNext()
         {
             var savedEvent = HistoryGoNext;
             if (savedEvent != null)
@@ -178,12 +178,34 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             }
         }
 
-        private void DoRunCommandEdition(string command)
+        private void OnCancelCommand()
         {
-            var savedEvent = RunCommandEdition;
+            var savedEvent = CommandCancelled;
             if (savedEvent != null)
             {
-                savedEvent(this, new CommandMarginEventArgs() { Command = _commandLineInput.Text });
+                savedEvent(this, EventArgs.Empty);
+            }
+        }
+
+        private void OnCommandCompleted(string command)
+        {
+            var savedEvent = CommandCompleted;
+            if (savedEvent != null)
+            {
+                var e = new CommandMarginEventArgs() { Command = command };
+                savedEvent(this, e);
+            }
+        }
+
+        private void OnBack(KeyEventArgs e)
+        {
+            if (_commandLineInput.Text.Trim().Length > 1)
+            {
+                // Prevent erasing the command prefix, unless it is the only character
+                if (1 == _commandLineInput.CaretIndex)
+                {
+                    e.Handled = true;
+                }
             }
         }
 
@@ -194,9 +216,9 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
 
         private void OnCommandLineInputTextChanged(object sender, TextChangedEventArgs e)
         {
-            if (!_isEditDisable && 0 == _commandLineInput.Text.Trim().Length)
+            if (IsEditEnabled && 0 == _commandLineInput.Text.Trim().Length)
             {
-                DoCancelCommandEdition();
+                OnCancelCommand();
             }
         }
 
@@ -238,30 +260,19 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             switch (e.Key)
             {
                 case Key.Escape:
-                    DoCancelCommandEdition();
+                    OnCancelCommand();
                     break;
-
                 case Key.Return:
-                    DoRunCommandEdition(_commandLineInput.Text.Trim());
+                    OnCommandCompleted(_commandLineInput.Text.Trim());
                     break;
-
                 case Key.Up:
-                    DoHistoryGoPrevious();
+                    OnHistoryGoPrevious();
                     break;
-
                 case Key.Down:
-                    DoHistoryGoNext();
+                    OnHistoryGoNext();
                     break;
-
                 case Key.Back:
-                    if (_commandLineInput.Text.Trim().Length > 1)
-                    {
-                        // Prevent erasing the command prefix, unless it is the only character
-                        if (1 == _commandLineInput.CaretIndex)
-                        {
-                            e.Handled = true;
-                        }
-                    }
+                    OnBack(e);
                     break;
             }
         }

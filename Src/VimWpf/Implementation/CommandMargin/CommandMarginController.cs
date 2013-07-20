@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows;
+using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text.Classification;
 using Vim.Extensions;
 using Vim.UI.Wpf.Properties;
@@ -18,7 +19,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
         private readonly FrameworkElement _parentVisualElement;
         private bool _inKeyInputEvent;
         private string _message;
-        private IMode _modeSwitch;
+        private SwitchModeEventArgs _modeSwitchEventArgs;
 
         /// <summary>
         /// We need to hold a reference to Text Editor visual element.
@@ -46,8 +47,8 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             _vimBuffer.Vim.MacroRecorder.RecordingStarted += OnRecordingStarted;
             _vimBuffer.Vim.MacroRecorder.RecordingStopped += OnRecordingStopped;
             _margin.OptionsClicked += OnOptionsClicked;
-            _margin.CancelCommandEdition += OnCancelCommandEdition;
-            _margin.RunCommandEdition += OnRunCommandEdition;
+            _margin.CommandCancelled += OnCommandCancelled;
+            _margin.CommandCompleted += OnCommandCompleted;
             _margin.HistoryGoPrevious += OnHistoryGoPrevious;
             _margin.HistoryGoNext += OnHistoryGoNext;
             _editorFormatMap.FormatMappingChanged += OnFormatMappingChanged;
@@ -80,9 +81,9 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
                 {
                     _margin.StatusLine = _message;
                 }
-                else if (_modeSwitch != null)
+                else if (_modeSwitchEventArgs != null)
                 {
-                    UpdateForSwitchMode(_modeSwitch);
+                    UpdateForSwitchMode(_modeSwitchEventArgs.PreviousMode, _modeSwitchEventArgs.CurrentMode);
                 }
                 else
                 {
@@ -92,7 +93,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             finally
             {
                 _message = null;
-                _modeSwitch = null;
+                _modeSwitchEventArgs = null;
             }
         }
 
@@ -108,7 +109,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             }
         }
 
-        private void UpdateForSwitchMode(IMode mode)
+        private void UpdateForSwitchMode(FSharpOption<IMode> previousMode, IMode currentMode)
         {
             // Calculate the argument string if we are in one time command mode
             string oneTimeArgument = null;
@@ -126,9 +127,14 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
 
             // Check if we can enable the command line to accept user input
             var search = _vimBuffer.IncrementalSearch;
-            _margin.IsCommandEditionDisable = mode.ModeKind != ModeKind.Command && !(search.InSearch && search.CurrentSearchData.IsSome());
 
-            switch (mode.ModeKind)
+            // TODO: Hack for now, really need to rethink this later 
+            if (_margin.IsEditEnabled)
+            {
+                _margin.IsEditReadOnly = previousMode.IsSome() && previousMode.Value.ModeKind == ModeKind.Command;
+            }
+
+            switch (currentMode.ModeKind)
             {
                 case ModeKind.Normal:
                     _margin.StatusLine = String.IsNullOrEmpty(oneTimeArgument)
@@ -194,13 +200,15 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             {
                 var data = search.CurrentSearchData.Value;
                 var prefix = data.Kind.IsAnyForward ? "/" : "?";
+
                 //TODO: Workaround to fix strange character when pressing <Home>...
                 _margin.StatusLine = prefix + data.Pattern.Trim('\0');
-                _margin.IsCommandEditionDisable = false;
+                _margin.IsEditReadOnly = false;
                 return;
             }
 
-            _margin.IsCommandEditionDisable = _vimBuffer.ModeKind != ModeKind.Command;
+            // TODO: this is just wrong
+            // _margin.IsEditReadOnly = _vimBuffer.ModeKind != ModeKind.Command;
 
             switch (_vimBuffer.ModeKind)
             {
@@ -295,23 +303,18 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             _vimBuffer.Process(KeyInputUtil.VimKeyToKeyInput(VimKey.Down));
         }
 
-        void OnCancelCommandEdition(object sender, EventArgs e)
+        void OnCommandCancelled(object sender, EventArgs e)
         {
             _vimBuffer.Process(KeyInputUtil.EscapeKey);
             FocusEditor();
         }
 
-        void OnRunCommandEdition(object sender, EventArgs e)
+        void OnCommandCompleted(object sender, CommandMarginEventArgs e)
         {
-            _vimBuffer.Process(KeyInputUtil.EscapeKey);
-
-            var input = (e as CommandMarginEventArgs).Command;
-
-            foreach (var c in input)
-            {
-                var i = KeyInputUtil.CharToKeyInput(c);
-                _vimBuffer.Process(i);
-            }
+            // TODO: make this more robust
+            Contract.Requires(_vimBuffer.ModeKind == ModeKind.Command);
+            _vimBuffer.CommandMode.Command = e.Command;
+            _vimBuffer.Process(KeyInputUtil.EnterKey);
 
             FocusEditor();
         }
@@ -320,11 +323,11 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
         {
             if (_inKeyInputEvent)
             {
-                _modeSwitch = args.CurrentMode;
+                _modeSwitchEventArgs = args;
             }
             else
             {
-                UpdateForSwitchMode(args.CurrentMode);
+                UpdateForSwitchMode(args.PreviousMode, args.CurrentMode);
             }
         }
 

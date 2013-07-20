@@ -32,6 +32,7 @@ namespace Vim.UI.Wpf.UnitTest
             _vimBuffer = CreateVimBuffer(lines);
             _textBuffer = _vimBuffer.TextBuffer;
             _textView = _vimBuffer.TextView;
+            _keyboardDevice = new MockKeyboardDevice();
 
             var editorFormatMap = _factory.Create<IEditorFormatMap>(MockBehavior.Loose);
             editorFormatMap.Setup(x => x.GetProperties(It.IsAny<string>())).Returns(new ResourceDictionary());
@@ -58,10 +59,9 @@ namespace Vim.UI.Wpf.UnitTest
             for (int i = 0; i < keyInputList.Count; i++)
             {
                 var keyInput = keyInputList[i];
-                if (_marginControl.IsKeyboardFocusWithin)
+                if (_marginControl.IsEditEnabled)
                 {
-                    var e = _keyboardDevice.CreateKeyEventArgs(keyInput);
-                    _marginControl.HandleKeyEvent(e);
+                    _keyboardDevice.SendKeyStroke(_marginControl.CommandLineTextBox, keyInput);
                 }
                 else
                 {

@@ -1,11 +1,33 @@
 ﻿using System;
 using System.Windows;
 using System.Windows.Input;
+using System.Windows.Media;
 
 namespace Vim.UnitTest.Mock
 {
-    public class MockKeyboardDevice : KeyboardDevice
+    public sealed class MockKeyboardDevice : KeyboardDevice
     {
+        private sealed class MockPresentationSource : PresentationSource
+        {
+            Visual _rootVisual;
+
+            protected override CompositionTarget GetCompositionTargetCore()
+            {
+                throw new NotImplementedException();
+            }
+
+            public override bool IsDisposed
+            {
+                get { return false; }
+            }
+
+            public override Visual RootVisual
+            {
+                get { return _rootVisual; }
+                set { _rootVisual = value; }
+            }
+        }
+
         private static RoutedEvent s_testEvent = EventManager.RegisterRoutedEvent(
                 "Test Event",
                 RoutingStrategy.Bubble,
@@ -48,11 +70,6 @@ namespace Vim.UnitTest.Mock
             return hasMod ? KeyStates.Down : KeyStates.None;
         }
 
-        private bool HasModifierKey(ModifierKeys modKey)
-        {
-            return 0 != (ModifierKeysImpl & modKey);
-        }
-
         public KeyEventArgs CreateKeyEventArgs(
             Key key,
             ModifierKeys modKeys = ModifierKeys.None)
@@ -69,35 +86,124 @@ namespace Vim.UnitTest.Mock
 
         public KeyEventArgs CreateKeyEventArgs(KeyInput keyInput)
         {
-            if (keyInput.KeyModifiers != KeyModifiers.None)
+            Key key;
+            ModifierKeys modKeys;
+            if (!TryGetKeyForKeyInput(keyInput, out key, out modKeys))
             {
                 throw new Exception();
             }
 
+            return CreateKeyEventArgs(key, modKeys);
+        }
+
+        public bool TryGetKeyForKeyInput(KeyInput keyInput, out Key key, out ModifierKeys modKeys)
+        {
+            key = Key.Delete;
+            modKeys = ModifierKeys.None;
+
+            // At this time we don't support any use of modifier keys here 
+            if (keyInput.KeyModifiers != KeyModifiers.None)
+            {
+                return false;
+            }
+
+            modKeys = ModifierKeys.None;
             switch (keyInput.Key)
             {
                 case VimKey.Left:
-                    return CreateKeyEventArgs(Key.Left);
+                    key = Key.Left;
+                    return true;
                 case VimKey.Right:
-                    return CreateKeyEventArgs(Key.Right);
+                    key = Key.Right;
+                    return true;
                 case VimKey.Up:
-                    return CreateKeyEventArgs(Key.Up);
+                    key = Key.Up;
+                    return true;
                 case VimKey.Down:
-                    return CreateKeyEventArgs(Key.Down);
+                    key = Key.Down;
+                    return true;
                 case VimKey.Escape:
-                    return CreateKeyEventArgs(Key.Escape);
+                    key = Key.Escape;
+                    return true;
+                case VimKey.Enter:
+                    key = Key.Enter;
+                    return true;
             }
 
             if (char.IsLetter(keyInput.Char))
             {
                 var c = char.ToLower(keyInput.Char);
-                var key = (Key)(c - Key.A);
-                return CreateKeyEventArgs(
-                    key,
-                    char.IsUpper(keyInput.Char) ? ModifierKeys.Shift : ModifierKeys.None);
+                key = (Key)((c - 'a') + (int)Key.A);
+                modKeys = char.IsUpper(keyInput.Char) ? ModifierKeys.Shift : ModifierKeys.None;
+                return true;
             }
 
-            throw new Exception();
+            return false;
         }
+
+        /// <summary>
+        /// Simulate the given KeyInput being sent to the given UIElement 
+        /// </summary>
+        public void SendKeyStroke(UIElement target, KeyInput keyInput)
+        {
+            Key key;
+            ModifierKeys modKeys;
+            if (!TryGetKeyForKeyInput(keyInput, out key, out modKeys))
+            {
+                throw new Exception();
+            }
+
+            ModifierKeysImpl = modKeys;
+            try
+            {
+                // First step is preview key down 
+                var keyEventArgs = new KeyEventArgs(
+                    this,
+                    new MockPresentationSource(),
+                    0,
+                    key);
+
+                if (!RaiseEvents(target, keyEventArgs, Keyboard.PreviewKeyDownEvent, Keyboard.KeyDownEvent))
+                {
+                    var raiseUp = true;
+                    if (char.IsLetterOrDigit(keyInput.Char))
+                    {
+                        var textComposition = new TextComposition(InputManager.Current, target, keyInput.Char.ToString());
+                        var textCompositionEventArgs = new TextCompositionEventArgs(this, textComposition);
+                        raiseUp = !RaiseEvents(target, textCompositionEventArgs, TextCompositionManager.TextInputEvent);
+                    }
+
+                    if (raiseUp)
+                    {
+                        RaiseEvents(target, keyEventArgs, Keyboard.PreviewKeyUpEvent, Keyboard.KeyUpEvent);
+                    }
+                }
+            }
+            finally
+            {
+                ModifierKeysImpl = ModifierKeys.None;
+            }
+        }
+
+        private bool RaiseEvents(UIElement target, RoutedEventArgs e, params RoutedEvent[] routedEventArray)
+        {
+            foreach (var routedEvent in routedEventArray)
+            {
+                e.RoutedEvent = routedEvent;
+                target.RaiseEvent(e);
+                if (e.Handled)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private bool HasModifierKey(ModifierKeys modKey)
+        {
+            return 0 != (ModifierKeysImpl & modKey);
+        }
+
     }
 }

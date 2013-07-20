@@ -18,7 +18,7 @@
         DataContext="{Binding ElementName=commandMarginControl}">
 
         <Grid.RowDefinitions>
-            <RowDefinition Height="auto" />
+            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
         <Grid.ColumnDefinitions>
@@ -43,7 +43,7 @@
             Grid.Row="0"
             Grid.Column="1"
             Text="{Binding Path=StatusLine}" 
-            IsReadOnly="{Binding Path=IsCommandEditionDisable}"
+            IsReadOnly="{Binding Path=IsEditReadOnly}"
             Foreground="{Binding Path=TextForeground}"
             Background="{Binding Path=TextBackground}"
             PreviewKeyDown="OnCommandLineInputPreviewKeyDown"
@@ -57,7 +57,5 @@
             Content="Options"
             Command="Properties"
             />
-
     </Grid>
-
 </UserControl>
