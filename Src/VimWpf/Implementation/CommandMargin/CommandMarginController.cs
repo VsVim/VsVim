@@ -3,10 +3,12 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows;
+using System.Windows.Input;
 using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text.Classification;
 using Vim.Extensions;
 using Vim.UI.Wpf.Properties;
+using WpfKeyboard = System.Windows.Input.Keyboard;
 
 namespace Vim.UI.Wpf.Implementation.CommandMargin
 {
@@ -46,11 +48,8 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             _vimBuffer.CommandMode.CommandChanged += OnCommandChanged;
             _vimBuffer.Vim.MacroRecorder.RecordingStarted += OnRecordingStarted;
             _vimBuffer.Vim.MacroRecorder.RecordingStopped += OnRecordingStopped;
-            _margin.OptionsClicked += OnOptionsClicked;
-            _margin.CommandCancelled += OnCommandCancelled;
-            _margin.CommandCompleted += OnCommandCompleted;
-            _margin.HistoryGoPrevious += OnHistoryGoPrevious;
-            _margin.HistoryGoNext += OnHistoryGoNext;
+            _margin.OptionsButton.Click += OnOptionsClicked;
+            _margin.CommandLineTextBox.PreviewKeyDown += OnCommandLineTextBoxPreviewKeyDown;
             _editorFormatMap.FormatMappingChanged += OnFormatMappingChanged;
             UpdateForRecordingChanged();
             UpdateTextColor();
@@ -62,6 +61,13 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             {
                 ParentVisualElement.Focus();
             }
+        }
+
+        private void FocusCommandLine(bool moveCaretToEnd)
+        {
+            WpfKeyboard.Focus(_margin.CommandLineTextBox);
+            _margin.IsEditReadOnly = false;
+            _margin.UpdateCaretPosition(moveCaretToEnd);
         }
 
         internal void Disconnect()
@@ -262,6 +268,29 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
         }
 
         /// <summary>
+        /// This method handles the KeyInput as it applies to command line editor
+        /// </summary>
+        internal void HandleKeyEvent(KeyEventArgs e)
+        {
+            switch (e.Key)
+            {
+                case Key.Escape:
+                    _vimBuffer.Process(KeyInputUtil.EscapeKey);
+                    FocusEditor();
+                    break;
+                case Key.Return:
+                    ExecuteCommand(_margin.CommandLineTextBox.Text);
+                    break;
+                case Key.Up:
+                    _vimBuffer.Process(KeyInputUtil.VimKeyToKeyInput(VimKey.Up));
+                    break;
+                case Key.Down:
+                    _vimBuffer.Process(KeyInputUtil.VimKeyToKeyInput(VimKey.Down));
+                    break;
+            }
+        }
+
+        /// <summary>
         /// If we're in command mode and a key is processed which effects the edit we should handle
         /// it here
         /// </summary>
@@ -276,11 +305,11 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             {
                 case VimKey.Home:
                     // Enable command line edition
-                    _margin.BeginCommandLineEdit(moveCaretToEnd: false);
+                    FocusCommandLine(moveCaretToEnd: false);
                     args.Handled = true;
                     break;
                 case VimKey.Left:
-                    _margin.BeginCommandLineEdit(moveCaretToEnd: true);
+                    FocusCommandLine(moveCaretToEnd: true);
                     args.Handled = true;
                     break;
                 case VimKey.Up:
@@ -291,33 +320,20 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             }
         }
 
-        #region Event Handlers
-
-        void OnHistoryGoPrevious(object sender, EventArgs e)
-        {
-            _vimBuffer.Process(KeyInputUtil.VimKeyToKeyInput(VimKey.Up));
-        }
-
-        void OnHistoryGoNext(object sender, EventArgs e)
-        {
-            _vimBuffer.Process(KeyInputUtil.VimKeyToKeyInput(VimKey.Down));
-        }
-
-        void OnCommandCancelled(object sender, EventArgs e)
-        {
-            _vimBuffer.Process(KeyInputUtil.EscapeKey);
-            FocusEditor();
-        }
-
-        void OnCommandCompleted(object sender, CommandMarginEventArgs e)
+        /// <summary>
+        /// Execute the command and switch focus back to the editor
+        /// </summary>
+        private void ExecuteCommand(string command)
         {
             // TODO: make this more robust
             Contract.Requires(_vimBuffer.ModeKind == ModeKind.Command);
-            _vimBuffer.CommandMode.Command = e.Command;
+            _vimBuffer.CommandMode.Command = command;
             _vimBuffer.Process(KeyInputUtil.EnterKey);
 
             FocusEditor();
         }
+
+        #region Event Handlers
 
         private void OnSwitchMode(object sender, SwitchModeEventArgs args)
         {
@@ -388,6 +404,11 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
         private void OnCommandChanged(object sender, EventArgs e)
         {
             UpdateForNoEvent();
+        }
+
+        private void OnCommandLineTextBoxPreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            HandleKeyEvent(e);
         }
 
         #endregion
