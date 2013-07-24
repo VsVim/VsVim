@@ -3651,7 +3651,7 @@ and SwitchModeKindEventArgs
 
 and SwitchModeEventArgs 
     (
-        _previousMode : IMode option,
+        _previousMode : IMode,
         _currentMode : IMode
     ) = 
 

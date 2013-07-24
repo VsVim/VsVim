@@ -165,7 +165,7 @@ namespace Vim.UnitTest.Mock
 
         public void RaiseSwitchedMode(IMode mode)
         {
-            RaiseSwitchedMode(new SwitchModeEventArgs(FSharpOption<IMode>.None, mode));
+            RaiseSwitchedMode(new SwitchModeEventArgs(mode, mode));
         }
 
         public void RaiseSwitchedMode(SwitchModeEventArgs args)
