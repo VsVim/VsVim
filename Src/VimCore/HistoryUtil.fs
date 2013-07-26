@@ -11,6 +11,8 @@ type HistoryState =
 
 type HistoryUtilData<'TData, 'TResult> = {
 
+    Command : string 
+
     ClientData : 'TData
 
     HistoryClient : IHistoryClient<'TData, 'TResult>
@@ -68,67 +70,70 @@ type internal HistoryUtil ()  =
     static member Begin<'TData, 'TResult> (historyClient : IHistoryClient<'TData, 'TResult>) data command : BindDataStorage<'TResult> = 
 
         let data = { 
+            Command = command
             ClientData = data
             HistoryClient = historyClient
             HistoryState = HistoryState.Empty 
         }
 
         BindDataStorage.Complex (fun () ->
-            let func = HistoryUtil.Process data command
+            let func = HistoryUtil.Process data
             { KeyRemapMode = historyClient.RemapMode; BindFunction = func })
 
     /// Process a single KeyInput for the IHistoryClient
-    static member Process (data: HistoryUtilData<_, _>) command (keyInput: KeyInput) =
+    static member Process (historyUtilData: HistoryUtilData<_, _>) (keyInput: KeyInput) =
 
-        let historyClient = data.HistoryClient
+        let historyClient = historyUtilData.HistoryClient
         let processCommand command =
-            let clientData = historyClient.ProcessCommand data.ClientData command
-            let data = { data with ClientData = clientData }
-            BindResult<_>.CreateNeedMoreInput historyClient.RemapMode (HistoryUtil.Process data command)
-
+            let clientData = historyClient.ProcessCommand historyUtilData.ClientData command
+            let historyUtilData = { historyUtilData with Command = command; ClientData = clientData }
+            BindResult<_>.CreateNeedMoreInput historyClient.RemapMode (HistoryUtil.Process historyUtilData)
+        
+        let command = historyUtilData.Command
         match Map.tryFind keyInput _keyInputMap with
         | Some HistoryCommand.Execute ->
             // Enter key completes the action
-            let result = historyClient.Completed data.ClientData command
+            let result = historyClient.Completed historyUtilData.ClientData command
             historyClient.HistoryList.Add command
             BindResult.Complete result
         | Some HistoryCommand.Cancel ->
             // Escape cancels the current search.  It does update the history though
-            historyClient.Cancelled data.ClientData
+            historyClient.Cancelled historyUtilData.ClientData
             historyClient.HistoryList.Add command
             BindResult.Cancelled
         | Some HistoryCommand.Back ->
             match command.Length with
             | 0 -> 
-                historyClient.Cancelled data.ClientData
+                historyClient.Cancelled historyUtilData.ClientData
                 BindResult.Cancelled
             | _ -> 
                 let command = command.Substring(0, command.Length - 1)
                 processCommand command
         | Some HistoryCommand.Previous ->
-            HistoryUtil.ProcessPrevious data command
+            HistoryUtil.ProcessPrevious historyUtilData
         | Some HistoryCommand.Next ->
-            HistoryUtil.ProcessNext data command
+            HistoryUtil.ProcessNext historyUtilData
         | None -> 
             let command = command + (keyInput.Char.ToString())
             processCommand command
 
     /// Run a history scroll at the specified index
-    static member DoHistoryScroll (data : HistoryUtilData<_, _>) command (historyList : string list) index =
+    static member DoHistoryScroll (data : HistoryUtilData<_, _>) (historyList : string list) index =
         if index < 0 || index >= historyList.Length then
             // Make sure we are searching at a valid index
             data.HistoryClient.Beep()
-            data, command
+            data
         else
             // Update the search to be this specific item
             let command = List.nth historyList index
             let clientData = data.HistoryClient.ProcessCommand data.ClientData command
-            let data = { data with ClientData = clientData; HistoryState = HistoryState.Index (historyList, index) }
-            data, command
+            let data = { data with Command = command; ClientData = clientData; HistoryState = HistoryState.Index (historyList, index) }
+            data
 
     /// Provide the previous entry in the list.  This will initiate a scrolling operation
-    static member ProcessPrevious (data : HistoryUtilData<_, _>) command =
-        let data, command = 
+    static member ProcessPrevious (data : HistoryUtilData<_, _>) =
+        let data = 
+            let command = data.Command
             match data.HistoryState with
             | HistoryState.Empty ->
                 let list = 
@@ -138,25 +143,25 @@ type internal HistoryUtil ()  =
                         |> List.ofSeq
                     else
                         data.HistoryClient.HistoryList.Items
-                HistoryUtil.DoHistoryScroll data command list 0
+                HistoryUtil.DoHistoryScroll data list 0
             | HistoryState.Index (list, index) -> 
-                HistoryUtil.DoHistoryScroll data command list (index + 1)
-        BindResult<_>.CreateNeedMoreInput data.HistoryClient.RemapMode (HistoryUtil.Process data command)
+                HistoryUtil.DoHistoryScroll data list (index + 1)
+        BindResult<_>.CreateNeedMoreInput data.HistoryClient.RemapMode (HistoryUtil.Process data)
 
     /// Provide the next entry in the list.  This will initiate a scrolling operation
-    static member ProcessNext (data : HistoryUtilData<_, _>) command =
-        let data, command = 
+    static member ProcessNext (data : HistoryUtilData<_, _>) =
+        let data = 
             match data.HistoryState with
             | HistoryState.Empty ->
                 data.HistoryClient.Beep()
-                data, command
+                data
             | HistoryState.Index (list, index) -> 
                 if index = 0 then
                     let clientData = data.HistoryClient.ProcessCommand data.ClientData ""
                     let data = { data with ClientData = clientData; HistoryState = HistoryState.Empty }
-                    data, ""
+                    data
                 else
-                    HistoryUtil.DoHistoryScroll data command list (index - 1)
+                    HistoryUtil.DoHistoryScroll data list (index - 1)
 
-        BindResult<_>.CreateNeedMoreInput data.HistoryClient.RemapMode (HistoryUtil.Process data command)
+        BindResult<_>.CreateNeedMoreInput data.HistoryClient.RemapMode (HistoryUtil.Process data)
 
