@@ -12,6 +12,15 @@ using WpfKeyboard = System.Windows.Input.Keyboard;
 
 namespace Vim.UI.Wpf.Implementation.CommandMargin
 {
+    /// <summary>
+    /// The type of edit that we are currently performing.  None exists when no command line edit
+    /// </summary>
+    internal enum CommandLineEditKind
+    {
+        None,
+        Command
+    }
+
     internal sealed class CommandMarginController
     {
         private readonly IVimBuffer _vimBuffer;
@@ -22,13 +31,19 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
         private bool _inKeyInputEvent;
         private string _message;
         private SwitchModeEventArgs _modeSwitchEventArgs;
+        private CommandLineEditKind _commandLineEditKind;
 
         /// <summary>
         /// We need to hold a reference to Text Editor visual element.
         /// </summary>
-        public FrameworkElement ParentVisualElement
+        internal FrameworkElement ParentVisualElement
         {
             get { return _parentVisualElement; }
+        }
+
+        internal CommandLineEditKind CommandLineEditKind
+        {
+            get { return _commandLineEditKind; }
         }
 
         internal CommandMarginController(IVimBuffer buffer, FrameworkElement parentVisualElement, CommandMarginControl control, IEditorFormatMap editorFormatMap, IEnumerable<Lazy<IOptionsProviderFactory>> optionsProviderFactory)
@@ -55,19 +70,29 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             UpdateTextColor();
         }
 
-        private void FocusEditor()
+        private void ChangeCommandLineEditKind(CommandLineEditKind commandLineEditKind)
         {
-            if (null != ParentVisualElement)
+            if (commandLineEditKind == _commandLineEditKind)
             {
-                ParentVisualElement.Focus();
+                return;
             }
-        }
 
-        private void FocusCommandLine(bool moveCaretToEnd)
-        {
-            WpfKeyboard.Focus(_margin.CommandLineTextBox);
-            _margin.IsEditReadOnly = false;
-            _margin.UpdateCaretPosition(moveCaretToEnd);
+            _commandLineEditKind = commandLineEditKind;
+            switch (commandLineEditKind)
+            {
+                case CommandLineEditKind.None:
+                    // Make sure that the editor has focus 
+                    if (ParentVisualElement != null)
+                    {
+                        ParentVisualElement.Focus();
+                    }
+                    _margin.IsEditReadOnly = true;
+                    break;
+                case CommandLineEditKind.Command:
+                    WpfKeyboard.Focus(_margin.CommandLineTextBox);
+                    _margin.IsEditReadOnly = false;
+                    break;
+            }
         }
 
         internal void Disconnect()
@@ -213,9 +238,6 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
                 return;
             }
 
-            // TODO: this is just wrong
-            // _margin.IsEditReadOnly = _vimBuffer.ModeKind != ModeKind.Command;
-
             switch (_vimBuffer.ModeKind)
             {
                 case ModeKind.Command:
@@ -276,7 +298,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             {
                 case Key.Escape:
                     _vimBuffer.Process(KeyInputUtil.EscapeKey);
-                    FocusEditor();
+                    ChangeCommandLineEditKind(CommandLineEditKind.None);
                     break;
                 case Key.Return:
                     ExecuteCommand(_margin.CommandLineTextBox.Text);
@@ -305,11 +327,13 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             {
                 case VimKey.Home:
                     // Enable command line edition
-                    FocusCommandLine(moveCaretToEnd: false);
+                    ChangeCommandLineEditKind(CommandLineEditKind.Command);
+                    _margin.UpdateCaretPosition(moveCaretToEnd: false);
                     args.Handled = true;
                     break;
                 case VimKey.Left:
-                    FocusCommandLine(moveCaretToEnd: true);
+                    ChangeCommandLineEditKind(CommandLineEditKind.Command);
+                    _margin.UpdateCaretPosition(moveCaretToEnd: true);
                     args.Handled = true;
                     break;
                 case VimKey.Up:
@@ -330,7 +354,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             _vimBuffer.CommandMode.Command = command;
             _vimBuffer.Process(KeyInputUtil.EnterKey);
 
-            FocusEditor();
+            ChangeCommandLineEditKind(CommandLineEditKind.None);
         }
 
         #region Event Handlers

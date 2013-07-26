@@ -70,6 +70,36 @@ namespace Vim.UI.Wpf.UnitTest
             }
         }
 
+        public sealed class BasicTest : CommandLineEditIntegrationTest
+        {
+            [Fact]
+            public void EscapeKeyExits()
+            {
+                Create("cat");
+                ProcessNotation(@":ab<Left>");
+                Assert.Equal(CommandLineEditKind.Command, _controller.CommandLineEditKind);
+                ProcessNotation(@"<Esc>");
+                Assert.Equal(CommandLineEditKind.None, _controller.CommandLineEditKind);
+                Assert.True(_marginControl.IsEditReadOnly);
+            }
+
+            [Fact]
+            public void HomeKeyMovesToStart()
+            {
+                Create("");
+                ProcessNotation(@":ab<Home>");
+                Assert.Equal(1, _marginControl.CommandLineTextBox.CaretIndex);
+            }
+
+            [Fact]
+            public void LeftKeyMovesBeforeLastCharacter()
+            {
+                Create("");
+                ProcessNotation(@":ab<Left>");
+                Assert.Equal(2, _marginControl.CommandLineTextBox.CaretIndex);
+            }
+        }
+
         public sealed class LeftKeyInCommandModeTest : CommandLineEditIntegrationTest
         {
             [Fact]
