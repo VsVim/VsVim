@@ -27,7 +27,6 @@ type HistoryCommand =
     | Execute
     | Cancel
     | Back
-    | Edit of Path
 
 type internal HistoryUtil ()  =
 
@@ -44,9 +43,6 @@ type internal HistoryUtil ()  =
             yield ("<Up>", HistoryCommand.Previous)
             yield ("<Down>", HistoryCommand.Next)
             yield ("<BS>", HistoryCommand.Back)
-            yield ("<BS>", HistoryCommand.Back)
-            yield ("<Left>", HistoryCommand.Edit Path.Backward)
-            yield ("<Right>", HistoryCommand.Edit Path.Backward)
             yield ("<Esc>", HistoryCommand.Cancel)
         }
         |> Seq.map (fun (name, command) -> 
@@ -113,13 +109,6 @@ type internal HistoryUtil ()  =
             HistoryUtil.ProcessPrevious data command
         | Some HistoryCommand.Next ->
             HistoryUtil.ProcessNext data command
-        | Some (HistoryCommand.Edit _) ->
-            // TODO: We will be implementing command line editing at some point.  In the mean
-            // time though don't process these keys as they don't have real character 
-            // representations and will show up as squares.  Just beep to let the user 
-            // know we don't support it
-            historyClient.Beep()
-            BindResult<_>.CreateNeedMoreInput historyClient.RemapMode (HistoryUtil.Process data command)
         | None -> 
             let command = command + (keyInput.Char.ToString())
             processCommand command
@@ -154,7 +143,7 @@ type internal HistoryUtil ()  =
                 HistoryUtil.DoHistoryScroll data command list (index + 1)
         BindResult<_>.CreateNeedMoreInput data.HistoryClient.RemapMode (HistoryUtil.Process data command)
 
-    /// Provide the next entry in the list.  This will initiate a scolling operation
+    /// Provide the next entry in the list.  This will initiate a scrolling operation
     static member ProcessNext (data : HistoryUtilData<_, _>) command =
         let data, command = 
             match data.HistoryState with
