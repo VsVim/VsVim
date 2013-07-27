@@ -83,7 +83,7 @@ type internal IncrementalSearch
                 member this.Completed (data : IncrementalSearchData) _ = x.Completed data
                 member this.Cancelled (data : IncrementalSearchData) = x.Cancelled data.SearchData
             }
-        
+
         let storage = HistoryUtil.Begin historyClient data StringUtil.empty
         storage.CreateBindData ()
 
