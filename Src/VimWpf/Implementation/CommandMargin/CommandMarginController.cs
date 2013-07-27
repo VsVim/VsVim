@@ -18,7 +18,9 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
     internal enum CommandLineEditKind
     {
         None,
-        Command
+        Command,
+        SearchForward,
+        SearchBackward
     }
 
     internal sealed class CommandMarginController
@@ -65,6 +67,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             _vimBuffer.Vim.MacroRecorder.RecordingStopped += OnRecordingStopped;
             _margin.OptionsButton.Click += OnOptionsClicked;
             _margin.CommandLineTextBox.PreviewKeyDown += OnCommandLineTextBoxPreviewKeyDown;
+            _margin.CommandLineTextBox.TextChanged += OnCommandLineTextBoxTextChanged;
             _editorFormatMap.FormatMappingChanged += OnFormatMappingChanged;
             UpdateForRecordingChanged();
             UpdateTextColor();
@@ -89,8 +92,13 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
                     _margin.IsEditReadOnly = true;
                     break;
                 case CommandLineEditKind.Command:
+                case CommandLineEditKind.SearchForward:
+                case CommandLineEditKind.SearchBackward:
                     WpfKeyboard.Focus(_margin.CommandLineTextBox);
                     _margin.IsEditReadOnly = false;
+                    break;
+                default:
+                    Contract.FailEnumValue(commandLineEditKind);
                     break;
             }
         }
@@ -158,12 +166,6 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
 
             // Check if we can enable the command line to accept user input
             var search = _vimBuffer.IncrementalSearch;
-
-            // TODO: Hack for now, really need to rethink this later 
-            if (_margin.IsEditEnabled)
-            {
-                _margin.IsEditReadOnly = previousMode.IsSome() && previousMode.Value.ModeKind == ModeKind.Command;
-            }
 
             switch (currentMode.ModeKind)
             {
@@ -234,7 +236,6 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
 
                 //TODO: Workaround to fix strange character when pressing <Home>...
                 _margin.StatusLine = prefix + data.Pattern.Trim('\0');
-                _margin.IsEditReadOnly = false;
                 return;
             }
 
@@ -318,7 +319,13 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
         /// </summary>
         private void CheckEnableCommandLineEdit(KeyInputStartEventArgs args)
         {
-            if (_vimBuffer.ModeKind != ModeKind.Command)
+            if (_commandLineEditKind != CommandLineEditKind.None)
+            {
+                return;
+            }
+
+            var commandLineEditKind = CalculateCommandLineEditKind();
+            if (commandLineEditKind == CommandLineEditKind.None)
             {
                 return;
             }
@@ -327,12 +334,12 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             {
                 case VimKey.Home:
                     // Enable command line edition
-                    ChangeCommandLineEditKind(CommandLineEditKind.Command);
+                    ChangeCommandLineEditKind(commandLineEditKind);
                     _margin.UpdateCaretPosition(moveCaretToEnd: false);
                     args.Handled = true;
                     break;
                 case VimKey.Left:
-                    ChangeCommandLineEditKind(CommandLineEditKind.Command);
+                    ChangeCommandLineEditKind(commandLineEditKind);
                     _margin.UpdateCaretPosition(moveCaretToEnd: true);
                     args.Handled = true;
                     break;
@@ -345,15 +352,58 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
         }
 
         /// <summary>
+        /// Update the current command to the given value
+        /// </summary>
+        private void UpdateCommand(string command)
+        {
+            command = command ?? "";
+            switch (_commandLineEditKind)
+            {
+                case CommandLineEditKind.Command:
+
+                    if (_vimBuffer.ModeKind == ModeKind.Command)
+                    {
+                        _vimBuffer.CommandMode.Command = command;
+                    }
+                    break;
+                case CommandLineEditKind.SearchBackward:
+                    if (_vimBuffer.IncrementalSearch.InSearch)
+                    {
+                        var pattern = command.Length > 0 && command[0] == '?'
+                            ? command.Substring(1)
+                            : command;
+                        _vimBuffer.IncrementalSearch.ResetSearch(pattern);
+                    }
+                    break;
+                case CommandLineEditKind.SearchForward:
+                    if (_vimBuffer.IncrementalSearch.InSearch)
+                    {
+                        var pattern = command.Length > 0 && command[0] == '/'
+                            ? command.Substring(1)
+                            : command;
+                        _vimBuffer.IncrementalSearch.ResetSearch(pattern);
+                    }
+                    break;
+                case CommandLineEditKind.None:
+                    break;
+                default:
+                    Contract.FailEnumValue(_commandLineEditKind);
+                    break;
+            }
+        }
+
+        /// <summary>
         /// Execute the command and switch focus back to the editor
         /// </summary>
         private void ExecuteCommand(string command)
         {
-            // TODO: make this more robust
-            Contract.Requires(_vimBuffer.ModeKind == ModeKind.Command);
-            _vimBuffer.CommandMode.Command = command;
-            _vimBuffer.Process(KeyInputUtil.EnterKey);
+            if (_commandLineEditKind == CommandLineEditKind.None)
+            {
+                return;
+            }
 
+            UpdateCommand(command);
+            _vimBuffer.Process(KeyInputUtil.EnterKey);
             ChangeCommandLineEditKind(CommandLineEditKind.None);
         }
 
@@ -433,6 +483,33 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
         private void OnCommandLineTextBoxPreviewKeyDown(object sender, KeyEventArgs e)
         {
             HandleKeyEvent(e);
+        }
+
+        private void OnCommandLineTextBoxTextChanged(object sender, RoutedEventArgs e)
+        {
+            UpdateCommand(_margin.CommandLineTextBox.Text);
+        }
+
+        /// <summary>
+        /// Calculate the type of edit that should be performed based on the current state of the
+        /// IVimBuffer
+        /// </summary>
+        private CommandLineEditKind CalculateCommandLineEditKind()
+        {
+            if (_vimBuffer.ModeKind == ModeKind.Command)
+            {
+                return CommandLineEditKind.Command;
+            }
+
+            if (_vimBuffer.IncrementalSearch.InSearch &&
+                _vimBuffer.IncrementalSearch.CurrentSearchData.IsSome())
+            {
+                return _vimBuffer.IncrementalSearch.CurrentSearchData.Value.Kind.IsAnyForward
+                    ? CommandLineEditKind.SearchForward
+                    : CommandLineEditKind.SearchBackward;
+            }
+
+            return CommandLineEditKind.None;
         }
 
         #endregion

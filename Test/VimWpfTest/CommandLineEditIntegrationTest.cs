@@ -1,4 +1,5 @@
-﻿using System;
+﻿using EditorUtils;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -24,7 +25,7 @@ namespace Vim.UI.Wpf.UnitTest
         private ITextView _textView;
         private MockKeyboardDevice _keyboardDevice;
 
-        protected void Create(params string[] lines)
+        protected virtual void Create(params string[] lines)
         {
             _factory = new MockRepository(MockBehavior.Strict);
             _marginControl = new CommandMarginControl();
@@ -108,6 +109,31 @@ namespace Vim.UI.Wpf.UnitTest
                 Create("cat", "dog", "fish");
                 ProcessNotation(@":e<Left>d<Enter>");
                 Assert.Equal("dog", _textBuffer.GetLine(0).GetText());
+            }
+        }
+
+        public abstract class IncrementalSearchTest : CommandLineEditIntegrationTest
+        {
+            private IIncrementalSearch _incrementalSearch;
+
+            protected override void Create(params string[] lines)
+            {
+                base.Create(lines);
+                _incrementalSearch = _vimBuffer.IncrementalSearch;
+            }
+
+            public sealed class ForwardTest : IncrementalSearchTest
+            {
+                /// <summary>
+                /// The search should be updating as edits are made 
+                /// </summary>
+                [Fact]
+                public void Simple()
+                {
+                    Create("cat", "dog", "fish");
+                    ProcessNotation(@"/dg<Left>o");
+                    Assert.Equal("dog", _incrementalSearch.CurrentSearchData.Value.Pattern);
+                }
             }
         }
     }

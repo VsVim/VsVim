@@ -3078,7 +3078,10 @@ type IIncrementalSearch =
     abstract WordNavigator : ITextStructureNavigator
 
     /// Begin an incremental search in the ITextBuffer
-    abstract Begin : Path -> BindData<SearchResult>
+    abstract Begin : path : Path -> BindData<SearchResult>
+
+    /// Reset the current search to be the given value 
+    abstract ResetSearch : pattern : string -> unit
 
     [<CLIEvent>]
     abstract CurrentSearchUpdated : IDelegateEvent<System.EventHandler<SearchResultEventArgs>>
@@ -3302,6 +3305,12 @@ type internal IHistorySession<'TData, 'TResult> =
 
     /// The current command that is being used 
     abstract Command : string 
+
+    /// The current client data 
+    abstract ClientData : 'TData
+
+    /// Cancel the IHistorySession
+    abstract Cancel : unit -> unit
 
     /// Reset the command to the current value
     abstract ResetCommand : string -> unit

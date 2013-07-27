@@ -35,19 +35,19 @@ type internal IncrementalSearch
     let _globalSettings = _localSettings.GlobalSettings
     let _textView = _operations.TextView
     let _searchService = _vimBufferData.Vim.SearchService
-    let mutable _data : IncrementalSearchData option = None
+    let mutable _historySession : IHistorySession<IncrementalSearchData, SearchResult> option = None
     let _currentSearchUpdated = StandardEvent<SearchResultEventArgs>()
     let _currentSearchCompleted = StandardEvent<SearchResultEventArgs>()
     let _currentSearchCancelled = StandardEvent<SearchDataEventArgs>()
 
     member x.CurrentSearchData =
-        match _data with
-        | Some data -> Some data.SearchData
+        match _historySession with 
+        | Some historySession -> Some historySession.ClientData.SearchData
         | None -> None
 
     member x.CurrentSearchResult =
-        match _data with
-        | Some data -> Some data.SearchResult
+        match _historySession with 
+        | Some historySession -> Some historySession.ClientData.SearchResult
         | None -> None
 
     /// There is a big gap between the behavior and documentation of key mapping for an 
@@ -61,6 +61,14 @@ type internal IncrementalSearch
 
     /// Begin the incremental search along the specified path
     member x.Begin path = 
+
+        // If there is an existing session going on then we need to cancel it 
+        match _historySession with 
+        | Some historySession -> 
+            historySession.Cancel()
+            _historySession <- None
+        | None -> ()
+
         let start = TextViewUtil.GetCaretPoint _textView
         let patternData = { Pattern = StringUtil.empty; Path = path }
         let searchData = SearchData.OfPatternData patternData _globalSettings.WrapScan
@@ -68,11 +76,6 @@ type internal IncrementalSearch
             StartPoint = start.Snapshot.CreateTrackingPoint(start.Position, PointTrackingMode.Negative)
             SearchResult = SearchResult.NotFound (searchData, false)
         }
-
-        _data <- Some data
-
-        // Raise the event
-        _currentSearchUpdated.Trigger x (SearchResultEventArgs(data.SearchResult))
 
         let historyClient = { 
             new IHistoryClient<IncrementalSearchData, SearchResult> with
@@ -85,6 +88,11 @@ type internal IncrementalSearch
             }
 
         let historySession = HistoryUtil.CreateHistorySession historyClient data StringUtil.empty
+        _historySession <- Some historySession
+
+        // Raise the event
+        _currentSearchUpdated.Trigger x (SearchResultEventArgs(data.SearchResult))
+
         historySession.CreateBindDataStorage().CreateBindData()
 
     // Reset the view to it's original state.  We should only be doing this if the
@@ -117,9 +125,7 @@ type internal IncrementalSearch
 
         let args = SearchResultEventArgs(searchResult)
         _currentSearchUpdated.Trigger x args
-        let data = { data with SearchResult = searchResult }
-        _data <- Some data
-        data
+        { data with SearchResult = searchResult }
 
     /// Called when the processing is completed.  Raise the completed event and return
     /// the final SearchResult
@@ -134,21 +140,27 @@ type internal IncrementalSearch
 
         _vimData.LastPatternData <- data.SearchData.PatternData
         _currentSearchCompleted.Trigger x (SearchResultEventArgs(data.SearchResult))
-        _data <- None
+        _historySession <- None
         data.SearchResult
 
     /// Cancel the search.  Provide the last value searched for
     member x.Cancelled data =
         x.ResetView ()
         _currentSearchCancelled.Trigger x (SearchDataEventArgs(data))
-        _data <- None
+        _historySession <- None
+
+    member x.ResetSearch pattern = 
+        match _historySession with
+        | Some historySession -> historySession.ResetCommand pattern
+        | None -> ()
 
     interface IIncrementalSearch with
-        member x.InSearch = Option.isSome _data
+        member x.InSearch = Option.isSome _historySession
         member x.WordNavigator = _wordNavigator
         member x.CurrentSearchData = x.CurrentSearchData
         member x.CurrentSearchResult = x.CurrentSearchResult
         member x.Begin kind = x.Begin kind
+        member x.ResetSearch pattern = x.ResetSearch pattern
         [<CLIEvent>]
         member x.CurrentSearchUpdated = _currentSearchUpdated.Publish
         [<CLIEvent>]

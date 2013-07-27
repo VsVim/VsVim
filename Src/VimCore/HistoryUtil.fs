@@ -115,10 +115,15 @@ type internal HistorySession<'TData, 'TResult>
 
         x.CreateBindResult()
 
+    member x.Cancel() = 
+        _historyClient.Cancelled _clientData
+
     interface IHistorySession<'TData, 'TResult> with 
         member x.HistoryClient = _historyClient
         member x.Command = _command
+        member x.ClientData = _clientData
         member x.CreateBindDataStorage() = x.CreateBindDataStorage()
+        member x.Cancel() = x.Cancel()
         member x.ResetCommand command = x.ResetCommand command
 
 and internal HistoryUtil ()  =
