@@ -19,7 +19,7 @@ type HistoryCommand =
     | Cancel
     | Back
 
-type internal HistoryUtilImpl<'TData, 'TResult>
+type internal HistorySession<'TData, 'TResult>
     (
         _historyClient : IHistoryClient<'TData, 'TResult>,
         _initialClientData : 'TData,
@@ -30,19 +30,20 @@ type internal HistoryUtilImpl<'TData, 'TResult>
     let mutable _clientData = _initialClientData
     let mutable _historyState = HistoryState.Empty
 
+    member x.ResetCommand command = 
+        // Run the given command through the IHistoryClient and update our data based on the 
+        // information returned 
+        _clientData <- _historyClient.ProcessCommand _clientData command
+        _command <- command
+
     member x.CreateBindResult() = 
         BindResult<_>.CreateNeedMoreInput _historyClient.RemapMode x.Process
 
+    member x.CreateBindDataStorage() = 
+        BindDataStorage.Complex (fun () -> { KeyRemapMode = _historyClient.RemapMode; BindFunction = x.Process })
+
     /// Process a single KeyInput value in the state machine. 
     member x.Process (keyInput: KeyInput) =
-
-        // Run the given command through the IHistoryClient and update our data based on the 
-        // information returned 
-        let processCommand command =
-            _clientData <- _historyClient.ProcessCommand _clientData command
-            _command <- command
-            x.CreateBindResult()
-        
         match Map.tryFind keyInput HistoryUtil.KeyInputMap with
         | Some HistoryCommand.Execute ->
             // Enter key completes the action
@@ -61,14 +62,16 @@ type internal HistoryUtilImpl<'TData, 'TResult>
                 BindResult.Cancelled
             | _ -> 
                 let command = _command.Substring(0, _command.Length - 1)
-                processCommand command
+                x.ResetCommand command
+                x.CreateBindResult()
         | Some HistoryCommand.Previous ->
             x.ProcessPrevious()
         | Some HistoryCommand.Next ->
             x.ProcessNext()
         | None -> 
             let command = _command + (keyInput.Char.ToString())
-            processCommand command
+            x.ResetCommand command
+            x.CreateBindResult()
 
     /// Run a history scroll at the specified index
     member x.DoHistoryScroll (historyList : string list) index =
@@ -112,6 +115,12 @@ type internal HistoryUtilImpl<'TData, 'TResult>
 
         x.CreateBindResult()
 
+    interface IHistorySession<'TData, 'TResult> with 
+        member x.HistoryClient = _historyClient
+        member x.Command = _command
+        member x.CreateBindDataStorage() = x.CreateBindDataStorage()
+        member x.ResetCommand command = x.ResetCommand command
+
 and internal HistoryUtil ()  =
 
     static let _keyInputMap = 
@@ -151,8 +160,7 @@ and internal HistoryUtil ()  =
 
     static member KeyInputMap = _keyInputMap
 
-    static member Begin<'TData, 'TResult> (historyClient : IHistoryClient<'TData, 'TResult>) clientData command : BindDataStorage<'TResult> = 
-
-        let historyUtilImpl = HistoryUtilImpl(historyClient, clientData, command)
-        BindDataStorage.Complex (fun () -> { KeyRemapMode = historyClient.RemapMode; BindFunction = historyUtilImpl.Process })
+    static member CreateHistorySession<'TData, 'TResult> historyClient clientData command =
+        let historySession = HistorySession<'TData, 'TResult>(historyClient, clientData, command)
+        historySession :> IHistorySession<'TData, 'TResult>
 

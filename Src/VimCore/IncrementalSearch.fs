@@ -84,8 +84,8 @@ type internal IncrementalSearch
                 member this.Cancelled (data : IncrementalSearchData) = x.Cancelled data.SearchData
             }
 
-        let storage = HistoryUtil.Begin historyClient data StringUtil.empty
-        storage.CreateBindData ()
+        let historySession = HistoryUtil.CreateHistorySession historyClient data StringUtil.empty
+        historySession.CreateBindDataStorage().CreateBindData()
 
     // Reset the view to it's original state.  We should only be doing this if the
     // 'incsearch' option is set.  Otherwise the view shouldn't change during an 

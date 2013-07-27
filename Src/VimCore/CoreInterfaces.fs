@@ -3294,6 +3294,22 @@ type internal IHistoryClient<'TData, 'TResult> =
     /// be provided
     abstract Cancelled : 'TData -> unit
 
+/// An active use of an IHistoryClient instance 
+type internal IHistorySession<'TData, 'TResult> =
+
+    /// The IHistoryClient this session is using 
+    abstract HistoryClient : IHistoryClient<'TData, 'TResult>
+
+    /// The current command that is being used 
+    abstract Command : string 
+
+    /// Reset the command to the current value
+    abstract ResetCommand : string -> unit
+
+    /// Create an BindDataStorage for this session which will process relevant KeyInput values
+    /// as manipulating the current history
+    abstract CreateBindDataStorage : unit -> BindDataStorage<'TResult>
+
 /// Represents shared state which is available to all IVimBuffer instances.
 type IVimData = 
 
