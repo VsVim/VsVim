@@ -101,14 +101,38 @@ namespace Vim.UI.Wpf.UnitTest
             }
         }
 
-        public sealed class LeftKeyInCommandModeTest : CommandLineEditIntegrationTest
+        public sealed class CommandModeTest : CommandLineEditIntegrationTest
         {
             [Fact]
-            public void Simple()
+            public void SingleLeftKey()
             {
                 Create("cat", "dog", "fish");
                 ProcessNotation(@":e<Left>d<Enter>");
                 Assert.Equal("dog", _textBuffer.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// If the edit box is cleared it should be changed by to the ':' item
+            /// </summary>
+            [Fact]
+            public void ClearEditBox()
+            {
+                Create("");
+                ProcessNotation(@":e<Left>");
+                _marginControl.CommandLineTextBox.Text = "";
+                Assert.Equal(":", _marginControl.CommandLineTextBox.Text);
+            }
+
+            /// <summary>
+            /// Don't let the first character get deleted
+            /// </summary>
+            [Fact]
+            public void DeleteFirstCharacter()
+            {
+                Create("");
+                ProcessNotation(@":e<Left>");
+                _marginControl.CommandLineTextBox.Text = "e";
+                Assert.Equal(":e", _marginControl.CommandLineTextBox.Text);
             }
         }
 

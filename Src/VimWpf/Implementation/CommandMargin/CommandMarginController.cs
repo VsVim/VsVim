@@ -503,7 +503,37 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
 
         private void OnCommandLineTextBoxTextChanged(object sender, RoutedEventArgs e)
         {
-            UpdateCommand(_margin.CommandLineTextBox.Text);
+            // If we are in an edit mode make sure the user didn't delete the command prefix 
+            // from the edit box 
+            var command = _margin.CommandLineTextBox.Text;
+            var prefixChar = GetPrefixChar(_editKind);
+            if (prefixChar != null)
+            {
+                bool update = false;
+                if (String.IsNullOrEmpty(command))
+                {
+                    command = prefixChar.Value.ToString();
+                    update = true;
+                }
+
+                if (command[0] != prefixChar.Value)
+                {
+                    command = prefixChar.Value.ToString() + command;
+                    update = true;
+                }
+
+                // If there is an update requested then change the text and immediately return.  The change
+                // of text will cause this function to be re-entered since it's an event handler for 
+                // text change.  Hence return because the new command has already been processed
+                if (update)
+                {
+                    _margin.CommandLineTextBox.Text = command;
+                    _margin.CommandLineTextBox.Select(1, 0);
+                    return;
+                }
+            }
+
+            UpdateCommand(command);
         }
 
         /// <summary>
@@ -552,6 +582,24 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             }
 
             return EditKind.None;
+        }
+
+        private static char? GetPrefixChar(EditKind editKind)
+        {
+            switch (editKind)
+            {
+                case EditKind.None:
+                    return null;
+                case EditKind.Command:
+                    return ':';
+                case EditKind.SearchForward:
+                    return '/';
+                case EditKind.SearchBackward:
+                    return '?';
+                default:
+                    Contract.FailEnumValue(editKind);
+                    return null;
+            }
         }
 
         #endregion
