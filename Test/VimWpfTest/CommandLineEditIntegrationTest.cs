@@ -78,9 +78,9 @@ namespace Vim.UI.Wpf.UnitTest
             {
                 Create("cat");
                 ProcessNotation(@":ab<Left>");
-                Assert.Equal(CommandLineEditKind.Command, _controller.CommandLineEditKind);
+                Assert.Equal(EditKind.Command, _controller.CommandLineEditKind);
                 ProcessNotation(@"<Esc>");
-                Assert.Equal(CommandLineEditKind.None, _controller.CommandLineEditKind);
+                Assert.Equal(EditKind.None, _controller.CommandLineEditKind);
                 Assert.True(_marginControl.IsEditReadOnly);
             }
 
