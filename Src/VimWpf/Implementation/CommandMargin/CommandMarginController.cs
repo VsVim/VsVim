@@ -238,6 +238,15 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
                 return;
             }
 
+            var search = _vimBuffer.IncrementalSearch;
+            if (search.InSearch && search.CurrentSearchData.IsSome())
+            {
+                var data = search.CurrentSearchData.Value;
+                var prefix = data.Kind.IsAnyForward ? "/" : "?";
+                _margin.StatusLine = prefix + data.Pattern;
+                return;
+            }
+
             switch (_vimBuffer.ModeKind)
             {
                 case ModeKind.Command:
@@ -289,7 +298,9 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
         }
 
         /// <summary>
-        /// This method handles the KeyInput as it applies to command line editor
+        /// This method handles the KeyInput as it applies to command line editor.  Make sure to 
+        /// mark the key as handled if we use it here.  If we don't then it will propagate out to 
+        /// the editor and be processed again
         /// </summary>
         internal void HandleKeyEvent(KeyEventArgs e)
         {
@@ -298,15 +309,19 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
                 case Key.Escape:
                     _vimBuffer.Process(KeyInputUtil.EscapeKey);
                     ChangeEditKind(EditKind.None);
+                    e.Handled = true;
                     break;
                 case Key.Return:
                     ExecuteCommand(_margin.CommandLineTextBox.Text);
+                    e.Handled = true;
                     break;
                 case Key.Up:
                     _vimBuffer.Process(KeyInputUtil.VimKeyToKeyInput(VimKey.Up));
+                    e.Handled = true;
                     break;
                 case Key.Down:
                     _vimBuffer.Process(KeyInputUtil.VimKeyToKeyInput(VimKey.Down));
+                    e.Handled = true;
                     break;
             }
         }

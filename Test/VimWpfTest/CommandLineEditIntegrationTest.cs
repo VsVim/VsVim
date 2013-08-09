@@ -99,6 +99,21 @@ namespace Vim.UI.Wpf.UnitTest
                 ProcessNotation(@":ab<Left>");
                 Assert.Equal(2, _marginControl.CommandLineTextBox.CaretIndex);
             }
+
+            /// <summary>
+            /// Make sure the key event is marked as handled for enter when in the middle of 
+            /// an edit.  If it's not marked as handled then it will propagate to the editor
+            /// and register as a key stroke
+            /// </summary>
+            [Fact]
+            public void HandleEnterKey()
+            {
+                Create("cat", "dog");
+                ProcessNotation(@"/og<Left><Left>d");
+                var keyEventArgs = _keyboardDevice.CreateKeyEventArgs(KeyInputUtil.EnterKey);
+                _controller.HandleKeyEvent(keyEventArgs);
+                Assert.True(keyEventArgs.Handled);
+            }
         }
 
         public sealed class CommandModeTest : CommandLineEditIntegrationTest
@@ -147,6 +162,18 @@ namespace Vim.UI.Wpf.UnitTest
                 Assert.Equal(":be", _marginControl.CommandLineTextBox.Text);
                 Assert.True(_marginControl.IsEditEnabled);
             }
+
+            /// <summary>
+            /// The delete key should function to delete text as expected 
+            /// </summary>
+            [Fact]
+            public void DeleteKey()
+            {
+                Create("");
+                ProcessNotation(@":bait<Left><Left><Del>");
+                Assert.Equal(":bat", _marginControl.CommandLineTextBox.Text);
+                Assert.True(_marginControl.IsEditEnabled);
+            }
         }
 
         public abstract class IncrementalSearchTest : CommandLineEditIntegrationTest
@@ -170,6 +197,43 @@ namespace Vim.UI.Wpf.UnitTest
                     Create("cat", "dog", "fish");
                     ProcessNotation(@"/dg<Left>o");
                     Assert.Equal("dog", _incrementalSearch.CurrentSearchData.Value.Pattern);
+                }
+
+                [Fact]
+                public void ClearEditBox()
+                {
+                    Create("");
+                    ProcessNotation(@"/e<Left>");
+                    _marginControl.CommandLineTextBox.Text = "";
+                    Assert.Equal("/", _marginControl.CommandLineTextBox.Text);
+                }
+
+                [Fact]
+                public void ClearAndRestart()
+                {
+                    Create("cat", "dog", "fish");
+                    ProcessNotation(@"/dg<Left><BS><Del>fish");
+                    Assert.Equal("fish", _incrementalSearch.CurrentSearchData.Value.Pattern);
+                }
+
+                [Fact]
+                public void BackKeyUpdateText()
+                {
+                    Create("cat", "dog", "fish");
+                    ProcessNotation(@"/u<BS>");
+                    Assert.Equal("/", _marginControl.CommandLineTextBox.Text);
+                }
+
+                /// <summary>
+                /// When the Enter key is run it should complete the search and cause the cursor
+                /// to be placed at the start of the successful find
+                /// </summary>
+                [Fact]
+                public void EnterToCompleteFind()
+                {
+                    Create("cat", "dog", "fish");
+                    ProcessNotation(@"/og<Home>d<Enter>");
+                    Assert.Equal(_textBuffer.GetLine(1).Start, _textView.GetCaretPoint());
                 }
             }
         }

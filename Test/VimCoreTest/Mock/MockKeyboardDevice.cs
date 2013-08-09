@@ -128,6 +128,12 @@ namespace Vim.UnitTest.Mock
                 case VimKey.Enter:
                     key = Key.Enter;
                     return true;
+                case VimKey.Delete:
+                    key = Key.Delete;
+                    return true;
+                case VimKey.Back:
+                    key = Key.Back;
+                    return true;
             }
 
             if (char.IsLetter(keyInput.Char))
