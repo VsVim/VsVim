@@ -231,21 +231,16 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
         /// </summary>
         private void UpdateForNoEvent()
         {
-            var search = _vimBuffer.IncrementalSearch;
-            if (search.InSearch && search.CurrentSearchData.IsSome())
+            // In the middle of an edit the edit edit box is responsible for keeping the 
+            // text up to date 
+            if (_editKind != EditKind.None)
             {
-                var data = search.CurrentSearchData.Value;
-                var prefix = data.Kind.IsAnyForward ? "/" : "?";
-
-                //TODO: Workaround to fix strange character when pressing <Home>...
-                _margin.StatusLine = prefix + data.Pattern.Trim('\0');
                 return;
             }
 
             switch (_vimBuffer.ModeKind)
             {
                 case ModeKind.Command:
-                    //TODO: Workaround to fix strange character when pressing <Home>...
                     _margin.StatusLine = ":" + _vimBuffer.CommandMode.Command.Trim('\0'); ;
                     break;
                 case ModeKind.Normal:

@@ -134,6 +134,19 @@ namespace Vim.UI.Wpf.UnitTest
                 _marginControl.CommandLineTextBox.Text = "e";
                 Assert.Equal(":e", _marginControl.CommandLineTextBox.Text);
             }
+
+            /// <summary>
+            /// Previously keys like caused issues because their literal char value was being appended to the
+            /// beginning of the edit box
+            /// </summary>
+            [Fact]
+            public void HomeKey()
+            {
+                Create("");
+                ProcessNotation(@":e<Home>b");
+                Assert.Equal(":be", _marginControl.CommandLineTextBox.Text);
+                Assert.True(_marginControl.IsEditEnabled);
+            }
         }
 
         public abstract class IncrementalSearchTest : CommandLineEditIntegrationTest
