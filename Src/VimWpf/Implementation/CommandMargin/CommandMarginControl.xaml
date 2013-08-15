@@ -8,17 +8,11 @@
              x:Name="commandMarginControl"
              >
 
-    <UserControl.CommandBindings>
-        <CommandBinding 
-            Command="Properties" 
-            Executed="PropertiesCommandExecuted"
-            CanExecute="PropertiesCommandCanExecute" />
-    </UserControl.CommandBindings>
     <Grid
         DataContext="{Binding ElementName=commandMarginControl}">
 
         <Grid.RowDefinitions>
-            <RowDefinition Height="auto" />
+            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
         <Grid.ColumnDefinitions>
@@ -39,25 +33,21 @@
             />
 
         <TextBox 
-            x:Name="commandLineInput"
+            x:Name="_commandLineInput"
             Grid.Row="0"
             Grid.Column="1"
             Text="{Binding Path=StatusLine}" 
-            IsReadOnly="{Binding Path=IsCommandEditionDisable}"
+            IsReadOnly="{Binding Path=IsEditReadOnly}"
             Foreground="{Binding Path=TextForeground}"
             Background="{Binding Path=TextBackground}"
-            PreviewKeyDown="OnCommandLineInputPreviewKeyDown"
-            TextChanged="OnCommandLineInputTextChanged"
-            SelectionChanged="OnCommandLineInputSelectionChanged"
             />
 
         <Button
+            x:Name="_optionsButton"
             Grid.Row="0"
             Grid.Column="2"
             Content="Options"
             Command="Properties"
             />
-
     </Grid>
-
 </UserControl>

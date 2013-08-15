@@ -763,6 +763,10 @@ type Contract =
         if not test then
             raise (System.Exception("Contract failed"))
 
+    static member FailEnumValue<'T> (value : 'T) : unit= 
+        let msg = sprintf "The value %O is not a valid member of type %O" value typedefof<'T>
+        raise (System.Exception(msg))
+
 module internal SystemUtil =
 
     let TryGetEnvironmentVariable name = 
