@@ -2434,6 +2434,10 @@ type InsertCommand  =
     /// Backspace at the current caret position
     | Back
 
+    /// Block edit of the specified TextChange value.  The int represents the number of 
+    /// lines on which this block insert should take place
+    | BlockInsert of string * int
+
     /// This is an insert command which is a combination of other insert commands
     | Combined of InsertCommand * InsertCommand
 
@@ -2509,6 +2513,7 @@ type InsertCommand  =
     member x.TextChange editorOptions = 
         match x with 
         | InsertCommand.Back ->  Some (TextChange.DeleteLeft 1)
+        | InsertCommand.BlockInsert _ -> None
         | InsertCommand.Combined (left, right) -> 
             match left.TextChange editorOptions, right.TextChange editorOptions with
             | Some l, Some r -> TextChange.Combination (l, r) |> Some
@@ -2751,7 +2756,7 @@ type internal IInsertUtil =
     abstract RepeatEdit : textChange : TextChange -> addNewLines : bool -> count : int -> unit
 
     /// Repeat the given edit series. 
-    abstract RepeatBlock : InsertCommand -> blockSpan : BlockSpan -> unit
+    abstract RepeatBlock : command : InsertCommand -> blockSpan : BlockSpan -> string option
 
 /// Contains the stored information about a Visual Span.  This instance *will* be 
 /// stored for long periods of time and used to repeat a Command instance across
@@ -3671,7 +3676,7 @@ and SwitchModeKindEventArgs
 
 and SwitchModeEventArgs 
     (
-        _previousMode : IMode option,
+        _previousMode : IMode,
         _currentMode : IMode
     ) = 
 

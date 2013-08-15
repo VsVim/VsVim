@@ -695,6 +695,77 @@ namespace Vim.UnitTest
                     Assert.Equal("cat", _textView.GetLine(1).GetText());
                 }
             }
+
+            public sealed class RepeatTest : BlockInsertTest
+            {
+                /// <summary>
+                /// The repeat of a block insert should work against the same number of lines as the
+                /// original change
+                /// </summary>
+                [Fact]
+                public void SameNumberOfLines()
+                {
+                    Create("cat", "dog", "fish");
+                    _vimBuffer.ProcessNotation("<C-q>j<S-i>x<Esc>j.");
+                    Assert.Equal(new[] { "xcat", "xxdog", "xfish" }, _textBuffer.GetLines());
+                }
+
+                /// <summary>
+                /// If the repeat goes off the end of the ITextBuffer then the change should just be 
+                /// applied to the lines from the caret to the end
+                /// </summary>
+                [Fact]
+                public void PasteEndOfBuffer()
+                {
+                    Create("cat", "dog", "fish");
+                    _vimBuffer.ProcessNotation("<C-q>j<S-i>x<Esc>jj.");
+                    Assert.Equal(new[] { "xcat", "xdog", "xfish" }, _textBuffer.GetLines());
+                }
+
+                /// <summary>
+                /// Spaces don't matter in the repeat.  The code should just treat them as normal characters and
+                /// repeat the edits into them
+                /// </summary>
+                [Fact]
+                public void DontConsiderSpaces()
+                {
+                    Create("cat", "dog", " fish");
+                    _vimBuffer.ProcessNotation("<C-q>j<S-i>x<Esc>jj.");
+                    Assert.Equal(new[] { "xcat", "xdog", "x fish" }, _textBuffer.GetLines());
+                }
+
+                /// <summary>
+                /// Make sure that we handle deletes properly.  So long as it leaves us with a new bit of text then
+                /// we can repeat it
+                /// </summary>
+                [Fact]
+                public void HandleDeletes()
+                {
+                    Create("cat", "dog", "fish", "store");
+                    _vimBuffer.ProcessNotation("<C-q>j<S-i>xy<BS><Esc>jj.");
+                    Assert.Equal(new[] { "xcat", "xdog", "xfish" , "xstore" }, _textBuffer.GetLines());
+                }
+
+                /// <summary>
+                /// Make sure the code properly handles the case where the insert results in 0 text being added
+                /// to the file.  This should cause us to not do anything even on repeat
+                /// </summary>
+                [Fact]
+                public void HandleEmptyInsertString()
+                {
+                    Create("cat", "dog", "fish", "store");
+                    _vimBuffer.ProcessNotation("<C-q>j<S-i>xy<BS><BS><Esc>jj.");
+                    Assert.Equal(new[] { "cat", "dog", "fish" , "store" }, _textBuffer.GetLines());
+                }
+
+                [Fact]
+                public void Issue1136()
+                {
+                    Create("cat", "dog");
+                    _vimBuffer.ProcessNotation("<C-q>j<S-i>x<Esc>.");
+                    Assert.Equal(new[] { "xxcat", "xxdog" }, _textBuffer.GetLines());
+                }
+            }
         }
 
         public sealed class BlockChange : VisualModeIntegrationTest

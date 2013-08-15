@@ -59,44 +59,45 @@ type UninitializedMode(_vimTextBuffer : IVimTextBuffer) =
         member x.OnLeave() = ()
         member x.OnClose() = ()
 
-type internal ModeMap() = 
+type internal ModeMap
+    (
+        _vimTextBuffer : IVimTextBuffer
+    ) = 
+
     let mutable _modeMap : Map<ModeKind, IMode> = Map.empty
-    let mutable _mode : IMode option = None
-    let mutable _previousMode : IMode option = None
+    let mutable _mode = UninitializedMode(_vimTextBuffer) :> IMode
+    let mutable _previousMode = _mode
     let _modeSwitchedEvent = StandardEvent<SwitchModeEventArgs>()
 
     member x.SwitchedEvent = _modeSwitchedEvent
-    member x.Mode = Option.get _mode
+    member x.Mode = _mode
     member x.PreviousMode = _previousMode
     member x.Modes = _modeMap |> Map.toSeq |> Seq.map (fun (k,m) -> m)
     member x.SwitchMode kind arg =
         let prev = _mode
         let mode = _modeMap.Item kind
-        _mode <- Some mode
+        _mode <- mode
 
-        match prev with
-        | None ->
-            () 
-        | Some prev ->
-            prev.OnLeave()
+        prev.OnLeave()
 
-            // When switching between different visual modes we don't want to lose
-            // the previous non-visual mode value.  Commands executing in Visual mode
-            // which return a SwitchPrevious mode value expected to actually leave 
-            // Visual Mode 
-            match _previousMode with
-            | None -> 
-                _previousMode <- Some prev
-            | Some mode -> 
-                if not (VisualKind.IsAnyVisual prev.ModeKind) && not (VisualKind.IsAnyVisual mode.ModeKind) then
-                    _previousMode <- Some prev
+        // When switching between different visual modes we don't want to lose
+        // the previous non-visual mode value.  Commands executing in Visual mode
+        // which return a SwitchPrevious mode value expected to actually leave 
+        // Visual Mode 
+        if not (VisualKind.IsAnyVisual prev.ModeKind) && not (VisualKind.IsAnyVisual mode.ModeKind) then
+            _previousMode <- prev
+        elif _previousMode.ModeKind = ModeKind.Uninitialized then
+            _previousMode <- prev
 
         mode.OnEnter arg
         _modeSwitchedEvent.Trigger x (SwitchModeEventArgs(prev, mode))
         mode
+
     member x.GetMode kind = Map.find kind _modeMap
+
     member x.AddMode (mode : IMode) = 
         _modeMap <- Map.add (mode.ModeKind) mode _modeMap
+
     member x.RemoveMode (mode : IMode) = 
         _modeMap <- Map.remove mode.ModeKind _modeMap
 
@@ -118,7 +119,7 @@ type internal VimBuffer
     let _statusUtil = _vimBufferData.StatusUtil
     let _properties = PropertyCollection()
     let _bag = DisposableBag()
-    let _modeMap = ModeMap()
+    let _modeMap = ModeMap(_vimBufferData.VimTextBuffer)
     let _keyMap = _vim.KeyMap
     let mutable _processingInputCount = 0
     let mutable _isClosed = false
@@ -148,13 +149,6 @@ type internal VimBuffer
         _vimTextBuffer.SwitchedMode
         |> Observable.subscribe (fun args -> this.OnVimTextBufferSwitchedMode args.ModeKind args.ModeArgument)
         |> _bag.Add
-
-        // Setup the initial uninitialized IMode value.  Note we don't want to change the 
-        // IVimTextBuffer mode here.  This is a mode which is meant to support IVimBuffer values
-        // until they can be fully initialized
-        let uninitializedMode = UninitializedMode(_vimTextBuffer) :> IMode
-        _modeMap.AddMode uninitializedMode
-        _modeMap.SwitchMode ModeKind.Uninitialized ModeArgument.None |> ignore
 
     member x.BufferedKeyInputs =
         match _bufferedKeyInput with
@@ -560,13 +554,7 @@ type internal VimBuffer
         mode
 
     member x.SwitchPreviousMode () =
-
-        match _modeMap.PreviousMode with
-        | None ->
-            // No previous mode so this is a no-op.
-            x.Mode
-        | Some previousMode ->
-            x.SwitchMode previousMode.ModeKind ModeArgument.None
+        x.SwitchMode _modeMap.PreviousMode.ModeKind ModeArgument.None
 
     /// Simulate the KeyInput being processed.  Should not go through remapping because the caller
     /// is responsible for doing the mapping.  They are indicating the literal key was processed

@@ -332,7 +332,13 @@ namespace Vim.UnitTest
             [Fact]
             public void BadElseIfAfterElse()
             {
-                AssertBadParse("if 42", "set ts=2", "else", "set ts=2", "elseif", "endif");
+                AssertBadParse("if 42", "set ts=2", "else", "set ts=2", "elseif 42", "endif");
+            }
+
+            [Fact]
+            public void BadElseAfterElse()
+            {
+                AssertBadParse("if 42", "else", "else", "endif");
             }
         }
 
