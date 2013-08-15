@@ -383,29 +383,5 @@ namespace Vim.UnitTest
             _search.DoSearch("d", enter: false).Run(VimKey.Up).Run(VimKey.Up);
             Assert.Equal("dip", _search.CurrentSearchData.Value.Pattern);
         }
-
-        /// <summary>
-        /// When properly implemented this will allow command line editing.  Today though 
-        /// we just beep to indicate we don't support it
-        /// </summary>
-        [Fact]
-        public void HistorySearch_LeftArrow()
-        {
-            Create("");
-            _search.DoSearch("d", enter: false).Run(VimKey.Left);
-            Assert.Equal(1, _vimHost.BeepCount);
-        }
-
-        /// <summary>
-        /// When properly implemented this will allow command line editing.  Today though 
-        /// we just beep to indicate we don't support it
-        /// </summary>
-        [Fact]
-        public void HistorySearch_RightArrow()
-        {
-            Create("");
-            _search.DoSearch("d", enter: false).Run(VimKey.Right);
-            Assert.Equal(1, _vimHost.BeepCount);
-        }
     }
 }

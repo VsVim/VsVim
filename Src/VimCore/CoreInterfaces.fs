@@ -3083,7 +3083,10 @@ type IIncrementalSearch =
     abstract WordNavigator : ITextStructureNavigator
 
     /// Begin an incremental search in the ITextBuffer
-    abstract Begin : Path -> BindData<SearchResult>
+    abstract Begin : path : Path -> BindData<SearchResult>
+
+    /// Reset the current search to be the given value 
+    abstract ResetSearch : pattern : string -> unit
 
     [<CLIEvent>]
     abstract CurrentSearchUpdated : IDelegateEvent<System.EventHandler<SearchResultEventArgs>>
@@ -3298,6 +3301,28 @@ type internal IHistoryClient<'TData, 'TResult> =
     /// Called when the command is cancelled.  The last valid TData value will
     /// be provided
     abstract Cancelled : 'TData -> unit
+
+/// An active use of an IHistoryClient instance 
+type internal IHistorySession<'TData, 'TResult> =
+
+    /// The IHistoryClient this session is using 
+    abstract HistoryClient : IHistoryClient<'TData, 'TResult>
+
+    /// The current command that is being used 
+    abstract Command : string 
+
+    /// The current client data 
+    abstract ClientData : 'TData
+
+    /// Cancel the IHistorySession
+    abstract Cancel : unit -> unit
+
+    /// Reset the command to the current value
+    abstract ResetCommand : string -> unit
+
+    /// Create an BindDataStorage for this session which will process relevant KeyInput values
+    /// as manipulating the current history
+    abstract CreateBindDataStorage : unit -> BindDataStorage<'TResult>
 
 /// Represents shared state which is available to all IVimBuffer instances.
 type IVimData = 

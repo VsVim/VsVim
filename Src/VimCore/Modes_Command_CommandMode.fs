@@ -90,8 +90,8 @@ type internal CommandMode
                         member this.Completed _ command = completed command
                         member this.Cancelled _ = cancelled ()
                     }
-                let storage = HistoryUtil.Begin historyClient 0 _command
-                storage.CreateBindData()
+                let historySession = HistoryUtil.CreateHistorySession historyClient 0 _command
+                historySession.CreateBindDataStorage().CreateBindData()
             | Some bindData ->
                 bindData
         _bindData <- None

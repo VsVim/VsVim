@@ -3,12 +3,33 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows;
+using System.Windows.Input;
+using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text.Classification;
 using Vim.Extensions;
 using Vim.UI.Wpf.Properties;
+using WpfKeyboard = System.Windows.Input.Keyboard;
 
 namespace Vim.UI.Wpf.Implementation.CommandMargin
 {
+    /// <summary>
+    /// The type of edit that we are currently performing.  None exists when no command line edit
+    /// </summary>
+    internal enum EditKind
+    {
+        None,
+        Command,
+        SearchForward,
+        SearchBackward
+    }
+
+    internal enum EditPosition
+    {
+        Start,
+        End,
+        BeforeLastCharacter
+    }
+
     internal sealed class CommandMarginController
     {
         private readonly IVimBuffer _vimBuffer;
@@ -17,15 +38,22 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
         private readonly ReadOnlyCollection<Lazy<IOptionsProviderFactory>> _optionsProviderFactory;
         private readonly FrameworkElement _parentVisualElement;
         private bool _inKeyInputEvent;
+        private bool _inCommandUpdate;
         private string _message;
-        private IMode _modeSwitch;
+        private SwitchModeEventArgs _modeSwitchEventArgs;
+        private EditKind _editKind;
 
         /// <summary>
         /// We need to hold a reference to Text Editor visual element.
         /// </summary>
-        public FrameworkElement ParentVisualElement
+        internal FrameworkElement ParentVisualElement
         {
             get { return _parentVisualElement; }
+        }
+
+        internal EditKind CommandLineEditKind
+        {
+            get { return _editKind; }
         }
 
         internal CommandMarginController(IVimBuffer buffer, FrameworkElement parentVisualElement, CommandMarginControl control, IEditorFormatMap editorFormatMap, IEnumerable<Lazy<IOptionsProviderFactory>> optionsProviderFactory)
@@ -45,21 +73,44 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             _vimBuffer.CommandMode.CommandChanged += OnCommandChanged;
             _vimBuffer.Vim.MacroRecorder.RecordingStarted += OnRecordingStarted;
             _vimBuffer.Vim.MacroRecorder.RecordingStopped += OnRecordingStopped;
-            _margin.OptionsClicked += OnOptionsClicked;
-            _margin.CancelCommandEdition += OnCancelCommandEdition;
-            _margin.RunCommandEdition += OnRunCommandEdition;
-            _margin.HistoryGoPrevious += OnHistoryGoPrevious;
-            _margin.HistoryGoNext += OnHistoryGoNext;
+            _margin.OptionsButton.Click += OnOptionsClicked;
+            _margin.CommandLineTextBox.PreviewKeyDown += OnCommandLineTextBoxPreviewKeyDown;
+            _margin.CommandLineTextBox.TextChanged += OnCommandLineTextBoxTextChanged;
+            _margin.CommandLineTextBox.SelectionChanged += OnCommandLineTextBoxSelectionChanged;
+            _margin.CommandLineTextBox.LostKeyboardFocus += OnCommandLineTextBoxLostKeyboardFocus;
+            _margin.CommandLineTextBox.PreviewMouseDown += OnCommandLineTextBoxPreviewMouseDown;
             _editorFormatMap.FormatMappingChanged += OnFormatMappingChanged;
             UpdateForRecordingChanged();
             UpdateTextColor();
         }
 
-        private void FocusEditor()
+        private void ChangeEditKind(EditKind editKind)
         {
-            if (null != ParentVisualElement)
+            if (editKind == _editKind)
             {
-                ParentVisualElement.Focus();
+                return;
+            }
+
+            _editKind = editKind;
+            switch (editKind)
+            {
+                case EditKind.None:
+                    // Make sure that the editor has focus 
+                    if (ParentVisualElement != null)
+                    {
+                        ParentVisualElement.Focus();
+                    }
+                    _margin.IsEditReadOnly = true;
+                    break;
+                case EditKind.Command:
+                case EditKind.SearchForward:
+                case EditKind.SearchBackward:
+                    WpfKeyboard.Focus(_margin.CommandLineTextBox);
+                    _margin.IsEditReadOnly = false;
+                    break;
+                default:
+                    Contract.FailEnumValue(editKind);
+                    break;
             }
         }
 
@@ -80,9 +131,9 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
                 {
                     _margin.StatusLine = _message;
                 }
-                else if (_modeSwitch != null)
+                else if (_modeSwitchEventArgs != null)
                 {
-                    UpdateForSwitchMode(_modeSwitch);
+                    UpdateForSwitchMode(_modeSwitchEventArgs.PreviousMode, _modeSwitchEventArgs.CurrentMode);
                 }
                 else
                 {
@@ -92,7 +143,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             finally
             {
                 _message = null;
-                _modeSwitch = null;
+                _modeSwitchEventArgs = null;
             }
         }
 
@@ -108,7 +159,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             }
         }
 
-        private void UpdateForSwitchMode(IMode mode)
+        private void UpdateForSwitchMode(IMode previousMode, IMode currentMode)
         {
             // Calculate the argument string if we are in one time command mode
             string oneTimeArgument = null;
@@ -126,9 +177,8 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
 
             // Check if we can enable the command line to accept user input
             var search = _vimBuffer.IncrementalSearch;
-            _margin.IsCommandEditionDisable = mode.ModeKind != ModeKind.Command && !(search.InSearch && search.CurrentSearchData.IsSome());
 
-            switch (mode.ModeKind)
+            switch (currentMode.ModeKind)
             {
                 case ModeKind.Normal:
                     _margin.StatusLine = String.IsNullOrEmpty(oneTimeArgument)
@@ -189,23 +239,25 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
         /// </summary>
         private void UpdateForNoEvent()
         {
+            // In the middle of an edit the edit edit box is responsible for keeping the 
+            // text up to date 
+            if (_editKind != EditKind.None)
+            {
+                return;
+            }
+
             var search = _vimBuffer.IncrementalSearch;
             if (search.InSearch && search.CurrentSearchData.IsSome())
             {
                 var data = search.CurrentSearchData.Value;
                 var prefix = data.Kind.IsAnyForward ? "/" : "?";
-                //TODO: Workaround to fix strange character when pressing <Home>...
-                _margin.StatusLine = prefix + data.Pattern.Trim('\0');
-                _margin.IsCommandEditionDisable = false;
+                _margin.StatusLine = prefix + data.Pattern;
                 return;
             }
-
-            _margin.IsCommandEditionDisable = _vimBuffer.ModeKind != ModeKind.Command;
 
             switch (_vimBuffer.ModeKind)
             {
                 case ModeKind.Command:
-                    //TODO: Workaround to fix strange character when pressing <Home>...
                     _margin.StatusLine = ":" + _vimBuffer.CommandMode.Command.Trim('\0'); ;
                     break;
                 case ModeKind.Normal:
@@ -254,12 +306,47 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
         }
 
         /// <summary>
+        /// This method handles the KeyInput as it applies to command line editor.  Make sure to 
+        /// mark the key as handled if we use it here.  If we don't then it will propagate out to 
+        /// the editor and be processed again
+        /// </summary>
+        internal void HandleKeyEvent(KeyEventArgs e)
+        {
+            switch (e.Key)
+            {
+                case Key.Escape:
+                    _vimBuffer.Process(KeyInputUtil.EscapeKey);
+                    ChangeEditKind(EditKind.None);
+                    e.Handled = true;
+                    break;
+                case Key.Return:
+                    ExecuteCommand(_margin.CommandLineTextBox.Text);
+                    e.Handled = true;
+                    break;
+                case Key.Up:
+                    _vimBuffer.Process(KeyInputUtil.VimKeyToKeyInput(VimKey.Up));
+                    e.Handled = true;
+                    break;
+                case Key.Down:
+                    _vimBuffer.Process(KeyInputUtil.VimKeyToKeyInput(VimKey.Down));
+                    e.Handled = true;
+                    break;
+            }
+        }
+
+        /// <summary>
         /// If we're in command mode and a key is processed which effects the edit we should handle
         /// it here
         /// </summary>
         private void CheckEnableCommandLineEdit(KeyInputStartEventArgs args)
         {
-            if (_vimBuffer.ModeKind != ModeKind.Command)
+            if (_editKind != EditKind.None)
+            {
+                return;
+            }
+
+            var commandLineEditKind = CalculateCommandLineEditKind();
+            if (commandLineEditKind == EditKind.None)
             {
                 return;
             }
@@ -268,63 +355,98 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             {
                 case VimKey.Home:
                     // Enable command line edition
-                    _margin.FocusCommandLine(moveCaretToEnd: false);
+                    ChangeEditKind(commandLineEditKind);
+                    _margin.UpdateCaretPosition(EditPosition.Start);
                     args.Handled = true;
                     break;
                 case VimKey.Left:
-                    _margin.FocusCommandLine(moveCaretToEnd: true);
+                    ChangeEditKind(commandLineEditKind);
+                    _margin.UpdateCaretPosition(EditPosition.BeforeLastCharacter);
                     args.Handled = true;
                     break;
                 case VimKey.Up:
                 case VimKey.Down:
                     // User is navigation through history, move caret to the end of the entry
-                    _margin.UpdateCaretPosition(true);
+                    _margin.UpdateCaretPosition(EditPosition.End);
                     break;
             }
         }
 
-        #region Event Handlers
-
-        void OnHistoryGoPrevious(object sender, EventArgs e)
+        /// <summary>
+        /// Update the current command to the given value
+        /// </summary>
+        private void UpdateCommand(string command)
         {
-            _vimBuffer.Process(KeyInputUtil.VimKeyToKeyInput(VimKey.Up));
-        }
-
-        void OnHistoryGoNext(object sender, EventArgs e)
-        {
-            _vimBuffer.Process(KeyInputUtil.VimKeyToKeyInput(VimKey.Down));
-        }
-
-        void OnCancelCommandEdition(object sender, EventArgs e)
-        {
-            _vimBuffer.Process(KeyInputUtil.EscapeKey);
-            FocusEditor();
-        }
-
-        void OnRunCommandEdition(object sender, EventArgs e)
-        {
-            _vimBuffer.Process(KeyInputUtil.EscapeKey);
-
-            var input = (e as CommandMarginEventArgs).Command;
-
-            foreach (var c in input)
+            _inCommandUpdate = true;
+            try
             {
-                var i = KeyInputUtil.CharToKeyInput(c);
-                _vimBuffer.Process(i);
+                command = command ?? "";
+                switch (_editKind)
+                {
+                    case EditKind.Command:
+
+                        if (_vimBuffer.ModeKind == ModeKind.Command)
+                        {
+                            _vimBuffer.CommandMode.Command = command;
+                        }
+                        break;
+                    case EditKind.SearchBackward:
+                        if (_vimBuffer.IncrementalSearch.InSearch)
+                        {
+                            var pattern = command.Length > 0 && command[0] == '?'
+                                ? command.Substring(1)
+                                : command;
+                            _vimBuffer.IncrementalSearch.ResetSearch(pattern);
+                        }
+                        break;
+                    case EditKind.SearchForward:
+                        if (_vimBuffer.IncrementalSearch.InSearch)
+                        {
+                            var pattern = command.Length > 0 && command[0] == '/'
+                                ? command.Substring(1)
+                                : command;
+                            _vimBuffer.IncrementalSearch.ResetSearch(pattern);
+                        }
+                        break;
+                    case EditKind.None:
+                        break;
+                    default:
+                        Contract.FailEnumValue(_editKind);
+                        break;
+                }
+            }
+            finally
+            {
+                _inCommandUpdate = false;
+            }
+        }
+
+        /// <summary>
+        /// Execute the command and switch focus back to the editor
+        /// </summary>
+        private void ExecuteCommand(string command)
+        {
+            if (_editKind == EditKind.None)
+            {
+                return;
             }
 
-            FocusEditor();
+            UpdateCommand(command);
+            _vimBuffer.Process(KeyInputUtil.EnterKey);
+            ChangeEditKind(EditKind.None);
         }
+
+        #region Event Handlers
 
         private void OnSwitchMode(object sender, SwitchModeEventArgs args)
         {
             if (_inKeyInputEvent)
             {
-                _modeSwitch = args.CurrentMode;
+                _modeSwitchEventArgs = args;
             }
             else
             {
-                UpdateForSwitchMode(args.CurrentMode);
+                UpdateForSwitchMode(args.PreviousMode, args.CurrentMode);
             }
         }
 
@@ -384,7 +506,139 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
 
         private void OnCommandChanged(object sender, EventArgs e)
         {
+            if (_inCommandUpdate)
+            {
+                return;
+            }
+
             UpdateForNoEvent();
+        }
+
+        private void OnCommandLineTextBoxPreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            HandleKeyEvent(e);
+        }
+
+        private void OnCommandLineTextBoxTextChanged(object sender, RoutedEventArgs e)
+        {
+            // If we are in an edit mode make sure the user didn't delete the command prefix 
+            // from the edit box 
+            var command = _margin.CommandLineTextBox.Text;
+            var prefixChar = GetPrefixChar(_editKind);
+            if (prefixChar != null)
+            {
+                bool update = false;
+                if (String.IsNullOrEmpty(command))
+                {
+                    command = prefixChar.Value.ToString();
+                    update = true;
+                }
+
+                if (command[0] != prefixChar.Value)
+                {
+                    command = prefixChar.Value.ToString() + command;
+                    update = true;
+                }
+
+                // If there is an update requested then change the text and immediately return.  The change
+                // of text will cause this function to be re-entered since it's an event handler for 
+                // text change.  Hence return because the new command has already been processed
+                if (update)
+                {
+                    _margin.CommandLineTextBox.Text = command;
+                    _margin.CommandLineTextBox.Select(1, 0);
+                    return;
+                }
+            }
+
+            UpdateCommand(command);
+        }
+
+        /// <summary>
+        /// If the user selects the text with the mouse then we need to initiate an edit 
+        /// in the case the vim buffer is capable of one.  If not then we need to cancel
+        /// the selection.  Anything else will give the user the appearance that they can
+        /// edit the text when in fact they cannot
+        /// </summary>
+        private void OnCommandLineTextBoxSelectionChanged(object sender, RoutedEventArgs e)
+        {
+            var textBox = _margin.CommandLineTextBox;
+            if (string.IsNullOrEmpty(textBox.SelectedText))
+            {
+                return;
+            }
+
+            var kind = CalculateCommandLineEditKind();
+            if (kind != EditKind.None)
+            {
+                ChangeEditKind(kind);
+            }
+        }
+
+        private void OnCommandLineTextBoxLostKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)
+        {
+            ChangeEditKind(EditKind.None);
+        }
+
+        /// <summary>
+        /// If the user clicks on the edit box then consider switching to edit mode
+        /// </summary>
+        private void OnCommandLineTextBoxPreviewMouseDown(object sender, RoutedEventArgs e)
+        {
+            if (_editKind != EditKind.None)
+            {
+                return;
+            }
+
+            var commandLineEditKind = CalculateCommandLineEditKind();
+            if (commandLineEditKind == EditKind.None)
+            {
+                return;
+            }
+
+            ChangeEditKind(commandLineEditKind);
+            _margin.UpdateCaretPosition(EditPosition.End);
+            e.Handled = true;
+        }
+
+        /// <summary>
+        /// Calculate the type of edit that should be performed based on the current state of the
+        /// IVimBuffer
+        /// </summary>
+        private EditKind CalculateCommandLineEditKind()
+        {
+            if (_vimBuffer.ModeKind == ModeKind.Command)
+            {
+                return EditKind.Command;
+            }
+
+            if (_vimBuffer.IncrementalSearch.InSearch &&
+                _vimBuffer.IncrementalSearch.CurrentSearchData.IsSome())
+            {
+                return _vimBuffer.IncrementalSearch.CurrentSearchData.Value.Kind.IsAnyForward
+                    ? EditKind.SearchForward
+                    : EditKind.SearchBackward;
+            }
+
+            return EditKind.None;
+        }
+
+        private static char? GetPrefixChar(EditKind editKind)
+        {
+            switch (editKind)
+            {
+                case EditKind.None:
+                    return null;
+                case EditKind.Command:
+                    return ':';
+                case EditKind.SearchForward:
+                    return '/';
+                case EditKind.SearchBackward:
+                    return '?';
+                default:
+                    Contract.FailEnumValue(editKind);
+                    return null;
+            }
         }
 
         #endregion
