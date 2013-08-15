@@ -268,6 +268,19 @@ namespace Vim.UnitTest
                 RunCommandRaw(":/dog");
                 Assert.Equal(_textBuffer.GetPointInLine(1, 1), _textView.GetCaretPoint());
             }
+
+            /// <summary>
+            /// Executing an incremental search from the command line needs to update the last searched
+            /// for term
+            /// </summary>
+            [Fact]
+            public void Issue1146()
+            {
+                Create("cat", " dog", "dog");
+                RunCommandRaw(":/dog");
+                _vimBuffer.Process("n");
+                Assert.Equal(_textBuffer.GetLine(2).Start, _textView.GetCaretPoint());
+            }
         }
 
         public sealed class LineEdittingTest : CommandModeIntegrationTest

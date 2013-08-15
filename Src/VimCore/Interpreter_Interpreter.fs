@@ -1012,7 +1012,7 @@ type VimInterpreter
             _commonOperations.RaiseSearchResultMessage(result)
     
             match result with
-            | SearchResult.Found (_, span, _) ->
+            | SearchResult.Found (searchData, span, _) ->
                 // Move it to the start of the line containing the match 
                 let point = 
                     span.Start 
@@ -1020,8 +1020,8 @@ type VimInterpreter
                     |> SnapshotLineUtil.GetFirstNonBlankOrStart
                 TextViewUtil.MoveCaretToPoint _textView point
                 _commonOperations.EnsureCaretOnScreenAndTextExpanded()
-            | SearchResult.NotFound _ ->
-                ()
+                _vimData.LastPatternData <- searchData.PatternData
+            | SearchResult.NotFound _ -> ()
     
             RunResult.Completed)
 

@@ -345,6 +345,27 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class RunSearhTest : InterpreterTest
+        {
+            [Fact]
+            public void ForwardSearchUpdatesLastPattern()
+            {
+                Create("cat", "dog");
+                ParseAndRun(":/dog");
+                Assert.Equal("dog", _vimData.LastPatternData.Pattern);
+                Assert.Equal(Path.Forward, _vimData.LastPatternData.Path);
+            }
+
+            [Fact]
+            public void BackwardSearchUpdatesLastPattern()
+            {
+                Create("cat", "dog");
+                ParseAndRun(":?dog");
+                Assert.Equal("dog", _vimData.LastPatternData.Pattern);
+                Assert.Equal(Path.Backward, _vimData.LastPatternData.Path);
+            }
+        }
+
         public sealed class RunScriptTest : InterpreterTest
         {
             private void RunScript(params string[] lines)
