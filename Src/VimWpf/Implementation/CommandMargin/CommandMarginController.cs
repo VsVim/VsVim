@@ -159,7 +159,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             }
         }
 
-        private void UpdateForSwitchMode(FSharpOption<IMode> previousMode, IMode currentMode)
+        private void UpdateForSwitchMode(IMode previousMode, IMode currentMode)
         {
             // Calculate the argument string if we are in one time command mode
             string oneTimeArgument = null;
