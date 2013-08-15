@@ -92,7 +92,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             InitializeComponent();
         }
 
-        public void UpdateCaretPosition(bool moveCaretToEnd)
+        internal void UpdateCaretPosition(EditPosition editPosition)
         {
             if (IsEditReadOnly)
             {
@@ -110,16 +110,24 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             }
             else
             { 
-                if (moveCaretToEnd)
+                switch (editPosition)
                 {
-                    // Case where <Left> is pressed.  Put the caret before the last editable value.  Don't let the 
-                    // caret get before the : character
-                    index = Math.Max(1, text.Length - 1);
-                }
-                else
-                {
-                    // Case where <Home> is pressed.  Put the caret after the : character
-                    index = 1;
+                    case EditPosition.Start:
+                        // Case where <Home> is pressed.  Put the caret after the : character
+                        index = 1;
+                        break;
+                    case EditPosition.BeforeLastCharacter:
+                        // Case where <Left> is pressed.  Put the caret before the last editable value.  Don't let the 
+                        // caret get before the : character
+                        index = Math.Max(1, text.Length - 1);
+                        break;
+                    case EditPosition.End:
+                        index = text.Length;
+                        break;
+                    default:
+                        Contract.FailEnumValue(editPosition);
+                        index = 0;
+                        break;
                 }
             }
 

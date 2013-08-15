@@ -23,6 +23,13 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
         SearchBackward
     }
 
+    internal enum EditPosition
+    {
+        Start,
+        End,
+        BeforeLastCharacter
+    }
+
     internal sealed class CommandMarginController
     {
         private readonly IVimBuffer _vimBuffer;
@@ -70,7 +77,8 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             _margin.CommandLineTextBox.PreviewKeyDown += OnCommandLineTextBoxPreviewKeyDown;
             _margin.CommandLineTextBox.TextChanged += OnCommandLineTextBoxTextChanged;
             _margin.CommandLineTextBox.SelectionChanged += OnCommandLineTextBoxSelectionChanged;
-            _margin.CommandLineTextBox.LostKeyboardFocus += CommandLineTextBoxLostKeyboardFocus;
+            _margin.CommandLineTextBox.LostKeyboardFocus += OnCommandLineTextBoxLostKeyboardFocus;
+            _margin.CommandLineTextBox.PreviewMouseDown += OnCommandLineTextBoxPreviewMouseDown;
             _editorFormatMap.FormatMappingChanged += OnFormatMappingChanged;
             UpdateForRecordingChanged();
             UpdateTextColor();
@@ -348,18 +356,18 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
                 case VimKey.Home:
                     // Enable command line edition
                     ChangeEditKind(commandLineEditKind);
-                    _margin.UpdateCaretPosition(moveCaretToEnd: false);
+                    _margin.UpdateCaretPosition(EditPosition.Start);
                     args.Handled = true;
                     break;
                 case VimKey.Left:
                     ChangeEditKind(commandLineEditKind);
-                    _margin.UpdateCaretPosition(moveCaretToEnd: true);
+                    _margin.UpdateCaretPosition(EditPosition.BeforeLastCharacter);
                     args.Handled = true;
                     break;
                 case VimKey.Up:
                 case VimKey.Down:
                     // User is navigation through history, move caret to the end of the entry
-                    _margin.UpdateCaretPosition(moveCaretToEnd: true);
+                    _margin.UpdateCaretPosition(EditPosition.End);
                     break;
             }
         }
@@ -567,9 +575,30 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             }
         }
 
-        private void CommandLineTextBoxLostKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)
+        private void OnCommandLineTextBoxLostKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)
         {
             ChangeEditKind(EditKind.None);
+        }
+
+        /// <summary>
+        /// If the user clicks on the edit box then consider switching to edit mode
+        /// </summary>
+        private void OnCommandLineTextBoxPreviewMouseDown(object sender, RoutedEventArgs e)
+        {
+            if (_editKind != EditKind.None)
+            {
+                return;
+            }
+
+            var commandLineEditKind = CalculateCommandLineEditKind();
+            if (commandLineEditKind == EditKind.None)
+            {
+                return;
+            }
+
+            ChangeEditKind(commandLineEditKind);
+            _margin.UpdateCaretPosition(EditPosition.End);
+            e.Handled = true;
         }
 
         /// <summary>
