@@ -19,13 +19,15 @@ namespace VsVim.Implementation.ConflictingKey
         private readonly CommandKeyBindingSnapshot _snapshot;
         private readonly HashSet<KeyBindingData> _advancedSet = new HashSet<KeyBindingData>();
         private readonly IVimApplicationSettings _vimApplicationSettings;
+        private readonly IProtectedOperations _protectedOperations;
 
-        public ConflictingKeyBindingDialog(CommandKeyBindingSnapshot snapshot, IVimApplicationSettings vimApplicationSettings)
+        public ConflictingKeyBindingDialog(CommandKeyBindingSnapshot snapshot, IVimApplicationSettings vimApplicationSettings, IProtectedOperations protectedOperations)
         {
             InitializeComponent();
 
             _snapshot = snapshot;
             _vimApplicationSettings = vimApplicationSettings;
+            _protectedOperations = protectedOperations;
             ComputeKeyBindings();
 
             BindingsListBox.ItemsSource = _keyBindingList;
@@ -83,7 +85,18 @@ namespace VsVim.Implementation.ConflictingKey
         private void OnOkClick(object sender, RoutedEventArgs e)
         {
             DialogResult = true;
-            UpdateKeyBindings();
+
+            try
+            {
+                UpdateKeyBindings();
+            }
+            catch (Exception ex)
+            {
+                // This code is run on the core message loop.  An exception here is fatal and there
+                // are a good number of COM calls here.  Catch the exception and report the error to
+                // the user 
+                _protectedOperations.Report(ex);
+            }
         }
 
         /// <summary>
