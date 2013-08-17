@@ -118,15 +118,27 @@ namespace Vim.UI.Wpf
 
         public abstract void GoToQuickFix(QuickFix quickFix, int count, bool hasBang);
 
-        public virtual bool IsDirty(ITextBuffer textbuffer)
+        public virtual bool IsDirty(ITextBuffer textBuffer)
         {
-            ITextDocument document;
-            if (!_textDocumentFactoryService.TryGetTextDocument(textbuffer, out document))
+            // If this is an IProjectionBuffer then we need to dig into the actual ITextBuffer values
+            // which make it up.  
+            foreach (var sourceTextBuffer in textBuffer.GetSourceBuffersRecursive())
             {
-                return false;
+                // The inert buffer doesn't need to be considered.  It's used as a fake buffer by web applications
+                // in order to render projected content
+                if (sourceTextBuffer.ContentType == _textBufferFactoryService.InertContentType)
+                {
+                    continue;
+                }
+
+                ITextDocument document;
+                if (_textDocumentFactoryService.TryGetTextDocument(sourceTextBuffer, out document) && document.IsDirty)
+                {
+                    return true;
+                }
             }
 
-            return document.IsDirty;
+            return false;
         }
 
         /// <summary>
