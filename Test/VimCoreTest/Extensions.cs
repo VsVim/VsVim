@@ -1063,12 +1063,11 @@ namespace Vim.UnitTest
         /// actions like scrolling
         /// </summary>
         /// <param name="wpfTextView"></param>
-        public static void MakeOneLineVisible(this IWpfTextView wpfTextView)
+        public static void SetVisibleLineCount(this IWpfTextView wpfTextView, int count)
         {
             var oldSize = wpfTextView.VisualElement.RenderSize;
-            var size = new Size(
-                oldSize.Width,
-                wpfTextView.TextViewLines.FirstVisibleLine.Height);
+            var height = wpfTextView.TextViewLines.FirstVisibleLine.Height * (double)count;
+            var size = new Size(oldSize.Width, height);
             wpfTextView.VisualElement.RenderSize = size;
         }
 

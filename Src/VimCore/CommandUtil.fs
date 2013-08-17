@@ -2411,13 +2411,16 @@ type internal CommandUtil
             doScroll()
 
         // The editor PageUp and PageDown don't actually move the caret.  Manually move it 
-        // here
-        let line = 
-            match direction with 
-            | ScrollDirection.Up -> _textView.TextViewLines.FirstVisibleLine
-            | ScrollDirection.Down -> _textView.TextViewLines.LastVisibleLine
-            | _ -> _textView.TextViewLines.FirstVisibleLine
-        _textView.Caret.MoveTo(line) |> ignore
+        // here.  Need to take into account that TextViewLines can throw 
+        try
+            let line = 
+                match direction with 
+                | ScrollDirection.Up -> _textView.TextViewLines.FirstVisibleLine
+                | ScrollDirection.Down -> _textView.TextViewLines.LastVisibleLine
+                | _ -> _textView.TextViewLines.FirstVisibleLine
+            _textView.Caret.MoveTo(line) |> ignore
+        with
+            | _ -> ()
 
         CommandResult.Completed ModeSwitch.NoSwitch
 

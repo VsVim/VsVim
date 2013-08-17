@@ -764,7 +764,7 @@ namespace Vim.UnitTest
             public void Down_ToBottom()
             {
                 Create("a", "b", "c", "d");
-                _textView.MakeOneLineVisible();
+                _textView.SetVisibleLineCount(count: 1);
                 for (var i = 0; i < 5; i++)
                 {
                     _commandUtil.ScrollLines(ScrollDirection.Down, true, FSharpOption<int>.None);
@@ -779,7 +779,7 @@ namespace Vim.UnitTest
             public void Down_UseScrollOption()
             {
                 Create("a", "b", "c", "d", "e");
-                _textView.MakeOneLineVisible();
+                _textView.SetVisibleLineCount(count: 1);
                 _windowSettings.Scroll = 3;
                 _commandUtil.ScrollLines(ScrollDirection.Down, true, FSharpOption<int>.None);
                 Assert.Equal(3, _textView.GetCaretLine().LineNumber);
@@ -793,7 +793,7 @@ namespace Vim.UnitTest
             public void Down_ScrollOptionWithCount()
             {
                 Create("a", "b", "c", "d", "e");
-                _textView.MakeOneLineVisible();
+                _textView.SetVisibleLineCount(count: 1);
                 _windowSettings.Scroll = 3;
                 _commandUtil.ScrollLines(ScrollDirection.Down, true, FSharpOption.Create(2));
                 Assert.Equal(2, _textView.GetCaretLine().LineNumber);
@@ -808,7 +808,7 @@ namespace Vim.UnitTest
             public void Down_NoScrollOrCount()
             {
                 Create("a", "b", "c", "d", "e");
-                _textView.MakeOneLineVisible();
+                _textView.SetVisibleLineCount(count: 1);
                 _windowSettings.Scroll = 3;
                 _commandUtil.ScrollLines(ScrollDirection.Down, false, FSharpOption<int>.None);
                 Assert.Equal(1, _textView.GetCaretLine().LineNumber);
@@ -822,7 +822,7 @@ namespace Vim.UnitTest
             public void Down_OverFold()
             {
                 Create("a", "b", "c", "d", "e");
-                _textView.MakeOneLineVisible();
+                _textView.SetVisibleLineCount(count: 1);
                 _foldManager.CreateFold(_textBuffer.GetLineRange(1, 2));
                 _commandUtil.ScrollLines(ScrollDirection.Down, false, FSharpOption.Create(2));
                 Assert.Equal(3, _textView.GetCaretLine().LineNumber);
@@ -845,7 +845,7 @@ namespace Vim.UnitTest
             public ScrollPagesTest()
             {
                 Create("a", "b", "c", "d", "e");
-                _textView.MakeOneLineVisible();
+                _textView.SetVisibleLineCount(count: 1);
             }
 
             [Fact]
