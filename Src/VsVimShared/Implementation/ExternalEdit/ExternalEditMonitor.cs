@@ -118,7 +118,7 @@ namespace VsVim.Implementation.ExternalEdit
                 return;
             }
 
-            if (args.PreviousMode.IsSome() && args.PreviousMode.Value.ModeKind == ModeKind.ExternalEdit)
+            if (args.PreviousMode.ModeKind == ModeKind.ExternalEdit)
             {
                 // If we're in the middle of an external edit and the mode switches then we 
                 // need to record the current edit markers so we can ignore them going 
