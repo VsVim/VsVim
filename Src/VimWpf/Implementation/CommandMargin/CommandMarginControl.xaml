@@ -47,7 +47,6 @@
             Grid.Row="0"
             Grid.Column="2"
             Content="Options"
-            Command="Properties"
             />
     </Grid>
 </UserControl>
