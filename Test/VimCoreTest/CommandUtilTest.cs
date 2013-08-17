@@ -735,7 +735,7 @@ namespace Vim.UnitTest
             }
         }
 
-        public sealed class ScrollLinesTest : CommandUtilTest
+        public abstract class ScrollLinesTest : CommandUtilTest
         {
             IFoldManager _foldManager;
 
@@ -745,98 +745,104 @@ namespace Vim.UnitTest
                 return _foldManager;
             }
 
-            /// <summary>
-            /// Should be beeping at the last line in the ITextBuffer
-            /// </summary>
-            [Fact]
-            public void Down_BeepAtLastLine()
+            public sealed class ScrollLinesDownTest : ScrollLinesTest
             {
-                Create("dog", "cat");
-                _textView.MoveCaretToLine(1);
-                _commandUtil.ScrollLines(ScrollDirection.Down, true, FSharpOption<int>.None);
-                Assert.Equal(1, _vimHost.BeepCount);
-            }
-
-            /// <summary>
-            /// Make sure the scroll lines down will hit the bottom of the screen
-            /// </summary>
-            [Fact]
-            public void Down_ToBottom()
-            {
-                Create("a", "b", "c", "d");
-                _textView.SetVisibleLineCount(count: 1);
-                for (var i = 0; i < 5; i++)
+                /// <summary>
+                /// Should be beeping at the last line in the ITextBuffer
+                /// </summary>
+                [Fact]
+                public void BeepAtLastLine()
                 {
+                    Create("dog", "cat");
+                    _textView.MoveCaretToLine(1);
                     _commandUtil.ScrollLines(ScrollDirection.Down, true, FSharpOption<int>.None);
+                    Assert.Equal(1, _vimHost.BeepCount);
                 }
-                Assert.Equal(_textView.GetLine(3).Start, _textView.GetCaretPoint());
+
+                /// <summary>
+                /// Make sure the scroll lines down will hit the bottom of the screen
+                /// </summary>
+                [Fact]
+                public void ToBottom()
+                {
+                    Create("a", "b", "c", "d");
+                    _textView.SetVisibleLineCount(count: 1);
+                    for (var i = 0; i < 5; i++)
+                    {
+                        _commandUtil.ScrollLines(ScrollDirection.Down, true, FSharpOption<int>.None);
+                    }
+                    Assert.Equal(_textView.GetLine(3).Start, _textView.GetCaretPoint());
+                }
+
+                /// <summary>
+                /// Make sure the scroll option is used if it's one of the parameters
+                /// </summary>
+                [Fact]
+                public void UseScrollOption()
+                {
+                    Create("a", "b", "c", "d", "e");
+                    _textView.SetVisibleLineCount(count: 1);
+                    _windowSettings.Scroll = 3;
+                    _commandUtil.ScrollLines(ScrollDirection.Down, true, FSharpOption<int>.None);
+                    Assert.Equal(3, _textView.GetCaretLine().LineNumber);
+                }
+
+                /// <summary>
+                /// If the scroll option is set to be consulted an an explicit count is given then that
+                /// count should be used and the scroll option should be set to that value
+                /// </summary>
+                [Fact]
+                public void ScrollOptionWithCount()
+                {
+                    Create("a", "b", "c", "d", "e");
+                    _textView.SetVisibleLineCount(count: 1);
+                    _windowSettings.Scroll = 3;
+                    _commandUtil.ScrollLines(ScrollDirection.Down, true, FSharpOption.Create(2));
+                    Assert.Equal(2, _textView.GetCaretLine().LineNumber);
+                    Assert.Equal(2, _windowSettings.Scroll);
+                }
+
+                /// <summary>
+                /// With no scroll or count then the value of 1 should be used and the scroll option
+                /// shouldn't be updated
+                /// </summary>
+                [Fact]
+                public void NoScrollOrCount()
+                {
+                    Create("a", "b", "c", "d", "e");
+                    _textView.SetVisibleLineCount(count: 1);
+                    _windowSettings.Scroll = 3;
+                    _commandUtil.ScrollLines(ScrollDirection.Down, false, FSharpOption<int>.None);
+                    Assert.Equal(1, _textView.GetCaretLine().LineNumber);
+                    Assert.Equal(3, _windowSettings.Scroll);
+                }
+
+                /// <summary>
+                /// Make sure that scroll lines down handles a fold as a single line
+                /// </summary>
+                [Fact]
+                public void OverFold()
+                {
+                    Create("a", "b", "c", "d", "e");
+                    _textView.SetVisibleLineCount(count: 1);
+                    _foldManager.CreateFold(_textBuffer.GetLineRange(1, 2));
+                    _commandUtil.ScrollLines(ScrollDirection.Down, false, FSharpOption.Create(2));
+                    Assert.Equal(3, _textView.GetCaretLine().LineNumber);
+                }
             }
 
-            /// <summary>
-            /// Make sure the scroll option is used if it's one of the parameters
-            /// </summary>
-            [Fact]
-            public void Down_UseScrollOption()
+            public sealed class ScrollLinesUpTest : ScrollLinesTest
             {
-                Create("a", "b", "c", "d", "e");
-                _textView.SetVisibleLineCount(count: 1);
-                _windowSettings.Scroll = 3;
-                _commandUtil.ScrollLines(ScrollDirection.Down, true, FSharpOption<int>.None);
-                Assert.Equal(3, _textView.GetCaretLine().LineNumber);
-            }
-
-            /// <summary>
-            /// If the scroll option is set to be consulted an an explicit count is given then that
-            /// count should be used and the scroll option should be set to that value
-            /// </summary>
-            [Fact]
-            public void Down_ScrollOptionWithCount()
-            {
-                Create("a", "b", "c", "d", "e");
-                _textView.SetVisibleLineCount(count: 1);
-                _windowSettings.Scroll = 3;
-                _commandUtil.ScrollLines(ScrollDirection.Down, true, FSharpOption.Create(2));
-                Assert.Equal(2, _textView.GetCaretLine().LineNumber);
-                Assert.Equal(2, _windowSettings.Scroll);
-            }
-
-            /// <summary>
-            /// With no scroll or count then the value of 1 should be used and the scroll option
-            /// shouldn't be updated
-            /// </summary>
-            [Fact]
-            public void Down_NoScrollOrCount()
-            {
-                Create("a", "b", "c", "d", "e");
-                _textView.SetVisibleLineCount(count: 1);
-                _windowSettings.Scroll = 3;
-                _commandUtil.ScrollLines(ScrollDirection.Down, false, FSharpOption<int>.None);
-                Assert.Equal(1, _textView.GetCaretLine().LineNumber);
-                Assert.Equal(3, _windowSettings.Scroll);
-            }
-
-            /// <summary>
-            /// Make sure that scroll lines down handles a fold as a single line
-            /// </summary>
-            [Fact]
-            public void Down_OverFold()
-            {
-                Create("a", "b", "c", "d", "e");
-                _textView.SetVisibleLineCount(count: 1);
-                _foldManager.CreateFold(_textBuffer.GetLineRange(1, 2));
-                _commandUtil.ScrollLines(ScrollDirection.Down, false, FSharpOption.Create(2));
-                Assert.Equal(3, _textView.GetCaretLine().LineNumber);
-            }
-
-            /// <summary>
-            /// Should be beeping at the first line in the ITextBuffer
-            /// </summary>
-            [Fact]
-            public void Up_BeepAtFirstLine()
-            {
-                Create("dog", "cat");
-                _commandUtil.ScrollLines(ScrollDirection.Up, true, FSharpOption<int>.None);
-                Assert.Equal(1, _vimHost.BeepCount);
+                /// <summary>
+                /// Should be beeping at the first line in the ITextBuffer
+                /// </summary>
+                [Fact]
+                public void BeepAtFirstLine()
+                {
+                    Create("dog", "cat");
+                    _commandUtil.ScrollLines(ScrollDirection.Up, true, FSharpOption<int>.None);
+                    Assert.Equal(1, _vimHost.BeepCount);
+                }
             }
         }
 
