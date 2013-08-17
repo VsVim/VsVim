@@ -50,6 +50,7 @@ namespace VsVim.Implementation.Misc
             // Don't handle input when incremental search is active.  Let Visual Studio handle it
             if (_adapter.IsIncrementalSearchActive(TextView))
             {
+                VimTrace.TraceInfo("VsKeyProcessor::TryProcess Incremental search active");
                 return false;
             }
 
