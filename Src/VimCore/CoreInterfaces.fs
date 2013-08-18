@@ -2029,13 +2029,18 @@ type CommandFlags =
     | Delete = 0x100
 
     /// Vim allows for special handling of the 'y' command in normal mode such that it can
-    /// have the pattern 'y#y'.  This flag is used to tag the 'd' command to allow such
+    /// have the pattern 'y#y'.  This flag is used to tag the 'y' command to allow such
     /// a pattern
     | Yank = 0x200
 
+    /// Vim allows for special handling of the 'c' command in normal mode such that it can
+    /// have the pattern 'c#c'.  This flag is used to tag the 'c' command to allow such
+    /// a pattern
+    | Change = 0x400
+
     /// Represents an insert edit action which can be linked with other insert edit actions and
     /// hence acts with them in a repeat
-    | InsertEdit = 0x400
+    | InsertEdit = 0x800
 
 /// Data about the run of a given MotionResult
 type MotionData = {

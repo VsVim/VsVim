@@ -2238,6 +2238,15 @@ namespace Vim.UnitTest
                 _vimBuffer.Process("cc");
                 Assert.Equal(6, _textView.GetCaretVirtualPoint().VirtualSpaces);
             }
+
+            [Fact]
+            public void Issue1145()
+            {
+                Create("cat", "dog", "fish");
+                _vimBuffer.ProcessNotation("c2cabc<Esc>");
+                Assert.Equal(new[] { "abc", "fish" }, _textBuffer.GetLines());
+                Assert.Equal(2, _textView.GetCaretPoint().Position);
+            }
         }
 
         public sealed class ChangeMotionTest : NormalModeIntegrationTest

@@ -171,6 +171,8 @@ type internal CommandRunner
             doSpecialBinding NormalCommand.DeleteLines 'd'
         elif Util.IsFlagSet commandBinding.CommandFlags CommandFlags.Yank then
             doSpecialBinding NormalCommand.YankLines 'y'
+        elif Util.IsFlagSet commandBinding.CommandFlags CommandFlags.Change then
+            doSpecialBinding NormalCommand.ChangeLines 'c'
         else
             let result = _motionCapture.GetMotionAndCount keyInput
             result.Convert (fun (motion, motionCount) -> convertMotion motion motionCount)
