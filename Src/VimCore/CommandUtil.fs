@@ -2366,36 +2366,59 @@ type internal CommandUtil
 
         let count = if count <= 0 then 1 else count
 
-        // After scrolling we need to ensure the caret is on screen.  Essentially if the caret isn't
-        // visible then put at it the top / bottom line depending on whether we are scrolling up
-        // or down
-        let updateCaret (getLineFunc : ITextViewLineCollection -> ITextViewLine) = 
-            try 
-                let containingLine = _textView.Caret.ContainingTextViewLine
-                if containingLine.VisibilityState <> VisibilityState.FullyVisible then
-                    let textViewLine = getLineFunc _textView.TextViewLines
-                    let snapshotLine = SnapshotPointUtil.GetContainingLine textViewLine.Start
-                    TextViewUtil.MoveCaretToPoint _textView snapshotLine.Start
+        try
+            // Update the caret to the specified offset from the first visible line
+            let updateCaretToOffset lineOffset = 
+                let textViewLines = _textView.TextViewLines
+                let firstIndex = textViewLines.GetIndexOfTextLine(textViewLines.FirstVisibleLine)
+                let textViewLine = textViewLines.[firstIndex + lineOffset]
+                let snapshotLine = SnapshotPointUtil.GetContainingLine textViewLine.Start
+                TextViewUtil.MoveCaretToPoint _textView snapshotLine.Start
 
-            with 
-                // Asking for ITextViewLine information can fail if we're in a layout.  
-                | _ -> ()
+            let textViewLines = _textView.TextViewLines
+            let firstIndex = textViewLines.GetIndexOfTextLine(textViewLines.FirstVisibleLine)
+            let caretIndex = textViewLines.GetIndexOfTextLine(_textView.Caret.ContainingTextViewLine)
 
-        match scrollDirection with
-        | ScrollDirection.Up -> 
-            if x.CaretLine.LineNumber = 0 then 
-                _commonOperations.Beep()
-            else
-                _textView.ViewScroller.ScrollViewportVerticallyByLines(scrollDirection, count)
-                updateCaret (fun textViewLines -> textViewLines.LastVisibleLine)
-        | ScrollDirection.Down ->
-            if x.CaretLine.LineNumber = SnapshotUtil.GetLastLineNumber x.CurrentSnapshot then
-                _commonOperations.Beep()
-            else
-                _textView.ViewScroller.ScrollViewportVerticallyByLines(scrollDirection, count)
-                updateCaret (fun textViewLines -> textViewLines.FirstVisibleLine)
-        | _ -> 
-            ()
+            // How many visual lines is the caret offset from the first visible line 
+            let lineOffset = max 0 (caretIndex - firstIndex)
+
+            match scrollDirection with
+            | ScrollDirection.Up -> 
+                if 0 = textViewLines.FirstVisibleLine.Start.Position then
+                    // The buffer is currently scrolled to the very top.  Move the caret by the specified
+                    // count or beep if caret at the start of the file as well.  Make sure this movement 
+                    // occurs on the visual lines, not the edit buffer (other wise folds will cause the 
+                    // caret to move incorrectly)
+                    if caretIndex = 0 then 
+                        _commonOperations.Beep()
+                    else
+                        let index = max 0 (caretIndex - count)
+                        let line = textViewLines.[index]
+                        TextViewUtil.MoveCaretToPoint _textView line.Start
+                else
+                    _textView.ViewScroller.ScrollViewportVerticallyByLines(scrollDirection, count)
+                    updateCaretToOffset lineOffset
+            | ScrollDirection.Down ->
+                if x.CurrentSnapshot.Length = textViewLines.LastVisibleLine.EndIncludingLineBreak.Position then
+                    // Currently scrolled to the end of the buffer.  Move the caret by the count or 
+                    // beep if truly at the end 
+                    let lastIndex = textViewLines.GetIndexOfTextLine(textViewLines.LastVisibleLine)
+                    if lastIndex = caretIndex then
+                        _commonOperations.Beep()
+                    else
+                        let index = min (textViewLines.Count - 1) (caretIndex + count)
+                        let line = textViewLines.[index]
+                        TextViewUtil.MoveCaretToPoint _textView line.Start
+                else
+                    _textView.ViewScroller.ScrollViewportVerticallyByLines(scrollDirection, count)
+                    updateCaretToOffset lineOffset
+            | _ -> ()
+
+        with 
+        // Dealing with ITextViewLines can lead to an exception (particularly during layout).  Need
+        // to be safe here and handle the exception.  If we can't access the ITextViewLines there
+        // isn't much that can be done for scrolling 
+        | _ -> () 
 
         CommandResult.Completed ModeSwitch.NoSwitch
 
