@@ -63,6 +63,11 @@ namespace Vim.UnitTest
 
         public sealed class KeyInputTest : VimBufferTest
         {
+            public KeyInputTest()
+            {
+                _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
+            }
+
             /// <summary>
             /// Make sure the processed event is raised during a key process
             /// </summary>
@@ -197,7 +202,7 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
-            /// When KeyInputStart is handled we still need to fire the other 2 events (Processed and End) in the 
+            /// When KeyInputStart is handled we still need to fire the other 3 events (Processing, Processed and End) in the 
             /// proper order.  The naiive consumer should see this is a normal event sequence
             /// </summary>
             [Fact]
@@ -211,6 +216,48 @@ namespace Vim.UnitTest
                         Assert.Equal(0, count);
                         count++;
                         e.Handled = true;
+                    };
+                _vimBuffer.KeyInputProcessing +=
+                    (sender, e) =>
+                    {
+                        Assert.Equal('c', e.KeyInput.Char);
+                        Assert.Equal(1, count);
+                        Assert.True(e.Handled);
+                        count++;
+                    };
+                _vimBuffer.KeyInputProcessed +=
+                    (sender, e) =>
+                    {
+                        Assert.Equal('c', e.KeyInput.Char);
+                        Assert.Equal(2, count);
+                        count++;
+                    };
+                _vimBuffer.KeyInputEnd +=
+                    (sender, e) =>
+                    {
+                        Assert.Equal('c', e.KeyInput.Char);
+                        Assert.Equal(3, count);
+                        count++;
+                    };
+                _vimBuffer.Process('c');
+                Assert.Equal(4, count);
+            }
+
+            /// <summary>
+            /// When KeyInputProcessing is handled we still need to fire the other 2 events (Processed and End) in the 
+            /// proper order.  The naiive consumer should see this is a normal event sequence
+            /// </summary>
+            [Fact]
+            public void KeyInputProcessingHandled()
+            {
+                var count = 0;
+                _vimBuffer.KeyInputProcessing +=
+                    (sender, e) =>
+                    {
+                        Assert.Equal('c', e.KeyInput.Char);
+                        Assert.Equal(0, count);
+                        e.Handled = true;
+                        count++;
                     };
                 _vimBuffer.KeyInputProcessed +=
                     (sender, e) =>
@@ -228,6 +275,43 @@ namespace Vim.UnitTest
                     };
                 _vimBuffer.Process('c');
                 Assert.Equal(3, count);
+            }
+
+            /// <summary>
+            /// The start and end events shouldn't consider any mappings.  They should display the key
+            /// which was actually pressed.  The Processing events though should consider the mappings
+            /// </summary>
+            [Fact]
+            public void Mappings()
+            {
+                var seen = 0;
+                _vimBuffer.ProcessNotation(":map a b", enter: true);
+                _vimBuffer.KeyInputStart += 
+                    (sender, e) => 
+                    {
+                        Assert.Equal('a', e.KeyInput.Char);
+                        seen++;
+                    };
+                _vimBuffer.KeyInputEnd += 
+                    (sender, e) => 
+                    {
+                        Assert.Equal('a', e.KeyInput.Char);
+                        seen++;
+                    };
+                _vimBuffer.KeyInputProcessing += 
+                    (sender, e) => 
+                    {
+                        Assert.Equal('b', e.KeyInput.Char);
+                        seen++;
+                    };
+                _vimBuffer.KeyInputProcessed += 
+                    (sender, e) => 
+                    {
+                        Assert.Equal('b', e.KeyInput.Char);
+                        seen++;
+                    };
+                _vimBuffer.ProcessNotation("a");
+                Assert.Equal(4, seen);
             }
         }
 

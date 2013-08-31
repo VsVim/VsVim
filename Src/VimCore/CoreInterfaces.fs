@@ -3945,8 +3945,24 @@ and IVimBuffer =
     [<CLIEvent>]
     abstract SwitchedMode : IDelegateEvent<System.EventHandler<SwitchModeEventArgs>>
 
+    /// Raised when a KeyInput is received by the buffer.  This will be raised for the 
+    /// KeyInput which was received and does not consider any mappings
+    [<CLIEvent>]
+    abstract KeyInputStart : IDelegateEvent<System.EventHandler<KeyInputStartEventArgs>>
+
+    /// This is raised just before the IVimBuffer attempts to process a KeyInput 
+    /// value.  This will not necessarily be the KeyInput which was raised in KeyInputStart
+    /// because a mapping could have changed it to one or many other different KeyInput
+    /// values.  
+    ///
+    /// If this event is marked as Handled then the KeyInput will never actually be 
+    /// processed by the IVimBuffer.  It will instead immediately move to the 
+    /// KeyInputProcessed event
+    [<CLIEvent>]
+    abstract KeyInputProcessing : IDelegateEvent<System.EventHandler<KeyInputStartEventArgs>>
+
     /// Raised when a key is processed.  This is raised when the KeyInput is actually
-    /// processed by Vim not when it is received.  
+    /// processed by Vim, not when it is received.  
     ///
     /// Typically this occurs immediately after a Start command and is followed by an
     /// End command.  One case this doesn't happen is in a key remapping where the source 
@@ -3955,17 +3971,14 @@ and IVimBuffer =
     [<CLIEvent>]
     abstract KeyInputProcessed : IDelegateEvent<System.EventHandler<KeyInputProcessedEventArgs>>
 
-    /// Raised when a KeyInput is received by the buffer
-    [<CLIEvent>]
-    abstract KeyInputStart : IDelegateEvent<System.EventHandler<KeyInputStartEventArgs>>
-
     /// Raised when a key is received but not immediately processed.  Occurs when a
     /// key remapping has more than one source key strokes
     [<CLIEvent>]
     abstract KeyInputBuffered : IDelegateEvent<System.EventHandler<KeyInputSetEventArgs>>
 
     /// Raised when a KeyInput is completed processing within the IVimBuffer.  This happens 
-    /// if the KeyInput is buffered or processed
+    /// if the KeyInput is buffered or processed.  This will be raised for the KeyInput which
+    /// was initially considered (came from KeyInputStart).  It won't consider any mappings
     [<CLIEvent>]
     abstract KeyInputEnd : IDelegateEvent<System.EventHandler<KeyInputEventArgs>>
 

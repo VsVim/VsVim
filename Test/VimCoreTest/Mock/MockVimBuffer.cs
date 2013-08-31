@@ -247,6 +247,8 @@ namespace Vim.UnitTest.Mock
         public event EventHandler<SwitchModeEventArgs> SwitchedMode;
 
 #pragma warning disable 67
+        public event EventHandler<KeyInputStartEventArgs> KeyInputProcessing;
+
         public event EventHandler Closing;
 #pragma warning restore 67
 

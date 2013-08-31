@@ -133,10 +133,11 @@ type internal VimBuffer
     /// element
     let mutable _bufferedKeyInput : KeyInputSet option = None
 
-    let _keyInputProcessedEvent = StandardEvent<KeyInputProcessedEventArgs>()
     let _keyInputStartEvent = StandardEvent<KeyInputStartEventArgs>()
-    let _keyInputEndEvent = StandardEvent<KeyInputEventArgs>()
+    let _keyInputProcessingEvent = StandardEvent<KeyInputStartEventArgs>()
+    let _keyInputProcessedEvent = StandardEvent<KeyInputProcessedEventArgs>()
     let _keyInputBufferedEvent = StandardEvent<KeyInputSetEventArgs>()
+    let _keyInputEndEvent = StandardEvent<KeyInputEventArgs>()
     let _errorMessageEvent = StandardEvent<StringEventArgs>()
     let _warningMessageEvent = StandardEvent<StringEventArgs>()
     let _statusMessageEvent = StandardEvent<StringEventArgs>()
@@ -338,9 +339,16 @@ type internal VimBuffer
     member x.ProcessOneKeyInput (keyInput : KeyInput) =
 
         let processResult = 
+
+            // Raise the KeyInputProcessing event before we actually process the value
+            let args = KeyInputStartEventArgs(keyInput)
+            _keyInputProcessingEvent.Trigger x args
+
             _processingInputCount <- _processingInputCount + 1
             try
-                if keyInput = _vim.GlobalSettings.DisableAllCommand then
+                if args.Handled then
+                    ProcessResult.Handled ModeSwitch.NoSwitch
+                elif keyInput = _vim.GlobalSettings.DisableAllCommand then
                     // Toggle the state of Vim.IsDisabled
                     _vim.IsDisabled <- not _vim.IsDisabled
                     ProcessResult.OfModeKind x.Mode.ModeKind
@@ -475,8 +483,12 @@ type internal VimBuffer
             if args.Handled then
                 // If one of the event handlers handled the KeyInput themselves then 
                 // the key is considered handled and nothing changed.  Need to raise 
-                // the processed event here since it was technically processed at this
+                // the process events here since it was technically processed at this
                 // point
+                let keyInputProcessingEventArgs = KeyInputStartEventArgs(keyInput)
+                keyInputProcessingEventArgs.Handled <- true
+                _keyInputProcessingEvent.Trigger x keyInputProcessingEventArgs
+
                 let processResult = ProcessResult.Handled ModeSwitch.NoSwitch
                 let keyInputProcessedEventArgs = KeyInputProcessedEventArgs(keyInput, processResult)
                 _keyInputProcessedEvent.Trigger x keyInputProcessedEventArgs
@@ -630,13 +642,15 @@ type internal VimBuffer
         [<CLIEvent>]
         member x.SwitchedMode = _modeMap.SwitchedEvent.Publish
         [<CLIEvent>]
-        member x.KeyInputProcessed = _keyInputProcessedEvent.Publish
-        [<CLIEvent>]
         member x.KeyInputStart = _keyInputStartEvent.Publish
         [<CLIEvent>]
-        member x.KeyInputEnd = _keyInputEndEvent.Publish
+        member x.KeyInputProcessing = _keyInputProcessingEvent.Publish
+        [<CLIEvent>]
+        member x.KeyInputProcessed = _keyInputProcessedEvent.Publish
         [<CLIEvent>]
         member x.KeyInputBuffered = _keyInputBufferedEvent.Publish
+        [<CLIEvent>]
+        member x.KeyInputEnd = _keyInputEndEvent.Publish
         [<CLIEvent>]
         member x.ErrorMessage = _errorMessageEvent.Publish
         [<CLIEvent>]
