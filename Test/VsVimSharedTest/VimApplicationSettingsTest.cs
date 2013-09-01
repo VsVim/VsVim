@@ -7,6 +7,7 @@ using EditorUtils;
 using EnvDTE;
 using Microsoft.VisualStudio.Settings;
 using Moq;
+using Vim.UI.Wpf;
 using VsVim.Implementation.Settings;
 using VsVim.UnitTest.Mock;
 using Xunit;
@@ -215,7 +216,7 @@ namespace VsVim.UnitTest
         #endregion
 
         private readonly MockRepository _factory;
-        private readonly Mock<IProtectedOperations> _protectedOperations;
+        private readonly Mock<IVimProtectedOperations> _protectedOperations;
         private readonly IVimApplicationSettings _vimApplicationSettings;
         private readonly VimApplicationSettings _vimApplicationSettingsRaw;
         private readonly WritableSettingsStore _writableSettingsStore;
@@ -224,7 +225,7 @@ namespace VsVim.UnitTest
         {
             settingsStore = settingsStore ?? new SimpleWritableSettingsStore();
             _factory = new MockRepository(MockBehavior.Strict);
-            _protectedOperations = _factory.Create<IProtectedOperations>();
+            _protectedOperations = _factory.Create<IVimProtectedOperations>();
             _vimApplicationSettingsRaw = new VimApplicationSettings(visualStudioVersion, settingsStore, _protectedOperations.Object);
             _vimApplicationSettings = _vimApplicationSettingsRaw;
             _writableSettingsStore = settingsStore;

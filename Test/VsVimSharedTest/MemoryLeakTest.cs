@@ -223,6 +223,12 @@ namespace VsVim.UnitTest
         [ThreadStatic]
         private static CompositionContainer _compositionContainer;
 
+        public override CompositionContainer CompositionContainerCache
+        {
+            get { return _compositionContainer; }
+            set { _compositionContainer = value; }
+        }
+
         private readonly TestableSynchronizationContext _synchronizationContext;
 
         public MemoryLeakTest()
@@ -259,31 +265,21 @@ namespace VsVim.UnitTest
             }
         }
 
-        protected override CompositionContainer GetOrCreateCompositionContainer()
+        protected override void GetEditorHostParts(List<System.ComponentModel.Composition.Primitives.ComposablePartCatalog> composablePartCatalogList, List<ExportProvider> exportProviderList)
         {
-            if (_compositionContainer == null)
-            {
-                var list = GetEditorUtilsCatalog();
-                list.Add(new AssemblyCatalog(typeof(Vim.IVim).Assembly));
-                list.Add(new AssemblyCatalog(typeof(Vim.UI.Wpf.VimKeyProcessor).Assembly));
-                list.Add(new AssemblyCatalog(typeof(VsVim.VsCommandTarget).Assembly));
-                list.Add(new TypeCatalog(
-                    typeof(VsVim.UnitTest.MemoryLeakTest.ServiceProvider),
-                    typeof(VsVim.UnitTest.MemoryLeakTest.VsEditorAdaptersFactoryService),
-                    typeof(VsVim.UnitTest.MemoryLeakTest.LegacySettings),
-                    typeof(VimErrorDetector)));
-
-                var catalog = new AggregateCatalog(list.ToArray());
-                _compositionContainer = new CompositionContainer(catalog);
-            }
-
-            return _compositionContainer;
+            composablePartCatalogList.Add(new AssemblyCatalog(typeof(Vim.IVim).Assembly));
+            composablePartCatalogList.Add(new AssemblyCatalog(typeof(Vim.UI.Wpf.VimKeyProcessor).Assembly));
+            composablePartCatalogList.Add(new AssemblyCatalog(typeof(VsVim.VsCommandTarget).Assembly));
+            composablePartCatalogList.Add(new TypeCatalog(
+                typeof(VsVim.UnitTest.MemoryLeakTest.ServiceProvider),
+                typeof(VsVim.UnitTest.MemoryLeakTest.VsEditorAdaptersFactoryService),
+                typeof(VsVim.UnitTest.MemoryLeakTest.LegacySettings),
+                typeof(VimErrorDetector)));
         }
 
         private IVimBuffer CreateVimBuffer()
         {
-            var container = GetOrCreateCompositionContainer();
-            var factory = container.GetExport<ITextEditorFactoryService>().Value;
+            var factory = CompositionContainer.GetExport<ITextEditorFactoryService>().Value;
             var textView = factory.CreateTextView();
 
             // Verify we actually created the IVimBuffer instance 
@@ -311,7 +307,7 @@ namespace VsVim.UnitTest
         [Fact]
         public void RespectHostCreationPolicy()
         {
-            var container = GetOrCreateCompositionContainer();
+            var container = CompositionContainer;
             var vsVimHost = container.GetExportedValue<VsVimHost>();
             vsVimHost.DisableVimBufferCreation = true;
             try
@@ -340,7 +336,7 @@ namespace VsVim.UnitTest
         [FactDebugOnly]
         public void TextViewOnly()
         {
-            var container = GetOrCreateCompositionContainer();
+            var container = CompositionContainer;
             var factory = container.GetExport<ITextEditorFactoryService>().Value;
             var textView = factory.CreateTextView();
             var weakReference = new WeakReference(textView);
@@ -359,7 +355,7 @@ namespace VsVim.UnitTest
         [FactDebugOnly]
         public void TextViewHostOnly()
         {
-            var container = GetOrCreateCompositionContainer();
+            var container = CompositionContainer;
             var factory = container.GetExport<ITextEditorFactoryService>().Value;
             var textView = factory.CreateTextView();
             var textViewHost = factory.CreateTextViewHost(textView, setFocus: true);
@@ -375,7 +371,7 @@ namespace VsVim.UnitTest
         [FactDebugOnly]
         public void VimWpfDoesntHoldBuffer()
         {
-            var container = GetOrCreateCompositionContainer();
+            var container = CompositionContainer;
             var factory = container.GetExport<ITextEditorFactoryService>().Value;
             var textView = factory.CreateTextView();
 

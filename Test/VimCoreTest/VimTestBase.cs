@@ -43,6 +43,15 @@ namespace Vim.UnitTest
         private IClipboardDevice _clipboardDevice;
         private IVimProtectedOperations _vimProtectedOperations;
 
+        [ThreadStatic]
+        private static CompositionContainer _compositionContainerCache;
+
+        public override CompositionContainer CompositionContainerCache
+        {
+            get { return _compositionContainerCache; }
+            set { _compositionContainerCache = value; }
+        }
+
         public IVim Vim
         {
             get { return _vim; }

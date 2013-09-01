@@ -38,7 +38,6 @@
     <MefComponent>|VimWpf|</MefComponent>
     <MefComponent>|VsVimShared|</MefComponent>
     <MefComponent>|Vs2012|</MefComponent>
-    <MefComponent>EditorUtils.dll</MefComponent>
     <VsPackage>Colors.pkgdef</VsPackage>
   </Content>
 </Vsix>
