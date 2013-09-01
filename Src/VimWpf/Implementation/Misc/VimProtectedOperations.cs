@@ -19,7 +19,7 @@ namespace Vim.UI.Wpf.Implementation.Misc
         private readonly IProtectedOperations _protectedOperations;
 
         [ImportingConstructor]
-        internal VimProtectedOperations(IEnumerable<Lazy<IExtensionErrorHandler>> errorHandlers)
+        internal VimProtectedOperations([ImportMany] IEnumerable<Lazy<IExtensionErrorHandler>> errorHandlers)
         {
             _protectedOperations = EditorUtilsFactory.CreateProtectedOperations(errorHandlers);
         }
