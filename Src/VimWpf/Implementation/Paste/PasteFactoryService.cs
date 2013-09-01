@@ -15,7 +15,7 @@ namespace Vim.UI.Wpf.Implementation.Paste
         private readonly IProtectedOperations _protectedOperations;
 
         [ImportingConstructor]
-        internal PasteFactoryService(IEditorFormatMapService formatMapService, [EditorUtilsImport] IProtectedOperations protectedOperations)
+        internal PasteFactoryService(IEditorFormatMapService formatMapService, IVimProtectedOperations protectedOperations)
         {
             _formatMapService = formatMapService;
             _protectedOperations = protectedOperations;

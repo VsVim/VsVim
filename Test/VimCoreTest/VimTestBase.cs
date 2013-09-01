@@ -29,9 +29,6 @@ namespace Vim.UnitTest
     /// </summary>
     public abstract class VimTestBase : EditorHost, IDisposable
     {
-        [ThreadStatic]
-        private static CompositionContainer s_vimCompositionContainer;
-
         private IVim _vim;
         private IVimBufferFactory _vimBufferFactory;
         private ICommonOperationsFactory _commonOperationsFactory;
@@ -44,6 +41,7 @@ namespace Vim.UnitTest
         private IKeyboardDevice _keyboardDevice;
         private IMouseDevice _mouseDevice;
         private IClipboardDevice _clipboardDevice;
+        private IVimProtectedOperations _vimProtectedOperations;
 
         public IVim Vim
         {
@@ -136,6 +134,11 @@ namespace Vim.UnitTest
             get { return _vim.VariableMap; }
         }
 
+        public IVimProtectedOperations VimProtectedOperations
+        {
+            get { return _vimProtectedOperations; }
+        }
+
         protected VimTestBase()
         {
             // Parts of the core editor in Vs2012 depend on there being an Application.Current value else
@@ -155,6 +158,7 @@ namespace Vim.UnitTest
             _foldManagerFactory = CompositionContainer.GetExportedValue<IFoldManagerFactory>();
             _bulkOperations = CompositionContainer.GetExportedValue<IBulkOperations>();
             _keyUtil = CompositionContainer.GetExportedValue<IKeyUtil>();
+            _vimProtectedOperations = CompositionContainer.GetExportedValue<IVimProtectedOperations>();
 
             _keyboardDevice = CompositionContainer.GetExportedValue<IKeyboardDevice>();
             _mouseDevice = CompositionContainer.GetExportedValue<IMouseDevice>();
@@ -365,25 +369,13 @@ namespace Vim.UnitTest
                 _bulkOperations);
         }
 
-        protected override CompositionContainer GetOrCreateCompositionContainer()
+        protected override void GetEditorHostParts(List<ComposablePartCatalog> composablePartCatalogList, List<ExportProvider> exportProviderList)
         {
-            if (s_vimCompositionContainer == null)
-            {
-                var list = GetVimCatalog();
-                var catalog = new AggregateCatalog(list.ToArray());
-                s_vimCompositionContainer = new CompositionContainer(catalog);
-            }
-
-            return s_vimCompositionContainer;
-        }
-
-        protected static List<ComposablePartCatalog> GetVimCatalog()
-        {
-            var list = GetEditorUtilsCatalog();
-            list.Add(new AssemblyCatalog(typeof(IVim).Assembly));
+            base.GetEditorHostParts(composablePartCatalogList, exportProviderList);
+            composablePartCatalogList.Add(new AssemblyCatalog(typeof(IVim).Assembly));
 
             // Other Exports needed to construct VsVim
-            list.Add(new TypeCatalog(
+            composablePartCatalogList.Add(new TypeCatalog(
                 typeof(TestableClipboardDevice),
                 typeof(TestableKeyboardDevice),
                 typeof(TestableMouseDevice),
@@ -391,9 +383,9 @@ namespace Vim.UnitTest
                 typeof(VimErrorDetector),
                 typeof(DisplayWindowBrokerFactoryService),
                 typeof(WordCompletionSessionFactoryService),
-                typeof(AlternateKeyUtil)));
-
-            return list;
+                typeof(AlternateKeyUtil),
+                typeof(VimProtectedOperations),
+                typeof(OutlinerTaggerProvider)));
         }
 
         protected void UpdateTabStop(IVimBuffer vimBuffer, int tabStop)
