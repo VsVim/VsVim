@@ -14,7 +14,7 @@ namespace Vim.UI.Wpf.UnitTest
 
         public KeyMappingTimeoutHandlerTest()
         {
-            _keyMappingTimeoutHandler = new KeyMappingTimeoutHandler(ProtectedOperations);
+            _keyMappingTimeoutHandler = new KeyMappingTimeoutHandler(VimProtectedOperations);
             Vim.GlobalSettings.Timeout = true;
             Vim.GlobalSettings.TimeoutLength = 100;
 

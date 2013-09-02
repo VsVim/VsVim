@@ -104,8 +104,7 @@ type IncrementalSearchTaggerSource (_vimBuffer : IVimBuffer) as this =
 type internal IncrementalSearchTaggerProvider
     [<ImportingConstructor>]
     (
-        _vim : IVim,
-        [<EditorUtilsImport>] _taggerFactory : ITaggerFactory
+        _vim : IVim
     ) = 
 
     interface IViewTaggerProvider with 
@@ -115,7 +114,7 @@ type internal IncrementalSearchTaggerProvider
                 | None -> null
                 | Some vimBuffer ->
                     let taggerSource = new IncrementalSearchTaggerSource(vimBuffer)
-                    let tagger = _taggerFactory.CreateBasicTaggerRaw taggerSource
+                    let tagger = EditorUtilsFactory.CreateBasicTaggerRaw taggerSource
                     tagger :> obj :?> ITagger<'T>
             else
                 null
@@ -303,8 +302,7 @@ type HighlightSearchTaggerSource
 type HighlightIncrementalSearchTaggerProvider
     [<ImportingConstructor>]
     ( 
-        _vim : IVim,
-        [<EditorUtilsImport>] _taggerFactory : ITaggerFactory
+        _vim : IVim
     ) = 
 
     let _key = obj()
@@ -315,7 +313,7 @@ type HighlightIncrementalSearchTaggerProvider
                 match _vim.GetOrCreateVimBufferForHost textView with
                 | None -> null
                 | Some vimBuffer ->
-                    let tagger = _taggerFactory.CreateAsyncTagger(textView.Properties, _key, fun () ->
+                    let tagger = EditorUtilsFactory.CreateAsyncTagger(textView.Properties, _key, fun () ->
                         let wordNavigator = vimBuffer.WordNavigator
                         let taggerSource = new HighlightSearchTaggerSource(textView, vimBuffer.GlobalSettings, _vim.VimData, _vim.VimHost)
                         taggerSource :> IAsyncTaggerSource<HighlightSearchData , TextMarkerTag>)
@@ -368,8 +366,7 @@ type SubstituteConfirmTaggerSource
 type SubstituteConfirmTaggerProvider
     [<ImportingConstructor>]
     ( 
-        _vim : IVim,
-        [<EditorUtilsImport>] _taggerFactory : ITaggerFactory
+        _vim : IVim
     ) = 
 
     interface IViewTaggerProvider with 
@@ -379,7 +376,7 @@ type SubstituteConfirmTaggerProvider
                 | None -> null
                 | Some vimBuffer ->
                     let taggerSource = new SubstituteConfirmTaggerSource(textBuffer, vimBuffer.SubstituteConfirmMode)
-                    let tagger = _taggerFactory.CreateBasicTaggerRaw(taggerSource)
+                    let tagger = EditorUtilsFactory.CreateBasicTaggerRaw(taggerSource)
                     tagger :> obj :?> ITagger<'T>
             else
                 null
@@ -430,15 +427,14 @@ type internal FoldTaggerSource(_foldData : IFoldData) as this =
 type FoldTaggerProvider
     [<ImportingConstructor>]
     (
-        _factory : IFoldManagerFactory,
-        [<EditorUtilsImport>] _taggerFactory : ITaggerFactory
+        _factory : IFoldManagerFactory
     ) =
 
     let _key = obj()
 
     interface ITaggerProvider with 
         member x.CreateTagger<'T when 'T :> ITag> textBuffer =
-            let tagger = _taggerFactory.CreateBasicTagger(textBuffer.Properties, _key, fun() ->
+            let tagger = EditorUtilsFactory.CreateBasicTagger(textBuffer.Properties, _key, fun() ->
                 let foldData = _factory.GetFoldData textBuffer
                 let taggerSource = new FoldTaggerSource(foldData)
                 taggerSource :> IBasicTaggerSource<OutliningRegionTag>)

@@ -9,6 +9,7 @@ using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.Win32;
 using Vim;
+using Vim.UI.Wpf;
 
 namespace VsVim.Implementation.Misc
 {
@@ -21,7 +22,7 @@ namespace VsVim.Implementation.Misc
     {
         private readonly _DTE _dte;
         private readonly IOptionsDialogService _optionsDialogService;
-        private readonly IProtectedOperations _protectedOperations;
+        private readonly IVimProtectedOperations _protectedOperations;
         private readonly IVimApplicationSettings _vimApplicationSettings;
         private readonly ScopeData _scopeData;
         private ConflictingKeyBindingState _state;
@@ -51,13 +52,13 @@ namespace VsVim.Implementation.Misc
         }
 
         [ImportingConstructor]
-        internal KeyBindingService(SVsServiceProvider serviceProvider, IOptionsDialogService service, [EditorUtilsImport] IProtectedOperations protectedOperations, IVimApplicationSettings vimApplicationSettings)
+        internal KeyBindingService(SVsServiceProvider serviceProvider, IOptionsDialogService service, IVimProtectedOperations protectedOperations, IVimApplicationSettings vimApplicationSettings)
             : this(serviceProvider.GetService<SDTE, _DTE>(), service, protectedOperations, vimApplicationSettings, new ScopeData(serviceProvider.GetService<SVsShell, IVsShell>()))
         {
 
         }
 
-        internal KeyBindingService(_DTE dte, IOptionsDialogService service, IProtectedOperations protectedOperations, IVimApplicationSettings vimApplicationSettings, ScopeData scopeData)
+        internal KeyBindingService(_DTE dte, IOptionsDialogService service, IVimProtectedOperations protectedOperations, IVimApplicationSettings vimApplicationSettings, ScopeData scopeData)
         {
             _dte = dte;
             _optionsDialogService = service;

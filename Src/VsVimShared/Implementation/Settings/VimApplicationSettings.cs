@@ -11,6 +11,7 @@ using Microsoft.VisualStudio.Settings;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Shell.Settings;
+using Vim.UI.Wpf;
 
 namespace VsVim.Implementation.Settings
 {
@@ -27,7 +28,7 @@ namespace VsVim.Implementation.Settings
         internal const string ErrorSetFormat = "Cannot set setting {0}";
 
         private readonly WritableSettingsStore _settingsStore;
-        private readonly IProtectedOperations _protectedOperations;
+        private readonly IVimProtectedOperations _protectedOperations;
         private readonly bool _legacySettingsSupported;
 
         internal bool LegacySettingsMigrated
@@ -54,14 +55,14 @@ namespace VsVim.Implementation.Settings
         internal VimApplicationSettings(
             SVsServiceProvider vsServiceProvider,
             ILegacySettings legacySettings,
-            [EditorUtilsImport] IProtectedOperations protectedOperations)
+            IVimProtectedOperations protectedOperations)
             : this(vsServiceProvider.GetVisualStudioVersion(), vsServiceProvider.GetWritableSettingsStore(), protectedOperations)
         {
             var dte = vsServiceProvider.GetService<SDTE, _DTE>();
             MigrateLegacySettings(dte, legacySettings);
         }
 
-        internal VimApplicationSettings(VisualStudioVersion visualStudioVersion, WritableSettingsStore settingsStore, IProtectedOperations protectedOperations)
+        internal VimApplicationSettings(VisualStudioVersion visualStudioVersion, WritableSettingsStore settingsStore, IVimProtectedOperations protectedOperations)
         {
             _settingsStore = settingsStore;
             _protectedOperations = protectedOperations;

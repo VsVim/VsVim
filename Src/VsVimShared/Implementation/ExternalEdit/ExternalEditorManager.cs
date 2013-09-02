@@ -11,7 +11,7 @@ namespace VsVim.Implementation.ExternalEdit
     [Export(typeof(IVimBufferCreationListener))]
     internal sealed class ExternalEditorManager : IVimBufferCreationListener
     {
-        private readonly IProtectedOperations _protectedOperations;
+        private readonly IVimProtectedOperations _protectedOperations;
         private readonly IVsAdapter _vsAdapter;
         private readonly List<IExternalEditAdapter> _adapterList = new List<IExternalEditAdapter>();
         private readonly Dictionary<IVimBuffer, ExternalEditMonitor> _monitorMap = new Dictionary<IVimBuffer, ExternalEditMonitor>();
@@ -19,7 +19,7 @@ namespace VsVim.Implementation.ExternalEdit
         [ImportingConstructor]
         internal ExternalEditorManager(
             IVsAdapter vsAdapter, 
-            [EditorUtilsImport] IProtectedOperations protectedOperations,
+            IVimProtectedOperations protectedOperations,
             [ImportMany] IEnumerable<IExternalEditAdapter> adapters)
         {
             _vsAdapter = vsAdapter;

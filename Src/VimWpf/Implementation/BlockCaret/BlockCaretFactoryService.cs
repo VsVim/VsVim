@@ -24,7 +24,7 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
 #pragma warning restore 169
 
         [ImportingConstructor]
-        internal BlockCaretFactoryService(IClassificationFormatMapService classificationFormatMapService, IEditorFormatMapService formatMapService, IControlCharUtil controlCharUtil, [EditorUtilsImport] IProtectedOperations protectedOperations)
+        internal BlockCaretFactoryService(IClassificationFormatMapService classificationFormatMapService, IEditorFormatMapService formatMapService, IControlCharUtil controlCharUtil, IVimProtectedOperations protectedOperations)
         {
             _classificationFormatMapService = classificationFormatMapService;
             _formatMapService = formatMapService;
