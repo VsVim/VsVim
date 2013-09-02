@@ -4,10 +4,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Windows.Threading;
+using Vim.UI.Wpf;
 
 namespace Vim.UnitTest
 {
-    public sealed class TestableProtectedOperations : IProtectedOperations
+    public sealed class TestableProtectedOperations : IVimProtectedOperations
     {
         private readonly List<Action> _postedActionList = new List<Action>();
 

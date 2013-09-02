@@ -46,7 +46,7 @@ namespace VsVim.UnitTest
             _serviceRaw = new KeyBindingService(
                 _dte.Object,
                 _optionsDialogService.Object,
-                new Mock<IProtectedOperations>().Object,
+                new Mock<IVimProtectedOperations>().Object,
                 _vimApplicationSettings.Object,
                 ScopeData.Default);
             _service = _serviceRaw;

@@ -28,6 +28,5 @@
     <MefComponent>|VimWpf|</MefComponent>
     <MefComponent>|VsVimShared|</MefComponent>
     <MefComponent>|Vs2010|</MefComponent>
-    <MefComponent>EditorUtils.dll</MefComponent>
   </Content>
 </Vsix>

@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.Composition;
 using EditorUtils;
+using Vim.UI.Wpf;
 
 namespace VsVim.Implementation.ConflictingKey
 {
@@ -7,10 +8,10 @@ namespace VsVim.Implementation.ConflictingKey
     internal sealed class OptionsDialogService : IOptionsDialogService
     {
         private readonly IVimApplicationSettings _vimApplicationSettings;
-        private readonly IProtectedOperations _protectedOperations;
+        private readonly IVimProtectedOperations _protectedOperations;
 
         [ImportingConstructor]
-        internal OptionsDialogService(IVimApplicationSettings vimApplicationSettings, [EditorUtilsImport] IProtectedOperations protectedOperations)
+        internal OptionsDialogService(IVimApplicationSettings vimApplicationSettings, IVimProtectedOperations protectedOperations)
         {
             _vimApplicationSettings = vimApplicationSettings;
             _protectedOperations = protectedOperations;

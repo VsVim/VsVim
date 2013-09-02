@@ -53,10 +53,10 @@ namespace VsVim.Implementation.ConflictingKey
         private readonly IKeyBindingService _keyBindingService;
         private readonly IServiceProvider _serviceProvider;
         private readonly IVimApplicationSettings _vimApplicationSettings;
-        private readonly IProtectedOperations _protectedOperations;
+        private readonly IVimProtectedOperations _protectedOperations;
 
         [ImportingConstructor]
-        internal OptionsProviderFatory(IKeyBindingService keyBindingService, SVsServiceProvider provider, IVimApplicationSettings vimApplicationSettings, [EditorUtilsImport] IProtectedOperations protectedOperations)
+        internal OptionsProviderFatory(IKeyBindingService keyBindingService, SVsServiceProvider provider, IVimApplicationSettings vimApplicationSettings, IVimProtectedOperations protectedOperations)
         {
             _keyBindingService = keyBindingService;
             _serviceProvider = provider;

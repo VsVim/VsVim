@@ -12,8 +12,6 @@ namespace VimApp
     sealed class VimComponentHost : EditorHost
     {
         [ThreadStatic]
-        private static CompositionContainer _vimCompositionContainer;
-
         private readonly IVim _vim;
 
         internal IVim Vim
@@ -26,26 +24,13 @@ namespace VimApp
             _vim = CompositionContainer.GetExportedValue<IVim>();
         }
 
-        protected override CompositionContainer GetOrCreateCompositionContainer()
+        protected override void GetEditorHostParts(List<ComposablePartCatalog> composablePartCatalogList, List<ExportProvider> exportProviderList)
         {
-            if (_vimCompositionContainer == null)
-            {
-                var list = GetVimCatalog();
-                var catalog = new AggregateCatalog(list.ToArray());
-                _vimCompositionContainer = new CompositionContainer(catalog);
-            }
+            base.GetEditorHostParts(composablePartCatalogList, exportProviderList);
 
-            return _vimCompositionContainer;
-        }
-
-        private static List<ComposablePartCatalog> GetVimCatalog()
-        {
-            var list = GetEditorUtilsCatalog();
-            list.Add(new AssemblyCatalog(typeof(IVim).Assembly));
-            list.Add(new AssemblyCatalog(typeof(VimKeyProcessor).Assembly));
-            list.Add(new AssemblyCatalog(typeof(VimComponentHost).Assembly));
-
-            return list;
+            composablePartCatalogList.Add(new AssemblyCatalog(typeof(IVim).Assembly));
+            composablePartCatalogList.Add(new AssemblyCatalog(typeof(VimKeyProcessor).Assembly));
+            composablePartCatalogList.Add(new AssemblyCatalog(typeof(VimComponentHost).Assembly));
         }
     }
 }

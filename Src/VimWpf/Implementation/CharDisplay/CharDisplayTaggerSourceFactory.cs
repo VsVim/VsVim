@@ -15,14 +15,12 @@ namespace Vim.UI.Wpf.Implementation.CharDisplay
     internal sealed class CharDisplayTaggerSourceFactory : IViewTaggerProvider
     {
         private readonly object _key = new object();
-        private readonly ITaggerFactory _taggerFactory;
         private readonly IEditorFormatMapService _editorFormatMapService;
         private readonly IVim _vim;
 
         [ImportingConstructor]
-        internal CharDisplayTaggerSourceFactory(IVim vim, [EditorUtilsImport]ITaggerFactory taggerFactory, IEditorFormatMapService editorFormatMapService)
+        internal CharDisplayTaggerSourceFactory(IVim vim, IEditorFormatMapService editorFormatMapService)
         {
-            _taggerFactory = taggerFactory;
             _editorFormatMapService = editorFormatMapService;
             _vim = vim;
         }
@@ -42,7 +40,7 @@ namespace Vim.UI.Wpf.Implementation.CharDisplay
                 return null;
             }
 
-            return _taggerFactory.CreateBasicTagger(
+            return EditorUtilsFactory.CreateBasicTagger(
                 textView.Properties,
                 _key,
                 () => CreateCharDisplayTaggerSource(textView)) as ITagger<T>;

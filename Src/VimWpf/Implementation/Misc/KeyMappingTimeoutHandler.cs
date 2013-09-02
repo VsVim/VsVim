@@ -22,7 +22,7 @@ namespace Vim.UI.Wpf.Implementation.Misc
             private readonly IProtectedOperations _protectedOperations;
             private readonly KeyMappingTimeoutHandler _keyMappingTimeoutHandler;
 
-            internal TimerData(IVimBuffer vimBuffer, [EditorUtilsImport] IProtectedOperations protectedOperations, KeyMappingTimeoutHandler keyMappingTimeoutHandler)
+            internal TimerData(IVimBuffer vimBuffer, IVimProtectedOperations protectedOperations, KeyMappingTimeoutHandler keyMappingTimeoutHandler)
             {
                 _protectedOperations = protectedOperations;
                 _vimBuffer = vimBuffer;
@@ -102,7 +102,7 @@ namespace Vim.UI.Wpf.Implementation.Misc
 
         #endregion
 
-        private readonly IProtectedOperations _protectedOperations;
+        private readonly IVimProtectedOperations _protectedOperations;
 
         /// <summary>
         /// This event is raised whenever any of the timers for the underlying IVimBuffer values
@@ -111,7 +111,7 @@ namespace Vim.UI.Wpf.Implementation.Misc
         internal event EventHandler Tick;
 
         [ImportingConstructor]
-        internal KeyMappingTimeoutHandler([EditorUtilsImport] IProtectedOperations protectedOperations)
+        internal KeyMappingTimeoutHandler(IVimProtectedOperations protectedOperations)
         {
             _protectedOperations = protectedOperations;
         }
