@@ -8,6 +8,7 @@ namespace VsVim.Implementation.ReSharper
 {
     internal interface IReSharperEditTagDetector
     {
+        ReSharperVersion Version { get; }
         bool IsEditTag(ITag tag);
     }
 
@@ -17,12 +18,19 @@ namespace VsVim.Implementation.ReSharper
         internal const string ExternalEditAttribute2 = "ReSharper LiveTemplates Current HotSpot";
         internal const string ExternalEditAttribute3 = "ReSharper LiveTemplates Current HotSpot mirror";
 
+        public abstract ReSharperVersion Version { get; }
+
         public abstract bool IsEditTag(ITag tag);
     }
 
     internal sealed class ReSharperV7EditTagDetector : ReSharperEditTagDetectorBase
     {
         internal FieldInfo AttributeIdFieldInfo { get; private set; }
+
+        public override ReSharperVersion Version
+        {
+            get { return ReSharperVersion.Version7AndEarlier; }
+        }
 
         public override bool IsEditTag(ITag tag)
         {
@@ -75,6 +83,11 @@ namespace VsVim.Implementation.ReSharper
         /// This is for a specific type and is thus safe in terms of leaks etc.
         /// </summary>
         internal PropertyInfo AttributeIdPropertyInfo { get; private set; }
+
+        public override ReSharperVersion Version
+        {
+            get { return ReSharperVersion.Version8; }
+        }
 
         public override bool IsEditTag(ITag tag)
         {
@@ -136,6 +149,11 @@ namespace VsVim.Implementation.ReSharper
     internal sealed class ReSharperUnknownEditTagDetector : IReSharperEditTagDetector
     {
         #region IReSharperEditTagDetector
+
+        ReSharperVersion IReSharperEditTagDetector.Version
+        {
+            get { return ReSharperVersion.Unknown; }
+        }
 
         bool IReSharperEditTagDetector.IsEditTag(ITag tag)
         {

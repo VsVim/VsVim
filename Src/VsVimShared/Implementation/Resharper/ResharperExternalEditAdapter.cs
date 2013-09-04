@@ -20,7 +20,6 @@ namespace VsVim.Implementation.ReSharper
 
         private readonly Dictionary<Type, bool> _tagMap = new Dictionary<Type, bool>();
         private readonly bool _isResharperInstalled;
-        private ReSharperVersion? _reSharperVersion;
         private IReSharperEditTagDetector _reSharperEditTagDetector;
 
         /// <summary>
@@ -60,7 +59,6 @@ namespace VsVim.Implementation.ReSharper
 
         internal void SetReSharperVersion(ReSharperVersion reSharperVersion)
         {
-            _reSharperVersion = reSharperVersion;
             switch (reSharperVersion)
             {
                 case ReSharperVersion.Version7AndEarlier:
@@ -146,11 +144,18 @@ namespace VsVim.Implementation.ReSharper
             {
                 var provider = pair.Value;
                 var providerType = provider.GetType();
+
+                // First step is to check the name of the tagger.  The ReSharper taggers we care
+                // about all have the same name
                 if (providerType.Name == ResharperTaggerProviderName)
                 {
-                    EnsureReShaprerVersion(providerType);
-                    if (_reSharperVersion.Value != ReSharperVersion.Unknown)
+                    // Next we need to make sure this is actually a ReSharper tagger.  Both dotCover 
+                    // and ReSharper use the same tagger name.  The only way to differentiate them is
+                    // to look at the assembly version
+                    var version = ResharperVersionUtility.DetectFromAssembly(providerType.Assembly);
+                    if (version != ReSharperVersion.Unknown)
                     {
+                        SetReSharperVersion(version);
                         var taggerResult = provider.SafeCreateTagger<ITag>(textBuffer);
                         if (taggerResult.IsSuccess)
                         {
@@ -201,19 +206,12 @@ namespace VsVim.Implementation.ReSharper
 
         private bool IsEditTag(ITag tag)
         {
-            EnsureReShaprerVersion(tag.GetType());
-            return _reSharperEditTagDetector.IsEditTag(tag);
-        }
-
-        private void EnsureReShaprerVersion(Type type)
-        {
-            if (_reSharperVersion.HasValue)
+            if (_reSharperEditTagDetector == null)
             {
-                Contract.Requires(_reSharperEditTagDetector != null);
-                return;
+                return false;
             }
 
-            SetReSharperVersion(ResharperVersionUtility.DetectFromAssembly(type.Assembly));
+            return _reSharperEditTagDetector.IsEditTag(tag);
         }
 
         #region IResharperUtil
