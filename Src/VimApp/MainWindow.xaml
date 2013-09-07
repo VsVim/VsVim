@@ -9,6 +9,9 @@
         </Grid.RowDefinitions>
 
         <Menu IsMainMenu="True" Grid.Row="0">
+            <MenuItem Header="File">
+                <MenuItem Header="New Tab" Click="OnNewTabClick" />
+            </MenuItem>
             <MenuItem Header="Custom">
                 <MenuItem Header="Issue 1074">
                     <MenuItem Header="Set Scenario" Click="OnLeaderSetClick" />
@@ -18,8 +21,10 @@
             </MenuItem>
         </Menu>
 
-        <DockPanel LastChildFill="True" Name="m_dockPanel" Grid.Row="1">
-
+        <DockPanel LastChildFill="True" Name="_dockPanel" Grid.Row="1">
+            <TabControl Name="_tabControl">
+                
+            </TabControl>
         </DockPanel>
 
     </Grid>

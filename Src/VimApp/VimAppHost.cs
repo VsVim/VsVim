@@ -102,7 +102,7 @@ namespace VimApp
 
         public override HostResult SplitViewHorizontally(ITextView value)
         {
-            MainWindow.SplitViewHorizontally(value);
+            MainWindow.SplitViewHorizontally((IWpfTextView)value);
             return HostResult.Success;
         }
 
