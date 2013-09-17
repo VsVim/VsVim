@@ -119,12 +119,17 @@ namespace VsVim.Implementation.Misc
                     }
                     else
                     {
-                        resourceId = UInt32.Parse((string)subKey.GetValue(null));
+                        if (!UInt32.TryParse((string)subKey.GetValue(null), out resourceId))
+                        {
+                            localizedScopeName = null;
+                            return false;
+                        }
                     }
 
                     var package = Guid.Parse((string)subKey.GetValue("Package"));
-                    ErrorHandler.ThrowOnFailure(vsShell.LoadPackageString(ref package, resourceId, out localizedScopeName));
-                    return !string.IsNullOrEmpty(localizedScopeName);
+                    return 
+                        ErrorHandler.Succeeded(vsShell.LoadPackageString(ref package, resourceId, out localizedScopeName)) &&
+                        !string.IsNullOrEmpty(localizedScopeName);
                 }
             }
             catch (Exception)
