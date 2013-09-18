@@ -85,6 +85,7 @@
     <Compile Include="Exports\OutlinerTaggerProvider.cs" />
     <Compile Include="HistoryListTest.cs" />
     <Compile Include="MatchingTokenUtilTest.cs" />
+    <Compile Include="ModeMapTest.cs" />
     <Compile Include="RegisterValueTest.cs" />
     <Compile Include="SnapshotOverlapPointTest.cs" />
     <Compile Include="SnapshotOverlapSpanTest.cs" />

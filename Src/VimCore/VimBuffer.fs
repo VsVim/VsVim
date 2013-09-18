@@ -74,24 +74,24 @@ type internal ModeMap
     member x.PreviousMode = _previousMode
     member x.Modes = _modeMap |> Map.toSeq |> Seq.map (fun (k,m) -> m)
     member x.SwitchMode kind arg =
-        let prev = _mode
-        let mode = _modeMap.Item kind
-        _mode <- mode
+        let currentMode = _mode
+        let newMode = _modeMap.Item kind
+        _mode <- newMode
 
-        prev.OnLeave()
+        currentMode.OnLeave()
 
         // When switching between different visual modes we don't want to lose
         // the previous non-visual mode value.  Commands executing in Visual mode
         // which return a SwitchPrevious mode value expected to actually leave 
         // Visual Mode 
-        if not (VisualKind.IsAnyVisual prev.ModeKind) && not (VisualKind.IsAnyVisual mode.ModeKind) then
-            _previousMode <- prev
+        if not (VisualKind.IsAnyVisual currentMode.ModeKind) && not (VisualKind.IsAnyVisual _previousMode.ModeKind) then
+            _previousMode <- currentMode
         elif _previousMode.ModeKind = ModeKind.Uninitialized then
-            _previousMode <- prev
+            _previousMode <- currentMode
 
-        mode.OnEnter arg
-        _modeSwitchedEvent.Trigger x (SwitchModeEventArgs(prev, mode))
-        mode
+        newMode.OnEnter arg
+        _modeSwitchedEvent.Trigger x (SwitchModeEventArgs(currentMode, newMode))
+        newMode
 
     member x.GetMode kind = Map.find kind _modeMap
 
@@ -160,7 +160,7 @@ type internal VimBuffer
         with get() = _inOneTimeCommand
         and set value = _inOneTimeCommand <- value
     
-    /// Get the current mode
+    member x.ModeMap = _modeMap
     member x.Mode = _modeMap.Mode
     member x.NormalMode = _modeMap.GetMode ModeKind.Normal :?> INormalMode
     member x.VisualLineMode = _modeMap.GetMode ModeKind.VisualLine :?> IVisualMode
