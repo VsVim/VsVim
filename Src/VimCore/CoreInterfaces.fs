@@ -3344,6 +3344,10 @@ type IVimData =
     /// The history of the : command list
     abstract CommandHistory : HistoryList with get, set
 
+    /// This is the pattern for which all occurences should be highlighted in the visible
+    /// IVimBuffer instances.  When this value is empty then no pattern should be highlighted
+    abstract DisplayPattern : string
+
     /// The ordered list of incremental search values
     abstract SearchHistory : HistoryList with get, set
 
@@ -3370,19 +3374,17 @@ type IVimData =
     /// The previous value of the current directory Vim is positioned in
     abstract PreviousCurrentDirectory : string
 
-    /// Raise the highlight search one time disabled event
-    abstract RaiseHighlightSearchOneTimeDisable : unit -> unit
+    /// Suspend the display of patterns in the visible IVimBuffer instances.  This is usually
+    /// associated with the use of the :nohl command
+    abstract SuspendDisplayPattern : unit -> unit
 
-    /// Raise the search occurred event
-    abstract RaiseSearchRanEvent : unit -> unit
+    /// Resume the display of patterns in the visible IVimBuffer instance.  If the display
+    /// isn't currently suspended then tihs command will have no effect on the system
+    abstract ResumeDisplayPattern : unit -> unit
 
-    /// Raised when a search is run on any IVimBuffer
+    /// Raised when the DisplayPattern property changes
     [<CLIEvent>]
-    abstract SearchRan: IDelegateEvent<System.EventHandler>
-
-    /// Raised when highlight search is disabled one time via the :noh command
-    [<CLIEvent>]
-    abstract HighlightSearchOneTimeDisabled : IDelegateEvent<System.EventHandler>
+    abstract DisplayPatternChanged : IDelegateEvent<System.EventHandler>
 
 [<RequireQualifiedAccess>]
 [<NoComparison>]

@@ -1978,7 +1978,7 @@ type internal MotionUtil
                     let span = SnapshotSpan(endPoint, caretPoint)
                     MotionResult.Create span false MotionKind.CharacterWiseExclusive |> Some
 
-        _vimData.RaiseSearchRanEvent()
+        _vimData.ResumeDisplayPattern()
         motionResult
 
     /// Move the caret to the next occurrence of the last search

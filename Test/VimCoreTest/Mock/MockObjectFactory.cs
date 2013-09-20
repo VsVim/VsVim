@@ -77,7 +77,7 @@ namespace Vim.UnitTest.Mock
             searchService = searchService ?? factory.Create<ISearchService>().Object;
             keyboardDevice = keyboardDevice ?? (factory.Create<IKeyboardDevice>(MockBehavior.Loose)).Object;
             mouseDevice = mouseDevice ?? (factory.Create<IMouseDevice>(MockBehavior.Loose)).Object;
-            vimData = vimData ?? new VimData();
+            vimData = vimData ?? VimUtil.CreateVimData();
             variableMap = variableMap ?? new Dictionary<string, VariableValue>();
             var mock = factory.Create<IVim>(MockBehavior.Strict);
             mock.SetupGet(x => x.RegisterMap).Returns(registerMap);

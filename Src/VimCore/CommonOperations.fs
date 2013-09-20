@@ -819,7 +819,6 @@ type internal CommonOperations
             // A substitute command should update both of them 
             _vimData.LastSubstituteData <- Some { SearchPattern=pattern; Substitute=replace; Flags=flags}
             _vimData.LastPatternData <- { Pattern = pattern; Path = Path.Forward }
-            _vimData.RaiseSearchRanEvent()
 
     /// Convert the provided whitespace into spaces.  The conversion of 
     /// tabs into spaces will be done based on the TabSize setting

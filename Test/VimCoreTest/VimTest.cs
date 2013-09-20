@@ -64,7 +64,7 @@ namespace Vim.UnitTest
                 MockObjectFactory.CreateClipboardDevice().Object,
                 _factory.Create<ISearchService>().Object,
                 _fileSystem.Object,
-                new VimData(),
+                new VimData(_globalSettings),
                 _factory.Create<IBulkOperations>().Object,
                 map,
                 new EditorToSettingSynchronizer());

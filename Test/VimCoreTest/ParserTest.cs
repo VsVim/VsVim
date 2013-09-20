@@ -12,7 +12,7 @@ namespace Vim.UnitTest
     {
         protected Parser CreateParser(params string[] lines)
         {
-            return new Parser(new VimData(), lines);
+            return new Parser(VimUtil.CreateVimData(), lines);
         }
 
         protected Parser CreateParserOfLines(string text)
@@ -269,7 +269,7 @@ namespace Vim.UnitTest
 
             private void AssertBadParse(params string[] lines)
             {
-                var parser = new Parser(new VimData());
+                var parser = VimUtil.CreateParser();
                 parser.Reset(lines);
                 var result = parser.ParseSingleCommand();
                 Assert.True(result.IsParseError);
@@ -277,7 +277,7 @@ namespace Vim.UnitTest
 
             private LineCommand Parse(params string[] lines)
             {
-                var parser = new Parser(new VimData());
+                var parser = VimUtil.CreateParser();
                 parser.Reset(lines);
                 return parser.ParseSingleCommand();
             }

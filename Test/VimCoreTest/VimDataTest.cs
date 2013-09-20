@@ -3,97 +3,225 @@ using Xunit;
 
 namespace Vim.UnitTest
 {
-    public sealed class VimDataTest : VimTestBase
+    public abstract class VimDataTest : VimTestBase
     {
-        /// <summary>
-        /// The startup value for CurrentDirectory should be a non-empty string
-        /// </summary>
-        [Fact]
-        public void CurrentDirectory_Initial()
+        private readonly VimData _vimDataRaw;
+        private readonly IVimData _vimData;
+        private readonly IVimGlobalSettings _globalSettings;
+
+        protected VimDataTest()
         {
-            IVimData vimData = new VimData();
-            Assert.False(String.IsNullOrEmpty(vimData.CurrentDirectory));
+            _globalSettings = new GlobalSettings();
+            _vimDataRaw = new VimData(_globalSettings);
+            _vimData = _vimDataRaw;
         }
 
-        /// <summary>
-        /// Setting the current directory should move the previous value to PreviousCurrentDirectory
-        /// </summary>
-        [Fact]
-        public void CurrentDirectory_SetUpdatePrevious()
+        public sealed class CurrentDirectoryTest : VimDataTest
         {
-            IVimData vimData = new VimData();
-            var old = vimData.CurrentDirectory;
-            vimData.CurrentDirectory = @"c:\";
-            Assert.Equal(old, vimData.PreviousCurrentDirectory);
+            /// <summary>
+            /// The startup value for CurrentDirectory should be a non-empty string
+            /// </summary>
+            [Fact]
+            public void Initial()
+            {
+                Assert.False(String.IsNullOrEmpty(_vimData.CurrentDirectory));
+            }
+
+            /// <summary>
+            /// Setting the current directory should move the previous value to PreviousCurrentDirectory
+            /// </summary>
+            [Fact]
+            public void SetUpdatePrevious()
+            {
+                var old = _vimData.CurrentDirectory;
+                _vimData.CurrentDirectory = @"c:\";
+                Assert.Equal(old, _vimData.PreviousCurrentDirectory);
+            }
         }
 
-        /// <summary>
-        /// The repeat last search should cause the search ran event to be raised
-        /// </summary>
-        [Fact]
-        public void SearchRan_RepeatLastSearch()
+        public abstract class LastPatternDataTest : VimDataTest
         {
-            var didRun = false;
-            VimData.SearchRan += delegate { didRun = true; };
-            VimData.LastPatternData = new PatternData("cat", Path.Forward);
-            var vimBuffer = CreateVimBuffer("hello world");
-            vimBuffer.Process("n");
-            Assert.True(didRun);
+            public sealed class EventTest : LastPatternDataTest
+            {
+                private int _runCount;
+
+                public EventTest()
+                {
+                    _globalSettings.HighlightSearch = true;
+                    _vimData.LastPatternData = new PatternData("cat", Path.Forward);
+                    _vimData.DisplayPatternChanged += delegate { _runCount++; };
+                }
+
+                [Fact]
+                public void PatternChanged()
+                {
+                    _vimData.LastPatternData = new PatternData("dog", Path.Forward);
+                    Assert.Equal(1, _runCount);
+                }
+
+                /// <summary>
+                /// If the pattern is the same then nothing actually changed.  No need to 
+                /// raise the event
+                /// </summary>
+                [Fact]
+                public void PatternDataSame()
+                {
+                    _vimData.LastPatternData = _vimData.LastPatternData;
+                    Assert.Equal(0, _runCount);
+                }
+
+                /// <summary>
+                /// The path is not a part of the DisplayPattern and hence if it changes then
+                /// it shouldn't effect the DisplayPattern valueh
+                /// </summary>
+                [Fact]
+                public void PathChanged()
+                {
+                    _vimData.LastPatternData = new PatternData("dog", Path.Forward);
+                    _runCount = 0;
+                    _vimData.LastPatternData = new PatternData("dog", Path.Backward);
+                    Assert.Equal(0, _runCount);
+                }
+
+                /// <summary>
+                /// Nothing changed if the highlight is disabled 
+                /// </summary>
+                [Fact]
+                public void PatternChangedHighlightDisabled()
+                {
+                    _globalSettings.HighlightSearch = false;
+                    _runCount = 0;
+                    Assert.Equal(0, _runCount);
+                }
+            }
+
+            public sealed class DisplayPatternTest : LastPatternDataTest
+            {
+                public DisplayPatternTest()
+                {
+                    _globalSettings.HighlightSearch = true;
+                }
+
+                [Fact]
+                public void Standard()
+                {
+                    _vimData.LastPatternData = new PatternData("dog", Path.Forward);
+                    Assert.Equal("dog", _vimData.DisplayPattern);
+                }
+
+                [Fact]
+                public void HighlightDisabled()
+                {
+                    _globalSettings.HighlightSearch = false;
+                    _vimData.LastPatternData = new PatternData("dog", Path.Forward);
+                    Assert.True(String.IsNullOrEmpty(_vimData.DisplayPattern));
+                }
+            }
         }
 
-        /// <summary>
-        /// The next word under cursor command '*' should cause the SearhRan event to fire
-        /// </summary>
-        [Fact]
-        public void SearchRan_NextWordUnderCaret()
+        public abstract class SuspendedResumedTest : VimDataTest
         {
-            var didRun = false;
-            VimData.SearchRan += delegate { didRun = true; };
-            VimData.LastPatternData = new PatternData("cat", Path.Forward);
-            var vimBuffer = CreateVimBuffer("hello world");
-            vimBuffer.Process("*");
-            Assert.True(didRun);
-        }
+            public sealed class EventTest : SuspendedResumedTest
+            {
+                private int _runCount;
 
-        /// <summary>
-        /// The '/' command should register a search change after the Enter key
-        /// </summary>
-        [Fact]
-        public void SearchRan_IncrementalSerach()
-        {
-            var didRun = false;
-            VimData.SearchRan += delegate { didRun = true; };
-            var vimBuffer = CreateVimBuffer("hello world");
-            vimBuffer.Process("/ab");
-            Assert.False(didRun);
-            vimBuffer.Process(VimKey.Enter);
-            Assert.True(didRun);
-        }
+                public EventTest()
+                {
+                    _globalSettings.HighlightSearch = true;
+                    _vimData.LastPatternData = new PatternData("cat", Path.Forward);
+                    _vimData.DisplayPatternChanged += delegate { _runCount++; };
+                }
 
-        /// <summary>
-        /// The :s command should cause a SearchRan to occur
-        /// </summary>
-        [Fact]
-        public void SearchRan_SubstituteCommand()
-        {
-            var didRun = false;
-            VimData.SearchRan += delegate { didRun = true; };
-            var vimBuffer = CreateVimBuffer("hello world");
-            vimBuffer.ProcessNotation(":s/cat/bat<Enter>");
-            Assert.True(didRun);
-        }
+                [Fact]
+                public void Suspend()
+                {
+                    _vimData.SuspendDisplayPattern();
+                    Assert.Equal(1, _runCount);
+                }
 
-        /// <summary>
-        /// Don't raise the SearchRan command for simple commands
-        /// </summary>
-        [Fact]
-        public void SearchRan_DontRaiseForSimpleCommands()
-        {
-            var didRun = false;
-            VimData.SearchRan += delegate { didRun = true; };
-            var vimBuffer = CreateVimBuffer("hello world");
-            vimBuffer.Process("dd");
-            Assert.False(didRun);
+                /// <summary>
+                /// Multiple suspends should have no effect.  Once it's suspended it's suspended until 
+                /// it's resumed
+                /// </summary>
+                [Fact]
+                public void SuspendRedundant()
+                {
+                    _vimData.SuspendDisplayPattern();
+                    _vimData.SuspendDisplayPattern();
+                    Assert.Equal(1, _runCount);
+                }
+
+                [Fact]
+                public void SupsendHighlightDisabled()
+                {
+                    _globalSettings.HighlightSearch = false;
+                    _runCount = 0;
+                    _vimData.SuspendDisplayPattern();
+                    Assert.Equal(0, _runCount);
+                }
+
+                [Fact]
+                public void Resume()
+                {
+                    _vimData.SuspendDisplayPattern();
+                    _runCount = 0;
+                    _vimData.ResumeDisplayPattern();
+                    Assert.Equal(1, _runCount);
+                }
+
+                /// <summary>
+                /// If it is already displaying then another call to display has no effect
+                /// </summary>
+                [Fact]
+                public void ResumeRedundant()
+                {
+                    _vimData.ResumeDisplayPattern();
+                    Assert.Equal(0, _runCount);
+                }
+
+                [Fact]
+                public void ResumeHighlightDisabled()
+                {
+                    _globalSettings.HighlightSearch = false;
+                    _vimData.SuspendDisplayPattern();
+                    _runCount = 0;
+                    _vimData.ResumeDisplayPattern();
+                    Assert.Equal(0, _runCount);
+                }
+            }
+
+            public sealed class DisplayPatternTest : SuspendedResumedTest
+            {
+                public DisplayPatternTest()
+                {
+                    _globalSettings.HighlightSearch = true;
+                    _vimData.LastPatternData = new PatternData("cat", Path.Forward);
+                }
+
+                [Fact]
+                public void Suspend()
+                {
+                    _vimData.SuspendDisplayPattern();
+                    Assert.True(String.IsNullOrEmpty(_vimData.DisplayPattern));
+                }
+
+                [Fact]
+                public void Resume()
+                {
+                    _vimData.SuspendDisplayPattern();
+                    _vimData.ResumeDisplayPattern();
+                    Assert.Equal("cat", _vimData.DisplayPattern);
+                }
+
+                [Fact]
+                public void ResumeHighlightDisabled()
+                {
+                    _globalSettings.HighlightSearch = false;
+                    _vimData.SuspendDisplayPattern();
+                    _vimData.ResumeDisplayPattern();
+                    Assert.True(String.IsNullOrEmpty(_vimData.DisplayPattern));
+                }
+            }
         }
     }
 }

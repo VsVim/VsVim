@@ -41,7 +41,7 @@ type internal BulkOperations
         member x.InBulkOperation = _bulkOperationCount > 0
         member x.BeginBulkOperation () = x.BeginBulkOperation()
 
-type internal VimData() =
+type internal VimData(_globalSettings : IVimGlobalSettings) as this =
 
     let mutable _autoCommandGroups : AutoCommandGroup list = List.Empty
     let mutable _autoCommands : AutoCommand list = List.Empty
@@ -55,8 +55,53 @@ type internal VimData() =
     let mutable _lastCharSearch : (CharSearchKind * Path * char) option = None
     let mutable _lastMacroRun : char option = None
     let mutable _lastCommand : StoredCommand option = None
-    let _searchRanEvent = StandardEvent()
-    let _highlightSearchOneTimeDisabled = StandardEvent()
+    let mutable _displayPattern = ""
+    let mutable _displayPatternSuspended = false
+    let _displayPatternChanged = StandardEvent()
+
+    do 
+        // When the setting is changed it also resets the one time disabled flag
+        // Up cast here to work around the F# bug which prevents accessing a CLIEvent from
+        // a derived type
+        //
+        // The lifetime of VimData is the same as IGlobalSettings and hence there is no need
+        // to unsubsribe from this event.  Nor is there any real mechanism.  
+        (_globalSettings :> IVimSettings).SettingChanged 
+        |> Observable.filter (fun args -> StringUtil.isEqual args.Setting.Name GlobalSettingNames.HighlightSearchName)
+        |> Observable.add (fun _ -> 
+            _displayPatternSuspended <- false
+            this.CheckDisplayPattern())
+
+        this.CheckDisplayPattern()
+
+    member x.LastPatternData 
+        with get() = _lastPatternData
+        and set value = 
+            _lastPatternData <- value
+            _displayPatternSuspended <- false
+            x.CheckDisplayPattern()
+
+    member x.SuspendDisplayPattern() = 
+        _displayPatternSuspended <- true
+        x.CheckDisplayPattern()
+
+    member x.ResumeDisplayPattern() = 
+        _displayPatternSuspended <- false
+        x.CheckDisplayPattern()
+
+    /// Recalculate the current value of display pattern against the cached value of display pattern.  If
+    /// it has changed then update the value and raised the changed event
+    member x.CheckDisplayPattern() =
+        let currentDisplayPattern = 
+            if _displayPatternSuspended then
+                ""
+            elif not _globalSettings.HighlightSearch then
+                ""
+            else
+                _lastPatternData.Pattern
+        if currentDisplayPattern <> _displayPattern then
+            _displayPattern <- currentDisplayPattern
+            _displayPatternChanged.Trigger x
 
     interface IVimData with 
         member x.AutoCommandGroups
@@ -73,6 +118,7 @@ type internal VimData() =
         member x.CommandHistory
             with get() = _commandHistory
             and set value = _commandHistory <- value
+        member x.DisplayPattern = _displayPattern
         member x.SearchHistory 
             with get() = _searchHistory
             and set value = _searchHistory <- value
@@ -86,8 +132,8 @@ type internal VimData() =
             with get() = _lastShellCommand
             and set value = _lastShellCommand <- value
         member x.LastPatternData 
-            with get() = _lastPatternData
-            and set value = _lastPatternData <- value
+            with get() = x.LastPatternData
+            and set value = x.LastPatternData <- value
         member x.PreviousCurrentDirectory = _previousCurrentDirecotry
         member x.LastCharSearch 
             with get() = _lastCharSearch
@@ -95,12 +141,10 @@ type internal VimData() =
         member x.LastMacroRun 
             with get() = _lastMacroRun
             and set value = _lastMacroRun <- value
-        member x.RaiseHighlightSearchOneTimeDisable () = _highlightSearchOneTimeDisabled.Trigger ()
-        member x.RaiseSearchRanEvent () = _searchRanEvent.Trigger()
+        member x.SuspendDisplayPattern() = x.SuspendDisplayPattern()
+        member x.ResumeDisplayPattern() = x.ResumeDisplayPattern()
         [<CLIEvent>]
-        member x.SearchRan = _searchRanEvent.Publish
-        [<CLIEvent>]
-        member x.HighlightSearchOneTimeDisabled = _highlightSearchOneTimeDisabled.Publish
+        member x.DisplayPatternChanged = _displayPatternChanged.Publish
 
 [<Export(typeof<IVimBufferFactory>)>]
 type internal VimBufferFactory
@@ -330,9 +374,9 @@ type internal Vim
         bulkOperations : IBulkOperations,
         editorToSettingSynchronizer : IEditorToSettingsSynchronizer) =
         let markMap = MarkMap(bufferTrackingService)
-        let vimData = VimData() :> IVimData
-        let variableMap = VariableMap()
         let globalSettings = GlobalSettings() :> IVimGlobalSettings
+        let vimData = VimData(globalSettings) :> IVimData
+        let variableMap = VariableMap()
         let listeners = bufferCreationListeners |> List.ofSeq
         Vim(
             host,

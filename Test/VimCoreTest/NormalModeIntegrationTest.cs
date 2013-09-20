@@ -1830,12 +1830,15 @@ namespace Vim.UnitTest
                 public void Issue896()
                 {
                     Create("");
+                    _globalSettings.HighlightSearch = true;
+                    _vimData.LastPatternData = new PatternData("cat", Path.Forward);
                     _vimBuffer.Process(":nnoremap <Esc> :nohl<Enter><Esc>", enter: true);
 
                     var ran = false;
-                    _vimData.HighlightSearchOneTimeDisabled += delegate { ran = true; };
+                    _vimData.DisplayPatternChanged += delegate { ran = true; };
                     _vimBuffer.Process(VimKey.Escape);
                     Assert.True(ran);
+                    Assert.True(String.IsNullOrEmpty(_vimData.DisplayPattern));
                 }
 
 

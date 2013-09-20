@@ -1030,7 +1030,7 @@ namespace Vim.UnitTest
         {
             private void ParseAndRun(params string[] lines)
             {
-                var parser = new Parser(new VimData());
+                var parser = VimUtil.CreateParser();
                 parser.Reset(lines);
                 var lineCommand = parser.ParseSingleCommand();
                 _interpreter.RunLineCommand(lineCommand);
@@ -1091,7 +1091,7 @@ namespace Vim.UnitTest
         {
             private LineRangeSpecifier ParseLineRange(string lineRangeText)
             {
-                var parser = new Parser(new VimData());
+                var parser = VimUtil.CreateParser();
                 var result = parser.ParseRange(lineRangeText);
                 Assert.True(!result.Item1.IsNone);
                 Assert.Equal("", result.Item2);

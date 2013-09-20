@@ -22,7 +22,7 @@ namespace Vim.UnitTest
         {
             _textView = CreateTextView(lines);
             _textBuffer = _textView.TextBuffer;
-            _globalSettings = new GlobalSettings();
+            _globalSettings = Vim.GlobalSettings;
             _globalSettings.IgnoreCase = true;
             _globalSettings.HighlightSearch = true;
             _vimData = Vim.VimData;
@@ -107,6 +107,44 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class IsProvidingTagsTest : HighlightSearchTaggerSourceTest
+        {
+            public IsProvidingTagsTest()
+            {
+                Create("");
+                _globalSettings.HighlightSearch = true;
+                _vimData.LastPatternData = new PatternData("cat", Path.Forward);
+            }
+
+            [Fact]
+            public void Standard()
+            {
+                _globalSettings.HighlightSearch = true;
+                _vimData.LastPatternData = new PatternData("cat", Path.Forward);
+                Assert.True(_asyncTaggerSourceRaw.IsProvidingTags);
+            }
+
+            [Fact]
+            public void DisplayPatternSuspended()
+            {
+                _vimData.SuspendDisplayPattern();
+                Assert.False(_asyncTaggerSourceRaw.IsProvidingTags);
+            }
+
+            /// <summary
+            /// Make sure that new instances respect the existing suppression of DisplayPattern
+            /// 
+            /// </summary>
+            [Fact]
+            public void Issue1164()
+            {
+                _vimData.SuspendDisplayPattern();
+                var vimBuffer = CreateVimBuffer();
+                var source = new HighlightSearchTaggerSource(vimBuffer.TextView, Vim.GlobalSettings, VimData, VimHost);
+                Assert.False(source.IsProvidingTags);
+            }
+        }
+
         public sealed class TryGetTagsPromptTest : HighlightSearchTaggerSourceTest
         {
 
@@ -124,14 +162,14 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
-            /// We can promptly say nothing when in One Time disabled
+            /// We can promptly say nothing when display of tags is suspended
             /// </summary>
             [Fact]
             public void OneTimeDisabled()
             {
                 Create("dog cat");
                 _vimData.LastPatternData = VimUtil.CreatePatternData("dog");
-                _asyncTaggerSourceRaw._oneTimeDisabled = true;
+                _vimData.SuspendDisplayPattern();
                 var ret = TryGetTagsPrompt(_textBuffer.GetExtent());
                 Assert.Equal(0, ret.Count);
             }
@@ -156,63 +194,51 @@ namespace Vim.UnitTest
 
         public sealed class ChangedTest : HighlightSearchTaggerSourceTest
         {
-            /// <summary>
-            /// The one time disabled event should cause a Changed event and the one time disabled
-            /// flag to be set
-            /// </summary>
-            [Fact]
-            public void OneTimeDisabled_Event()
+            private bool _raised;
+
+            public ChangedTest()
             {
                 Create("");
-                Assert.False(_asyncTaggerSourceRaw._oneTimeDisabled);
-                var raised = false;
-                _asyncTaggerSource.Changed += delegate { raised = true; };
-                _vimData.RaiseHighlightSearchOneTimeDisable();
-                Assert.True(raised);
-                Assert.True(_asyncTaggerSourceRaw._oneTimeDisabled);
+                _vimData.LastPatternData = new PatternData("dog", Path.Forward);
+                _asyncTaggerSource.Changed += delegate { _raised = true; };
+            }
+
+            /// <summary>
+            /// The SuspendDisplayPattern method should cause the Changed event to be raised
+            /// and stop the display of tags
+            /// </summary>
+            [Fact]
+            public void SuspendDisplayPattern()
+            {
+                Assert.True(_asyncTaggerSourceRaw.IsProvidingTags);
+                _vimData.SuspendDisplayPattern();
+                Assert.True(_raised);
+                Assert.False(_asyncTaggerSourceRaw.IsProvidingTags);
             }
 
             /// <summary>
             /// The search ran should cause a Changed event if we were previously disabled
             /// </summary>
             [Fact]
-            public void SearchRan_WhenDisabled()
+            public void ResumeDisplayPattern()
             {
-                Create("");
-                var raised = false;
-                _asyncTaggerSource.Changed += delegate { raised = true; };
-                _vimData.RaiseHighlightSearchOneTimeDisable();
-                _vimData.RaiseSearchRanEvent();
-                Assert.True(raised);
+                _vimData.SuspendDisplayPattern();
+                Assert.False(_asyncTaggerSourceRaw.IsProvidingTags);
+                _raised = false;
+                _vimData.ResumeDisplayPattern();
+                Assert.True(_raised);
+                Assert.True(_asyncTaggerSourceRaw.IsProvidingTags);
             }
 
             /// <summary>
-            /// The search ran should not cause a Changed event if we were not disabled and 
-            /// the pattern didn't change from the last search.  Nothing has changed at this
-            /// point
+            /// When the display pattern changes it should cause the Changed event to be 
+            /// raised
             /// </summary>
             [Fact]
-            public void SearchRan_NoDifference()
+            public void DisplayPatternChanged()
             {
-                Create("");
-                var raised = false;
-                _asyncTaggerSource.Changed += delegate { raised = true; };
-                _vimData.RaiseSearchRanEvent();
-                Assert.False(raised);
-            }
-
-            /// <summary>
-            /// The SearchRan event should cause a Changed event if the Pattern changes
-            /// </summary>
-            [Fact]
-            public void SearchRan_WhenPatternChanged()
-            {
-                Create("");
-                var raised = false;
-                _asyncTaggerSource.Changed += delegate { raised = true; };
                 _vimData.LastPatternData = new PatternData("hello", Path.Forward);
-                _vimData.RaiseSearchRanEvent();
-                Assert.True(raised);
+                Assert.True(_raised);
             }
 
             /// <summary>
@@ -221,14 +247,11 @@ namespace Vim.UnitTest
             [Fact]
             public void IsVisibleChanged()
             {
-                Create("");
                 Assert.True(_asyncTaggerSourceRaw._isVisible);
-                var raised = false;
-                _asyncTaggerSource.Changed += delegate { raised = true; };
                 VimHost.IsTextViewVisible = false;
                 VimHost.RaiseIsVisibleChanged(_textView);
                 Assert.False(_asyncTaggerSourceRaw._isVisible);
-                Assert.True(raised);
+                Assert.True(_raised);
             }
 
             /// <summary>
@@ -237,12 +260,10 @@ namespace Vim.UnitTest
             [Fact]
             public void RaiseChanged()
             {
-                Create("");
                 _globalSettings.HighlightSearch = false;
-                var raised = false;
-                _asyncTaggerSource.Changed += delegate { raised = true; };
+                _raised = false;
                 _globalSettings.HighlightSearch = true;
-                Assert.True(raised);
+                Assert.True(_raised);
                 Assert.True(_asyncTaggerSourceRaw.IsProvidingTags);
             }
 
@@ -252,11 +273,10 @@ namespace Vim.UnitTest
             [Fact]
             public void ResetOneTimeDisabled()
             {
-                Create("");
+                _vimData.LastPatternData = new PatternData("cat", Path.Forward);
                 _globalSettings.HighlightSearch = false;
-                _asyncTaggerSourceRaw._oneTimeDisabled = true;
+                _vimData.SuspendDisplayPattern();
                 _globalSettings.HighlightSearch = true;
-                Assert.False(_asyncTaggerSourceRaw._oneTimeDisabled);
                 Assert.True(_asyncTaggerSourceRaw.IsProvidingTags);
             }
         }

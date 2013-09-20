@@ -43,10 +43,9 @@ namespace Vim.UnitTest
             _factory = new MockRepository(MockBehavior.Strict);
 
             // Create the Vim instance with our Mock'd services
-            _vimData = new VimData();
             var registerMap = VimUtil.CreateRegisterMap(MockObjectFactory.CreateClipboardDevice(_factory).Object);
             _vimHost = _factory.Create<IVimHost>();
-            _globalSettings = _factory.Create<IVimGlobalSettings>();
+            _globalSettings = _factory.Create<IVimGlobalSettings>(MockBehavior.Loose);
             _globalSettings.SetupGet(x => x.Magic).Returns(true);
             _globalSettings.SetupGet(x => x.SmartCase).Returns(false);
             _globalSettings.SetupGet(x => x.IgnoreCase).Returns(true);
@@ -55,6 +54,7 @@ namespace Vim.UnitTest
             _globalSettings.SetupGet(x => x.UseEditorIndent).Returns(false);
             _globalSettings.SetupGet(x => x.VirtualEdit).Returns(String.Empty);
             _globalSettings.SetupGet(x => x.WrapScan).Returns(true);
+            _vimData = new VimData(_globalSettings.Object);
             _searchService = new SearchService(TextSearchService, _globalSettings.Object);
             var vim = MockObjectFactory.CreateVim(
                 registerMap: registerMap,

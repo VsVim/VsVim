@@ -36,7 +36,7 @@ namespace Vim.UnitTest
             _buffer.DefaultValue = DefaultValue.Mock;
             _buffer.SetupGet(x => x.NormalMode).Returns(_normalMode.Object);
 
-            _vimData = new VimData();
+            _vimData = VimUtil.CreateVimData();
             var vim = MockObjectFactory.CreateVim(vimData: _vimData);
             _tracker = new ChangeTracker(vim.Object);
             _tracker.OnVimBufferCreated(_buffer.Object);

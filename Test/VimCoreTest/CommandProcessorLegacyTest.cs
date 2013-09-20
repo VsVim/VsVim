@@ -45,7 +45,7 @@ namespace Vim.UnitTest
             _statusUtil = _factory.Create<IStatusUtil>();
             _fileSystem = _factory.Create<IFileSystem>(MockBehavior.Strict);
             _foldManager = _factory.Create<IFoldManager>(MockBehavior.Strict);
-            _vimData = new VimData();
+            _vimData = VimData;
             _vim = MockObjectFactory.CreateVim(RegisterMap, host: _vimHost.Object, vimData: _vimData, factory: _factory);
             var localSettings = new LocalSettings(Vim.GlobalSettings);
             var vimTextBuffer = MockObjectFactory.CreateVimTextBuffer(

@@ -45,7 +45,17 @@ namespace Vim.UnitTest
                 var result = func();
                 return string.IsNullOrEmpty(result) ? FSharpOption<string>.None : FSharpOption.Create(result);
             };
-            return new RegisterMap(new VimData(), device, func2.ToFSharpFunc());
+            return new RegisterMap(CreateVimData(), device, func2.ToFSharpFunc());
+        }
+
+        internal static IVimData CreateVimData()
+        {
+            return new VimData(new GlobalSettings());
+        }
+
+        internal static Parser CreateParser()
+        {
+            return new Parser(CreateVimData());
         }
 
         internal static CommandBinding CreateNormalBinding(string name)
@@ -295,13 +305,13 @@ namespace Vim.UnitTest
 
         internal static LineCommand ParseLineCommand(string text)
         {
-            var parser = new Parser(new VimData());
+            var parser = CreateParser();
             return parser.ParseLineCommand(text);
         }
 
         internal static ParseResult<Expression> ParseExpression(string expr)
         {
-            var parser = new Parser(new VimData());
+            var parser = CreateParser();
             return parser.ParseExpression(expr);
         }
     }

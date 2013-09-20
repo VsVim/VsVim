@@ -137,10 +137,6 @@ type HighlightSearchTaggerSource
     let _changed = StandardEvent()
     let _eventHandlers = DisposableBag()
 
-    /// Whether or not we are currently supressing tags because the user executed the 
-    /// :nohl command
-    let mutable _oneTimeDisabled = false
-
     /// Whether or not the ITextView is visible.  There is one setting which controls the tags for
     /// all ITextView's in the system.  It's very wasteful to raise tags changed when we are not 
     /// visible.  Many components call immediately back into GetTags even if the ITextView is not
@@ -149,42 +145,25 @@ type HighlightSearchTaggerSource
     let mutable _isVisible = true
 
     do
-        let lastIsProvidingTags = ref this.IsProvidingTags
-        let lastPatternData = ref _vimData.LastPatternData
+        let cachedIsProvidingTags = ref this.IsProvidingTags
+        let cachedDisplayPattern = ref _vimData.DisplayPattern
 
         // If anything around how we display tags has changed then need to raise the Changed event
         let maybeRaiseChanged () = 
-            if lastIsProvidingTags.Value <> this.IsProvidingTags || lastPatternData.Value <> _vimData.LastPatternData then
-                lastPatternData := _vimData.LastPatternData
-                lastIsProvidingTags := this.IsProvidingTags
+            if cachedIsProvidingTags.Value <> this.IsProvidingTags || cachedDisplayPattern.Value <> _vimData.DisplayPattern then
+                cachedDisplayPattern := _vimData.DisplayPattern
+                cachedIsProvidingTags := this.IsProvidingTags
 
                 _changed.Trigger this
 
-        // When the 'LastSearchData' property changes we want to reset the 'oneTimeDisabled' flag and 
-        // begin highlighting again
-        _vimData.SearchRan
-        |> Observable.subscribe (fun _ -> 
-            _oneTimeDisabled <- false
-            maybeRaiseChanged())
+        _vimData.DisplayPatternChanged
+        |> Observable.subscribe (fun _ -> maybeRaiseChanged())
         |> _eventHandlers.Add
 
-        // Make sure we respond to the HighlightSearchOneTimeDisabled event
-        _vimData.HighlightSearchOneTimeDisabled
-        |> Observable.subscribe (fun _ ->
-            _oneTimeDisabled <- true
-            maybeRaiseChanged())
-        |> _eventHandlers.Add
-
-        // When the setting is changed it also resets the one time disabled flag
-        // Up cast here to work around the F# bug which prevents accessing a CLIEvent from
-        // a derived type
-        (_globalSettings :> IVimSettings).SettingChanged 
-        |> Observable.filter (fun args -> StringUtil.isEqual args.Setting.Name GlobalSettingNames.HighlightSearchName)
-        |> Observable.subscribe (fun _ -> 
-            _oneTimeDisabled <- false
-            maybeRaiseChanged())
-        |> _eventHandlers.Add
-
+        // Tags shouldn't be displayed when the ITextView isn't visible.  No need to chew up CPU
+        // cycles, even on a background thread, for a visual cue that isn't visible.  Doing so
+        // can lead to noticable perf issues when a large file is hidden, an expensive regex is
+        // used and VS requests tags for a large section of the file.  This can and will happen
         _vimHost.IsVisibleChanged
         |> Observable.filter (fun args -> args.TextView = _textView)
         |> Observable.subscribe (fun _ -> 
@@ -195,15 +174,12 @@ type HighlightSearchTaggerSource
     /// Whether or not we are currently providing any tags.  Tags are surpressed in a
     /// number of scenarios
     member x.IsProvidingTags = 
-        not _oneTimeDisabled &&
-        _isVisible &&
-        _globalSettings.HighlightSearch
+        _isVisible && not (StringUtil.isNullOrEmpty _vimData.DisplayPattern)
 
     /// Get the search information for a background 
     member x.GetDataForSnapshot() =  
-
         let highlightSearchData = {
-            Pattern = _vimData.LastPatternData.Pattern
+            Pattern = _vimData.DisplayPattern
             VimRegexOptions = VimRegexFactory.CreateRegexOptions _globalSettings
         }
 

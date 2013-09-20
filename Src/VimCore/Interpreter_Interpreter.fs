@@ -772,7 +772,7 @@ type VimInterpreter
 
     /// Run the 'nohlsearch' command.  Temporarily disables highlighitng in the buffer
     member x.RunNoHighlightSearch() = 
-        _vimData.RaiseHighlightSearchOneTimeDisable()
+        _vimData.SuspendDisplayPattern()
         RunResult.Completed
 
     member x.RunParseError msg =

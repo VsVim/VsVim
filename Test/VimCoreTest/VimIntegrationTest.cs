@@ -12,7 +12,7 @@ namespace Vim.UnitTest
 {
     public abstract class VimIntegrationTest : VimTestBase
     {
-        public sealed class MistTest : VimIntegrationTest
+        public sealed class MiscTest : VimIntegrationTest
         {
             [Fact]
             public void RemoveBuffer1()
@@ -195,6 +195,75 @@ autocmd BufEnter *.html set ts=12
                 Run(text);
                 var vimBuffer = CreateVimBufferWithName("test.html");
                 Assert.NotEqual(12, vimBuffer.LocalSettings.TabStop);
+            }
+        }
+
+        public sealed class DisplayPatternTest : VimIntegrationTest
+        {
+            private bool _didRun;
+
+            public DisplayPatternTest()
+            {
+                Vim.GlobalSettings.HighlightSearch = true;
+                VimData.LastPatternData = new PatternData("cat", Path.Forward);
+                VimData.DisplayPatternChanged += delegate { _didRun = true; };
+            }
+
+            /// <summary>
+            /// The repeat last search should cause the search ran event to be raised
+            /// </summary>
+            [Fact]
+            public void RepeatLastSearch()
+            {
+                var vimBuffer = CreateVimBuffer("hello world");
+                vimBuffer.Process("n");
+                Assert.True(_didRun);
+            }
+
+            /// <summary>
+            /// The next word under cursor command '*' should cause the SearhRan event to fire
+            /// </summary>
+            [Fact]
+            public void NextWordUnderCaret()
+            {
+                var vimBuffer = CreateVimBuffer("hello world");
+                vimBuffer.Process("*");
+                Assert.True(_didRun);
+            }
+
+            /// <summary>
+            /// The '/' command should register a search change after the Enter key
+            /// </summary>
+            [Fact]
+            public void IncrementalSerach()
+            {
+                var vimBuffer = CreateVimBuffer("hello world");
+                vimBuffer.Process("/ab");
+                Assert.False(_didRun);
+                vimBuffer.Process(VimKey.Enter);
+                Assert.True(_didRun);
+            }
+
+            /// <summary>
+            /// The :s command should cause a SearchRan to occur
+            /// </summary>
+            [Fact]
+            public void SubstituteCommand()
+            {
+                var vimBuffer = CreateVimBuffer("hello world");
+                vimBuffer.ProcessNotation(":s/cat/bat<Enter>");
+                Assert.True(_didRun);
+            }
+
+            /// <summary>
+            /// Don't raise the SearchRan command for simple commands
+            /// </summary>
+            [Fact]
+            public void DontRaiseForSimpleCommands()
+            {
+                var vimBuffer = CreateVimBuffer("hello world");
+                vimBuffer.Process("dd");
+                Assert.False(_didRun);
             }
         }
     }
