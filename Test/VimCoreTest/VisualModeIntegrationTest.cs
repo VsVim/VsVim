@@ -1081,6 +1081,16 @@ namespace Vim.UnitTest
                 Assert.Equal(2, _textView.GetCaretPoint().Position);
                 Assert.Equal("cat", _textView.GetSelectionSpan().GetText());
             }
+
+            [Fact]
+            public void Issue890()
+            {
+                Create("cat > dog");
+                _vimBuffer.ProcessNotation(@":vmap > >gv", enter: true);
+                _vimBuffer.ProcessNotation(@"vf>");
+                Assert.Equal(ModeKind.VisualCharacter, _vimBuffer.ModeKind);
+                Assert.Equal(4, _textView.GetCaretPoint().Position);
+            }
         }
 
         public sealed class ChangeCase : VisualModeIntegrationTest

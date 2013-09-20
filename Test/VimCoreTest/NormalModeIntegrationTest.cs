@@ -1868,6 +1868,19 @@ namespace Vim.UnitTest
                     Assert.Equal("cat", UnnamedRegister.StringValue);
                 }
 
+                /// <summary>
+                /// When 0 is mapped it should only be used before we get into a count situation.  Once inside of a 
+                /// count operation we should ignore the :nmap of 0 and instead us 0 as a number
+                /// </summary>
+                [Fact]
+                public void Issue890()
+                {
+                    Create("cat dog fish big tree to chase");
+                    _textView.MoveCaretTo(1);
+                    _vimBuffer.ProcessNotation(@":nmap 0 ^", enter: true);
+                    _vimBuffer.ProcessNotation("10l");
+                    Assert.Equal(11, _textView.GetCaretPoint().Position);
+                }
 
                 /// <summary>
                 /// Make sure that key mapping correctly takse effect after a count.  For example when trying
