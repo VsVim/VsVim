@@ -210,14 +210,17 @@ autocmd BufEnter *.html set ts=12
             }
 
             /// <summary>
-            /// The repeat last search should cause the search ran event to be raised
+            /// The repeat last search should cause the display of tags to be resumed
             /// </summary>
             [Fact]
             public void RepeatLastSearch()
             {
                 var vimBuffer = CreateVimBuffer("hello world");
-                vimBuffer.Process("n");
+                vimBuffer.ProcessNotation(@":nohl", enter: true);
+                Assert.Equal("", VimData.DisplayPattern);
+                vimBuffer.ProcessNotation(@"n");
                 Assert.True(_didRun);
+                Assert.Equal("cat", VimData.DisplayPattern);
             }
 
             /// <summary>
@@ -245,14 +248,16 @@ autocmd BufEnter *.html set ts=12
             }
 
             /// <summary>
-            /// The :s command should cause a SearchRan to occur
+            /// The :s command should cause tags to be resumed
             /// </summary>
             [Fact]
             public void SubstituteCommand()
             {
                 var vimBuffer = CreateVimBuffer("hello world");
-                vimBuffer.ProcessNotation(":s/cat/bat<Enter>");
+                vimBuffer.ProcessNotation(@":nohl", enter: true);
+                vimBuffer.ProcessNotation(":s/dog/bat<Enter>");
                 Assert.True(_didRun);
+                Assert.Equal("dog", VimData.DisplayPattern);
             }
 
             /// <summary>
