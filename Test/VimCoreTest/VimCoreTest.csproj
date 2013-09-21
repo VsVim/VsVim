@@ -81,6 +81,7 @@
     <Compile Include="CommandProcessorLegacyTest.cs" />
     <Compile Include="CommandRunnerTest.cs" />
     <Compile Include="CommandUtilTest.cs" />
+    <Compile Include="CommonOperationsIntegrationTest.cs" />
     <Compile Include="EditUtilTest.cs" />
     <Compile Include="Exports\OutlinerTaggerProvider.cs" />
     <Compile Include="HistoryListTest.cs" />

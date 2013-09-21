@@ -5,8 +5,10 @@ open EditorUtils
 open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Editor
 open Microsoft.VisualStudio.Text.Editor.OptionsExtensionMethods
+open Microsoft.VisualStudio.Text.Formatting
 open Microsoft.VisualStudio.Text.Operations
 open Microsoft.VisualStudio.Text.Outlining
+open System
 open System.ComponentModel.Composition
 open System.Text.RegularExpressions
 open StringBuilderExtensions
@@ -202,6 +204,84 @@ type internal CommonOperations
             let line = SnapshotPointUtil.GetContainingLine point
             if point.Position >= line.End.Position && line.Length > 0 then 
                 TextViewUtil.MoveCaretToPoint _textView (line.End.Subtract(1))
+
+    /// Adjust the ITextView scrolling to account for the 'scrolloff' setting after a move operation
+    /// completes
+    member x.AdjustTextViewForScrollOffset() =
+        if _globalSettings.ScrollOffset > 0 then
+            x.AdjustTextViewForScrollOffsetCore _globalSettings.ScrollOffset
+    
+    /// The most efficient API for moving the caret is DisplayTextLineContainingBufferPosition.  This is actually
+    /// what the scrolling APIs use to implement scrolling.  Unfortunately this API deals is in buffer positions
+    /// but we want to scroll visually.  
+    ///
+    /// This is easier to explain with folding.  If the line just above the caret is 300 lines folded into 1 then 
+    /// we want to consider only the folded line for scroll offset, not the 299 invisible lines.  In order to do 
+    /// this we need to map the caret position up to the visual buffer, do the line math there, find the correct 
+    /// visual line, then map the start of that line back down to the edit buffer.  
+    ///
+    /// This function also suffers from another problem.  The font in Visual Studio is not guaranteed to be fixed
+    /// width / height.  Adornments can also cause lines to be taller or shorter than they should be.  Hence we
+    /// have to approximate the number of lines that can be on the screen in order to calculate the proper 
+    /// offset to use.  
+    member x.AdjustTextViewForScrollOffsetCore offset =
+        Contract.Requires(offset >= 0)
+
+        try
+            // First calculate the actual offset.  The actual offset can't be more than half of the lines which
+            // are visible on the screen.  It's tempting to use the ITextViewLinesCollection.Count to see how
+            // many possible lines are displayed.  This value will be wrong though when the view is scrolled 
+            // to the bottom because it will be displaying the last few lines and several blanks which don't
+            // count.  Instead we average out the height of the lines and divide that into the height of 
+            // the view port 
+            let textViewLines = _textView.TextViewLines
+            let calcOffset () = 
+                if textViewLines.Count = 0 then
+                    0
+                else
+                    let lineHeight = textViewLines |> Seq.averageBy (fun l -> l.Height)
+                    let lineCount = int (_textView.ViewportHeight / lineHeight) 
+                    let maxOffset = lineCount / 2
+                    min maxOffset offset
+            let offset = calcOffset ()
+
+            // This function will do the actual positioning of the scroll based on the calculated lines 
+            // in the buffer
+            let doScroll topPoint bottomPoint =
+                let firstVisibleLineNumber = SnapshotPointUtil.GetLineNumber textViewLines.FirstVisibleLine.Start 
+                let lastVisibleLineNumber = SnapshotPointUtil.GetLineNumber textViewLines.LastVisibleLine.End 
+                let topLineNumber = SnapshotPointUtil.GetLineNumber topPoint
+                let bottomLineNumber = SnapshotPointUtil.GetLineNumber bottomPoint
+
+                if topLineNumber < firstVisibleLineNumber then
+                    _textView.DisplayTextLineContainingBufferPosition(topPoint, 0.0, ViewRelativePosition.Top)
+                elif bottomLineNumber > lastVisibleLineNumber then
+                    _textView.DisplayTextLineContainingBufferPosition(bottomPoint, 0.0, ViewRelativePosition.Bottom)
+
+            // Time to map up and down the buffer graph to find the correct top and bottom point that the scroll
+            // needs tobe adjusted to 
+            let visualSnapshot = _textView.VisualSnapshot
+            let editSnapshot = _textView.TextSnapshot
+            match BufferGraphUtil.MapPointUpToSnapshotStandard _textView.BufferGraph x.CaretPoint visualSnapshot with
+            | None -> ()
+            | Some visualPoint ->
+                let visualLine = SnapshotPointUtil.GetContainingLine visualPoint
+                let visualLineNumber = visualLine.LineNumber
+
+                let topLineNumber = max 0 (visualLineNumber - offset) 
+                let bottomLineNumber = min (visualLineNumber + offset) (visualSnapshot.LineCount - 1)
+                let visualTopLine = SnapshotUtil.GetLine visualSnapshot topLineNumber
+                let visualBottomLine = SnapshotUtil.GetLine visualSnapshot bottomLineNumber
+                let editTopPoint = BufferGraphUtil.MapPointDownToSnapshotStandard _textView.BufferGraph visualTopLine.Start editSnapshot
+                let editBottomPoint = BufferGraphUtil.MapPointDownToSnapshotStandard _textView.BufferGraph visualBottomLine.Start editSnapshot
+                match editTopPoint, editBottomPoint with
+                | Some p1, Some p2 -> doScroll p1 p2
+                | _ -> ()
+
+        with
+            // As always when using ITextViewLines an exception can be thrown due to layout.  Simply catch
+            // this exception and move on
+            | _ -> ()
 
     /// Delete count lines from the cursor.  The caret should be positioned at the start
     /// of the first line for both undo / redo

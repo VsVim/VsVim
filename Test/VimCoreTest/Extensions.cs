@@ -1054,6 +1054,16 @@ namespace Vim.UnitTest
             }
         }
 
+        public static void ScrollToTop(this ITextView textView)
+        {
+            textView.ViewScroller.ScrollViewportVerticallyByLines(ScrollDirection.Up, textView.TextBuffer.CurrentSnapshot.LineCount);
+        }
+
+        public static void ScrollToBottom(this ITextView textView)
+        {
+            textView.ViewScroller.ScrollViewportVerticallyByLines(ScrollDirection.Down, textView.TextBuffer.CurrentSnapshot.LineCount);
+        }
+
         #endregion
 
         #region IWpfTextView
