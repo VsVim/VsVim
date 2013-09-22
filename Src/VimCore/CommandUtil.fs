@@ -476,7 +476,7 @@ type internal CommandUtil
             // Move the caret back to it's original position.  Don't consider virtual
             // space here since we're switching to insert mode
             let point = SnapshotPoint(x.CurrentSnapshot, caretPosition)
-            _commonOperations.MoveCaretToPoint point)
+            _commonOperations.MoveCaretToPoint point ViewFlags.None)
 
     /// Delete the selected text in Visual Mode and begin insert mode with a linked
     /// transaction. 
@@ -1313,7 +1313,7 @@ type internal CommandUtil
                     |> SnapshotLineUtil.GetFirstNonBlankOrStart
                     |> VirtualSnapshotPointUtil.OfPoint
 
-            _commonOperations.MoveCaretToPointAndEnsureVisible point.Position
+            _commonOperations.MoveCaretToPoint point.Position ViewFlags.All
             _jumpList.Add before
             CommandResult.Completed ModeSwitch.NoSwitch
 
@@ -1358,7 +1358,7 @@ type internal CommandUtil
     member x.JumpToTagCore () =
         match _jumpList.Current with
         | None -> _commonOperations.Beep()
-        | Some point -> _commonOperations.MoveCaretToPointAndEnsureVisible point
+        | Some point -> _commonOperations.MoveCaretToPoint point ViewFlags.All
 
     /// Move the caret to start of a line which is deleted.  Needs to preserve the original 
     /// indent if 'autoindent' is set.
@@ -2373,7 +2373,7 @@ type internal CommandUtil
                 let firstIndex = textViewLines.GetIndexOfTextLine(textViewLines.FirstVisibleLine)
                 let textViewLine = textViewLines.[firstIndex + lineOffset]
                 let snapshotLine = SnapshotPointUtil.GetContainingLine textViewLine.Start
-                _commonOperations.MoveCaretToPointAndEnsureVisible snapshotLine.Start
+                _commonOperations.MoveCaretToPoint snapshotLine.Start ViewFlags.All
 
             let textViewLines = _textView.TextViewLines
             let firstIndex = textViewLines.GetIndexOfTextLine(textViewLines.FirstVisibleLine)
@@ -2452,7 +2452,7 @@ type internal CommandUtil
         _commonOperations.EditorOperations.ScrollLineTop()
         if not keepCaretColumn then
             _commonOperations.EditorOperations.MoveToStartOfLineAfterWhiteSpace(false)
-        _commonOperations.EnsureScrollOffset()
+        _commonOperations.EnsureAtCaret ViewFlags.ScrollOffset
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Scroll the line containing the caret to the middle of the ITextView.  
@@ -2460,7 +2460,7 @@ type internal CommandUtil
         _commonOperations.EditorOperations.ScrollLineCenter()
         if not keepCaretColumn then
             _commonOperations.EditorOperations.MoveToStartOfLineAfterWhiteSpace(false)
-        _commonOperations.EnsureScrollOffset()
+        _commonOperations.EnsureAtCaret ViewFlags.ScrollOffset
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Scroll the line containing the caret to the bottom of the ITextView.  
@@ -2468,7 +2468,7 @@ type internal CommandUtil
         _commonOperations.EditorOperations.ScrollLineBottom()
         if not keepCaretColumn then
             _commonOperations.EditorOperations.MoveToStartOfLineAfterWhiteSpace(false)
-        _commonOperations.EnsureScrollOffset()
+        _commonOperations.EnsureAtCaret ViewFlags.ScrollOffset
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Shift the given line range left by the specified value.  The caret will be 

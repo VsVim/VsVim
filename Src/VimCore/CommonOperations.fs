@@ -387,7 +387,7 @@ type internal CommonOperations
         let moveLeft () = 
             if x.CaretLine.Start.Position < x.CaretPoint.Position then
                 let point = SnapshotPointUtil.SubtractOne x.CaretPoint
-                x.MoveCaretToPointAndEnsureVisible point
+                x.MoveCaretToPoint point ViewFlags.All
                 true
             else
                 false
@@ -396,7 +396,7 @@ type internal CommonOperations
         let moveRight () =
             if x.CaretPoint.Position < x.CaretLine.End.Position then
                 let point = SnapshotPointUtil.AddOne x.CaretPoint
-                x.MoveCaretToPointAndEnsureVisible point
+                x.MoveCaretToPoint point ViewFlags.All
                 true
             else
                 false
@@ -427,26 +427,17 @@ type internal CommonOperations
         | CaretMovement.PageUp -> movePageUp()
         | CaretMovement.PageDown -> movePageDown()
 
-    /// Move the caret to the specified point and ensure it's visible and the surrounding 
-    /// text is expanded
-    ///
-    /// Note: We actually do the operation in the opposite order.  The text needs to be expanded
-    /// before we even move the point.  Before the text is expanded the point we are moving to 
-    /// will map to the collapsed region.  When the text is subsequently expanded it has no 
-    /// memory and will just stay in place.  
-    ///
-    /// To avoid this we will expand then move the caret and finally ensure it's visible on 
-    /// the screen
-    member x.MoveCaretToPointAndEnsureVisible point = 
-        x.EnsurePointExpanded point
+    /// Move the caret to the specified point and ensure the specified view properties are 
+    /// correct at that point 
+    member x.MoveCaretToPoint point viewFlags = 
+        // In the case where we want to expand the text we are moving to we need to do the expansion
+        // first before the move.  Before the text is expanded the point we are moving to will map to 
+        // the collapsed region.  When the text is subsequently expanded it has no memory and will 
+        // just stay in place.  
+        if Util.IsFlagSet viewFlags ViewFlags.TextExpanded then
+            x.EnsurePointExpanded point
         TextViewUtil.MoveCaretToPoint _textView point
-        x.EnsureCaretOnScreen()
-
-    /// Move the caret to the specified point and ensure it's on screen.  Does not expand the 
-    /// surrounding text if this is in the middle of a collapsed region
-    member x.MoveCaretToPointAndEnsureOnScreen point = 
-        TextViewUtil.MoveCaretToPoint _textView point
-        x.EnsureCaretOnScreen()
+        x.EnsureAtPoint point viewFlags
 
     /// Move the caret to the position dictated by the given MotionResult value
     member x.MoveCaretToMotionResult (result : MotionResult) =
@@ -546,15 +537,19 @@ type internal CommonOperations
                     | CaretColumn.AfterLastLine ->
                         getAfterLastLine()
 
-        if result.OperationKind = OperationKind.LineWise && not (Util.IsFlagSet result.MotionResultFlags MotionResultFlags.ExclusiveLineWise) then
-            // Line wise motions should not cause any collapsed regions to be expanded.  Instead they
-            // should leave the regions collapsed and just move the point into the region
-            x.MoveCaretToPointAndEnsureOnScreen point
-        else
-            // Character wise motions should expand regions
-            x.MoveCaretToPointAndEnsureVisible point
+        let viewFlags = 
+            if result.OperationKind = OperationKind.LineWise && not (Util.IsFlagSet result.MotionResultFlags MotionResultFlags.ExclusiveLineWise) then
+                // Line wise motions should not cause any collapsed regions to be expanded.  Instead they
+                // should leave the regions collapsed and just move the point into the region
+                ViewFlags.All &&& (~~~ViewFlags.TextExpanded)
+            else
+                // Character wise motions should expand regions
+                ViewFlags.All
+        x.MoveCaretToPoint point viewFlags
 
+        // STODO: should be a part of the view flags to check the virtual space
         x.AdjustCaretPostMove()
+
         _editorOperations.ResetSelection()
 
     /// Move the caret to the specified point but adjust the result if it's in virtual space
@@ -649,7 +644,7 @@ type internal CommonOperations
     member x.NavigateToPoint (point : VirtualSnapshotPoint) = 
         let textBuffer = point.Position.Snapshot.TextBuffer
         if textBuffer = _textView.TextBuffer then 
-            x.MoveCaretToPointAndEnsureVisible point.Position
+            x.MoveCaretToPoint point.Position (ViewFlags.Visible ||| ViewFlags.ScrollOffset)
             true
         else
             _vimHost.NavigateTo point 
@@ -1104,19 +1099,22 @@ type internal CommonOperations
     /// after the undo completes
     member x.Undo count = 
         _undoRedoOperations.Undo count
-        x.EnsureCaretOnScreenAndTextExpanded()
+        x.EnsureAtPoint x.CaretPoint ViewFlags.All
 
     /// Redo 'count' operations in the ITextBuffer and ensure the caret is on the screen
     /// after the redo completes
     member x.Redo count = 
         _undoRedoOperations.Redo count
-        x.EnsureCaretOnScreenAndTextExpanded()
+        x.EnsureAtPoint x.CaretPoint ViewFlags.All
 
-    /// Ensure the caret is visible on the screen.  Will not expand the text around the caret
-    /// if it's in the middle of a collapsed region
-    member x.EnsureCaretOnScreen () = 
-        TextViewUtil.EnsureCaretOnScreen _textView 
-        x.AdjustTextViewForScrollOffset()
+    /// Ensure the given view properties are met at the given point
+    member x.EnsureAtPoint point viewFlags = 
+        if Util.IsFlagSet viewFlags ViewFlags.TextExpanded then
+            x.EnsurePointExpanded point
+        if Util.IsFlagSet viewFlags ViewFlags.Visible then
+            x.EnsurePointVisible point
+        if Util.IsFlagSet viewFlags ViewFlags.ScrollOffset then
+            x.AdjustTextViewForScrollOffsetAtPoint point
 
     /// Ensure the given SnapshotPoint is not in a collapsed region on the screen
     member x.EnsurePointExpanded point = 
@@ -1127,19 +1125,13 @@ type internal CommonOperations
             let span = SnapshotSpan(point, 0)
             outliningManager.ExpandAll(span, fun _ -> true) |> ignore
 
-    /// Ensure the point is visible on the screen and any regions surrounding the point are
-    /// expanded such that the actual caret is visible
-    member x.EnsurePointOnScreenAndTextExpanded point = 
-        x.EnsurePointExpanded point
-        x.AdjustTextViewForScrollOffsetAtPoint point
-        _vimHost.EnsureVisible _textView point
-
-    /// Ensure the text is on the screen and that if it's in the middle of a collapsed region 
-    /// that the collapsed region is expanded to reveal the caret
-    member x.EnsureCaretOnScreenAndTextExpanded () =
-        x.EnsurePointExpanded x.CaretPoint
-        x.EnsureCaretOnScreen()
-
+    /// Ensure the point is on screen / visible
+    member x.EnsurePointVisible (point : SnapshotPoint) = 
+        if point.Position = x.CaretPoint.Position then
+            TextViewUtil.EnsureCaretOnScreen _textView
+        else
+            _vimHost.EnsureVisible _textView point  
+        
     interface ICommonOperations with
         member x.VimBufferData = _vimBufferData
         member x.TextView = _textView 
@@ -1149,10 +1141,8 @@ type internal CommonOperations
         member x.Beep () = x.Beep()
         member x.CreateRegisterValue point stringData operationKind = x.CreateRegisterValue point stringData operationKind
         member x.DeleteLines startLine count register = x.DeleteLines startLine count register
-        member x.EnsureCaretOnScreen() = x.EnsureCaretOnScreen()
-        member x.EnsureCaretOnScreenAndTextExpanded() = x.EnsureCaretOnScreenAndTextExpanded()
-        member x.EnsurePointOnScreenAndTextExpanded point = x.EnsurePointOnScreenAndTextExpanded point
-        member x.EnsureScrollOffset() = x.AdjustTextViewForScrollOffset()
+        member x.EnsureAtCaret viewFlags = x.EnsureAtPoint x.CaretPoint viewFlags
+        member x.EnsureAtPoint point viewFlags = x.EnsureAtPoint point viewFlags
         member x.FormatLines range = _vimHost.FormatLines _textView range
         member x.GetNewLineText point = x.GetNewLineText point
         member x.GetNewLineIndent contextLine newLine = x.GetNewLineIndent contextLine newLine
@@ -1168,8 +1158,7 @@ type internal CommonOperations
         member x.GoToTab index = _vimHost.GoToTab index
         member x.Join range kind = x.Join range kind
         member x.MoveCaret caretMovement = x.MoveCaret caretMovement
-        member x.MoveCaretToPoint point =  TextViewUtil.MoveCaretToPoint _textView point 
-        member x.MoveCaretToPointAndEnsureVisible point = x.MoveCaretToPointAndEnsureVisible point
+        member x.MoveCaretToPoint point viewFlags =  x.MoveCaretToPoint point viewFlags
         member x.MoveCaretToPointAndCheckVirtualSpace point = x.MoveCaretToPointAndCheckVirtualSpace point
         member x.MoveCaretToMotionResult data = x.MoveCaretToMotionResult data
         member x.NavigateToPoint point = x.NavigateToPoint point

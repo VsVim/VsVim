@@ -6,6 +6,7 @@ open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Editor
 open Microsoft.VisualStudio.Text.Operations
 open Microsoft.VisualStudio.Text.Tagging
+open System
 
 /// Used to determine if a completion window is active for a given view
 type IDisplayWindowBroker =
@@ -242,6 +243,23 @@ type Result =
     | Succeeded
     | Failed of string
 
+[<Flags>]
+type ViewFlags = 
+    | None = 0 
+
+    /// Ensure the context point is visible in the ITextView
+    | Visible = 0x1
+
+    /// If the context point is inside a collapsed region then it needs to be exapnded
+    | TextExpanded = 0x2
+
+    /// Using the context point as a reference ensure the scroll respects the 'scrolloff'
+    /// setting
+    | ScrollOffset = 0x4
+
+    /// All flags 
+    | All = 0xffff
+
 /// This class abstracts out the operations that are common to normal, visual and 
 /// command mode.  It usually contains common edit and movement operations and very
 /// rarely will deal with caret operations.  That is the responsibility of the 
@@ -273,17 +291,11 @@ type ICommonOperations =
     /// Delete at least count lines from the visual snapshot
     abstract DeleteLines : startLine : ITextSnapshotLine -> maxCount : int -> register : Register -> unit
 
-    /// Ensure the caret is on the visible screen
-    abstract EnsureCaretOnScreen : unit -> unit
+    /// Ensure the view properties are met at the caret
+    abstract EnsureAtCaret : viewFlags : ViewFlags -> unit
 
-    /// Ensure the caret is on screen and that it is not in a collapsed region
-    abstract EnsureCaretOnScreenAndTextExpanded : unit -> unit
-
-    /// Ensure the point is on screen and that it is not in a collapsed region
-    abstract EnsurePointOnScreenAndTextExpanded : SnapshotPoint -> unit
-
-    /// Ensure the scrolling is correct for the 'scrolloff' setting
-    abstract EnsureScrollOffset : unit -> unit 
+    /// Ensure the view properties are met at the point
+    abstract EnsureAtPoint : point : SnapshotPoint -> viewFlags : ViewFlags -> unit
 
     /// Format the specified line range
     abstract FormatLines : SnapshotLineRange -> unit
@@ -340,15 +352,14 @@ type ICommonOperations =
     /// Move the caret in the specified direction
     abstract MoveCaret : caretMovement : CaretMovement -> bool
 
-    /// Move the caret to a given point on the screen
-    abstract MoveCaretToPoint : SnapshotPoint -> unit
-
-    /// Move the caret to a given point on the screen and ensure it's visible and the surrounding
-    /// text is expanded
-    abstract MoveCaretToPointAndEnsureVisible : SnapshotPoint -> unit
+    /// Move the caret to a given point on the screen and ensure the view has the specified
+    /// properties at that point 
+    abstract MoveCaretToPoint : point : SnapshotPoint -> viewFlags : ViewFlags -> unit
 
     /// Move the caret to the specified SnapshotPoint and make sure to adjust for the 
     /// virtual edit settings
+    ///
+    /// STODO: delete this 
     abstract MoveCaretToPointAndCheckVirtualSpace : SnapshotPoint -> unit
 
     /// Move the caret to the MotionResult value
