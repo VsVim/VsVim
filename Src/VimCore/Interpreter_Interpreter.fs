@@ -578,9 +578,7 @@ type VimInterpreter
                 else
                     match TrackingPointUtil.GetPoint _textView.TextSnapshot caret with
                     | None -> ()
-                    | Some(point) -> 
-                        TextViewUtil.MoveCaretToPoint _textView point
-                        TextViewUtil.EnsureCaretOnScreen _textView
+                    | Some point -> _commonOperations.MoveCaretToPointAndEnsureVisible point
 
         elif not hasBang && _vimHost.IsDirty _textBuffer then
             _statusUtil.OnError Resources.Common_NoWriteSinceLastChange

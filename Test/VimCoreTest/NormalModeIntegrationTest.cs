@@ -3964,6 +3964,17 @@ namespace Vim.UnitTest
                 Assert.Equal(lineNumber, _textView.GetCaretLine().LineNumber);
             }
 
+            [Fact]
+            public void ScrollLineToTop()
+            {
+                var lineNumber = 4;
+                _textView.SetVisibleLineCount(10);
+                _textView.DisplayTextLineContainingBufferPosition(_textBuffer.GetLine(lineNumber).Start, 0.0, ViewRelativePosition.Top);
+                _textView.MoveCaretToLine(lineNumber + 4);
+                _vimBuffer.ProcessNotation("zt");
+                AssertFirstLine(lineNumber + 2);
+            }
+
             /// <summary>
             /// The simple act of moving the caret outside of the context of a vim command shousd cause the scroll 
             /// offset to be respected 

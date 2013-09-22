@@ -2452,6 +2452,7 @@ type internal CommandUtil
         _commonOperations.EditorOperations.ScrollLineTop()
         if not keepCaretColumn then
             _commonOperations.EditorOperations.MoveToStartOfLineAfterWhiteSpace(false)
+        _commonOperations.EnsureScrollOffset()
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Scroll the line containing the caret to the middle of the ITextView.  
@@ -2459,6 +2460,7 @@ type internal CommandUtil
         _commonOperations.EditorOperations.ScrollLineCenter()
         if not keepCaretColumn then
             _commonOperations.EditorOperations.MoveToStartOfLineAfterWhiteSpace(false)
+        _commonOperations.EnsureScrollOffset()
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Scroll the line containing the caret to the bottom of the ITextView.  
@@ -2466,6 +2468,7 @@ type internal CommandUtil
         _commonOperations.EditorOperations.ScrollLineBottom()
         if not keepCaretColumn then
             _commonOperations.EditorOperations.MoveToStartOfLineAfterWhiteSpace(false)
+        _commonOperations.EnsureScrollOffset()
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Shift the given line range left by the specified value.  The caret will be 
