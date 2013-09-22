@@ -30,13 +30,15 @@ namespace Vim.UnitTest
 
         public abstract class ScrollOffsetTest : CommonOperationsIntegrationTest
         {
-            private int _lastLineNumber = 0;
+            private readonly IFoldManager _foldManager;
+            private readonly int _lastLineNumber = 0;
 
             protected ScrollOffsetTest()
             {
                 Create(KeyInputUtilTest.CharLettersLower.Select(x => x.ToString()).ToArray());
                 _lastLineNumber = _textBuffer.CurrentSnapshot.LineCount - 1;
                 _textView.SetVisibleLineCount(5);
+                _foldManager = FoldManagerFactory.GetFoldManager(_textView);
             }
 
             private void AssertFirstLine(int lineNumber)
@@ -118,6 +120,21 @@ namespace Vim.UnitTest
                     _commonOperationsRaw.AdjustTextViewForScrollOffset();
                     AssertFirstLine(5);
                 }
+
+                /// <summary>
+                /// Folded text should count as a single line 
+                /// </summary>
+                [Fact]
+                public void OverFold()
+                {
+                    _globalSettings.ScrollOffset = 2;
+                    _textView.SetVisibleLineCount(5);
+                    _textView.ScrollToBottom();
+                    _foldManager.CreateFold(_textBuffer.GetLineRange(startLine: 3, endLine: 5));
+                    _textView.MoveCaretToLine(6);
+                    _commonOperationsRaw.AdjustTextViewForScrollOffset();
+                    AssertFirstLine(2);
+                }
             }
 
             public sealed class BottomTest : ScrollOffsetTest
@@ -164,6 +181,42 @@ namespace Vim.UnitTest
                     _textView.MoveCaretToLine(_lastLineNumber - 1);
                     _commonOperationsRaw.AdjustTextViewForScrollOffset();
                     AssertLastLine(_lastLineNumber);
+                }
+
+                [Fact]
+                public void OverFold()
+                {
+                    _globalSettings.ScrollOffset = 2;
+                    _textView.SetVisibleLineCount(5);
+                    _textView.ScrollToTop();
+                    int mouseLineNumber = _lastLineNumber - 6;
+                    _textView.MoveCaretToLine(mouseLineNumber);
+                    _foldManager.CreateFold(_textBuffer.GetLineRange(startLine: mouseLineNumber + 1, endLine: mouseLineNumber + 4));
+                    _commonOperationsRaw.AdjustTextViewForScrollOffset();
+                    AssertLastLine(mouseLineNumber + 5);
+                }
+            }
+
+            public sealed class MiscTest : ScrollOffsetTest
+            {
+                [Fact]
+                public void SingleLineSingleOffset()
+                {
+                    _textBuffer.SetText("");
+                    _textView.MoveCaretToLine(0);
+                    _globalSettings.ScrollOffset = 1;
+                    _commonOperationsRaw.AdjustTextViewForScrollOffset();
+                    AssertFirstLine(0);
+                }
+
+                [Fact]
+                public void SingleLineBigOffset()
+                {
+                    _textBuffer.SetText("");
+                    _textView.MoveCaretToLine(0);
+                    _globalSettings.ScrollOffset = 100;
+                    _commonOperationsRaw.AdjustTextViewForScrollOffset();
+                    AssertFirstLine(0);
                 }
             }
         }
