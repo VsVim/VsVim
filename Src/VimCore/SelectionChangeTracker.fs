@@ -18,6 +18,7 @@ open System.Collections.Generic
 type internal SelectionChangeTracker
     ( 
         _vimBuffer : IVimBuffer,
+        _commonOperations : ICommonOperations,
         _selectionOverrideList : IVisualModeSelectionOverride list,
         _mouseDevice : IMouseDevice
     ) as this =
@@ -34,15 +35,19 @@ type internal SelectionChangeTracker
 
     do
         _textView.Selection.SelectionChanged 
-        |> Observable.subscribe (fun args -> this.OnSelectionChanged() )
+        |> Observable.subscribe (fun _ -> this.OnSelectionChanged())
+        |> _bag.Add
+
+        _textView.Caret.PositionChanged 
+        |> Observable.subscribe (fun _ -> this.OnPositionChanged())
         |> _bag.Add
 
         _vimBuffer.Closed
-        |> Observable.subscribe (fun args -> this.OnBufferClosed() )
+        |> Observable.subscribe (fun _ -> this.OnBufferClosed())
         |> _bag.Add
 
         _vimBuffer.KeyInputProcessed
-        |> Observable.subscribe (fun args -> this.OnKeyInputFinished() )
+        |> Observable.subscribe (fun _ -> this.OnKeyInputFinished())
         |> _bag.Add
 
     member x.ShouldIgnoreSelectionChange() = 
@@ -71,7 +76,14 @@ type internal SelectionChangeTracker
         else
             x.SetModeForSelection()
 
-    member x.OnBufferClosed() = _bag.DisposeAll()
+    /// If the caret changes position and it wasn't initiated by VsVim then we should be 
+    /// adjusting the screen to account for 'scrolloff'
+    member x.OnPositionChanged() = 
+        if not _vimBuffer.IsProcessingInput then
+            _commonOperations.EnsureScrollOffset()
+
+    member x.OnBufferClosed() = 
+        _bag.DisposeAll()
 
     /// Linked to the KeyInputProcessed event.  If the selection changed while processing keyinput
     /// and we weren't in Visual Mode then we need to update the selection
@@ -160,11 +172,11 @@ type internal SelectionChangeTrackerFactory
     [<ImportingConstructor>]
     (
         [<ImportMany>] _selectionOverrideList : IVisualModeSelectionOverride seq,
-        mouseDevice : IMouseDevice
+        _mouseDevice : IMouseDevice,
+        _commonOperationsFactory : ICommonOperationsFactory
     ) =
 
     let _selectionOverrideList = _selectionOverrideList |> List.ofSeq
-    let _mouseDevice = mouseDevice
 
     interface IVimBufferCreationListener with
         member x.VimBufferCreated vimBuffer = 
@@ -172,7 +184,8 @@ type internal SelectionChangeTrackerFactory
             // It's OK to just ignore this after creation.  It subscribes to several 
             // event handlers which will keep it alive for the duration of the 
             // IVimBuffer
-            let selectionTracker = SelectionChangeTracker(vimBuffer, _selectionOverrideList, _mouseDevice)
+            let commonOperations = _commonOperationsFactory.GetCommonOperations vimBuffer.VimBufferData
+            let selectionTracker = SelectionChangeTracker(vimBuffer, commonOperations, _selectionOverrideList, _mouseDevice)
             ()
 
 

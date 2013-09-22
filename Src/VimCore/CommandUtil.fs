@@ -2373,7 +2373,7 @@ type internal CommandUtil
                 let firstIndex = textViewLines.GetIndexOfTextLine(textViewLines.FirstVisibleLine)
                 let textViewLine = textViewLines.[firstIndex + lineOffset]
                 let snapshotLine = SnapshotPointUtil.GetContainingLine textViewLine.Start
-                TextViewUtil.MoveCaretToPoint _textView snapshotLine.Start
+                _commonOperations.MoveCaretToPointAndEnsureVisible snapshotLine.Start
 
             let textViewLines = _textView.TextViewLines
             let firstIndex = textViewLines.GetIndexOfTextLine(textViewLines.FirstVisibleLine)

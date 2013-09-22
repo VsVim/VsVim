@@ -282,6 +282,9 @@ type ICommonOperations =
     /// Ensure the point is on screen and that it is not in a collapsed region
     abstract EnsurePointOnScreenAndTextExpanded : SnapshotPoint -> unit
 
+    /// Ensure the scrolling is correct for the 'scrolloff' setting
+    abstract EnsureScrollOffset : unit -> unit 
+
     /// Format the specified line range
     abstract FormatLines : SnapshotLineRange -> unit
 
@@ -386,7 +389,7 @@ type ICommonOperations =
     abstract ShiftLineRangeRight : SnapshotLineRange -> multiplier : int -> unit
 
     /// Substitute Command implementation
-    abstract Substitute : pattern : string -> replace : string -> SnapshotLineRange -> SubstituteFlags -> unit
+    abstract Substitute : pattern : string -> replace : string -> SnapshotLineRange -> flags : SubstituteFlags -> unit
 
     /// Undo the buffer changes "count" times
     abstract Undo : count:int -> unit

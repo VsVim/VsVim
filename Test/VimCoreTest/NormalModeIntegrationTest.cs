@@ -23,6 +23,7 @@ namespace Vim.UnitTest
         protected ITextBuffer _textBuffer;
         protected IVimGlobalSettings _globalSettings;
         protected IVimLocalSettings _localSettings;
+        protected IVimWindowSettings _windowSettings;
         protected IJumpList _jumpList;
         protected IKeyMap _keyMap;
         protected IVimData _vimData;
@@ -60,6 +61,7 @@ namespace Vim.UnitTest
             _keyMap = _vimBuffer.Vim.KeyMap;
             _localSettings = _vimBuffer.LocalSettings;
             _globalSettings = _localSettings.GlobalSettings;
+            _windowSettings = _vimBuffer.WindowSettings;
             _jumpList = _vimBuffer.JumpList;
             _vimHost = (MockVimHost)_vimBuffer.Vim.VimHost;
             _vimHost.BeepCount = 0;
@@ -3875,6 +3877,103 @@ namespace Vim.UnitTest
                 _vimBuffer.Process("r2");
                 Assert.Equal("<h2>test</h2>", _textBuffer.GetLine(0).GetText());
                 Assert.Equal(2, _textView.GetCaretPoint());
+            }
+        }
+
+        public sealed class ScrollOffsetTest : NormalModeIntegrationTest
+        {
+            private static readonly string[] Lines = KeyInputUtilTest.CharLettersLower.Select(x => x.ToString()).ToArray();
+            private readonly int _lastLineNumber = 0;
+
+            public ScrollOffsetTest()
+            {
+                Create(Lines);
+                _lastLineNumber = _textBuffer.CurrentSnapshot.LineCount - 1;
+                _textView.SetVisibleLineCount(5);
+                _globalSettings.ScrollOffset = 2;
+            }
+
+            private void AssertFirstLine(int lineNumber)
+            {
+                var actual = _textView.GetFirstVisibleLineNumber();
+                Assert.Equal(lineNumber, actual);
+            }
+
+            private void AssertLastLine(int lineNumber)
+            {
+                var actual = _textView.GetLastVisibleLineNumber();
+                Assert.Equal(lineNumber, actual);
+            }
+
+            [Fact]
+            public void SimpleMoveDown()
+            {
+                _textView.ScrollToTop();
+                AssertLastLine(4);
+                _textView.MoveCaretToLine(2);
+                _vimBuffer.ProcessNotation("j");
+                AssertLastLine(5);
+            }
+
+            [Fact]
+            public void SimpleMoveUp()
+            {
+                var lineNumber = 20;
+                _textView.DisplayTextLineContainingBufferPosition(_textBuffer.GetLine(lineNumber).Start, 0.0, ViewRelativePosition.Top);
+                _textView.MoveCaretToLine(lineNumber + 2);
+                AssertFirstLine(lineNumber);
+                _vimBuffer.ProcessNotation("k");
+                AssertFirstLine(lineNumber - 1);
+            }
+
+            /// <summary>
+            /// During an incremental search even though the caret doesn't move we should still position
+            /// the scroll as if the caret was at the found search point 
+            /// </summary>
+            [Fact]
+            public void IncrementalSearchForward()
+            {
+                _globalSettings.IncrementalSearch = true;
+                _textView.ScrollToTop();
+                _textView.MoveCaretToLine(0);
+                _vimBuffer.ProcessNotation("/g");
+                AssertLastLine(8);
+            }
+
+            [Fact]
+            public void ScrollDownLines()
+            {
+                _textView.ScrollToTop();
+                _textView.MoveCaretToLine(2);
+                _windowSettings.Scroll = 2;
+                _vimBuffer.ProcessNotation("<c-d>");
+                AssertFirstLine(2);
+                Assert.Equal(4, _textView.GetCaretLine().LineNumber);
+            }
+
+            [Fact]
+            public void ScrollUpLines()
+            {
+                var lineNumber = 16;
+                _textView.DisplayTextLineContainingBufferPosition(_textBuffer.GetLine(lineNumber).Start, 0.0, ViewRelativePosition.Top);
+                _textView.MoveCaretToLine(lineNumber + 2);
+                _windowSettings.Scroll = 2;
+                AssertFirstLine(lineNumber);
+                _vimBuffer.ProcessNotation("<c-u>");
+                AssertFirstLine(lineNumber - 2);
+                Assert.Equal(lineNumber, _textView.GetCaretLine().LineNumber);
+            }
+
+            /// <summary>
+            /// The simple act of moving the caret outside of the context of a vim command shousd cause the scroll 
+            /// offset to be respected 
+            /// </summary>
+            [Fact]
+            public void CaretMove()
+            {
+                _textView.ScrollToTop();
+                _textView.MoveCaretToLine(4);
+                AssertFirstLine(2);
             }
         }
 

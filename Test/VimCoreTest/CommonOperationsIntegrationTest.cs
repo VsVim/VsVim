@@ -30,12 +30,13 @@ namespace Vim.UnitTest
 
         public abstract class ScrollOffsetTest : CommonOperationsIntegrationTest
         {
+            private static readonly string[] Lines = KeyInputUtilTest.CharLettersLower.Select(x => x.ToString()).ToArray();
             private readonly IFoldManager _foldManager;
             private readonly int _lastLineNumber = 0;
 
             protected ScrollOffsetTest()
             {
-                Create(KeyInputUtilTest.CharLettersLower.Select(x => x.ToString()).ToArray());
+                Create(Lines);
                 _lastLineNumber = _textBuffer.CurrentSnapshot.LineCount - 1;
                 _textView.SetVisibleLineCount(5);
                 _foldManager = FoldManagerFactory.GetFoldManager(_textView);
@@ -43,16 +44,14 @@ namespace Vim.UnitTest
 
             private void AssertFirstLine(int lineNumber)
             {
-                var line = _textView.TextViewLines.FirstVisibleLine;
-                var snapshotLine = line.Start.GetContainingLine();
-                Assert.Equal(lineNumber, snapshotLine.LineNumber);
+                var actual = _textView.GetFirstVisibleLineNumber();
+                Assert.Equal(lineNumber, actual);
             }
 
             private void AssertLastLine(int lineNumber)
             {
-                var line = _textView.TextViewLines.LastVisibleLine;
-                var snapshotLine = line.End.GetContainingLine();
-                Assert.Equal(lineNumber, snapshotLine.LineNumber);
+                var actual = _textView.GetLastVisibleLineNumber();
+                Assert.Equal(lineNumber, actual);
             }
 
             public sealed class TopTest : ScrollOffsetTest

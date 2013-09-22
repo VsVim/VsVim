@@ -208,10 +208,13 @@ type internal CommonOperations
     /// Adjust the ITextView scrolling to account for the 'scrolloff' setting after a move operation
     /// completes
     member x.AdjustTextViewForScrollOffset() =
+        x.AdjustTextViewForScrollOffsetAtPoint x.CaretPoint
+
+    member x.AdjustTextViewForScrollOffsetAtPoint point = 
         if _globalSettings.ScrollOffset > 0 then
-            x.AdjustTextViewForScrollOffsetCore _globalSettings.ScrollOffset
+            x.AdjustTextViewForScrollOffsetAtPointCore point _globalSettings.ScrollOffset
     
-    /// The most efficient API for moving the caret is DisplayTextLineContainingBufferPosition.  This is actually
+    /// The most efficient API for moving the scroll is DisplayTextLineContainingBufferPosition.  This is actually
     /// what the scrolling APIs use to implement scrolling.  Unfortunately this API deals is in buffer positions
     /// but we want to scroll visually.  
     ///
@@ -224,7 +227,7 @@ type internal CommonOperations
     /// width / height.  Adornments can also cause lines to be taller or shorter than they should be.  Hence we
     /// have to approximate the number of lines that can be on the screen in order to calculate the proper 
     /// offset to use.  
-    member x.AdjustTextViewForScrollOffsetCore offset =
+    member x.AdjustTextViewForScrollOffsetAtPointCore contextPoint offset = 
         Contract.Requires(offset >= 0)
 
         try
@@ -262,16 +265,19 @@ type internal CommonOperations
             // needs tobe adjusted to 
             let visualSnapshot = _textView.VisualSnapshot
             let editSnapshot = _textView.TextSnapshot
-            match BufferGraphUtil.MapPointUpToSnapshotStandard _textView.BufferGraph x.CaretPoint visualSnapshot with
+            match BufferGraphUtil.MapPointUpToSnapshotStandard _textView.BufferGraph contextPoint visualSnapshot with
             | None -> ()
             | Some visualPoint ->
                 let visualLine = SnapshotPointUtil.GetContainingLine visualPoint
                 let visualLineNumber = visualLine.LineNumber
 
+                // Calculate the line information in the visual buffer
                 let topLineNumber = max 0 (visualLineNumber - offset) 
                 let bottomLineNumber = min (visualLineNumber + offset) (visualSnapshot.LineCount - 1)
                 let visualTopLine = SnapshotUtil.GetLine visualSnapshot topLineNumber
                 let visualBottomLine = SnapshotUtil.GetLine visualSnapshot bottomLineNumber
+
+                // Map it back down to the edit buffer and then scroll
                 let editTopPoint = BufferGraphUtil.MapPointDownToSnapshotStandard _textView.BufferGraph visualTopLine.Start editSnapshot
                 let editBottomPoint = BufferGraphUtil.MapPointDownToSnapshotStandard _textView.BufferGraph visualBottomLine.Start editSnapshot
                 match editTopPoint, editBottomPoint with
@@ -1110,6 +1116,7 @@ type internal CommonOperations
     /// if it's in the middle of a collapsed region
     member x.EnsureCaretOnScreen () = 
         TextViewUtil.EnsureCaretOnScreen _textView 
+        x.AdjustTextViewForScrollOffset()
 
     /// Ensure the given SnapshotPoint is not in a collapsed region on the screen
     member x.EnsurePointExpanded point = 
@@ -1124,6 +1131,7 @@ type internal CommonOperations
     /// expanded such that the actual caret is visible
     member x.EnsurePointOnScreenAndTextExpanded point = 
         x.EnsurePointExpanded point
+        x.AdjustTextViewForScrollOffsetAtPoint point
         _vimHost.EnsureVisible _textView point
 
     /// Ensure the text is on the screen and that if it's in the middle of a collapsed region 
@@ -1141,9 +1149,10 @@ type internal CommonOperations
         member x.Beep () = x.Beep()
         member x.CreateRegisterValue point stringData operationKind = x.CreateRegisterValue point stringData operationKind
         member x.DeleteLines startLine count register = x.DeleteLines startLine count register
-        member x.EnsureCaretOnScreen () = x.EnsureCaretOnScreen()
-        member x.EnsureCaretOnScreenAndTextExpanded () = x.EnsureCaretOnScreenAndTextExpanded()
+        member x.EnsureCaretOnScreen() = x.EnsureCaretOnScreen()
+        member x.EnsureCaretOnScreenAndTextExpanded() = x.EnsureCaretOnScreenAndTextExpanded()
         member x.EnsurePointOnScreenAndTextExpanded point = x.EnsurePointOnScreenAndTextExpanded point
+        member x.EnsureScrollOffset() = x.AdjustTextViewForScrollOffset()
         member x.FormatLines range = _vimHost.FormatLines _textView range
         member x.GetNewLineText point = x.GetNewLineText point
         member x.GetNewLineIndent contextLine newLine = x.GetNewLineIndent contextLine newLine
@@ -1151,10 +1160,10 @@ type internal CommonOperations
         member x.GetSpacesToPoint point = x.GetSpacesToPoint point
         member x.GetPointForSpaces contextLine column = x.GetPointForSpaces contextLine column
         member x.GoToLocalDeclaration() = x.GoToLocalDeclaration()
-        member x.GoToGlobalDeclaration () = x.GoToGlobalDeclaration()
-        member x.GoToFile () = x.GoToFile()
-        member x.GoToFileInNewWindow () = x.GoToFileInNewWindow()
-        member x.GoToDefinition () = x.GoToDefinition()
+        member x.GoToGlobalDeclaration() = x.GoToGlobalDeclaration()
+        member x.GoToFile() = x.GoToFile()
+        member x.GoToFileInNewWindow() = x.GoToFileInNewWindow()
+        member x.GoToDefinition() = x.GoToDefinition()
         member x.GoToNextTab direction count = _vimHost.GoToNextTab direction count
         member x.GoToTab index = _vimHost.GoToTab index
         member x.Join range kind = x.Join range kind

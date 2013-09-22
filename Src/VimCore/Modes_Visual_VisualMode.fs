@@ -312,8 +312,7 @@ type internal VisualMode
                     startPoint
                 else 
                     x.CaretPoint
-            TextViewUtil.MoveCaretToPoint _textView point
-            TextViewUtil.EnsureCaretOnScreen _textView
+            _operations.MoveCaretToPointAndEnsureVisible point
 
     member x.ShouldHandleEscape = not _runner.IsHandlingEscape
 

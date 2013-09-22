@@ -1064,6 +1064,16 @@ namespace Vim.UnitTest
             textView.ViewScroller.ScrollViewportVerticallyByLines(ScrollDirection.Down, textView.TextBuffer.CurrentSnapshot.LineCount);
         }
 
+        public static int GetFirstVisibleLineNumber(this ITextView textView)
+        {
+            return textView.TextViewLines.FirstVisibleLine.Start.GetContainingLine().LineNumber;
+        }
+
+        public static int GetLastVisibleLineNumber(this ITextView textView)
+        {
+            return textView.TextViewLines.LastVisibleLine.Start.GetContainingLine().LineNumber;
+        }
+
         #endregion
 
         #region IWpfTextView
