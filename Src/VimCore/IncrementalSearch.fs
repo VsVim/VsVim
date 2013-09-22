@@ -100,7 +100,7 @@ type internal IncrementalSearch
     // incremental search
     member x.ResetView () =
         if _globalSettings.IncrementalSearch then
-             _operations.EnsureAtCaret (ViewFlags.ScrollOffset ||| ViewFlags.Visible)
+             _operations.EnsureAtCaret ViewFlags.All
 
     /// Run the search for the specified text.  Returns the new IncrementalSearchData resulting
     /// from the search
