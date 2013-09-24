@@ -30,7 +30,7 @@ namespace VsVim.Implementation.NavigateTo
 
         void IDisposable.Dispose()
         {
-            
+            _threadCommunicator.StopSearch();
         }
 
         #endregion

@@ -1144,5 +1144,36 @@ namespace VsVim
         }
 
         #endregion
+
+        #region IVsRunningDocumentTable
+
+        /// <summary>
+        /// Get the document cookies for the documents in the running document table
+        /// </summary>
+        /// <remarks>
+        /// Do not use RunningDocumentTable::GetEnumerator in place of this method.  In Vs2012 and before
+        /// it can throw an exception in certain conditions.  The root cause is unknown but it will end
+        /// up passing IntPtr.Zero into Marshal.Release and throwing.  
+        /// </remarks>
+        public static List<uint> GetRunningDocumentCookies(this IVsRunningDocumentTable runningDocumentTable)
+        {
+            var list = new List<uint>();
+            IEnumRunningDocuments enumDocuments;
+            if (!ErrorHandler.Succeeded(runningDocumentTable.GetRunningDocumentsEnum(out enumDocuments)))
+            {
+                return list;
+            }
+
+            uint[] array = new uint[1];
+            uint pceltFetched = 0;
+            while (ErrorHandler.Succeeded(enumDocuments.Next(1, array, out pceltFetched)) && (pceltFetched == 1))
+            {
+                list.Add(array[0]);
+            }
+
+            return list;
+        }
+
+        #endregion
     }
 }

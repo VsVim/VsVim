@@ -20,7 +20,7 @@ namespace VsVim.Implementation.Misc
     {
         private readonly IVsAdapter _vsAdapter;
         private readonly IVsTextManager _textManager;
-        private readonly RunningDocumentTable _table;
+        private readonly IVsRunningDocumentTable _runningDocumentTable;
         private readonly IServiceProvider _serviceProvider;
         private readonly ITextDocumentFactoryService _textDocumentFactoryService;
         private readonly ITextBufferFactoryService _textBufferFactoryService;
@@ -30,10 +30,10 @@ namespace VsVim.Implementation.Misc
             get
             {
                 var list = new List<ITextBuffer>();
-                foreach (var item in _table)
+                foreach (var docCookie in _runningDocumentTable.GetRunningDocumentCookies())
                 {
                     ITextBuffer buffer;
-                    if (_vsAdapter.GetTextBufferForDocCookie(item.DocCookie).TryGetValue(out buffer))
+                    if (_vsAdapter.GetTextBufferForDocCookie(docCookie).TryGetValue(out buffer))
                     {
                         list.Add(buffer);
                     }
@@ -80,7 +80,7 @@ namespace VsVim.Implementation.Misc
             _textManager = _serviceProvider.GetService<SVsTextManager, IVsTextManager>();
             _textDocumentFactoryService = textDocumentFactoryService;
             _textBufferFactoryService = textBufferFactoryService;
-            _table = new RunningDocumentTable(_serviceProvider);
+            _runningDocumentTable = _serviceProvider.GetService<SVsRunningDocumentTable, IVsRunningDocumentTable>();
         }
 
         internal bool NavigateTo(VirtualSnapshotPoint point)

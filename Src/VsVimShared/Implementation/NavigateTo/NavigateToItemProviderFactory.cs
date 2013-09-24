@@ -42,17 +42,32 @@ namespace VsVim.Implementation.NavigateTo
 
         private void OnSearchStopped()
         {
-            _inSearch = false;
-            _textManager.TextViews
-                .Where(x => !x.Selection.IsEmpty)
-                .ForEach(x => x.Selection.Clear());
+            if (_inSearch)
+            {
+                _inSearch = false;
+                _textManager.TextViews
+                    .Where(x => !x.Selection.IsEmpty)
+                    .ForEach(x => x.Selection.Clear());
+            }
         }
 
         private void CallOnMainThread(Action action)
         {
+            Action wrappedAction = () =>
+            {
+                try
+                {
+                    action();
+                }
+                catch
+                {
+                    // Don't let the exception propagate to the message loop and take down VS
+                }
+            };
+
             try
             {
-                _synchronizationContext.Post(_ => action(), null);
+                _synchronizationContext.Post(_ => wrappedAction(), null);
             }
             catch
             {
