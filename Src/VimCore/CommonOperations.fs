@@ -5,8 +5,10 @@ open EditorUtils
 open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Editor
 open Microsoft.VisualStudio.Text.Editor.OptionsExtensionMethods
+open Microsoft.VisualStudio.Text.Formatting
 open Microsoft.VisualStudio.Text.Operations
 open Microsoft.VisualStudio.Text.Outlining
+open System
 open System.ComponentModel.Composition
 open System.Text.RegularExpressions
 open StringBuilderExtensions
@@ -191,7 +193,7 @@ type internal CommonOperations
     /// default the 'l' motion will only move you to the last character on the line and no 
     /// further.  Visual Studio up and down though acts like virtualedit=onemore.  We correct 
     /// this here
-    member x.AdjustCaretPostMove() =
+    member x.AdjustCaretForVirtualEdit() =
 
         let allowPastEndOfLine = 
             _globalSettings.IsVirtualEditOneMore ||
@@ -202,6 +204,90 @@ type internal CommonOperations
             let line = SnapshotPointUtil.GetContainingLine point
             if point.Position >= line.End.Position && line.Length > 0 then 
                 TextViewUtil.MoveCaretToPoint _textView (line.End.Subtract(1))
+
+    /// Adjust the ITextView scrolling to account for the 'scrolloff' setting after a move operation
+    /// completes
+    member x.AdjustTextViewForScrollOffset() =
+        x.AdjustTextViewForScrollOffsetAtPoint x.CaretPoint
+
+    member x.AdjustTextViewForScrollOffsetAtPoint point = 
+        if _globalSettings.ScrollOffset > 0 then
+            x.AdjustTextViewForScrollOffsetAtPointCore point _globalSettings.ScrollOffset
+    
+    /// The most efficient API for moving the scroll is DisplayTextLineContainingBufferPosition.  This is actually
+    /// what the scrolling APIs use to implement scrolling.  Unfortunately this API deals is in buffer positions
+    /// but we want to scroll visually.  
+    ///
+    /// This is easier to explain with folding.  If the line just above the caret is 300 lines folded into 1 then 
+    /// we want to consider only the folded line for scroll offset, not the 299 invisible lines.  In order to do 
+    /// this we need to map the caret position up to the visual buffer, do the line math there, find the correct 
+    /// visual line, then map the start of that line back down to the edit buffer.  
+    ///
+    /// This function also suffers from another problem.  The font in Visual Studio is not guaranteed to be fixed
+    /// width / height.  Adornments can also cause lines to be taller or shorter than they should be.  Hence we
+    /// have to approximate the number of lines that can be on the screen in order to calculate the proper 
+    /// offset to use.  
+    member x.AdjustTextViewForScrollOffsetAtPointCore contextPoint offset = 
+        Contract.Requires(offset >= 0)
+
+        try
+            // First calculate the actual offset.  The actual offset can't be more than half of the lines which
+            // are visible on the screen.  It's tempting to use the ITextViewLinesCollection.Count to see how
+            // many possible lines are displayed.  This value will be wrong though when the view is scrolled 
+            // to the bottom because it will be displaying the last few lines and several blanks which don't
+            // count.  Instead we average out the height of the lines and divide that into the height of 
+            // the view port 
+            let textViewLines = _textView.TextViewLines
+            let calcOffset () = 
+                if textViewLines.Count = 0 then
+                    0
+                else
+                    let lineHeight = textViewLines |> Seq.averageBy (fun l -> l.Height)
+                    let lineCount = int (_textView.ViewportHeight / lineHeight) 
+                    let maxOffset = lineCount / 2
+                    min maxOffset offset
+            let offset = calcOffset ()
+
+            // This function will do the actual positioning of the scroll based on the calculated lines 
+            // in the buffer
+            let doScroll topPoint bottomPoint =
+                let firstVisibleLineNumber = SnapshotPointUtil.GetLineNumber textViewLines.FirstVisibleLine.Start 
+                let lastVisibleLineNumber = SnapshotPointUtil.GetLineNumber textViewLines.LastVisibleLine.End 
+                let topLineNumber = SnapshotPointUtil.GetLineNumber topPoint
+                let bottomLineNumber = SnapshotPointUtil.GetLineNumber bottomPoint
+
+                if topLineNumber < firstVisibleLineNumber then
+                    _textView.DisplayTextLineContainingBufferPosition(topPoint, 0.0, ViewRelativePosition.Top)
+                elif bottomLineNumber > lastVisibleLineNumber then
+                    _textView.DisplayTextLineContainingBufferPosition(bottomPoint, 0.0, ViewRelativePosition.Bottom)
+
+            // Time to map up and down the buffer graph to find the correct top and bottom point that the scroll
+            // needs tobe adjusted to 
+            let visualSnapshot = _textView.VisualSnapshot
+            let editSnapshot = _textView.TextSnapshot
+            match BufferGraphUtil.MapPointUpToSnapshotStandard _textView.BufferGraph contextPoint visualSnapshot with
+            | None -> ()
+            | Some visualPoint ->
+                let visualLine = SnapshotPointUtil.GetContainingLine visualPoint
+                let visualLineNumber = visualLine.LineNumber
+
+                // Calculate the line information in the visual buffer
+                let topLineNumber = max 0 (visualLineNumber - offset) 
+                let bottomLineNumber = min (visualLineNumber + offset) (visualSnapshot.LineCount - 1)
+                let visualTopLine = SnapshotUtil.GetLine visualSnapshot topLineNumber
+                let visualBottomLine = SnapshotUtil.GetLine visualSnapshot bottomLineNumber
+
+                // Map it back down to the edit buffer and then scroll
+                let editTopPoint = BufferGraphUtil.MapPointDownToSnapshotStandard _textView.BufferGraph visualTopLine.Start editSnapshot
+                let editBottomPoint = BufferGraphUtil.MapPointDownToSnapshotStandard _textView.BufferGraph visualBottomLine.Start editSnapshot
+                match editTopPoint, editBottomPoint with
+                | Some p1, Some p2 -> doScroll p1 p2
+                | _ -> ()
+
+        with
+            // As always when using ITextViewLines an exception can be thrown due to layout.  Simply catch
+            // this exception and move on
+            | _ -> ()
 
     /// Delete count lines from the cursor.  The caret should be positioned at the start
     /// of the first line for both undo / redo
@@ -301,7 +387,7 @@ type internal CommonOperations
         let moveLeft () = 
             if x.CaretLine.Start.Position < x.CaretPoint.Position then
                 let point = SnapshotPointUtil.SubtractOne x.CaretPoint
-                x.MoveCaretToPointAndEnsureVisible point
+                x.MoveCaretToPoint point ViewFlags.Standard
                 true
             else
                 false
@@ -310,7 +396,7 @@ type internal CommonOperations
         let moveRight () =
             if x.CaretPoint.Position < x.CaretLine.End.Position then
                 let point = SnapshotPointUtil.AddOne x.CaretPoint
-                x.MoveCaretToPointAndEnsureVisible point
+                x.MoveCaretToPoint point ViewFlags.Standard
                 true
             else
                 false
@@ -341,26 +427,17 @@ type internal CommonOperations
         | CaretMovement.PageUp -> movePageUp()
         | CaretMovement.PageDown -> movePageDown()
 
-    /// Move the caret to the specified point and ensure it's visible and the surrounding 
-    /// text is expanded
-    ///
-    /// Note: We actually do the operation in the opposite order.  The text needs to be expanded
-    /// before we even move the point.  Before the text is expanded the point we are moving to 
-    /// will map to the collapsed region.  When the text is subsequently expanded it has no 
-    /// memory and will just stay in place.  
-    ///
-    /// To avoid this we will expand then move the caret and finally ensure it's visible on 
-    /// the screen
-    member x.MoveCaretToPointAndEnsureVisible point = 
-        x.EnsurePointExpanded point
+    /// Move the caret to the specified point and ensure the specified view properties are 
+    /// correct at that point 
+    member x.MoveCaretToPoint point viewFlags = 
+        // In the case where we want to expand the text we are moving to we need to do the expansion
+        // first before the move.  Before the text is expanded the point we are moving to will map to 
+        // the collapsed region.  When the text is subsequently expanded it has no memory and will 
+        // just stay in place.  
+        if Util.IsFlagSet viewFlags ViewFlags.TextExpanded then
+            x.EnsurePointExpanded point
         TextViewUtil.MoveCaretToPoint _textView point
-        x.EnsureCaretOnScreen()
-
-    /// Move the caret to the specified point and ensure it's on screen.  Does not expand the 
-    /// surrounding text if this is in the middle of a collapsed region
-    member x.MoveCaretToPointAndEnsureOnScreen point = 
-        TextViewUtil.MoveCaretToPoint _textView point
-        x.EnsureCaretOnScreen()
+        x.EnsureAtPoint point viewFlags
 
     /// Move the caret to the position dictated by the given MotionResult value
     member x.MoveCaretToMotionResult (result : MotionResult) =
@@ -460,22 +537,16 @@ type internal CommonOperations
                     | CaretColumn.AfterLastLine ->
                         getAfterLastLine()
 
-        if result.OperationKind = OperationKind.LineWise && not (Util.IsFlagSet result.MotionResultFlags MotionResultFlags.ExclusiveLineWise) then
-            // Line wise motions should not cause any collapsed regions to be expanded.  Instead they
-            // should leave the regions collapsed and just move the point into the region
-            x.MoveCaretToPointAndEnsureOnScreen point
-        else
-            // Character wise motions should expand regions
-            x.MoveCaretToPointAndEnsureVisible point
-
-        x.AdjustCaretPostMove()
+        let viewFlags = 
+            if result.OperationKind = OperationKind.LineWise && not (Util.IsFlagSet result.MotionResultFlags MotionResultFlags.ExclusiveLineWise) then
+                // Line wise motions should not cause any collapsed regions to be expanded.  Instead they
+                // should leave the regions collapsed and just move the point into the region
+                ViewFlags.All &&& (~~~ViewFlags.TextExpanded)
+            else
+                // Character wise motions should expand regions
+                ViewFlags.All
+        x.MoveCaretToPoint point viewFlags
         _editorOperations.ResetSelection()
-
-    /// Move the caret to the specified point but adjust the result if it's in virtual space
-    /// and current settings disallow that
-    member x.MoveCaretToPointAndCheckVirtualSpace point =
-        TextViewUtil.MoveCaretToPoint _textView point
-        x.AdjustCaretPostMove()
 
     /// Move the caret to the proper indentation on a newly created line.  The context line 
     /// is provided to calculate an indentation off of
@@ -563,7 +634,7 @@ type internal CommonOperations
     member x.NavigateToPoint (point : VirtualSnapshotPoint) = 
         let textBuffer = point.Position.Snapshot.TextBuffer
         if textBuffer = _textView.TextBuffer then 
-            x.MoveCaretToPointAndEnsureVisible point.Position
+            x.MoveCaretToPoint point.Position (ViewFlags.Visible ||| ViewFlags.ScrollOffset)
             true
         else
             _vimHost.NavigateTo point 
@@ -1018,18 +1089,24 @@ type internal CommonOperations
     /// after the undo completes
     member x.Undo count = 
         _undoRedoOperations.Undo count
-        x.EnsureCaretOnScreenAndTextExpanded()
+        x.EnsureAtPoint x.CaretPoint ViewFlags.Standard
 
     /// Redo 'count' operations in the ITextBuffer and ensure the caret is on the screen
     /// after the redo completes
     member x.Redo count = 
         _undoRedoOperations.Redo count
-        x.EnsureCaretOnScreenAndTextExpanded()
+        x.EnsureAtPoint x.CaretPoint ViewFlags.Standard
 
-    /// Ensure the caret is visible on the screen.  Will not expand the text around the caret
-    /// if it's in the middle of a collapsed region
-    member x.EnsureCaretOnScreen () = 
-        TextViewUtil.EnsureCaretOnScreen _textView 
+    /// Ensure the given view properties are met at the given point
+    member x.EnsureAtPoint point viewFlags = 
+        if Util.IsFlagSet viewFlags ViewFlags.TextExpanded then
+            x.EnsurePointExpanded point
+        if Util.IsFlagSet viewFlags ViewFlags.Visible then
+            x.EnsurePointVisible point
+        if Util.IsFlagSet viewFlags ViewFlags.ScrollOffset then
+            x.AdjustTextViewForScrollOffsetAtPoint point
+        if Util.IsFlagSet viewFlags ViewFlags.VirtualEdit && point.Position = x.CaretPoint.Position then
+            x.AdjustCaretForVirtualEdit()
 
     /// Ensure the given SnapshotPoint is not in a collapsed region on the screen
     member x.EnsurePointExpanded point = 
@@ -1040,18 +1117,13 @@ type internal CommonOperations
             let span = SnapshotSpan(point, 0)
             outliningManager.ExpandAll(span, fun _ -> true) |> ignore
 
-    /// Ensure the point is visible on the screen and any regions surrounding the point are
-    /// expanded such that the actual caret is visible
-    member x.EnsurePointOnScreenAndTextExpanded point = 
-        x.EnsurePointExpanded point
-        _vimHost.EnsureVisible _textView point
-
-    /// Ensure the text is on the screen and that if it's in the middle of a collapsed region 
-    /// that the collapsed region is expanded to reveal the caret
-    member x.EnsureCaretOnScreenAndTextExpanded () =
-        x.EnsurePointExpanded x.CaretPoint
-        x.EnsureCaretOnScreen()
-
+    /// Ensure the point is on screen / visible
+    member x.EnsurePointVisible (point : SnapshotPoint) = 
+        if point.Position = x.CaretPoint.Position then
+            TextViewUtil.EnsureCaretOnScreen _textView
+        else
+            _vimHost.EnsureVisible _textView point  
+        
     interface ICommonOperations with
         member x.VimBufferData = _vimBufferData
         member x.TextView = _textView 
@@ -1061,9 +1133,8 @@ type internal CommonOperations
         member x.Beep () = x.Beep()
         member x.CreateRegisterValue point stringData operationKind = x.CreateRegisterValue point stringData operationKind
         member x.DeleteLines startLine count register = x.DeleteLines startLine count register
-        member x.EnsureCaretOnScreen () = x.EnsureCaretOnScreen()
-        member x.EnsureCaretOnScreenAndTextExpanded () = x.EnsureCaretOnScreenAndTextExpanded()
-        member x.EnsurePointOnScreenAndTextExpanded point = x.EnsurePointOnScreenAndTextExpanded point
+        member x.EnsureAtCaret viewFlags = x.EnsureAtPoint x.CaretPoint viewFlags
+        member x.EnsureAtPoint point viewFlags = x.EnsureAtPoint point viewFlags
         member x.FormatLines range = _vimHost.FormatLines _textView range
         member x.GetNewLineText point = x.GetNewLineText point
         member x.GetNewLineIndent contextLine newLine = x.GetNewLineIndent contextLine newLine
@@ -1071,17 +1142,15 @@ type internal CommonOperations
         member x.GetSpacesToPoint point = x.GetSpacesToPoint point
         member x.GetPointForSpaces contextLine column = x.GetPointForSpaces contextLine column
         member x.GoToLocalDeclaration() = x.GoToLocalDeclaration()
-        member x.GoToGlobalDeclaration () = x.GoToGlobalDeclaration()
-        member x.GoToFile () = x.GoToFile()
-        member x.GoToFileInNewWindow () = x.GoToFileInNewWindow()
-        member x.GoToDefinition () = x.GoToDefinition()
+        member x.GoToGlobalDeclaration() = x.GoToGlobalDeclaration()
+        member x.GoToFile() = x.GoToFile()
+        member x.GoToFileInNewWindow() = x.GoToFileInNewWindow()
+        member x.GoToDefinition() = x.GoToDefinition()
         member x.GoToNextTab direction count = _vimHost.GoToNextTab direction count
         member x.GoToTab index = _vimHost.GoToTab index
         member x.Join range kind = x.Join range kind
         member x.MoveCaret caretMovement = x.MoveCaret caretMovement
-        member x.MoveCaretToPoint point =  TextViewUtil.MoveCaretToPoint _textView point 
-        member x.MoveCaretToPointAndEnsureVisible point = x.MoveCaretToPointAndEnsureVisible point
-        member x.MoveCaretToPointAndCheckVirtualSpace point = x.MoveCaretToPointAndCheckVirtualSpace point
+        member x.MoveCaretToPoint point viewFlags =  x.MoveCaretToPoint point viewFlags
         member x.MoveCaretToMotionResult data = x.MoveCaretToMotionResult data
         member x.NavigateToPoint point = x.NavigateToPoint point
         member x.NormalizeBlanks text = x.NormalizeBlanks text

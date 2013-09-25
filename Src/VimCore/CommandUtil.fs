@@ -268,7 +268,7 @@ type internal CommandUtil
 
             // Move the caret but make sure to respect the 'virtualedit' option
             let point = SnapshotPoint(x.CurrentSnapshot, span.End.Position)
-            _commonOperations.MoveCaretToPointAndCheckVirtualSpace point)
+            _commonOperations.MoveCaretToPoint point ViewFlags.VirtualEdit)
 
         CommandResult.Completed ModeSwitch.NoSwitch
 
@@ -476,7 +476,7 @@ type internal CommandUtil
             // Move the caret back to it's original position.  Don't consider virtual
             // space here since we're switching to insert mode
             let point = SnapshotPoint(x.CurrentSnapshot, caretPosition)
-            _commonOperations.MoveCaretToPoint point)
+            _commonOperations.MoveCaretToPoint point ViewFlags.None)
 
     /// Delete the selected text in Visual Mode and begin insert mode with a linked
     /// transaction. 
@@ -570,7 +570,7 @@ type internal CommandUtil
                 // Need to respect the virtual edit setting here as we could have 
                 // deleted the last character on the line
                 let point = SnapshotPoint(snapshot, position)
-                _commonOperations.MoveCaretToPointAndCheckVirtualSpace point)
+                _commonOperations.MoveCaretToPoint point ViewFlags.VirtualEdit)
 
             // Put the deleted text into the specified register
             let value = RegisterValue(StringData.OfSpan span, OperationKind.CharacterWise)
@@ -673,7 +673,7 @@ type internal CommandUtil
                 // Possible for a block mode to deletion to cause the start to now be in the line 
                 // break so we need to account for the 'virtualedit' setting
                 let point = SnapshotPoint(x.CurrentSnapshot, visualSpan.Start.Position)
-                _commonOperations.MoveCaretToPointAndCheckVirtualSpace point
+                _commonOperations.MoveCaretToPoint point ViewFlags.VirtualEdit
 
                 editSpan)
 
@@ -778,7 +778,7 @@ type internal CommandUtil
 
             // Get the point on the current ITextSnapshot
             let point = SnapshotPoint(x.CurrentSnapshot, span.Start.Position)
-            _commonOperations.MoveCaretToPointAndCheckVirtualSpace point)
+            _commonOperations.MoveCaretToPoint point ViewFlags.VirtualEdit)
 
         // Update the register with the result so long as something was actually deleted
         // from the buffer
@@ -801,7 +801,7 @@ type internal CommandUtil
 
             // Move the caret back to the original position in the ITextBuffer.
             let point = SnapshotPoint(x.CurrentSnapshot, caretPosition)
-            _commonOperations.MoveCaretToPointAndCheckVirtualSpace point)
+            _commonOperations.MoveCaretToPoint point ViewFlags.VirtualEdit)
 
         CommandResult.Completed ModeSwitch.NoSwitch
 
@@ -1313,7 +1313,7 @@ type internal CommandUtil
                     |> SnapshotLineUtil.GetFirstNonBlankOrStart
                     |> VirtualSnapshotPointUtil.OfPoint
 
-            _commonOperations.MoveCaretToPointAndEnsureVisible point.Position
+            _commonOperations.MoveCaretToPoint point.Position ViewFlags.Standard
             _jumpList.Add before
             CommandResult.Completed ModeSwitch.NoSwitch
 
@@ -1358,7 +1358,7 @@ type internal CommandUtil
     member x.JumpToTagCore () =
         match _jumpList.Current with
         | None -> _commonOperations.Beep()
-        | Some point -> _commonOperations.MoveCaretToPointAndEnsureVisible point
+        | Some point -> _commonOperations.MoveCaretToPoint point ViewFlags.Standard
 
     /// Move the caret to start of a line which is deleted.  Needs to preserve the original 
     /// indent if 'autoindent' is set.
@@ -1696,7 +1696,7 @@ type internal CommandUtil
                             // Position at the original insertion point
                             SnapshotUtil.GetPoint x.CurrentSnapshot oldPoint.Position
 
-                _commonOperations.MoveCaretToPointAndCheckVirtualSpace point
+                _commonOperations.MoveCaretToPoint point ViewFlags.VirtualEdit
             | OperationKind.LineWise ->
 
                 // Get the line on which we will be positioning the caret
@@ -1721,7 +1721,7 @@ type internal CommandUtil
 
                 // Get the indent point of the line.  That's what the caret needs to be moved to
                 let point = SnapshotLineUtil.GetIndentPoint line
-                _commonOperations.MoveCaretToPointAndCheckVirtualSpace point)
+                _commonOperations.MoveCaretToPoint point ViewFlags.VirtualEdit)
 
     /// Put the contents of the specified register over the selection.  This is used for all
     /// visual mode put commands. 
@@ -2373,7 +2373,7 @@ type internal CommandUtil
                 let firstIndex = textViewLines.GetIndexOfTextLine(textViewLines.FirstVisibleLine)
                 let textViewLine = textViewLines.[firstIndex + lineOffset]
                 let snapshotLine = SnapshotPointUtil.GetContainingLine textViewLine.Start
-                TextViewUtil.MoveCaretToPoint _textView snapshotLine.Start
+                _commonOperations.MoveCaretToPoint snapshotLine.Start ViewFlags.Standard
 
             let textViewLines = _textView.TextViewLines
             let firstIndex = textViewLines.GetIndexOfTextLine(textViewLines.FirstVisibleLine)
@@ -2452,6 +2452,7 @@ type internal CommandUtil
         _commonOperations.EditorOperations.ScrollLineTop()
         if not keepCaretColumn then
             _commonOperations.EditorOperations.MoveToStartOfLineAfterWhiteSpace(false)
+        _commonOperations.EnsureAtCaret ViewFlags.ScrollOffset
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Scroll the line containing the caret to the middle of the ITextView.  
@@ -2459,6 +2460,7 @@ type internal CommandUtil
         _commonOperations.EditorOperations.ScrollLineCenter()
         if not keepCaretColumn then
             _commonOperations.EditorOperations.MoveToStartOfLineAfterWhiteSpace(false)
+        _commonOperations.EnsureAtCaret ViewFlags.ScrollOffset
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Scroll the line containing the caret to the bottom of the ITextView.  
@@ -2466,6 +2468,7 @@ type internal CommandUtil
         _commonOperations.EditorOperations.ScrollLineBottom()
         if not keepCaretColumn then
             _commonOperations.EditorOperations.MoveToStartOfLineAfterWhiteSpace(false)
+        _commonOperations.EnsureAtCaret ViewFlags.ScrollOffset
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Shift the given line range left by the specified value.  The caret will be 

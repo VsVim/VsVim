@@ -232,7 +232,7 @@ type internal InsertUtil
         // If the caret is in virtual space we move regardless of the flag.
         let virtualPoint = TextViewUtil.GetCaretVirtualPoint _textView
         if virtualPoint.IsInVirtualSpace then 
-            _operations.MoveCaretToPoint virtualPoint.Position
+            _operations.MoveCaretToPoint virtualPoint.Position ViewFlags.None
             CommandResult.Completed ModeSwitch.NoSwitch
         elif moveCaretLeft then 
             x.MoveCaret Direction.Left
@@ -424,7 +424,7 @@ type internal InsertUtil
 
             // Move the caret to the end of the insertion
             let point = SnapshotPoint(x.CurrentSnapshot, position)
-            _operations.MoveCaretToPoint point)
+            _operations.MoveCaretToPoint point ViewFlags.None)
 
         CommandResult.Completed ModeSwitch.NoSwitch
 
@@ -439,7 +439,7 @@ type internal InsertUtil
 
             // Move the caret to the end of the insertion in the current ITextSnapshot
             let point = SnapshotPoint(x.CurrentSnapshot, position)
-            _operations.MoveCaretToPoint point)
+            _operations.MoveCaretToPoint point ViewFlags.None)
 
         CommandResult.Completed ModeSwitch.NoSwitch
 
@@ -460,7 +460,7 @@ type internal InsertUtil
                     _wordUtil.GetWords WordKind.NormalWord Path.Backward x.CaretPoint
                     |> Seq.map SnapshotSpanUtil.GetStartPoint
                     |> SeqUtil.headOrDefault defaultIfNotFound
-                _operations.MoveCaretToPointAndEnsureVisible point
+                _operations.MoveCaretToPoint point ViewFlags.Standard
                 CommandResult.Completed ModeSwitch.NoSwitch
             else
                 _operations.Beep()
@@ -474,7 +474,7 @@ type internal InsertUtil
                     |> Seq.skip 1
                     |> Seq.map SnapshotSpanUtil.GetStartPoint
                     |> SeqUtil.headOrDefault defaultIfNotFound
-                _operations.MoveCaretToPointAndEnsureVisible point
+                _operations.MoveCaretToPoint point ViewFlags.Standard
                 CommandResult.Completed ModeSwitch.NoSwitch
             else
                 _operations.Beep()

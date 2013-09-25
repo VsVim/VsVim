@@ -107,65 +107,6 @@ namespace Vim.UnitTest
         }
 
         /// <summary>
-        /// If the caret is in the virtualedit=onemore the caret should remain in the line break
-        /// </summary>
-        [Fact]
-        public void AdjustCaretPostMove_VirtualEditOneMore()
-        {
-            Create("cat", "dog");
-            _textView.MoveCaretTo(3);
-            _globalSettings.SetupGet(x => x.IsVirtualEditOneMore).Returns(true);
-            _operationsRaw.AdjustCaretPostMove();
-            Assert.Equal(3, _textView.GetCaretPoint().Position);
-        }
-
-        /// <summary>
-        /// If the caret is in default virtual edit then we should be putting the caret back in the 
-        /// line
-        /// </summary>
-        [Fact]
-        public void AdjustCaretPostMove_VirtualEditNormal()
-        {
-            Create("cat", "dog");
-            _textView.MoveCaretTo(3);
-            _operationsRaw.AdjustCaretPostMove();
-            Assert.Equal(2, _textView.GetCaretPoint().Position);
-        }
-
-        /// <summary>
-        /// If the caret is in the selection exclusive and we're in visual mode then we should leave
-        /// the caret in the line break.  It's needed to let motions like v$ get the appropriate 
-        /// selection
-        /// </summary>
-        [Fact]
-        public void AdjustCaretPostMove_ExclusiveSelectionAndVisual()
-        {
-            Create("cat", "dog");
-            _globalSettings.SetupGet(x => x.SelectionKind).Returns(SelectionKind.Exclusive);
-
-            foreach (var mode in new[] { ModeKind.VisualBlock, ModeKind.VisualCharacter, ModeKind.VisualLine })
-            {
-                _vimTextBuffer.SetupGet(x => x.ModeKind).Returns(mode);
-                _textView.MoveCaretTo(3);
-                _operationsRaw.AdjustCaretPostMove();
-                Assert.Equal(3, _textView.GetCaretPoint().Position);
-            }
-        }
-
-        /// <summary>
-        /// In a non-visual mode setting the exclusive selection setting shouldn't be a factor
-        /// </summary>
-        [Fact]
-        public void AdjustCaretPostMove_ExclusiveSelectionOnly()
-        {
-            Create("cat", "dog");
-            _textView.MoveCaretTo(3);
-            _globalSettings.SetupGet(x => x.SelectionKind).Returns(SelectionKind.Exclusive);
-            _operationsRaw.AdjustCaretPostMove();
-            Assert.Equal(2, _textView.GetCaretPoint().Position);
-        }
-
-        /// <summary>
         /// Standard case of deleting several lines in the buffer
         /// </summary>
         [Fact]
