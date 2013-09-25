@@ -193,7 +193,7 @@ type internal CommonOperations
     /// default the 'l' motion will only move you to the last character on the line and no 
     /// further.  Visual Studio up and down though acts like virtualedit=onemore.  We correct 
     /// this here
-    member x.AdjustCaretPostMove() =
+    member x.AdjustCaretForVirtualEdit() =
 
         let allowPastEndOfLine = 
             _globalSettings.IsVirtualEditOneMore ||
@@ -541,22 +541,12 @@ type internal CommonOperations
             if result.OperationKind = OperationKind.LineWise && not (Util.IsFlagSet result.MotionResultFlags MotionResultFlags.ExclusiveLineWise) then
                 // Line wise motions should not cause any collapsed regions to be expanded.  Instead they
                 // should leave the regions collapsed and just move the point into the region
-                ViewFlags.Standard &&& (~~~ViewFlags.TextExpanded)
+                ViewFlags.All &&& (~~~ViewFlags.TextExpanded)
             else
                 // Character wise motions should expand regions
-                ViewFlags.Standard
+                ViewFlags.All
         x.MoveCaretToPoint point viewFlags
-
-        // STODO: should be a part of the view flags to check the virtual space
-        x.AdjustCaretPostMove()
-
         _editorOperations.ResetSelection()
-
-    /// Move the caret to the specified point but adjust the result if it's in virtual space
-    /// and current settings disallow that
-    member x.MoveCaretToPointAndCheckVirtualSpace point =
-        TextViewUtil.MoveCaretToPoint _textView point
-        x.AdjustCaretPostMove()
 
     /// Move the caret to the proper indentation on a newly created line.  The context line 
     /// is provided to calculate an indentation off of
@@ -1115,6 +1105,8 @@ type internal CommonOperations
             x.EnsurePointVisible point
         if Util.IsFlagSet viewFlags ViewFlags.ScrollOffset then
             x.AdjustTextViewForScrollOffsetAtPoint point
+        if Util.IsFlagSet viewFlags ViewFlags.VirtualEdit && point.Position = x.CaretPoint.Position then
+            x.AdjustCaretForVirtualEdit()
 
     /// Ensure the given SnapshotPoint is not in a collapsed region on the screen
     member x.EnsurePointExpanded point = 
@@ -1159,7 +1151,6 @@ type internal CommonOperations
         member x.Join range kind = x.Join range kind
         member x.MoveCaret caretMovement = x.MoveCaret caretMovement
         member x.MoveCaretToPoint point viewFlags =  x.MoveCaretToPoint point viewFlags
-        member x.MoveCaretToPointAndCheckVirtualSpace point = x.MoveCaretToPointAndCheckVirtualSpace point
         member x.MoveCaretToMotionResult data = x.MoveCaretToMotionResult data
         member x.NavigateToPoint point = x.NavigateToPoint point
         member x.NormalizeBlanks text = x.NormalizeBlanks text

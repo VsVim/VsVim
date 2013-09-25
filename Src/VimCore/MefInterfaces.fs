@@ -257,9 +257,16 @@ type ViewFlags =
     /// setting
     | ScrollOffset = 0x04
 
+    /// Possibly move the caret to account for the 'virtualedit' setting
+    | VirtualEdit = 0x08
+
     /// Standard flags: 
     /// Visible ||| TextExpanded ||| ScrollOffset
     | Standard = 0x07
+
+    /// All flags
+    /// Visible ||| TextExpanded ||| ScrollOffset ||| VirtualEdit
+    | All = 0x0f
 
 /// This class abstracts out the operations that are common to normal, visual and 
 /// command mode.  It usually contains common edit and movement operations and very
@@ -357,14 +364,8 @@ type ICommonOperations =
     /// properties at that point 
     abstract MoveCaretToPoint : point : SnapshotPoint -> viewFlags : ViewFlags -> unit
 
-    /// Move the caret to the specified SnapshotPoint and make sure to adjust for the 
-    /// virtual edit settings
-    ///
-    /// STODO: delete this 
-    abstract MoveCaretToPointAndCheckVirtualSpace : SnapshotPoint -> unit
-
     /// Move the caret to the MotionResult value
-    abstract MoveCaretToMotionResult : MotionResult -> unit
+    abstract MoveCaretToMotionResult : motionResult : MotionResult -> unit
 
     /// Navigate to the given point which may occur in any ITextBuffer.  This will not update the 
     /// jump list

@@ -268,7 +268,7 @@ type internal CommandUtil
 
             // Move the caret but make sure to respect the 'virtualedit' option
             let point = SnapshotPoint(x.CurrentSnapshot, span.End.Position)
-            _commonOperations.MoveCaretToPointAndCheckVirtualSpace point)
+            _commonOperations.MoveCaretToPoint point ViewFlags.VirtualEdit)
 
         CommandResult.Completed ModeSwitch.NoSwitch
 
@@ -570,7 +570,7 @@ type internal CommandUtil
                 // Need to respect the virtual edit setting here as we could have 
                 // deleted the last character on the line
                 let point = SnapshotPoint(snapshot, position)
-                _commonOperations.MoveCaretToPointAndCheckVirtualSpace point)
+                _commonOperations.MoveCaretToPoint point ViewFlags.VirtualEdit)
 
             // Put the deleted text into the specified register
             let value = RegisterValue(StringData.OfSpan span, OperationKind.CharacterWise)
@@ -673,7 +673,7 @@ type internal CommandUtil
                 // Possible for a block mode to deletion to cause the start to now be in the line 
                 // break so we need to account for the 'virtualedit' setting
                 let point = SnapshotPoint(x.CurrentSnapshot, visualSpan.Start.Position)
-                _commonOperations.MoveCaretToPointAndCheckVirtualSpace point
+                _commonOperations.MoveCaretToPoint point ViewFlags.VirtualEdit
 
                 editSpan)
 
@@ -778,7 +778,7 @@ type internal CommandUtil
 
             // Get the point on the current ITextSnapshot
             let point = SnapshotPoint(x.CurrentSnapshot, span.Start.Position)
-            _commonOperations.MoveCaretToPointAndCheckVirtualSpace point)
+            _commonOperations.MoveCaretToPoint point ViewFlags.VirtualEdit)
 
         // Update the register with the result so long as something was actually deleted
         // from the buffer
@@ -801,7 +801,7 @@ type internal CommandUtil
 
             // Move the caret back to the original position in the ITextBuffer.
             let point = SnapshotPoint(x.CurrentSnapshot, caretPosition)
-            _commonOperations.MoveCaretToPointAndCheckVirtualSpace point)
+            _commonOperations.MoveCaretToPoint point ViewFlags.VirtualEdit)
 
         CommandResult.Completed ModeSwitch.NoSwitch
 
@@ -1696,7 +1696,7 @@ type internal CommandUtil
                             // Position at the original insertion point
                             SnapshotUtil.GetPoint x.CurrentSnapshot oldPoint.Position
 
-                _commonOperations.MoveCaretToPointAndCheckVirtualSpace point
+                _commonOperations.MoveCaretToPoint point ViewFlags.VirtualEdit
             | OperationKind.LineWise ->
 
                 // Get the line on which we will be positioning the caret
@@ -1721,7 +1721,7 @@ type internal CommandUtil
 
                 // Get the indent point of the line.  That's what the caret needs to be moved to
                 let point = SnapshotLineUtil.GetIndentPoint line
-                _commonOperations.MoveCaretToPointAndCheckVirtualSpace point)
+                _commonOperations.MoveCaretToPoint point ViewFlags.VirtualEdit)
 
     /// Put the contents of the specified register over the selection.  This is used for all
     /// visual mode put commands. 

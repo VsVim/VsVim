@@ -196,7 +196,7 @@ namespace Vim.UnitTest
                 }
             }
 
-            public sealed class MiscTest : ScrollOffsetTest
+            public sealed class MiscScrollOffsetTest : ScrollOffsetTest
             {
                 [Fact]
                 public void SingleLineSingleOffset()
@@ -220,12 +220,77 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class VirtualEditTest : CommonOperationsIntegrationTest
+        {
+            /// <summary>
+            /// If the caret is in the virtualedit=onemore the caret should remain in the line break
+            /// </summary>
+            [Fact]
+            public void VirtualEditOneMore()
+            {
+                Create("cat", "dog");
+                _textView.MoveCaretTo(3);
+                _globalSettings.VirtualEdit = "onemore";
+                _commonOperationsRaw.AdjustCaretForVirtualEdit();
+                Assert.Equal(3, _textView.GetCaretPoint().Position);
+            }
+
+            /// <summary>
+            /// If the caret is in default virtual edit then we should be putting the caret back in the 
+            /// line
+            /// </summary>
+            [Fact]
+            public void VirtualEditNormal()
+            {
+                Create("cat", "dog");
+                _textView.MoveCaretTo(3);
+                _commonOperationsRaw.AdjustCaretForVirtualEdit();
+                Assert.Equal(2, _textView.GetCaretPoint().Position);
+            }
+
+            /// <summary>
+            /// If the caret is in the selection exclusive and we're in visual mode then we should leave
+            /// the caret in the line break.  It's needed to let motions like v$ get the appropriate 
+            /// selection
+            /// </summary>
+            [Fact]
+            public void ExclusiveSelectionAndVisual()
+            {
+                Create("cat", "dog");
+                _globalSettings.Selection = "old";
+                Assert.Equal(SelectionKind.Exclusive, _globalSettings.SelectionKind);
+
+                foreach (var modeKind in new[] { ModeKind.VisualBlock, ModeKind.VisualCharacter, ModeKind.VisualLine })
+                {
+                    _vimBuffer.SwitchMode(modeKind, ModeArgument.None);
+                    _textView.MoveCaretTo(3);
+                    _commonOperationsRaw.AdjustCaretForVirtualEdit();
+                    Assert.Equal(3, _textView.GetCaretPoint().Position);
+                }
+            }
+
+            /// <summary>
+            /// In a non-visual mode setting the exclusive selection setting shouldn't be a factor
+            /// </summary>
+            [Fact]
+            public void ExclusiveSelectionOnly()
+            {
+                Create("cat", "dog");
+                _textView.MoveCaretTo(3);
+                _globalSettings.Selection = "old";
+                Assert.Equal(SelectionKind.Exclusive, _globalSettings.SelectionKind);
+                _commonOperationsRaw.AdjustCaretForVirtualEdit();
+                Assert.Equal(2, _textView.GetCaretPoint().Position);
+            }
+        }
+
         public sealed class MiscTest : CommonOperationsIntegrationTest
         {
             [Fact]
             public void ViewFlagsValues()
             {
                 Assert.Equal(ViewFlags.Standard, ViewFlags.Visible | ViewFlags.TextExpanded | ViewFlags.ScrollOffset);
+                Assert.Equal(ViewFlags.All, ViewFlags.Visible | ViewFlags.TextExpanded | ViewFlags.ScrollOffset | ViewFlags.VirtualEdit);
             }
         }
     }

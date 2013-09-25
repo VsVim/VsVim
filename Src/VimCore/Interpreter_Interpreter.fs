@@ -821,7 +821,7 @@ type VimInterpreter
                     let number = number + (lineCount - 1)
                     SnapshotUtil.GetLine x.CurrentSnapshot number
                 let point = SnapshotLineUtil.GetFirstNonBlankOrEnd line
-                _commonOperations.MoveCaretToPointAndCheckVirtualSpace point)
+                _commonOperations.MoveCaretToPoint point ViewFlags.VirtualEdit)
     
             RunResult.Completed)
 
