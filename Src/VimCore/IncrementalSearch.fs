@@ -100,7 +100,7 @@ type internal IncrementalSearch
     // incremental search
     member x.ResetView () =
         if _globalSettings.IncrementalSearch then
-             _operations.EnsureCaretOnScreenAndTextExpanded()
+             _operations.EnsureAtCaret ViewFlags.Standard
 
     /// Run the search for the specified text.  Returns the new IncrementalSearchData resulting
     /// from the search
@@ -120,7 +120,7 @@ type internal IncrementalSearch
         // option is set
         if _globalSettings.IncrementalSearch then
             match searchResult with
-            | SearchResult.Found (_, span, _) -> _operations.EnsurePointOnScreenAndTextExpanded span.Start
+            | SearchResult.Found (_, span, _) -> _operations.EnsureAtPoint span.Start ViewFlags.Standard
             | SearchResult.NotFound _ -> x.ResetView ()
 
         let args = SearchResultEventArgs(searchResult)

@@ -40,7 +40,7 @@ namespace Vim.UnitTest
 
             _context = new TestableSynchronizationContext();
             _context.Install();
-            _tracker = new SelectionChangeTracker(_vimBuffer.Object, selectionList.ToFSharpList(), _mouseDevice.Object);
+            _tracker = new SelectionChangeTracker(_vimBuffer.Object, _factory.Create<ICommonOperations>(MockBehavior.Loose).Object, selectionList.ToFSharpList(), _mouseDevice.Object);
         }
 
         public void Dispose()

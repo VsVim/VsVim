@@ -28,8 +28,7 @@ namespace Vim.UnitTest
             _factory = new MockRepository(MockBehavior.Strict);
             _editorOperations = _factory.Create<IEditorOperations>();
             _operations = _factory.Create<ICommonOperations>();
-            _operations.Setup(x => x.MoveCaretToPoint(It.IsAny<SnapshotPoint>()));
-            _operations.Setup(x => x.MoveCaretToPointAndEnsureVisible(It.IsAny<SnapshotPoint>()));
+            _operations.Setup(x => x.MoveCaretToPoint(It.IsAny<SnapshotPoint>(), It.IsAny<ViewFlags>()));
             _operations.Setup(x => x.GetReplaceData(It.IsAny<SnapshotPoint>())).Returns(new ReplaceData(Environment.NewLine, Vim.GlobalSettings.Magic, 1));
             _operations.SetupGet(x => x.EditorOperations).Returns(_editorOperations.Object);
 
@@ -125,7 +124,7 @@ namespace Vim.UnitTest
         {
             Create("cat cat", "dog", "rabbit", "tree");
             _mode.OnEnter(VimUtil.CreateSubstituteArgument(_textBuffer.GetSpan(0, 3), "cat", "bird", SubstituteFlags.ReplaceAll, range: _textBuffer.GetLineRange(0)));
-            _operations.Setup(x => x.MoveCaretToPointAndEnsureVisible(_textBuffer.GetPoint(5))).Verifiable();
+            _operations.Setup(x => x.MoveCaretToPoint(_textBuffer.GetPoint(5), ViewFlags.Standard)).Verifiable();
             Assert.True(_mode.Process('y').IsHandledNoSwitch());
             Assert.Equal("bird cat", _textBuffer.GetLine(0).GetText());
             Assert.Equal(_textBuffer.GetSpan(5, 3), _mode.CurrentMatch.Value);
