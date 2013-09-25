@@ -43,7 +43,7 @@ namespace Vim.UnitTest
             _tracker.SetupGet(x => x.IsRunning).Returns(true);
             _operations = _factory.Create<ICommonOperations>();
             _operations.SetupGet(x => x.TextView).Returns(_textView);
-            _operations.Setup(x => x.MoveCaretToPoint(It.IsAny<SnapshotPoint>(), ViewFlags.All));
+            _operations.Setup(x => x.MoveCaretToPoint(It.IsAny<SnapshotPoint>(), ViewFlags.Standard));
             _commandUtil = _factory.Create<ICommandUtil>();
             var motionUtil = new MotionUtil(vimBufferData, _operations.Object);
             var capture = new MotionCapture(vimBufferData, new IncrementalSearch(vimBufferData, _operations.Object));

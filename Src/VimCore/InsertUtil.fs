@@ -460,7 +460,7 @@ type internal InsertUtil
                     _wordUtil.GetWords WordKind.NormalWord Path.Backward x.CaretPoint
                     |> Seq.map SnapshotSpanUtil.GetStartPoint
                     |> SeqUtil.headOrDefault defaultIfNotFound
-                _operations.MoveCaretToPoint point ViewFlags.All
+                _operations.MoveCaretToPoint point ViewFlags.Standard
                 CommandResult.Completed ModeSwitch.NoSwitch
             else
                 _operations.Beep()
@@ -474,7 +474,7 @@ type internal InsertUtil
                     |> Seq.skip 1
                     |> Seq.map SnapshotSpanUtil.GetStartPoint
                     |> SeqUtil.headOrDefault defaultIfNotFound
-                _operations.MoveCaretToPoint point ViewFlags.All
+                _operations.MoveCaretToPoint point ViewFlags.Standard
                 CommandResult.Completed ModeSwitch.NoSwitch
             else
                 _operations.Beep()

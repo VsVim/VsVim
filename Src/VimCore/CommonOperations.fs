@@ -387,7 +387,7 @@ type internal CommonOperations
         let moveLeft () = 
             if x.CaretLine.Start.Position < x.CaretPoint.Position then
                 let point = SnapshotPointUtil.SubtractOne x.CaretPoint
-                x.MoveCaretToPoint point ViewFlags.All
+                x.MoveCaretToPoint point ViewFlags.Standard
                 true
             else
                 false
@@ -396,7 +396,7 @@ type internal CommonOperations
         let moveRight () =
             if x.CaretPoint.Position < x.CaretLine.End.Position then
                 let point = SnapshotPointUtil.AddOne x.CaretPoint
-                x.MoveCaretToPoint point ViewFlags.All
+                x.MoveCaretToPoint point ViewFlags.Standard
                 true
             else
                 false
@@ -541,10 +541,10 @@ type internal CommonOperations
             if result.OperationKind = OperationKind.LineWise && not (Util.IsFlagSet result.MotionResultFlags MotionResultFlags.ExclusiveLineWise) then
                 // Line wise motions should not cause any collapsed regions to be expanded.  Instead they
                 // should leave the regions collapsed and just move the point into the region
-                ViewFlags.All &&& (~~~ViewFlags.TextExpanded)
+                ViewFlags.Standard &&& (~~~ViewFlags.TextExpanded)
             else
                 // Character wise motions should expand regions
-                ViewFlags.All
+                ViewFlags.Standard
         x.MoveCaretToPoint point viewFlags
 
         // STODO: should be a part of the view flags to check the virtual space
@@ -1099,13 +1099,13 @@ type internal CommonOperations
     /// after the undo completes
     member x.Undo count = 
         _undoRedoOperations.Undo count
-        x.EnsureAtPoint x.CaretPoint ViewFlags.All
+        x.EnsureAtPoint x.CaretPoint ViewFlags.Standard
 
     /// Redo 'count' operations in the ITextBuffer and ensure the caret is on the screen
     /// after the redo completes
     member x.Redo count = 
         _undoRedoOperations.Redo count
-        x.EnsureAtPoint x.CaretPoint ViewFlags.All
+        x.EnsureAtPoint x.CaretPoint ViewFlags.Standard
 
     /// Ensure the given view properties are met at the given point
     member x.EnsureAtPoint point viewFlags = 

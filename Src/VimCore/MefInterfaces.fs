@@ -248,17 +248,18 @@ type ViewFlags =
     | None = 0 
 
     /// Ensure the context point is visible in the ITextView
-    | Visible = 0x1
+    | Visible = 0x01
 
     /// If the context point is inside a collapsed region then it needs to be exapnded
-    | TextExpanded = 0x2
+    | TextExpanded = 0x02
 
     /// Using the context point as a reference ensure the scroll respects the 'scrolloff'
     /// setting
-    | ScrollOffset = 0x4
+    | ScrollOffset = 0x04
 
-    /// All flags 
-    | All = 0xffff
+    /// Standard flags: 
+    /// Visible ||| TextExpanded ||| ScrollOffset
+    | Standard = 0x07
 
 /// This class abstracts out the operations that are common to normal, visual and 
 /// command mode.  It usually contains common edit and movement operations and very

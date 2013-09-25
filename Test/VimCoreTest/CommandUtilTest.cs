@@ -375,7 +375,7 @@ namespace Vim.UnitTest
                 Create("cat", "dog");
                 Vim.MarkMap.SetGlobalMark(Letter.A, _vimTextBuffer, 0, 1);
                 var point = _textBuffer.GetPoint(1);
-                _commonOperations.Setup(x => x.MoveCaretToPoint(point, ViewFlags.All)).Verifiable();
+                _commonOperations.Setup(x => x.MoveCaretToPoint(point, ViewFlags.Standard)).Verifiable();
                 _commandUtil.JumpToMark(Mark.NewGlobalMark(Letter.A));
                 _commonOperations.Verify();
             }

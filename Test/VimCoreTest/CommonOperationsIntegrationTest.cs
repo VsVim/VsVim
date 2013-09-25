@@ -219,5 +219,14 @@ namespace Vim.UnitTest
                 }
             }
         }
+
+        public sealed class MiscTest : CommonOperationsIntegrationTest
+        {
+            [Fact]
+            public void ViewFlagsValues()
+            {
+                Assert.Equal(ViewFlags.Standard, ViewFlags.Visible | ViewFlags.TextExpanded | ViewFlags.ScrollOffset);
+            }
+        }
     }
 }

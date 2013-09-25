@@ -86,7 +86,7 @@ type internal SubstituteConfirmMode
 
                 // Adjust the caret to the new location and ensure it's visible to the user.  We need
                 // to dig into collapsed regions here as well
-                _operations.MoveCaretToPoint data.CurrentMatch.Start ViewFlags.All
+                _operations.MoveCaretToPoint data.CurrentMatch.Start ViewFlags.Standard
 
     member x.CurrentSubstitute =
         match _confirmData with

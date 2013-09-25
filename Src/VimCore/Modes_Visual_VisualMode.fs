@@ -312,7 +312,7 @@ type internal VisualMode
                     startPoint
                 else 
                     x.CaretPoint
-            _operations.MoveCaretToPoint point ViewFlags.All
+            _operations.MoveCaretToPoint point ViewFlags.Standard
 
     member x.ShouldHandleEscape = not _runner.IsHandlingEscape
 

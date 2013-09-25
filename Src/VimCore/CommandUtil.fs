@@ -1313,7 +1313,7 @@ type internal CommandUtil
                     |> SnapshotLineUtil.GetFirstNonBlankOrStart
                     |> VirtualSnapshotPointUtil.OfPoint
 
-            _commonOperations.MoveCaretToPoint point.Position ViewFlags.All
+            _commonOperations.MoveCaretToPoint point.Position ViewFlags.Standard
             _jumpList.Add before
             CommandResult.Completed ModeSwitch.NoSwitch
 
@@ -1358,7 +1358,7 @@ type internal CommandUtil
     member x.JumpToTagCore () =
         match _jumpList.Current with
         | None -> _commonOperations.Beep()
-        | Some point -> _commonOperations.MoveCaretToPoint point ViewFlags.All
+        | Some point -> _commonOperations.MoveCaretToPoint point ViewFlags.Standard
 
     /// Move the caret to start of a line which is deleted.  Needs to preserve the original 
     /// indent if 'autoindent' is set.
@@ -2373,7 +2373,7 @@ type internal CommandUtil
                 let firstIndex = textViewLines.GetIndexOfTextLine(textViewLines.FirstVisibleLine)
                 let textViewLine = textViewLines.[firstIndex + lineOffset]
                 let snapshotLine = SnapshotPointUtil.GetContainingLine textViewLine.Start
-                _commonOperations.MoveCaretToPoint snapshotLine.Start ViewFlags.All
+                _commonOperations.MoveCaretToPoint snapshotLine.Start ViewFlags.Standard
 
             let textViewLines = _textView.TextViewLines
             let firstIndex = textViewLines.GetIndexOfTextLine(textViewLines.FirstVisibleLine)

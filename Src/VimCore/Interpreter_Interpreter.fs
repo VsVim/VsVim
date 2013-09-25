@@ -578,7 +578,7 @@ type VimInterpreter
                 else
                     match TrackingPointUtil.GetPoint _textView.TextSnapshot caret with
                     | None -> ()
-                    | Some point -> _commonOperations.MoveCaretToPoint point ViewFlags.All
+                    | Some point -> _commonOperations.MoveCaretToPoint point ViewFlags.Standard
 
         elif not hasBang && _vimHost.IsDirty _textBuffer then
             _statusUtil.OnError Resources.Common_NoWriteSinceLastChange
@@ -730,7 +730,7 @@ type VimInterpreter
             SnapshotUtil.GetLineOrLast x.CurrentSnapshot number
             |> SnapshotLineUtil.GetFirstNonBlankOrEnd
 
-        _commonOperations.MoveCaretToPoint point (ViewFlags.All &&& (~~~ViewFlags.TextExpanded))
+        _commonOperations.MoveCaretToPoint point (ViewFlags.Standard &&& (~~~ViewFlags.TextExpanded))
         RunResult.Completed
 
     /// Run the let command
@@ -1016,7 +1016,7 @@ type VimInterpreter
                     span.Start 
                     |> SnapshotPointUtil.GetContainingLine 
                     |> SnapshotLineUtil.GetFirstNonBlankOrStart
-                _commonOperations.MoveCaretToPoint point ViewFlags.All
+                _commonOperations.MoveCaretToPoint point ViewFlags.Standard
                 _vimData.LastPatternData <- searchData.PatternData
             | SearchResult.NotFound _ -> ()
     

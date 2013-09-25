@@ -95,7 +95,7 @@ namespace Vim.UnitTest
         {
             Create("foo", "bar", "baz");
             _operations
-                .Setup(x => x.MoveCaretToPoint(_textView.GetLastLine().Start, ViewFlags.All & ~ViewFlags.TextExpanded))
+                .Setup(x => x.MoveCaretToPoint(_textView.GetLastLine().Start, ViewFlags.Standard & ~ViewFlags.TextExpanded))
                 .Verifiable();
             RunCommand("$");
             _operations.Verify();
@@ -109,7 +109,7 @@ namespace Vim.UnitTest
         public void Jump_UseVimLineNumber()
         {
             Create("cat", "dog", "tree");
-            _operations.Setup(x => x.MoveCaretToPoint(_textView.GetLine(1).Start, ViewFlags.All & ~ViewFlags.TextExpanded)).Verifiable();
+            _operations.Setup(x => x.MoveCaretToPoint(_textView.GetLine(1).Start, ViewFlags.Standard & ~ViewFlags.TextExpanded)).Verifiable();
             RunCommand("2");
             _operations.Verify();
         }
@@ -122,7 +122,7 @@ namespace Vim.UnitTest
         public void Jump_FirstLineSpecial()
         {
             Create("cat", "dog", "tree");
-            _operations.Setup(x => x.MoveCaretToPoint(_textView.GetLine(0).Start, ViewFlags.All & ~ViewFlags.TextExpanded)).Verifiable();
+            _operations.Setup(x => x.MoveCaretToPoint(_textView.GetLine(0).Start, ViewFlags.Standard & ~ViewFlags.TextExpanded)).Verifiable();
             RunCommand("0");
             _operations.Verify();
         }
@@ -135,7 +135,7 @@ namespace Vim.UnitTest
         public void Jump_LineNumberTooBig()
         {
             Create("cat", "dog", "tree");
-            _operations.Setup(x => x.MoveCaretToPoint(_textView.GetLine(2).Start, ViewFlags.All & ~ViewFlags.TextExpanded)).Verifiable();
+            _operations.Setup(x => x.MoveCaretToPoint(_textView.GetLine(2).Start, ViewFlags.Standard & ~ViewFlags.TextExpanded)).Verifiable();
             RunCommand("300");
             _operations.Verify();
         }
@@ -148,7 +148,7 @@ namespace Vim.UnitTest
         public void Jump_Indent()
         {
             Create("cat", "  dog", "tree");
-            _operations.Setup(x => x.MoveCaretToPoint(_textView.GetPointInLine(1, 2), ViewFlags.All & ~ViewFlags.TextExpanded)).Verifiable();
+            _operations.Setup(x => x.MoveCaretToPoint(_textView.GetPointInLine(1, 2), ViewFlags.Standard & ~ViewFlags.TextExpanded)).Verifiable();
             RunCommand("2");
             _operations.Verify();
         }
@@ -246,7 +246,7 @@ namespace Vim.UnitTest
             Create("foo");
             _vimHost.Setup(x => x.Reload(_textBuffer)).Returns(true).Verifiable();
             _vimHost.Setup(x => x.IsDirty(_textBuffer)).Returns(false).Verifiable();
-            _operations.Setup(x => x.MoveCaretToPoint(It.IsAny<SnapshotPoint>(), ViewFlags.All));
+            _operations.Setup(x => x.MoveCaretToPoint(It.IsAny<SnapshotPoint>(), ViewFlags.Standard));
             RunCommand("e");
             _operations.Verify();
             RunCommand("edi");
