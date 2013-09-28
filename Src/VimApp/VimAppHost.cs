@@ -8,7 +8,7 @@ namespace VimApp
 {
     [Export(typeof(IVimHost))]
     [Export(typeof(DefaultVimHost))]
-    sealed class DefaultVimHost : Vim.UI.Wpf.VimHost
+    internal sealed class DefaultVimHost : Vim.UI.Wpf.VimHost
     {
         internal MainWindow MainWindow
         {
@@ -91,11 +91,6 @@ namespace VimApp
         }
 
         public override void RunVisualStudioCommand(string command, string argument)
-        {
-
-        }
-
-        public override void ShowOpenFileDialog()
         {
 
         }

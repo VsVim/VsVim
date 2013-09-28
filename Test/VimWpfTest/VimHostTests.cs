@@ -98,11 +98,6 @@ namespace Vim.UI.Wpf.UnitTest
                 throw new NotImplementedException();
             }
 
-            public override void ShowOpenFileDialog()
-            {
-                throw new NotImplementedException();
-            }
-
             public override HostResult SplitViewHorizontally(ITextView value)
             {
                 throw new NotImplementedException();
