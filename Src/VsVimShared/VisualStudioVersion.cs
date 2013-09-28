@@ -8,6 +8,7 @@ namespace VsVim
     {
         Vs2010,
         Vs2012,
+        Vs2013,
         Unknown
     }
 }

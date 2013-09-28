@@ -990,6 +990,8 @@ namespace VsVim
                     return VisualStudioVersion.Vs2010;
                 case "11":
                     return VisualStudioVersion.Vs2012;
+                case "12":
+                    return VisualStudioVersion.Vs2013;
                 default:
                     return VisualStudioVersion.Unknown;
             }

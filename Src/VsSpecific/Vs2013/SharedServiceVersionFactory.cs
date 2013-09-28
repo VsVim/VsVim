@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.Composition;
 
-namespace VsVim.Vs2012
+namespace VsVim.Vs2013
 {
     [Export(typeof(ISharedServiceVersionFactory))]
     internal sealed class SharedServiceVersionFactory : ISharedServiceVersionFactory
@@ -17,7 +17,7 @@ namespace VsVim.Vs2012
 
         VisualStudioVersion ISharedServiceVersionFactory.Version
         {
-            get { return VisualStudioVersion.Vs2012; }
+            get { return VisualStudioVersion.Vs2013; }
         }
 
         ISharedService ISharedServiceVersionFactory.Create()

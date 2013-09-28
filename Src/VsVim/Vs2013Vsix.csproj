@@ -32,7 +32,6 @@
     <StartAction>Program</StartAction>
     <StartProgram>$(DevEnvDir)\devenv.exe</StartProgram>
     <StartArguments>/rootsuffix Exp</StartArguments>
-    <VisualStudioTarget>Dev11</VisualStudioTarget>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -122,7 +121,7 @@
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
       <SubType>Designer</SubType>
     </None>
-    <None Include="Dev11\source.extension.vsixmanifest">
+    <None Include="Dev12\source.extension.vsixmanifest">
       <SubType>Designer</SubType>
     </None>
   </ItemGroup>
@@ -137,9 +136,9 @@
       <Project>{65A749E0-F1B1-4E43-BE73-25072EE398C6}</Project>
       <Name>VimWpf</Name>
     </ProjectReference>
-    <ProjectReference Include="..\VsSpecific\Vs2012\Vs2012.csproj">
+    <ProjectReference Include="..\VsSpecific\Vs2013\Vs2013.csproj">
       <Project>{ca760951-31f6-40b1-bab5-68cb26816abe}</Project>
-      <Name>Vs2012</Name>
+      <Name>Vs2013</Name>
     </ProjectReference>
     <ProjectReference Include="..\VsVimShared\VsVimShared.csproj">
       <Project>{979DEDC6-25E2-494B-9E8F-6E42078C601C}</Project>
