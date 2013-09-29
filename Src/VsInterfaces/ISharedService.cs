@@ -1,5 +1,4 @@
-﻿using Vim;
-using Microsoft.VisualStudio.Shell.Interop;
+﻿using Microsoft.VisualStudio.Shell.Interop;
 
 namespace VsVim
 {
@@ -24,7 +23,7 @@ namespace VsVim
     }
 
     /// <summary>
-    /// Factory for producing IVersionService intstances.  This is an interface for services which
+    /// Factory for producing IVersionService instances.  This is an interface for services which
     /// need to vary in implementation between versions of Visual Studio
     /// </summary>
     public interface ISharedService

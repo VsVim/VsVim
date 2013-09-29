@@ -1,7 +1,4 @@
-﻿
-using Microsoft.VisualStudio.Text.Editor;
-using Microsoft.FSharp.Core;
-using Microsoft.VisualStudio.Shell.Interop;
+﻿using Microsoft.VisualStudio.Shell.Interop;
 
 namespace VsVim.Implementation.SharedService
 {

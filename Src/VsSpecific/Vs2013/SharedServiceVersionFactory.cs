@@ -5,12 +5,10 @@ namespace VsVim.Vs2013
     [Export(typeof(ISharedServiceVersionFactory))]
     internal sealed class SharedServiceVersionFactory : ISharedServiceVersionFactory
     {
-        private readonly IVsAdapter _vsAdapter;
-
         [ImportingConstructor]
-        internal SharedServiceVersionFactory(IVsAdapter vsAdapter)
+        internal SharedServiceVersionFactory()
         {
-            _vsAdapter = vsAdapter;
+
         }
 
         #region ISharedServiceVersionFactory
@@ -22,7 +20,7 @@ namespace VsVim.Vs2013
 
         ISharedService ISharedServiceVersionFactory.Create()
         {
-            return new SharedService(_vsAdapter);
+            return new SharedService();
         }
 
         #endregion
