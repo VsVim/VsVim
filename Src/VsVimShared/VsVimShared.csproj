@@ -140,7 +140,6 @@
     </Compile>
     <Compile Include="Implementation\ConflictingKey\KeyBindingData.cs" />
     <Compile Include="Implementation\ConflictingKey\KeyBindingHandledByOption.cs" />
-    <Compile Include="VisualStudioVersion.cs" />
     <Compile Include="VsCommandTarget.cs" />
     <Compile Include="VsFilterKeysAdapter.cs" />
     <Compile Include="Implementation\Misc\VsKeyProcessor.cs" />
