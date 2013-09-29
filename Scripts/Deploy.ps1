@@ -39,7 +39,7 @@ function test-vsixcontents() {
     $dest.Copyhere($items, 20)
 
     $files = gci $target | %{ $_.Name }
-    if ($files.Count -ne 13) { 
+    if ($files.Count -ne 14) { 
         write-host "Wrong number of files in VSIX. Found ..."
         foreach ($file in $files) {
             write-host "`t$file"
@@ -60,6 +60,7 @@ function test-vsixcontents() {
         "Vim.UI.Wpf.dll",
         "VsVim.Vs2010.dll",
         "VsVim.Vs2012.dll",
+        "VsVim.Vs2013.dll",
         "VsVim.dll",
         "VsVim.Shared.dll"
 
@@ -148,10 +149,15 @@ if (-not $fast) {
     write-host "Cleaning Projects"
     build-clean Src\VsSpecific\Vs2010\Vs2010.csproj
     build-clean Src\VsSpecific\Vs2012\Vs2012.csproj
+    build-clean Src\VsSpecific\Vs2013\Vs2013.csproj
     build-clean Src\VsVim\VsVim.csproj
 
     if (test-path "VsVim\VsVim.Vs2012.dll") {
         rm Src\VsVim\VsVim.Vs2012.dll
+    }
+
+    if (test-path "VsVim\VsVim.Vs2013.dll") {
+        rm Src\VsVim\VsVim.Vs2013.dll
     }
 }
 
@@ -169,9 +175,11 @@ build-release Test\VsVimSharedTest\VsVimSharedTest.csproj
 # Next step is to build the 2012 components.  We need to get the 2012 specific DLL
 # to deploy with the standard install
 build-release Src\VsSpecific\Vs2012\Vs2012.csproj
+build-release Src\VsSpecific\Vs2013\Vs2013.csproj
 
 # Copy the 2012 specfic components into the location expected by the build system
 copy Src\VsSpecific\Vs2012\bin\Release\VsVim.Vs2012.dll Src\VsVim
+copy Src\VsSpecific\Vs2013\bin\Release\VsVim.Vs2013.dll Src\VsVim
 
 # Now build the final output project
 build-release Src\VsVim\VsVim.csproj
