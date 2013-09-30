@@ -49,7 +49,7 @@ function test-vsixcontents() {
     }
 
     # The set of important files that are easy to miss 
-    #   - FSharp.Core.dll: We bind to the 4.0 version but 2012 only installs
+    #   - FSharp.Core.dll: We bind to the 4.0 version but 2012+ only installs
     #     the 4.5 version that we can't bind to
     #   - EditorUtils.dll: Not a part of the build but necessary.  Make sure 
     #     that it's found        
@@ -62,6 +62,7 @@ function test-vsixcontents() {
         "VsVim.Vs2012.dll",
         "VsVim.Vs2013.dll",
         "VsVim.dll",
+        "VsVim.Interfaces.dll",
         "VsVim.Shared.dll"
 
     foreach ($item in $expected) {
@@ -151,14 +152,6 @@ if (-not $fast) {
     build-clean Src\VsSpecific\Vs2012\Vs2012.csproj
     build-clean Src\VsSpecific\Vs2013\Vs2013.csproj
     build-clean Src\VsVim\VsVim.csproj
-
-    if (test-path "VsVim\VsVim.Vs2012.dll") {
-        rm Src\VsVim\VsVim.Vs2012.dll
-    }
-
-    if (test-path "VsVim\VsVim.Vs2013.dll") {
-        rm Src\VsVim\VsVim.Vs2013.dll
-    }
 }
 
 # Before building make sure the version number is consistent in all 
@@ -172,16 +165,7 @@ build-release Test\VimCoreTest\VimCoreTest.csproj
 build-release Test\VimWpfTest\VimWpfTest.csproj
 build-release Test\VsVimSharedTest\VsVimSharedTest.csproj
 
-# Next step is to build the 2012 components.  We need to get the 2012 specific DLL
-# to deploy with the standard install
-build-release Src\VsSpecific\Vs2012\Vs2012.csproj
-build-release Src\VsSpecific\Vs2013\Vs2013.csproj
-
-# Copy the 2012 specfic components into the location expected by the build system
-copy Src\VsSpecific\Vs2012\bin\Release\VsVim.Vs2012.dll Src\VsVim
-copy Src\VsSpecific\Vs2013\bin\Release\VsVim.Vs2013.dll Src\VsVim
-
-# Now build the final output project
+# Now build the main output project
 build-release Src\VsVim\VsVim.csproj
 
 write-host "Verifying the Vsix Contents"
