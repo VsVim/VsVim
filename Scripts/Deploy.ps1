@@ -1,12 +1,14 @@
 param ([switch]$fast = $false)
 [string]$script:rootPath = split-path -parent $MyInvocation.MyCommand.Definition 
 [string]$script:rootPath = resolve-path (join-path $rootPath "..")
-cd $rootPath
+pushd $rootPath
 
 $msbuild = join-path ${env:SystemRoot} "microsoft.net\framework\v4.0.30319\msbuild.exe"
 if (-not (test-path $msbuild)) {
     write-error "Can't find msbuild.exe"
 }
+
+$zip = join-path $rootPath "Tools\7za920\7za.exe"
 
 function test-return() {
     if ($LASTEXITCODE -ne 0) {
@@ -17,7 +19,7 @@ function test-return() {
 # Test the contents of the Vsix to make sure it has all of the appropriate
 # files 
 function test-vsixcontents() { 
-    param ([string]$vsixPath = $(throw "Need the path to the VSIX")) 
+    $vsixPath = "Deploy\VsVim.vsix"
     if (-not (test-Path $vsixPath)) {
         write-error "Vsix doesn't exist"
     }
@@ -25,18 +27,7 @@ function test-vsixcontents() {
     # Make a folder to hold the files
     $target = join-path ([IO.Path]::GetTempPath()) ([IO.Path]::GetRandomFileName())
     mkdir $target | out-null
-
-    # Copy the VSIX to a file with a zip extension.  This is required for the 
-    # shell to unzip it for us. 
-    $vsixTarget = join-path $target "VsVim.zip"
-    copy $vsixPath $vsixTarget
-
-    # Unzip the file 
-    $shellApp = new-object -com shell.application
-    $source = $shellApp.NameSpace($vsixTarget)
-    $dest = $shellApp.NameSpace($target)
-    $items = $source.Items()
-    $dest.Copyhere($items, 20)
+    & $zip x "-o$target" $vsixPath | out-null
 
     $files = gci $target | %{ $_.Name }
     if ($files.Count -ne 14) { 
@@ -134,16 +125,33 @@ function build-release() {
     Test-Return
 }
 
-function publish-vsix() {
+# Due to the way we build the VSIX there are many files included that we don't actually
+# want to deploy.  Here we will clear out those files and rebuild the VSIX without 
+# them
+function clean-vsixcontents() { 
     param ([string]$vsixPath = $(throw "Need the path to the VSIX")) 
-    if (-not (test-path "Deploy")) {
-        mkdir "Deploy" | out-null
+    if (-not (test-Path $vsixPath)) {
+        write-error "Vsix doesn't exist"
     }
-    $vsixName = split-path -leaf $vsixPath
-    $target = join-path "Deploy" $vsixName
-    copy -force $vsixPath $target
-    ii "Deploy"
+
+    write-host "Cleaning VSIX contents"
+    # Make a folder to hold the files
+    $target = join-path ([IO.Path]::GetTempPath()) ([IO.Path]::GetRandomFileName())
+    mkdir $target | out-null
+
+    & $zip x "-o$target" $vsixPath | out-null
+    rm "$target\Microsoft.VisualStudio.*"
+    rm $vsixPath
+    & $zip a -r $vsixPath $target\*.* | out-null
 }
+
+function build-vsix() {
+    rm Deploy\VsVim* 
+    copy "Src\VsVim\bin\Release\VsVim.vsix" "Deploy\VsVim.orig.vsix"
+    copy "Deploy\VsVim.orig.vsix" "Deploy\VsVim.vsix"
+    clean-vsixcontents (resolve-path "Deploy\VsVim.vsix")
+    copy "Deploy\VsVim.vsix" "Deploy\VsVim.zip"
+} 
 
 # First step is to clean out all of the projects 
 if (-not $fast) { 
@@ -167,9 +175,10 @@ build-release Test\VsVimSharedTest\VsVimSharedTest.csproj
 
 # Now build the main output project
 build-release Src\VsVim\VsVim.csproj
+build-vsix
 
 write-host "Verifying the Vsix Contents"
-$vsixPath = "Src\VsVim\bin\Release\VsVim.vsix"
-test-vsixcontents $vsixPath
+test-vsixcontents 
 test-unittests
-publish-vsix $vsixPath 
+
+popd
