@@ -140,6 +140,7 @@ function clean-vsixcontents() {
 }
 
 function build-vsix() {
+    mkdir Deploy 2>&1 | out-null
     rm Deploy\VsVim* 
     copy "Src\VsVim\bin\Release\VsVim.vsix" "Deploy\VsVim.orig.vsix"
     copy "Deploy\VsVim.orig.vsix" "Deploy\VsVim.vsix"

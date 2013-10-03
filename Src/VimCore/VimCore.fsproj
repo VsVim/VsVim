@@ -33,8 +33,9 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>3</WarningLevel>
   </PropertyGroup>
-  <Import Condition=" '$(VisualStudioVersion)' == '10.0'" Project="$(ProgramFiles)\Microsoft F#\v4.0\Microsoft.FSharp.Targets" />
-  <Import Condition=" '$(VisualStudioVersion)' == '11.0'" Project="$(MSBuildExtensionsPath32)\..\Microsoft SDKs\F#\3.0\Framework\v4.0\Microsoft.FSharp.Targets" />
+  <Import Condition=" '$(VisualStudioVersion)' == '' "     Project="$(ProgramFiles)\Microsoft F#\v4.0\Microsoft.FSharp.Targets" />
+  <Import Condition=" '$(VisualStudioVersion)' == '10.0' " Project="$(ProgramFiles)\Microsoft F#\v4.0\Microsoft.FSharp.Targets" />
+  <Import Condition=" '$(VisualStudioVersion)' == '11.0' " Project="$(MSBuildExtensionsPath32)\..\Microsoft SDKs\F#\3.0\Framework\v4.0\Microsoft.FSharp.Targets" />
 
   <!-- 
     The text of the import statement must be exactyl FSharpTargetsPath else it will 
@@ -43,7 +44,7 @@
   <PropertyGroup>
     <FSharpTargetsPath>$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\FSharp\Microsoft.FSharp.Targets</FSharpTargetsPath> 
   </PropertyGroup>
-  <Import Condition=" '$(VisualStudioVersion)' == '12.0'" Project="$(FSharpTargetsPath)" />
+  <Import Condition=" '$(VisualStudioVersion)' == '12.0' " Project="$(FSharpTargetsPath)" />
   <Import Project="$(SolutionDir)\.nuget\nuget.targets" />
   <ItemGroup>
     <Compile Include="Resources.fs" />
@@ -182,4 +183,7 @@
 	<Target Name="AfterBuild">
 	</Target>
 	-->
+   <Target Name="AfterBuild">
+      <Message Text="Version is '$(VisualStudioVersion)'" />
+   </Target>
 </Project>
