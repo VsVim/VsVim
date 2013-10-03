@@ -39,6 +39,7 @@
     <MefComponent>|VimCore|</MefComponent>
     <MefComponent>|VimWpf|</MefComponent>
     <MefComponent>|VsVimShared|</MefComponent>
+    <MefComponent>|VsInterfaces|</MefComponent>
     <MefComponent>|Vs2010|</MefComponent>
     <MefComponent>|Vs2012|</MefComponent>
     <MefComponent>|Vs2013|</MefComponent>

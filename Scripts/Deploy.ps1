@@ -1,7 +1,7 @@
 param ([switch]$fast = $false)
 [string]$script:rootPath = split-path -parent $MyInvocation.MyCommand.Definition 
 [string]$script:rootPath = resolve-path (join-path $rootPath "..")
-pushd $rootPath
+cd $rootPath
 
 $msbuild = join-path ${env:SystemRoot} "microsoft.net\framework\v4.0.30319\msbuild.exe"
 if (-not (test-path $msbuild)) {
@@ -130,19 +130,13 @@ function build-release() {
 # them
 function clean-vsixcontents() { 
     param ([string]$vsixPath = $(throw "Need the path to the VSIX")) 
-    if (-not (test-Path $vsixPath)) {
-        write-error "Vsix doesn't exist"
-    }
 
     write-host "Cleaning VSIX contents"
-    # Make a folder to hold the files
-    $target = join-path ([IO.Path]::GetTempPath()) ([IO.Path]::GetRandomFileName())
-    mkdir $target | out-null
+    write-host "`tBuilding CleanVsix"
+    build-release "Src\CleanVsix\CleanVsix.csproj"
 
-    & $zip x "-o$target" $vsixPath | out-null
-    rm "$target\Microsoft.VisualStudio.*"
-    rm $vsixPath
-    & $zip a -r $vsixPath $target\*.* | out-null
+    write-host "`tCleaning contents"
+    & Src\CleanVsix\bin\Release\CleanVsix.exe "$vsixPath"
 }
 
 function build-vsix() {
@@ -178,7 +172,10 @@ build-release Src\VsVim\VsVim.csproj
 build-vsix
 
 write-host "Verifying the Vsix Contents"
-test-vsixcontents 
-test-unittests
+
+if (-not $fast) {
+    test-vsixcontents 
+    test-unittests
+}
 
 popd
