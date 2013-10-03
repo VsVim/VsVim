@@ -4,27 +4,35 @@ using Microsoft.VisualStudio.Text.Editor;
 
 namespace VsVim
 {
+    public enum DocumentLoad
+    {
+        RespectLazy,
+        ForceLoad
+    }
+
     public interface ITextManager
     {
-        /// <summary>
-        /// Set of active ITextBuffers
-        /// </summary>
-        IEnumerable<ITextBuffer> TextBuffers { get; }
-
-        /// <summary>
-        /// Set of all active IWpfTextViews
-        /// </summary>
-        IEnumerable<ITextView> TextViews { get; }
-
         /// <summary>
         /// Returns the active IWpfITextView
         /// </summary>
         ITextView ActiveTextViewOptional { get; }
 
         /// <summary>
+        /// Get the set of ITextBuffer instances which map to a document open in the 
+        /// running document table
+        /// </summary>
+        IEnumerable<ITextBuffer> GetDocumentTextBuffers(DocumentLoad documentLoad);
+
+        /// <summary>
+        /// Get the set of ITextView instancesc which map to a view of a document open
+        /// in the running document table
+        /// </summary>
+        IEnumerable<ITextView> GetDocumentTextViews(DocumentLoad documentLoad);
+
+        /// <summary>
         /// Get the ITextView instances which are attachked to this ITextBuffer
         /// </summary>
-        IEnumerable<ITextView> GetTextViews(ITextBuffer textBuffer);
+        IEnumerable<ITextView> GetDocumentTextViews(ITextBuffer textBuffer);
 
         /// <summary>
         /// Navigate Visual Studio to the given point

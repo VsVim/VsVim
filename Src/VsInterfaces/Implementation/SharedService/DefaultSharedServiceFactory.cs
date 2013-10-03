@@ -20,6 +20,11 @@ namespace VsVim.Implementation.SharedService
             {
                 return false;
             }
+
+            bool ISharedService.IsLazyLoaded(uint documentCookie)
+            {
+                return false;
+            }
         }
 
         VisualStudioVersion ISharedServiceVersionFactory.Version

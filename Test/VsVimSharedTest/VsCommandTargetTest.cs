@@ -501,7 +501,7 @@ namespace VsVim.UnitTest
             {
                 _textBuffer.SetText("dog", "cat");
                 _textView.Selection.Select(_textBuffer.GetLineSpan(0, 3));
-                _textManager.Setup(x => x.TextViews).Returns(new[] { _textView });
+                _textManager.Setup(x => x.GetDocumentTextViews(DocumentLoad.RespectLazy)).Returns(new[] { _textView });
                 _nextTarget.SetupExecAll();
                 RunExec(CreateEditCommand(EditCommandKind.GoToDefinition));
                 Assert.True(_textView.Selection.IsEmpty);

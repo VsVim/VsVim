@@ -1,14 +1,18 @@
-﻿using System.ComponentModel.Composition;
+﻿using Microsoft.VisualStudio.Shell;
+using Microsoft.VisualStudio.Shell.Interop;
+using System.ComponentModel.Composition;
 
 namespace VsVim.Vs2013
 {
     [Export(typeof(ISharedServiceVersionFactory))]
     internal sealed class SharedServiceVersionFactory : ISharedServiceVersionFactory
     {
-        [ImportingConstructor]
-        internal SharedServiceVersionFactory()
-        {
+        private readonly IVsRunningDocumentTable _vsRunningDocumentTable;
 
+        [ImportingConstructor]
+        internal SharedServiceVersionFactory(SVsServiceProvider vsServiceProvider)
+        {
+            _vsRunningDocumentTable = (IVsRunningDocumentTable)vsServiceProvider.GetService(typeof(SVsRunningDocumentTable));
         }
 
         #region ISharedServiceVersionFactory
@@ -20,7 +24,7 @@ namespace VsVim.Vs2013
 
         ISharedService ISharedServiceVersionFactory.Create()
         {
-            return new SharedService();
+            return new SharedService(_vsRunningDocumentTable);
         }
 
         #endregion

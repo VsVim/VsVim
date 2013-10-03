@@ -79,6 +79,11 @@ namespace VsVim.Vs2012
             return IsActiveWindowFrame(vsWindowFrame);
         }
 
+        bool ISharedService.IsLazyLoaded(uint documentCookie)
+        {
+            return false;
+        }
+
         #endregion
     }
 }

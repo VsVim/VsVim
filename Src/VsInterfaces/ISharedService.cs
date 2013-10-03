@@ -45,6 +45,11 @@ namespace VsVim
         /// Go to the tab with the specified index
         /// </summary>
         void GoToTab(int index);
+
+        /// <summary>
+        /// Is the document represented by the cookie being lazily loaded by the IDE?
+        /// </summary>
+        bool IsLazyLoaded(uint documentCookie);
     }
 
     /// <summary>

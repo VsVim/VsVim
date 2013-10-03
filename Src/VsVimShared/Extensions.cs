@@ -1126,9 +1126,8 @@ namespace VsVim
         /// Get the document cookies for the documents in the running document table
         /// </summary>
         /// <remarks>
-        /// Do not use RunningDocumentTable::GetEnumerator in place of this method.  In Vs2012 and before
-        /// it can throw an exception in certain conditions.  The root cause is unknown but it will end
-        /// up passing IntPtr.Zero into Marshal.Release and throwing.  
+        /// This method simple asks for the cookies and hence won't force the document to be loaded
+        /// if it is being loaded in a lazy fashion
         /// </remarks>
         public static List<uint> GetRunningDocumentCookies(this IVsRunningDocumentTable runningDocumentTable)
         {
