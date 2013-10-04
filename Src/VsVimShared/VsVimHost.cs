@@ -220,7 +220,9 @@ namespace VsVim
 
         public override bool GoToDefinition()
         {
-            var selected = _textManager.TextViews.Where(x => !x.Selection.IsEmpty).ToList();
+            var selected = _textManager
+                .GetDocumentTextViews(DocumentLoad.RespectLazy)
+                .Where(x => !x.Selection.IsEmpty).ToList();
             if (!GoToDefinitionCore(_textManager.ActiveTextViewOptional, null))
             {
                 return false;
@@ -232,7 +234,8 @@ namespace VsVim
             // 
             // This selection often occurs in another document but that document won't be 
             // active when we get back here.  Instead just clear all of the new selections
-            _textManager.TextViews
+            _textManager
+                .GetDocumentTextViews(DocumentLoad.RespectLazy)
                 .Where(x => !x.Selection.IsEmpty && !selected.Contains(x))
                 .ForEach(x => x.Selection.Clear());
 
@@ -277,11 +280,6 @@ namespace VsVim
             {
                 return HostResult.NewError(e.Message);
             }
-        }
-
-        public override void ShowOpenFileDialog()
-        {
-            SafeExecuteCommand("Edit.OpenFile");
         }
 
         public override bool NavigateTo(VirtualSnapshotPoint point)

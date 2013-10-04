@@ -128,9 +128,6 @@
     <Compile Include="NativeMethods.cs" />
     <Compile Include="OleCommandData.cs" />
     <Compile Include="OleCommandUtil.cs" />
-    <Compile Include="Implementation\SharedService\DefaultSharedServiceFactory.cs" />
-    <Compile Include="Implementation\SharedService\SharedServiceFactory.cs" />
-    <Compile Include="ISharedService.cs" />
     <Compile Include="IVsAdapter.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Result.cs" />
@@ -143,7 +140,6 @@
     </Compile>
     <Compile Include="Implementation\ConflictingKey\KeyBindingData.cs" />
     <Compile Include="Implementation\ConflictingKey\KeyBindingHandledByOption.cs" />
-    <Compile Include="VisualStudioVersion.cs" />
     <Compile Include="VsCommandTarget.cs" />
     <Compile Include="VsFilterKeysAdapter.cs" />
     <Compile Include="Implementation\Misc\VsKeyProcessor.cs" />
@@ -157,6 +153,10 @@
     <ProjectReference Include="..\VimWpf\VimWpf.csproj">
       <Project>{65A749E0-F1B1-4E43-BE73-25072EE398C6}</Project>
       <Name>VimWpf</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\VsInterfaces\VsInterfaces.csproj">
+      <Project>{e27dbbf1-6116-4e32-8fa5-07dce5e62bb6}</Project>
+      <Name>VsInterfaces</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

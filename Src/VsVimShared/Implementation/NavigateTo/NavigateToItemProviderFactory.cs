@@ -44,8 +44,11 @@ namespace VsVim.Implementation.NavigateTo
         {
             if (_inSearch)
             {
+                // Once the search is stopped clear out all of the selections in active buffers.  Leaving the 
+                // selection puts us into Visual Mode.  Don't force any document loads here.  If the document 
+                // isn't loaded then it can't have a selection which will interfere with this
                 _inSearch = false;
-                _textManager.TextViews
+                _textManager.GetDocumentTextViews(DocumentLoad.RespectLazy)
                     .Where(x => !x.Selection.IsEmpty)
                     .ForEach(x => x.Selection.Clear());
             }

@@ -424,7 +424,7 @@ namespace VsVim
                     // active file yet so just clear out the active selections
                     action = () =>
                         {
-                            _textManager.TextViews
+                            _textManager.GetDocumentTextViews(DocumentLoad.RespectLazy)
                                 .Where(x => !x.Selection.IsEmpty)
                                 .ForEach(x => x.Selection.Clear());
                         };

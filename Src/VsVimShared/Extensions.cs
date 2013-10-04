@@ -970,31 +970,6 @@ namespace VsVim
             }
         }
 
-        public static VisualStudioVersion GetVisualStudioVersion(this _DTE dte)
-        {
-            var version = dte.Version;
-            if (string.IsNullOrEmpty(dte.Version))
-            {
-                return VisualStudioVersion.Unknown;
-            }
-
-            var parts = version.Split('.');
-            if (parts.Length == 0)
-            {
-                return VisualStudioVersion.Unknown;
-            }
-
-            switch (parts[0])
-            {
-                case "10":
-                    return VisualStudioVersion.Vs2010;
-                case "11":
-                    return VisualStudioVersion.Vs2012;
-                default:
-                    return VisualStudioVersion.Unknown;
-            }
-        }
-
         #endregion
 
         #region Project
@@ -1151,9 +1126,8 @@ namespace VsVim
         /// Get the document cookies for the documents in the running document table
         /// </summary>
         /// <remarks>
-        /// Do not use RunningDocumentTable::GetEnumerator in place of this method.  In Vs2012 and before
-        /// it can throw an exception in certain conditions.  The root cause is unknown but it will end
-        /// up passing IntPtr.Zero into Marshal.Release and throwing.  
+        /// This method simple asks for the cookies and hence won't force the document to be loaded
+        /// if it is being loaded in a lazy fashion
         /// </remarks>
         public static List<uint> GetRunningDocumentCookies(this IVsRunningDocumentTable runningDocumentTable)
         {

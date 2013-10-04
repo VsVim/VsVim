@@ -270,6 +270,7 @@ namespace VsVim.UnitTest
             composablePartCatalogList.Add(new AssemblyCatalog(typeof(Vim.IVim).Assembly));
             composablePartCatalogList.Add(new AssemblyCatalog(typeof(Vim.UI.Wpf.VimKeyProcessor).Assembly));
             composablePartCatalogList.Add(new AssemblyCatalog(typeof(VsVim.VsCommandTarget).Assembly));
+            composablePartCatalogList.Add(new AssemblyCatalog(typeof(VsVim.ISharedService).Assembly));
             composablePartCatalogList.Add(new TypeCatalog(
                 typeof(VsVim.UnitTest.MemoryLeakTest.ServiceProvider),
                 typeof(VsVim.UnitTest.MemoryLeakTest.VsEditorAdaptersFactoryService),

@@ -1,7 +1,4 @@
-﻿
-using Microsoft.VisualStudio.Text.Editor;
-using Microsoft.FSharp.Core;
-using Microsoft.VisualStudio.Shell.Interop;
+﻿using Microsoft.VisualStudio.Shell.Interop;
 
 namespace VsVim.Implementation.SharedService
 {
@@ -20,6 +17,11 @@ namespace VsVim.Implementation.SharedService
             }
 
             bool ISharedService.IsActiveWindowFrame(IVsWindowFrame vsWindowFrame)
+            {
+                return false;
+            }
+
+            bool ISharedService.IsLazyLoaded(uint documentCookie)
             {
                 return false;
             }
