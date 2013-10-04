@@ -254,8 +254,6 @@ namespace Vim.UI.Wpf
             }
         }
 
-        public abstract void ShowOpenFileDialog();
-
         public abstract HostResult SplitViewHorizontally(ITextView value);
 
         public abstract HostResult SplitViewVertically(ITextView value);
@@ -541,11 +539,6 @@ namespace Vim.UI.Wpf
         bool IVimHost.SaveTextAs(string text, string filePath)
         {
             return SaveTextAs(text, filePath);
-        }
-
-        void IVimHost.ShowOpenFileDialog()
-        {
-            ShowOpenFileDialog();
         }
 
         bool IVimHost.ShouldCreateVimBuffer(ITextView textView)

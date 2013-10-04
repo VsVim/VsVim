@@ -3,12 +3,13 @@ using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Operations;
 using Vim;
+using EditorUtils;
 
 namespace VimApp
 {
     [Export(typeof(IVimHost))]
-    [Export(typeof(DefaultVimHost))]
-    sealed class DefaultVimHost : Vim.UI.Wpf.VimHost
+    [Export(typeof(VimAppHost))]
+    internal sealed class VimAppHost : Vim.UI.Wpf.VimHost
     {
         internal MainWindow MainWindow
         {
@@ -17,7 +18,7 @@ namespace VimApp
         }
 
         [ImportingConstructor]
-        internal DefaultVimHost(
+        internal VimAppHost(
             ITextBufferFactoryService textBufferFactoryService,
             ITextEditorFactoryService textEditorFactoryService,
             ITextDocumentFactoryService textDocumentFactoryService,
@@ -30,7 +31,7 @@ namespace VimApp
 
         }
 
-        public override void FormatLines(ITextView textView, EditorUtils.SnapshotLineRange range)
+        public override void FormatLines(ITextView textView, SnapshotLineRange range)
         {
 
         }
@@ -91,11 +92,6 @@ namespace VimApp
         }
 
         public override void RunVisualStudioCommand(string command, string argument)
-        {
-
-        }
-
-        public override void ShowOpenFileDialog()
         {
 
         }

@@ -28,7 +28,6 @@ namespace Vim.UnitTest.Mock
         public int DismissCompletionWindowCount { get; set; }
         public VirtualSnapshotPoint NavigateToData { get; set; }
         public bool NavigateToReturn { get; set; }
-        public int ShowOpenFileDialogCount { get; set; }
         public ITextView FocusedTextView { get; set; }
         public FSharpList<IVimBuffer> Buffers { get; set; }
         public bool? IsTextViewVisible { get; set; }
@@ -118,11 +117,6 @@ namespace Vim.UnitTest.Mock
             }
 
             return name ?? "";
-        }
-
-        void IVimHost.ShowOpenFileDialog()
-        {
-            ShowOpenFileDialogCount++;
         }
 
         void IVimHost.Close(ITextView textView)

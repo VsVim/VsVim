@@ -63,6 +63,7 @@
   <ItemGroup>
     <Compile Include="DefaultKeyProcessorProvider.cs" />
     <Compile Include="Extensions.cs" />
+    <Compile Include="ViewInfo.cs" />
     <Compile Include="VimComponentHost.cs" />
     <Compile Include="VimAppHost.cs" />
     <ApplicationDefinition Include="App.xaml">

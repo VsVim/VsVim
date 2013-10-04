@@ -3504,9 +3504,6 @@ type IVimHost =
     /// create an IVimBuffer for it
     abstract ShouldCreateVimBuffer : textView : ITextView -> bool
 
-    /// Display the open file dialog 
-    abstract ShowOpenFileDialog : unit -> unit
-
     /// Split the views horizontally
     abstract SplitViewHorizontally : ITextView -> HostResult
 
