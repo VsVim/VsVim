@@ -24,28 +24,7 @@ namespace VsVim.Implementation.Misc
         private readonly IServiceProvider _serviceProvider;
         private readonly ITextDocumentFactoryService _textDocumentFactoryService;
         private readonly ITextBufferFactoryService _textBufferFactoryService;
-
-        internal IEnumerable<ITextBuffer> TextBuffers
-        {
-            get
-            {
-                var list = new List<ITextBuffer>();
-                foreach (var docCookie in _runningDocumentTable.GetRunningDocumentCookies())
-                {
-                    ITextBuffer buffer;
-                    if (_vsAdapter.GetTextBufferForDocCookie(docCookie).TryGetValue(out buffer))
-                    {
-                        list.Add(buffer);
-                    }
-                }
-                return list;
-            }
-        }
-
-        internal IEnumerable<ITextView> TextViews
-        {
-            get { return TextBuffers.Select(x => GetTextViews(x)).SelectMany(x => x); }
-        }
+        private readonly ISharedService _sharedService;
 
         internal ITextView ActiveTextViewOptional
         {
@@ -73,6 +52,17 @@ namespace VsVim.Implementation.Misc
             IVsAdapter adapter,
             ITextDocumentFactoryService textDocumentFactoryService,
             ITextBufferFactoryService textBufferFactoryService,
+            ISharedServiceFactory sharedServiceFactory,
+            SVsServiceProvider serviceProvider) : this(adapter, textDocumentFactoryService, textBufferFactoryService, sharedServiceFactory.Create(), serviceProvider)
+        {
+
+        }
+
+        internal TextManager(
+            IVsAdapter adapter,
+            ITextDocumentFactoryService textDocumentFactoryService,
+            ITextBufferFactoryService textBufferFactoryService,
+            ISharedService sharedService,
             SVsServiceProvider serviceProvider)
         {
             _vsAdapter = adapter;
@@ -81,6 +71,38 @@ namespace VsVim.Implementation.Misc
             _textDocumentFactoryService = textDocumentFactoryService;
             _textBufferFactoryService = textBufferFactoryService;
             _runningDocumentTable = _serviceProvider.GetService<SVsRunningDocumentTable, IVsRunningDocumentTable>();
+            _sharedService = sharedService;
+        }
+
+        private IEnumerable<ITextBuffer> GetDocumentTextBuffers(DocumentLoad documentLoad)
+        {
+            var list = new List<ITextBuffer>();
+            foreach (var docCookie in _runningDocumentTable.GetRunningDocumentCookies())
+            {
+                if (documentLoad == DocumentLoad.RespectLazy && _sharedService.IsLazyLoaded(docCookie))
+                {
+                    continue;
+                }
+
+                ITextBuffer buffer;
+                if (_vsAdapter.GetTextBufferForDocCookie(docCookie).TryGetValue(out buffer))
+                {
+                    list.Add(buffer);
+                }
+            }
+
+            return list;
+        }
+
+        private IEnumerable<ITextView> GetDocumentTextViews(DocumentLoad documentLoad)
+        {
+            var list = new List<ITextView>();
+            foreach (var textBuffer in GetDocumentTextBuffers(documentLoad))
+            {
+                list.AddRange(GetTextViews(textBuffer));
+            }
+
+            return list;
         }
 
         internal bool NavigateTo(VirtualSnapshotPoint point)
@@ -243,24 +265,24 @@ namespace VsVim.Implementation.Misc
 
         #region ITextManager
 
-        IEnumerable<ITextBuffer> ITextManager.TextBuffers
-        {
-            get { return TextBuffers; }
-        }
-
-        IEnumerable<ITextView> ITextManager.TextViews
-        {
-            get { return TextViews; }
-        }
-
         ITextView ITextManager.ActiveTextViewOptional
         {
             get { return ActiveTextViewOptional; }
         }
 
-        IEnumerable<ITextView> ITextManager.GetTextViews(ITextBuffer textBuffer)
+        IEnumerable<ITextView> ITextManager.GetDocumentTextViews(ITextBuffer textBuffer)
         {
             return GetTextViews(textBuffer);
+        }
+
+        IEnumerable<ITextBuffer> ITextManager.GetDocumentTextBuffers(DocumentLoad documentLoad)
+        {
+            return GetDocumentTextBuffers(documentLoad);
+        }
+
+        IEnumerable<ITextView> ITextManager.GetDocumentTextViews(DocumentLoad documentLoad)
+        {
+            return GetDocumentTextViews(documentLoad);
         }
 
         bool ITextManager.NavigateTo(VirtualSnapshotPoint point)

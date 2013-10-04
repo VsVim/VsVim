@@ -17,7 +17,8 @@ namespace VsVim.Implementation.SharedService
             SVsServiceProvider serviceProvider,
             [ImportMany]IEnumerable<ISharedServiceVersionFactory> factories)
         {
-            var dte = serviceProvider.GetService<SDTE, _DTE>();
+            // TODO: Maybe move the GetService extension method into this project
+            var dte = (_DTE)serviceProvider.GetService(typeof(SDTE));
             var version = dte.GetVisualStudioVersion();
             var factory = factories.FirstOrDefault(x => x.Version == version);
             if (factory == null)

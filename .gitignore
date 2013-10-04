@@ -58,10 +58,10 @@ obj/
 TestsResults/
 
 # Copied into a source directory for ease of build
-VsVim.Dev11.dll
-VsVim.Dev11.pdb
 VsVim.Vs2012.dll
 VsVim.Vs2012.pdb
+VsVim.Vs2013.dll
+VsVim.Vs2013.pdb
 
 # Profiling Output
 *.vsp

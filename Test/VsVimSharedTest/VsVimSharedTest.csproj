@@ -16,7 +16,6 @@
     <ProjectTypeGuids>{3AC096D0-A1C2-E12C-1390-A8335801FDAB};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
     <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\</SolutionDir>
     <RestorePackages>true</RestorePackages>
-    <VisualStudioTarget>test</VisualStudioTarget>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -117,6 +116,10 @@
     <Compile Include="VsVimHostTest.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\Src\VsInterfaces\VsInterfaces.csproj">
+      <Project>{e27dbbf1-6116-4e32-8fa5-07dce5e62bb6}</Project>
+      <Name>VsInterfaces</Name>
+    </ProjectReference>
     <ProjectReference Include="..\VimCoreTest\VimCoreTest.csproj">
       <Project>{B4FC7C81-E500-47C8-A884-2DBB7CA77123}</Project>
       <Name>VimCoreTest</Name>

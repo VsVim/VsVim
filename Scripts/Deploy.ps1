@@ -8,6 +8,8 @@ if (-not (test-path $msbuild)) {
     write-error "Can't find msbuild.exe"
 }
 
+$zip = join-path $rootPath "Tools\7za920\7za.exe"
+
 function test-return() {
     if ($LASTEXITCODE -ne 0) {
         write-error "Command failed with code $LASTEXITCODE"
@@ -17,7 +19,7 @@ function test-return() {
 # Test the contents of the Vsix to make sure it has all of the appropriate
 # files 
 function test-vsixcontents() { 
-    param ([string]$vsixPath = $(throw "Need the path to the VSIX")) 
+    $vsixPath = "Deploy\VsVim.vsix"
     if (-not (test-Path $vsixPath)) {
         write-error "Vsix doesn't exist"
     }
@@ -25,21 +27,10 @@ function test-vsixcontents() {
     # Make a folder to hold the files
     $target = join-path ([IO.Path]::GetTempPath()) ([IO.Path]::GetRandomFileName())
     mkdir $target | out-null
-
-    # Copy the VSIX to a file with a zip extension.  This is required for the 
-    # shell to unzip it for us. 
-    $vsixTarget = join-path $target "VsVim.zip"
-    copy $vsixPath $vsixTarget
-
-    # Unzip the file 
-    $shellApp = new-object -com shell.application
-    $source = $shellApp.NameSpace($vsixTarget)
-    $dest = $shellApp.NameSpace($target)
-    $items = $source.Items()
-    $dest.Copyhere($items, 20)
+    & $zip x "-o$target" $vsixPath | out-null
 
     $files = gci $target | %{ $_.Name }
-    if ($files.Count -ne 13) { 
+    if ($files.Count -ne 14) { 
         write-host "Wrong number of files in VSIX. Found ..."
         foreach ($file in $files) {
             write-host "`t$file"
@@ -49,7 +40,7 @@ function test-vsixcontents() {
     }
 
     # The set of important files that are easy to miss 
-    #   - FSharp.Core.dll: We bind to the 4.0 version but 2012 only installs
+    #   - FSharp.Core.dll: We bind to the 4.0 version but 2012+ only installs
     #     the 4.5 version that we can't bind to
     #   - EditorUtils.dll: Not a part of the build but necessary.  Make sure 
     #     that it's found        
@@ -60,7 +51,9 @@ function test-vsixcontents() {
         "Vim.UI.Wpf.dll",
         "VsVim.Vs2010.dll",
         "VsVim.Vs2012.dll",
+        "VsVim.Vs2013.dll",
         "VsVim.dll",
+        "VsVim.Interfaces.dll",
         "VsVim.Shared.dll"
 
     foreach ($item in $expected) {
@@ -132,27 +125,36 @@ function build-release() {
     Test-Return
 }
 
-function publish-vsix() {
+# Due to the way we build the VSIX there are many files included that we don't actually
+# want to deploy.  Here we will clear out those files and rebuild the VSIX without 
+# them
+function clean-vsixcontents() { 
     param ([string]$vsixPath = $(throw "Need the path to the VSIX")) 
-    if (-not (test-path "Deploy")) {
-        mkdir "Deploy" | out-null
-    }
-    $vsixName = split-path -leaf $vsixPath
-    $target = join-path "Deploy" $vsixName
-    copy -force $vsixPath $target
-    ii "Deploy"
+
+    write-host "Cleaning VSIX contents"
+    write-host "`tBuilding CleanVsix"
+    build-release "Src\CleanVsix\CleanVsix.csproj"
+
+    write-host "`tCleaning contents"
+    & Src\CleanVsix\bin\Release\CleanVsix.exe "$vsixPath"
 }
+
+function build-vsix() {
+    mkdir Deploy 2>&1 | out-null
+    rm Deploy\VsVim* 
+    copy "Src\VsVim\bin\Release\VsVim.vsix" "Deploy\VsVim.orig.vsix"
+    copy "Deploy\VsVim.orig.vsix" "Deploy\VsVim.vsix"
+    clean-vsixcontents (resolve-path "Deploy\VsVim.vsix")
+    copy "Deploy\VsVim.vsix" "Deploy\VsVim.zip"
+} 
 
 # First step is to clean out all of the projects 
 if (-not $fast) { 
     write-host "Cleaning Projects"
     build-clean Src\VsSpecific\Vs2010\Vs2010.csproj
     build-clean Src\VsSpecific\Vs2012\Vs2012.csproj
+    build-clean Src\VsSpecific\Vs2013\Vs2013.csproj
     build-clean Src\VsVim\VsVim.csproj
-
-    if (test-path "VsVim\VsVim.Vs2012.dll") {
-        rm Src\VsVim\VsVim.Vs2012.dll
-    }
 }
 
 # Before building make sure the version number is consistent in all 
@@ -166,18 +168,15 @@ build-release Test\VimCoreTest\VimCoreTest.csproj
 build-release Test\VimWpfTest\VimWpfTest.csproj
 build-release Test\VsVimSharedTest\VsVimSharedTest.csproj
 
-# Next step is to build the 2012 components.  We need to get the 2012 specific DLL
-# to deploy with the standard install
-build-release Src\VsSpecific\Vs2012\Vs2012.csproj
-
-# Copy the 2012 specfic components into the location expected by the build system
-copy Src\VsSpecific\Vs2012\bin\Release\VsVim.Vs2012.dll Src\VsVim
-
-# Now build the final output project
+# Now build the main output project
 build-release Src\VsVim\VsVim.csproj
+build-vsix
 
 write-host "Verifying the Vsix Contents"
-$vsixPath = "Src\VsVim\bin\Release\VsVim.vsix"
-test-vsixcontents $vsixPath
-test-unittests
-publish-vsix $vsixPath 
+
+if (-not $fast) {
+    test-vsixcontents 
+    test-unittests
+}
+
+popd

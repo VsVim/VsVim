@@ -39,7 +39,10 @@
     <MefComponent>|VimCore|</MefComponent>
     <MefComponent>|VimWpf|</MefComponent>
     <MefComponent>|VsVimShared|</MefComponent>
+    <MefComponent>|VsInterfaces|</MefComponent>
     <MefComponent>|Vs2010|</MefComponent>
-    <MefComponent>VsVim.Vs2012.dll</MefComponent>
+    <MefComponent>|Vs2012|</MefComponent>
+    <MefComponent>|Vs2013|</MefComponent>
+    <VsPackage>Colors.pkgdef</VsPackage>
   </Content>
 </Vsix>

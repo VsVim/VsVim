@@ -17,6 +17,7 @@ namespace VsVim.UnitTest
         private readonly Mock<IVsAdapter> _adapter;
         private readonly Mock<SVsServiceProvider> _serviceProvider;
         private readonly Mock<IVsRunningDocumentTable> _table;
+        private readonly Mock<ISharedService> _sharedService;
         private readonly TextManager _managerRaw;
         private readonly ITextManager _manager;
 
@@ -30,10 +31,13 @@ namespace VsVim.UnitTest
             _serviceProvider
                 .Setup(x => x.GetService(typeof(SVsRunningDocumentTable)))
                 .Returns(_table.Object);
+            _sharedService = _factory.Create<ISharedService>();
+            _sharedService.Setup(x => x.IsLazyLoaded(It.IsAny<uint>())).Returns(false);
             _managerRaw = new TextManager(
                 _adapter.Object,
                 _factory.Create<ITextDocumentFactoryService>().Object,
                 _factory.Create<ITextBufferFactoryService>().Object,
+                _sharedService.Object,
                 _serviceProvider.Object);
             _manager = _managerRaw;
         }

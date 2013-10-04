@@ -43,7 +43,7 @@ namespace VsVim.UnitTest
             _dte = _factory.Create<_DTE>();
             _dte.SetupGet(x => x.StatusBar).Returns(_statusBar.Object);
             _textManager = _factory.Create<ITextManager>();
-            _textManager.SetupGet(x => x.TextViews).Returns(new List<ITextView>());
+            _textManager.Setup(x => x.GetDocumentTextViews(DocumentLoad.RespectLazy)).Returns(new List<ITextView>());
 
             var vsMonitorSelection = _factory.Create<IVsMonitorSelection>();
             uint cookie = 42;

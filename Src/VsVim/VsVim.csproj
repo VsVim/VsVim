@@ -19,10 +19,22 @@
     <StartAction>Program</StartAction>
     <StartProgram>$(DevEnvDir)\devenv.exe</StartProgram>
     <StartArguments>/rootsuffix Exp</StartArguments>
-    <VisualStudioTarget>all</VisualStudioTarget>
     <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\</SolutionDir>
     <RestorePackages>true</RestorePackages>
+    <VsSdkTargets>$(MSBuildExtensionsPath)\Microsoft\VisualStudio\v$(VisualStudioVersion)\VSSDK\Microsoft.VsSDK.targets</VsSdkTargets>
+    <VsSdkTargets Condition=" '$(VisualStudioVersion)' == '' ">$(MSBuildExtensionsPath)\Microsoft\VisualStudio\v10.0\VSSDK\Microsoft.VsSDK.targets</VsSdkTargets>
   </PropertyGroup>
+
+  <!-- This is needed to prevent forced migrations when opening the project in Vs2012 -->
+  <PropertyGroup Condition=" '$(VisualStudioVersion)' == '11.0' ">
+    <MinimumVisualStudioVersion>11.0</MinimumVisualStudioVersion>
+  </PropertyGroup>
+
+  <!-- This is needed to prevent forced migrations when opening the project in Vs2013 -->
+  <PropertyGroup Condition=" '$(VisualStudioVersion)' == '12.0' ">
+    <MinimumVisualStudioVersion>12.0</MinimumVisualStudioVersion>
+  </PropertyGroup>
+
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
@@ -95,15 +107,11 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <Content Include="VsVim.Vs2012.dll">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    <Content Include="FSharp.Core.dll">
       <IncludeInVSIX>true</IncludeInVSIX>
     </Content>
     <None Include="app.config" />
     <Content Include="Colors.pkgdef">
-      <IncludeInVSIX>true</IncludeInVSIX>
-    </Content>
-    <Content Include="FSharp.Core.dll">
       <IncludeInVSIX>true</IncludeInVSIX>
     </Content>
     <Content Include="License.rtf">
@@ -130,6 +138,12 @@
       <Project>{65A749E0-F1B1-4E43-BE73-25072EE398C6}</Project>
       <Name>VimWpf</Name>
     </ProjectReference>
+    <ProjectReference Include="..\VsInterfaces\VsInterfaces.csproj">
+      <Project>{e27dbbf1-6116-4e32-8fa5-07dce5e62bb6}</Project>
+      <Name>VsInterfaces</Name>
+      <IncludeOutputGroupsInVSIX>BuiltProjectOutputGroup%3bBuiltProjectOutputGroupDependencies%3bGetCopyToOutputDirectoryItems%3b</IncludeOutputGroupsInVSIX>
+      <IncludeOutputGroupsInVSIXLocalOnly>DebugSymbolsProjectOutputGroup%3b</IncludeOutputGroupsInVSIXLocalOnly>
+    </ProjectReference>
     <ProjectReference Include="..\VsVimShared\VsVimShared.csproj">
       <Project>{979DEDC6-25E2-494B-9E8F-6E42078C601C}</Project>
       <Name>VsVimShared</Name>
@@ -139,6 +153,21 @@
     <ProjectReference Include="..\VsSpecific\Vs2010\Vs2010.csproj">
       <Project>{0DE4170C-224D-47CF-BE00-B88AA14EC804}</Project>
       <Name>Vs2010</Name>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly> 
+      <IncludeOutputGroupsInVSIX>BuiltProjectOutputGroup%3bBuiltProjectOutputGroupDependencies%3bGetCopyToOutputDirectoryItems%3b</IncludeOutputGroupsInVSIX>
+      <IncludeOutputGroupsInVSIXLocalOnly>DebugSymbolsProjectOutputGroup%3b</IncludeOutputGroupsInVSIXLocalOnly>
+    </ProjectReference>
+    <ProjectReference Include="..\VsSpecific\Vs2012\Vs2012.csproj">
+      <Project>{60316861-7561-4B07-8A16-212E00A2856E}</Project>
+      <Name>Vs2012</Name>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly> 
+      <IncludeOutputGroupsInVSIX>BuiltProjectOutputGroup%3bBuiltProjectOutputGroupDependencies%3bGetCopyToOutputDirectoryItems%3b</IncludeOutputGroupsInVSIX>
+      <IncludeOutputGroupsInVSIXLocalOnly>DebugSymbolsProjectOutputGroup%3b</IncludeOutputGroupsInVSIXLocalOnly>
+    </ProjectReference>
+    <ProjectReference Include="..\VsSpecific\Vs2013\Vs2013.csproj">
+      <Project>{ca760951-31f6-40b1-bab5-68cb26816abe}</Project>
+      <Name>Vs2013</Name>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly> 
       <IncludeOutputGroupsInVSIX>BuiltProjectOutputGroup%3bBuiltProjectOutputGroupDependencies%3bGetCopyToOutputDirectoryItems%3b</IncludeOutputGroupsInVSIX>
       <IncludeOutputGroupsInVSIXLocalOnly>DebugSymbolsProjectOutputGroup%3b</IncludeOutputGroupsInVSIXLocalOnly>
     </ProjectReference>
@@ -153,7 +182,7 @@
     <Content Include="KeyboardInputRouting.txt" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <Import Project="$(MSBuildExtensionsPath)\Microsoft\VisualStudio\v10.0\VSSDK\Microsoft.VsSDK.targets" />
+  <Import Condition="Exists($(VsSdkTargets))" Project="$(VsSdkTargets)" />
   <Import Project="$(SolutionDir)\.nuget\nuget.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

@@ -1,25 +1,16 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using Microsoft.FSharp.Core;
-using Microsoft.VisualStudio.Editor;
 using Microsoft.VisualStudio.Platform.WindowManagement;
 using Microsoft.VisualStudio.PlatformUI.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
-using Microsoft.VisualStudio.Text.Editor;
-using Vim;
-using Vim.Extensions;
 
 namespace VsVim.Vs2012
 {
     internal sealed class SharedService : ISharedService
     {
-        private readonly IVsAdapter _vsAdapter;
-        private readonly IVsEditorAdaptersFactoryService _editorAdaptersFactoryService;
-
-        internal SharedService(IVsAdapter vsAdapter)
+        internal SharedService()
         {
-            _vsAdapter = vsAdapter;
-            _editorAdaptersFactoryService = _vsAdapter.EditorAdapter;
+
         }
 
         internal void GoToTab(int index)
@@ -86,6 +77,11 @@ namespace VsVim.Vs2012
         bool ISharedService.IsActiveWindowFrame(IVsWindowFrame vsWindowFrame)
         {
             return IsActiveWindowFrame(vsWindowFrame);
+        }
+
+        bool ISharedService.IsLazyLoaded(uint documentCookie)
+        {
+            return false;
         }
 
         #endregion
