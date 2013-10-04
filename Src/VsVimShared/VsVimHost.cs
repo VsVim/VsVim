@@ -282,11 +282,6 @@ namespace VsVim
             }
         }
 
-        public override void ShowOpenFileDialog()
-        {
-            SafeExecuteCommand("Edit.OpenFile");
-        }
-
         public override bool NavigateTo(VirtualSnapshotPoint point)
         {
             return _textManager.NavigateTo(point);
