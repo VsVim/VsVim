@@ -1610,6 +1610,8 @@ type internal CommandUtil
             | OperationKind.CharacterWise -> 
                 if x.CaretLine.Length = 0 then 
                     x.CaretLine.Start
+                elif SnapshotPointUtil.IsInsideLineBreak x.CaretPoint then
+                    x.CaretLine.End
                 else
                     SnapshotPointUtil.AddOneOrCurrent x.CaretPoint
             | OperationKind.LineWise -> 

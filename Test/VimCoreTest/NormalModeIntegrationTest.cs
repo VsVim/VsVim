@@ -3109,6 +3109,40 @@ namespace Vim.UnitTest
                 _vimBuffer.Process("yy2p");
                 Assert.Equal(new[] { "cat", "cat", "cat" }, _textBuffer.GetLines());
             }
+
+            [Fact]
+            public void InVirtualSpaceCharacterWise()
+            {
+                Create("big", "tree");
+                UnnamedRegister.UpdateValue("ger");
+                _globalSettings.VirtualEdit = "onemore";
+                _vimBuffer.Process("lllp");
+                Assert.Equal(_textBuffer.GetLines(), new[] { "bigger", "tree" });
+            }
+
+            [Fact]
+            public void InVirtualSpaceCharacterWiseWithNewLine()
+            {
+                Create("big", "tree");
+                UnnamedRegister.UpdateValue("ger" + Environment.NewLine);
+                _globalSettings.VirtualEdit = "onemore";
+                _vimBuffer.Process("lllp");
+                Assert.Equal(_textBuffer.GetLines(), new[] { "bigger", "", "tree" });
+                Assert.True(_textBuffer.CurrentSnapshot.Lines.Take(2).All(x => x.GetLineBreakText() == Environment.NewLine));
+            }
+
+            [Fact]
+            public void Issue1185()
+            {
+                Create("cat", "dog", "fish");
+                _globalSettings.VirtualEdit = "onemore";
+                _textView.MoveCaretToLine(1);
+                _vimBuffer.Process("yyklllllp");
+                Assert.Equal(
+                    _textBuffer.GetLines(),
+                    new[] { "cat", "dog", "dog", "fish" });
+                Assert.True(_textBuffer.CurrentSnapshot.Lines.Take(3).All(x => x.GetLineBreakText() == Environment.NewLine));
+            }
         }
 
         public sealed class PutBeforeTest : NormalModeIntegrationTest
@@ -4158,7 +4192,7 @@ namespace Vim.UnitTest
             [Fact]
             public void HtmlBlocks()
             {
-                var text = 
+                var text =
 @"
   <dl>
     <li>Here we are</li>
