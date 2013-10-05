@@ -63,6 +63,10 @@
   <ItemGroup>
     <Compile Include="DefaultKeyProcessorProvider.cs" />
     <Compile Include="Extensions.cs" />
+    <Compile Include="Implementation\NewLineDisplay\NewLineDisplay.cs" />
+    <Compile Include="Implementation\NewLineDisplay\NewLineDisplayFactory.cs" />
+    <Compile Include="Implementation\VimAppOptions.cs" />
+    <Compile Include="IVimAppOptions.cs" />
     <Compile Include="ViewInfo.cs" />
     <Compile Include="VimComponentHost.cs" />
     <Compile Include="VimAppHost.cs" />

@@ -23,6 +23,7 @@ namespace VimApp
     {
         private readonly VimComponentHost _vimComponentHost;
         private readonly IClassificationFormatMapService _classificationFormatMapService;
+        private readonly IVimAppOptions _vimAppOptions;
         private readonly AppInfo _appInfo = new AppInfo();
 
         internal TabInfo ActiveTabInfo
@@ -55,6 +56,7 @@ namespace VimApp
             _vimComponentHost = new VimComponentHost();
             _vimComponentHost.CompositionContainer.GetExportedValue<VimAppHost>().MainWindow = this;
             _classificationFormatMapService = _vimComponentHost.CompositionContainer.GetExportedValue<IClassificationFormatMapService>();
+            _vimAppOptions = _vimComponentHost.CompositionContainer.GetExportedValue<IVimAppOptions>();
 
             // Create the initial view to display 
             AddNewTab("Empty Doc");
@@ -199,6 +201,11 @@ namespace VimApp
             }
             builder.AppendLine("End");
             ActiveVimBuffer.TextBuffer.Insert(0, builder.ToString());
+        }
+
+        private void OnDisplayNewLinesChecked(object sender, RoutedEventArgs e)
+        {
+            _vimAppOptions.DisplayNewLines = _displayNewLinesMenuItem.IsChecked;
         }
 
         private void OnNewTabClick(object sender, RoutedEventArgs e)

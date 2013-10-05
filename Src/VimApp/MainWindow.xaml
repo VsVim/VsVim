@@ -19,6 +19,9 @@
                 </MenuItem>
                 <MenuItem Header="Insert Control Characters" Click="OnInsertControlCharactersClick" />
             </MenuItem>
+            <MenuItem Header="Options">
+                <MenuItem Name="_displayNewLinesMenuItem" Header="Display New Lines" IsCheckable="True" IsChecked="False" Checked="OnDisplayNewLinesChecked" Unchecked="OnDisplayNewLinesChecked" />
+            </MenuItem>
         </Menu>
 
         <DockPanel LastChildFill="True" Name="_dockPanel" Grid.Row="1">
