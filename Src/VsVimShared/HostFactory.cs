@@ -25,7 +25,10 @@ namespace VsVim
     [Export(typeof(IVsTextViewCreationListener))]
     [ContentType(Vim.Constants.ContentType)]
     [TextViewRole(PredefinedTextViewRoles.Document)]
-    internal sealed class HostFactory : IWpfTextViewCreationListener, IVimBufferCreationListener, IVsTextViewCreationListener
+    internal sealed class HostFactory :
+        IWpfTextViewCreationListener,
+        IVimBufferCreationListener,
+        IVsTextViewCreationListener
     {
         private readonly HashSet<IVimBuffer> _toSyncSet = new HashSet<IVimBuffer>();
         private readonly Dictionary<IVimBuffer, VsCommandTarget> _vimBufferToCommandTargetMap = new Dictionary<IVimBuffer, VsCommandTarget>();
@@ -83,7 +86,7 @@ namespace VsVim
             }
 
             // Synchronize any further changes between the buffers
-            _editorToSettingSynchronizer.StartSynchronizing(vimBuffer); 
+            _editorToSettingSynchronizer.StartSynchronizing(vimBuffer);
 
             // We have to make a decision on whether Visual Studio or Vim settings win during the startup
             // process.  If there was a Vimrc file then the vim settings win, else the Visual Studio ones
@@ -100,6 +103,60 @@ namespace VsVim
             {
                 // Visual Studio settings win.  
                 _editorToSettingSynchronizer.CopyEditorToVimSettings(vimBuffer);
+            }
+        }
+
+        private void ConnectToOleCommandTarget(IVimBuffer vimBuffer, ITextView textView, IVsTextView vsTextView)
+        {
+            var broker = _displayWindowBrokerFactoryServcie.CreateDisplayWindowBroker(textView);
+            var bufferCoordinator = _bufferCoordinatorFactory.GetVimBufferCoordinator(vimBuffer);
+            var result = VsCommandTarget.Create(bufferCoordinator, vsTextView, _textManager, _adapter, broker, _resharperUtil, _keyUtil);
+            if (result.IsSuccess)
+            {
+                // Store the value for debugging
+                _vimBufferToCommandTargetMap[vimBuffer] = result.Value;
+            }
+
+            // Try and install the IVsFilterKeys adapter.  This cannot be done synchronously here
+            // because Venus projects are not fully initialized at this state.  Merely querying 
+            // for properties cause them to corrupt internal state and prevents rendering of the 
+            // view.  Occurs for aspx and .js pages
+            Action install = () => VsFilterKeysAdapter.TryInstallFilterKeysAdapter(_adapter, vimBuffer);
+
+            _protectedOperations.BeginInvoke(install);
+        }
+
+        /// <summary>
+        /// The JavaScript language service connects its IOleCommandTarget asynchronously based on events that we can't 
+        /// reasonable hook into.  The current architecture of our IOleCommandTarget solution requires that we appear 
+        /// before them in order to function.  This is particularly important for ReSharper behavior.  
+        ///
+        /// The most reliable solution we could find is to find the last event that JavaScript uses which is 
+        /// OnGotAggregateFocus.  Once focus is achieved we schedule a background item to then connect to IOleCommandTarget. 
+        /// This is very reliable in getting us in front of them.  
+        /// 
+        /// Long term we need to find a better solution here 
+        /// </summary>
+        private void ConnectJavaScriptToOleCommandTarget(IVimBuffer vimBuffer, ITextView textView, IVsTextView vsTextView)
+        {
+            Action connectInBackground = () => _protectedOperations.BeginInvoke(
+                () => ConnectToOleCommandTarget(vimBuffer, textView, vsTextView),
+                DispatcherPriority.Background);
+
+            EventHandler onFocus = null;
+            onFocus = (sender, e) =>
+            {
+                connectInBackground();
+                textView.GotAggregateFocus -= onFocus;
+            };
+
+            if (textView.HasAggregateFocus)
+            {
+                connectInBackground();
+            }
+            else
+            {
+                textView.GotAggregateFocus += onFocus;
             }
         }
 
@@ -175,22 +232,15 @@ namespace VsVim
             // At this point Visual Studio has fully applied it's settings.  Begin the synchronization process
             BeginSettingSynchronization(vimBuffer);
 
-            var broker = _displayWindowBrokerFactoryServcie.CreateDisplayWindowBroker(textView);
-            var bufferCoordinator = _bufferCoordinatorFactory.GetVimBufferCoordinator(vimBuffer);
-            var result = VsCommandTarget.Create(bufferCoordinator, vsView, _textManager, _adapter, broker, _resharperUtil, _keyUtil);
-            if (result.IsSuccess)
+            var contentType = textView.TextBuffer.ContentType;
+            if (contentType.IsJavaScript() || contentType.IsResJSON())
             {
-                // Store the value for debugging
-                _vimBufferToCommandTargetMap[vimBuffer] = result.Value;
+                ConnectJavaScriptToOleCommandTarget(vimBuffer, textView, vsView);
             }
-
-            // Try and install the IVsFilterKeys adapter.  This cannot be done synchronously here
-            // because Venus projects are not fully initialized at this state.  Merely querying 
-            // for properties cause them to corrupt internal state and prevents rendering of the 
-            // view.  Occurs for aspx and .js pages
-            Action install = () => VsFilterKeysAdapter.TryInstallFilterKeysAdapter(_adapter, vimBuffer);
-
-            _protectedOperations.BeginInvoke(install);
+            else
+            {
+                ConnectToOleCommandTarget(vimBuffer, textView, vsView);
+            }
         }
 
         #endregion

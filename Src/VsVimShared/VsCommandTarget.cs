@@ -530,7 +530,7 @@ namespace VsVim
                 // R# special cases both the Back and Enter command in various scenarios
                 //
                 //  - Enter is special cased in XML doc comments presumably to do custom formatting 
-                //  - Enter is supressed during debugging in Exec.  Presumably this is done to avoid the annoying
+                //  - Enter is suppressed during debugging in Exec.  Presumably this is done to avoid the annoying
                 //    "Invalid ENC Edit" dialog during debugging.
                 //  - Back is special cased to delete matched parens in Exec.  
                 //
@@ -562,7 +562,7 @@ namespace VsVim
                 // Marking it as Disabled will cause the QueryStatus call to fail.  This means the 
                 // KeyInput will be routed to the KeyProcessor chain for the ITextView eventually
                 // making it to our VsKeyProcessor.  That component respects the SilentlyHandled 
-                // statu of KeyInput and will siently handle it
+                // status of KeyInput and will silently handle it
                 status = passToResharper ? CommandStatus.Enable : CommandStatus.Disable;
             }
 

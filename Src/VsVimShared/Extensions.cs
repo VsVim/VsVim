@@ -702,17 +702,27 @@ namespace VsVim
         /// <summary>
         /// Does this IContentType represent C++
         /// </summary>
-        public static bool IsCPlusPlus(this IContentType ct)
+        public static bool IsCPlusPlus(this IContentType contentType)
         {
-            return ct.IsOfType(Constants.CPlusPlusContentType);
+            return contentType.IsOfType(Constants.CPlusPlusContentType);
         }
 
         /// <summary>
         /// Does this IContentType represent C#
         /// </summary>
-        public static bool IsCSharp(this IContentType ct)
+        public static bool IsCSharp(this IContentType contentType)
         {
-            return ct.IsOfType(Constants.CSharpContentType);
+            return contentType.IsOfType(Constants.CSharpContentType);
+        }
+
+        public static bool IsJavaScript(this IContentType contentType)
+        {
+            return contentType.IsOfType("JavaScript");
+        }
+
+        public static bool IsResJSON(this IContentType contentType)
+        {
+            return contentType.IsOfType("ResJSON");
         }
 
         /// <summary>
