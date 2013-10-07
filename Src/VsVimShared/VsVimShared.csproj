@@ -107,6 +107,8 @@
     <Compile Include="Implementation\Settings\SettingSerializer.cs" />
     <Compile Include="Implementation\Settings\SettingsMigrator.cs" />
     <Compile Include="Implementation\Settings\VimApplicationSettings.cs" />
+    <Compile Include="Implementation\SharedService\DefaultSharedServiceFactory.cs" />
+    <Compile Include="Implementation\SharedService\SharedServiceFactory.cs" />
     <Compile Include="Implementation\VisualAssist\IVisualAssistUtil.cs" />
     <Compile Include="Implementation\VisualAssist\VisualAssistKeyProcessor.cs" />
     <Compile Include="Implementation\VisualAssist\VisualAssistMargin.xaml.cs">

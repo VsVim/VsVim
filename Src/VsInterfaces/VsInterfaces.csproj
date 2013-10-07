@@ -35,8 +35,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Extension.cs" />
-    <Compile Include="Implementation\SharedService\DefaultSharedServiceFactory.cs" />
-    <Compile Include="Implementation\SharedService\SharedServiceFactory.cs" />
     <Compile Include="ISharedService.cs" />
     <Compile Include="VisualStudioVersion.cs" />
   </ItemGroup>
