@@ -234,7 +234,7 @@ type internal InsertUtil
         if virtualPoint.IsInVirtualSpace then 
             _operations.MoveCaretToPoint virtualPoint.Position ViewFlags.None
             CommandResult.Completed ModeSwitch.NoSwitch
-        elif moveCaretLeft then 
+        elif moveCaretLeft && not (SnapshotPointUtil.IsStartOfLine x.CaretPoint) then
             x.MoveCaret Direction.Left
         else
             CommandResult.Completed ModeSwitch.NoSwitch
