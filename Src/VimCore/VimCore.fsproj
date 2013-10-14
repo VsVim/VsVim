@@ -15,6 +15,7 @@
     <RestorePackages>true</RestorePackages>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\..\</SolutionDir>
+    <OtherFlags>--standalone</OtherFlags>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -33,16 +34,15 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>3</WarningLevel>
   </PropertyGroup>
-  <Import Condition=" '$(VisualStudioVersion)' == '' "     Project="$(ProgramFiles)\Microsoft F#\v4.0\Microsoft.FSharp.Targets" />
+  <Import Condition=" '$(VisualStudioVersion)' == '' " Project="$(ProgramFiles)\Microsoft F#\v4.0\Microsoft.FSharp.Targets" />
   <Import Condition=" '$(VisualStudioVersion)' == '10.0' " Project="$(ProgramFiles)\Microsoft F#\v4.0\Microsoft.FSharp.Targets" />
   <Import Condition=" '$(VisualStudioVersion)' == '11.0' " Project="$(MSBuildExtensionsPath32)\..\Microsoft SDKs\F#\3.0\Framework\v4.0\Microsoft.FSharp.Targets" />
-
   <!-- 
     The text of the import statement must be exactyl FSharpTargetsPath else it will 
     trigger the update wizard in VS2013
-  --> 
+  -->
   <PropertyGroup>
-    <FSharpTargetsPath>$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\FSharp\Microsoft.FSharp.Targets</FSharpTargetsPath> 
+    <FSharpTargetsPath>$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\FSharp\Microsoft.FSharp.Targets</FSharpTargetsPath>
   </PropertyGroup>
   <Import Condition=" '$(VisualStudioVersion)' == '12.0' " Project="$(FSharpTargetsPath)" />
   <Import Project="$(SolutionDir)\.nuget\nuget.targets" />
@@ -172,6 +172,9 @@
     <Reference Include="System.ComponentModel.Composition" />
     <Reference Include="System.Core" />
     <Reference Include="System.Numerics" />
+    <Reference Include="System.ServiceModel.Internals" />
+    <Reference Include="SMDiagnostics" />
+    <Reference Include="PresentationUI" />
     <Reference Include="WindowsBase" />
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
@@ -183,7 +186,7 @@
 	<Target Name="AfterBuild">
 	</Target>
 	-->
-   <Target Name="AfterBuild">
-      <Message Text="Version is '$(VisualStudioVersion)'" />
-   </Target>
+  <Target Name="AfterBuild">
+    <Message Text="Version is '$(VisualStudioVersion)'" />
+  </Target>
 </Project>
