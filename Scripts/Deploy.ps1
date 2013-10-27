@@ -30,7 +30,7 @@ function test-vsixcontents() {
     & $zip x "-o$target" $vsixPath | out-null
 
     $files = gci $target | %{ $_.Name }
-    if ($files.Count -ne 14) { 
+    if ($files.Count -ne 13) { 
         write-host "Wrong number of files in VSIX. Found ..."
         foreach ($file in $files) {
             write-host "`t$file"
@@ -45,7 +45,6 @@ function test-vsixcontents() {
     #   - EditorUtils.dll: Not a part of the build but necessary.  Make sure 
     #     that it's found        
     $expected = 
-        "FSharp.Core.dll", 
         "EditorUtils.dll",
         "Vim.Core.dll", 
         "Vim.UI.Wpf.dll",

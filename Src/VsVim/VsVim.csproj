@@ -103,9 +103,6 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <Content Include="FSharp.Core.dll">
-      <IncludeInVSIX>true</IncludeInVSIX>
-    </Content>
     <None Include="app.config" />
     <Content Include="Colors.pkgdef">
       <IncludeInVSIX>true</IncludeInVSIX>
