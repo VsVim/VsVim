@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Reflection;
 using System.Windows.Input;
 using Microsoft.FSharp.Core;
+using Microsoft.VisualStudio.Text.Editor;
 using Vim;
 using Vim.UI.Wpf;
 
@@ -26,13 +27,23 @@ namespace VsVim.Implementation.Misc
             get { return _keyDownCount; }
         }
 
-        internal VsKeyProcessor(IVsAdapter adapter, IVimBufferCoordinator bufferCoordinator, IKeyUtil keyUtil, IReportDesignerUtil reportDesignerUtil)
+        internal VsKeyProcessor(IVsAdapter adapter, IVimBufferCoordinator bufferCoordinator, IKeyUtil keyUtil, IReportDesignerUtil reportDesignerUtil, IWpfTextView wpfTextView)
             : base(bufferCoordinator.VimBuffer, keyUtil)
         {
             _adapter = adapter;
             _reportDesignerUtil = reportDesignerUtil;
             _bufferCoordinator = bufferCoordinator;
             _searchInProgressInfo = new Lazy<PropertyInfo>(FindSearchInProgressPropertyInfo);
+	        wpfTextView.VisualElement.MouseDown += (s, e) =>
+		        {
+			        if (e.ChangedButton == MouseButton.Middle && e.ButtonState == MouseButtonState.Pressed)
+			        {
+				        var position = e.GetPosition(wpfTextView.VisualElement);
+				        var viewLine = wpfTextView.TextViewLines.GetTextViewLineContainingYCoordinate(position.Y + wpfTextView.ViewportTop);
+				        wpfTextView.Caret.MoveTo(viewLine, position.X + wpfTextView.ViewportLeft);
+				        TryProcess(KeyInputUtil.CharToKeyInput('P'));
+			        }
+		        };
         }
 
         /// <summary>
@@ -197,6 +208,5 @@ namespace VsVim.Implementation.Misc
 
             return isDiscarded;
         }
-
     }
 }
