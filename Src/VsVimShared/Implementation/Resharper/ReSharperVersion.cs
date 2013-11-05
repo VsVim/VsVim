@@ -5,5 +5,6 @@
         Unknown,
         Version7AndEarlier,
         Version8,
+        Version81
     }
 }
