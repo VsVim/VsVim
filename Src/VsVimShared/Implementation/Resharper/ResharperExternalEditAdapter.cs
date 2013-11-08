@@ -67,6 +67,9 @@ namespace VsVim.Implementation.ReSharper
                 case ReSharperVersion.Version8:
                     _reSharperEditTagDetector = new ReSharperV8EditTagDetector();
                     break;
+                case ReSharperVersion.Version81:
+                    _reSharperEditTagDetector = new ReSharperV81EditTagDetector();
+                    break;
                 case ReSharperVersion.Unknown:
                     _reSharperEditTagDetector = new ReSharperUnknownEditTagDetector();
                     break;
