@@ -36,6 +36,8 @@ namespace VsVim.Implementation.ReSharper
                             return ReSharperVersion.Version8;
                         case 1:
                             return ReSharperVersion.Version81;
+                        default:
+                            return ReSharperVersion.Version81;
                     }
                 }
                 return ReSharperVersion.Unknown;
