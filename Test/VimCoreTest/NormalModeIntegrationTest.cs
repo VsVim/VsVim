@@ -34,7 +34,7 @@ namespace Vim.UnitTest
         protected bool _assertOnErrorMessage = true;
         protected bool _assertOnWarningMessage = true;
 
-        protected void Create(params string[] lines)
+        protected virtual void Create(params string[] lines)
         {
             _textView = CreateTextView(lines);
             _textBuffer = _textView.TextBuffer;
@@ -3408,7 +3408,6 @@ namespace Vim.UnitTest
                 Assert.Equal(6, _textView.GetCaretPoint().Position);
             }
 
-
             [Fact]
             public void ShiftLeft1()
             {
@@ -4260,6 +4259,94 @@ namespace Vim.UnitTest
                 Assert.Equal(6, _textView.GetCaretPoint().Position);
                 _vimBuffer.Process(')');
                 Assert.Equal(12, _textView.GetCaretPoint().Position);
+            }
+        }
+
+        public sealed class ShiftLeftTest : NormalModeIntegrationTest
+        {
+            protected override void Create(params string[] lines)
+            {
+                base.Create(lines);
+                _vimBuffer.LocalSettings.ShiftWidth = 4;
+            }
+
+            [Fact]
+            public void Simple()
+            {
+                Create("    cat", "    dog");
+                _vimBuffer.Process("<<");
+                Assert.Equal(new[] { "cat", "    dog"}, _textBuffer.GetLines());
+            }
+
+            [Fact]
+            public void Multiline()
+            {
+                Create("    cat", "    dog");
+                _vimBuffer.Process("2<<");
+                Assert.Equal(new[] { "cat", "dog"}, _textBuffer.GetLines());
+            }
+
+            [Fact]
+            public void EmptyLine()
+            {
+                Create("", "dog");
+                _vimBuffer.Process("<<");
+                Assert.Equal(new[] { "", "dog" }, _textBuffer.GetLines());
+            }
+
+            /// <summary>
+            /// A left shift of a blank line will remove the contents
+            /// </summary>
+            [Fact]
+            public void BlankLine()
+            {
+                Create(" ", "dog");
+                _vimBuffer.Process("<<");
+                Assert.Equal(new[] { "", "dog" }, _textBuffer.GetLines());
+            }
+        }
+
+        public sealed class ShiftRightTest : NormalModeIntegrationTest
+        {
+            protected override void Create(params string[] lines)
+            {
+                base.Create(lines);
+                _vimBuffer.LocalSettings.ShiftWidth = 4;
+            }
+
+            /// <summary>
+            /// The shift right of an empty line should not add any spaces
+            /// </summary>
+            [Fact]
+            public void EmptyLine()
+            {
+                Create("", "dog");
+                _vimBuffer.Process(">>");
+                Assert.Equal("", _textBuffer.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// The shift right of an empty line should not add any spaces
+            /// </summary>
+            [Fact]
+            public void IncludeEmptyLine()
+            {
+                Create("cat", "", "dog");
+                _vimBuffer.Process("3>>");
+                Assert.Equal("    cat", _textBuffer.GetLine(0).GetText());
+                Assert.Equal("", _textBuffer.GetLine(1).GetText());
+                Assert.Equal("    dog", _textBuffer.GetLine(2).GetText());
+            }
+
+            /// <summary>
+            /// The shift right of a blank line should add spaces
+            /// </summary>
+            [Fact]
+            public void BlankLine()
+            {
+                Create(" ", "dog");
+                _vimBuffer.Process(">>");
+                Assert.Equal("     ", _textBuffer.GetLine(0).GetText());
             }
         }
 
@@ -5572,43 +5659,6 @@ namespace Vim.UnitTest
                 _vimBuffer.Process("ddu");
                 Assert.Equal(new[] { "cat", "dog", "fish" }, _textBuffer.GetLines());
                 Assert.Equal(_textView.GetLine(1).Start, _textView.GetCaretPoint());
-            }
-
-            /// <summary>
-            /// The shift right of an empty line should not add any spaces
-            /// </summary>
-            [Fact]
-            public void ShiftRight_EmptyLine()
-            {
-                Create("", "dog");
-                _vimBuffer.Process(">>");
-                Assert.Equal("", _textBuffer.GetLine(0).GetText());
-            }
-
-            /// <summary>
-            /// The shift right of an empty line should not add any spaces
-            /// </summary>
-            [Fact]
-            public void ShiftRight_IncludeEmptyLine()
-            {
-                Create("cat", "", "dog");
-                _vimBuffer.LocalSettings.ShiftWidth = 4;
-                _vimBuffer.Process("3>>");
-                Assert.Equal("    cat", _textBuffer.GetLine(0).GetText());
-                Assert.Equal("", _textBuffer.GetLine(1).GetText());
-                Assert.Equal("    dog", _textBuffer.GetLine(2).GetText());
-            }
-
-            /// <summary>
-            /// The shift right of a blank line should add spaces
-            /// </summary>
-            [Fact]
-            public void ShiftRight_BlankLine()
-            {
-                Create(" ", "dog");
-                _vimBuffer.LocalSettings.ShiftWidth = 4;
-                _vimBuffer.Process(">>");
-                Assert.Equal("     ", _textBuffer.GetLine(0).GetText());
             }
 
             /// <summary>

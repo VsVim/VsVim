@@ -1991,56 +1991,56 @@ type CommandResult =
 /// Information about the attributes of Command
 [<System.Flags>]
 type CommandFlags =
-    | None = 0x0
+    | None = 0x0000
 
     /// Relates to the movement of the cursor.  A movement command does not alter the 
     /// last command
-    | Movement = 0x1
+    | Movement = 0x0001
 
     /// A Command which can be repeated
-    | Repeatable = 0x2
+    | Repeatable = 0x0002
 
     /// A Command which should not be considered when looking at last changes
-    | Special = 0x4
+    | Special = 0x0004
 
     /// Can handle the escape key if provided as part of a Motion or Long command extra
     /// input
-    | HandlesEscape = 0x8
+    | HandlesEscape = 0x0008
 
     /// For the purposes of change repeating the command is linked with the following
     /// text change
-    | LinkedWithNextCommand = 0x10
+    | LinkedWithNextCommand = 0x0010
 
     /// For the purposes of change repeating the command is linked with the previous
     /// text change if it exists
-    | LinkedWithPreviousCommand = 0x20
+    | LinkedWithPreviousCommand = 0x0020
 
     /// For Visual mode commands which should reset the cursor to the original point
     /// after completing
-    | ResetCaret = 0x40
+    | ResetCaret = 0x0040
 
     /// For Visual mode commands which should reset the anchor point to the current
     /// anchor point of the selection
-    | ResetAnchorPoint = 0x80
+    | ResetAnchorPoint = 0x0080
 
     /// Vim allows for special handling of the 'd' command in normal mode such that it can
     /// have the pattern 'd#d'.  This flag is used to tag the 'd' command to allow such
     /// a pattern
-    | Delete = 0x100
+    | Delete = 0x0100
 
     /// Vim allows for special handling of the 'y' command in normal mode such that it can
     /// have the pattern 'y#y'.  This flag is used to tag the 'y' command to allow such
     /// a pattern
-    | Yank = 0x200
+    | Yank = 0x0200
 
     /// Vim allows for special handling of the 'c' command in normal mode such that it can
     /// have the pattern 'c#c'.  This flag is used to tag the 'c' command to allow such
     /// a pattern
-    | Change = 0x400
+    | Change = 0x1000
 
     /// Represents an insert edit action which can be linked with other insert edit actions and
     /// hence acts with them in a repeat
-    | InsertEdit = 0x800
+    | InsertEdit = 0x2000
 
 /// Data about the run of a given MotionResult
 type MotionData = {
