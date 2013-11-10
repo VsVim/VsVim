@@ -173,6 +173,10 @@ type internal CommandRunner
             doSpecialBinding NormalCommand.YankLines 'y'
         elif Util.IsFlagSet commandBinding.CommandFlags CommandFlags.Change then
             doSpecialBinding NormalCommand.ChangeLines 'c'
+        elif Util.IsFlagSet commandBinding.CommandFlags CommandFlags.ShiftRight then
+            doSpecialBinding NormalCommand.ShiftLinesRight '>'
+        elif Util.IsFlagSet commandBinding.CommandFlags CommandFlags.ShiftLeft then
+            doSpecialBinding NormalCommand.ShiftLinesLeft '<'
         else
             let result = _motionCapture.GetMotionAndCount keyInput
             result.Convert (fun (motion, motionCount) -> convertMotion motion motionCount)

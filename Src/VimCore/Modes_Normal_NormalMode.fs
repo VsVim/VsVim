@@ -154,8 +154,8 @@ type internal NormalMode
                 yield ("g?", CommandFlags.Repeatable, (fun motion -> NormalCommand.ChangeCaseMotion (ChangeCharacterKind.Rot13, motion)))
                 yield ("y", CommandFlags.Yank, NormalCommand.Yank)
                 yield ("zf", CommandFlags.None, NormalCommand.FoldMotion)
-                yield ("<lt>", CommandFlags.Repeatable, NormalCommand.ShiftMotionLinesLeft)
-                yield (">", CommandFlags.Repeatable, NormalCommand.ShiftMotionLinesRight)
+                yield ("<lt>", CommandFlags.Repeatable ||| CommandFlags.ShiftLeft, NormalCommand.ShiftMotionLinesLeft)
+                yield (">", CommandFlags.Repeatable ||| CommandFlags.ShiftRight, NormalCommand.ShiftMotionLinesRight)
                 yield ("=", CommandFlags.Repeatable, NormalCommand.FormatMotion)
             } |> Seq.map (fun (str, flags, command) -> 
                 let keyInputSet = KeyNotationUtil.StringToKeyInputSet str

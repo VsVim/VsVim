@@ -4304,6 +4304,14 @@ namespace Vim.UnitTest
                 _vimBuffer.Process("<<");
                 Assert.Equal(new[] { "", "dog" }, _textBuffer.GetLines());
             }
+
+            [Fact]
+            public void CountInMiddle()
+            {
+                Create("    cat", "    dog");
+                _vimBuffer.Process("<2<");
+                Assert.Equal(new[] { "cat", "dog" }, _textBuffer.GetLines());
+            }
         }
 
         public sealed class ShiftRightTest : NormalModeIntegrationTest
@@ -4347,6 +4355,14 @@ namespace Vim.UnitTest
                 Create(" ", "dog");
                 _vimBuffer.Process(">>");
                 Assert.Equal("     ", _textBuffer.GetLine(0).GetText());
+            }
+
+            [Fact]
+            public void CountInMiddle()
+            {
+                Create("cat", "dog");
+                _vimBuffer.Process(">2>");
+                Assert.Equal(new[] { "    cat", "    dog" }, _textBuffer.GetLines());
             }
         }
 

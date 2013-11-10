@@ -2033,6 +2033,16 @@ type CommandFlags =
     /// a pattern
     | Yank = 0x0200
 
+    /// Vim allows for special handling of the '>' command in normal mode such that it can
+    /// have the pattern '>#>'.  This flag is used to tag the '>' command to allow such
+    /// a pattern
+    | ShiftRight = 0x0400
+
+    /// Vim allows for special handling of the '<' command in normal mode such that it can
+    /// have the pattern '<#<'.  This flag is used to tag the '<' command to allow such
+    /// a pattern
+    | ShiftLeft = 0x0800
+
     /// Vim allows for special handling of the 'c' command in normal mode such that it can
     /// have the pattern 'c#c'.  This flag is used to tag the 'c' command to allow such
     /// a pattern
