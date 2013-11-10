@@ -3911,6 +3911,22 @@ namespace Vim.UnitTest
                 Assert.Equal("<h2>test</h2>", _textBuffer.GetLine(0).GetText());
                 Assert.Equal(2, _textView.GetCaretPoint());
             }
+
+            /// <summary>
+            /// When the replace character is a new line we need to respect the line ending of the current
+            /// line when inserting the text
+            /// </summary>
+            [Fact]
+            public void Issue1198()
+            {
+                Create("");
+                _textBuffer.SetText("cat\ndog");
+                _textView.MoveCaretTo(0);
+                Assert.Equal("\n", _textBuffer.GetLine(0).GetLineBreakText());
+                _vimBuffer.ProcessNotation("r<Enter>");
+                Assert.Equal("\n", _textBuffer.GetLine(0).GetLineBreakText());
+                Assert.Equal("", _textBuffer.GetLine(0).GetText());
+            }
         }
 
         public sealed class ScrollOffsetTest : NormalModeIntegrationTest

@@ -2013,7 +2013,7 @@ type internal CommandUtil
                     let replaceText = 
                         if keyInput = KeyInputUtil.EnterKey then 
                             let previousIndent = SnapshotLineUtil.GetIndentText line |> _commonOperations.NormalizeBlanks
-                            let replaceText = EditUtil.NewLine _options
+                            let replaceText = _commonOperations.GetNewLineText x.CaretPoint
                             replaceText + previousIndent 
                         else 
                             new System.String(keyInput.Char, count)
