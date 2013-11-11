@@ -11,6 +11,7 @@ open Microsoft.VisualStudio.Text.Formatting
 open RegexPatternUtil
 open VimCoreExtensions
 open ITextEditExtensions
+open StringBuilderExtensions
 
 [<RequireQualifiedAccess>]
 [<NoComparison>]
@@ -2058,23 +2059,28 @@ type internal CommandUtil
         // The caret can be anywhere at the start of the operation so move it to the
         // first point before even beginning the edit transaction
         _textView.Selection.Clear()
-        let points = 
-            visualSpan.Spans
-            |> Seq.map (SnapshotSpanUtil.GetPoints Path.Forward)
-            |> Seq.concat
-        let editPoint = 
-            match points |> SeqUtil.tryHeadOnly with
-            | Some point -> point
-            | None -> x.CaretPoint
-        TextViewUtil.MoveCaretToPoint _textView editPoint
+        TextViewUtil.MoveCaretToPoint _textView visualSpan.Start
 
         x.EditWithUndoTransaciton "ReplaceChar" (fun () -> 
             use edit = _textBuffer.CreateEdit()
-            points |> Seq.iter (fun point -> edit.Replace((Span(point.Position, 1)), replaceText) |> ignore)
+            let builder = System.Text.StringBuilder()
+
+            for span in visualSpan.OverlapSpans do 
+                if span.HasOverlapStart then
+                    let startPoint = span.Start
+                    builder.Length <- 0
+                    builder.AppendCharCount ' ' startPoint.SpacesBefore
+                    builder.AppendStringCount replaceText (startPoint.Width - startPoint.SpacesBefore)
+                    edit.Replace(Span(startPoint.Point.Position, 1), (builder.ToString())) |> ignore
+
+                SnapshotSpanUtil.GetPoints Path.Forward span.InnerSpan
+                |> Seq.filter (fun point -> not (SnapshotPointUtil.IsInsideLineBreak point))
+                |> Seq.iter (fun point -> edit.Replace(Span(point.Position, 1), replaceText) |> ignore)
+
             let snapshot = edit.Apply()
 
             // Reposition the caret at the start of the edit
-            let editPoint = SnapshotPoint(snapshot, editPoint.Position)
+            let editPoint = SnapshotPoint(snapshot, visualSpan.Start.Position)
             TextViewUtil.MoveCaretToPoint _textView editPoint)
 
         CommandResult.Completed (ModeSwitch.SwitchMode ModeKind.Normal)

@@ -99,7 +99,7 @@ type SnapshotOverlapPoint =
     val private _before : int
     val private _width : int
 
-    // BTODO: This constructor should be hidden behind a signature file.  No one should ever call it
+    // TODO: This constructor should be hidden behind a signature file.  No one should ever call it
     // directly.  It is too easy to get the 'width' wrong
     internal new (point : SnapshotPoint, before : int, width : int) = 
         if width < 0 then

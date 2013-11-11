@@ -581,8 +581,15 @@ module internal StringBuilderExtensions =
         member x.AppendChar (c : char) = 
             x.Append(c) |> ignore
 
+        member x.AppendCharCount (c : char) (count : int) = 
+            x.Append(c, count) |> ignore
+
         member x.AppendString (str : string) =
             x.Append(str) |> ignore
+            
+        member x.AppendStringCount (str : string) (count : int) =
+            for i = 0 to count - 1 do
+                x.Append(str) |> ignore
 
         member x.AppendNumber (number : int) =
             x.Append(number) |> ignore
