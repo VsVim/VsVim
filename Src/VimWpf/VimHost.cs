@@ -46,6 +46,11 @@ namespace Vim.UI.Wpf
             get { return true; }
         }
 
+        public abstract int TabCount
+        {
+            get;
+        }
+
         protected VimHost(
             ITextBufferFactoryService textBufferFactoryService,
             ITextEditorFactoryService textEditorFactoryService,
@@ -115,6 +120,8 @@ namespace Vim.UI.Wpf
 
         public abstract string GetName(ITextBuffer value);
 
+        public abstract int GetTabIndex(ITextView textView);
+
         public virtual bool TryGetFocusedTextView(out ITextView textView)
         {
             textView = _textViewList.FirstOrDefault(x => x.HasAggregateFocus);
@@ -126,8 +133,6 @@ namespace Vim.UI.Wpf
         public abstract bool GoToGlobalDeclaration(ITextView textView, string name);
 
         public abstract bool GoToLocalDeclaration(ITextView textView, string name);
-
-        public abstract void GoToNextTab(Path direction, int count);
 
         public abstract void GoToTab(int index);
 
@@ -461,6 +466,11 @@ namespace Vim.UI.Wpf
             return GetName(textBuffer);
         }
 
+        int IVimHost.GetTabIndex(ITextView textView)
+        {
+            return GetTabIndex(textView);
+        }
+
         bool IVimHost.GoToDefinition()
         {
             return GoToDefinition();
@@ -474,11 +484,6 @@ namespace Vim.UI.Wpf
         bool IVimHost.GoToLocalDeclaration(ITextView textView, string identifier)
         {
             return GoToLocalDeclaration(textView, identifier);
-        }
-
-        void IVimHost.GoToNextTab(Path value, int count)
-        {
-            GoToNextTab(value, count);
         }
 
         void IVimHost.GoToTab(int index)

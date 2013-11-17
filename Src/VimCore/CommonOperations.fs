@@ -624,6 +624,38 @@ type internal CommonOperations
         | HostResult.Success -> ()
         | HostResult.Error(_) -> _statusUtil.OnError (Resources.NormalMode_CantFindFile text)
 
+    member x.GoToNextTab path count = 
+
+        let tabCount = _vimHost.TabCount
+        let mutable tabIndex = _vimHost.GetTabIndex _textView
+        if tabCount >= 0 && tabIndex >= 0 && tabIndex < tabCount then
+            let count = count % tabCount
+            match path with
+            | Path.Forward -> 
+                tabIndex <- tabIndex + count
+                tabIndex <- tabIndex % tabCount
+            | Path.Backward -> 
+                tabIndex <- tabIndex - count
+                if tabIndex < 0 then
+                    tabIndex <- tabIndex + tabCount
+
+            _vimHost.GoToTab tabIndex
+
+    member x.GoToTab index = 
+
+        // Normalize out the specified tabIndex to a 0 based value.  Vim uses some odd
+        // logic here but the host represents the tab as a 0 based list of tabs
+        let mutable tabIndex = index
+        let tabCount = _vimHost.TabCount
+        if tabCount > 0 then
+            if tabIndex < 0 then
+                tabIndex <- tabCount - 1
+            elif tabIndex > 0 then
+                tabIndex <- tabIndex - 1
+
+            if tabIndex >= 0 && tabIndex < tabCount then
+                _vimHost.GoToTab tabIndex
+
     /// Return the full word under the cursor or an empty string
     member x.WordUnderCursorOrEmpty =
         let point =  TextViewUtil.GetCaretPoint _textView
@@ -1146,8 +1178,8 @@ type internal CommonOperations
         member x.GoToFile() = x.GoToFile()
         member x.GoToFileInNewWindow() = x.GoToFileInNewWindow()
         member x.GoToDefinition() = x.GoToDefinition()
-        member x.GoToNextTab direction count = _vimHost.GoToNextTab direction count
-        member x.GoToTab index = _vimHost.GoToTab index
+        member x.GoToNextTab direction count = x.GoToNextTab direction count
+        member x.GoToTab index = x.GoToTab index
         member x.Join range kind = x.Join range kind
         member x.MoveCaret caretMovement = x.MoveCaret caretMovement
         member x.MoveCaretToPoint point viewFlags =  x.MoveCaretToPoint point viewFlags

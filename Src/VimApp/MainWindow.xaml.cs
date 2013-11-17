@@ -51,6 +51,11 @@ namespace VimApp
             }
         }
 
+        internal TabControl TabControl
+        {
+            get { return _tabControl; }
+        }
+
         public MainWindow()
         {
             InitializeComponent();

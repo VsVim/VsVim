@@ -32,6 +32,11 @@ namespace VimApp
             set;
         }
 
+        public override int TabCount
+        {
+            get { return MainWindow.TabControl.Items.Count; }
+        }
+
         [ImportingConstructor]
         internal VimAppHost(
             ITextBufferFactoryService textBufferFactoryService,
@@ -56,6 +61,17 @@ namespace VimApp
             return "";
         }
 
+        public override int GetTabIndex(ITextView textView)
+        {
+            IVimViewInfo vimViewInfo;
+            if (!TryGetVimViewInfo(textView, out vimViewInfo))
+            {
+                return -1;
+            }
+
+            return MainWindow.TabControl.Items.IndexOf(vimViewInfo.VimWindow.TabItem);
+        }
+
         public override bool GoToDefinition()
         {
             return false;
@@ -71,14 +87,9 @@ namespace VimApp
             return false;
         }
 
-        public override void GoToNextTab(Path direction, int count)
-        {
-
-        }
-
         public override void GoToTab(int index)
         {
-
+            MainWindow.TabControl.SelectedIndex = index;
         }
 
         // TODO: The ITextView parameter isn't necessary.  This command should always load into
@@ -186,7 +197,7 @@ namespace VimApp
         {
             // First find the IVimViewInfo that contains this ITextView
             IVimViewInfo vimViewInfo;
-            if (!TryFindVimViewInfo(textView, out vimViewInfo))
+            if (!TryGetVimViewInfo(textView, out vimViewInfo))
             {
                 return HostResult.NewError(ErrorCouldNotFindVimViewInfo);
             }
@@ -207,7 +218,7 @@ namespace VimApp
             return false;
         }
 
-        private bool TryFindVimViewInfo(ITextView textView, out IVimViewInfo vimViewInfo)
+        private bool TryGetVimViewInfo(ITextView textView, out IVimViewInfo vimViewInfo)
         {
             vimViewInfo = _vimWindowManager.VimWindowList
                 .SelectMany(x => x.VimViewInfoList)

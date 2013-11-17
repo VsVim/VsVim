@@ -65,6 +65,11 @@ namespace VsVim
             get { return false; }
         }
 
+        public override int TabCount
+        {
+            get { return _sharedService.GetWindowFrameState().WindowFrameCount; }
+        }
+
         [ImportingConstructor]
         internal VsVimHost(
             IVsAdapter adapter,
@@ -339,65 +344,20 @@ namespace VsVim
             return false;
         }
 
-        /// <summary>
-        /// Go to the 'count' tab in the given direction.  If the count exceeds the count in
-        /// the given direction then it should wrap around to the end of the list of items
-        /// </summary>
-        public override void GoToNextTab(Vim.Path direction, int count)
+        public override int GetTabIndex(ITextView textView)
         {
-            // First get the index of the current tab so we know where we are incrementing
-            // from.  Make sure to check that our view is actually a part of the active
-            // views
+            // TODO: Should look for the actual index instead of assuming this is called on the 
+            // active ITextView.  They may not actually be equal
             var windowFrameState = _sharedService.GetWindowFrameState();
-            var index = windowFrameState.ActiveWindowFrameIndex;
-            if (index == -1)
-            {
-                return;
-            }
-
-            var childCount = windowFrameState.WindowFrameCount;
-            count = count % childCount;
-            if (direction.IsForward)
-            {
-                index += count;
-                index %= childCount;
-            }
-            else
-            {
-                index -= count;
-                if (index < 0)
-                {
-                    index += childCount;
-                }
-            }
-
-            _sharedService.GoToTab(index);
+            return windowFrameState.ActiveWindowFrameIndex;
         }
 
         public override void GoToTab(int index)
         {
-            var windowFrameState = _sharedService.GetWindowFrameState();
-            var realIndex = -1;
-            if (index < 0)
-            {
-                realIndex = windowFrameState.WindowFrameCount - 1;
-            }
-            else if (index == 0)
-            {
-                realIndex = 0;
-            }
-            else
-            {
-                realIndex = index - 1;
-            }
-
-            if (realIndex >= 0 && realIndex < windowFrameState.WindowFrameCount)
-            {
-                _sharedService.GoToTab(realIndex);
-            }
+            _sharedService.GoToTab(index);
         }
 
-        public override void GoToQuickFix(QuickFix quickFix, int count, bool hasBang)
+        public override bool GoToQuickFix(QuickFix quickFix, int count, bool hasBang)
         {
             // This implementation could be much more riguorous but for next a simple navigation
             // of the next and previous error will suffice
@@ -408,6 +368,8 @@ namespace VsVim
             {
                 SafeExecuteCommand(command);
             }
+
+            return true;
         }
 
         public override HostResult Make(bool jumpToFirstError, string arguments)
@@ -485,17 +447,14 @@ namespace VsVim
         public override HostResult MoveFocus(ITextView textView, Direction direction)
         {
             bool result = false;
-            if (direction.IsUp)
+            switch (direction)
             {
-                result = _textManager.MoveViewUp(textView);
-            }
-            else if (direction.IsDown)
-            {
-                result = _textManager.MoveViewDown(textView);
-            }
-            else if (direction.IsLeft || direction.IsRight)
-            {
-                result = false;
+                case Direction.Up:
+                    result = _textManager.MoveViewUp(textView);
+                    break;
+                case Direction.Down:
+                    result = _textManager.MoveViewDown(textView);
+                    break;
             }
 
             return result ? HostResult.Success : HostResult.NewError("Not Implemented");

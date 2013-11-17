@@ -1727,57 +1727,6 @@ namespace Vim.UnitTest
                 Assert.Equal(Resources.Common_NoPreviousShellCommand, _statusUtil.LastError);
             }
 
-            [Fact]
-            public void TabNext_NoCount()
-            {
-                Create("");
-                ParseAndRun("tabn");
-                Assert.Equal(Path.Forward, VimHost.GoToNextTabData.Item1);
-                Assert.Equal(1, VimHost.GoToNextTabData.Item2);
-            }
-
-            /// <summary>
-            /// :tabn with a count
-            /// </summary>
-            [Fact]
-            public void TabNext_WithCount()
-            {
-                Create("");
-                ParseAndRun("tabn 3");
-                Assert.Equal(Path.Forward, VimHost.GoToNextTabData.Item1);
-                Assert.Equal(3, VimHost.GoToNextTabData.Item2);
-            }
-
-            [Fact]
-            public void TabPrevious_NoCount()
-            {
-                Create("");
-                ParseAndRun("tabp");
-                Assert.Equal(Path.Backward, VimHost.GoToNextTabData.Item1);
-                Assert.Equal(1, VimHost.GoToNextTabData.Item2);
-            }
-
-            [Fact]
-            public void TabPrevious_NoCount_AltName()
-            {
-                Create("");
-                ParseAndRun("tabN");
-                Assert.Equal(Path.Backward, VimHost.GoToNextTabData.Item1);
-                Assert.Equal(1, VimHost.GoToNextTabData.Item2);
-            }
-
-            /// <summary>
-            /// :tabp with a count
-            /// </summary>
-            [Fact]
-            public void TabPrevious_WithCount()
-            {
-                Create("");
-                ParseAndRun("tabp 3");
-                Assert.Equal(Path.Backward, VimHost.GoToNextTabData.Item1);
-                Assert.Equal(3, VimHost.GoToNextTabData.Item2);
-            }
-
             /// <summary>
             /// Simple visual studio command
             /// </summary>

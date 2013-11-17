@@ -3421,6 +3421,10 @@ type IVimHost =
     /// created
     abstract AutoSynchronizeSettings : bool 
 
+    /// Get the count of tabs that are active in the host.  If tabs are not supported then
+    /// -1 should be returned
+    abstract TabCount : int
+
     abstract Beep : unit -> unit
 
     /// Called at the start of a bulk operation such as a macro replay or a repeat of
@@ -3447,6 +3451,10 @@ type IVimHost =
     /// Get the ITextView which currently has keyboard focus
     abstract GetFocusedTextView : unit -> ITextView option
 
+    /// Get the tab index of the tab containing the given ITextView.  A number less
+    /// than 0 indicates the value couldn't be determined
+    abstract GetTabIndex : textView : ITextView -> int
+
     /// Go to the definition of the value under the cursor
     abstract GoToDefinition : unit -> bool
 
@@ -3456,11 +3464,9 @@ type IVimHost =
     /// Go to the local declaration of the value under the cursor
     abstract GoToGlobalDeclaration : tetxView : ITextView -> identifier : string -> bool
 
-    /// Go to the "count" next tab window in the specified direction.  This will wrap 
-    /// around
-    abstract GoToNextTab : Path -> count : int -> unit
-
-    /// Go the nth tab.  The first tab can be accessed with both 0 and 1
+    /// Go to the nth tab in the tab list.  This value is always a 0 based index 
+    /// into the set of tabs.  It does not correspond to vim's handling of tab
+    /// values which is not a standard 0 based index
     abstract GoToTab : index : int -> unit
 
     /// Go to the specified entry in the quick fix list
