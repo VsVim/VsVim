@@ -65,8 +65,10 @@
     <Compile Include="Implementation\NewLineDisplay\NewLineDisplay.cs" />
     <Compile Include="Implementation\NewLineDisplay\NewLineDisplayFactory.cs" />
     <Compile Include="Implementation\VimAppOptions.cs" />
-    <Compile Include="IVimAppOptions.cs" />
-    <Compile Include="ViewInfo.cs" />
+    <Compile Include="Implementation\Window\VimViewInfo.cs" />
+    <Compile Include="Implementation\Window\VimWindow.cs" />
+    <Compile Include="Implementation\Window\VimWindowManager.cs" />
+    <Compile Include="Interfaces.cs" />
     <Compile Include="VimComponentHost.cs" />
     <Compile Include="VimAppHost.cs" />
     <ApplicationDefinition Include="App.xaml">

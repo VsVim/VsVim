@@ -26,6 +26,21 @@ namespace Vim.UI.Wpf
         private event EventHandler<TextViewEventArgs> _isVisibleChanged;
         private event EventHandler<TextViewChangedEventArgs> _activeTextViewChanged;
 
+        public ITextDocumentFactoryService TextDocumentFactoryService
+        {
+            get { return _textDocumentFactoryService; }
+        }
+
+        public ITextBufferFactoryService TextBufferFactoryService
+        {
+            get { return _textBufferFactoryService; }
+        }
+
+        public ITextEditorFactoryService TextEditorFactoryService
+        {
+            get { return _textEditorFactoryService; }
+        }
+
         public virtual bool AutoSynchronizeSettings
         {
             get { return true; }
