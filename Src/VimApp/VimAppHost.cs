@@ -6,6 +6,7 @@ using Microsoft.VisualStudio.Text.Operations;
 using Vim;
 using EditorUtils;
 using System;
+using System.Windows.Input;
 
 namespace VimApp
 {
@@ -13,6 +14,10 @@ namespace VimApp
     [Export(typeof(VimAppHost))]
     internal sealed class VimAppHost : Vim.UI.Wpf.VimHost
     {
+        private const string ErrorCouldNotFindVimViewInfo = "Could not find the associated IVimViewInfo";
+        private const string ErrorUnsupported = "Could not find the associated IVimViewInfo";
+        private const string ErrorInvalidDirection = "Invalid direction";
+
         private IVimWindowManager _vimWindowManager;
 
         internal IVimWindowManager VimWindowManager
@@ -102,17 +107,70 @@ namespace VimApp
 
         public override HostResult LoadFileIntoNewWindow(string filePath)
         {
-            return HostResult.NewError("");
+            try
+            {
+                var textDocument = TextDocumentFactoryService.CreateAndLoadTextDocument(filePath, TextBufferFactoryService.TextContentType);
+                var wpfTextView = MainWindow.CreateTextView(textDocument.TextBuffer);
+                MainWindow.AddNewTab(System.IO.Path.GetFileName(filePath), wpfTextView);
+                return HostResult.Success;
+            }
+            catch (Exception ex)
+            {
+                return HostResult.NewError(ex.Message);
+            }
         }
 
         public override HostResult Make(bool jumpToFirstError, string arguments)
         {
-            return HostResult.NewError("");
+            return HostResult.NewError(ErrorUnsupported);
         }
 
         public override HostResult MoveFocus(ITextView textView, Direction direction)
         {
-            return HostResult.NewError("Not Supported");
+            foreach (var vimWindow in _vimWindowManager.VimWindowList)
+            {
+                var list = vimWindow.VimViewInfoList;
+                int i = 0;
+                while (i < list.Count)
+                {
+                    if (list[i].TextView == textView)
+                    {
+                        break;
+                    }
+
+                    i++;
+                }
+
+                if (i >= list.Count)
+                {
+                    continue;
+                }
+
+                int target = -1;
+                switch (direction)
+                {
+                    case Direction.Up:
+                        target = i - 1;
+                        break;
+                    case Direction.Down:
+                        target = i + 1;
+                        break;
+                }
+
+                if (target >= 0 && target < list.Count)
+                {
+                    var targetTextView = list[target].TextViewHost.TextView;
+                    Keyboard.Focus(targetTextView.VisualElement);
+                    var hasAggregateFocus = targetTextView.HasAggregateFocus;
+                    return HostResult.Success;
+                }
+                else
+                {
+                    return HostResult.NewError(ErrorInvalidDirection);
+                }
+            }
+
+            return HostResult.NewError(ErrorCouldNotFindVimViewInfo);
         }
 
         public override bool NavigateTo(VirtualSnapshotPoint point)
@@ -128,13 +186,10 @@ namespace VimApp
         public override HostResult SplitViewHorizontally(ITextView textView)
         {
             // First find the IVimViewInfo that contains this ITextView
-            var vimViewInfo = _vimWindowManager.VimWindowList
-                .SelectMany(x => x.VimViewInfoList)
-                .Where(x => x.TextViewHost.TextView == textView)
-                .FirstOrDefault();
-            if (vimViewInfo == null)
+            IVimViewInfo vimViewInfo;
+            if (!TryFindVimViewInfo(textView, out vimViewInfo))
             {
-                return HostResult.NewError("Could not find the associated IVimViewInfo");
+                return HostResult.NewError(ErrorCouldNotFindVimViewInfo);
             }
 
             var newTextView = MainWindow.CreateTextView(textView.TextBuffer);
@@ -145,12 +200,21 @@ namespace VimApp
 
         public override HostResult SplitViewVertically(ITextView value)
         {
-            return HostResult.NewError("");
+            return HostResult.NewError(ErrorUnsupported);
         }
 
         public override void GoToQuickFix(QuickFix quickFix, int count, bool hasBang)
         {
             throw new System.NotImplementedException();
+        }
+
+        private bool TryFindVimViewInfo(ITextView textView, out IVimViewInfo vimViewInfo)
+        {
+            vimViewInfo = _vimWindowManager.VimWindowList
+                .SelectMany(x => x.VimViewInfoList)
+                .Where(x => x.TextViewHost.TextView == textView)
+                .FirstOrDefault();
+            return vimViewInfo != null;
         }
     }
 }

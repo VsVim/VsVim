@@ -248,7 +248,7 @@ namespace Vim.UI.Wpf
         }
 
         /// <summary>
-        /// All ITextView instances are elligable for an IVimBuffer by default.  Let the actual
+        /// All ITextView instances are eligible for an IVimBuffer by default.  Let the actual
         /// host override this method an reject IVimBuffer instances that it doesn't like
         /// </summary>
         public virtual bool ShouldCreateVimBuffer(ITextView textView)
@@ -360,7 +360,7 @@ namespace Vim.UI.Wpf
         }
 
         /// <summary>
-        /// Do the horizontal scolling necessary to make the column of the given point visible
+        /// Do the horizontal scrolling necessary to make the column of the given point visible
         /// </summary>
         private void EnsureLinePointVisible(ITextView textView, SnapshotPoint point)
         {

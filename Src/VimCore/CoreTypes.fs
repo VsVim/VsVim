@@ -292,14 +292,11 @@ type Mark =
         else
             LocalMark.OfChar c |> Option.map LocalMark
     
-[<RequireQualifiedAccess>]
-[<StructuralEquality>]
-[<NoComparison>]
 type Direction =
-    | Up
-    | Down
-    | Left
-    | Right
+    | Up        = 1
+    | Down      = 2
+    | Left      = 3
+    | Right     = 4
 
 [<RequireQualifiedAccess>]
 [<StructuralEquality>]

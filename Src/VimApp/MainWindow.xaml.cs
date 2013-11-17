@@ -82,9 +82,16 @@ namespace VimApp
                 PredefinedTextViewRoles.Interactive,
                 PredefinedTextViewRoles.Structured,
                 PredefinedTextViewRoles.Analyzable);
-            return _vimComponentHost.TextEditorFactoryService.CreateTextView(
+            var textView =  _vimComponentHost.TextEditorFactoryService.CreateTextView(
                 textBuffer,
                 textViewRoleSet);
+
+            textView.GotAggregateFocus += delegate
+            {
+                var hasFocus = textView.HasAggregateFocus;
+                
+            };
+            return textView;    
         }
 
         /// <summary>
@@ -111,7 +118,7 @@ namespace VimApp
             AddNewTab(name, textView);
         }
 
-        private void AddNewTab(string name, IWpfTextView textView)
+        internal void AddNewTab(string name, IWpfTextView textView)
         {
             var textViewHost = CreateTextViewHost(textView);
             var tabItem = new TabItem();

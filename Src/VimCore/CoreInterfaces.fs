@@ -33,6 +33,7 @@ type CaretMovement =
         | Direction.Right -> CaretMovement.Right
         | Direction.Down -> CaretMovement.Down
         | Direction.Left -> CaretMovement.Left
+        | _ -> raise (Contract.GetInvalidEnumException direction)
 
 type TextViewEventArgs(_textView : ITextView) =
     inherit System.EventArgs()

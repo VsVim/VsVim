@@ -20,6 +20,11 @@ namespace VimApp.Implementation.Window
             get { return TextViewHost; }
         }
 
+        IWpfTextView IVimViewInfo.TextView
+        {
+            get { return TextViewHost.TextView; }
+        }
+
         IVimBuffer IVimViewInfo.VimBuffer
         {
             get { return VimBuffer; }

@@ -770,9 +770,12 @@ type Contract =
         if not test then
             raise (System.Exception("Contract failed"))
 
-    static member FailEnumValue<'T> (value : 'T) : unit= 
+    static member GetInvalidEnumException<'T> (value : 'T) : System.Exception =
         let msg = sprintf "The value %O is not a valid member of type %O" value typedefof<'T>
-        raise (System.Exception(msg))
+        System.Exception(msg)
+
+    static member FailEnumValue<'T> (value : 'T) : unit = 
+        raise (Contract.GetInvalidEnumException value)
 
 module internal SystemUtil =
 
