@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.Composition;
+using System.Linq;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Operations;
@@ -124,9 +125,21 @@ namespace VimApp
 
         }
 
-        public override HostResult SplitViewHorizontally(ITextView value)
+        public override HostResult SplitViewHorizontally(ITextView textView)
         {
-            MainWindow.SplitViewHorizontally((IWpfTextView)value);
+            // First find the IVimViewInfo that contains this ITextView
+            var vimViewInfo = _vimWindowManager.VimWindowList
+                .SelectMany(x => x.VimViewInfoList)
+                .Where(x => x.TextViewHost.TextView == textView)
+                .FirstOrDefault();
+            if (vimViewInfo == null)
+            {
+                return HostResult.NewError("Could not find the associated IVimViewInfo");
+            }
+
+            var newTextView = MainWindow.CreateTextView(textView.TextBuffer);
+            var newTextViewHost = MainWindow.CreateTextViewHost(newTextView);
+            vimViewInfo.VimWindow.AddVimViewInfo(newTextViewHost);
             return HostResult.Success;
         }
 

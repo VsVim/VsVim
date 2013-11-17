@@ -24,7 +24,9 @@ namespace VimApp
     {
         IWpfTextViewHost TextViewHost { get; }
 
-        IVimBuffer VimBuffer { get; } 
+        IVimBuffer VimBuffer { get; }
+
+        IVimWindow VimWindow { get; }
     }
 
     /// <summary>

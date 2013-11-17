@@ -10,7 +10,8 @@ namespace VimApp.Implementation.Window
     internal sealed class VimViewInfo : IVimViewInfo
     {
         internal IWpfTextViewHost TextViewHost { get; set; }
-        internal IVimBuffer VimBuffer { get; set; } 
+        internal IVimBuffer VimBuffer { get; set; }
+        internal IVimWindow VimWindow { get; set; }
 
         #region IVimViewInfo
 
@@ -22,6 +23,11 @@ namespace VimApp.Implementation.Window
         IVimBuffer IVimViewInfo.VimBuffer
         {
             get { return VimBuffer; }
+        }
+
+        IVimWindow IVimViewInfo.VimWindow
+        {
+            get { return VimWindow; }
         }
 
         #endregion

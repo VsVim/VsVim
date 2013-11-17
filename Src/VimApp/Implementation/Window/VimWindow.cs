@@ -52,7 +52,7 @@ namespace VimApp.Implementation.Window
         IVimViewInfo IVimWindow.AddVimViewInfo(IWpfTextViewHost textViewHost)
         {
             var vimBuffer = _vim.GetOrCreateVimBuffer(textViewHost.TextView);
-            var vimViewInfo = new VimViewInfo() { VimBuffer = vimBuffer, TextViewHost = textViewHost };
+            var vimViewInfo = new VimViewInfo() { VimBuffer = vimBuffer, TextViewHost = textViewHost, VimWindow = this };
             _vimViewInfoList.Add(vimViewInfo);
             RaiseChanged();
             return vimViewInfo;

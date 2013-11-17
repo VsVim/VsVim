@@ -123,13 +123,6 @@ namespace VimApp
             vimWindow.AddVimViewInfo(textViewHost);
         }
 
-        internal void SplitViewHorizontally(IWpfTextView textView)
-        {
-            var vimWindow = ActiveVimWindowOpt;
-            var newTextViewHost = CreateTextViewHost(textView);
-            vimWindow.AddVimViewInfo(newTextViewHost);
-        }
-
         private Grid BuildGrid(ReadOnlyCollection<IVimViewInfo> viewInfoList)
         {
             Contract.Requires(viewInfoList.Count > 1);
@@ -208,6 +201,7 @@ namespace VimApp
 
         private void OnVimWindowChanged(IVimWindow vimWindow)
         {
+            vimWindow.TabItem.Content = null;
             vimWindow.TabItem.Content = CreateWindowContent(vimWindow);
         }
 
