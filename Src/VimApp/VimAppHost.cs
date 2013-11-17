@@ -161,7 +161,6 @@ namespace VimApp
                 {
                     var targetTextView = list[target].TextViewHost.TextView;
                     Keyboard.Focus(targetTextView.VisualElement);
-                    var hasAggregateFocus = targetTextView.HasAggregateFocus;
                     return HostResult.Success;
                 }
                 else
@@ -203,9 +202,9 @@ namespace VimApp
             return HostResult.NewError(ErrorUnsupported);
         }
 
-        public override void GoToQuickFix(QuickFix quickFix, int count, bool hasBang)
+        public override bool GoToQuickFix(QuickFix quickFix, int count, bool hasBang)
         {
-            throw new System.NotImplementedException();
+            return false;
         }
 
         private bool TryFindVimViewInfo(ITextView textView, out IVimViewInfo vimViewInfo)

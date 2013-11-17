@@ -827,12 +827,12 @@ type VimInterpreter
 
     member x.RunQuickFixNext count hasBang =
         let count = OptionUtil.getOrDefault 1 count 
-        _vimHost.GoToQuickFix QuickFix.Next count hasBang
+        _vimHost.GoToQuickFix QuickFix.Next count hasBang |> ignore
         RunResult.Completed
 
     member x.RunQuickFixPrevious count hasBang =
         let count = OptionUtil.getOrDefault 1 count 
-        _vimHost.GoToQuickFix QuickFix.Previous count hasBang
+        _vimHost.GoToQuickFix QuickFix.Previous count hasBang |> ignore
         RunResult.Completed
 
     /// Run the quit command

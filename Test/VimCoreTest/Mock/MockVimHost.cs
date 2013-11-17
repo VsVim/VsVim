@@ -287,9 +287,10 @@ namespace Vim.UnitTest.Mock
             return ShouldCreateVimBufferImpl;
         }
 
-        void IVimHost.GoToQuickFix(QuickFix quickFix, int count, bool hasBang)
+        bool IVimHost.GoToQuickFix(QuickFix quickFix, int count, bool hasBang)
         {
             RunQuickFixFunc(quickFix, count, hasBang);
+            return false;
         }
 
         void IVimHost.VimRcLoaded(VimRcState vimRcState, IVimLocalSettings localSettings, IVimWindowSettings windowSettings)

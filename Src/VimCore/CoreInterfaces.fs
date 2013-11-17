@@ -3464,7 +3464,7 @@ type IVimHost =
     abstract GoToTab : index : int -> unit
 
     /// Go to the specified entry in the quick fix list
-    abstract GoToQuickFix : quickFix : QuickFix -> count : int -> hasBang : bool -> unit
+    abstract GoToQuickFix : quickFix : QuickFix -> count : int -> hasBang : bool -> bool
 
     /// Get the name of the given ITextBuffer
     abstract GetName : textBuffer : ITextBuffer -> string
