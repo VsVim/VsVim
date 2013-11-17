@@ -36,12 +36,39 @@ namespace VimApp
 
         ReadOnlyCollection<IVimViewInfo> VimViewInfoList { get; }
 
-        IVimViewInfo AddVimViewInfo(IVimBuffer vimBuffer, IWpfTextViewHost textViewHost);
+        /// <summary>
+        /// Raised when the view changes
+        /// </summary>
+        event EventHandler Changed;
+
+        IVimViewInfo AddVimViewInfo(IWpfTextViewHost textViewHost);
+
+        /// <summary>
+        /// Remove all of the existing IVimViewInfo associated with this IVimWindow
+        /// </summary>
+        void Clear();
+    }
+
+    internal sealed class VimWindowEventArgs : EventArgs
+    {
+        private readonly IVimWindow _vimWindow;
+
+        internal IVimWindow VimWindow
+        {
+            get { return _vimWindow; }
+        }
+
+        internal VimWindowEventArgs(IVimWindow vimWindow)
+        {
+            _vimWindow = vimWindow;
+        }
     }
 
     interface IVimWindowManager
     {
         ReadOnlyCollection<IVimWindow> VimWindowList { get; }
+
+        event EventHandler<VimWindowEventArgs> VimWindowCreated;
 
         IVimWindow GetVimWindow(TabItem tabItem);
 

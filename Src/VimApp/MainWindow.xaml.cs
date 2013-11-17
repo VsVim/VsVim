@@ -27,12 +27,17 @@ namespace VimApp
         private readonly IVimAppOptions _vimAppOptions;
         private readonly IVimWindowManager _vimWindowManager;
 
-        internal IVimWindow ActiveVimWindow
+        internal IVimWindow ActiveVimWindowOpt
         {
             get
             {
                 var tabItem = (TabItem)_tabControl.SelectedItem;
-                return _vimWindowManager.GetVimWindow(tabItem);
+                if (tabItem != null)
+                {
+                    return _vimWindowManager.GetVimWindow(tabItem);
+                }
+
+                return null;
             }
         }
 
@@ -40,7 +45,7 @@ namespace VimApp
         {
             get
             {
-                var tabInfo = ActiveVimWindow;
+                var tabInfo = ActiveVimWindowOpt;
                 var found = tabInfo.VimViewInfoList.First(x => x.TextViewHost.TextView.HasAggregateFocus);
                 return found != null ? found.VimBuffer : null;
             }
@@ -55,16 +60,20 @@ namespace VimApp
 #endif
 
             _vimComponentHost = new VimComponentHost();
-            _vimComponentHost.CompositionContainer.GetExportedValue<VimAppHost>().MainWindow = this;
             _classificationFormatMapService = _vimComponentHost.CompositionContainer.GetExportedValue<IClassificationFormatMapService>();
             _vimAppOptions = _vimComponentHost.CompositionContainer.GetExportedValue<IVimAppOptions>();
             _vimWindowManager = _vimComponentHost.CompositionContainer.GetExportedValue<IVimWindowManager>();
+            var vimAppHost = _vimComponentHost.CompositionContainer.GetExportedValue<VimAppHost>();
+            vimAppHost.MainWindow = this;
+            vimAppHost.VimWindowManager = _vimWindowManager;
+
+            _vimWindowManager.VimWindowCreated += OnVimWindowCreated;
 
             // Create the initial view to display 
             AddNewTab("Empty Doc");
         }
 
-        private IWpfTextView CreateTextView(ITextBuffer textBuffer)
+        internal IWpfTextView CreateTextView(ITextBuffer textBuffer)
         {
             var textViewRoleSet = _vimComponentHost.TextEditorFactoryService.CreateTextViewRoleSet(
                 PredefinedTextViewRoles.PrimaryDocument,
@@ -81,7 +90,7 @@ namespace VimApp
         /// <summary>
         /// Create an ITextViewHost instance for the active ITextBuffer
         /// </summary>
-        private IWpfTextViewHost CreateTextViewHost(IWpfTextView textView)
+        internal IWpfTextViewHost CreateTextViewHost(IWpfTextView textView)
         {
             textView.Options.SetOptionValue(DefaultTextViewOptions.UseVisibleWhitespaceId, true);
             var textViewHost = _vimComponentHost.TextEditorFactoryService.CreateTextViewHost(textView, setFocus: true);
@@ -111,19 +120,20 @@ namespace VimApp
             tabItem.Content = textViewHost.HostControl;
             _tabControl.Items.Add(tabItem);
 
-            var vimBuffer = _vimComponentHost.Vim.GetOrCreateVimBuffer(textView);
-            vimWindow.AddVimViewInfo(vimBuffer, textViewHost);
+            vimWindow.AddVimViewInfo(textViewHost);
         }
 
         internal void SplitViewHorizontally(IWpfTextView textView)
         {
-            var vimWindow = ActiveVimWindow;
+            var vimWindow = ActiveVimWindowOpt;
             var newTextViewHost = CreateTextViewHost(textView);
-            var vimBuffer = _vimComponentHost.Vim.GetOrCreateVimBuffer(textView);
-            vimWindow.AddVimViewInfo(vimBuffer, newTextViewHost);
+            vimWindow.AddVimViewInfo(newTextViewHost);
+        }
 
-            var viewInfoList = vimWindow.VimViewInfoList;
-            var grid = BuildGrid(viewInfoList);
+        private Grid BuildGrid(ReadOnlyCollection<IVimViewInfo> viewInfoList)
+        {
+            Contract.Requires(viewInfoList.Count > 1);
+            var grid = BuildGridCore(viewInfoList);
             var row = 0;
             for (int i = 0; i < viewInfoList.Count; i++)
             {
@@ -149,13 +159,13 @@ namespace VimApp
                 }
             }
 
-            vimWindow.TabItem.Content = grid;
+            return grid;
         }
 
         /// <summary>
         /// Build up the grid to contain the ITextView instances that we are splitting into
         /// </summary>
-        internal Grid BuildGrid(ReadOnlyCollection<IVimViewInfo> viewInfoList)
+        private Grid BuildGridCore(ReadOnlyCollection<IVimViewInfo> viewInfoList)
         {
             var grid = new Grid();
 
@@ -176,6 +186,34 @@ namespace VimApp
             }
 
             return grid;
+        }
+
+        private UIElement CreateWindowContent(IVimWindow vimWindow)
+        {
+            var viewInfoList = vimWindow.VimViewInfoList;
+            if (viewInfoList.Count == 0)
+            {
+                var textBlock = new TextBlock();
+                textBlock.Text = "No buffer associated with this window";
+                return textBlock;
+            }
+
+            if (viewInfoList.Count == 1)
+            {
+                return viewInfoList[0].TextViewHost.HostControl;
+            }
+
+            return BuildGrid(viewInfoList);
+        }
+
+        private void OnVimWindowChanged(IVimWindow vimWindow)
+        {
+            vimWindow.TabItem.Content = CreateWindowContent(vimWindow);
+        }
+
+        private void OnVimWindowCreated(object sender, VimWindowEventArgs e)
+        {
+            e.VimWindow.Changed += (sender2, e2 ) => OnVimWindowChanged(e.VimWindow);
         }
 
         #region Issue 1074 Helpers

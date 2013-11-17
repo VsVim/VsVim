@@ -4,6 +4,7 @@ using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Operations;
 using Vim;
 using EditorUtils;
+using System;
 
 namespace VimApp
 {
@@ -11,6 +12,14 @@ namespace VimApp
     [Export(typeof(VimAppHost))]
     internal sealed class VimAppHost : Vim.UI.Wpf.VimHost
     {
+        private IVimWindowManager _vimWindowManager;
+
+        internal IVimWindowManager VimWindowManager
+        {
+            get { return _vimWindowManager; }
+            set { _vimWindowManager = value; }
+        }
+
         internal MainWindow MainWindow
         {
             get;
@@ -66,9 +75,28 @@ namespace VimApp
 
         }
 
+        // TODO: The ITextView parameter isn't necessary.  This command should always load into
+        // the active window, not existing
         public override HostResult LoadFileIntoExistingWindow(string filePath, ITextView textView)
         {
-            return HostResult.NewError("");
+            var vimWindow = MainWindow.ActiveVimWindowOpt;
+            if (vimWindow == null)
+            {
+                return HostResult.NewError("No active vim window");
+            }
+
+            try
+            {
+                var textDocument = TextDocumentFactoryService.CreateAndLoadTextDocument(filePath, TextBufferFactoryService.TextContentType);
+                var wpfTextViewHost = MainWindow.CreateTextViewHost(MainWindow.CreateTextView(textDocument.TextBuffer));
+                vimWindow.Clear();
+                vimWindow.AddVimViewInfo(wpfTextViewHost);
+                return HostResult.Success;
+            }
+            catch (Exception ex)
+            {
+                return HostResult.NewError(ex.Message);
+            }
         }
 
         public override HostResult LoadFileIntoNewWindow(string filePath)

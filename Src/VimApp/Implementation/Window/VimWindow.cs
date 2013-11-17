@@ -11,12 +11,24 @@ namespace VimApp.Implementation.Window
 {
     internal sealed class VimWindow : IVimWindow
     {
+        private readonly IVim _vim;
         private readonly TabItem _tabItem;
         private readonly List<VimViewInfo> _vimViewInfoList = new List<VimViewInfo>();
+        private event EventHandler _changed;
 
-        internal VimWindow(TabItem tabItem)
+        internal VimWindow(IVim vim, TabItem tabItem)
         {
+            _vim = vim;
             _tabItem = tabItem;
+        }
+
+        private void RaiseChanged()
+        {
+            var handlers = _changed;
+            if (handlers != null)
+            {
+                handlers(this, EventArgs.Empty);
+            }
         }
 
         #region IVimWindow
@@ -31,14 +43,27 @@ namespace VimApp.Implementation.Window
             get { return new ReadOnlyCollection<IVimViewInfo>(_vimViewInfoList.Cast<IVimViewInfo>().ToList()); }
         }
 
-        IVimViewInfo IVimWindow.AddVimViewInfo(IVimBuffer vimBuffer, IWpfTextViewHost textViewHost)
+        event EventHandler IVimWindow.Changed
         {
+            add { _changed += value; }
+            remove { _changed -= value; }
+        }
+
+        IVimViewInfo IVimWindow.AddVimViewInfo(IWpfTextViewHost textViewHost)
+        {
+            var vimBuffer = _vim.GetOrCreateVimBuffer(textViewHost.TextView);
             var vimViewInfo = new VimViewInfo() { VimBuffer = vimBuffer, TextViewHost = textViewHost };
             _vimViewInfoList.Add(vimViewInfo);
+            RaiseChanged();
             return vimViewInfo;
         }
 
-        #endregion
+        void IVimWindow.Clear()
+        {
+            _vimViewInfoList.Clear();
+            RaiseChanged();
+        }
 
+        #endregion
     }
 }
