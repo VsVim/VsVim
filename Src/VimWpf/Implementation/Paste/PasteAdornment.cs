@@ -117,15 +117,26 @@ namespace Vim.UI.Wpf.Implementation.Paste
 
         private void Display()
         {
-            var control = CreateControl();
-            var caretPoint = _textView.Caret.Position.BufferPosition;
-            _isAdornmentPresent = true;
-            _adornmentLayer.AddAdornment(
-                AdornmentPositioningBehavior.TextRelative,
-                new SnapshotSpan(caretPoint, 0),
-                _tag,
-                control,
-                (x, y) => _isAdornmentPresent = false);
+            try
+            {
+                var control = CreateControl();
+                var caretPoint = _textView.Caret.Position.BufferPosition;
+                _isAdornmentPresent = true;
+                _adornmentLayer.AddAdornment(
+                    AdornmentPositioningBehavior.TextRelative,
+                    new SnapshotSpan(caretPoint, 0),
+                    _tag,
+                    control,
+                    (x, y) => _isAdornmentPresent = false);
+            }
+            catch (Exception)
+            {
+                // In the cases where the caret is off of the screen it is possible that simply 
+                // querying the caret can cause an exception to be thrown.  There is no good
+                // way to query for whether the caret is visible or not hence we just guard
+                // against this case and register the adornment as invisible
+                _isAdornmentPresent = false;
+            }
         }
 
         private void OnChangeEvent(object sender, EventArgs e)
