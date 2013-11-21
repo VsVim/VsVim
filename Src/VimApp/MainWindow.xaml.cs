@@ -214,6 +214,26 @@ namespace VimApp
         private void OnVimWindowChanged(IVimWindow vimWindow)
         {
             vimWindow.TabItem.Content = null;
+            foreach (var vimViewInfo in vimWindow.VimViewInfoList)
+            {
+                var textViewHost = vimViewInfo.TextViewHost;
+                var parent = LogicalTreeHelper.GetParent(textViewHost.HostControl);
+
+                var grid = parent as Grid;
+                if (grid != null)
+                {
+                    grid.Children.Remove(textViewHost.HostControl);
+                    continue;
+                }
+
+                var tabItem = parent as TabItem;
+                if (tabItem != null)
+                {
+                    tabItem.Content = null;
+                    continue;
+                }
+            }
+
             vimWindow.TabItem.Content = CreateWindowContent(vimWindow);
         }
 
