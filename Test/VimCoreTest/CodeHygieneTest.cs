@@ -105,7 +105,7 @@ namespace Vim.UnitTest
                     Run(CaseSpecifier.IgnoreCase, CaseSpecifier.None);
                     Run(ChangeCharacterKind.Rot13, ChangeCharacterKind.ToggleCase);
                     Run(CharSearchKind.TillChar, CharSearchKind.ToChar);
-                    Run(Direction.Left, Direction.Right);
+                    Run(KeyRemapMode.Language, KeyRemapMode.Normal);
                     Run(DirectiveKind.If, DirectiveKind.Else);
                     Run(MagicKind.NoMagic, MagicKind.Magic);
                     Run(MatchingTokenKind.Braces, MatchingTokenKind.Brackets);

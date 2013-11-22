@@ -91,7 +91,7 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
                         {
                             kind = CaretDisplay.QuarterBlock;
                         }
-                        else if (mode.KeyRemapMode.Is(KeyRemapMode.OperatorPending))
+                        else if (mode.KeyRemapMode.IsOperatorPending)
                         {
                             kind = CaretDisplay.HalfBlock;
                         }

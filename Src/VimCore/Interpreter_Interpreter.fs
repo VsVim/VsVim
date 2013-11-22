@@ -444,6 +444,7 @@ type VimInterpreter
                 "?"
             else 
                 match List.head modes with
+                | KeyRemapMode.None -> ""
                 | KeyRemapMode.Normal -> "n"
                 | KeyRemapMode.Visual -> "x"
                 | KeyRemapMode.Select -> "s"

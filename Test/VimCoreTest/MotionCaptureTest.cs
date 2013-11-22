@@ -394,7 +394,7 @@ namespace Vim.UnitTest
             _textView.SetText("cat dog");
             var result = _capture.GetMotionAndCount(KeyInputUtil.CharToKeyInput('/'));
             Assert.True(result.IsNeedMoreInput);
-            Assert.True(result.AsNeedMoreInput().Item.KeyRemapMode.IsSome(KeyRemapMode.Command));
+            Assert.Equal(result.AsNeedMoreInput().Item.KeyRemapMode, KeyRemapMode.Command);
         }
 
         /// <summary>
@@ -408,7 +408,7 @@ namespace Vim.UnitTest
             var result = _capture.GetMotionAndCount(KeyInputUtil.CharToKeyInput('/'));
             result = result.AsNeedMoreInput().Item.BindFunction.Invoke(KeyInputUtil.CharToKeyInput('a'));
             Assert.True(result.IsNeedMoreInput);
-            Assert.True(result.AsNeedMoreInput().Item.KeyRemapMode.IsSome(KeyRemapMode.Command));
+            Assert.Equal(result.AsNeedMoreInput().Item.KeyRemapMode, KeyRemapMode.Command);
         }
 
         [Fact]

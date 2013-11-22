@@ -2607,7 +2607,7 @@ and BindData<'T> = {
 
     /// The optional KeyRemapMode which should be used when binding
     /// the next KeyInput in the sequence
-    KeyRemapMode : KeyRemapMode option
+    KeyRemapMode : KeyRemapMode 
 
     /// Function to call to get the BindResult for this data
     BindFunction : KeyInput -> BindResult<'T>
@@ -2632,7 +2632,7 @@ and BindData<'T> = {
 
     /// Create for a function which doesn't require any remapping
     static member CreateForSimple bindFunc =
-        { KeyRemapMode = None; BindFunction = bindFunc }
+        { KeyRemapMode = KeyRemapMode.None; BindFunction = bindFunc }
 
     /// Very similar to the Convert function.  This will instead map a BindData<'T>.Completed
     /// to a BindData<'U> of any form 
@@ -2952,7 +2952,7 @@ type ICommandRunner =
     /// In certain circumstances a specific type of key remapping needs to occur for input.  This 
     /// option will have the appropriate value in those circumstances.  For example while processing
     /// the {char} argument to f,F,t or T the Language mapping will be used
-    abstract KeyRemapMode : KeyRemapMode option
+    abstract KeyRemapMode : KeyRemapMode 
 
     /// True when in the middle of a count operation
     abstract InCount : bool
@@ -3302,7 +3302,7 @@ type internal IHistoryClient<'TData, 'TResult> =
     abstract HistoryList : HistoryList
 
     /// What remapping mode if any should be used for key input
-    abstract RemapMode : KeyRemapMode option
+    abstract RemapMode : KeyRemapMode
 
     /// Beep
     abstract Beep : unit -> unit
@@ -4057,7 +4057,7 @@ and INormalMode =
     abstract CommandRunner : ICommandRunner 
 
     /// Mode keys need to be remapped with currently
-    abstract KeyRemapMode : KeyRemapMode option
+    abstract KeyRemapMode : KeyRemapMode
 
     /// Is normal mode in the middle of a count operation
     abstract InCount : bool
@@ -4108,7 +4108,7 @@ and IVisualMode =
     abstract CommandRunner : ICommandRunner 
 
     /// Mode keys need to be remapped with currently
-    abstract KeyRemapMode : KeyRemapMode option
+    abstract KeyRemapMode : KeyRemapMode 
 
     /// Is visual mode in the middle of a count operation
     abstract InCount : bool

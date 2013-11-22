@@ -41,7 +41,7 @@ namespace Vim.UI.Wpf.UnitTest
         public void OperatorPending1()
         {
             var mode = new Mock<INormalMode>();
-            mode.SetupGet(x => x.KeyRemapMode).Returns(FSharpOption.Create(KeyRemapMode.OperatorPending)).Verifiable();
+            mode.SetupGet(x => x.KeyRemapMode).Returns(KeyRemapMode.OperatorPending).Verifiable();
             _buffer.SetupGet(x => x.NormalMode).Returns(mode.Object);
             _buffer.SetupGet(x => x.ModeKind).Returns(ModeKind.Normal);
 
@@ -57,7 +57,7 @@ namespace Vim.UI.Wpf.UnitTest
         public void OperatorPending2()
         {
             var mode = new Mock<INormalMode>();
-            mode.SetupGet(x => x.KeyRemapMode).Returns(FSharpOption.Create(KeyRemapMode.OperatorPending)).Verifiable();
+            mode.SetupGet(x => x.KeyRemapMode).Returns(KeyRemapMode.OperatorPending).Verifiable();
             _buffer.SetupGet(x => x.NormalMode).Returns(mode.Object);
             _buffer.SetupGet(x => x.ModeKind).Returns(ModeKind.Command);
             _caret.SetupSet(x => x.CaretDisplay = CaretDisplay.Invisible).Verifiable();
@@ -86,7 +86,7 @@ namespace Vim.UI.Wpf.UnitTest
         {
             var mode = new Mock<INormalMode>();
             mode.SetupGet(x => x.InReplace).Returns(true);
-            mode.SetupGet(x => x.KeyRemapMode).Returns(FSharpOption.Create(KeyRemapMode.Normal)).Verifiable();
+            mode.SetupGet(x => x.KeyRemapMode).Returns(KeyRemapMode.Normal).Verifiable();
             _buffer.SetupGet(x => x.NormalMode).Returns(mode.Object);
             _buffer.SetupGet(x => x.ModeKind).Returns(ModeKind.Normal);
 
@@ -99,6 +99,7 @@ namespace Vim.UI.Wpf.UnitTest
         public void NormalMode1()
         {
             var mode = new Mock<INormalMode>();
+            mode.SetupGet(x => x.KeyRemapMode).Returns(KeyRemapMode.Normal);
             _buffer.SetupGet(x => x.NormalMode).Returns(mode.Object);
             _buffer.SetupGet(x => x.ModeKind).Returns(ModeKind.Normal);
 

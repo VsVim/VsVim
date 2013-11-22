@@ -13,7 +13,7 @@ namespace Vim.UnitTest
         public Tuple<FSharpOption<int>, KeyInput> GetComplete(string text)
         {
             var first = KeyInputUtil.CharToKeyInput(text[0]);
-            var result = CountCapture.GetCount(FSharpOption<KeyRemapMode>.None, first);
+            var result = CountCapture.GetCount(KeyRemapMode.None, first);
             if (text.Length > 1)
             {
                 return result.Run(text.Substring(1)).AsComplete().Item;

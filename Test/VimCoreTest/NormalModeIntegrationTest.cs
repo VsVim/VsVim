@@ -1505,7 +1505,7 @@ namespace Vim.UnitTest
                 {
                     Create("");
                     _vimBuffer.Process("2");
-                    Assert.True(_normalMode.KeyRemapMode.Is(KeyRemapMode.Normal));
+                    Assert.Equal(_normalMode.KeyRemapMode, KeyRemapMode.Normal);
                 }
 
                 /// <summary>
@@ -1725,7 +1725,7 @@ namespace Vim.UnitTest
                 {
                     Create("cat");
                     _vimBuffer.Process("g");
-                    Assert.True(_vimBuffer.NormalMode.KeyRemapMode.IsNone());
+                    Assert.Equal(_vimBuffer.NormalMode.KeyRemapMode, KeyRemapMode.None);
                 }
 
                 [Fact]
@@ -1805,7 +1805,7 @@ namespace Vim.UnitTest
                 {
                     Create("");
                     _vimBuffer.Process("\"");
-                    Assert.True(_normalMode.KeyRemapMode.IsNone());
+                    Assert.Equal(_normalMode.KeyRemapMode, KeyRemapMode.None);
                 }
 
                 /// <summary>

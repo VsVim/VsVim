@@ -1210,7 +1210,7 @@ namespace Vim.UnitTest
         public void KeyRemapMode_DefaultIsNormal()
         {
             Create("foo bar");
-            Assert.Equal(KeyRemapMode.Normal, _mode.KeyRemapMode.Value);
+            Assert.Equal(KeyRemapMode.Normal, _mode.KeyRemapMode);
         }
 
         [Fact]
@@ -1221,7 +1221,7 @@ namespace Vim.UnitTest
                 .Setup(x => x.Begin(Path.Forward))
                 .Returns(VimUtil.CreateBindData<SearchResult>(remapMode: KeyRemapMode.Command));
             _mode.Process('/');
-            Assert.Equal(KeyRemapMode.Command, _mode.KeyRemapMode.Value);
+            Assert.Equal(KeyRemapMode.Command, _mode.KeyRemapMode);
         }
 
         [Fact]
@@ -1229,7 +1229,7 @@ namespace Vim.UnitTest
         {
             Create("");
             _mode.Process('y');
-            Assert.Equal(KeyRemapMode.OperatorPending, _mode.KeyRemapMode.Value);
+            Assert.Equal(KeyRemapMode.OperatorPending, _mode.KeyRemapMode);
         }
 
         [Fact]
@@ -1237,7 +1237,7 @@ namespace Vim.UnitTest
         {
             Create("");
             _mode.Process('d');
-            Assert.Equal(KeyRemapMode.OperatorPending, _mode.KeyRemapMode.Value);
+            Assert.Equal(KeyRemapMode.OperatorPending, _mode.KeyRemapMode);
         }
 
         [Fact]
@@ -1245,7 +1245,7 @@ namespace Vim.UnitTest
         {
             Create("");
             _mode.Process("df");
-            Assert.Equal(KeyRemapMode.Language, _mode.KeyRemapMode.Value);
+            Assert.Equal(KeyRemapMode.Language, _mode.KeyRemapMode);
         }
 
         /// <summary>
@@ -1259,7 +1259,7 @@ namespace Vim.UnitTest
         {
             Create("");
             _mode.Process("g");
-            Assert.True(_mode.KeyRemapMode.IsNone());
+            Assert.Equal(_mode.KeyRemapMode, KeyRemapMode.None);
         }
 
         [Fact]

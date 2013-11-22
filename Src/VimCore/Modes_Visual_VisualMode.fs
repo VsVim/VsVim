@@ -36,7 +36,7 @@ type internal VisualMode
             | None -> BindResult<NormalCommand>.Error
             | Some localMark -> BindResult<_>.Complete (func localMark)
         let bindData = {
-            KeyRemapMode = None
+            KeyRemapMode = KeyRemapMode.None
             BindFunction = bindFunc }
         BindDataStorage<_>.Simple bindData
 
@@ -91,7 +91,7 @@ type internal VisualMode
 
         let complexSeq = 
             seq {
-                yield ("r", CommandFlags.Repeatable, BindData<_>.CreateForSingle None (fun keyInput -> VisualCommand.ReplaceSelection keyInput))
+                yield ("r", CommandFlags.Repeatable, BindData<_>.CreateForSingle KeyRemapMode.None (fun keyInput -> VisualCommand.ReplaceSelection keyInput))
             } |> Seq.map (fun (str, flags, bindCommand) -> 
                 let keyInputSet = KeyNotationUtil.StringToKeyInputSet str
                 let storage = BindDataStorage.Simple bindCommand
@@ -139,7 +139,7 @@ type internal VisualMode
         if _runner.IsWaitingForMoreInput then
             _runner.KeyRemapMode
         else
-            Some KeyRemapMode.Visual
+            KeyRemapMode.Visual
 
     member x.SelectedSpan = (TextSelectionUtil.GetStreamSelectionSpan _textView.Selection).SnapshotSpan
 

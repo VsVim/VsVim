@@ -201,7 +201,7 @@ type internal NormalMode
         if _runner.IsWaitingForMoreInput then
             _runner.KeyRemapMode
         else
-            Some KeyRemapMode.Normal
+            KeyRemapMode.Normal
     member x.Command = _data.Command
     member x.Commands = 
         this.EnsureCommands()
@@ -219,8 +219,8 @@ type internal NormalMode
                     yield ("r", CommandFlags.Repeatable, x.BindReplaceChar ())
                     yield ("'", CommandFlags.Movement, x.BindMark NormalCommand.JumpToMarkLine)
                     yield ("`", CommandFlags.Movement, x.BindMark NormalCommand.JumpToMark)
-                    yield ("m", CommandFlags.Special, BindDataStorage<_>.CreateForSingleChar None NormalCommand.SetMarkToCaret)
-                    yield ("@", CommandFlags.Special, BindDataStorage<_>.CreateForSingleChar None NormalCommand.RunMacro)
+                    yield ("m", CommandFlags.Special, BindDataStorage<_>.CreateForSingleChar KeyRemapMode.None NormalCommand.SetMarkToCaret)
+                    yield ("@", CommandFlags.Special, BindDataStorage<_>.CreateForSingleChar KeyRemapMode.None NormalCommand.RunMacro)
                 } |> Seq.map (fun (str, flags, storage) -> 
                     let keyInputSet = KeyNotationUtil.StringToKeyInputSet str
                     CommandBinding.ComplexNormalBinding (keyInputSet, flags, storage))
@@ -272,7 +272,7 @@ type internal NormalMode
                 | _ -> NormalCommand.ReplaceChar keyInput |> BindResult.Complete
 
             {
-                KeyRemapMode = Some KeyRemapMode.Language
+                KeyRemapMode = KeyRemapMode.Language
                 BindFunction = bind }
         BindDataStorage.Complex func
 
@@ -283,7 +283,7 @@ type internal NormalMode
             | None -> BindResult<NormalCommand>.Error
             | Some localMark -> BindResult<_>.Complete (func localMark)
         let bindData = {
-            KeyRemapMode = None
+            KeyRemapMode = KeyRemapMode.None
             BindFunction = bindFunc }
         BindDataStorage<_>.Simple bindData
 

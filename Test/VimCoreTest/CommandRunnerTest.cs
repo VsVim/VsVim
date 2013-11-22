@@ -62,7 +62,7 @@ namespace Vim.UnitTest
             public void DefaultIsNone()
             {
                 Create("hello world");
-                Assert.True(_runner.KeyRemapMode.IsNone());
+                Assert.Equal(_runner.KeyRemapMode, KeyRemapMode.None);
             }
 
             [Fact]
@@ -71,7 +71,7 @@ namespace Vim.UnitTest
                 Create("hello world");
                 _runner.Add(VimUtil.CreateNormalBinding("cat"));
                 _runner.Run('c');
-                Assert.True(_runner.KeyRemapMode.IsNone());
+                Assert.Equal(_runner.KeyRemapMode, KeyRemapMode.None);
             }
 
             [Fact]
@@ -80,7 +80,7 @@ namespace Vim.UnitTest
                 Create("hello world");
                 _runner.Add(VimUtil.CreateMotionBinding("d"));
                 _runner.Run('d');
-                Assert.True(_runner.KeyRemapMode.IsSome(KeyRemapMode.OperatorPending));
+                Assert.Equal(_runner.KeyRemapMode, KeyRemapMode.OperatorPending);
             }
 
             [Fact]
@@ -89,7 +89,7 @@ namespace Vim.UnitTest
                 Create("hello world");
                 _runner.Add(VimUtil.CreateMotionBinding("d"));
                 _runner.Run('d');
-                Assert.True(_runner.KeyRemapMode.IsSome(KeyRemapMode.OperatorPending));
+                Assert.Equal(_runner.KeyRemapMode, KeyRemapMode.OperatorPending);
             }
 
             [Fact]
@@ -99,7 +99,7 @@ namespace Vim.UnitTest
                 _runner.Add(VimUtil.CreateMotionBinding("d"));
                 _runner.Add(VimUtil.CreateNormalBinding("dd"));
                 _runner.Run('d');
-                Assert.True(_runner.KeyRemapMode.IsSome(KeyRemapMode.OperatorPending));
+                Assert.Equal(_runner.KeyRemapMode, KeyRemapMode.OperatorPending);
             }
 
             [Fact]
@@ -109,7 +109,7 @@ namespace Vim.UnitTest
                 _runner.Add(VimUtil.CreateMotionBinding("d"));
                 _runner.Run('d');
                 _runner.Run('f');
-                Assert.Equal(KeyRemapMode.Language, _runner.KeyRemapMode.Value);
+                Assert.Equal(KeyRemapMode.Language, _runner.KeyRemapMode);
             }
 
             /// <summary>
@@ -121,9 +121,9 @@ namespace Vim.UnitTest
                 Create("hello world");
                 _runner.Add(VimUtil.CreateComplexNormalBinding("a", x => true, KeyRemapMode.Language));
                 _runner.Run('a');
-                Assert.True(_runner.KeyRemapMode.IsSome(KeyRemapMode.Language));
+                Assert.Equal(_runner.KeyRemapMode, KeyRemapMode.Language);
                 _runner.Run('b');
-                Assert.True(_runner.KeyRemapMode.IsSome(KeyRemapMode.Language));
+                Assert.Equal(_runner.KeyRemapMode, KeyRemapMode.Language);
             }
 
             [Fact]
@@ -131,7 +131,7 @@ namespace Vim.UnitTest
             {
                 Create(KeyRemapMode.Language, "");
                 _runner.Run('2');
-                Assert.True(_runner.KeyRemapMode.IsSome(KeyRemapMode.Language));
+                Assert.Equal(_runner.KeyRemapMode, KeyRemapMode.Language);
             }
 
             /// <summary>
@@ -142,7 +142,7 @@ namespace Vim.UnitTest
             {
                 Create(KeyRemapMode.Language, "");
                 _runner.Run('"');
-                Assert.True(_runner.KeyRemapMode.IsNone());
+                Assert.Equal(_runner.KeyRemapMode, KeyRemapMode.None);
             }
         }
 

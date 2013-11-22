@@ -30,7 +30,7 @@ namespace Vim.UnitTest
         {
             var mode = _factory.Create<INormalMode>(behavior);
             mode.SetupGet(x => x.ModeKind).Returns(ModeKind.Normal);
-            mode.SetupGet(x => x.KeyRemapMode).Returns(FSharpOption.Create(KeyRemapMode.Normal));
+            mode.SetupGet(x => x.KeyRemapMode).Returns(KeyRemapMode.Normal);
             mode.SetupGet(x => x.InCount).Returns(false);
             mode.Setup(x => x.OnLeave());
             mode.Setup(x => x.OnClose());
@@ -54,6 +54,7 @@ namespace Vim.UnitTest
         {
             var mode = _factory.Create<IVisualMode>(behavior);
             mode.SetupGet(x => x.ModeKind).Returns(ModeKind.VisualLine);
+            mode.SetupGet(x => x.KeyRemapMode).Returns(KeyRemapMode.Visual);
             mode.Setup(x => x.OnLeave());
             mode.Setup(x => x.OnClose());
             _vimBufferRaw.RemoveMode(_vimBuffer.VisualLineMode);
@@ -670,7 +671,7 @@ namespace Vim.UnitTest
                 _textView.SetText("cat dog", 0);
                 _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
                 _vimBuffer.Process("d");
-                Assert.True(_vimBuffer.NormalMode.KeyRemapMode.Value.IsOperatorPending);
+                Assert.Equal(_vimBuffer.NormalMode.KeyRemapMode, KeyRemapMode.OperatorPending);
                 _vimBuffer.Process("z");
                 Assert.Equal("dog", _textView.GetLine(0).GetText());
             }

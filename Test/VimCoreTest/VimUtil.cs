@@ -132,7 +132,7 @@ namespace Vim.UnitTest
             };
 
             var bindData = new BindData<NormalCommand>(
-                FSharpOption<KeyRemapMode>.None,
+                KeyRemapMode.None,
                 func.ToFSharpFunc());
             var bindDataStorage = BindDataStorage<NormalCommand>.NewSimple(bindData);
             return CommandBinding.NewComplexNormalBinding(
@@ -147,14 +147,13 @@ namespace Vim.UnitTest
             KeyRemapMode remapMode = null,
             CommandFlags flags = CommandFlags.None)
         {
-            var remapModeOption = FSharpOption.CreateForReference(remapMode);
             Func<KeyInput, BindResult<NormalCommand>> func = null;
             func = keyInput =>
             {
                 if (predicate(keyInput))
                 {
                     var data = new BindData<NormalCommand>(
-                        remapModeOption,
+                        remapMode,
                         func.ToFSharpFunc());
                     return BindResult<NormalCommand>.NewNeedMoreInput(data);
                 }
@@ -163,7 +162,7 @@ namespace Vim.UnitTest
             };
 
             var bindData = new BindData<NormalCommand>(
-                remapModeOption,
+                remapMode,
                 func.ToFSharpFunc());
             var bindDataStorage = BindDataStorage<NormalCommand>.NewSimple(bindData);
             return CommandBinding.NewComplexNormalBinding(
@@ -284,7 +283,7 @@ namespace Vim.UnitTest
         internal static BindData<T> CreateBindData<T>(Func<KeyInput, BindResult<T>> func = null, KeyRemapMode remapMode = null)
         {
             func = func ?? (x => BindResult<T>.Cancelled);
-            return new BindData<T>(FSharpOption.CreateForReference(remapMode), func.ToFSharpFunc());
+            return new BindData<T>(remapMode, func.ToFSharpFunc());
         }
 
         internal static BindDataStorage<T> CreateBindDataStorage<T>(BindData<T> bindData = null)

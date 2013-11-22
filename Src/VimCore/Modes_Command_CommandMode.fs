@@ -84,7 +84,7 @@ type internal CommandMode
                 let historyClient = {
                     new IHistoryClient<int, RunResult> with
                         member this.HistoryList = _vimData.CommandHistory
-                        member this.RemapMode = Some KeyRemapMode.Command
+                        member this.RemapMode = KeyRemapMode.Command
                         member this.Beep() = _operations.Beep()
                         member this.ProcessCommand _ command = processCommand command
                         member this.Completed _ command = completed command
