@@ -179,6 +179,32 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class RegisterTest : CommandRunnerTest
+        {
+            public RegisterTest()
+            {
+                Create("");
+                _runner.Add(VimUtil.CreateNormalBinding("dd"));
+            }
+
+
+            [Fact]
+            public void AfterRegister()
+            {
+                _runner.Run("\"a");
+                Assert.True(_runner.IsWaitingForMoreInput);
+                Assert.Equal(KeyRemapMode.Normal, _runner.KeyRemapMode);
+            }
+
+            [Fact]
+            public void InRegister()
+            {
+                _runner.Run("\"");
+                Assert.True(_runner.IsWaitingForMoreInput);
+                Assert.Equal(KeyRemapMode.None, _runner.KeyRemapMode);
+            }
+        }
+
         public sealed class RunTest : CommandRunnerTest
         {
             [Fact]

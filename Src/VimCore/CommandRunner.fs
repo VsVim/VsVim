@@ -28,7 +28,7 @@ type internal CommandRunner
         _commandUtil : ICommandUtil,
         _statusUtil : IStatusUtil,
         _visualKind : VisualKind,
-        _countKeyRemapMode : KeyRemapMode
+        _defaultKeyRemapMode : KeyRemapMode
     ) =
 
     /// Represents the empty state for processing commands.  Holds all of the default
@@ -77,7 +77,7 @@ type internal CommandRunner
             if ki.IsDigit then
                 _inCount <- true
                 let num = num + ki.Char.ToString()
-                BindResult.NeedMoreInput { KeyRemapMode = _countKeyRemapMode; BindFunction = inner num }
+                BindResult.NeedMoreInput { KeyRemapMode = _defaultKeyRemapMode; BindFunction = inner num }
             else
                 _inCount <- false
                 let count = System.Int32.Parse(num)
@@ -100,7 +100,6 @@ type internal CommandRunner
         // Okay now we get to build some fun.  It's possible to enter register and count
         // in either order with either being missing.  So we need to try all of the possibilities
         // here
-
         let bindCommandResult register count =
             let func = x.BindCommand register count
             let data = { KeyRemapMode = KeyRemapMode.None; BindFunction = func }
@@ -114,11 +113,10 @@ type internal CommandRunner
             tryCount keyInput foundCount missingCount
 
         let tryRegisterThenCount keyInput missingRegister = 
-
             let foundRegister register = 
                 let register = Some register
                 let next keyInput = tryCount keyInput (fun count keyInput -> x.BindCommand register (Some count) keyInput) (fun keyInput -> x.BindCommand register None keyInput)
-                BindResult.NeedMoreInput { KeyRemapMode = KeyRemapMode.None; BindFunction = next }
+                BindResult.NeedMoreInput { KeyRemapMode = _defaultKeyRemapMode; BindFunction = next }
 
             tryRegister keyInput foundRegister missingRegister
 

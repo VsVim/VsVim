@@ -1420,6 +1420,16 @@ namespace Vim.UnitTest
                 _vimBuffer.Process("yy");
                 Assert.Equal("cat\n", UnnamedRegister.StringValue);
             }
+
+            [Fact]
+            public void Issue1203()
+            {
+                Create("cat dog", "fish");
+                _textView.MoveCaretTo(4);
+                _vimBuffer.ProcessNotation(":nmap Y y$", enter: true);
+                _vimBuffer.ProcessNotation("\"aY");
+                Assert.Equal("dog", RegisterMap.GetRegister('a').StringValue);
+            }
         }
 
         public abstract class KeyMappingTest : NormalModeIntegrationTest
@@ -1806,6 +1816,28 @@ namespace Vim.UnitTest
                     Create("");
                     _vimBuffer.Process("\"");
                     Assert.Equal(_normalMode.KeyRemapMode, KeyRemapMode.None);
+                }
+
+                /// <summary>
+                /// After a register is entered the KeyRemapMode should still be normal mode
+                /// </summary>
+                [Fact]
+                public void KeyRemapModeAfterRegister()
+                {
+                    Create("");
+                    _vimBuffer.Process("\"a");
+                    Assert.Equal(KeyRemapMode.Normal, _normalMode.KeyRemapMode);
+                }
+
+                /// <summary>
+                /// After a count is entered the KeyRemapMode should still be normal mode
+                /// </summary>
+                [Fact]
+                public void KeyRemapModeAfterCount()
+                {
+                    Create("");
+                    _vimBuffer.Process("3");
+                    Assert.Equal(KeyRemapMode.Normal, _normalMode.KeyRemapMode);
                 }
 
                 /// <summary>
