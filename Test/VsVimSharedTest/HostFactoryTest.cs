@@ -43,7 +43,7 @@ namespace VsVim.UnitTest
                 _mockFactory.Create<ITextManager>(MockBehavior.Loose).Object,
                 vsAdapter.Object,
                 _protectedOperations,
-                new VimBufferCoordinatorFactory(),
+                new VimBufferCoordinatorFactory(Vim),
                 _mockFactory.Create<IKeyUtil>(MockBehavior.Loose).Object,
                 _synchronizer.Object);
         }

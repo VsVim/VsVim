@@ -37,6 +37,23 @@ namespace Vim.UI.Wpf.UnitTest
             /// <summary>
             /// Pass the event onto the various KeyProcessor values
             /// </summary>
+            internal void HandlePreviewKeyUp(object sender, KeyEventArgs e)
+            {
+                for (int i = _keyProcessors.Count - 1; i >=0 ; i--)
+                {
+                    var keyProcessor = _keyProcessors[i];
+                    if (e.Handled && !keyProcessor.IsInterestedInHandledEvents)
+                    {
+                        continue;
+                    }
+
+                    keyProcessor.PreviewKeyUp(e);
+                }
+            }
+
+            /// <summary>
+            /// Pass the event onto the various KeyProcessor values
+            /// </summary>
             internal void HandleKeyUp(object sender, KeyEventArgs e)
             {
                 foreach (var keyProcessor in _keyProcessors)
@@ -218,18 +235,23 @@ namespace Vim.UI.Wpf.UnitTest
             keyDownEventArgs.RoutedEvent = UIElement.KeyDownEvent;
             _defaultInputController.HandleKeyDown(this, keyDownEventArgs);
 
-            // If the event is handled then return
-            if (keyDownEventArgs.Handled)
+            // If the event is handled then don't run any text composition command
+            if (!keyDownEventArgs.Handled)
             {
-                return;
+                var textInputEventArgs = new TextCompositionEventArgs(
+                    _defaultKeyboardDevice,
+                    CreateTextComposition(text));
+                textInputEventArgs.RoutedEvent = UIElement.TextInputEvent;
+                _defaultInputController.HandleTextInput(this, textInputEventArgs);
             }
 
-            // Now raise the TextInput event
-            var textInputEventArgs = new TextCompositionEventArgs(
+            var previewKeyUpEventArgs = new KeyEventArgs(
                 _defaultKeyboardDevice,
-                CreateTextComposition(text));
-            textInputEventArgs.RoutedEvent = UIElement.TextInputEvent;
-            _defaultInputController.HandleTextInput(this, textInputEventArgs);
+                _presentationSource.Object,
+                0,
+                key);
+            previewKeyUpEventArgs.RoutedEvent = UIElement.PreviewKeyUpEvent;
+            _defaultInputController.HandlePreviewKeyUp(this, previewKeyUpEventArgs);
 
             var keyUpEventArgs = new KeyEventArgs(
                 _defaultKeyboardDevice,

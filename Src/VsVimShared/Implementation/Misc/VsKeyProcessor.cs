@@ -42,7 +42,9 @@ namespace VsVim.Implementation.Misc
         /// </summary>
         protected override bool TryProcess(KeyInput keyInput)
         {
-            if (IsDiscardedKeyInput(keyInput))
+            // Check to see if we should be discarding this KeyInput value.  If it is discarded and 
+            // made it back to us then we need to pretend that it was handled here
+            if (_bufferCoordinator.IsDiscarded(keyInput))
             {
                 return true;
             }
@@ -89,7 +91,6 @@ namespace VsVim.Implementation.Misc
         public override void KeyUp(KeyEventArgs args)
         {
             OnKeyEvent(isDown: false);
-            _bufferCoordinator.DiscardedKeyInput = FSharpOption<KeyInput>.None;
             base.KeyUp(args);
         }
 
@@ -182,21 +183,5 @@ namespace VsVim.Implementation.Misc
 
             return vsTextView.GetType().GetProperty("SearchInProgress", BindingFlags.Public | BindingFlags.Instance);
         }
-
-        /// <summary>
-        /// Is this KeyInput value to be discarded based on previous KeyInput values
-        /// </summary>
-        private bool IsDiscardedKeyInput(KeyInput keyInput)
-        {
-            // Check to see if we should be discarding this KeyInput value.  If the KeyInput matches
-            // then we mark the KeyInput as handled since it's the value we want to discard.  In either
-            // case though we clear out the discarded KeyInput value.  This value is only meant to
-            // last for a single key stroke.
-            var isDiscarded = _bufferCoordinator.DiscardedKeyInput.IsSome(keyInput);
-            _bufferCoordinator.DiscardedKeyInput = FSharpOption<KeyInput>.None;
-
-            return isDiscarded;
-        }
-
     }
 }

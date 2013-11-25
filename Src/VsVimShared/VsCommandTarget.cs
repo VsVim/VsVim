@@ -399,6 +399,12 @@ namespace VsVim
             VimTrace.TraceInfo("VsCommandTarget::Exec {0}", editCommand);
             action = null;
 
+            // If the KeyInput was already handled then pretend we handled it here 
+            if (editCommand.HasKeyInput && _bufferCoordinator.IsDiscarded(editCommand.KeyInput))
+            {
+                return true;
+            }
+
             switch (editCommand.EditCommandKind)
             {
                 case EditCommandKind.Undo:
@@ -448,7 +454,7 @@ namespace VsVim
                         var keyInput = editCommand.KeyInput;
 
                         // Discard the input if it's been flagged by a previous QueryStatus
-                        if (_bufferCoordinator.DiscardedKeyInput.IsSome(keyInput))
+                        if (_bufferCoordinator.IsDiscarded(keyInput))
                         {
                             return true;
                         }
@@ -469,8 +475,6 @@ namespace VsVim
         private CommandStatus QueryStatusCore(EditCommand editCommand)
         {
             VimTrace.TraceInfo("VsCommandTarget::QueryStatus {0}", editCommand);
-
-            _bufferCoordinator.DiscardedKeyInput = FSharpOption<KeyInput>.None;
 
             var action = CommandStatus.PassOn;
             switch (editCommand.EditCommandKind)
@@ -554,7 +558,7 @@ namespace VsVim
                 // We've broken the rules a bit by handling the command in QueryStatus and we need
                 // to silently handle this command if it comes back to us again either through 
                 // Exec or through the VsKeyProcessor
-                _bufferCoordinator.DiscardedKeyInput = FSharpOption.Create(keyInput);
+                _bufferCoordinator.Discard(keyInput);
 
                 // If we need to cooperate with R# to handle this command go ahead and pass it on 
                 // to them.  Else mark it as Disabled.
@@ -612,8 +616,6 @@ namespace VsVim
             }
             finally
             {
-                _bufferCoordinator.DiscardedKeyInput = FSharpOption<KeyInput>.None;
-
                 // Run any cleanup actions specified by ExecCore 
                 if (action != null)
                 {

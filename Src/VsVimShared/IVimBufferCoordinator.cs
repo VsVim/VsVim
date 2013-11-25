@@ -14,10 +14,19 @@ namespace VsVim
         IVimBuffer VimBuffer { get; }
 
         /// <summary>
-        /// When this is set to a KeyInput we should discard and set as handled an KeyInput
-        /// which originates from the user that matchs the value
+        /// True if there is a KeyInput value currently being discarded
         /// </summary>
-        FSharpOption<KeyInput> DiscardedKeyInput { get; set; }
+        bool HasDiscardedKeyInput { get; }
+
+        /// <summary>
+        /// Is this KeyInput value already discarded by the input system?
+        /// </summary>
+        bool IsDiscarded(KeyInput keyInput);
+
+        /// <summary>
+        /// Discard this KeyInput for the duration of the current key input scenario
+        /// </summary>
+        void Discard(KeyInput keyInput);
     }
 
     internal interface IVimBufferCoordinatorFactory

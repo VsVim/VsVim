@@ -244,7 +244,7 @@ namespace VsVim.UnitTest
                 _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
                 _resharperUtil.SetupGet(x => x.IsInstalled).Returns(true).Verifiable();
                 Assert.True(RunQueryStatus(KeyInputUtil.EscapeKey));
-                Assert.True(_bufferCoordinator.DiscardedKeyInput.IsSome(KeyInputUtil.EscapeKey));
+                Assert.True(_bufferCoordinator.IsDiscarded(KeyInputUtil.EscapeKey));
                 Assert.Equal(1, count);
                 _factory.Verify();
             }
@@ -264,7 +264,7 @@ namespace VsVim.UnitTest
                 _resharperUtil.SetupGet(x => x.IsInstalled).Returns(true).Verifiable();
                 Assert.True(_vimBuffer.CanProcessAsCommand(backKeyInput));
                 Assert.False(RunQueryStatus(backKeyInput));
-                Assert.True(_bufferCoordinator.DiscardedKeyInput.IsSome(backKeyInput));
+                Assert.True(_bufferCoordinator.IsDiscarded(backKeyInput));
                 Assert.Equal(1, count);
                 _factory.Verify();
             }
@@ -284,7 +284,7 @@ namespace VsVim.UnitTest
                 _resharperUtil.SetupGet(x => x.IsInstalled).Returns(true).Verifiable();
                 Assert.True(_vimBuffer.CanProcessAsCommand(backKeyInput));
                 Assert.True(RunQueryStatus(backKeyInput));
-                Assert.True(_bufferCoordinator.DiscardedKeyInput.IsNone());
+                Assert.False(_bufferCoordinator.HasDiscardedKeyInput);
                 Assert.Equal(0, count);
                 _factory.Verify();
             }
@@ -301,7 +301,7 @@ namespace VsVim.UnitTest
                 _vimBuffer.SwitchMode(ModeKind.ExternalEdit, ModeArgument.None);
                 _resharperUtil.SetupGet(x => x.IsInstalled).Returns(true).Verifiable();
                 Assert.True(RunQueryStatus(KeyInputUtil.EscapeKey));
-                Assert.True(_bufferCoordinator.DiscardedKeyInput.IsSome(KeyInputUtil.EscapeKey));
+                Assert.True(_bufferCoordinator.IsDiscarded(KeyInputUtil.EscapeKey));
                 Assert.Equal(1, count);
                 _factory.Verify();
             }
@@ -337,7 +337,7 @@ namespace VsVim.UnitTest
                 Assert.True(_vimBuffer.CanProcessAsCommand(KeyInputUtil.EnterKey));
                 Assert.False(RunQueryStatus(KeyInputUtil.EnterKey));
                 Assert.Equal(_textView.GetLine(1).Start, _textView.GetCaretPoint());
-                Assert.True(_bufferCoordinator.DiscardedKeyInput.IsSome(KeyInputUtil.EnterKey));
+                Assert.True(_bufferCoordinator.IsDiscarded(KeyInputUtil.EnterKey));
                 _factory.Verify();
             }
 
@@ -356,7 +356,7 @@ namespace VsVim.UnitTest
                 _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
                 Assert.True(_vimBuffer.CanProcessAsCommand(KeyInputUtil.EnterKey));
                 Assert.True(RunQueryStatus(KeyInputUtil.EnterKey));
-                Assert.True(_bufferCoordinator.DiscardedKeyInput.IsNone());
+                Assert.False(_bufferCoordinator.HasDiscardedKeyInput);
                 Assert.Equal(_textView.GetLine(0).Start, _textView.GetCaretPoint());
                 Assert.Same(savedSnapshot, _textView.TextSnapshot);
                 _factory.Verify();
@@ -378,37 +378,13 @@ namespace VsVim.UnitTest
             /// <summary>
             /// If a given KeyInput is marked for discarding make sure we don't pass it along to the
             /// next IOleCommandTarget.
-            ///
-            /// Also make sure that the Exec clears the discarded KeyInput
             /// </summary>
             [Fact]
             public void DiscardedKeyInput()
             {
-                _bufferCoordinator.DiscardedKeyInput = FSharpOption.Create(KeyInputUtil.EscapeKey);
+                _bufferCoordinator.Discard(KeyInputUtil.EscapeKey);
                 RunExec(KeyInputUtil.EscapeKey);
-                Assert.True(_bufferCoordinator.DiscardedKeyInput.IsNone());
                 _factory.Verify();
-            }
-
-            /// <summary>
-            /// The Exec method should clear out the discarded KeyInput value.  The discard is only
-            /// meant to last for a single key stroke so the next Exec or QueryStatus should clear it 
-            /// out.  
-            /// 
-            /// The clear of discard happens irrespective of what the current KeyInput is.  The point
-            /// of DiscardedKeyInput is to prevent user input for a single key stroke.  If Exec comes
-            /// along with a different KeyInput then clearly another KeyInput has happened and we 
-            /// are done
-            /// </summary>
-            [Fact]
-            public void ClearDiscardedKeyInput()
-            {
-                _bufferCoordinator.DiscardedKeyInput = FSharpOption.Create(KeyInputUtil.EnterKey);
-
-                // Make sur Ecape isn't handled so it will go to the next IOleCommandTarget
-                Assert.True(_vimBuffer.CanProcess(KeyInputUtil.EscapeKey));
-                RunExec(KeyInputUtil.EscapeKey);
-                Assert.True(_bufferCoordinator.DiscardedKeyInput.IsNone());
             }
 
             [Fact]

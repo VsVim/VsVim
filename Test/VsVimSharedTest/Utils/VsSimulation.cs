@@ -376,6 +376,7 @@ namespace VsVim.UnitTest.Utils
             // from the default Visual Studio one.  We can guarantee this is true due to MEF 
             // ordering of the components
             _vsKeyProcessorSimulation.KeyProcessors.Add(new VsKeyProcessor(_vsAdapter.Object, bufferCoordinator, _keyUtil, _reportDesignerUtil.Object));
+            _vsKeyProcessorSimulation.KeyProcessors.Add((KeyProcessor)bufferCoordinator);
             _vsKeyProcessorSimulation.KeyProcessors.Add(new SimulationKeyProcessor(bufferCoordinator.VimBuffer.TextView));
         }
 
