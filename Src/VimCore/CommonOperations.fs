@@ -58,25 +58,6 @@ module internal CommonUtil =
 
             statusUtil.OnError (format searchData.Pattern)
 
-/// When maintaining the caret column for motion moves this represents the desired 
-/// column to jump to if there is enough space on the line
-///
-[<RequireQualifiedAccess>]
-[<NoComparison>]
-[<NoEquality>]
-type MaintainCaretColumn = 
-
-    /// There is no saved caret column. 
-    | None
-
-    /// This number is kept as a count of spaces.  Tabs need to be adjusted for when applying
-    /// this setting to a motion
-    | Spaces of int
-
-    /// The caret was moved with the $ motion and the further moves should move to the end of 
-    /// the line 
-    | EndOfLine
-
 type internal CommonOperations
     (
         _vimBufferData : IVimBufferData,
@@ -1159,6 +1140,9 @@ type internal CommonOperations
     interface ICommonOperations with
         member x.VimBufferData = _vimBufferData
         member x.TextView = _textView 
+        member x.MaintainCaretColumn 
+            with get() = x.MaintainCaretColumn
+            and set value = x.MaintainCaretColumn <- value
         member x.EditorOperations = _editorOperations
         member x.EditorOptions = _editorOptions
 
