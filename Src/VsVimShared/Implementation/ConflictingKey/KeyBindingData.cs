@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows;
@@ -61,10 +62,16 @@ namespace VsVim.Implementation.ConflictingKey
             var firstKeyInput = bindings.First().KeyBinding.FirstKeyStroke;
             KeyName = KeyBinding.CreateKeyBindingStringForSingleKeyStroke(firstKeyInput);
 
+            // It's possible that Visual Studio will bind multiple key strokes to the same 
+            // command.  Often it will be things like "Ctrl-[, P" and "Ctr-[, Ctrl-P".  In 
+            // that case we don't want to list the command twice so filter that possibility
+            // out here
+            var commandNames = bindings.Select(x => x.Name).Distinct(StringComparer.OrdinalIgnoreCase);
+
             _bindings = bindings;
             _handledByOptions.AddRange(
                 new[] {
-                     _visualStudioOption = new KeyBindingHandledByOption("Visual Studio", bindings.Select(binding => binding.Name)),
+                     _visualStudioOption = new KeyBindingHandledByOption("Visual Studio", commandNames),
                      _vsVimOption = new KeyBindingHandledByOption("VsVim", Enumerable.Empty<string>())
                 });
         }
