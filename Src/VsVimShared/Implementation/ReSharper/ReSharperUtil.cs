@@ -7,17 +7,25 @@ using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Tagging;
 using Microsoft.VisualStudio.TextManager.Interop;
+using Microsoft.VisualStudio.Utilities;
 using Vim;
 
 namespace VsVim.Implementation.ReSharper
 {
+    [ContentType(Vim.Constants.ContentType)]
+    [TextViewRole(PredefinedTextViewRoles.Document)]
+    [Order(Before = Constants.VisualStudioKeyProcessorName, After = Constants.VsKeyProcessorName)]
     [Export(typeof(IReSharperUtil))]
     [Export(typeof(IExternalEditAdapter))]
-    internal sealed class ReSharperUtil : IExternalEditAdapter, IReSharperUtil
+    [Export(typeof(IKeyProcessorProvider))]
+    [Name("ReSharper Util")]
+    internal sealed class ReSharperUtil : IExternalEditAdapter, IReSharperUtil, IKeyProcessorProvider
     {
         internal const string ResharperTaggerProviderName = "VsDocumentMarkupTaggerProvider";
         private static readonly Guid Resharper5Guid = new Guid("0C6E6407-13FC-4878-869A-C8B4016C57FE");
 
+        private readonly IVim _vim;
+        private readonly IVimBufferCoordinatorFactory _vimBufferCoordinatorFactory;
         private readonly Dictionary<Type, bool> _tagMap = new Dictionary<Type, bool>();
         private readonly bool _isResharperInstalled;
         private IReSharperEditTagDetector _reSharperEditTagDetector;
@@ -30,10 +38,12 @@ namespace VsVim.Implementation.ReSharper
         internal List<Lazy<ITaggerProvider>> TaggerProviders { get; set; }
 
         [ImportingConstructor]
-        internal ReSharperUtil(SVsServiceProvider serviceProvider)
+        internal ReSharperUtil(IVim vim, IVimBufferCoordinatorFactory vimBufferCoordinatorFactory, SVsServiceProvider serviceProvider)
         {
             var vsShell = serviceProvider.GetService<SVsShell, IVsShell>();
             _isResharperInstalled = vsShell.IsPackageInstalled(Resharper5Guid);
+            _vim = vim;
+            _vimBufferCoordinatorFactory = vimBufferCoordinatorFactory;
         }
 
         internal ReSharperUtil(bool isResharperInstalled)
@@ -241,6 +251,22 @@ namespace VsVim.Implementation.ReSharper
         bool IExternalEditAdapter.IsExternalEditTag(ITag tag)
         {
             return IsExternalEditTag(tag);
+        }
+
+        #endregion
+
+        #region IKeyProcessorProvider
+
+        KeyProcessor IKeyProcessorProvider.GetAssociatedProcessor(IWpfTextView wpfTextView)
+        {
+            IVimBuffer vimBuffer;
+            if (!_vim.TryGetOrCreateVimBufferForHost(wpfTextView, out vimBuffer))
+            {
+                return null;
+            }
+
+            var vimBufferCoordinator = _vimBufferCoordinatorFactory.GetVimBufferCoordinator(vimBuffer);
+            return new ReSharperKeyProcessor(vimBufferCoordinator);
         }
 
         #endregion
