@@ -266,7 +266,7 @@ namespace VsVim.Implementation.ReSharper
             }
 
             var vimBufferCoordinator = _vimBufferCoordinatorFactory.GetVimBufferCoordinator(vimBuffer);
-            return new ReSharperKeyProcessor(vimBufferCoordinator);
+            return new ReSharperKeyProcessor
         }
 
         #endregion
