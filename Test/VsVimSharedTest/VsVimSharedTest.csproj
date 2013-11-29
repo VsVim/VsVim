@@ -80,6 +80,7 @@
   <ItemGroup>
     <Compile Include="CodeHygieneTest.cs" />
     <Compile Include="CommandIdTest.cs" />
+    <Compile Include="CommandKeyBindingTest.cs" />
     <Compile Include="CSharpAdapterTest.cs" />
     <Compile Include="HostFactoryTest.cs" />
     <Compile Include="MindScapeTest.cs" />
