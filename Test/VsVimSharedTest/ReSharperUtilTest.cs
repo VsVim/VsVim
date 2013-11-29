@@ -11,7 +11,7 @@ using Xunit;
 
 namespace VsVim.UnitTest
 {
-    public abstract class ResharperExternalEditAdapterTest : VimTestBase
+    public abstract class ReSharperUtilTest : VimTestBase
     {
         sealed class VsTextAdornmentTag : ITag
         {
@@ -19,7 +19,7 @@ namespace VsVim.UnitTest
         }
 
         private ITextBuffer _textBuffer;
-        private ReSharperExternalEditAdapter _adapterRaw;
+        private ReSharperUtil _adapterRaw;
         private IExternalEditAdapter _adapter;
         private MockRepository _factory;
 
@@ -27,11 +27,11 @@ namespace VsVim.UnitTest
         {
             _textBuffer = CreateTextBuffer(lines);
             _factory = new MockRepository(MockBehavior.Strict);
-            _adapterRaw = new ReSharperExternalEditAdapter(true);
+            _adapterRaw = new ReSharperUtil(true);
             _adapter = _adapterRaw;
         }
 
-        public sealed class IsExternalEditMarkerTest : ResharperExternalEditAdapterTest
+        public sealed class IsExternalEditMarkerTest : ReSharperUtilTest
         {
             /// <summary>
             /// Ensure that the R# adapter doesn't pick up on IVsTextMarker instances

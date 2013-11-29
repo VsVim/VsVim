@@ -13,7 +13,7 @@ namespace VsVim.Implementation.ReSharper
 {
     [Export(typeof(IReSharperUtil))]
     [Export(typeof(IExternalEditAdapter))]
-    internal sealed class ReSharperExternalEditAdapter : IExternalEditAdapter, IReSharperUtil
+    internal sealed class ReSharperUtil : IExternalEditAdapter, IReSharperUtil
     {
         internal const string ResharperTaggerProviderName = "VsDocumentMarkupTaggerProvider";
         private static readonly Guid Resharper5Guid = new Guid("0C6E6407-13FC-4878-869A-C8B4016C57FE");
@@ -30,13 +30,13 @@ namespace VsVim.Implementation.ReSharper
         internal List<Lazy<ITaggerProvider>> TaggerProviders { get; set; }
 
         [ImportingConstructor]
-        internal ReSharperExternalEditAdapter(SVsServiceProvider serviceProvider)
+        internal ReSharperUtil(SVsServiceProvider serviceProvider)
         {
             var vsShell = serviceProvider.GetService<SVsShell, IVsShell>();
             _isResharperInstalled = vsShell.IsPackageInstalled(Resharper5Guid);
         }
 
-        internal ReSharperExternalEditAdapter(bool isResharperInstalled)
+        internal ReSharperUtil(bool isResharperInstalled)
         {
             _isResharperInstalled = isResharperInstalled;
         }
