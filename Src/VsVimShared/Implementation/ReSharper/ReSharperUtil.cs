@@ -259,6 +259,12 @@ namespace VsVim.Implementation.ReSharper
 
         KeyProcessor IKeyProcessorProvider.GetAssociatedProcessor(IWpfTextView wpfTextView)
         {
+            // Don't want to invoke the custom processor unless R# is installed on the machine
+            if (!_isResharperInstalled)
+            {
+                return null;
+            }
+
             IVimBuffer vimBuffer;
             if (!_vim.TryGetOrCreateVimBufferForHost(wpfTextView, out vimBuffer))
             {
@@ -266,7 +272,7 @@ namespace VsVim.Implementation.ReSharper
             }
 
             var vimBufferCoordinator = _vimBufferCoordinatorFactory.GetVimBufferCoordinator(vimBuffer);
-            return new ReSharperKeyProcessor
+            return new ReSharperKeyProcessor(vimBufferCoordinator);
         }
 
         #endregion

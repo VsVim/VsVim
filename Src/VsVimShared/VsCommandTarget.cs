@@ -492,85 +492,12 @@ namespace VsVim
                     if (editCommand.HasKeyInput && _vimBuffer.CanProcess(editCommand.KeyInput))
                     {
                         action = CommandStatus.Enable;
-                        if (_resharperUtil.IsInstalled)
-                        {
-                            action = QueryStatusInResharper(editCommand.KeyInput) ?? CommandStatus.Enable;
-                        }
                     }
                     break;
             }
 
             VimTrace.TraceInfo("VsCommandTarget::QueryStatus ", action);
             return action;
-        }
-
-        /// <summary>
-        /// With Resharper installed we need to special certain keys like Escape.  They need to 
-        /// process it in order for them to dismiss their custom intellisense but their processing 
-        /// will swallow the event and not propagate it to us.  So handle, return and account 
-        /// for the double stroke in exec
-        /// </summary>
-        private CommandStatus? QueryStatusInResharper(KeyInput keyInput)
-        {
-            CommandStatus? status = null;
-            var passToResharper = true;
-            if (_vimBuffer.ModeKind.IsAnyInsert() && keyInput == KeyInputUtil.EscapeKey)
-            {
-                // Have to special case Escape here for insert mode.  R# is typically ahead of us on the IOleCommandTarget
-                // chain.  If a completion window is open and we wait for Exec to run R# will be ahead of us and run
-                // their Exec call.  This will lead to them closing the completion window and not calling back into
-                // our exec leaving us in insert mode.
-                status = CommandStatus.Enable;
-            }
-            else if (_vimBuffer.ModeKind == ModeKind.ExternalEdit && keyInput == KeyInputUtil.EscapeKey)
-            {
-                // Have to special case Escape here for external edit mode because we want escape to get us back to 
-                // normal mode.  However we do want this key to make it to R# as well since they may need to dismiss
-                // intellisense
-                status = CommandStatus.Enable;
-            }
-            else if ((keyInput.Key == VimKey.Back || keyInput == KeyInputUtil.EnterKey) && _vimBuffer.ModeKind != ModeKind.Insert)
-            {
-                // R# special cases both the Back and Enter command in various scenarios
-                //
-                //  - Enter is special cased in XML doc comments presumably to do custom formatting 
-                //  - Enter is suppressed during debugging in Exec.  Presumably this is done to avoid the annoying
-                //    "Invalid ENC Edit" dialog during debugging.
-                //  - Back is special cased to delete matched parens in Exec.  
-                //
-                // In all of these scenarios if the Enter or Back key is registered as a valid Vim
-                // command we want to process it as such and prevent R# from seeing the command.  If 
-                // R# is allowed to see the command they will process it often resulting in double 
-                // actions
-                status = CommandStatus.Enable;
-                passToResharper = false;
-            }
-
-            // Only process the KeyInput if we are enabling the value.  When the value is Enabled
-            // we return Enabled from QueryStatus and Visual Studio will push the KeyInput back
-            // through the event chain where either of the following will happen 
-            //
-            //  1. R# will handle the KeyInput
-            //  2. R# will not handle it, it will come back to use in Exec and we will ignore it
-            //     because we mark it as silently handled
-            if (status.HasValue && status.Value == CommandStatus.Enable && _vimBuffer.Process(keyInput).IsAnyHandled)
-            {
-                // We've broken the rules a bit by handling the command in QueryStatus and we need
-                // to silently handle this command if it comes back to us again either through 
-                // Exec or through the VsKeyProcessor
-                _bufferCoordinator.Discard(keyInput);
-
-                // If we need to cooperate with R# to handle this command go ahead and pass it on 
-                // to them.  Else mark it as Disabled.
-                //
-                // Marking it as Disabled will cause the QueryStatus call to fail.  This means the 
-                // KeyInput will be routed to the KeyProcessor chain for the ITextView eventually
-                // making it to our VsKeyProcessor.  That component respects the SilentlyHandled 
-                // status of KeyInput and will silently handle it
-                status = passToResharper ? CommandStatus.Enable : CommandStatus.Disable;
-            }
-
-            return status;
         }
 
         internal static Result<VsCommandTarget> Create(
