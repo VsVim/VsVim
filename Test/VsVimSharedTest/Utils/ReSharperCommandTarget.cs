@@ -20,6 +20,10 @@ namespace VsVim.UnitTest.Utils
         private readonly ITextView _textView;
         private readonly IOleCommandTarget _nextCommandTarget;
 
+        internal bool IntellisenseDisplayed { get; set; }
+        internal int ExecEscapeCount { get; set; }
+        internal int ExecBackCount { get; set; }
+
         internal ReSharperCommandTarget(ITextView textView, IOleCommandTarget nextCommandTarget)
         {
             _textView = textView;
@@ -34,6 +38,11 @@ namespace VsVim.UnitTest.Utils
             if (keyInput.Key == VimKey.Back)
             {
                 return TryExecBack();
+            }
+
+            if (keyInput.Key == VimKey.Escape)
+            {
+                return TryExecEscape();
             }
 
             return false;
@@ -54,6 +63,19 @@ namespace VsVim.UnitTest.Utils
 
             var span = new Span(caretPoint.Position - 1, 2);
             _textView.TextBuffer.Delete(span);
+            ExecBackCount++;
+            return true;
+        }
+
+        private bool TryExecEscape()
+        {
+            if (!IntellisenseDisplayed)
+            {
+                return false;
+            }
+
+            IntellisenseDisplayed = false;
+            ExecEscapeCount++;
             return true;
         }
 

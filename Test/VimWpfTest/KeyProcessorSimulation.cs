@@ -11,6 +11,9 @@ using Vim.UnitTest;
 
 namespace Vim.UI.Wpf.UnitTest
 {
+    /// <summary>
+    /// This type is used to simulate how keyboard input navigates through WPF events
+    /// </summary>
     public class KeyProcessorSimulation
     {
         #region DefaultInputController
@@ -381,6 +384,9 @@ namespace Vim.UI.Wpf.UnitTest
             return (Key)Enum.Parse(typeof(Key), str);
         }
 
+        /// <summary>
+        /// This is intended to simulate the pre-processing of input similar to pre-process message
+        /// </summary>
         protected virtual bool PreProcess(KeyInput keyInput, Key key, ModifierKeys modifierKeys)
         {
             return false;

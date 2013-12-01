@@ -24,15 +24,15 @@ namespace VsVim.UnitTest
         /// <summary>
         /// Create a Visual Studio simulation with the specified set of lines
         /// </summary>
-        private void Create(params string[] lines)
+        protected virtual void Create(params string[] lines)
         {
-            Create(false, lines);
+            CreateCore(false, lines);
         }
 
         /// <summary>
         /// Create a Visual Studio simulation with the specified set of lines
         /// </summary>
-        private void Create(bool simulateResharper, params string[] lines)
+        private void CreateCore(bool simulateResharper, params string[] lines)
         {
             _textView = CreateTextView(lines);
             _textBuffer = _textView.TextBuffer;
@@ -188,7 +188,7 @@ namespace VsVim.UnitTest
             [Fact]
             public void SwitchMode_InsertKey()
             {
-                Create(false, "");
+                Create("");
                 _vsSimulation.Run(VimKey.Insert);
                 Assert.Equal(ModeKind.Insert, _vimBuffer.ModeKind);
                 _vsSimulation.Run(VimKey.Insert);
@@ -202,7 +202,7 @@ namespace VsVim.UnitTest
             [Fact]
             public void WordCompletion_Down()
             {
-                Create(false, "c dog", "cat copter");
+                Create("c dog", "cat copter");
                 _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
                 _textView.MoveCaretTo(1);
                 _vsSimulation.Run(KeyNotationUtil.StringToKeyInput("<C-n>"));
@@ -217,7 +217,7 @@ namespace VsVim.UnitTest
             [Fact]
             public void WordCompletion_TypeChar()
             {
-                Create(false, "c dog", "cat");
+                Create("c dog", "cat");
                 _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
                 _textView.MoveCaretTo(1);
                 _vsSimulation.Run(KeyNotationUtil.StringToKeyInput("<C-n>"));
@@ -227,56 +227,120 @@ namespace VsVim.UnitTest
             }
         }
 
-        public sealed class ReSharperTest : VsIntegrationTest
+        public abstract class ReSharperTest : VsIntegrationTest
         {
-            /// <summary>
-            /// Verify that the back behavior which R# works as expected when we are in 
-            /// Insert mode.  It should delete the simple double matched parens
-            /// </summary>
-            [Fact]
-            public void BackParenWorksInInsert()
+            public sealed class BackTest : ReSharperTest
             {
-                Create(true, "method();", "next");
-                _textView.MoveCaretTo(7);
-                _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
-                _vsSimulation.Run(VimKey.Back);
-                Assert.Equal("method;", _textView.GetLine(0).GetText());
-            }
-
-            /// <summary>
-            /// Make sure that back can be used to navigate across an entire line.  Briefly introduced
-            /// an issue during the testing of the special casing of Back which caused the key to be
-            /// disabled for a time
-            /// </summary>
-            [Fact]
-            public void BackAcrossEntireLine()
-            {
-                Create(true, "hello();", "world");
-                _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
-                _textView.MoveCaretTo(8);
-                for (int i = 0; i < 8; i++)
+                /// <summary>
+                /// Verify that the back behavior which R# works as expected when we are in 
+                /// Insert mode.  It should delete the simple double matched parens
+                /// </summary>
+                [Fact]
+                public void ParenWorksInInsert()
                 {
+                    Create("method();", "next");
+                    _textView.MoveCaretTo(7);
+                    _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
                     _vsSimulation.Run(VimKey.Back);
-                    Assert.Equal(8 - (i + 1), _textView.GetCaretPoint().Position);
+                    Assert.Equal("method;", _textView.GetLine(0).GetText());
+                }
+
+                /// <summary>
+                /// Make sure that back can be used to navigate across an entire line.  Briefly introduced
+                /// an issue during the testing of the special casing of Back which caused the key to be
+                /// disabled for a time
+                /// </summary>
+                [Fact]
+                public void AcrossEntireLine()
+                {
+                    Create("hello();", "world");
+                    _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
+                    _textView.MoveCaretTo(8);
+                    for (int i = 0; i < 8; i++)
+                    {
+                        _vsSimulation.Run(VimKey.Back);
+                        Assert.Equal(8 - (i + 1), _textView.GetCaretPoint().Position);
+                    }
+                }
+
+                /// <summary>
+                /// Ensure the repeating of the Back command is done properly for Resharper.  We special case
+                /// the initial handling of the command.  But this shouldn't affect the repeat as it should
+                /// be using CustomProcess under the hood
+                /// </summary>
+                [Fact]
+                public void Repeat()
+                {
+                    Create("dog toy", "fish chips");
+                    _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
+                    _textView.MoveCaretToLine(1, 5);
+                    _vsSimulation.Run(VimKey.Back, VimKey.Escape);
+                    _textView.MoveCaretTo(4);
+                    _vsSimulation.Run(".");
+                    Assert.Equal("dogtoy", _textView.GetLine(0).GetText());
+                    Assert.Equal(2, _textView.GetCaretPoint().Position);
                 }
             }
 
-            /// <summary>
-            /// Ensure the repeating of the Back command is done properly for Resharper.  We special case
-            /// the initial handling of the command.  But this shouldn't affect the repeat as it should
-            /// be using CustomProcess under the hood
-            /// </summary>
-            [Fact]
-            public void BackRepeat()
+            public sealed class EscapeTest : ReSharperTest
             {
-                Create(true, "dog toy", "fish chips");
-                _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
-                _textView.MoveCaretToLine(1, 5);
-                _vsSimulation.Run(VimKey.Back, VimKey.Escape);
-                _textView.MoveCaretTo(4);
-                _vsSimulation.Run(".");
-                Assert.Equal("dogtoy", _textView.GetLine(0).GetText());
-                Assert.Equal(2, _textView.GetCaretPoint().Position);
+                private int _escapeKeyCount;
+
+                protected override void Create(params string[] lines)
+                {
+                    base.Create(lines);
+
+                    _vimBuffer.KeyInputProcessed += (sender, e) =>
+                    {
+                        if (e.KeyInput.Key == VimKey.Escape)
+                        {
+                            _escapeKeyCount++;
+                        }
+                    };
+                }
+
+                /// <summary>
+                /// The Escape key here needs to go to both R# and VsVim.  We have no way of manually dismissing the 
+                /// intellisense displayed by R# and hence have to let them do it by letting them see the Escape 
+                /// key themselves 
+                /// </summary>
+                [Fact]
+                public void InsertWithIntellisenseActive()
+                {
+                    Create("blah");
+                    _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
+                    _reSharperCommandTarget.IntellisenseDisplayed = true;
+                    _vsSimulation.Run(VimKey.Escape);
+                    Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
+                    Assert.Equal(1, _reSharperCommandTarget.ExecEscapeCount);
+                    Assert.Equal(1, _escapeKeyCount);
+                    Assert.False(_reSharperCommandTarget.IntellisenseDisplayed);
+                }
+
+                /// <summary>
+                /// We have no way to track whether or not R# intellisense is active.  Hence we have to act as if
+                /// it is at all times even when it's not. 
+                /// </summary>
+                [Fact]
+                public void InsertWithIntellisenseInactive()
+                {
+                    Create("blah");
+                    _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
+                    _reSharperCommandTarget.IntellisenseDisplayed = false;
+                    _vsSimulation.Run(VimKey.Escape);
+                    Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
+                    Assert.Equal(0, _reSharperCommandTarget.ExecEscapeCount);
+                    Assert.Equal(1, _escapeKeyCount);
+                    Assert.False(_reSharperCommandTarget.IntellisenseDisplayed);
+                }
+            }
+
+            private ReSharperCommandTarget _reSharperCommandTarget;
+
+            protected override void Create(params string[] lines)
+            {
+                CreateCore(true, lines);
+                _reSharperCommandTarget = _vsSimulation.ReSharperCommandTargetOpt;
             }
         }
     }

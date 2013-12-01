@@ -9,7 +9,7 @@ using Vim.UI.Wpf;
 namespace VsVim.Implementation.Misc
 {
     /// <summary>
-    /// This is the Visual Studio specific implementation of the typical Vim  key processor.  The
+    /// This is the Visual Studio specific implementation of the typical Vim key processor.  The
     /// base key processor is sufficient to actually handle most types of input.  Unfortunately 
     /// there are Visual Studio specific quirks we need to handle.  
     /// </summary>

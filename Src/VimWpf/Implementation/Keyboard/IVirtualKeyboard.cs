@@ -46,7 +46,7 @@ namespace Vim.UI.Wpf.Implementation.Keyboard
 
         /// <summary>
         /// Try and map the given char to it's virtual key and modifiers.  There is no guarantee that if 
-        /// succesful that this return is the only combination which produces that char.  Many more 
+        /// successful that this return is the only combination which produces that char.  Many more 
         /// could exist
         /// </summary>
         bool TryMapChar(char c, out uint virtualKey, out VirtualKeyModifiers virtualKeyModifiers);

@@ -36,6 +36,10 @@ namespace VsVim.UnitTest.Utils
     {
         #region VsKeyProcessorSimulation
 
+        /// <summary>
+        /// This is a Visual Studio specific implementation of the key processor.  It takes into account the interaction
+        /// between IOleCommandTarget and keyboard input. 
+        /// </summary>
         private sealed class VsKeyProcessorSimulation : KeyProcessorSimulation
         {
             private readonly VsSimulation _vsSimulation;
@@ -45,9 +49,25 @@ namespace VsVim.UnitTest.Utils
                 _vsSimulation = vsSimulation;
             }
 
+            /// <summary>
+            /// Visual Studio hooks PreTranslateMessage and will process keyboard input there if it maps to a 
+            /// command keyboard binding.  Textual input is *not* handled here but keys like Esc, Up, Down, etc ...
+            /// are.  They need to be routed directly to IOleCommandTarget
+            /// </summary>
             protected override bool PreProcess(KeyInput keyInput, Key key, ModifierKeys modifierKeys)
             {
-                return _vsSimulation.RunInOleCommandTarget(keyInput);
+                switch (keyInput.Key)
+                {
+                    case VimKey.Escape:
+                    case VimKey.Back:
+                    case VimKey.Up:
+                    case VimKey.Down:
+                    case VimKey.Left:
+                    case VimKey.Right:
+                        return _vsSimulation.RunInOleCommandTarget(keyInput);
+                    default:
+                        return false;
+                }
             }
         }
 
@@ -218,12 +238,21 @@ namespace VsVim.UnitTest.Utils
         private readonly Mock<IReportDesignerUtil> _reportDesignerUtil;
         private readonly TestableSynchronizationContext _testableSynchronizationContext;
         private readonly IKeyUtil _keyUtil;
+        private readonly ReSharperCommandTarget _reSharperCommandTarget;
         private bool _simulateStandardKeyMappings;
 
         internal bool SimulateStandardKeyMappings
         {
             get { return _simulateStandardKeyMappings; }
             set { _simulateStandardKeyMappings = value; }
+        }
+
+        /// <summary>
+        /// In the case where we are simulating R# this will be the command target used 
+        /// </summary>
+        internal ReSharperCommandTarget ReSharperCommandTargetOpt
+        {
+            get { return _reSharperCommandTarget; }
         }
 
         internal Mock<IDisplayWindowBroker> DisplayWindowBroker
@@ -284,8 +313,8 @@ namespace VsVim.UnitTest.Utils
             // behind them
             if (simulateResharper)
             {
-                var resharperCommandTarget = new ReSharperCommandTarget(_wpfTextView, vsCommandTarget);
-                _commandTarget = resharperCommandTarget;
+                _reSharperCommandTarget = new ReSharperCommandTarget(_wpfTextView, vsCommandTarget);
+                _commandTarget = _reSharperCommandTarget;
             }
             else
             {
