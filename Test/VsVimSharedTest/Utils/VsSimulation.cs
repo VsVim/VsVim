@@ -16,6 +16,7 @@ using Vim.UI.Wpf;
 using Vim.UI.Wpf.UnitTest;
 using Vim.UnitTest;
 using VsVim.Implementation.Misc;
+using VsVim.Implementation.ReSharper;
 
 namespace VsVim.UnitTest.Utils
 {
@@ -192,78 +193,6 @@ namespace VsVim.UnitTest.Utils
 
         #endregion
 
-        #region ResharperCommandTarget
-
-        /// <summary>
-        /// Simulation of the R# command target.  This is intended to implement the most basic of 
-        /// R# functionality for the purpose of testing
-        /// </summary>
-        private sealed class ResharperCommandTarget : IOleCommandTarget
-        {
-            private readonly ITextView _textView;
-            private readonly IOleCommandTarget _nextCommandTarget;
-
-            internal ResharperCommandTarget(ITextView textView, IOleCommandTarget nextCommandTarget)
-            {
-                _textView = textView;
-                _nextCommandTarget = nextCommandTarget;
-            }
-
-            /// <summary>
-            /// Try and simulate the execution of the few KeyInput values we care about
-            /// </summary>
-            private bool TryExec(KeyInput keyInput)
-            {
-                if (keyInput.Key == VimKey.Back)
-                {
-                    return TryExecBack();
-                }
-
-                return false;
-            }
-
-            /// <summary>
-            /// R# will delete both parens when the Back key is used on the closing paren
-            /// </summary>
-            private bool TryExecBack()
-            {
-                var caretPoint = _textView.GetCaretPoint();
-                if (caretPoint.Position < 2 ||
-                    caretPoint.GetChar() != ')' ||
-                    caretPoint.Subtract(1).GetChar() != '(')
-                {
-                    return false;
-                }
-
-                var span = new Span(caretPoint.Position - 1, 2);
-                _textView.TextBuffer.Delete(span);
-                return true;
-            }
-
-            int IOleCommandTarget.Exec(ref Guid commandGroup, uint commandId, uint commandExecOpt, IntPtr variantIn, IntPtr variantOut)
-            {
-                KeyInput keyInput;
-                EditCommandKind editCommandKind;
-                if (!OleCommandUtil.TryConvert(commandGroup, commandId, variantIn, out keyInput, out editCommandKind) ||
-                    !TryExec(keyInput))
-                {
-                    return _nextCommandTarget.Exec(ref commandGroup, commandId, commandExecOpt, variantIn, variantOut);
-                }
-
-                return VSConstants.S_OK;
-            }
-
-            /// <summary>
-            /// R# just forwards it's QueryStatus call onto the next target
-            /// </summary>
-            int IOleCommandTarget.QueryStatus(ref Guid pguidCmdGroup, uint cCmds, OLECMD[] prgCmds, IntPtr pCmdText)
-            {
-                return _nextCommandTarget.QueryStatus(ref pguidCmdGroup, cCmds, prgCmds, pCmdText);
-            }
-        }
-
-        #endregion
-
         /// <summary>
         /// Cache of QueryStatus commands
         /// </summary>
@@ -355,7 +284,7 @@ namespace VsVim.UnitTest.Utils
             // behind them
             if (simulateResharper)
             {
-                var resharperCommandTarget = new ResharperCommandTarget(_wpfTextView, vsCommandTarget);
+                var resharperCommandTarget = new ReSharperCommandTarget(_wpfTextView, vsCommandTarget);
                 _commandTarget = resharperCommandTarget;
             }
             else
@@ -375,6 +304,10 @@ namespace VsVim.UnitTest.Utils
             // Create the input controller.  Make sure that the VsVim one is ahead in the list
             // from the default Visual Studio one.  We can guarantee this is true due to MEF 
             // ordering of the components
+            if (simulateResharper)
+            {
+                _vsKeyProcessorSimulation.KeyProcessors.Add(new ReSharperKeyProcessor(bufferCoordinator));
+            }
             _vsKeyProcessorSimulation.KeyProcessors.Add(new VsKeyProcessor(_vsAdapter.Object, bufferCoordinator, _keyUtil, _reportDesignerUtil.Object));
             _vsKeyProcessorSimulation.KeyProcessors.Add((KeyProcessor)bufferCoordinator);
             _vsKeyProcessorSimulation.KeyProcessors.Add(new SimulationKeyProcessor(bufferCoordinator.VimBuffer.TextView));
