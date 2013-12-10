@@ -42,7 +42,7 @@ namespace VsVim.Implementation.ReSharper
             var handled = false;
             if (_vimBuffer.ModeKind.IsAnyInsert())
             {
-                handled = _vimBuffer.Process(KeyInputUtil.EscapeKey).IsAnyHandled;
+                handled = TryProcess(KeyInputUtil.EscapeKey);
             }
 
             // Have to special case Escape here for external edit mode because we want escape to get us back to 
@@ -50,7 +50,7 @@ namespace VsVim.Implementation.ReSharper
             // intellisense
             if (_vimBuffer.ModeKind == ModeKind.ExternalEdit)
             {
-                handled = _vimBuffer.Process(KeyInputUtil.EscapeKey).IsAnyHandled;
+                handled = TryProcess(KeyInputUtil.EscapeKey);
             }
 
             // If we handled it then discard the KeyInput so that we don't double process it.  We still want the 
@@ -72,7 +72,7 @@ namespace VsVim.Implementation.ReSharper
             // handling succeeds then we want to prevent R# from seeing the command.  If they see
             // it they will process it and the result will be conflicting actions
             var keyInput = KeyInputUtil.VimKeyToKeyInput(VimKey.Back);
-            if (!_vimBuffer.ModeKind.IsAnyInsert() && _vimBuffer.Process(keyInput).IsAnyHandled)
+            if (!_vimBuffer.ModeKind.IsAnyInsert() && TryProcess(keyInput))
             {
                 _vimBufferCoordinator.Discard(keyInput);
                 args.Handled = true;
@@ -91,11 +91,21 @@ namespace VsVim.Implementation.ReSharper
             // handling succeeds then we want to prevent R# from seeing the command.  If they see
             // it they will process it and the result will be conflicting actions
             var keyInput = KeyInputUtil.EnterKey;
-            if (!_vimBuffer.ModeKind.IsAnyInsert() && _vimBuffer.Process(keyInput).IsAnyHandled)
+            if (!_vimBuffer.ModeKind.IsAnyInsert() && TryProcess(keyInput))
             {
                 _vimBufferCoordinator.Discard(keyInput);
                 args.Handled = true;
             }
+        }
+
+        private bool TryProcess(KeyInput keyInput)
+        {
+            if (_vimBufferCoordinator.IsDiscarded(keyInput))
+            {
+                return false; ;
+            }
+
+            return _vimBuffer.Process(keyInput).IsAnyHandled;
         }
     }
 }

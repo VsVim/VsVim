@@ -35,8 +35,21 @@ namespace VsVim.Implementation.Misc
             _buffer = buffer;
         }
 
+        public override bool IsInterestedInHandledEvents
+        {
+            get { return true; }
+        }
+
+        public override void KeyUp(KeyEventArgs args)
+        {
+            VimTrace.TraceInfo("VimBufferCoordinator::KeyUp {0}", args.Key);
+            base.KeyUp(args);
+            _discardedKeyInputOpt = null;
+        }
+
         public override void PreviewKeyUp(KeyEventArgs args)
         {
+            VimTrace.TraceInfo("VimBufferCoordinator::PreviewKeyUp {0}", args.Key);
             base.PreviewKeyUp(args);
             _discardedKeyInputOpt = null;
         }
@@ -67,9 +80,10 @@ namespace VsVim.Implementation.Misc
     }
 
     [Export(typeof(IVimBufferCoordinatorFactory))]
+    [Export(typeof(IKeyProcessorProvider))]
     [Order(After = Constants.VisualStudioKeyProcessorName)]
     [ContentType(Vim.Constants.AnyContentType)]
-    [TextViewRole(PredefinedTextViewRoles.PrimaryDocument)]
+    [TextViewRole(PredefinedTextViewRoles.Document)]
     [Name("Buffer Coordinator Key Processor")]
     internal sealed class VimBufferCoordinatorFactory : IVimBufferCoordinatorFactory, IKeyProcessorProvider
     {

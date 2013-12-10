@@ -54,8 +54,14 @@ namespace VsVim.UnitTest.Utils
             /// command keyboard binding.  Textual input is *not* handled here but keys like Esc, Up, Down, etc ...
             /// are.  They need to be routed directly to IOleCommandTarget
             /// </summary>
-            protected override bool PreProcess(KeyInput keyInput, Key key, ModifierKeys modifierKeys)
+            protected override bool PreProcess(KeyDirection keyDirection, KeyInput keyInput, Key key, ModifierKeys modifierKeys)
             {
+                // Visual Studio only intercepts the down events.  
+                if (keyDirection != KeyDirection.Down)
+                {
+                    return false;
+                }
+
                 switch (keyInput.Key)
                 {
                     case VimKey.Escape:
