@@ -506,7 +506,7 @@ namespace VsVim.UnitTest
             {
                 var editCommand = CreateEditCommand(EditCommandKind.GoToDefinition);
                 Action action = null;
-                Assert.False(_targetRaw.ExecCore(editCommand, out action));
+                Assert.False(_targetRaw.Exec(editCommand, out action));
             }
         }
     }

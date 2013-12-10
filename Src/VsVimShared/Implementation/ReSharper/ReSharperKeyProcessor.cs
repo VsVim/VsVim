@@ -4,6 +4,7 @@ using Vim;
 
 namespace VsVim.Implementation.ReSharper
 {
+    // TODO: Delete this? 
     internal sealed class ReSharperKeyProcessor : KeyProcessor
     {
         private readonly IVimBuffer _vimBuffer;
