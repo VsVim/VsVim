@@ -49,12 +49,6 @@ namespace VsVim
 
     internal sealed class StandardCommandTarget : ICommandTarget
     {
-        /// <summary>
-        /// This is the key which is used to store VsCommandTarget instances in the ITextView
-        /// property bag
-        /// </summary>
-        private static readonly object Key = new object();
-
         private readonly IVimBuffer _vimBuffer;
         private readonly IVim _vim;
         private readonly IVimBufferCoordinator _bufferCoordinator;
@@ -63,7 +57,6 @@ namespace VsVim
         private readonly ITextManager _textManager;
         private readonly IVsAdapter _vsAdapter;
         private readonly IDisplayWindowBroker _broker;
-        private readonly IReSharperUtil _resharperUtil;
         private readonly IKeyUtil _keyUtil;
 
         internal StandardCommandTarget(
@@ -71,7 +64,6 @@ namespace VsVim
             ITextManager textManager,
             IVsAdapter vsAdapter,
             IDisplayWindowBroker broker,
-            IReSharperUtil resharperUtil,
             IKeyUtil keyUtil)
         {
             _vimBuffer = bufferCoordinator.VimBuffer;
@@ -82,7 +74,6 @@ namespace VsVim
             _textManager = textManager;
             _vsAdapter = vsAdapter;
             _broker = broker;
-            _resharperUtil = resharperUtil;
             _keyUtil = keyUtil;
         }
 
@@ -126,7 +117,7 @@ namespace VsVim
         private bool IsDisplayWindowKey(KeyInput keyInput)
         {
             // Consider normal completion
-            if (_broker.IsCompletionActive || _resharperUtil.IsInstalled)
+            if (_broker.IsCompletionActive)
             {
                 return
                     keyInput.IsArrowKey ||
@@ -185,13 +176,7 @@ namespace VsVim
             // experience for those features
             if (!_broker.IsAnyDisplayActive())
             {
-                // The one exception to this rule is R#.  We can't accurately determine if 
-                // R# has intellisense active or not so we have to pretend like it always 
-                // does.  We limit this to insert mode only though. 
-                if (!_resharperUtil.IsInstalled || _vimBuffer.ModeKind != ModeKind.Insert)
-                {
-                    return _vimBuffer.Process(keyInput).IsAnyHandled;
-                }
+                return _vimBuffer.Process(keyInput).IsAnyHandled;
             }
 
             // Next we need to consider here are Key mappings.  The CanProcess and Process APIs 
@@ -223,64 +208,6 @@ namespace VsVim
             }
 
             return handled;
-        }
-
-        /// <summary>
-        /// Try and convert the Visual Studio command to it's equivalent KeyInput
-        /// </summary>
-        internal bool TryConvert(Guid commandGroup, uint commandId, IntPtr variantIn, out KeyInput keyInput)
-        {
-            keyInput = null;
-
-            EditCommand editCommand;
-            if (!TryConvert(commandGroup, commandId, variantIn, out editCommand))
-            {
-                return false;
-            }
-
-            if (!editCommand.HasKeyInput)
-            {
-                return false;
-            }
-
-            keyInput = editCommand.KeyInput;
-            return true;
-        }
-
-        /// <summary>
-        /// Try and convert the Visual Studio command to it's equivalent KeyInput
-        /// </summary>
-        internal bool TryConvert(Guid commandGroup, uint commandId, IntPtr variantIn, out EditCommand editCommand)
-        {
-            editCommand = null;
-
-            // Don't ever process a command when we are in an automation function.  Doing so will cause VsVim to 
-            // intercept items like running Macros and certain wizard functionality
-            if (_vsAdapter.InAutomationFunction)
-            {
-                return false;
-            }
-
-            // Don't intercept commands while incremental search is active.  Don't want to interfere with it
-            if (_vsAdapter.IsIncrementalSearchActive(_vimBuffer.TextView))
-            {
-                return false;
-            }
-
-            var modifiers = _keyUtil.GetKeyModifiers(_vsAdapter.KeyboardDevice.Modifiers);
-            if (!OleCommandUtil.TryConvert(commandGroup, commandId, variantIn, modifiers, out editCommand))
-            {
-                return false;
-            }
-
-            // Don't process Visual Studio commands.  If the key sequence is mapped to a Visual Studio command
-            // then that command wins.
-            if (editCommand.EditCommandKind == EditCommandKind.VisualStudioCommand)
-            {
-                return false;
-            }
-
-            return true;
         }
 
         /// <summary>
@@ -427,12 +354,6 @@ namespace VsVim
 
     internal sealed class ReSharperCommandTarget : ICommandTarget
     {
-        /// <summary>
-        /// This is the key which is used to store VsCommandTarget instances in the ITextView
-        /// property bag
-        /// </summary>
-        private static readonly object Key = new object();
-
         private readonly IVimBuffer _vimBuffer;
         private readonly IVim _vim;
         private readonly IVimBufferCoordinator _bufferCoordinator;
@@ -623,7 +544,6 @@ namespace VsVim
                         textManager,
                         vsAdapter,
                         broker,
-                        resharperUtil,
                         keyUtil)
                 });
         }
