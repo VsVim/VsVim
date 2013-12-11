@@ -244,7 +244,7 @@ namespace VsVim.UnitTest.Utils
         private readonly Mock<IReportDesignerUtil> _reportDesignerUtil;
         private readonly TestableSynchronizationContext _testableSynchronizationContext;
         private readonly IKeyUtil _keyUtil;
-        private readonly ReSharperCommandTarget _reSharperCommandTarget;
+        private readonly ReSharperCommandTargetSimulation _reSharperCommandTarget;
         private bool _simulateStandardKeyMappings;
 
         internal bool SimulateStandardKeyMappings
@@ -256,7 +256,7 @@ namespace VsVim.UnitTest.Utils
         /// <summary>
         /// In the case where we are simulating R# this will be the command target used 
         /// </summary>
-        internal ReSharperCommandTarget ReSharperCommandTargetOpt
+        internal ReSharperCommandTargetSimulation ReSharperCommandTargetOpt
         {
             get { return _reSharperCommandTarget; }
         }
@@ -319,7 +319,7 @@ namespace VsVim.UnitTest.Utils
             // behind them
             if (simulateResharper)
             {
-                _reSharperCommandTarget = new ReSharperCommandTarget(_wpfTextView, vsCommandTarget);
+                _reSharperCommandTarget = new ReSharperCommandTargetSimulation(_wpfTextView, vsCommandTarget);
                 _commandTarget = _reSharperCommandTarget;
             }
             else

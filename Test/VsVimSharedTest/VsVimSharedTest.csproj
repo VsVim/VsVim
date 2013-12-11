@@ -105,7 +105,7 @@
     <Compile Include="SnippetExternalEditAdapterTest.cs" />
     <Compile Include="TextManagerTest.cs" />
     <Compile Include="Utils\CharPointer.cs" />
-    <Compile Include="Utils\ReSharperCommandTarget.cs" />
+    <Compile Include="Utils\ReSharperCommandTargetSimulation.cs" />
     <Compile Include="Utils\VsSimulation.cs" />
     <Compile Include="VimApplicationSettingsTest.cs" />
     <Compile Include="VsAdapterTest.cs" />

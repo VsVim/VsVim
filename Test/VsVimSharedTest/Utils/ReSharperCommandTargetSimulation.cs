@@ -15,7 +15,7 @@ namespace VsVim.UnitTest.Utils
     /// Simulation of the R# command target.  This is intended to implement the most basic of 
     /// R# functionality for the purpose of testing
     /// </summary>
-    internal sealed class ReSharperCommandTarget : IOleCommandTarget
+    internal sealed class ReSharperCommandTargetSimulation : IOleCommandTarget
     {
         private readonly ITextView _textView;
         private readonly IOleCommandTarget _nextCommandTarget;
@@ -24,7 +24,7 @@ namespace VsVim.UnitTest.Utils
         internal int ExecEscapeCount { get; set; }
         internal int ExecBackCount { get; set; }
 
-        internal ReSharperCommandTarget(ITextView textView, IOleCommandTarget nextCommandTarget)
+        internal ReSharperCommandTargetSimulation(ITextView textView, IOleCommandTarget nextCommandTarget)
         {
             _textView = textView;
             _nextCommandTarget = nextCommandTarget;

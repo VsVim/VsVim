@@ -425,7 +425,7 @@ namespace VsVim
         }
     }
 
-    internal sealed class VsVimReSharperCommandTarget : ICommandTarget
+    internal sealed class ReSharperCommandTarget : ICommandTarget
     {
         /// <summary>
         /// This is the key which is used to store VsCommandTarget instances in the ITextView
@@ -444,7 +444,7 @@ namespace VsVim
         private readonly IReSharperUtil _resharperUtil;
         private readonly IKeyUtil _keyUtil;
 
-        internal VsVimReSharperCommandTarget(
+        internal ReSharperCommandTarget(
             IVimBufferCoordinator bufferCoordinator,
             ITextManager textManager,
             IVsAdapter vsAdapter,
@@ -611,7 +611,7 @@ namespace VsVim
 
             _commandTargets = new ReadOnlyCollection<ICommandTarget>(new ICommandTarget[]
                 {
-                    new VsVimReSharperCommandTarget(
+                    new ReSharperCommandTarget(
                         bufferCoordinator,
                         textManager,
                         vsAdapter,

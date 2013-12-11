@@ -335,7 +335,7 @@ namespace VsVim.UnitTest
                 }
             }
 
-            private ReSharperCommandTarget _reSharperCommandTarget;
+            private ReSharperCommandTargetSimulation _reSharperCommandTarget;
 
             protected override void Create(params string[] lines)
             {
