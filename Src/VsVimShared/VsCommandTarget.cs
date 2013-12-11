@@ -16,6 +16,10 @@ using Vim.UI.Wpf;
 
 namespace VsVim
 {
+    // TODO: establish who is control of tracing (need it for R# and standard?)
+    // TODO: establish who is control of looking at IVimBufferCoordinator
+    // TODO: Get rid of the ExecCore, QueryStatusCore names
+
     internal enum CommandStatus
     {
         /// <summary>
@@ -28,6 +32,7 @@ namespace VsVim
         /// </summary>
         Disable,
 
+        // TODO: need a better name here 
         /// <summary>
         /// VsVim isn't concerned about the command and it's left to the next IOleCommandTarget
         /// to determine if it's enabled or not
@@ -42,7 +47,7 @@ namespace VsVim
         bool Exec(EditCommand editCommand, out Action action);
     }
 
-    internal sealed class InitialCommandTarget : ICommandTarget
+    internal sealed class StandardCommandTarget : ICommandTarget
     {
         /// <summary>
         /// This is the key which is used to store VsCommandTarget instances in the ITextView
@@ -61,7 +66,7 @@ namespace VsVim
         private readonly IReSharperUtil _resharperUtil;
         private readonly IKeyUtil _keyUtil;
 
-        internal InitialCommandTarget(
+        internal StandardCommandTarget(
             IVimBufferCoordinator bufferCoordinator,
             ITextManager textManager,
             IVsAdapter vsAdapter,
@@ -401,11 +406,6 @@ namespace VsVim
                     if (editCommand.HasKeyInput && _vimBuffer.CanProcess(editCommand.KeyInput))
                     {
                         action = CommandStatus.Enable;
-                        if (_resharperUtil.IsInstalled)
-                        {
-                            action = QueryStatusInResharper(editCommand.KeyInput) ?? CommandStatus.Enable;
-                        }
-
                     }
                     break;
             }
@@ -414,13 +414,83 @@ namespace VsVim
             return action;
         }
 
+        CommandStatus ICommandTarget.QueryStatus(EditCommand editCommand)
+        {
+            return QueryStatusCore(editCommand);
+        }
+
+        bool ICommandTarget.Exec(EditCommand editCommand, out Action action)
+        {
+            return ExecCore(editCommand, out action);
+        }
+    }
+
+    internal sealed class VsVimReSharperCommandTarget : ICommandTarget
+    {
+        /// <summary>
+        /// This is the key which is used to store VsCommandTarget instances in the ITextView
+        /// property bag
+        /// </summary>
+        private static readonly object Key = new object();
+
+        private readonly IVimBuffer _vimBuffer;
+        private readonly IVim _vim;
+        private readonly IVimBufferCoordinator _bufferCoordinator;
+        private readonly ITextBuffer _textBuffer;
+        private readonly ITextView _textView;
+        private readonly ITextManager _textManager;
+        private readonly IVsAdapter _vsAdapter;
+        private readonly IDisplayWindowBroker _broker;
+        private readonly IReSharperUtil _resharperUtil;
+        private readonly IKeyUtil _keyUtil;
+
+        internal VsVimReSharperCommandTarget(
+            IVimBufferCoordinator bufferCoordinator,
+            ITextManager textManager,
+            IVsAdapter vsAdapter,
+            IDisplayWindowBroker broker,
+            IReSharperUtil resharperUtil,
+            IKeyUtil keyUtil)
+        {
+            _vimBuffer = bufferCoordinator.VimBuffer;
+            _vim = _vimBuffer.Vim;
+            _bufferCoordinator = bufferCoordinator;
+            _textBuffer = _vimBuffer.TextBuffer;
+            _textView = _vimBuffer.TextView;
+            _textManager = textManager;
+            _vsAdapter = vsAdapter;
+            _broker = broker;
+            _resharperUtil = resharperUtil;
+            _keyUtil = keyUtil;
+        }
+
+        internal bool ExecCore(EditCommand editCommand, out Action action)
+        {
+            action = null;
+            return false;
+        }
+
+        private CommandStatus QueryStatusCore(EditCommand editCommand)
+        {
+            if (editCommand.HasKeyInput && _vimBuffer.CanProcess(editCommand.KeyInput))
+            {
+                var commandStatus = QueryStatusCore(editCommand.KeyInput);
+                if (commandStatus.HasValue)
+                {
+                    return commandStatus.Value;
+                }
+            }
+
+            return CommandStatus.PassOn;
+        }
+
         /// <summary>
         /// With ReSharper installed we need to special certain keys like Escape.  They need to 
         /// process it in order for them to dismiss their custom intellisense but their processing 
         /// will swallow the event and not propagate it to us.  So handle, return and account 
         /// for the double stroke in exec
         /// </summary>
-        private CommandStatus? QueryStatusInResharper(KeyInput keyInput)
+        private CommandStatus? QueryStatusCore(KeyInput keyInput)
         {
             CommandStatus? status = null;
             var passToResharper = true;
@@ -541,7 +611,14 @@ namespace VsVim
 
             _commandTargets = new ReadOnlyCollection<ICommandTarget>(new ICommandTarget[]
                 {
-                    new InitialCommandTarget(
+                    new VsVimReSharperCommandTarget(
+                        bufferCoordinator,
+                        textManager,
+                        vsAdapter,
+                        broker,
+                        resharperUtil,
+                        keyUtil),
+                    new StandardCommandTarget(
                         bufferCoordinator,
                         textManager,
                         vsAdapter,
