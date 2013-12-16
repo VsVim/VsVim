@@ -17,9 +17,6 @@ using Vim.UI.Wpf;
 
 namespace VsVim
 {
-    // TODO: establish who is control of tracing (need it for R# and standard?)
-    // TODO: establish who is control of looking at IVimBufferCoordinator
-    // TODO: Get rid of the ExecCore, QueryStatusCore names
     // TODO: mapped keys which relate to intellisense should be passed along as mapped
 
     internal enum CommandStatus
@@ -229,9 +226,8 @@ namespace VsVim
             }
         }
 
-        internal bool ExecCore(EditCommand editCommand, out Action action)
+        internal bool Exec(EditCommand editCommand, out Action action)
         {
-            VimTrace.TraceInfo("VsCommandTarget::Exec {0}", editCommand);
             action = null;
 
             // If the KeyInput was already handled then pretend we handled it here 
@@ -307,10 +303,8 @@ namespace VsVim
             }
         }
 
-        private CommandStatus QueryStatusCore(EditCommand editCommand)
+        private CommandStatus QueryStatus(EditCommand editCommand)
         {
-            VimTrace.TraceInfo("VsCommandTarget::QueryStatus {0}", editCommand);
-
             var action = CommandStatus.PassOn;
             switch (editCommand.EditCommandKind)
             {
@@ -331,19 +325,22 @@ namespace VsVim
                     break;
             }
 
-            VimTrace.TraceInfo("VsCommandTarget::QueryStatus ", action);
             return action;
         }
 
+        #region ICommandTarget
+
         CommandStatus ICommandTarget.QueryStatus(EditCommand editCommand)
         {
-            return QueryStatusCore(editCommand);
+            return QueryStatus(editCommand);
         }
 
         bool ICommandTarget.Exec(EditCommand editCommand, out Action action)
         {
-            return ExecCore(editCommand, out action);
+            return Exec(editCommand, out action);
         }
+
+        #endregion
     }
 
     internal sealed class ReSharperCommandTarget : ICommandTarget
@@ -362,13 +359,13 @@ namespace VsVim
             _resharperUtil = resharperUtil;
         }
 
-        internal bool ExecCore(EditCommand editCommand, out Action action)
+        internal bool Exec(EditCommand editCommand, out Action action)
         {
             action = null;
             return false;
         }
 
-        private CommandStatus QueryStatusCore(EditCommand editCommand)
+        private CommandStatus QueryStatus(EditCommand editCommand)
         {
             if (editCommand.HasKeyInput && _vimBuffer.CanProcess(editCommand.KeyInput))
             {
@@ -451,15 +448,19 @@ namespace VsVim
             return status;
         }
 
+        #region ICommandTarget
+
         CommandStatus ICommandTarget.QueryStatus(EditCommand editCommand)
         {
-            return QueryStatusCore(editCommand);
+            return QueryStatus(editCommand);
         }
 
         bool ICommandTarget.Exec(EditCommand editCommand, out Action action)
         {
-            return ExecCore(editCommand, out action);
+            return Exec(editCommand, out action);
         }
+
+        #endregion
     }
 
     /// <summary>
