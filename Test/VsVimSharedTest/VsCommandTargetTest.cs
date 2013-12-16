@@ -32,7 +32,7 @@ namespace VsVim.UnitTest
         internal readonly VsCommandTarget _targetRaw;
         internal readonly IVimBufferCoordinator _bufferCoordinator;
 
-        protected VsCommandTargetTest()
+        protected VsCommandTargetTest(bool isReSharperInstalled)
         {
             _textView = CreateTextView("");
             _textBuffer = _textView.TextBuffer;
@@ -43,7 +43,7 @@ namespace VsVim.UnitTest
 
             // By default Resharper isn't loaded
             _resharperUtil = _factory.Create<IReSharperUtil>();
-            _resharperUtil.SetupGet(x => x.IsInstalled).Returns(false);
+            _resharperUtil.SetupGet(x => x.IsInstalled).Returns(isReSharperInstalled);
 
             _nextTarget = _factory.Create<IOleCommandTarget>(MockBehavior.Strict);
             _vsAdapter = _factory.Create<IVsAdapter>();
@@ -162,6 +162,12 @@ namespace VsVim.UnitTest
 
         public sealed class TryConvertTest : VsCommandTargetTest
         {
+            public TryConvertTest()
+                : base(isReSharperInstalled: false)
+            {
+
+            }
+
             private void AssertCannotConvert2K(VSConstants.VSStd2KCmdID id)
             {
                 KeyInput ki;
@@ -198,6 +204,12 @@ namespace VsVim.UnitTest
 
         public sealed class QueryStatusTest : VsCommandTargetTest
         {
+            public QueryStatusTest()
+                : base(isReSharperInstalled: false)
+            {
+
+            }
+
             [Fact]
             public void IgnoreEscapeIfCantProcess()
             {
@@ -215,156 +227,15 @@ namespace VsVim.UnitTest
                 Assert.True(_vimBuffer.CanProcess(VimKey.Escape));
                 Assert.True(RunQueryStatus(KeyInputUtil.EscapeKey));
             }
-
-            /// <summary>
-            /// Don't actually run the Escape in the QueryStatus command if we're in visual mode
-            /// </summary>
-            [Fact]
-            public void EnableEscapeAndDontHandleInResharperPlusVisualMode()
-            {
-                var count = 0;
-                _vimBuffer.KeyInputProcessed += delegate { count++; };
-                _vimBuffer.SwitchMode(ModeKind.VisualCharacter, ModeArgument.None);
-                _resharperUtil.SetupGet(x => x.IsInstalled).Returns(true).Verifiable();
-                RunQueryStatus(KeyInputUtil.EscapeKey);
-                Assert.Equal(0, count);
-                _factory.Verify();
-            }
-
-            /// <summary>
-            /// Make sure we process Escape during QueryStatus if we're in insert mode and still pass
-            /// it on to R#.  R# will intercept escape and never give it to us and we'll think 
-            /// we're still in insert.  
-            /// </summary>
-            [Fact]
-            public void Resharper_EnableAndHandleEscape()
-            {
-                var count = 0;
-                _vimBuffer.KeyInputProcessed += delegate { count++; };
-                _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
-                _resharperUtil.SetupGet(x => x.IsInstalled).Returns(true).Verifiable();
-                Assert.True(RunQueryStatus(KeyInputUtil.EscapeKey));
-                Assert.True(_bufferCoordinator.IsDiscarded(KeyInputUtil.EscapeKey));
-                Assert.Equal(1, count);
-                _factory.Verify();
-            }
-
-            /// <summary>
-            /// When Back is processed as a command make sure we handle it in QueryStatus and hide
-            /// it from R#.  Back in R# is used to do special parens delete and we don't want that
-            /// overriding a command
-            /// </summary>
-            [Fact]
-            public void Reshaper_BackspaceAsCommand()
-            {
-                var backKeyInput = KeyInputUtil.VimKeyToKeyInput(VimKey.Back);
-                var count = 0;
-                _vimBuffer.KeyInputProcessed += delegate { count++; };
-                _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
-                _resharperUtil.SetupGet(x => x.IsInstalled).Returns(true).Verifiable();
-                Assert.True(_vimBuffer.CanProcessAsCommand(backKeyInput));
-                Assert.False(RunQueryStatus(backKeyInput));
-                Assert.True(_bufferCoordinator.IsDiscarded(backKeyInput));
-                Assert.Equal(1, count);
-                _factory.Verify();
-            }
-
-            /// <summary>
-            /// When Back is processed as an edit make sure we don't special case it and instead let
-            /// it go back to R# for processing.  They special case Back during edit to do actions
-            /// like matched paren deletion that we want to enable.
-            /// </summary>
-            [Fact]
-            public void Reshaper_BackspaceInInsert()
-            {
-                var backKeyInput = KeyInputUtil.VimKeyToKeyInput(VimKey.Back);
-                var count = 0;
-                _vimBuffer.KeyInputProcessed += delegate { count++; };
-                _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
-                _resharperUtil.SetupGet(x => x.IsInstalled).Returns(true).Verifiable();
-                Assert.True(_vimBuffer.CanProcessAsCommand(backKeyInput));
-                Assert.True(RunQueryStatus(backKeyInput));
-                Assert.False(_bufferCoordinator.HasDiscardedKeyInput);
-                Assert.Equal(0, count);
-                _factory.Verify();
-            }
-
-            /// <summary>
-            /// Make sure we process Escape during QueryStatus if we're in insert mode.  R# will
-            /// intercept escape and never give it to us and we'll think we're still in insert
-            /// </summary>
-            [Fact]
-            public void EnableAndHandleEscapeInResharperPlusExternalEdit()
-            {
-                var count = 0;
-                _vimBuffer.KeyInputProcessed += delegate { count++; };
-                _vimBuffer.SwitchMode(ModeKind.ExternalEdit, ModeArgument.None);
-                _resharperUtil.SetupGet(x => x.IsInstalled).Returns(true).Verifiable();
-                Assert.True(RunQueryStatus(KeyInputUtil.EscapeKey));
-                Assert.True(_bufferCoordinator.IsDiscarded(KeyInputUtil.EscapeKey));
-                Assert.Equal(1, count);
-                _factory.Verify();
-            }
-
-            /// <summary>
-            /// The PageUp key isn't special so don't special case it in R#
-            /// </summary>
-            [Fact]
-            public void Reshaprer_HandlePageUpNormally()
-            {
-                var count = 0;
-                _vimBuffer.KeyInputProcessed += delegate { count++; };
-                _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
-                _resharperUtil.SetupGet(x => x.IsInstalled).Returns(true).Verifiable();
-                Assert.True(RunQueryStatus(KeyInputUtil.VimKeyToKeyInput(VimKey.PageUp)));
-                Assert.Equal(0, count);
-                _factory.Verify();
-            }
-
-            /// <summary>
-            /// When Visual Studio is in debug mode R# will attempt to handle the Enter key directly
-            /// and do nothing.  Presumably they are doing this because it is an edit command and they
-            /// are suppressing it's action.  We want to process this directly though if Vim believes
-            /// Enter to be a command and not an edit, for example in normal mode
-            /// </summary>
-            [Fact]
-            public void Resharper_EnterAsCommand()
-            {
-                _textView.SetText("cat", "dog");
-                _textView.MoveCaretTo(0);
-                _resharperUtil.SetupGet(x => x.IsInstalled).Returns(true).Verifiable();
-                _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
-                Assert.True(_vimBuffer.CanProcessAsCommand(KeyInputUtil.EnterKey));
-                Assert.False(RunQueryStatus(KeyInputUtil.EnterKey));
-                Assert.Equal(_textView.GetLine(1).Start, _textView.GetCaretPoint());
-                Assert.True(_bufferCoordinator.IsDiscarded(KeyInputUtil.EnterKey));
-                _factory.Verify();
-            }
-
-            /// <summary>
-            /// If Enter isn't going to be processed as a command then don't special case it
-            /// mode for R#.  It would be an edit and we don't want to interfere with R#'s handling 
-            /// of edits
-            /// </summary>
-            [Fact]
-            public void Resharper_EnterInInsert()
-            {
-                _textView.SetText("cat", "dog");
-                _textView.MoveCaretTo(0);
-                var savedSnapshot = _textView.TextSnapshot;
-                _resharperUtil.SetupGet(x => x.IsInstalled).Returns(true).Verifiable();
-                _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
-                Assert.True(_vimBuffer.CanProcessAsCommand(KeyInputUtil.EnterKey));
-                Assert.True(RunQueryStatus(KeyInputUtil.EnterKey));
-                Assert.False(_bufferCoordinator.HasDiscardedKeyInput);
-                Assert.Equal(_textView.GetLine(0).Start, _textView.GetCaretPoint());
-                Assert.Same(savedSnapshot, _textView.TextSnapshot);
-                _factory.Verify();
-            }
         }
 
         public sealed class ExecTest : VsCommandTargetTest
         {
+            public ExecTest()
+                : base(isReSharperInstalled: false)
+            {
+            }
+
             [Fact]
             public void PassOnIfCantHandle()
             {
@@ -495,6 +366,12 @@ namespace VsVim.UnitTest
 
         public sealed class ExecCoreTest : VsCommandTargetTest
         {
+            public ExecCoreTest()
+                : base(isReSharperInstalled: false)
+            {
+
+            }
+
             /// <summary>
             /// Don't process GoToDefinition even if it has a KeyInput associated with it.  In the past
             /// a bug in OleCommandTarget.Convert created an EditCommand in this state.  That is a bug
@@ -507,6 +384,144 @@ namespace VsVim.UnitTest
                 var editCommand = CreateEditCommand(EditCommandKind.GoToDefinition);
                 Action action = null;
                 Assert.False(_targetRaw.Exec(editCommand, out action));
+            }
+        }
+
+        public sealed class ReSharperQueryStatusTest : VsCommandTargetTest
+        {
+            public ReSharperQueryStatusTest()
+                : base(isReSharperInstalled: true)
+            {
+
+            }
+
+            /// Don't actually run the Escape in the QueryStatus command if we're in visual mode
+            /// </summary>
+            [Fact]
+            public void EnableEscapeAndDontHandleInResharperPlusVisualMode()
+            {
+                var count = 0;
+                _vimBuffer.KeyInputProcessed += delegate { count++; };
+                _vimBuffer.SwitchMode(ModeKind.VisualCharacter, ModeArgument.None);
+                RunQueryStatus(KeyInputUtil.EscapeKey);
+                Assert.Equal(0, count);
+            }
+
+            /// <summary>
+            /// Make sure we process Escape during QueryStatus if we're in insert mode and still pass
+            /// it on to R#.  R# will intercept escape and never give it to us and we'll think 
+            /// we're still in insert.  
+            /// </summary>
+            [Fact]
+            public void EnableAndHandleEscape()
+            {
+                var count = 0;
+                _vimBuffer.KeyInputProcessed += delegate { count++; };
+                _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
+                Assert.True(RunQueryStatus(KeyInputUtil.EscapeKey));
+                Assert.True(_bufferCoordinator.IsDiscarded(KeyInputUtil.EscapeKey));
+                Assert.Equal(1, count);
+            }
+
+            /// <summary>
+            /// When Back is processed as a command make sure we handle it in QueryStatus and hide
+            /// it from R#.  Back in R# is used to do special parens delete and we don't want that
+            /// overriding a command
+            /// </summary>
+            [Fact]
+            public void BackspaceAsCommand()
+            {
+                var backKeyInput = KeyInputUtil.VimKeyToKeyInput(VimKey.Back);
+                var count = 0;
+                _vimBuffer.KeyInputProcessed += delegate { count++; };
+                _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
+                Assert.True(_vimBuffer.CanProcessAsCommand(backKeyInput));
+                Assert.False(RunQueryStatus(backKeyInput));
+                Assert.True(_bufferCoordinator.IsDiscarded(backKeyInput));
+                Assert.Equal(1, count);
+            }
+
+            /// <summary>
+            /// When Back is processed as an edit make sure we don't special case it and instead let
+            /// it go back to R# for processing.  They special case Back during edit to do actions
+            /// like matched paren deletion that we want to enable.
+            /// </summary>
+            [Fact]
+            public void BackspaceInInsert()
+            {
+                var backKeyInput = KeyInputUtil.VimKeyToKeyInput(VimKey.Back);
+                var count = 0;
+                _vimBuffer.KeyInputProcessed += delegate { count++; };
+                _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
+                Assert.True(_vimBuffer.CanProcessAsCommand(backKeyInput));
+                Assert.True(RunQueryStatus(backKeyInput));
+                Assert.False(_bufferCoordinator.HasDiscardedKeyInput);
+                Assert.Equal(0, count);
+            }
+
+            /// <summary>
+            /// Make sure we process Escape during QueryStatus if we're in insert mode.  R# will
+            /// intercept escape and never give it to us and we'll think we're still in insert
+            /// </summary>
+            [Fact]
+            public void EnableAndHandleEscapeInResharperPlusExternalEdit()
+            {
+                var count = 0;
+                _vimBuffer.KeyInputProcessed += delegate { count++; };
+                _vimBuffer.SwitchMode(ModeKind.ExternalEdit, ModeArgument.None);
+                Assert.True(RunQueryStatus(KeyInputUtil.EscapeKey));
+                Assert.True(_bufferCoordinator.IsDiscarded(KeyInputUtil.EscapeKey));
+                Assert.Equal(1, count);
+            }
+
+            /// <summary>
+            /// The PageUp key isn't special so don't special case it in R#
+            /// </summary>
+            [Fact]
+            public void HandlePageUpNormally()
+            {
+                var count = 0;
+                _vimBuffer.KeyInputProcessed += delegate { count++; };
+                _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
+                Assert.True(RunQueryStatus(KeyInputUtil.VimKeyToKeyInput(VimKey.PageUp)));
+                Assert.Equal(0, count);
+            }
+
+            /// <summary>
+            /// When Visual Studio is in debug mode R# will attempt to handle the Enter key directly
+            /// and do nothing.  Presumably they are doing this because it is an edit command and they
+            /// are suppressing it's action.  We want to process this directly though if Vim believes
+            /// Enter to be a command and not an edit, for example in normal mode
+            /// </summary>
+            [Fact]
+            public void EnterAsCommand()
+            {
+                _textView.SetText("cat", "dog");
+                _textView.MoveCaretTo(0);
+                _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
+                Assert.True(_vimBuffer.CanProcessAsCommand(KeyInputUtil.EnterKey));
+                Assert.False(RunQueryStatus(KeyInputUtil.EnterKey));
+                Assert.Equal(_textView.GetLine(1).Start, _textView.GetCaretPoint());
+                Assert.True(_bufferCoordinator.IsDiscarded(KeyInputUtil.EnterKey));
+            }
+
+            /// <summary>
+            /// If Enter isn't going to be processed as a command then don't special case it
+            /// mode for R#.  It would be an edit and we don't want to interfere with R#'s handling 
+            /// of edits
+            /// </summary>
+            [Fact]
+            public void EnterInInsert()
+            {
+                _textView.SetText("cat", "dog");
+                _textView.MoveCaretTo(0);
+                var savedSnapshot = _textView.TextSnapshot;
+                _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
+                Assert.True(_vimBuffer.CanProcessAsCommand(KeyInputUtil.EnterKey));
+                Assert.True(RunQueryStatus(KeyInputUtil.EnterKey));
+                Assert.False(_bufferCoordinator.HasDiscardedKeyInput);
+                Assert.Equal(_textView.GetLine(0).Start, _textView.GetCaretPoint());
+                Assert.Same(savedSnapshot, _textView.TextSnapshot);
             }
         }
     }

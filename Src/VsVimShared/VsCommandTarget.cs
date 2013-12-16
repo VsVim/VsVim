@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
@@ -504,17 +505,14 @@ namespace VsVim
             _broker = broker;
             _keyUtil = keyUtil;
 
-            _commandTargets = new ReadOnlyCollection<ICommandTarget>(new ICommandTarget[]
-                {
-                    new ReSharperCommandTarget(
-                        vimBufferCoordinator,
-                        broker,
-                        resharperUtil),
-                    new StandardCommandTarget(
-                        vimBufferCoordinator,
-                        textManager,
-                        broker)
-                });
+            var commandTargets = new List<ICommandTarget>();
+            if (resharperUtil.IsInstalled)
+            {
+                commandTargets.Add(new ReSharperCommandTarget(vimBufferCoordinator, broker, resharperUtil));
+            }
+
+            commandTargets.Add(new StandardCommandTarget(vimBufferCoordinator, textManager, broker));
+            _commandTargets = commandTargets.ToReadOnlyCollectionShallow();
         }
 
         /// <summary>
