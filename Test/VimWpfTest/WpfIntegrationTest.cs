@@ -21,7 +21,7 @@ namespace Vim.UI.Wpf.UnitTest
         {
             _vimBuffer = CreateVimBuffer(lines);
             _textBuffer = _vimBuffer.TextBuffer;
-            _vimKeyProcessor = new VimKeyProcessor(_vimBuffer, KeyUtil);
+            _vimKeyProcessor = new VimKeyProcessor(_vimBuffer, KeyUtil, new FakeWpfTextView());
             _simulation = new KeyProcessorSimulation((IWpfTextView)_vimBuffer.TextView);
             _simulation.KeyProcessors.Add(_vimKeyProcessor);
         }

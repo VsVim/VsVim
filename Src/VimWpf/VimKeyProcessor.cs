@@ -35,10 +35,24 @@ namespace Vim.UI.Wpf
             get { return _vimBuffer.TextView; }
         }
 
-        public VimKeyProcessor(IVimBuffer vimBuffer, IKeyUtil keyUtil)
+        public VimKeyProcessor(IVimBuffer vimBuffer, IKeyUtil keyUtil, IWpfTextView wpfTextView)
         {
             _vimBuffer = vimBuffer;
             _keyUtil = keyUtil;
+            wpfTextView.VisualElement.MouseDown += (s, e) =>
+                {
+                    if (e.ChangedButton == MouseButton.Middle && e.ButtonState == MouseButtonState.Pressed)
+                    {
+                        var position = e.GetPosition(wpfTextView.VisualElement);
+                        var viewLine =
+                            wpfTextView.TextViewLines.GetTextViewLineContainingYCoordinate(position.Y + wpfTextView.ViewportTop);
+                        wpfTextView.Caret.MoveTo(viewLine, position.X + wpfTextView.ViewportLeft);
+                        if (_vimBuffer.Mode.ModeKind == ModeKind.Insert)
+                            _vimBuffer.NormalMode.CommandRunner.Run(KeyInputUtil.CharToKeyInput('P'));
+                        else
+                            TryProcess(KeyInputUtil.CharToKeyInput('P'));
+                    }
+                };
         }
 
         public override bool IsInterestedInHandledEvents

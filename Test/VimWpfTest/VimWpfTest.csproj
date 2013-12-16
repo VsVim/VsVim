@@ -70,6 +70,7 @@
     <Compile Include="CodeHygieneTest.cs" />
     <Compile Include="CommandLineEditIntegrationTest.cs" />
     <Compile Include="CommandMarginProviderTest.cs" />
+    <Compile Include="FakeWpfTextView.cs" />
     <Compile Include="WpfIntegrationTest.cs" />
     <Compile Include="CommandMarginControllerTest.cs" />
     <Compile Include="DisplayWindowBrokerTest.cs" />
