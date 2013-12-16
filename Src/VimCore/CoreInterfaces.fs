@@ -3806,6 +3806,9 @@ and IVimBuffer =
     /// The current directory for this particular window
     abstract CurrentDirectory : string option with get, set
 
+    /// The ICommandUtil for this IVimBuffer
+    abstract CommandUtil : ICommandUtil
+
     /// Global settings for the buffer
     abstract GlobalSettings : IVimGlobalSettings
 

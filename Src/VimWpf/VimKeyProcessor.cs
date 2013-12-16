@@ -44,13 +44,13 @@ namespace Vim.UI.Wpf
                     if (e.ChangedButton == MouseButton.Middle && e.ButtonState == MouseButtonState.Pressed)
                     {
                         var position = e.GetPosition(wpfTextView.VisualElement);
-                        var viewLine =
-                            wpfTextView.TextViewLines.GetTextViewLineContainingYCoordinate(position.Y + wpfTextView.ViewportTop);
+                        var viewLine = wpfTextView.TextViewLines.GetTextViewLineContainingYCoordinate(position.Y + wpfTextView.ViewportTop);
                         wpfTextView.Caret.MoveTo(viewLine, position.X + wpfTextView.ViewportLeft);
-                        if (_vimBuffer.Mode.ModeKind == ModeKind.Insert)
-                            _vimBuffer.NormalMode.CommandRunner.Run(KeyInputUtil.CharToKeyInput('P'));
-                        else
-                            TryProcess(KeyInputUtil.CharToKeyInput('P'));
+
+                        // Run the 'put' command directly here.  Don't try to run 'P' because a key mapping could
+                        // prevent it from running correctly 
+                        var command = Command.NewNormalCommand(NormalCommand.NewPutBeforeCaret(false), CommandData.Default);
+                        _vimBuffer.CommandUtil.RunCommand(command);
                     }
                 };
         }

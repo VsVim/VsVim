@@ -107,7 +107,8 @@ type internal VimBuffer
         _incrementalSearch : IIncrementalSearch,
         _motionUtil : IMotionUtil,
         _wordNavigator : ITextStructureNavigator,
-        _windowSettings : IVimWindowSettings
+        _windowSettings : IVimWindowSettings,
+        _commandUtil : ICommandUtil
     ) as this =
 
     let _vim = _vimBufferData.Vim
@@ -588,6 +589,7 @@ type internal VimBuffer
         member x.VimTextBuffer = x.VimBufferData.VimTextBuffer
         member x.WordNavigator = _wordNavigator
         member x.TextView = _textView
+        member x.CommandUtil = _commandUtil
         member x.MotionUtil = _motionUtil
         member x.TextBuffer = _textView.TextBuffer
         member x.TextSnapshot = _textView.TextSnapshot

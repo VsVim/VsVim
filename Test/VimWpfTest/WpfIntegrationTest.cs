@@ -1,5 +1,6 @@
 ﻿using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
+using Moq;
 using Vim.UnitTest;
 using Xunit;
 
@@ -21,7 +22,7 @@ namespace Vim.UI.Wpf.UnitTest
         {
             _vimBuffer = CreateVimBuffer(lines);
             _textBuffer = _vimBuffer.TextBuffer;
-            _vimKeyProcessor = new VimKeyProcessor(_vimBuffer, KeyUtil, new FakeWpfTextView());
+            _vimKeyProcessor = new VimKeyProcessor(_vimBuffer, KeyUtil, (IWpfTextView)(_vimBuffer.TextView));
             _simulation = new KeyProcessorSimulation((IWpfTextView)_vimBuffer.TextView);
             _simulation.KeyProcessors.Add(_vimKeyProcessor);
         }

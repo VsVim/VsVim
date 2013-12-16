@@ -5,7 +5,7 @@ using System.Text;
 using Vim.UnitTest;
 using Xunit;
 
-namespace VsVim.Shared.UnitTest
+namespace VsVim.UnitTest
 {
     public abstract class CommandKeyBindingTest
     {
