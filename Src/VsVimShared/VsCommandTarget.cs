@@ -19,6 +19,7 @@ namespace VsVim
     // TODO: establish who is control of tracing (need it for R# and standard?)
     // TODO: establish who is control of looking at IVimBufferCoordinator
     // TODO: Get rid of the ExecCore, QueryStatusCore names
+    // TODO: mapped keys which relate to intellisense should be passed along as mapped
 
     internal enum CommandStatus
     {
@@ -50,31 +51,23 @@ namespace VsVim
     internal sealed class StandardCommandTarget : ICommandTarget
     {
         private readonly IVimBuffer _vimBuffer;
-        private readonly IVim _vim;
-        private readonly IVimBufferCoordinator _bufferCoordinator;
+        private readonly IVimBufferCoordinator _vimBufferCoordinator;
         private readonly ITextBuffer _textBuffer;
         private readonly ITextView _textView;
         private readonly ITextManager _textManager;
-        private readonly IVsAdapter _vsAdapter;
         private readonly IDisplayWindowBroker _broker;
-        private readonly IKeyUtil _keyUtil;
 
         internal StandardCommandTarget(
-            IVimBufferCoordinator bufferCoordinator,
+            IVimBufferCoordinator vimBufferCoordinator,
             ITextManager textManager,
-            IVsAdapter vsAdapter,
-            IDisplayWindowBroker broker,
-            IKeyUtil keyUtil)
+            IDisplayWindowBroker broker)
         {
-            _vimBuffer = bufferCoordinator.VimBuffer;
-            _vim = _vimBuffer.Vim;
-            _bufferCoordinator = bufferCoordinator;
+            _vimBuffer = vimBufferCoordinator.VimBuffer;
+            _vimBufferCoordinator = vimBufferCoordinator;
             _textBuffer = _vimBuffer.TextBuffer;
             _textView = _vimBuffer.TextView;
             _textManager = textManager;
-            _vsAdapter = vsAdapter;
             _broker = broker;
-            _keyUtil = keyUtil;
         }
 
         /// <summary>
@@ -241,7 +234,7 @@ namespace VsVim
             action = null;
 
             // If the KeyInput was already handled then pretend we handled it here 
-            if (editCommand.HasKeyInput && _bufferCoordinator.IsDiscarded(editCommand.KeyInput))
+            if (editCommand.HasKeyInput && _vimBufferCoordinator.IsDiscarded(editCommand.KeyInput))
             {
                 return true;
             }
@@ -295,7 +288,7 @@ namespace VsVim
                         var keyInput = editCommand.KeyInput;
 
                         // Discard the input if it's been flagged by a previous QueryStatus
-                        if (_bufferCoordinator.IsDiscarded(keyInput))
+                        if (_vimBufferCoordinator.IsDiscarded(keyInput))
                         {
                             return true;
                         }
@@ -355,34 +348,17 @@ namespace VsVim
     internal sealed class ReSharperCommandTarget : ICommandTarget
     {
         private readonly IVimBuffer _vimBuffer;
-        private readonly IVim _vim;
-        private readonly IVimBufferCoordinator _bufferCoordinator;
-        private readonly ITextBuffer _textBuffer;
-        private readonly ITextView _textView;
-        private readonly ITextManager _textManager;
-        private readonly IVsAdapter _vsAdapter;
-        private readonly IDisplayWindowBroker _broker;
+        private readonly IVimBufferCoordinator _vimBufferCoordinator;
         private readonly IReSharperUtil _resharperUtil;
-        private readonly IKeyUtil _keyUtil;
 
         internal ReSharperCommandTarget(
-            IVimBufferCoordinator bufferCoordinator,
-            ITextManager textManager,
-            IVsAdapter vsAdapter,
+            IVimBufferCoordinator vimBufferCoordinator,
             IDisplayWindowBroker broker,
-            IReSharperUtil resharperUtil,
-            IKeyUtil keyUtil)
+            IReSharperUtil resharperUtil)
         {
-            _vimBuffer = bufferCoordinator.VimBuffer;
-            _vim = _vimBuffer.Vim;
-            _bufferCoordinator = bufferCoordinator;
-            _textBuffer = _vimBuffer.TextBuffer;
-            _textView = _vimBuffer.TextView;
-            _textManager = textManager;
-            _vsAdapter = vsAdapter;
-            _broker = broker;
+            _vimBuffer = vimBufferCoordinator.VimBuffer;
+            _vimBufferCoordinator = vimBufferCoordinator;
             _resharperUtil = resharperUtil;
-            _keyUtil = keyUtil;
         }
 
         internal bool ExecCore(EditCommand editCommand, out Action action)
@@ -459,7 +435,7 @@ namespace VsVim
                 // We've broken the rules a bit by handling the command in QueryStatus and we need
                 // to silently handle this command if it comes back to us again either through 
                 // Exec or through the VsKeyProcessor
-                _bufferCoordinator.Discard(keyInput);
+                _vimBufferCoordinator.Discard(keyInput);
 
                 // If we need to cooperate with R# to handle this command go ahead and pass it on 
                 // to them.  Else mark it as Disabled.
@@ -500,47 +476,42 @@ namespace VsVim
 
         private readonly IVimBuffer _vimBuffer;
         private readonly IVim _vim;
-        private readonly IVimBufferCoordinator _bufferCoordinator;
+        private readonly IVimBufferCoordinator _vimBufferCoordinator;
         private readonly ITextBuffer _textBuffer;
         private readonly ITextView _textView;
         private readonly ITextManager _textManager;
         private readonly IVsAdapter _vsAdapter;
         private readonly IDisplayWindowBroker _broker;
-        private readonly IReSharperUtil _resharperUtil;
         private readonly IKeyUtil _keyUtil;
         private readonly ReadOnlyCollection<ICommandTarget> _commandTargets;
         private IOleCommandTarget _nextTarget;
 
         private VsCommandTarget(
-            IVimBufferCoordinator bufferCoordinator,
+            IVimBufferCoordinator vimBufferCoordinator,
             ITextManager textManager,
             IVsAdapter vsAdapter,
             IDisplayWindowBroker broker,
             IReSharperUtil resharperUtil,
             IKeyUtil keyUtil)
         {
-            _vimBuffer = bufferCoordinator.VimBuffer;
+            _vimBuffer = vimBufferCoordinator.VimBuffer;
             _vim = _vimBuffer.Vim;
-            _bufferCoordinator = bufferCoordinator;
+            _vimBufferCoordinator = vimBufferCoordinator;
             _textBuffer = _vimBuffer.TextBuffer;
             _textView = _vimBuffer.TextView;
             _textManager = textManager;
             _vsAdapter = vsAdapter;
             _broker = broker;
-            _resharperUtil = resharperUtil;
             _keyUtil = keyUtil;
 
             _commandTargets = new ReadOnlyCollection<ICommandTarget>(new ICommandTarget[]
                 {
                     new ReSharperCommandTarget(
-                        bufferCoordinator,
-                        textManager,
-                        vsAdapter,
+                        vimBufferCoordinator,
                         broker,
-                        resharperUtil,
-                        keyUtil),
+                        resharperUtil),
                     new StandardCommandTarget(
-                        bufferCoordinator,
+                        vimBufferCoordinator,
                         textManager,
                         vsAdapter,
                         broker,
@@ -705,7 +676,7 @@ namespace VsVim
             action = null;
 
             // If the KeyInput was already handled then pretend we handled it here 
-            if (editCommand.HasKeyInput && _bufferCoordinator.IsDiscarded(editCommand.KeyInput))
+            if (editCommand.HasKeyInput && _vimBufferCoordinator.IsDiscarded(editCommand.KeyInput))
             {
                 return true;
             }
