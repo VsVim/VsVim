@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel.Composition;
 using System.Diagnostics;
+using System.Linq;  
 using System.Windows.Threading;
 using EditorUtils;
 using Microsoft.VisualStudio.Editor;
@@ -32,7 +34,7 @@ namespace VsVim
     {
         private readonly HashSet<IVimBuffer> _toSyncSet = new HashSet<IVimBuffer>();
         private readonly Dictionary<IVimBuffer, VsCommandTarget> _vimBufferToCommandTargetMap = new Dictionary<IVimBuffer, VsCommandTarget>();
-        private readonly IReSharperUtil _resharperUtil;
+        private readonly ReadOnlyCollection<ICommandTargetFactory> _commandTargetFactoryList;
         private readonly IDisplayWindowBrokerFactoryService _displayWindowBrokerFactoryServcie;
         private readonly IVim _vim;
         private readonly IVsEditorAdaptersFactoryService _adaptersFactory;
@@ -47,17 +49,16 @@ namespace VsVim
         public HostFactory(
             IVim vim,
             IVsEditorAdaptersFactoryService adaptersFactory,
-            IReSharperUtil resharperUtil,
             IDisplayWindowBrokerFactoryService displayWindowBrokerFactoryService,
             ITextManager textManager,
             IVsAdapter adapter,
             IVimProtectedOperations protectedOperations,
             IVimBufferCoordinatorFactory bufferCoordinatorFactory,
             IKeyUtil keyUtil,
-            IEditorToSettingsSynchronizer editorToSettingSynchronizer)
+            IEditorToSettingsSynchronizer editorToSettingSynchronizer,
+            [ImportMany] IEnumerable<Lazy<ICommandTargetFactory, IOrderable>> commandTargetFactoryList)
         {
             _vim = vim;
-            _resharperUtil = resharperUtil;
             _displayWindowBrokerFactoryServcie = displayWindowBrokerFactoryService;
             _adaptersFactory = adaptersFactory;
             _textManager = textManager;
@@ -66,6 +67,7 @@ namespace VsVim
             _bufferCoordinatorFactory = bufferCoordinatorFactory;
             _keyUtil = keyUtil;
             _editorToSettingSynchronizer = editorToSettingSynchronizer;
+            _commandTargetFactoryList = Orderer.Order(commandTargetFactoryList).Select(x => x.Value).ToReadOnlyCollection();
 
 #if DEBUG
             VimTrace.TraceSwitch.Level = TraceLevel.Info;
@@ -109,8 +111,12 @@ namespace VsVim
         private void ConnectToOleCommandTarget(IVimBuffer vimBuffer, ITextView textView, IVsTextView vsTextView)
         {
             var broker = _displayWindowBrokerFactoryServcie.CreateDisplayWindowBroker(textView);
-            var bufferCoordinator = _bufferCoordinatorFactory.GetVimBufferCoordinator(vimBuffer);
-            var result = VsCommandTarget.Create(bufferCoordinator, vsTextView, _textManager, _adapter, broker, _resharperUtil, _keyUtil);
+            var vimBufferCoordinator = _bufferCoordinatorFactory.GetVimBufferCoordinator(vimBuffer);
+            var commandTargetList = _commandTargetFactoryList
+                .Select(x => x.CreateCommandTarget(vimBufferCoordinator))
+                .Where(x => x != null)
+                .ToReadOnlyCollection();
+            var result = VsCommandTarget.Create(vimBufferCoordinator, vsTextView, _textManager, _adapter, broker, _keyUtil, commandTargetList);
             if (result.IsSuccess)
             {
                 // Store the value for debugging

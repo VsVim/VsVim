@@ -31,6 +31,8 @@ type IDisplayWindowBroker =
 
 type IDisplayWindowBrokerFactoryService  =
 
+    // TODO: rename this method nad make sure it returns a singleton object once
+    // per ITextView.  Don't need to have a bunch of these floating around
     abstract CreateDisplayWindowBroker : ITextView -> IDisplayWindowBroker
 
 /// What type of tracking are we doing

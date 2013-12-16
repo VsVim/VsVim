@@ -240,7 +240,6 @@ namespace VsVim.UnitTest.Utils
         private readonly MockRepository _factory;
         private readonly Mock<IVsAdapter> _vsAdapter;
         private readonly Mock<IDisplayWindowBroker> _displayWindowBroker;
-        private readonly Mock<IReSharperUtil> _resharperUtil;
         private readonly Mock<IReportDesignerUtil> _reportDesignerUtil;
         private readonly TestableSynchronizationContext _testableSynchronizationContext;
         private readonly IKeyUtil _keyUtil;
@@ -284,9 +283,6 @@ namespace VsVim.UnitTest.Utils
             _vsAdapter.Setup(x => x.IsReadOnly(It.IsAny<ITextView>())).Returns(false);
             _vsAdapter.Setup(x => x.IsIncrementalSearchActive(_wpfTextView)).Returns(false);
 
-            _resharperUtil = _factory.Create<IReSharperUtil>();
-            _resharperUtil.SetupGet(x => x.IsInstalled).Returns(simulateResharper);
-
             _reportDesignerUtil = _factory.Create<IReportDesignerUtil>();
             _reportDesignerUtil.Setup(x => x.IsExpressionView(_wpfTextView)).Returns(false);
 
@@ -300,6 +296,14 @@ namespace VsVim.UnitTest.Utils
                 bufferCoordinator.VimBuffer.TextView,
                 editorOperationsFactoryService.GetEditorOperations(bufferCoordinator.VimBuffer.TextView));
 
+            var textManager = _factory.Create<ITextManager>();
+            var commandTargets = new List<ICommandTarget>();
+            if (simulateResharper)
+            {
+                commandTargets.Add(new ReSharperCommandTarget(bufferCoordinator));
+            }
+            commandTargets.Add(new StandardCommandTarget(bufferCoordinator, textManager.Object, _displayWindowBroker.Object));
+
             // Create the VsCommandTarget.  It's next is the final and default Visual Studio 
             // command target
             var vsTextView = _factory.Create<IVsTextView>();
@@ -308,11 +312,11 @@ namespace VsVim.UnitTest.Utils
             var vsCommandTarget = VsCommandTarget.Create(
                 bufferCoordinator,
                 vsTextView.Object,
-                _factory.Create<ITextManager>().Object,
+                textManager.Object,
                 _vsAdapter.Object,
                 _displayWindowBroker.Object,
-                _resharperUtil.Object,
-                _keyUtil).Value;
+                _keyUtil,
+                commandTargets.ToReadOnlyCollectionShallow()).Value;
 
             // Time to setup the start command target.  If we are simulating R# then put them ahead of VsVim
             // on the IOleCommandTarget chain.  VsVim doesn't try to fight R# and prefers instead to be 

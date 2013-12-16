@@ -20,6 +20,11 @@ namespace VsVim
         internal const string VsKeyProcessorName = "VsVim";
 
         /// <summary>
+        /// Name of the standard ICommandTarget implementation
+        /// </summary>
+        internal const string StandardCommandTargetName = "Standard Command Target";
+
+        /// <summary>
         /// Name of the main Visual Studio KeyProcessor implementation
         /// </summary>
         internal const string VisualStudioKeyProcessorName = "VisualStudioKeyProcessor";

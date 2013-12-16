@@ -13,6 +13,7 @@ using Vim.UnitTest;
 using VsVim.Implementation;
 using VsVim.Implementation.Misc;
 using Microsoft.VisualStudio.Text;
+using System.Collections.Generic;
 
 namespace VsVim.UnitTest
 {
@@ -28,7 +29,6 @@ namespace VsVim.UnitTest
         protected readonly Mock<IDisplayWindowBroker> _broker;
         protected readonly Mock<ITextManager> _textManager;
         protected readonly IOleCommandTarget _target;
-        internal readonly Mock<IReSharperUtil> _resharperUtil;
         internal readonly VsCommandTarget _targetRaw;
         internal readonly IVimBufferCoordinator _bufferCoordinator;
 
@@ -41,10 +41,6 @@ namespace VsVim.UnitTest
             _vim = _vimBuffer.Vim;
             _factory = new MockRepository(MockBehavior.Strict);
 
-            // By default Resharper isn't loaded
-            _resharperUtil = _factory.Create<IReSharperUtil>();
-            _resharperUtil.SetupGet(x => x.IsInstalled).Returns(isReSharperInstalled);
-
             _nextTarget = _factory.Create<IOleCommandTarget>(MockBehavior.Strict);
             _vsAdapter = _factory.Create<IVsAdapter>();
             _vsAdapter.SetupGet(x => x.KeyboardDevice).Returns(InputManager.Current.PrimaryKeyboardDevice);
@@ -55,6 +51,13 @@ namespace VsVim.UnitTest
             _broker = _factory.Create<IDisplayWindowBroker>(MockBehavior.Loose);
             _textManager = _factory.Create<ITextManager>();
 
+            var commandTargets = new List<ICommandTarget>();
+            if (isReSharperInstalled)
+            {
+                commandTargets.Add(new ReSharperCommandTarget(_bufferCoordinator));
+            }
+            commandTargets.Add(new StandardCommandTarget(_bufferCoordinator, _textManager.Object, _broker.Object));
+
             var oldCommandFilter = _nextTarget.Object;
             var vsTextView = _factory.Create<IVsTextView>(MockBehavior.Loose);
             vsTextView.Setup(x => x.AddCommandFilter(It.IsAny<IOleCommandTarget>(), out oldCommandFilter)).Returns(0);
@@ -64,8 +67,8 @@ namespace VsVim.UnitTest
                 _textManager.Object,
                 _vsAdapter.Object,
                 _broker.Object,
-                _resharperUtil.Object,
-                KeyUtil);
+                KeyUtil,
+                commandTargets.ToReadOnlyCollectionShallow());
             Assert.True(result.IsSuccess);
             _targetRaw = result.Value;
             _target = _targetRaw;

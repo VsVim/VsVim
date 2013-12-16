@@ -12,6 +12,7 @@ using Vim.UI.Wpf;
 using Vim.UnitTest;
 using VsVim.Implementation.Misc;
 using Xunit;
+using Microsoft.VisualStudio.Utilities;
 
 namespace VsVim.UnitTest
 {
@@ -38,14 +39,14 @@ namespace VsVim.UnitTest
             _hostFactory = new HostFactory(
                 Vim,
                 _vsEditorAdaptersFactoryService.Object,
-                _mockFactory.Create<IReSharperUtil>().Object,
                 _mockFactory.Create<IDisplayWindowBrokerFactoryService>(MockBehavior.Loose).Object,
                 _mockFactory.Create<ITextManager>(MockBehavior.Loose).Object,
                 vsAdapter.Object,
                 _protectedOperations,
                 new VimBufferCoordinatorFactory(Vim),
                 _mockFactory.Create<IKeyUtil>(MockBehavior.Loose).Object,
-                _synchronizer.Object);
+                _synchronizer.Object,
+                new Lazy<ICommandTargetFactory, IOrderable>[] { });
         }
 
         private void InvalidateSynchronizer()

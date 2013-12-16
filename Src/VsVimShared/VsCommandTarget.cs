@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel.Composition;
 using System.Diagnostics;
 using System.Linq;
 using System.Windows;
@@ -11,6 +12,7 @@ using Microsoft.VisualStudio.OLE.Interop;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.TextManager.Interop;
+using Microsoft.VisualStudio.Utilities;
 using Vim;
 using Vim.Extensions;
 using Vim.UI.Wpf;
@@ -44,6 +46,33 @@ namespace VsVim
         CommandStatus QueryStatus(EditCommand editCommand);
 
         bool Exec(EditCommand editCommand, out Action action);
+    }
+
+    internal interface ICommandTargetFactory
+    {
+        ICommandTarget CreateCommandTarget(IVimBufferCoordinator vimBufferCoordinator);
+    }
+
+    [Export(typeof(ICommandTargetFactory))]
+    [Name(Constants.StandardCommandTargetName)]
+    [Order]
+    internal sealed class StandardCommandTargetFactory : ICommandTargetFactory
+    {
+        private readonly ITextManager _textManager;
+        private readonly IDisplayWindowBrokerFactoryService _displayWindowBrokerFactory;
+
+        [ImportingConstructor]
+        internal StandardCommandTargetFactory(ITextManager textManager, IDisplayWindowBrokerFactoryService displayWindowBrokerFactory)
+        {
+            _textManager = textManager;
+            _displayWindowBrokerFactory = displayWindowBrokerFactory;
+        }
+
+        ICommandTarget ICommandTargetFactory.CreateCommandTarget(IVimBufferCoordinator vimBufferCoordinator)
+        {
+            var displayWindowBroker = _displayWindowBrokerFactory.CreateDisplayWindowBroker(vimBufferCoordinator.VimBuffer.TextView);
+            return new StandardCommandTarget(vimBufferCoordinator, _textManager, displayWindowBroker);
+        }
     }
 
     internal sealed class StandardCommandTarget : ICommandTarget
@@ -343,20 +372,39 @@ namespace VsVim
         #endregion
     }
 
+    [Export(typeof(ICommandTargetFactory))]
+    [Name("ReSharper Command Target")]
+    [Order(Before=Constants.StandardCommandTargetName)]
+    internal sealed class ReSharperCommandTargetFactory : ICommandTargetFactory
+    {
+        private readonly IReSharperUtil _reSharperUtil;
+
+        [ImportingConstructor]
+        internal ReSharperCommandTargetFactory(IReSharperUtil reSharperUtil)
+        {
+            _reSharperUtil = reSharperUtil;
+        }
+
+        ICommandTarget ICommandTargetFactory.CreateCommandTarget(IVimBufferCoordinator vimBufferCoordinator)
+        {
+            if (_reSharperUtil.IsInstalled)
+            {
+                return new ReSharperCommandTarget(vimBufferCoordinator);
+            }
+
+            return null;
+        }
+    }
+
     internal sealed class ReSharperCommandTarget : ICommandTarget
     {
         private readonly IVimBuffer _vimBuffer;
         private readonly IVimBufferCoordinator _vimBufferCoordinator;
-        private readonly IReSharperUtil _resharperUtil;
 
-        internal ReSharperCommandTarget(
-            IVimBufferCoordinator vimBufferCoordinator,
-            IDisplayWindowBroker broker,
-            IReSharperUtil resharperUtil)
+        internal ReSharperCommandTarget(IVimBufferCoordinator vimBufferCoordinator)
         {
             _vimBuffer = vimBufferCoordinator.VimBuffer;
             _vimBufferCoordinator = vimBufferCoordinator;
-            _resharperUtil = resharperUtil;
         }
 
         internal bool Exec(EditCommand editCommand, out Action action)
@@ -493,8 +541,8 @@ namespace VsVim
             ITextManager textManager,
             IVsAdapter vsAdapter,
             IDisplayWindowBroker broker,
-            IReSharperUtil resharperUtil,
-            IKeyUtil keyUtil)
+            IKeyUtil keyUtil,
+            ReadOnlyCollection<ICommandTarget> commandTargets)
         {
             _vimBuffer = vimBufferCoordinator.VimBuffer;
             _vim = _vimBuffer.Vim;
@@ -505,15 +553,7 @@ namespace VsVim
             _vsAdapter = vsAdapter;
             _broker = broker;
             _keyUtil = keyUtil;
-
-            var commandTargets = new List<ICommandTarget>();
-            if (resharperUtil.IsInstalled)
-            {
-                commandTargets.Add(new ReSharperCommandTarget(vimBufferCoordinator, broker, resharperUtil));
-            }
-
-            commandTargets.Add(new StandardCommandTarget(vimBufferCoordinator, textManager, broker));
-            _commandTargets = commandTargets.ToReadOnlyCollectionShallow();
+            _commandTargets = commandTargets;
         }
 
         /// <summary>
@@ -715,10 +755,10 @@ namespace VsVim
             ITextManager textManager,
             IVsAdapter adapter,
             IDisplayWindowBroker broker,
-            IReSharperUtil resharperUtil,
-            IKeyUtil keyUtil)
+            IKeyUtil keyUtil,
+            ReadOnlyCollection<ICommandTarget> commandTargets)
         {
-            var vsCommandTarget = new VsCommandTarget(bufferCoordinator, textManager, adapter, broker, resharperUtil, keyUtil);
+            var vsCommandTarget = new VsCommandTarget(bufferCoordinator, textManager, adapter, broker, keyUtil, commandTargets);
             var hresult = vsTextView.AddCommandFilter(vsCommandTarget, out vsCommandTarget._nextTarget);
             var result = Result.CreateSuccessOrError(vsCommandTarget, hresult);
             if (result.IsSuccess)
