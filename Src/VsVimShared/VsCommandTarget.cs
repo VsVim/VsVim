@@ -513,9 +513,7 @@ namespace VsVim
                     new StandardCommandTarget(
                         vimBufferCoordinator,
                         textManager,
-                        vsAdapter,
-                        broker,
-                        keyUtil)
+                        broker)
                 });
         }
 
