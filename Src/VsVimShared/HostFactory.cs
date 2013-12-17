@@ -112,11 +112,7 @@ namespace VsVim
         {
             var broker = _displayWindowBrokerFactoryServcie.CreateDisplayWindowBroker(textView);
             var vimBufferCoordinator = _bufferCoordinatorFactory.GetVimBufferCoordinator(vimBuffer);
-            var commandTargetList = _commandTargetFactoryList
-                .Select(x => x.CreateCommandTarget(vimBufferCoordinator))
-                .Where(x => x != null)
-                .ToReadOnlyCollection();
-            var result = VsCommandTarget.Create(vimBufferCoordinator, vsTextView, _textManager, _adapter, broker, _keyUtil, commandTargetList);
+            var result = VsCommandTarget.Create(vimBufferCoordinator, vsTextView, _textManager, _adapter, broker, _keyUtil, _commandTargetFactoryList);
             if (result.IsSuccess)
             {
                 // Store the value for debugging

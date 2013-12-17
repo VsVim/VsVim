@@ -19,8 +19,6 @@ using Vim.UI.Wpf;
 
 namespace VsVim
 {
-    // TODO: mapped keys which relate to intellisense should be passed along as mapped
-
     /// <summary>
     /// This class needs to intercept commands which the core VIM engine wants to process and call into the VIM engine 
     /// directly.  It needs to be very careful to not double use commands that will be processed by the KeyProcessor.  In 
@@ -38,32 +36,39 @@ namespace VsVim
         private readonly IVim _vim;
         private readonly IVimBufferCoordinator _vimBufferCoordinator;
         private readonly ITextBuffer _textBuffer;
-        private readonly ITextView _textView;
-        private readonly ITextManager _textManager;
         private readonly IVsAdapter _vsAdapter;
         private readonly IDisplayWindowBroker _broker;
         private readonly IKeyUtil _keyUtil;
-        private readonly ReadOnlyCollection<ICommandTarget> _commandTargets;
-        private IOleCommandTarget _nextTarget;
+        private ReadOnlyCollection<ICommandTarget> _commandTargets;
+        private IOleCommandTarget _nextCommandTarget;
 
         private VsCommandTarget(
             IVimBufferCoordinator vimBufferCoordinator,
             ITextManager textManager,
             IVsAdapter vsAdapter,
             IDisplayWindowBroker broker,
-            IKeyUtil keyUtil,
-            ReadOnlyCollection<ICommandTarget> commandTargets)
+            IKeyUtil keyUtil)
         {
             _vimBuffer = vimBufferCoordinator.VimBuffer;
             _vim = _vimBuffer.Vim;
             _vimBufferCoordinator = vimBufferCoordinator;
             _textBuffer = _vimBuffer.TextBuffer;
-            _textView = _vimBuffer.TextView;
-            _textManager = textManager;
             _vsAdapter = vsAdapter;
             _broker = broker;
             _keyUtil = keyUtil;
-            _commandTargets = commandTargets;
+        }
+
+        internal VsCommandTarget(
+            IVimBufferCoordinator vimBufferCoordinator,
+            ITextManager textManager,
+            IVsAdapter vsAdapter,
+            IDisplayWindowBroker broker,
+            IKeyUtil keyUtil,
+            IOleCommandTarget nextTarget,
+            ReadOnlyCollection<ICommandTarget> commandTargets)
+            : this(vimBufferCoordinator, textManager, vsAdapter, broker, keyUtil)
+        {
+            CompleteInit(nextTarget, commandTargets);
         }
 
         /// <summary>
@@ -96,7 +101,7 @@ namespace VsVim
                 }
 
                 var versionNumber = _textBuffer.CurrentSnapshot.Version.VersionNumber;
-                int hr = _nextTarget.Exec(oleCommandData);
+                int hr = _nextCommandTarget.Exec(oleCommandData);
 
                 // Whether or not an Exec succeeded is a bit of a heuristic.  IOleCommandTarget implementations like
                 // C++ will return E_ABORT if Intellisense failed but the character was actually inserted into 
@@ -259,24 +264,42 @@ namespace VsVim
             return action;
         }
 
+        private void CompleteInit(IOleCommandTarget nextCommandTarget, ReadOnlyCollection<ICommandTarget> commandTargets)
+        {
+            Debug.Assert(_nextCommandTarget == null);
+            Debug.Assert(_commandTargets == null);
+
+            _nextCommandTarget = nextCommandTarget;
+            _commandTargets = commandTargets;
+
+            // Register the VsCommandTarget with the ITextView so that it can be retrieved later
+            _vimBufferCoordinator.VimBuffer.TextView.Properties[Key] = this;
+        }
+
         internal static Result<VsCommandTarget> Create(
-            IVimBufferCoordinator bufferCoordinator,
+            IVimBufferCoordinator vimBufferCoordinator,
             IVsTextView vsTextView,
             ITextManager textManager,
             IVsAdapter adapter,
             IDisplayWindowBroker broker,
             IKeyUtil keyUtil,
-            ReadOnlyCollection<ICommandTarget> commandTargets)
+            ReadOnlyCollection<ICommandTargetFactory> commandTargetFactoryList)
         {
-            var vsCommandTarget = new VsCommandTarget(bufferCoordinator, textManager, adapter, broker, keyUtil, commandTargets);
-            var hresult = vsTextView.AddCommandFilter(vsCommandTarget, out vsCommandTarget._nextTarget);
-            var result = Result.CreateSuccessOrError(vsCommandTarget, hresult);
-            if (result.IsSuccess)
+            var vsCommandTarget = new VsCommandTarget(vimBufferCoordinator, textManager, adapter, broker, keyUtil);
+
+            IOleCommandTarget nextCommandTarget;
+            var hresult = vsTextView.AddCommandFilter(vsCommandTarget, out nextCommandTarget);
+            if (ErrorHandler.Failed(hresult))
             {
-                bufferCoordinator.VimBuffer.TextView.Properties[Key] = vsCommandTarget;
+                return Result.CreateError(hresult);
             }
 
-            return result;
+            var commandTargets = commandTargetFactoryList
+                .Select(x => x.CreateCommandTarget(nextCommandTarget, vimBufferCoordinator))
+                .Where(x => x != null)
+                .ToReadOnlyCollection();
+            vsCommandTarget.CompleteInit(nextCommandTarget, commandTargets);
+            return Result.CreateSuccess(vsCommandTarget);
         }
 
         internal static bool TryGet(ITextView textView, out VsCommandTarget vsCommandTarget)
@@ -298,7 +321,7 @@ namespace VsVim
                     return NativeMethods.S_OK;
                 }
 
-                return _nextTarget.Exec(commandGroup, commandId, commandExecOpt, variantIn, variantOut);
+                return _nextCommandTarget.Exec(commandGroup, commandId, commandExecOpt, variantIn, variantOut);
             }
             finally
             {
@@ -325,11 +348,11 @@ namespace VsVim
                         prgCmds[0].cmdf = (uint)OLECMDF.OLECMDF_SUPPORTED;
                         return NativeMethods.S_OK;
                     case CommandStatus.PassOn:
-                        return _nextTarget.QueryStatus(pguidCmdGroup, cCmds, prgCmds, pCmdText);
+                        return _nextCommandTarget.QueryStatus(pguidCmdGroup, cCmds, prgCmds, pCmdText);
                 }
             }
 
-            return _nextTarget.QueryStatus(pguidCmdGroup, cCmds, prgCmds, pCmdText);
+            return _nextCommandTarget.QueryStatus(pguidCmdGroup, cCmds, prgCmds, pCmdText);
         }
 
         #endregion

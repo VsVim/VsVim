@@ -4,6 +4,7 @@ using System.ComponentModel.Composition;
 using System.Linq;
 using System.Text;
 using System.Windows.Input;
+using Microsoft.VisualStudio.OLE.Interop;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Utilities;
 using Vim;
@@ -165,7 +166,7 @@ namespace VsVim.Implementation.ReSharper
             _reSharperUtil = reSharperUtil;
         }
 
-        ICommandTarget ICommandTargetFactory.CreateCommandTarget(IVimBufferCoordinator vimBufferCoordinator)
+        ICommandTarget ICommandTargetFactory.CreateCommandTarget(IOleCommandTarget nextCommandTarget, IVimBufferCoordinator vimBufferCoordinator)
         {
             if (!_reSharperUtil.IsInstalled)
             {

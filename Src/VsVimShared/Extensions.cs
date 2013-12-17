@@ -1058,6 +1058,24 @@ namespace VsVim
 
         #region IOleCommandTarget
 
+        internal static int Exec(this IOleCommandTarget oleCommandTarget, KeyInput keyInput)
+        {
+            var oleCommandData = OleCommandData.Empty;
+            try
+            {
+                if (!OleCommandUtil.TryConvert(keyInput, out oleCommandData))
+                {
+                    return VSConstants.E_FAIL;
+                }
+
+                return oleCommandTarget.Exec(oleCommandData);
+            }
+            finally
+            {
+                oleCommandData.Dispose();
+            }
+        }
+
         internal static int Exec(this IOleCommandTarget oleCommandTarget, OleCommandData oleCommandData)
         {
             Guid commandGroup = oleCommandData.Group;

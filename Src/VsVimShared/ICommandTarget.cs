@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using Microsoft.VisualStudio.OLE.Interop;
 
 namespace VsVim
 {
@@ -17,7 +18,6 @@ namespace VsVim
         /// </summary>
         Disable,
 
-        // TODO: need a better name here 
         /// <summary>
         /// VsVim isn't concerned about the command and it's left to the next IOleCommandTarget
         /// to determine if it's enabled or not
@@ -34,6 +34,6 @@ namespace VsVim
 
     internal interface ICommandTargetFactory
     {
-        ICommandTarget CreateCommandTarget(IVimBufferCoordinator vimBufferCoordinator);
+        ICommandTarget CreateCommandTarget(IOleCommandTarget nextCommandTarget, IVimBufferCoordinator vimBufferCoordinator);
     }
 }

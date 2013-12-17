@@ -70,6 +70,7 @@ namespace VsVim.UnitTest.Utils
                     case VimKey.Down:
                     case VimKey.Left:
                     case VimKey.Right:
+                    case VimKey.Tab:
                         return _vsSimulation.RunInOleCommandTarget(keyInput);
                     default:
                         return false;
@@ -302,21 +303,18 @@ namespace VsVim.UnitTest.Utils
             {
                 commandTargets.Add(ReSharperKeyUtil.GetOrCreate(bufferCoordinator));
             }
-            commandTargets.Add(new StandardCommandTarget(bufferCoordinator, textManager.Object, _displayWindowBroker.Object));
+            commandTargets.Add(new StandardCommandTarget(bufferCoordinator, textManager.Object, _displayWindowBroker.Object, _defaultCommandTarget));
 
             // Create the VsCommandTarget.  It's next is the final and default Visual Studio 
             // command target
-            var vsTextView = _factory.Create<IVsTextView>();
-            IOleCommandTarget nextCommandTarget = _defaultCommandTarget;
-            vsTextView.Setup(x => x.AddCommandFilter(It.IsAny<IOleCommandTarget>(), out nextCommandTarget)).Returns(VSConstants.S_OK);
-            var vsCommandTarget = VsCommandTarget.Create(
+            var vsCommandTarget = new VsCommandTarget(
                 bufferCoordinator,
-                vsTextView.Object,
                 textManager.Object,
                 _vsAdapter.Object,
                 _displayWindowBroker.Object,
                 _keyUtil,
-                commandTargets.ToReadOnlyCollectionShallow()).Value;
+                _defaultCommandTarget,
+                commandTargets.ToReadOnlyCollectionShallow());
 
             // Time to setup the start command target.  If we are simulating R# then put them ahead of VsVim
             // on the IOleCommandTarget chain.  VsVim doesn't try to fight R# and prefers instead to be 

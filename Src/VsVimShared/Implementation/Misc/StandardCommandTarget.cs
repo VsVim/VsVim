@@ -5,6 +5,8 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Windows;
+using Microsoft.VisualStudio;
+using Microsoft.VisualStudio.OLE.Interop;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Utilities;
@@ -21,11 +23,13 @@ namespace VsVim.Implementation.Misc
         private readonly ITextView _textView;
         private readonly ITextManager _textManager;
         private readonly IDisplayWindowBroker _broker;
+        private readonly IOleCommandTarget _nextOleCommandTarget;
 
         internal StandardCommandTarget(
             IVimBufferCoordinator vimBufferCoordinator,
             ITextManager textManager,
-            IDisplayWindowBroker broker)
+            IDisplayWindowBroker broker,
+            IOleCommandTarget nextOleCommandTarget)
         {
             _vimBuffer = vimBufferCoordinator.VimBuffer;
             _vimBufferCoordinator = vimBufferCoordinator;
@@ -33,6 +37,7 @@ namespace VsVim.Implementation.Misc
             _textView = _vimBuffer.TextView;
             _textManager = textManager;
             _broker = broker;
+            _nextOleCommandTarget = nextOleCommandTarget;
         }
 
         /// <summary>
@@ -144,17 +149,24 @@ namespace VsVim.Implementation.Misc
             KeyInput mapped;
             if (!TryGetSingleMapping(keyInput, out mapped))
             {
+                _broker.DismissDisplayWindows();
                 return _vimBuffer.Process(keyInput).IsAnyHandled;
             }
 
-            // If the key actually being processed is a display window key and the display window
-            // is active then we allow IOleCommandTarget to control the key
+            bool handled;
             if (IsDisplayWindowKey(mapped))
             {
-                return false;
+                // If the key which actually needs to be processed is a display window key, say 
+                // down, up, etc..., then forward it on to the next IOleCommandTarget.  It is responsible
+                // for mapping that key to action against the display window 
+                handled = ErrorHandler.Succeeded(_nextOleCommandTarget.Exec(mapped));
             }
-
-            var handled = _vimBuffer.Process(keyInput).IsAnyHandled;
+            else
+            {
+                // Intentionally using keyInput here and not mapped.  Process will do mapping on the
+                // provided input hence we should be using the original keyInput here not mapped
+                handled = _vimBuffer.Process(keyInput).IsAnyHandled;
+            }
 
             // The Escape key should always dismiss the active completion session.  However Vim
             // itself is mostly ignorant of display windows and typically won't dismiss them
@@ -325,10 +337,10 @@ namespace VsVim.Implementation.Misc
             _displayWindowBrokerFactory = displayWindowBrokerFactory;
         }
 
-        ICommandTarget ICommandTargetFactory.CreateCommandTarget(IVimBufferCoordinator vimBufferCoordinator)
+        ICommandTarget ICommandTargetFactory.CreateCommandTarget(IOleCommandTarget nextCommandTarget, IVimBufferCoordinator vimBufferCoordinator)
         {
             var displayWindowBroker = _displayWindowBrokerFactory.CreateDisplayWindowBroker(vimBufferCoordinator.VimBuffer.TextView);
-            return new StandardCommandTarget(vimBufferCoordinator, _textManager, displayWindowBroker);
+            return new StandardCommandTarget(vimBufferCoordinator, _textManager, displayWindowBroker, nextCommandTarget);
         }
     }
 }

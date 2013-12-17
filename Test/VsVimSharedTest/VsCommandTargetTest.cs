@@ -57,21 +57,17 @@ namespace VsVim.UnitTest
             {
                 commandTargets.Add(ReSharperKeyUtil.GetOrCreate(_bufferCoordinator));
             }
-            commandTargets.Add(new StandardCommandTarget(_bufferCoordinator, _textManager.Object, _broker.Object));
+            commandTargets.Add(new StandardCommandTarget(_bufferCoordinator, _textManager.Object, _broker.Object, _nextTarget.Object));
 
             var oldCommandFilter = _nextTarget.Object;
-            var vsTextView = _factory.Create<IVsTextView>(MockBehavior.Loose);
-            vsTextView.Setup(x => x.AddCommandFilter(It.IsAny<IOleCommandTarget>(), out oldCommandFilter)).Returns(0);
-            var result = VsCommandTarget.Create(
+            _targetRaw = new VsCommandTarget(
                 _bufferCoordinator,
-                vsTextView.Object,
                 _textManager.Object,
                 _vsAdapter.Object,
                 _broker.Object,
                 KeyUtil,
+                _nextTarget.Object,
                 commandTargets.ToReadOnlyCollectionShallow());
-            Assert.True(result.IsSuccess);
-            _targetRaw = result.Value;
             _target = _targetRaw;
         }
 

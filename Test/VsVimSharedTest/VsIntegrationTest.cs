@@ -46,26 +46,13 @@ namespace VsVim.UnitTest
                 keyUtil: KeyUtil);
         }
 
-        public sealed class MiscTest : VsIntegrationTest
+        public sealed class KeyMapTest : VsIntegrationTest
         {
-            /// <summary>
-            /// Simple sanity check to ensure that our simulation is working properly
-            /// </summary>
-            [Fact]
-            public void Insert_SanityCheck()
-            {
-                Create("hello world");
-                _textView.MoveCaretTo(0);
-                _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
-                _vsSimulation.Run('x');
-                Assert.Equal("xhello world", _textView.GetLine(0).GetText());
-            }
-
             /// <summary>
             /// Make sure that S_RETURN will actually come across as such 
             /// </summary>
             [Fact]
-            public void KeyMap_ShiftAndReturn()
+            public void ShiftAndReturn()
             {
                 Create("cat", "dog");
                 _vimBuffer.Process(":map <S-RETURN> o<Esc>", enter: true);
@@ -80,7 +67,7 @@ namespace VsVim.UnitTest
             /// Make sure that S_TAB will actually come across as such 
             /// </summary>
             [Fact]
-            public void KeyMap_ShiftAndTab()
+            public void ShiftAndTab()
             {
                 Create("cat", "dog");
                 _vimBuffer.Process(":map <S-TAB> o<Esc>", enter: true);
@@ -92,7 +79,7 @@ namespace VsVim.UnitTest
             }
 
             [Fact]
-            public void KeyMap_ShiftAndEnter()
+            public void ShiftAndEnter()
             {
                 Create("cat", "dog");
                 _vimBuffer.Process(":inoremap <S-CR> <Esc>", enter: true);
@@ -107,13 +94,44 @@ namespace VsVim.UnitTest
             /// key mapping we process it promptly as it should be 
             /// </summary>
             [Fact]
-            public void KeyMap_DoubleSemicolon()
+            public void DoubleSemicolon()
             {
                 Create("cat", "dog");
                 _vimBuffer.Process(":imap ;; <Esc>", enter: true);
                 _vimBuffer.Process("i");
                 _vsSimulation.Run(";;");
                 Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
+            }
+
+            /// <summary>
+            /// Make sure that keys which are mapped to display window keys are passed down to 
+            /// Visual Studio as mapped keys 
+            /// </summary>
+            [Fact]
+            public void MappedDisplayWindowKey()
+            {
+                Create("cat", "dog");
+                _vimBuffer.Process(":imap <Tab> <Down>", enter: true);
+                _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
+                _vsSimulation.DisplayWindowBroker.SetupGet(x => x.IsCompletionActive).Returns(true);
+                _vsSimulation.Run(VimKey.Tab);
+                Assert.Equal(_textBuffer.GetLine(1).Start, _textView.GetCaretPoint());
+            }
+        }
+
+        public sealed class MiscTest : VsIntegrationTest
+        {
+            /// <summary>
+            /// Simple sanity check to ensure that our simulation is working properly
+            /// </summary>
+            [Fact]
+            public void Insert_SanityCheck()
+            {
+                Create("hello world");
+                _textView.MoveCaretTo(0);
+                _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
+                _vsSimulation.Run('x');
+                Assert.Equal("xhello world", _textView.GetLine(0).GetText());
             }
 
             /// <summary>
