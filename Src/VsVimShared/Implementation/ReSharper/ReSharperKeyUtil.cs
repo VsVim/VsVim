@@ -3,47 +3,125 @@ using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.Linq;
 using System.Text;
+using System.Windows.Input;
+using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Utilities;
 using Vim;
 
 namespace VsVim.Implementation.ReSharper
 {
-    [Export(typeof(ICommandTargetFactory))]
-    [Name("ReSharper Command Target")]
-    [Order(Before=Constants.StandardCommandTargetName)]
-    internal sealed class ReSharperCommandTargetFactory : ICommandTargetFactory
+    internal sealed class ReSharperKeyUtil : KeyProcessor, ICommandTarget
     {
-        private readonly IReSharperUtil _reSharperUtil;
+        private static object PropertyBagKey = new object();
 
-        [ImportingConstructor]
-        internal ReSharperCommandTargetFactory(IReSharperUtil reSharperUtil)
-        {
-            _reSharperUtil = reSharperUtil;
-        }
-
-        ICommandTarget ICommandTargetFactory.CreateCommandTarget(IVimBufferCoordinator vimBufferCoordinator)
-        {
-            if (_reSharperUtil.IsInstalled)
-            {
-                return new ReSharperCommandTarget(vimBufferCoordinator);
-            }
-
-            return null;
-        }
-    }
-
-    internal sealed class ReSharperCommandTarget : ICommandTarget
-    {
         private readonly IVimBuffer _vimBuffer;
         private readonly IVimBufferCoordinator _vimBufferCoordinator;
 
-        internal ReSharperCommandTarget(IVimBufferCoordinator vimBufferCoordinator)
+        private ReSharperKeyUtil(IVimBufferCoordinator vimBufferCoordinator)
         {
-            _vimBuffer = vimBufferCoordinator.VimBuffer;
             _vimBufferCoordinator = vimBufferCoordinator;
+            _vimBuffer = vimBufferCoordinator.VimBuffer;
         }
 
-        internal bool Exec(EditCommand editCommand, out Action action)
+        internal static ReSharperKeyUtil GetOrCreate(IVimBufferCoordinator vimBufferCoordinator)
+        {
+            return vimBufferCoordinator.VimBuffer.Properties.GetOrCreateSingletonProperty(PropertyBagKey, () => new ReSharperKeyUtil(vimBufferCoordinator));
+        }
+
+        public override void PreviewKeyDown(KeyEventArgs args)
+        {
+            switch (args.Key)
+            {
+                case Key.Escape:
+                    PreviewKeyDownEscape(args);
+                    break;
+                case Key.Back:
+                    PreviewKeyDownBack(args);
+                    break;
+                case Key.Enter:
+                    PreviewKeyDownEnter(args);
+                    break;
+            }
+
+            base.PreviewKeyDown(args);
+        }
+
+        private void PreviewKeyDownEscape(KeyEventArgs args)
+        {
+            // Have to special case Escape here for insert mode.  R# is typically ahead of us on the IOleCommandTarget
+            // chain.  If a completion window is open and we wait for Exec to run R# will be ahead of us and run
+            // their Exec call.  This will lead to them closing the completion window and not calling back into
+            // our exec leaving us in insert mode.
+            var handled = false;
+            if (_vimBuffer.ModeKind.IsAnyInsert())
+            {
+                handled = TryProcess(KeyInputUtil.EscapeKey);
+            }
+
+            // Have to special case Escape here for external edit mode because we want escape to get us back to 
+            // normal mode.  However we do want this key to make it to R# as well since they may need to dismiss
+            // intellisense
+            if (_vimBuffer.ModeKind == ModeKind.ExternalEdit)
+            {
+                handled = TryProcess(KeyInputUtil.EscapeKey);
+            }
+
+            // If we handled it then discard the KeyInput so that we don't double process it.  We still want the 
+            // KeyInput to make it's way to ReSharper though so that it can dismiss Intellisense so don't mark
+            // the event as handled
+            if (handled)
+            {
+                _vimBufferCoordinator.Discard(KeyInputUtil.EscapeKey);
+            }
+        }
+
+        private void PreviewKeyDownBack(KeyEventArgs args)
+        {
+            // R# special cases both the Back command in various scenarios
+            //
+            //  - Back is special cased to delete matched parens in Exec.  
+            //
+            // In these scenarios we want to make sure that we handle the key in Vim.  If this 
+            // handling succeeds then we want to prevent R# from seeing the command.  If they see
+            // it they will process it and the result will be conflicting actions
+            var keyInput = KeyInputUtil.VimKeyToKeyInput(VimKey.Back);
+            if (!_vimBuffer.ModeKind.IsAnyInsert() && TryProcess(keyInput))
+            {
+                _vimBufferCoordinator.Discard(keyInput);
+                args.Handled = true;
+            }
+        }
+
+        private void PreviewKeyDownEnter(KeyEventArgs args)
+        {
+            // R# special cases both the Back and Enter command in various scenarios
+            //
+            //  - Enter is special cased in XML doc comments presumably to do custom formatting 
+            //  - Enter is suppressed during debugging in Exec.  Presumably this is done to avoid the annoying
+            //    "Invalid ENC Edit" dialog during debugging.
+            //
+            // In these scenarios we want to make sure that we handle the key in Vim.  If this 
+            // handling succeeds then we want to prevent R# from seeing the command.  If they see
+            // it they will process it and the result will be conflicting actions
+            var keyInput = KeyInputUtil.EnterKey;
+            if (!_vimBuffer.ModeKind.IsAnyInsert() && TryProcess(keyInput))
+            {
+                _vimBufferCoordinator.Discard(keyInput);
+                args.Handled = true;
+            }
+        }
+
+        private bool TryProcess(KeyInput keyInput)
+        {
+            if (_vimBufferCoordinator.IsDiscarded(keyInput))
+            {
+                return false; ;
+            }
+
+            return _vimBuffer.Process(keyInput).IsAnyHandled;
+        }
+
+        private bool Exec(EditCommand editCommand, out Action action)
         {
             action = null;
             return false;
@@ -147,4 +225,65 @@ namespace VsVim.Implementation.ReSharper
         #endregion
     }
 
+    [Export(typeof(ICommandTargetFactory))]
+    [Name("ReSharper Command Target")]
+    [Order(Before=Constants.StandardCommandTargetName)]
+    internal sealed class ReSharperCommandTargetFactory : ICommandTargetFactory
+    {
+        private readonly IReSharperUtil _reSharperUtil;
+
+        [ImportingConstructor]
+        internal ReSharperCommandTargetFactory(IReSharperUtil reSharperUtil)
+        {
+            _reSharperUtil = reSharperUtil;
+        }
+
+        ICommandTarget ICommandTargetFactory.CreateCommandTarget(IVimBufferCoordinator vimBufferCoordinator)
+        {
+            if (!_reSharperUtil.IsInstalled)
+            {
+                return null;
+            }
+
+            return ReSharperKeyUtil.GetOrCreate(vimBufferCoordinator);
+        }
+    }
+
+    [ContentType(Vim.Constants.ContentType)]
+    [TextViewRole(PredefinedTextViewRoles.Document)]
+    [Order(Before = Constants.VisualStudioKeyProcessorName, After = Constants.VsKeyProcessorName)]
+    [Export(typeof(IKeyProcessorProvider))]
+    [Name("ReSharper Key Processor")]
+    internal sealed class ReSharperKeyProcessorProvider : IKeyProcessorProvider
+    {
+        private readonly IReSharperUtil _reSharperUtil;
+        private readonly IVim _vim;
+        private readonly IVimBufferCoordinatorFactory _vimBufferCoordinatorFactory;
+
+        [ImportingConstructor]
+        internal ReSharperKeyProcessorProvider(IVim vim, IReSharperUtil reSharperUtil, IVimBufferCoordinatorFactory vimBufferCoordinatorFactory)
+        {
+            _vim = vim;
+            _reSharperUtil = reSharperUtil;
+            _vimBufferCoordinatorFactory = vimBufferCoordinatorFactory;
+        }
+
+        KeyProcessor IKeyProcessorProvider.GetAssociatedProcessor(IWpfTextView wpfTextView)
+        {
+            // Don't want to invoke the custom processor unless R# is installed on the machine
+            if (!_reSharperUtil.IsInstalled)
+            {
+                return null;
+            }
+
+            IVimBuffer vimBuffer;
+            if (!_vim.TryGetOrCreateVimBufferForHost(wpfTextView, out vimBuffer))
+            {
+                return null;
+            }
+
+            var vimBufferCoordinator = _vimBufferCoordinatorFactory.GetVimBufferCoordinator(vimBuffer);
+            return ReSharperKeyUtil.GetOrCreate(vimBufferCoordinator);
+        }
+    }
 }

@@ -14,12 +14,9 @@ namespace VsVim.Implementation.ReSharper
 {
     [ContentType(Vim.Constants.ContentType)]
     [TextViewRole(PredefinedTextViewRoles.Document)]
-    [Order(Before = Constants.VisualStudioKeyProcessorName, After = Constants.VsKeyProcessorName)]
     [Export(typeof(IReSharperUtil))]
     [Export(typeof(IExternalEditAdapter))]
-    [Export(typeof(IKeyProcessorProvider))]
-    [Name("ReSharper Util")]
-    internal sealed class ReSharperUtil : IExternalEditAdapter, IReSharperUtil, IKeyProcessorProvider
+    internal sealed class ReSharperUtil : IExternalEditAdapter, IReSharperUtil
     {
         internal const string ResharperTaggerProviderName = "VsDocumentMarkupTaggerProvider";
         private static readonly Guid Resharper5Guid = new Guid("0C6E6407-13FC-4878-869A-C8B4016C57FE");
@@ -251,28 +248,6 @@ namespace VsVim.Implementation.ReSharper
         bool IExternalEditAdapter.IsExternalEditTag(ITag tag)
         {
             return IsExternalEditTag(tag);
-        }
-
-        #endregion
-
-        #region IKeyProcessorProvider
-
-        KeyProcessor IKeyProcessorProvider.GetAssociatedProcessor(IWpfTextView wpfTextView)
-        {
-            // Don't want to invoke the custom processor unless R# is installed on the machine
-            if (!_isResharperInstalled)
-            {
-                return null;
-            }
-
-            IVimBuffer vimBuffer;
-            if (!_vim.TryGetOrCreateVimBufferForHost(wpfTextView, out vimBuffer))
-            {
-                return null;
-            }
-
-            var vimBufferCoordinator = _vimBufferCoordinatorFactory.GetVimBufferCoordinator(vimBuffer);
-            return new ReSharperKeyProcessor(vimBufferCoordinator);
         }
 
         #endregion

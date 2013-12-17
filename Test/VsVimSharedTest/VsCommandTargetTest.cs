@@ -55,7 +55,7 @@ namespace VsVim.UnitTest
             var commandTargets = new List<ICommandTarget>();
             if (isReSharperInstalled)
             {
-                commandTargets.Add(new ReSharperCommandTarget(_bufferCoordinator));
+                commandTargets.Add(ReSharperKeyUtil.GetOrCreate(_bufferCoordinator));
             }
             commandTargets.Add(new StandardCommandTarget(_bufferCoordinator, _textManager.Object, _broker.Object));
 

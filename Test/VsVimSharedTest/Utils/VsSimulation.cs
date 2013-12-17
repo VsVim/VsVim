@@ -300,7 +300,7 @@ namespace VsVim.UnitTest.Utils
             var commandTargets = new List<ICommandTarget>();
             if (simulateResharper)
             {
-                commandTargets.Add(new ReSharperCommandTarget(bufferCoordinator));
+                commandTargets.Add(ReSharperKeyUtil.GetOrCreate(bufferCoordinator));
             }
             commandTargets.Add(new StandardCommandTarget(bufferCoordinator, textManager.Object, _displayWindowBroker.Object));
 
@@ -345,7 +345,7 @@ namespace VsVim.UnitTest.Utils
             // ordering of the components
             if (simulateResharper)
             {
-                _vsKeyProcessorSimulation.KeyProcessors.Add(new ReSharperKeyProcessor(bufferCoordinator));
+                _vsKeyProcessorSimulation.KeyProcessors.Add(ReSharperKeyUtil.GetOrCreate(bufferCoordinator));
             }
             _vsKeyProcessorSimulation.KeyProcessors.Add(new VsKeyProcessor(_vsAdapter.Object, bufferCoordinator, _keyUtil, _reportDesignerUtil.Object));
             _vsKeyProcessorSimulation.KeyProcessors.Add((KeyProcessor)bufferCoordinator);
