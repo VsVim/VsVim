@@ -124,7 +124,7 @@
     <Compile Include="IOptionsDialogService.cs" />
     <Compile Include="IPowerToolsUtil.cs" />
     <Compile Include="IReportDesignerUtil.cs" />
-    <Compile Include="IResharperUtil.cs" />
+    <Compile Include="Implementation\ReSharper\IResharperUtil.cs" />
     <Compile Include="ITextManager.cs" />
     <Compile Include="IVimApplicationSettings.cs" />
     <Compile Include="IVimBufferCoordinator.cs" />
