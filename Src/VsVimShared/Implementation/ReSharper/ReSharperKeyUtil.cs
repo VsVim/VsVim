@@ -28,6 +28,26 @@ namespace VsVim.Implementation.ReSharper
             return vimBufferCoordinator.VimBuffer.Properties.GetOrCreateSingletonProperty(PropertyBagKey, () => new ReSharperKeyUtil(vimBufferCoordinator));
         }
 
+        public override bool IsInterestedInHandledEvents
+        {
+            get { return true; }
+        }
+
+        public override void PreviewKeyUp(KeyEventArgs args)
+        {
+            if (args.Key == Key.Escape)
+            {
+                // The Escape key was pressed and we are still inside of Insert mode.  This means that R# 
+                // handled the key stroke to dismiss intellisense.  Leave insert mode now to complete the operation
+                if (_vimBuffer.ModeKind == ModeKind.Insert)
+                {
+                    VimTrace.TraceInfo("ReSharperKeyUtil::PreviewKeyUp handled escape swallowed by Visual Assist");
+                    _vimBuffer.Process(KeyInputUtil.EscapeKey);
+                }
+            }
+            base.PreviewKeyUp(args);
+        }
+
         private bool Exec(EditCommand editCommand, out Action action)
         {
             action = null;
