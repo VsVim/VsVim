@@ -14,6 +14,7 @@ using VsVim.Implementation;
 using VsVim.Implementation.Misc;
 using Microsoft.VisualStudio.Text;
 using System.Collections.Generic;
+using VsVim.Implementation.ReSharper;
 
 namespace VsVim.UnitTest
 {
