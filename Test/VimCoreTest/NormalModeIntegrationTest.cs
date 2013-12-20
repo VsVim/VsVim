@@ -3961,6 +3961,104 @@ namespace Vim.UnitTest
             }
         }
 
+        public abstract class ScrollWindowTest : NormalModeIntegrationTest
+        {
+            private static readonly string[] Lines = KeyInputUtilTest.CharLettersLower.Select(x => x.ToString()).ToArray();
+            private readonly int _lastLineNumber = 0;
+
+            protected ScrollWindowTest()
+            {
+                Create(Lines);
+                _lastLineNumber = _textBuffer.CurrentSnapshot.LineCount - 1;
+                _textView.SetVisibleLineCount(5);
+                _globalSettings.ScrollOffset = 1;
+                _windowSettings.Scroll = 1;
+            }
+
+            public sealed class WindowAndCaretTest : ScrollWindowTest
+            {
+                [Fact]
+                public void UpMovesCaret()
+                {
+                    _textView.DisplayTextLineContainingBufferPosition(_textBuffer.GetLine(1).Start, 0.0, ViewRelativePosition.Top);
+                    _textView.MoveCaretToLine(2);
+                    _vimBuffer.ProcessNotation("<C-u>");
+                    Assert.Equal(1, _textView.GetCaretLine().LineNumber);
+                    Assert.Equal(0, _textView.GetFirstVisibleLineNumber());
+                }
+
+                /// <summary>
+                /// The caret should move in this case even if the window itself doesn't scroll
+                /// </summary>
+                [Fact]
+                public void UpMovesCaretWithoutScroll()
+                {
+                    _textView.MoveCaretToLine(2);
+                    _vimBuffer.ProcessNotation("<C-u>");
+                    Assert.Equal(1, _textView.GetCaretLine().LineNumber);
+                }
+            }
+
+            public sealed class WindowOnlyTest : ScrollWindowTest
+            {
+                [Fact]
+                public void UpDoesNotMoveCaret()
+                {
+                    _textView.DisplayTextLineContainingBufferPosition(_textBuffer.GetLine(1).Start, 0.0, ViewRelativePosition.Top);
+                    _textView.MoveCaretToLine(2);
+                    _vimBuffer.ProcessNotation("<C-y>");
+                    Assert.Equal(2, _textView.GetCaretLine().LineNumber);
+                }
+
+                [Fact]
+                public void DownDoesNotMoveCaret()
+                {
+                    _textView.MoveCaretToLine(2);
+                    _vimBuffer.ProcessNotation("<C-e>");
+                    Assert.Equal(_textView.GetPointInLine(2, 0), _textView.GetCaretPoint());
+                }
+
+                /// <summary>
+                /// When the caret moves off the visible screen we move it to be visible
+                /// </summary>
+                [Fact]
+                public void DownMovesCaretWhenNotVisible()
+                {
+                    _textView.MoveCaretToLine(0);
+                    _vimBuffer.ProcessNotation("<C-e>");
+                    Assert.Equal(_textView.GetFirstVisibleLineNumber(), _textView.GetCaretLine().LineNumber);
+                }
+
+                /// <summary>
+                /// As the lines move off of the screen the caret is moved down to keep it visible.  Make sure 
+                /// that we maintain the caret column in these cases 
+                /// </summary>
+                [Fact]
+                public void DownMaintainCaretColumn()
+                {
+                    _textBuffer.SetText("cat", "", "dog", "a", "b", "c", "d", "e");
+                    _textView.MoveCaretToLine(0, 1);
+                    _vimBuffer.ProcessNotation("<C-e>");
+                    Assert.Equal(_textBuffer.GetPointInLine(1, 0), _textView.GetCaretPoint());
+                    _vimBuffer.ProcessNotation("<C-e>");
+                    Assert.Equal(_textBuffer.GetPointInLine(2, 1), _textView.GetCaretPoint());
+                }
+
+                /// <summary>
+                /// When the scroll is to the top of the ITextBuffer the Ctrl-Y command should not cause the 
+                /// caret to move.  It should only move as the result of the window scrolling the caret out of
+                /// the view 
+                /// </summary>
+                [Fact]
+                public void Issue1202()
+                {
+                    _textView.MoveCaretToLine(1);
+                    _vimBuffer.ProcessNotation("<C-y>");
+                    Assert.Equal(1, _textView.GetCaretLine().LineNumber);
+                }
+            }
+        }
+
         public sealed class ScrollOffsetTest : NormalModeIntegrationTest
         {
             private static readonly string[] Lines = KeyInputUtilTest.CharLettersLower.Select(x => x.ToString()).ToArray();
@@ -4323,7 +4421,7 @@ namespace Vim.UnitTest
             {
                 Create("    cat", "    dog");
                 _vimBuffer.Process("<<");
-                Assert.Equal(new[] { "cat", "    dog"}, _textBuffer.GetLines());
+                Assert.Equal(new[] { "cat", "    dog" }, _textBuffer.GetLines());
             }
 
             [Fact]
@@ -4331,7 +4429,7 @@ namespace Vim.UnitTest
             {
                 Create("    cat", "    dog");
                 _vimBuffer.Process("2<<");
-                Assert.Equal(new[] { "cat", "dog"}, _textBuffer.GetLines());
+                Assert.Equal(new[] { "cat", "dog" }, _textBuffer.GetLines());
             }
 
             [Fact]

@@ -29,7 +29,7 @@ namespace VimHost
         public KeyProcessor GetAssociatedProcessor(IWpfTextView wpfTextView)
         {
             var vimTextBuffer = _vim.GetOrCreateVimBuffer(wpfTextView);
-            return new VimKeyProcessor(vimTextBuffer, _keyUtil);
+            return new VimKeyProcessor(vimTextBuffer, _keyUtil, wpfTextView);
         }
     }
 }

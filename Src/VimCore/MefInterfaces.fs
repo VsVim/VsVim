@@ -270,6 +270,25 @@ type ViewFlags =
     /// Visible ||| TextExpanded ||| ScrollOffset ||| VirtualEdit
     | All = 0x0f
 
+/// When maintaining the caret column for motion moves this represents the desired 
+/// column to jump to if there is enough space on the line
+///
+[<RequireQualifiedAccess>]
+[<NoComparison>]
+[<NoEquality>]
+type MaintainCaretColumn = 
+
+    /// There is no saved caret column. 
+    | None
+
+    /// This number is kept as a count of spaces.  Tabs need to be adjusted for when applying
+    /// this setting to a motion
+    | Spaces of int
+
+    /// The caret was moved with the $ motion and the further moves should move to the end of 
+    /// the line 
+    | EndOfLine
+
 /// This class abstracts out the operations that are common to normal, visual and 
 /// command mode.  It usually contains common edit and movement operations and very
 /// rarely will deal with caret operations.  That is the responsibility of the 
@@ -284,6 +303,10 @@ type ICommonOperations =
 
     /// Associated IEditorOptions
     abstract EditorOptions : IEditorOptions
+
+    /// The currently maintained caret column for up / down caret movements in the
+    /// buffer
+    abstract MaintainCaretColumn : MaintainCaretColumn with get, set
 
     /// Associated ITextView
     abstract TextView : ITextView 

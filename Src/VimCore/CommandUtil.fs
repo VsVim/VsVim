@@ -2260,6 +2260,7 @@ type internal CommandUtil
         | NormalCommand.SetMarkToCaret c -> x.SetMarkToCaret c
         | NormalCommand.ScrollLines (direction, useScrollOption) -> x.ScrollLines direction useScrollOption data.Count
         | NormalCommand.ScrollPages direction -> x.ScrollPages direction data.CountOrDefault
+        | NormalCommand.ScrollWindow direction -> x.ScrollWindow direction count
         | NormalCommand.ScrollCaretLineToTop keepCaretColumn -> x.ScrollCaretLineToTop keepCaretColumn
         | NormalCommand.ScrollCaretLineToMiddle keepCaretColumn -> x.ScrollCaretLineToMiddle keepCaretColumn
         | NormalCommand.ScrollCaretLineToBottom keepCaretColumn -> x.ScrollCaretLineToBottom keepCaretColumn
@@ -2452,6 +2453,51 @@ type internal CommandUtil
             _textView.Caret.MoveTo(line) |> ignore
         with
             | _ -> ()
+
+        CommandResult.Completed ModeSwitch.NoSwitch
+
+    /// Scroll the window in the specified direction by the specified number of lines.  The 
+    /// caret only moves if it leaves the view port
+    member x.ScrollWindow direction count = 
+        try
+
+            // If the scroll of the window has taken the caret off of the visible portion of the ITextView
+            // then we need to move it back at the same column
+            let updateCaret (textViewLine : ITextViewLine) = 
+
+                // This is one operation which does maintain the column spacing as we go up and down the 
+                // lines.  Make sure to use spaces here not column
+                let columnSpaces = 
+                    let caretSpaces = _commonOperations.GetSpacesToPoint x.CaretPoint
+                    match _commonOperations.MaintainCaretColumn with
+                    | MaintainCaretColumn.None -> caretSpaces
+                    | MaintainCaretColumn.Spaces spaces -> max caretSpaces spaces
+                    | MaintainCaretColumn.EndOfLine -> caretSpaces
+
+                let line = textViewLine.Start.GetContainingLine()
+                let point = _commonOperations.GetPointForSpaces line columnSpaces
+                TextViewUtil.MoveCaretToPoint _textView point
+
+                // The MaintainCaretColumn value is reset on every caret position change.  Don't cache
+                // the value until after the caret is moved
+                _commonOperations.MaintainCaretColumn <- MaintainCaretColumn.Spaces columnSpaces
+
+            _textView.ViewScroller.ScrollViewportVerticallyByLines(direction, count)
+            let textViewLines = _textView.TextViewLines
+            match direction with
+            | ScrollDirection.Up ->
+                if x.CaretPoint.Position >= textViewLines.LastVisibleLine.End.Position then
+                    updateCaret textViewLines.LastVisibleLine
+            | ScrollDirection.Down ->
+                if x.CaretPoint.Position < textViewLines.FirstVisibleLine.Start.Position then
+                    updateCaret textViewLines.FirstVisibleLine
+            | _ -> ()
+
+        with 
+        // Dealing with ITextViewLines can lead to an exception (particularly during layout).  Need
+        // to be safe here and handle the exception.  If we can't access the ITextViewLines there
+        // isn't much that can be done for scrolling 
+        | _ -> () 
 
         CommandResult.Completed ModeSwitch.NoSwitch
 

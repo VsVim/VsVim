@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Reflection;
 using System.Windows.Input;
 using Microsoft.FSharp.Core;
+using Microsoft.VisualStudio.Text.Editor;
 using Vim;
 using Vim.UI.Wpf;
 
@@ -26,8 +27,8 @@ namespace VsVim.Implementation.Misc
             get { return _keyDownCount; }
         }
 
-        internal VsKeyProcessor(IVsAdapter adapter, IVimBufferCoordinator bufferCoordinator, IKeyUtil keyUtil, IReportDesignerUtil reportDesignerUtil)
-            : base(bufferCoordinator.VimBuffer, keyUtil)
+        internal VsKeyProcessor(IVsAdapter adapter, IVimBufferCoordinator bufferCoordinator, IKeyUtil keyUtil, IReportDesignerUtil reportDesignerUtil, IWpfTextView wpfTextView)
+            : base(bufferCoordinator.VimBuffer, keyUtil, wpfTextView)
         {
             _adapter = adapter;
             _reportDesignerUtil = reportDesignerUtil;

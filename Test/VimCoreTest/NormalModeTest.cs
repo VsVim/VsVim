@@ -389,7 +389,7 @@ namespace Vim.UnitTest
         public void Bind_ScrollLines_Down()
         {
             Create("");
-            _commandUtil.SetupCommandNormal(NormalCommand.NewScrollLines(ScrollDirection.Down, false));
+            _commandUtil.SetupCommandNormal(NormalCommand.NewScrollWindow(ScrollDirection.Down));
             _mode.Process(KeyInputUtil.CharWithControlToKeyInput('e'));
             _commandUtil.Verify();
         }
@@ -398,7 +398,7 @@ namespace Vim.UnitTest
         public void Bind_ScrollLines_Up()
         {
             Create("");
-            _commandUtil.SetupCommandNormal(NormalCommand.NewScrollLines(ScrollDirection.Up, false));
+            _commandUtil.SetupCommandNormal(NormalCommand.NewScrollWindow(ScrollDirection.Up));
             _mode.Process(KeyInputUtil.CharWithControlToKeyInput('y'));
             _commandUtil.Verify();
         }

@@ -2295,12 +2295,15 @@ type NormalCommand =
     /// Set the specified mark to the current value of the caret
     | SetMarkToCaret of char
 
-    /// Scroll the screen in the specified direction.  The bool is whether to use
+    /// Scroll the caret in the specified direciton.  The bool is whether to use
     /// the 'scroll' option or 'count'
     | ScrollLines of ScrollDirection * bool
 
     /// Move the display a single page in the specified direction
     | ScrollPages of ScrollDirection
+
+    /// Scroll the window in the specified direction by 'count' lines
+    | ScrollWindow of ScrollDirection
 
     /// Scroll the current line to the top of the ITextView.  The bool is whether or not
     /// to leave the caret in the same column
@@ -3802,6 +3805,9 @@ and IVimBuffer =
 
     /// The current directory for this particular window
     abstract CurrentDirectory : string option with get, set
+
+    /// The ICommandUtil for this IVimBuffer
+    abstract CommandUtil : ICommandUtil
 
     /// Global settings for the buffer
     abstract GlobalSettings : IVimGlobalSettings

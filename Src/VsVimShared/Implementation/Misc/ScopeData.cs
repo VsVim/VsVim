@@ -18,14 +18,16 @@ namespace VsVim.Implementation.Misc
     {
         internal const string DefaultGlobalScopeName = "Global";
         internal const string DefaultTextEditorScopeName = "Text Editor";
+        internal const string DefaultSolutionExplorerScopeName = "Solution Explorer";
 
         internal static ScopeData Default
         {
-            get { return new ScopeData(DefaultGlobalScopeName, DefaultTextEditorScopeName); }
+            get { return new ScopeData(DefaultGlobalScopeName, DefaultTextEditorScopeName, DefaultSolutionExplorerScopeName); }
         }
 
         private readonly string _globalScopeName;
         private readonly string _textEditorScopeName;
+        private readonly string _solutionExplorerScopeName;
         private readonly HashSet<string> _importantScopeSet;
 
         internal string GlobalScopeName
@@ -33,22 +35,24 @@ namespace VsVim.Implementation.Misc
             get { return _globalScopeName; }
         }
 
-        internal ScopeData(string globalScopeName, string textEditorScopeName = null)
+        internal ScopeData(string globalScopeName, string textEditorScopeName = null, string solutionExplorerScopeName = null)
         {
             _globalScopeName = globalScopeName ?? DefaultGlobalScopeName;
             _textEditorScopeName = textEditorScopeName ?? DefaultTextEditorScopeName;
-            _importantScopeSet = CreateImportantScopeSet(_globalScopeName, _textEditorScopeName);
+            _solutionExplorerScopeName = solutionExplorerScopeName ?? DefaultSolutionExplorerScopeName;
+            _importantScopeSet = CreateImportantScopeSet(_globalScopeName, _textEditorScopeName, _solutionExplorerScopeName);
         }
 
         internal ScopeData(IVsShell vsShell)
         {
-            if (!TryGetMainScopeNames(vsShell, out _globalScopeName, out _textEditorScopeName))
+            if (!TryGetMainScopeNames(vsShell, out _globalScopeName, out _textEditorScopeName, out _solutionExplorerScopeName))
             {
                 _globalScopeName = DefaultGlobalScopeName;
                 _textEditorScopeName = DefaultTextEditorScopeName;
+                _solutionExplorerScopeName = DefaultSolutionExplorerScopeName;
             }
 
-            _importantScopeSet = CreateImportantScopeSet(_globalScopeName, _textEditorScopeName);
+            _importantScopeSet = CreateImportantScopeSet(_globalScopeName, _textEditorScopeName, _solutionExplorerScopeName);
         }
 
         internal bool IsImportantScope(string name)
@@ -56,11 +60,12 @@ namespace VsVim.Implementation.Misc
             return _importantScopeSet.Contains(name);
         }
 
-        private static HashSet<string> CreateImportantScopeSet(string globalScopeName, string textEditorScopeName)
+        private static HashSet<string> CreateImportantScopeSet(string globalScopeName, string textEditorScopeName, string solutionExplorerScopeName)
         {
             var set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             set.Add(globalScopeName);
             set.Add(textEditorScopeName);
+            set.Add(solutionExplorerScopeName);
 
             // No scope is considered interesting as well
             set.Add("");
@@ -68,14 +73,15 @@ namespace VsVim.Implementation.Misc
         }
 
         /// <summary>
-        /// Get the localized names of "Global" and "Text Editor" scope.  I wish there was a prettier way of doing 
-        /// this.  However there is no API available which provides this information.  We need to directly 
+        /// Get the localized names of "Global", "Text Editor" and "Solution Explorer" scope.  I wish there was a 
+        /// prettier way of doing this.  However there is no API available which provides this information.  We need to directly 
         /// query some registry values here
         /// </summary>
-        private static bool TryGetMainScopeNames(IVsShell vsShell, out string globalScopeName, out string textEditorScopeName)
+        private static bool TryGetMainScopeNames(IVsShell vsShell, out string globalScopeName, out string textEditorScopeName, out string solutionExplorerScopeName)
         {
             globalScopeName = null;
             textEditorScopeName = null;
+            solutionExplorerScopeName = null;
             try
             {
                 using (var rootKey = VSRegistry.RegistryRoot(__VsLocalRegistryType.RegType_Configuration, writable: false))
@@ -93,7 +99,15 @@ namespace VsVim.Implementation.Misc
                         // if we get only the global name.  Just fill in the default here
                         if (!TryGetKeyBindingScopeName(vsShell, keyBindingsKey, "{8B382828-6202-11D1-8870-0000F87579D2}", null, out textEditorScopeName))
                         {
-                            textEditorScopeName = "Text Editor";
+                            textEditorScopeName = DefaultTextEditorScopeName;
+                        }
+
+                        // The "Solution Explorer" scope is only relevant starting in VS2013.  By default it contains a lot of 
+                        // key bindings for '['.  If we can't find the real name just use the default.  We don't want its abscence
+                        // to screw up other scopes
+                        if (!TryGetKeyBindingScopeName(vsShell, keyBindingsKey, "{3AE79031-E1BC-11D0-8F78-00A0C9110057}", null, out solutionExplorerScopeName))
+                        {
+                            solutionExplorerScopeName = DefaultSolutionExplorerScopeName;
                         }
                     }
                 }
@@ -106,29 +120,47 @@ namespace VsVim.Implementation.Misc
             }
         }
 
+        /// <summary>
+        /// The scopes, including well known ones like "Text Editor", in Visual Studio key bindings are localized 
+        /// strings.  This scope attempts to read the localized string out of the correct package by digging
+        /// through the registry and getting the correct resource id.
+        /// </summary>
+        /// <returns></returns>
         private static bool TryGetKeyBindingScopeName(IVsShell vsShell, RegistryKey keyBindingsKey, string subKeyName, uint? id, out string localizedScopeName)
         {
             try
             {
                 using (var subKey = keyBindingsKey.OpenSubKey(subKeyName, writable: false))
                 {
-                    uint resourceId;
-                    if (id.HasValue)
+                    if (!id.HasValue)
                     {
-                        resourceId = id.Value;
-                    }
-                    else
-                    {
-                        if (!UInt32.TryParse((string)subKey.GetValue(null), out resourceId))
+                        // If we don't already have a resource ID then need to reed it from the KeyBindingTables sub-registry 
+                        // key.  It will be in the default value position
+                        var idString = (string)subKey.GetValue(null) ?? "";
+
+                        // The id string often is prefixed with a '#' so remove that 
+                        if (idString.Length > 0 && idString[0] == '#')
                         {
-                            localizedScopeName = null;
-                            return false;
+                            idString = idString.Substring(1);
                         }
+
+                        uint resourceId;
+                        if (UInt32.TryParse(idString, out resourceId))
+                        {
+                            id = resourceId;
+                        }
+
+                    }
+
+                    if (!id.HasValue)
+                    {
+                        localizedScopeName = null;
+                        return false;
                     }
 
                     var package = Guid.Parse((string)subKey.GetValue("Package"));
                     return 
-                        ErrorHandler.Succeeded(vsShell.LoadPackageString(ref package, resourceId, out localizedScopeName)) &&
+                        ErrorHandler.Succeeded(vsShell.LoadPackageString(ref package, id.Value, out localizedScopeName)) &&
                         !string.IsNullOrEmpty(localizedScopeName);
                 }
             }

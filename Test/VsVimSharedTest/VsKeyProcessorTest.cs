@@ -249,7 +249,7 @@ namespace VsVim.UnitTest
             _mockVimBuffer.SetupGet(x => x.ModeKind).Returns(ModeKind.Normal);
             _bufferCoordinator = new VimBufferCoordinator(_mockVimBuffer.Object);
             _device = new MockKeyboardDevice();
-            return new VsKeyProcessor(_vsAdapter.Object, _bufferCoordinator, KeyUtil, _reportDesignerUtil.Object);
+            return new VsKeyProcessor(_vsAdapter.Object, _bufferCoordinator, KeyUtil, _reportDesignerUtil.Object, _wpfTextView);
         }
 
         public sealed class VsKeyDownTest : VsKeyProcessorTest

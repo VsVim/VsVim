@@ -31,6 +31,7 @@ namespace Vim.UnitTest.Mock
         public ISelectMode SelectBlockModeImpl;
         public ISelectMode SelectCharacterModeImpl;
         public ISelectMode SelectLineModeImpl;
+        public ICommandUtil CommandUtilImpl;
         public IMode ExternalEditModeImpl;
         public bool IsProcessingInputImpl;
         public PropertyCollection PropertiesImpl;
@@ -418,6 +419,11 @@ namespace Vim.UnitTest.Mock
         public FSharpOption<ModeKind> InOneTimeCommand
         {
             get { return InOneTimeCommandImpl; }
+        }
+
+        public ICommandUtil CommandUtil
+        {
+            get { return CommandUtilImpl; }
         }
     }
 }

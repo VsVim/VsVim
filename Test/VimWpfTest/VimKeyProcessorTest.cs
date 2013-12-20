@@ -68,11 +68,11 @@ namespace Vim.UI.Wpf.UnitTest
             private MockRepository _factory;
             private Mock<IVimBuffer> _mockVimBuffer;
 
-            protected override Wpf.VimKeyProcessor  CreateKeyProcessor()
+            protected override Wpf.VimKeyProcessor CreateKeyProcessor()
             {
                 _factory = new MockRepository(MockBehavior.Strict);
                 _mockVimBuffer = _factory.Create<IVimBuffer>();
-                return new VimKeyProcessor(_mockVimBuffer.Object, KeyUtil);
+                return new VimKeyProcessor(_mockVimBuffer.Object, KeyUtil, CreateTextView());
             }
 
             /// <summary>
@@ -252,7 +252,7 @@ namespace Vim.UI.Wpf.UnitTest
                 _factory = new MockRepository(MockBehavior.Strict);
                 _mockVimBuffer = _factory.Create<IVimBuffer>();
                 _wpfTextView = CreateTextView();
-                return new VimKeyProcessor(_mockVimBuffer.Object, KeyUtil);
+                return new VimKeyProcessor(_mockVimBuffer.Object, KeyUtil, _wpfTextView);
             }
 
             private TextCompositionEventArgs CreateTextComposition(string text)
