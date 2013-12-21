@@ -2429,6 +2429,9 @@ type VisualCommand =
     /// Switch the mode to insert and possibly a block insert
     | SwitchModeInsert
 
+    /// Switch to the previous mode
+    | SwitchModePrevious
+
     /// Switch to the specified visual mode
     | SwitchModeVisual of VisualKind
 

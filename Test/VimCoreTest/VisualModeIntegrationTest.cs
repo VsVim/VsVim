@@ -1193,7 +1193,7 @@ namespace Vim.UnitTest
             }
         }
 
-        public sealed class Misc : VisualModeIntegrationTest
+        public sealed class MiscAllTest : VisualModeIntegrationTest
         {
             /// <summary>
             /// When changing a line wise selection one blank line should be left remaining in the ITextBuffer
@@ -2269,6 +2269,14 @@ namespace Vim.UnitTest
                         _textBuffer.GetLineSpan(1, 5, 1)
                     },
                     _textView.Selection.SelectedSpans);
+            }
+
+            [Fact]
+            public void Issue1213()
+            {
+                Create("hello world");
+                _vimBuffer.ProcessNotation("v<c-c>");
+                Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
             }
         }
 

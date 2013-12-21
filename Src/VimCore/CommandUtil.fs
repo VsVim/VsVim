@@ -2316,6 +2316,7 @@ type internal CommandUtil
         | VisualCommand.ShiftLinesLeft -> x.ShiftLinesLeftVisual count visualSpan
         | VisualCommand.ShiftLinesRight -> x.ShiftLinesRightVisual count visualSpan
         | VisualCommand.SwitchModeInsert -> x.SwitchModeInsert visualSpan 
+        | VisualCommand.SwitchModePrevious -> x.SwitchPreviousMode()
         | VisualCommand.SwitchModeVisual visualKind -> x.SwitchModeVisual visualKind 
         | VisualCommand.ToggleFoldInSelection -> x.ToggleFoldUnderCaret count
         | VisualCommand.ToggleAllFoldsInSelection-> x.ToggleAllFolds()
@@ -2735,6 +2736,10 @@ type internal CommandUtil
             |> TextViewUtil.MoveCaretToPoint _textView
             x.EditWithUndoTransaciton "Visual Insert" (fun _ -> ())
             x.SwitchMode ModeKind.Insert ModeArgument.None
+
+    /// Switch to the previous mode
+    member x.SwitchPreviousMode() = 
+        CommandResult.Completed ModeSwitch.SwitchPreviousMode 
 
     /// Switch from the current visual mode into the specified visual mode
     member x.SwitchModeVisual newVisualKind = 
