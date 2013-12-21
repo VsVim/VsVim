@@ -99,7 +99,7 @@ type IncrementalSearchTaggerSource (_vimBuffer : IVimBuffer) as this =
 
 [<Export(typeof<IViewTaggerProvider>)>]
 [<ContentType(Constants.AnyContentType)>]
-[<TextViewRole(PredefinedTextViewRoles.Document)>]
+[<TextViewRole(PredefinedTextViewRoles.Editable)>]
 [<TagType(typeof<TextMarkerTag>)>]
 type internal IncrementalSearchTaggerProvider
     [<ImportingConstructor>]
@@ -273,7 +273,7 @@ type HighlightSearchTaggerSource
 
 [<Export(typeof<IViewTaggerProvider>)>]
 [<ContentType(Constants.AnyContentType)>]
-[<TextViewRole(PredefinedTextViewRoles.Document)>]
+[<TextViewRole(PredefinedTextViewRoles.Editable)>]
 [<TagType(typeof<TextMarkerTag>)>]
 type HighlightIncrementalSearchTaggerProvider
     [<ImportingConstructor>]
@@ -337,7 +337,7 @@ type SubstituteConfirmTaggerSource
 
 [<Export(typeof<IViewTaggerProvider>)>]
 [<ContentType(Constants.AnyContentType)>]
-[<TextViewRole(PredefinedTextViewRoles.Document)>]
+[<TextViewRole(PredefinedTextViewRoles.Editable)>]
 [<TagType(typeof<TextMarkerTag>)>]
 type SubstituteConfirmTaggerProvider
     [<ImportingConstructor>]
@@ -398,7 +398,7 @@ type internal FoldTaggerSource(_foldData : IFoldData) as this =
 
 [<Export(typeof<ITaggerProvider>)>]
 [<ContentType(Constants.AnyContentType)>]
-[<TextViewRole(PredefinedTextViewRoles.Document)>]
+[<TextViewRole(PredefinedTextViewRoles.Editable)>]
 [<TagType(typeof<OutliningRegionTag>)>]
 type FoldTaggerProvider
     [<ImportingConstructor>]

@@ -29,6 +29,12 @@ namespace VsVim
         /// </summary>
         internal const string VisualStudioKeyProcessorName = "VisualStudioKeyProcessor";
 
+        /// <summary>
+        /// This text view role was added in VS 2013.  Adding the constant here so we can refer to 
+        /// it within our code as we compile against the VS 2010 binaries
+        /// </summary>
+        internal const string TextViewRoleEmbeddedPeekTextView = "EMBEDDED_PEEK_TEXT_VIEW"
+
         internal static Guid VsUserDataFileNameMoniker = new Guid(0x978a8e17, 0x4df8, 0x432a, 150, 0x23, 0xd5, 0x30, 0xa2, 100, 0x52, 0xbc);
     }
 }

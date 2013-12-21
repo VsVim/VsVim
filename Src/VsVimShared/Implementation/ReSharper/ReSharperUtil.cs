@@ -13,7 +13,7 @@ using Vim;
 namespace VsVim.Implementation.ReSharper
 {
     [ContentType(Vim.Constants.ContentType)]
-    [TextViewRole(PredefinedTextViewRoles.Document)]
+    [TextViewRole(PredefinedTextViewRoles.Editable)]
     [Export(typeof(IReSharperUtil))]
     [Export(typeof(IExternalEditAdapter))]
     internal sealed class ReSharperUtil : IExternalEditAdapter, IReSharperUtil

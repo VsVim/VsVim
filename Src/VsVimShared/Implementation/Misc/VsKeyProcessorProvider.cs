@@ -10,7 +10,7 @@ namespace VsVim.Implementation.Misc
     [Export(typeof(IKeyProcessorProvider))]
     [Order(Before = Constants.VisualStudioKeyProcessorName)]
     [Name(Constants.VsKeyProcessorName)]
-    [TextViewRole(PredefinedTextViewRoles.Document)]
+    [TextViewRole(PredefinedTextViewRoles.Editable)]
     [ContentType(Vim.Constants.ContentType)]
     internal sealed class VsKeyProcessorProvider : IKeyProcessorProvider
     {

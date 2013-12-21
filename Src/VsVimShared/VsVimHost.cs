@@ -28,7 +28,7 @@ namespace VsVim
     [Export(typeof(IWpfTextViewCreationListener))]
     [Export(typeof(VsVimHost))]
     [ContentType(Vim.Constants.ContentType)]
-    [TextViewRole(PredefinedTextViewRoles.Document)]
+    [TextViewRole(PredefinedTextViewRoles.Editable)]
     internal sealed class VsVimHost : VimHost, IVsSelectionEvents
     {
         internal const string CommandNameGoToDefinition = "Edit.GoToDefinition";
@@ -485,6 +485,11 @@ namespace VsVim
 
         public override bool ShouldCreateVimBuffer(ITextView textView)
         {
+            if (!base.ShouldCreateVimBuffer(textView))
+            {
+                return false;
+            }
+
             return !DisableVimBufferCreation;
         }
 

@@ -12,7 +12,7 @@ namespace VimHost
 {
     [Export(typeof(IKeyProcessorProvider))]
     [ContentType("text")]
-    [TextViewRole(PredefinedTextViewRoles.PrimaryDocument)]
+    [TextViewRole(PredefinedTextViewRoles.Editable)]
     [Name("Default Key Processor")]
     internal sealed class DefaultKeyProcessorProvider : IKeyProcessorProvider
     {

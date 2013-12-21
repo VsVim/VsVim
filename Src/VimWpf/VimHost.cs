@@ -253,11 +253,15 @@ namespace Vim.UI.Wpf
         }
 
         /// <summary>
-        /// All ITextView instances are eligible for an IVimBuffer by default.  Let the actual
-        /// host override this method an reject IVimBuffer instances that it doesn't like
+        /// By default anything but an interactive window is eligable for creation 
         /// </summary>
         public virtual bool ShouldCreateVimBuffer(ITextView textView)
         {
+            if (textView.Roles.Contains(PredefinedTextViewRoles.Interactive))
+            {
+                return false;
+            }
+
             return true;
         }
 

@@ -13,7 +13,7 @@ namespace VimApp.Implementation.NewLineDisplay
 {
     [Export(typeof(IWpfTextViewCreationListener))]
     [ContentType(Vim.Constants.AnyContentType)]
-    [TextViewRole(PredefinedTextViewRoles.Document)]
+    [TextViewRole(PredefinedTextViewRoles.Editable)]
     internal sealed class NewLineDisplayFactory : IWpfTextViewCreationListener
     {
         internal const string AdornmentLayerName = "NewLineDisplayAdornment";

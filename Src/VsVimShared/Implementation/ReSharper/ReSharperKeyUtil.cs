@@ -178,7 +178,7 @@ namespace VsVim.Implementation.ReSharper
     }
 
     [ContentType(Vim.Constants.ContentType)]
-    [TextViewRole(PredefinedTextViewRoles.Document)]
+    [TextViewRole(PredefinedTextViewRoles.Editable)]
     [Order(Before = Constants.VisualStudioKeyProcessorName, After = Constants.VsKeyProcessorName)]
     [Export(typeof(IKeyProcessorProvider))]
     [Name("ReSharper Key Processor")]

@@ -193,6 +193,48 @@ namespace VsVim.UnitTest
             }
         }
 
+        public sealed class SholudCreateVimBufferTest : VsVimHostTest
+        {
+            private ITextView Create(params string[] textViewRoles)
+            {
+                return TextEditorFactoryService.CreateTextView(
+                    CreateTextBuffer(),
+                    TextEditorFactoryService.CreateTextViewRoleSet(textViewRoles));
+            }
+
+            /// <summary>
+            /// Don't create IVimBuffer instances for interactive windows.  This would cause the NuGet
+            /// window to have instances of vim created inside of it 
+            /// </summary>
+            [Fact]
+            public void Interactive()
+            {
+                var textView = Create(PredefinedTextViewRoles.Editable, PredefinedTextViewRoles.Interactive);
+                Assert.False(_host.ShouldCreateVimBuffer(textView));
+            }
+
+            [Fact]
+            public void EmbeddedPeekTextView()
+            {
+                var textView = Create(PredefinedTextViewRoles.Editable, Constants.TextViewRoleEmbeddedPeekTextView);
+                Assert.True(_host.ShouldCreateVimBuffer(textView));
+            }
+
+            [Fact]
+            public void StandardDocument()
+            {
+                var textView = Create(PredefinedTextViewRoles.Editable, PredefinedTextViewRoles.Document, PredefinedTextViewRoles.Structured, PredefinedTextViewRoles.Zoomable, PredefinedTextViewRoles.Debuggable);
+                Assert.True(_host.ShouldCreateVimBuffer(textView));
+            }
+
+            [Fact]
+            public void StandardPrimaryDocument()
+            {
+                var textView = Create(PredefinedTextViewRoles.Editable, PredefinedTextViewRoles.PrimaryDocument, PredefinedTextViewRoles.Structured, PredefinedTextViewRoles.Zoomable, PredefinedTextViewRoles.Debuggable);
+                Assert.True(_host.ShouldCreateVimBuffer(textView));
+            }
+        }
+
         public sealed class MiscTest : VsVimHostTest
         {
             [Fact]
