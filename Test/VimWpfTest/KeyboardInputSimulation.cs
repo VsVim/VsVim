@@ -20,7 +20,7 @@ namespace Vim.UI.Wpf.UnitTest
     /// <summary>
     /// This type is used to simulate how keyboard input navigates through WPF events
     /// </summary>
-    public class KeyProcessorSimulation
+    public class KeyboardInputSimulation
     {
         #region DefaultInputController
 
@@ -188,7 +188,7 @@ namespace Vim.UI.Wpf.UnitTest
             get { return _defaultInputController.KeyProcessors; }
         }
 
-        public KeyProcessorSimulation(IWpfTextView wpfTextView)
+        public KeyboardInputSimulation(IWpfTextView wpfTextView)
         {
             _defaultInputController = new DefaultInputController(wpfTextView);
             _defaultKeyboardDevice = new DefaultKeyboardDevice(InputManager.Current);

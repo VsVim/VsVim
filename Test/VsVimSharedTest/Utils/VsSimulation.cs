@@ -34,17 +34,17 @@ namespace VsVim.UnitTest.Utils
     /// </summary>
     internal sealed class VsSimulation
     {
-        #region VsKeyProcessorSimulation
+        #region VsKeyboardInputSimulation
 
         /// <summary>
         /// This is a Visual Studio specific implementation of the key processor.  It takes into account the interaction
         /// between IOleCommandTarget and keyboard input. 
         /// </summary>
-        private sealed class VsKeyProcessorSimulation : KeyProcessorSimulation
+        private sealed class VsKeyboardInputSimulation : KeyboardInputSimulation
         {
             private readonly VsSimulation _vsSimulation;
 
-            internal VsKeyProcessorSimulation(VsSimulation vsSimulation, IWpfTextView wpfTextView) : base(wpfTextView)
+            internal VsKeyboardInputSimulation(VsSimulation vsSimulation, IWpfTextView wpfTextView) : base(wpfTextView)
             {
                 _vsSimulation = vsSimulation;
             }
@@ -237,7 +237,7 @@ namespace VsVim.UnitTest.Utils
         private readonly DefaultCommandTarget _defaultCommandTarget;
 
         private readonly IWpfTextView _wpfTextView;
-        private readonly VsKeyProcessorSimulation _vsKeyProcessorSimulation;
+        private readonly VsKeyboardInputSimulation _vsKeyboardInputSimulation;
         private readonly MockRepository _factory;
         private readonly Mock<IVsAdapter> _vsAdapter;
         private readonly Mock<IDisplayWindowBroker> _displayWindowBroker;
@@ -271,7 +271,7 @@ namespace VsVim.UnitTest.Utils
             _keyUtil = keyUtil;
             _wpfTextView = (IWpfTextView)bufferCoordinator.VimBuffer.TextView;
             _factory = new MockRepository(MockBehavior.Strict);
-            _vsKeyProcessorSimulation = new VsKeyProcessorSimulation(this, _wpfTextView);
+            _vsKeyboardInputSimulation = new VsKeyboardInputSimulation(this, _wpfTextView);
             _testableSynchronizationContext = new TestableSynchronizationContext();
             _simulateStandardKeyMappings = simulateStandardKeyMappings;
 
@@ -279,7 +279,7 @@ namespace VsVim.UnitTest.Utils
             // this via an exposed property
             _vsAdapter = _factory.Create<IVsAdapter>();
             _vsAdapter.SetupGet(x => x.InAutomationFunction).Returns(false);
-            _vsAdapter.SetupGet(x => x.KeyboardDevice).Returns(_vsKeyProcessorSimulation.KeyBoardDevice);
+            _vsAdapter.SetupGet(x => x.KeyboardDevice).Returns(_vsKeyboardInputSimulation.KeyBoardDevice);
             _vsAdapter.Setup(x => x.IsReadOnly(It.IsAny<ITextBuffer>())).Returns(false);
             _vsAdapter.Setup(x => x.IsReadOnly(It.IsAny<ITextView>())).Returns(false);
             _vsAdapter.Setup(x => x.IsIncrementalSearchActive(_wpfTextView)).Returns(false);
@@ -343,11 +343,11 @@ namespace VsVim.UnitTest.Utils
             // ordering of the components
             if (simulateResharper)
             {
-                _vsKeyProcessorSimulation.KeyProcessors.Add(ReSharperKeyUtil.GetOrCreate(bufferCoordinator));
+                _vsKeyboardInputSimulation.KeyProcessors.Add(ReSharperKeyUtil.GetOrCreate(bufferCoordinator));
             }
-            _vsKeyProcessorSimulation.KeyProcessors.Add(new VsKeyProcessor(_vsAdapter.Object, bufferCoordinator, _keyUtil, _reportDesignerUtil.Object, _wpfTextView));
-            _vsKeyProcessorSimulation.KeyProcessors.Add((KeyProcessor)bufferCoordinator);
-            _vsKeyProcessorSimulation.KeyProcessors.Add(new SimulationKeyProcessor(bufferCoordinator.VimBuffer.TextView));
+            _vsKeyboardInputSimulation.KeyProcessors.Add(new VsKeyProcessor(_vsAdapter.Object, bufferCoordinator, _keyUtil, _reportDesignerUtil.Object, _wpfTextView));
+            _vsKeyboardInputSimulation.KeyProcessors.Add((KeyProcessor)bufferCoordinator);
+            _vsKeyboardInputSimulation.KeyProcessors.Add(new SimulationKeyProcessor(bufferCoordinator.VimBuffer.TextView));
         }
 
         /// <summary>
@@ -388,7 +388,7 @@ namespace VsVim.UnitTest.Utils
             _testableSynchronizationContext.Install();
             try
             {
-                _vsKeyProcessorSimulation.Run(keyInput);
+                _vsKeyboardInputSimulation.Run(keyInput);
                 _testableSynchronizationContext.RunAll();
             }
             finally

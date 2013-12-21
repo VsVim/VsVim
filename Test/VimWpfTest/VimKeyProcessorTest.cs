@@ -245,7 +245,7 @@ namespace Vim.UI.Wpf.UnitTest
             private MockRepository _factory;
             private Mock<IVimBuffer> _mockVimBuffer;
             private IWpfTextView _wpfTextView;
-            private InputDevice _inputDevice = new KeyProcessorSimulation.DefaultKeyboardDevice();
+            private InputDevice _inputDevice = new KeyboardInputSimulation.DefaultKeyboardDevice();
 
             protected override VimKeyProcessor CreateKeyProcessor()
             {

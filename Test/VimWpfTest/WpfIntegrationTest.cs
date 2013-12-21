@@ -9,7 +9,7 @@ namespace Vim.UI.Wpf.UnitTest
     public class WpfIntegrationTest : VimTestBase
     {
         protected VimKeyProcessor _vimKeyProcessor;
-        protected KeyProcessorSimulation _simulation;
+        protected KeyboardInputSimulation _simulation;
         protected IVimBuffer _vimBuffer;
         protected ITextBuffer _textBuffer;
 
@@ -23,7 +23,7 @@ namespace Vim.UI.Wpf.UnitTest
             _vimBuffer = CreateVimBuffer(lines);
             _textBuffer = _vimBuffer.TextBuffer;
             _vimKeyProcessor = new VimKeyProcessor(_vimBuffer, KeyUtil, (IWpfTextView)(_vimBuffer.TextView));
-            _simulation = new KeyProcessorSimulation((IWpfTextView)_vimBuffer.TextView);
+            _simulation = new KeyboardInputSimulation((IWpfTextView)_vimBuffer.TextView);
             _simulation.KeyProcessors.Add(_vimKeyProcessor);
         }
 

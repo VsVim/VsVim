@@ -243,6 +243,12 @@ namespace VsVim.UnitTest
                 Assert.Equal("cats dog", _textView.GetLine(0).GetText());
                 Assert.True(_vimBuffer.InsertMode.ActiveWordCompletionSession.IsNone());
             }
+
+            [Fact]
+            public void EscapeDismissPeekDefinitionWindow()
+            {
+
+            }
         }
 
         public abstract class ReSharperTest : VsIntegrationTest
