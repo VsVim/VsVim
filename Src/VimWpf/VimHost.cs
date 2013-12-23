@@ -253,11 +253,12 @@ namespace Vim.UI.Wpf
         }
 
         /// <summary>
-        /// By default anything but an interactive window is eligable for creation 
+        /// By default anything but a pure interactive window is eligable for creation 
         /// </summary>
         public virtual bool ShouldCreateVimBuffer(ITextView textView)
         {
-            if (textView.Roles.Contains(PredefinedTextViewRoles.Interactive))
+            if (textView.Roles.Contains(PredefinedTextViewRoles.Interactive) &&
+                !textView.Roles.Contains(PredefinedTextViewRoles.Document))
             {
                 return false;
             }

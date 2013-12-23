@@ -131,6 +131,14 @@ namespace VsVim.Implementation.Misc
                 return _vimBuffer.Process(keyInput).IsAnyHandled;
             }
 
+            // If we are in a peek definition window and normal mode we need to let the Escape key 
+            // pass on to the next command target.  This is necessary to close the peek definition
+            // window
+            if (_vimBuffer.ModeKind == ModeKind.Normal && _textView.Roles.Contains(Constants.TextViewRoleEmbeddedPeekTextView))
+            {
+                return false;
+            }
+
             // The only time we actively intercept keys and route them through IOleCommandTarget
             // is when one of the IDisplayWindowBroker windows is active
             //

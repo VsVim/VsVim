@@ -485,6 +485,11 @@ namespace VsVim
 
         public override bool ShouldCreateVimBuffer(ITextView textView)
         {
+            if (textView.Roles.Contains(Constants.TextViewRoleEmbeddedPeekTextView))
+            {
+                return true;
+            }
+
             if (!base.ShouldCreateVimBuffer(textView))
             {
                 return false;

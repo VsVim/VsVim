@@ -26,16 +26,31 @@ namespace VsVim.UnitTest
         /// </summary>
         protected virtual void Create(params string[] lines)
         {
-            CreateCore(false, lines);
+            CreateCore(simulateResharper: false, usePeekRole: false, lines: lines);
+        }
+
+        protected virtual void CreatePeek(params string[] lines)
+        {
+            CreateCore(simulateResharper: false, usePeekRole: true, lines: lines);
         }
 
         /// <summary>
         /// Create a Visual Studio simulation with the specified set of lines
         /// </summary>
-        private void CreateCore(bool simulateResharper, params string[] lines)
+        private void CreateCore(bool simulateResharper, bool usePeekRole, params string[] lines)
         {
-            _textView = CreateTextView(lines);
-            _textBuffer = _textView.TextBuffer;
+            if (usePeekRole)
+            {
+                _textBuffer = CreateTextBuffer(lines);
+                _textView = TextEditorFactoryService.CreateTextView(
+                    _textBuffer,
+                    TextEditorFactoryService.CreateTextViewRoleSet(PredefinedTextViewRoles.Document, PredefinedTextViewRoles.Editable, Constants.TextViewRoleEmbeddedPeekTextView));
+            }
+            else
+            {
+                _textView = CreateTextView(lines);
+                _textBuffer = _textView.TextBuffer;
+            }
             _vimBuffer = Vim.CreateVimBuffer(_textView);
             _bufferCoordinator = new VimBufferCoordinator(_vimBuffer);
             _vsSimulation = new VsSimulation(
@@ -243,11 +258,46 @@ namespace VsVim.UnitTest
                 Assert.Equal("cats dog", _textView.GetLine(0).GetText());
                 Assert.True(_vimBuffer.InsertMode.ActiveWordCompletionSession.IsNone());
             }
+        }
 
+        public sealed class EscapeTest : VsIntegrationTest
+        {
             [Fact]
-            public void EscapeDismissPeekDefinitionWindow()
+            public void DismissPeekDefinitionWindow()
             {
+                CreatePeek("cat dog");
+                _vsSimulation.Run(VimKey.Escape);
+                Assert.Equal(KeyInputUtil.EscapeKey, _vsSimulation.VsCommandTarget.LastExecEditCommand.KeyInput);
+            }
 
+            /// <summary>
+            /// The Escape key shouldn't dismiss the peek definition window when we are in 
+            /// insert mode
+            /// </summary>
+            [Fact]
+            public void DontDismissPeekDefinitionWindow()
+            {
+                CreatePeek("cat dog");
+                _vsSimulation.Run("i");
+                Assert.Equal(ModeKind.Insert, _vimBuffer.ModeKind);
+                _vsSimulation.Run(VimKey.Escape);
+                Assert.Null(_vsSimulation.VsCommandTarget.LastExecEditCommand);
+                Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
+            }
+
+            /// <summary>
+            /// In a normal window the Escape key should cause a beep to occur when the buffer is
+            /// in normal mode 
+            /// </summary>
+            [Fact]
+            public void BeepNormalMode()
+            {
+                Create();
+                int count = 0;
+                _vimBuffer.KeyInputProcessed += delegate { count++; };
+                _vsSimulation.Run(VimKey.Escape);
+                Assert.Equal(1, count);
+                Assert.Null(_vsSimulation.VsCommandTarget.LastExecEditCommand);
             }
         }
 
@@ -306,7 +356,7 @@ namespace VsVim.UnitTest
                 }
             }
 
-            public sealed class EscapeTest : ReSharperTest
+            public sealed class ReSharperEscapeTest : ReSharperTest
             {
                 private int _escapeKeyCount;
 
@@ -363,7 +413,7 @@ namespace VsVim.UnitTest
 
             protected override void Create(params string[] lines)
             {
-                CreateCore(true, lines);
+                CreateCore(simulateResharper: true, usePeekRole: false, lines: lines);
                 _reSharperCommandTarget = _vsSimulation.ReSharperCommandTargetOpt;
             }
         }

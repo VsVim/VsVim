@@ -139,10 +139,22 @@ namespace VsVim.UnitTest.Utils
         /// 
         /// This mimics mainly the implementation VsTextViewAdapter InnerExec and InnerQueryStatus
         /// </summary>
-        private sealed class DefaultCommandTarget : IOleCommandTarget
+        internal sealed class DefaultCommandTarget : IOleCommandTarget
         {
             private readonly ITextView _textView;
             private readonly IEditorOperations _editorOperatins;
+            private EditCommand _lastExecEditCommand;
+            private EditCommand _lastQueryStatusEditCommand;
+
+            internal EditCommand LastExecEditCommand
+            {
+                get { return _lastExecEditCommand; }
+            }
+
+            internal EditCommand LastQueryStatusEditCommand
+            {
+                get { return _lastQueryStatusEditCommand; }
+            }
 
             internal DefaultCommandTarget(ITextView textView, IEditorOperations editorOperations)
             {
@@ -198,9 +210,11 @@ namespace VsVim.UnitTest.Utils
                 EditCommand editCommand;
                 if (!OleCommandUtil.TryConvert(commandGroup, cmdId, variantIn, KeyModifiers.None, out editCommand))
                 {
+                    _lastExecEditCommand = null;
                     return VSConstants.E_FAIL;
                 }
 
+                _lastExecEditCommand = editCommand;
                 return TryExec(editCommand.KeyInput) ? VSConstants.S_OK : VSConstants.E_FAIL;
             }
 
@@ -209,10 +223,12 @@ namespace VsVim.UnitTest.Utils
                 EditCommand editCommand;
                 if (1 != commandCount || !OleCommandUtil.TryConvert(commandGroup, commands[0].cmdID, commandText, KeyModifiers.None, out editCommand))
                 {
+                    _lastQueryStatusEditCommand = null;
                     commands[0].cmdf = 0;
                     return NativeMethods.S_OK;
                 }
 
+                _lastQueryStatusEditCommand = editCommand;
                 commands[0].cmdf = (uint)(OLECMDF.OLECMDF_ENABLED | OLECMDF.OLECMDF_SUPPORTED);
                 return NativeMethods.S_OK;
             }
@@ -234,7 +250,7 @@ namespace VsVim.UnitTest.Utils
         /// This is the default command target for Visual Studio.  It simulates the final command
         /// target on the chain.
         /// </summary>
-        private readonly DefaultCommandTarget _defaultCommandTarget;
+        private readonly DefaultCommandTarget _vsCommandTarget;
 
         private readonly IWpfTextView _wpfTextView;
         private readonly VsKeyboardInputSimulation _vsKeyboardInputSimulation;
@@ -266,6 +282,11 @@ namespace VsVim.UnitTest.Utils
             get { return _displayWindowBroker; }
         }
 
+        internal DefaultCommandTarget VsCommandTarget
+        {
+            get { return _vsCommandTarget; }
+        }
+
         internal VsSimulation(IVimBufferCoordinator bufferCoordinator, bool simulateResharper, bool simulateStandardKeyMappings, IEditorOperationsFactoryService editorOperationsFactoryService, IKeyUtil keyUtil)
         {
             _keyUtil = keyUtil;
@@ -293,7 +314,7 @@ namespace VsVim.UnitTest.Utils
             _displayWindowBroker.SetupGet(x => x.IsSignatureHelpActive).Returns(false);
             _displayWindowBroker.SetupGet(x => x.IsSmartTagSessionActive).Returns(false);
 
-            _defaultCommandTarget = new DefaultCommandTarget(
+            _vsCommandTarget = new DefaultCommandTarget(
                 bufferCoordinator.VimBuffer.TextView,
                 editorOperationsFactoryService.GetEditorOperations(bufferCoordinator.VimBuffer.TextView));
 
@@ -303,7 +324,7 @@ namespace VsVim.UnitTest.Utils
             {
                 commandTargets.Add(ReSharperKeyUtil.GetOrCreate(bufferCoordinator));
             }
-            commandTargets.Add(new StandardCommandTarget(bufferCoordinator, textManager.Object, _displayWindowBroker.Object, _defaultCommandTarget));
+            commandTargets.Add(new StandardCommandTarget(bufferCoordinator, textManager.Object, _displayWindowBroker.Object, _vsCommandTarget));
 
             // Create the VsCommandTarget.  It's next is the final and default Visual Studio 
             // command target
@@ -313,7 +334,7 @@ namespace VsVim.UnitTest.Utils
                 _vsAdapter.Object,
                 _displayWindowBroker.Object,
                 _keyUtil,
-                _defaultCommandTarget,
+                _vsCommandTarget,
                 commandTargets.ToReadOnlyCollectionShallow());
 
             // Time to setup the start command target.  If we are simulating R# then put them ahead of VsVim
