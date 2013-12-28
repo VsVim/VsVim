@@ -54,7 +54,7 @@ namespace Vim.UnitTest
         public void RunSearch_NeedMoreUntilEndKey()
         {
             Create("foo bar");
-            var data = new SearchData("b", SearchKind.ForwardWithWrap, s_options);
+            var data = new SearchData("b", SearchOffsetData.None, SearchKind.ForwardWithWrap, s_options);
             Assert.True(_search.Begin(Path.Forward).Run("b").IsNeedMoreInput);
         }
 

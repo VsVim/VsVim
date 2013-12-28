@@ -31,7 +31,7 @@ namespace Vim.UnitTest
 
         private FindOptions CreateFindOptions(string pattern, SearchKind kind, SearchOptions options)
         {
-            var searchData = new SearchData(pattern, kind, options);
+            var searchData = new SearchData(pattern, SearchOffsetData.None, kind, options);
             var findData = _searchRaw.ConvertToFindData(searchData, _textBuffer.CurrentSnapshot, _wordNavigator);
             Assert.True(findData.IsSome());
             return findData.Value.FindOptions;
@@ -215,7 +215,7 @@ namespace Vim.UnitTest
         public void BadRegex_NoMagicSpecifierShouldBeHandled()
         {
             Create("");
-            var searchData = new SearchData(@"\V", SearchKind.ForwardWithWrap, SearchOptions.None);
+            var searchData = new SearchData(@"\V", SearchOffsetData.None, SearchKind.ForwardWithWrap, SearchOptions.None);
             var result = _search.FindNext(searchData, _textBuffer.GetPoint(0), _wordNavigator);
             Assert.True(result.IsNotFound);
         }

@@ -420,10 +420,107 @@ type PatternDataEventArgs(_patternData : PatternData) =
 
     member x.PatternData = _patternData
 
+/// An incremental search can be augmented with a offset of characters or a line
+/// count.  This is described in full in :help searh-offset'
+[<RequireQualifiedAccess>]
+type SearchOffsetData =
+    | None
+    | Line of int
+    | Start of int
+    | End of int
+    | Search of PatternData
+
+    with 
+
+    static member private ParseCore (offset : string) =
+        Contract.Requires (offset.Length > 0)
+
+        let index = ref 0
+        let isForward = ref true
+        let movePastPlusOrMinus () = 
+            if index.Value < offset.Length then
+                match offset.[index.Value] with
+                | '+' -> 
+                    isForward := true
+                    index := index.Value + 1
+                | '-' ->
+                    isForward := false
+                    index := index.Value + 1
+                | _ -> ()
+
+        let parseNumber () = 
+            movePastPlusOrMinus ()
+            let mutable num = 0
+            let mutable isBad = index.Value >= offset.Length
+            while index.Value < offset.Length do
+                num <- num * 10
+                match CharUtil.GetDigitValue (offset.[index.Value]) with
+                | Option.None -> 
+                    isBad <- true
+                    index := offset.Length
+                | Option.Some d ->
+                    num <- num + d
+                    index := index.Value + 1
+            if isBad then
+                0
+            elif isForward.Value then
+                num
+            else    
+                -num
+
+        let parseLine () = 
+            let number = parseNumber ()
+            SearchOffsetData.Line number
+
+        let parseEnd () = 
+            index := index.Value + 1
+            let number = parseNumber ()
+            SearchOffsetData.End number
+            
+        let parseStart () = 
+            index := index.Value + 1
+            let number = parseNumber ()
+            SearchOffsetData.Start number
+
+        let parseSearch () = 
+            index := index.Value + 1
+            match StringUtil.charAtOption index.Value offset with
+            | Option.Some '/' -> 
+                let path = Path.Forward
+                let pattern = offset.Substring(index.Value + 1)
+                SearchOffsetData.Search ({ Pattern = pattern; Path = path})
+            | Option.Some '?' -> 
+                let path = Path.Backward
+                let pattern = offset.Substring(index.Value + 1)
+                SearchOffsetData.Search ({ Pattern = pattern; Path = path})
+            | _ ->
+                SearchOffsetData.None
+
+        if CharUtil.IsDigit (offset.[0]) then
+            parseLine ()
+        else
+            match offset.[0] with
+            | '-' -> parseLine ()
+            | '+' -> parseLine ()
+            | 'e' -> parseEnd ()
+            | 's' -> parseStart ()
+            | 'b' -> parseStart ()
+            | ';' -> parseSearch () 
+            | _ -> SearchOffsetData.None
+
+    static member Parse (offset : string) =
+        if StringUtil.isNullOrEmpty offset then
+            SearchOffsetData.None
+        else
+            SearchOffsetData.ParseCore offset
+
 type SearchData = {
 
     /// The pattern being searched for in the buffer
     Pattern : string
+    
+    /// The offset that is applied to the search
+    Offset : SearchOffsetData
 
     Kind : SearchKind;
 
@@ -437,6 +534,7 @@ type SearchData = {
             Pattern = patternData.Pattern
             Kind = SearchKind.OfPathAndWrap patternData.Path wrap
             Options = PatternData.DefaultSearchOptions
+            Offset = SearchOffsetData.None
         }
 
 type SearchDataEventArgs(_searchData : SearchData) =

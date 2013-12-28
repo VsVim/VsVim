@@ -102,15 +102,33 @@ type internal IncrementalSearch
         if _globalSettings.IncrementalSearch then
              _operations.EnsureAtCaret ViewFlags.Standard
 
+    /// Parse out the pattern and offset from the specified string 
+    member x.ParsePatternAndOffset (rawPattern : string) = 
+        let mutable index = -1
+        let mutable i = 1
+        while i < rawPattern.Length do
+            if rawPattern.[i] = '/' && rawPattern.[i-1] <> '\\' then
+                index <- i
+                i <- rawPattern.Length
+            else
+                i <- i + 1
+
+        if index < 0 then
+            rawPattern, SearchOffsetData.None
+        else
+            let offset = rawPattern.Substring(index + 1)
+            rawPattern, SearchOffsetData.Parse offset
+
     /// Run the search for the specified text.  Returns the new IncrementalSearchData resulting
     /// from the search
-    member x.RunSearch (data : IncrementalSearchData) pattern =
+    member x.RunSearch (data : IncrementalSearchData) rawPattern =
 
         // Get the SearchResult value for the new text
-        let searchData = { data.SearchData with Pattern = pattern }
+        let pattern, offset = x.ParsePatternAndOffset rawPattern
+        let searchData = { data.SearchData with Pattern = pattern; Offset = offset }
         let searchResult =
             if StringUtil.isNullOrEmpty pattern then
-                SearchResult.NotFound (  searchData, false)
+                SearchResult.NotFound (searchData, false)
             else
                 match TrackingPointUtil.GetPoint _textView.TextSnapshot data.StartPoint with
                 | None -> SearchResult.NotFound (searchData, false)

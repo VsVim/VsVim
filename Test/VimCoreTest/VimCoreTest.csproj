@@ -87,6 +87,7 @@
     <Compile Include="MatchingTokenUtilTest.cs" />
     <Compile Include="ModeMapTest.cs" />
     <Compile Include="RegisterValueTest.cs" />
+    <Compile Include="SearchDataOffsetTest.cs" />
     <Compile Include="SnapshotOverlapPointTest.cs" />
     <Compile Include="SnapshotOverlapSpanTest.cs" />
     <Compile Include="StringUtilTest.cs" />
