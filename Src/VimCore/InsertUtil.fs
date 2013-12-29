@@ -593,10 +593,27 @@ type internal InsertUtil
 
         CommandResult.Completed ModeSwitch.NoSwitch
 
-    /// Shift the carte line one 'shiftwidth' to the right
+    /// Shift the caret line one 'shiftwidth' to the right.  This rounds the number of
+    /// leading blanks up to a multiple of 'shiftwidth'
     member x.ShiftLineRight () =
-        let range = TextViewUtil.GetCaretLineRange _textView 1
-        _operations.ShiftLineRangeRight range 1
+        let indentSpan = SnapshotLineUtil.GetIndentSpan x.CaretLine
+
+        let spaces = 
+            let spaces = _operations.NormalizeBlanksToSpaces (indentSpan.GetText())
+
+            // Make sure to account for the caret being in virtual space.  This simply
+            // adds extra spaces to the line equal to the number of virtual spaces
+            if x.CaretVirtualPoint.IsInVirtualSpace then
+                let extra = StringUtil.repeatChar x.CaretVirtualPoint.VirtualSpaces ' '
+                spaces + extra
+            else
+                spaces
+
+        let extend = _localSettings.ShiftWidth - spaces.Length % _localSettings.ShiftWidth
+        let indent = 
+            let spaces = spaces + StringUtil.repeatChar extend ' '
+            _operations.NormalizeBlanks spaces
+        _textBuffer.Replace(indentSpan.Span, indent) |> ignore
         CommandResult.Completed ModeSwitch.NoSwitch
 
     member x.ExtraTextChange textChange addNewLines = 
