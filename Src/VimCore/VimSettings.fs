@@ -542,19 +542,7 @@ type internal WindowSettings
         let defaultValue = 10
         match _textView with
         | None -> defaultValue
-        | Some textView ->
-            try
-                let col = textView.TextViewLines
-                match col.FirstVisibleLine,col.LastVisibleLine with
-                | (null, _) -> defaultValue
-                | (_, null) -> defaultValue
-                | (top, bottom) ->
-                    let topLine = top.Start.GetContainingLine()
-                    let endLine = bottom.End.GetContainingLine()
-                    (endLine.LineNumber - topLine.LineNumber) / 2
-            with 
-                // This will be thrown if we're currently in the middle of an inner layout
-                :? System.InvalidOperationException -> defaultValue
+        | Some textView -> int (textView.ViewportHeight / textView.LineHeight / 2.0 + 0.5)
 
     static member Copy (settings : IVimWindowSettings) = 
         let copy = WindowSettings(settings.GlobalSettings)
