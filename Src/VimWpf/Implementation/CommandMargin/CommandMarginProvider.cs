@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel.Composition;
 using System.Linq;
-using EnvDTE;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Utilities;
@@ -26,9 +25,6 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
         private readonly ReadOnlyCollection<Lazy<IOptionsProviderFactory>> _optionsProviderFactories;
         private readonly IEditorFormatMapService _editorFormatMapService;
         private readonly SVsServiceProvider _serviceProvider;
-
-        internal const string CategoryFontsAndColors = "FontsAndColors";
-        internal const string PageTextEditor = "TextEditor";
 
         [ImportingConstructor]
         internal CommandMarginProvider(
@@ -54,9 +50,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             }
 
             var editorFormatMap = _editorFormatMapService.GetEditorFormatMap(wpfTextViewHost.TextView);
-            var dte = (_DTE)_serviceProvider.GetService(typeof(_DTE));
-            var fontProperties = dte.Properties[CategoryFontsAndColors, PageTextEditor];
-
+            var fontProperties = new TextEditorFontProperties(_serviceProvider);
 			return new CommandMargin(wpfTextViewHost.TextView.VisualElement, vimBuffer, editorFormatMap, fontProperties, _optionsProviderFactories);
         }
 

@@ -4,7 +4,6 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows;
 using System.Windows.Input;
-using System.Windows.Media;
 using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text.Classification;
 using Vim.Extensions;
@@ -36,7 +35,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
         private readonly IVimBuffer _vimBuffer;
         private readonly CommandMarginControl _margin;
         private readonly IEditorFormatMap _editorFormatMap;
-        private readonly EnvDTE.Properties _fontProperties;
+        private readonly IFontProperties _fontProperties;
         private readonly ReadOnlyCollection<Lazy<IOptionsProviderFactory>> _optionsProviderFactory;
         private readonly FrameworkElement _parentVisualElement;
         private bool _inKeyInputEvent;
@@ -44,9 +43,6 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
         private string _message;
         private SwitchModeEventArgs _modeSwitchEventArgs;
         private EditKind _editKind;
-
-        internal const string PropertyFontFamily = "FontFamily";
-        internal const string PropertyFontSize = "FontSize";
 
         /// <summary>
         /// We need to hold a reference to Text Editor visual element.
@@ -61,7 +57,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             get { return _editKind; }
         }
 
-        internal CommandMarginController(IVimBuffer buffer, FrameworkElement parentVisualElement, CommandMarginControl control, IEditorFormatMap editorFormatMap, EnvDTE.Properties fontProperties, IEnumerable<Lazy<IOptionsProviderFactory>> optionsProviderFactory)
+        internal CommandMarginController(IVimBuffer buffer, FrameworkElement parentVisualElement, CommandMarginControl control, IEditorFormatMap editorFormatMap, IFontProperties fontProperties, IEnumerable<Lazy<IOptionsProviderFactory>> optionsProviderFactory)
         {
             _vimBuffer = buffer;
             _margin = control;
@@ -86,8 +82,10 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             _margin.CommandLineTextBox.LostKeyboardFocus += OnCommandLineTextBoxLostKeyboardFocus;
             _margin.CommandLineTextBox.PreviewMouseDown += OnCommandLineTextBoxPreviewMouseDown;
             _editorFormatMap.FormatMappingChanged += OnFormatMappingChanged;
+            _fontProperties.FontPropertiesChanged += OnFontPropertiesChanged;
             UpdateForRecordingChanged();
             UpdateTextColor();
+            UpdateFontProperties();
         }
 
         private void ChangeEditKind(EditKind editKind)
@@ -309,10 +307,15 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             var propertyMap = _editorFormatMap.GetProperties(CommandMarginFormatDefinition.Name);
             _margin.TextForeground = propertyMap.GetForegroundBrush(SystemColors.WindowTextBrush);
             _margin.TextBackground = propertyMap.GetBackgroundBrush(SystemColors.WindowBrush);
-            var fontFamily = _fontProperties.Item(PropertyFontFamily).Value.ToString();
-            _margin.FontFamily = new FontFamily(fontFamily);
-            var fontSize = Convert.ToDouble(_fontProperties.Item(PropertyFontSize).Value);
-            _margin.FontSize = fontSize;
+        }
+
+        /// <summary>
+        /// Update the font family and size of the command margin text input controls
+        /// </summary>
+        private void UpdateFontProperties()
+        {
+            _margin.FontFamily = _fontProperties.FontFamily;
+            _margin.FontSize = _fontProperties.FontSize;
         }
 
         /// <summary>
@@ -502,6 +505,11 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
         private void OnFormatMappingChanged(object sender, FormatItemsEventArgs e)
         {
             UpdateTextColor();
+        }
+
+        private void OnFontPropertiesChanged(object sender, FontPropertiesEventArgs e)
+        {
+            UpdateFontProperties();
         }
 
         private void OnRecordingStarted(object sender, RecordRegisterEventArgs args)

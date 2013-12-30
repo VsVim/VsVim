@@ -75,10 +75,19 @@ namespace VsVim.UnitTest.Mock
         {
             col = col ?? new EnvDTE.Command[] { };
             var commands = CreateCommands(col.ToList());
-            var dte = new Mock<_DTE>();
+            var factory = new MockRepository(MockBehavior.Loose);
+            var dte = factory.Create<_DTE>();
             dte.SetupGet(x => x.Commands).Returns(commands.Object);
-            var fontProperties = Vim.UnitTest.Mock.MockObjectFactory.CreateFontProperties("Courier New", 10);
+
+            var fontProperties = factory.Create<EnvDTE.Properties>();
+            var fontFamilyProperty = factory.Create<EnvDTE.Property>();
+            fontFamilyProperty.SetupGet(x => x.Value).Returns("Courier New");
+            var fontSizeProperty = factory.Create<EnvDTE.Property>();
+            fontSizeProperty.SetupGet(x => x.Value).Returns(10);
+            fontProperties.Setup(x => x.Item("FontFamily")).Returns(fontFamilyProperty.Object);
+            fontProperties.Setup(x => x.Item("FontSize")).Returns(fontSizeProperty.Object);
             dte.Setup(x => x.get_Properties("FontsAndColors", "TextEditor")).Returns(fontProperties.Object);
+
             return dte;
         }
 

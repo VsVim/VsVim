@@ -10,6 +10,8 @@ using Microsoft.VisualStudio.Utilities;
 using Moq;
 using System.Collections.Generic;
 using Vim.Interpreter;
+using Vim.UI.Wpf.Implementation.CommandMargin;
+using System.Windows.Media;
 
 namespace Vim.UnitTest.Mock
 {
@@ -535,19 +537,15 @@ namespace Vim.UnitTest.Mock
             return mock;
         }
 
-        public static Mock<EnvDTE.Properties> CreateFontProperties(
+        public static Mock<IFontProperties> CreateFontProperties(
             string fontFamily,
-            int fontSize,
+            double fontSize,
             MockRepository factory = null)
         {
             factory = factory ?? new MockRepository(MockBehavior.Strict);
-            var fontProperties = factory.Create<EnvDTE.Properties>();
-            var fontFamilyProperty = factory.Create<EnvDTE.Property>();
-            fontFamilyProperty.SetupGet(x => x.Value).Returns(fontFamily);
-            var fontSizeProperty = factory.Create<EnvDTE.Property>();
-            fontSizeProperty.SetupGet(x => x.Value).Returns(fontSize);
-            fontProperties.Setup(x => x.Item("FontFamily")).Returns(fontFamilyProperty.Object);
-            fontProperties.Setup(x => x.Item("FontSize")).Returns(fontSizeProperty.Object);
+            var fontProperties = factory.Create<IFontProperties>();
+            fontProperties.SetupGet(x => x.FontFamily).Returns(new FontFamily(fontFamily));
+            fontProperties.SetupGet(x => x.FontSize).Returns(fontSize);
             return fontProperties;
         }
     }

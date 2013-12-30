@@ -51,6 +51,7 @@
     <Reference Include="Microsoft.VisualStudio.Text.Logic, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
     <Reference Include="Microsoft.VisualStudio.Text.UI, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
     <Reference Include="Microsoft.VisualStudio.Text.UI.Wpf, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
+    <Reference Include="Microsoft.VisualStudio.TextManager.Interop, Version=7.1.40304.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
     <Reference Include="System" />
@@ -66,6 +67,7 @@
     <Compile Include="Implementation\CharDisplay\CharDisplayTaggerSource.cs" />
     <Compile Include="Implementation\CharDisplay\CharDisplayTaggerSourceFactory.cs" />
     <Compile Include="Implementation\CharDisplay\ControlCharUtil.cs" />
+    <Compile Include="Implementation\CommandMargin\TextEditorFontProperties.cs" />
     <Compile Include="Implementation\Keyboard\AlternateKeyUtil.cs" />
     <Compile Include="Implementation\Keyboard\FrugalList.cs" />
     <Compile Include="Implementation\Keyboard\KeyboardState.cs" />

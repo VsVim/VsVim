@@ -13,7 +13,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
         private readonly CommandMarginControl _margin = new CommandMarginControl();
         private readonly CommandMarginController _controller;
 
-        public CommandMargin(FrameworkElement parentVisualElement, IVimBuffer buffer, IEditorFormatMap editorFormatMap, EnvDTE.Properties fontProperties, IEnumerable<Lazy<IOptionsProviderFactory>> optionsProviderFactories)
+        public CommandMargin(FrameworkElement parentVisualElement, IVimBuffer buffer, IEditorFormatMap editorFormatMap, IFontProperties fontProperties, IEnumerable<Lazy<IOptionsProviderFactory>> optionsProviderFactories)
         {
             _margin.StatusLine = "Welcome to Vim";
             _controller = new CommandMarginController(buffer, parentVisualElement, _margin, editorFormatMap, fontProperties, optionsProviderFactories);
