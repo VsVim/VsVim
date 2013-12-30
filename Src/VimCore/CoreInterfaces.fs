@@ -413,6 +413,7 @@ type PatternData = {
     with 
 
     /// The default search options when looking at a specific pattern
+    /// TODO: Move this to a more appropriate type
     static member DefaultSearchOptions = SearchOptions.ConsiderIgnoreCase ||| SearchOptions.ConsiderSmartCase
 
 type PatternDataEventArgs(_patternData : PatternData) =
@@ -514,28 +515,31 @@ type SearchOffsetData =
         else
             SearchOffsetData.ParseCore offset
 
-type SearchData = {
+type SearchData
+    (
+        _pattern : string,
+        _offset : SearchOffsetData,
+        _kind : SearchKind,
+        _options : SearchOptions
+    ) = 
+
+    new (pattern : string, path : Path, isWrap : bool) =
+        let kind = SearchKind.OfPathAndWrap path isWrap
+        SearchData(pattern, SearchOffsetData.None, kind, PatternData.DefaultSearchOptions)
 
     /// The pattern being searched for in the buffer
-    Pattern : string
-    
+    member x.Pattern = _pattern
+
     /// The offset that is applied to the search
-    Offset : SearchOffsetData
+    member x.Offset = _offset
 
-    Kind : SearchKind;
+    member x.Kind = _kind
 
-    Options : SearchOptions
-} with
+    member x.Options = _options
+
+    member x.Path = x.Kind.Path
 
     member x.PatternData = { Pattern = x.Pattern; Path = x.Kind.Path }
-
-    static member OfPatternData (patternData : PatternData) wrap = 
-        {
-            Pattern = patternData.Pattern
-            Kind = SearchKind.OfPathAndWrap patternData.Path wrap
-            Options = PatternData.DefaultSearchOptions
-            Offset = SearchOffsetData.None
-        }
 
 type SearchDataEventArgs(_searchData : SearchData) =
     inherit System.EventArgs()
@@ -546,9 +550,18 @@ type SearchDataEventArgs(_searchData : SearchData) =
 [<RequireQualifiedAccess>]
 type SearchResult =
 
-    /// The pattern was found.  The bool at the end of the tuple represents whether not
+    /// The pattern was found.  The two spans here represent the following pieces of data
+    /// respectively 
+    ///
+    ///     - the span of the pattern + the specified offset
+    ///     - the span of the found pattern 
+    ///
+    /// In general the first should be used by consumers.  The second is only interesting
+    /// to items that need to tag the value 
+    ///
+    /// The bool at the end of the tuple represents whether not
     /// a wrap occurred while searching for the value
-    | Found of SearchData * SnapshotSpan * bool
+    | Found of SearchData * SnapshotSpan * SnapshotSpan * bool
 
     /// The pattern was not found.  The bool is true if the word was present in the ITextBuffer
     /// but wasn't found do to the lack of a wrap in the SearchData value
@@ -559,7 +572,7 @@ type SearchResult =
     /// Returns the SearchData which was searched for
     member x.SearchData = 
         match x with 
-        | SearchResult.Found (searchData, _, _) -> searchData
+        | SearchResult.Found (searchData, _, _, _) -> searchData
         | SearchResult.NotFound (searchData, _) -> searchData
 
 type SearchResultEventArgs(_searchResult : SearchResult) = 
@@ -575,14 +588,14 @@ type ISearchService =
 
     /// Find the next occurrence of the pattern in the buffer starting at the 
     /// given SnapshotPoint
-    abstract FindNext : SearchData -> SnapshotPoint -> ITextStructureNavigator -> SearchResult
+    abstract FindNext : searchPoint : SnapshotPoint -> searchData : SearchData -> navigator : ITextStructureNavigator -> SearchResult
 
     /// Find the next Nth occurrence of the search data
-    abstract FindNextMultiple : SearchData -> SnapshotPoint -> ITextStructureNavigator -> count:int -> SearchResult
+    abstract FindNextMultiple : searchPoint : SnapshotPoint -> searchData : SearchData -> navigator : ITextStructureNavigator -> count : int -> SearchResult
 
     /// Find the next 'count' occurrence of the specified pattern.  Note: The first occurrence won't
     /// match anything at the provided start point.  That will be adjusted appropriately
-    abstract FindNextPattern : PatternData -> SnapshotPoint -> ITextStructureNavigator -> count : int -> SearchResult
+    abstract FindNextPattern : searchPoint : SnapshotPoint -> searchPoint : SearchData -> navigator : ITextStructureNavigator -> count : int -> SearchResult
 
 /// Column information about the caret in relation to this Motion Result
 [<RequireQualifiedAccess>]

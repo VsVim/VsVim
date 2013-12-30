@@ -70,8 +70,7 @@ type internal IncrementalSearch
         | None -> ()
 
         let start = TextViewUtil.GetCaretPoint _textView
-        let patternData = { Pattern = StringUtil.empty; Path = path }
-        let searchData = SearchData.OfPatternData patternData _globalSettings.WrapScan
+        let searchData = SearchData(StringUtil.empty, path, _globalSettings.WrapScan)
         let data = {
             StartPoint = start.Snapshot.CreateTrackingPoint(start.Position, PointTrackingMode.Negative)
             SearchResult = SearchResult.NotFound (searchData, false)
@@ -117,7 +116,8 @@ type internal IncrementalSearch
             rawPattern, SearchOffsetData.None
         else
             let offset = rawPattern.Substring(index + 1)
-            rawPattern, SearchOffsetData.Parse offset
+            let pattern = rawPattern.Substring(0, index)
+            pattern, SearchOffsetData.Parse offset
 
     /// Run the search for the specified text.  Returns the new IncrementalSearchData resulting
     /// from the search
@@ -125,20 +125,20 @@ type internal IncrementalSearch
 
         // Get the SearchResult value for the new text
         let pattern, offset = x.ParsePatternAndOffset rawPattern
-        let searchData = { data.SearchData with Pattern = pattern; Offset = offset }
+        let searchData = SearchData(pattern, offset, data.SearchData.Kind, data.SearchData.Options)
         let searchResult =
             if StringUtil.isNullOrEmpty pattern then
                 SearchResult.NotFound (searchData, false)
             else
                 match TrackingPointUtil.GetPoint _textView.TextSnapshot data.StartPoint with
                 | None -> SearchResult.NotFound (searchData, false)
-                | Some point -> _searchService.FindNextPattern searchData.PatternData point _wordNavigator 1
+                | Some point -> _searchService.FindNextPattern point searchData _wordNavigator 1
 
         // Update our state based on the SearchResult.  Only update the view if the 'incsearch'
         // option is set
         if _globalSettings.IncrementalSearch then
             match searchResult with
-            | SearchResult.Found (_, span, _) -> _operations.EnsureAtPoint span.Start ViewFlags.Standard
+            | SearchResult.Found (_, span, _, _) -> _operations.EnsureAtPoint span.Start ViewFlags.Standard
             | SearchResult.NotFound _ -> x.ResetView ()
 
         let args = SearchResultEventArgs(searchResult)

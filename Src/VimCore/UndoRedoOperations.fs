@@ -223,6 +223,9 @@ and UndoRedoOperations
             | :? System.NotSupportedException -> 
                 _statusUtil.OnError errorMessage
                 List.empty, List.empty
+            | :? System.InvalidOperationException -> 
+                _statusUtil.OnError errorMessage
+                List.empty, List.empty
 
     /// Do 'count' undo operations from the perspective of VsVim.  This is different than the actual
     /// number of undo operations we actually have to perform because of ILinkedUndoTransaction items

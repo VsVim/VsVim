@@ -41,7 +41,7 @@ module internal CommonUtil =
     let RaiseSearchResultMessage (statusUtil : IStatusUtil) searchResult =
 
         match searchResult with 
-        | SearchResult.Found (searchData, _, didWrap) ->
+        | SearchResult.Found (searchData, _, _, didWrap) ->
             if didWrap then
                 let message = 
                     if searchData.Kind.IsAnyForward then Resources.Common_SearchForwardWrapped

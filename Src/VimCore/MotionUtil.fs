@@ -1947,7 +1947,8 @@ type internal MotionUtil
         // The search operation should also update the search history
         _vimData.SearchHistory.Add patternData.Pattern
 
-        let searchResult = _search.FindNextPattern patternData searchPoint _wordNavigator count
+        let searchData = SearchData(patternData.Pattern, patternData.Path, _globalSettings.WrapScan)
+        let searchResult = _search.FindNextPattern searchPoint searchData _wordNavigator count
 
         // Raise the messages that go with this given result
         CommonUtil.RaiseSearchResultMessage _statusUtil searchResult
@@ -1959,7 +1960,7 @@ type internal MotionUtil
                 // Nothing to return here. 
                 None
     
-            | SearchResult.Found (_, span, _) ->
+            | SearchResult.Found (_, span, _, _) ->
     
                 // Create the MotionResult for the provided MotionArgument and the 
                 // start and end points of the search.  Need to be careful because

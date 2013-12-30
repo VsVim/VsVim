@@ -11,10 +11,11 @@ type SearchServiceData = {
 
     TextSearchService : ITextSearchService
 
-    WrapScan : bool
-
     VimRegexOptions : VimRegexOptions
 }
+
+/// TODO: We should be caching the search results somewhere.  Very often we do the same
+/// search many times in a row.  Caching should be a win here
 
 /// This class is useable from multiple threads.  Need to be careful because 
 /// IVimGlobalSettings is not safe to use from multiple threads. 
@@ -27,7 +28,6 @@ type internal SearchService
 
     let mutable _searchServiceData = {
         TextSearchService = _textSearchService
-        WrapScan = _globalSettings.WrapScan
         VimRegexOptions = VimRegexFactory.CreateRegexOptions _globalSettings
     }
 
@@ -40,9 +40,55 @@ type internal SearchService
         |> Event.add (fun _ -> 
             _searchServiceData <- {
                 TextSearchService = _textSearchService
-                WrapScan = _globalSettings.WrapScan
                 VimRegexOptions = VimRegexFactory.CreateRegexOptions _globalSettings
             })
+
+    [<UsedInBackgroundThread()>]
+    static member ApplySearchOffsetDataLine (span : SnapshotSpan) count = 
+        let snapshot = span.Snapshot
+        let startLine = SnapshotPointUtil.GetContainingLine span.Start
+        let number = startLine.LineNumber + count
+        let number = 
+            if number < 0 then 0
+            elif number >= snapshot.LineCount then snapshot.LineCount - 1
+            else number
+        let line = snapshot.GetLineFromLineNumber number
+        SnapshotSpan(line.Start, 1)
+
+    [<UsedInBackgroundThread()>]
+    static member ApplySearchOffsetDataStartEnd startPoint count = 
+        let mutable column = SnapshotColumn(startPoint)
+        let isForward = count >= 0
+        let mutable count = abs count
+        let mutable foundEnd = false
+
+        while count > 0 && not foundEnd do
+            if isForward then
+                if SnapshotPointUtil.IsEndPoint column.Point then
+                    foundEnd <- true
+                else    
+                    column <- column.Add 1
+            else
+                if column.Point.Position = 0 then
+                    foundEnd <- true
+                else
+                    column <- column.Subtract 1
+
+            if not column.IsInsideLineBreak then
+                count <- count - 1
+
+        SnapshotSpan(column.Point, 1)
+
+    /// This method is callabla from multiple threads.  Made static to help promote safety
+    [<UsedInBackgroundThread()>]
+    static member ApplySearchOffsetData (span : SnapshotSpan) (searchOffsetData : SearchOffsetData) =
+        let snapshot = span.Snapshot
+        match searchOffsetData with
+        | SearchOffsetData.None -> span
+        | SearchOffsetData.Line count -> SearchService.ApplySearchOffsetDataLine span count
+        | SearchOffsetData.End count -> SearchService.ApplySearchOffsetDataStartEnd (SnapshotSpanUtil.GetLastIncludedPointOrStart span) count
+        | SearchOffsetData.Start count -> SearchService.ApplySearchOffsetDataStartEnd span.Start count
+        | _ -> span
 
     /// This method is callabla from multiple threads.  Made static to help promote safety
     [<UsedInBackgroundThread()>]
@@ -169,8 +215,9 @@ type internal SearchService
                     SearchResult.NotFound (searchData, true)
                 else
                     match result, count > 1 with
-                    | Some span, false ->
-                        SearchResult.Found (searchData, span, didWrap)
+                    | Some patternSpan, false ->
+                        let span = SearchService.ApplySearchOffsetData patternSpan searchData.Offset 
+                        SearchResult.Found (searchData, span, patternSpan, didWrap)
                     | Some span, true -> 
                         // Need to keep searching.  Get the next point to search for.  We always wrap 
                         // when searching so that we can give back accurate NotFound data.  
@@ -191,17 +238,16 @@ type internal SearchService
 
     /// Search for the given pattern from the specified point. 
     [<UsedInBackgroundThread()>]
-    static member FindNextPatternCore (searchServiceData : SearchServiceData) (patternData : PatternData) startPoint wordNavigator count =
+    static member FindNextPatternCore (searchServiceData : SearchServiceData) (searchData : SearchData) startPoint wordNavigator count =
 
         // Find the real place to search.  When going forward we should start after
         // the caret and before should start before. This prevents the text 
         // under the caret from being the first match
         let snapshot = SnapshotPointUtil.GetSnapshot startPoint
-        let startPoint, didStartWrap = CommonUtil.GetSearchPointAndWrap patternData.Path startPoint
+        let startPoint, didStartWrap = CommonUtil.GetSearchPointAndWrap searchData.Path startPoint
 
         // Go ahead and run the search
-        let wrapScan = searchServiceData.WrapScan
-        let searchData = SearchData.OfPatternData patternData wrapScan
+        let wrapScan = searchData.Kind.IsWrap
         let result = SearchService.FindNextMultipleCore searchServiceData searchData startPoint wordNavigator count 
 
         // Need to fudge the SearchResult here to account for the possible wrap the 
@@ -210,10 +256,10 @@ type internal SearchService
         // process the messages properly and give back the appropriate value
         if didStartWrap then 
             match result with
-            | SearchResult.Found (searchData, span, didWrap) ->
+            | SearchResult.Found (searchData, span, patternSpan, didWrap) ->
                 if wrapScan then
                     // If wrapping is enabled then we just need to update the 'didWrap' state
-                    SearchResult.Found (searchData, span, true)
+                    SearchResult.Found (searchData, span, patternSpan, true)
                 else
                     // Wrapping is not enabled so change the result but it would've been present
                     // if wrapping was enabled
@@ -235,12 +281,12 @@ type internal SearchService
     member x.FindNext searchData point nav = x.FindNextMultiple searchData point nav 1
 
     /// Search for the given pattern from the specified point. 
-    member x.FindNextPattern patternData startPoint wordNavigator count = 
-        SearchService.FindNextPatternCore _searchServiceData patternData startPoint wordNavigator count
+    member x.FindNextPattern searchData startPoint wordNavigator count = 
+        SearchService.FindNextPatternCore _searchServiceData searchData startPoint wordNavigator count
 
     interface ISearchService with
-        member x.FindNext searchData point nav = x.FindNext searchData point nav
-        member x.FindNextMultiple searchData point nav count = x.FindNextMultiple searchData point nav count
-        member x.FindNextPattern patternData point nav count = x.FindNextPattern patternData point nav count
+        member x.FindNext point searchData nav = x.FindNext searchData point nav
+        member x.FindNextMultiple point searchData nav count = x.FindNextMultiple searchData point nav count
+        member x.FindNextPattern point searchData nav count = x.FindNextPattern searchData point nav count
 
 

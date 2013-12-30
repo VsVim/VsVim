@@ -88,6 +88,7 @@
     <Compile Include="ModeMapTest.cs" />
     <Compile Include="RegisterValueTest.cs" />
     <Compile Include="SearchDataOffsetTest.cs" />
+    <Compile Include="SnapshotColumnTest.cs" />
     <Compile Include="SnapshotOverlapPointTest.cs" />
     <Compile Include="SnapshotOverlapSpanTest.cs" />
     <Compile Include="StringUtilTest.cs" />
