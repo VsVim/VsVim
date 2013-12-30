@@ -77,6 +77,8 @@ namespace VsVim.UnitTest.Mock
             var commands = CreateCommands(col.ToList());
             var dte = new Mock<_DTE>();
             dte.SetupGet(x => x.Commands).Returns(commands.Object);
+            var fontProperties = Vim.UnitTest.Mock.MockObjectFactory.CreateFontProperties("Courier New", 10);
+            dte.Setup(x => x.get_Properties("FontsAndColors", "TextEditor")).Returns(fontProperties.Object);
             return dte;
         }
 

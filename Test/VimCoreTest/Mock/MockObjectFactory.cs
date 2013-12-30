@@ -534,5 +534,21 @@ namespace Vim.UnitTest.Mock
             mock.SetupGet(x => x.Count).Returns(range.Count);
             return mock;
         }
+
+        public static Mock<EnvDTE.Properties> CreateFontProperties(
+            string fontFamily,
+            int fontSize,
+            MockRepository factory = null)
+        {
+            factory = factory ?? new MockRepository(MockBehavior.Strict);
+            var fontProperties = factory.Create<EnvDTE.Properties>();
+            var fontFamilyProperty = factory.Create<EnvDTE.Property>();
+            fontFamilyProperty.SetupGet(x => x.Value).Returns(fontFamily);
+            var fontSizeProperty = factory.Create<EnvDTE.Property>();
+            fontSizeProperty.SetupGet(x => x.Value).Returns(fontSize);
+            fontProperties.Setup(x => x.Item("FontFamily")).Returns(fontFamilyProperty.Object);
+            fontProperties.Setup(x => x.Item("FontSize")).Returns(fontSizeProperty.Object);
+            return fontProperties;
+        }
     }
 }
