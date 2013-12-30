@@ -28,22 +28,20 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
     /// </summary>
     internal class TextEditorFontProperties : IFontProperties
     {
-        private class TextManagerEvents : IVsTextManagerEvents
+        private class TextManagerEvents : IVsTextManagerEvents, IDisposable
         {
-            private readonly SVsServiceProvider _serviceProvider;
+            private readonly IConnectionPoint _connectionPoint;
+            private readonly int _cookie;
 
             public TextManagerEvents(SVsServiceProvider serviceProvider)
             {
-                _serviceProvider = serviceProvider;
-                var textManager = (IVsTextManager)_serviceProvider.GetService(typeof(SVsTextManager));
+                var textManager = (IVsTextManager)serviceProvider.GetService(typeof(SVsTextManager));
                 if (textManager is IConnectionPointContainer)
                 {
                     var container = (IConnectionPointContainer)textManager;
-                    IConnectionPoint textManagerEventsConnection;
                     var eventGuid = typeof(IVsTextManagerEvents).GUID;
-                    container.FindConnectionPoint(ref eventGuid, out textManagerEventsConnection);
-                    int textManagerCookie;
-                    textManagerEventsConnection.Advise(this, out textManagerCookie);
+                    container.FindConnectionPoint(ref eventGuid, out _connectionPoint);
+                    _connectionPoint.Advise(this, out _cookie);
                 }
             }
 
@@ -69,10 +67,20 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             }
 
             public event EventHandler UserPreferencesChanged;
+
+            public void Dispose()
+            {
+                if (_connectionPoint != null)
+                {
+                    _connectionPoint.Unadvise(_cookie);
+                }
+            }
         }
 
+        private readonly SVsServiceProvider _serviceProvider;
         private readonly _DTE _dte;
-        private readonly TextManagerEvents _textManagerEvents;
+        private TextManagerEvents _textManagerEvents;
+        private event EventHandler<FontPropertiesEventArgs> _fontPropertiesChanged;
 
         internal const string CategoryFontsAndColors = "FontsAndColors";
         internal const string PageTextEditor = "TextEditor";
@@ -95,22 +103,42 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             {
                 var fontProperties = _dte.Properties[CategoryFontsAndColors, PageTextEditor];
                 var fontSize = Convert.ToDouble(fontProperties.Item(PropertyFontSize).Value);
-                return fontSize * 1.25;
+                return fontSize;
             }
         }
 
-        public event EventHandler<FontPropertiesEventArgs> FontPropertiesChanged;
+        public event EventHandler<FontPropertiesEventArgs> FontPropertiesChanged
+        {
+            add
+            {
+                _fontPropertiesChanged += value;
+                if (_fontPropertiesChanged != null && _textManagerEvents == null)
+                {
+                    _textManagerEvents = new TextManagerEvents(_serviceProvider);
+                    _textManagerEvents.UserPreferencesChanged += OnUserPreferencesChanged;
+                }
+            }
+            remove
+            {
+                _fontPropertiesChanged -= value;
+                if (_fontPropertiesChanged == null && _textManagerEvents != null)
+                {
+                    _textManagerEvents.Dispose();
+                    _textManagerEvents = null;
+                }
+            }
+        }
 
         public TextEditorFontProperties(SVsServiceProvider serviceProvider)
         {
-            _dte = (_DTE)serviceProvider.GetService(typeof(_DTE));
-            _textManagerEvents = new TextManagerEvents(serviceProvider);
-            _textManagerEvents.UserPreferencesChanged += textManagerEvents_UserPreferencesChanged;
+            _serviceProvider = serviceProvider;
+            _dte = (_DTE)_serviceProvider.GetService(typeof(_DTE));
+            _textManagerEvents = null;
         }
 
-        private void textManagerEvents_UserPreferencesChanged(object sender, EventArgs e)
+        private void OnUserPreferencesChanged(object sender, EventArgs e)
         {
-            var handler = FontPropertiesChanged;
+            var handler = _fontPropertiesChanged;
             if (handler != null)
             {
                 handler(this, FontPropertiesEventArgs.Empty);

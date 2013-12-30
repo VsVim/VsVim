@@ -75,6 +75,8 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             _vimBuffer.CommandMode.CommandChanged += OnCommandChanged;
             _vimBuffer.Vim.MacroRecorder.RecordingStarted += OnRecordingStarted;
             _vimBuffer.Vim.MacroRecorder.RecordingStopped += OnRecordingStopped;
+            _margin.Loaded += OnCommandMarginLoaded;
+            _margin.Unloaded += OnCommandMarginUnloaded;
             _margin.OptionsButton.Click += OnOptionsClicked;
             _margin.CommandLineTextBox.PreviewKeyDown += OnCommandLineTextBoxPreviewKeyDown;
             _margin.CommandLineTextBox.TextChanged += OnCommandLineTextBoxTextChanged;
@@ -82,10 +84,8 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             _margin.CommandLineTextBox.LostKeyboardFocus += OnCommandLineTextBoxLostKeyboardFocus;
             _margin.CommandLineTextBox.PreviewMouseDown += OnCommandLineTextBoxPreviewMouseDown;
             _editorFormatMap.FormatMappingChanged += OnFormatMappingChanged;
-            _fontProperties.FontPropertiesChanged += OnFontPropertiesChanged;
             UpdateForRecordingChanged();
             UpdateTextColor();
-            UpdateFontProperties();
         }
 
         private void ChangeEditKind(EditKind editKind)
@@ -314,8 +314,24 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
         /// </summary>
         private void UpdateFontProperties()
         {
-            _margin.FontFamily = _fontProperties.FontFamily;
-            _margin.FontSize = _fontProperties.FontSize;
+            _margin.TextFontFamily = _fontProperties.FontFamily;
+            _margin.TextFontSize = _fontProperties.FontSize * GetDpiScaling();
+        }
+
+        /// <summary>
+        /// Get the DPI scaling factor for the control.
+        /// </summary>
+        /// <returns></returns>
+        private double GetDpiScaling()
+        {
+            var source = PresentationSource.FromVisual(_margin);
+            if (source != null)
+            {
+                var dpiX = 96 * source.CompositionTarget.TransformToDevice.M11;
+                var dpiY = 96 * source.CompositionTarget.TransformToDevice.M22;
+                return (dpiX + dpiY) / 2 / 96;
+            }
+            return 1;
         }
 
         /// <summary>
@@ -487,6 +503,17 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
         private void OnWarningMessage(object sender, StringEventArgs args)
         {
             MessageEvent(args.Message);
+        }
+
+        private void OnCommandMarginLoaded(object sender, RoutedEventArgs e)
+        {
+            _fontProperties.FontPropertiesChanged += OnFontPropertiesChanged;
+            UpdateFontProperties();
+        }
+
+        private void OnCommandMarginUnloaded(object sender, RoutedEventArgs e)
+        {
+            _fontProperties.FontPropertiesChanged -= OnFontPropertiesChanged;
         }
 
         private void OnOptionsClicked(object sender, EventArgs e)
