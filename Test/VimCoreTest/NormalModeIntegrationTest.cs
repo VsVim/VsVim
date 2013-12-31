@@ -2479,7 +2479,7 @@ namespace Vim.UnitTest
                 {
                     Create("cat dog bear");
                     _vimBuffer.Process("/DOG");
-                    Assert.True(_vimBuffer.IncrementalSearch.CurrentSearchResult.Value.IsNotFound);
+                    Assert.True(_vimBuffer.IncrementalSearch.CurrentSearchResult.IsNotFound);
                     _vimBuffer.Process(@"\c", enter: true);
                     Assert.Equal(4, _textView.GetCaretPoint().Position);
                 }

@@ -166,7 +166,7 @@ namespace Vim.UnitTest
         {
             Create("foo bar");
             _search.Begin(Path.Forward).Run("B");
-            Assert.Equal("B", _search.CurrentSearchData.Value.Pattern);
+            Assert.Equal("B", _search.CurrentSearchData.Pattern);
         }
 
         [Fact]
@@ -174,7 +174,7 @@ namespace Vim.UnitTest
         {
             Create("foo bar");
             _search.Begin(Path.Forward).Run("ab");
-            Assert.Equal("ab", _search.CurrentSearchData.Value.Pattern);
+            Assert.Equal("ab", _search.CurrentSearchData.Pattern);
         }
 
         [Fact]
@@ -191,7 +191,6 @@ namespace Vim.UnitTest
             Create("foo bar");
             _search.DoSearch("foo");
             Assert.False(_search.InSearch);
-            Assert.False(_search.CurrentSearchData.IsSome());
             Assert.Equal("foo", _vimData.LastPatternData.Pattern);
         }
 
@@ -308,7 +307,7 @@ namespace Vim.UnitTest
             Create("cat bear");
             _vimData.SearchHistory = (new[] { "a", "b" }).ToHistoryList();
             _search.Begin(Path.Forward).Run(VimKey.Up);
-            Assert.Equal("a", _search.CurrentSearchData.Value.Pattern);
+            Assert.Equal("a", _search.CurrentSearchData.Pattern);
         }
 
         /// <summary>
@@ -320,7 +319,7 @@ namespace Vim.UnitTest
             Create("dog cat");
             _vimData.SearchHistory = (new[] { "a", "b" }).ToHistoryList();
             _search.Begin(Path.Forward).Run(VimKey.Up).Run(VimKey.Up);
-            Assert.Equal("b", _search.CurrentSearchData.Value.Pattern);
+            Assert.Equal("b", _search.CurrentSearchData.Pattern);
         }
 
         /// <summary>
@@ -333,7 +332,7 @@ namespace Vim.UnitTest
             Create("dog cat");
             _vimData.SearchHistory = (new[] { "a", "b" }).ToHistoryList();
             _search.Begin(Path.Forward).Run(VimKey.Up).Run(VimKey.Down);
-            Assert.Equal("", _search.CurrentSearchData.Value.Pattern);
+            Assert.Equal("", _search.CurrentSearchData.Pattern);
         }
 
         /// <summary>
@@ -345,7 +344,7 @@ namespace Vim.UnitTest
             Create("dog cat");
             _vimData.SearchHistory = (new[] { "a", "b" }).ToHistoryList();
             _search.Begin(Path.Forward).Run(VimKey.Up, VimKey.Up, VimKey.Down);
-            Assert.Equal("a", _search.CurrentSearchData.Value.Pattern);
+            Assert.Equal("a", _search.CurrentSearchData.Pattern);
         }
 
         /// <summary>
@@ -369,7 +368,7 @@ namespace Vim.UnitTest
             Create("");
             _vimData.SearchHistory = (new[] { "dog", "cat" }).ToHistoryList();
             _search.DoSearch("d", enter: false).Run(VimKey.Up);
-            Assert.Equal("dog", _search.CurrentSearchData.Value.Pattern);
+            Assert.Equal("dog", _search.CurrentSearchData.Pattern);
         }
 
         /// <summary>
@@ -381,7 +380,7 @@ namespace Vim.UnitTest
             Create("");
             _vimData.SearchHistory = (new[] { "dog", "cat", "dip" }).ToHistoryList();
             _search.DoSearch("d", enter: false).Run(VimKey.Up).Run(VimKey.Up);
-            Assert.Equal("dip", _search.CurrentSearchData.Value.Pattern);
+            Assert.Equal("dip", _search.CurrentSearchData.Pattern);
         }
     }
 }

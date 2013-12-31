@@ -6,9 +6,7 @@ open Microsoft.VisualStudio.Text.Editor
 open Microsoft.VisualStudio.Text.Outlining
 open NullableUtil
 
-type IncrementalSearchData = {
-    /// The point from which the search needs to occur 
-    StartPoint : ITrackingPoint;
+type IncrementalSearchData = { 
 
     /// Most recent result of the search
     SearchResult : SearchResult
@@ -20,9 +18,13 @@ type IncrementalSearchData = {
 
     member x.SearchData = x.SearchResult.SearchData
 
-    member x.Pattern = x.SearchData.Pattern 
-
-    member x.Path = x.SearchData.Kind.Path
+    static member Default = 
+        let searchData = SearchData("", Path.Forward, false)
+        let searchResult = SearchResult.NotFound (searchData, false)
+        {
+            SearchResult = searchResult
+            SearchText = ""
+        }
 
 type internal IncrementalSearch
     (
@@ -38,25 +40,17 @@ type internal IncrementalSearch
     let _globalSettings = _localSettings.GlobalSettings
     let _textView = _operations.TextView
     let _searchService = _vimBufferData.Vim.SearchService
-    let mutable _historySession : IHistorySession<IncrementalSearchData, SearchResult> option = None
+    let mutable _historySession : IHistorySession<ITrackingPoint, SearchResult> option = None
+    let mutable _incrementalSearchData = IncrementalSearchData.Default
     let _currentSearchUpdated = StandardEvent<SearchResultEventArgs>()
     let _currentSearchCompleted = StandardEvent<SearchResultEventArgs>()
     let _currentSearchCancelled = StandardEvent<SearchDataEventArgs>()
 
-    member x.CurrentSearchData =
-        match _historySession with 
-        | Some historySession -> Some historySession.ClientData.SearchData
-        | None -> None
+    member x.CurrentSearchData = _incrementalSearchData.SearchResult.SearchData
 
-    member x.CurrentSearchResult =
-        match _historySession with 
-        | Some historySession -> Some historySession.ClientData.SearchResult
-        | None -> None
+    member x.CurrentSearchResult = _incrementalSearchData.SearchResult
 
-    member x.CurrentSearchText = 
-        match _historySession with
-        | Some historySession -> Some historySession.ClientData.SearchText
-        | None -> None
+    member x.CurrentSearchText =  _incrementalSearchData.SearchText
 
     /// There is a big gap between the behavior and documentation of key mapping for an 
     /// incremental search operation.  The documentation properly documents the language
@@ -79,27 +73,29 @@ type internal IncrementalSearch
 
         let start = TextViewUtil.GetCaretPoint _textView
         let searchData = SearchData(StringUtil.empty, path, _globalSettings.WrapScan)
-        let data = {
-            StartPoint = start.Snapshot.CreateTrackingPoint(start.Position, PointTrackingMode.Negative)
-            SearchResult = SearchResult.NotFound (searchData, false)
-            SearchText = ""
+        let searchResult = SearchResult.NotFound (searchData, false)
+        let incrementalSearchData = {
+            SearchResult = searchResult
+            SearchText = match path with | Path.Forward -> "/" | Path.Backward -> "?"
         }
+        let startPoint = start.Snapshot.CreateTrackingPoint(start.Position, PointTrackingMode.Negative)
 
         let historyClient = { 
-            new IHistoryClient<IncrementalSearchData, SearchResult> with
+            new IHistoryClient<ITrackingPoint, SearchResult> with
                 member this.HistoryList = _vimData.SearchHistory
                 member this.RemapMode = x.RemapMode
                 member this.Beep() = _operations.Beep()
-                member this.ProcessCommand data command = x.RunSearch data command
-                member this.Completed (data : IncrementalSearchData) _ = x.Completed data
-                member this.Cancelled (data : IncrementalSearchData) = x.Cancelled data.SearchData
+                member this.ProcessCommand data command = x.ProcessCommand data command
+                member this.Completed (data : ITrackingPoint) _ = x.Completed data
+                member this.Cancelled (data : ITrackingPoint) = x.Cancelled()
             }
 
-        let historySession = HistoryUtil.CreateHistorySession historyClient data StringUtil.empty
+        let historySession = HistoryUtil.CreateHistorySession historyClient startPoint StringUtil.empty
         _historySession <- Some historySession
+        _incrementalSearchData <- incrementalSearchData
 
         // Raise the event
-        _currentSearchUpdated.Trigger x (SearchResultEventArgs(data.SearchResult))
+        _currentSearchUpdated.Trigger x (SearchResultEventArgs(searchResult))
 
         historySession.CreateBindDataStorage().CreateBindData()
 
@@ -128,18 +124,22 @@ type internal IncrementalSearch
             let pattern = rawPattern.Substring(0, index)
             pattern, SearchOffsetData.Parse offset
 
-    /// Run the search for the specified text.  Returns the new IncrementalSearchData resulting
-    /// from the search
-    member x.RunSearch (data : IncrementalSearchData) rawPattern =
+    member x.ProcessCommand (startPoint : ITrackingPoint) rawPattern =
+        x.RunSearch startPoint rawPattern
+        startPoint
+
+    /// Run the search for the specified text.  This will do the search, update the caret 
+    /// position and raise events
+    member x.RunSearch (startPoint : ITrackingPoint) rawPattern =
 
         // Get the SearchResult value for the new text
         let pattern, offset = x.ParsePatternAndOffset rawPattern
-        let searchData = SearchData(pattern, offset, data.SearchData.Kind, data.SearchData.Options)
+        let searchData = SearchData(pattern, offset, _incrementalSearchData.SearchData.Kind, _incrementalSearchData.SearchData.Options)
         let searchResult =
             if StringUtil.isNullOrEmpty pattern then
                 SearchResult.NotFound (searchData, false)
             else
-                match TrackingPointUtil.GetPoint _textView.TextSnapshot data.StartPoint with
+                match TrackingPointUtil.GetPoint _textView.TextSnapshot startPoint with
                 | None -> SearchResult.NotFound (searchData, false)
                 | Some point -> _searchService.FindNextPattern point searchData _wordNavigator 1
 
@@ -150,37 +150,42 @@ type internal IncrementalSearch
             | SearchResult.Found (_, span, _, _) -> _operations.EnsureAtPoint span.Start ViewFlags.Standard
             | SearchResult.NotFound _ -> x.ResetView ()
 
+        // Update all of our internal state before we start raising events 
+        let searchText = 
+            match _incrementalSearchData.SearchData.Path with
+            | Path.Forward -> "/" + rawPattern
+            | Path.Backward -> "?" + rawPattern
+        _incrementalSearchData <- {
+            SearchResult = searchResult
+            SearchText = searchText
+        }
+
         let args = SearchResultEventArgs(searchResult)
         _currentSearchUpdated.Trigger x args
 
-        // TODO: This should be updated *before* we raise the event
-        let currentSearchText = 
-            match data.Path with
-            | Path.Forward -> "/" + rawPattern
-            | Path.Backward -> "?" + rawPattern
-        { data with SearchResult = searchResult; SearchText = currentSearchText }
-
     /// Called when the processing is completed.  Raise the completed event and return
     /// the final SearchResult
-    member x.Completed (data : IncrementalSearchData) =
-        let data =
-            if StringUtil.isNullOrEmpty data.SearchData.Pattern then
+    member x.Completed startPoint =
+        let searchResult =
+            if StringUtil.isNullOrEmpty _incrementalSearchData.SearchData.Pattern then
                 // When the user simply hits Enter on an empty incremental search then
                 // we should be re-using the 'LastSearch' value.
-                x.RunSearch data _vimData.LastPatternData.Pattern
-            else 
-                data
+                x.RunSearch startPoint _vimData.LastPatternData.Pattern
 
-        _vimData.LastPatternData <- data.SearchData.PatternData
-        _currentSearchCompleted.Trigger x (SearchResultEventArgs(data.SearchResult))
+            _incrementalSearchData.SearchResult
+
+        _vimData.LastPatternData <- searchResult.SearchData.PatternData
+        _currentSearchCompleted.Trigger x (SearchResultEventArgs(searchResult))
         _historySession <- None
-        data.SearchResult
+        _incrementalSearchData <- IncrementalSearchData.Default
+        searchResult
 
     /// Cancel the search.  Provide the last value searched for
     member x.Cancelled data =
         x.ResetView ()
-        _currentSearchCancelled.Trigger x (SearchDataEventArgs(data))
+        _currentSearchCancelled.Trigger x (SearchDataEventArgs(_incrementalSearchData.SearchData))
         _historySession <- None
+        _incrementalSearchData <- IncrementalSearchData.Default
 
     member x.ResetSearch pattern = 
         match _historySession with

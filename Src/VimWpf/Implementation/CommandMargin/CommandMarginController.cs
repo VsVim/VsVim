@@ -248,9 +248,9 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             }
 
             var search = _vimBuffer.IncrementalSearch;
-            if (search.InSearch && search.CurrentSearchData.IsSome())
+            if (search.InSearch)
             {
-                _margin.StatusLine = search.CurrentSearchText.Value;
+                _margin.StatusLine = search.CurrentSearchText;
                 return;
             }
 
@@ -611,10 +611,9 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
                 return EditKind.Command;
             }
 
-            if (_vimBuffer.IncrementalSearch.InSearch &&
-                _vimBuffer.IncrementalSearch.CurrentSearchData.IsSome())
+            if (_vimBuffer.IncrementalSearch.InSearch)
             {
-                return _vimBuffer.IncrementalSearch.CurrentSearchData.Value.Kind.IsAnyForward
+                return _vimBuffer.IncrementalSearch.CurrentSearchData.Kind.IsAnyForward
                     ? EditKind.SearchForward
                     : EditKind.SearchBackward;
             }

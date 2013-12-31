@@ -3232,15 +3232,15 @@ type IIncrementalSearch =
 
     /// When in the middle of a search this will return the SearchData for 
     /// the search
-    abstract CurrentSearchData : SearchData option
+    abstract CurrentSearchData : SearchData 
 
     /// When in the middle of a search this will return the SearchResult for the 
     /// search
-    abstract CurrentSearchResult : SearchResult option
+    abstract CurrentSearchResult : SearchResult 
 
     /// When in the middle of a search this will return the actual text which
     /// is being searched for
-    abstract CurrentSearchText : string option
+    abstract CurrentSearchText : string
 
     /// The ITextStructureNavigator used for finding 'word' values in the ITextBuffer
     abstract WordNavigator : ITextStructureNavigator
