@@ -517,8 +517,7 @@ type SearchOffsetData =
         else
             SearchOffsetData.ParseCore offset
 
-// TODO: need to properly implement equality on this type.  Currently it's by reference
-// and that is wrong
+[<Sealed>]
 type SearchData
     (
         _pattern : string,
@@ -544,6 +543,29 @@ type SearchData
     member x.Path = x.Kind.Path
 
     member x.PatternData = { Pattern = x.Pattern; Path = x.Kind.Path }
+
+    member x.Equals(other: SearchData) =
+        if obj.ReferenceEquals(other, null) then
+            false
+        else
+            _pattern = other.Pattern &&
+            _offset = other.Offset &&
+            _kind = other.Kind &&
+            _options = other.Options
+
+    override x.Equals(other : obj) = 
+        match other with
+        | :? SearchData as otherSearchData -> x.Equals(otherSearchData);
+        | _ -> false 
+
+    override x.GetHashCode() =
+        _pattern.GetHashCode()
+
+    static member op_Equality(this, other) = System.Collections.Generic.EqualityComparer<SearchData>.Default.Equals(this, other)
+    static member op_Inequality(this, other) = not (System.Collections.Generic.EqualityComparer<SearchData>.Default.Equals(this, other))
+
+    interface System.IEquatable<SearchData> with
+        member x.Equals other = x.Equals(other)
 
 type SearchDataEventArgs(_searchData : SearchData) =
     inherit System.EventArgs()

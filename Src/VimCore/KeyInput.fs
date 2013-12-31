@@ -37,15 +37,17 @@ type KeyInput
     /// the CTRL-F command (scroll down).  It has the same behavior with capital 
     /// or lower case F.
     member x.CompareTo (right : KeyInput) =
-
-        let left = x
-        let comp = compare left.KeyModifiers right.KeyModifiers
-        if comp <> 0 then 
-            comp
-        else
-            let comp = compare left.Char right.Char
-            if comp <> 0 then comp
-            else compare left.Key right.Key
+        if obj.ReferenceEquals(right, null) then
+            1
+        else 
+            let left = x
+            let comp = compare left.KeyModifiers right.KeyModifiers
+            if comp <> 0 then 
+                comp
+            else
+                let comp = compare left.Char right.Char
+                if comp <> 0 then comp
+                else compare left.Key right.Key
                     
     override x.GetHashCode() = 
         let c = x.Char
