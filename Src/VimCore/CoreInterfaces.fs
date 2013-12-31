@@ -424,6 +424,8 @@ type PatternDataEventArgs(_patternData : PatternData) =
 /// An incremental search can be augmented with a offset of characters or a line
 /// count.  This is described in full in :help searh-offset'
 [<RequireQualifiedAccess>]
+[<StructuralEquality>]
+[<NoComparison>]
 type SearchOffsetData =
     | None
     | Line of int
@@ -515,6 +517,8 @@ type SearchOffsetData =
         else
             SearchOffsetData.ParseCore offset
 
+// TODO: need to properly implement equality on this type.  Currently it's by reference
+// and that is wrong
 type SearchData
     (
         _pattern : string,
@@ -976,7 +980,7 @@ type Motion =
     | RepeatLastCharSearchOpposite
 
     /// A search for the specified pattern
-    | Search of PatternData
+    | Search of SearchData
 
     /// Backward a section in the editor or to a close brace
     | SectionBackwardOrCloseBrace
@@ -3211,6 +3215,10 @@ type IIncrementalSearch =
     /// When in the middle of a search this will return the SearchResult for the 
     /// search
     abstract CurrentSearchResult : SearchResult option
+
+    /// When in the middle of a search this will return the actual text which
+    /// is being searched for
+    abstract CurrentSearchText : string option
 
     /// The ITextStructureNavigator used for finding 'word' values in the ITextBuffer
     abstract WordNavigator : ITextStructureNavigator

@@ -1929,25 +1929,24 @@ type internal MotionUtil
             MotionResult.Create span true MotionKind.CharacterWiseInclusive |> Some
 
     /// Get the motion for a search command.  Used to implement the '/' and '?' motions
-    member x.Search (patternData : PatternData) count = 
+    member x.Search (searchData : SearchData) count = 
 
         // Searching as part of a motion should update the last pattern information
         // irrespective of whether or not the search completes
-        _vimData.LastPatternData <- patternData
+        _vimData.LastPatternData <- searchData.PatternData
 
-        x.SearchCore patternData x.CaretPoint count
+        x.SearchCore searchData x.CaretPoint count
 
     /// Implements the core searching motion.  Will *not* update the LastPatternData 
     /// value.  Simply performs the search and returns the result
-    member x.SearchCore (patternData : PatternData) searchPoint count =
+    member x.SearchCore (searchData : SearchData) searchPoint count =
 
         // All search operations update the jump list
         _jumpList.Add x.CaretPoint
 
         // The search operation should also update the search history
-        _vimData.SearchHistory.Add patternData.Pattern
+        _vimData.SearchHistory.Add searchData.Pattern
 
-        let searchData = SearchData(patternData.Pattern, patternData.Path, _globalSettings.WrapScan)
         let searchResult = _search.FindNextPattern searchPoint searchData _wordNavigator count
 
         // Raise the messages that go with this given result
@@ -1993,7 +1992,8 @@ type internal MotionUtil
             _statusUtil.OnError Resources.NormalMode_NoPreviousSearch
             None
         else
-            x.SearchCore last x.CaretPoint count
+            let searchData = SearchData(last.Pattern, last.Path, _globalSettings.WrapScan)
+            x.SearchCore searchData x.CaretPoint count
 
     /// Motion from the caret to the next occurrence of the partial word under the caret
     member x.NextPartialWord path count =
@@ -2042,6 +2042,7 @@ type internal MotionUtil
 
             let pattern = if isWholeWord then PatternUtil.CreateWholeWord word else word
             let patternData = { Pattern = pattern; Path = path }
+            let searchData = SearchData(pattern, path, _globalSettings.WrapScan)
 
             // Make sure to update the LastPatternData here.  It needs to be done 
             // whether or not the search actually succeeds
@@ -2050,7 +2051,7 @@ type internal MotionUtil
             // A word search always starts at the beginning of the word.  The pattern
             // based search will ensure that we don't match this word again because it
             // won't make an initial match at the provided point
-            x.SearchCore patternData span.Start count
+            x.SearchCore searchData span.Start count
 
     /// Adjust the MotionResult value based on the rules detailed in ':help exclusive'.  The
     /// rules in summary are
@@ -2154,7 +2155,7 @@ type internal MotionUtil
             | Motion.QuotedStringContents quoteChar -> x.QuotedStringContents quoteChar
             | Motion.RepeatLastCharSearch -> x.RepeatLastCharSearch()
             | Motion.RepeatLastCharSearchOpposite -> x.RepeatLastCharSearchOpposite()
-            | Motion.Search patternData-> x.Search patternData motionArgument.Count
+            | Motion.Search searchData-> x.Search searchData motionArgument.Count
             | Motion.SectionBackwardOrCloseBrace -> x.SectionBackwardOrCloseBrace motionArgument.Count |> Some
             | Motion.SectionBackwardOrOpenBrace -> x.SectionBackwardOrOpenBrace motionArgument.Count |> Some
             | Motion.SectionForward -> x.SectionForward motionArgument.MotionContext motionArgument.Count |> Some

@@ -13,6 +13,9 @@ type IncrementalSearchData = {
     /// Most recent result of the search
     SearchResult : SearchResult
 
+    /// Most recent search text being usde
+    SearchText : string
+
 } with 
 
     member x.SearchData = x.SearchResult.SearchData
@@ -50,6 +53,11 @@ type internal IncrementalSearch
         | Some historySession -> Some historySession.ClientData.SearchResult
         | None -> None
 
+    member x.CurrentSearchText = 
+        match _historySession with
+        | Some historySession -> Some historySession.ClientData.SearchText
+        | None -> None
+
     /// There is a big gap between the behavior and documentation of key mapping for an 
     /// incremental search operation.  The documentation properly documents the language
     /// mapping in "help language-mapping" and 'help imsearch'.  But it doesn't document
@@ -74,6 +82,7 @@ type internal IncrementalSearch
         let data = {
             StartPoint = start.Snapshot.CreateTrackingPoint(start.Position, PointTrackingMode.Negative)
             SearchResult = SearchResult.NotFound (searchData, false)
+            SearchText = ""
         }
 
         let historyClient = { 
@@ -143,7 +152,13 @@ type internal IncrementalSearch
 
         let args = SearchResultEventArgs(searchResult)
         _currentSearchUpdated.Trigger x args
-        { data with SearchResult = searchResult }
+
+        // TODO: This should be updated *before* we raise the event
+        let currentSearchText = 
+            match data.Path with
+            | Path.Forward -> "/" + rawPattern
+            | Path.Backward -> "?" + rawPattern
+        { data with SearchResult = searchResult; SearchText = currentSearchText }
 
     /// Called when the processing is completed.  Raise the completed event and return
     /// the final SearchResult
@@ -177,6 +192,7 @@ type internal IncrementalSearch
         member x.WordNavigator = _wordNavigator
         member x.CurrentSearchData = x.CurrentSearchData
         member x.CurrentSearchResult = x.CurrentSearchResult
+        member x.CurrentSearchText = x.CurrentSearchText
         member x.Begin kind = x.Begin kind
         member x.ResetSearch pattern = x.ResetSearch pattern
         [<CLIEvent>]
