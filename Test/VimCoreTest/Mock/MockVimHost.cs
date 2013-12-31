@@ -43,6 +43,7 @@ namespace Vim.UnitTest.Mock
         public bool ShouldCreateVimBufferImpl { get; set; }
         public VimRcState VimRcState { get; private set; }
         public int TabCount { get; set; }
+        public IFontProperties FontProperties { get; set; }
         public int GoToTabData { get; set; }
         public int GetTabIndexData { get; set; }
 

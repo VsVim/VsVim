@@ -1,28 +1,16 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Windows.Media;
-using EnvDTE;
+﻿using EnvDTE;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.TextManager.Interop;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.InteropServices.ComTypes;
+using System.Text;
+using System.Windows.Media;
+using Vim;
 
-namespace Vim.UI.Wpf.Implementation.CommandMargin
+namespace VsVim
 {
-    public class FontPropertiesEventArgs : EventArgs
-    {
-        public static readonly FontPropertiesEventArgs Empty = new FontPropertiesEventArgs();
-    }
-
-    public interface IFontProperties
-    {
-        FontFamily FontFamily { get; }
-        double FontSize { get; }
-
-        event EventHandler<FontPropertiesEventArgs> FontPropertiesChanged;
-    }
-
     /// <summary>
     /// Exposes the font family and font size of the Visual Studio text editor
     /// </summary>
@@ -141,7 +129,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             var handler = _fontPropertiesChanged;
             if (handler != null)
             {
-                handler(this, FontPropertiesEventArgs.Empty);
+                handler(this, new FontPropertiesEventArgs());
             }
         }
     }

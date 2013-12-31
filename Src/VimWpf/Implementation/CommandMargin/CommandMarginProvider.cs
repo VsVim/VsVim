@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel.Composition;
 using System.Linq;
-using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Utilities;
 using Microsoft.VisualStudio.Text.Classification;
@@ -24,18 +23,15 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
         private readonly IVim _vim;
         private readonly ReadOnlyCollection<Lazy<IOptionsProviderFactory>> _optionsProviderFactories;
         private readonly IEditorFormatMapService _editorFormatMapService;
-        private readonly SVsServiceProvider _serviceProvider;
 
         [ImportingConstructor]
         internal CommandMarginProvider(
             IVim vim, 
             IEditorFormatMapService editorFormatMapService, 
-            SVsServiceProvider serviceProvider,
             [ImportMany] IEnumerable<Lazy<IOptionsProviderFactory>> optionsProviderFactories)
         {
             _vim = vim;
             _editorFormatMapService = editorFormatMapService;
-            _serviceProvider = serviceProvider;
             _optionsProviderFactories = optionsProviderFactories.ToList().AsReadOnly();
         }
 
@@ -50,7 +46,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             }
 
             var editorFormatMap = _editorFormatMapService.GetEditorFormatMap(wpfTextViewHost.TextView);
-            var fontProperties = new TextEditorFontProperties(_serviceProvider);
+            var fontProperties = _vim.VimHost.FontProperties;
 			return new CommandMargin(wpfTextViewHost.TextView.VisualElement, vimBuffer, editorFormatMap, fontProperties, _optionsProviderFactories);
         }
 

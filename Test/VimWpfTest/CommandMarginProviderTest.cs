@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using Microsoft.FSharp.Core;
-using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Text.Classification;
 using Microsoft.VisualStudio.Text.Editor;
 using Moq;
@@ -24,11 +23,9 @@ namespace Vim.UI.Wpf.UnitTest
         {
             _factory = new MockRepository(MockBehavior.Strict);
             _vim = _factory.Create<IVim>();
-            var sp = _factory.Create<SVsServiceProvider>();
             _commandMarginProviderRaw = new CommandMarginProvider(
                 _vim.Object,
                 CompositionContainer.GetExportedValue<IEditorFormatMapService>(),
-                sp.Object,
                 new List<Lazy<IOptionsProviderFactory>>());
             _commandMarginProvider = _commandMarginProviderRaw;
         }

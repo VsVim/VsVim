@@ -10,7 +10,6 @@ using Microsoft.VisualStudio.Utilities;
 using Moq;
 using System.Collections.Generic;
 using Vim.Interpreter;
-using Vim.UI.Wpf.Implementation.CommandMargin;
 using System.Windows.Media;
 
 namespace Vim.UnitTest.Mock

@@ -51,6 +51,11 @@ namespace Vim.UI.Wpf
             get;
         }
 
+        public abstract IFontProperties FontProperties
+        {
+            get;
+        }
+
         protected VimHost(
             ITextBufferFactoryService textBufferFactoryService,
             ITextEditorFactoryService textEditorFactoryService,

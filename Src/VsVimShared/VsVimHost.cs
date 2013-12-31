@@ -41,6 +41,7 @@ namespace VsVim
         private readonly IVsExtensibility _vsExtensibility;
         private readonly ISharedService _sharedService;
         private readonly IVsMonitorSelection _vsMonitorSelection;
+        private readonly IFontProperties _fontProperties;
 
         internal _DTE DTE
         {
@@ -70,6 +71,11 @@ namespace VsVim
             get { return _sharedService.GetWindowFrameState().WindowFrameCount; }
         }
 
+        public override IFontProperties FontProperties
+        {
+            get { return _fontProperties; }
+        }
+
         [ImportingConstructor]
         internal VsVimHost(
             IVsAdapter adapter,
@@ -93,6 +99,7 @@ namespace VsVim
             _textManager = textManager;
             _sharedService = sharedServiceFactory.Create();
             _vsMonitorSelection = serviceProvider.GetService<SVsShellMonitorSelection, IVsMonitorSelection>();
+            _fontProperties = new TextEditorFontProperties(serviceProvider);
 
             uint cookie;
             _vsMonitorSelection.AdviseSelectionEvents(this, out cookie);
