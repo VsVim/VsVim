@@ -379,13 +379,19 @@ namespace Vim.UnitTest
 
         public abstract class ApplySearchOffsetDataTest : SearchServiceTest
         {
+            private Span ApplySearchOffsetData(SnapshotSpan span, SearchOffsetData searchOffsetData)
+            {
+                var searchServiceData = new SearchServiceData(_textSearch, VimRegexOptions.Default);
+                return SearchService.ApplySearchOffsetData(searchServiceData, _wordNavigator, span, searchOffsetData).Value;
+            }
+
             public sealed class LineTest : ApplySearchOffsetDataTest
             {
                 [Fact]
                 public void OneLineDown()
                 {
                     Create("cat", "dog", "fish");
-                    var span = SearchService.ApplySearchOffsetData(_textBuffer.GetLineSpan(0, 2), SearchOffsetData.NewLine(1));
+                    var span = ApplySearchOffsetData(_textBuffer.GetLineSpan(0, 2), SearchOffsetData.NewLine(1));
                     Assert.Equal(_textBuffer.GetLineSpan(1, 1), span);
                 }
 
@@ -393,7 +399,7 @@ namespace Vim.UnitTest
                 public void TooManyLinesDown()
                 {
                     Create("cat", "dog", "fish");
-                    var span = SearchService.ApplySearchOffsetData(_textBuffer.GetLineSpan(0, 2), SearchOffsetData.NewLine(100));
+                    var span = ApplySearchOffsetData(_textBuffer.GetLineSpan(0, 2), SearchOffsetData.NewLine(100));
                     Assert.Equal(_textBuffer.GetLineSpan(2, 1), span);
                 }
 
@@ -401,7 +407,7 @@ namespace Vim.UnitTest
                 public void OneLineAbove()
                 {
                     Create("cat", "dog", "fish");
-                    var span = SearchService.ApplySearchOffsetData(_textBuffer.GetLineSpan(1, 2), SearchOffsetData.NewLine(-1));
+                    var span = ApplySearchOffsetData(_textBuffer.GetLineSpan(1, 2), SearchOffsetData.NewLine(-1));
                     Assert.Equal(_textBuffer.GetLineSpan(0, 1), span);
                 }
             }
@@ -412,7 +418,7 @@ namespace Vim.UnitTest
                 public void ZeroCase()
                 {
                     Create("cat", "dog", "fish");
-                    var span = SearchService.ApplySearchOffsetData(_textBuffer.GetLineSpan(0, 1, 2), SearchOffsetData.NewEnd(0));
+                    var span = ApplySearchOffsetData(_textBuffer.GetLineSpan(0, 1, 2), SearchOffsetData.NewEnd(0));
                     Assert.Equal(_textBuffer.GetLineSpan(0, 2, 1), span);
                 }
 
@@ -420,7 +426,7 @@ namespace Vim.UnitTest
                 public void After()
                 {
                     Create("cat", "dog", "fish");
-                    var span = SearchService.ApplySearchOffsetData(_textBuffer.GetLineSpan(0, 1, 1), SearchOffsetData.NewEnd(1));
+                    var span = ApplySearchOffsetData(_textBuffer.GetLineSpan(0, 1, 1), SearchOffsetData.NewEnd(1));
                     Assert.Equal(_textBuffer.GetLineSpan(0, 2, 1), span);
                 }
 
@@ -428,7 +434,7 @@ namespace Vim.UnitTest
                 public void AfterAcrossLines()
                 {
                     Create("cat", "dog", "fish");
-                    var span = SearchService.ApplySearchOffsetData(_textBuffer.GetLineSpan(0, 2), SearchOffsetData.NewEnd(2));
+                    var span = ApplySearchOffsetData(_textBuffer.GetLineSpan(0, 2), SearchOffsetData.NewEnd(2));
                     Assert.Equal(_textBuffer.GetLineSpan(1, 1), span);
                 }
 
@@ -436,18 +442,18 @@ namespace Vim.UnitTest
                 public void Before()
                 {
                     Create("cat", "dog", "fish");
-                    var span = SearchService.ApplySearchOffsetData(_textBuffer.GetLineSpan(0, 2), SearchOffsetData.NewEnd(-1));
+                    var span = ApplySearchOffsetData(_textBuffer.GetLineSpan(0, 2), SearchOffsetData.NewEnd(-1));
                     Assert.Equal(_textBuffer.GetLineSpan(0, 1), span);
                 }
             }
 
             public sealed class SearchTest  : ApplySearchOffsetDataTest
             {
-                [Fact(Skip="in progress")]
+                [Fact]
                 public void SimpleCase()
                 {
                     Create("big", "cat", "dog", "fish");
-                    var span = SearchService.ApplySearchOffsetData(_textBuffer.GetLineSpan(0, 2), SearchOffsetData.NewSearch(new PatternData("dog", Path.Forward)));
+                    var span = ApplySearchOffsetData(_textBuffer.GetLineSpan(0, 2), SearchOffsetData.NewSearch(new PatternData("dog", Path.Forward)));
                     Assert.Equal(_textBuffer.GetLineSpan(2, 3), span);
                 }
             }

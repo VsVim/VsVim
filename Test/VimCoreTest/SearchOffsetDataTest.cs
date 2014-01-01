@@ -46,6 +46,8 @@ namespace Vim.UnitTest
                 AssertLine("42", 42);
                 AssertLine("-1", -1);
                 AssertLine("1", 1);
+                AssertLine("+", 1);
+                AssertLine("-", -1);
             }
 
             [Fact]
@@ -62,6 +64,7 @@ namespace Vim.UnitTest
                 AssertEnd("e+1", 1);
                 AssertEnd("e-1", -1);
                 AssertEnd("e42", 42);
+                AssertEnd("e+", 1);
             }
 
             [Fact]

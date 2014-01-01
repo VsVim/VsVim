@@ -174,7 +174,7 @@ type internal IncrementalSearch
 
             _incrementalSearchData.SearchResult
 
-        _vimData.LastPatternData <- searchResult.SearchData.PatternData
+        _vimData.LastPatternData <- searchResult.SearchData.LastPatternData
         _currentSearchCompleted.Trigger x (SearchResultEventArgs(searchResult))
         _historySession <- None
         _incrementalSearchData <- IncrementalSearchData.Default

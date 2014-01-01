@@ -1933,7 +1933,7 @@ type internal MotionUtil
 
         // Searching as part of a motion should update the last pattern information
         // irrespective of whether or not the search completes
-        _vimData.LastPatternData <- searchData.PatternData
+        _vimData.LastPatternData <- searchData.LastPatternData
 
         x.SearchCore searchData x.CaretPoint count
 
@@ -2041,12 +2041,11 @@ type internal MotionUtil
                 isWholeWord && isWord
 
             let pattern = if isWholeWord then PatternUtil.CreateWholeWord word else word
-            let patternData = { Pattern = pattern; Path = path }
             let searchData = SearchData(pattern, path, _globalSettings.WrapScan)
 
             // Make sure to update the LastPatternData here.  It needs to be done 
             // whether or not the search actually succeeds
-            _vimData.LastPatternData <- patternData
+            _vimData.LastPatternData <- searchData.LastPatternData
 
             // A word search always starts at the beginning of the word.  The pattern
             // based search will ensure that we don't match this word again because it

@@ -1018,7 +1018,7 @@ type VimInterpreter
                     |> SnapshotPointUtil.GetContainingLine 
                     |> SnapshotLineUtil.GetFirstNonBlankOrStart
                 _commonOperations.MoveCaretToPoint point ViewFlags.Standard
-                _vimData.LastPatternData <- searchData.PatternData
+                _vimData.LastPatternData <- searchData.LastPatternData
             | SearchResult.NotFound _ -> ()
     
             RunResult.Completed)

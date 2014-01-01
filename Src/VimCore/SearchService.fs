@@ -79,16 +79,23 @@ type internal SearchService
 
         SnapshotSpan(column.Point, 1)
 
+    [<UsedInBackgroundThread()>]
+    static member ApplySearchOffsetDataSearch searchServiceData navigator point (patternData : PatternData) = 
+        let searchData = SearchData(patternData.Pattern, patternData.Path, true)
+        match SearchService.FindNextMultipleCore searchServiceData searchData point navigator 1 with
+        | SearchResult.Found (_, span, _, _) -> Some span
+        | SearchResult.NotFound _ -> None
+
     /// This method is callabla from multiple threads.  Made static to help promote safety
     [<UsedInBackgroundThread()>]
-    static member ApplySearchOffsetData (span : SnapshotSpan) (searchOffsetData : SearchOffsetData) =
+    static member ApplySearchOffsetData searchServiceData navigator (span : SnapshotSpan) (searchOffsetData : SearchOffsetData) : SnapshotSpan option =
         let snapshot = span.Snapshot
         match searchOffsetData with
-        | SearchOffsetData.None -> span
-        | SearchOffsetData.Line count -> SearchService.ApplySearchOffsetDataLine span count
-        | SearchOffsetData.End count -> SearchService.ApplySearchOffsetDataStartEnd (SnapshotSpanUtil.GetLastIncludedPointOrStart span) count
-        | SearchOffsetData.Start count -> SearchService.ApplySearchOffsetDataStartEnd span.Start count
-        | _ -> span
+        | SearchOffsetData.None -> Some span
+        | SearchOffsetData.Line count -> SearchService.ApplySearchOffsetDataLine span count |> Some
+        | SearchOffsetData.End count -> SearchService.ApplySearchOffsetDataStartEnd (SnapshotSpanUtil.GetLastIncludedPointOrStart span) count |> Some
+        | SearchOffsetData.Start count -> SearchService.ApplySearchOffsetDataStartEnd span.Start count |> Some
+        | SearchOffsetData.Search patternData -> SearchService.ApplySearchOffsetDataSearch searchServiceData navigator span.End patternData
 
     /// This method is callabla from multiple threads.  Made static to help promote safety
     [<UsedInBackgroundThread()>]
@@ -172,11 +179,11 @@ type internal SearchService
 
     /// This method is callabla from multiple threads.  Made static to help promote safety
     [<UsedInBackgroundThread()>]
-    static member FindNextMultipleCore (searchServiceData : SearchServiceData) (searchData : SearchData) startPoint nav count =
+    static member FindNextMultipleCore (searchServiceData : SearchServiceData) (searchData : SearchData) (startPoint : SnapshotPoint) (navigator : ITextStructureNavigator) count : SearchResult =
 
         let textSearchService = searchServiceData.TextSearchService
         let snapshot = SnapshotPointUtil.GetSnapshot startPoint 
-        match SearchService.ConvertToFindDataCore searchServiceData searchData snapshot nav with
+        match SearchService.ConvertToFindDataCore searchServiceData searchData snapshot navigator with
         | None ->
             // Can't convert to a FindData so no way to search
             SearchResult.NotFound (searchData, false)
@@ -216,8 +223,9 @@ type internal SearchService
                 else
                     match result, count > 1 with
                     | Some patternSpan, false ->
-                        let span = SearchService.ApplySearchOffsetData patternSpan searchData.Offset 
-                        SearchResult.Found (searchData, span, patternSpan, didWrap)
+                        match SearchService.ApplySearchOffsetData searchServiceData navigator patternSpan searchData.Offset with
+                        | Some span -> SearchResult.Found (searchData, span, patternSpan, didWrap)
+                        | None -> SearchResult.NotFound (searchData, true)
                     | Some span, true -> 
                         // Need to keep searching.  Get the next point to search for.  We always wrap 
                         // when searching so that we can give back accurate NotFound data.  
@@ -285,8 +293,8 @@ type internal SearchService
         SearchService.FindNextPatternCore _searchServiceData searchData startPoint wordNavigator count
 
     interface ISearchService with
-        member x.FindNext point searchData nav = x.FindNext searchData point nav
-        member x.FindNextMultiple point searchData nav count = x.FindNextMultiple searchData point nav count
-        member x.FindNextPattern point searchData nav count = x.FindNextPattern searchData point nav count
+        member x.FindNext point searchData navigator = x.FindNext searchData point navigator
+        member x.FindNextMultiple point searchData navigator count = x.FindNextMultiple searchData point navigator count
+        member x.FindNextPattern point searchData navigator count = x.FindNextPattern searchData point navigator count
 
 

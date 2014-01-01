@@ -446,30 +446,40 @@ type SearchOffsetData =
                 | '+' -> 
                     isForward := true
                     index := index.Value + 1
+                    true
                 | '-' ->
                     isForward := false
                     index := index.Value + 1
-                | _ -> ()
+                    true
+                | _ -> false
+            else
+                false
 
         let parseNumber () = 
-            movePastPlusOrMinus ()
-            let mutable num = 0
-            let mutable isBad = index.Value >= offset.Length
-            while index.Value < offset.Length do
-                num <- num * 10
-                match CharUtil.GetDigitValue (offset.[index.Value]) with
-                | Option.None -> 
-                    isBad <- true
-                    index := offset.Length
-                | Option.Some d ->
-                    num <- num + d
-                    index := index.Value + 1
-            if isBad then
-                0
-            elif isForward.Value then
-                num
-            else    
-                -num
+            if movePastPlusOrMinus () && index.Value = offset.Length then
+                // a single + or - counts as a value if it's not followed by
+                // a number 
+                if isForward.Value then 1
+                else -1
+            else
+                // parse out the digits after the value
+                let mutable num = 0
+                let mutable isBad = index.Value >= offset.Length
+                while index.Value < offset.Length do
+                    num <- num * 10
+                    match CharUtil.GetDigitValue (offset.[index.Value]) with
+                    | Option.None -> 
+                        isBad <- true
+                        index := offset.Length
+                    | Option.Some d ->
+                        num <- num + d
+                        index := index.Value + 1
+                if isBad then
+                    0
+                elif isForward.Value then
+                    num
+                else    
+                    -num
 
         let parseLine () = 
             let number = parseNumber ()
@@ -542,7 +552,20 @@ type SearchData
 
     member x.Path = x.Kind.Path
 
+    /// The PatternData which was searched for.  This does not include the pattern searched
+    /// for in the offset
     member x.PatternData = { Pattern = x.Pattern; Path = x.Kind.Path }
+
+    /// The PatternData which should be used for IVimData.LastPatternData if this search needs
+    /// to update that value.  It takes into account the search pattern in an offset string
+    /// as specified in ':help //;'
+    member x.LastPatternData =
+        let path = x.Path
+        let pattern = 
+            match x.Offset with
+            | SearchOffsetData.Search patternData -> patternData.Pattern
+            | _ -> x.Pattern
+        { Pattern = pattern; Path = path }
 
     member x.Equals(other: SearchData) =
         if obj.ReferenceEquals(other, null) then

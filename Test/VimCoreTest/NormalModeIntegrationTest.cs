@@ -2643,7 +2643,7 @@ namespace Vim.UnitTest
 
             public sealed class OffsetTest : IncrementalSearchTest
             {
-                [Fact(Skip="in progress")]
+                [Fact]
                 public void LineBelowImplicitCount()
                 {
                     Create("the big", "cat", "dog");
@@ -2652,7 +2652,7 @@ namespace Vim.UnitTest
                     Assert.Equal("big", _vimData.LastPatternData.Pattern);
                 }
 
-                [Fact(Skip="in progress")]
+                [Fact]
                 public void LineBelowExplicitCount()
                 {
                     Create("the big", "cat", "dog");
@@ -2665,7 +2665,7 @@ namespace Vim.UnitTest
                 /// When the count is too big the caret should move to the start of the last line
                 /// in the buffer
                 /// </summary>
-                [Fact(Skip="in progress")]
+                [Fact]
                 public void LineBelowExplicitCountTooBig()
                 {
                     Create("the big", "cat", "dog");
@@ -2674,7 +2674,7 @@ namespace Vim.UnitTest
                     Assert.Equal("big", _vimData.LastPatternData.Pattern);
                 }
 
-                [Fact(Skip="in progress")]
+                [Fact]
                 public void LineBelowExplicitCountNoPlus()
                 {
                     Create("the big", "cat", "dog");
@@ -2683,15 +2683,15 @@ namespace Vim.UnitTest
                     Assert.Equal("big", _vimData.LastPatternData.Pattern);
                 }
 
-                [Fact(Skip="in progress")]
+                [Fact]
                 public void LineAboveImplicitCount()
                 {
                     Create("the big", "cat", "dog", "fish");
-                    _vimBuffer.ProcessNotation("/big/-", enter: true);
+                    _vimBuffer.ProcessNotation("/dog/-", enter: true);
                     Assert.Equal(_textBuffer.GetLine(1).Start, _textView.GetCaretPoint());
                 }
 
-                [Fact(Skip="in progress")]
+                [Fact]
                 public void LineAboveImplicitCount2()
                 {
                     Create("the big", "cat", "dog", "fish");
@@ -2699,7 +2699,7 @@ namespace Vim.UnitTest
                     Assert.Equal(_textBuffer.GetLine(2).Start, _textView.GetCaretPoint());
                 }
 
-                [Fact(Skip="in progress")]
+                [Fact]
                 public void LineAboveExplicitCount()
                 {
                     Create("the big", "cat", "dog", "fish");
@@ -2707,7 +2707,7 @@ namespace Vim.UnitTest
                     Assert.Equal(_textBuffer.GetLine(2).Start, _textView.GetCaretPoint());
                 }
 
-                [Fact(Skip="in progress")]
+                [Fact]
                 public void LineAboveExplicitCountTooBig()
                 {
                     Create("the big", "cat", "dog", "fish");
@@ -2715,7 +2715,7 @@ namespace Vim.UnitTest
                     Assert.Equal(_textBuffer.GetLine(0).Start, _textView.GetCaretPoint());
                 }
 
-                [Fact(Skip="in progress")]
+                [Fact]
                 public void EndNoCount()
                 {
                     Create("the big dog", "cat", "dog", "fish");
@@ -2723,7 +2723,7 @@ namespace Vim.UnitTest
                     Assert.Equal(6, _textView.GetCaretPoint().Position);
                 }
 
-                [Fact(Skip="in progress")]
+                [Fact]
                 public void EndExplicitCount1()
                 {
                     Create("the big dog", "cat", "dog", "fish");
@@ -2731,7 +2731,7 @@ namespace Vim.UnitTest
                     Assert.Equal(6, _textView.GetCaretPoint().Position);
                 }
 
-                [Fact(Skip="in progress")]
+                [Fact]
                 public void EndExplicitCount2()
                 {
                     Create("the big dog", "cat", "dog", "fish");
@@ -2739,7 +2739,7 @@ namespace Vim.UnitTest
                     Assert.Equal(7, _textView.GetCaretPoint().Position);
                 }
 
-                [Fact(Skip="in progress")]
+                [Fact]
                 public void EndExplicitCount3()
                 {
                     Create("the big dog", "cat", "dog", "fish");
@@ -2752,23 +2752,25 @@ namespace Vim.UnitTest
                 /// search offsets.  Instead we treat them as no character and count everything
                 /// else
                 /// </summary>
-                [Fact(Skip="in progress")]
+                [Fact]
                 public void EndExplicitCountExceedsLineLength()
                 {
                     Create("test", "cat", "dog", "fish");
+                    _assertOnWarningMessage = false;
                     _vimBuffer.ProcessNotation("/test/e1", enter: true);
                     Assert.Equal(_textBuffer.GetLine(1).Start, _textView.GetCaretPoint());
                 }
 
-                [Fact(Skip="in progress")]
+                [Fact]
                 public void EndExplicitCountExceedsLineLength2()
                 {
                     Create("test", "cat", "dog", "fish");
+                    _assertOnWarningMessage = false;
                     _vimBuffer.ProcessNotation("/test/e2", enter: true);
                     Assert.Equal(_textBuffer.GetPointInLine(1, 1), _textView.GetCaretPoint());
                 }
 
-                [Fact(Skip="in progress")]
+                [Fact]
                 public void BeginImplicitCount()
                 {
                     Create("the big dog", "cat", "dog", "fish");
@@ -2776,7 +2778,7 @@ namespace Vim.UnitTest
                     Assert.Equal(4, _textView.GetCaretPoint().Position);
                 }
 
-                [Fact(Skip="in progress")]
+                [Fact]
                 public void BeginExplicitCount1()
                 {
                     Create("the big dog", "cat", "dog", "fish");
@@ -2784,7 +2786,7 @@ namespace Vim.UnitTest
                     Assert.Equal(4, _textView.GetCaretPoint().Position);
                 }
 
-                [Fact(Skip="in progress")]
+                [Fact]
                 public void BeginExplicitCount2()
                 {
                     Create("the big dog", "cat", "dog", "fish");
@@ -2792,7 +2794,7 @@ namespace Vim.UnitTest
                     Assert.Equal(5, _textView.GetCaretPoint().Position);
                 }
 
-                [Fact(Skip="in progress")]
+                [Fact]
                 public void BeginExplicitCount3()
                 {
                     Create("the big dog", "cat", "dog", "fish");
@@ -2800,7 +2802,7 @@ namespace Vim.UnitTest
                     Assert.Equal(3, _textView.GetCaretPoint().Position);
                 }
 
-                [Fact(Skip="in progress")]
+                [Fact]
                 public void BeginExplicitCountAlternateSyntax()
                 {
                     Create("the big dog", "cat", "dog", "fish");
@@ -2808,7 +2810,7 @@ namespace Vim.UnitTest
                     Assert.Equal(3, _textView.GetCaretPoint().Position);
                 }
 
-                [Fact(Skip="in progress")]
+                [Fact]
                 public void Search()
                 {
                     Create("the big dog", "cat", "dog", "fish");
