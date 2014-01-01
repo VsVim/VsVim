@@ -1954,29 +1954,49 @@ type internal MotionUtil
 
         let motionResult = 
             match searchResult with
-            | SearchResult.NotFound (searchData, isOutsidePath) ->
-    
+            | SearchResult.NotFound _ ->
                 // Nothing to return here. 
                 None
-    
             | SearchResult.Found (_, span, _, _) ->
-    
                 // Create the MotionResult for the provided MotionArgument and the 
                 // start and end points of the search.  Need to be careful because
                 // the start and end point can be forward or reverse
                 //
                 // Even though the search doesn't necessarily start from the caret
                 // point the resulting Span begins / ends on it
-                let caretPoint = x.CaretPoint
-                let endPoint = span.Start
-                if caretPoint.Position = endPoint.Position then
+                let mutable startPoint = x.CaretPoint
+                let mutable endPoint = span.Start
+                let mutable motionKind = MotionKind.CharacterWiseExclusive
+                let mutable isForward = true
+                let mutable caretColumn = CaretColumn.None
+
+                if startPoint.Position > endPoint.Position then
+                    isForward <- false
+                    endPoint <- x.CaretPoint
+                    startPoint <- span.Start
+
+                // Update the span and motion kind based on the offset information.  This
+                // can make the span inclusive or linewise in some cases
+                match searchData.Offset with
+                | SearchOffsetData.Line _ -> 
+                    let startLine = SnapshotPointUtil.GetContainingLine startPoint
+                    startPoint <- startLine.Start
+
+                    let endLine = SnapshotPointUtil.GetContainingLine endPoint
+                    endPoint <- endLine.EndIncludingLineBreak
+                    motionKind <- MotionKind.LineWise
+                    if isForward then
+                        caretColumn <- CaretColumn.InLastLine (SnapshotPointUtil.GetColumn span.Start)
+                | SearchOffsetData.End _ ->
+                    endPoint <- SnapshotPointUtil.AddOneOrCurrent endPoint
+                    motionKind <- MotionKind.CharacterWiseInclusive 
+                | _ -> ()
+                    
+                if startPoint.Position = endPoint.Position then
                     None
-                else if caretPoint.Position < endPoint.Position then 
-                    let span = SnapshotSpan(caretPoint, endPoint)
-                    MotionResult.Create span true MotionKind.CharacterWiseExclusive |> Some
-                else 
-                    let span = SnapshotSpan(endPoint, caretPoint)
-                    MotionResult.Create span false MotionKind.CharacterWiseExclusive |> Some
+                else
+                    let span = SnapshotSpan(startPoint, endPoint)
+                    MotionResult.CreateExEx span isForward motionKind MotionResultFlags.None caretColumn |> Some
 
         _vimData.ResumeDisplayPattern()
         motionResult

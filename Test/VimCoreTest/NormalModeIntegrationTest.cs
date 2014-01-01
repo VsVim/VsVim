@@ -1282,7 +1282,7 @@ namespace Vim.UnitTest
                 Assert.True(didSee);
             }
 
-            [Fact(Skip="in progress")]
+            [Fact]
             public void SearchWithOffsetEnd()
             {
                 Create("the big dog", "cat", "fish");
@@ -1290,7 +1290,7 @@ namespace Vim.UnitTest
                 Assert.Equal("the big", UnnamedRegister.StringValue);
             }
 
-            [Fact(Skip="in progress")]
+            [Fact]
             public void SearchWithOffsetEndAndCount()
             {
                 Create("the big dog", "cat", "fish");
@@ -1298,12 +1298,13 @@ namespace Vim.UnitTest
                 Assert.Equal("the bi", UnnamedRegister.StringValue);
             }
 
-            [Fact(Skip="in progress")]
+            [Fact]
             public void SearchWithLineCount()
             {
                 Create("the big dog", "cat", "fish");
                 _vimBuffer.ProcessNotation("y/big/0", enter: true);
                 Assert.Equal("the big dog" + Environment.NewLine, UnnamedRegister.StringValue);
+                Assert.Equal(OperationKind.LineWise, UnnamedRegister.OperationKind);
             }
 
             /// <summary>
