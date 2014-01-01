@@ -6,9 +6,9 @@ using Xunit;
 
 namespace Vim.UnitTest
 {
-    public abstract class SearchDataOffsetTest
+    public abstract class SearchOffsetDataTest
     {
-        public sealed class ParseTest : SearchDataOffsetTest
+        public sealed class ParseTest : SearchOffsetDataTest
         {
             private static void AssertLine(string offset, int count)
             {
