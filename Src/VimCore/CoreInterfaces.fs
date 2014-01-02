@@ -3949,6 +3949,10 @@ and IMarkMap =
     /// Set the mark for the given char for the IVimTextBuffer
     abstract SetMark : mark : Mark -> vimBufferData : IVimBufferData -> line : int -> column : int -> bool
 
+    /// Remove the specified mark and return whether or not a mark was actually
+    /// removed
+    abstract RemoveGlobalMark : letter : Letter -> bool
+
     /// Delete all of the global marks 
     abstract Clear : unit -> unit
 
@@ -4004,6 +4008,9 @@ and IVimTextBuffer =
     /// Set the local mark value to the specified line and column.  Returns false if the given 
     /// mark cannot be set
     abstract SetLocalMark : localMark : LocalMark -> line : int -> column : int -> bool
+
+    /// Remove the specified local mark.  Returns whether a mark was actually removed
+    abstract RemoveLocalMark : localMark : LocalMark -> bool
 
     /// Switch the current mode to the provided value
     abstract SwitchMode : ModeKind -> ModeArgument -> unit

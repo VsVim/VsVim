@@ -132,14 +132,28 @@ type internal VimTextBuffer
     member x.SetLocalMark localMark line column = 
         match localMark with
         | LocalMark.Letter letter -> 
-            // First close out the existing mark at this location if it exists
-            match PropertyCollectionUtil.GetValue<ITrackingLineColumn> letter _textBuffer.Properties with
-            | None -> ()
-            | Some trackingLineColumn -> trackingLineColumn.Close()
+            // Remove the mark.  This will take core of closing out the tracking data for us so that we don't 
+            // leak it
+            x.RemoveLocalMark localMark |> ignore
 
             let trackingLineColumn = _bufferTrackingService.CreateLineColumn _textBuffer line column LineColumnTrackingMode.Default
             _textBuffer.Properties.[letter] <- trackingLineColumn
             true
+        | LocalMark.Number _ -> false
+        | LocalMark.LastSelectionEnd -> false
+        | LocalMark.LastSelectionStart -> false
+        | LocalMark.LastInsertExit -> false
+        | LocalMark.LastEdit -> false
+
+    member x.RemoveLocalMark localMark = 
+        match localMark with
+        | LocalMark.Letter letter -> 
+            // Close out the existing mark at this location if it exists
+            match PropertyCollectionUtil.GetValue<ITrackingLineColumn> letter _textBuffer.Properties with
+            | None -> false
+            | Some trackingLineColumn -> 
+                trackingLineColumn.Close()
+                _textBuffer.Properties.RemoveProperty letter
         | LocalMark.Number _ -> false
         | LocalMark.LastSelectionEnd -> false
         | LocalMark.LastSelectionStart -> false
@@ -174,6 +188,7 @@ type internal VimTextBuffer
         member x.Clear() = x.Clear()
         member x.GetLocalMark localMark = x.GetLocalMark localMark
         member x.SetLocalMark localMark line column = x.SetLocalMark localMark line column
+        member x.RemoveLocalMark localMark = x.RemoveLocalMark localMark
         member x.SwitchMode modeKind modeArgument = x.SwitchMode modeKind modeArgument
 
         [<CLIEvent>]

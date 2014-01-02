@@ -61,6 +61,9 @@ type internal Tokenizer =
     /// Rewind the token stream to the specified mark
     member MoveToMark : mark : int -> unit
 
+    /// Move to the end of the current line
+    member MoveToEndOfLine : unit -> unit
+
     /// Change the flags on the tokenizer and return a ResetTokenizerFlags instance
     /// that will reset the flags when done 
     member SetTokenizerFlagsScoped : tokenizerFlags : TokenizerFlags -> ResetTokenizerFlags

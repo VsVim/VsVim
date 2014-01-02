@@ -237,7 +237,7 @@ namespace Vim.UnitTest
                 return HasLocalMark(LocalMark.NewLetter(letter));
             }
 
-            [Fact(Skip = "work in progress")]
+            [Fact]
             public void DeleteGlobal()
             {
                 Create("cat", "dog");
@@ -247,7 +247,7 @@ namespace Vim.UnitTest
                 Assert.False(HasGlobalMark(Letter.A));
             }
 
-            [Fact(Skip = "work in progress")]
+            [Fact]
             public void DeleteGlobalMany()
             {
                 Create("cat", "dog");
@@ -259,7 +259,7 @@ namespace Vim.UnitTest
                 Assert.False(HasGlobalMark(Letter.B));
             }
 
-            [Fact(Skip = "work in progress")]
+            [Fact]
             public void DeleteGlobalRange()
             {
                 Create("cat", "dog");
@@ -275,7 +275,7 @@ namespace Vim.UnitTest
             /// Normal delete range operation but include some invalid marks here.  No errors
             /// should be issued
             /// </summary>
-            [Fact(Skip = "work in progress")]
+            [Fact]
             public void DeleteGlobalRangeWithInvalid()
             {
                 Create("cat", "dog");
@@ -288,7 +288,7 @@ namespace Vim.UnitTest
                 Assert.False(HasGlobalMark(Letter.C));
             }
 
-            [Fact(Skip = "work in progress")]
+            [Fact]
             public void DeleteLocalMark()
             {
                 Create("cat", "dog");
@@ -301,7 +301,7 @@ namespace Vim.UnitTest
                 Assert.True(HasLocalMark(Letter.B));
             }
 
-            [Fact(Skip = "work in progress")]
+            [Fact]
             public void DeleteLocalMarkMany()
             {
                 Create("cat", "dog");
@@ -314,7 +314,7 @@ namespace Vim.UnitTest
                 Assert.False(HasLocalMark(Letter.B));
             }
 
-            [Fact(Skip = "work in progress")]
+            [Fact]
             public void DeleteLocalMarkRange()
             {
                 Create("cat", "dog");
@@ -327,7 +327,7 @@ namespace Vim.UnitTest
                 Assert.False(HasLocalMark(Letter.B));
             }
 
-            [Fact(Skip = "work in progress")]
+            [Fact]
             public void DeleteLocalMarkNumber()
             {
                 Create("cat", "dog");
@@ -340,7 +340,7 @@ namespace Vim.UnitTest
                 Assert.False(HasLocalMark(Letter.B));
             }
 
-            [Fact(Skip = "work in progress")]
+            [Fact]
             public void DeleteAllMarks()
             {
                 Create("cat", "dog");

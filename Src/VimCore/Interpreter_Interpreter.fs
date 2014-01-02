@@ -417,10 +417,29 @@ type VimInterpreter
     /// Run the delete command.  Delete the specified range of text and set it to 
     /// the given Register
     member x.RunDelete lineRange register = 
-
         x.RunWithLineRangeOrDefault lineRange DefaultLineRange.CurrentLine (fun lineRange ->
             _commonOperations.DeleteLines lineRange.StartLine lineRange.Count register
             RunResult.Completed)
+
+    member x.RunDeleteMarkCore mark = 
+        match mark with 
+        | Mark.LocalMark localMark -> _vimTextBuffer.RemoveLocalMark localMark |> ignore
+        | Mark.GlobalMark letter -> _markMap.RemoveGlobalMark letter |> ignore
+        | Mark.LastJump -> ()
+
+    member x.RunDeleteMarks marks = 
+        marks |> Seq.iter x.RunDeleteMarkCore
+        RunResult.Completed
+
+    member x.RunDeleteAllMarks () = 
+        LocalMark.All
+        |> Seq.filter (fun mark -> 
+            match mark with 
+            | LocalMark.Number _ -> false
+            | _ -> true)
+        |> Seq.map (fun localMark -> Mark.LocalMark localMark)
+        |> Seq.iter x.RunDeleteMarkCore
+        RunResult.Completed
 
     member x.RunFunction (func : Function) = 
         _statusUtil.OnError Resources.Interpreter_FunctionNotSupported
@@ -1412,6 +1431,8 @@ type VimInterpreter
         | LineCommand.ClearKeyMap (keyRemapModes, mapArgumentList) -> x.RunClearKeyMap keyRemapModes mapArgumentList
         | LineCommand.Close hasBang -> x.RunClose hasBang
         | LineCommand.Delete (lineRange, registerName) -> x.RunDelete lineRange (getRegister registerName)
+        | LineCommand.DeleteMarks marks -> x.RunDeleteMarks marks
+        | LineCommand.DeleteAllMarks -> x.RunDeleteAllMarks()
         | LineCommand.Edit (hasBang, fileOptions, commandOption, filePath) -> x.RunEdit hasBang fileOptions commandOption filePath
         | LineCommand.Else -> cantRun ()
         | LineCommand.ElseIf _ -> cantRun ()
