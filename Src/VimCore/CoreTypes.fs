@@ -229,8 +229,67 @@ type Letter =
 [<RequireQualifiedAccess>]
 [<StructuralEquality>]
 [<NoComparison>]
+type NumberMark = 
+    | Item0
+    | Item1
+    | Item2
+    | Item3
+    | Item4
+    | Item5
+    | Item6
+    | Item7
+    | Item8
+    | Item9
+
+    with
+
+    member x.Char =
+        match x with
+        | Item0 -> '0'
+        | Item1 -> '1'
+        | Item2 -> '2'
+        | Item3 -> '3'
+        | Item4 -> '4'
+        | Item5 -> '5'
+        | Item6 -> '6'
+        | Item7 -> '7'
+        | Item8 -> '8'
+        | Item9 -> '9'
+
+    static member All = 
+        seq { 
+            yield Item0
+            yield Item1
+            yield Item2
+            yield Item3
+            yield Item4
+            yield Item5
+            yield Item6
+            yield Item7
+            yield Item8
+            yield Item9
+        }
+
+    static member OfChar c =
+        match c with
+        | '0' -> Some Item0
+        | '1' -> Some Item1
+        | '2' -> Some Item2
+        | '3' -> Some Item3
+        | '4' -> Some Item4
+        | '5' -> Some Item5
+        | '6' -> Some Item6
+        | '7' -> Some Item7
+        | '8' -> Some Item8
+        | '9' -> Some Item9
+        | _ -> None
+
+[<RequireQualifiedAccess>]
+[<StructuralEquality>]
+[<NoComparison>]
 type LocalMark =
     | Letter of Letter
+    | Number of NumberMark
     | LastInsertExit
     | LastSelectionStart
     | LastSelectionEnd
@@ -241,6 +300,7 @@ type LocalMark =
     member x.Char =
         match x with 
         | Letter letter -> letter.Char
+        | Number number -> number.Char
         | LastSelectionStart -> '<'
         | LastSelectionEnd -> '>'
         | LastInsertExit -> '^'
@@ -250,6 +310,8 @@ type LocalMark =
         seq {
             for letter in Letter.All do
                 yield LocalMark.Letter letter
+            for number in NumberMark.All do
+                yield LocalMark.Number number
             yield LocalMark.LastSelectionStart
             yield LocalMark.LastSelectionEnd
             yield LocalMark.LastEdit
@@ -257,15 +319,17 @@ type LocalMark =
 
     static member OfChar c =
         match Letter.OfChar c with
-        | Some letter ->
-            Some (LocalMark.Letter letter)
+        | Some letter -> Some (LocalMark.Letter letter)
         | None ->
-            match c with 
-            | '<' -> Some LocalMark.LastSelectionStart
-            | '>' -> Some LocalMark.LastSelectionEnd
-            | '^' -> Some LocalMark.LastInsertExit
-            | '.' -> Some LocalMark.LastEdit
-            | _ -> None
+            match NumberMark.OfChar c with
+            | Some number -> Some (LocalMark.Number number)
+            | None -> 
+                match c with 
+                | '<' -> Some LocalMark.LastSelectionStart
+                | '>' -> Some LocalMark.LastSelectionEnd
+                | '^' -> Some LocalMark.LastInsertExit
+                | '.' -> Some LocalMark.LastEdit
+                | _ -> None
 
 [<RequireQualifiedAccess>]
 [<StructuralEquality>]

@@ -109,12 +109,14 @@ type internal VimTextBuffer
 
     /// Get the specified local mark value
     member x.GetLocalMark localMark =
-
         match localMark with
         | LocalMark.Letter letter ->
             _textBuffer.Properties
             |> PropertyCollectionUtil.GetValue<ITrackingLineColumn> letter
             |> OptionUtil.map2 (fun trackingLineColumn -> trackingLineColumn.VirtualPoint)
+        | LocalMark.Number _ ->
+            // TODO: implement numbered mark support
+            None
         | LocalMark.LastInsertExit ->
             x.LastInsertExitPoint |> Option.map VirtualSnapshotPointUtil.OfPoint
         | LocalMark.LastEdit ->
@@ -138,6 +140,7 @@ type internal VimTextBuffer
             let trackingLineColumn = _bufferTrackingService.CreateLineColumn _textBuffer line column LineColumnTrackingMode.Default
             _textBuffer.Properties.[letter] <- trackingLineColumn
             true
+        | LocalMark.Number _ -> false
         | LocalMark.LastSelectionEnd -> false
         | LocalMark.LastSelectionStart -> false
         | LocalMark.LastInsertExit -> false

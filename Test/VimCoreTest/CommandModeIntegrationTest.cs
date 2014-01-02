@@ -220,6 +220,140 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class DeleteMarksTest : CommandModeIntegrationTest
+        {
+            private bool HasGlobalMark(Letter letter)
+            {
+                return Vim.MarkMap.GetGlobalMark(letter).IsSome();
+            }
+
+            private bool HasLocalMark(LocalMark localMark)
+            {
+                return _vimBuffer.VimTextBuffer.GetLocalMark(localMark).IsSome();
+            }
+
+            private bool HasLocalMark(Letter letter)
+            {
+                return HasLocalMark(LocalMark.NewLetter(letter));
+            }
+
+            [Fact(Skip = "work in progress")]
+            public void DeleteGlobal()
+            {
+                Create("cat", "dog");
+                _vimBuffer.ProcessNotation("mA");
+                Assert.True(HasGlobalMark(Letter.A));
+                _vimBuffer.ProcessNotation(":delmarks A", enter: true);
+                Assert.False(HasGlobalMark(Letter.A));
+            }
+
+            [Fact(Skip = "work in progress")]
+            public void DeleteGlobalMany()
+            {
+                Create("cat", "dog");
+                _vimBuffer.ProcessNotation("mA");
+                _vimBuffer.ProcessNotation("mB");
+                Assert.True(HasGlobalMark(Letter.A));
+                _vimBuffer.ProcessNotation(":delmarks A B", enter: true);
+                Assert.False(HasGlobalMark(Letter.A));
+                Assert.False(HasGlobalMark(Letter.B));
+            }
+
+            [Fact(Skip = "work in progress")]
+            public void DeleteGlobalRange()
+            {
+                Create("cat", "dog");
+                _vimBuffer.ProcessNotation("mA");
+                _vimBuffer.ProcessNotation("mB");
+                Assert.True(HasGlobalMark(Letter.A));
+                _vimBuffer.ProcessNotation(":delmarks A-B", enter: true);
+                Assert.False(HasGlobalMark(Letter.A));
+                Assert.False(HasGlobalMark(Letter.B));
+            }
+
+            /// <summary>
+            /// Normal delete range operation but include some invalid marks here.  No errors
+            /// should be issued
+            /// </summary>
+            [Fact(Skip = "work in progress")]
+            public void DeleteGlobalRangeWithInvalid()
+            {
+                Create("cat", "dog");
+                _vimBuffer.ProcessNotation("mA");
+                _vimBuffer.ProcessNotation("mB");
+                Assert.True(HasGlobalMark(Letter.A));
+                _vimBuffer.ProcessNotation(":delmarks A-C", enter: true);
+                Assert.False(HasGlobalMark(Letter.A));
+                Assert.False(HasGlobalMark(Letter.B));
+                Assert.False(HasGlobalMark(Letter.C));
+            }
+
+            [Fact(Skip = "work in progress")]
+            public void DeleteLocalMark()
+            {
+                Create("cat", "dog");
+                _vimBuffer.ProcessNotation("ma");
+                _vimBuffer.ProcessNotation("mb");
+                Assert.True(HasLocalMark(Letter.A));
+                Assert.True(HasLocalMark(Letter.B));
+                _vimBuffer.ProcessNotation(":delmarks a", enter: true);
+                Assert.False(HasLocalMark(Letter.A));
+                Assert.True(HasLocalMark(Letter.B));
+            }
+
+            [Fact(Skip = "work in progress")]
+            public void DeleteLocalMarkMany()
+            {
+                Create("cat", "dog");
+                _vimBuffer.ProcessNotation("ma");
+                _vimBuffer.ProcessNotation("mb");
+                Assert.True(HasLocalMark(Letter.A));
+                Assert.True(HasLocalMark(Letter.B));
+                _vimBuffer.ProcessNotation(":delmarks a b", enter: true);
+                Assert.False(HasLocalMark(Letter.A));
+                Assert.False(HasLocalMark(Letter.B));
+            }
+
+            [Fact(Skip = "work in progress")]
+            public void DeleteLocalMarkRange()
+            {
+                Create("cat", "dog");
+                _vimBuffer.ProcessNotation("ma");
+                _vimBuffer.ProcessNotation("mb");
+                Assert.True(HasLocalMark(Letter.A));
+                Assert.True(HasLocalMark(Letter.B));
+                _vimBuffer.ProcessNotation(":delmarks a-b", enter: true);
+                Assert.False(HasLocalMark(Letter.A));
+                Assert.False(HasLocalMark(Letter.B));
+            }
+
+            [Fact(Skip = "work in progress")]
+            public void DeleteLocalMarkNumber()
+            {
+                Create("cat", "dog");
+                _vimBuffer.ProcessNotation("ma");
+                _vimBuffer.ProcessNotation("mb");
+                Assert.True(HasLocalMark(Letter.A));
+                Assert.True(HasLocalMark(Letter.B));
+                _vimBuffer.ProcessNotation(":delmarks a-b", enter: true);
+                Assert.False(HasLocalMark(Letter.A));
+                Assert.False(HasLocalMark(Letter.B));
+            }
+
+            [Fact(Skip = "work in progress")]
+            public void DeleteAllMarks()
+            {
+                Create("cat", "dog");
+                _vimBuffer.ProcessNotation("ma");
+                _vimBuffer.ProcessNotation("mA");
+                Assert.True(HasLocalMark(Letter.A));
+                Assert.True(HasGlobalMark(Letter.A));
+                _vimBuffer.ProcessNotation(":delmarks!", enter: true);
+                Assert.False(HasLocalMark(Letter.A));
+                Assert.True(HasGlobalMark(Letter.A));
+            }
+        }
+
         public sealed class IncrementalSearchTest : CommandModeIntegrationTest
         {
             /// <summary>

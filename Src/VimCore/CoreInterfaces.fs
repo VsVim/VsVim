@@ -3999,7 +3999,7 @@ and IVimTextBuffer =
     abstract Clear : unit -> unit
 
     /// Get the local mark value 
-    abstract GetLocalMark : localMark: LocalMark -> VirtualSnapshotPoint option
+    abstract GetLocalMark : localMark : LocalMark -> VirtualSnapshotPoint option
 
     /// Set the local mark value to the specified line and column.  Returns false if the given 
     /// mark cannot be set
