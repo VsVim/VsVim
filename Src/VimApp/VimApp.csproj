@@ -60,6 +60,7 @@
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Constants.cs" />
     <Compile Include="DefaultKeyProcessorProvider.cs" />
     <Compile Include="Extensions.cs" />
     <Compile Include="Implementation\NewLineDisplay\NewLineDisplay.cs" />

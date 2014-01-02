@@ -109,8 +109,8 @@ namespace VimApp
 
             var classificationFormatMap = _classificationFormatMapService.GetClassificationFormatMap(textViewHost.TextView);
             classificationFormatMap.DefaultTextProperties = TextFormattingRunProperties.CreateTextFormattingRunProperties(
-                new Typeface(new FontFamily("Consolas"), FontStyles.Normal, FontWeights.Normal, FontStretches.Normal),
-                14,
+                new Typeface(Constants.FontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal),
+                Constants.FontSize,
                 Colors.Black);
 
             return textViewHost;

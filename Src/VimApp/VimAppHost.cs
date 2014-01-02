@@ -14,16 +14,16 @@ namespace VimApp
     [Export(typeof(VimAppHost))]
     internal sealed class VimAppHost : Vim.UI.Wpf.VimHost
     {
-        private class TextEditorFontProperties : IFontProperties
+        private sealed class TextEditorFontProperties : IFontProperties
         {
             public System.Windows.Media.FontFamily FontFamily
             {
-                get { return new System.Windows.Media.FontFamily("Consolas"); }
+                get { return Constants.FontFamily; }
             }
 
             public double FontSize
             {
-                get { return 10; }
+                get { return Constants.FontSize; }
             }
 
             public event EventHandler<FontPropertiesEventArgs> FontPropertiesChanged;
@@ -32,7 +32,9 @@ namespace VimApp
             {
                 var handler = FontPropertiesChanged;
                 if (handler != null)
+                {
                     handler(this, new FontPropertiesEventArgs());
+                }
             }
         }
 
