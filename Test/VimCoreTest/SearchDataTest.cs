@@ -45,5 +45,14 @@ namespace Vim.UnitTest
                     .WithNotEqualValues(new SearchData("world", Path.Forward, false)));
             }
         }
+
+        public sealed class MiscTest : SearchDataTest
+        {
+            [Fact]
+            public void Options()
+            {
+                Assert.Equal(SearchOptions.Default, SearchOptions.ConsiderIgnoreCase | SearchOptions.ConsiderSmartCase);
+            }
+        }
     }
 }

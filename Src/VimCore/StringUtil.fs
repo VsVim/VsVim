@@ -4,7 +4,6 @@ namespace Vim
 open System
 open StringBuilderExtensions
 
-// TODO: Use pascal case in this type
 module internal StringUtil =
 
     let empty = System.String.Empty

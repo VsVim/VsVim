@@ -347,7 +347,7 @@ namespace VsVim.Implementation.Misc
 
         ICommandTarget ICommandTargetFactory.CreateCommandTarget(IOleCommandTarget nextCommandTarget, IVimBufferCoordinator vimBufferCoordinator)
         {
-            var displayWindowBroker = _displayWindowBrokerFactory.CreateDisplayWindowBroker(vimBufferCoordinator.VimBuffer.TextView);
+            var displayWindowBroker = _displayWindowBrokerFactory.GetDisplayWindowBroker(vimBufferCoordinator.VimBuffer.TextView);
             return new StandardCommandTarget(vimBufferCoordinator, _textManager, displayWindowBroker, nextCommandTarget);
         }
     }

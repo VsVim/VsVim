@@ -110,7 +110,7 @@ namespace VsVim
 
         private void ConnectToOleCommandTarget(IVimBuffer vimBuffer, ITextView textView, IVsTextView vsTextView)
         {
-            var broker = _displayWindowBrokerFactoryServcie.CreateDisplayWindowBroker(textView);
+            var broker = _displayWindowBrokerFactoryServcie.GetDisplayWindowBroker(textView);
             var vimBufferCoordinator = _bufferCoordinatorFactory.GetVimBufferCoordinator(vimBuffer);
             var result = VsCommandTarget.Create(vimBufferCoordinator, vsTextView, _textManager, _adapter, broker, _keyUtil, _commandTargetFactoryList);
             if (result.IsSuccess)

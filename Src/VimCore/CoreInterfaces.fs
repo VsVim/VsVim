@@ -401,6 +401,9 @@ type SearchOptions =
     /// Consider the "smartcase" option when doing the search
     | ConsiderSmartCase = 0x2
 
+    /// ConsiderIgnoreCase ||| ConsiderSmartCase
+    | Default = 0x3
+
 /// Information about a search of a pattern
 type PatternData = {
 
@@ -410,11 +413,6 @@ type PatternData = {
     /// The direction in which the pattern was searched for
     Path : Path
 }
-    with 
-
-    /// The default search options when looking at a specific pattern
-    /// TODO: Move this to a more appropriate type
-    static member DefaultSearchOptions = SearchOptions.ConsiderIgnoreCase ||| SearchOptions.ConsiderSmartCase
 
 type PatternDataEventArgs(_patternData : PatternData) =
     inherit System.EventArgs()
@@ -538,11 +536,11 @@ type SearchData
 
     new (pattern : string, path : Path, isWrap : bool) =
         let kind = SearchKind.OfPathAndWrap path isWrap
-        SearchData(pattern, SearchOffsetData.None, kind, PatternData.DefaultSearchOptions)
+        SearchData(pattern, SearchOffsetData.None, kind, SearchOptions.Default)
 
     new (pattern : string, path : Path) = 
         let kind = SearchKind.OfPathAndWrap path true
-        SearchData(pattern, SearchOffsetData.None, kind, PatternData.DefaultSearchOptions)
+        SearchData(pattern, SearchOffsetData.None, kind, SearchOptions.Default)
 
     /// The pattern being searched for in the buffer
     member x.Pattern = _pattern
@@ -3226,7 +3224,7 @@ type IKeyMap =
 /// Jump list information associated with an IVimBuffer.  This is maintained as a forward
 /// and backwards traversable list of points with which to navigate to
 ///
-/// TODO:  Technically Vim's implementation of a jump list can span across different
+/// Technically Vim's implementation of a jump list can span across different
 /// buffers  This is limited to just a single ITextBuffer.  This is mostly due to Visual 
 /// Studio's limitations in swapping out an ITextBuffer contents for a different file.  It
 /// is possible but currently not a high priority here

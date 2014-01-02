@@ -103,8 +103,11 @@ type SnapshotOverlapPoint =
     val private _before : int
     val private _width : int
 
-    // TODO: This constructor should be hidden behind a signature file.  No one should ever call it
-    // directly.  It is too easy to get the 'width' wrong
+    /// !!!Do not call this directly!!!
+    ///
+    /// This constructor is meant for internal usage only.  If friend types existed this would employ
+    /// a friend type to protect it.  It's far too easy to get the 'width' parameter incorrect.  Instead
+    /// go through a supported API for creating them
     internal new (point : SnapshotPoint, before : int, width : int) = 
         if width < 0 then
             invalidArg "width" "Width must be positive"

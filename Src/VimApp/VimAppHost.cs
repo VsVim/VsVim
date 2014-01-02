@@ -28,7 +28,7 @@ namespace VimApp
 
             public event EventHandler<FontPropertiesEventArgs> FontPropertiesChanged;
 
-            protected void OnFontPropertiesChanged()
+            internal void OnFontPropertiesChanged()
             {
                 var handler = FontPropertiesChanged;
                 if (handler != null)
