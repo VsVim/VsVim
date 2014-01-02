@@ -222,7 +222,7 @@ namespace Vim.UnitTest
             SearchOptions options = SearchOptions.None)
         {
             kind = kind ?? SearchKind.Forward;
-            return new SearchData(pattern, kind, options);
+            return new SearchData(pattern, SearchOffsetData.None, kind, options);
         }
 
         internal static ModeArgument CreateSubstituteArgument(

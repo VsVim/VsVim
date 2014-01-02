@@ -196,7 +196,7 @@ namespace Vim.UI.Wpf.UnitTest
                 {
                     Create("cat", "dog", "fish");
                     ProcessNotation(@"/dg<Left>o");
-                    Assert.Equal("dog", _incrementalSearch.CurrentSearchData.Value.Pattern);
+                    Assert.Equal("dog", _incrementalSearch.CurrentSearchData.Pattern);
                 }
 
                 [Fact]
@@ -213,7 +213,7 @@ namespace Vim.UI.Wpf.UnitTest
                 {
                     Create("cat", "dog", "fish");
                     ProcessNotation(@"/dg<Left><BS><Del>fish");
-                    Assert.Equal("fish", _incrementalSearch.CurrentSearchData.Value.Pattern);
+                    Assert.Equal("fish", _incrementalSearch.CurrentSearchData.Pattern);
                 }
 
                 [Fact]

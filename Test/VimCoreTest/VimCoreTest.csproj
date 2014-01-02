@@ -71,6 +71,7 @@
     <Compile Include="BulkOperationsTest.cs" />
     <Compile Include="ChangeTrackerTest.cs" />
     <Compile Include="CharacterSpanTest.cs" />
+    <Compile Include="CharSpanTest.cs" />
     <Compile Include="CharUtilTest.cs" />
     <Compile Include="ClipboardRegisterValueBackingTest.cs" />
     <Compile Include="CodeHygieneTest.cs" />
@@ -87,6 +88,9 @@
     <Compile Include="MatchingTokenUtilTest.cs" />
     <Compile Include="ModeMapTest.cs" />
     <Compile Include="RegisterValueTest.cs" />
+    <Compile Include="SearchOffsetDataTest.cs" />
+    <Compile Include="SearchDataTest.cs" />
+    <Compile Include="SnapshotColumnTest.cs" />
     <Compile Include="SnapshotOverlapPointTest.cs" />
     <Compile Include="SnapshotOverlapSpanTest.cs" />
     <Compile Include="StringUtilTest.cs" />

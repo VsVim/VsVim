@@ -413,6 +413,7 @@ type PatternData = {
     with 
 
     /// The default search options when looking at a specific pattern
+    /// TODO: Move this to a more appropriate type
     static member DefaultSearchOptions = SearchOptions.ConsiderIgnoreCase ||| SearchOptions.ConsiderSmartCase
 
 type PatternDataEventArgs(_patternData : PatternData) =
@@ -420,24 +421,200 @@ type PatternDataEventArgs(_patternData : PatternData) =
 
     member x.PatternData = _patternData
 
-type SearchData = {
+/// An incremental search can be augmented with a offset of characters or a line
+/// count.  This is described in full in :help searh-offset'
+[<RequireQualifiedAccess>]
+[<StructuralEquality>]
+[<NoComparison>]
+type SearchOffsetData =
+    | None
+    | Line of int
+    | Start of int
+    | End of int
+    | Search of PatternData
+
+    with 
+
+    static member private ParseCore (offset : string) =
+        Contract.Requires (offset.Length > 0)
+
+        let index = ref 0
+        let isForward = ref true
+        let movePastPlusOrMinus () = 
+            if index.Value < offset.Length then
+                match offset.[index.Value] with
+                | '+' -> 
+                    isForward := true
+                    index := index.Value + 1
+                    true
+                | '-' ->
+                    isForward := false
+                    index := index.Value + 1
+                    true
+                | _ -> false
+            else
+                false
+
+        let parseNumber () = 
+            if movePastPlusOrMinus () && index.Value = offset.Length then
+                // a single + or - counts as a value if it's not followed by
+                // a number 
+                if isForward.Value then 1
+                else -1
+            else
+                // parse out the digits after the value
+                let mutable num = 0
+                let mutable isBad = index.Value >= offset.Length
+                while index.Value < offset.Length do
+                    num <- num * 10
+                    match CharUtil.GetDigitValue (offset.[index.Value]) with
+                    | Option.None -> 
+                        isBad <- true
+                        index := offset.Length
+                    | Option.Some d ->
+                        num <- num + d
+                        index := index.Value + 1
+                if isBad then
+                    0
+                elif isForward.Value then
+                    num
+                else    
+                    -num
+
+        let parseLine () = 
+            let number = parseNumber ()
+            SearchOffsetData.Line number
+
+        let parseEnd () = 
+            index := index.Value + 1
+            let number = parseNumber ()
+            SearchOffsetData.End number
+            
+        let parseStart () = 
+            index := index.Value + 1
+            let number = parseNumber ()
+            SearchOffsetData.Start number
+
+        let parseSearch () = 
+            index := index.Value + 1
+            match StringUtil.charAtOption index.Value offset with
+            | Option.Some '/' -> 
+                let path = Path.Forward
+                let pattern = offset.Substring(index.Value + 1)
+                SearchOffsetData.Search ({ Pattern = pattern; Path = path})
+            | Option.Some '?' -> 
+                let path = Path.Backward
+                let pattern = offset.Substring(index.Value + 1)
+                SearchOffsetData.Search ({ Pattern = pattern; Path = path})
+            | _ ->
+                SearchOffsetData.None
+
+        if CharUtil.IsDigit (offset.[0]) then
+            parseLine ()
+        else
+            match offset.[0] with
+            | '-' -> parseLine ()
+            | '+' -> parseLine ()
+            | 'e' -> parseEnd ()
+            | 's' -> parseStart ()
+            | 'b' -> parseStart ()
+            | ';' -> parseSearch () 
+            | _ -> SearchOffsetData.None
+
+    static member Parse (offset : string) =
+        if StringUtil.isNullOrEmpty offset then
+            SearchOffsetData.None
+        else
+            SearchOffsetData.ParseCore offset
+
+[<Sealed>]
+type SearchData
+    (
+        _pattern : string,
+        _offset : SearchOffsetData,
+        _kind : SearchKind,
+        _options : SearchOptions
+    ) = 
+
+    new (pattern : string, path : Path, isWrap : bool) =
+        let kind = SearchKind.OfPathAndWrap path isWrap
+        SearchData(pattern, SearchOffsetData.None, kind, PatternData.DefaultSearchOptions)
+
+    new (pattern : string, path : Path) = 
+        let kind = SearchKind.OfPathAndWrap path true
+        SearchData(pattern, SearchOffsetData.None, kind, PatternData.DefaultSearchOptions)
 
     /// The pattern being searched for in the buffer
-    Pattern : string
+    member x.Pattern = _pattern
 
-    Kind : SearchKind;
+    /// The offset that is applied to the search
+    member x.Offset = _offset
 
-    Options : SearchOptions
-} with
+    member x.Kind = _kind
 
+    member x.Options = _options
+
+    member x.Path = x.Kind.Path
+
+    /// The PatternData which was searched for.  This does not include the pattern searched
+    /// for in the offset
     member x.PatternData = { Pattern = x.Pattern; Path = x.Kind.Path }
 
-    static member OfPatternData (patternData : PatternData) wrap = 
-        {
-            Pattern = patternData.Pattern
-            Kind = SearchKind.OfPathAndWrap patternData.Path wrap
-            Options = PatternData.DefaultSearchOptions
-        }
+    /// The PatternData which should be used for IVimData.LastPatternData if this search needs
+    /// to update that value.  It takes into account the search pattern in an offset string
+    /// as specified in ':help //;'
+    member x.LastPatternData =
+        let path = x.Path
+        let pattern = 
+            match x.Offset with
+            | SearchOffsetData.Search patternData -> patternData.Pattern
+            | _ -> x.Pattern
+        { Pattern = pattern; Path = path }
+
+    member x.Equals(other: SearchData) =
+        if obj.ReferenceEquals(other, null) then
+            false
+        else
+            _pattern = other.Pattern &&
+            _offset = other.Offset &&
+            _kind = other.Kind &&
+            _options = other.Options
+
+    override x.Equals(other : obj) = 
+        match other with
+        | :? SearchData as otherSearchData -> x.Equals(otherSearchData);
+        | _ -> false 
+
+    override x.GetHashCode() =
+        _pattern.GetHashCode()
+
+    static member op_Equality(this, other) = System.Collections.Generic.EqualityComparer<SearchData>.Default.Equals(this, other)
+    static member op_Inequality(this, other) = not (System.Collections.Generic.EqualityComparer<SearchData>.Default.Equals(this, other))
+
+    /// Parse out a SearchData value given the specific pattern and SearchKind.  The pattern should
+    /// not include a beginning / or ?.  That should be removed by this point
+    static member Parse (pattern : string) (searchKind : SearchKind) searchOptions =
+        let mutable index = -1
+        let mutable i = 1
+        let targetChar = 
+            if searchKind.IsAnyForward then '/'
+            else '?'
+        while i < pattern.Length do
+            if pattern.[i] = targetChar && pattern.[i-1] <> '\\' then
+                index <- i
+                i <- pattern.Length
+            else
+                i <- i + 1
+
+        if index < 0 then
+            SearchData(pattern, SearchOffsetData.None, searchKind, searchOptions)
+        else
+            let offset = SearchOffsetData.Parse (pattern.Substring(index + 1))
+            let pattern = pattern.Substring(0, index)
+            SearchData(pattern, offset, searchKind, searchOptions)
+
+    interface System.IEquatable<SearchData> with
+        member x.Equals other = x.Equals(other)
 
 type SearchDataEventArgs(_searchData : SearchData) =
     inherit System.EventArgs()
@@ -448,9 +625,18 @@ type SearchDataEventArgs(_searchData : SearchData) =
 [<RequireQualifiedAccess>]
 type SearchResult =
 
-    /// The pattern was found.  The bool at the end of the tuple represents whether not
+    /// The pattern was found.  The two spans here represent the following pieces of data
+    /// respectively 
+    ///
+    ///     - the span of the pattern + the specified offset
+    ///     - the span of the found pattern 
+    ///
+    /// In general the first should be used by consumers.  The second is only interesting
+    /// to items that need to tag the value 
+    ///
+    /// The bool at the end of the tuple represents whether not
     /// a wrap occurred while searching for the value
-    | Found of SearchData * SnapshotSpan * bool
+    | Found of SearchData * SnapshotSpan * SnapshotSpan * bool
 
     /// The pattern was not found.  The bool is true if the word was present in the ITextBuffer
     /// but wasn't found do to the lack of a wrap in the SearchData value
@@ -461,7 +647,7 @@ type SearchResult =
     /// Returns the SearchData which was searched for
     member x.SearchData = 
         match x with 
-        | SearchResult.Found (searchData, _, _) -> searchData
+        | SearchResult.Found (searchData, _, _, _) -> searchData
         | SearchResult.NotFound (searchData, _) -> searchData
 
 type SearchResultEventArgs(_searchResult : SearchResult) = 
@@ -477,14 +663,14 @@ type ISearchService =
 
     /// Find the next occurrence of the pattern in the buffer starting at the 
     /// given SnapshotPoint
-    abstract FindNext : SearchData -> SnapshotPoint -> ITextStructureNavigator -> SearchResult
+    abstract FindNext : searchPoint : SnapshotPoint -> searchData : SearchData -> navigator : ITextStructureNavigator -> SearchResult
 
     /// Find the next Nth occurrence of the search data
-    abstract FindNextMultiple : SearchData -> SnapshotPoint -> ITextStructureNavigator -> count:int -> SearchResult
+    abstract FindNextMultiple : searchPoint : SnapshotPoint -> searchData : SearchData -> navigator : ITextStructureNavigator -> count : int -> SearchResult
 
     /// Find the next 'count' occurrence of the specified pattern.  Note: The first occurrence won't
     /// match anything at the provided start point.  That will be adjusted appropriately
-    abstract FindNextPattern : PatternData -> SnapshotPoint -> ITextStructureNavigator -> count : int -> SearchResult
+    abstract FindNextPattern : searchPoint : SnapshotPoint -> searchPoint : SearchData -> navigator : ITextStructureNavigator -> count : int -> SearchResult
 
 /// Column information about the caret in relation to this Motion Result
 [<RequireQualifiedAccess>]
@@ -865,7 +1051,7 @@ type Motion =
     | RepeatLastCharSearchOpposite
 
     /// A search for the specified pattern
-    | Search of PatternData
+    | Search of SearchData
 
     /// Backward a section in the editor or to a close brace
     | SectionBackwardOrCloseBrace
@@ -3095,11 +3281,15 @@ type IIncrementalSearch =
 
     /// When in the middle of a search this will return the SearchData for 
     /// the search
-    abstract CurrentSearchData : SearchData option
+    abstract CurrentSearchData : SearchData 
 
     /// When in the middle of a search this will return the SearchResult for the 
     /// search
-    abstract CurrentSearchResult : SearchResult option
+    abstract CurrentSearchResult : SearchResult 
+
+    /// When in the middle of a search this will return the actual text which
+    /// is being searched for
+    abstract CurrentSearchText : string
 
     /// The ITextStructureNavigator used for finding 'word' values in the ITextBuffer
     abstract WordNavigator : ITextStructureNavigator
@@ -3215,10 +3405,14 @@ type StringEventArgs(_message : string) =
 
     member x.Message = _message
 
+    override x.ToString() = _message
+
 type KeyInputEventArgs (_keyInput : KeyInput) = 
     inherit System.EventArgs()
 
     member x.KeyInput = _keyInput
+
+    override x.ToString() = _keyInput.ToString()
 
 type KeyInputStartEventArgs (_keyInput : KeyInput) =
     inherit KeyInputEventArgs(_keyInput)
@@ -3229,10 +3423,14 @@ type KeyInputStartEventArgs (_keyInput : KeyInput) =
         with get() = _handled 
         and set value = _handled <- value
 
+    override x.ToString() = _keyInput.ToString()
+
 type KeyInputSetEventArgs (_keyInputSet : KeyInputSet) = 
     inherit System.EventArgs()
 
     member x.KeyInputSet = _keyInputSet
+
+    override x.ToString() = _keyInputSet.ToString()
 
 type KeyInputProcessedEventArgs(_keyInput : KeyInput, _processResult : ProcessResult) =
     inherit System.EventArgs()
@@ -3240,6 +3438,8 @@ type KeyInputProcessedEventArgs(_keyInput : KeyInput, _processResult : ProcessRe
     member x.KeyInput = _keyInput
 
     member x.ProcessResult = _processResult
+
+    override x.ToString() = _keyInput.ToString()
 
 /// Implements a list for storing history items.  This is used for the 5 types
 /// of history lists in Vim (:help history).  

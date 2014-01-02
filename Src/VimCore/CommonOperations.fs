@@ -19,6 +19,7 @@ module internal CommonUtil =
     /// a context point.  They don't begin at the point but rather before
     /// or after the point depending on the direction.  Return true if 
     /// a wrap was needed to get the start point
+    [<UsedInBackgroundThread>]
     let GetSearchPointAndWrap path point = 
         match path with
         | Path.Forward ->
@@ -41,7 +42,7 @@ module internal CommonUtil =
     let RaiseSearchResultMessage (statusUtil : IStatusUtil) searchResult =
 
         match searchResult with 
-        | SearchResult.Found (searchData, _, didWrap) ->
+        | SearchResult.Found (searchData, _, _, didWrap) ->
             if didWrap then
                 let message = 
                     if searchData.Kind.IsAnyForward then Resources.Common_SearchForwardWrapped
@@ -891,7 +892,7 @@ type internal CommonOperations
         match VimRegexFactory.CreateForSubstituteFlags pattern _globalSettings flags with
         | None -> 
             _statusUtil.OnError (Resources.Common_PatternNotFound pattern)
-        | Some (regex) -> 
+        | Some regex -> 
             doReplace regex
 
             // Make sure to update the saved state.  Note that there are 2 patterns stored 
@@ -901,7 +902,7 @@ type internal CommonOperations
             // 2. Last searched for pattern.
             //
             // A substitute command should update both of them 
-            _vimData.LastSubstituteData <- Some { SearchPattern=pattern; Substitute=replace; Flags=flags}
+            _vimData.LastSubstituteData <- Some { SearchPattern = pattern; Substitute = replace; Flags = flags}
             _vimData.LastPatternData <- { Pattern = pattern; Path = Path.Forward }
 
     /// Convert the provided whitespace into spaces.  The conversion of 

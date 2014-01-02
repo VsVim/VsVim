@@ -1282,6 +1282,31 @@ namespace Vim.UnitTest
                 Assert.True(didSee);
             }
 
+            [Fact]
+            public void SearchWithOffsetEnd()
+            {
+                Create("the big dog", "cat", "fish");
+                _vimBuffer.ProcessNotation("y/big/e", enter: true);
+                Assert.Equal("the big", UnnamedRegister.StringValue);
+            }
+
+            [Fact]
+            public void SearchWithOffsetEndAndCount()
+            {
+                Create("the big dog", "cat", "fish");
+                _vimBuffer.ProcessNotation("y/big/e-1", enter: true);
+                Assert.Equal("the bi", UnnamedRegister.StringValue);
+            }
+
+            [Fact]
+            public void SearchWithLineCount()
+            {
+                Create("the big dog", "cat", "fish");
+                _vimBuffer.ProcessNotation("y/big/0", enter: true);
+                Assert.Equal("the big dog" + Environment.NewLine, UnnamedRegister.StringValue);
+                Assert.Equal(OperationKind.LineWise, UnnamedRegister.OperationKind);
+            }
+
             /// <summary>
             /// Doing an 'iw' yank from the start of the word should yank just the word
             /// </summary>
@@ -2421,197 +2446,405 @@ namespace Vim.UnitTest
             }
         }
 
-        public sealed class IncrementalSearchTest : NormalModeIntegrationTest
+        public abstract class IncrementalSearchTest : NormalModeIntegrationTest
         {
-            [Fact]
-            public void VeryNoMagic()
+            public sealed class StandardTest : IncrementalSearchTest
             {
-                Create("dog", "cat");
-                _vimBuffer.Process(@"/\Vog", enter: true);
-                Assert.Equal(1, _textView.GetCaretPoint().Position);
+                [Fact]
+                public void VeryNoMagic()
+                {
+                    Create("dog", "cat");
+                    _vimBuffer.Process(@"/\Vog", enter: true);
+                    Assert.Equal(1, _textView.GetCaretPoint().Position);
+                }
+
+                /// <summary>
+                /// Make sure the caret goes to column 0 on the next line even if one of the 
+                /// motion adjustment applies (:help exclusive-linewise)
+                /// </summary>
+                [Fact]
+                public void CaretOnColumnZero()
+                {
+                    Create("hello", "world");
+                    _textView.MoveCaretTo(2);
+                    _vimBuffer.Process("/world", enter: true);
+                    Assert.Equal(_textView.GetLine(1).Start, _textView.GetCaretPoint());
+                }
+
+                /// <summary>
+                /// Make sure we respect the \c marker over the 'ignorecase' option even if it appears
+                /// at the end of the string
+                /// </summary>
+                [Fact]
+                public void CaseInsensitiveAtEndOfSearhString()
+                {
+                    Create("cat dog bear");
+                    _vimBuffer.Process("/DOG");
+                    Assert.True(_vimBuffer.IncrementalSearch.CurrentSearchResult.IsNotFound);
+                    _vimBuffer.Process(@"\c", enter: true);
+                    Assert.Equal(4, _textView.GetCaretPoint().Position);
+                }
+
+                /// <summary>
+                /// Make sure we respect the \c marker over the 'ignorecase' option even if it appears
+                /// in the middle of the string
+                /// </summary>
+                [Fact]
+                public void CaseInsensitiveInMiddleOfSearhString()
+                {
+                    Create("cat dog bear");
+                    _vimBuffer.Process(@"/D\cOG", enter: true);
+                    Assert.Equal(4, _textView.GetCaretPoint().Position);
+                }
+
+                [Fact]
+                public void CaseSensitive()
+                {
+                    Create("dogDOG", "cat");
+                    _vimBuffer.Process(@"/\COG", enter: true);
+                    Assert.Equal(4, _textView.GetCaretPoint().Position);
+                }
+
+                /// <summary>
+                /// The case option in the search string should take precedence over the 
+                /// ignore case option
+                /// </summary>
+                [Fact]
+                public void CaseSensitiveAgain()
+                {
+                    Create("hello dog DOG");
+                    _globalSettings.IgnoreCase = true;
+                    _vimBuffer.Process(@"/\CDOG", enter: true);
+                    Assert.Equal(10, _textView.GetCaretPoint());
+                }
+
+                [Fact]
+                public void HandlesEscape()
+                {
+                    Create("dog");
+                    _vimBuffer.Process("/do");
+                    _vimBuffer.Process(KeyInputUtil.EscapeKey);
+                    Assert.Equal(0, _textView.GetCaretPoint().Position);
+                }
+
+                [Fact]
+                public void HandlesEscapeInOperator()
+                {
+                    Create("dog");
+                    _vimBuffer.Process("d/do");
+                    _vimBuffer.Process(KeyInputUtil.EscapeKey);
+                    Assert.Equal(0, _textView.GetCaretPoint().Position);
+                }
+
+                [Fact]
+                public void UsedAsOperatorMotion()
+                {
+                    Create("dog cat tree");
+                    _vimBuffer.Process("d/cat", enter: true);
+                    Assert.Equal("cat tree", _textView.GetLine(0).GetText());
+                    Assert.Equal(0, _textView.GetCaretPoint().Position);
+                }
+
+                [Fact]
+                public void DontMoveCaretDuringSearch()
+                {
+                    Create("dog cat tree");
+                    _vimBuffer.Process("/cat");
+                    Assert.Equal(0, _textView.GetCaretPoint().Position);
+                }
+
+                [Fact]
+                public void MoveCaretAfterEnter()
+                {
+                    Create("dog cat tree");
+                    _vimBuffer.Process("/cat", enter: true);
+                    Assert.Equal(4, _textView.GetCaretPoint().Position);
+                }
+
+                /// <summary>
+                /// Verify a couple of searches for {} work as expected
+                /// </summary>
+                [Fact]
+                public void Braces()
+                {
+                    Create("func() {   }");
+                    Action<string, int> doSearch =
+                        (pattern, position) =>
+                        {
+                            _textView.MoveCaretTo(0);
+                            _vimBuffer.Process(pattern);
+                            _vimBuffer.Process(VimKey.Enter);
+                            Assert.Equal(position, _textView.GetCaretPoint().Position);
+                        };
+                    doSearch(@"/{", 7);
+                    doSearch(@"/}", 11);
+
+                    _assertOnErrorMessage = false;
+                    doSearch(@"/\<{\>", 0);  // Should fail
+                    doSearch(@"/\<}\>", 0);  // Should fail
+                }
+
+                /// <summary>
+                /// Verify we can use the \1 in an incremental search for matches
+                /// </summary>
+                [Fact]
+                public void GroupingMatch()
+                {
+                    Create("dog", "dog::dog", "dog");
+                    _vimBuffer.Process(@"/\(dog\)::\1", enter: true);
+                    Assert.Equal(_textView.GetLine(1).Start, _textView.GetCaretPoint());
+                }
+
+                /// <summary>
+                /// Unless kDivide is mapped to another key it should be processed exactly as 
+                /// / is processed
+                /// </summary>
+                [Fact]
+                public void KeypadDivideShouldBeginSearch()
+                {
+                    Create("cat dog");
+                    _vimBuffer.ProcessNotation("<kDivide>a", enter: true);
+                    Assert.Equal(1, _textView.GetCaretPoint().Position);
+                }
+
+                /// <summary>
+                /// Searching for an unmatched bracket shouldn't require any escapes
+                /// </summary>
+                [Fact]
+                public void UnmatchedOpenBracket()
+                {
+                    Create("int[]");
+                    _vimBuffer.ProcessNotation("/[", enter: true);
+                    Assert.Equal(3, _textView.GetCaretPoint());
+                }
+
+                /// <summary>
+                /// Searching for an unmatched bracket shouldn't require any escapes
+                /// </summary>
+                [Fact]
+                public void UnmatchedCloseBracket()
+                {
+                    Create("int[]");
+                    _vimBuffer.ProcessNotation("/]", enter: true);
+                    Assert.Equal(4, _textView.GetCaretPoint());
+                }
+
+                /// <summary>
+                /// A bracket pair which has no content should still match literally and not as a 
+                /// character set atom
+                /// </summary>
+                [Fact]
+                public void BracketPairWithNoContents()
+                {
+                    Create("int[]");
+                    _vimBuffer.ProcessNotation("/[]", enter: true);
+                    Assert.Equal(3, _textView.GetCaretPoint());
+                }
+
+                [Fact]
+                public void BackwardsSlashIsUsedDirectly()
+                {
+                    Create("cat", "cat/", "dog");
+                    _textView.MoveCaretToLine(2);
+                    _vimBuffer.ProcessNotation("?cat/", enter: true);
+                    Assert.Equal(_textBuffer.GetLine(1).Start, _textView.GetCaretPoint());
+                }
+
+                [Fact]
+                public void ForwardQuestionIsUsedDirectly()
+                {
+                    Create("tree", "cat", "cat?", "dog");
+                    _vimBuffer.ProcessNotation("/cat?", enter: true);
+                    Assert.Equal(_textBuffer.GetLine(2).Start, _textView.GetCaretPoint());
+                }
             }
 
-            /// <summary>
-            /// Make sure the caret goes to column 0 on the next line even if one of the 
-            /// motion adjustment applies (:help exclusive-linewise)
-            /// </summary>
-            [Fact]
-            public void CaretOnColumnZero()
+            public sealed class OffsetTest : IncrementalSearchTest
             {
-                Create("hello", "world");
-                _textView.MoveCaretTo(2);
-                _vimBuffer.Process("/world", enter: true);
-                Assert.Equal(_textView.GetLine(1).Start, _textView.GetCaretPoint());
-            }
+                [Fact]
+                public void LineBelowImplicitCount()
+                {
+                    Create("the big", "cat", "dog");
+                    _vimBuffer.ProcessNotation("/big/+", enter: true);
+                    Assert.Equal(_textBuffer.GetLine(1).Start, _textView.GetCaretPoint());
+                    Assert.Equal("big", _vimData.LastPatternData.Pattern);
+                }
 
-            /// <summary>
-            /// Make sure we respect the \c marker over the 'ignorecase' option even if it appears
-            /// at the end of the string
-            /// </summary>
-            [Fact]
-            public void CaseInsensitiveAtEndOfSearhString()
-            {
-                Create("cat dog bear");
-                _vimBuffer.Process("/DOG");
-                Assert.True(_vimBuffer.IncrementalSearch.CurrentSearchResult.Value.IsNotFound);
-                _vimBuffer.Process(@"\c", enter: true);
-                Assert.Equal(4, _textView.GetCaretPoint().Position);
-            }
+                [Fact]
+                public void LineBelowExplicitCount()
+                {
+                    Create("the big", "cat", "dog");
+                    _vimBuffer.ProcessNotation("/big/+1", enter: true);
+                    Assert.Equal(_textBuffer.GetLine(1).Start, _textView.GetCaretPoint());
+                    Assert.Equal("big", _vimData.LastPatternData.Pattern);
+                }
 
-            /// <summary>
-            /// Make sure we respect the \c marker over the 'ignorecase' option even if it appears
-            /// in the middle of the string
-            /// </summary>
-            [Fact]
-            public void CaseInsensitiveInMiddleOfSearhString()
-            {
-                Create("cat dog bear");
-                _vimBuffer.Process(@"/D\cOG", enter: true);
-                Assert.Equal(4, _textView.GetCaretPoint().Position);
-            }
+                /// <summary>
+                /// When the count is too big the caret should move to the start of the last line
+                /// in the buffer
+                /// </summary>
+                [Fact]
+                public void LineBelowExplicitCountTooBig()
+                {
+                    Create("the big", "cat", "dog");
+                    _vimBuffer.ProcessNotation("/big/+100", enter: true);
+                    Assert.Equal(_textBuffer.GetLine(2).Start, _textView.GetCaretPoint());
+                    Assert.Equal("big", _vimData.LastPatternData.Pattern);
+                }
 
-            [Fact]
-            public void CaseSensitive()
-            {
-                Create("dogDOG", "cat");
-                _vimBuffer.Process(@"/\COG", enter: true);
-                Assert.Equal(4, _textView.GetCaretPoint().Position);
-            }
+                [Fact]
+                public void LineBelowExplicitCountNoPlus()
+                {
+                    Create("the big", "cat", "dog");
+                    _vimBuffer.ProcessNotation("/big/1", enter: true);
+                    Assert.Equal(_textBuffer.GetLine(1).Start, _textView.GetCaretPoint());
+                    Assert.Equal("big", _vimData.LastPatternData.Pattern);
+                }
 
-            /// <summary>
-            /// The case option in the search string should take precedence over the 
-            /// ignore case option
-            /// </summary>
-            [Fact]
-            public void CaseSensitiveAgain()
-            {
-                Create("hello dog DOG");
-                _globalSettings.IgnoreCase = true;
-                _vimBuffer.Process(@"/\CDOG", enter: true);
-                Assert.Equal(10, _textView.GetCaretPoint());
-            }
+                [Fact]
+                public void LineAboveImplicitCount()
+                {
+                    Create("the big", "cat", "dog", "fish");
+                    _vimBuffer.ProcessNotation("/dog/-", enter: true);
+                    Assert.Equal(_textBuffer.GetLine(1).Start, _textView.GetCaretPoint());
+                }
 
-            [Fact]
-            public void HandlesEscape()
-            {
-                Create("dog");
-                _vimBuffer.Process("/do");
-                _vimBuffer.Process(KeyInputUtil.EscapeKey);
-                Assert.Equal(0, _textView.GetCaretPoint().Position);
-            }
+                [Fact]
+                public void LineAboveImplicitCount2()
+                {
+                    Create("the big", "cat", "dog", "fish");
+                    _vimBuffer.ProcessNotation("/fish/-", enter: true);
+                    Assert.Equal(_textBuffer.GetLine(2).Start, _textView.GetCaretPoint());
+                }
 
-            [Fact]
-            public void HandlesEscapeInOperator()
-            {
-                Create("dog");
-                _vimBuffer.Process("d/do");
-                _vimBuffer.Process(KeyInputUtil.EscapeKey);
-                Assert.Equal(0, _textView.GetCaretPoint().Position);
-            }
+                [Fact]
+                public void LineAboveExplicitCount()
+                {
+                    Create("the big", "cat", "dog", "fish");
+                    _vimBuffer.ProcessNotation("/fish/-1", enter: true);
+                    Assert.Equal(_textBuffer.GetLine(2).Start, _textView.GetCaretPoint());
+                }
 
-            [Fact]
-            public void UsedAsOperatorMotion()
-            {
-                Create("dog cat tree");
-                _vimBuffer.Process("d/cat", enter: true);
-                Assert.Equal("cat tree", _textView.GetLine(0).GetText());
-                Assert.Equal(0, _textView.GetCaretPoint().Position);
-            }
+                [Fact]
+                public void LineAboveExplicitCountTooBig()
+                {
+                    Create("the big", "cat", "dog", "fish");
+                    _vimBuffer.ProcessNotation("/fish/-1000", enter: true);
+                    Assert.Equal(_textBuffer.GetLine(0).Start, _textView.GetCaretPoint());
+                }
 
-            [Fact]
-            public void DontMoveCaretDuringSearch()
-            {
-                Create("dog cat tree");
-                _vimBuffer.Process("/cat");
-                Assert.Equal(0, _textView.GetCaretPoint().Position);
-            }
+                [Fact]
+                public void EndNoCount()
+                {
+                    Create("the big dog", "cat", "dog", "fish");
+                    _vimBuffer.ProcessNotation("/big/e", enter: true);
+                    Assert.Equal(6, _textView.GetCaretPoint().Position);
+                }
 
-            [Fact]
-            public void MoveCaretAfterEnter()
-            {
-                Create("dog cat tree");
-                _vimBuffer.Process("/cat", enter: true);
-                Assert.Equal(4, _textView.GetCaretPoint().Position);
-            }
+                [Fact]
+                public void EndExplicitCount1()
+                {
+                    Create("the big dog", "cat", "dog", "fish");
+                    _vimBuffer.ProcessNotation("/big/e0", enter: true);
+                    Assert.Equal(6, _textView.GetCaretPoint().Position);
+                }
 
-            /// <summary>
-            /// Verify a couple of searches for {} work as expected
-            /// </summary>
-            [Fact]
-            public void Braces()
-            {
-                Create("func() {   }");
-                Action<string, int> doSearch =
-                    (pattern, position) =>
-                    {
-                        _textView.MoveCaretTo(0);
-                        _vimBuffer.Process(pattern);
-                        _vimBuffer.Process(VimKey.Enter);
-                        Assert.Equal(position, _textView.GetCaretPoint().Position);
-                    };
-                doSearch(@"/{", 7);
-                doSearch(@"/}", 11);
+                [Fact]
+                public void EndExplicitCount2()
+                {
+                    Create("the big dog", "cat", "dog", "fish");
+                    _vimBuffer.ProcessNotation("/big/e1", enter: true);
+                    Assert.Equal(7, _textView.GetCaretPoint().Position);
+                }
 
-                _assertOnErrorMessage = false;
-                doSearch(@"/\<{\>", 0);  // Should fail
-                doSearch(@"/\<}\>", 0);  // Should fail
-            }
+                [Fact]
+                public void EndExplicitCount3()
+                {
+                    Create("the big dog", "cat", "dog", "fish");
+                    _vimBuffer.ProcessNotation("/big/e+1", enter: true);
+                    Assert.Equal(7, _textView.GetCaretPoint().Position);
+                }
 
-            /// <summary>
-            /// Verify we can use the \1 in an incremental search for matches
-            /// </summary>
-            [Fact]
-            public void GroupingMatch()
-            {
-                Create("dog", "dog::dog", "dog");
-                _vimBuffer.Process(@"/\(dog\)::\1", enter: true);
-                Assert.Equal(_textView.GetLine(1).Start, _textView.GetCaretPoint());
-            }
+                /// <summary>
+                /// New line characters don't actually count as characters when considering 
+                /// search offsets.  Instead we treat them as no character and count everything
+                /// else
+                /// </summary>
+                [Fact]
+                public void EndExplicitCountExceedsLineLength()
+                {
+                    Create("test", "cat", "dog", "fish");
+                    _assertOnWarningMessage = false;
+                    _vimBuffer.ProcessNotation("/test/e1", enter: true);
+                    Assert.Equal(_textBuffer.GetLine(1).Start, _textView.GetCaretPoint());
+                }
 
-            /// <summary>
-            /// Unless kDivide is mapped to another key it should be processed exactly as 
-            /// / is processed
-            /// </summary>
-            [Fact]
-            public void KeypadDivideShouldBeginSearch()
-            {
-                Create("cat dog");
-                _vimBuffer.ProcessNotation("<kDivide>a", enter: true);
-                Assert.Equal(1, _textView.GetCaretPoint().Position);
-            }
+                [Fact]
+                public void EndExplicitCountExceedsLineLength2()
+                {
+                    Create("test", "cat", "dog", "fish");
+                    _assertOnWarningMessage = false;
+                    _vimBuffer.ProcessNotation("/test/e2", enter: true);
+                    Assert.Equal(_textBuffer.GetPointInLine(1, 1), _textView.GetCaretPoint());
+                }
 
-            /// <summary>
-            /// Searching for an unmatched bracket shouldn't require any escapes
-            /// </summary>
-            [Fact]
-            public void UnmatchedOpenBracket()
-            {
-                Create("int[]");
-                _vimBuffer.ProcessNotation("/[", enter: true);
-                Assert.Equal(3, _textView.GetCaretPoint());
-            }
+                [Fact]
+                public void BeginImplicitCount()
+                {
+                    Create("the big dog", "cat", "dog", "fish");
+                    _vimBuffer.ProcessNotation("/big/s", enter: true);
+                    Assert.Equal(4, _textView.GetCaretPoint().Position);
+                }
 
-            /// <summary>
-            /// Searching for an unmatched bracket shouldn't require any escapes
-            /// </summary>
-            [Fact]
-            public void UnmatchedCloseBracket()
-            {
-                Create("int[]");
-                _vimBuffer.ProcessNotation("/]", enter: true);
-                Assert.Equal(4, _textView.GetCaretPoint());
-            }
+                [Fact]
+                public void BeginExplicitCount1()
+                {
+                    Create("the big dog", "cat", "dog", "fish");
+                    _vimBuffer.ProcessNotation("/big/s0", enter: true);
+                    Assert.Equal(4, _textView.GetCaretPoint().Position);
+                }
 
-            /// <summary>
-            /// A bracket pair which has no content should still match literally and not as a 
-            /// character set atom
-            /// </summary>
-            [Fact]
-            public void BracketPairWithNoContents()
-            {
-                Create("int[]");
-                _vimBuffer.ProcessNotation("/[]", enter: true);
-                Assert.Equal(3, _textView.GetCaretPoint());
+                [Fact]
+                public void BeginExplicitCount2()
+                {
+                    Create("the big dog", "cat", "dog", "fish");
+                    _vimBuffer.ProcessNotation("/big/s1", enter: true);
+                    Assert.Equal(5, _textView.GetCaretPoint().Position);
+                }
+
+                [Fact]
+                public void BeginExplicitCount3()
+                {
+                    Create("the big dog", "cat", "dog", "fish");
+                    _vimBuffer.ProcessNotation("/big/s-1", enter: true);
+                    Assert.Equal(3, _textView.GetCaretPoint().Position);
+                }
+
+                [Fact]
+                public void BeginExplicitCountAlternateSyntax()
+                {
+                    Create("the big dog", "cat", "dog", "fish");
+                    _vimBuffer.ProcessNotation("/big/b-1", enter: true);
+                    Assert.Equal(3, _textView.GetCaretPoint().Position);
+                }
+
+                [Fact]
+                public void BeginBackwardsExplicitCount()
+                {
+                    Create("the big dog", "cat", "dog", "fish");
+                    _textView.MoveCaretToLine(3);
+                    _vimBuffer.ProcessNotation("?dog?b1", enter: true);
+                    Assert.Equal(_textBuffer.GetPointInLine(2, 1), _textView.GetCaretPoint());
+                }
+
+                [Fact]
+                public void Search()
+                {
+                    Create("the big dog", "cat", "dog", "fish");
+                    _vimBuffer.ProcessNotation("/big/;/dog", enter: true);
+                    Assert.Equal(8, _textView.GetCaretPoint().Position);
+                    Assert.Equal("dog", _vimData.LastPatternData.Pattern);
+                }
             }
         }
 
@@ -3733,7 +3966,6 @@ namespace Vim.UnitTest
                 _vimBuffer.Process('.');
                 Assert.Equal("};", _textView.GetLine(1).GetText());
             }
-
             /// <summary>
             /// The insert line above command should be linked the the following text change
             /// </summary>

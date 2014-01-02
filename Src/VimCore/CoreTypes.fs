@@ -329,6 +329,7 @@ type Path =
         else Path.Backward
 
 [<RequireQualifiedAccess>]
+[<StructuralEquality>]
 [<NoComparison>]
 type SearchKind = 
      | Forward

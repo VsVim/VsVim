@@ -9,6 +9,7 @@ using Microsoft.VisualStudio.Text.Classification;
 using Vim.Extensions;
 using Vim.UI.Wpf.Properties;
 using WpfKeyboard = System.Windows.Input.Keyboard;
+using System.Text;
 
 namespace Vim.UI.Wpf.Implementation.CommandMargin
 {
@@ -247,11 +248,9 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             }
 
             var search = _vimBuffer.IncrementalSearch;
-            if (search.InSearch && search.CurrentSearchData.IsSome())
+            if (search.InSearch)
             {
-                var data = search.CurrentSearchData.Value;
-                var prefix = data.Kind.IsAnyForward ? "/" : "?";
-                _margin.StatusLine = prefix + data.Pattern;
+                _margin.StatusLine = search.CurrentSearchText;
                 return;
             }
 
@@ -612,10 +611,9 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
                 return EditKind.Command;
             }
 
-            if (_vimBuffer.IncrementalSearch.InSearch &&
-                _vimBuffer.IncrementalSearch.CurrentSearchData.IsSome())
+            if (_vimBuffer.IncrementalSearch.InSearch)
             {
-                return _vimBuffer.IncrementalSearch.CurrentSearchData.Value.Kind.IsAnyForward
+                return _vimBuffer.IncrementalSearch.CurrentSearchData.Kind.IsAnyForward
                     ? EditKind.SearchForward
                     : EditKind.SearchBackward;
             }

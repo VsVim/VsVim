@@ -28,7 +28,7 @@ type IncrementalSearchTaggerSource (_vimBuffer : IVimBuffer) as this =
         let updateCurrentWithResult result = 
             _searchSpan <-
                 match result with
-                | SearchResult.Found (_, span, _) -> span.Snapshot.CreateTrackingSpan(span.Span, SpanTrackingMode.EdgeExclusive) |> Some
+                | SearchResult.Found (_, _, patternSpan, _) -> patternSpan.Snapshot.CreateTrackingSpan(patternSpan.Span, SpanTrackingMode.EdgeExclusive) |> Some
                 | SearchResult.NotFound _ -> None
 
         // When the search is updated we need to update the result.  Make sure to do so before raising 

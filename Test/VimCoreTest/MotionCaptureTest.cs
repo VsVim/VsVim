@@ -312,18 +312,22 @@ namespace Vim.UnitTest
         {
             _textView.TextBuffer.SetText("hello world");
             _textView.MoveCaretTo(_textView.GetEndPoint().Position);
-            var data = Process("?world", enter: true).AsComplete().Item;
-            var patternData = VimUtil.CreatePatternData("world", Path.Backward);
-            Assert.Equal(Motion.NewSearch(patternData), data);
+            var motionResult = Process("?world", enter: true).AsComplete().Item;
+            var searchData = ((Motion.Search)motionResult).Item;
+            Assert.Equal("world", searchData.Pattern);
+            Assert.Equal(Path.Backward, searchData.Path);
+            Assert.True(searchData.Kind.IsBackwardWithWrap);
         }
 
         [Fact]
         public void IncrementalSearch_Forward()
         {
             _textView.SetText("hello world", caret: 0);
-            var data = Process("/world", enter: true).AsComplete().Item;
-            var patternData = VimUtil.CreatePatternData("world", Path.Forward);
-            Assert.Equal(Motion.NewSearch(patternData), data);
+            var motionResult = Process("/world", enter: true).AsComplete().Item;
+            var searchData = ((Motion.Search)motionResult).Item;
+            Assert.Equal("world", searchData.Pattern);
+            Assert.Equal(Path.Forward, searchData.Path);
+            Assert.True(searchData.Kind.IsForwardWithWrap);
         }
 
         [Fact]

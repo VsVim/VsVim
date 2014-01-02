@@ -1006,19 +1006,19 @@ type VimInterpreter
     
             // Searches start after the end of the specified line range
             let startPoint = lineRange.End
-            let patternData = { Pattern = pattern; Path = path }
-            let result = _searchService.FindNextPattern patternData startPoint _vimBufferData.VimTextBuffer.WordNavigator 1
+            let searchData = SearchData(pattern, path, _globalSettings.WrapScan)
+            let result = _searchService.FindNextPattern startPoint searchData _vimBufferData.VimTextBuffer.WordNavigator 1
             _commonOperations.RaiseSearchResultMessage(result)
     
             match result with
-            | SearchResult.Found (searchData, span, _) ->
+            | SearchResult.Found (searchData, span, _, _) ->
                 // Move it to the start of the line containing the match 
                 let point = 
                     span.Start 
                     |> SnapshotPointUtil.GetContainingLine 
                     |> SnapshotLineUtil.GetFirstNonBlankOrStart
                 _commonOperations.MoveCaretToPoint point ViewFlags.Standard
-                _vimData.LastPatternData <- searchData.PatternData
+                _vimData.LastPatternData <- searchData.LastPatternData
             | SearchResult.NotFound _ -> ()
     
             RunResult.Completed)

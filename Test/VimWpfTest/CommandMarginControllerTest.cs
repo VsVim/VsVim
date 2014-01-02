@@ -73,9 +73,11 @@ namespace Vim.UI.Wpf.UnitTest
             {
                 searchKind = searchKind ?? SearchKind.Forward;
 
-                var data = new SearchData(pattern, searchKind, searchOptions);
+                var data = new SearchData(pattern, SearchOffsetData.None, searchKind, searchOptions);
+                var text = (searchKind.IsAnyForward ? "/" : "?") + pattern;
                 _search.SetupGet(x => x.InSearch).Returns(true).Verifiable();
-                _search.SetupGet(x => x.CurrentSearchData).Returns(FSharpOption.Create(data)).Verifiable();
+                _search.SetupGet(x => x.CurrentSearchData).Returns(data).Verifiable();
+                _search.SetupGet(x => x.CurrentSearchText).Returns(text).Verifiable();
             }
 
             /// <summary>

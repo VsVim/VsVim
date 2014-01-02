@@ -267,8 +267,9 @@ namespace Vim.UnitTest
  
             foreach (var cur in _equalityUnits.SelectMany(x => x.AllValues))
             {
-                var value = (IEquatable<T>)cur;
-                Assert.False(value.Equals(null));
+                var equatable = (IEquatable<T>)cur;
+                var value = default(T);
+                Assert.False(equatable.Equals(value));
             }
         }
     }
