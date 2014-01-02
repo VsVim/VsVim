@@ -14,6 +14,35 @@ type ServiceSearchData = {
     Navigator : ITextStructureNavigator
 }
 
+/// An entry in our cache.  This type must be *very* careful to not hold the ITextBuffer in
+/// question in memory.  This is why a WeakReference is used.  We don't want a cached search
+/// entry creating a memory leak 
+type ServiceCacheEntry = { 
+    SearchString : string
+    Options : FindOptions
+    EditorData : WeakReference<ITextSnapshot * ITextStructureNavigator>
+    StartPosition : int 
+    FoundSpan : Span
+} with 
+
+    member x.Matches (findData : FindData) (position : int) =
+        if findData.FindOptions = x.Options && findData.SearchString = x.SearchString && position = x.StartPosition then
+            match x.EditorData.Target with
+            | Some (snapshot, navigator) -> findData.TextSnapshotToSearch = snapshot && findData.TextStructureNavigator = navigator
+            | None -> false
+        else
+            false
+
+    static member Create (findData : FindData) (position : int) (foundSpan : SnapshotSpan) =
+        let editorData = (findData.TextSnapshotToSearch, findData.TextStructureNavigator)
+        {
+            SearchString = findData.SearchString
+            Options = findData.FindOptions
+            EditorData = WeakReferenceUtil.Create editorData
+            StartPosition = position
+            FoundSpan = foundSpan.Span
+        }
+
 /// This class is used from multiple threads.  In general this is fine because searching 
 /// an ITextSnapshot is an operation which is mostly readonly.  The lack of mutatino eliminates
 /// many race condition possibilities.  There are 2 cases we need to be on the watch for
@@ -36,6 +65,16 @@ type internal SearchService
     ) =
 
     let mutable _vimRegexOptions = VimRegexOptions.Default
+
+    /// Vim semantics make repeated searches for the exact same string a very common 
+    /// operation.  Incremental search is followed by taggers, next, etc ...  Caching
+    /// here can provide a clear win to ensure the searches aren't unnecessarily 
+    /// duplicated as searching is a relatively expensive operation.  
+    ///
+    /// This is used from multiple threads and all access must be inside a 
+    /// lock(_cacheArray) guard
+    let _cacheArray : ServiceCacheEntry option [] = Array.init 10 (fun _ -> None)
+    let mutable _cacheArrayIndex = 0
 
     do
         // It's not safe to use IVimGlobalSettings from multiple threads.  It will
@@ -178,6 +217,40 @@ type internal SearchService
         with 
         | :? System.ArgumentException -> None
 
+    member x.DoFindNext (findData : FindData) (position : int) =
+        match x.DoFindNextInCache findData position with
+        | Some foundSpan -> Some foundSpan
+        | None -> 
+            match x.DoFindNextCore findData position with
+            | Some foundSpan -> 
+                x.AddIntoCache findData position foundSpan
+                Some foundSpan
+            | None -> None
+
+    member x.DoFindNextCore (findData : FindData) (position : int) =
+        try
+            _textSearchService.FindNext(position, true, findData) |> NullableUtil.ToOption
+        with 
+        | :? System.InvalidOperationException ->
+            // Happens when we provide an invalid regular expression.  Just return None
+            None
+
+    member x.DoFindNextInCache (findData : FindData) (position : int) =
+        lock (_cacheArray) (fun () -> 
+            _cacheArray
+            |> SeqUtil.filterToSome
+            |> Seq.tryFind (fun cacheEntry -> cacheEntry.Matches findData position)
+            |> Option.map (fun cacheEntry -> SnapshotSpan(findData.TextSnapshotToSearch, cacheEntry.FoundSpan)))
+
+    member x.AddIntoCache (findData : FindData) (position : int) (foundSpan : SnapshotSpan) = 
+        lock (_cacheArray) (fun () -> 
+            let cacheEntry = ServiceCacheEntry.Create findData position foundSpan
+            _cacheArray.[_cacheArrayIndex] <- Some cacheEntry
+            _cacheArrayIndex <- 
+                let index = _cacheArrayIndex + 1
+                if index >= _cacheArray.Length then 0 
+                else index)
+
     member x.FindNextMultipleCore (serviceSearchData : ServiceSearchData) (startPoint : SnapshotPoint) count : SearchResult =
 
         let snapshot = SnapshotPointUtil.GetSnapshot startPoint 
@@ -190,14 +263,7 @@ type internal SearchService
 
             // Recursive loop to perform the search "count" times
             let rec doFind findData count position didWrap = 
-
-                let result = 
-                    try
-                        _textSearchService.FindNext(position, true, findData) |> NullableUtil.ToOption
-                    with 
-                    | :? System.InvalidOperationException ->
-                        // Happens when we provide an invalid regular expression.  Just return None
-                        None
+                let result = x.DoFindNext findData position
 
                 // Calculate whether this search is wrapping or not
                 let didWrap = 

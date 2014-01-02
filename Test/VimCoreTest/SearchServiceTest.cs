@@ -3,6 +3,7 @@ using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Operations;
 using Xunit;
 using Vim.Extensions;
+using Moq;
 
 namespace Vim.UnitTest
 {
@@ -15,7 +16,12 @@ namespace Vim.UnitTest
         private SearchService _searchRaw;
         private ISearchService _search;
 
-        public void Create(params string[] lines)
+        public virtual void Create(params string[] lines)
+        {
+            Create(TextSearchService, lines);
+        }
+
+        public virtual void Create(ITextSearchService textSearchService, params string[] lines)
         {
             _textBuffer = CreateTextBuffer(lines);
             _wordNavigator = WordUtilFactory.GetWordUtil(_textBuffer).CreateTextStructureNavigator(WordKind.NormalWord);
@@ -24,7 +30,7 @@ namespace Vim.UnitTest
             _globalSettings.IgnoreCase = true;
             _globalSettings.SmartCase = false;
 
-            _textSearch = TextSearchService;
+            _textSearch = textSearchService;
             _searchRaw = new SearchService(_textSearch, _globalSettings);
             _search = _searchRaw;
         }
@@ -449,7 +455,7 @@ namespace Vim.UnitTest
                 }
             }
 
-            public sealed class SearchTest  : ApplySearchOffsetDataTest
+            public sealed class SearchTest : ApplySearchOffsetDataTest
             {
                 [Fact]
                 public void SimpleCase()
@@ -458,6 +464,80 @@ namespace Vim.UnitTest
                     var span = ApplySearchOffsetData(_textBuffer.GetLineSpan(0, 2), SearchOffsetData.NewSearch(new PatternData("dog", Path.Forward)));
                     Assert.Equal(_textBuffer.GetLineSpan(2, 3), span);
                 }
+            }
+        }
+
+        public sealed class CacheTest : SearchServiceTest
+        {
+            private Mock<ITextSearchService> _mock;
+            private int _searchCount = 0;
+
+            public CacheTest()
+            {
+                _mock = new Mock<ITextSearchService>();
+                _mock
+                    .Setup(x => x.FindNext(It.IsAny<int>(), It.IsAny<bool>(), It.IsAny<FindData>()))
+                    .Returns<int, bool, FindData>((position, wrapAround, findData) =>
+                        {
+                            _searchCount++;
+                            return TextSearchService.FindNext(position, wrapAround, findData);
+                        });
+            }
+
+            public override void Create(params string[] lines)
+            {
+                base.Create(_mock.Object, lines);
+            }
+
+            private void FindNext(string text, int position = 0, Path path = null, bool isWrap = true, ITextStructureNavigator navigator = null)
+            {
+                navigator = navigator ?? _wordNavigator;
+                path = path ?? Path.Forward;
+                var point = _textBuffer.GetPoint(position);
+                _search.FindNext(point, new SearchData(text, path, isWrap), navigator);
+            }
+
+            [Fact]
+            public void SameText()
+            {
+                Create("cat dog");
+                for (int i = 0; i < 10; i++)
+                {
+                    FindNext("dog");
+                    Assert.Equal(1, _searchCount);
+                }
+            }
+
+            [Fact]
+            public void DifferentTextSameSnapshot()
+            {
+                Create("cat dog");
+                FindNext("dog");
+                Assert.Equal(1, _searchCount);
+                FindNext("cat");
+                Assert.Equal(2, _searchCount);
+                FindNext("dog");
+                Assert.Equal(2, _searchCount);
+            }
+
+            [Fact]
+            public void SameTextDifferentSnapshot()
+            {
+                Create("cat dog");
+                FindNext("dog");
+                Assert.Equal(1, _searchCount);
+                _textBuffer.Replace(new Span(0, 0), "foo ");
+                FindNext("dog");
+                Assert.Equal(2, _searchCount);
+            }
+
+            [Fact]
+            public void SameTextDifferentStartPoint()
+            {
+                Create("cat dog");
+                FindNext("dog", position: 0);
+                FindNext("dog", position: 1);
+                Assert.Equal(2, _searchCount);
             }
         }
     }

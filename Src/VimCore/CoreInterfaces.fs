@@ -540,6 +540,10 @@ type SearchData
         let kind = SearchKind.OfPathAndWrap path isWrap
         SearchData(pattern, SearchOffsetData.None, kind, PatternData.DefaultSearchOptions)
 
+    new (pattern : string, path : Path) = 
+        let kind = SearchKind.OfPathAndWrap path true
+        SearchData(pattern, SearchOffsetData.None, kind, PatternData.DefaultSearchOptions)
+
     /// The pattern being searched for in the buffer
     member x.Pattern = _pattern
 

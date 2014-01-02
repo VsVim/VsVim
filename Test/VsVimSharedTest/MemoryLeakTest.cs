@@ -454,5 +454,24 @@ namespace VsVim.UnitTest
             Assert.Null(weakVimBuffer.Target);
             Assert.Null(weakTextView.Target);
         }
+
+        /// <summary>
+        /// Make sure the caching which comes with searching doesn't hold onto the buffer
+        /// </summary>
+        [Fact]
+        public void SearchCacheDoesntHoldTheBuffer()
+        {
+            var vimBuffer = CreateVimBuffer();
+            vimBuffer.TextBuffer.SetText("hello world");
+            vimBuffer.Process("/world", enter: true);
+            var weakTextBuffer = new WeakReference(vimBuffer.TextBuffer);
+
+            // Clean up 
+            vimBuffer.TextView.Close();
+            vimBuffer = null;
+
+            RunGarbageCollector();
+            Assert.Null(weakTextBuffer.Target);
+        }
     }
 }
