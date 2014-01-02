@@ -5,20 +5,29 @@ open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Operations
 open Microsoft.VisualStudio.Text.Editor
 
-/// This is the data which is passed between threads the SearhService is 
-/// used on.
-type SearchServiceData = {
+type ServiceSearchData = {
 
-    TextSearchService : ITextSearchService
+    SearchData : SearchData
 
     VimRegexOptions : VimRegexOptions
+
+    Navigator : ITextStructureNavigator
 }
 
-/// TODO: We should be caching the search results somewhere.  Very often we do the same
-/// search many times in a row.  Caching should be a win here
-
-/// This class is useable from multiple threads.  Need to be careful because 
-/// IVimGlobalSettings is not safe to use from multiple threads. 
+/// This class is used from multiple threads.  In general this is fine because searching 
+/// an ITextSnapshot is an operation which is mostly readonly.  The lack of mutatino eliminates
+/// many race condition possibilities.  There are 2 cases we need to be on the watch for
+/// within this type
+///
+///  1. The caching solution does mutate shared state.  All use of this data must occur
+///     within a lock(_cacheArray) guard
+///  2. The use of _vimRegexOptions.  This is a value which is updated via the UI thread 
+///     via a user action that changes any value it depends on.  A single API initiated 
+///     search may involve several actual searches of the data.  To be consistent we need
+///     to use the same _vimRegexOptions throughout the same search
+///
+///     This is achieved by wrapping all uses of SearchData with ServiceSearchData at 
+///     the API entry points.  
 [<UsedInBackgroundThread()>]
 type internal SearchService 
     (
@@ -26,10 +35,7 @@ type internal SearchService
         _globalSettings : IVimGlobalSettings
     ) =
 
-    let mutable _searchServiceData = {
-        TextSearchService = _textSearchService
-        VimRegexOptions = VimRegexFactory.CreateRegexOptions _globalSettings
-    }
+    let mutable _vimRegexOptions = VimRegexOptions.Default
 
     do
         // It's not safe to use IVimGlobalSettings from multiple threads.  It will
@@ -37,14 +43,12 @@ type internal SearchService
         // to calcualet our new SearhServiceData and store it.  That can be safely
         // used from a background thread since it's a container of appropriate types
         (_globalSettings :> IVimSettings).SettingChanged 
-        |> Event.add (fun _ -> 
-            _searchServiceData <- {
-                TextSearchService = _textSearchService
-                VimRegexOptions = VimRegexFactory.CreateRegexOptions _globalSettings
-            })
+        |> Event.add (fun _ -> _vimRegexOptions <- VimRegexFactory.CreateRegexOptions _globalSettings)
 
-    [<UsedInBackgroundThread()>]
-    static member ApplySearchOffsetDataLine (span : SnapshotSpan) count = 
+    member x.GetServiceSearchData searchData navigator = 
+        { SearchData = searchData; VimRegexOptions = _vimRegexOptions; Navigator = navigator }
+
+    member x.ApplySearchOffsetDataLine (span : SnapshotSpan) count = 
         let snapshot = span.Snapshot
         let startLine = SnapshotPointUtil.GetContainingLine span.Start
         let number = startLine.LineNumber + count
@@ -55,8 +59,7 @@ type internal SearchService
         let line = snapshot.GetLineFromLineNumber number
         SnapshotSpan(line.Start, 1)
 
-    [<UsedInBackgroundThread()>]
-    static member ApplySearchOffsetDataStartEnd startPoint count = 
+    member x.ApplySearchOffsetDataStartEnd startPoint count = 
         let mutable column = SnapshotColumn(startPoint)
         let isForward = count >= 0
         let mutable count = abs count
@@ -79,31 +82,29 @@ type internal SearchService
 
         SnapshotSpan(column.Point, 1)
 
-    [<UsedInBackgroundThread()>]
-    static member ApplySearchOffsetDataSearch searchServiceData navigator point (patternData : PatternData) = 
+    member x.ApplySearchOffsetDataSearch (serviceSearchData : ServiceSearchData) point (patternData : PatternData) = 
         let searchData = SearchData(patternData.Pattern, patternData.Path, true)
-        match SearchService.FindNextMultipleCore searchServiceData searchData point navigator 1 with
+        let serviceSearchData = { serviceSearchData with SearchData = searchData }
+        match x.FindNextMultipleCore serviceSearchData point 1 with
         | SearchResult.Found (_, span, _, _) -> Some span
         | SearchResult.NotFound _ -> None
 
-    /// This method is callabla from multiple threads.  Made static to help promote safety
-    [<UsedInBackgroundThread()>]
-    static member ApplySearchOffsetData searchServiceData navigator (span : SnapshotSpan) (searchOffsetData : SearchOffsetData) : SnapshotSpan option =
+    member x.ApplySearchOffsetData (serviceSearchData : ServiceSearchData) (span : SnapshotSpan) : SnapshotSpan option =
         let snapshot = span.Snapshot
-        match searchOffsetData with
+        match serviceSearchData.SearchData.Offset with
         | SearchOffsetData.None -> Some span
-        | SearchOffsetData.Line count -> SearchService.ApplySearchOffsetDataLine span count |> Some
-        | SearchOffsetData.End count -> SearchService.ApplySearchOffsetDataStartEnd (SnapshotSpanUtil.GetLastIncludedPointOrStart span) count |> Some
-        | SearchOffsetData.Start count -> SearchService.ApplySearchOffsetDataStartEnd span.Start count |> Some
-        | SearchOffsetData.Search patternData -> SearchService.ApplySearchOffsetDataSearch searchServiceData navigator span.End patternData
+        | SearchOffsetData.Line count -> x.ApplySearchOffsetDataLine span count |> Some
+        | SearchOffsetData.End count -> x.ApplySearchOffsetDataStartEnd (SnapshotSpanUtil.GetLastIncludedPointOrStart span) count |> Some
+        | SearchOffsetData.Start count -> x.ApplySearchOffsetDataStartEnd span.Start count |> Some
+        | SearchOffsetData.Search patternData -> x.ApplySearchOffsetDataSearch serviceSearchData span.End patternData
 
     /// This method is callabla from multiple threads.  Made static to help promote safety
-    [<UsedInBackgroundThread()>]
-    static member ConvertToFindDataCore (searchServiceData : SearchServiceData) (searchData : SearchData) snapshot wordNavigator =
+    member x.ConvertToFindDataCore (serviceSearchData : ServiceSearchData) snapshot = 
 
         // First get the text and possible text based options for the pattern.  We special
         // case a search of whole words that is not a regex for efficiency reasons
-        let options = searchServiceData.VimRegexOptions
+        let options = serviceSearchData.VimRegexOptions
+        let searchData = serviceSearchData.SearchData
         let pattern = searchData.Pattern
         let text, textOptions, hadCaseSpecifier = 
             let useRegex () =
@@ -173,17 +174,15 @@ type internal SearchService
             | Some text ->
                 // Can throw in cases like having an invalidly formed regex.  Occurs
                 // a lot via incremental searching while the user is typing
-                FindData(text, snapshot, options, wordNavigator) |> Some
+                FindData(text, snapshot, options, serviceSearchData.Navigator) |> Some
         with 
         | :? System.ArgumentException -> None
 
-    /// This method is callabla from multiple threads.  Made static to help promote safety
-    [<UsedInBackgroundThread()>]
-    static member FindNextMultipleCore (searchServiceData : SearchServiceData) (searchData : SearchData) (startPoint : SnapshotPoint) (navigator : ITextStructureNavigator) count : SearchResult =
+    member x.FindNextMultipleCore (serviceSearchData : ServiceSearchData) (startPoint : SnapshotPoint) count : SearchResult =
 
-        let textSearchService = searchServiceData.TextSearchService
         let snapshot = SnapshotPointUtil.GetSnapshot startPoint 
-        match SearchService.ConvertToFindDataCore searchServiceData searchData snapshot navigator with
+        let searchData = serviceSearchData.SearchData
+        match x.ConvertToFindDataCore serviceSearchData snapshot with
         | None ->
             // Can't convert to a FindData so no way to search
             SearchResult.NotFound (searchData, false)
@@ -194,7 +193,7 @@ type internal SearchService
 
                 let result = 
                     try
-                        textSearchService.FindNext(position, true, findData) |> NullableUtil.ToOption
+                        _textSearchService.FindNext(position, true, findData) |> NullableUtil.ToOption
                     with 
                     | :? System.InvalidOperationException ->
                         // Happens when we provide an invalid regular expression.  Just return None
@@ -223,7 +222,7 @@ type internal SearchService
                 else
                     match result, count > 1 with
                     | Some patternSpan, false ->
-                        match SearchService.ApplySearchOffsetData searchServiceData navigator patternSpan searchData.Offset with
+                        match x.ApplySearchOffsetData serviceSearchData patternSpan with
                         | Some span -> SearchResult.Found (searchData, span, patternSpan, didWrap)
                         | None -> SearchResult.NotFound (searchData, true)
                     | Some span, true -> 
@@ -244,19 +243,18 @@ type internal SearchService
             let pos = startPoint.Position
             doFind findData count pos false
 
-    /// Search for the given pattern from the specified point. 
-    [<UsedInBackgroundThread()>]
-    static member FindNextPatternCore (searchServiceData : SearchServiceData) (searchData : SearchData) startPoint wordNavigator count =
+    member x.FindNextPatternCore (serviceSearchData : ServiceSearchData) startPoint count =
 
         // Find the real place to search.  When going forward we should start after
         // the caret and before should start before. This prevents the text 
         // under the caret from being the first match
         let snapshot = SnapshotPointUtil.GetSnapshot startPoint
+        let searchData = serviceSearchData.SearchData
         let startPoint, didStartWrap = CommonUtil.GetSearchPointAndWrap searchData.Path startPoint
 
         // Go ahead and run the search
         let wrapScan = searchData.Kind.IsWrap
-        let result = SearchService.FindNextMultipleCore searchServiceData searchData startPoint wordNavigator count 
+        let result = x.FindNextMultipleCore serviceSearchData startPoint count 
 
         // Need to fudge the SearchResult here to account for the possible wrap the 
         // search start incurred when calculating the actual 'startPoint' value.  If it 
@@ -279,18 +277,17 @@ type internal SearchService
             // Nothing to fudge if the start didn't wrap 
             result
 
-    /// Convert the Vim SearchData to the editor FindData structure
-    member x.ConvertToFindData (searchData : SearchData) snapshot wordNavigator =
-        SearchService.ConvertToFindDataCore _searchServiceData searchData snapshot wordNavigator
+    member x.FindNextMultiple searchData startPoint navigator count =
+        let serviceSearchData = x.GetServiceSearchData searchData navigator
+        x.FindNextMultipleCore serviceSearchData startPoint count 
 
-    member x.FindNextMultiple searchData startPoint wordNavigator count =
-        SearchService.FindNextMultipleCore _searchServiceData searchData startPoint wordNavigator count 
-
-    member x.FindNext searchData point nav = x.FindNextMultiple searchData point nav 1
+    member x.FindNext searchData point navigator = 
+        x.FindNextMultiple searchData point navigator 1
 
     /// Search for the given pattern from the specified point. 
-    member x.FindNextPattern searchData startPoint wordNavigator count = 
-        SearchService.FindNextPatternCore _searchServiceData searchData startPoint wordNavigator count
+    member x.FindNextPattern searchData startPoint navigator count = 
+        let searchServiceData = x.GetServiceSearchData searchData navigator
+        x.FindNextPatternCore searchServiceData startPoint count
 
     interface ISearchService with
         member x.FindNext point searchData navigator = x.FindNext searchData point navigator

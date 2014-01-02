@@ -32,7 +32,8 @@ namespace Vim.UnitTest
         private FindOptions CreateFindOptions(string pattern, SearchKind kind, SearchOptions options)
         {
             var searchData = new SearchData(pattern, SearchOffsetData.None, kind, options);
-            var findData = _searchRaw.ConvertToFindData(searchData, _textBuffer.CurrentSnapshot, _wordNavigator);
+            var serviceSearchData = _searchRaw.GetServiceSearchData(searchData, _wordNavigator);
+            var findData = _searchRaw.ConvertToFindDataCore(serviceSearchData, _textBuffer.CurrentSnapshot);
             Assert.True(findData.IsSome());
             return findData.Value.FindOptions;
         }
@@ -381,8 +382,9 @@ namespace Vim.UnitTest
         {
             private Span ApplySearchOffsetData(SnapshotSpan span, SearchOffsetData searchOffsetData)
             {
-                var searchServiceData = new SearchServiceData(_textSearch, VimRegexOptions.Default);
-                return SearchService.ApplySearchOffsetData(searchServiceData, _wordNavigator, span, searchOffsetData).Value;
+                var searchData = new SearchData("", searchOffsetData, SearchKind.Forward, SearchOptions.None);
+                var serviceSearchData = _searchRaw.GetServiceSearchData(searchData, _wordNavigator);
+                return _searchRaw.ApplySearchOffsetData(serviceSearchData, span).Value;
             }
 
             public sealed class LineTest : ApplySearchOffsetDataTest

@@ -19,6 +19,7 @@ module internal CommonUtil =
     /// a context point.  They don't begin at the point but rather before
     /// or after the point depending on the direction.  Return true if 
     /// a wrap was needed to get the start point
+    [<UsedInBackgroundThread>]
     let GetSearchPointAndWrap path point = 
         match path with
         | Path.Forward ->
