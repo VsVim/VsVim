@@ -313,6 +313,39 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class ShiftRightTest : InsertUtilTest
+        {
+            /// <summary>
+            /// Make sure that shift right functions correctly on blank lines
+            /// </summary>
+            [Fact]
+            public void FromBlankLine()
+            {
+                Create("");
+                _vimBuffer.LocalSettings.ShiftWidth = 4;
+                _insertUtilRaw.ShiftLineRight();
+
+                Assert.Equal("    ", _textView.GetLine(0).GetText());
+                Assert.Equal(_insertUtilRaw.CaretColumn, 4);
+            }
+
+            /// <summary>
+            /// Make sure that shift right functions correctly on lines with
+            /// leading blanks not equivalent to a multiple of the shift wdith
+            /// </summary>
+            [Fact]
+            public void WithIrregularLeadingBlanks()
+            {
+                Create("   abc");
+                _textView.MoveCaretTo(3);
+                _vimBuffer.LocalSettings.ShiftWidth = 4;
+                _insertUtilRaw.ShiftLineRight();
+
+                Assert.Equal("    abc", _textView.GetLine(0).GetText());
+                Assert.Equal(_insertUtilRaw.CaretColumn, 4);
+            }
+        }
+
         public sealed class MoveCaretByWordTest : InsertUtilTest
         {
             [Fact]

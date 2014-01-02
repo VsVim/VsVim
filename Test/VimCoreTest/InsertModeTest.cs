@@ -73,6 +73,7 @@ namespace Vim.UnitTest
             _broker.SetupGet(x => x.IsCompletionActive).Returns(false);
             _broker.SetupGet(x => x.IsQuickInfoActive).Returns(false);
             _broker.SetupGet(x => x.IsSignatureHelpActive).Returns(false);
+            _broker.SetupGet(x => x.IsSmartTagSessionActive).Returns(false);
             _insertUtil = _factory.Create<IInsertUtil>();
 
             // Setup the mouse.  By default we say it has no buttons down as that's the normal state
