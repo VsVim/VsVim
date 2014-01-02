@@ -36,6 +36,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
         private readonly IVimBuffer _vimBuffer;
         private readonly CommandMarginControl _margin;
         private readonly IEditorFormatMap _editorFormatMap;
+        private readonly IFontProperties _fontProperties;
         private readonly ReadOnlyCollection<Lazy<IOptionsProviderFactory>> _optionsProviderFactory;
         private readonly FrameworkElement _parentVisualElement;
         private bool _inKeyInputEvent;
@@ -57,12 +58,13 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             get { return _editKind; }
         }
 
-        internal CommandMarginController(IVimBuffer buffer, FrameworkElement parentVisualElement, CommandMarginControl control, IEditorFormatMap editorFormatMap, IEnumerable<Lazy<IOptionsProviderFactory>> optionsProviderFactory)
+        internal CommandMarginController(IVimBuffer buffer, FrameworkElement parentVisualElement, CommandMarginControl control, IEditorFormatMap editorFormatMap, IFontProperties fontProperties, IEnumerable<Lazy<IOptionsProviderFactory>> optionsProviderFactory)
         {
             _vimBuffer = buffer;
             _margin = control;
             _parentVisualElement = parentVisualElement;
             _editorFormatMap = editorFormatMap;
+            _fontProperties = fontProperties;
             _optionsProviderFactory = optionsProviderFactory.ToList().AsReadOnly();
 
             _vimBuffer.SwitchedMode += OnSwitchMode;
@@ -74,6 +76,8 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             _vimBuffer.CommandMode.CommandChanged += OnCommandChanged;
             _vimBuffer.Vim.MacroRecorder.RecordingStarted += OnRecordingStarted;
             _vimBuffer.Vim.MacroRecorder.RecordingStopped += OnRecordingStopped;
+            _margin.Loaded += OnCommandMarginLoaded;
+            _margin.Unloaded += OnCommandMarginUnloaded;
             _margin.OptionsButton.Click += OnOptionsClicked;
             _margin.CommandLineTextBox.PreviewKeyDown += OnCommandLineTextBoxPreviewKeyDown;
             _margin.CommandLineTextBox.TextChanged += OnCommandLineTextBoxTextChanged;
@@ -305,6 +309,31 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
         }
 
         /// <summary>
+        /// Update the font family and size of the command margin text input controls
+        /// </summary>
+        private void UpdateFontProperties()
+        {
+            _margin.TextFontFamily = _fontProperties.FontFamily;
+            _margin.TextFontSize = _fontProperties.FontSize * GetDpiScaling();
+        }
+
+        /// <summary>
+        /// Get the DPI scaling factor for the control.
+        /// </summary>
+        /// <returns></returns>
+        private double GetDpiScaling()
+        {
+            var source = PresentationSource.FromVisual(_margin);
+            if (source != null)
+            {
+                var dpiX = 96 * source.CompositionTarget.TransformToDevice.M11;
+                var dpiY = 96 * source.CompositionTarget.TransformToDevice.M22;
+                return (dpiX + dpiY) / 2 / 96;
+            }
+            return 1;
+        }
+
+        /// <summary>
         /// This method handles the KeyInput as it applies to command line editor.  Make sure to 
         /// mark the key as handled if we use it here.  If we don't then it will propagate out to 
         /// the editor and be processed again
@@ -475,6 +504,17 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             MessageEvent(args.Message);
         }
 
+        private void OnCommandMarginLoaded(object sender, RoutedEventArgs e)
+        {
+            _fontProperties.FontPropertiesChanged += OnFontPropertiesChanged;
+            UpdateFontProperties();
+        }
+
+        private void OnCommandMarginUnloaded(object sender, RoutedEventArgs e)
+        {
+            _fontProperties.FontPropertiesChanged -= OnFontPropertiesChanged;
+        }
+
         private void OnOptionsClicked(object sender, EventArgs e)
         {
             var provider = _optionsProviderFactory.Select(x => x.Value.CreateOptionsProvider()).Where(x => x != null).FirstOrDefault();
@@ -491,6 +531,11 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
         private void OnFormatMappingChanged(object sender, FormatItemsEventArgs e)
         {
             UpdateTextColor();
+        }
+
+        private void OnFontPropertiesChanged(object sender, FontPropertiesEventArgs e)
+        {
+            UpdateFontProperties();
         }
 
         private void OnRecordingStarted(object sender, RecordRegisterEventArgs args)

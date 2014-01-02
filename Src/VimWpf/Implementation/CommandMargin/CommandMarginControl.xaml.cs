@@ -39,6 +39,18 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             typeof(CommandMarginControl),
             new PropertyMetadata(Brushes.White));
 
+        public static readonly DependencyProperty TextFontFamilyProperty = DependencyProperty.Register(
+            "TextFontFamily",
+            typeof(FontFamily),
+            typeof(CommandMarginControl),
+            new PropertyMetadata(new FontFamily("Courier New")));
+
+        public static readonly DependencyProperty TextFontSizeProperty = DependencyProperty.Register(
+            "TextFontSize",
+            typeof(double),
+            typeof(CommandMarginControl),
+            new PropertyMetadata(10.0));
+
         /// <summary>
         /// The primary status line for Vim
         /// </summary>
@@ -70,6 +82,18 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
         {
             get { return (Brush)GetValue(TextBackgroundProperty); }
             set { SetValue(TextBackgroundProperty, value); }
+        }
+
+        public double TextFontSize
+        {
+            get { return (double)GetValue(TextFontSizeProperty); }
+            set { SetValue(TextFontSizeProperty, value); }
+        }
+
+        public FontFamily TextFontFamily
+        {
+            get { return (FontFamily)GetValue(TextFontFamilyProperty); }
+            set { SetValue(TextFontFamilyProperty, value); }
         }
 
         public bool IsEditEnabled

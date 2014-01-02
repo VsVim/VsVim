@@ -3603,6 +3603,19 @@ type IVimData =
     [<CLIEvent>]
     abstract DisplayPatternChanged : IDelegateEvent<System.EventHandler>
 
+type FontPropertiesEventArgs () =
+
+    inherit System.EventArgs()
+
+type IFontProperties =
+
+    abstract FontFamily : System.Windows.Media.FontFamily
+
+    abstract FontSize : double
+
+    [<CLIEvent>]
+    abstract FontPropertiesChanged : IDelegateEvent<System.EventHandler<FontPropertiesEventArgs>>
+
 [<RequireQualifiedAccess>]
 [<NoComparison>]
 type QuickFix =
@@ -3630,6 +3643,9 @@ type IVimHost =
     /// Get the count of tabs that are active in the host.  If tabs are not supported then
     /// -1 should be returned
     abstract TabCount : int
+
+    /// Get the font properties associated with the text editor
+    abstract FontProperties : IFontProperties
 
     abstract Beep : unit -> unit
 

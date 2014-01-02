@@ -14,6 +14,28 @@ namespace VimApp
     [Export(typeof(VimAppHost))]
     internal sealed class VimAppHost : Vim.UI.Wpf.VimHost
     {
+        private class TextEditorFontProperties : IFontProperties
+        {
+            public System.Windows.Media.FontFamily FontFamily
+            {
+                get { return new System.Windows.Media.FontFamily("Consolas"); }
+            }
+
+            public double FontSize
+            {
+                get { return 10; }
+            }
+
+            public event EventHandler<FontPropertiesEventArgs> FontPropertiesChanged;
+
+            protected void OnFontPropertiesChanged()
+            {
+                var handler = FontPropertiesChanged;
+                if (handler != null)
+                    handler(this, new FontPropertiesEventArgs());
+            }
+        }
+
         private const string ErrorCouldNotFindVimViewInfo = "Could not find the associated IVimViewInfo";
         private const string ErrorUnsupported = "Could not find the associated IVimViewInfo";
         private const string ErrorInvalidDirection = "Invalid direction";
@@ -35,6 +57,11 @@ namespace VimApp
         public override int TabCount
         {
             get { return MainWindow.TabControl.Items.Count; }
+        }
+
+        public override IFontProperties FontProperties
+        {
+            get { return new TextEditorFontProperties(); }
         }
 
         [ImportingConstructor]
