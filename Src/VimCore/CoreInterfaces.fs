@@ -587,6 +587,28 @@ type SearchData
     static member op_Equality(this, other) = System.Collections.Generic.EqualityComparer<SearchData>.Default.Equals(this, other)
     static member op_Inequality(this, other) = not (System.Collections.Generic.EqualityComparer<SearchData>.Default.Equals(this, other))
 
+    /// Parse out a SearchData value given the specific pattern and SearchKind.  The pattern should
+    /// not include a beginning / or ?.  That should be removed by this point
+    static member Parse (pattern : string) (searchKind : SearchKind) searchOptions =
+        let mutable index = -1
+        let mutable i = 1
+        let targetChar = 
+            if searchKind.IsAnyForward then '/'
+            else '?'
+        while i < pattern.Length do
+            if pattern.[i] = targetChar && pattern.[i-1] <> '\\' then
+                index <- i
+                i <- pattern.Length
+            else
+                i <- i + 1
+
+        if index < 0 then
+            SearchData(pattern, SearchOffsetData.None, searchKind, searchOptions)
+        else
+            let offset = SearchOffsetData.Parse (pattern.Substring(index + 1))
+            let pattern = pattern.Substring(0, index)
+            SearchData(pattern, offset, searchKind, searchOptions)
+
     interface System.IEquatable<SearchData> with
         member x.Equals other = x.Equals(other)
 
@@ -3379,10 +3401,14 @@ type StringEventArgs(_message : string) =
 
     member x.Message = _message
 
+    override x.ToString() = _message
+
 type KeyInputEventArgs (_keyInput : KeyInput) = 
     inherit System.EventArgs()
 
     member x.KeyInput = _keyInput
+
+    override x.ToString() = _keyInput.ToString()
 
 type KeyInputStartEventArgs (_keyInput : KeyInput) =
     inherit KeyInputEventArgs(_keyInput)
@@ -3393,10 +3419,14 @@ type KeyInputStartEventArgs (_keyInput : KeyInput) =
         with get() = _handled 
         and set value = _handled <- value
 
+    override x.ToString() = _keyInput.ToString()
+
 type KeyInputSetEventArgs (_keyInputSet : KeyInputSet) = 
     inherit System.EventArgs()
 
     member x.KeyInputSet = _keyInputSet
+
+    override x.ToString() = _keyInputSet.ToString()
 
 type KeyInputProcessedEventArgs(_keyInput : KeyInput, _processResult : ProcessResult) =
     inherit System.EventArgs()
@@ -3404,6 +3434,8 @@ type KeyInputProcessedEventArgs(_keyInput : KeyInput, _processResult : ProcessRe
     member x.KeyInput = _keyInput
 
     member x.ProcessResult = _processResult
+
+    override x.ToString() = _keyInput.ToString()
 
 /// Implements a list for storing history items.  This is used for the 5 types
 /// of history lists in Vim (:help history).  

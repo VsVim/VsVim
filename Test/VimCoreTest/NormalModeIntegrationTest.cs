@@ -2640,6 +2640,23 @@ namespace Vim.UnitTest
                     _vimBuffer.ProcessNotation("/[]", enter: true);
                     Assert.Equal(3, _textView.GetCaretPoint());
                 }
+
+                [Fact]
+                public void BackwardsSlashIsUsedDirectly()
+                {
+                    Create("cat", "cat/", "dog");
+                    _textView.MoveCaretToLine(2);
+                    _vimBuffer.ProcessNotation("?cat/", enter: true);
+                    Assert.Equal(_textBuffer.GetLine(1).Start, _textView.GetCaretPoint());
+                }
+
+                [Fact]
+                public void ForwardQuestionIsUsedDirectly()
+                {
+                    Create("tree", "cat", "cat?", "dog");
+                    _vimBuffer.ProcessNotation("/cat?", enter: true);
+                    Assert.Equal(_textBuffer.GetLine(2).Start, _textView.GetCaretPoint());
+                }
             }
 
             public sealed class OffsetTest : IncrementalSearchTest
@@ -2809,6 +2826,15 @@ namespace Vim.UnitTest
                     Create("the big dog", "cat", "dog", "fish");
                     _vimBuffer.ProcessNotation("/big/b-1", enter: true);
                     Assert.Equal(3, _textView.GetCaretPoint().Position);
+                }
+
+                [Fact]
+                public void BeginBackwardsExplicitCount()
+                {
+                    Create("the big dog", "cat", "dog", "fish");
+                    _textView.MoveCaretToLine(3);
+                    _vimBuffer.ProcessNotation("?dog?b1", enter: true);
+                    Assert.Equal(_textBuffer.GetPointInLine(2, 1), _textView.GetCaretPoint());
                 }
 
                 [Fact]
