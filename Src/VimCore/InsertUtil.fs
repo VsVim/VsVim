@@ -568,10 +568,11 @@ type internal InsertUtil
 
         // Convert spaces, tabs and virtual space to a column
         let column = 
-            if isBlankLine && x.CaretVirtualPoint.IsInVirtualSpace then
-                x.CaretVirtualPoint.VirtualSpaces
-            else
-                (_operations.NormalizeBlanksToSpaces (indentSpan.GetText())).Length
+            (_operations.NormalizeBlanksToSpaces (indentSpan.GetText())).Length +
+                if isBlankLine && x.CaretVirtualPoint.IsInVirtualSpace then
+                    x.CaretVirtualPoint.VirtualSpaces
+                else
+                    0
 
         // Compute offset to the nearest multiple of 'shiftwidth'
         let offset =
