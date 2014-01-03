@@ -344,7 +344,7 @@ namespace Vim.UnitTest
                 Create("    ", "dog");
                 _vimBuffer.LocalSettings.ShiftWidth = 4;
                 _vimBuffer.LocalSettings.ExpandTab = true;
-                _textView.MoveCaretTo(0, 8);
+                _textView.MoveCaretTo(4, 4);
 
                 _insertUtilRaw.ShiftLineRight();
 
