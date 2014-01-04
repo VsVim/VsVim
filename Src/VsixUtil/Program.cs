@@ -16,6 +16,83 @@ namespace VsixUtil
         Vs2013,
     }
 
+    static class Extensions
+    {
+        internal static LateBound AsLateBound(this object obj)
+        {
+            return new LateBound(obj);
+        }
+    }
+
+    sealed class LateBound
+    {
+        private readonly object _value;
+        private readonly Type _type;
+
+        internal object Value
+        {
+            get { return _value; }
+        }
+
+        internal bool IsNull
+        {
+            get { return _value == null; }
+        }
+
+        internal LateBound(object value)
+        {
+            _value = value;
+            _type = value != null ? value.GetType() : null;
+        }
+
+        internal LateBound GetProperty(string name)
+        {
+            return _type
+                .GetProperty(name, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
+                .GetValue(_value, null)
+                .AsLateBound();
+        }
+
+        internal T Cast<T>()
+        {
+            return (T)_value;
+        }
+
+        internal LateBound CallMethod(string name, params object[] arguments)
+        {
+            return CallMethodCore(_type, name, _value, arguments);
+        }
+
+        internal static LateBound CallStaticMethod(Type type, string name, params object[] arguments)
+        {
+            return CallMethodCore(type, name, null, arguments);
+        }
+
+        private static LateBound CallMethodCore(Type type, string name, object thisArgument, params object[] arguments)
+        {
+            var methodInfo = type
+                .GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static)
+                .Where(x => x.Name != null && x.Name == name)
+                .Where(x => x.GetParameters().Length == arguments.Length)
+                .FirstOrDefault();
+
+            if (methodInfo == null)
+            {
+                var message = String.Format("Could not find method {0}::{1}", type.Name, name);
+                throw new Exception(message);
+            }
+
+            return methodInfo
+                .Invoke(thisArgument, arguments)
+                .AsLateBound();
+        }
+
+        public override string ToString()
+        {
+            return _value != null ? _value.ToString() : "<null>";
+        }
+    }
+
     class Program
     {
         private static string GetVersionNumber(Version version)
@@ -77,10 +154,27 @@ namespace VsixUtil
             }
         }
 
-        private static dynamic CreateExtensionManager(Version version, string rootSuffix)
+        private static bool IsVersionInstalled(Version version)
+        {
+            try
+            {
+                return GetApplicationPath(version) != null;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static Type GetExtensionManagerServiceType(Version version)
+        {
+            var assembly = LoadImplementationAssembly(version);
+            return assembly.GetType("Microsoft.VisualStudio.ExtensionManager.ExtensionManagerService");
+        }
+
+        private static LateBound CreateExtensionManager(Version version, string rootSuffix)
         {
             var settingsAssembly = LoadSettingsAssembly(version);
-            var extensionAssembly = LoadImplementationAssembly(version);
             var applicationPath = GetApplicationPath(version);
 
             var externalSettingsManagerType = settingsAssembly.GetType("Microsoft.VisualStudio.Settings.ExternalSettingsManager");
@@ -98,22 +192,78 @@ namespace VsixUtil
                 .FirstOrDefault()
                 .Invoke(null, new[] { applicationPath, rootSuffix });
 
-            var extensionManagerServiceType = extensionAssembly.GetType("Microsoft.VisualStudio.ExtensionManager.ExtensionManagerService");
-            var constructor = extensionManagerServiceType
+            var extensionManagerServiceType = GetExtensionManagerServiceType(version);
+            var obj = extensionManagerServiceType
                 .GetConstructors()
                 .Where(x => x.GetParameters().Length == 1 && x.GetParameters()[0].ParameterType.Name.Contains("SettingsManager"))
-                .FirstOrDefault();
+                .FirstOrDefault()
+                .Invoke(new[] { settingsManager });
+            return obj.AsLateBound();
+        }
 
-            var obj = constructor.Invoke(new[] { settingsManager });
-            return obj;
+        private static LateBound CreateInstallableExtension(string extensionPath, Version version)
+        {
+            var type = GetExtensionManagerServiceType(version);
+            return LateBound.CallStaticMethod(type, "CreateInstallableExtension", extensionPath);
+        }
+
+        private static void InstallExtension(string extensionPath, string rootSuffix, Version version)
+        {
+            var extensionManager = CreateExtensionManager(version, rootSuffix);
+            var installableExtension = CreateInstallableExtension(extensionPath, version);
+            var identifier = installableExtension.GetProperty("Header").GetProperty("Identifier").Cast<string>();
+
+            try
+            {
+                var installedExtension = extensionManager.CallMethod("GetInstalledExtension", identifier);
+                try
+                {
+                    Console.Write("Uninstalling ... ");
+                    extensionManager.CallMethod("Uninstall", installedExtension.Value);
+                    Console.WriteLine();
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex.Message);
+                }
+            }
+            catch
+            {
+                // Extension isn't installed
+            }
+
+            try
+            {
+                Console.Write("Installing ... ");
+                extensionManager.CallMethod("Install", installableExtension.Value, false);
+                Console.WriteLine();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+            }
         }
 
         static void Main(string[] args)
         {
-            var extensionManager = CreateExtensionManager(Version.Vs2013, "");
+            if (args.Length == 0)
+            {
+                Console.WriteLine("vsixutil extensionPath [rootSuffix]");
+                return;
+            }
 
-            var testId = "VsVim.Microsoft.e214908b-0458-4ae2-a583-4310f29687c3";
-            dynamic installedExtension = extensionManager.GetInstalledExtension(testId);
+            var extensionPath = args[0];
+            var rootSuffix = args.Length == 2 ? args[1] : "";
+            foreach (var version in Enum.GetValues(typeof(Version)).Cast<Version>().Where(x => IsVersionInstalled(x)))
+            {
+                Console.WriteLine("Visual Studio {0}.0", GetVersionNumber(version));
+                InstallExtension(extensionPath, rootSuffix, version);
+            }
+        }
+
+        static void PrintHelp()
+        {
+            Console.WriteLine("vsixutil extensionPath [rootSuffix]");
         }
     }
 }
