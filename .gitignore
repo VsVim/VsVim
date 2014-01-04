@@ -36,6 +36,9 @@ _ReSharper.VsVim
 # Productivity Power Tools
 *.docstates
 
+# Place where dogfood drops get put into. 
+Dogfood/
+
 # This solution uses NuGet package restore so don't check in
 # the actual binaries
 packages/

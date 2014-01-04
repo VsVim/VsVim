@@ -70,21 +70,28 @@ namespace VsixUtil
 
         private static LateBound CallMethodCore(Type type, string name, object thisArgument, params object[] arguments)
         {
-            var methodInfo = type
-                .GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static)
-                .Where(x => x.Name != null && x.Name == name)
-                .Where(x => x.GetParameters().Length == arguments.Length)
-                .FirstOrDefault();
-
-            if (methodInfo == null)
+            try
             {
-                var message = String.Format("Could not find method {0}::{1}", type.Name, name);
-                throw new Exception(message);
-            }
+                var methodInfo = type
+                    .GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static)
+                    .Where(x => x.Name != null && x.Name == name)
+                    .Where(x => x.GetParameters().Length == arguments.Length)
+                    .FirstOrDefault();
 
-            return methodInfo
-                .Invoke(thisArgument, arguments)
-                .AsLateBound();
+                if (methodInfo == null)
+                {
+                    var message = String.Format("Could not find method {0}::{1}", type.Name, name);
+                    throw new Exception(message);
+                }
+
+                return methodInfo
+                    .Invoke(thisArgument, arguments)
+                    .AsLateBound();
+            }
+            catch (TargetInvocationException ex)
+            {
+                throw ex.InnerException;
+            }
         }
 
         public override string ToString()
@@ -236,6 +243,9 @@ namespace VsixUtil
             {
                 Console.Write("Installing ... ");
                 extensionManager.CallMethod("Install", installableExtension.Value, false);
+
+                var installedExtension = extensionManager.CallMethod("GetInstalledExtension", identifier);
+                extensionManager.CallMethod("Enable", installedExtension.Value);
                 Console.WriteLine();
             }
             catch (Exception ex)
