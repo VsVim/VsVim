@@ -932,11 +932,23 @@ type Motion =
     /// for command '0'
     | BeginingOfLine
 
-    /// The left motion for h, <Left>, etc ...
+    /// The left motion for h
     | CharLeft 
 
-    /// The right motion for l, <Right>, etc ...
+    /// The right motion for l
     | CharRight
+
+    /// The backspace motion
+    | SpaceLeft 
+
+    /// The space motion
+    | SpaceRight
+
+    /// The arrow motion for <Left>
+    | ArrowLeft 
+
+    /// The arrow motion for <Right>
+    | ArrowRight
 
     /// Implements the f, F, t and T motions
     | CharSearch of CharSearchKind * Path * char

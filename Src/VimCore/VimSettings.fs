@@ -153,6 +153,7 @@ type internal GlobalSettings() =
             (VimRcPathsName, VimRcPathsName, SettingValue.String(StringUtil.empty))
             (VirtualEditName, "ve", SettingValue.String(StringUtil.empty))
             (VisualBellName, "vb", SettingValue.Toggle false)
+            (WhichWrapName, "ww", SettingValue.String "b,s")
             (WrapScanName, "ws", SettingValue.Toggle true)
         |]
 
@@ -411,6 +412,9 @@ type internal GlobalSettings() =
         member x.VisualBell
             with get() = _map.GetBoolValue VisualBellName
             and set value = _map.TrySetValue VisualBellName (SettingValue.Toggle value) |> ignore
+        member x.WhichWrap
+            with get() = _map.GetStringValue WhichWrapName
+            and set value = _map.TrySetValue WhichWrapName (SettingValue.String value) |> ignore
         member x.WrapScan
             with get() = _map.GetBoolValue WrapScanName
             and set value = _map.TrySetValue WrapScanName (SettingValue.Toggle value) |> ignore
@@ -419,6 +423,15 @@ type internal GlobalSettings() =
         member x.IsBackspaceIndent = x.IsCommaSubOptionPresent BackspaceName "indent"
         member x.IsBackspaceStart = x.IsCommaSubOptionPresent BackspaceName "start"
         member x.IsVirtualEditOneMore = x.IsCommaSubOptionPresent VirtualEditName "onemore"
+        member x.IsWhichWrapBackspace = x.IsCommaSubOptionPresent WhichWrapName "b"
+        member x.IsWhichWrapSpace = x.IsCommaSubOptionPresent WhichWrapName "s"
+        member x.IsWhichWrapMotionH = x.IsCommaSubOptionPresent WhichWrapName "h"
+        member x.IsWhichWrapMotionL = x.IsCommaSubOptionPresent WhichWrapName "l"
+        member x.IsWhichWrapLeftNormal = x.IsCommaSubOptionPresent WhichWrapName "<"
+        member x.IsWhichWrapRightNormal = x.IsCommaSubOptionPresent WhichWrapName ">"
+        member x.IsWhichWrapTilde = x.IsCommaSubOptionPresent WhichWrapName "~"
+        member x.IsWhichWrapLeftInsert = x.IsCommaSubOptionPresent WhichWrapName "["
+        member x.IsWhichWrapRightInsert = x.IsCommaSubOptionPresent WhichWrapName "]"
 
         [<CLIEvent>]
         member x.SettingChanged = _map.SettingChanged

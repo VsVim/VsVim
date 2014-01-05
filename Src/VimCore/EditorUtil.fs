@@ -1157,6 +1157,73 @@ module SnapshotPointUtil =
         else
             None
 
+    /// Get a previous point relative to a base point.  Goes as far as possible
+    /// in the specified direction counting line breaks as a single item
+    let GetPreviousPoint basePoint count =
+        let tss = GetSnapshot basePoint
+        let mutable point = basePoint
+        for i = 1 to count do
+            let line = GetContainingLine point
+            point <-
+                if point.Position = line.Start.Position then
+                    if line.LineNumber = 0 then point
+                    else tss.GetLineFromLineNumber(line.LineNumber-1).End
+                else
+                    point.Subtract(1)
+        point
+
+    /// Get a previous point relative to a base point.  Goes as far as possible
+    /// in the specified direction counting line breaks as a single item
+    let GetNextPoint basePoint count =
+        let tss = GetSnapshot basePoint
+        let mutable point = basePoint
+        for i = 1 to count do
+            let line = GetContainingLine point
+            point <-
+                if point.Position >= line.End.Position then
+                    let num = line.LineNumber+1
+                    if num = tss.LineCount then point
+                    else tss.GetLineFromLineNumber(num).Start
+                else
+                    point.Add(1)
+        point
+
+    /// Get a previous point relative to a base point skipping line breaks.
+    /// Goes as far as possible in the specified direction
+    let GetPreviousPointSkippingLineBreaks basePoint count =
+        let tss = GetSnapshot basePoint
+        let mutable point = basePoint
+        for i = 1 to count do
+            let line = GetContainingLine point
+            point <-
+                if point.Position = line.Start.Position then
+                    if line.LineNumber = 0 then point
+                    else
+                        let previousLine = tss.GetLineFromLineNumber(line.LineNumber-1)
+                        if previousLine.Length = 0 then
+                            previousLine.Start
+                        else
+                            previousLine.End.Subtract(1)
+                else
+                    point.Subtract(1)
+        point
+
+    /// Get a previous point relative to a base point skipping line breaks.
+    /// Goes as far as possible in the specified direction
+    let GetNextPointSkippingLineBreaks basePoint count =
+        let tss = GetSnapshot basePoint
+        let mutable point = basePoint
+        for i = 1 to count do
+            let line = GetContainingLine point
+            point <-
+                if line.Length = 0 || point.Position + 1 = line.End.Position then
+                    let num = line.LineNumber+1
+                    if num = tss.LineCount then point
+                    else tss.GetLineFromLineNumber(num).Start
+                else
+                    point.Add(1)
+        point
+
     /// Is this the last point on the line?
     let IsLastPointOnLine point = 
         let line = GetContainingLine point
