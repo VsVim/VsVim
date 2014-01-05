@@ -413,6 +413,12 @@ and [<RequireQualifiedAccess>] LineCommand =
     /// which can be specified
     | CopyTo of LineRangeSpecifier * LineRangeSpecifier * int option
 
+    /// Delete the specified marks
+    | DeleteMarks of Mark list
+
+    /// Delete all of the marks except A-Z and 0-9
+    | DeleteAllMarks 
+
     /// Move the specific line range to the given position.  The first line range is the 
     /// source and the second is the destination
     | MoveTo of LineRangeSpecifier * LineRangeSpecifier * int option

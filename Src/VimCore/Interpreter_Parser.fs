@@ -122,6 +122,7 @@ type Parser
         ("cprevious", "cp")
         ("copy", "co")
         ("delete","d")
+        ("delmarks", "delm")
         ("display","di")
         ("edit", "e")
         ("else", "el")
@@ -362,7 +363,7 @@ type Parser
             if _lineIndex + 1 >= _lines.Length then
                 // If this is the last line we should at least move the tokenizer to the end
                 // of the line
-                x.MoveToEndOfLine()
+                _tokenizer.MoveToEndOfLine()
             else
                 _lineIndex <- _lineIndex + 1
                 _tokenizer.Reset _lines.[_lineIndex] TokenizerFlags.None
@@ -383,11 +384,6 @@ type Parser
         match _tokenizer.CurrentTokenKind with
         | TokenKind.Blank -> _tokenizer.MoveNextToken()
         | _ -> ()
-
-    /// Move to the end of the current line
-    member x.MoveToEndOfLine() = 
-        while not _tokenizer.IsAtEndOfLine do
-            _tokenizer.MoveNextToken()
 
     /// Try and expand the possible abbreviation to a full line command name.  If it's 
     /// not an abbreviation then the original string will be returned
@@ -883,6 +879,55 @@ type Parser
         let lineRange = LineRangeSpecifier.WithEndCount (lineRange, x.ParseNumber())
         LineCommand.Delete (lineRange, name)
 
+    /// Parse out the :delmarks command
+    member x.ParseDeleteMarks() =
+        x.SkipBlanks()
+        if x.ParseBang() then
+            LineCommand.DeleteAllMarks
+        else
+            // Don't care about blank chars here.  Keep moving
+            let moveCore () = 
+                _tokenizer.MoveNextChar()
+                while not _tokenizer.IsAtEndOfLine && CharUtil.IsBlank _tokenizer.CurrentChar do
+                    _tokenizer.MoveNextChar()
+
+            let hadError = ref false
+            let list = List<Mark>()
+
+            // Parse out the range of marks.  Anything from the start to end character
+            // inclusive 
+            let parseRange (startChar : char) (endChar : char) =
+                for i = int startChar to int endChar do
+                    let c = char i 
+                    match Mark.OfChar c with
+                    | Some mark -> list.Add mark
+                    | None -> hadError := true
+
+            while not _tokenizer.IsAtEndOfLine && not hadError.Value do
+                let c = _tokenizer.CurrentChar
+                moveCore ()
+                if _tokenizer.CurrentChar = '-' then
+                    moveCore ()
+                    let o = _tokenizer.CurrentChar
+                    moveCore ()
+
+                    if CharUtil.IsLetter c && CharUtil.IsLetter o && c < o then
+                        parseRange c o
+                    elif CharUtil.IsDigit c && CharUtil.IsDigit o && c < o then
+                        parseRange c o
+                    else
+                        hadError := true
+                else
+                    match Mark.OfChar c with
+                    | Some mark -> list.Add(mark)
+                    | None -> hadError := true
+
+            if hadError.Value then
+                _tokenizer.MoveToEndOfLine()
+                LineCommand.ParseError Resources.Parser_Error
+            else
+                LineCommand.DeleteMarks (List.ofSeq list)
+
     /// Parse out the :edit command
     member x.ParseEdit () = 
         let hasBang = x.ParseBang()
@@ -962,7 +1007,7 @@ type Parser
                 | TokenKind.EndOfLine ->
                     (isAbort, isDict, isRange, false)
                 | _ -> 
-                    x.MoveToEndOfLine()
+                    _tokenizer.MoveToEndOfLine()
                     (isAbort, isDict, isRange, true)
 
             inner false false false
@@ -997,7 +1042,7 @@ type Parser
 
         match lineCommand with 
         | LineCommand.ParseError _ -> 
-            x.MoveToEndOfLine()
+            _tokenizer.MoveToEndOfLine()
             LineCommand.FunctionStart None
         | _ -> lineCommand
 
@@ -1561,11 +1606,11 @@ type Parser
         x.ParseIfOrElseIf LineCommand.IfStart
 
     member x.ParseIfEnd() =
-        x.MoveToEndOfLine()
+        _tokenizer.MoveToEndOfLine()
         LineCommand.IfEnd
 
     member x.ParseElse() = 
-        x.MoveToEndOfLine()
+        _tokenizer.MoveToEndOfLine()
         LineCommand.Else
 
     /// Parse out the :elseif command from the buffer
@@ -1578,7 +1623,7 @@ type Parser
         | ParseResult.Failed msg -> LineCommand.ParseError msg
         | ParseResult.Succeeded expr -> 
             let lineCommand = onSuccess expr 
-            x.MoveToEndOfLine()
+            _tokenizer.MoveToEndOfLine()
             lineCommand
 
     /// Parse out the :if command from the buffer given the initial conditional expression
@@ -1891,6 +1936,7 @@ type Parser
                 | "copy" -> x.ParseCopyTo lineRange 
                 | "cunmap" -> noRange (fun () -> x.ParseMapUnmap false [KeyRemapMode.Command])
                 | "delete" -> x.ParseDelete lineRange
+                | "delmarks" -> noRange (fun () -> x.ParseDeleteMarks())
                 | "display" -> noRange x.ParseDisplayRegisters 
                 | "edit" -> noRange x.ParseEdit
                 | "else" -> noRange x.ParseElse

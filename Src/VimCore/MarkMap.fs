@@ -34,13 +34,16 @@ type MarkMap(_bufferTrackingService : IBufferTrackingService) =
                 | Some trackingLineColumn -> Some (letter, trackingLineColumn, key)
 
     /// Delete a global mark if it exists
-    member x.DeleteGlobalMark letter = 
-        match x.GetGlobalMarkData letter with
-        | None -> ()
-        | Some (_, trackingLineColumn, key) ->
-            trackingLineColumn.TextBuffer.Properties.RemoveProperty(key) |> ignore
-            trackingLineColumn.Close()
+    member x.RemoveGlobalMark letter = 
+        let result = 
+            match x.GetGlobalMarkData letter with
+            | None -> false
+            | Some (_, trackingLineColumn, key) ->
+                trackingLineColumn.TextBuffer.Properties.RemoveProperty(key) |> ignore
+                trackingLineColumn.Close()
+                true
         _globalMarkMap <- Map.remove letter _globalMarkMap
+        result
 
     /// Get all of the global mark letters and their associated VirtualSnapshotPoint
     member x.GlobalMarks =
@@ -64,7 +67,7 @@ type MarkMap(_bufferTrackingService : IBufferTrackingService) =
     /// Set the global mark to the value in question
     member x.SetGlobalMark letter (vimTextBuffer : IVimTextBuffer) line column =
         // First clear out the existing mark if it exists.  
-        x.DeleteGlobalMark letter
+        x.RemoveGlobalMark letter |> ignore
 
         let trackingLineColumn = _bufferTrackingService.CreateLineColumn vimTextBuffer.TextBuffer line column LineColumnTrackingMode.Default
         let key = Map.find letter _letterToKeyMap
@@ -107,7 +110,7 @@ type MarkMap(_bufferTrackingService : IBufferTrackingService) =
 
         // Close all of the ITrackingLineColumn instances
         Letter.All
-        |> Seq.iter x.DeleteGlobalMark
+        |> Seq.iter (fun letter -> x.RemoveGlobalMark letter |> ignore)
 
         _globalMarkMap <- Map.empty
 
@@ -117,5 +120,6 @@ type MarkMap(_bufferTrackingService : IBufferTrackingService) =
         member x.GetMark mark vimTextBuffer = x.GetMark mark vimTextBuffer
         member x.SetGlobalMark letter vimTextBuffer line column = x.SetGlobalMark letter vimTextBuffer line column
         member x.SetMark mark vimTextBuffer line column = x.SetMark mark vimTextBuffer line column
+        member x.RemoveGlobalMark letter = x.RemoveGlobalMark letter
         member x.Clear() = x.Clear()
 
