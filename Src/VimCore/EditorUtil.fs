@@ -1157,72 +1157,47 @@ module SnapshotPointUtil =
         else
             None
 
-    /// Get a previous point relative to a base point.  Goes as far as possible
-    /// in the specified direction counting line breaks as a single item
-    let GetPreviousPoint basePoint count =
-        let tss = GetSnapshot basePoint
-        let mutable point = basePoint
-        for i = 1 to count do
-            let line = GetContainingLine point
-            point <-
-                if point.Position = line.Start.Position then
-                    if line.LineNumber = 0 then point
-                    else tss.GetLineFromLineNumber(line.LineNumber-1).End
-                else
-                    point.Subtract(1)
-        point
+    /// Get a point relative to a starting point backward or forward
+    /// 'count' characters skipping line breaks if 'skipLineBreaks' is
+    /// specified.  Goes as far as possible in the specified direction
+    let GetRelativePoint startPoint count skipLineBreaks =
 
-    /// Get a previous point relative to a base point.  Goes as far as possible
-    /// in the specified direction counting line breaks as a single item
-    let GetNextPoint basePoint count =
-        let tss = GetSnapshot basePoint
-        let mutable point = basePoint
-        for i = 1 to count do
-            let line = GetContainingLine point
-            point <-
-                if point.Position >= line.End.Position then
-                    let num = line.LineNumber+1
-                    if num = tss.LineCount then point
-                    else tss.GetLineFromLineNumber(num).Start
-                else
-                    point.Add(1)
-        point
+        /// Get the relative column in 'direction' using predicate 'isEnd'
+        /// to stop the motion
+        let GetRelativeColumn direction (isEnd : SnapshotPoint -> bool) =
 
-    /// Get a previous point relative to a base point skipping line breaks.
-    /// Goes as far as possible in the specified direction
-    let GetPreviousPointSkippingLineBreaks basePoint count =
-        let tss = GetSnapshot basePoint
-        let mutable point = basePoint
-        for i = 1 to count do
-            let line = GetContainingLine point
-            point <-
-                if point.Position = line.Start.Position then
-                    if line.LineNumber = 0 then point
-                    else
-                        let previousLine = tss.GetLineFromLineNumber(line.LineNumber-1)
-                        if previousLine.Length = 0 then
-                            previousLine.Start
+            /// Adjust 'column' backward or forward if it is in the
+            /// middle of a line break
+            let AdjustLineBreak (column : SnapshotColumn) =
+                if column.Column <= column.Line.Length then
+                    column
+                else if direction = -1 then
+                    SnapshotColumn(column.Line, column.Line.Length)
+                else
+                    SnapshotColumn(column.Line.EndIncludingLineBreak)
+
+            let mutable column = SnapshotColumn(startPoint)
+            let mutable remaining = abs count
+            while remaining > 0 && not (isEnd column.Point) do
+                column <- column.Add direction
+                column <- AdjustLineBreak column
+                remaining <- remaining -
+                    if skipLineBreaks then
+                        if column.Line.Length = 0 || not column.IsInsideLineBreak then
+                            1
                         else
-                            previousLine.End.Subtract(1)
-                else
-                    point.Subtract(1)
-        point
+                            0
+                    else
+                        1
+            column
 
-    /// Get a previous point relative to a base point skipping line breaks.
-    /// Goes as far as possible in the specified direction
-    let GetNextPointSkippingLineBreaks basePoint count =
-        let tss = GetSnapshot basePoint
-        let mutable point = basePoint
-        for i = 1 to count do
-            let line = GetContainingLine point
-            point <-
-                if line.Length = 0 || point.Position + 1 >= line.End.Position then
-                    let num = line.LineNumber+1
-                    if num = tss.LineCount then point
-                    else tss.GetLineFromLineNumber(num).Start
-                else
-                    point.Add(1)
-        point
+        let column =
+            if count < 0 then
+                GetRelativeColumn -1 IsStartPoint
+            else
+                GetRelativeColumn 1 IsEndPoint
+
+        column.Point
 
     /// Is this the last point on the line?
     let IsLastPointOnLine point = 

@@ -324,31 +324,31 @@ and IVimGlobalSettings =
     abstract IsVirtualEditOneMore : bool with get
 
     /// Is the 'b' option inside of WhichWrap set
-    abstract IsWhichWrapBackspace : bool with get
+    abstract IsWhichWrapSpaceLeft : bool with get
 
     /// Is the 's' option inside of WhichWrap set
-    abstract IsWhichWrapSpace : bool with get
+    abstract IsWhichWrapSpaceRight : bool with get
 
     /// Is the 'h' option inside of WhichWrap set
-    abstract IsWhichWrapMotionH : bool with get
+    abstract IsWhichWrapCharLeft : bool with get
 
     /// Is the 'l' option inside of WhichWrap set
-    abstract IsWhichWrapMotionL : bool with get
+    abstract IsWhichWrapCharRight : bool with get
 
     /// Is the '<' option inside of WhichWrap set
-    abstract IsWhichWrapLeftNormal : bool with get
+    abstract IsWhichWrapArrowLeft : bool with get
 
     /// Is the '>' option inside of WhichWrap set
-    abstract IsWhichWrapRightNormal : bool with get
+    abstract IsWhichWrapArrowRight : bool with get
 
     /// Is the '~' option inside of WhichWrap set
     abstract IsWhichWrapTilde : bool with get
 
     /// Is the '[' option inside of WhichWrap set
-    abstract IsWhichWrapLeftInsert : bool with get
+    abstract IsWhichWrapArrowLeftInsert : bool with get
 
     /// Is the ']' option inside of WhichWrap set
-    abstract IsWhichWrapRightInsert : bool with get
+    abstract IsWhichWrapArrowRightInsert : bool with get
 
     /// Is the Selection setting set to a value which calls for inclusive 
     /// selection.  This does not directly track if Setting = "inclusive" 

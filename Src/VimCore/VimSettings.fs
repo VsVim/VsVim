@@ -423,15 +423,15 @@ type internal GlobalSettings() =
         member x.IsBackspaceIndent = x.IsCommaSubOptionPresent BackspaceName "indent"
         member x.IsBackspaceStart = x.IsCommaSubOptionPresent BackspaceName "start"
         member x.IsVirtualEditOneMore = x.IsCommaSubOptionPresent VirtualEditName "onemore"
-        member x.IsWhichWrapBackspace = x.IsCommaSubOptionPresent WhichWrapName "b"
-        member x.IsWhichWrapSpace = x.IsCommaSubOptionPresent WhichWrapName "s"
-        member x.IsWhichWrapMotionH = x.IsCommaSubOptionPresent WhichWrapName "h"
-        member x.IsWhichWrapMotionL = x.IsCommaSubOptionPresent WhichWrapName "l"
-        member x.IsWhichWrapLeftNormal = x.IsCommaSubOptionPresent WhichWrapName "<"
-        member x.IsWhichWrapRightNormal = x.IsCommaSubOptionPresent WhichWrapName ">"
+        member x.IsWhichWrapSpaceLeft = x.IsCommaSubOptionPresent WhichWrapName "b"
+        member x.IsWhichWrapSpaceRight = x.IsCommaSubOptionPresent WhichWrapName "s"
+        member x.IsWhichWrapCharLeft = x.IsCommaSubOptionPresent WhichWrapName "h"
+        member x.IsWhichWrapCharRight = x.IsCommaSubOptionPresent WhichWrapName "l"
+        member x.IsWhichWrapArrowLeft = x.IsCommaSubOptionPresent WhichWrapName "<"
+        member x.IsWhichWrapArrowRight = x.IsCommaSubOptionPresent WhichWrapName ">"
         member x.IsWhichWrapTilde = x.IsCommaSubOptionPresent WhichWrapName "~"
-        member x.IsWhichWrapLeftInsert = x.IsCommaSubOptionPresent WhichWrapName "["
-        member x.IsWhichWrapRightInsert = x.IsCommaSubOptionPresent WhichWrapName "]"
+        member x.IsWhichWrapArrowLeftInsert = x.IsCommaSubOptionPresent WhichWrapName "["
+        member x.IsWhichWrapArrowRightInsert = x.IsCommaSubOptionPresent WhichWrapName "]"
 
         [<CLIEvent>]
         member x.SettingChanged = _map.SettingChanged

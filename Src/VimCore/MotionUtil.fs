@@ -1635,7 +1635,7 @@ type internal MotionUtil
 
     /// Get the motion which is 'count' characters to the left of the caret on
     /// the same line
-    member x.CharLeft count = 
+    member x.CharLeftOnSameLine count = 
         let startPoint = 
             SnapshotPointUtil.TryGetPreviousPointOnLine x.CaretPoint count
             |> OptionUtil.getOrDefault x.CaretLine.Start
@@ -1644,7 +1644,7 @@ type internal MotionUtil
 
     /// Get the motion which is 'count' characters to the right of the caret 
     /// on the same line
-    member x.CharRight count =
+    member x.CharRightOnSameLine count =
         let endPoint = 
             if SnapshotPointUtil.IsInsideLineBreak x.CaretPoint then 
                 x.CaretPoint
@@ -1659,52 +1659,56 @@ type internal MotionUtil
     /// Get the motion which is 'count' characters before the caret
     /// through the buffer taking into acount 'virtualedit'
     member x.CharLeftWithLineWrap count =
-        let startPoint =
-            if _globalSettings.IsVirtualEditOneMore then
-                SnapshotPointUtil.GetPreviousPoint x.CaretPoint count
-            else
-                SnapshotPointUtil.GetPreviousPointSkippingLineBreaks x.CaretPoint count
+        let skipLineBreaks = not _globalSettings.IsVirtualEditOneMore
+        let startPoint = SnapshotPointUtil.GetRelativePoint x.CaretPoint -count skipLineBreaks
         let span = SnapshotSpan(startPoint, x.CaretPoint)
         MotionResult.Create span false MotionKind.CharacterWiseExclusive
 
     /// Get the motion which is 'count' characters after the caret 
     /// through the buffer taking into acount 'virtualedit'
     member x.CharRightWithLineWrap count =
-        let endPoint =
-            if _globalSettings.IsVirtualEditOneMore then
-                SnapshotPointUtil.GetNextPoint x.CaretPoint count
-            else
-                SnapshotPointUtil.GetNextPointSkippingLineBreaks x.CaretPoint count
+        let skipLineBreaks = not _globalSettings.IsVirtualEditOneMore
+        let endPoint = SnapshotPointUtil.GetRelativePoint x.CaretPoint count skipLineBreaks
         let span = SnapshotSpan(x.CaretPoint, endPoint)
         MotionResult.Create span true MotionKind.CharacterWiseExclusive
 
+    /// Get a relative character motion backward or forward 'count' characters
+    /// wrapping lines if 'withLineWrap' is specified
+    member x.CharMotion count withLineWrap =
+        if count < 0 then
+            if withLineWrap then
+                x.CharLeftWithLineWrap -count
+            else
+                x.CharLeftOnSameLine -count
+        else
+            if withLineWrap then
+                x.CharRightWithLineWrap count
+            else
+                x.CharRightOnSameLine count
+
+    /// Count chars left using the h key
+    member x.CharLeft count =
+        x.CharMotion -count _globalSettings.IsWhichWrapCharLeft
+
+    /// Count chars right using the l key
+    member x.CharRight count =
+        x.CharMotion count _globalSettings.IsWhichWrapCharRight
+
     /// Count chars left using the backspace key
     member x.SpaceLeft count =
-        if _globalSettings.IsWhichWrapBackspace then
-            x.CharLeftWithLineWrap count
-        else
-            x.CharLeft count
+        x.CharMotion -count _globalSettings.IsWhichWrapSpaceLeft
 
     /// Count chars right using the space key
     member x.SpaceRight count =
-        if _globalSettings.IsWhichWrapSpace then
-            x.CharRightWithLineWrap count
-        else
-            x.CharRight count
+        x.CharMotion count _globalSettings.IsWhichWrapSpaceRight
 
     /// Count chars left using the arrow key
     member x.ArrowLeft count =
-        if _globalSettings.IsWhichWrapLeftNormal then
-            x.CharLeftWithLineWrap count
-        else
-            x.CharLeft count
+        x.CharMotion -count _globalSettings.IsWhichWrapArrowLeft
 
     /// Count chars right using the arrow key
     member x.ArrowRight count =
-        if _globalSettings.IsWhichWrapRightNormal then
-            x.CharRightWithLineWrap count
-        else
-            x.CharRight count
+        x.CharMotion count _globalSettings.IsWhichWrapArrowRight
 
     /// Move a single line up from the current line.  Should fail if we are currenly
     /// on the first line of the ITextBuffer
