@@ -911,6 +911,10 @@ namespace Vim.UnitTest
                 Assert.Equal("", data.Span.GetText());
             }
 
+            /// <summary>
+            /// Space right on the last character of the line should produce a
+            /// span to the beginning of the next line
+            /// </summary>
             [Fact]
             public void SpaceRight_LastCharacter()
             {
@@ -921,6 +925,10 @@ namespace Vim.UnitTest
                 Assert.Equal(_textBuffer.GetLineFromLineNumber(1).Start, data.Span.End);
             }
 
+            /// <summary>
+            /// Space right after the last character of the line should produce a
+            /// span containing just the line break
+            /// </summary>
             [Fact]
             public void SpaceRight_EndOfLine()
             {
@@ -931,6 +939,11 @@ namespace Vim.UnitTest
                 Assert.Equal(_textBuffer.GetLineFromLineNumber(1).Start, data.Span.End);
             }
 
+            /// <summary>
+            /// Space right on the last character of the line with
+            /// 'virtualedit=onemore' should produce a span containing
+            /// just that character
+            /// </summary>
             [Fact]
             public void SpaceRight_LastCharacterVirtualEdit()
             {
@@ -942,6 +955,11 @@ namespace Vim.UnitTest
                 Assert.Equal(_textBuffer.GetLineFromLineNumber(0).End, data.Span.End);
             }
 
+            /// <summary>
+            /// Space right after the last character of the line with
+            /// 'virtualedit=onemore' should produce a span containing
+            /// just the line break
+            /// </summary>
             [Fact]
             public void SpaceRight_EndOfLineVirtualEdit()
             {
