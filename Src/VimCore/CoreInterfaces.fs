@@ -3607,8 +3607,10 @@ type FontPropertiesEventArgs () =
 
 type IFontProperties =
 
+    /// The font family
     abstract FontFamily : System.Windows.Media.FontFamily
 
+    /// The font size in points
     abstract FontSize : double
 
     [<CLIEvent>]

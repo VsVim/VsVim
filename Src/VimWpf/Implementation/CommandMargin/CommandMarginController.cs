@@ -314,23 +314,9 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
         private void UpdateFontProperties()
         {
             _margin.TextFontFamily = _fontProperties.FontFamily;
-            _margin.TextFontSize = _fontProperties.FontSize * GetDpiScaling();
-        }
 
-        /// <summary>
-        /// Get the DPI scaling factor for the control.
-        /// </summary>
-        /// <returns></returns>
-        private double GetDpiScaling()
-        {
-            var source = PresentationSource.FromVisual(_margin);
-            if (source != null)
-            {
-                var dpiX = 96 * source.CompositionTarget.TransformToDevice.M11;
-                var dpiY = 96 * source.CompositionTarget.TransformToDevice.M22;
-                return (dpiX + dpiY) / 2 / 96;
-            }
-            return 1;
+            // Convert points (1 pt = 1/72") to pixels (1 WPF pixel = 1/96").
+            _margin.TextFontSize = _fontProperties.FontSize * 96 / 72;
         }
 
         /// <summary>
