@@ -130,17 +130,37 @@ namespace Vim.UnitTest
         public void CharLeft()
         {
             AssertMotion("h", Motion.CharLeft);
-            AssertMotion(VimKey.Left, Motion.CharLeft);
-            AssertMotion(VimKey.Back, Motion.CharLeft);
-            AssertMotion(KeyNotationUtil.StringToKeyInput("<C-h>"), Motion.CharLeft);
         }
 
         [Fact]
         public void CharRight()
         {
             AssertMotion("l", Motion.CharRight);
-            AssertMotion(VimKey.Right, Motion.CharRight);
-            AssertMotion(" ", Motion.CharRight);
+        }
+
+        [Fact]
+        public void SpaceLeft()
+        {
+            AssertMotion(VimKey.Back, Motion.SpaceLeft);
+            AssertMotion(KeyNotationUtil.StringToKeyInput("<C-h>"), Motion.SpaceLeft);
+        }
+
+        [Fact]
+        public void SpaceRight()
+        {
+            AssertMotion(" ", Motion.SpaceRight);
+        }
+
+        [Fact]
+        public void ArrowLeft()
+        {
+            AssertMotion(VimKey.Left, Motion.ArrowLeft);
+        }
+
+        [Fact]
+        public void ArrowRight()
+        {
+            AssertMotion(VimKey.Right, Motion.ArrowRight);
         }
 
         [Fact]

@@ -1216,7 +1216,7 @@ module SnapshotPointUtil =
         for i = 1 to count do
             let line = GetContainingLine point
             point <-
-                if line.Length = 0 || point.Position + 1 = line.End.Position then
+                if line.Length = 0 || point.Position + 1 >= line.End.Position then
                     let num = line.LineNumber+1
                     if num = tss.LineCount then point
                     else tss.GetLineFromLineNumber(num).Start

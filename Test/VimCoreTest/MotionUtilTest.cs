@@ -912,6 +912,48 @@ namespace Vim.UnitTest
             }
 
             [Fact]
+            public void SpaceRight_LastCharacter()
+            {
+                Create("cat", "dog");
+                _textView.MoveCaretTo(2);
+                var data = _motionUtil.SpaceRight(1);
+                Assert.Equal("t\r\n", data.Span.GetText());
+                Assert.Equal(_textBuffer.GetLineFromLineNumber(1).Start, data.Span.End);
+            }
+
+            [Fact]
+            public void SpaceRight_EndOfLine()
+            {
+                Create("cat", "dog");
+                _textView.MoveCaretTo(3);
+                var data = _motionUtil.SpaceRight(1);
+                Assert.Equal("\r\n", data.Span.GetText());
+                Assert.Equal(_textBuffer.GetLineFromLineNumber(1).Start, data.Span.End);
+            }
+
+            [Fact]
+            public void SpaceRight_LastCharacterVirtualEdit()
+            {
+                Create("cat", "dog");
+                _globalSettings.VirtualEdit = "onemore";
+                _textView.MoveCaretTo(2);
+                var data = _motionUtil.SpaceRight(1);
+                Assert.Equal("t", data.Span.GetText());
+                Assert.Equal(_textBuffer.GetLineFromLineNumber(0).End, data.Span.End);
+            }
+
+            [Fact]
+            public void SpaceRight_EndOfLineVirtualEdit()
+            {
+                Create("cat", "dog");
+                _globalSettings.VirtualEdit = "onemore";
+                _textView.MoveCaretTo(3);
+                var data = _motionUtil.SpaceRight(1);
+                Assert.Equal("\r\n", data.Span.GetText());
+                Assert.Equal(_textBuffer.GetLineFromLineNumber(1).Start, data.Span.End);
+            }
+
+            [Fact]
             public void EndOfWord1()
             {
                 Create("foo bar");
