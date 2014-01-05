@@ -238,6 +238,10 @@ type internal Tokenizer
         let index = _currentToken.StartIndex + 1
         x.MoveToIndex index
 
+    member x.MoveToEndOfLine() =
+        while not x.IsAtEndOfLine do
+            x.MoveNextToken()
+
     member x.SetTokenizerFlagsScoped tokenizerFlags = 
         let reset = new ResetTokenizerFlags(x, _tokenizerFlags) 
         x.TokenizerFlags <- tokenizerFlags

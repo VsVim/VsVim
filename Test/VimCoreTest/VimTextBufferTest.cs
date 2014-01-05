@@ -101,6 +101,21 @@ namespace Vim.UnitTest
                 Assert.False(_vimTextBuffer.SetLocalMark(LocalMark.LastSelectionStart, 0, 4));
                 Assert.Equal(0, _vimTextBuffer.GetLocalMark(LocalMark.LastSelectionStart).Value.Position.Position);
             }
+
+            [Fact]
+            public void RemoveLocalMark_NotFound()
+            {
+                Create("dog");
+                Assert.False(_vimTextBuffer.RemoveLocalMark(LocalMark.NewLetter(Letter.A)));
+            }
+
+            [Fact]
+            public void RemoveLocalMark_Found()
+            {
+                Create("dog");
+                _vimTextBuffer.SetLocalMark(LocalMark.NewLetter(Letter.A), 0, 0);
+                Assert.True(_vimTextBuffer.RemoveLocalMark(LocalMark.NewLetter(Letter.A)));
+            }
         }
 
         public sealed class ClearTest : VimTextBufferTest
