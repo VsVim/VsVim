@@ -193,6 +193,87 @@ namespace VsVim.UnitTest
             }
         }
 
+        public sealed class SholudCreateVimBufferTest : VsVimHostTest
+        {
+            private ITextView CreateWithRoles(params string[] textViewRoles)
+            {
+                Create();
+                return TextEditorFactoryService.CreateTextView(
+                    CreateTextBuffer(),
+                    TextEditorFactoryService.CreateTextViewRoleSet(textViewRoles));
+            }
+
+            /// <summary>
+            /// Don't create IVimBuffer instances for interactive windows.  This would cause the NuGet
+            /// window to have instances of vim created inside of it 
+            /// </summary>
+            [Fact]
+            public void Interactive()
+            {
+                var textView = CreateWithRoles(PredefinedTextViewRoles.Editable, PredefinedTextViewRoles.Interactive);
+                Assert.False(_host.ShouldCreateVimBuffer(textView));
+            }
+
+            [Fact]
+            public void EmbeddedPeekTextView()
+            {
+                var textView = CreateWithRoles(PredefinedTextViewRoles.Editable, Constants.TextViewRoleEmbeddedPeekTextView);
+                Assert.True(_host.ShouldCreateVimBuffer(textView));
+            }
+
+            [Fact]
+            public void StandardDocument()
+            {
+                var textView = CreateWithRoles(PredefinedTextViewRoles.Editable, PredefinedTextViewRoles.Document, PredefinedTextViewRoles.Structured, PredefinedTextViewRoles.Zoomable, PredefinedTextViewRoles.Debuggable);
+                Assert.True(_host.ShouldCreateVimBuffer(textView));
+            }
+
+            [Fact]
+            public void StandardPrimaryDocument()
+            {
+                var textView = CreateWithRoles(PredefinedTextViewRoles.Editable, PredefinedTextViewRoles.PrimaryDocument, PredefinedTextViewRoles.Structured, PredefinedTextViewRoles.Zoomable, PredefinedTextViewRoles.Debuggable);
+                Assert.True(_host.ShouldCreateVimBuffer(textView));
+            }
+
+            [Fact]
+            public void StandardCSharpDocument()
+            {
+                var textView = CreateWithRoles(
+                    PredefinedTextViewRoles.Analyzable,
+                    PredefinedTextViewRoles.Document,
+                    PredefinedTextViewRoles.Editable,
+                    PredefinedTextViewRoles.Interactive,
+                    PredefinedTextViewRoles.Structured,
+                    PredefinedTextViewRoles.Zoomable,
+                    PredefinedTextViewRoles.Debuggable,
+                    PredefinedTextViewRoles.PrimaryDocument);
+                Assert.True(_host.ShouldCreateVimBuffer(textView));
+            }
+
+            [Fact]
+            public void StandardCSharpEmbeddedTextView()
+            {
+                var textView = CreateWithRoles(
+                    PredefinedTextViewRoles.Interactive,
+                    PredefinedTextViewRoles.Editable,
+                    Constants.TextViewRoleEmbeddedPeekTextView,
+                    PredefinedTextViewRoles.Analyzable,
+                    PredefinedTextViewRoles.Zoomable);
+                Assert.True(_host.ShouldCreateVimBuffer(textView));
+            }
+
+            [Fact]
+            public void NuGetManagerConsole()
+            {
+                var textView = CreateWithRoles(
+                    PredefinedTextViewRoles.Interactive,
+                    PredefinedTextViewRoles.Editable,
+                    PredefinedTextViewRoles.Analyzable,
+                    PredefinedTextViewRoles.Zoomable);
+                Assert.False(_host.ShouldCreateVimBuffer(textView));
+            }
+        }
+
         public sealed class MiscTest : VsVimHostTest
         {
             [Fact]

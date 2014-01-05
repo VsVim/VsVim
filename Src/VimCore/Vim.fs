@@ -238,12 +238,12 @@ type internal VimBufferFactory
         let insertUtil = InsertUtil(vimBufferData, commonOperations) :> IInsertUtil
         let commandUtil = CommandUtil(vimBufferData, motionUtil, commonOperations, foldManager, insertUtil, _bulkOperations) :> ICommandUtil
 
-        let bufferRaw = VimBuffer(vimBufferData, incrementalSearch, motionUtil, wordNav, vimBufferData.WindowSettings)
+        let bufferRaw = VimBuffer(vimBufferData, incrementalSearch, motionUtil, wordNav, vimBufferData.WindowSettings, commandUtil)
         let buffer = bufferRaw :> IVimBuffer
 
         let vim = vimBufferData.Vim
-        let createCommandRunner kind countKeyRemapMode = CommandRunner (textView, vim.RegisterMap, capture, vimBufferData.LocalSettings, commandUtil, vimBufferData.StatusUtil, kind, countKeyRemapMode) :>ICommandRunner
-        let broker = _completionWindowBrokerFactoryService.CreateDisplayWindowBroker textView
+        let createCommandRunner kind countKeyRemapMode = CommandRunner(textView, vim.RegisterMap, capture, vimBufferData.LocalSettings, commandUtil, vimBufferData.StatusUtil, kind, countKeyRemapMode) :>ICommandRunner
+        let broker = _completionWindowBrokerFactoryService.GetDisplayWindowBroker textView
         let bufferOptions = _editorOptionsFactoryService.GetOptions(textView.TextBuffer)
         let visualOptsFactory visualKind = Modes.Visual.SelectionTracker(textView, vimBufferData.LocalSettings, incrementalSearch, visualKind) :> Modes.Visual.ISelectionTracker
         let undoRedoOperations = vimBufferData.UndoRedoOperations

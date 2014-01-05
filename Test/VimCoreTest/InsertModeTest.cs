@@ -73,6 +73,7 @@ namespace Vim.UnitTest
             _broker.SetupGet(x => x.IsCompletionActive).Returns(false);
             _broker.SetupGet(x => x.IsQuickInfoActive).Returns(false);
             _broker.SetupGet(x => x.IsSignatureHelpActive).Returns(false);
+            _broker.SetupGet(x => x.IsSmartTagSessionActive).Returns(false);
             _insertUtil = _factory.Create<IInsertUtil>();
 
             // Setup the mouse.  By default we say it has no buttons down as that's the normal state
@@ -341,6 +342,7 @@ namespace Vim.UnitTest
                 _broker.SetupGet(x => x.IsCompletionActive).Returns(false).Verifiable();
                 _broker.SetupGet(x => x.IsQuickInfoActive).Returns(false).Verifiable();
                 _broker.SetupGet(x => x.IsSignatureHelpActive).Returns(false).Verifiable();
+                _broker.SetupGet(x => x.IsSmartTagSessionActive).Returns(false).Verifiable();
                 SetupRunCompleteMode(true);
                 var res = _mode.Process(KeyInputUtil.EscapeKey);
                 Assert.True(res.IsSwitchMode(ModeKind.Normal));
@@ -356,6 +358,7 @@ namespace Vim.UnitTest
             {
                 _textView.SetText("hello world", "", "again");
                 _textView.MoveCaretTo(_textView.GetLine(1).Start.Position, 4);
+                _broker.SetupGet(x => x.IsSmartTagSessionActive).Returns(false).Verifiable();
                 SetupRunCompleteMode(true);
                 _mode.Process(KeyInputUtil.EscapeKey);
                 _factory.Verify();

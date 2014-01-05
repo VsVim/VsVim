@@ -107,7 +107,8 @@ type internal VimBuffer
         _incrementalSearch : IIncrementalSearch,
         _motionUtil : IMotionUtil,
         _wordNavigator : ITextStructureNavigator,
-        _windowSettings : IVimWindowSettings
+        _windowSettings : IVimWindowSettings,
+        _commandUtil : ICommandUtil
     ) as this =
 
     let _vim = _vimBufferData.Vim
@@ -179,14 +180,14 @@ type internal VimBuffer
     /// Current KeyRemapMode which should be used when calculating keyboard mappings
     member x.KeyRemapMode = 
         match _modeMap.Mode.ModeKind with
-        | ModeKind.Insert -> Some KeyRemapMode.Insert
-        | ModeKind.Replace -> Some KeyRemapMode.Insert
+        | ModeKind.Insert -> KeyRemapMode.Insert
+        | ModeKind.Replace -> KeyRemapMode.Insert
         | ModeKind.Normal -> x.NormalMode.KeyRemapMode
-        | ModeKind.Command -> Some KeyRemapMode.Command
+        | ModeKind.Command -> KeyRemapMode.Command
         | ModeKind.VisualBlock -> x.VisualBlockMode.KeyRemapMode
         | ModeKind.VisualCharacter -> x.VisualCharacterMode.KeyRemapMode
         | ModeKind.VisualLine -> x.VisualLineMode.KeyRemapMode
-        | _ -> None
+        | _ -> KeyRemapMode.None
 
     /// Is this buffer currently in the middle of a count operation
     member x.InCount = 
@@ -326,9 +327,7 @@ type internal VimBuffer
             | None -> KeyInputSet.OneKeyInput keyInput
             | Some bufferedKeyInputSet -> bufferedKeyInputSet.Add keyInput
 
-        match x.KeyRemapMode with
-        | None -> KeyMappingResult.Mapped keyInputSet
-        | Some keyRemapMode -> x.GetKeyMappingCore keyInputSet keyRemapMode
+        x.GetKeyMappingCore keyInputSet x.KeyRemapMode
 
     member x.OnVimTextBufferSwitchedMode modeKind modeArgument =
         if x.Mode.ModeKind <> modeKind then
@@ -433,13 +432,13 @@ type internal VimBuffer
 
         while remainingSet.Value.Length > 0 do
             match x.KeyRemapMode with
-            | None -> 
+            | KeyRemapMode.None -> 
                 // There is no mode for the current key stroke but may be for the subsequent
                 // ones in the set.  Process the first one only here 
                 remainingSet.Value.FirstKeyInput.Value |> KeyInputSet.OneKeyInput |> processSet
                 remainingSet := remainingSet.Value.Rest |> KeyInputSetUtil.OfList
-            | Some keyRemapMode ->
-                let keyMappingResult = x.GetKeyMappingCore remainingSet.Value keyRemapMode
+            | _ -> 
+                let keyMappingResult = x.GetKeyMappingCore remainingSet.Value x.KeyRemapMode
                 remainingSet := 
                     match keyMappingResult with
                     | KeyMappingResult.Mapped mappedKeyInputSet -> 
@@ -524,16 +523,12 @@ type internal VimBuffer
             //
             // Then type 'i' in insert mode and wait for the time out.  It will print 'short'
             let keyInputSet = 
-                match x.KeyRemapMode with
+                let keyMapping = 
+                    _keyMap.GetKeyMappingsForMode x.KeyRemapMode
+                    |> Seq.tryFind (fun keyMapping -> keyMapping.Left = keyInputSet)
+                match keyMapping with
                 | None -> keyInputSet
-                | Some keyRemapMode ->
-                    let keyMapping = 
-                        keyRemapMode
-                        |> _keyMap.GetKeyMappingsForMode 
-                        |> Seq.tryFind (fun keyMapping -> keyMapping.Left = keyInputSet)
-                    match keyMapping with
-                    | None -> keyInputSet
-                    | Some keyMapping -> keyMapping.Right
+                | Some keyMapping -> keyMapping.Right
 
             keyInputSet.KeyInputs
             |> Seq.iter (fun keyInput -> x.ProcessOneKeyInput keyInput |> ignore)
@@ -594,6 +589,7 @@ type internal VimBuffer
         member x.VimTextBuffer = x.VimBufferData.VimTextBuffer
         member x.WordNavigator = _wordNavigator
         member x.TextView = _textView
+        member x.CommandUtil = _commandUtil
         member x.MotionUtil = _motionUtil
         member x.TextBuffer = _textView.TextBuffer
         member x.TextSnapshot = _textView.TextSnapshot

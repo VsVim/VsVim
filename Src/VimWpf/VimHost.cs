@@ -26,9 +26,34 @@ namespace Vim.UI.Wpf
         private event EventHandler<TextViewEventArgs> _isVisibleChanged;
         private event EventHandler<TextViewChangedEventArgs> _activeTextViewChanged;
 
+        public ITextDocumentFactoryService TextDocumentFactoryService
+        {
+            get { return _textDocumentFactoryService; }
+        }
+
+        public ITextBufferFactoryService TextBufferFactoryService
+        {
+            get { return _textBufferFactoryService; }
+        }
+
+        public ITextEditorFactoryService TextEditorFactoryService
+        {
+            get { return _textEditorFactoryService; }
+        }
+
         public virtual bool AutoSynchronizeSettings
         {
             get { return true; }
+        }
+
+        public abstract int TabCount
+        {
+            get;
+        }
+
+        public abstract IFontProperties FontProperties
+        {
+            get;
         }
 
         protected VimHost(
@@ -100,6 +125,8 @@ namespace Vim.UI.Wpf
 
         public abstract string GetName(ITextBuffer value);
 
+        public abstract int GetTabIndex(ITextView textView);
+
         public virtual bool TryGetFocusedTextView(out ITextView textView)
         {
             textView = _textViewList.FirstOrDefault(x => x.HasAggregateFocus);
@@ -112,11 +139,9 @@ namespace Vim.UI.Wpf
 
         public abstract bool GoToLocalDeclaration(ITextView textView, string name);
 
-        public abstract void GoToNextTab(Path direction, int count);
-
         public abstract void GoToTab(int index);
 
-        public abstract void GoToQuickFix(QuickFix quickFix, int count, bool hasBang);
+        public abstract bool GoToQuickFix(QuickFix quickFix, int count, bool hasBang);
 
         public virtual bool IsDirty(ITextBuffer textBuffer)
         {
@@ -233,11 +258,16 @@ namespace Vim.UI.Wpf
         }
 
         /// <summary>
-        /// All ITextView instances are elligable for an IVimBuffer by default.  Let the actual
-        /// host override this method an reject IVimBuffer instances that it doesn't like
+        /// By default anything but a pure interactive window is eligable for creation 
         /// </summary>
         public virtual bool ShouldCreateVimBuffer(ITextView textView)
         {
+            if (textView.Roles.Contains(PredefinedTextViewRoles.Interactive) &&
+                !textView.Roles.Contains(PredefinedTextViewRoles.Document))
+            {
+                return false;
+            }
+
             return true;
         }
 
@@ -345,7 +375,7 @@ namespace Vim.UI.Wpf
         }
 
         /// <summary>
-        /// Do the horizontal scolling necessary to make the column of the given point visible
+        /// Do the horizontal scrolling necessary to make the column of the given point visible
         /// </summary>
         private void EnsureLinePointVisible(ITextView textView, SnapshotPoint point)
         {
@@ -446,6 +476,11 @@ namespace Vim.UI.Wpf
             return GetName(textBuffer);
         }
 
+        int IVimHost.GetTabIndex(ITextView textView)
+        {
+            return GetTabIndex(textView);
+        }
+
         bool IVimHost.GoToDefinition()
         {
             return GoToDefinition();
@@ -461,19 +496,14 @@ namespace Vim.UI.Wpf
             return GoToLocalDeclaration(textView, identifier);
         }
 
-        void IVimHost.GoToNextTab(Path value, int count)
-        {
-            GoToNextTab(value, count);
-        }
-
         void IVimHost.GoToTab(int index)
         {
             GoToTab(index);
         }
 
-        void IVimHost.GoToQuickFix(QuickFix quickFix, int count, bool hasBang)
+        bool IVimHost.GoToQuickFix(QuickFix quickFix, int count, bool hasBang)
         {
-            GoToQuickFix(quickFix, count, hasBang);
+            return GoToQuickFix(quickFix, count, hasBang);
         }
 
         bool IVimHost.IsDirty(ITextBuffer textBuffer)

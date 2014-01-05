@@ -11,7 +11,16 @@ using Vim.UnitTest;
 
 namespace Vim.UI.Wpf.UnitTest
 {
-    public class KeyProcessorSimulation
+    public enum KeyDirection
+    {
+        Up,
+        Down
+    }
+
+    /// <summary>
+    /// This type is used to simulate how keyboard input navigates through WPF events
+    /// </summary>
+    public class KeyboardInputSimulation
     {
         #region DefaultInputController
 
@@ -32,6 +41,40 @@ namespace Vim.UI.Wpf.UnitTest
             {
                 _textView = textView;
                 _keyProcessors = new List<KeyProcessor>();
+            }
+
+            /// <summary>
+            /// Pass the event onto the various KeyProcessor values
+            /// </summary>
+            internal void HandlePreviewKeyDown(object sender, KeyEventArgs e)
+            {
+                for (int i = _keyProcessors.Count - 1; i >=0 ; i--)
+                {
+                    var keyProcessor = _keyProcessors[i];
+                    if (e.Handled && !keyProcessor.IsInterestedInHandledEvents)
+                    {
+                        continue;
+                    }
+
+                    keyProcessor.PreviewKeyDown(e);
+                }
+            }
+
+            /// <summary>
+            /// Pass the event onto the various KeyProcessor values
+            /// </summary>
+            internal void HandlePreviewKeyUp(object sender, KeyEventArgs e)
+            {
+                for (int i = _keyProcessors.Count - 1; i >=0 ; i--)
+                {
+                    var keyProcessor = _keyProcessors[i];
+                    if (e.Handled && !keyProcessor.IsInterestedInHandledEvents)
+                    {
+                        continue;
+                    }
+
+                    keyProcessor.PreviewKeyUp(e);
+                }
             }
 
             /// <summary>
@@ -145,7 +188,7 @@ namespace Vim.UI.Wpf.UnitTest
             get { return _defaultInputController.KeyProcessors; }
         }
 
-        public KeyProcessorSimulation(IWpfTextView wpfTextView)
+        public KeyboardInputSimulation(IWpfTextView wpfTextView)
         {
             _defaultInputController = new DefaultInputController(wpfTextView);
             _defaultKeyboardDevice = new DefaultKeyboardDevice(InputManager.Current);
@@ -173,6 +216,10 @@ namespace Vim.UI.Wpf.UnitTest
             }
         }
 
+        /// <summary>
+        /// This method will simulate a key sequence where the provided keyInput value is pressed
+        /// down and released 
+        /// </summary>
         public void Run(KeyInput keyInput)
         {
             Key key;
@@ -186,63 +233,97 @@ namespace Vim.UI.Wpf.UnitTest
             try
             {
                 _defaultKeyboardDevice.DownKeyModifiers = modifierKeys;
-
-                if (PreProcess(keyInput, key, modifierKeys))
-                {
-                    return;
-                }
-
                 var text = keyInput.RawChar.IsSome()
                     ? keyInput.Char.ToString()
                     : String.Empty;
-                Run(text, key, modifierKeys);
+                Run(text, keyInput, key, modifierKeys);
             }
             finally
             {
                 _defaultKeyboardDevice.DownKeyModifiers = ModifierKeys.None;
-
             }
         }
 
         /// <summary>
         /// Run the KeyInput directly in the Wpf control
         /// </summary>
-        private void Run(string text, Key key, ModifierKeys modifierKeys)
+        private void Run(string text, KeyInput keyInput, Key key, ModifierKeys modifierKeys)
         {
-            // First raise the KeyDown event
-            var keyDownEventArgs = new KeyEventArgs(
-                _defaultKeyboardDevice,
-                _presentationSource.Object,
-                0,
-                key);
-            keyDownEventArgs.RoutedEvent = UIElement.KeyDownEvent;
-            _defaultInputController.HandleKeyDown(this, keyDownEventArgs);
-
-            // If the event is handled then return
-            if (keyDownEventArgs.Handled)
+            if (!RunDown(keyInput, key, modifierKeys))
             {
-                return;
+                // If the down event wasn't handled then we should proceed to actually providing
+                // textual composition 
+                var textInputEventArgs = new TextCompositionEventArgs(
+                    _defaultKeyboardDevice,
+                    CreateTextComposition(text));
+                textInputEventArgs.RoutedEvent = UIElement.TextInputEvent;
+                _defaultInputController.HandleTextInput(this, textInputEventArgs);
             }
 
-            // Now raise the TextInput event
-            var textInputEventArgs = new TextCompositionEventArgs(
-                _defaultKeyboardDevice,
-                CreateTextComposition(text));
-            textInputEventArgs.RoutedEvent = UIElement.TextInputEvent;
-            _defaultInputController.HandleTextInput(this, textInputEventArgs);
+            // The key up code is processed even if the down or text composition is handled by 
+            // the calling code.  It's an independent event 
+            RunUp(keyInput, key, modifierKeys);
+        }
 
-            var keyUpEventArgs = new KeyEventArgs(
-                _defaultKeyboardDevice,
-                _presentationSource.Object,
-                0,
-                key);
-            keyUpEventArgs.RoutedEvent = UIElement.KeyUpEvent;
+        private bool RunDown(KeyInput keyInput, Key key, ModifierKeys modifierKeys)
+        {
+            // First let the preprocess step have a chance to intercept the key
+            if (PreProcess(KeyDirection.Down, keyInput, key, modifierKeys))
+            {
+                return true;
+            }
+
+            // Next raise the preview event
+            // First raise the PreviewKeyDown event
+            var previewKeyDownEventArgs = CreateKeyEventArgs(key, UIElement.PreviewKeyDownEvent);
+            _defaultInputController.HandlePreviewKeyDown(this, previewKeyDownEventArgs);
+            if (previewKeyDownEventArgs.Handled)
+            {
+                return true;
+            }
+
+            // If the preview event wasn't handled then move to the down event 
+            var keyDownEventArgs = CreateKeyEventArgs(key, UIElement.KeyDownEvent);
+            _defaultInputController.HandleKeyDown(this, keyDownEventArgs);
+            return keyDownEventArgs.Handled;
+        }
+
+        private bool RunUp(KeyInput keyInput, Key key, ModifierKeys modifierKeys)
+        {
+            // First let the preprocess step have a chance to intercept the key
+            if (PreProcess(KeyDirection.Up, keyInput, key, modifierKeys))
+            {
+                return true;
+            }
+
+            // Now move onto the up style events.  These are raised even if the chain of down events
+            // are handled 
+            var previewKeyUpEventArgs = CreateKeyEventArgs(key, UIElement.PreviewKeyUpEvent);
+            _defaultInputController.HandlePreviewKeyUp(this, previewKeyUpEventArgs);
+            if (previewKeyUpEventArgs.Handled)
+            {
+                return true;
+            }
+
+            var keyUpEventArgs = CreateKeyEventArgs(key, UIElement.KeyUpEvent);
             _defaultInputController.HandleKeyUp(this, keyUpEventArgs);
+            return keyUpEventArgs.Handled;
         }
 
         private TextComposition CreateTextComposition(string text)
         {
             return _wpfTextView.VisualElement.CreateTextComposition(text);
+        }
+
+        private KeyEventArgs CreateKeyEventArgs(Key key, RoutedEvent e)
+        {
+            var keyEventArgs = new KeyEventArgs(
+                _defaultKeyboardDevice,
+                _presentationSource.Object,
+                0,
+                key);
+            keyEventArgs.RoutedEvent = e;
+            return keyEventArgs;
         }
 
         private bool TryConvert(KeyInput keyInput, out Key key, out ModifierKeys modifierKeys)
@@ -336,7 +417,11 @@ namespace Vim.UI.Wpf.UnitTest
             return (Key)Enum.Parse(typeof(Key), str);
         }
 
-        protected virtual bool PreProcess(KeyInput keyInput, Key key, ModifierKeys modifierKeys)
+        /// <summary>
+        /// This is intended to simulate the pre-processing of input similar to pre-process message.  This will
+        /// return true if the event was handled
+        /// </summary>
+        protected virtual bool PreProcess(KeyDirection keyDirection, KeyInput keyInput, Key key, ModifierKeys modifierKeys)
         {
             return false;
         }

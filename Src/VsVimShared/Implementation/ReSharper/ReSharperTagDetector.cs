@@ -143,6 +143,51 @@ namespace VsVim.Implementation.ReSharper
         }
     }
 
+    internal sealed class ReSharperV81EditTagDetector : ReSharperEditTagDetectorBase
+    {
+        internal FieldInfo AttributeIdFieldInfo { get; private set; }
+
+        public override ReSharperVersion Version
+        {
+            get { return ReSharperVersion.Version81; }
+        }
+
+        public override bool IsEditTag(ITag tag)
+        {
+            // In ReSharper 8 the tag implementation (JetBrains.VsIntegration.DevTen.Markup.VsTextAdornmentTag) 
+            // no longer stores a reference to the JetBrains.TextControl.DocumentMarkup.IHighlighter implementation
+            // Instead the implementation is similar to how ReSharper 7 did it, 
+            // it has a field "myHighlighterAttributeId" that stores the highlighter attribute id
+
+            // Cache the FieldInfo/PropertyInfo since we will be using it a lot
+            if (AttributeIdFieldInfo == null)
+            {
+                Type type = tag.GetType();
+                AttributeIdFieldInfo = type.GetField("myHighlighterAttributeId", BindingFlags.Instance | BindingFlags.NonPublic);
+            }
+
+            if (AttributeIdFieldInfo == null)
+            {
+                return false;
+            }
+
+            var value = AttributeIdFieldInfo.GetValue(tag) as string;
+            if (value == null)
+            {
+                return false;
+            }
+
+            switch (value)
+            {
+                case ExternalEditAttribute1:
+                case ExternalEditAttribute2:
+                case ExternalEditAttribute3:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+    }
     /// <summary>
     /// Used in the cases where the version of R# cannot be detected 
     /// </summary>

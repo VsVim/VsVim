@@ -1,5 +1,6 @@
 ﻿
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 namespace VsVim
 {
@@ -58,7 +59,7 @@ namespace VsVim
     /// <summary>
     /// Represents the KeyBinding information for a Visual Studio command
     /// </summary>
-    public sealed class CommandKeyBinding
+    public sealed class CommandKeyBinding : IEquatable<CommandKeyBinding>
     {
         /// <summary>
         /// The unique id of the command
@@ -80,6 +81,39 @@ namespace VsVim
             Id = commandId;
             Name = name;
             KeyBinding = binding;
+        }
+
+        public override int GetHashCode()
+        {
+            return Id.GetHashCode() ^ KeyBinding.GetHashCode();
+        }
+
+        public override bool Equals(object obj)
+        {
+            return Equals(obj as CommandKeyBinding);
+        }
+
+        public bool Equals(CommandKeyBinding other)
+        {
+            if (other == null)
+            {
+                return false;
+            }
+
+            return
+                Id == other.Id &&
+                StringComparer.OrdinalIgnoreCase.Equals(Name, other.Name) &&
+                KeyBinding == other.KeyBinding;
+        }
+
+        public static bool operator ==(CommandKeyBinding left, CommandKeyBinding right)
+        {
+            return EqualityComparer<CommandKeyBinding>.Default.Equals(left, right);
+        }
+
+        public static bool operator !=(CommandKeyBinding left, CommandKeyBinding right)
+        {
+            return !EqualityComparer<CommandKeyBinding>.Default.Equals(left, right);
         }
 
         public override string ToString()

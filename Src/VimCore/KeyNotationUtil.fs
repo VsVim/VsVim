@@ -125,7 +125,7 @@ module KeyNotationUtil =
         let numberString = numberCharSpan.ToString()
 
         // TODO: Need to unify the handling of number parsing in this code base.  It's done here,
-        // in CommandUtil for the <C-A> command and in the parser 
+        // in CommandUtil for the <C-A> command and in SearchDataOffset
         let numberBase = 
             if numberString.StartsWith("0x") then
                 16

@@ -10,7 +10,7 @@ namespace Vim.UI.Wpf.Implementation.CharDisplay
 {
     [Export(typeof(IViewTaggerProvider))]
     [ContentType(Constants.AnyContentType)]
-    [TextViewRole(PredefinedTextViewRoles.Document)]
+    [TextViewRole(PredefinedTextViewRoles.Editable)]
     [TagType(typeof(IntraTextAdornmentTag))]
     internal sealed class CharDisplayTaggerSourceFactory : IViewTaggerProvider
     {

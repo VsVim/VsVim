@@ -30,6 +30,14 @@ namespace Vim.UnitTest
             return flags == SourceConstructFlags.SumType;
         }
 
+        /// <summary>
+        /// Determine if this type is one that was embedded from FSharp.Core.dll
+        /// </summary>
+        static bool IsFSharpCore(Type type)
+        {
+            return type.FullName.StartsWith("Microsoft.FSharp", StringComparison.Ordinal);
+        }
+
         public sealed class NamingTest : CodeHygieneTest
         {
             [Fact]
@@ -51,7 +59,11 @@ namespace Vim.UnitTest
             {
                 var any = false;
                 var list = new List<string>();
-                foreach (var type in _sourceAssembly.GetTypes().Where(IsDiscriminatedUnion))
+                var types = _sourceAssembly
+                    .GetTypes()
+                    .Where(IsDiscriminatedUnion)
+                    .Where(x => !IsFSharpCore(x));
+                foreach (var type in types)
                 {
                     any = true;
                     var attrib = type.GetCustomAttributes(typeof(RequireQualifiedAccessAttribute), inherit: true);
@@ -93,7 +105,7 @@ namespace Vim.UnitTest
                     Run(CaseSpecifier.IgnoreCase, CaseSpecifier.None);
                     Run(ChangeCharacterKind.Rot13, ChangeCharacterKind.ToggleCase);
                     Run(CharSearchKind.TillChar, CharSearchKind.ToChar);
-                    Run(Direction.Left, Direction.Right);
+                    Run(KeyRemapMode.Language, KeyRemapMode.Normal);
                     Run(DirectiveKind.If, DirectiveKind.Else);
                     Run(MagicKind.NoMagic, MagicKind.Magic);
                     Run(MatchingTokenKind.Braces, MatchingTokenKind.Brackets);

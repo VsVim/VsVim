@@ -16,6 +16,7 @@ using Vim.UI.Wpf;
 using Vim.UI.Wpf.UnitTest;
 using Vim.UnitTest;
 using VsVim.Implementation.Misc;
+using VsVim.Implementation.ReSharper;
 
 namespace VsVim.UnitTest.Utils
 {
@@ -33,20 +34,47 @@ namespace VsVim.UnitTest.Utils
     /// </summary>
     internal sealed class VsSimulation
     {
-        #region VsKeyProcessorSimulation
+        #region VsKeyboardInputSimulation
 
-        private sealed class VsKeyProcessorSimulation : KeyProcessorSimulation
+        /// <summary>
+        /// This is a Visual Studio specific implementation of the key processor.  It takes into account the interaction
+        /// between IOleCommandTarget and keyboard input. 
+        /// </summary>
+        private sealed class VsKeyboardInputSimulation : KeyboardInputSimulation
         {
             private readonly VsSimulation _vsSimulation;
 
-            internal VsKeyProcessorSimulation(VsSimulation vsSimulation, IWpfTextView wpfTextView) : base(wpfTextView)
+            internal VsKeyboardInputSimulation(VsSimulation vsSimulation, IWpfTextView wpfTextView) : base(wpfTextView)
             {
                 _vsSimulation = vsSimulation;
             }
 
-            protected override bool PreProcess(KeyInput keyInput, Key key, ModifierKeys modifierKeys)
+            /// <summary>
+            /// Visual Studio hooks PreTranslateMessage and will process keyboard input there if it maps to a 
+            /// command keyboard binding.  Textual input is *not* handled here but keys like Esc, Up, Down, etc ...
+            /// are.  They need to be routed directly to IOleCommandTarget
+            /// </summary>
+            protected override bool PreProcess(KeyDirection keyDirection, KeyInput keyInput, Key key, ModifierKeys modifierKeys)
             {
-                return _vsSimulation.RunInOleCommandTarget(keyInput);
+                // Visual Studio only intercepts the down events.  
+                if (keyDirection != KeyDirection.Down)
+                {
+                    return false;
+                }
+
+                switch (keyInput.Key)
+                {
+                    case VimKey.Escape:
+                    case VimKey.Back:
+                    case VimKey.Up:
+                    case VimKey.Down:
+                    case VimKey.Left:
+                    case VimKey.Right:
+                    case VimKey.Tab:
+                        return _vsSimulation.RunInOleCommandTarget(keyInput);
+                    default:
+                        return false;
+                }
             }
         }
 
@@ -111,10 +139,22 @@ namespace VsVim.UnitTest.Utils
         /// 
         /// This mimics mainly the implementation VsTextViewAdapter InnerExec and InnerQueryStatus
         /// </summary>
-        private sealed class DefaultCommandTarget : IOleCommandTarget
+        internal sealed class DefaultCommandTarget : IOleCommandTarget
         {
             private readonly ITextView _textView;
             private readonly IEditorOperations _editorOperatins;
+            private EditCommand _lastExecEditCommand;
+            private EditCommand _lastQueryStatusEditCommand;
+
+            internal EditCommand LastExecEditCommand
+            {
+                get { return _lastExecEditCommand; }
+            }
+
+            internal EditCommand LastQueryStatusEditCommand
+            {
+                get { return _lastQueryStatusEditCommand; }
+            }
 
             internal DefaultCommandTarget(ITextView textView, IEditorOperations editorOperations)
             {
@@ -170,9 +210,11 @@ namespace VsVim.UnitTest.Utils
                 EditCommand editCommand;
                 if (!OleCommandUtil.TryConvert(commandGroup, cmdId, variantIn, KeyModifiers.None, out editCommand))
                 {
+                    _lastExecEditCommand = null;
                     return VSConstants.E_FAIL;
                 }
 
+                _lastExecEditCommand = editCommand;
                 return TryExec(editCommand.KeyInput) ? VSConstants.S_OK : VSConstants.E_FAIL;
             }
 
@@ -181,84 +223,14 @@ namespace VsVim.UnitTest.Utils
                 EditCommand editCommand;
                 if (1 != commandCount || !OleCommandUtil.TryConvert(commandGroup, commands[0].cmdID, commandText, KeyModifiers.None, out editCommand))
                 {
+                    _lastQueryStatusEditCommand = null;
                     commands[0].cmdf = 0;
                     return NativeMethods.S_OK;
                 }
 
+                _lastQueryStatusEditCommand = editCommand;
                 commands[0].cmdf = (uint)(OLECMDF.OLECMDF_ENABLED | OLECMDF.OLECMDF_SUPPORTED);
                 return NativeMethods.S_OK;
-            }
-        }
-
-        #endregion
-
-        #region ResharperCommandTarget
-
-        /// <summary>
-        /// Simulation of the R# command target.  This is intended to implement the most basic of 
-        /// R# functionality for the purpose of testing
-        /// </summary>
-        private sealed class ResharperCommandTarget : IOleCommandTarget
-        {
-            private readonly ITextView _textView;
-            private readonly IOleCommandTarget _nextCommandTarget;
-
-            internal ResharperCommandTarget(ITextView textView, IOleCommandTarget nextCommandTarget)
-            {
-                _textView = textView;
-                _nextCommandTarget = nextCommandTarget;
-            }
-
-            /// <summary>
-            /// Try and simulate the execution of the few KeyInput values we care about
-            /// </summary>
-            private bool TryExec(KeyInput keyInput)
-            {
-                if (keyInput.Key == VimKey.Back)
-                {
-                    return TryExecBack();
-                }
-
-                return false;
-            }
-
-            /// <summary>
-            /// R# will delete both parens when the Back key is used on the closing paren
-            /// </summary>
-            private bool TryExecBack()
-            {
-                var caretPoint = _textView.GetCaretPoint();
-                if (caretPoint.Position < 2 ||
-                    caretPoint.GetChar() != ')' ||
-                    caretPoint.Subtract(1).GetChar() != '(')
-                {
-                    return false;
-                }
-
-                var span = new Span(caretPoint.Position - 1, 2);
-                _textView.TextBuffer.Delete(span);
-                return true;
-            }
-
-            int IOleCommandTarget.Exec(ref Guid commandGroup, uint commandId, uint commandExecOpt, IntPtr variantIn, IntPtr variantOut)
-            {
-                KeyInput keyInput;
-                EditCommandKind editCommandKind;
-                if (!OleCommandUtil.TryConvert(commandGroup, commandId, variantIn, out keyInput, out editCommandKind) ||
-                    !TryExec(keyInput))
-                {
-                    return _nextCommandTarget.Exec(ref commandGroup, commandId, commandExecOpt, variantIn, variantOut);
-                }
-
-                return VSConstants.S_OK;
-            }
-
-            /// <summary>
-            /// R# just forwards it's QueryStatus call onto the next target
-            /// </summary>
-            int IOleCommandTarget.QueryStatus(ref Guid pguidCmdGroup, uint cCmds, OLECMD[] prgCmds, IntPtr pCmdText)
-            {
-                return _nextCommandTarget.QueryStatus(ref pguidCmdGroup, cCmds, prgCmds, pCmdText);
             }
         }
 
@@ -278,17 +250,17 @@ namespace VsVim.UnitTest.Utils
         /// This is the default command target for Visual Studio.  It simulates the final command
         /// target on the chain.
         /// </summary>
-        private readonly DefaultCommandTarget _defaultCommandTarget;
+        private readonly DefaultCommandTarget _vsCommandTarget;
 
         private readonly IWpfTextView _wpfTextView;
-        private readonly VsKeyProcessorSimulation _vsKeyProcessorSimulation;
+        private readonly VsKeyboardInputSimulation _vsKeyboardInputSimulation;
         private readonly MockRepository _factory;
         private readonly Mock<IVsAdapter> _vsAdapter;
         private readonly Mock<IDisplayWindowBroker> _displayWindowBroker;
-        private readonly Mock<IReSharperUtil> _resharperUtil;
         private readonly Mock<IReportDesignerUtil> _reportDesignerUtil;
         private readonly TestableSynchronizationContext _testableSynchronizationContext;
         private readonly IKeyUtil _keyUtil;
+        private readonly ReSharperCommandTargetSimulation _reSharperCommandTarget;
         private bool _simulateStandardKeyMappings;
 
         internal bool SimulateStandardKeyMappings
@@ -297,9 +269,22 @@ namespace VsVim.UnitTest.Utils
             set { _simulateStandardKeyMappings = value; }
         }
 
+        /// <summary>
+        /// In the case where we are simulating R# this will be the command target used 
+        /// </summary>
+        internal ReSharperCommandTargetSimulation ReSharperCommandTargetOpt
+        {
+            get { return _reSharperCommandTarget; }
+        }
+
         internal Mock<IDisplayWindowBroker> DisplayWindowBroker
         {
             get { return _displayWindowBroker; }
+        }
+
+        internal DefaultCommandTarget VsCommandTarget
+        {
+            get { return _vsCommandTarget; }
         }
 
         internal VsSimulation(IVimBufferCoordinator bufferCoordinator, bool simulateResharper, bool simulateStandardKeyMappings, IEditorOperationsFactoryService editorOperationsFactoryService, IKeyUtil keyUtil)
@@ -307,7 +292,7 @@ namespace VsVim.UnitTest.Utils
             _keyUtil = keyUtil;
             _wpfTextView = (IWpfTextView)bufferCoordinator.VimBuffer.TextView;
             _factory = new MockRepository(MockBehavior.Strict);
-            _vsKeyProcessorSimulation = new VsKeyProcessorSimulation(this, _wpfTextView);
+            _vsKeyboardInputSimulation = new VsKeyboardInputSimulation(this, _wpfTextView);
             _testableSynchronizationContext = new TestableSynchronizationContext();
             _simulateStandardKeyMappings = simulateStandardKeyMappings;
 
@@ -315,13 +300,10 @@ namespace VsVim.UnitTest.Utils
             // this via an exposed property
             _vsAdapter = _factory.Create<IVsAdapter>();
             _vsAdapter.SetupGet(x => x.InAutomationFunction).Returns(false);
-            _vsAdapter.SetupGet(x => x.KeyboardDevice).Returns(_vsKeyProcessorSimulation.KeyBoardDevice);
+            _vsAdapter.SetupGet(x => x.KeyboardDevice).Returns(_vsKeyboardInputSimulation.KeyBoardDevice);
             _vsAdapter.Setup(x => x.IsReadOnly(It.IsAny<ITextBuffer>())).Returns(false);
             _vsAdapter.Setup(x => x.IsReadOnly(It.IsAny<ITextView>())).Returns(false);
             _vsAdapter.Setup(x => x.IsIncrementalSearchActive(_wpfTextView)).Returns(false);
-
-            _resharperUtil = _factory.Create<IReSharperUtil>();
-            _resharperUtil.SetupGet(x => x.IsInstalled).Returns(simulateResharper);
 
             _reportDesignerUtil = _factory.Create<IReportDesignerUtil>();
             _reportDesignerUtil.Setup(x => x.IsExpressionView(_wpfTextView)).Returns(false);
@@ -332,31 +314,36 @@ namespace VsVim.UnitTest.Utils
             _displayWindowBroker.SetupGet(x => x.IsSignatureHelpActive).Returns(false);
             _displayWindowBroker.SetupGet(x => x.IsSmartTagSessionActive).Returns(false);
 
-            _defaultCommandTarget = new DefaultCommandTarget(
+            _vsCommandTarget = new DefaultCommandTarget(
                 bufferCoordinator.VimBuffer.TextView,
                 editorOperationsFactoryService.GetEditorOperations(bufferCoordinator.VimBuffer.TextView));
 
+            var textManager = _factory.Create<ITextManager>();
+            var commandTargets = new List<ICommandTarget>();
+            if (simulateResharper)
+            {
+                commandTargets.Add(ReSharperKeyUtil.GetOrCreate(bufferCoordinator));
+            }
+            commandTargets.Add(new StandardCommandTarget(bufferCoordinator, textManager.Object, _displayWindowBroker.Object, _vsCommandTarget));
+
             // Create the VsCommandTarget.  It's next is the final and default Visual Studio 
             // command target
-            var vsTextView = _factory.Create<IVsTextView>();
-            IOleCommandTarget nextCommandTarget = _defaultCommandTarget;
-            vsTextView.Setup(x => x.AddCommandFilter(It.IsAny<IOleCommandTarget>(), out nextCommandTarget)).Returns(VSConstants.S_OK);
-            var vsCommandTarget = VsCommandTarget.Create(
+            var vsCommandTarget = new VsCommandTarget(
                 bufferCoordinator,
-                vsTextView.Object,
-                _factory.Create<ITextManager>().Object,
+                textManager.Object,
                 _vsAdapter.Object,
                 _displayWindowBroker.Object,
-                _resharperUtil.Object,
-                _keyUtil).Value;
+                _keyUtil,
+                _vsCommandTarget,
+                commandTargets.ToReadOnlyCollectionShallow());
 
             // Time to setup the start command target.  If we are simulating R# then put them ahead of VsVim
             // on the IOleCommandTarget chain.  VsVim doesn't try to fight R# and prefers instead to be 
             // behind them
             if (simulateResharper)
             {
-                var resharperCommandTarget = new ResharperCommandTarget(_wpfTextView, vsCommandTarget);
-                _commandTarget = resharperCommandTarget;
+                _reSharperCommandTarget = new ReSharperCommandTargetSimulation(_wpfTextView, vsCommandTarget);
+                _commandTarget = _reSharperCommandTarget;
             }
             else
             {
@@ -375,8 +362,13 @@ namespace VsVim.UnitTest.Utils
             // Create the input controller.  Make sure that the VsVim one is ahead in the list
             // from the default Visual Studio one.  We can guarantee this is true due to MEF 
             // ordering of the components
-            _vsKeyProcessorSimulation.KeyProcessors.Add(new VsKeyProcessor(_vsAdapter.Object, bufferCoordinator, _keyUtil, _reportDesignerUtil.Object));
-            _vsKeyProcessorSimulation.KeyProcessors.Add(new SimulationKeyProcessor(bufferCoordinator.VimBuffer.TextView));
+            if (simulateResharper)
+            {
+                _vsKeyboardInputSimulation.KeyProcessors.Add(ReSharperKeyUtil.GetOrCreate(bufferCoordinator));
+            }
+            _vsKeyboardInputSimulation.KeyProcessors.Add(new VsKeyProcessor(_vsAdapter.Object, bufferCoordinator, _keyUtil, _reportDesignerUtil.Object, _wpfTextView));
+            _vsKeyboardInputSimulation.KeyProcessors.Add((KeyProcessor)bufferCoordinator);
+            _vsKeyboardInputSimulation.KeyProcessors.Add(new SimulationKeyProcessor(bufferCoordinator.VimBuffer.TextView));
         }
 
         /// <summary>
@@ -417,7 +409,7 @@ namespace VsVim.UnitTest.Utils
             _testableSynchronizationContext.Install();
             try
             {
-                _vsKeyProcessorSimulation.Run(keyInput);
+                _vsKeyboardInputSimulation.Run(keyInput);
                 _testableSynchronizationContext.RunAll();
             }
             finally

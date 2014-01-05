@@ -575,14 +575,35 @@ module internal CharUtil =
         | _ when IsWideCharacter c -> 2
         | _ -> 1
 
+    let GetDigitValue c = 
+        match c with
+        | '0' -> Some 0
+        | '1' -> Some 1
+        | '2' -> Some 2
+        | '3' -> Some 3
+        | '4' -> Some 4
+        | '5' -> Some 5
+        | '6' -> Some 6
+        | '7' -> Some 7
+        | '8' -> Some 8
+        | '9' -> Some 9
+        | _ -> None
+
 module internal StringBuilderExtensions =
 
     type StringBuilder with
         member x.AppendChar (c : char) = 
             x.Append(c) |> ignore
 
+        member x.AppendCharCount (c : char) (count : int) = 
+            x.Append(c, count) |> ignore
+
         member x.AppendString (str : string) =
             x.Append(str) |> ignore
+            
+        member x.AppendStringCount (str : string) (count : int) =
+            for i = 0 to count - 1 do
+                x.Append(str) |> ignore
 
         member x.AppendNumber (number : int) =
             x.Append(number) |> ignore
@@ -763,9 +784,12 @@ type Contract =
         if not test then
             raise (System.Exception("Contract failed"))
 
-    static member FailEnumValue<'T> (value : 'T) : unit= 
+    static member GetInvalidEnumException<'T> (value : 'T) : System.Exception =
         let msg = sprintf "The value %O is not a valid member of type %O" value typedefof<'T>
-        raise (System.Exception(msg))
+        System.Exception(msg)
+
+    static member FailEnumValue<'T> (value : 'T) : unit = 
+        raise (Contract.GetInvalidEnumException value)
 
 module internal SystemUtil =
 

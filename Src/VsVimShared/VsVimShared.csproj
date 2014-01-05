@@ -34,11 +34,10 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="EditorUtils, Version=1.2.0.0, Culture=neutral, PublicKeyToken=3d1514c4742e0252, processorArchitecture=MSIL">
+    <Reference Include="EditorUtils, Version=1.3.0.0, Culture=neutral, PublicKeyToken=3d1514c4742e0252, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\packages\EditorUtils.1.2.0.0\lib\net40\EditorUtils.dll</HintPath>
+      <HintPath>..\..\packages\EditorUtils.1.3.0.0\lib\net40\EditorUtils.dll</HintPath>
     </Reference>
-    <Reference Include="FSharp.Core, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
     <Reference Include="Microsoft.VisualStudio.Text.Data, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
     <Reference Include="Microsoft.VisualStudio.Text.Logic, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
     <Reference Include="Microsoft.VisualStudio.Text.UI, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
@@ -77,12 +76,15 @@
     <Compile Include="EditCommand.cs" />
     <Compile Include="EditCommandKind.cs" />
     <Compile Include="Extensions.cs" />
+    <Compile Include="ICommandTarget.cs" />
     <Compile Include="Implementation\ExternalEdit\ExternalEditMonitor.cs" />
     <Compile Include="Implementation\ExternalEdit\ExternalEditorManager.cs" />
     <Compile Include="IExternalEditAdapter.cs" />
     <Compile Include="Implementation\Misc\ReportDesignerUtil.cs" />
     <Compile Include="Implementation\Misc\ScopeData.cs" />
-    <Compile Include="Implementation\Resharper\ResharperExternalEditAdapter.cs" />
+    <Compile Include="Implementation\Misc\StandardCommandTarget.cs" />
+    <Compile Include="Implementation\ReSharper\ReSharperKeyUtil.cs" />
+    <Compile Include="Implementation\ReSharper\ReSharperUtil.cs" />
     <Compile Include="Implementation\ExternalEdit\SnippetExternalEditAdapter.cs" />
     <Compile Include="HostFactory.cs" />
     <Compile Include="IKeyBindingService.cs" />
@@ -101,14 +103,15 @@
     <Compile Include="Implementation\NavigateTo\IThreadCommunicator.cs" />
     <Compile Include="Implementation\NavigateTo\NavigateToItemProvider.cs" />
     <Compile Include="Implementation\NavigateTo\NavigateToItemProviderFactory.cs" />
-    <Compile Include="Implementation\Resharper\ReSharperTagDetector.cs" />
-    <Compile Include="Implementation\Resharper\ReSharperVersion.cs" />
-    <Compile Include="Implementation\Resharper\ResharperVersionutility.cs" />
+    <Compile Include="Implementation\ReSharper\ReSharperTagDetector.cs" />
+    <Compile Include="Implementation\ReSharper\ReSharperVersion.cs" />
+    <Compile Include="Implementation\ReSharper\ResharperVersionutility.cs" />
     <Compile Include="Implementation\Settings\SettingSerializer.cs" />
     <Compile Include="Implementation\Settings\SettingsMigrator.cs" />
     <Compile Include="Implementation\Settings\VimApplicationSettings.cs" />
     <Compile Include="Implementation\SharedService\DefaultSharedServiceFactory.cs" />
     <Compile Include="Implementation\SharedService\SharedServiceFactory.cs" />
+    <Compile Include="TextEditorFontProperties.cs" />
     <Compile Include="Implementation\VisualAssist\IVisualAssistUtil.cs" />
     <Compile Include="Implementation\VisualAssist\VisualAssistKeyProcessor.cs" />
     <Compile Include="Implementation\VisualAssist\VisualAssistMargin.xaml.cs">
@@ -121,7 +124,7 @@
     <Compile Include="IOptionsDialogService.cs" />
     <Compile Include="IPowerToolsUtil.cs" />
     <Compile Include="IReportDesignerUtil.cs" />
-    <Compile Include="IResharperUtil.cs" />
+    <Compile Include="Implementation\ReSharper\IResharperUtil.cs" />
     <Compile Include="ITextManager.cs" />
     <Compile Include="IVimApplicationSettings.cs" />
     <Compile Include="IVimBufferCoordinator.cs" />

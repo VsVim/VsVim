@@ -97,6 +97,8 @@ namespace Vim.UI.Wpf.Implementation.Misc
     [Export(typeof(IDisplayWindowBrokerFactoryService))]
     internal sealed class DisplayWindowBrokerFactoryService : IDisplayWindowBrokerFactoryService
     {
+        private static readonly object Key = new object();
+
         private readonly ICompletionBroker _completionBroker;
         private readonly ISignatureHelpBroker _signatureHelpBroker;
         private readonly ISmartTagBroker _smartTagBroker;
@@ -115,14 +117,16 @@ namespace Vim.UI.Wpf.Implementation.Misc
             _quickInfoBroker = quickInfoBroker;
         }
 
-        IDisplayWindowBroker IDisplayWindowBrokerFactoryService.CreateDisplayWindowBroker(ITextView textView)
+        IDisplayWindowBroker IDisplayWindowBrokerFactoryService.GetDisplayWindowBroker(ITextView textView)
         {
-            return new DisplayWindowBroker(
-                textView,
-                _completionBroker,
-                _signatureHelpBroker,
-                _smartTagBroker,
-                _quickInfoBroker);
+            return textView.Properties.GetOrCreateSingletonProperty(
+                Key,
+                () => new DisplayWindowBroker(
+                        textView,
+                        _completionBroker,
+                        _signatureHelpBroker,
+                        _smartTagBroker,
+                        _quickInfoBroker));
         }
     }
 

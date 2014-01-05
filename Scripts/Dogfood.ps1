@@ -1,45 +1,30 @@
 [string]$script:rootPath = split-path -parent $MyInvocation.MyCommand.Definition 
 [string]$script:rootPath = resolve-path (join-path $rootPath "..")
 
-function Get-ProgramFiles32() {
-    if ( test-path (join-path $env:WinDir "SysWow64") ) {
-        return ${env:ProgramFiles(x86)}
+$msbuild = join-path ${env:SystemRoot} "microsoft.net\framework\v4.0.30319\msbuild.exe"
+
+function build-project()
+{
+    param ([string]$fileName = $(throw "Need a project file name"))
+    $name = split-path -leaf $fileName
+    write-host "Building $name"
+    & $msbuild /nologo /verbosity:m /p:Configuration=Debug $fileName
+}
+
+function test-return() {
+    if ($LASTEXITCODE -ne 0) {
+        write-error "Command failed with code $LASTEXITCODE"
     }
-    
-    return $env:ProgramFiles
 }
 
-$idePath = join-path (Get-ProgramFiles32) "Microsoft Visual Studio 10.0\Common7\IDE"
-$vsixInstaller = join-path $idePath "vsixInstaller.exe"
-$devenv = join-path $idePath "devenv.exe"
+build-project (join-path $rootPath "Src\VsixUtil\VsixUtil.csproj")
+build-project (join-path $rootPath "Src\VsVim\VsVim.csproj")
 
-if (-not (test-path $vsixInstaller)) {
-    write-error "Couldn't find $vsixInstaller"
-    return
-}
-
-gps devenv -ErrorAction SilentlyContinue | kill
-write-host "Uninstalling VsVim"
-& $vsixInstaller /quiet /uninstall:VsVim.Microsoft.e214908b-0458-4ae2-a583-4310f29687c3
-
-$dest = join-path (resolve-path ~\) 'Dogfood'
-mkdir $dest -ErrorAction SilentlyContinue
 pushd $rootPath
-copy VsVim\bin\Debug\* $dest
+mkdir "Dogfood" -ErrorAction SilentlyContinue | out-null
+rm "Dogfood\*"
+copy Src\VsVim\bin\Debug\* "Dogfood"
+copy Src\VsixUtil\bin\Debug\* "Dogfood"
 
-$target = join-path $dest "VsVim.vsix"
-if (-not (test-path $target)) {
-    $target = join-path $dest "VsVim10.vsix"
-}
+& ".\Dogfood\VsixUtil.exe" "Dogfood\VsVim.vsix"
 popd
-write-host "Installing VsVim"
-
-& $vsixInstaller /quiet $target
-sleep 2
-wait-process "vsixInstaller" -ErrorAction SilentlyContinue
-
-# Even though we waited for the installer to finish devenv doesn't
-# always seem to pick up the change immediately.  Wait a sec for
-# it all to catch up
-sleep 2
-& $devenv

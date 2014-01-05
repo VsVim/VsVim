@@ -857,6 +857,76 @@ namespace Vim.UnitTest
             }
         }
 
+        public abstract class ReplaceSelectionTest : VisualModeIntegrationTest
+        {
+            public sealed class CharacterWiseTest : ReplaceSelectionTest
+            {
+                [Fact]
+                public void Simple()
+                {
+                    Create("cat dog", "tree fish");
+                    _vimBuffer.ProcessNotation("vllra");
+                    Assert.Equal(new[] { "aaa dog", "tree fish" }, _textBuffer.GetLines());
+                }
+
+                [Fact]
+                public void ExtendIntoNewLine()
+                {
+                    Create("cat", "dog");
+                    _vimBuffer.GlobalSettings.VirtualEdit = "onemore";
+                    _vimBuffer.ProcessNotation("vlllllra");
+                    Assert.Equal(new[] { "aaa", "dog" }, _textBuffer.GetLines());
+                }
+
+                [Fact]
+                public void MultiLine()
+                {
+                    Create("cat", "dog");
+                    _vimBuffer.ProcessNotation("vjra");
+                    Assert.Equal(new[] { "aaa", "aog" }, _textBuffer.GetLines());
+                }
+            }
+
+            public sealed class LineWiseTest : ReplaceSelectionTest
+            {
+                [Fact]
+                public void Single()
+                {
+                    Create("cat", "dog");
+                    _vimBuffer.ProcessNotation("Vra");
+                    Assert.Equal(new[] { "aaa", "dog" }, _textBuffer.GetLines());
+                }
+
+                [Fact]
+                public void Issue1201()
+                {
+                    Create("one two three", "four five six");
+                    _vimBuffer.ProcessNotation("Vr-");
+                    Assert.Equal("-------------", _textBuffer.GetLine(0).GetText());
+                }
+            }
+
+            public sealed class BlockWiseTest : ReplaceSelectionTest
+            {
+                /// <summary>
+                /// TODO: This test is actually different from gVim.  Here gVim would replace
+                /// with "d aaag" on the second line (3 a's instead of 4).  There appears to be a
+                /// bug in the width calculation of the start of the SnasphotOverlapSpan.  It claims
+                /// to have a width of 4 and spaces before of 3.  There are only 3 characters available
+                /// though total because the 'd' occupies part of the tab width.  Need to resolve
+                /// this 
+                /// </summary>
+                [Fact]
+                public void Overlap()
+                {
+                    Create("cat", "d\tog");
+                    _vimBuffer.LocalSettings.TabStop = 4;
+                    _vimBuffer.ProcessNotation("ll<C-q>jlra");
+                    Assert.Equal(new[] { "caa", "d aaaag" }, _textBuffer.GetLines());
+                }
+            }
+        }
+
         public sealed class Insert : VisualModeIntegrationTest
         {
             /// <summary>
@@ -1123,7 +1193,7 @@ namespace Vim.UnitTest
             }
         }
 
-        public sealed class Misc : VisualModeIntegrationTest
+        public sealed class MiscAllTest : VisualModeIntegrationTest
         {
             /// <summary>
             /// When changing a line wise selection one blank line should be left remaining in the ITextBuffer
@@ -2199,6 +2269,14 @@ namespace Vim.UnitTest
                         _textBuffer.GetLineSpan(1, 5, 1)
                     },
                     _textView.Selection.SelectedSpans);
+            }
+
+            [Fact]
+            public void Issue1213()
+            {
+                Create("hello world");
+                _vimBuffer.ProcessNotation("v<c-c>");
+                Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
             }
         }
 

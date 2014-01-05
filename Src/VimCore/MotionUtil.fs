@@ -1929,54 +1929,74 @@ type internal MotionUtil
             MotionResult.Create span true MotionKind.CharacterWiseInclusive |> Some
 
     /// Get the motion for a search command.  Used to implement the '/' and '?' motions
-    member x.Search (patternData : PatternData) count = 
+    member x.Search (searchData : SearchData) count = 
 
         // Searching as part of a motion should update the last pattern information
         // irrespective of whether or not the search completes
-        _vimData.LastPatternData <- patternData
+        _vimData.LastPatternData <- searchData.LastPatternData
 
-        x.SearchCore patternData x.CaretPoint count
+        x.SearchCore searchData x.CaretPoint count
 
     /// Implements the core searching motion.  Will *not* update the LastPatternData 
     /// value.  Simply performs the search and returns the result
-    member x.SearchCore (patternData : PatternData) searchPoint count =
+    member x.SearchCore (searchData : SearchData) searchPoint count =
 
         // All search operations update the jump list
         _jumpList.Add x.CaretPoint
 
         // The search operation should also update the search history
-        _vimData.SearchHistory.Add patternData.Pattern
+        _vimData.SearchHistory.Add searchData.Pattern
 
-        let searchResult = _search.FindNextPattern patternData searchPoint _wordNavigator count
+        let searchResult = _search.FindNextPattern searchPoint searchData _wordNavigator count
 
         // Raise the messages that go with this given result
         CommonUtil.RaiseSearchResultMessage _statusUtil searchResult
 
         let motionResult = 
             match searchResult with
-            | SearchResult.NotFound (searchData, isOutsidePath) ->
-    
+            | SearchResult.NotFound _ ->
                 // Nothing to return here. 
                 None
-    
-            | SearchResult.Found (_, span, _) ->
-    
+            | SearchResult.Found (_, span, _, _) ->
                 // Create the MotionResult for the provided MotionArgument and the 
                 // start and end points of the search.  Need to be careful because
                 // the start and end point can be forward or reverse
                 //
                 // Even though the search doesn't necessarily start from the caret
                 // point the resulting Span begins / ends on it
-                let caretPoint = x.CaretPoint
-                let endPoint = span.Start
-                if caretPoint.Position = endPoint.Position then
+                let mutable startPoint = x.CaretPoint
+                let mutable endPoint = span.Start
+                let mutable motionKind = MotionKind.CharacterWiseExclusive
+                let mutable isForward = true
+                let mutable caretColumn = CaretColumn.None
+
+                if startPoint.Position > endPoint.Position then
+                    isForward <- false
+                    endPoint <- x.CaretPoint
+                    startPoint <- span.Start
+
+                // Update the span and motion kind based on the offset information.  This
+                // can make the span inclusive or linewise in some cases
+                match searchData.Offset with
+                | SearchOffsetData.Line _ -> 
+                    let startLine = SnapshotPointUtil.GetContainingLine startPoint
+                    startPoint <- startLine.Start
+
+                    let endLine = SnapshotPointUtil.GetContainingLine endPoint
+                    endPoint <- endLine.EndIncludingLineBreak
+                    motionKind <- MotionKind.LineWise
+                    if isForward then
+                        caretColumn <- CaretColumn.InLastLine (SnapshotPointUtil.GetColumn span.Start)
+                | SearchOffsetData.End _ ->
+                    endPoint <- SnapshotPointUtil.AddOneOrCurrent endPoint
+                    motionKind <- MotionKind.CharacterWiseInclusive 
+                | _ -> ()
+                    
+                if startPoint.Position = endPoint.Position then
                     None
-                else if caretPoint.Position < endPoint.Position then 
-                    let span = SnapshotSpan(caretPoint, endPoint)
-                    MotionResult.Create span true MotionKind.CharacterWiseExclusive |> Some
-                else 
-                    let span = SnapshotSpan(endPoint, caretPoint)
-                    MotionResult.Create span false MotionKind.CharacterWiseExclusive |> Some
+                else
+                    let span = SnapshotSpan(startPoint, endPoint)
+                    MotionResult.CreateExEx span isForward motionKind MotionResultFlags.None caretColumn |> Some
 
         _vimData.ResumeDisplayPattern()
         motionResult
@@ -1992,7 +2012,8 @@ type internal MotionUtil
             _statusUtil.OnError Resources.NormalMode_NoPreviousSearch
             None
         else
-            x.SearchCore last x.CaretPoint count
+            let searchData = SearchData(last.Pattern, last.Path, _globalSettings.WrapScan)
+            x.SearchCore searchData x.CaretPoint count
 
     /// Motion from the caret to the next occurrence of the partial word under the caret
     member x.NextPartialWord path count =
@@ -2040,16 +2061,16 @@ type internal MotionUtil
                 isWholeWord && isWord
 
             let pattern = if isWholeWord then PatternUtil.CreateWholeWord word else word
-            let patternData = { Pattern = pattern; Path = path }
+            let searchData = SearchData(pattern, path, _globalSettings.WrapScan)
 
             // Make sure to update the LastPatternData here.  It needs to be done 
             // whether or not the search actually succeeds
-            _vimData.LastPatternData <- patternData
+            _vimData.LastPatternData <- searchData.LastPatternData
 
             // A word search always starts at the beginning of the word.  The pattern
             // based search will ensure that we don't match this word again because it
             // won't make an initial match at the provided point
-            x.SearchCore patternData span.Start count
+            x.SearchCore searchData span.Start count
 
     /// Adjust the MotionResult value based on the rules detailed in ':help exclusive'.  The
     /// rules in summary are
@@ -2153,7 +2174,7 @@ type internal MotionUtil
             | Motion.QuotedStringContents quoteChar -> x.QuotedStringContents quoteChar
             | Motion.RepeatLastCharSearch -> x.RepeatLastCharSearch()
             | Motion.RepeatLastCharSearchOpposite -> x.RepeatLastCharSearchOpposite()
-            | Motion.Search patternData-> x.Search patternData motionArgument.Count
+            | Motion.Search searchData-> x.Search searchData motionArgument.Count
             | Motion.SectionBackwardOrCloseBrace -> x.SectionBackwardOrCloseBrace motionArgument.Count |> Some
             | Motion.SectionBackwardOrOpenBrace -> x.SectionBackwardOrOpenBrace motionArgument.Count |> Some
             | Motion.SectionForward -> x.SectionForward motionArgument.MotionContext motionArgument.Count |> Some

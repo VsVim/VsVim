@@ -1292,6 +1292,17 @@ namespace Vim.UnitTest
                 Assert.Equal(ModeKind.Insert, _vimBuffer.ModeKind);
                 Assert.True(_vimBuffer.InsertMode.ActiveWordCompletionSession.IsNone());
             }
+
+            [Fact]
+            public void EscapeInColumnZero()
+            {
+                Create("cat", "dog");
+                _textView.MoveCaretToLine(1);
+                Assert.Equal(ModeKind.Insert, _vimBuffer.ModeKind);
+                _vimBuffer.ProcessNotation(@"<Esc>");
+                Assert.Equal(0, VimHost.BeepCount);
+                Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
+            }
         }
     }
 }

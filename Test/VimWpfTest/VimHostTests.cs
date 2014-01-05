@@ -53,19 +53,14 @@ namespace Vim.UI.Wpf.UnitTest
                 throw new NotImplementedException();
             }
 
-            public override void GoToNextTab(Path direction, int count)
-            {
-                throw new NotImplementedException();
-            }
-
             public override void GoToTab(int index)
             {
                 throw new NotImplementedException();
             }
 
-            public override void GoToQuickFix(QuickFix quickFix, int count, bool hasBang)
+            public override bool GoToQuickFix(QuickFix quickFix, int count, bool hasBang)
             {
-                throw new NotImplementedException();
+                return false;
             }
 
             public override HostResult LoadFileIntoExistingWindow(string filePath, ITextView textView)
@@ -104,6 +99,21 @@ namespace Vim.UI.Wpf.UnitTest
             }
 
             public override HostResult SplitViewVertically(ITextView value)
+            {
+                throw new NotImplementedException();
+            }
+
+            public override int TabCount
+            {
+                get { throw new NotImplementedException(); }
+            }
+
+            public override IFontProperties FontProperties
+            {
+                get { throw new NotImplementedException(); }
+            }
+
+            public override int GetTabIndex(ITextView textView)
             {
                 throw new NotImplementedException();
             }

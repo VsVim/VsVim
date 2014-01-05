@@ -19,6 +19,7 @@ module internal CommonUtil =
     /// a context point.  They don't begin at the point but rather before
     /// or after the point depending on the direction.  Return true if 
     /// a wrap was needed to get the start point
+    [<UsedInBackgroundThread>]
     let GetSearchPointAndWrap path point = 
         match path with
         | Path.Forward ->
@@ -41,7 +42,7 @@ module internal CommonUtil =
     let RaiseSearchResultMessage (statusUtil : IStatusUtil) searchResult =
 
         match searchResult with 
-        | SearchResult.Found (searchData, _, didWrap) ->
+        | SearchResult.Found (searchData, _, _, didWrap) ->
             if didWrap then
                 let message = 
                     if searchData.Kind.IsAnyForward then Resources.Common_SearchForwardWrapped
@@ -57,25 +58,6 @@ module internal CommonUtil =
                     Resources.Common_PatternNotFound
 
             statusUtil.OnError (format searchData.Pattern)
-
-/// When maintaining the caret column for motion moves this represents the desired 
-/// column to jump to if there is enough space on the line
-///
-[<RequireQualifiedAccess>]
-[<NoComparison>]
-[<NoEquality>]
-type MaintainCaretColumn = 
-
-    /// There is no saved caret column. 
-    | None
-
-    /// This number is kept as a count of spaces.  Tabs need to be adjusted for when applying
-    /// this setting to a motion
-    | Spaces of int
-
-    /// The caret was moved with the $ motion and the further moves should move to the end of 
-    /// the line 
-    | EndOfLine
 
 type internal CommonOperations
     (
@@ -624,6 +606,38 @@ type internal CommonOperations
         | HostResult.Success -> ()
         | HostResult.Error(_) -> _statusUtil.OnError (Resources.NormalMode_CantFindFile text)
 
+    member x.GoToNextTab path count = 
+
+        let tabCount = _vimHost.TabCount
+        let mutable tabIndex = _vimHost.GetTabIndex _textView
+        if tabCount >= 0 && tabIndex >= 0 && tabIndex < tabCount then
+            let count = count % tabCount
+            match path with
+            | Path.Forward -> 
+                tabIndex <- tabIndex + count
+                tabIndex <- tabIndex % tabCount
+            | Path.Backward -> 
+                tabIndex <- tabIndex - count
+                if tabIndex < 0 then
+                    tabIndex <- tabIndex + tabCount
+
+            _vimHost.GoToTab tabIndex
+
+    member x.GoToTab index = 
+
+        // Normalize out the specified tabIndex to a 0 based value.  Vim uses some odd
+        // logic here but the host represents the tab as a 0 based list of tabs
+        let mutable tabIndex = index
+        let tabCount = _vimHost.TabCount
+        if tabCount > 0 then
+            if tabIndex < 0 then
+                tabIndex <- tabCount - 1
+            elif tabIndex > 0 then
+                tabIndex <- tabIndex - 1
+
+            if tabIndex >= 0 && tabIndex < tabCount then
+                _vimHost.GoToTab tabIndex
+
     /// Return the full word under the cursor or an empty string
     member x.WordUnderCursorOrEmpty =
         let point =  TextViewUtil.GetCaretPoint _textView
@@ -878,7 +892,7 @@ type internal CommonOperations
         match VimRegexFactory.CreateForSubstituteFlags pattern _globalSettings flags with
         | None -> 
             _statusUtil.OnError (Resources.Common_PatternNotFound pattern)
-        | Some (regex) -> 
+        | Some regex -> 
             doReplace regex
 
             // Make sure to update the saved state.  Note that there are 2 patterns stored 
@@ -888,7 +902,7 @@ type internal CommonOperations
             // 2. Last searched for pattern.
             //
             // A substitute command should update both of them 
-            _vimData.LastSubstituteData <- Some { SearchPattern=pattern; Substitute=replace; Flags=flags}
+            _vimData.LastSubstituteData <- Some { SearchPattern = pattern; Substitute = replace; Flags = flags}
             _vimData.LastPatternData <- { Pattern = pattern; Path = Path.Forward }
 
     /// Convert the provided whitespace into spaces.  The conversion of 
@@ -1127,6 +1141,9 @@ type internal CommonOperations
     interface ICommonOperations with
         member x.VimBufferData = _vimBufferData
         member x.TextView = _textView 
+        member x.MaintainCaretColumn 
+            with get() = x.MaintainCaretColumn
+            and set value = x.MaintainCaretColumn <- value
         member x.EditorOperations = _editorOperations
         member x.EditorOptions = _editorOptions
 
@@ -1146,8 +1163,8 @@ type internal CommonOperations
         member x.GoToFile() = x.GoToFile()
         member x.GoToFileInNewWindow() = x.GoToFileInNewWindow()
         member x.GoToDefinition() = x.GoToDefinition()
-        member x.GoToNextTab direction count = _vimHost.GoToNextTab direction count
-        member x.GoToTab index = _vimHost.GoToTab index
+        member x.GoToNextTab direction count = x.GoToNextTab direction count
+        member x.GoToTab index = x.GoToTab index
         member x.Join range kind = x.Join range kind
         member x.MoveCaret caretMovement = x.MoveCaret caretMovement
         member x.MoveCaretToPoint point viewFlags =  x.MoveCaretToPoint point viewFlags

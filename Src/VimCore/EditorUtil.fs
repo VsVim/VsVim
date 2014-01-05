@@ -38,6 +38,9 @@ module internal EditorCoreUtil =
             let c = point.GetChar()
             CharUtil.GetCharacterWidth c tabStop
 
+    let IsInsideLineBreak (point : SnapshotPoint) (line : ITextSnapshotLine) = 
+        point.Position >= line.End.Position && not (IsEndPoint point)
+
 /// This is the representation of a point within a particular line.  It's common
 /// to represent a column in vim and using a SnapshotPoint isn't always the best
 /// representation.  Finding the containing ITextSnapshotLine for a given 
@@ -59,7 +62,11 @@ type SnapshotColumn
 
     member x.IsStartOfLine = _column = 0
 
+    member x.IsInsideLineBreak = EditorCoreUtil.IsInsideLineBreak x.Point x.Line
+
     member x.Line = _snapshotLine
+
+    member x.LineNumber = _snapshotLine.LineNumber
 
     member x.Snapshot = _snapshotLine.Snapshot
 
@@ -68,18 +75,15 @@ type SnapshotColumn
     member x.Column = _column
 
     member x.Add count = 
-        if count + _column < _snapshotLine.LengthIncludingLineBreak then
+        let column = _column + count
+        if column > 0 && column < _snapshotLine.LengthIncludingLineBreak then
             SnapshotColumn(_snapshotLine, _column + count)
         else
             let point = x.Point.Add count
             SnapshotColumn(point)
 
     member x.Subtract count = 
-        if count <= _column then
-            SnapshotColumn(_snapshotLine, _column - count)
-        else
-            let point = x.Point.Subtract count
-            SnapshotColumn(point)
+        x.Add -count
 
     override x.ToString() = 
         x.Point.ToString()
@@ -99,8 +103,11 @@ type SnapshotOverlapPoint =
     val private _before : int
     val private _width : int
 
-    // BTODO: This constructor should be hidden behind a signature file.  No one should ever call it
-    // directly.  It is too easy to get the 'width' wrong
+    /// !!!Do not call this directly!!!
+    ///
+    /// This constructor is meant for internal usage only.  If friend types existed this would employ
+    /// a friend type to protect it.  It's far too easy to get the 'width' parameter incorrect.  Instead
+    /// go through a supported API for creating them
     internal new (point : SnapshotPoint, before : int, width : int) = 
         if width < 0 then
             invalidArg "width" "Width must be positive"
@@ -430,6 +437,12 @@ module SnapshotSpanUtil =
     let GetLastIncludedPoint (span:SnapshotSpan) =
         if span.Length = 0 then None
         else span.End.Subtract(1) |> Some
+
+    /// Gets the last point which is actually included in the span.  This is different than
+    /// EndPoint which is the first point after the span
+    let GetLastIncludedPointOrStart (span:SnapshotSpan) =
+        if span.Length = 0 then span.Start
+        else span.End.Subtract(1)
 
     /// Is this the last included point in the SnapshotSpan?  
     let IsLastIncludedPoint span point = 
@@ -867,7 +880,7 @@ module SnapshotPointUtil =
     /// Is the passed in SnapshotPoint inside the line break portion of the line
     let IsInsideLineBreak point = 
         let line = GetContainingLine point
-        point.Position >= line.End.Position && not (IsEndPoint point)
+        EditorCoreUtil.IsInsideLineBreak point line 
 
     /// Is this point white space?
     let IsWhiteSpace point =

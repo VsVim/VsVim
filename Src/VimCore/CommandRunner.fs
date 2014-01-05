@@ -28,7 +28,7 @@ type internal CommandRunner
         _commandUtil : ICommandUtil,
         _statusUtil : IStatusUtil,
         _visualKind : VisualKind,
-        _countKeyRemapMode : KeyRemapMode
+        _defaultKeyRemapMode : KeyRemapMode
     ) =
 
     /// Represents the empty state for processing commands.  Holds all of the default
@@ -67,7 +67,7 @@ type internal CommandRunner
             | None -> BindResult.Error
             | Some name -> completeFunc name
 
-        BindResult.NeedMoreInput { KeyRemapMode = None; BindFunction = inner }
+        BindResult.NeedMoreInput { KeyRemapMode = KeyRemapMode.None; BindFunction = inner }
 
     /// Used to wait for a count value to complete.  Passed in the initial digit 
     /// in the count
@@ -77,7 +77,7 @@ type internal CommandRunner
             if ki.IsDigit then
                 _inCount <- true
                 let num = num + ki.Char.ToString()
-                BindResult.NeedMoreInput { KeyRemapMode = Some _countKeyRemapMode; BindFunction = inner num }
+                BindResult.NeedMoreInput { KeyRemapMode = _defaultKeyRemapMode; BindFunction = inner num }
             else
                 _inCount <- false
                 let count = System.Int32.Parse(num)
@@ -100,10 +100,9 @@ type internal CommandRunner
         // Okay now we get to build some fun.  It's possible to enter register and count
         // in either order with either being missing.  So we need to try all of the possibilities
         // here
-
         let bindCommandResult register count =
             let func = x.BindCommand register count
-            let data = { KeyRemapMode = None; BindFunction = func }
+            let data = { KeyRemapMode = KeyRemapMode.None; BindFunction = func }
             BindResult.NeedMoreInput data
 
         let tryCountThenRegister keyInput missingCount = 
@@ -114,11 +113,10 @@ type internal CommandRunner
             tryCount keyInput foundCount missingCount
 
         let tryRegisterThenCount keyInput missingRegister = 
-
             let foundRegister register = 
                 let register = Some register
                 let next keyInput = tryCount keyInput (fun count keyInput -> x.BindCommand register (Some count) keyInput) (fun keyInput -> x.BindCommand register None keyInput)
-                BindResult.NeedMoreInput { KeyRemapMode = None; BindFunction = next }
+                BindResult.NeedMoreInput { KeyRemapMode = _defaultKeyRemapMode; BindFunction = next }
 
             tryRegister keyInput foundRegister missingRegister
 
@@ -145,7 +143,7 @@ type internal CommandRunner
         // Handle the special case of 'd' and 'y' 
         let doSpecialBinding normalCommand targetChar = 
 
-            let result = CountCapture.GetCount None keyInput
+            let result = CountCapture.GetCount KeyRemapMode.None keyInput
             result.Map (fun (countOpt, keyInput) -> 
 
                 if keyInput.Char = targetChar then
@@ -173,6 +171,10 @@ type internal CommandRunner
             doSpecialBinding NormalCommand.YankLines 'y'
         elif Util.IsFlagSet commandBinding.CommandFlags CommandFlags.Change then
             doSpecialBinding NormalCommand.ChangeLines 'c'
+        elif Util.IsFlagSet commandBinding.CommandFlags CommandFlags.ShiftRight then
+            doSpecialBinding NormalCommand.ShiftLinesRight '>'
+        elif Util.IsFlagSet commandBinding.CommandFlags CommandFlags.ShiftLeft then
+            doSpecialBinding NormalCommand.ShiftLinesLeft '<'
         else
             let result = _motionCapture.GetMotionAndCount keyInput
             result.Convert (fun (motion, motionCount) -> convertMotion motion motionCount)
@@ -225,13 +227,13 @@ type internal CommandRunner
                     if Seq.isEmpty withPrefix then 
                         // Nothing else matched so we are good to go for this motion.
                         _data <- { _data with CommandFlags = Some commandBinding.CommandFlags }
-                        BindResult<_>.CreateNeedMoreInput (Some KeyRemapMode.OperatorPending) (fun keyInput -> x.BindMotion commandBinding commandData func keyInput)
+                        BindResult<_>.CreateNeedMoreInput KeyRemapMode.OperatorPending (fun keyInput -> x.BindMotion commandBinding commandData func keyInput)
                     else 
                         // At least one other command matched so we need at least one more piece of input to
                         // differentiate the commands.  At this point though because the command is of the
                         // motion variety we are in operator pending
                         _data <- { _data with CommandFlags = Some commandBinding.CommandFlags }
-                        bindNext (Some KeyRemapMode.OperatorPending)
+                        bindNext KeyRemapMode.OperatorPending
 
                 | CommandBinding.ComplexNormalBinding (_, _, bindDataStorage) -> 
                     _data <- { _data with CommandFlags = Some commandBinding.CommandFlags }
@@ -266,22 +268,22 @@ type internal CommandRunner
                             _data <- { _data with CommandFlags = Some command.CommandFlags }
                             x.BindMotion command commandData func currentInput
                         | CommandBinding.NormalBinding _ -> 
-                            bindNext None
+                            bindNext KeyRemapMode.None
                         | CommandBinding.VisualBinding _ -> 
-                            bindNext None
+                            bindNext KeyRemapMode.None
                         | CommandBinding.InsertBinding _ ->
-                            bindNext None
+                            bindNext KeyRemapMode.None
                         | CommandBinding.ComplexNormalBinding _ -> 
-                            bindNext None
+                            bindNext KeyRemapMode.None
                         | CommandBinding.ComplexVisualBinding _ -> 
-                            bindNext None
+                            bindNext KeyRemapMode.None
                     | None -> 
                         // No prefix matches and no previous motion so won't ever match a command
                         BindResult.Error
                 elif hasPrefixMatch then
                     // At least one command with a prefix matching the current input.  Wait for the 
                     // next keystroke
-                    bindNext None
+                    bindNext KeyRemapMode.None
                 else
                     // No prospect of matching a command at this point
                     BindResult.Error
@@ -353,7 +355,7 @@ type internal CommandRunner
         member x.InCount = _inCount
         member x.KeyRemapMode = 
             match _runBindData with
-            | None -> None
+            | None -> KeyRemapMode.None
             | Some bindData -> bindData.KeyRemapMode
         member x.Add command = x.Add command
         member x.Remove name = x.Remove name

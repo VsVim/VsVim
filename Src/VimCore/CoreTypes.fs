@@ -12,7 +12,10 @@ type WordKind =
 /// Modes for a key remapping
 [<RequireQualifiedAccess>]
 [<DebuggerDisplay("{ToString(),nq}")>]
+[<StructuralEquality>]
+[<StructuralComparison>]
 type KeyRemapMode =
+    | None
     | Normal 
     | Visual 
     | Select 
@@ -25,6 +28,7 @@ type KeyRemapMode =
 
     static member All = 
         seq {
+            yield None
             yield Normal
             yield Visual 
             yield Select
@@ -35,6 +39,7 @@ type KeyRemapMode =
 
     override x.ToString() =
         match x with 
+        | None -> "None"
         | Normal -> "Normal"
         | Visual -> "Visual"
         | Select -> "Select"
@@ -292,14 +297,11 @@ type Mark =
         else
             LocalMark.OfChar c |> Option.map LocalMark
     
-[<RequireQualifiedAccess>]
-[<StructuralEquality>]
-[<NoComparison>]
 type Direction =
-    | Up
-    | Down
-    | Left
-    | Right
+    | Up        = 1
+    | Down      = 2
+    | Left      = 3
+    | Right     = 4
 
 [<RequireQualifiedAccess>]
 [<StructuralEquality>]
@@ -327,6 +329,7 @@ type Path =
         else Path.Backward
 
 [<RequireQualifiedAccess>]
+[<StructuralEquality>]
 [<NoComparison>]
 type SearchKind = 
      | Forward

@@ -13,6 +13,7 @@ using System.Text;
 using System;
 using Microsoft.VisualStudio.Text.Classification;
 using Microsoft.VisualStudio.Text.Formatting;
+using System.Collections.ObjectModel;
 
 namespace VimApp
 {
@@ -24,25 +25,35 @@ namespace VimApp
         private readonly VimComponentHost _vimComponentHost;
         private readonly IClassificationFormatMapService _classificationFormatMapService;
         private readonly IVimAppOptions _vimAppOptions;
-        private readonly AppInfo _appInfo = new AppInfo();
+        private readonly IVimWindowManager _vimWindowManager;
 
-        internal TabInfo ActiveTabInfo
+        internal IVimWindow ActiveVimWindowOpt
         {
             get
             {
                 var tabItem = (TabItem)_tabControl.SelectedItem;
-                return _appInfo.GetTabInfo(tabItem);
+                if (tabItem != null)
+                {
+                    return _vimWindowManager.GetVimWindow(tabItem);
+                }
+
+                return null;
             }
         }
 
-        internal IVimBuffer ActiveVimBuffer
+        internal IVimBuffer ActiveVimBufferOpt
         {
             get
             {
-                var tabInfo = ActiveTabInfo;
-                var found = tabInfo.ViewInfoList.First(x => x.TextViewHost.TextView.HasAggregateFocus);
+                var tabInfo = ActiveVimWindowOpt;
+                var found = tabInfo.VimViewInfoList.First(x => x.TextViewHost.TextView.HasAggregateFocus);
                 return found != null ? found.VimBuffer : null;
             }
+        }
+
+        internal TabControl TabControl
+        {
+            get { return _tabControl; }
         }
 
         public MainWindow()
@@ -54,15 +65,20 @@ namespace VimApp
 #endif
 
             _vimComponentHost = new VimComponentHost();
-            _vimComponentHost.CompositionContainer.GetExportedValue<VimAppHost>().MainWindow = this;
             _classificationFormatMapService = _vimComponentHost.CompositionContainer.GetExportedValue<IClassificationFormatMapService>();
             _vimAppOptions = _vimComponentHost.CompositionContainer.GetExportedValue<IVimAppOptions>();
+            _vimWindowManager = _vimComponentHost.CompositionContainer.GetExportedValue<IVimWindowManager>();
+            var vimAppHost = _vimComponentHost.CompositionContainer.GetExportedValue<VimAppHost>();
+            vimAppHost.MainWindow = this;
+            vimAppHost.VimWindowManager = _vimWindowManager;
+
+            _vimWindowManager.VimWindowCreated += OnVimWindowCreated;
 
             // Create the initial view to display 
             AddNewTab("Empty Doc");
         }
 
-        private IWpfTextView CreateTextView(ITextBuffer textBuffer)
+        internal IWpfTextView CreateTextView(ITextBuffer textBuffer)
         {
             var textViewRoleSet = _vimComponentHost.TextEditorFactoryService.CreateTextViewRoleSet(
                 PredefinedTextViewRoles.PrimaryDocument,
@@ -71,23 +87,30 @@ namespace VimApp
                 PredefinedTextViewRoles.Interactive,
                 PredefinedTextViewRoles.Structured,
                 PredefinedTextViewRoles.Analyzable);
-            return _vimComponentHost.TextEditorFactoryService.CreateTextView(
+            var textView =  _vimComponentHost.TextEditorFactoryService.CreateTextView(
                 textBuffer,
                 textViewRoleSet);
+
+            textView.GotAggregateFocus += delegate
+            {
+                var hasFocus = textView.HasAggregateFocus;
+                
+            };
+            return textView;    
         }
 
         /// <summary>
         /// Create an ITextViewHost instance for the active ITextBuffer
         /// </summary>
-        private IWpfTextViewHost CreateTextViewHost(IWpfTextView textView)
+        internal IWpfTextViewHost CreateTextViewHost(IWpfTextView textView)
         {
             textView.Options.SetOptionValue(DefaultTextViewOptions.UseVisibleWhitespaceId, true);
             var textViewHost = _vimComponentHost.TextEditorFactoryService.CreateTextViewHost(textView, setFocus: true);
 
             var classificationFormatMap = _classificationFormatMapService.GetClassificationFormatMap(textViewHost.TextView);
             classificationFormatMap.DefaultTextProperties = TextFormattingRunProperties.CreateTextFormattingRunProperties(
-                new Typeface(new FontFamily("Consolas"), FontStyles.Normal, FontWeights.Normal, FontStretches.Normal),
-                14,
+                new Typeface(Constants.FontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal),
+                Constants.FontSize,
                 Colors.Black);
 
             return textViewHost;
@@ -100,28 +123,22 @@ namespace VimApp
             AddNewTab(name, textView);
         }
 
-        private void AddNewTab(string name, IWpfTextView textView)
+        internal void AddNewTab(string name, IWpfTextView textView)
         {
             var textViewHost = CreateTextViewHost(textView);
             var tabItem = new TabItem();
-            var tabInfo = _appInfo.GetOrCreateTabInfo(tabItem);
+            var vimWindow = _vimWindowManager.CreateVimWindow(tabItem);
             tabItem.Header = name;
             tabItem.Content = textViewHost.HostControl;
             _tabControl.Items.Add(tabItem);
 
-            var vimBuffer = _vimComponentHost.Vim.GetOrCreateVimBuffer(textView);
-            tabInfo.AddViewInfo(vimBuffer, textViewHost);
+            vimWindow.AddVimViewInfo(textViewHost);
         }
 
-        internal void SplitViewHorizontally(IWpfTextView textView)
+        private Grid BuildGrid(ReadOnlyCollection<IVimViewInfo> viewInfoList)
         {
-            var tabInfo = ActiveTabInfo;
-            var newTextViewHost = CreateTextViewHost(textView);
-            var vimBuffer = _vimComponentHost.Vim.GetOrCreateVimBuffer(textView);
-            tabInfo.AddViewInfo(vimBuffer, newTextViewHost);
-
-            var viewInfoList = tabInfo.ViewInfoList.ToList();
-            var grid = BuildGrid(viewInfoList);
+            Contract.Requires(viewInfoList.Count > 1);
+            var grid = BuildGridCore(viewInfoList);
             var row = 0;
             for (int i = 0; i < viewInfoList.Count; i++)
             {
@@ -147,13 +164,13 @@ namespace VimApp
                 }
             }
 
-            tabInfo.TabItem.Content = grid;
+            return grid;
         }
 
         /// <summary>
         /// Build up the grid to contain the ITextView instances that we are splitting into
         /// </summary>
-        internal Grid BuildGrid(List<ViewInfo> viewInfoList)
+        private Grid BuildGridCore(ReadOnlyCollection<IVimViewInfo> viewInfoList)
         {
             var grid = new Grid();
 
@@ -176,17 +193,66 @@ namespace VimApp
             return grid;
         }
 
+        private UIElement CreateWindowContent(IVimWindow vimWindow)
+        {
+            var viewInfoList = vimWindow.VimViewInfoList;
+            if (viewInfoList.Count == 0)
+            {
+                var textBlock = new TextBlock();
+                textBlock.Text = "No buffer associated with this window";
+                return textBlock;
+            }
+
+            if (viewInfoList.Count == 1)
+            {
+                return viewInfoList[0].TextViewHost.HostControl;
+            }
+
+            return BuildGrid(viewInfoList);
+        }
+
+        private void OnVimWindowChanged(IVimWindow vimWindow)
+        {
+            vimWindow.TabItem.Content = null;
+            foreach (var vimViewInfo in vimWindow.VimViewInfoList)
+            {
+                var textViewHost = vimViewInfo.TextViewHost;
+                var parent = LogicalTreeHelper.GetParent(textViewHost.HostControl);
+
+                var grid = parent as Grid;
+                if (grid != null)
+                {
+                    grid.Children.Remove(textViewHost.HostControl);
+                    continue;
+                }
+
+                var tabItem = parent as TabItem;
+                if (tabItem != null)
+                {
+                    tabItem.Content = null;
+                    continue;
+                }
+            }
+
+            vimWindow.TabItem.Content = CreateWindowContent(vimWindow);
+        }
+
+        private void OnVimWindowCreated(object sender, VimWindowEventArgs e)
+        {
+            e.VimWindow.Changed += (sender2, e2 ) => OnVimWindowChanged(e.VimWindow);
+        }
+
         #region Issue 1074 Helpers
 
         private void OnLeaderSetClick(object sender, RoutedEventArgs e)
         {
-            ActiveVimBuffer.Process(@":let mapleader='ö'", enter: true);
-            ActiveVimBuffer.Process(@":nmap <Leader>x ihit it<Esc>", enter: true);
+            ActiveVimBufferOpt.Process(@":let mapleader='ö'", enter: true);
+            ActiveVimBufferOpt.Process(@":nmap <Leader>x ihit it<Esc>", enter: true);
         }
 
         private void OnLeaderTypeClick(object sender, RoutedEventArgs e)
         {
-            ActiveVimBuffer.Process(@"ö", enter: false);
+            ActiveVimBufferOpt.Process(@"ö", enter: false);
         }
 
         #endregion
@@ -200,7 +266,7 @@ namespace VimApp
                 builder.AppendFormat("{0} - {1}{2}", i, (char)i, Environment.NewLine);
             }
             builder.AppendLine("End");
-            ActiveVimBuffer.TextBuffer.Insert(0, builder.ToString());
+            ActiveVimBufferOpt.TextBuffer.Insert(0, builder.ToString());
         }
 
         private void OnDisplayNewLinesChecked(object sender, RoutedEventArgs e)
@@ -210,7 +276,8 @@ namespace VimApp
 
         private void OnNewTabClick(object sender, RoutedEventArgs e)
         {
-            var name = String.Format("Empty Doc {0}", _appInfo.Count + 1);
+            // TODO: Move the title to IVimWindow
+            var name = String.Format("Empty Doc {0}", _vimWindowManager.VimWindowList.Count + 1);
             AddNewTab(name);
         }
     }

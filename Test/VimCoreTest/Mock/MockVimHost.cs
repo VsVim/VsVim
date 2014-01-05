@@ -42,11 +42,10 @@ namespace Vim.UnitTest.Mock
         public ITextView LastClosed { get; set; }
         public bool ShouldCreateVimBufferImpl { get; set; }
         public VimRcState VimRcState { get; private set; }
-
-        /// <summary>
-        /// Data from the last GoToNextTab call
-        /// </summary>
-        public Tuple<Path, int> GoToNextTabData { get; set; }
+        public int TabCount { get; set; }
+        public IFontProperties FontProperties { get; set; }
+        public int GoToTabData { get; set; }
+        public int GetTabIndexData { get; set; }
 
         public MockVimHost()
         {
@@ -200,14 +199,9 @@ namespace Vim.UnitTest.Mock
             return true;
         }
 
-        void IVimHost.GoToNextTab(Path value, int count)
-        {
-            GoToNextTabData = Tuple.Create(value, count);
-        }
-
         void IVimHost.GoToTab(int index)
         {
-            throw new NotImplementedException();
+            GoToTabData = index;
         }
 
         string IVimHost.RunCommand(string command, string arguments, IVimData vimData)
@@ -287,14 +281,25 @@ namespace Vim.UnitTest.Mock
             return ShouldCreateVimBufferImpl;
         }
 
-        void IVimHost.GoToQuickFix(QuickFix quickFix, int count, bool hasBang)
+        bool IVimHost.GoToQuickFix(QuickFix quickFix, int count, bool hasBang)
         {
             RunQuickFixFunc(quickFix, count, hasBang);
+            return false;
         }
 
         void IVimHost.VimRcLoaded(VimRcState vimRcState, IVimLocalSettings localSettings, IVimWindowSettings windowSettings)
         {
             VimRcState = vimRcState;
+        }
+
+        int IVimHost.GetTabIndex(ITextView textView)
+        {
+            return GetTabIndexData;            
+        }
+
+        int IVimHost.TabCount
+        {
+            get { return TabCount; }
         }
     }
 }

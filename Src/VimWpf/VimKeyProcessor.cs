@@ -35,10 +35,24 @@ namespace Vim.UI.Wpf
             get { return _vimBuffer.TextView; }
         }
 
-        public VimKeyProcessor(IVimBuffer vimBuffer, IKeyUtil keyUtil)
+        public VimKeyProcessor(IVimBuffer vimBuffer, IKeyUtil keyUtil, IWpfTextView wpfTextView)
         {
             _vimBuffer = vimBuffer;
             _keyUtil = keyUtil;
+            wpfTextView.VisualElement.MouseDown += (s, e) =>
+                {
+                    if (e.ChangedButton == MouseButton.Middle && e.ButtonState == MouseButtonState.Pressed)
+                    {
+                        var position = e.GetPosition(wpfTextView.VisualElement);
+                        var viewLine = wpfTextView.TextViewLines.GetTextViewLineContainingYCoordinate(position.Y + wpfTextView.ViewportTop);
+                        wpfTextView.Caret.MoveTo(viewLine, position.X + wpfTextView.ViewportLeft);
+
+                        // Run the 'put' command directly here.  Don't try to run 'P' because a key mapping could
+                        // prevent it from running correctly 
+                        var command = Command.NewNormalCommand(NormalCommand.NewPutBeforeCaret(false), CommandData.Default);
+                        _vimBuffer.CommandUtil.RunCommand(command);
+                    }
+                };
         }
 
         public override bool IsInterestedInHandledEvents

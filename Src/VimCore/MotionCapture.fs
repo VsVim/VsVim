@@ -124,7 +124,7 @@ type internal MotionCapture
 
     /// Get a char and use the provided 'func' to create a Motion value.
     let GetChar func = 
-        let data = BindData<_>.CreateForSingleChar (Some KeyRemapMode.Language) func
+        let data = BindData<_>.CreateForSingleChar KeyRemapMode.Language func
         BindDataStorage<_>.Simple data
 
     /// Get a local mark and us the provided 'func' to create a Motion value
@@ -134,7 +134,7 @@ type internal MotionCapture
             | None -> BindResult<Motion>.Error
             | Some localMark -> BindResult<_>.Complete (func localMark)
         let bindData = {
-            KeyRemapMode = Some KeyRemapMode.Language
+            KeyRemapMode = KeyRemapMode.Language
             BindFunction = bindFunc }
         BindDataStorage<_>.Simple bindData
 
@@ -152,8 +152,8 @@ type internal MotionCapture
 
             result.Convert (fun searchResult ->
                 match searchResult with
-                | SearchResult.Found (searchData, _, _) -> Motion.Search searchData.PatternData
-                | SearchResult.NotFound (searchData, _) -> Motion.Search searchData.PatternData)
+                | SearchResult.Found (searchData, _, _, _) -> Motion.Search searchData
+                | SearchResult.NotFound (searchData, _) -> Motion.Search searchData)
 
         BindDataStorage.Complex activateFunc
 
@@ -231,13 +231,13 @@ type internal MotionCapture
                     if Seq.isEmpty res then 
                         BindResult.Error
                     else 
-                        let bindData = { KeyRemapMode = None; BindFunction = inner name }
+                        let bindData = { KeyRemapMode = KeyRemapMode.None; BindFunction = inner name }
                         BindResult.NeedMoreInput bindData
         inner KeyInputSet.Empty keyInput
 
     /// Get the Motion value and associated count beginning with the specified KeyInput value
     member x.GetMotionAndCount keyInput =
-        let result = CountCapture.GetCount None keyInput
+        let result = CountCapture.GetCount KeyRemapMode.None keyInput
         result.Map (fun (count, keyInput) -> 
             let result = x.GetMotion keyInput
             result.Convert (fun motion -> (motion, count)))

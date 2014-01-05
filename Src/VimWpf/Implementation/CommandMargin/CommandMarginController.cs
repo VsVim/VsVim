@@ -9,6 +9,7 @@ using Microsoft.VisualStudio.Text.Classification;
 using Vim.Extensions;
 using Vim.UI.Wpf.Properties;
 using WpfKeyboard = System.Windows.Input.Keyboard;
+using System.Text;
 
 namespace Vim.UI.Wpf.Implementation.CommandMargin
 {
@@ -35,6 +36,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
         private readonly IVimBuffer _vimBuffer;
         private readonly CommandMarginControl _margin;
         private readonly IEditorFormatMap _editorFormatMap;
+        private readonly IFontProperties _fontProperties;
         private readonly ReadOnlyCollection<Lazy<IOptionsProviderFactory>> _optionsProviderFactory;
         private readonly FrameworkElement _parentVisualElement;
         private bool _inKeyInputEvent;
@@ -56,12 +58,13 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             get { return _editKind; }
         }
 
-        internal CommandMarginController(IVimBuffer buffer, FrameworkElement parentVisualElement, CommandMarginControl control, IEditorFormatMap editorFormatMap, IEnumerable<Lazy<IOptionsProviderFactory>> optionsProviderFactory)
+        internal CommandMarginController(IVimBuffer buffer, FrameworkElement parentVisualElement, CommandMarginControl control, IEditorFormatMap editorFormatMap, IFontProperties fontProperties, IEnumerable<Lazy<IOptionsProviderFactory>> optionsProviderFactory)
         {
             _vimBuffer = buffer;
             _margin = control;
             _parentVisualElement = parentVisualElement;
             _editorFormatMap = editorFormatMap;
+            _fontProperties = fontProperties;
             _optionsProviderFactory = optionsProviderFactory.ToList().AsReadOnly();
 
             _vimBuffer.SwitchedMode += OnSwitchMode;
@@ -73,6 +76,8 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             _vimBuffer.CommandMode.CommandChanged += OnCommandChanged;
             _vimBuffer.Vim.MacroRecorder.RecordingStarted += OnRecordingStarted;
             _vimBuffer.Vim.MacroRecorder.RecordingStopped += OnRecordingStopped;
+            _margin.Loaded += OnCommandMarginLoaded;
+            _margin.Unloaded += OnCommandMarginUnloaded;
             _margin.OptionsButton.Click += OnOptionsClicked;
             _margin.CommandLineTextBox.PreviewKeyDown += OnCommandLineTextBoxPreviewKeyDown;
             _margin.CommandLineTextBox.TextChanged += OnCommandLineTextBoxTextChanged;
@@ -247,11 +252,9 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             }
 
             var search = _vimBuffer.IncrementalSearch;
-            if (search.InSearch && search.CurrentSearchData.IsSome())
+            if (search.InSearch)
             {
-                var data = search.CurrentSearchData.Value;
-                var prefix = data.Kind.IsAnyForward ? "/" : "?";
-                _margin.StatusLine = prefix + data.Pattern;
+                _margin.StatusLine = search.CurrentSearchText;
                 return;
             }
 
@@ -303,6 +306,17 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             var propertyMap = _editorFormatMap.GetProperties(CommandMarginFormatDefinition.Name);
             _margin.TextForeground = propertyMap.GetForegroundBrush(SystemColors.WindowTextBrush);
             _margin.TextBackground = propertyMap.GetBackgroundBrush(SystemColors.WindowBrush);
+        }
+
+        /// <summary>
+        /// Update the font family and size of the command margin text input controls
+        /// </summary>
+        private void UpdateFontProperties()
+        {
+            _margin.TextFontFamily = _fontProperties.FontFamily;
+
+            // Convert points (1 pt = 1/72") to pixels (1 WPF pixel = 1/96").
+            _margin.TextFontSize = _fontProperties.FontSize * 96 / 72;
         }
 
         /// <summary>
@@ -476,6 +490,17 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             MessageEvent(args.Message);
         }
 
+        private void OnCommandMarginLoaded(object sender, RoutedEventArgs e)
+        {
+            _fontProperties.FontPropertiesChanged += OnFontPropertiesChanged;
+            UpdateFontProperties();
+        }
+
+        private void OnCommandMarginUnloaded(object sender, RoutedEventArgs e)
+        {
+            _fontProperties.FontPropertiesChanged -= OnFontPropertiesChanged;
+        }
+
         private void OnOptionsClicked(object sender, EventArgs e)
         {
             var provider = _optionsProviderFactory.Select(x => x.Value.CreateOptionsProvider()).Where(x => x != null).FirstOrDefault();
@@ -492,6 +517,11 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
         private void OnFormatMappingChanged(object sender, FormatItemsEventArgs e)
         {
             UpdateTextColor();
+        }
+
+        private void OnFontPropertiesChanged(object sender, FontPropertiesEventArgs e)
+        {
+            UpdateFontProperties();
         }
 
         private void OnRecordingStarted(object sender, RecordRegisterEventArgs args)
@@ -612,10 +642,9 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
                 return EditKind.Command;
             }
 
-            if (_vimBuffer.IncrementalSearch.InSearch &&
-                _vimBuffer.IncrementalSearch.CurrentSearchData.IsSome())
+            if (_vimBuffer.IncrementalSearch.InSearch)
             {
-                return _vimBuffer.IncrementalSearch.CurrentSearchData.Value.Kind.IsAnyForward
+                return _vimBuffer.IncrementalSearch.CurrentSearchData.Kind.IsAnyForward
                     ? EditKind.SearchForward
                     : EditKind.SearchBackward;
             }

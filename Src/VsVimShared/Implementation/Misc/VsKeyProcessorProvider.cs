@@ -10,7 +10,7 @@ namespace VsVim.Implementation.Misc
     [Export(typeof(IKeyProcessorProvider))]
     [Order(Before = Constants.VisualStudioKeyProcessorName)]
     [Name(Constants.VsKeyProcessorName)]
-    [TextViewRole(PredefinedTextViewRoles.Document)]
+    [TextViewRole(PredefinedTextViewRoles.Editable)]
     [ContentType(Vim.Constants.ContentType)]
     internal sealed class VsKeyProcessorProvider : IKeyProcessorProvider
     {
@@ -39,7 +39,7 @@ namespace VsVim.Implementation.Misc
             }
 
             var vimBufferCoordinator = _bufferCoordinatorFactory.GetVimBufferCoordinator(vimBuffer);
-            return new VsKeyProcessor(_adapter, vimBufferCoordinator, _keyUtil, _reportDesignerUtil);
+            return new VsKeyProcessor(_adapter, vimBufferCoordinator, _keyUtil, _reportDesignerUtil, wpfTextView);
         }
     }
 }

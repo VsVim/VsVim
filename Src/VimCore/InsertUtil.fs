@@ -234,7 +234,7 @@ type internal InsertUtil
         if virtualPoint.IsInVirtualSpace then 
             _operations.MoveCaretToPoint virtualPoint.Position ViewFlags.None
             CommandResult.Completed ModeSwitch.NoSwitch
-        elif moveCaretLeft then 
+        elif moveCaretLeft && not (SnapshotPointUtil.IsStartOfLine x.CaretPoint) then
             x.MoveCaret Direction.Left
         else
             CommandResult.Completed ModeSwitch.NoSwitch
@@ -557,47 +557,53 @@ type internal InsertUtil
     member x.RunInsertCommand command = 
         x.RunInsertCommandCore command false
 
-    /// Shift the caret line one 'shiftwidth' to the left.  This is different than 
-    /// both normal and visual mode shifts because it will round up the blanks to
-    /// a 'shiftwidth' before indenting
-    member x.ShiftLineLeft () =
+    /// Shift the caret line one 'shiftwidth' in a direction.  This is
+    /// different than both normal and visual mode shifts because it will
+    /// round the blanks to a 'shiftwidth' before indenting
+    member x.ShiftLine (direction : int) =
+
+        // Get the current indent and whether the line is blank
         let indentSpan = SnapshotLineUtil.GetIndentSpan x.CaretLine
+        let isBlankLine = SnapshotLineUtil.IsBlankOrEmpty x.CaretLine
 
-        if indentSpan.Length > 0 || x.CaretVirtualPoint.IsInVirtualSpace then
-            let isBlankLine = SnapshotLineUtil.IsBlankOrEmpty x.CaretLine
-
-            let spaces = 
-                let spaces = _operations.NormalizeBlanksToSpaces (indentSpan.GetText())
-
-                // Make sure to account for the caret being in virtual space.  This simply
-                // adds extra spaces to the line equal to the number of virtual spaces
-                if x.CaretVirtualPoint.IsInVirtualSpace then
-                    let extra = StringUtil.repeatChar x.CaretVirtualPoint.VirtualSpaces ' '
-                    spaces + extra
+        // Convert spaces, tabs and virtual space to a column
+        let column = 
+            (_operations.NormalizeBlanksToSpaces (indentSpan.GetText())).Length +
+                if isBlankLine && x.CaretVirtualPoint.IsInVirtualSpace then
+                    x.CaretVirtualPoint.VirtualSpaces
                 else
-                    spaces
+                    0
 
-            let trim = 
-                let remainder = spaces.Length % _localSettings.ShiftWidth
-                if remainder = 0 then
-                    _localSettings.ShiftWidth
-                else
-                    remainder
-            let indent = 
-                let spaces = spaces.Substring(0, spaces.Length - trim)
-                _operations.NormalizeBlanks spaces
-            _textBuffer.Replace(indentSpan.Span, indent) |> ignore
-            if isBlankLine then
-                // the line is now all spaces, move it to the end
-                TextViewUtil.MoveCaretToPoint _textView x.CaretLine.End
+        // Compute offset to the nearest multiple of 'shiftwidth'
+        let offset =
+            let remainder = column % _localSettings.ShiftWidth
+            if remainder = 0 then
+                direction * _localSettings.ShiftWidth
+            else if direction = -1 then
+                -remainder
+            else
+                _localSettings.ShiftWidth - remainder
+
+        // Replace the current indent with a new indent
+        let newColumn = max (column + offset) 0
+        let spaces = StringUtil.repeatChar newColumn ' '
+        let indent = _operations.NormalizeBlanks spaces
+        _textBuffer.Replace(indentSpan.Span, indent) |> ignore
+
+        // If the line is all spaces, move it to the end and
+        // the caret will no longer be in virtual space
+        if isBlankLine then
+            TextViewUtil.MoveCaretToPoint _textView x.CaretLine.End
 
         CommandResult.Completed ModeSwitch.NoSwitch
 
-    /// Shift the carte line one 'shiftwidth' to the right
+    /// Shift the caret line one 'shiftwidth' to the left
+    member x.ShiftLineLeft () =
+        x.ShiftLine -1
+
+    /// Shift the caret line one 'shiftwidth' to the right
     member x.ShiftLineRight () =
-        let range = TextViewUtil.GetCaretLineRange _textView 1
-        _operations.ShiftLineRangeRight range 1
-        CommandResult.Completed ModeSwitch.NoSwitch
+        x.ShiftLine 1
 
     member x.ExtraTextChange textChange addNewLines = 
         x.ApplyTextChange textChange addNewLines 

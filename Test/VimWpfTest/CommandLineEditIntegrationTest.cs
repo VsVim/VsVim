@@ -37,6 +37,7 @@ namespace Vim.UI.Wpf.UnitTest
 
             var editorFormatMap = _factory.Create<IEditorFormatMap>(MockBehavior.Loose);
             editorFormatMap.Setup(x => x.GetProperties(It.IsAny<string>())).Returns(new ResourceDictionary());
+            var fontProperties = MockObjectFactory.CreateFontProperties("Courier New", 10, _factory);
 
             var parentVisualElement = _factory.Create<FrameworkElement>();
 
@@ -45,6 +46,7 @@ namespace Vim.UI.Wpf.UnitTest
                 parentVisualElement.Object,
                 _marginControl,
                 editorFormatMap.Object,
+                fontProperties.Object,
                 new List<Lazy<IOptionsProviderFactory>>());
         }
 
@@ -196,7 +198,7 @@ namespace Vim.UI.Wpf.UnitTest
                 {
                     Create("cat", "dog", "fish");
                     ProcessNotation(@"/dg<Left>o");
-                    Assert.Equal("dog", _incrementalSearch.CurrentSearchData.Value.Pattern);
+                    Assert.Equal("dog", _incrementalSearch.CurrentSearchData.Pattern);
                 }
 
                 [Fact]
@@ -213,7 +215,7 @@ namespace Vim.UI.Wpf.UnitTest
                 {
                     Create("cat", "dog", "fish");
                     ProcessNotation(@"/dg<Left><BS><Del>fish");
-                    Assert.Equal("fish", _incrementalSearch.CurrentSearchData.Value.Pattern);
+                    Assert.Equal("fish", _incrementalSearch.CurrentSearchData.Pattern);
                 }
 
                 [Fact]

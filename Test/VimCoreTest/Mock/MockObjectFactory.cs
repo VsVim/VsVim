@@ -10,6 +10,7 @@ using Microsoft.VisualStudio.Utilities;
 using Moq;
 using System.Collections.Generic;
 using Vim.Interpreter;
+using System.Windows.Media;
 
 namespace Vim.UnitTest.Mock
 {
@@ -533,6 +534,18 @@ namespace Vim.UnitTest.Mock
             mock.SetupGet(x => x.LastVisibleLine).Returns(CreateTextViewLine(range.LastLine, factory).Object);
             mock.SetupGet(x => x.Count).Returns(range.Count);
             return mock;
+        }
+
+        public static Mock<IFontProperties> CreateFontProperties(
+            string fontFamily,
+            double fontSize,
+            MockRepository factory = null)
+        {
+            factory = factory ?? new MockRepository(MockBehavior.Strict);
+            var fontProperties = factory.Create<IFontProperties>();
+            fontProperties.SetupGet(x => x.FontFamily).Returns(new FontFamily(fontFamily));
+            fontProperties.SetupGet(x => x.FontSize).Returns(fontSize);
+            return fontProperties;
         }
     }
 }

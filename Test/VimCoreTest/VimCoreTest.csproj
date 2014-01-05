@@ -38,11 +38,10 @@
     <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="EditorUtils, Version=1.2.0.0, Culture=neutral, PublicKeyToken=3d1514c4742e0252, processorArchitecture=MSIL">
+    <Reference Include="EditorUtils, Version=1.3.0.0, Culture=neutral, PublicKeyToken=3d1514c4742e0252, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\packages\EditorUtils.1.2.0.0\lib\net40\EditorUtils.dll</HintPath>
+      <HintPath>..\..\packages\EditorUtils.1.3.0.0\lib\net40\EditorUtils.dll</HintPath>
     </Reference>
-    <Reference Include="FSharp.Core, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
     <Reference Include="Microsoft.VisualStudio.CoreUtility, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
     <Reference Include="Microsoft.VisualStudio.Language.Intellisense, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
     <Reference Include="Microsoft.VisualStudio.Text.Data, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
@@ -72,6 +71,7 @@
     <Compile Include="BulkOperationsTest.cs" />
     <Compile Include="ChangeTrackerTest.cs" />
     <Compile Include="CharacterSpanTest.cs" />
+    <Compile Include="CharSpanTest.cs" />
     <Compile Include="CharUtilTest.cs" />
     <Compile Include="ClipboardRegisterValueBackingTest.cs" />
     <Compile Include="CodeHygieneTest.cs" />
@@ -88,6 +88,9 @@
     <Compile Include="MatchingTokenUtilTest.cs" />
     <Compile Include="ModeMapTest.cs" />
     <Compile Include="RegisterValueTest.cs" />
+    <Compile Include="SearchOffsetDataTest.cs" />
+    <Compile Include="SearchDataTest.cs" />
+    <Compile Include="SnapshotColumnTest.cs" />
     <Compile Include="SnapshotOverlapPointTest.cs" />
     <Compile Include="SnapshotOverlapSpanTest.cs" />
     <Compile Include="StringUtilTest.cs" />

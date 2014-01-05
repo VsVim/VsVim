@@ -36,8 +36,11 @@
             x:Name="_commandLineInput"
             Grid.Row="0"
             Grid.Column="1"
+            VerticalAlignment="Center"
             Text="{Binding Path=StatusLine}" 
             IsReadOnly="{Binding Path=IsEditReadOnly}"
+            FontFamily="{Binding Path=TextFontFamily}"
+            FontSize="{Binding Path=TextFontSize}"
             Foreground="{Binding Path=TextForeground}"
             Background="{Binding Path=TextBackground}"
             />

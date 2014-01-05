@@ -444,6 +444,7 @@ type VimInterpreter
                 "?"
             else 
                 match List.head modes with
+                | KeyRemapMode.None -> ""
                 | KeyRemapMode.Normal -> "n"
                 | KeyRemapMode.Visual -> "x"
                 | KeyRemapMode.Select -> "s"
@@ -827,12 +828,12 @@ type VimInterpreter
 
     member x.RunQuickFixNext count hasBang =
         let count = OptionUtil.getOrDefault 1 count 
-        _vimHost.GoToQuickFix QuickFix.Next count hasBang
+        _vimHost.GoToQuickFix QuickFix.Next count hasBang |> ignore
         RunResult.Completed
 
     member x.RunQuickFixPrevious count hasBang =
         let count = OptionUtil.getOrDefault 1 count 
-        _vimHost.GoToQuickFix QuickFix.Previous count hasBang
+        _vimHost.GoToQuickFix QuickFix.Previous count hasBang |> ignore
         RunResult.Completed
 
     /// Run the quit command
@@ -1005,19 +1006,19 @@ type VimInterpreter
     
             // Searches start after the end of the specified line range
             let startPoint = lineRange.End
-            let patternData = { Pattern = pattern; Path = path }
-            let result = _searchService.FindNextPattern patternData startPoint _vimBufferData.VimTextBuffer.WordNavigator 1
+            let searchData = SearchData(pattern, path, _globalSettings.WrapScan)
+            let result = _searchService.FindNextPattern startPoint searchData _vimBufferData.VimTextBuffer.WordNavigator 1
             _commonOperations.RaiseSearchResultMessage(result)
     
             match result with
-            | SearchResult.Found (searchData, span, _) ->
+            | SearchResult.Found (searchData, span, _, _) ->
                 // Move it to the start of the line containing the match 
                 let point = 
                     span.Start 
                     |> SnapshotPointUtil.GetContainingLine 
                     |> SnapshotLineUtil.GetFirstNonBlankOrStart
                 _commonOperations.MoveCaretToPoint point ViewFlags.Standard
-                _vimData.LastPatternData <- searchData.PatternData
+                _vimData.LastPatternData <- searchData.LastPatternData
             | SearchResult.NotFound _ -> ()
     
             RunResult.Completed)

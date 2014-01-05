@@ -80,7 +80,7 @@ namespace Vim.UnitTest.Mock
             throw new NotImplementedException();
         }
 
-        public FSharpOption<KeyRemapMode> KeyRemapMode
+        public KeyRemapMode KeyRemapMode
         {
             get { throw new NotImplementedException(); }
         }

@@ -35,11 +35,10 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="EditorUtils, Version=1.2.0.0, Culture=neutral, PublicKeyToken=3d1514c4742e0252, processorArchitecture=MSIL">
+    <Reference Include="EditorUtils, Version=1.3.0.0, Culture=neutral, PublicKeyToken=3d1514c4742e0252, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\packages\EditorUtils.1.2.0.0\lib\net40\EditorUtils.dll</HintPath>
+      <HintPath>..\..\packages\EditorUtils.1.3.0.0\lib\net40\EditorUtils.dll</HintPath>
     </Reference>
-    <Reference Include="FSharp.Core, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
     <Reference Include="Microsoft.VisualStudio.Text.Data, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
     <Reference Include="Microsoft.VisualStudio.Text.Logic, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
     <Reference Include="Microsoft.VisualStudio.Text.UI, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
@@ -81,6 +80,7 @@
   <ItemGroup>
     <Compile Include="CodeHygieneTest.cs" />
     <Compile Include="CommandIdTest.cs" />
+    <Compile Include="CommandKeyBindingTest.cs" />
     <Compile Include="CSharpAdapterTest.cs" />
     <Compile Include="HostFactoryTest.cs" />
     <Compile Include="MindScapeTest.cs" />
@@ -102,10 +102,11 @@
     <Compile Include="KeyBindingServiceTest.cs" />
     <Compile Include="KeyBindingTest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="ResharperExternalEditAdapterTest.cs" />
+    <Compile Include="ReSharperUtilTest.cs" />
     <Compile Include="SnippetExternalEditAdapterTest.cs" />
     <Compile Include="TextManagerTest.cs" />
     <Compile Include="Utils\CharPointer.cs" />
+    <Compile Include="Utils\ReSharperCommandTargetSimulation.cs" />
     <Compile Include="Utils\VsSimulation.cs" />
     <Compile Include="VimApplicationSettingsTest.cs" />
     <Compile Include="VsAdapterTest.cs" />

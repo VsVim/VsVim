@@ -33,6 +33,7 @@ type CaretMovement =
         | Direction.Right -> CaretMovement.Right
         | Direction.Down -> CaretMovement.Down
         | Direction.Left -> CaretMovement.Left
+        | _ -> raise (Contract.GetInvalidEnumException direction)
 
 type TextViewEventArgs(_textView : ITextView) =
     inherit System.EventArgs()
@@ -400,6 +401,9 @@ type SearchOptions =
     /// Consider the "smartcase" option when doing the search
     | ConsiderSmartCase = 0x2
 
+    /// ConsiderIgnoreCase ||| ConsiderSmartCase
+    | Default = 0x3
+
 /// Information about a search of a pattern
 type PatternData = {
 
@@ -409,34 +413,206 @@ type PatternData = {
     /// The direction in which the pattern was searched for
     Path : Path
 }
-    with 
-
-    /// The default search options when looking at a specific pattern
-    static member DefaultSearchOptions = SearchOptions.ConsiderIgnoreCase ||| SearchOptions.ConsiderSmartCase
 
 type PatternDataEventArgs(_patternData : PatternData) =
     inherit System.EventArgs()
 
     member x.PatternData = _patternData
 
-type SearchData = {
+/// An incremental search can be augmented with a offset of characters or a line
+/// count.  This is described in full in :help searh-offset'
+[<RequireQualifiedAccess>]
+[<StructuralEquality>]
+[<NoComparison>]
+type SearchOffsetData =
+    | None
+    | Line of int
+    | Start of int
+    | End of int
+    | Search of PatternData
+
+    with 
+
+    static member private ParseCore (offset : string) =
+        Contract.Requires (offset.Length > 0)
+
+        let index = ref 0
+        let isForward = ref true
+        let movePastPlusOrMinus () = 
+            if index.Value < offset.Length then
+                match offset.[index.Value] with
+                | '+' -> 
+                    isForward := true
+                    index := index.Value + 1
+                    true
+                | '-' ->
+                    isForward := false
+                    index := index.Value + 1
+                    true
+                | _ -> false
+            else
+                false
+
+        let parseNumber () = 
+            if movePastPlusOrMinus () && index.Value = offset.Length then
+                // a single + or - counts as a value if it's not followed by
+                // a number 
+                if isForward.Value then 1
+                else -1
+            else
+                // parse out the digits after the value
+                let mutable num = 0
+                let mutable isBad = index.Value >= offset.Length
+                while index.Value < offset.Length do
+                    num <- num * 10
+                    match CharUtil.GetDigitValue (offset.[index.Value]) with
+                    | Option.None -> 
+                        isBad <- true
+                        index := offset.Length
+                    | Option.Some d ->
+                        num <- num + d
+                        index := index.Value + 1
+                if isBad then
+                    0
+                elif isForward.Value then
+                    num
+                else    
+                    -num
+
+        let parseLine () = 
+            let number = parseNumber ()
+            SearchOffsetData.Line number
+
+        let parseEnd () = 
+            index := index.Value + 1
+            let number = parseNumber ()
+            SearchOffsetData.End number
+            
+        let parseStart () = 
+            index := index.Value + 1
+            let number = parseNumber ()
+            SearchOffsetData.Start number
+
+        let parseSearch () = 
+            index := index.Value + 1
+            match StringUtil.charAtOption index.Value offset with
+            | Option.Some '/' -> 
+                let path = Path.Forward
+                let pattern = offset.Substring(index.Value + 1)
+                SearchOffsetData.Search ({ Pattern = pattern; Path = path})
+            | Option.Some '?' -> 
+                let path = Path.Backward
+                let pattern = offset.Substring(index.Value + 1)
+                SearchOffsetData.Search ({ Pattern = pattern; Path = path})
+            | _ ->
+                SearchOffsetData.None
+
+        if CharUtil.IsDigit (offset.[0]) then
+            parseLine ()
+        else
+            match offset.[0] with
+            | '-' -> parseLine ()
+            | '+' -> parseLine ()
+            | 'e' -> parseEnd ()
+            | 's' -> parseStart ()
+            | 'b' -> parseStart ()
+            | ';' -> parseSearch () 
+            | _ -> SearchOffsetData.None
+
+    static member Parse (offset : string) =
+        if StringUtil.isNullOrEmpty offset then
+            SearchOffsetData.None
+        else
+            SearchOffsetData.ParseCore offset
+
+[<Sealed>]
+type SearchData
+    (
+        _pattern : string,
+        _offset : SearchOffsetData,
+        _kind : SearchKind,
+        _options : SearchOptions
+    ) = 
+
+    new (pattern : string, path : Path, isWrap : bool) =
+        let kind = SearchKind.OfPathAndWrap path isWrap
+        SearchData(pattern, SearchOffsetData.None, kind, SearchOptions.Default)
+
+    new (pattern : string, path : Path) = 
+        let kind = SearchKind.OfPathAndWrap path true
+        SearchData(pattern, SearchOffsetData.None, kind, SearchOptions.Default)
 
     /// The pattern being searched for in the buffer
-    Pattern : string
+    member x.Pattern = _pattern
 
-    Kind : SearchKind;
+    /// The offset that is applied to the search
+    member x.Offset = _offset
 
-    Options : SearchOptions
-} with
+    member x.Kind = _kind
 
+    member x.Options = _options
+
+    member x.Path = x.Kind.Path
+
+    /// The PatternData which was searched for.  This does not include the pattern searched
+    /// for in the offset
     member x.PatternData = { Pattern = x.Pattern; Path = x.Kind.Path }
 
-    static member OfPatternData (patternData : PatternData) wrap = 
-        {
-            Pattern = patternData.Pattern
-            Kind = SearchKind.OfPathAndWrap patternData.Path wrap
-            Options = PatternData.DefaultSearchOptions
-        }
+    /// The PatternData which should be used for IVimData.LastPatternData if this search needs
+    /// to update that value.  It takes into account the search pattern in an offset string
+    /// as specified in ':help //;'
+    member x.LastPatternData =
+        let path = x.Path
+        let pattern = 
+            match x.Offset with
+            | SearchOffsetData.Search patternData -> patternData.Pattern
+            | _ -> x.Pattern
+        { Pattern = pattern; Path = path }
+
+    member x.Equals(other: SearchData) =
+        if obj.ReferenceEquals(other, null) then
+            false
+        else
+            _pattern = other.Pattern &&
+            _offset = other.Offset &&
+            _kind = other.Kind &&
+            _options = other.Options
+
+    override x.Equals(other : obj) = 
+        match other with
+        | :? SearchData as otherSearchData -> x.Equals(otherSearchData);
+        | _ -> false 
+
+    override x.GetHashCode() =
+        _pattern.GetHashCode()
+
+    static member op_Equality(this, other) = System.Collections.Generic.EqualityComparer<SearchData>.Default.Equals(this, other)
+    static member op_Inequality(this, other) = not (System.Collections.Generic.EqualityComparer<SearchData>.Default.Equals(this, other))
+
+    /// Parse out a SearchData value given the specific pattern and SearchKind.  The pattern should
+    /// not include a beginning / or ?.  That should be removed by this point
+    static member Parse (pattern : string) (searchKind : SearchKind) searchOptions =
+        let mutable index = -1
+        let mutable i = 1
+        let targetChar = 
+            if searchKind.IsAnyForward then '/'
+            else '?'
+        while i < pattern.Length do
+            if pattern.[i] = targetChar && pattern.[i-1] <> '\\' then
+                index <- i
+                i <- pattern.Length
+            else
+                i <- i + 1
+
+        if index < 0 then
+            SearchData(pattern, SearchOffsetData.None, searchKind, searchOptions)
+        else
+            let offset = SearchOffsetData.Parse (pattern.Substring(index + 1))
+            let pattern = pattern.Substring(0, index)
+            SearchData(pattern, offset, searchKind, searchOptions)
+
+    interface System.IEquatable<SearchData> with
+        member x.Equals other = x.Equals(other)
 
 type SearchDataEventArgs(_searchData : SearchData) =
     inherit System.EventArgs()
@@ -447,9 +623,18 @@ type SearchDataEventArgs(_searchData : SearchData) =
 [<RequireQualifiedAccess>]
 type SearchResult =
 
-    /// The pattern was found.  The bool at the end of the tuple represents whether not
+    /// The pattern was found.  The two spans here represent the following pieces of data
+    /// respectively 
+    ///
+    ///     - the span of the pattern + the specified offset
+    ///     - the span of the found pattern 
+    ///
+    /// In general the first should be used by consumers.  The second is only interesting
+    /// to items that need to tag the value 
+    ///
+    /// The bool at the end of the tuple represents whether not
     /// a wrap occurred while searching for the value
-    | Found of SearchData * SnapshotSpan * bool
+    | Found of SearchData * SnapshotSpan * SnapshotSpan * bool
 
     /// The pattern was not found.  The bool is true if the word was present in the ITextBuffer
     /// but wasn't found do to the lack of a wrap in the SearchData value
@@ -460,7 +645,7 @@ type SearchResult =
     /// Returns the SearchData which was searched for
     member x.SearchData = 
         match x with 
-        | SearchResult.Found (searchData, _, _) -> searchData
+        | SearchResult.Found (searchData, _, _, _) -> searchData
         | SearchResult.NotFound (searchData, _) -> searchData
 
 type SearchResultEventArgs(_searchResult : SearchResult) = 
@@ -476,14 +661,14 @@ type ISearchService =
 
     /// Find the next occurrence of the pattern in the buffer starting at the 
     /// given SnapshotPoint
-    abstract FindNext : SearchData -> SnapshotPoint -> ITextStructureNavigator -> SearchResult
+    abstract FindNext : searchPoint : SnapshotPoint -> searchData : SearchData -> navigator : ITextStructureNavigator -> SearchResult
 
     /// Find the next Nth occurrence of the search data
-    abstract FindNextMultiple : SearchData -> SnapshotPoint -> ITextStructureNavigator -> count:int -> SearchResult
+    abstract FindNextMultiple : searchPoint : SnapshotPoint -> searchData : SearchData -> navigator : ITextStructureNavigator -> count : int -> SearchResult
 
     /// Find the next 'count' occurrence of the specified pattern.  Note: The first occurrence won't
     /// match anything at the provided start point.  That will be adjusted appropriately
-    abstract FindNextPattern : PatternData -> SnapshotPoint -> ITextStructureNavigator -> count : int -> SearchResult
+    abstract FindNextPattern : searchPoint : SnapshotPoint -> searchPoint : SearchData -> navigator : ITextStructureNavigator -> count : int -> SearchResult
 
 /// Column information about the caret in relation to this Motion Result
 [<RequireQualifiedAccess>]
@@ -864,7 +1049,7 @@ type Motion =
     | RepeatLastCharSearchOpposite
 
     /// A search for the specified pattern
-    | Search of PatternData
+    | Search of SearchData
 
     /// Backward a section in the editor or to a close brace
     | SectionBackwardOrCloseBrace
@@ -1991,56 +2176,66 @@ type CommandResult =
 /// Information about the attributes of Command
 [<System.Flags>]
 type CommandFlags =
-    | None = 0x0
+    | None = 0x0000
 
     /// Relates to the movement of the cursor.  A movement command does not alter the 
     /// last command
-    | Movement = 0x1
+    | Movement = 0x0001
 
     /// A Command which can be repeated
-    | Repeatable = 0x2
+    | Repeatable = 0x0002
 
     /// A Command which should not be considered when looking at last changes
-    | Special = 0x4
+    | Special = 0x0004
 
     /// Can handle the escape key if provided as part of a Motion or Long command extra
     /// input
-    | HandlesEscape = 0x8
+    | HandlesEscape = 0x0008
 
     /// For the purposes of change repeating the command is linked with the following
     /// text change
-    | LinkedWithNextCommand = 0x10
+    | LinkedWithNextCommand = 0x0010
 
     /// For the purposes of change repeating the command is linked with the previous
     /// text change if it exists
-    | LinkedWithPreviousCommand = 0x20
+    | LinkedWithPreviousCommand = 0x0020
 
     /// For Visual mode commands which should reset the cursor to the original point
     /// after completing
-    | ResetCaret = 0x40
+    | ResetCaret = 0x0040
 
     /// For Visual mode commands which should reset the anchor point to the current
     /// anchor point of the selection
-    | ResetAnchorPoint = 0x80
+    | ResetAnchorPoint = 0x0080
 
     /// Vim allows for special handling of the 'd' command in normal mode such that it can
     /// have the pattern 'd#d'.  This flag is used to tag the 'd' command to allow such
     /// a pattern
-    | Delete = 0x100
+    | Delete = 0x0100
 
     /// Vim allows for special handling of the 'y' command in normal mode such that it can
     /// have the pattern 'y#y'.  This flag is used to tag the 'y' command to allow such
     /// a pattern
-    | Yank = 0x200
+    | Yank = 0x0200
+
+    /// Vim allows for special handling of the '>' command in normal mode such that it can
+    /// have the pattern '>#>'.  This flag is used to tag the '>' command to allow such
+    /// a pattern
+    | ShiftRight = 0x0400
+
+    /// Vim allows for special handling of the '<' command in normal mode such that it can
+    /// have the pattern '<#<'.  This flag is used to tag the '<' command to allow such
+    /// a pattern
+    | ShiftLeft = 0x0800
 
     /// Vim allows for special handling of the 'c' command in normal mode such that it can
     /// have the pattern 'c#c'.  This flag is used to tag the 'c' command to allow such
     /// a pattern
-    | Change = 0x400
+    | Change = 0x1000
 
     /// Represents an insert edit action which can be linked with other insert edit actions and
     /// hence acts with them in a repeat
-    | InsertEdit = 0x800
+    | InsertEdit = 0x2000
 
 /// Data about the run of a given MotionResult
 type MotionData = {
@@ -2284,12 +2479,15 @@ type NormalCommand =
     /// Set the specified mark to the current value of the caret
     | SetMarkToCaret of char
 
-    /// Scroll the screen in the specified direction.  The bool is whether to use
+    /// Scroll the caret in the specified direciton.  The bool is whether to use
     /// the 'scroll' option or 'count'
     | ScrollLines of ScrollDirection * bool
 
     /// Move the display a single page in the specified direction
     | ScrollPages of ScrollDirection
+
+    /// Scroll the window in the specified direction by 'count' lines
+    | ScrollWindow of ScrollDirection
 
     /// Scroll the current line to the top of the ITextView.  The bool is whether or not
     /// to leave the caret in the same column
@@ -2414,6 +2612,9 @@ type VisualCommand =
 
     /// Switch the mode to insert and possibly a block insert
     | SwitchModeInsert
+
+    /// Switch to the previous mode
+    | SwitchModePrevious
 
     /// Switch to the specified visual mode
     | SwitchModeVisual of VisualKind
@@ -2596,7 +2797,7 @@ and BindData<'T> = {
 
     /// The optional KeyRemapMode which should be used when binding
     /// the next KeyInput in the sequence
-    KeyRemapMode : KeyRemapMode option
+    KeyRemapMode : KeyRemapMode 
 
     /// Function to call to get the BindResult for this data
     BindFunction : KeyInput -> BindResult<'T>
@@ -2621,7 +2822,7 @@ and BindData<'T> = {
 
     /// Create for a function which doesn't require any remapping
     static member CreateForSimple bindFunc =
-        { KeyRemapMode = None; BindFunction = bindFunc }
+        { KeyRemapMode = KeyRemapMode.None; BindFunction = bindFunc }
 
     /// Very similar to the Convert function.  This will instead map a BindData<'T>.Completed
     /// to a BindData<'U> of any form 
@@ -2941,7 +3142,7 @@ type ICommandRunner =
     /// In certain circumstances a specific type of key remapping needs to occur for input.  This 
     /// option will have the appropriate value in those circumstances.  For example while processing
     /// the {char} argument to f,F,t or T the Language mapping will be used
-    abstract KeyRemapMode : KeyRemapMode option
+    abstract KeyRemapMode : KeyRemapMode 
 
     /// True when in the middle of a count operation
     abstract InCount : bool
@@ -3023,7 +3224,7 @@ type IKeyMap =
 /// Jump list information associated with an IVimBuffer.  This is maintained as a forward
 /// and backwards traversable list of points with which to navigate to
 ///
-/// TODO:  Technically Vim's implementation of a jump list can span across different
+/// Technically Vim's implementation of a jump list can span across different
 /// buffers  This is limited to just a single ITextBuffer.  This is mostly due to Visual 
 /// Studio's limitations in swapping out an ITextBuffer contents for a different file.  It
 /// is possible but currently not a high priority here
@@ -3078,11 +3279,15 @@ type IIncrementalSearch =
 
     /// When in the middle of a search this will return the SearchData for 
     /// the search
-    abstract CurrentSearchData : SearchData option
+    abstract CurrentSearchData : SearchData 
 
     /// When in the middle of a search this will return the SearchResult for the 
     /// search
-    abstract CurrentSearchResult : SearchResult option
+    abstract CurrentSearchResult : SearchResult 
+
+    /// When in the middle of a search this will return the actual text which
+    /// is being searched for
+    abstract CurrentSearchText : string
 
     /// The ITextStructureNavigator used for finding 'word' values in the ITextBuffer
     abstract WordNavigator : ITextStructureNavigator
@@ -3198,10 +3403,14 @@ type StringEventArgs(_message : string) =
 
     member x.Message = _message
 
+    override x.ToString() = _message
+
 type KeyInputEventArgs (_keyInput : KeyInput) = 
     inherit System.EventArgs()
 
     member x.KeyInput = _keyInput
+
+    override x.ToString() = _keyInput.ToString()
 
 type KeyInputStartEventArgs (_keyInput : KeyInput) =
     inherit KeyInputEventArgs(_keyInput)
@@ -3212,10 +3421,14 @@ type KeyInputStartEventArgs (_keyInput : KeyInput) =
         with get() = _handled 
         and set value = _handled <- value
 
+    override x.ToString() = _keyInput.ToString()
+
 type KeyInputSetEventArgs (_keyInputSet : KeyInputSet) = 
     inherit System.EventArgs()
 
     member x.KeyInputSet = _keyInputSet
+
+    override x.ToString() = _keyInputSet.ToString()
 
 type KeyInputProcessedEventArgs(_keyInput : KeyInput, _processResult : ProcessResult) =
     inherit System.EventArgs()
@@ -3223,6 +3436,8 @@ type KeyInputProcessedEventArgs(_keyInput : KeyInput, _processResult : ProcessRe
     member x.KeyInput = _keyInput
 
     member x.ProcessResult = _processResult
+
+    override x.ToString() = _keyInput.ToString()
 
 /// Implements a list for storing history items.  This is used for the 5 types
 /// of history lists in Vim (:help history).  
@@ -3291,7 +3506,7 @@ type internal IHistoryClient<'TData, 'TResult> =
     abstract HistoryList : HistoryList
 
     /// What remapping mode if any should be used for key input
-    abstract RemapMode : KeyRemapMode option
+    abstract RemapMode : KeyRemapMode
 
     /// Beep
     abstract Beep : unit -> unit
@@ -3386,6 +3601,21 @@ type IVimData =
     [<CLIEvent>]
     abstract DisplayPatternChanged : IDelegateEvent<System.EventHandler>
 
+type FontPropertiesEventArgs () =
+
+    inherit System.EventArgs()
+
+type IFontProperties =
+
+    /// The font family
+    abstract FontFamily : System.Windows.Media.FontFamily
+
+    /// The font size in points
+    abstract FontSize : double
+
+    [<CLIEvent>]
+    abstract FontPropertiesChanged : IDelegateEvent<System.EventHandler<FontPropertiesEventArgs>>
+
 [<RequireQualifiedAccess>]
 [<NoComparison>]
 type QuickFix =
@@ -3409,6 +3639,13 @@ type IVimHost =
     /// Should vim automatically start synchronization of IVimBuffer instances when they are 
     /// created
     abstract AutoSynchronizeSettings : bool 
+
+    /// Get the count of tabs that are active in the host.  If tabs are not supported then
+    /// -1 should be returned
+    abstract TabCount : int
+
+    /// Get the font properties associated with the text editor
+    abstract FontProperties : IFontProperties
 
     abstract Beep : unit -> unit
 
@@ -3436,6 +3673,10 @@ type IVimHost =
     /// Get the ITextView which currently has keyboard focus
     abstract GetFocusedTextView : unit -> ITextView option
 
+    /// Get the tab index of the tab containing the given ITextView.  A number less
+    /// than 0 indicates the value couldn't be determined
+    abstract GetTabIndex : textView : ITextView -> int
+
     /// Go to the definition of the value under the cursor
     abstract GoToDefinition : unit -> bool
 
@@ -3445,15 +3686,13 @@ type IVimHost =
     /// Go to the local declaration of the value under the cursor
     abstract GoToGlobalDeclaration : tetxView : ITextView -> identifier : string -> bool
 
-    /// Go to the "count" next tab window in the specified direction.  This will wrap 
-    /// around
-    abstract GoToNextTab : Path -> count : int -> unit
-
-    /// Go the nth tab.  The first tab can be accessed with both 0 and 1
+    /// Go to the nth tab in the tab list.  This value is always a 0 based index 
+    /// into the set of tabs.  It does not correspond to vim's handling of tab
+    /// values which is not a standard 0 based index
     abstract GoToTab : index : int -> unit
 
     /// Go to the specified entry in the quick fix list
-    abstract GoToQuickFix : quickFix : QuickFix -> count : int -> hasBang : bool -> unit
+    abstract GoToQuickFix : quickFix : QuickFix -> count : int -> hasBang : bool -> bool
 
     /// Get the name of the given ITextBuffer
     abstract GetName : textBuffer : ITextBuffer -> string
@@ -3786,6 +4025,9 @@ and IVimBuffer =
     /// The current directory for this particular window
     abstract CurrentDirectory : string option with get, set
 
+    /// The ICommandUtil for this IVimBuffer
+    abstract CommandUtil : ICommandUtil
+
     /// Global settings for the buffer
     abstract GlobalSettings : IVimGlobalSettings
 
@@ -4040,7 +4282,7 @@ and INormalMode =
     abstract CommandRunner : ICommandRunner 
 
     /// Mode keys need to be remapped with currently
-    abstract KeyRemapMode : KeyRemapMode option
+    abstract KeyRemapMode : KeyRemapMode
 
     /// Is normal mode in the middle of a count operation
     abstract InCount : bool
@@ -4091,7 +4333,7 @@ and IVisualMode =
     abstract CommandRunner : ICommandRunner 
 
     /// Mode keys need to be remapped with currently
-    abstract KeyRemapMode : KeyRemapMode option
+    abstract KeyRemapMode : KeyRemapMode 
 
     /// Is visual mode in the middle of a count operation
     abstract InCount : bool

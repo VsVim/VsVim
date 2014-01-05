@@ -271,7 +271,7 @@ namespace Vim.UnitTest
             }
         }
 
-        public sealed class ShiftLeftTest : InsertUtilTest
+        public sealed class ShiftTest : InsertUtilTest
         {
             /// <summary>
             /// Make sure that shift left functions correctly when the caret is in virtual
@@ -279,7 +279,7 @@ namespace Vim.UnitTest
             /// as such
             /// </summary>
             [Fact]
-            public void FromVirtualSpace()
+            public void Left_FromVirtualSpace()
             {
                 Create("", "dog");
                 _vimBuffer.LocalSettings.ShiftWidth = 4;
@@ -299,7 +299,7 @@ namespace Vim.UnitTest
             /// dedented 2 columns. I think we're opting for VS-ish behavior instead here.
             /// </summary>
             [Fact]
-            public void CaretIsMovedToBeginningOfLineIfInVirtualSpaceAfterEndOfLine()
+            public void Left_CaretIsMovedToBeginningOfLineIfInVirtualSpaceAfterEndOfLine()
             {
                 Create("    foo");
                 _vimBuffer.LocalSettings.ShiftWidth = 2;
@@ -310,6 +310,100 @@ namespace Vim.UnitTest
                 Assert.Equal(_textView.GetLine(0).GetText(), "  foo");
                 Assert.Equal(_insertUtilRaw.CaretColumn, 2);
                 Assert.Equal(_textView.Caret.Position.VirtualSpaces, 0);
+            }
+
+            /// <summary>
+            /// Make sure that shift right functions correctly when the caret is in virtual
+            /// space.  The virtual space should just be converted to spaces and processed
+            /// as such
+            /// </summary>
+            [Fact]
+            public void Right_FromVirtualSpace()
+            {
+                Create("", "dog");
+                _vimBuffer.LocalSettings.ShiftWidth = 4;
+                _vimBuffer.LocalSettings.ExpandTab = true;
+                _textView.MoveCaretTo(0, 8);
+
+                _insertUtilRaw.ShiftLineRight();
+
+                Assert.Equal("            ", _textView.GetLine(0).GetText());
+                Assert.Equal(_insertUtilRaw.CaretColumn, 12);
+                Assert.False(_textView.Caret.InVirtualSpace);
+                // probably redundant, but we just want to be sure...
+                Assert.Equal(_textView.Caret.Position.VirtualSpaces, 0);
+            }
+
+            /// <summary>
+            /// Make sure that shift right functions correctly when the caret is in virtual
+            /// space with leading spaces.
+            /// </summary>
+            [Fact]
+            public void Right_FromVirtualSpaceWithLeadingSpaces()
+            {
+                Create("    ", "dog");
+                _vimBuffer.LocalSettings.ShiftWidth = 4;
+                _vimBuffer.LocalSettings.ExpandTab = true;
+                _textView.MoveCaretTo(4, 4);
+
+                _insertUtilRaw.ShiftLineRight();
+
+                Assert.Equal("            ", _textView.GetLine(0).GetText());
+                Assert.Equal(_insertUtilRaw.CaretColumn, 12);
+                Assert.False(_textView.Caret.InVirtualSpace);
+                // probably redundant, but we just want to be sure...
+                Assert.Equal(_textView.Caret.Position.VirtualSpaces, 0);
+            }
+
+            /// <summary>
+            /// Make sure that shift right properly produces mixed tabs and spaces
+            /// when the 'shiftwidth' is smaller than the 'tabstop'
+            /// as such
+            /// </summary>
+            [Fact]
+            public void Right_ToTabsAndSpaces()
+            {
+                Create("", "dog");
+                _vimBuffer.LocalSettings.ShiftWidth = 4;
+                _textView.MoveCaretTo(0, 8);
+
+                _insertUtilRaw.ShiftLineRight();
+
+                Assert.Equal("\t    ", _textView.GetLine(0).GetText());
+                Assert.Equal(_insertUtilRaw.CaretColumn, 5);
+                Assert.False(_textView.Caret.InVirtualSpace);
+                // probably redundant, but we just want to be sure...
+                Assert.Equal(_textView.Caret.Position.VirtualSpaces, 0);
+            }
+
+            /// <summary>
+            /// Make sure that shift right functions correctly on blank lines
+            /// </summary>
+            [Fact]
+            public void Right_FromBlankLine()
+            {
+                Create("");
+                _vimBuffer.LocalSettings.ShiftWidth = 4;
+                _insertUtilRaw.ShiftLineRight();
+
+                Assert.Equal("    ", _textView.GetLine(0).GetText());
+                Assert.Equal(_insertUtilRaw.CaretColumn, 4);
+            }
+
+            /// <summary>
+            /// Make sure that shift right functions correctly on lines with
+            /// leading blanks not equivalent to a multiple of the shift wdith
+            /// </summary>
+            [Fact]
+            public void Right_WithIrregularLeadingBlanks()
+            {
+                Create("   abc");
+                _textView.MoveCaretTo(3);
+                _vimBuffer.LocalSettings.ShiftWidth = 4;
+                _insertUtilRaw.ShiftLineRight();
+
+                Assert.Equal("    abc", _textView.GetLine(0).GetText());
+                Assert.Equal(_insertUtilRaw.CaretColumn, 4);
             }
         }
 

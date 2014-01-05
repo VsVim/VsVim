@@ -188,7 +188,7 @@ type internal KeyMap
     member x.GetRemapModeMap mode = 
         match Map.tryFind mode _map with
         | None -> Map.empty
-        | Some(map) -> map
+        | Some map -> map
 
     /// Get all of the mappings for the given KeyRemapMode
     member x.GetKeyMappingsForMode mode : KeyMapping list = 

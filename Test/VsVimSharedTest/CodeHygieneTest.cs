@@ -20,7 +20,7 @@ namespace VsVim.UnitTest
             const string prefix = "VsVim.UnitTest.";
             foreach (var type in _assembly.GetTypes().Where(x => x.IsPublic))
             {
-                Assert.True(type.FullName.StartsWith(prefix, StringComparison.Ordinal));
+                Assert.True(type.FullName.StartsWith(prefix, StringComparison.Ordinal), String.Format("Wrong namespace prefix on {0}", type.FullName));
             }
         }
     }

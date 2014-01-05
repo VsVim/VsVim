@@ -27,6 +27,7 @@ namespace Vim.UI.Wpf.UnitTest
             var vimBuffer = CreateVimBuffer();
             var editorFormatMap = _factory.Create<IEditorFormatMap>(MockBehavior.Loose);
             editorFormatMap.Setup(x => x.GetProperties(It.IsAny<string>())).Returns(new ResourceDictionary());
+            var fontProperties = MockObjectFactory.CreateFontProperties("Courier New", 10, _factory);
 
             var parentVisualElement = _factory.Create<FrameworkElement>();
 
@@ -35,6 +36,7 @@ namespace Vim.UI.Wpf.UnitTest
                 parentVisualElement.Object,
                 _marginControl,
                 editorFormatMap.Object,
+                fontProperties.Object,
                 new List<Lazy<IOptionsProviderFactory>>());
         }
 
@@ -73,9 +75,11 @@ namespace Vim.UI.Wpf.UnitTest
             {
                 searchKind = searchKind ?? SearchKind.Forward;
 
-                var data = new SearchData(pattern, searchKind, searchOptions);
+                var data = new SearchData(pattern, SearchOffsetData.None, searchKind, searchOptions);
+                var text = (searchKind.IsAnyForward ? "/" : "?") + pattern;
                 _search.SetupGet(x => x.InSearch).Returns(true).Verifiable();
-                _search.SetupGet(x => x.CurrentSearchData).Returns(FSharpOption.Create(data)).Verifiable();
+                _search.SetupGet(x => x.CurrentSearchData).Returns(data).Verifiable();
+                _search.SetupGet(x => x.CurrentSearchText).Returns(text).Verifiable();
             }
 
             /// <summary>

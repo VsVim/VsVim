@@ -116,10 +116,10 @@ type internal CommandFactory
             yield ("zb", CommandFlags.Movement, NormalCommand.ScrollCaretLineToBottom true)
             yield ("<C-b>", CommandFlags.Movement, NormalCommand.ScrollPages ScrollDirection.Up)
             yield ("<C-d>", CommandFlags.Movement, NormalCommand.ScrollLines (ScrollDirection.Down, true))
-            yield ("<C-e>", CommandFlags.Movement, NormalCommand.ScrollLines (ScrollDirection.Down, false))
+            yield ("<C-e>", CommandFlags.Movement, NormalCommand.ScrollWindow ScrollDirection.Down)
             yield ("<C-f>", CommandFlags.Movement, NormalCommand.ScrollPages ScrollDirection.Down)
             yield ("<C-u>", CommandFlags.Movement, NormalCommand.ScrollLines (ScrollDirection.Up, true))
-            yield ("<C-y>", CommandFlags.Movement, NormalCommand.ScrollLines (ScrollDirection.Up, false))
+            yield ("<C-y>", CommandFlags.Movement, NormalCommand.ScrollWindow ScrollDirection.Up)
             yield ("<S-Down>", CommandFlags.Movement, NormalCommand.ScrollPages ScrollDirection.Down)
             yield ("<S-Up>", CommandFlags.Movement, NormalCommand.ScrollPages ScrollDirection.Up)
             yield ("<PageUp>", CommandFlags.Movement, NormalCommand.ScrollPages ScrollDirection.Up)
@@ -139,7 +139,7 @@ type internal CommandFactory
             if macroRecorder.IsRecording then
                 CommandBinding.NormalBinding (name, CommandFlags.Special, NormalCommand.RecordMacroStop)
             else
-                CommandBinding.ComplexNormalBinding (name, CommandFlags.Special, BindDataStorage<_>.CreateForSingleChar None NormalCommand.RecordMacroStart)
+                CommandBinding.ComplexNormalBinding (name, CommandFlags.Special, BindDataStorage<_>.CreateForSingleChar KeyRemapMode.None NormalCommand.RecordMacroStart)
         
         // Raised when macro recording starts or stops.  
         let onMacroRecordingChanged _ = 

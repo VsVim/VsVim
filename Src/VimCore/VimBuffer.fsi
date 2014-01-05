@@ -14,7 +14,7 @@ type internal VimBufferData =
 
 type internal VimBuffer =
 
-    new : IVimBufferData * IIncrementalSearch * IMotionUtil * ITextStructureNavigator * IVimWindowSettings -> VimBuffer
+    new : IVimBufferData * IIncrementalSearch * IMotionUtil * ITextStructureNavigator * IVimWindowSettings * ICommandUtil -> VimBuffer
 
     member AddMode : IMode -> unit
 

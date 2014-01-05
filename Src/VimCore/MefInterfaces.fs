@@ -31,7 +31,8 @@ type IDisplayWindowBroker =
 
 type IDisplayWindowBrokerFactoryService  =
 
-    abstract CreateDisplayWindowBroker : ITextView -> IDisplayWindowBroker
+    /// Get the display broker for the provided ITextView
+    abstract GetDisplayWindowBroker : textView : ITextView -> IDisplayWindowBroker
 
 /// What type of tracking are we doing
 [<RequireQualifiedAccess>]
@@ -268,6 +269,25 @@ type ViewFlags =
     /// Visible ||| TextExpanded ||| ScrollOffset ||| VirtualEdit
     | All = 0x0f
 
+/// When maintaining the caret column for motion moves this represents the desired 
+/// column to jump to if there is enough space on the line
+///
+[<RequireQualifiedAccess>]
+[<NoComparison>]
+[<NoEquality>]
+type MaintainCaretColumn = 
+
+    /// There is no saved caret column. 
+    | None
+
+    /// This number is kept as a count of spaces.  Tabs need to be adjusted for when applying
+    /// this setting to a motion
+    | Spaces of int
+
+    /// The caret was moved with the $ motion and the further moves should move to the end of 
+    /// the line 
+    | EndOfLine
+
 /// This class abstracts out the operations that are common to normal, visual and 
 /// command mode.  It usually contains common edit and movement operations and very
 /// rarely will deal with caret operations.  That is the responsibility of the 
@@ -282,6 +302,10 @@ type ICommonOperations =
 
     /// Associated IEditorOptions
     abstract EditorOptions : IEditorOptions
+
+    /// The currently maintained caret column for up / down caret movements in the
+    /// buffer
+    abstract MaintainCaretColumn : MaintainCaretColumn with get, set
 
     /// Associated ITextView
     abstract TextView : ITextView 
@@ -349,9 +373,10 @@ type ICommonOperations =
 
     /// Go to the "count" next tab window in the specified direction.  This will wrap 
     /// around
-    abstract GoToNextTab : Path -> count : int -> unit
+    abstract GoToNextTab : path : Path -> count : int -> unit
 
-    /// Go the nth tab.  The first tab can be accessed with both 0 and 1
+    /// Go the nth tab.  This uses vim's method of numbering tabs which is a 1 based list.  Both
+    /// 0 and 1 can be used to access the first tab
     abstract GoToTab : int -> unit
 
     /// Joins the lines in the range
