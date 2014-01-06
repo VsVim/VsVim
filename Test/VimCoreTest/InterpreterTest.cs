@@ -394,6 +394,33 @@ namespace Vim.UnitTest
                 Assert.True(_globalSettings.IncrementalSearch);
                 Assert.Equal(4, _localSettings.TabStop);
             }
+
+            /// <summary>
+            /// Make sure we handle blank lines in the script just fine
+            /// </summary>
+            [Fact]
+            public void HasBlankLine()
+            {
+                Create("");
+                RunScript(
+                    "set incsearch",
+                    "",
+                    "set ts=4");
+                Assert.True(_globalSettings.IncrementalSearch);
+                Assert.Equal(4, _localSettings.TabStop);
+            }
+
+            [Fact]
+            public void SyntaxError()
+            {
+                Create("");
+                RunScript(
+                    "set incsearch",
+                    "'",
+                    "set ts=4");
+                Assert.True(_globalSettings.IncrementalSearch);
+                Assert.Equal(4, _localSettings.TabStop);
+            }
         }
 
         public sealed class SetTest : InterpreterTest
