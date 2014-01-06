@@ -1752,7 +1752,8 @@ type Parser
                     let value = x.ParseWhile (fun token -> 
                         match token.TokenKind with
                         | TokenKind.Word _ -> true
-                        | TokenKind.Character c -> CharUtil.IsLetterOrDigit c || c = ','
+                        | TokenKind.Character c ->
+                            CharUtil.IsLetterOrDigit c || ",<>~[]".Contains(c.ToString())
                         | TokenKind.Number number -> true
                         | _ -> false)
                     match value with 

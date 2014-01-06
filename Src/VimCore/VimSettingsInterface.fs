@@ -48,6 +48,7 @@ module GlobalSettingNames =
     let VirtualEditName = "virtualedit"
     let VimRcName = "vimrc"
     let VimRcPathsName = "vimrcpaths"
+    let WhichWrapName = "whichwrap"
     let WrapScanName = "wrapscan"
 
 module LocalSettingNames =
@@ -322,6 +323,33 @@ and IVimGlobalSettings =
     /// Is the 'onemore' option inside of VirtualEdit set
     abstract IsVirtualEditOneMore : bool with get
 
+    /// Is the 'b' option inside of WhichWrap set
+    abstract IsWhichWrapSpaceLeft : bool with get
+
+    /// Is the 's' option inside of WhichWrap set
+    abstract IsWhichWrapSpaceRight : bool with get
+
+    /// Is the 'h' option inside of WhichWrap set
+    abstract IsWhichWrapCharLeft : bool with get
+
+    /// Is the 'l' option inside of WhichWrap set
+    abstract IsWhichWrapCharRight : bool with get
+
+    /// Is the '<' option inside of WhichWrap set
+    abstract IsWhichWrapArrowLeft : bool with get
+
+    /// Is the '>' option inside of WhichWrap set
+    abstract IsWhichWrapArrowRight : bool with get
+
+    /// Is the '~' option inside of WhichWrap set
+    abstract IsWhichWrapTilde : bool with get
+
+    /// Is the '[' option inside of WhichWrap set
+    abstract IsWhichWrapArrowLeftInsert : bool with get
+
+    /// Is the ']' option inside of WhichWrap set
+    abstract IsWhichWrapArrowRightInsert : bool with get
+
     /// Is the Selection setting set to a value which calls for inclusive 
     /// selection.  This does not directly track if Setting = "inclusive" 
     /// although that would cause this value to be true
@@ -419,6 +447,9 @@ and IVimGlobalSettings =
 
     /// Whether or not to use a visual indicator of errors instead of a beep
     abstract VisualBell : bool with get, set
+
+    /// Which operations should wrap in the buffer
+    abstract WhichWrap : string with get, set
 
     /// Whether or not searches should wrap at the end of the file
     abstract WrapScan : bool with get, set
