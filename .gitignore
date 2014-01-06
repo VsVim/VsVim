@@ -36,6 +36,11 @@ _ReSharper.VsVim
 # Productivity Power Tools
 *.docstates
 
+# Roslyn
+VimAll.sln.ide/
+VimCore.sln.ide/
+VsVim.sln.ide/
+
 # Place where dogfood drops get put into. 
 Dogfood/
 
