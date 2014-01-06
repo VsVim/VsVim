@@ -1179,8 +1179,7 @@ module SnapshotPointUtil =
             let mutable column = SnapshotColumn(startPoint)
             let mutable remaining = abs count
             while remaining > 0 && not (isEnd column.Point) do
-                column <- column.Add direction
-                column <- AdjustLineBreak column
+                column <- column.Add direction |> AdjustLineBreak
                 remaining <- remaining -
                     if skipLineBreaks then
                         if column.Line.Length = 0 || not column.IsInsideLineBreak then
