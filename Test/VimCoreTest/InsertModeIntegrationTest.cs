@@ -1303,6 +1303,39 @@ namespace Vim.UnitTest
                 Assert.Equal(0, VimHost.BeepCount);
                 Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
             }
+
+            /// <summary>
+            /// If 'cw' is issued on an indented line consisting of a single
+            /// word, the caret shouldn't move
+            /// </summary>
+            [Fact]
+            public void ChangeWord_OneIndentedWord()
+            {
+                Create("    cat", "dog");
+                _vimBuffer.Process(VimKey.Escape);
+                _textView.MoveCaretTo(4);
+                Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
+                _vimBuffer.ProcessNotation("cw");
+                Assert.Equal(ModeKind.Insert, _vimBuffer.ModeKind);
+                Assert.Equal(4, _textView.GetCaretPoint().Position);
+            }
+
+            /// <summary>
+            /// If 'cw' is issued on an indented line consisting of a single
+            /// word, and the line is followed by a blank line, the caret
+            /// still shouldn't move
+            /// </summary>
+            [Fact]
+            public void ChangeWord_OneIndentedWordBeforeBlankLine()
+            {
+                Create("    cat", "", "dog");
+                _vimBuffer.Process(VimKey.Escape);
+                _textView.MoveCaretTo(4);
+                Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
+                _vimBuffer.ProcessNotation("cw");
+                Assert.Equal(ModeKind.Insert, _vimBuffer.ModeKind);
+                Assert.Equal(4, _textView.GetCaretPoint().Position);
+            }
         }
     }
 }
