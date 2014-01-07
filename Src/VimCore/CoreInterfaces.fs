@@ -2705,6 +2705,9 @@ type InsertCommand  =
     /// Move the caret in the given direction
     | MoveCaret of Direction
 
+    /// Move the caret in the given direction with an arrow key
+    | MoveCaretWithArrow of Direction
+
     /// Move the caret in the given direction by a whole word
     | MoveCaretByWord of Direction
 
@@ -2750,6 +2753,7 @@ type InsertCommand  =
         | InsertCommand.InsertTab -> Some (TextChange.Insert "\t")
         | InsertCommand.InsertText text -> Some (TextChange.Insert text)
         | InsertCommand.MoveCaret _ -> None
+        | InsertCommand.MoveCaretWithArrow _ -> None
         | InsertCommand.MoveCaretByWord _ -> None
         | InsertCommand.ShiftLineLeft -> None
         | InsertCommand.ShiftLineRight -> None

@@ -385,6 +385,9 @@ type ICommonOperations =
     /// Move the caret in the specified direction
     abstract MoveCaret : caretMovement : CaretMovement -> bool
 
+    /// Move the caret in the specified direction with an arrow key
+    abstract MoveCaretWithArrow : caretMovement : CaretMovement -> bool
+
     /// Move the caret to a given point on the screen and ensure the view has the specified
     /// properties at that point 
     abstract MoveCaretToPoint : point : SnapshotPoint -> viewFlags : ViewFlags -> unit
