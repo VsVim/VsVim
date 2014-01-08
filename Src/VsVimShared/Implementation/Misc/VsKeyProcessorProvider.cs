@@ -10,8 +10,8 @@ namespace VsVim.Implementation.Misc
     [Export(typeof(IKeyProcessorProvider))]
     [Order(Before = Constants.VisualStudioKeyProcessorName)]
     [Name(Constants.VsKeyProcessorName)]
-    [TextViewRole(PredefinedTextViewRoles.Editable)]
-    [ContentType(Vim.Constants.ContentType)]
+    [TextViewRole(PredefinedTextViewRoles.Interactive)]
+    [ContentType(Vim.Constants.AnyContentType)]
     internal sealed class VsKeyProcessorProvider : IKeyProcessorProvider
     {
         private readonly IVimBufferCoordinatorFactory _bufferCoordinatorFactory;
@@ -35,7 +35,7 @@ namespace VsVim.Implementation.Misc
             IVimBuffer vimBuffer;
             if (!_vim.TryGetOrCreateVimBufferForHost(wpfTextView, out vimBuffer))
             {
-                return null;
+                return new ForwardingKeyProcessor(_keyUtil, wpfTextView);
             }
 
             var vimBufferCoordinator = _bufferCoordinatorFactory.GetVimBufferCoordinator(vimBuffer);

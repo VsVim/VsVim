@@ -80,6 +80,7 @@
     <Compile Include="Implementation\ExternalEdit\ExternalEditMonitor.cs" />
     <Compile Include="Implementation\ExternalEdit\ExternalEditorManager.cs" />
     <Compile Include="IExternalEditAdapter.cs" />
+    <Compile Include="Implementation\Misc\ForwardingKeyProcessor.cs" />
     <Compile Include="Implementation\Misc\ReportDesignerUtil.cs" />
     <Compile Include="Implementation\Misc\ScopeData.cs" />
     <Compile Include="Implementation\Misc\StandardCommandTarget.cs" />
