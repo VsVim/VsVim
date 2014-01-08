@@ -409,6 +409,38 @@ type internal CommonOperations
         | CaretMovement.PageUp -> movePageUp()
         | CaretMovement.PageDown -> movePageDown()
 
+    /// Move the caret in the given direction with an arrow key
+    member x.MoveCaretWithArrow caretMovement = 
+
+        /// Move left one character taking into account 'whichwrap'
+        let moveLeft () =
+            if _globalSettings.IsWhichWrapArrowLeftInsert then
+                if SnapshotPointUtil.IsStartPoint x.CaretPoint then
+                    false
+                else
+                    let point = SnapshotPointUtil.GetPreviousPointWithWrap x.CaretPoint
+                    x.MoveCaretToPoint point ViewFlags.Standard
+                    true
+            else
+                x.MoveCaret caretMovement
+
+        /// Move right one character taking into account 'whichwrap'
+        let moveRight () =
+            if _globalSettings.IsWhichWrapArrowRightInsert then
+                if SnapshotPointUtil.IsEndPoint x.CaretPoint then
+                    false
+                else
+                    let point = SnapshotPointUtil.GetNextPointWithWrap x.CaretPoint
+                    x.MoveCaretToPoint point ViewFlags.Standard
+                    true
+            else
+                x.MoveCaret caretMovement
+
+        match caretMovement with
+        | CaretMovement.Left -> moveLeft()
+        | CaretMovement.Right -> moveRight()
+        | _ -> x.MoveCaret caretMovement
+
     /// Move the caret to the specified point and ensure the specified view properties are 
     /// correct at that point 
     member x.MoveCaretToPoint point viewFlags = 
@@ -1167,6 +1199,7 @@ type internal CommonOperations
         member x.GoToTab index = x.GoToTab index
         member x.Join range kind = x.Join range kind
         member x.MoveCaret caretMovement = x.MoveCaret caretMovement
+        member x.MoveCaretWithArrow caretMovement = x.MoveCaretWithArrow caretMovement
         member x.MoveCaretToPoint point viewFlags =  x.MoveCaretToPoint point viewFlags
         member x.MoveCaretToMotionResult data = x.MoveCaretToMotionResult data
         member x.NavigateToPoint point = x.NavigateToPoint point

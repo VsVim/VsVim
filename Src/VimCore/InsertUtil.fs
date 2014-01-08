@@ -452,6 +452,15 @@ type internal InsertUtil
             _operations.Beep()
             CommandResult.Error
 
+    /// Move the caret in the given direction with an arrow key
+    member x.MoveCaretWithArrow direction =
+        let caretMovement = CaretMovement.OfDirection direction
+        if _operations.MoveCaretWithArrow caretMovement then
+            CommandResult.Completed ModeSwitch.NoSwitch
+        else
+            _operations.Beep()
+            CommandResult.Error
+
     member x.MoveCaretByWord direction = 
         let moveLeft () = 
             if x.CaretPoint.Position > x.CaretLine.Start.Position then
@@ -550,6 +559,7 @@ type internal InsertUtil
             | InsertCommand.InsertTab -> x.InsertTab()
             | InsertCommand.InsertText text -> x.InsertText text
             | InsertCommand.MoveCaret direction -> x.MoveCaret direction
+            | InsertCommand.MoveCaretWithArrow direction -> x.MoveCaretWithArrow direction
             | InsertCommand.MoveCaretByWord direction -> x.MoveCaretByWord direction
             | InsertCommand.ShiftLineLeft -> x.ShiftLineLeft ()
             | InsertCommand.ShiftLineRight -> x.ShiftLineRight ()

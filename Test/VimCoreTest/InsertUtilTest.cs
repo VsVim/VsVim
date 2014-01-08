@@ -466,5 +466,67 @@ namespace Vim.UnitTest
                 Assert.Equal(_textView.GetCaretPoint().Position, 6);
             }
         }
+
+        /// <summary>
+        /// Tests for moving the caret in insert mode
+        /// </summary>
+        public sealed class MoveCaretWithArrowTest : InsertUtilTest
+        {
+            /// <summary>
+            /// Arrow left at beginning of line without 'whichwrap=['
+            /// should stay put
+            /// </summary>
+            [Fact]
+            public void Without_IsWhichWrapArrowLeftInsert()
+            {
+                Create("dog", "cat");
+                _globalSettings.WhichWrap = "";
+                _textView.MoveCaretTo(5);
+                _insertUtilRaw.MoveCaretWithArrow(Direction.Left);
+                Assert.Equal(5, _textView.GetCaretPoint().Position);
+            }
+
+            /// <summary>
+            /// Arrow left at beginning of line with 'whichwrap=['
+            /// should move the end of the previous line
+            /// </summary>
+            [Fact]
+            public void With_IsWhichWrapArrowLeftInsert()
+            {
+                Create("dog", "cat");
+                _globalSettings.WhichWrap = "[";
+                _textView.MoveCaretTo(5);
+                _insertUtilRaw.MoveCaretWithArrow(Direction.Left);
+                Assert.Equal(3, _textView.GetCaretPoint().Position);
+            }
+
+            /// <summary>
+            /// Arrow right at end of line without 'whichwrap=['
+            /// should stay put
+            /// </summary>
+            [Fact]
+            public void Without_IsWhichWrapArrowRightInsert()
+            {
+                Create("dog", "cat");
+                _globalSettings.WhichWrap = "";
+                _textView.MoveCaretTo(3);
+                _insertUtilRaw.MoveCaretWithArrow(Direction.Right);
+                Assert.Equal(3, _textView.GetCaretPoint().Position);
+            }
+
+            /// <summary>
+            /// Arrow right at end of line with 'whichwrap=]'
+            /// should move the beginning of the next line
+            /// </summary>
+            [Fact]
+            public void With_IsWhichWrapArrowRightInsert()
+            {
+                Create("dog", "cat");
+                _globalSettings.WhichWrap = "]";
+                _textView.MoveCaretTo(3);
+                _insertUtilRaw.MoveCaretWithArrow(Direction.Right);
+                Assert.Equal(5, _textView.GetCaretPoint().Position);
+            }
+        }
     }
 }
