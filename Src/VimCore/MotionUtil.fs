@@ -1334,12 +1334,12 @@ type internal MotionUtil
             | MotionContext.Movement -> endPoint
             | MotionContext.AfterOperator -> 
                 // If the word motion comes after an operator and ends on the first word 
-                // of a different line then the motion is moved back to the last line containg
+                // of a different line, then the motion is moved back to the last line containing
                 // a word
                 let endLine = SnapshotPointUtil.GetContainingLine endPoint
                 let isFirstNonBlank = SnapshotLineUtil.GetFirstNonBlankOrStart endLine = endPoint
 
-                if isFirstNonBlank && endLine.Length > 0 && endLine.LineNumber > x.CaretLine.LineNumber then
+                if isFirstNonBlank && endLine.LineNumber > x.CaretLine.LineNumber then
                     let previousLine = 
                         SnapshotUtil.GetLines x.CurrentSnapshot (endLine.LineNumber - 1) Path.Backward
                         |> Seq.skipWhile (fun textLine -> SnapshotLineUtil.IsBlank textLine && textLine.LineNumber > x.CaretLine.LineNumber)
