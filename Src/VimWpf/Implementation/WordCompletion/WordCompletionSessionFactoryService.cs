@@ -107,29 +107,6 @@ namespace Vim.UI.Wpf.Implementation.WordCompletion
 
         #endregion
 
-        #region WordCompletionSet
-
-        private sealed class WordCompletionSet : CompletionSet
-        {
-            internal WordCompletionSet(ITrackingSpan wordTrackingSpan, IEnumerable<Completion> completions)
-                : base(WordCompletionSetName, WordCompletionSetName, wordTrackingSpan, completions, null)
-            {
-            }
-
-            /// <summary>
-            /// For a word completion set there is no best match.  This is called very often by the the various
-            /// pieces of the intellisense stack to select the best match based on the current data in the
-            /// ITextBuffer.  It's meant to filter as the user types.  We don't want any of that behavior in 
-            /// the word completion scenario
-            /// </summary>
-            public override void SelectBestMatch()
-            {
-
-            }
-        }
-
-        #endregion
-
         #region DismissedWordCompletionSession
 
         /// <summary>
@@ -176,8 +153,6 @@ namespace Vim.UI.Wpf.Implementation.WordCompletion
         }
 
         #endregion
-
-        private const string WordCompletionSetName = "Words";
 
         /// <summary>
         /// Key used to hide the CompletionData in the ITextView
@@ -238,12 +213,11 @@ namespace Vim.UI.Wpf.Implementation.WordCompletion
                 }
 
                 // Now move the word completion set to the fron
-                var wordCompletionSet = completionSession.CompletionSets.FirstOrDefault(x => x.Moniker == WordCompletionSetName);
+                var wordCompletionSet = completionSession.CompletionSets.OfType<WordCompletionSet>().FirstOrDefault();
                 if (wordCompletionSet == null)
                 {
-                    wordCompletionSet = new CompletionSet();
+                    wordCompletionSet = new WordCompletionSet();
                 }
-
                 completionSession.SelectedCompletionSet = wordCompletionSet;
 
                 var intellisenseSessionStack = _intellisenseSessionStackMapService.GetStackForTextView(textView);

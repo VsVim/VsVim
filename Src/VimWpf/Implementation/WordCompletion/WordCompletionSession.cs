@@ -14,13 +14,13 @@ namespace Vim.UI.Wpf.Implementation.WordCompletion
     {
         private readonly ITextView _textView;
         private readonly ICompletionSession _completionSession;
-        private readonly CompletionSet _wordCompletionSet;
+        private readonly WordCompletionSet _wordCompletionSet;
         private readonly IIntellisenseSessionStack _intellisenseSessionStack;
         private readonly ITrackingSpan _wordTrackingSpan;
         private bool _isDismissed;
         private event EventHandler _dismissed;
 
-        internal WordCompletionSession(ITrackingSpan wordTrackingSpan, IIntellisenseSessionStack intellisenseSessionStack, ICompletionSession completionSession, CompletionSet wordCompletionSet)
+        internal WordCompletionSession(ITrackingSpan wordTrackingSpan, IIntellisenseSessionStack intellisenseSessionStack, ICompletionSession completionSession, WordCompletionSet wordCompletionSet)
         {
             _textView = completionSession.TextView;
             _wordTrackingSpan = wordTrackingSpan;
