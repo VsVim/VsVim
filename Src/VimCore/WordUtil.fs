@@ -3,14 +3,13 @@ namespace Vim
 open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Editor
 open Microsoft.VisualStudio.Text.Operations
+open Microsoft.VisualStudio.Utilities
 open System.ComponentModel.Composition
 
+[<UsedInBackgroundThread()>]
 [<Sealed>]
-type internal WordUtil 
-    (
-        _textBuffer : ITextBuffer,
-        _textStructureNavigator : ITextStructureNavigator
-    ) = 
+[<Export(typeof<IWordUtil>)>]
+type internal WordUtil() = 
 
     /// Get the SnapshotSpan for Word values from the given point.  If the provided point is 
     /// in the middle of a word the span of the entire word will be returned
@@ -18,7 +17,7 @@ type internal WordUtil
     /// This can be called from a background thread via ITextSearchService.  The member is 
     /// static to promote safety
     [<UsedInBackgroundThread()>]
-    static member GetWordsCore kind path point = 
+    static member GetWords kind path point = 
 
         let snapshot = SnapshotPointUtil.GetSnapshot point
         let line = SnapshotPointUtil.GetContainingLine point
@@ -49,8 +48,8 @@ type internal WordUtil
     /// This can be called from a background thread via ITextSearchService.  The member is 
     /// static to promote safety
     [<UsedInBackgroundThread()>]
-    static member GetFullWordSpanCore wordKind point = 
-        let word = WordUtil.GetWordsCore wordKind Path.Forward point |> SeqUtil.tryHeadOnly
+    static member GetFullWordSpan wordKind point = 
+        let word = WordUtil.GetWords wordKind Path.Forward point |> SeqUtil.tryHeadOnly
         match word with 
         | None -> 
             // No more words forward then no word at the given SnapshotPoint
@@ -63,59 +62,34 @@ type internal WordUtil
             else 
                 None
 
-    member x.GetWords kind path point = 
-        WordUtil.GetWordsCore kind path point
-
-    /// Get the SnapshotSpan for the full word span which crosses the given SanpshotPoint
-    member x.GetFullWordSpan wordKind point = 
-        WordUtil.GetFullWordSpanCore wordKind point
-
     /// Create an ITextStructure navigator for the ITextBuffer where the GetWordExtent function 
     /// considers word values of the given WordKind.  Use the base ITextStructureNavigator of the
     /// ITextBuffer for the rest of the functions
     ///
     /// Note: This interface can be invoked from any thread via ITextSearhService
-    member x.CreateTextStructureNavigator wordKind = 
-        let this = x
+    [<UsedInBackgroundThread()>]
+    static member CreateTextStructureNavigator wordKind contentType = 
+
         { new ITextStructureNavigator with 
-            member x.ContentType = _textStructureNavigator.ContentType
+            member x.ContentType = contentType
             member x.GetExtentOfWord point = 
-                match WordUtil.GetFullWordSpanCore wordKind point with
+                match WordUtil.GetFullWordSpan wordKind point with
                 | Some span -> TextExtent(span, true)
                 | None -> TextExtent(SnapshotSpan(point,1),false)
-            member x.GetSpanOfEnclosing span = _textStructureNavigator.GetSpanOfEnclosing(span)
-            member x.GetSpanOfFirstChild span = _textStructureNavigator.GetSpanOfFirstChild(span)
-            member x.GetSpanOfNextSibling span = _textStructureNavigator.GetSpanOfNextSibling(span)
-            member x.GetSpanOfPreviousSibling span = _textStructureNavigator.GetSpanOfPreviousSibling(span) }
+            member x.GetSpanOfEnclosing span = 
+                match WordUtil.GetFullWordSpan wordKind span.Start with
+                | Some span -> span
+                | None -> span
+            member x.GetSpanOfFirstChild span = 
+                SnapshotSpan(span.End, 0)
+            member x.GetSpanOfNextSibling span = 
+                SnapshotSpan(span.End, 0)
+            member x.GetSpanOfPreviousSibling span = 
+                let before = SnapshotPointUtil.SubtractOneOrCurrent span.Start
+                SnapshotSpan(before, 0) }
 
     interface IWordUtil with 
-        member x.TextBuffer = _textBuffer
-        member x.GetFullWordSpan wordKind point = x.GetFullWordSpan wordKind point
-        member x.GetWords wordKind path point = x.GetWords wordKind path point
-        member x.CreateTextStructureNavigator wordKind = x.CreateTextStructureNavigator wordKind 
-
-// TODO: Need to think through how we handled folded regions here.  Should we be looking an the ITextView
-// snapshot or instead looking at the normal snapshot and the fold manager explicitly.  How this is done
-// will have a big impact on the structure of this API
-[<Export(typeof<IWordUtilFactory>)>]
-type internal WordUtilFactory
-    [<ImportingConstructor>]
-    (
-        _textStructureNavigatorSelectorService : ITextStructureNavigatorSelectorService
-    ) =
-
-    /// Use an object instance as a key.  Makes it harder for components to ignore this
-    /// service and instead manually query by a predefined key
-    let _key = System.Object()
-
-    member x.CreateWordUtil (textBuffer : ITextBuffer) =
-        let textStructureNavigator = _textStructureNavigatorSelectorService.GetTextStructureNavigator textBuffer
-        WordUtil(textBuffer, textStructureNavigator) :> IWordUtil
-
-    member x.GetWordUtil (textBuffer : ITextBuffer) =
-        let properties = textBuffer.Properties
-        properties.GetOrCreateSingletonProperty(_key, (fun () -> x.CreateWordUtil textBuffer))
-
-    interface IWordUtilFactory with
-        member x.GetWordUtil textBuffer = x.GetWordUtil textBuffer
+        member x.GetFullWordSpan wordKind point = WordUtil.GetFullWordSpan wordKind point
+        member x.GetWords wordKind path point = WordUtil.GetWords wordKind path point
+        member x.CreateTextStructureNavigator wordKind contentType = WordUtil.CreateTextStructureNavigator wordKind contentType
 

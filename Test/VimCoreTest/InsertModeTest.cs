@@ -96,7 +96,7 @@ namespace Vim.UnitTest
                 !insertMode,
                 _keyboardDevice.Object,
                 _mouseDevice.Object,
-                WordUtilFactory.GetWordUtil(_textView.TextBuffer),
+                WordUtil,
                 _wordCompletionSessionFactoryService.Object);
             _mode = _modeRaw;
             _mode.CommandRan += (sender, e) => { _lastCommandRan = e.CommandRunData; };
