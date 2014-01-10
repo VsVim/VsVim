@@ -17,19 +17,19 @@ namespace VsVim.Implementation.Misc
     {
         private readonly IKeyUtil _keyUtil;
         private readonly _DTE _dte;
-        private readonly IKeyBindingService _keyBindingService;
+        private readonly IVimApplicationSettings _vimApplicationSettings;
 
         [ImportingConstructor]
-        internal FallbackKeyProcessorProvider(IKeyUtil keyUtil, SVsServiceProvider serviceProvider, IKeyBindingService keyBindingService)
+        internal FallbackKeyProcessorProvider(SVsServiceProvider serviceProvider, IKeyUtil keyUtil, IVimApplicationSettings vimApplicationSettings)
         {
-            _keyUtil = keyUtil;
             _dte = (_DTE)serviceProvider.GetService(typeof(_DTE));
-            _keyBindingService = keyBindingService;
+            _keyUtil = keyUtil;
+            _vimApplicationSettings = vimApplicationSettings;
         }
 
         KeyProcessor IKeyProcessorProvider.GetAssociatedProcessor(IWpfTextView wpfTextView)
         {
-            return new FallbackKeyProcessor(_dte, _keyUtil, _keyBindingService, wpfTextView);
+            return new FallbackKeyProcessor(_dte, _keyUtil, _vimApplicationSettings, wpfTextView);
         }
     }
 }

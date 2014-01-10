@@ -2,100 +2,90 @@
 using Microsoft.VisualStudio.Text.Editor;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Windows.Input;
 using Vim;
 using Vim.UI.Wpf;
 
 namespace VsVim.Implementation.Misc
 {
-    internal sealed class FallbackKeyProcessor : KeyProcessor, IDisposable
+    internal sealed class FallbackKeyProcessor : KeyProcessor
     {
         private struct FallbackCommand
         {
             private KeyInput _keyInput;
-            private string _command;
+            private CommandId _command;
 
-            public FallbackCommand(KeyInput keyInput, string command)
+            public FallbackCommand(KeyInput keyInput, CommandId command)
             {
                 _keyInput = keyInput;
                 _command = command;
             }
             public KeyInput KeyInput { get { return _keyInput; } }
-            public string Command { get { return _command; } }
+            public CommandId Command { get { return _command; } }
         }
 
         private readonly _DTE _dte;
         private readonly IKeyUtil _keyUtil;
         private readonly IWpfTextView _textView;
-        private readonly IKeyBindingService _keyBindingService;
+        private readonly IVimApplicationSettings _vimApplicationSettings;
 
-        private List<FallbackCommand> _fallbackList;
+        private List<FallbackCommand> _fallbackCommandList;
 
-        internal FallbackKeyProcessor(_DTE dte, IKeyUtil keyUtil, IKeyBindingService keyBindingService, IWpfTextView wpfTextView)
+        internal FallbackKeyProcessor(_DTE dte, IKeyUtil keyUtil, IVimApplicationSettings vimApplicationSettings, IWpfTextView wpfTextView)
         {
             _dte = dte;
             _keyUtil = keyUtil;
-            _keyBindingService = keyBindingService;
+            _vimApplicationSettings = vimApplicationSettings;
             _textView = wpfTextView;
-            _fallbackList = new List<FallbackCommand>();
+            _fallbackCommandList = new List<FallbackCommand>();
 
-            _keyBindingService.ConflictingKeyBindingStateChanged += OnStateChanged;
-            OnStateChanged();
-        }
-
-        private void Unsubscribe()
-        {
-            _keyBindingService.ConflictingKeyBindingStateChanged -= OnStateChanged;
-        }
-
-        private void OnStateChanged(object sender, EventArgs e)
-        {
-            OnStateChanged();
-        }
-
-        private void OnStateChanged()
-        {
-            VimTrace.TraceInfo("FallbackKeyProcessor::OnStateChanged {0}", _keyBindingService.ConflictingKeyBindingState);
-            switch (_keyBindingService.ConflictingKeyBindingState)
-            {
-                case ConflictingKeyBindingState.HasNotChecked:
-                case ConflictingKeyBindingState.ConflictsIgnoredOrResolved:
-                case ConflictingKeyBindingState.FoundConflicts:
-                    break;
-                default:
-                    throw new Exception("Enum value unknown");
-            }
             GetKeyBindings();
         }
 
         private void GetKeyBindings()
         {
-            _fallbackList = new List<FallbackCommand>
+            _fallbackCommandList = _vimApplicationSettings.RemovedBindings
+                .Where(binding => IsTextViewBinding(binding))
+                .Select(binding => Tuple.Create(
+                    binding.KeyBinding.Scope,
+                    KeyBinding.Parse(binding.KeyBinding.CommandString),
+                    binding.Id
+                ))
+                .Where(tuple => tuple.Item2.KeyStrokes.Count == 1)
+                .OrderBy(tuple => GetScopeOrder(tuple.Item1))
+                .Select(tuple => new FallbackCommand(tuple.Item2.FirstKeyStroke.AggregateKeyInput, tuple.Item3))
+                .ToList();
+        }
+
+        private bool IsTextViewBinding(CommandKeyBinding binding)
+        {
+            var scope = binding.KeyBinding.Scope;
+            switch (binding.KeyBinding.Scope)
             {
-                new FallbackCommand(
-                    KeyInputUtil.CharWithControlToKeyInput('F'), "Edit.Find"
-                ),
-                new FallbackCommand(
-                    KeyInputUtil.ApplyModifiersToVimKey(VimKey.Home, KeyModifiers.Control), "Edit.DocumentStart"
-                ),
-                new FallbackCommand(
-                    KeyInputUtil.ApplyModifiersToVimKey(VimKey.Left, KeyModifiers.Control), "Edit.WordPrevious"
-                ),
-                new FallbackCommand(
-                    KeyInputUtil.ApplyModifiersToVimKey(VimKey.Right, KeyModifiers.Control), "Edit.WordNext"
-                ),
-                new FallbackCommand(
-                    KeyInputUtil.ApplyModifiersToVimKey(VimKey.Left, KeyModifiers.Shift), "Edit.CharLeftExtend"
-                ),
-                new FallbackCommand(
-                    KeyInputUtil.ApplyModifiersToVimKey(VimKey.Right, KeyModifiers.Shift), "Edit.CharRightExtend"
-                ),
-            };
+                case ScopeData.DefaultTextEditorScopeName:
+                case ScopeData.DefaultGlobalScopeName:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        private int GetScopeOrder(string scope)
+        {
+            switch (scope)
+            {
+                case ScopeData.DefaultTextEditorScopeName:
+                    return 1;
+                case ScopeData.DefaultGlobalScopeName:
+                    return 2;
+                default:
+                    throw new InvalidOperationException("scope not handled");
+            }
         }
 
         public override void TextInput(TextCompositionEventArgs args)
         {
-            VimTrace.TraceInfo("FallbackKeyProcessor::TextInput Text={0} ControlText={1} SystemText={2}", args.Text, args.ControlText, args.SystemText);
             bool handled = false;
 
             var text = args.Text;
@@ -127,29 +117,17 @@ namespace VsVim.Implementation.Misc
                 }
             }
 
-            VimTrace.TraceInfo("FallbackKeyProcessor::TextInput Handled={0}", handled);
             args.Handled = handled;
             base.TextInput(args);
         }
 
         public override void KeyDown(KeyEventArgs args)
         {
-            VimTrace.TraceInfo("FallbackKeyProcessor::KeyDown {0} {1}", args.Key, args.KeyboardDevice.Modifiers);
-
             bool handled;
             KeyInput keyInput;
             if (_keyUtil.TryConvertSpecialToKeyInput(args.Key, args.KeyboardDevice.Modifiers, out keyInput))
             {
-                handled = TryProcess(keyInput);
-            }
-            else
-            {
-                handled = false;
-            }
-
-            if (handled)
-            {
-                args.Handled = true;
+                args.Handled = TryProcess(keyInput);
             }
             else
             {
@@ -159,7 +137,8 @@ namespace VsVim.Implementation.Misc
 
         internal bool TryProcess(KeyInput keyInput)
         {
-            foreach (var fallbackCommand in _fallbackList)
+            VimTrace.TraceInfo("FallbackKeyProcessor::TryProcess {0}", keyInput);
+            foreach (var fallbackCommand in _fallbackCommandList)
             {
                 if (fallbackCommand.KeyInput == keyInput)
                 {
@@ -169,12 +148,14 @@ namespace VsVim.Implementation.Misc
             return false;
         }
 
-        private bool SafeExecuteCommand(string command, string args = "")
+        private bool SafeExecuteCommand(CommandId command)
         {
             try
             {
-                VimTrace.TraceInfo("FallbackKeyProcessor::SafeExecuteCommand {0} {1}", command, args);
-                _dte.ExecuteCommand(command, args);
+                VimTrace.TraceInfo("FallbackKeyProcessor::SafeExecuteCommand {0}", command);
+                object customIn = null;
+                object customOut = null;
+                _dte.Commands.Raise(command.Group.ToString(), (int)command.Id, ref customIn, ref customOut);
                 return true;
             }
             catch
@@ -182,11 +163,5 @@ namespace VsVim.Implementation.Misc
                 return false;
             }
         }
-
-        public void Dispose()
-        {
-            Unsubscribe();
-        }
-
     }
 }
