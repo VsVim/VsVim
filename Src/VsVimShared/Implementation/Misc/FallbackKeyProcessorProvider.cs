@@ -1,8 +1,6 @@
 ﻿using System.ComponentModel.Composition;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Utilities;
-using Vim;
-using Vim.Extensions;
 using Vim.UI.Wpf;
 using EnvDTE;
 using Microsoft.VisualStudio.Shell;
@@ -17,18 +15,13 @@ namespace VsVim.Implementation.Misc
     [ContentType(Vim.Constants.AnyContentType)]
     internal sealed class FallbackKeyProcessorProvider : IKeyProcessorProvider
     {
-        private readonly IVsAdapter _adapter;
-        private readonly IVim _vim;
         private readonly IKeyUtil _keyUtil;
-        private readonly IReportDesignerUtil _reportDesignerUtil;
         private readonly _DTE _dte;
         private readonly IKeyBindingService _keyBindingService;
 
         [ImportingConstructor]
-        internal FallbackKeyProcessorProvider(IVim vim, IVsAdapter adapter, IKeyUtil keyUtil, SVsServiceProvider serviceProvider, IKeyBindingService keyBindingService)
+        internal FallbackKeyProcessorProvider(IKeyUtil keyUtil, SVsServiceProvider serviceProvider, IKeyBindingService keyBindingService)
         {
-            _vim = vim;
-            _adapter = adapter;
             _keyUtil = keyUtil;
             _dte = (_DTE)serviceProvider.GetService(typeof(_DTE));
             _keyBindingService = keyBindingService;
