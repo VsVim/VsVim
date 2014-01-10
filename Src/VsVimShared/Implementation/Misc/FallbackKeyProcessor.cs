@@ -7,17 +7,43 @@ using Vim.UI.Wpf;
 
 namespace VsVim.Implementation.Misc
 {
-    internal sealed class ForwardingKeyProcessor : KeyProcessor
+    internal sealed class FallbackKeyProcessor : KeyProcessor, IDisposable
     {
         private readonly _DTE _dte;
         private readonly IKeyUtil _keyUtil;
         private readonly IWpfTextView _textView;
+        private readonly IKeyBindingService _keyBindingService;
 
-        internal ForwardingKeyProcessor(_DTE dte, IKeyUtil keyUtil, IWpfTextView wpfTextView)
+        internal FallbackKeyProcessor(_DTE dte, IKeyUtil keyUtil, IKeyBindingService keyBindingService, IWpfTextView wpfTextView)
         {
             _dte = dte;
             _keyUtil = keyUtil;
+            _keyBindingService = keyBindingService;
             _textView = wpfTextView;
+
+            _keyBindingService.ConflictingKeyBindingStateChanged += OnStateChanged;
+        }
+
+        private void GetKindBindings()
+        {
+        }
+
+        private void Unsubscribe()
+        {
+            _keyBindingService.ConflictingKeyBindingStateChanged -= OnStateChanged;
+        }
+
+        private void OnStateChanged(object sender, EventArgs e)
+        {
+            switch (_keyBindingService.ConflictingKeyBindingState)
+            {
+                case ConflictingKeyBindingState.HasNotChecked:
+                case ConflictingKeyBindingState.ConflictsIgnoredOrResolved:
+                case ConflictingKeyBindingState.FoundConflicts:
+                    break;
+                default:
+                    throw new Exception("Enum value unknown");
+            }
         }
 
         public override void TextInput(TextCompositionEventArgs args)
@@ -125,6 +151,11 @@ namespace VsVim.Implementation.Misc
             {
                 return false;
             }
+        }
+
+        public void Dispose()
+        {
+            Unsubscribe();
         }
 
     }
