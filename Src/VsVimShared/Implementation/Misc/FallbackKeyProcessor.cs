@@ -27,19 +27,24 @@ namespace VsVim.Implementation.Misc
 
         private readonly _DTE _dte;
         private readonly IKeyUtil _keyUtil;
-        private readonly IWpfTextView _textView;
         private readonly IVimApplicationSettings _vimApplicationSettings;
 
         private List<FallbackCommand> _fallbackCommandList;
 
-        internal FallbackKeyProcessor(_DTE dte, IKeyUtil keyUtil, IVimApplicationSettings vimApplicationSettings, IWpfTextView wpfTextView)
+        internal FallbackKeyProcessor(_DTE dte, IKeyUtil keyUtil, IVimApplicationSettings vimApplicationSettings)
         {
             _dte = dte;
             _keyUtil = keyUtil;
             _vimApplicationSettings = vimApplicationSettings;
-            _textView = wpfTextView;
             _fallbackCommandList = new List<FallbackCommand>();
 
+            // Register for key binding changes and get the current bindings
+            _vimApplicationSettings.SettingsChanged += SettingsChanged;
+            GetKeyBindings();
+        }
+
+        private void SettingsChanged(object sender, ApplicationSettingsEventArgs e)
+        {
             GetKeyBindings();
         }
 
@@ -123,7 +128,6 @@ namespace VsVim.Implementation.Misc
 
         public override void KeyDown(KeyEventArgs args)
         {
-            bool handled;
             KeyInput keyInput;
             if (_keyUtil.TryConvertSpecialToKeyInput(args.Key, args.KeyboardDevice.Modifiers, out keyInput))
             {
