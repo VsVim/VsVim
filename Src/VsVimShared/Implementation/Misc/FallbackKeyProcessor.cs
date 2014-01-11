@@ -36,6 +36,7 @@ namespace VsVim.Implementation.Misc
         private readonly _DTE _dte;
         private readonly IKeyUtil _keyUtil;
         private readonly IVimApplicationSettings _vimApplicationSettings;
+        private readonly IVimBuffer _vimBuffer;
 
         private List<FallbackCommand> _fallbackCommandList;
 
@@ -44,11 +45,12 @@ namespace VsVim.Implementation.Misc
         /// by not making use of it, the fallback processor can be reused for
         /// multiple text views
         /// </summary>
-        internal FallbackKeyProcessor(_DTE dte, IKeyUtil keyUtil, IVimApplicationSettings vimApplicationSettings)
+        internal FallbackKeyProcessor(_DTE dte, IKeyUtil keyUtil, IVimApplicationSettings vimApplicationSettings, IVimBuffer vimBuffer)
         {
             _dte = dte;
             _keyUtil = keyUtil;
             _vimApplicationSettings = vimApplicationSettings;
+            _vimBuffer = vimBuffer;
             _fallbackCommandList = new List<FallbackCommand>();
 
             // Register for key binding changes and get the current bindings
@@ -119,44 +121,33 @@ namespace VsVim.Implementation.Misc
         }
 
         /// <summary>
-        /// Convert this key processors's text input into KeyInput and forward
-        /// it to TryProcess
+        /// This maps letters which are pressed to a KeyInput value by looking at the virtual
+        /// key vs the textual input.  When Visual Studio is processing key mappings it's doing
+        /// so in PreTraslateMessage and using the virtual key codes.  We need to simulate this
+        /// as best as possible when forwarding keys
         /// </summary>
-        public override void TextInput(TextCompositionEventArgs args)
+        private bool TryConvertLetterToKeyInput(KeyEventArgs keyEventArgs, out KeyInput keyInput)
         {
-            bool handled = false;
+            keyInput = KeyInput.DefaultValue;
 
-            var text = args.Text;
-            if (String.IsNullOrEmpty(text))
+            var keyboardDevice = keyEventArgs.Device as KeyboardDevice;
+            var keyModifiers = keyboardDevice != null
+                ? _keyUtil.GetKeyModifiers(keyboardDevice.Modifiers)
+                : KeyModifiers.Alt;
+            if (keyModifiers == KeyModifiers.None)
             {
-                text = args.ControlText;
+                return false;
             }
 
-            if (!String.IsNullOrEmpty(text))
+            var key = keyEventArgs.Key;
+            if (key < Key.A || key > Key.Z)
             {
-                for (var i = 0; i < text.Length; i++)
-                {
-                    var keyInput = KeyInputUtil.CharToKeyInput(text[i]);
-                    handled = TryProcess(keyInput);
-                }
-            }
-            else if (!String.IsNullOrEmpty(args.SystemText))
-            {
-                var keyboardDevice = args.Device as KeyboardDevice;
-                var keyModifiers = keyboardDevice != null
-                    ? _keyUtil.GetKeyModifiers(keyboardDevice.Modifiers)
-                    : KeyModifiers.Alt;
-
-                text = args.SystemText;
-                for (var i = 0; i < text.Length; i++)
-                {
-                    var keyInput = KeyInputUtil.ApplyModifiers(KeyInputUtil.CharToKeyInput(text[i]), keyModifiers);
-                    handled = TryProcess(keyInput);
-                }
+                return false;
             }
 
-            args.Handled = handled;
-            base.TextInput(args);
+            var c = (char)('a' + (key - Key.A));
+            keyInput = KeyInputUtil.ApplyModifiersToChar(c, keyModifiers);
+            return true;
         }
 
         /// <summary>
@@ -167,6 +158,10 @@ namespace VsVim.Implementation.Misc
         {
             KeyInput keyInput;
             if (_keyUtil.TryConvertSpecialToKeyInput(args.Key, args.KeyboardDevice.Modifiers, out keyInput))
+            {
+                args.Handled = TryProcess(keyInput);
+            }
+            else if (TryConvertLetterToKeyInput(args, out keyInput))
             {
                 args.Handled = TryProcess(keyInput);
             }
@@ -181,6 +176,13 @@ namespace VsVim.Implementation.Misc
         /// </summary>
         internal bool TryProcess(KeyInput keyInput)
         {
+            // If this processor is associated with a IVimBuffer then don't fall back to VS commands 
+            // unless vim is currently disabled
+            if (_vimBuffer != null && _vimBuffer.ModeKind != ModeKind.Disabled)
+            {
+                return false;
+            }
+
             // Check for any applicable fallback bindings, in order
             VimTrace.TraceInfo("FallbackKeyProcessor::TryProcess {0}", keyInput);
             foreach (var fallbackCommand in _fallbackCommandList)
