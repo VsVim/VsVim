@@ -121,8 +121,14 @@ namespace Vim.UI.Wpf.Implementation.WordCompletion
                 _textView = textView;
             }
 
+            void IWordCompletionSession.AddExtra(IEnumerable<string> words)
+            {
+
+            }
+
             void IWordCompletionSession.Dismiss()
             {
+
             }
 
             event EventHandler IWordCompletionSession.Dismissed

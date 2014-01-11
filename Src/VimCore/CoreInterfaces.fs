@@ -161,6 +161,9 @@ type IWordCompletionSession =
     /// The associated ITextView instance
     abstract TextView : ITextView
 
+    /// Add more words to the completion session
+    abstract AddExtra : words : string seq -> unit
+
     /// Select the next word in the session
     abstract MoveNext : unit -> bool
 

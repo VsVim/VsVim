@@ -3,6 +3,7 @@ using Microsoft.VisualStudio.Language.Intellisense;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Vim.Extensions;
+using System.Collections.Generic;
 
 namespace Vim.UI.Wpf.Implementation.WordCompletion
 {
@@ -119,6 +120,11 @@ namespace Vim.UI.Wpf.Implementation.WordCompletion
         {
             add { _dismissed += value; }
             remove { _dismissed -= value; }
+        }
+
+        void IWordCompletionSession.AddExtra(IEnumerable<string> words)
+        {
+            _wordCompletionSet.AddExtra(words);
         }
 
         void IWordCompletionSession.Dismiss()

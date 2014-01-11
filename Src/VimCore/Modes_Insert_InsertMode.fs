@@ -8,6 +8,7 @@ open Microsoft.VisualStudio.Text.Editor
 open System
 open System.Threading.Tasks
 open System.Threading
+open System.Collections.Generic
 
 type WordCompletionUtil
     (
@@ -15,70 +16,127 @@ type WordCompletionUtil
         _wordUtil : IWordUtil
     ) =
 
+    /// Get a fun (string -> bool) that determines if a particular word should be included in the output
+    /// based on the text that we are searching for 
+    ///
+    /// This method will be called for every single word in the file hence avoid allocations whenever
+    /// possible.  That dramatically reduces the allocations
+    [<UsedInBackgroundThread>]
+    static member GetFilterFunc (filterText : string) (comparer : CharComparer) =
+
+        // Is this actually a word we're interest in.  Need to clear out new lines, 
+        // comment characters, one character items, etc ... 
+        let isWord (span : SnapshotSpan) =
+            if span.Length = 0 || span.Length = 1 then
+                false
+            else
+                let c = span.Start.GetChar()
+                TextUtil.IsWordChar WordKind.NormalWord c
+
+        // Is this span a match for the filter text? 
+        let isMatch (span : SnapshotSpan) =
+            if span.Length < filterText.Length then
+                false
+            else
+                let mutable same = true
+                let mutable point = span.Start
+                let mutable i = 0
+                while i < filterText.Length && same do
+                    if not (comparer.IsEqual filterText.[i] (point.GetChar())) then
+                        same <- false
+                    else 
+                        i <- i + 1
+                        point <- point.Add(1)
+                same
+
+        if String.IsNullOrEmpty filterText then
+            isWord
+        else
+            isMatch
+
     /// Get the word completions for the given word text in the ITextBuffer
     [<UsedInBackgroundThread>]
-    static member GetWordCompletionsCore (wordUtil : IWordUtil) (comparer : StringComparison) (wordSpan : SnapshotSpan) (cancellationToken : CancellationToken) =
-        try
-            // Get the sequence of words before the completion word 
-            let snapshot = wordSpan.Snapshot
-            let wordsBefore = 
-                let startPoint = SnapshotUtil.GetStartPoint snapshot
-                wordUtil.GetWords WordKind.NormalWord Path.Forward startPoint
-                |> Seq.filter (fun span -> span.End.Position <= wordSpan.Start.Position)
+    member x.GetWordCompletionsCore (wordSpan : SnapshotSpan) (comparer : CharComparer) (cancellationToken : CancellationToken) =
+        // Get the sequence of words before the completion word 
+        let snapshot = wordSpan.Snapshot
+        let wordsBefore = 
+            let startPoint = SnapshotUtil.GetStartPoint snapshot
+            _wordUtil.GetWords WordKind.NormalWord Path.Forward startPoint
+            |> Seq.filter (fun span -> span.End.Position <= wordSpan.Start.Position)
 
-            // Get the sequence of words after the completion word 
-            let wordsAfter =
+        // Get the sequence of words after the completion word 
+        let wordsAfter =
 
-                // The provided SnapshotSpan can be a subset of an entire word.  If so then
-                // we want to consider the text to the right of the caret as a full word
-                match wordUtil.GetFullWordSpan WordKind.NormalWord wordSpan.Start with
-                | None -> wordUtil.GetWords WordKind.NormalWord Path.Forward wordSpan.End
-                | Some fullWordSpan ->
-                    if fullWordSpan = wordSpan then
-                        wordUtil.GetWords WordKind.NormalWord Path.Forward wordSpan.End
-                    else
-                        let remaining = SnapshotSpan(wordSpan.End, fullWordSpan.End)
-                        let after = wordUtil.GetWords WordKind.NormalWord Path.Forward fullWordSpan.End
-                        Seq.append (Seq.singleton remaining) after
-
-            let filterText = wordSpan.GetText()
-            let filterFunc =
-
-                // Is this actually a word we're interest in.  Need to clear out new lines, 
-                // comment characters, one character items, etc ... 
-                let isWord text =
-                    if StringUtil.isNullOrEmpty text then 
-                        false
-                    elif text.Length = 1 then
-                        // One character items don't get included in the list
-                        false
-                    else
-                        TextUtil.IsWordChar WordKind.NormalWord (text.[0])
-
-                if String.IsNullOrEmpty filterText then
-                    (fun (wordSpan : SnapshotSpan) ->
-                        let wordText = wordSpan.GetText()
-                        isWord wordText)
+            // The provided SnapshotSpan can be a subset of an entire word.  If so then
+            // we want to consider the text to the right of the caret as a full word
+            match _wordUtil.GetFullWordSpan WordKind.NormalWord wordSpan.Start with
+            | None -> _wordUtil.GetWords WordKind.NormalWord Path.Forward wordSpan.End
+            | Some fullWordSpan ->
+                if fullWordSpan = wordSpan then
+                    _wordUtil.GetWords WordKind.NormalWord Path.Forward wordSpan.End
                 else
-                    (fun (wordSpan : SnapshotSpan) -> 
-                        let wordText = wordSpan.GetText()
-                        if wordText.StartsWith(filterText, comparer) && isWord wordText then
-                            true
-                        else
-                            false)
+                    let remaining = SnapshotSpan(wordSpan.End, fullWordSpan.End)
+                    let after = _wordUtil.GetWords WordKind.NormalWord Path.Forward fullWordSpan.End
+                    Seq.append (Seq.singleton remaining) after
 
-            // Combine the collections
-            Seq.append wordsAfter wordsBefore
-            |> Seq.filter filterFunc
-            |> Seq.map SnapshotSpanUtil.GetText
-            |> Seq.distinct
-            |> List.ofSeq
-        with
-        | _ -> List.empty
+        let filterText = wordSpan.GetText()
+        let filterFunc = WordCompletionUtil.GetFilterFunc filterText comparer
+
+        // Combine the collections
+        Seq.append wordsAfter wordsBefore
+        |> Seq.filter filterFunc
+        |> Seq.map SnapshotSpanUtil.GetText
+        |> Seq.distinct
+        |> List.ofSeq
+
+    /// Get the word completion entries in the specified ITextSnapshot.  If the token is cancelled the 
+    /// exception will be propagated out of this method.  This method will return duplicate words too
+    [<UsedInBackgroundThread>]
+    member x.GetWordCompletionsInFile (filterText : string) comparer (snapshot : ITextSnapshot) (cancellationToken : CancellationToken) =
+        let filterFunc = WordCompletionUtil.GetFilterFunc filterText comparer
+        let startPoint = SnapshotPoint(snapshot, 0) 
+        startPoint
+        |> _wordUtil.GetWords WordKind.NormalWord Path.Forward
+        |> Seq.filter filterFunc
+        |> Seq.map (fun wordSpan -> 
+            cancellationToken.ThrowIfCancellationRequested()
+            wordSpan.GetText())
+
+    [<UsedInBackgroundThread>]
+    member x.GetWordCompletionsInFiles (filterText : string) comparer snapshotList (cancellationToken : CancellationToken) =
+        snapshotList
+        |> Seq.map (fun snapshot -> x.GetWordCompletionsInFile filterText comparer snapshot cancellationToken)
+        |> Seq.concat
+        |> Seq.distinct
+        |> List.ofSeq
 
     member x.GetWordCompletions (wordSpan : SnapshotSpan) =
-        let comparer = if _globalSettings.IgnoreCase then StringComparison.OrdinalIgnoreCase else StringComparison.Ordinal
-        WordCompletionUtil.GetWordCompletionsCore _wordUtil comparer wordSpan CancellationToken.None
+        let comparer = if _globalSettings.IgnoreCase then CharComparer.IgnoreCase else CharComparer.Exact
+        x.GetWordCompletionsCore wordSpan comparer CancellationToken.None
+
+    /// Get the word completion for other buffers currently open and add them to the session after they 
+    /// are found.  Parsing out words in documents can be an expensive and long operation so it's done on
+    /// a background thread 
+    member x.GetWordCompletionsInOtherFiles (vimBufferData : IVimBufferData) (filterText : string) (wordCompletionSession : IWordCompletionSession) =
+        let tokenSource = new CancellationTokenSource()
+        let token = tokenSource.Token
+        let snapshotList = 
+            vimBufferData.Vim.VimBuffers
+            |> Seq.map (fun vimBuffer -> vimBuffer.TextSnapshot)
+            |> Seq.filter (fun snapshot -> snapshot.TextBuffer <> vimBufferData.TextBuffer)
+            |> List.ofSeq
+        let comparer = if _globalSettings.IgnoreCase then CharComparer.IgnoreCase else CharComparer.Exact
+        let context = System.Threading.SynchronizationContext.Current
+        if context <> null then
+            let asyncUnit = async { 
+                let! token = Async.CancellationToken
+                let all = x.GetWordCompletionsInFiles filterText comparer snapshotList token
+                do! Async.SwitchToContext context
+                wordCompletionSession.AddExtra all } 
+            Async.Start(asyncUnit, token)
+
+            wordCompletionSession.Dismissed 
+            |> Observable.add (fun _ -> tokenSource.Cancel())
 
 [<RequireQualifiedAccess>]
 type InsertKind =
@@ -480,6 +538,9 @@ type internal InsertMode
             let wordCompletionSession = _wordCompletionSessionFactoryService.CreateWordCompletionSession _textView wordSpan wordList true
 
             if not wordCompletionSession.IsDismissed then
+
+                // Start querying for the word completions in other files
+                _wordCompletionUtil.GetWordCompletionsInOtherFiles _vimBuffer.VimBufferData (wordSpan.GetText()) wordCompletionSession
 
                 // When the completion session is dismissed we want to clean out the session 
                 // data 
