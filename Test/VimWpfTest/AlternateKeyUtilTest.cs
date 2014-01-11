@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Windows.Input;
-using Vim.UI.Wpf.Implementation.Keyboard;
+using Vim.UI.Wpf.Implementation.Misc;
 using Xunit;
 
 namespace Vim.UI.Wpf.UnitTest

@@ -12,7 +12,6 @@ using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Operations;
 using Vim.Interpreter;
 using Vim.UI.Wpf;
-using Vim.UI.Wpf.Implementation.Keyboard;
 using Vim.UI.Wpf.Implementation.Misc;
 using Vim.UI.Wpf.Implementation.WordCompletion;
 using Vim.UnitTest.Exports;

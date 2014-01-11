@@ -61,7 +61,7 @@
     <Compile Include="Implementation\CharDisplay\CharDisplayTaggerSource.cs" />
     <Compile Include="Implementation\CharDisplay\CharDisplayTaggerSourceFactory.cs" />
     <Compile Include="Implementation\CharDisplay\ControlCharUtil.cs" />
-    <Compile Include="Implementation\Keyboard\AlternateKeyUtil.cs" />
+    <Compile Include="Implementation\Misc\AlternateKeyUtil.cs" />
     <Compile Include="Implementation\BlockCaret\BlockCaretController.cs" />
     <Compile Include="Implementation\BlockCaret\BlockCaretFormatDefinition.cs" />
     <Compile Include="Implementation\CommandMargin\CommandMarginFormatDefinition.cs" />

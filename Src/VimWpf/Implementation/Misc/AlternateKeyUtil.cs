@@ -2,7 +2,7 @@
 using System.ComponentModel.Composition;
 using System.Windows.Input;
 
-namespace Vim.UI.Wpf.Implementation.Keyboard
+namespace Vim.UI.Wpf.Implementation.Misc
 {
     [Export(typeof(IKeyUtil))]
     internal sealed class AlternateKeyUtil : IKeyUtil

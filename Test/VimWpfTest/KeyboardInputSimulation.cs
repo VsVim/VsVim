@@ -6,7 +6,7 @@ using System.Windows.Input;
 using Microsoft.VisualStudio.Text.Editor;
 using Moq;
 using Vim.Extensions;
-using Vim.UI.Wpf.Implementation.Keyboard;
+using Vim.UI.Wpf.Implementation.Misc;
 using Vim.UnitTest;
 
 namespace Vim.UI.Wpf.UnitTest
