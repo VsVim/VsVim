@@ -12,17 +12,18 @@ open System.Collections.Generic
 
 type WordCompletionUtil
     (
-        _globalSettings : IVimGlobalSettings,
+        _vim : IVim,
         _wordUtil : IWordUtil
     ) =
+
+    let _globalSettings = _vim.GlobalSettings
 
     /// Get a fun (string -> bool) that determines if a particular word should be included in the output
     /// based on the text that we are searching for 
     ///
     /// This method will be called for every single word in the file hence avoid allocations whenever
     /// possible.  That dramatically reduces the allocations
-    [<UsedInBackgroundThread>]
-    static member GetFilterFunc (filterText : string) (comparer : CharComparer) =
+    static member private GetFilterFunc (filterText : string) (comparer : CharComparer) =
 
         // Is this actually a word we're interest in.  Need to clear out new lines, 
         // comment characters, one character items, etc ... 
@@ -55,8 +56,7 @@ type WordCompletionUtil
             isMatch
 
     /// Get the word completions for the given word text in the ITextBuffer
-    [<UsedInBackgroundThread>]
-    member x.GetWordCompletionsCore (wordSpan : SnapshotSpan) (comparer : CharComparer) (cancellationToken : CancellationToken) =
+    member private x.GetWordCompletionsCore (wordSpan : SnapshotSpan) (comparer : CharComparer) =
         // Get the sequence of words before the completion word 
         let snapshot = wordSpan.Snapshot
         let wordsBefore = 
@@ -86,57 +86,34 @@ type WordCompletionUtil
         Seq.append wordsAfter wordsBefore
         |> Seq.filter filterFunc
         |> Seq.map SnapshotSpanUtil.GetText
-        |> Seq.distinct
-        |> List.ofSeq
 
     /// Get the word completion entries in the specified ITextSnapshot.  If the token is cancelled the 
     /// exception will be propagated out of this method.  This method will return duplicate words too
-    [<UsedInBackgroundThread>]
-    member x.GetWordCompletionsInFile (filterText : string) comparer (snapshot : ITextSnapshot) (cancellationToken : CancellationToken) =
+    member private x.GetWordCompletionsInFile (filterText : string) comparer (snapshot : ITextSnapshot) =
         let filterFunc = WordCompletionUtil.GetFilterFunc filterText comparer
         let startPoint = SnapshotPoint(snapshot, 0) 
         startPoint
         |> _wordUtil.GetWords WordKind.NormalWord Path.Forward
         |> Seq.filter filterFunc
-        |> Seq.map (fun wordSpan -> 
-            cancellationToken.ThrowIfCancellationRequested()
-            wordSpan.GetText())
-
-    [<UsedInBackgroundThread>]
-    member x.GetWordCompletionsInFiles (filterText : string) comparer snapshotList (cancellationToken : CancellationToken) =
-        snapshotList
-        |> Seq.map (fun snapshot -> x.GetWordCompletionsInFile filterText comparer snapshot cancellationToken)
-        |> Seq.concat
-        |> Seq.distinct
-        |> List.ofSeq
+        |> Seq.map (fun wordSpan -> wordSpan.GetText())
 
     member x.GetWordCompletions (wordSpan : SnapshotSpan) =
         let comparer = if _globalSettings.IgnoreCase then CharComparer.IgnoreCase else CharComparer.Exact
-        x.GetWordCompletionsCore wordSpan comparer CancellationToken.None
+        let filterText = wordSpan.GetText()
+        let fileCompletions = x.GetWordCompletionsCore wordSpan comparer 
+        let fileTextBuffer = wordSpan.Snapshot.TextBuffer
 
-    /// Get the word completion for other buffers currently open and add them to the session after they 
-    /// are found.  Parsing out words in documents can be an expensive and long operation so it's done on
-    /// a background thread 
-    member x.GetWordCompletionsInOtherFiles (vimBufferData : IVimBufferData) (filterText : string) (wordCompletionSession : IWordCompletionSession) =
-        let tokenSource = new CancellationTokenSource()
-        let token = tokenSource.Token
-        let snapshotList = 
-            vimBufferData.Vim.VimBuffers
+        let otherFileCompletions = 
+            _vim.VimBuffers
             |> Seq.map (fun vimBuffer -> vimBuffer.TextSnapshot)
-            |> Seq.filter (fun snapshot -> snapshot.TextBuffer <> vimBufferData.TextBuffer)
-            |> List.ofSeq
-        let comparer = if _globalSettings.IgnoreCase then CharComparer.IgnoreCase else CharComparer.Exact
-        let context = System.Threading.SynchronizationContext.Current
-        if context <> null then
-            let asyncUnit = async { 
-                let! token = Async.CancellationToken
-                let all = x.GetWordCompletionsInFiles filterText comparer snapshotList token
-                do! Async.SwitchToContext context
-                wordCompletionSession.AddExtra all } 
-            Async.Start(asyncUnit, token)
+            |> Seq.filter (fun snapshot -> snapshot.TextBuffer <> fileTextBuffer)
+            |> Seq.collect (fun snapshot -> x.GetWordCompletionsInFile filterText comparer snapshot)
 
-            wordCompletionSession.Dismissed 
-            |> Observable.add (fun _ -> tokenSource.Cancel())
+        fileCompletions
+        |> Seq.append otherFileCompletions  
+        |> Seq.filter (fun word -> word.Length > 1)
+        |> Seq.distinct
+        |> List.ofSeq
 
 [<RequireQualifiedAccess>]
 type InsertKind =
@@ -238,7 +215,7 @@ type internal InsertMode
     let _globalSettings = _vimBuffer.GlobalSettings
     let _editorOperations = _operations.EditorOperations
     let _commandRanEvent = StandardEvent<CommandRunDataEventArgs>()
-    let _wordCompletionUtil = WordCompletionUtil(_globalSettings, _wordUtil)
+    let _wordCompletionUtil = WordCompletionUtil(_vimBuffer.Vim, _wordUtil)
     let mutable _commandMap : Map<KeyInput, RawInsertCommand> = Map.empty
     let mutable _sessionData = _emptySessionData
 
@@ -323,6 +300,8 @@ type internal InsertMode
     member x.CurrentSnapshot = _textView.TextSnapshot
 
     member x.ModeKind = if _isReplace then ModeKind.Replace else ModeKind.Insert
+
+    member x.WordCompletionUtil = _wordCompletionUtil
 
     /// Is this the currently active mode?
     member x.IsActive = x.ModeKind = _vimBuffer.ModeKind
@@ -538,10 +517,6 @@ type internal InsertMode
             let wordCompletionSession = _wordCompletionSessionFactoryService.CreateWordCompletionSession _textView wordSpan wordList true
 
             if not wordCompletionSession.IsDismissed then
-
-                // Start querying for the word completions in other files
-                _wordCompletionUtil.GetWordCompletionsInOtherFiles _vimBuffer.VimBufferData (wordSpan.GetText()) wordCompletionSession
-
                 // When the completion session is dismissed we want to clean out the session 
                 // data 
                 wordCompletionSession.Dismissed

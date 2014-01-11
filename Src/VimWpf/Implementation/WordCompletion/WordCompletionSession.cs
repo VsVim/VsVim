@@ -122,11 +122,6 @@ namespace Vim.UI.Wpf.Implementation.WordCompletion
             remove { _dismissed -= value; }
         }
 
-        void IWordCompletionSession.AddExtra(IEnumerable<string> words)
-        {
-            _wordCompletionSet.AddExtra(words);
-        }
-
         void IWordCompletionSession.Dismiss()
         {
             _isDismissed = true;
