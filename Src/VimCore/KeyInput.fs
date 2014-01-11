@@ -3,8 +3,6 @@
 namespace Vim
 open System.Runtime.InteropServices
 
-type VirtualKeyCode = int
-
 [<Sealed>]
 type KeyInput
     (

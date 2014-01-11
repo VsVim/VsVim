@@ -73,15 +73,10 @@
     <Compile Include="WpfIntegrationTest.cs" />
     <Compile Include="CommandMarginControllerTest.cs" />
     <Compile Include="DisplayWindowBrokerTest.cs" />
-    <Compile Include="FrugalListTest.cs" />
     <Compile Include="KeyboardDeviceImplTest.cs" />
-    <Compile Include="KeyboardMapBuilderTest.cs" />
-    <Compile Include="KeyboardMapTest.cs" />
     <Compile Include="KeyMappingTimeoutHandlerTest.cs" />
     <Compile Include="KeyboardInputSimulation.cs" />
-    <Compile Include="MockVirtualKeyboard.cs" />
     <Compile Include="VimKeyProcessorTest.cs" />
-    <Compile Include="KeyUtilTest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="VimHostTests.cs" />
   </ItemGroup>
