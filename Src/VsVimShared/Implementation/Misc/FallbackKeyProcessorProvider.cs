@@ -4,6 +4,7 @@ using Microsoft.VisualStudio.Utilities;
 using Vim.UI.Wpf;
 using EnvDTE;
 using Microsoft.VisualStudio.Shell;
+using Vim;
 
 namespace VsVim.Implementation.Misc
 {
@@ -29,16 +30,15 @@ namespace VsVim.Implementation.Misc
         private readonly IKeyUtil _keyUtil;
         private readonly _DTE _dte;
         private readonly IVimApplicationSettings _vimApplicationSettings;
-
-        private KeyProcessor _keyProcessor;
+        private readonly IVim _vim;
 
         [ImportingConstructor]
-        internal FallbackKeyProcessorProvider(SVsServiceProvider serviceProvider, IKeyUtil keyUtil, IVimApplicationSettings vimApplicationSettings)
+        internal FallbackKeyProcessorProvider(SVsServiceProvider serviceProvider, IKeyUtil keyUtil, IVimApplicationSettings vimApplicationSettings, IVim vim)
         {
             _dte = (_DTE)serviceProvider.GetService(typeof(_DTE));
             _keyUtil = keyUtil;
             _vimApplicationSettings = vimApplicationSettings;
-            _keyProcessor = null;
+            _vim = vim;
         }
 
         /// <summary>
@@ -47,11 +47,13 @@ namespace VsVim.Implementation.Misc
         /// </summary>
         KeyProcessor IKeyProcessorProvider.GetAssociatedProcessor(IWpfTextView wpfTextView)
         {
-            if (_keyProcessor == null)
+            IVimBuffer vimBuffer;
+            if (!_vim.TryGetOrCreateVimBufferForHost(wpfTextView, out vimBuffer))
             {
-                _keyProcessor = new FallbackKeyProcessor(_dte, _keyUtil, _vimApplicationSettings);
+                vimBuffer = null;
             }
-            return _keyProcessor;
+
+            return new FallbackKeyProcessor(_dte, _keyUtil, _vimApplicationSettings, vimBuffer);
         }
     }
 }

@@ -36,6 +36,7 @@ namespace VsVim.Implementation.Misc
         private readonly _DTE _dte;
         private readonly IKeyUtil _keyUtil;
         private readonly IVimApplicationSettings _vimApplicationSettings;
+        private readonly IVimBuffer _vimBuffer;
 
         private List<FallbackCommand> _fallbackCommandList;
 
@@ -44,11 +45,12 @@ namespace VsVim.Implementation.Misc
         /// by not making use of it, the fallback processor can be reused for
         /// multiple text views
         /// </summary>
-        internal FallbackKeyProcessor(_DTE dte, IKeyUtil keyUtil, IVimApplicationSettings vimApplicationSettings)
+        internal FallbackKeyProcessor(_DTE dte, IKeyUtil keyUtil, IVimApplicationSettings vimApplicationSettings, IVimBuffer vimBuffer)
         {
             _dte = dte;
             _keyUtil = keyUtil;
             _vimApplicationSettings = vimApplicationSettings;
+            _vimBuffer = vimBuffer;
             _fallbackCommandList = new List<FallbackCommand>();
 
             // Register for key binding changes and get the current bindings
@@ -174,6 +176,13 @@ namespace VsVim.Implementation.Misc
         /// </summary>
         internal bool TryProcess(KeyInput keyInput)
         {
+            // If this processor is associated with a IVimBuffer then don't fall back to VS commands 
+            // unless vim is currently disabled
+            if (_vimBuffer != null && _vimBuffer.ModeKind != ModeKind.Disabled)
+            {
+                return false;
+            }
+
             // Check for any applicable fallback bindings, in order
             VimTrace.TraceInfo("FallbackKeyProcessor::TryProcess {0}", keyInput);
             foreach (var fallbackCommand in _fallbackCommandList)
