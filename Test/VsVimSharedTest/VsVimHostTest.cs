@@ -62,7 +62,6 @@ namespace VsVim.UnitTest
                 _undoManagerProvider.Object,
                 _editorAdaptersFactoryService.Object,
                 _editorOperationsFactoryService.Object,
-                WordUtilFactory,
                 _textManager.Object,
                 _factory.Create<ISharedServiceFactory>(MockBehavior.Loose).Object,
                 sp.Object);

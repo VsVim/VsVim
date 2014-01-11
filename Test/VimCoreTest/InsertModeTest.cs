@@ -96,7 +96,7 @@ namespace Vim.UnitTest
                 !insertMode,
                 _keyboardDevice.Object,
                 _mouseDevice.Object,
-                WordUtilFactory.GetWordUtil(_textView.TextBuffer),
+                WordUtil,
                 _wordCompletionSessionFactoryService.Object);
             _mode = _modeRaw;
             _mode.CommandRan += (sender, e) => { _lastCommandRan = e.CommandRunData; };
@@ -246,7 +246,7 @@ namespace Vim.UnitTest
             public void GetWordCompletions_All()
             {
                 Create("cat dog tree");
-                var words = _modeRaw.GetWordCompletions(new SnapshotSpan(_textView.TextSnapshot, 3, 0));
+                var words = _modeRaw.WordCompletionUtil.GetWordCompletions(new SnapshotSpan(_textView.TextSnapshot, 3, 0));
                 Assert.Equal(
                     new[] { "dog", "tree", "cat" },
                     words.ToList());
@@ -259,7 +259,7 @@ namespace Vim.UnitTest
             public void GetWordCompletions_All_JustWords()
             {
                 Create("cat dog // tree &&");
-                var words = _modeRaw.GetWordCompletions(new SnapshotSpan(_textView.TextSnapshot, 3, 0));
+                var words = _modeRaw.WordCompletionUtil.GetWordCompletions(new SnapshotSpan(_textView.TextSnapshot, 3, 0));
                 Assert.Equal(
                     new[] { "dog", "tree", "cat" },
                     words.ToList());
@@ -272,7 +272,7 @@ namespace Vim.UnitTest
             public void GetWordCompletions_Prefix()
             {
                 Create("c cat dog // tree && copter");
-                var words = _modeRaw.GetWordCompletions(new SnapshotSpan(_textView.TextSnapshot, 0, 1));
+                var words = _modeRaw.WordCompletionUtil.GetWordCompletions(new SnapshotSpan(_textView.TextSnapshot, 0, 1));
                 Assert.Equal(
                     new[] { "cat", "copter" },
                     words.ToList());
@@ -286,7 +286,7 @@ namespace Vim.UnitTest
             public void GetWordCompletions_MiddleOfWord()
             {
                 Create("test", "ccrook cat caturday");
-                var words = _modeRaw.GetWordCompletions(new SnapshotSpan(_textView.GetLine(1).Start, 1));
+                var words = _modeRaw.WordCompletionUtil.GetWordCompletions(new SnapshotSpan(_textView.GetLine(1).Start, 1));
                 Assert.Equal(
                     new[] { "crook", "cat", "caturday" },
                     words.ToList());
@@ -299,7 +299,7 @@ namespace Vim.UnitTest
             public void GetWordCompletions_ExcludeOneLengthValues()
             {
                 Create("c cat dog // tree && copter a b c");
-                var words = _modeRaw.GetWordCompletions(new SnapshotSpan(_textView.TextSnapshot, 0, 1));
+                var words = _modeRaw.WordCompletionUtil.GetWordCompletions(new SnapshotSpan(_textView.TextSnapshot, 0, 1));
                 Assert.Equal(
                     new[] { "cat", "copter" },
                     words.ToList());

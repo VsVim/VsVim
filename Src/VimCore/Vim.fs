@@ -157,7 +157,7 @@ type internal VimBufferFactory
         _outliningManagerService : IOutliningManagerService,
         _completionWindowBrokerFactoryService : IDisplayWindowBrokerFactoryService,
         _commonOperationsFactory : ICommonOperationsFactory,
-        _wordUtilFactory : IWordUtilFactory,
+        _wordUtil : IWordUtil,
         _textChangeTrackerFactory : ITextChangeTrackerFactory,
         _textSearchService : ITextSearchService,
         _bufferTrackingService : IBufferTrackingService,
@@ -171,10 +171,9 @@ type internal VimBufferFactory
     ) =
 
     /// Create an IVimTextBuffer instance for the provided ITextBuffer
-    member x.CreateVimTextBuffer textBuffer (vim : IVim) = 
+    member x.CreateVimTextBuffer (textBuffer : ITextBuffer) (vim : IVim) = 
         let localSettings = LocalSettings(vim.GlobalSettings) :> IVimLocalSettings
-        let wordUtil = _wordUtilFactory.GetWordUtil textBuffer
-        let wordNavigator = wordUtil.CreateTextStructureNavigator WordKind.NormalWord
+        let wordNavigator = _wordUtil.CreateTextStructureNavigator WordKind.NormalWord textBuffer.ContentType
         VimTextBuffer(textBuffer, localSettings, wordNavigator, _bufferTrackingService, vim)
 
     /// Create a VimBufferData instance for the given ITextView and IVimTextBuffer.  This is mainly
@@ -195,9 +194,8 @@ type internal VimBufferFactory
                 if manager = null then None
                 else manager.TextBufferUndoHistory |> Some
             UndoRedoOperations(statusUtil, history, editOperations) :> IUndoRedoOperations
-        let wordUtil = _wordUtilFactory.GetWordUtil textBuffer
         let windowSettings = WindowSettings(vim.GlobalSettings, textView)
-        VimBufferData(vimTextBuffer,textView, windowSettings, jumpList, statusUtil, undoRedoOperations, wordUtil) :> IVimBufferData
+        VimBufferData(vimTextBuffer,textView, windowSettings, jumpList, statusUtil, undoRedoOperations, _wordUtil) :> IVimBufferData
 
     /// Create an IVimBuffer instance for the provided VimBufferData
     member x.CreateVimBuffer (vimBufferData : IVimBufferData) = 
@@ -228,7 +226,7 @@ type internal VimBufferFactory
                 // the uninitialized state.  Do the switch now to the correct mode
                 vimBuffer.SwitchMode vimBufferData.VimTextBuffer.ModeKind ModeArgument.None |> ignore
 
-        let wordNav = wordUtil.CreateTextStructureNavigator WordKind.NormalWord
+        let wordNav = _wordUtil.CreateTextStructureNavigator WordKind.NormalWord vimBufferData.TextBuffer.ContentType
         let incrementalSearch = IncrementalSearch(vimBufferData, commonOperations) :> IIncrementalSearch
         let capture = MotionCapture(vimBufferData, incrementalSearch) :> IMotionCapture
 

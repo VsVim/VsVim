@@ -23,7 +23,7 @@ namespace Vim.UnitTest
         {
             _textView = CreateTextView(lines);
             _textBuffer = _textView.TextBuffer;
-            _wordUtilRaw = new WordUtil(_textBuffer, CreateTextStructureNavigator(_textBuffer, WordKind.NormalWord));
+            _wordUtilRaw = new WordUtil();
             _wordUtil = _wordUtilRaw;
         }
 
