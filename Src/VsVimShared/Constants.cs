@@ -20,7 +20,7 @@ namespace VsVim
         internal const string VsKeyProcessorName = "VsVim";
 
         /// <summary>
-        /// Name of the main Key Processor
+        /// Name of the fallback Key Processor
         /// </summary>
         internal const string FallbackKeyProcessorName = "VsVimFallback";
 

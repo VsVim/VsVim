@@ -9,20 +9,28 @@ using Vim.UI.Wpf;
 
 namespace VsVim.Implementation.Misc
 {
+    /// <summary>
+    /// The fallback key processor handles all the keys VsVim had to unbind
+    /// due to conflicts
+    /// </summary>
     internal sealed class FallbackKeyProcessor : KeyProcessor
     {
-        private struct FallbackCommand
+        /// <summary>
+        /// A fallback command is a tuple of a previously bound key paired
+        /// with its corresponding Visual Studio command
+        /// </summary>
+        internal struct FallbackCommand
         {
             private KeyInput _keyInput;
             private CommandId _command;
 
-            public FallbackCommand(KeyInput keyInput, CommandId command)
+            internal FallbackCommand(KeyInput keyInput, CommandId command)
             {
                 _keyInput = keyInput;
                 _command = command;
             }
-            public KeyInput KeyInput { get { return _keyInput; } }
-            public CommandId Command { get { return _command; } }
+            internal KeyInput KeyInput { get { return _keyInput; } }
+            internal CommandId Command { get { return _command; } }
         }
 
         private readonly _DTE _dte;
@@ -31,6 +39,11 @@ namespace VsVim.Implementation.Misc
 
         private List<FallbackCommand> _fallbackCommandList;
 
+        /// <summary>
+        /// In general a key processor applies to a specific IWpfTextView but
+        /// by not making use of it, the fallback processor can be reused for
+        /// multiple text views
+        /// </summary>
         internal FallbackKeyProcessor(_DTE dte, IKeyUtil keyUtil, IVimApplicationSettings vimApplicationSettings)
         {
             _dte = dte;
@@ -48,8 +61,15 @@ namespace VsVim.Implementation.Misc
             GetKeyBindings();
         }
 
+        /// <summary>
+        /// Get conflicting key bindings stored in our application settings
+        /// </summary>
         private void GetKeyBindings()
         {
+            // Construct a list of all fallback commands keys we had to unbind.
+            // We are only interested in the bindings scoped to text views and
+            // consisting of a single keystroke. Sort the bindings in order of
+            // more specific bindings first
             _fallbackCommandList = _vimApplicationSettings.RemovedBindings
                 .Where(binding => IsTextViewBinding(binding))
                 .Select(binding => Tuple.Create(
@@ -59,13 +79,18 @@ namespace VsVim.Implementation.Misc
                 ))
                 .Where(tuple => tuple.Item2.KeyStrokes.Count == 1)
                 .OrderBy(tuple => GetScopeOrder(tuple.Item1))
-                .Select(tuple => new FallbackCommand(tuple.Item2.FirstKeyStroke.AggregateKeyInput, tuple.Item3))
+                .Select(tuple => new FallbackCommand(
+                    tuple.Item2.FirstKeyStroke.AggregateKeyInput,
+                    tuple.Item3
+                ))
                 .ToList();
         }
 
+        /// <summary>
+        /// True if the binding is applicable to a text view
+        /// </summary>
         private bool IsTextViewBinding(CommandKeyBinding binding)
         {
-            var scope = binding.KeyBinding.Scope;
             switch (binding.KeyBinding.Scope)
             {
                 case ScopeData.DefaultTextEditorScopeName:
@@ -76,6 +101,10 @@ namespace VsVim.Implementation.Misc
             }
         }
 
+        /// <summary>
+        /// Get a sortable numeric value corresponding to a scope.  Lower
+        /// numbers cause the binding to be considered first
+        /// </summary>
         private int GetScopeOrder(string scope)
         {
             switch (scope)
@@ -89,6 +118,10 @@ namespace VsVim.Implementation.Misc
             }
         }
 
+        /// <summary>
+        /// Convert this key processors's text input into KeyInput and forward
+        /// it to TryProcess
+        /// </summary>
         public override void TextInput(TextCompositionEventArgs args)
         {
             bool handled = false;
@@ -126,6 +159,10 @@ namespace VsVim.Implementation.Misc
             base.TextInput(args);
         }
 
+        /// <summary>
+        /// Convert this key processors's keyboard events into KeyInput and
+        /// forward it to TryProcess
+        /// </summary>
         public override void KeyDown(KeyEventArgs args)
         {
             KeyInput keyInput;
@@ -139,8 +176,12 @@ namespace VsVim.Implementation.Misc
             }
         }
 
+        /// <summary>
+        /// Try to process this KeyInput
+        /// </summary>
         internal bool TryProcess(KeyInput keyInput)
         {
+            // Check for any applicable fallback bindings, in order
             VimTrace.TraceInfo("FallbackKeyProcessor::TryProcess {0}", keyInput);
             foreach (var fallbackCommand in _fallbackCommandList)
             {
@@ -152,6 +193,9 @@ namespace VsVim.Implementation.Misc
             return false;
         }
 
+        /// <summary>
+        /// Safely execute a Visual Studio command
+        /// </summary>
         private bool SafeExecuteCommand(CommandId command)
         {
             try

@@ -9,6 +9,7 @@ namespace VsVim.Implementation.Misc
 {
     [Export(typeof(IKeyProcessorProvider))]
     [Order(Before = Constants.FallbackKeyProcessorName)]
+    [Order(Before = Constants.VisualStudioKeyProcessorName)]
     [Name(Constants.VsKeyProcessorName)]
     [TextViewRole(PredefinedTextViewRoles.Editable)]
     [ContentType(Vim.Constants.ContentType)]
