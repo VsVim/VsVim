@@ -119,44 +119,33 @@ namespace VsVim.Implementation.Misc
         }
 
         /// <summary>
-        /// Convert this key processors's text input into KeyInput and forward
-        /// it to TryProcess
+        /// This maps letters which are pressed to a KeyInput value by looking at the virtual
+        /// key vs the textual input.  When Visual Studio is processing key mappings it's doing
+        /// so in PreTraslateMessage and using the virtual key codes.  We need to simulate this
+        /// as best as possible when forwarding keys
         /// </summary>
-        public override void TextInput(TextCompositionEventArgs args)
+        private bool TryConvertLetterToKeyInput(KeyEventArgs keyEventArgs, out KeyInput keyInput)
         {
-            bool handled = false;
+            keyInput = KeyInput.DefaultValue;
 
-            var text = args.Text;
-            if (String.IsNullOrEmpty(text))
+            var keyboardDevice = keyEventArgs.Device as KeyboardDevice;
+            var keyModifiers = keyboardDevice != null
+                ? _keyUtil.GetKeyModifiers(keyboardDevice.Modifiers)
+                : KeyModifiers.Alt;
+            if (keyModifiers == KeyModifiers.None)
             {
-                text = args.ControlText;
+                return false;
             }
 
-            if (!String.IsNullOrEmpty(text))
+            var key = keyEventArgs.Key;
+            if (key < Key.A || key > Key.Z)
             {
-                for (var i = 0; i < text.Length; i++)
-                {
-                    var keyInput = KeyInputUtil.CharToKeyInput(text[i]);
-                    handled = TryProcess(keyInput);
-                }
-            }
-            else if (!String.IsNullOrEmpty(args.SystemText))
-            {
-                var keyboardDevice = args.Device as KeyboardDevice;
-                var keyModifiers = keyboardDevice != null
-                    ? _keyUtil.GetKeyModifiers(keyboardDevice.Modifiers)
-                    : KeyModifiers.Alt;
-
-                text = args.SystemText;
-                for (var i = 0; i < text.Length; i++)
-                {
-                    var keyInput = KeyInputUtil.ApplyModifiers(KeyInputUtil.CharToKeyInput(text[i]), keyModifiers);
-                    handled = TryProcess(keyInput);
-                }
+                return false;
             }
 
-            args.Handled = handled;
-            base.TextInput(args);
+            var c = (char)('a' + (key - Key.A));
+            keyInput = KeyInputUtil.ApplyModifiersToChar(c, keyModifiers);
+            return true;
         }
 
         /// <summary>
@@ -167,6 +156,10 @@ namespace VsVim.Implementation.Misc
         {
             KeyInput keyInput;
             if (_keyUtil.TryConvertSpecialToKeyInput(args.Key, args.KeyboardDevice.Modifiers, out keyInput))
+            {
+                args.Handled = TryProcess(keyInput);
+            }
+            else if (TryConvertLetterToKeyInput(args, out keyInput))
             {
                 args.Handled = TryProcess(keyInput);
             }
