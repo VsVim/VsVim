@@ -19,6 +19,7 @@ namespace VsVim.Implementation.Misc
         private readonly IVsAdapter _adapter;
         private readonly IVimBufferCoordinator _bufferCoordinator;
         private readonly IReportDesignerUtil _reportDesignerUtil;
+        private readonly KeyProcessor _fallbackKeyProcessor;
         private int _keyDownCount;
         private Lazy<PropertyInfo> _searchInProgressInfo;
 
@@ -27,9 +28,10 @@ namespace VsVim.Implementation.Misc
             get { return _keyDownCount; }
         }
 
-        internal VsKeyProcessor(IVsAdapter adapter, IVimBufferCoordinator bufferCoordinator, IKeyUtil keyUtil, IReportDesignerUtil reportDesignerUtil, IWpfTextView wpfTextView)
+        internal VsKeyProcessor(KeyProcessor fallbackKeyProcessor, IVsAdapter adapter, IVimBufferCoordinator bufferCoordinator, IKeyUtil keyUtil, IReportDesignerUtil reportDesignerUtil, IWpfTextView wpfTextView)
             : base(bufferCoordinator.VimBuffer, keyUtil, wpfTextView)
         {
+            _fallbackKeyProcessor = fallbackKeyProcessor;
             _adapter = adapter;
             _reportDesignerUtil = reportDesignerUtil;
             _bufferCoordinator = bufferCoordinator;
@@ -91,14 +93,41 @@ namespace VsVim.Implementation.Misc
         /// </summary>
         public override void KeyUp(KeyEventArgs args)
         {
+            if (ShouldUseFallbackProcessor(args))
+            {
+                _fallbackKeyProcessor.KeyDown(args);
+                return;
+            }
             OnKeyEvent(isDown: false);
             base.KeyUp(args);
         }
 
         public override void KeyDown(KeyEventArgs args)
         {
+            if (ShouldUseFallbackProcessor(args))
+            {
+                _fallbackKeyProcessor.KeyDown(args);
+                return;
+            }
             OnKeyEvent(isDown: true);
             base.KeyDown(args);
+        }
+
+        /// <summary>
+        /// Whether we should use the fallback processor for this key event
+        /// </summary>
+        private bool ShouldUseFallbackProcessor(KeyEventArgs args)
+        {
+            if (args.Key == Key.F12)
+                return false;
+            else if (args.KeyboardDevice.Modifiers == (ModifierKeys.Control | ModifierKeys.Shift))
+                return false;
+            else if (_bufferCoordinator.VimBuffer.ModeKind != ModeKind.Disabled)
+                return false;
+            else if (_fallbackKeyProcessor == null)
+                return false;
+            else
+                return true;
         }
 
         /// <summary>

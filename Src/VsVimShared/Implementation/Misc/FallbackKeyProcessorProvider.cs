@@ -19,6 +19,7 @@ namespace VsVim.Implementation.Misc
     /// allows the keys to "work again" whenever VsVim disables itself
     /// temporarily.
     /// </summary>
+    [Export(typeof(FallbackKeyProcessorProvider))]
     [Export(typeof(IKeyProcessorProvider))]
     [Order(After = Constants.VsKeyProcessorName)]
     [Order(Before = Constants.VisualStudioKeyProcessorName)]
@@ -31,6 +32,7 @@ namespace VsVim.Implementation.Misc
         private readonly _DTE _dte;
         private readonly IVimApplicationSettings _vimApplicationSettings;
         private readonly IVim _vim;
+        private FallbackKeyProcessor _keyProcessor;
 
         [ImportingConstructor]
         internal FallbackKeyProcessorProvider(SVsServiceProvider serviceProvider, IKeyUtil keyUtil, IVimApplicationSettings vimApplicationSettings, IVim vim)
@@ -48,12 +50,20 @@ namespace VsVim.Implementation.Misc
         KeyProcessor IKeyProcessorProvider.GetAssociatedProcessor(IWpfTextView wpfTextView)
         {
             IVimBuffer vimBuffer;
-            if (!_vim.TryGetOrCreateVimBufferForHost(wpfTextView, out vimBuffer))
+            if (_vim.TryGetOrCreateVimBufferForHost(wpfTextView, out vimBuffer))
             {
-                vimBuffer = null;
+                return null;
             }
+            return GetOrCreateFallbackProcessor(wpfTextView);
+        }
 
-            return new FallbackKeyProcessor(_dte, _keyUtil, _vimApplicationSettings, vimBuffer);
+        internal FallbackKeyProcessor GetOrCreateFallbackProcessor(IWpfTextView wpfTextView)
+        {
+            if (_keyProcessor == null)
+            {
+                _keyProcessor = new FallbackKeyProcessor(_dte, _keyUtil, _vimApplicationSettings);
+            }
+            return _keyProcessor;
         }
     }
 }

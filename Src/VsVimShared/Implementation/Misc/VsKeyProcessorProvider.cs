@@ -15,6 +15,7 @@ namespace VsVim.Implementation.Misc
     [ContentType(Vim.Constants.ContentType)]
     internal sealed class VsKeyProcessorProvider : IKeyProcessorProvider
     {
+        private readonly FallbackKeyProcessorProvider _fallbackKeyProcessorProvider;
         private readonly IVimBufferCoordinatorFactory _bufferCoordinatorFactory;
         private readonly IVsAdapter _adapter;
         private readonly IVim _vim;
@@ -22,13 +23,14 @@ namespace VsVim.Implementation.Misc
         private readonly IReportDesignerUtil _reportDesignerUtil;
 
         [ImportingConstructor]
-        internal VsKeyProcessorProvider(IVim vim, IVsAdapter adapter, IVimBufferCoordinatorFactory bufferCoordinatorFactory, IKeyUtil keyUtil, IReportDesignerUtil reportDesignerUtil)
+        internal VsKeyProcessorProvider(IVim vim, IVsAdapter adapter, IVimBufferCoordinatorFactory bufferCoordinatorFactory, IKeyUtil keyUtil, IReportDesignerUtil reportDesignerUtil, FallbackKeyProcessorProvider fallbackKeyProcessorProvider)
         {
             _vim = vim;
             _adapter = adapter;
             _bufferCoordinatorFactory = bufferCoordinatorFactory;
             _keyUtil = keyUtil;
             _reportDesignerUtil = reportDesignerUtil;
+            _fallbackKeyProcessorProvider = fallbackKeyProcessorProvider;
         }
 
         KeyProcessor IKeyProcessorProvider.GetAssociatedProcessor(IWpfTextView wpfTextView)
@@ -39,8 +41,9 @@ namespace VsVim.Implementation.Misc
                 return null;
             }
 
+            var fallbackKeyProcessor = _fallbackKeyProcessorProvider.GetOrCreateFallbackProcessor(wpfTextView);
             var vimBufferCoordinator = _bufferCoordinatorFactory.GetVimBufferCoordinator(vimBuffer);
-            return new VsKeyProcessor(_adapter, vimBufferCoordinator, _keyUtil, _reportDesignerUtil, wpfTextView);
+            return new VsKeyProcessor(fallbackKeyProcessor, _adapter, vimBufferCoordinator, _keyUtil, _reportDesignerUtil, wpfTextView);
         }
     }
 }
