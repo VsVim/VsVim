@@ -53,7 +53,7 @@ namespace VsVim.Implementation.Misc
                 vimBuffer = null;
             }
 
-            return new FallbackKeyProcessor(_dte, _keyUtil, _vimApplicationSettings, vimBuffer);
+            return new FallbackKeyProcessor(_dte, _keyUtil, _vimApplicationSettings, wpfTextView, vimBuffer);
         }
     }
 }

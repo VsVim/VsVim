@@ -45,7 +45,7 @@ namespace VsVim.Implementation.Misc
         /// by not making use of it, the fallback processor can be reused for
         /// multiple text views
         /// </summary>
-        internal FallbackKeyProcessor(_DTE dte, IKeyUtil keyUtil, IVimApplicationSettings vimApplicationSettings, IVimBuffer vimBuffer)
+        internal FallbackKeyProcessor(_DTE dte, IKeyUtil keyUtil, IVimApplicationSettings vimApplicationSettings, ITextView textView, IVimBuffer vimBuffer)
         {
             _dte = dte;
             _keyUtil = keyUtil;
@@ -54,13 +54,20 @@ namespace VsVim.Implementation.Misc
             _fallbackCommandList = new List<FallbackCommand>();
 
             // Register for key binding changes and get the current bindings
-            _vimApplicationSettings.SettingsChanged += SettingsChanged;
+            _vimApplicationSettings.SettingsChanged += OnSettingsChanged;
+            GetKeyBindings();
+
+            textView.Closed += OnTextViewClosed;
+        }
+
+        private void OnSettingsChanged(object sender, ApplicationSettingsEventArgs e)
+        {
             GetKeyBindings();
         }
 
-        private void SettingsChanged(object sender, ApplicationSettingsEventArgs e)
+        private void OnTextViewClosed(object sender, EventArgs e)
         {
-            GetKeyBindings();
+            _vimApplicationSettings.SettingsChanged -= OnSettingsChanged;
         }
 
         /// <summary>
