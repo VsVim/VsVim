@@ -78,12 +78,15 @@
     <Reference Include="Microsoft.VisualStudio.Settings, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AlternativeKeyUtil.cs" />
     <Compile Include="CodeHygieneTest.cs" />
     <Compile Include="CommandIdTest.cs" />
     <Compile Include="CommandKeyBindingTest.cs" />
     <Compile Include="CSharpAdapterTest.cs" />
+    <Compile Include="FallbackKeyProcessorTest.cs" />
     <Compile Include="HostFactoryTest.cs" />
     <Compile Include="MindScapeTest.cs" />
+    <Compile Include="ReadOnlyCollection.cs" />
     <Compile Include="ReportDesignerUtilTest.cs" />
     <Compile Include="ResultTest.cs" />
     <Compile Include="ScopeDataTest.cs" />
