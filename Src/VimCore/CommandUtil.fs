@@ -2002,7 +2002,7 @@ type internal CommandUtil
         let point = x.CaretPoint
         let line = point.GetContainingLine()
 
-        let ReplaceChar () =
+        let replaceChar () =
             let span = new Span(point.Position, count)
             let position =
                 if keyInput = KeyInputUtil.EnterKey then 
@@ -2046,7 +2046,7 @@ type internal CommandUtil
         else
             // Do the replace in an undo transaction since we are explicitly positioning
             // the caret
-            x.EditWithUndoTransaciton "ReplaceChar" (fun () -> ReplaceChar())
+            x.EditWithUndoTransaciton "ReplaceChar" (fun () -> replaceChar())
             CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Replace the char under the cursor in visual mode.
