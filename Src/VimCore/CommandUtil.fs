@@ -1999,50 +1999,54 @@ type internal CommandUtil
     /// Replace the char under the cursor with the specified character
     member x.ReplaceChar keyInput count = 
 
-        let succeeded = 
-            let point = x.CaretPoint
-            let line = point.GetContainingLine()
-            if (point.Position + count) > line.End.Position then
-                // If the replace operation exceeds the line length then the operation
-                // can't succeed
-                false
-            else
-                // Do the replace in an undo transaction since we are explicitly positioning
-                // the caret
-                x.EditWithUndoTransaciton "ReplaceChar" (fun () -> 
+        let point = x.CaretPoint
+        let line = point.GetContainingLine()
 
-                    let replaceText = 
-                        if keyInput = KeyInputUtil.EnterKey then 
-                            let previousIndent = SnapshotLineUtil.GetIndentText line |> _commonOperations.NormalizeBlanks
-                            let replaceText = _commonOperations.GetNewLineText x.CaretPoint
-                            replaceText + previousIndent 
-                        else 
-                            new System.String(keyInput.Char, count)
-                    let span = new Span(point.Position, count)
-                    _textBuffer.Replace(span, replaceText) |> ignore
-
-                    // Don't use the ITextSnapshot that is returned from Replace.  This represents the ITextSnapshot
-                    // after our change.  If other components are listening to the Change events they could make their
-                    // own change.  The ITextSnapshot returned reflects only our change, not theirs.  To properly 
-                    // position the caret we need the current ITextSnapshot
-                    let snapshot = _textBuffer.CurrentSnapshot
-
-                    // It's possible for any edit to occur after ours including the complete deletion of the buffer
-                    // contents.  Need to account for this in the caret positioning 
-                    let position = min point.Position snapshot.Length
-
+        let replaceChar () =
+            let span = new Span(point.Position, count)
+            let position =
+                if keyInput = KeyInputUtil.EnterKey then 
+                    // Special case for replacement with a newline.  First, vim only inserts a
+                    // single newline regardless of the count.  Second, let the host do any magic
+                    // by simulating a keystroke, e.g. from inside a C# documentation comment.
+                    // The caret goes one character to the left of whereever it ended up
+                    _textBuffer.Delete(span) |> ignore
+                    _insertUtil.RunInsertCommand(InsertCommand.InsertNewLine) |> ignore
+                    _textView.GetCaretPoint().Position - 1
+                else
                     // The caret should move to the end of the replace operation which is 
                     // 'count - 1' characters from the original position 
-                    let point = SnapshotPoint(snapshot, position + (replaceText.Length - 1))
+                    let replaceText = new System.String(keyInput.Char, count)
+                    _textBuffer.Replace(span, replaceText) |> ignore
+                    point.Position + count - 1
 
-                    _textView.Caret.MoveTo(point) |> ignore)
-                true
+            // Don't use the ITextSnapshot that is returned from Replace.  This represents the ITextSnapshot
+            // after our change.  If other components are listening to the Change events they could make their
+            // own change.  The ITextSnapshot returned reflects only our change, not theirs.  To properly 
+            // position the caret we need the current ITextSnapshot
+            let snapshot = _textBuffer.CurrentSnapshot
 
-        // If the replace failed then we should beep the console
-        if not succeeded then
+            // It's possible for any edit to occur after ours including the complete deletion of the buffer
+            // contents.  Need to account for this in the caret positioning.
+            let position = min position snapshot.Length
+            let point = SnapshotPoint(snapshot, position)
+            let point =
+                if SnapshotPointUtil.IsInsideLineBreak point then
+                    SnapshotPointUtil.GetNextPointWithWrap point
+                else
+                    point
+            TextViewUtil.MoveCaretToPoint _textView point
+
+        // If the replace operation exceeds the line length then the operation
+        // can't succeed
+        if (point.Position + count) > line.End.Position then
+            // If the replace failed then we should beep the console
             _commonOperations.Beep()
             CommandResult.Error
-        else 
+        else
+            // Do the replace in an undo transaction since we are explicitly positioning
+            // the caret
+            x.EditWithUndoTransaciton "ReplaceChar" (fun () -> replaceChar())
             CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Replace the char under the cursor in visual mode.
