@@ -252,6 +252,7 @@ type internal InsertMode
                 ("<C-o>", RawInsertCommand.CustomCommand this.ProcessNormalModeOneCommand)
                 ("<C-p>", RawInsertCommand.CustomCommand this.ProcessWordCompletionPrevious)
                 ("<C-r>", RawInsertCommand.CustomCommand this.ProcessPasteStart)
+                ("<C-u>", RawInsertCommand.CustomCommand this.UndoInsert)
             ]
 
         let mappedCommands : (string * RawInsertCommand) list = 
@@ -612,6 +613,21 @@ type internal InsertMode
                 let keyInputSet = KeyInputSet.OneKeyInput keyInput
                 let insertCommand = InsertCommand.InsertText text
                 x.RunInsertCommand insertCommand keyInputSet CommandFlags.None
+
+    /// Undo the most recent insertion
+    member x.UndoInsert() =
+        match _sessionData.InsertTextChange with
+        | None ->
+            _operations.Beep()
+        | Some textChange ->
+            match textChange.InsertText with
+            | None ->
+                _operations.Beep()
+            | Some text ->
+                let count = String.length text
+                _insertUtil.RunInsertCommand (InsertCommand.DeleteLeft count) |> ignore
+                _sessionData <- { _sessionData with InsertTextChange = None }
+        ProcessResult.Handled ModeSwitch.NoSwitch
 
     /// Try and process the KeyInput by considering the current text edit in Insert Mode
     member x.ProcessWithCurrentChange keyInput = 
