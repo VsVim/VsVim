@@ -237,6 +237,79 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class DeleteLineBeforeCursorTest : InsertUtilTest
+        {
+            /// <summary>
+            /// Run the command from the end of the line
+            /// </summary>
+            [Fact]
+            public void DeleteLineBeforeCursor_EndOfLine()
+            {
+                Create("dog bear cat");
+                _globalSettings.Backspace = "start";
+                _textView.MoveCaretTo(12);
+                _insertUtilRaw.DeleteLineBeforeCursor();
+                Assert.Equal("", _textView.GetLine(0).GetText());
+                Assert.Equal(0, _textView.GetCaretPoint().Position);
+            }
+
+            /// <summary>
+            /// Run the command from the middle of a line
+            /// </summary>
+            [Fact]
+            public void DeleteLineBeforeCursor_MiddleOfLine()
+            {
+                Create("dog bear cat");
+                _globalSettings.Backspace = "start";
+                _textView.MoveCaretTo(4);
+                _insertUtilRaw.DeleteLineBeforeCursor();
+                Assert.Equal("bear cat", _textView.GetLine(0).GetText());
+                Assert.Equal(0, _textView.GetCaretPoint().Position);
+            }
+
+            /// <summary>
+            /// Before the first non-blank this should delete the indent on the line
+            /// </summary>
+            [Fact]
+            public void DeleteLineBeforeCursor_BeforeFirstNonBlank()
+            {
+                Create("   dog cat");
+                _globalSettings.Backspace = "start";
+                _textView.MoveCaretTo(3);
+                _insertUtilRaw.DeleteLineBeforeCursor();
+                Assert.Equal("dog cat", _textView.GetLine(0).GetText());
+                Assert.Equal(0, _textView.GetCaretPoint().Position);
+            }
+
+            /// <summary>
+            /// Don't delete a line break if the eol suboption isn't set 
+            /// </summary>
+            [Fact]
+            public void DeleteLineBeforeCursor_LineNoOption()
+            {
+                Create("dog", "cat");
+                _globalSettings.Backspace = "start";
+                _textView.MoveCaretToLine(1);
+                _insertUtilRaw.DeleteLineBeforeCursor();
+                Assert.Equal("dog", _textView.GetLine(0).GetText());
+                Assert.Equal("cat", _textView.GetLine(1).GetText());
+            }
+
+            /// <summary>
+            /// If the eol option is set then delete the line break and move the caret back a line
+            /// </summary>
+            [Fact]
+            public void DeleteLineBeforeCursor_LineWithOption()
+            {
+                Create("dog", "cat");
+                _globalSettings.Backspace = "start,eol";
+                _textView.MoveCaretToLine(1);
+                _insertUtilRaw.DeleteLineBeforeCursor();
+                Assert.Equal("dogcat", _textView.GetLine(0).GetText());
+                Assert.Equal(3, _textView.GetCaretPoint().Position);
+            }
+        }
+
         public sealed class InsertTabTest : InsertUtilTest
         {
             /// <summary>
