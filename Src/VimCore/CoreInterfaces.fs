@@ -2710,6 +2710,9 @@ type InsertCommand  =
     /// Shift the current line one indent width to the right
     | ShiftLineRight
 
+    /// Delete non-blank characters before cursor on current line
+    | DeleteLineBeforeCursor
+
     with
 
     /// Convert a TextChange value into the appropriate InsertCommand structure
@@ -2750,6 +2753,7 @@ type InsertCommand  =
         | InsertCommand.MoveCaretByWord _ -> None
         | InsertCommand.ShiftLineLeft -> None
         | InsertCommand.ShiftLineRight -> None
+        | InsertCommand.DeleteLineBeforeCursor -> None
 
 /// Commands which can be executed by the user
 [<RequireQualifiedAccess>]
