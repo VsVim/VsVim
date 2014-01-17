@@ -399,6 +399,28 @@ type internal CommonOperations
             _editorOperations.PageDown(false)
             true
 
+        let moveControlUp () =
+            moveUp()
+
+        let moveControlDown () =
+            moveDown()
+
+        let moveControlLeft () =
+            _editorOperations.MoveToPreviousWord(false)
+            true
+
+        let moveControlRight () =
+            _editorOperations.MoveToNextWord(false)
+            true
+
+        let moveControlHome () =
+            _editorOperations.MoveToTopOfView(false)
+            true
+
+        let moveControlEnd () =
+            _editorOperations.MoveToBottomOfView(false)
+            true
+
         match caretMovement with
         | CaretMovement.Up -> moveUp()
         | CaretMovement.Down -> moveDown()
@@ -408,6 +430,12 @@ type internal CommonOperations
         | CaretMovement.End -> moveEnd()
         | CaretMovement.PageUp -> movePageUp()
         | CaretMovement.PageDown -> movePageDown()
+        | CaretMovement.ControlUp -> moveControlUp()
+        | CaretMovement.ControlDown -> moveControlDown()
+        | CaretMovement.ControlLeft -> moveControlLeft()
+        | CaretMovement.ControlRight -> moveControlRight()
+        | CaretMovement.ControlHome -> moveControlHome()
+        | CaretMovement.ControlEnd -> moveControlEnd()
 
     /// Move the caret in the given direction with an arrow key
     member x.MoveCaretWithArrow caretMovement = 

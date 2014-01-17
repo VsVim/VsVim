@@ -27,16 +27,26 @@ type internal SelectMode
     /// A 'special key' is defined in :help keymodel as any of the following keys.  Depending
     /// on the value of the keymodel setting they can affect the selection
     static let GetCaretMovement (keyInput : KeyInput) =
-        match keyInput.Key with
-        | VimKey.Up -> Some CaretMovement.Up
-        | VimKey.Right -> Some CaretMovement.Right
-        | VimKey.Down -> Some CaretMovement.Down
-        | VimKey.Left -> Some CaretMovement.Left
-        | VimKey.Home -> Some CaretMovement.Home
-        | VimKey.End -> Some CaretMovement.End
-        | VimKey.PageUp -> Some CaretMovement.PageUp
-        | VimKey.PageDown -> Some CaretMovement.PageDown
-        | _ -> None
+        if not (Util.IsFlagSet keyInput.KeyModifiers KeyModifiers.Control) then
+            match keyInput.Key with
+            | VimKey.Up -> Some CaretMovement.Up
+            | VimKey.Right -> Some CaretMovement.Right
+            | VimKey.Down -> Some CaretMovement.Down
+            | VimKey.Left -> Some CaretMovement.Left
+            | VimKey.Home -> Some CaretMovement.Home
+            | VimKey.End -> Some CaretMovement.End
+            | VimKey.PageUp -> Some CaretMovement.PageUp
+            | VimKey.PageDown -> Some CaretMovement.PageDown
+            | _ -> None
+        else
+            match keyInput.Key with
+            | VimKey.Up -> Some CaretMovement.ControlUp
+            | VimKey.Right -> Some CaretMovement.ControlRight
+            | VimKey.Down -> Some CaretMovement.ControlDown
+            | VimKey.Left -> Some CaretMovement.ControlLeft
+            | VimKey.Home -> Some CaretMovement.ControlHome
+            | VimKey.End -> Some CaretMovement.ControlEnd
+            | _ -> None
 
     member x.CaretPoint = TextViewUtil.GetCaretPoint _textView
 
@@ -47,7 +57,7 @@ type internal SelectMode
     member x.CurrentSnapshot = _textView.TextSnapshot
 
     member x.ProcessCaretMovement caretMovement (keyInput : KeyInput) = 
-        _commonOperations.MoveCaret caretMovement |> ignore
+        _commonOperations.MoveCaretWithArrow caretMovement |> ignore
 
         let hasShift = Util.IsFlagSet keyInput.KeyModifiers KeyModifiers.Shift
         if not hasShift && Util.IsFlagSet _globalSettings.KeyModelOptions KeyModelOptions.StopSelection then

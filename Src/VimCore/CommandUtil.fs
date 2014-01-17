@@ -2707,7 +2707,7 @@ type internal CommandUtil
     /// a motion or initiate a select in the editor
     member x.SwitchToSelection caretMovement =
         let anchorPoint = x.CaretPoint
-        if not (_commonOperations.MoveCaret caretMovement) then
+        if not (_commonOperations.MoveCaretWithArrow caretMovement) then
             CommandResult.Error
         else
             let visualSelection = VisualSelection.CreateForPoints VisualKind.Character anchorPoint x.CaretPoint _localSettings.TabStop

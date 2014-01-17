@@ -176,6 +176,12 @@ type internal NormalMode
             yield ("<S-End>", CommandFlags.Repeatable, NormalCommand.SwitchToSelection CaretMovement.End)
             yield ("<S-PageUp>", CommandFlags.Repeatable, NormalCommand.SwitchToSelection CaretMovement.PageUp)
             yield ("<S-PageDown>", CommandFlags.Repeatable, NormalCommand.SwitchToSelection CaretMovement.PageDown)
+            yield ("<C-S-Up>", CommandFlags.Repeatable, NormalCommand.SwitchToSelection CaretMovement.ControlUp)
+            yield ("<C-S-Right>", CommandFlags.Repeatable, NormalCommand.SwitchToSelection CaretMovement.ControlRight)
+            yield ("<C-S-Down>", CommandFlags.Repeatable, NormalCommand.SwitchToSelection CaretMovement.ControlDown)
+            yield ("<C-S-Left>", CommandFlags.Repeatable, NormalCommand.SwitchToSelection CaretMovement.ControlLeft)
+            yield ("<C-S-Home>", CommandFlags.Repeatable, NormalCommand.SwitchToSelection CaretMovement.ControlHome)
+            yield ("<C-S-End>", CommandFlags.Repeatable, NormalCommand.SwitchToSelection CaretMovement.ControlEnd)
         } 
         |> Seq.map (fun (str, flags, command) -> 
             let keyInputSet = KeyNotationUtil.StringToKeyInputSet str

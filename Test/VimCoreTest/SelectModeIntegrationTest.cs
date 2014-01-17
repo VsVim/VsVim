@@ -100,7 +100,7 @@ namespace Vim.UnitTest
         public sealed class SpecialKeysFromNormal : SelectModeIntegrationTest
         {
             [Fact]
-            public void ShiftRightToSelect()
+            public void ShiftRightToSelectInclusive()
             {
                 Create("cat");
                 _globalSettings.SelectModeOptions = SelectModeOptions.Keyboard;
@@ -108,6 +108,19 @@ namespace Vim.UnitTest
                 _vimBuffer.ProcessNotation("<S-Right>");
                 Assert.Equal(ModeKind.SelectCharacter, _vimBuffer.ModeKind);
                 Assert.Equal("ca", _textView.GetSelectionSpan().GetText());
+                Assert.Equal(1, _textView.GetCaretPoint().Position);
+            }
+
+            [Fact]
+            public void ShiftRightToSelectExclusive()
+            {
+                Create("cat");
+                _globalSettings.Selection = "exclusive";
+                _globalSettings.SelectModeOptions = SelectModeOptions.Keyboard;
+                _globalSettings.KeyModelOptions = KeyModelOptions.StartSelection;
+                _vimBuffer.ProcessNotation("<S-Right>");
+                Assert.Equal(ModeKind.SelectCharacter, _vimBuffer.ModeKind);
+                Assert.Equal("c", _textView.GetSelectionSpan().GetText());
                 Assert.Equal(1, _textView.GetCaretPoint().Position);
             }
 

@@ -24,6 +24,12 @@ type CaretMovement =
     | End
     | PageUp
     | PageDown
+    | ControlUp
+    | ControlRight
+    | ControlDown
+    | ControlLeft
+    | ControlHome
+    | ControlEnd
 
     with 
 
