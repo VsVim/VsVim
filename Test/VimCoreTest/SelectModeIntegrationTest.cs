@@ -100,7 +100,7 @@ namespace Vim.UnitTest
         public sealed class SpecialKeysFromNormal : SelectModeIntegrationTest
         {
             [Fact]
-            public void ShiftRightToSelectInclusive()
+            public void ShiftRightToSelect_Inclusive()
             {
                 Create("cat");
                 _globalSettings.SelectModeOptions = SelectModeOptions.Keyboard;
@@ -115,7 +115,7 @@ namespace Vim.UnitTest
             }
 
             [Fact]
-            public void ShiftRightToSelectExclusive()
+            public void ShiftRightToSelect_Exclusive()
             {
                 Create("cat");
                 _globalSettings.Selection = "exclusive";
@@ -131,7 +131,7 @@ namespace Vim.UnitTest
             }
 
             [Fact]
-            public void ControlShiftRightToSelectInclusive()
+            public void ControlShiftRightToSelect_Inclusive()
             {
                 Create("cat dog");
                 _globalSettings.SelectModeOptions = SelectModeOptions.Keyboard;
@@ -146,7 +146,7 @@ namespace Vim.UnitTest
             }
 
             [Fact]
-            public void ControlShiftRightToSelectExclusive()
+            public void ControlShiftRightToSelect_Exclusive()
             {
                 Create("cat dog");
                 _globalSettings.Selection = "exclusive";
@@ -159,6 +159,138 @@ namespace Vim.UnitTest
                 _vimBuffer.ProcessNotation("<Esc>");
                 Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
                 Assert.Equal(4, _textView.GetCaretPoint().Position);
+            }
+
+            [Fact]
+            public void ShiftLeftToSelect_Inclusive()
+            {
+                Create("cat dog");
+                _textView.MoveCaretTo(4);
+                _globalSettings.SelectModeOptions = SelectModeOptions.Keyboard;
+                _globalSettings.KeyModelOptions = KeyModelOptions.StartSelection;
+                _vimBuffer.ProcessNotation("<S-Left>");
+                Assert.Equal(ModeKind.SelectCharacter, _vimBuffer.ModeKind);
+                Assert.Equal(" d", _textView.GetSelectionSpan().GetText());
+                Assert.Equal(3, _textView.GetCaretPoint().Position);
+                _vimBuffer.ProcessNotation("<Esc>");
+                Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
+                Assert.Equal(3, _textView.GetCaretPoint().Position);
+            }
+
+            [Fact]
+            public void ShiftLeftToSelect_Exclusive()
+            {
+                Create("cat dog");
+                _textView.MoveCaretTo(4);
+                _globalSettings.Selection = "exclusive";
+                _globalSettings.SelectModeOptions = SelectModeOptions.Keyboard;
+                _globalSettings.KeyModelOptions = KeyModelOptions.StartSelection;
+                _vimBuffer.ProcessNotation("<S-Left>");
+                Assert.Equal(ModeKind.SelectCharacter, _vimBuffer.ModeKind);
+                Assert.Equal(" ", _textView.GetSelectionSpan().GetText());
+                Assert.Equal(3, _textView.GetCaretPoint().Position);
+                _vimBuffer.ProcessNotation("<Esc>");
+                Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
+                Assert.Equal(3, _textView.GetCaretPoint().Position);
+            }
+
+            [Fact]
+            public void ControlShiftLeftToSelect_Inclusive()
+            {
+                Create("cat dog fish");
+                _textView.MoveCaretTo(8);
+                _globalSettings.SelectModeOptions = SelectModeOptions.Keyboard;
+                _globalSettings.KeyModelOptions = KeyModelOptions.StartSelection;
+                _vimBuffer.ProcessNotation("<C-S-Left>");
+                Assert.Equal(ModeKind.SelectCharacter, _vimBuffer.ModeKind);
+                Assert.Equal("dog f", _textView.GetSelectionSpan().GetText());
+                Assert.Equal(4, _textView.GetCaretPoint().Position);
+                _vimBuffer.ProcessNotation("<Esc>");
+                Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
+                Assert.Equal(4, _textView.GetCaretPoint().Position);
+            }
+
+            [Fact]
+            public void ControlShiftLeftToSelect_Exclusive()
+            {
+                Create("cat dog fish");
+                _textView.MoveCaretTo(8);
+                _globalSettings.Selection = "exclusive";
+                _globalSettings.SelectModeOptions = SelectModeOptions.Keyboard;
+                _globalSettings.KeyModelOptions = KeyModelOptions.StartSelection;
+                _vimBuffer.ProcessNotation("<C-S-Left>");
+                Assert.Equal(ModeKind.SelectCharacter, _vimBuffer.ModeKind);
+                Assert.Equal("dog ", _textView.GetSelectionSpan().GetText());
+                Assert.Equal(4, _textView.GetCaretPoint().Position);
+                _vimBuffer.ProcessNotation("<Esc>");
+                Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
+                Assert.Equal(4, _textView.GetCaretPoint().Position);
+            }
+
+            [Fact]
+            public void ControlShiftEndToSelect_InclusiveFinalLineBreak()
+            {
+                Create("cat dog fish", "");
+                _textView.MoveCaretTo(0);
+                _globalSettings.SelectModeOptions = SelectModeOptions.Keyboard;
+                _globalSettings.KeyModelOptions = KeyModelOptions.StartSelection;
+                _vimBuffer.ProcessNotation("<C-S-End>");
+                Assert.Equal(ModeKind.SelectCharacter, _vimBuffer.ModeKind);
+                Assert.Equal("cat dog fish", _textView.GetSelectionSpan().GetText());
+                Assert.Equal(12, _textView.GetCaretPoint().Position);
+                _vimBuffer.ProcessNotation("<Esc>");
+                Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
+                Assert.Equal(11, _textView.GetCaretPoint().Position);
+            }
+
+            [Fact]
+            public void ControlShiftEndToSelect_ExclusiveFinalLineBreak()
+            {
+                Create("cat dog fish", "");
+                _textView.MoveCaretTo(0);
+                _globalSettings.Selection = "exclusive";
+                _globalSettings.SelectModeOptions = SelectModeOptions.Keyboard;
+                _globalSettings.KeyModelOptions = KeyModelOptions.StartSelection;
+                _vimBuffer.ProcessNotation("<C-S-End>");
+                Assert.Equal(ModeKind.SelectCharacter, _vimBuffer.ModeKind);
+                Assert.Equal("cat dog fish", _textView.GetSelectionSpan().GetText());
+                Assert.Equal(14, _textView.GetCaretPoint().Position);
+                _vimBuffer.ProcessNotation("<Esc>");
+                Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
+                Assert.Equal(14, _textView.GetCaretPoint().Position);
+            }
+
+            [Fact]
+            public void ControlShiftEndToSelect_InclusiveNoFinalLineBreak()
+            {
+                Create("cat dog fish");
+                _textView.MoveCaretTo(0);
+                _globalSettings.SelectModeOptions = SelectModeOptions.Keyboard;
+                _globalSettings.KeyModelOptions = KeyModelOptions.StartSelection;
+                _vimBuffer.ProcessNotation("<C-S-End>");
+                Assert.Equal(ModeKind.SelectCharacter, _vimBuffer.ModeKind);
+                Assert.Equal("cat dog fish", _textView.GetSelectionSpan().GetText());
+                Assert.Equal(11, _textView.GetCaretPoint().Position);
+                _vimBuffer.ProcessNotation("<Esc>");
+                Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
+                Assert.Equal(11, _textView.GetCaretPoint().Position);
+            }
+
+            [Fact]
+            public void ControlShiftEndToSelect_ExclusiveNoFinalLineBreak()
+            {
+                Create("cat dog fish");
+                _textView.MoveCaretTo(0);
+                _globalSettings.Selection = "exclusive";
+                _globalSettings.SelectModeOptions = SelectModeOptions.Keyboard;
+                _globalSettings.KeyModelOptions = KeyModelOptions.StartSelection;
+                _vimBuffer.ProcessNotation("<C-S-End>");
+                Assert.Equal(ModeKind.SelectCharacter, _vimBuffer.ModeKind);
+                Assert.Equal("cat dog fish", _textView.GetSelectionSpan().GetText());
+                Assert.Equal(12, _textView.GetCaretPoint().Position);
+                _vimBuffer.ProcessNotation("<Esc>");
+                Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
+                Assert.Equal(11, _textView.GetCaretPoint().Position);
             }
 
             [Fact]

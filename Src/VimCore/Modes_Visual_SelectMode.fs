@@ -102,14 +102,14 @@ type internal SelectMode
     member x.Process keyInput = 
         let processResult = 
             if keyInput = KeyInputUtil.EscapeKey then
-                ProcessResult.Handled ModeSwitch.SwitchPreviousMode
+                x.CheckCaretAndSwitchPreviousMode
             elif keyInput = KeyInputUtil.EnterKey then
                 let caretPoint = TextViewUtil.GetCaretPoint _textView
                 let text = _commonOperations.GetNewLineText caretPoint
                 x.ProcessInput text
             elif keyInput.Key = VimKey.Delete || keyInput.Key = VimKey.Back || keyInput = (KeyInputUtil.CharWithControlToKeyInput 'x') then
                 x.ProcessInput "" |> ignore
-                ProcessResult.Handled ModeSwitch.SwitchPreviousMode
+                x.CheckCaretAndSwitchPreviousMode
             elif keyInput = KeyInputUtil.CharWithControlToKeyInput 'c' then
                 _commonOperations.EditorOperations.CopySelection() |> ignore
                 ProcessResult.Handled ModeSwitch.NoSwitch
@@ -130,6 +130,10 @@ type internal SelectMode
             _textView.Selection.Mode <- TextSelectionMode.Stream
 
         processResult
+
+    member x.CheckCaretAndSwitchPreviousMode =
+        _commonOperations.EnsureAtCaret ViewFlags.VirtualEdit
+        ProcessResult.Handled ModeSwitch.SwitchPreviousMode
 
     member x.OnEnter modeArgument = 
         match modeArgument with
