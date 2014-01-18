@@ -414,11 +414,11 @@ type internal CommonOperations
             true
 
         let moveControlHome () =
-            _editorOperations.MoveToTopOfView(false)
+            _editorOperations.MoveToStartOfDocument(false)
             true
 
         let moveControlEnd () =
-            _editorOperations.MoveToBottomOfView(false)
+            _editorOperations.MoveToEndOfDocument(false)
             true
 
         match caretMovement with
@@ -438,7 +438,7 @@ type internal CommonOperations
         | CaretMovement.ControlEnd -> moveControlEnd()
 
     /// Move the caret in the given direction with an arrow key
-    member x.MoveCaretWithArrow caretMovement = 
+    member x.MoveCaretWithArrow caretMovement =
 
         /// Move left one character taking into account 'whichwrap'
         let moveLeft () =
