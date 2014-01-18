@@ -132,8 +132,7 @@ type internal SelectMode
                     // For example, both Ctrl+F and Ctrl+Shift+F should page
                     // forward.  In any case, we don't want to process it
                     // as text input
-                    let hasControl = Util.IsFlagSet keyInput.KeyModifiers KeyModifiers.Control
-                    if not hasControl && Option.isSome keyInput.RawChar then
+                    if Option.isSome keyInput.RawChar && not (CharUtil.IsControl keyInput.Char) then
                         x.ProcessInput (StringUtil.ofChar keyInput.Char)
                     elif x.ShouldStopSelection keyInput then
                         x.CheckCaretAndSwitchPreviousMode
