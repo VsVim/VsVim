@@ -107,8 +107,15 @@ type internal SelectMode
                 let caretPoint = TextViewUtil.GetCaretPoint _textView
                 let text = _commonOperations.GetNewLineText caretPoint
                 x.ProcessInput text
-            elif keyInput.Key = VimKey.Delete || keyInput.Key = VimKey.Back then
-                x.ProcessInput ""
+            elif keyInput.Key = VimKey.Delete || keyInput.Key = VimKey.Back || keyInput = (KeyInputUtil.CharWithControlToKeyInput 'x') then
+                x.ProcessInput "" |> ignore
+                ProcessResult.Handled ModeSwitch.SwitchPreviousMode
+            elif keyInput = KeyInputUtil.CharWithControlToKeyInput 'c' then
+                _commonOperations.EditorOperations.CopySelection() |> ignore
+                ProcessResult.Handled ModeSwitch.NoSwitch
+            elif keyInput = KeyInputUtil.CharWithControlToKeyInput 'v' then
+                _commonOperations.EditorOperations.Paste() |> ignore
+                ProcessResult.Handled ModeSwitch.NoSwitch
             else
                 match GetCaretMovement keyInput with
                 | Some caretMovement -> x.ProcessCaretMovement caretMovement keyInput
