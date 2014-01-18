@@ -56,11 +56,15 @@ type internal SelectMode
 
     member x.CurrentSnapshot = _textView.TextSnapshot
 
-    member x.ProcessCaretMovement caretMovement (keyInput : KeyInput) = 
+    member x.ShouldStopSelection (keyInput : KeyInput) =
+        let hasShift = Util.IsFlagSet keyInput.KeyModifiers KeyModifiers.Shift
+        let hasStopSelection = Util.IsFlagSet _globalSettings.KeyModelOptions KeyModelOptions.StopSelection
+        not hasShift && hasStopSelection
+
+    member x.ProcessCaretMovement caretMovement keyInput =
         _commonOperations.MoveCaretWithArrow caretMovement |> ignore
 
-        let hasShift = Util.IsFlagSet keyInput.KeyModifiers KeyModifiers.Shift
-        if not hasShift && Util.IsFlagSet _globalSettings.KeyModelOptions KeyModelOptions.StopSelection then
+        if x.ShouldStopSelection keyInput then
             ProcessResult.Handled ModeSwitch.SwitchPreviousMode
         else
             // The caret moved so we need to update the selection 
@@ -99,6 +103,9 @@ type internal SelectMode
 
         ProcessResult.Handled (ModeSwitch.SwitchMode ModeKind.Insert)
 
+    /// Handles Ctrl+C/Ctrl+V/Ctrl+X ala $VIMRUNTIME/mswin.vim
+    ///
+    /// TODO: This should be turned into a mode map
     member x.Process keyInput = 
         let processResult = 
             if keyInput = KeyInputUtil.EscapeKey then
@@ -120,8 +127,16 @@ type internal SelectMode
                 match GetCaretMovement keyInput with
                 | Some caretMovement -> x.ProcessCaretMovement caretMovement keyInput
                 | None -> 
-                    if Option.isSome keyInput.RawChar then
+                    // TODO: The shift modifier should be removed and the
+                    // resulting key should be processed as an ordinary motion.
+                    // For example, both Ctrl+F and Ctrl+Shift+F should page
+                    // forward.  In any case, we don't want to process it
+                    // as text input
+                    let hasControl = Util.IsFlagSet keyInput.KeyModifiers KeyModifiers.Control
+                    if not hasControl && Option.isSome keyInput.RawChar then
                         x.ProcessInput (StringUtil.ofChar keyInput.Char)
+                    elif x.ShouldStopSelection keyInput then
+                        x.CheckCaretAndSwitchPreviousMode
                     else
                         ProcessResult.Handled ModeSwitch.NoSwitch
 

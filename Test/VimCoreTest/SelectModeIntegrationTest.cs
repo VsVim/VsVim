@@ -398,7 +398,7 @@ namespace Vim.UnitTest
                 Create("dog cat bear");
                 EnterSelect(0, 4);
                 _vimBuffer.Process(VimKey.Delete);
-                Assert.Equal(ModeKind.Insert, _vimBuffer.ModeKind);
+                Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
                 Assert.Equal("cat bear", _textBuffer.GetLine(0).GetText());
                 Assert.Equal(0, _textView.GetCaretPoint().Position);
             }
@@ -413,7 +413,7 @@ namespace Vim.UnitTest
                 Create("dog cat bear");
                 EnterSelect(0, 4);
                 _vimBuffer.Process(VimKey.Back);
-                Assert.Equal(ModeKind.Insert, _vimBuffer.ModeKind);
+                Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
                 Assert.Equal("cat bear", _textBuffer.GetLine(0).GetText());
                 Assert.Equal(0, _textView.GetCaretPoint().Position);
             }
