@@ -183,7 +183,7 @@ type InsertSessionData = {
 [<RequireQualifiedAccess>]
 type RawInsertCommand =
     | InsertCommand of KeyInputSet * InsertCommand * CommandFlags
-    | CustomCommand of (unit -> ProcessResult)
+    | CustomCommand of (KeyInput -> ProcessResult)
 
 type internal InsertMode
     ( 
@@ -252,6 +252,7 @@ type internal InsertMode
                 ("<C-o>", RawInsertCommand.CustomCommand this.ProcessNormalModeOneCommand)
                 ("<C-p>", RawInsertCommand.CustomCommand this.ProcessWordCompletionPrevious)
                 ("<C-r>", RawInsertCommand.CustomCommand this.ProcessPasteStart)
+                ("<C-u>", RawInsertCommand.CustomCommand this.UndoInsert)
             ]
 
         let mappedCommands : (string * RawInsertCommand) list = 
@@ -308,7 +309,7 @@ type internal InsertMode
 
     /// Cancel the active IWordCompletionSession if there is such a session 
     /// active
-    member x.CancelWordCompletionSession () = 
+    member x.CancelWordCompletionSession keyInput = 
         match _sessionData.ActiveEditItem with
         | ActiveEditItem.WordCompletion wordCompletionSession -> 
             if not wordCompletionSession.IsDismissed then
@@ -321,7 +322,7 @@ type internal InsertMode
     member x.CanProcess keyInput = x.GetRawInsertCommand keyInput |> Option.isSome
 
     /// Complete the current batched edit command if one exists
-    member x.CompleteCombinedEditCommand () = 
+    member x.CompleteCombinedEditCommand keyInput = 
         match _sessionData.CombinedEditCommand with
         | None ->
             // Nothing to do
@@ -438,26 +439,26 @@ type internal InsertMode
                 _sessionData <- { _sessionData with Transaction = None }
 
     /// Process the <Insert> command.  This toggles between insert an replace mode
-    member x.ProcessInsert () = 
+    member x.ProcessInsert keyInput = 
 
         let mode = if _isReplace then ModeKind.Insert else ModeKind.Replace
         ProcessResult.Handled (ModeSwitch.SwitchMode mode)
 
     /// Enter normal mode for a single command.
-    member x.ProcessNormalModeOneCommand () =
+    member x.ProcessNormalModeOneCommand keyInput =
 
         let switch = ModeSwitch.SwitchModeOneTimeCommand
         ProcessResult.Handled switch
 
     /// Process the CTRL-N key stroke which calls for the previous word completion
-    member x.ProcessWordCompletionNext () = 
+    member x.ProcessWordCompletionNext keyInput = 
         x.StartWordCompletionSession true
 
     /// Process the CTRL-P key stroke which calls for the previous word completion
-    member x.ProcessWordCompletionPrevious () =
+    member x.ProcessWordCompletionPrevious keyInput =
         x.StartWordCompletionSession false
 
-    member x.ProcessEscape () =
+    member x.ProcessEscape keyInput =
 
         x.ApplyAfterEdits()
 
@@ -613,6 +614,52 @@ type internal InsertMode
                 let insertCommand = InsertCommand.InsertText text
                 x.RunInsertCommand insertCommand keyInputSet CommandFlags.None
 
+    /// Undo from insert mode
+    ///
+    /// This operation is somewhat complex in that it starts by undoing
+    /// recently entered text and optionally continues "undoing"
+    /// by deleting to the beginning of the line and then optionally
+    /// even deleting back to the end of previous lines
+    member x.UndoInsert keyInput =
+
+        let deleteLineBeforeCursor () =
+            let keyInputSet = KeyInputSet.OneKeyInput keyInput
+            let insertCommand = InsertCommand.DeleteLineBeforeCursor
+            x.RunInsertCommand insertCommand keyInputSet CommandFlags.None
+
+        let undoTextInsertion (text : String) =
+            if text.Contains("\n") then
+                deleteLineBeforeCursor ()
+            else
+                try 
+                    _textChangeTracker.TrackCurrentChange <- false
+                    let count = String.length text
+                    _insertUtil.RunInsertCommand (InsertCommand.DeleteLeft count) |> ignore
+                    _sessionData <- {
+                        _sessionData with
+                            InsertTextChange = None
+                            CombinedEditCommand = None
+                    }
+                finally 
+                    _textChangeTracker.TrackCurrentChange <- true
+                ProcessResult.Handled ModeSwitch.NoSwitch
+
+        let insertText =
+            match _sessionData.InsertTextChange with
+            | None ->
+                None
+            | Some textChange ->
+                textChange.InsertText
+        match insertText with
+        | None ->
+            if _globalSettings.IsBackspaceStart then
+                deleteLineBeforeCursor ()
+            else
+                _operations.Beep()
+                ProcessResult.Handled ModeSwitch.NoSwitch
+        | Some text ->
+            undoTextInsertion text
+
     /// Try and process the KeyInput by considering the current text edit in Insert Mode
     member x.ProcessWithCurrentChange keyInput = 
 
@@ -678,7 +725,7 @@ type internal InsertMode
             x.Process keyInput
 
     /// Start a paste session in insert mode
-    member x.ProcessPasteStart() =
+    member x.ProcessPasteStart keyInput =
         x.CancelWordCompletionSession()
         _sessionData <- { _sessionData with ActiveEditItem = ActiveEditItem.Paste }
         ProcessResult.Handled ModeSwitch.NoSwitch
@@ -724,7 +771,7 @@ type internal InsertMode
                 match x.GetRawInsertCommand keyInput with
                 | Some rawInsertCommand ->
                     match rawInsertCommand with
-                    | RawInsertCommand.CustomCommand func -> func()
+                    | RawInsertCommand.CustomCommand func -> func keyInput
                     | RawInsertCommand.InsertCommand (keyInputSet, insertCommand, commandFlags) -> x.RunInsertCommand insertCommand keyInputSet commandFlags
                 | None -> 
                     ProcessResult.NotHandled

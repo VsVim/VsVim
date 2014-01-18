@@ -563,6 +563,7 @@ type internal InsertUtil
             | InsertCommand.MoveCaretByWord direction -> x.MoveCaretByWord direction
             | InsertCommand.ShiftLineLeft -> x.ShiftLineLeft ()
             | InsertCommand.ShiftLineRight -> x.ShiftLineRight ()
+            | InsertCommand.DeleteLineBeforeCursor -> x.DeleteLineBeforeCursor()
 
     member x.RunInsertCommand command = 
         x.RunInsertCommandCore command false
@@ -614,6 +615,17 @@ type internal InsertUtil
     /// Shift the caret line one 'shiftwidth' to the right
     member x.ShiftLineRight () =
         x.ShiftLine 1
+
+    /// Delete the line before the cursor
+    member x.DeleteLineBeforeCursor () =
+        let caretPosition = x.CaretPoint.Position
+        let position = (SnapshotLineUtil.GetFirstNonBlankOrStart x.CaretLine).Position
+        if caretPosition > position then
+            let span = new Span(position, caretPosition - position)
+            _textBuffer.Delete(span) |> ignore
+            CommandResult.Completed ModeSwitch.NoSwitch
+        else
+            x.DeleteWordBeforeCursor()
 
     member x.ExtraTextChange textChange addNewLines = 
         x.ApplyTextChange textChange addNewLines 
