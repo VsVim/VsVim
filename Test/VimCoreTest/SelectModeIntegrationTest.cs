@@ -109,6 +109,9 @@ namespace Vim.UnitTest
                 Assert.Equal(ModeKind.SelectCharacter, _vimBuffer.ModeKind);
                 Assert.Equal("ca", _textView.GetSelectionSpan().GetText());
                 Assert.Equal(1, _textView.GetCaretPoint().Position);
+                _vimBuffer.ProcessNotation("<Esc>");
+                Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
+                Assert.Equal(1, _textView.GetCaretPoint().Position);
             }
 
             [Fact]
@@ -122,6 +125,9 @@ namespace Vim.UnitTest
                 Assert.Equal(ModeKind.SelectCharacter, _vimBuffer.ModeKind);
                 Assert.Equal("c", _textView.GetSelectionSpan().GetText());
                 Assert.Equal(1, _textView.GetCaretPoint().Position);
+                _vimBuffer.ProcessNotation("<Esc>");
+                Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
+                Assert.Equal(1, _textView.GetCaretPoint().Position);
             }
 
             [Fact]
@@ -134,6 +140,9 @@ namespace Vim.UnitTest
                 Assert.Equal(ModeKind.SelectCharacter, _vimBuffer.ModeKind);
                 Assert.Equal("cat d", _textView.GetSelectionSpan().GetText());
                 Assert.Equal(4, _textView.GetCaretPoint().Position);
+                _vimBuffer.ProcessNotation("<Esc>");
+                Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
+                Assert.Equal(4, _textView.GetCaretPoint().Position);
             }
 
             [Fact]
@@ -143,9 +152,12 @@ namespace Vim.UnitTest
                 _globalSettings.Selection = "exclusive";
                 _globalSettings.SelectModeOptions = SelectModeOptions.Keyboard;
                 _globalSettings.KeyModelOptions = KeyModelOptions.StartSelection;
-                _vimBuffer.ProcessNotation("<S-Right>");
+                _vimBuffer.ProcessNotation("<C-S-Right>");
                 Assert.Equal(ModeKind.SelectCharacter, _vimBuffer.ModeKind);
                 Assert.Equal("cat ", _textView.GetSelectionSpan().GetText());
+                Assert.Equal(4, _textView.GetCaretPoint().Position);
+                _vimBuffer.ProcessNotation("<Esc>");
+                Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
                 Assert.Equal(4, _textView.GetCaretPoint().Position);
             }
 
