@@ -2711,6 +2711,8 @@ type internal CommandUtil
             CommandResult.Error
         else
             let visualSelection = VisualSelection.CreateForPoints VisualKind.Character anchorPoint x.CaretPoint _localSettings.TabStop
+            let visualSelection = visualSelection.AdjustForExtendIntoLineBreak true
+            let visualSelection = visualSelection.AdjustForSelectionKind _globalSettings.SelectionKind
             let modeKind = 
                 if Util.IsFlagSet _globalSettings.SelectModeOptions SelectModeOptions.Keyboard then
                     ModeKind.SelectCharacter

@@ -69,7 +69,7 @@ type internal SelectionTracker
             _textView.Selection.Mode <- _visualKind.TextSelectionMode
             let anchorPoint = selection.AnchorPoint.Position
             _anchorPoint <- 
-                if selection.IsReversed then
+                if selection.IsReversed && _globalSettings.SelectionKind = SelectionKind.Inclusive then
                     SnapshotPointUtil.SubtractOneOrCurrent anchorPoint |> Some
                 else
                     Some anchorPoint
