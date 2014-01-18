@@ -37,6 +37,7 @@ namespace VsVim.Implementation.Misc
         private readonly IKeyUtil _keyUtil;
         private readonly IVimApplicationSettings _vimApplicationSettings;
         private readonly IVimBuffer _vimBuffer;
+        private readonly ScopeData _scopeData;
 
         private List<FallbackCommand> _fallbackCommandList;
 
@@ -45,12 +46,13 @@ namespace VsVim.Implementation.Misc
         /// by not making use of it, the fallback processor can be reused for
         /// multiple text views
         /// </summary>
-        internal FallbackKeyProcessor(_DTE dte, IKeyUtil keyUtil, IVimApplicationSettings vimApplicationSettings, ITextView textView, IVimBuffer vimBuffer)
+        internal FallbackKeyProcessor(_DTE dte, IKeyUtil keyUtil, IVimApplicationSettings vimApplicationSettings, ITextView textView, IVimBuffer vimBuffer, ScopeData scopeData)
         {
             _dte = dte;
             _keyUtil = keyUtil;
             _vimApplicationSettings = vimApplicationSettings;
             _vimBuffer = vimBuffer;
+            _scopeData = scopeData;
             _fallbackCommandList = new List<FallbackCommand>();
 
             // Register for key binding changes and get the current bindings
@@ -100,14 +102,7 @@ namespace VsVim.Implementation.Misc
         /// </summary>
         private bool IsTextViewBinding(CommandKeyBinding binding)
         {
-            switch (binding.KeyBinding.Scope)
-            {
-                case ScopeData.DefaultTextEditorScopeName:
-                case ScopeData.DefaultGlobalScopeName:
-                    return true;
-                default:
-                    return false;
-            }
+            return _scopeData.GetScopeKind(binding.KeyBinding.Scope) != ScopeKind.Unknown;
         }
 
         /// <summary>
@@ -116,15 +111,7 @@ namespace VsVim.Implementation.Misc
         /// </summary>
         private int GetScopeOrder(string scope)
         {
-            switch (scope)
-            {
-                case ScopeData.DefaultTextEditorScopeName:
-                    return 1;
-                case ScopeData.DefaultGlobalScopeName:
-                    return 2;
-                default:
-                    throw new InvalidOperationException("scope not handled");
-            }
+            return (int)_scopeData.GetScopeKind(scope);
         }
 
         /// <summary>

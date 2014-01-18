@@ -198,7 +198,7 @@ namespace VsVim.Implementation.Misc
         internal bool ShouldSkip(CommandKeyBinding binding)
         {
             var scope = binding.KeyBinding.Scope;
-            if (!_scopeData.IsImportantScope(scope))
+            if (_scopeData.GetScopeKind(scope) == ScopeKind.Unknown)
             {
                 return true;
             }

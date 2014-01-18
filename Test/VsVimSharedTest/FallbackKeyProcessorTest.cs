@@ -13,7 +13,7 @@ using Vim.UnitTest.Mock;
 using VsVim.Implementation.Misc;
 using Xunit;
 
-namespace VsVim.Shared.UnitTest
+namespace VsVim.UnitTest
 {
     public abstract class FallbackKeyProcessorTest : VimTestBase
     {
@@ -46,7 +46,8 @@ namespace VsVim.Shared.UnitTest
                 CompositionContainer.GetExportedValue<IKeyUtil>(),
                 _vimApplicationSettings.Object,
                 textView,
-                _vimBuffer);
+                _vimBuffer,
+                new ScopeData());
         }
 
         private CommandId AddRemovedBinding(string keyStroke, string name = "comment")
