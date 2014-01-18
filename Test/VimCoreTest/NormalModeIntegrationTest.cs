@@ -2027,6 +2027,36 @@ namespace Vim.UnitTest
                 _vimBuffer.Process("n");
                 Assert.True(didHit);
             }
+
+            [Fact]
+            public void Issue1244_1()
+            {
+                Create("cat", "dog", "cat");
+                _vimBuffer.ProcessNotation(":s/cat/foo", enter: true);
+                _vimBuffer.ProcessNotation("n");
+                Assert.Equal(_textBuffer.GetLine(2).Start, _textView.GetCaretPoint());
+            }
+
+            [Fact]
+            public void Issue1244_2()
+            {
+                Create("cat", "dog", "cat", "dog");
+                _vimBuffer.ProcessNotation(":/dog", enter: true);
+                _vimBuffer.ProcessNotation("n");
+                Assert.Equal(_textBuffer.GetLine(3).Start, _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// Search offsets should apply to the 'n' and 'N' searches
+            /// </summary>
+            [Fact]
+            public void Issue1244_3()
+            {
+                Create("cat", "dog", "cat", "dog");
+                _vimBuffer.ProcessNotation("/d/e+1", enter: true);
+                _vimBuffer.ProcessNotation("n");
+                Assert.Equal(_textBuffer.GetPointInLine(3, 1), _textView.GetCaretPoint());
+            }
         }
 
         public sealed class MapLeaderTest : NormalModeIntegrationTest
