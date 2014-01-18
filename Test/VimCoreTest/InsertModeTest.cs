@@ -23,6 +23,7 @@ namespace Vim.UnitTest
         protected IInsertMode _mode;
         protected ITextView _textView;
         protected ITextBuffer _textBuffer;
+        protected IVimGlobalSettings _globalSettings;
         protected CommandRunData _lastCommandRan;
         protected Mock<ICommonOperations> _operations;
         protected Mock<IDisplayWindowBroker> _broker;
@@ -67,6 +68,7 @@ namespace Vim.UnitTest
                 vim: _vim.Object,
                 factory: _factory);
             _vimBuffer.SetupGet(x => x.ModeKind).Returns(ModeKind.Insert);
+            _globalSettings = _vimBuffer.Object.GlobalSettings;
             _operations = _factory.Create<ICommonOperations>();
             _operations.SetupGet(x => x.EditorOperations).Returns(EditorOperationsFactoryService.GetEditorOperations(_textView));
             _broker = _factory.Create<IDisplayWindowBroker>();
@@ -435,6 +437,20 @@ namespace Vim.UnitTest
                 _textView.SetText("hello world");
                 _insertUtil.Setup(x => x.RunInsertCommand(InsertCommand.ShiftLineRight)).Returns(CommandResult.NewCompleted(ModeSwitch.NoSwitch)).Verifiable();
                 _mode.Process(KeyNotationUtil.StringToKeyInput("<C-T>"));
+                _factory.Verify();
+            }
+
+            /// <summary>
+            /// Make sure we bind the delete line before cursor
+            /// </summary>
+            [Fact]
+            public void Command_DeleteLineBeforeCursor()
+            {
+                Create(insertMode: true, lines: "");
+                _textView.SetText("hello world");
+                _globalSettings.Backspace = "start";
+                _insertUtil.Setup(x => x.RunInsertCommand(InsertCommand.DeleteLineBeforeCursor)).Returns(CommandResult.NewCompleted(ModeSwitch.NoSwitch)).Verifiable();
+                _mode.Process(KeyNotationUtil.StringToKeyInput("<C-U>"));
                 _factory.Verify();
             }
 

@@ -1225,6 +1225,198 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
+            /// Make sure undoing insert starting from an empty line works
+            /// </summary>
+            [Fact]
+            public void UndoInsert_FromEmptyLine()
+            {
+                Create("");
+                _vimBuffer.Process("cat");
+                Assert.Equal("cat", _textBuffer.GetLine(0).GetText());
+                _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<C-U>"));
+                Assert.Equal("", _textBuffer.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// Make sure undoing an insert from the start of a non-empty line works
+            /// </summary>
+            [Fact]
+            public void UndoInsert_FromStarrtOfNonEmpyLine()
+            {
+                Create("cat");
+                _textView.MoveCaretTo(0);
+                _vimBuffer.Process("dog ");
+                Assert.Equal("dog cat", _textBuffer.GetLine(0).GetText());
+                _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<C-U>"));
+                Assert.Equal("cat", _textBuffer.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// Make sure undoing an insert from the end of a non-empty line works
+            /// </summary>
+            [Fact]
+            public void UndoInsert_FromEndOfNonEmpyLine()
+            {
+                Create("cat");
+                _textView.MoveCaretTo(3);
+                _vimBuffer.Process(" dog");
+                Assert.Equal("cat dog", _textBuffer.GetLine(0).GetText());
+                _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<C-U>"));
+                Assert.Equal("cat", _textBuffer.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// Make sure undoing an insert from the middle of a non-empty line works
+            /// </summary>
+            [Fact]
+            public void UndoInsert_FromMiddleOfNonEmpyLine()
+            {
+                Create("cat dog");
+                _textView.MoveCaretTo(4);
+                _vimBuffer.Process("bear ");
+                Assert.Equal("cat bear dog", _textBuffer.GetLine(0).GetText());
+                _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<C-U>"));
+                Assert.Equal("cat dog", _textBuffer.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// Make sure undoing an insert from the start position stays put
+            /// </summary>
+            [Fact]
+            public void UndoInsert_UndoAtStart_NoBackspaceStart()
+            {
+                Create("cat dog");
+                _textView.MoveCaretTo(4);
+                _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<C-U>"));
+                Assert.Equal("cat dog", _textBuffer.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// Make sure undoing an insert and then undoing again from the start position stays put
+            /// </summary>
+            [Fact]
+            public void UndoInsert_UndoAgainAtStart_NoBackspaceStart()
+            {
+                Create("cat dog");
+                _textView.MoveCaretTo(4);
+                _vimBuffer.Process("bear ");
+                Assert.Equal("cat bear dog", _textBuffer.GetLine(0).GetText());
+                _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<C-U>"));
+                Assert.Equal("cat dog", _textBuffer.GetLine(0).GetText());
+                _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<C-U>"));
+                Assert.Equal("cat dog", _textBuffer.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// Make sure undoing an insert from the start position with 'backspace=start'
+            /// performs delete line before cursor
+            /// </summary>
+            [Fact]
+            public void UndoInsert_UndoAtStart_BackspaceStart()
+            {
+                Create("cat dog");
+                _globalSettings.Backspace = "start";
+                _textView.MoveCaretTo(4);
+                _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<C-U>"));
+                Assert.Equal("dog", _textBuffer.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// Make sure undoing an insert and then undoing again from the start position with 'backspace=start'
+            /// performs delete line before cursor
+            /// </summary>
+            [Fact]
+            public void UndoInsert_UndoAgainAtStart_BackspaceStart()
+            {
+                Create("cat dog");
+                _globalSettings.Backspace = "start";
+                _textView.MoveCaretTo(4);
+                _vimBuffer.Process("bear ");
+                Assert.Equal("cat bear dog", _textBuffer.GetLine(0).GetText());
+                _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<C-U>"));
+                Assert.Equal("cat dog", _textBuffer.GetLine(0).GetText());
+                _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<C-U>"));
+                Assert.Equal("dog", _textBuffer.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// Make sure undoing insert from the start of the next line
+            /// of an insert without 'backspace=eol' does nothing
+            /// 
+            /// </summary>
+            [Fact]
+            public void UndoInsert_FromStartOfNextLine_NoBackspaceEol()
+            {
+                Create("cat dog");
+                _textView.MoveCaretTo(4);
+                _vimBuffer.Process("bear");
+                Assert.Equal("cat beardog", _textBuffer.GetLine(0).GetText());
+                _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<Enter>"));
+                Assert.Equal("cat bear", _textBuffer.GetLine(0).GetText());
+                Assert.Equal("dog", _textBuffer.GetLine(1).GetText());
+                _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<C-U>"));
+                Assert.Equal("cat bear", _textBuffer.GetLine(0).GetText());
+                Assert.Equal("dog", _textBuffer.GetLine(1).GetText());
+            }
+
+            /// <summary>
+            /// Make sure undoing insert from the start of the next line
+            /// of an insert without 'backspace=eol' wraps to previous line
+            /// 
+            /// </summary>
+            [Fact]
+            public void UndoInsert_FromStartOfNextLine_BackspaceEol()
+            {
+                Create("cat dog");
+                _globalSettings.Backspace = "eol";
+                _textView.MoveCaretTo(4);
+                _vimBuffer.Process("bear");
+                Assert.Equal("cat beardog", _textBuffer.GetLine(0).GetText());
+                _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<Enter>"));
+                Assert.Equal("cat bear", _textBuffer.GetLine(0).GetText());
+                Assert.Equal("dog", _textBuffer.GetLine(1).GetText());
+                _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<C-U>"));
+                Assert.Equal("cat beardog", _textBuffer.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// Make sure undoing an insert twice from the same edit
+            /// </summary>
+            [Fact]
+            public void UndoInsert_TwiceFromSameEdit()
+            {
+                Create("cat dog");
+                _textView.MoveCaretTo(4);
+                _vimBuffer.Process("bear ");
+                Assert.Equal("cat bear dog", _textBuffer.GetLine(0).GetText());
+                _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<C-U>"));
+                Assert.Equal("cat dog", _textBuffer.GetLine(0).GetText());
+                _vimBuffer.Process("lion ");
+                Assert.Equal("cat lion dog", _textBuffer.GetLine(0).GetText());
+                _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<C-U>"));
+                Assert.Equal("cat dog", _textBuffer.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// Make sure a redo after an undo in insert works
+            /// </summary>
+            [Fact]
+            public void UndoInsert_WithRedo()
+            {
+                Create("cat dog");
+                _textView.MoveCaretTo(4);
+                _vimBuffer.Process("bear ");
+                Assert.Equal("cat bear dog", _textBuffer.GetLine(0).GetText());
+                _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<C-U>"));
+                Assert.Equal("cat dog", _textBuffer.GetLine(0).GetText());
+                _vimBuffer.Process("lion ");
+                Assert.Equal("cat lion dog", _textBuffer.GetLine(0).GetText());
+                _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<Esc>"));
+                _vimBuffer.Process(" .");
+                Assert.Equal("cat lion lion dog", _textBuffer.GetLine(0).GetText());
+            }
+
+            /// <summary>
             /// Simple word completion action which accepts the first match
             /// </summary>
             [Fact]
