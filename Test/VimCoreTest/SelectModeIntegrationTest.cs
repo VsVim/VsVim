@@ -125,6 +125,31 @@ namespace Vim.UnitTest
             }
 
             [Fact]
+            public void ControlShiftRightToSelectInclusive()
+            {
+                Create("cat dog");
+                _globalSettings.SelectModeOptions = SelectModeOptions.Keyboard;
+                _globalSettings.KeyModelOptions = KeyModelOptions.StartSelection;
+                _vimBuffer.ProcessNotation("<C-S-Right>");
+                Assert.Equal(ModeKind.SelectCharacter, _vimBuffer.ModeKind);
+                Assert.Equal("cat d", _textView.GetSelectionSpan().GetText());
+                Assert.Equal(4, _textView.GetCaretPoint().Position);
+            }
+
+            [Fact]
+            public void ControlShiftRightToSelectExclusive()
+            {
+                Create("cat dog");
+                _globalSettings.Selection = "exclusive";
+                _globalSettings.SelectModeOptions = SelectModeOptions.Keyboard;
+                _globalSettings.KeyModelOptions = KeyModelOptions.StartSelection;
+                _vimBuffer.ProcessNotation("<S-Right>");
+                Assert.Equal(ModeKind.SelectCharacter, _vimBuffer.ModeKind);
+                Assert.Equal("cat ", _textView.GetSelectionSpan().GetText());
+                Assert.Equal(4, _textView.GetCaretPoint().Position);
+            }
+
+            [Fact]
             public void ShiftRightToVisual()
             {
                 Create("cat");
