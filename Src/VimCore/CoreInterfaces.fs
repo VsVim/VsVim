@@ -1903,10 +1903,13 @@ type VisualSelection =
         | SelectionKind.Exclusive -> 
             match x with
             | Character (characterSpan, path) -> 
-                // The span decreases by a single character in exclusive 
-                let endPoint = characterSpan.Last |> OptionUtil.getOrDefault characterSpan.Start
-                let characterSpan = CharacterSpan(SnapshotSpan(characterSpan.Start, endPoint))
-                VisualSelection.Character (characterSpan, path)
+                if SnapshotPointUtil.IsEndPoint characterSpan.End then
+                    x
+                else
+                    // The span decreases by a single character in exclusive 
+                    let endPoint = characterSpan.Last |> OptionUtil.getOrDefault characterSpan.Start
+                    let characterSpan = CharacterSpan(SnapshotSpan(characterSpan.Start, endPoint))
+                    VisualSelection.Character (characterSpan, path)
             | Line _ ->
                 // The span isn't effected
                 x
