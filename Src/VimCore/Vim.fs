@@ -50,7 +50,7 @@ type internal VimData(_globalSettings : IVimGlobalSettings) as this =
     let mutable _commandHistory = HistoryList()
     let mutable _searchHistory = HistoryList()
     let mutable _lastSubstituteData : SubstituteData option = None
-    let mutable _lastPatternData = { Pattern = StringUtil.empty; Path = Path.Forward }
+    let mutable _lastSearchData = SearchData("", Path.Forward)
     let mutable _lastShellCommand : string option = None
     let mutable _lastCharSearch : (CharSearchKind * Path * char) option = None
     let mutable _lastMacroRun : char option = None
@@ -74,10 +74,10 @@ type internal VimData(_globalSettings : IVimGlobalSettings) as this =
 
         this.CheckDisplayPattern()
 
-    member x.LastPatternData 
-        with get() = _lastPatternData
+    member x.LastSearchData 
+        with get() = _lastSearchData
         and set value = 
-            _lastPatternData <- value
+            _lastSearchData <- value
             _displayPatternSuspended <- false
             x.CheckDisplayPattern()
 
@@ -98,7 +98,7 @@ type internal VimData(_globalSettings : IVimGlobalSettings) as this =
             elif not _globalSettings.HighlightSearch then
                 ""
             else
-                _lastPatternData.Pattern
+                _lastSearchData.Pattern
         if currentDisplayPattern <> _displayPattern then
             _displayPattern <- currentDisplayPattern
             _displayPatternChanged.Trigger x
@@ -131,9 +131,9 @@ type internal VimData(_globalSettings : IVimGlobalSettings) as this =
         member x.LastShellCommand
             with get() = _lastShellCommand
             and set value = _lastShellCommand <- value
-        member x.LastPatternData 
-            with get() = x.LastPatternData
-            and set value = x.LastPatternData <- value
+        member x.LastSearchData 
+            with get() = x.LastSearchData
+            and set value = x.LastSearchData <- value
         member x.PreviousCurrentDirectory = _previousCurrentDirecotry
         member x.LastCharSearch 
             with get() = _lastCharSearch

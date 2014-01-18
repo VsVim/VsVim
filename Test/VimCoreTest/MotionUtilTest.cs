@@ -2427,11 +2427,11 @@ namespace Vim.UnitTest
             public void NextWord_NoWordUnderCaret()
             {
                 Create("  ", "foo bar baz");
-                _vimData.LastPatternData = VimUtil.CreatePatternData("cat");
+                _vimData.LastSearchData = VimUtil.CreateSearchData("cat");
                 _statusUtil.Setup(x => x.OnError(Resources.NormalMode_NoWordUnderCursor)).Verifiable();
                 _motionUtil.NextWord(Path.Forward, 1);
                 _statusUtil.Verify();
-                Assert.Equal("cat", _vimData.LastPatternData.Pattern);
+                Assert.Equal("cat", _vimData.LastSearchData.Pattern);
             }
 
             /// <summary>
@@ -2443,7 +2443,7 @@ namespace Vim.UnitTest
                 Create("hello world", "hello");
                 var result = _motionUtil.NextWord(Path.Forward, 1).Value;
                 Assert.Equal(_textView.GetLine(0).ExtentIncludingLineBreak, result.Span);
-                Assert.Equal(@"\<hello\>", _vimData.LastPatternData.Pattern);
+                Assert.Equal(@"\<hello\>", _vimData.LastSearchData.Pattern);
             }
 
             /// <summary>
@@ -2494,8 +2494,8 @@ namespace Vim.UnitTest
             public void LastSearch_UsePattern()
             {
                 Create("foo bar", "foo");
-                var data = VimUtil.CreatePatternData("foo", Path.Forward);
-                _vimData.LastPatternData = data;
+                var data = new SearchData("foo", Path.Forward);
+                _vimData.LastSearchData = data;
                 var result = _motionUtil.LastSearch(false, 1).Value;
                 Assert.Equal("foo bar" + Environment.NewLine, result.Span.GetText());
             }
@@ -2508,11 +2508,11 @@ namespace Vim.UnitTest
             public void LastSearch_DontUpdateLastSearch()
             {
                 Create("dog cat", "dog", "dog");
-                var data = VimUtil.CreatePatternData("dog", Path.Forward);
-                _vimData.LastPatternData = data;
+                var data = new SearchData("dog", Path.Forward);
+                _vimData.LastSearchData = data;
                 _statusUtil.Setup(x => x.OnWarning(Resources.Common_SearchBackwardWrapped)).Verifiable();
                 _motionUtil.LastSearch(true, 1);
-                Assert.Equal(data, _vimData.LastPatternData);
+                Assert.Equal(data, _vimData.LastSearchData);
                 _statusUtil.Verify();
             }
 

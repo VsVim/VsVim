@@ -1020,7 +1020,7 @@ type VimInterpreter
     member x.RunSearch lineRange path pattern = 
         x.RunWithLineRangeOrDefault lineRange DefaultLineRange.CurrentLine (fun lineRange ->
             let pattern = 
-                if StringUtil.isNullOrEmpty pattern then _vimData.LastPatternData.Pattern
+                if StringUtil.isNullOrEmpty pattern then _vimData.LastSearchData.Pattern
                 else pattern
     
             // Searches start after the end of the specified line range
@@ -1037,7 +1037,7 @@ type VimInterpreter
                     |> SnapshotPointUtil.GetContainingLine 
                     |> SnapshotLineUtil.GetFirstNonBlankOrStart
                 _commonOperations.MoveCaretToPoint point ViewFlags.Standard
-                _vimData.LastPatternData <- searchData.LastPatternData
+                _vimData.LastSearchData <- searchData
             | SearchResult.NotFound _ -> ()
     
             RunResult.Completed)
@@ -1298,7 +1298,7 @@ type VimInterpreter
         // Get the actual pattern to use
         let pattern = 
             if pattern = "" then 
-                _vimData.LastPatternData.Pattern
+                _vimData.LastSearchData.Pattern
             else
                 // If a pattern is given then it is the one that we will use 
                 pattern

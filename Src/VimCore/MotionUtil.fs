@@ -1987,7 +1987,7 @@ type internal MotionUtil
 
         // Searching as part of a motion should update the last pattern information
         // irrespective of whether or not the search completes
-        _vimData.LastPatternData <- searchData.LastPatternData
+        _vimData.LastSearchData <- searchData.LastSearchData
 
         x.SearchCore searchData x.CaretPoint count
 
@@ -2057,16 +2057,16 @@ type internal MotionUtil
 
     /// Move the caret to the next occurrence of the last search
     member x.LastSearch isReverse count =
-        let last = _vimData.LastPatternData
-        let last = 
-            if isReverse then { last with Path = Path.Reverse last.Path }
-            else last
-
+        let last = _vimData.LastSearchData
         if StringUtil.isNullOrEmpty last.Pattern then
             _statusUtil.OnError Resources.NormalMode_NoPreviousSearch
             None
         else
-            let searchData = SearchData(last.Pattern, last.Path, _globalSettings.WrapScan)
+            let path = 
+                if isReverse then Path.Reverse last.Path
+                else last.Path
+            let searchKind = SearchKind.OfPathAndWrap path _globalSettings.WrapScan
+            let searchData = SearchData(last.Pattern, last.Offset, searchKind, last.Options)
             x.SearchCore searchData x.CaretPoint count
 
     /// Motion from the caret to the next occurrence of the partial word under the caret
@@ -2117,9 +2117,9 @@ type internal MotionUtil
             let pattern = if isWholeWord then PatternUtil.CreateWholeWord word else word
             let searchData = SearchData(pattern, path, _globalSettings.WrapScan)
 
-            // Make sure to update the LastPatternData here.  It needs to be done 
+            // Make sure to update the LastSearchData here.  It needs to be done 
             // whether or not the search actually succeeds
-            _vimData.LastPatternData <- searchData.LastPatternData
+            _vimData.LastSearchData <- searchData
 
             // A word search always starts at the beginning of the word.  The pattern
             // based search will ensure that we don't match this word again because it

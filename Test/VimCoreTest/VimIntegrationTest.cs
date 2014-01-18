@@ -205,7 +205,7 @@ autocmd BufEnter *.html set ts=12
             public DisplayPatternTest()
             {
                 Vim.GlobalSettings.HighlightSearch = true;
-                VimData.LastPatternData = new PatternData("cat", Path.Forward);
+                VimData.LastSearchData = new SearchData("cat", Path.Forward);
                 VimData.DisplayPatternChanged += delegate { _didRun = true; };
             }
 

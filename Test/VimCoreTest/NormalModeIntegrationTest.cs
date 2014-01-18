@@ -473,7 +473,7 @@ namespace Vim.UnitTest
                 Create("last_item", "hello");
                 _assertOnWarningMessage = false;
                 _vimBuffer.Process("*");
-                Assert.Equal(PatternUtil.CreateWholeWord("last_item"), _vimData.LastPatternData.Pattern);
+                Assert.Equal(PatternUtil.CreateWholeWord("last_item"), _vimData.LastSearchData.Pattern);
             }
 
             /// <summary>
@@ -1890,7 +1890,7 @@ namespace Vim.UnitTest
                 {
                     Create("");
                     _globalSettings.HighlightSearch = true;
-                    _vimData.LastPatternData = new PatternData("cat", Path.Forward);
+                    _vimData.LastSearchData = new SearchData("cat", Path.Forward);
                     _vimBuffer.Process(":nnoremap <Esc> :nohl<Enter><Esc>", enter: true);
 
                     var ran = false;
@@ -1956,6 +1956,106 @@ namespace Vim.UnitTest
                     Assert.Equal("ll", _textBuffer.CurrentSnapshot.GetText());
                     Assert.Equal(0, _textView.GetCaretPoint().Position);
                 }
+            }
+        }
+
+        public sealed class LastSearchTest : NormalModeIntegrationTest
+        {
+            /// <summary>
+            /// Incremental search should re-use the last search if the entered search string is
+            /// empty.  It should ignore the direction though and base it's search off the '/' or
+            /// '?' it was created with
+            /// </summary>
+            [Fact]
+            public void IncrementalReuse()
+            {
+                Create("dog cat dog");
+                _textView.MoveCaretTo(1);
+                _vimBuffer.LocalSettings.GlobalSettings.WrapScan = false;
+                _vimBuffer.VimData.LastSearchData = new SearchData("dog", Path.Backward);
+                _vimBuffer.Process('/');
+                _vimBuffer.Process(VimKey.Enter);
+                Assert.Equal(8, _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// Substitute command should set the LastSearch value
+            /// </summary>
+            [Fact]
+            public void SetBySubstitute()
+            {
+                Create("dog cat dog");
+                _vimBuffer.Process(":s/dog/cat", enter: true);
+                Assert.Equal("dog", _vimBuffer.VimData.LastSearchData.Pattern);
+            }
+
+            /// <summary>
+            /// Substitute command should re-use the LastSearch value if there is no specific 
+            /// search value set
+            /// </summary>
+            [Fact]
+            public void UsedBySubstitute()
+            {
+                Create("dog cat dog");
+                _vimBuffer.VimData.LastSearchData = new SearchData("dog", Path.Forward);
+                _vimBuffer.Process(":s//cat", enter: true);
+                Assert.Equal("cat cat dog", _textView.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// The search options used by a :s command should not be stored.  For example the 
+            /// 'i' flag is used only for the :s command and not for repeats of the search 
+            /// later on.
+            /// </summary>
+            [Fact]
+            public void DontStoreSearchOptions()
+            {
+                Create("cat", "dog", "cat");
+                _assertOnErrorMessage = false;
+                _globalSettings.IgnoreCase = false;
+                _globalSettings.WrapScan = true;
+                _textView.MoveCaretToLine(2);
+                _vimBuffer.Process(":s/CAT/fish/i", enter: true);
+                Assert.Equal("fish", _textView.GetLine(2).GetText());
+                var didHit = false;
+                _vimBuffer.ErrorMessage +=
+                    (sender, args) =>
+                    {
+                        Assert.Equal(Resources.Common_PatternNotFound("CAT"), args.Message);
+                        didHit = true;
+                    };
+                _vimBuffer.Process("n");
+                Assert.True(didHit);
+            }
+
+            [Fact]
+            public void Issue1244_1()
+            {
+                Create("cat", "dog", "cat");
+                _vimBuffer.ProcessNotation(":s/cat/foo", enter: true);
+                _vimBuffer.ProcessNotation("n");
+                Assert.Equal(_textBuffer.GetLine(2).Start, _textView.GetCaretPoint());
+            }
+
+            [Fact]
+            public void Issue1244_2()
+            {
+                Create("cat", "dog", "cat", "dog");
+                _vimBuffer.ProcessNotation(":/dog", enter: true);
+                _vimBuffer.ProcessNotation("n");
+                Assert.Equal(_textBuffer.GetLine(3).Start, _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// Search offsets should apply to the 'n' and 'N' searches
+            /// </summary>
+            [Fact]
+            public void Issue1244_3()
+            {
+                Create("cat", "dog", "cat", "dog");
+                _vimBuffer.ProcessNotation("/d/e+1", enter: true);
+                _vimBuffer.ProcessNotation("n");
+                Assert.Equal(_textBuffer.GetPointInLine(3, 1), _textView.GetCaretPoint());
             }
         }
 
@@ -2667,7 +2767,7 @@ namespace Vim.UnitTest
                     Create("the big", "cat", "dog");
                     _vimBuffer.ProcessNotation("/big/+", enter: true);
                     Assert.Equal(_textBuffer.GetLine(1).Start, _textView.GetCaretPoint());
-                    Assert.Equal("big", _vimData.LastPatternData.Pattern);
+                    Assert.Equal("big", _vimData.LastSearchData.Pattern);
                 }
 
                 [Fact]
@@ -2676,7 +2776,7 @@ namespace Vim.UnitTest
                     Create("the big", "cat", "dog");
                     _vimBuffer.ProcessNotation("/big/+1", enter: true);
                     Assert.Equal(_textBuffer.GetLine(1).Start, _textView.GetCaretPoint());
-                    Assert.Equal("big", _vimData.LastPatternData.Pattern);
+                    Assert.Equal("big", _vimData.LastSearchData.Pattern);
                 }
 
                 /// <summary>
@@ -2689,7 +2789,7 @@ namespace Vim.UnitTest
                     Create("the big", "cat", "dog");
                     _vimBuffer.ProcessNotation("/big/+100", enter: true);
                     Assert.Equal(_textBuffer.GetLine(2).Start, _textView.GetCaretPoint());
-                    Assert.Equal("big", _vimData.LastPatternData.Pattern);
+                    Assert.Equal("big", _vimData.LastSearchData.Pattern);
                 }
 
                 [Fact]
@@ -2698,7 +2798,7 @@ namespace Vim.UnitTest
                     Create("the big", "cat", "dog");
                     _vimBuffer.ProcessNotation("/big/1", enter: true);
                     Assert.Equal(_textBuffer.GetLine(1).Start, _textView.GetCaretPoint());
-                    Assert.Equal("big", _vimData.LastPatternData.Pattern);
+                    Assert.Equal("big", _vimData.LastSearchData.Pattern);
                 }
 
                 [Fact]
@@ -2843,7 +2943,7 @@ namespace Vim.UnitTest
                     Create("the big dog", "cat", "dog", "fish");
                     _vimBuffer.ProcessNotation("/big/;/dog", enter: true);
                     Assert.Equal(8, _textView.GetCaretPoint().Position);
-                    Assert.Equal("dog", _vimData.LastPatternData.Pattern);
+                    Assert.Equal("dog", _vimData.LastSearchData.Pattern);
                 }
             }
         }
@@ -5742,73 +5842,6 @@ namespace Vim.UnitTest
                 _textView.MoveCaretTo(0);
                 _vimBuffer.Process("gj");
                 Assert.Equal("cat dog", _textView.GetLine(0).GetText());
-            }
-
-            /// <summary>
-            /// Incremental search should re-use the last search if the entered search string is
-            /// empty.  It should ignore the direction though and base it's search off the '/' or
-            /// '?' it was created with
-            /// </summary>
-            [Fact]
-            public void LastSearch_IncrementalReuse()
-            {
-                Create("dog cat dog");
-                _textView.MoveCaretTo(1);
-                _vimBuffer.LocalSettings.GlobalSettings.WrapScan = false;
-                _vimBuffer.VimData.LastPatternData = VimUtil.CreatePatternData("dog", Path.Backward);
-                _vimBuffer.Process('/');
-                _vimBuffer.Process(VimKey.Enter);
-                Assert.Equal(8, _textView.GetCaretPoint());
-            }
-
-            /// <summary>
-            /// Substitute command should set the LastSearch value
-            /// </summary>
-            [Fact]
-            public void LastSearch_SetBySubstitute()
-            {
-                Create("dog cat dog");
-                _vimBuffer.Process(":s/dog/cat", enter: true);
-                Assert.Equal("dog", _vimBuffer.VimData.LastPatternData.Pattern);
-            }
-
-            /// <summary>
-            /// Substitute command should re-use the LastSearch value if there is no specific 
-            /// search value set
-            /// </summary>
-            [Fact]
-            public void LastSearch_UsedBySubstitute()
-            {
-                Create("dog cat dog");
-                _vimBuffer.VimData.LastPatternData = VimUtil.CreatePatternData("dog");
-                _vimBuffer.Process(":s//cat", enter: true);
-                Assert.Equal("cat cat dog", _textView.GetLine(0).GetText());
-            }
-
-            /// <summary>
-            /// The search options used by a :s command should not be stored.  For example the 
-            /// 'i' flag is used only for the :s command and not for repeats of the search 
-            /// later on.
-            /// </summary>
-            [Fact]
-            public void LastSearch_DontStoreSearchOptions()
-            {
-                Create("cat", "dog", "cat");
-                _assertOnErrorMessage = false;
-                _globalSettings.IgnoreCase = false;
-                _globalSettings.WrapScan = true;
-                _textView.MoveCaretToLine(2);
-                _vimBuffer.Process(":s/CAT/fish/i", enter: true);
-                Assert.Equal("fish", _textView.GetLine(2).GetText());
-                var didHit = false;
-                _vimBuffer.ErrorMessage +=
-                    (sender, args) =>
-                    {
-                        Assert.Equal(Resources.Common_PatternNotFound("CAT"), args.Message);
-                        didHit = true;
-                    };
-                _vimBuffer.Process("n");
-                Assert.True(didHit);
             }
 
             /// <summary>
