@@ -473,7 +473,7 @@ namespace Vim.UnitTest
                 Create("last_item", "hello");
                 _assertOnWarningMessage = false;
                 _vimBuffer.Process("*");
-                Assert.Equal(PatternUtil.CreateWholeWord("last_item"), _vimData.LastPatternData.Pattern);
+                Assert.Equal(PatternUtil.CreateWholeWord("last_item"), _vimData.LastSearchData.Pattern);
             }
 
             /// <summary>
@@ -1890,7 +1890,7 @@ namespace Vim.UnitTest
                 {
                     Create("");
                     _globalSettings.HighlightSearch = true;
-                    _vimData.LastPatternData = new PatternData("cat", Path.Forward);
+                    _vimData.LastSearchData = new SearchData("cat", Path.Forward);
                     _vimBuffer.Process(":nnoremap <Esc> :nohl<Enter><Esc>", enter: true);
 
                     var ran = false;
@@ -1972,7 +1972,7 @@ namespace Vim.UnitTest
                 Create("dog cat dog");
                 _textView.MoveCaretTo(1);
                 _vimBuffer.LocalSettings.GlobalSettings.WrapScan = false;
-                _vimBuffer.VimData.LastPatternData = VimUtil.CreatePatternData("dog", Path.Backward);
+                _vimBuffer.VimData.LastSearchData = new SearchData("dog", Path.Backward);
                 _vimBuffer.Process('/');
                 _vimBuffer.Process(VimKey.Enter);
                 Assert.Equal(8, _textView.GetCaretPoint());
@@ -1986,7 +1986,7 @@ namespace Vim.UnitTest
             {
                 Create("dog cat dog");
                 _vimBuffer.Process(":s/dog/cat", enter: true);
-                Assert.Equal("dog", _vimBuffer.VimData.LastPatternData.Pattern);
+                Assert.Equal("dog", _vimBuffer.VimData.LastSearchData.Pattern);
             }
 
             /// <summary>
@@ -1997,7 +1997,7 @@ namespace Vim.UnitTest
             public void UsedBySubstitute()
             {
                 Create("dog cat dog");
-                _vimBuffer.VimData.LastPatternData = VimUtil.CreatePatternData("dog");
+                _vimBuffer.VimData.LastSearchData = new SearchData("dog", Path.Forward);
                 _vimBuffer.Process(":s//cat", enter: true);
                 Assert.Equal("cat cat dog", _textView.GetLine(0).GetText());
             }
@@ -2767,7 +2767,7 @@ namespace Vim.UnitTest
                     Create("the big", "cat", "dog");
                     _vimBuffer.ProcessNotation("/big/+", enter: true);
                     Assert.Equal(_textBuffer.GetLine(1).Start, _textView.GetCaretPoint());
-                    Assert.Equal("big", _vimData.LastPatternData.Pattern);
+                    Assert.Equal("big", _vimData.LastSearchData.Pattern);
                 }
 
                 [Fact]
@@ -2776,7 +2776,7 @@ namespace Vim.UnitTest
                     Create("the big", "cat", "dog");
                     _vimBuffer.ProcessNotation("/big/+1", enter: true);
                     Assert.Equal(_textBuffer.GetLine(1).Start, _textView.GetCaretPoint());
-                    Assert.Equal("big", _vimData.LastPatternData.Pattern);
+                    Assert.Equal("big", _vimData.LastSearchData.Pattern);
                 }
 
                 /// <summary>
@@ -2789,7 +2789,7 @@ namespace Vim.UnitTest
                     Create("the big", "cat", "dog");
                     _vimBuffer.ProcessNotation("/big/+100", enter: true);
                     Assert.Equal(_textBuffer.GetLine(2).Start, _textView.GetCaretPoint());
-                    Assert.Equal("big", _vimData.LastPatternData.Pattern);
+                    Assert.Equal("big", _vimData.LastSearchData.Pattern);
                 }
 
                 [Fact]
@@ -2798,7 +2798,7 @@ namespace Vim.UnitTest
                     Create("the big", "cat", "dog");
                     _vimBuffer.ProcessNotation("/big/1", enter: true);
                     Assert.Equal(_textBuffer.GetLine(1).Start, _textView.GetCaretPoint());
-                    Assert.Equal("big", _vimData.LastPatternData.Pattern);
+                    Assert.Equal("big", _vimData.LastSearchData.Pattern);
                 }
 
                 [Fact]
@@ -2943,7 +2943,7 @@ namespace Vim.UnitTest
                     Create("the big dog", "cat", "dog", "fish");
                     _vimBuffer.ProcessNotation("/big/;/dog", enter: true);
                     Assert.Equal(8, _textView.GetCaretPoint().Position);
-                    Assert.Equal("dog", _vimData.LastPatternData.Pattern);
+                    Assert.Equal("dog", _vimData.LastSearchData.Pattern);
                 }
             }
         }

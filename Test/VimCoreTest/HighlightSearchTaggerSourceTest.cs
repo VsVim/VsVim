@@ -58,7 +58,7 @@ namespace Vim.UnitTest
             public void PatternEmpty()
             {
                 Create("dog cat");
-                _vimData.LastPatternData = VimUtil.CreatePatternData("");
+                _vimData.LastSearchData = VimUtil.CreateSearchData("");
                 var ret = GetTags(_textBuffer.GetExtent());
                 Assert.Equal(0, ret.Count());
             }
@@ -70,7 +70,7 @@ namespace Vim.UnitTest
             public void WithMatch()
             {
                 Create("foo is the bar");
-                _vimData.LastPatternData = VimUtil.CreatePatternData("foo");
+                _vimData.LastSearchData = VimUtil.CreateSearchData("foo");
                 var ret = GetTags(_textBuffer.GetExtent());
                 Assert.Equal(1, ret.Count());
                 Assert.Equal(new SnapshotSpan(_textBuffer.CurrentSnapshot, 0, 3), ret.Single().Span);
@@ -83,7 +83,7 @@ namespace Vim.UnitTest
             public void OutSideSpan()
             {
                 Create("foo is the bar");
-                _vimData.LastPatternData = VimUtil.CreatePatternData("foo");
+                _vimData.LastSearchData = VimUtil.CreateSearchData("foo");
                 var ret = GetTags(new SnapshotSpan(_textBuffer.CurrentSnapshot, 4, 3));
                 Assert.Equal(0, ret.Count());
             }
@@ -99,7 +99,7 @@ namespace Vim.UnitTest
             public void ZeroLengthResults()
             {
                 Create("cat");
-                _vimData.LastPatternData = VimUtil.CreatePatternData(@"\|i\>");
+                _vimData.LastSearchData = VimUtil.CreateSearchData(@"\|i\>");
                 var ret = GetTags(_textBuffer.GetExtent());
                 Assert.Equal(
                     new[] { "cat" },
@@ -113,14 +113,14 @@ namespace Vim.UnitTest
             {
                 Create("");
                 _globalSettings.HighlightSearch = true;
-                _vimData.LastPatternData = new PatternData("cat", Path.Forward);
+                _vimData.LastSearchData = new SearchData("cat", Path.Forward);
             }
 
             [Fact]
             public void Standard()
             {
                 _globalSettings.HighlightSearch = true;
-                _vimData.LastPatternData = new PatternData("cat", Path.Forward);
+                _vimData.LastSearchData = new SearchData("cat", Path.Forward);
                 Assert.True(_asyncTaggerSourceRaw.IsProvidingTags);
             }
 
@@ -155,7 +155,7 @@ namespace Vim.UnitTest
             public void HighlightDisabled()
             {
                 Create("dog cat");
-                _vimData.LastPatternData = VimUtil.CreatePatternData("dog");
+                _vimData.LastSearchData = VimUtil.CreateSearchData("dog");
                 _globalSettings.HighlightSearch = false;
                 var ret = TryGetTagsPrompt(_textBuffer.GetExtent());
                 Assert.Equal(0, ret.Count);
@@ -168,7 +168,7 @@ namespace Vim.UnitTest
             public void OneTimeDisabled()
             {
                 Create("dog cat");
-                _vimData.LastPatternData = VimUtil.CreatePatternData("dog");
+                _vimData.LastSearchData = VimUtil.CreateSearchData("dog");
                 _vimData.SuspendDisplayPattern();
                 var ret = TryGetTagsPrompt(_textBuffer.GetExtent());
                 Assert.Equal(0, ret.Count);
@@ -185,7 +185,7 @@ namespace Vim.UnitTest
             public void NotVisible()
             {
                 Create("dog cat");
-                _vimData.LastPatternData = VimUtil.CreatePatternData("dog");
+                _vimData.LastSearchData = VimUtil.CreateSearchData("dog");
                 _asyncTaggerSourceRaw._isVisible = false;
                 var ret = TryGetTagsPrompt(_textBuffer.GetExtent());
                 Assert.Equal(0, ret.Count);
@@ -199,7 +199,7 @@ namespace Vim.UnitTest
             public ChangedTest()
             {
                 Create("");
-                _vimData.LastPatternData = new PatternData("dog", Path.Forward);
+                _vimData.LastSearchData = new SearchData("dog", Path.Forward);
                 _asyncTaggerSource.Changed += delegate { _raised = true; };
             }
 
@@ -237,7 +237,7 @@ namespace Vim.UnitTest
             [Fact]
             public void DisplayPatternChanged()
             {
-                _vimData.LastPatternData = new PatternData("hello", Path.Forward);
+                _vimData.LastSearchData = new SearchData("hello", Path.Forward);
                 Assert.True(_raised);
             }
 
@@ -273,7 +273,7 @@ namespace Vim.UnitTest
             [Fact]
             public void ResetOneTimeDisabled()
             {
-                _vimData.LastPatternData = new PatternData("cat", Path.Forward);
+                _vimData.LastSearchData = new SearchData("cat", Path.Forward);
                 _globalSettings.HighlightSearch = false;
                 _vimData.SuspendDisplayPattern();
                 _globalSettings.HighlightSearch = true;

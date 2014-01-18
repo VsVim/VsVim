@@ -417,6 +417,7 @@ type PatternDataEventArgs(_patternData : PatternData) =
 [<RequireQualifiedAccess>]
 [<StructuralEquality>]
 [<NoComparison>]
+[<DebuggerDisplay("{ToString(),nq}")>]
 type SearchOffsetData =
     | None
     | Line of int
@@ -519,6 +520,7 @@ type SearchOffsetData =
             SearchOffsetData.ParseCore offset
 
 [<Sealed>]
+[<DebuggerDisplay("{ToString(),nq}")>]
 type SearchData
     (
         _pattern : string,
@@ -551,16 +553,16 @@ type SearchData
     /// for in the offset
     member x.PatternData = { Pattern = x.Pattern; Path = x.Kind.Path }
 
-    /// The PatternData which should be used for IVimData.LastPatternData if this search needs
+    /// The SearchData which should be used for IVimData.LastSearchData if this search needs
     /// to update that value.  It takes into account the search pattern in an offset string
     /// as specified in ':help //;'
-    member x.LastPatternData =
+    member x.LastSearchData =
         let path = x.Path
         let pattern = 
             match x.Offset with
             | SearchOffsetData.Search patternData -> patternData.Pattern
             | _ -> x.Pattern
-        { Pattern = pattern; Path = path }
+        SearchData(pattern, x.Offset, x.Kind, x.Options)
 
     member x.Equals(other: SearchData) =
         if obj.ReferenceEquals(other, null) then
@@ -578,6 +580,9 @@ type SearchData
 
     override x.GetHashCode() =
         _pattern.GetHashCode()
+
+    override x.ToString() =
+        x.Pattern
 
     static member op_Equality(this, other) = System.Collections.Generic.EqualityComparer<SearchData>.Default.Equals(this, other)
     static member op_Inequality(this, other) = not (System.Collections.Generic.EqualityComparer<SearchData>.Default.Equals(this, other))
@@ -3594,7 +3599,7 @@ type IVimData =
     abstract LastMacroRun : char option with get, set
 
     /// Last pattern searched for in any buffer.
-    abstract LastPatternData : PatternData with get, set
+    abstract LastSearchData : SearchData with get, set
 
     /// Data for the last substitute command performed
     abstract LastSubstituteData : SubstituteData option with get, set

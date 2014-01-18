@@ -151,11 +151,11 @@ type internal IncrementalSearch
             if StringUtil.isNullOrEmpty _incrementalSearchData.SearchData.Pattern then
                 // When the user simply hits Enter on an empty incremental search then
                 // we should be re-using the 'LastSearch' value.
-                x.RunSearch startPoint _vimData.LastPatternData.Pattern
+                x.RunSearch startPoint _vimData.LastSearchData.Pattern
 
             _incrementalSearchData.SearchResult
 
-        _vimData.LastPatternData <- searchResult.SearchData.LastPatternData
+        _vimData.LastSearchData <- searchResult.SearchData.LastSearchData
         _currentSearchCompleted.Trigger x (SearchResultEventArgs(searchResult))
         _historySession <- None
         _incrementalSearchData <- IncrementalSearchData.Default
