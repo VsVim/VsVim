@@ -8,8 +8,11 @@ open Vim.Modes
 type internal SelectMode
     (
         _vimBufferData : IVimBufferData,
-        _visualKind : VisualKind,
         _commonOperations : ICommonOperations,
+        _motionUtil : IMotionUtil,
+        _visualKind : VisualKind,
+        _runner : ICommandRunner,
+        _capture : IMotionCapture,
         _undoRedoOperations : IUndoRedoOperations,
         _selectionTracker : ISelectionTracker
     ) = 
@@ -23,6 +26,24 @@ type internal SelectMode
         | VisualKind.Character -> ModeKind.SelectCharacter
         | VisualKind.Line -> ModeKind.SelectLine
         | VisualKind.Block -> ModeKind.SelectBlock
+
+    /// Handles Ctrl+C/Ctrl+V/Ctrl+X ala $VIMRUNTIME/mswin.vim
+    static let Commands = 
+        let visualSeq = 
+            seq {
+                yield ("<C-g>", CommandFlags.Special, VisualCommand.SwitchModeOtherVisual)
+            } |> Seq.map (fun (str, flags, command) -> 
+                let keyInputSet = KeyNotationUtil.StringToKeyInputSet str
+                CommandBinding.VisualBinding (keyInputSet, flags, command))
+        let normalSeq = 
+            seq {
+                yield ("<C-x>", CommandFlags.Special, NormalCommand.CutSelection)
+                yield ("<C-c>", CommandFlags.Special, NormalCommand.CopySelection)
+                yield ("<C-v>", CommandFlags.Special, NormalCommand.Paste)
+            } |> Seq.map (fun (str, flags, command) -> 
+                let keyInputSet = KeyNotationUtil.StringToKeyInputSet str
+                CommandBinding.NormalBinding (keyInputSet, flags, command))
+        Seq.append visualSeq normalSeq
 
     /// A 'special key' is defined in :help keymodel as any of the following keys.  Depending
     /// on the value of the keymodel setting they can affect the selection
@@ -47,6 +68,29 @@ type internal SelectMode
             | VimKey.Home -> Some CaretMovement.ControlHome
             | VimKey.End -> Some CaretMovement.ControlEnd
             | _ -> None
+
+    let mutable _builtCommands = false
+
+    member x.CommandNames = 
+        x.EnsureCommandsBuilt()
+        _runner.Commands |> Seq.map (fun command -> command.KeyInputSet)
+
+    member this.KeyRemapMode = 
+        if _runner.IsWaitingForMoreInput then
+            _runner.KeyRemapMode
+        else
+            KeyRemapMode.Visual
+
+    member x.EnsureCommandsBuilt() =
+        if not _builtCommands then
+            let factory = CommandFactory(_commonOperations, _capture, _motionUtil, _vimBufferData.JumpList, _vimTextBuffer.LocalSettings)
+
+            // Add in the standard commands
+            factory.CreateMovementCommands()
+            |> Seq.append Commands
+            |> Seq.iter _runner.Add 
+
+            _builtCommands <- true
 
     member x.CaretPoint = TextViewUtil.GetCaretPoint _textView
 
@@ -103,56 +147,46 @@ type internal SelectMode
 
         ProcessResult.Handled (ModeSwitch.SwitchMode ModeKind.Insert)
 
-    /// Handles Ctrl+C/Ctrl+V/Ctrl+X ala $VIMRUNTIME/mswin.vim
-    ///
-    /// TODO: This should be turned into a mode map
     member x.Process keyInput = 
+
         let processResult = 
             if keyInput = KeyInputUtil.EscapeKey then
-                x.CheckCaretAndSwitchPreviousMode
+                ProcessResult.Handled ModeSwitch.SwitchPreviousMode
             elif keyInput = KeyInputUtil.EnterKey then
                 let caretPoint = TextViewUtil.GetCaretPoint _textView
                 let text = _commonOperations.GetNewLineText caretPoint
                 x.ProcessInput text
             elif keyInput.Key = VimKey.Delete || keyInput.Key = VimKey.Back then
                 x.ProcessInput "" |> ignore
-                x.CheckCaretAndSwitchPreviousMode
-            elif keyInput = (KeyInputUtil.CharWithControlToKeyInput 'x') then
-                _commonOperations.EditorOperations.CutSelection() |> ignore
-                x.CheckCaretAndSwitchPreviousMode
-            elif keyInput = KeyInputUtil.CharWithControlToKeyInput 'c' then
-                _commonOperations.EditorOperations.CopySelection() |> ignore
-                ProcessResult.Handled ModeSwitch.NoSwitch
-            elif keyInput = KeyInputUtil.CharWithControlToKeyInput 'v' then
-                _commonOperations.EditorOperations.Paste() |> ignore
-                ProcessResult.Handled ModeSwitch.NoSwitch
+                ProcessResult.Handled ModeSwitch.SwitchPreviousMode
             else
                 match GetCaretMovement keyInput with
-                | Some caretMovement -> x.ProcessCaretMovement caretMovement keyInput
+                | Some caretMovement ->
+                    x.ProcessCaretMovement caretMovement keyInput
                 | None -> 
-                    // TODO: The shift modifier should be removed and the
-                    // resulting key should be processed as an ordinary motion.
-                    // For example, both Ctrl+F and Ctrl+Shift+F should page
-                    // forward.  In any case, we don't want to process it
-                    // as text input
-                    if Option.isSome keyInput.RawChar && not (CharUtil.IsControl keyInput.Char) then
-                        x.ProcessInput (StringUtil.ofChar keyInput.Char)
-                    elif x.ShouldStopSelection keyInput then
-                        x.CheckCaretAndSwitchPreviousMode
-                    else
+                    match _runner.Run keyInput with
+                    | BindResult.NeedMoreInput _ -> 
+                        ProcessResult.HandledNeedMoreInput
+                    | BindResult.Complete commandRanData ->
+                        ProcessResult.OfCommandResult commandRanData.CommandResult
+                    | BindResult.Error ->
+                        _selectionTracker.UpdateSelection()
+                        _commonOperations.Beep()
+                        ProcessResult.Handled ModeSwitch.NoSwitch
+                    | BindResult.Cancelled -> 
+                        _selectionTracker.UpdateSelection()
                         ProcessResult.Handled ModeSwitch.NoSwitch
 
         if processResult.IsAnySwitch then
+            _commonOperations.EnsureAtCaret ViewFlags.VirtualEdit
             _textView.Selection.Clear()
             _textView.Selection.Mode <- TextSelectionMode.Stream
 
         processResult
 
-    member x.CheckCaretAndSwitchPreviousMode =
-        _commonOperations.EnsureAtCaret ViewFlags.VirtualEdit
-        ProcessResult.Handled ModeSwitch.SwitchPreviousMode
-
     member x.OnEnter modeArgument = 
+        x.EnsureCommandsBuilt()
+        
         match modeArgument with
         | ModeArgument.InitialVisualSelection (visualSelection, caretPoint) ->
 
@@ -163,7 +197,11 @@ type internal SelectMode
         | _ -> ()
 
         _selectionTracker.Start()
-    member x.OnLeave() = _selectionTracker.Stop()
+
+    member x.OnLeave() =
+        _runner.ResetState()
+        _selectionTracker.Stop()
+
     member x.OnClose() = ()
 
     member x.SyncSelection() =
