@@ -178,13 +178,10 @@ type internal CommonOperations
     member x.AdjustCaretForVirtualEdit() =
 
         let allowPastEndOfLine = 
+            _globalSettings.IsVirtualEditOneMore ||
             (_globalSettings.SelectionKind = SelectionKind.Exclusive && VisualKind.IsAnyVisual _vimTextBuffer.ModeKind)
 
         if not allowPastEndOfLine then
-            x.AdjustCaretForVirtualEditOneMore()
-
-    member x.AdjustCaretForVirtualEditOneMore() =
-        if not _globalSettings.IsVirtualEditOneMore then
             let point = TextViewUtil.GetCaretPoint _textView
             let line = SnapshotPointUtil.GetContainingLine point
             if point.Position >= line.End.Position && line.Length > 0 then 
