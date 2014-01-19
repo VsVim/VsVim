@@ -114,8 +114,11 @@ type internal SelectMode
                 let caretPoint = TextViewUtil.GetCaretPoint _textView
                 let text = _commonOperations.GetNewLineText caretPoint
                 x.ProcessInput text
-            elif keyInput.Key = VimKey.Delete || keyInput.Key = VimKey.Back || keyInput = (KeyInputUtil.CharWithControlToKeyInput 'x') then
+            elif keyInput.Key = VimKey.Delete || keyInput.Key = VimKey.Back then
                 x.ProcessInput "" |> ignore
+                x.CheckCaretAndSwitchPreviousMode
+            elif keyInput = (KeyInputUtil.CharWithControlToKeyInput 'x') then
+                _commonOperations.EditorOperations.CutSelection() |> ignore
                 x.CheckCaretAndSwitchPreviousMode
             elif keyInput = KeyInputUtil.CharWithControlToKeyInput 'c' then
                 _commonOperations.EditorOperations.CopySelection() |> ignore
