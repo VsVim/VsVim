@@ -69,6 +69,10 @@ type internal SelectMode
             | VimKey.End -> Some CaretMovement.ControlEnd
             | _ -> None
 
+    /// Whether a key input corresponds to normal text
+    static let IsTextKeyInput (keyInput : KeyInput) =
+        Option.isSome keyInput.RawChar && not (CharUtil.IsControl keyInput.Char)
+
     let mutable _builtCommands = false
 
     member x.CommandNames = 
@@ -82,11 +86,20 @@ type internal SelectMode
             KeyRemapMode.Visual
 
     member x.EnsureCommandsBuilt() =
+
+        /// Whether a command is bound to a key that is not insertable text
+        let isNonTextCommand (command : CommandBinding) =
+            match command.KeyInputSet.FirstKeyInput with
+            | None ->
+                true
+            | Some keyInput ->
+                not (IsTextKeyInput keyInput)
+
         if not _builtCommands then
             let factory = CommandFactory(_commonOperations, _capture, _motionUtil, _vimBufferData.JumpList, _vimTextBuffer.LocalSettings)
 
-            // Add in the standard commands
-            factory.CreateMovementCommands()
+            // Add in the standard non-conflicting movement commands
+            factory.CreateMovementCommands() |> Seq.filter isNonTextCommand
             |> Seq.append Commands
             |> Seq.iter _runner.Add 
 
@@ -164,18 +177,20 @@ type internal SelectMode
                 | Some caretMovement ->
                     x.ProcessCaretMovement caretMovement keyInput
                 | None -> 
-                    match _runner.Run keyInput with
-                    | BindResult.NeedMoreInput _ -> 
-                        ProcessResult.HandledNeedMoreInput
-                    | BindResult.Complete commandRanData ->
-                        ProcessResult.OfCommandResult commandRanData.CommandResult
-                    | BindResult.Error ->
-                        _selectionTracker.UpdateSelection()
-                        _commonOperations.Beep()
-                        ProcessResult.Handled ModeSwitch.NoSwitch
-                    | BindResult.Cancelled -> 
-                        _selectionTracker.UpdateSelection()
-                        ProcessResult.Handled ModeSwitch.NoSwitch
+                    if IsTextKeyInput keyInput then
+                        x.ProcessInput (StringUtil.ofChar keyInput.Char)
+                    else
+                        match _runner.Run keyInput with
+                        | BindResult.NeedMoreInput _ -> 
+                            ProcessResult.HandledNeedMoreInput
+                        | BindResult.Complete commandRanData ->
+                            ProcessResult.OfCommandResult commandRanData.CommandResult
+                        | BindResult.Error ->
+                            _commonOperations.Beep()
+                            ProcessResult.Handled ModeSwitch.SwitchPreviousMode
+                        | BindResult.Cancelled -> 
+                            _selectionTracker.UpdateSelection()
+                            ProcessResult.Handled ModeSwitch.NoSwitch
 
         if processResult.IsAnySwitch then
             _commonOperations.EnsureAtCaret ViewFlags.VirtualEdit

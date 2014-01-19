@@ -256,8 +256,8 @@ type internal VimBufferFactory
             VisualKind.All
             |> Seq.map (fun visualKind ->
                 let tracker = visualOptsFactory visualKind
-                Modes.Visual.SelectMode(vimBufferData, commonOperations, motionUtil, visualKind,
-                    createCommandRunner visualKind KeyRemapMode.Select, capture, undoRedoOperations, tracker) :> IMode)
+                let runner = createCommandRunner visualKind KeyRemapMode.Select
+                Modes.Visual.SelectMode(vimBufferData, commonOperations, motionUtil, visualKind, runner, capture, undoRedoOperations, tracker) :> IMode)
             |> List.ofSeq
 
         let visualModeList =
