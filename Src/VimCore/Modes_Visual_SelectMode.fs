@@ -94,7 +94,7 @@ type internal SelectMode
             let factory = CommandFactory(_commonOperations, _capture, _motionUtil, _vimBufferData.JumpList, _vimTextBuffer.LocalSettings)
 
             // Add in the standard non-conflicting movement commands
-            factory.CreateMovementCommands() |> Seq.filter isNonTextCommand
+            factory.CreateScrollCommands() |> Seq.filter isNonTextCommand
             |> Seq.append Commands
             |> Seq.iter _runner.Add 
 
