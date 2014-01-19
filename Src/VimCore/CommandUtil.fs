@@ -2751,7 +2751,7 @@ type internal CommandUtil
     member x.SwitchPreviousMode() = 
         CommandResult.Completed ModeSwitch.SwitchPreviousMode 
 
-    /// Switch to parallel visual mode
+    /// Switch to other visual mode: visual from select or vice versa
     member x.SwitchModeOtherVisual visualSpan =
         let currentModeKind = _vimBufferData.VimTextBuffer.ModeKind
         let newModeKind =
@@ -2763,21 +2763,20 @@ type internal CommandUtil
             | ModeKind.SelectCharacter -> ModeKind.VisualCharacter
             | ModeKind.SelectLine -> ModeKind.VisualLine
             | _ -> currentModeKind
-        let anchorPoint = 
+        let anchorPoint =
             _vimBufferData.VisualCaretStartPoint
             |> OptionUtil.map2 (TrackingPointUtil.GetPoint x.CurrentSnapshot)
         match anchorPoint with
         | None ->
             _commonOperations.Beep()
             CommandResult.Completed ModeSwitch.NoSwitch
-        | Some anchorPoint -> 
+        | Some anchorPoint ->
             let caretPoint = x.CaretPoint
             let visualSelection = VisualSelection.CreateForPoints visualSpan.VisualKind anchorPoint caretPoint _localSettings.TabStop
             let visualSelection = visualSelection.AdjustForExtendIntoLineBreak true
             let visualSelection = visualSelection.AdjustForSelectionKind _globalSettings.SelectionKind
             let modeArgument = ModeArgument.InitialVisualSelection (visualSelection, Some anchorPoint)
             x.SwitchMode newModeKind modeArgument
-
 
     /// Switch from the current visual mode into the specified visual mode
     member x.SwitchModeVisual newVisualKind = 
@@ -2806,10 +2805,6 @@ type internal CommandUtil
                     let modeArgument = ModeArgument.InitialVisualSelection (newVisualSelection, Some anchorPoint)
 
                     x.SwitchMode newVisualSelection.VisualKind.VisualModeKind modeArgument
-
-    /// Cycle between a corresponding visual and select mode
-    member x.Swap newVisualKind = 
-        ()
 
     /// Undo count operations in the ITextBuffer
     member x.Undo count = 

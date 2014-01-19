@@ -27,15 +27,15 @@ type internal SelectMode
         | VisualKind.Line -> ModeKind.SelectLine
         | VisualKind.Block -> ModeKind.SelectBlock
 
-    /// Handles Ctrl+C/Ctrl+V/Ctrl+X ala $VIMRUNTIME/mswin.vim
-    static let Commands = 
-        let visualSeq = 
+    /// Handles Ctrl+C/Ctrl+V/Ctrl+X a la $VIMRUNTIME/mswin.vim
+    static let Commands =
+        let visualSeq =
             seq {
                 yield ("<C-g>", CommandFlags.Special, VisualCommand.SwitchModeOtherVisual)
                 yield ("<C-x>", CommandFlags.Special, VisualCommand.CutSelection)
                 yield ("<C-c>", CommandFlags.Special, VisualCommand.CopySelection)
                 yield ("<C-v>", CommandFlags.Special, VisualCommand.CutSelectionAndPaste)
-            } |> Seq.map (fun (str, flags, command) -> 
+            } |> Seq.map (fun (str, flags, command) ->
                 let keyInputSet = KeyNotationUtil.StringToKeyInputSet str
                 CommandBinding.VisualBinding (keyInputSet, flags, command))
         visualSeq
@@ -70,11 +70,11 @@ type internal SelectMode
 
     let mutable _builtCommands = false
 
-    member x.CommandNames = 
+    member x.CommandNames =
         x.EnsureCommandsBuilt()
         _runner.Commands |> Seq.map (fun command -> command.KeyInputSet)
 
-    member this.KeyRemapMode = 
+    member this.KeyRemapMode =
         if _runner.IsWaitingForMoreInput then
             _runner.KeyRemapMode
         else
@@ -96,7 +96,7 @@ type internal SelectMode
             // Add in the standard non-conflicting movement commands
             factory.CreateScrollCommands() |> Seq.filter isNonTextCommand
             |> Seq.append Commands
-            |> Seq.iter _runner.Add 
+            |> Seq.iter _runner.Add
 
             _builtCommands <- true
 
@@ -171,19 +171,19 @@ type internal SelectMode
                 match GetCaretMovement keyInput with
                 | Some caretMovement ->
                     x.ProcessCaretMovement caretMovement keyInput
-                | None -> 
+                | None ->
                     if IsTextKeyInput keyInput then
                         x.ProcessInput (StringUtil.ofChar keyInput.Char)
                     else
                         match _runner.Run keyInput with
-                        | BindResult.NeedMoreInput _ -> 
+                        | BindResult.NeedMoreInput _ ->
                             ProcessResult.HandledNeedMoreInput
                         | BindResult.Complete commandRanData ->
                             ProcessResult.OfCommandResult commandRanData.CommandResult
                         | BindResult.Error ->
                             _commonOperations.Beep()
                             ProcessResult.Handled ModeSwitch.SwitchPreviousMode
-                        | BindResult.Cancelled -> 
+                        | BindResult.Cancelled ->
                             _selectionTracker.UpdateSelection()
                             ProcessResult.Handled ModeSwitch.NoSwitch
 
@@ -194,9 +194,9 @@ type internal SelectMode
 
         processResult
 
-    member x.OnEnter modeArgument = 
+    member x.OnEnter modeArgument =
         x.EnsureCommandsBuilt()
-        
+
         match modeArgument with
         | ModeArgument.InitialVisualSelection (visualSelection, caretPoint) ->
 
