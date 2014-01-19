@@ -2285,9 +2285,6 @@ type internal CommandUtil
         | NormalCommand.WriteBufferAndQuit -> x.WriteBufferAndQuit()
         | NormalCommand.Yank motion -> x.RunWithMotion motion (x.YankMotion register)
         | NormalCommand.YankLines -> x.YankLines count register
-        | NormalCommand.CutSelection -> x.CutSelection()
-        | NormalCommand.CopySelection -> x.CopySelection()
-        | NormalCommand.Paste -> x.Paste()
 
     /// Run a VisualCommand against the buffer
     member x.RunVisualCommand command (data : CommandData) (visualSpan : VisualSpan) = 
@@ -2330,6 +2327,9 @@ type internal CommandUtil
         | VisualCommand.ToggleAllFoldsInSelection-> x.ToggleAllFolds()
         | VisualCommand.YankLineSelection -> x.YankLineSelection register visualSpan
         | VisualCommand.YankSelection -> x.YankSelection register visualSpan
+        | VisualCommand.CutSelection -> x.CutSelection streamSelectionSpan
+        | VisualCommand.CopySelection -> x.CopySelection streamSelectionSpan
+        | VisualCommand.CutSelectionAndPaste -> x.CutSelectionAndPaste streamSelectionSpan
 
     /// Get the MotionResult value for the provided MotionData and pass it
     /// if found to the provided function
@@ -2886,19 +2886,22 @@ type internal CommandUtil
         CommandResult.Completed ModeSwitch.SwitchPreviousMode
 
     /// Cut selection
-    member x.CutSelection () =
+    member x.CutSelection streamSelectionSpan =
+        _textView.Selection.Select(streamSelectionSpan.Start, streamSelectionSpan.End)
         _editorOperations.CutSelection() |> ignore
-        CommandResult.Completed ModeSwitch.NoSwitch
+        CommandResult.Completed ModeSwitch.SwitchPreviousMode
 
     /// Copy selection
-    member x.CopySelection () =
+    member x.CopySelection streamSelectionSpan =
+        _textView.Selection.Select(streamSelectionSpan.Start, streamSelectionSpan.End)
         _editorOperations.CopySelection() |> ignore
         CommandResult.Completed ModeSwitch.NoSwitch
 
-    /// Paste
-    member x.Paste() =
+    /// Cut selection and paste
+    member x.CutSelectionAndPaste streamSelectionSpan =
+        _textView.Selection.Select(streamSelectionSpan.Start, streamSelectionSpan.End)
         _editorOperations.Paste() |> ignore
-        CommandResult.Completed ModeSwitch.NoSwitch
+        CommandResult.Completed ModeSwitch.SwitchPreviousMode
 
     interface ICommandUtil with
         member x.RunNormalCommand command data = x.RunNormalCommand command data

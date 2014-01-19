@@ -2557,15 +2557,6 @@ type NormalCommand =
     /// Yank the specified number of lines
     | YankLines
 
-    /// Cut selection
-    | CutSelection
-
-    /// Copy selection
-    | CopySelection
-
-    /// Paste
-    | Paste
-
 /// Visual mode commands which can be executed by the user 
 [<RequireQualifiedAccess>]
 [<NoComparison>]
@@ -2656,6 +2647,15 @@ type VisualCommand =
 
     /// Switch to the other visual mode, visual or select
     | SwitchModeOtherVisual
+
+    /// Cut selection
+    | CutSelection
+
+    /// Copy selection
+    | CopySelection
+
+    /// Cut selection and paste
+    | CutSelectionAndPaste
 
 /// Insert mode commands that can be executed by the user
 [<RequireQualifiedAccess>]

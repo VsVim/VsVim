@@ -32,18 +32,13 @@ type internal SelectMode
         let visualSeq = 
             seq {
                 yield ("<C-g>", CommandFlags.Special, VisualCommand.SwitchModeOtherVisual)
+                yield ("<C-x>", CommandFlags.Special, VisualCommand.CutSelection)
+                yield ("<C-c>", CommandFlags.Special, VisualCommand.CopySelection)
+                yield ("<C-v>", CommandFlags.Special, VisualCommand.CutSelectionAndPaste)
             } |> Seq.map (fun (str, flags, command) -> 
                 let keyInputSet = KeyNotationUtil.StringToKeyInputSet str
                 CommandBinding.VisualBinding (keyInputSet, flags, command))
-        let normalSeq = 
-            seq {
-                yield ("<C-x>", CommandFlags.Special, NormalCommand.CutSelection)
-                yield ("<C-c>", CommandFlags.Special, NormalCommand.CopySelection)
-                yield ("<C-v>", CommandFlags.Special, NormalCommand.Paste)
-            } |> Seq.map (fun (str, flags, command) -> 
-                let keyInputSet = KeyNotationUtil.StringToKeyInputSet str
-                CommandBinding.NormalBinding (keyInputSet, flags, command))
-        Seq.append visualSeq normalSeq
+        visualSeq
 
     /// A 'special key' is defined in :help keymodel as any of the following keys.  Depending
     /// on the value of the keymodel setting they can affect the selection
