@@ -238,6 +238,7 @@ type internal InsertMode
             ("<C-t>", InsertCommand.ShiftLineRight, CommandFlags.Repeatable)
             ("<C-y>", InsertCommand.InsertCharacterAboveCaret, CommandFlags.Repeatable)
             ("<C-w>", InsertCommand.DeleteWordBeforeCursor, CommandFlags.Repeatable ||| CommandFlags.InsertEdit)
+            ("<C-v>", InsertCommand.Paste, CommandFlags.Repeatable ||| CommandFlags.InsertEdit)
             ("<C-Left>", InsertCommand.MoveCaretByWord Direction.Left, CommandFlags.Movement)
             ("<C-Right>", InsertCommand.MoveCaretByWord Direction.Right, CommandFlags.Movement)
         ]

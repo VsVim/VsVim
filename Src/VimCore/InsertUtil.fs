@@ -564,6 +564,7 @@ type internal InsertUtil
             | InsertCommand.ShiftLineLeft -> x.ShiftLineLeft ()
             | InsertCommand.ShiftLineRight -> x.ShiftLineRight ()
             | InsertCommand.DeleteLineBeforeCursor -> x.DeleteLineBeforeCursor()
+            | InsertCommand.Paste -> x.Paste()
 
     member x.RunInsertCommand command = 
         x.RunInsertCommandCore command false
@@ -626,6 +627,11 @@ type internal InsertUtil
             CommandResult.Completed ModeSwitch.NoSwitch
         else
             x.DeleteWordBeforeCursor()
+
+    /// Paste clipboard
+    member x.Paste () =
+        _editorOperations.Paste() |> ignore
+        CommandResult.Completed ModeSwitch.NoSwitch
 
     member x.ExtraTextChange textChange addNewLines = 
         x.ApplyTextChange textChange addNewLines 

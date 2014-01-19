@@ -2739,6 +2739,9 @@ type InsertCommand  =
     /// Delete non-blank characters before cursor on current line
     | DeleteLineBeforeCursor
 
+    /// Paste clipboard
+    | Paste
+
     with
 
     /// Convert a TextChange value into the appropriate InsertCommand structure
@@ -2780,6 +2783,7 @@ type InsertCommand  =
         | InsertCommand.ShiftLineLeft -> None
         | InsertCommand.ShiftLineRight -> None
         | InsertCommand.DeleteLineBeforeCursor -> None
+        | InsertCommand.Paste -> None
 
 /// Commands which can be executed by the user
 [<RequireQualifiedAccess>]
