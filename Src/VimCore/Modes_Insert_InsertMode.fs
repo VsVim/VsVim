@@ -247,6 +247,24 @@ type internal InsertMode
         ]
 
     do
+
+        // Caret changes can end a text change operation.
+        _textView.Caret.PositionChanged
+        |> Observable.subscribe (fun _ -> this.OnCaretPositionChanged() )
+        |> _bag.Add
+
+        // Listen for text changes
+        _textChangeTracker.ChangeCompleted
+        |> Observable.filter (fun _ -> this.IsActive)
+        |> Observable.subscribe (fun args -> this.OnTextChangeCompleted args)
+        |> _bag.Add
+
+    member x.EnsureCommandsBuilt () =
+        if _commandMap.IsEmpty then
+            x.BuildCommands()
+
+    member x.BuildCommands () =
+
         let oldCommands : (string * RawInsertCommand) list = 
             [
                 ("<Esc>", RawInsertCommand.CustomCommand this.ProcessEscape)
@@ -302,23 +320,18 @@ type internal InsertMode
                         ()
             ]
 
+        let applicableSelectionCommands =
+            if Util.IsFlagSet _globalSettings.KeyModelOptions KeyModelOptions.StartSelection then
+                selectionCommands
+            else
+                List.empty
+
         _commandMap <-
             oldCommands
             |> Seq.append mappedCommands
             |> Seq.map (fun (str, func) -> (KeyNotationUtil.StringToKeyInput str), func)
-            |> Seq.append selectionCommands
+            |> Seq.append applicableSelectionCommands
             |> Map.ofSeq
-
-        // Caret changes can end a text change operation.
-        _textView.Caret.PositionChanged
-        |> Observable.subscribe (fun _ -> this.OnCaretPositionChanged() )
-        |> _bag.Add
-
-        // Listen for text changes 
-        _textChangeTracker.ChangeCompleted
-        |> Observable.filter (fun _ -> this.IsActive)
-        |> Observable.subscribe (fun args -> this.OnTextChangeCompleted args)
-        |> _bag.Add
 
     member x.ActiveWordCompletionSession = 
         match _sessionData.ActiveEditItem with
@@ -884,6 +897,7 @@ type internal InsertMode
     /// Entering an insert or replace mode.  Setup the InsertSessionData based on the 
     /// ModeArgument value. 
     member x.OnEnter arg =
+        x.EnsureCommandsBuilt()
 
         // When starting insert mode we want to track the edits to the IVimBuffer as a 
         // text change
