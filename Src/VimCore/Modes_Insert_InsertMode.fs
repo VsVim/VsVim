@@ -305,11 +305,8 @@ type internal InsertMode
             // Run a normal command bound to a key input and return a command result
             let runNormalCommand normalCommand keyInput =
                 let commandData = { Count = None; RegisterName = None }
-                match _commandUtil.RunNormalCommand normalCommand commandData with
-                | CommandResult.Error ->
-                    ProcessResult.Error
-                | CommandResult.Completed modeSwitch ->
-                    ProcessResult.Handled modeSwitch
+                let commandResult = _commandUtil.RunNormalCommand normalCommand commandData
+                ProcessResult.OfCommandResult commandResult
 
             // Extract those bindings that are bound to normal commands and
             // create raw insert command that runs the normal command
