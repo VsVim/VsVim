@@ -267,32 +267,40 @@ type internal InsertMode
                 (name, rawInsertCommand))
             |> List.ofSeq
 
-        let runNormalCommand normalCommand keyInput =
-            let commandData = { Count = None; RegisterName = None }
-            match _commandUtil.RunNormalCommand normalCommand commandData with
-            | CommandResult.Error ->
-                ProcessResult.Error
-            | CommandResult.Completed modeSwitch ->
-                ProcessResult.Handled modeSwitch
-
+        /// The list of commands that initiate select mode
         let selectionCommands : (KeyInput * RawInsertCommand) list =
+
+            // Create a command factory so we can access the selection commands
             let factory =
                 CommandFactory(_operations, _capture, _motionUtil,
                     _vimBuffer.VimBufferData.JumpList,
                     _vimBuffer.LocalSettings)
-            factory.CreateSelectionCommands()
-            |> Seq.collect (
-                fun commandBinding ->
+
+            // Run a normal command bound to a key input and return a command result
+            let runNormalCommand normalCommand keyInput =
+                let commandData = { Count = None; RegisterName = None }
+                match _commandUtil.RunNormalCommand normalCommand commandData with
+                | CommandResult.Error ->
+                    ProcessResult.Error
+                | CommandResult.Completed modeSwitch ->
+                    ProcessResult.Handled modeSwitch
+
+            // Extract those bindings that are bound to normal commands and
+            // create raw insert command that runs the normal command
+            [
+                for commandBinding in factory.CreateSelectionCommands() do
                     match commandBinding with
                     | CommandBinding.NormalBinding (_, _,  normalCommand) ->
-                        let keyInput = commandBinding.KeyInputSet.FirstKeyInput.Value
-                        seq {
-                            yield (keyInput, RawInsertCommand.CustomCommand (runNormalCommand normalCommand))
-                        }
+                        match commandBinding.KeyInputSet.FirstKeyInput with
+                        | Some keyInput ->
+                            let customCommand = runNormalCommand normalCommand
+                            let rawInsertCommand = RawInsertCommand.CustomCommand customCommand
+                            yield (keyInput, rawInsertCommand)
+                        | None ->
+                            ()
                     | _ ->
-                        Seq.empty
-            )
-            |> Seq.toList
+                        ()
+            ]
 
         _commandMap <-
             oldCommands

@@ -195,7 +195,7 @@ type internal NormalMode
         if not x.IsCommandRunnerPopulated then
             let factory = CommandFactory(_operations, _capture, _motionUtil, _vimBufferData.JumpList, _localSettings)
 
-            _sharedSelectionCommands <- factory.CreateSelectionCommands() |> Seq.toList
+            _sharedSelectionCommands <- factory.CreateSelectionCommands() |> List.ofSeq
             _sharedSelectionCommandNameSet <-
                 _sharedSelectionCommands
                 |> Seq.map (fun binding -> binding.KeyInputSet)
