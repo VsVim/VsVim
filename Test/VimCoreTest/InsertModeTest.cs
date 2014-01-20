@@ -28,7 +28,7 @@ namespace Vim.UnitTest
         protected ICommonOperations _operations;
         protected Mock<IDisplayWindowBroker> _broker;
         protected Mock<IEditorOptions> _editorOptions;
-        protected Mock<IUndoRedoOperations> _undoRedoOperations;
+        protected IUndoRedoOperations _undoRedoOperations;
         protected Mock<ITextChangeTracker> _textChangeTracker;
         internal Mock<IInsertUtil> _insertUtil;
         protected Mock<IKeyboardDevice> _keyboardDevice;
@@ -61,7 +61,7 @@ namespace Vim.UnitTest
             _editorOptions = _factory.Create<IEditorOptions>(MockBehavior.Loose);
             _textChangeTracker = _factory.Create<ITextChangeTracker>(MockBehavior.Loose);
             _textChangeTracker.SetupGet(x => x.CurrentChange).Returns(FSharpOption<TextChange>.None);
-            _undoRedoOperations = _factory.Create<IUndoRedoOperations>();
+            _undoRedoOperations = CreateUndoRedoOperations();
             _wordCompletionSessionFactoryService = _factory.Create<IWordCompletionSessionFactoryService>();
 
             var localSettings = new LocalSettings(Vim.GlobalSettings);
@@ -94,7 +94,7 @@ namespace Vim.UnitTest
                 _operations,
                 _broker.Object,
                 _editorOptions.Object,
-                _undoRedoOperations.Object,
+                _undoRedoOperations,
                 _textChangeTracker.Object,
                 _insertUtil.Object,
                 _motionUtil.Object,
