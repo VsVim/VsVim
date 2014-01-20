@@ -72,7 +72,7 @@ type IncrementalSearchTaggerSource (_vimBuffer : IVimBuffer) as this =
 
     member x.GetTags span =
 
-        if VisualKind.IsAnyVisual _vimBuffer.ModeKind || not _globalSettings.IncrementalSearch then 
+        if VisualKind.IsAnyVisualOrSelect _vimBuffer.ModeKind || not _globalSettings.IncrementalSearch then 
             // If any of these are true then we shouldn't be displaying any tags
             ReadOnlyCollectionUtil.Empty
         else

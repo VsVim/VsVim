@@ -84,7 +84,7 @@ type internal ModeMap
         // the previous non-visual mode value.  Commands executing in Visual mode
         // which return a SwitchPrevious mode value expected to actually leave 
         // Visual Mode 
-        if not (VisualKind.IsAnyVisual currentMode.ModeKind) && not (VisualKind.IsAnyVisual _previousMode.ModeKind) then
+        if not (VisualKind.IsAnyVisualOrSelect currentMode.ModeKind) && not (VisualKind.IsAnyVisualOrSelect _previousMode.ModeKind) then
             _previousMode <- currentMode
         elif _previousMode.ModeKind = ModeKind.Uninitialized then
             _previousMode <- currentMode

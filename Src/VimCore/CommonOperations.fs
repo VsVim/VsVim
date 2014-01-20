@@ -179,7 +179,7 @@ type internal CommonOperations
 
         let allowPastEndOfLine = 
             _globalSettings.IsVirtualEditOneMore ||
-            (_globalSettings.SelectionKind = SelectionKind.Exclusive && VisualKind.IsAnyVisual _vimTextBuffer.ModeKind)
+            (_globalSettings.SelectionKind = SelectionKind.Exclusive && VisualKind.IsAnyVisualOrSelect _vimTextBuffer.ModeKind)
 
         if not allowPastEndOfLine then
             let point = TextViewUtil.GetCaretPoint _textView
