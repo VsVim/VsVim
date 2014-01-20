@@ -244,10 +244,11 @@ type internal InsertMode
             ("<C-v>", InsertCommand.Paste, CommandFlags.Repeatable ||| CommandFlags.InsertEdit)
             ("<C-Left>", InsertCommand.MoveCaretByWord Direction.Left, CommandFlags.Movement)
             ("<C-Right>", InsertCommand.MoveCaretByWord Direction.Right, CommandFlags.Movement)
+            ("<S-Left>", InsertCommand.MoveCaretByWord Direction.Left, CommandFlags.Movement)
+            ("<S-Right>", InsertCommand.MoveCaretByWord Direction.Right, CommandFlags.Movement)
         ]
 
     do
-
         // Caret changes can end a text change operation.
         _textView.Caret.PositionChanged
         |> Observable.subscribe (fun _ -> this.OnCaretPositionChanged() )
@@ -257,6 +258,11 @@ type internal InsertMode
         _textChangeTracker.ChangeCompleted
         |> Observable.filter (fun _ -> this.IsActive)
         |> Observable.subscribe (fun args -> this.OnTextChangeCompleted args)
+        |> _bag.Add
+
+        // Listen for global settings changes
+        _globalSettings.SettingChanged
+        |> Observable.subscribe (fun args -> this.OnGlobalSettingsChanged args)
         |> _bag.Add
 
     member x.EnsureCommandsBuilt () =
@@ -286,6 +292,9 @@ type internal InsertMode
             |> List.ofSeq
 
         /// The list of commands that initiate select mode
+        ///
+        /// TODO: Because insert mode does not yet use a command runner, we have
+        /// to simulate a little mini-runner here.  Should this be upgraded?
         let selectionCommands : (KeyInput * RawInsertCommand) list =
 
             // Create a command factory so we can access the selection commands
@@ -888,6 +897,11 @@ type internal InsertMode
             | Some command -> InsertCommand.Combined (command, textChangeCommand)
 
         _sessionData <- { _sessionData with CombinedEditCommand = Some command } 
+
+    /// Raised when a global setting is changed
+    member x.OnGlobalSettingsChanged (args : SettingEventArgs) = 
+        if not _commandMap.IsEmpty then
+            x.BuildCommands()
 
     /// Called when the IVimBuffer is closed.  We need to unsubscribe from several events
     /// when this happens to prevent the ITextBuffer / ITextView from being kept alive
