@@ -55,3 +55,47 @@ Now how the components in Visual Studio play together to route key input
   - TranslateMessage
   - DispatchMessage
     
+Focus Issues
+====
+Visual Studio handles focus in an undocumented way and this is a small description of the behaviors
+
+Peek Definition Window
+---
+    Here the parent refers to the original ITextView and the child refers to the ITextView embedded
+    in the peek window that is opened 
+
+    ITextView::HasAggregateFocus
+    ---
+        The HasAggregateFocus states the property is true with when the focus is in the ITextView or 
+        any of its adornments.  This is not entirely correct though because the peek definition window
+        is actually implemented as an adornment.  There is a layer between the adornment and the 
+        ITextView that breaks this relationship for at least HasAggregateFocus.  
+
+        - Parent
+            - true when the focus is in the original window
+            - false when the focus is in the peek window
+        - Child
+            - false when the focus is in the original window
+            - true when the focus is in the peek window 
+
+    IWpfTextView::Visual::IsKeyboardFocusWithin
+    ---
+        - Parent
+            - true in both cases
+        - Child
+            - true if the caret is inside the peek window
+            - false if the caret is inside the original window 
+            
+Incremental Search / Find
+---
+    This is the window which is brought up when you hit Ctrl-F in a default Visual Studio 
+    installation.  It is implemented as an adornment on the IWpfTextView.  It can still
+    be visible even when the focus is in the ITextView  
+
+    Both ITextView::HasAggregateFocus and IWpfTextView::Visual::IsKeyboardFocusWithin are
+    true whether or not the caret is in the ITextView or the find ui
+
+
+
+
+
