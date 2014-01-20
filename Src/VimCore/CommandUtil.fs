@@ -2322,10 +2322,14 @@ type internal CommandUtil
         | VisualCommand.SwitchModeInsert -> x.SwitchModeInsert visualSpan 
         | VisualCommand.SwitchModePrevious -> x.SwitchPreviousMode()
         | VisualCommand.SwitchModeVisual visualKind -> x.SwitchModeVisual visualKind 
+        | VisualCommand.SwitchModeOtherVisual -> x.SwitchModeOtherVisual visualSpan
         | VisualCommand.ToggleFoldInSelection -> x.ToggleFoldUnderCaret count
         | VisualCommand.ToggleAllFoldsInSelection-> x.ToggleAllFolds()
         | VisualCommand.YankLineSelection -> x.YankLineSelection register visualSpan
         | VisualCommand.YankSelection -> x.YankSelection register visualSpan
+        | VisualCommand.CutSelection -> x.CutSelection streamSelectionSpan
+        | VisualCommand.CopySelection -> x.CopySelection streamSelectionSpan
+        | VisualCommand.CutSelectionAndPaste -> x.CutSelectionAndPaste streamSelectionSpan
 
     /// Get the MotionResult value for the provided MotionData and pass it
     /// if found to the provided function
@@ -2707,10 +2711,12 @@ type internal CommandUtil
     /// a motion or initiate a select in the editor
     member x.SwitchToSelection caretMovement =
         let anchorPoint = x.CaretPoint
-        if not (_commonOperations.MoveCaret caretMovement) then
+        if not (_commonOperations.MoveCaretWithArrow caretMovement) then
             CommandResult.Error
         else
             let visualSelection = VisualSelection.CreateForPoints VisualKind.Character anchorPoint x.CaretPoint _localSettings.TabStop
+            let visualSelection = visualSelection.AdjustForExtendIntoLineBreak true
+            let visualSelection = visualSelection.AdjustForSelectionKind _globalSettings.SelectionKind
             let modeKind = 
                 if Util.IsFlagSet _globalSettings.SelectModeOptions SelectModeOptions.Keyboard then
                     ModeKind.SelectCharacter
@@ -2744,6 +2750,33 @@ type internal CommandUtil
     /// Switch to the previous mode
     member x.SwitchPreviousMode() = 
         CommandResult.Completed ModeSwitch.SwitchPreviousMode 
+
+    /// Switch to other visual mode: visual from select or vice versa
+    member x.SwitchModeOtherVisual visualSpan =
+        let currentModeKind = _vimBufferData.VimTextBuffer.ModeKind
+        let newModeKind =
+            match currentModeKind with
+            | ModeKind.VisualBlock -> ModeKind.SelectBlock
+            | ModeKind.VisualCharacter -> ModeKind.SelectCharacter
+            | ModeKind.VisualLine -> ModeKind.SelectLine
+            | ModeKind.SelectBlock -> ModeKind.VisualBlock
+            | ModeKind.SelectCharacter -> ModeKind.VisualCharacter
+            | ModeKind.SelectLine -> ModeKind.VisualLine
+            | _ -> currentModeKind
+        let anchorPoint =
+            _vimBufferData.VisualCaretStartPoint
+            |> OptionUtil.map2 (TrackingPointUtil.GetPoint x.CurrentSnapshot)
+        match anchorPoint with
+        | None ->
+            _commonOperations.Beep()
+            CommandResult.Completed ModeSwitch.NoSwitch
+        | Some anchorPoint ->
+            let caretPoint = x.CaretPoint
+            let visualSelection = VisualSelection.CreateForPoints visualSpan.VisualKind anchorPoint caretPoint _localSettings.TabStop
+            let visualSelection = visualSelection.AdjustForExtendIntoLineBreak true
+            let visualSelection = visualSelection.AdjustForSelectionKind _globalSettings.SelectionKind
+            let modeArgument = ModeArgument.InitialVisualSelection (visualSelection, Some anchorPoint)
+            x.SwitchMode newModeKind modeArgument
 
     /// Switch from the current visual mode into the specified visual mode
     member x.SwitchModeVisual newVisualKind = 
@@ -2845,6 +2878,24 @@ type internal CommandUtil
         let data = StringData.OfEditSpan visualSpan.EditSpan
         let value = x.CreateRegisterValue data visualSpan.OperationKind
         _registerMap.SetRegisterValue register RegisterOperation.Yank value
+        CommandResult.Completed ModeSwitch.SwitchPreviousMode
+
+    /// Cut selection
+    member x.CutSelection streamSelectionSpan =
+        _textView.Selection.Select(streamSelectionSpan.Start, streamSelectionSpan.End)
+        _editorOperations.CutSelection() |> ignore
+        CommandResult.Completed ModeSwitch.SwitchPreviousMode
+
+    /// Copy selection
+    member x.CopySelection streamSelectionSpan =
+        _textView.Selection.Select(streamSelectionSpan.Start, streamSelectionSpan.End)
+        _editorOperations.CopySelection() |> ignore
+        CommandResult.Completed ModeSwitch.NoSwitch
+
+    /// Cut selection and paste
+    member x.CutSelectionAndPaste streamSelectionSpan =
+        _textView.Selection.Select(streamSelectionSpan.Start, streamSelectionSpan.End)
+        _editorOperations.Paste() |> ignore
         CommandResult.Completed ModeSwitch.SwitchPreviousMode
 
     interface ICommandUtil with

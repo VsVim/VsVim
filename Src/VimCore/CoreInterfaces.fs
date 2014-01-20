@@ -24,6 +24,12 @@ type CaretMovement =
     | End
     | PageUp
     | PageDown
+    | ControlUp
+    | ControlRight
+    | ControlDown
+    | ControlLeft
+    | ControlHome
+    | ControlEnd
 
     with 
 
@@ -1902,10 +1908,13 @@ type VisualSelection =
         | SelectionKind.Exclusive -> 
             match x with
             | Character (characterSpan, path) -> 
-                // The span decreases by a single character in exclusive 
-                let endPoint = characterSpan.Last |> OptionUtil.getOrDefault characterSpan.Start
-                let characterSpan = CharacterSpan(SnapshotSpan(characterSpan.Start, endPoint))
-                VisualSelection.Character (characterSpan, path)
+                if SnapshotPointUtil.IsEndPoint characterSpan.End then
+                    x
+                else
+                    // The span decreases by a single character in exclusive
+                    let endPoint = characterSpan.Last |> OptionUtil.getOrDefault characterSpan.Start
+                    let characterSpan = CharacterSpan(SnapshotSpan(characterSpan.Start, endPoint))
+                    VisualSelection.Character (characterSpan, path)
             | Line _ ->
                 // The span isn't effected
                 x
@@ -2640,6 +2649,18 @@ type VisualCommand =
 
     /// Yank the selection into the specified register
     | YankSelection
+
+    /// Switch to the other visual mode, visual or select
+    | SwitchModeOtherVisual
+
+    /// Cut selection
+    | CutSelection
+
+    /// Copy selection
+    | CopySelection
+
+    /// Cut selection and paste
+    | CutSelectionAndPaste
 
 /// Insert mode commands that can be executed by the user
 [<RequireQualifiedAccess>]

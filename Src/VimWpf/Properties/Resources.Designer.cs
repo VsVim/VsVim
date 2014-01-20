@@ -169,7 +169,7 @@ namespace Vim.UI.Wpf.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to -- VISUAL LINE--.
+        ///   Looks up a localized string similar to -- VISUAL LINE --.
         /// </summary>
         internal static string VisualLineBanner {
             get {

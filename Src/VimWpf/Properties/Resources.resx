@@ -154,7 +154,7 @@
     <value>-- ({0}) VISUAL --</value>
   </data>
   <data name="VisualLineBanner" xml:space="preserve">
-    <value>-- VISUAL LINE--</value>
+    <value>-- VISUAL LINE --</value>
   </data>
   <data name="VisualLineOneTimeCommandBanner" xml:space="preserve">
     <value>-- ({0}) VISUAL LINE --</value>

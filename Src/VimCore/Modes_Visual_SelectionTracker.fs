@@ -65,11 +65,12 @@ type internal SelectionTracker
             // The selection is already set and we need to track it.  The anchor point in
             // vim is always included in the selection but in the ITextSelection it is 
             // not when the selection is reversed.  We need to account for this when 
-            // setting our anchor point 
+            // setting our anchor point unless the selection is exclusive
             _textView.Selection.Mode <- _visualKind.TextSelectionMode
             let anchorPoint = selection.AnchorPoint.Position
+            let isInclusive =_globalSettings.SelectionKind = SelectionKind.Inclusive 
             _anchorPoint <- 
-                if selection.IsReversed then
+                if selection.IsReversed && isInclusive then
                     SnapshotPointUtil.SubtractOneOrCurrent anchorPoint |> Some
                 else
                     Some anchorPoint

@@ -8,8 +8,11 @@ open Vim.Modes
 type internal SelectMode
     (
         _vimBufferData : IVimBufferData,
-        _visualKind : VisualKind,
         _commonOperations : ICommonOperations,
+        _motionUtil : IMotionUtil,
+        _visualKind : VisualKind,
+        _runner : ICommandRunner,
+        _capture : IMotionCapture,
         _undoRedoOperations : IUndoRedoOperations,
         _selectionTracker : ISelectionTracker
     ) = 
@@ -24,19 +27,78 @@ type internal SelectMode
         | VisualKind.Line -> ModeKind.SelectLine
         | VisualKind.Block -> ModeKind.SelectBlock
 
+    /// Handles Ctrl+C/Ctrl+V/Ctrl+X a la $VIMRUNTIME/mswin.vim
+    static let Commands =
+        let visualSeq =
+            seq {
+                yield ("<C-g>", CommandFlags.Special, VisualCommand.SwitchModeOtherVisual)
+                yield ("<C-x>", CommandFlags.Special, VisualCommand.CutSelection)
+                yield ("<C-c>", CommandFlags.Special, VisualCommand.CopySelection)
+                yield ("<C-v>", CommandFlags.Special, VisualCommand.CutSelectionAndPaste)
+            } |> Seq.map (fun (str, flags, command) ->
+                let keyInputSet = KeyNotationUtil.StringToKeyInputSet str
+                CommandBinding.VisualBinding (keyInputSet, flags, command))
+        visualSeq
+
     /// A 'special key' is defined in :help keymodel as any of the following keys.  Depending
     /// on the value of the keymodel setting they can affect the selection
     static let GetCaretMovement (keyInput : KeyInput) =
-        match keyInput.Key with
-        | VimKey.Up -> Some CaretMovement.Up
-        | VimKey.Right -> Some CaretMovement.Right
-        | VimKey.Down -> Some CaretMovement.Down
-        | VimKey.Left -> Some CaretMovement.Left
-        | VimKey.Home -> Some CaretMovement.Home
-        | VimKey.End -> Some CaretMovement.End
-        | VimKey.PageUp -> Some CaretMovement.PageUp
-        | VimKey.PageDown -> Some CaretMovement.PageDown
-        | _ -> None
+        if not (Util.IsFlagSet keyInput.KeyModifiers KeyModifiers.Control) then
+            match keyInput.Key with
+            | VimKey.Up -> Some CaretMovement.Up
+            | VimKey.Right -> Some CaretMovement.Right
+            | VimKey.Down -> Some CaretMovement.Down
+            | VimKey.Left -> Some CaretMovement.Left
+            | VimKey.Home -> Some CaretMovement.Home
+            | VimKey.End -> Some CaretMovement.End
+            | VimKey.PageUp -> Some CaretMovement.PageUp
+            | VimKey.PageDown -> Some CaretMovement.PageDown
+            | _ -> None
+        else
+            match keyInput.Key with
+            | VimKey.Up -> Some CaretMovement.ControlUp
+            | VimKey.Right -> Some CaretMovement.ControlRight
+            | VimKey.Down -> Some CaretMovement.ControlDown
+            | VimKey.Left -> Some CaretMovement.ControlLeft
+            | VimKey.Home -> Some CaretMovement.ControlHome
+            | VimKey.End -> Some CaretMovement.ControlEnd
+            | _ -> None
+
+    /// Whether a key input corresponds to normal text
+    static let IsTextKeyInput (keyInput : KeyInput) =
+        Option.isSome keyInput.RawChar && not (CharUtil.IsControl keyInput.Char)
+
+    let mutable _builtCommands = false
+
+    member x.CommandNames =
+        x.EnsureCommandsBuilt()
+        _runner.Commands |> Seq.map (fun command -> command.KeyInputSet)
+
+    member this.KeyRemapMode =
+        if _runner.IsWaitingForMoreInput then
+            _runner.KeyRemapMode
+        else
+            KeyRemapMode.Visual
+
+    member x.EnsureCommandsBuilt() =
+
+        /// Whether a command is bound to a key that is not insertable text
+        let isNonTextCommand (command : CommandBinding) =
+            match command.KeyInputSet.FirstKeyInput with
+            | None ->
+                true
+            | Some keyInput ->
+                not (IsTextKeyInput keyInput)
+
+        if not _builtCommands then
+            let factory = CommandFactory(_commonOperations, _capture, _motionUtil, _vimBufferData.JumpList, _vimTextBuffer.LocalSettings)
+
+            // Add in the standard non-conflicting movement commands
+            factory.CreateScrollCommands() |> Seq.filter isNonTextCommand
+            |> Seq.append Commands
+            |> Seq.iter _runner.Add
+
+            _builtCommands <- true
 
     member x.CaretPoint = TextViewUtil.GetCaretPoint _textView
 
@@ -46,11 +108,15 @@ type internal SelectMode
 
     member x.CurrentSnapshot = _textView.TextSnapshot
 
-    member x.ProcessCaretMovement caretMovement (keyInput : KeyInput) = 
-        _commonOperations.MoveCaret caretMovement |> ignore
-
+    member x.ShouldStopSelection (keyInput : KeyInput) =
         let hasShift = Util.IsFlagSet keyInput.KeyModifiers KeyModifiers.Shift
-        if not hasShift && Util.IsFlagSet _globalSettings.KeyModelOptions KeyModelOptions.StopSelection then
+        let hasStopSelection = Util.IsFlagSet _globalSettings.KeyModelOptions KeyModelOptions.StopSelection
+        not hasShift && hasStopSelection
+
+    member x.ProcessCaretMovement caretMovement keyInput =
+        _commonOperations.MoveCaretWithArrow caretMovement |> ignore
+
+        if x.ShouldStopSelection keyInput then
             ProcessResult.Handled ModeSwitch.SwitchPreviousMode
         else
             // The caret moved so we need to update the selection 
@@ -90,6 +156,7 @@ type internal SelectMode
         ProcessResult.Handled (ModeSwitch.SwitchMode ModeKind.Insert)
 
     member x.Process keyInput = 
+
         let processResult = 
             if keyInput = KeyInputUtil.EscapeKey then
                 ProcessResult.Handled ModeSwitch.SwitchPreviousMode
@@ -98,23 +165,38 @@ type internal SelectMode
                 let text = _commonOperations.GetNewLineText caretPoint
                 x.ProcessInput text
             elif keyInput.Key = VimKey.Delete || keyInput.Key = VimKey.Back then
-                x.ProcessInput ""
+                x.ProcessInput "" |> ignore
+                ProcessResult.Handled ModeSwitch.SwitchPreviousMode
             else
                 match GetCaretMovement keyInput with
-                | Some caretMovement -> x.ProcessCaretMovement caretMovement keyInput
-                | None -> 
-                    if Option.isSome keyInput.RawChar then
+                | Some caretMovement ->
+                    x.ProcessCaretMovement caretMovement keyInput
+                | None ->
+                    if IsTextKeyInput keyInput then
                         x.ProcessInput (StringUtil.ofChar keyInput.Char)
                     else
-                        ProcessResult.Handled ModeSwitch.NoSwitch
+                        match _runner.Run keyInput with
+                        | BindResult.NeedMoreInput _ ->
+                            ProcessResult.HandledNeedMoreInput
+                        | BindResult.Complete commandRanData ->
+                            ProcessResult.OfCommandResult commandRanData.CommandResult
+                        | BindResult.Error ->
+                            _commonOperations.Beep()
+                            ProcessResult.Handled ModeSwitch.SwitchPreviousMode
+                        | BindResult.Cancelled ->
+                            _selectionTracker.UpdateSelection()
+                            ProcessResult.Handled ModeSwitch.NoSwitch
 
         if processResult.IsAnySwitch then
+            _commonOperations.EnsureAtCaret ViewFlags.VirtualEdit
             _textView.Selection.Clear()
             _textView.Selection.Mode <- TextSelectionMode.Stream
 
         processResult
 
-    member x.OnEnter modeArgument = 
+    member x.OnEnter modeArgument =
+        x.EnsureCommandsBuilt()
+
         match modeArgument with
         | ModeArgument.InitialVisualSelection (visualSelection, caretPoint) ->
 
@@ -125,7 +207,11 @@ type internal SelectMode
         | _ -> ()
 
         _selectionTracker.Start()
-    member x.OnLeave() = _selectionTracker.Stop()
+
+    member x.OnLeave() =
+        _runner.ResetState()
+        _selectionTracker.Stop()
+
     member x.OnClose() = ()
 
     member x.SyncSelection() =
