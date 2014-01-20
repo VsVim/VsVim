@@ -347,6 +347,10 @@ type internal NormalMode
         x.EnsureCommands()
         x.Reset()
 
+        // Ensure the caret is positioned correctly vis a vis virtual edit
+        if not (TextViewUtil.GetCaretPoint(_operations.TextView).Position = 0) then
+            _operations.EnsureAtCaret ViewFlags.VirtualEdit
+
         // Process the argument if it's applicable
         match arg with 
         | ModeArgument.None -> ()

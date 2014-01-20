@@ -188,7 +188,6 @@ type internal SelectMode
                             ProcessResult.Handled ModeSwitch.NoSwitch
 
         if processResult.IsAnySwitch then
-            _commonOperations.EnsureAtCaret ViewFlags.VirtualEdit
             _textView.Selection.Clear()
             _textView.Selection.Mode <- TextSelectionMode.Stream
 
