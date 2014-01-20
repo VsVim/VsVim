@@ -25,7 +25,7 @@ namespace Vim.UnitTest
         protected ITextBuffer _textBuffer;
         protected IVimGlobalSettings _globalSettings;
         protected CommandRunData _lastCommandRan;
-        protected Mock<ICommonOperations> _operations;
+        protected ICommonOperations _operations;
         protected Mock<IDisplayWindowBroker> _broker;
         protected Mock<IEditorOptions> _editorOptions;
         protected Mock<IUndoRedoOperations> _undoRedoOperations;
@@ -34,7 +34,7 @@ namespace Vim.UnitTest
         protected Mock<IKeyboardDevice> _keyboardDevice;
         protected Mock<IMouseDevice> _mouseDevice;
         protected Mock<IVim> _vim;
-        protected Mock<IVimBuffer> _vimBuffer;
+        protected IVimBuffer _vimBuffer;
         protected Mock<IWordCompletionSessionFactoryService> _wordCompletionSessionFactoryService;
         protected Mock<IWordCompletionSession> _activeWordCompletionSession;
         protected Mock<IMotionUtil> _motionUtil;
@@ -65,15 +65,11 @@ namespace Vim.UnitTest
             _wordCompletionSessionFactoryService = _factory.Create<IWordCompletionSessionFactoryService>();
 
             var localSettings = new LocalSettings(Vim.GlobalSettings);
-            _vimBuffer = MockObjectFactory.CreateVimBuffer(
-                _textView,
-                localSettings: localSettings,
-                vim: _vim.Object,
-                factory: _factory);
-            _vimBuffer.SetupGet(x => x.ModeKind).Returns(ModeKind.Insert);
-            _globalSettings = _vimBuffer.Object.GlobalSettings;
-            _operations = _factory.Create<ICommonOperations>();
-            _operations.SetupGet(x => x.EditorOperations).Returns(EditorOperationsFactoryService.GetEditorOperations(_textView));
+            _vimBuffer = Vim.CreateVimBuffer(_textView);
+            _globalSettings = _vimBuffer.GlobalSettings;
+            var vimTextBuffer = Vim.GetOrCreateVimTextBuffer(_textView.TextBuffer);
+            var vimBufferData = CreateVimBufferData(vimTextBuffer, _textView);
+            _operations = CommonOperationsFactory.GetCommonOperations(vimBufferData);
             _broker = _factory.Create<IDisplayWindowBroker>();
             _broker.SetupGet(x => x.IsCompletionActive).Returns(false);
             _broker.SetupGet(x => x.IsQuickInfoActive).Returns(false);
@@ -94,8 +90,8 @@ namespace Vim.UnitTest
             _keyboardDevice.Setup(x => x.IsArrowKeyDown).Returns(false);
 
             _modeRaw = new global::Vim.Modes.Insert.InsertMode(
-                _vimBuffer.Object,
-                _operations.Object,
+                _vimBuffer,
+                _operations,
                 _broker.Object,
                 _editorOptions.Object,
                 _undoRedoOperations.Object,
@@ -110,6 +106,7 @@ namespace Vim.UnitTest
                 WordUtil,
                 _wordCompletionSessionFactoryService.Object);
             _mode = _modeRaw;
+            _mode.OnEnter(ModeArgument.None);
             _mode.CommandRan += (sender, e) => { _lastCommandRan = e.CommandRunData; };
         }
 

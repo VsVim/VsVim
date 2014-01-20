@@ -300,8 +300,7 @@ type internal InsertMode
             // Create a command factory so we can access the selection commands
             let factory =
                 CommandFactory(_operations, _capture, _motionUtil,
-                    _vimBuffer.VimBufferData.JumpList,
-                    _vimBuffer.LocalSettings)
+                    _vimBuffer.JumpList, _vimBuffer.LocalSettings)
 
             // Run a normal command bound to a key input and return a command result
             let runNormalCommand normalCommand keyInput =
