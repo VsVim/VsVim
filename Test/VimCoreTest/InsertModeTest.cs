@@ -37,6 +37,9 @@ namespace Vim.UnitTest
         protected Mock<IVimBuffer> _vimBuffer;
         protected Mock<IWordCompletionSessionFactoryService> _wordCompletionSessionFactoryService;
         protected Mock<IWordCompletionSession> _activeWordCompletionSession;
+        protected Mock<IMotionUtil> _motionUtil;
+        protected Mock<ICommandUtil> _commandUtil;
+        protected Mock<IMotionCapture> _capture;
 
         public InsertModeTest()
         {
@@ -77,6 +80,9 @@ namespace Vim.UnitTest
             _broker.SetupGet(x => x.IsSignatureHelpActive).Returns(false);
             _broker.SetupGet(x => x.IsSmartTagSessionActive).Returns(false);
             _insertUtil = _factory.Create<IInsertUtil>();
+            _motionUtil = _factory.Create<IMotionUtil>();
+            _commandUtil = _factory.Create<ICommandUtil>();
+            _capture = _factory.Create<IMotionCapture>();
 
             // Setup the mouse.  By default we say it has no buttons down as that's the normal state
             _mouseDevice = _factory.Create<IMouseDevice>();
@@ -95,6 +101,9 @@ namespace Vim.UnitTest
                 _undoRedoOperations.Object,
                 _textChangeTracker.Object,
                 _insertUtil.Object,
+                _motionUtil.Object,
+                _commandUtil.Object,
+                _capture.Object,
                 !insertMode,
                 _keyboardDevice.Object,
                 _mouseDevice.Object,

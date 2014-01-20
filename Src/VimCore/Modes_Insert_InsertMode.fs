@@ -194,6 +194,9 @@ type internal InsertMode
         _undoRedoOperations : IUndoRedoOperations,
         _textChangeTracker : ITextChangeTracker,
         _insertUtil : IInsertUtil,
+        _motionUtil : IMotionUtil,
+        _commandUtil : ICommandUtil,
+        _capture : IMotionCapture,
         _isReplace : bool,
         _keyboard : IKeyboardDevice,
         _mouse : IMouseDevice,
@@ -264,11 +267,38 @@ type internal InsertMode
                 (name, rawInsertCommand))
             |> List.ofSeq
 
-        let both = Seq.append oldCommands mappedCommands
+        let runNormalCommand normalCommand keyInput =
+            let commandData = { Count = None; RegisterName = None }
+            match _commandUtil.RunNormalCommand normalCommand commandData with
+            | CommandResult.Error ->
+                ProcessResult.Error
+            | CommandResult.Completed modeSwitch ->
+                ProcessResult.Handled modeSwitch
+
+        let selectionCommands : (KeyInput * RawInsertCommand) list =
+            let factory =
+                CommandFactory(_operations, _capture, _motionUtil,
+                    _vimBuffer.VimBufferData.JumpList,
+                    _vimBuffer.LocalSettings)
+            factory.CreateSelectionCommands()
+            |> Seq.collect (
+                fun commandBinding ->
+                    match commandBinding with
+                    | CommandBinding.NormalBinding (_, _,  normalCommand) ->
+                        let keyInput = commandBinding.KeyInputSet.FirstKeyInput.Value
+                        seq {
+                            yield (keyInput, RawInsertCommand.CustomCommand (runNormalCommand normalCommand))
+                        }
+                    | _ ->
+                        Seq.empty
+            )
+            |> Seq.toList
+
         _commandMap <-
             oldCommands
             |> Seq.append mappedCommands
             |> Seq.map (fun (str, func) -> (KeyNotationUtil.StringToKeyInput str), func)
+            |> Seq.append selectionCommands
             |> Map.ofSeq
 
         // Caret changes can end a text change operation.
