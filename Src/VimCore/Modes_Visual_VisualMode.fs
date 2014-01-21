@@ -163,40 +163,7 @@ type internal VisualMode
 
     member x.OnEnter modeArgument = 
         x.EnsureCommandsBuilt()
-
-        // If we are provided an InitialVisualSpan value here go ahead and use it.  Do this before we
-        // begin selection tracking as it will properly update the resulting selection to the appropriate
-        // mode
-        let caretPoint = 
-            match modeArgument with
-            | ModeArgument.InitialVisualSelection (visualSelection, caretPoint) ->
-
-                if visualSelection.VisualKind = _visualKind then
-                    visualSelection.Select _textView
-                    let visualCaretPoint = visualSelection.GetCaretPoint _globalSettings.SelectionKind
-                    TextViewUtil.MoveCaretToPointRaw _textView visualCaretPoint MoveCaretFlags.EnsureOnScreen
-                    caretPoint
-                else
-                    None
-            | _ ->
-                None
-
-        // Save the start point of the visual selection so we can potentially reset to it later
-        let caretPosition = 
-            match caretPoint with
-            | Some caretPoint -> caretPoint.Position
-            | None -> 
-                // If there is an existing explicit selection then the anchor point is considered
-                // the original start point.  Else just use the caret point
-                if _textView.Selection.IsEmpty then
-                    x.CaretPoint.Position
-                else 
-                    _textView.Selection.AnchorPoint.Position.Position
-
-        let caretTrackingPoint = x.CurrentSnapshot.CreateTrackingPoint(caretPosition, PointTrackingMode.Negative) |> Some
-        _vimBufferData.VisualCaretStartPoint <- caretTrackingPoint
-        _vimBufferData.VisualAnchorPoint <- caretTrackingPoint
-
+        _selectionTracker.RecordCaretTrackingPoint modeArgument
         _selectionTracker.Start()
 
     member x.OnClose() =
