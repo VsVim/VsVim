@@ -146,8 +146,8 @@ type internal CommandFactory
             yield ("<C-S-Left>", CommandFlags.Repeatable, NormalCommand.SwitchToSelection CaretMovement.ControlLeft)
             yield ("<C-S-Home>", CommandFlags.Repeatable, NormalCommand.SwitchToSelection CaretMovement.ControlHome)
             yield ("<C-S-End>", CommandFlags.Repeatable, NormalCommand.SwitchToSelection CaretMovement.ControlEnd)
-        } 
-        |> Seq.map (fun (str, flags, command) -> 
+        }
+        |> Seq.map (fun (str, flags, command) ->
             let keyInputSet = KeyNotationUtil.StringToKeyInputSet str
             CommandBinding.NormalBinding (keyInputSet, flags, command))
 

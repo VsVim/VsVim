@@ -895,7 +895,7 @@ type internal InsertMode
         _sessionData <- { _sessionData with CombinedEditCommand = Some command } 
 
     /// Raised when a global setting is changed
-    member x.OnGlobalSettingsChanged (args : SettingEventArgs) = 
+    member x.OnGlobalSettingsChanged (args : SettingEventArgs) =
         if not _commandMap.IsEmpty then
             x.BuildCommands()
 
