@@ -114,6 +114,7 @@ type internal SelectMode
         not hasShift && hasStopSelection
 
     member x.ProcessCaretMovement caretMovement keyInput =
+        _textView.Selection.Clear()
         _commonOperations.MoveCaretWithArrow caretMovement |> ignore
 
         if x.ShouldStopSelection keyInput then

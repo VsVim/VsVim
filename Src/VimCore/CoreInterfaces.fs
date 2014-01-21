@@ -1947,7 +1947,7 @@ type VisualSelection =
             // SnapshotSpan
             match path with
             | Path.Forward ->
-                if characterSpan.LastLine.Length = 0 then
+                if selectionKind = SelectionKind.Inclusive && characterSpan.LastLine.Length = 0 then
                     // Need to special case the empty last line because there is no character which
                     // isn't inside the line break here.  Just return the start as the caret position
                     characterSpan.LastLine.Start
