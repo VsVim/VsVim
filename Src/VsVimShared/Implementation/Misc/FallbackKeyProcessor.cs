@@ -102,7 +102,14 @@ namespace VsVim.Implementation.Misc
         /// </summary>
         private bool IsTextViewBinding(CommandKeyBinding binding)
         {
-            return _scopeData.GetScopeKind(binding.KeyBinding.Scope) != ScopeKind.Unknown;
+            switch (_scopeData.GetScopeKind(binding.KeyBinding.Scope))
+            {
+                case ScopeKind.TextEditor:
+                case ScopeKind.Global:
+                    return true;
+                default:
+                    return false;
+            }
         }
 
         /// <summary>
@@ -111,7 +118,15 @@ namespace VsVim.Implementation.Misc
         /// </summary>
         private int GetScopeOrder(string scope)
         {
-            return (int)_scopeData.GetScopeKind(scope);
+            switch (_scopeData.GetScopeKind(scope))
+            {
+                case ScopeKind.TextEditor:
+                    return 1;
+                case ScopeKind.Global:
+                    return 2;
+                default:
+                    throw new InvalidOperationException("Unexpected ScopeKind");
+            }
         }
 
         /// <summary>
