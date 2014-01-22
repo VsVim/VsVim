@@ -2715,7 +2715,6 @@ type internal CommandUtil
             CommandResult.Error
         else
             let visualSelection = VisualSelection.CreateForPoints VisualKind.Character anchorPoint x.CaretPoint _localSettings.TabStop
-            let visualSelection = visualSelection.AdjustForExtendIntoLineBreak true
             let visualSelection = visualSelection.AdjustForSelectionKind _globalSettings.SelectionKind
             let modeKind = 
                 if Util.IsFlagSet _globalSettings.SelectModeOptions SelectModeOptions.Keyboard then
@@ -2773,7 +2772,6 @@ type internal CommandUtil
         | Some anchorPoint ->
             let caretPoint = x.CaretPoint
             let visualSelection = VisualSelection.CreateForPoints visualSpan.VisualKind anchorPoint caretPoint _localSettings.TabStop
-            let visualSelection = visualSelection.AdjustForExtendIntoLineBreak true
             let visualSelection = visualSelection.AdjustForSelectionKind _globalSettings.SelectionKind
             let modeArgument = ModeArgument.InitialVisualSelection (visualSelection, Some anchorPoint)
             x.SwitchMode newModeKind modeArgument

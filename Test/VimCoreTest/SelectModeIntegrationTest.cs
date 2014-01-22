@@ -349,6 +349,33 @@ namespace Vim.UnitTest
                 Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
                 Assert.Equal(0, _textView.GetCaretPoint().Position);
             }
+
+            [Fact]
+            public void ShiftLeftToFromLastCharacter_NormalInclusive()
+            {
+                Create("cat", "dog");
+                _textView.MoveCaretTo(2);
+                _globalSettings.SelectModeOptions = SelectModeOptions.Keyboard;
+                _globalSettings.KeyModelOptions = KeyModelOptions.StartSelection;
+                _vimBuffer.ProcessNotation("<S-Left>");
+                Assert.Equal(ModeKind.SelectCharacter, _vimBuffer.ModeKind);
+                Assert.Equal("at", _textView.GetSelectionSpan().GetText());
+                Assert.Equal(1, _textView.GetCaretPoint().Position);
+            }
+
+            [Fact]
+            public void ShiftLeftToFromLastCharacter_NormalExclusive()
+            {
+                Create("cat", "dog");
+                _textView.MoveCaretTo(2);
+                _globalSettings.Selection = "exclusive";
+                _globalSettings.SelectModeOptions = SelectModeOptions.Keyboard;
+                _globalSettings.KeyModelOptions = KeyModelOptions.StartSelection;
+                _vimBuffer.ProcessNotation("<S-Left>");
+                Assert.Equal(ModeKind.SelectCharacter, _vimBuffer.ModeKind);
+                Assert.Equal("a", _textView.GetSelectionSpan().GetText());
+                Assert.Equal(1, _textView.GetCaretPoint().Position);
+            }
         }
 
         public sealed class SpecialKeysFromInsert : SelectModeIntegrationTest
