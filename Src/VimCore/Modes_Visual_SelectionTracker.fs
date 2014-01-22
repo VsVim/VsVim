@@ -9,12 +9,14 @@ open Vim
 /// Responsible for tracking and updating the selection while we are in visual mode
 type internal SelectionTracker
     (
-        _textView : ITextView,
-        _localSettings : IVimLocalSettings,
+        _vimBufferData : IVimBufferData,
         _incrementalSearch : IIncrementalSearch,
         _visualKind : VisualKind
     ) as this =
 
+    let _textView = _vimBufferData.TextView
+    let _textBuffer = _vimBufferData.TextBuffer
+    let _localSettings = _vimBufferData.LocalSettings
     let _globalSettings = _localSettings.GlobalSettings
 
     /// The anchor point we are currently tracking.  This is always included in the selection which
@@ -115,6 +117,42 @@ type internal SelectionTracker
         _anchorPoint <- Some anchorPoint
         x.UpdateSelection()
 
+    /// Record the caret tracking point
+    member x.RecordCaretTrackingPoint modeArgument =
+
+        // If we are provided an InitialVisualSpan value here go ahead and use it.  Do this before we
+        // begin selection tracking as it will properly update the resulting selection to the appropriate
+        // mode
+        let caretPoint =
+            match modeArgument with
+            | ModeArgument.InitialVisualSelection (visualSelection, caretPoint) ->
+
+                if visualSelection.VisualKind = _visualKind then
+                    visualSelection.Select _textView
+                    let visualCaretPoint = visualSelection.GetCaretPoint _globalSettings.SelectionKind
+                    TextViewUtil.MoveCaretToPointRaw _textView visualCaretPoint MoveCaretFlags.EnsureOnScreen
+                    caretPoint
+                else
+                    None
+            | _ ->
+                None
+
+        // Save the start point of the visual selection so we can potentially reset to it later
+        let caretPosition =
+            match caretPoint with
+            | Some caretPoint -> caretPoint.Position
+            | None ->
+                // If there is an existing explicit selection then the anchor point is considered
+                // the original start point.  Else just use the caret point
+                if _textView.Selection.IsEmpty then
+                    (TextViewUtil.GetCaretPoint _textView).Position
+                else
+                    _textView.Selection.AnchorPoint.Position.Position
+
+        let caretTrackingPoint = _textBuffer.CurrentSnapshot.CreateTrackingPoint(caretPosition, PointTrackingMode.Negative) |> Some
+        _vimBufferData.VisualCaretStartPoint <- caretTrackingPoint
+        _vimBufferData.VisualAnchorPoint <- caretTrackingPoint
+
     /// When the text is changed it invalidates the anchor point.  It needs to be forwarded to
     /// the next version of the buffer.  If it's not present then just go to point 0
     member x.OnTextChanged (args : TextContentChangedEventArgs) =
@@ -134,3 +172,4 @@ type internal SelectionTracker
         member x.Stop () = x.Stop()
         member x.UpdateSelection() = x.UpdateSelection()
         member x.UpdateSelectionWithAnchorPoint anchorPoint = x.UpdateSelectionWithAnchorPoint anchorPoint
+        member x.RecordCaretTrackingPoint modeArgument = x.RecordCaretTrackingPoint modeArgument

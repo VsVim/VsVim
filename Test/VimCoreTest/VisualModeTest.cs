@@ -40,6 +40,7 @@ namespace Vim.UnitTest
             _tracker = _factory.Create<ISelectionTracker>();
             _tracker.Setup(x => x.Start());
             _tracker.Setup(x => x.UpdateSelection());
+            _tracker.Setup(x => x.RecordCaretTrackingPoint(It.IsAny<ModeArgument>()));
             _tracker.SetupGet(x => x.IsRunning).Returns(true);
             _operations = _factory.Create<ICommonOperations>();
             _operations.SetupGet(x => x.TextView).Returns(_textView);

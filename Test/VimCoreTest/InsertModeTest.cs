@@ -25,18 +25,21 @@ namespace Vim.UnitTest
         protected ITextBuffer _textBuffer;
         protected IVimGlobalSettings _globalSettings;
         protected CommandRunData _lastCommandRan;
-        protected Mock<ICommonOperations> _operations;
+        protected ICommonOperations _operations;
         protected Mock<IDisplayWindowBroker> _broker;
         protected Mock<IEditorOptions> _editorOptions;
-        protected Mock<IUndoRedoOperations> _undoRedoOperations;
+        protected IUndoRedoOperations _undoRedoOperations;
         protected Mock<ITextChangeTracker> _textChangeTracker;
         internal Mock<IInsertUtil> _insertUtil;
         protected Mock<IKeyboardDevice> _keyboardDevice;
         protected Mock<IMouseDevice> _mouseDevice;
         protected Mock<IVim> _vim;
-        protected Mock<IVimBuffer> _vimBuffer;
+        protected IVimBuffer _vimBuffer;
         protected Mock<IWordCompletionSessionFactoryService> _wordCompletionSessionFactoryService;
         protected Mock<IWordCompletionSession> _activeWordCompletionSession;
+        protected Mock<IMotionUtil> _motionUtil;
+        protected Mock<ICommandUtil> _commandUtil;
+        protected Mock<IMotionCapture> _capture;
 
         public InsertModeTest()
         {
@@ -58,25 +61,24 @@ namespace Vim.UnitTest
             _editorOptions = _factory.Create<IEditorOptions>(MockBehavior.Loose);
             _textChangeTracker = _factory.Create<ITextChangeTracker>(MockBehavior.Loose);
             _textChangeTracker.SetupGet(x => x.CurrentChange).Returns(FSharpOption<TextChange>.None);
-            _undoRedoOperations = _factory.Create<IUndoRedoOperations>();
+            _undoRedoOperations = CreateUndoRedoOperations();
             _wordCompletionSessionFactoryService = _factory.Create<IWordCompletionSessionFactoryService>();
 
             var localSettings = new LocalSettings(Vim.GlobalSettings);
-            _vimBuffer = MockObjectFactory.CreateVimBuffer(
-                _textView,
-                localSettings: localSettings,
-                vim: _vim.Object,
-                factory: _factory);
-            _vimBuffer.SetupGet(x => x.ModeKind).Returns(ModeKind.Insert);
-            _globalSettings = _vimBuffer.Object.GlobalSettings;
-            _operations = _factory.Create<ICommonOperations>();
-            _operations.SetupGet(x => x.EditorOperations).Returns(EditorOperationsFactoryService.GetEditorOperations(_textView));
+            _vimBuffer = Vim.CreateVimBuffer(_textView);
+            _globalSettings = _vimBuffer.GlobalSettings;
+            var vimTextBuffer = Vim.GetOrCreateVimTextBuffer(_textView.TextBuffer);
+            var vimBufferData = CreateVimBufferData(vimTextBuffer, _textView);
+            _operations = CommonOperationsFactory.GetCommonOperations(vimBufferData);
             _broker = _factory.Create<IDisplayWindowBroker>();
             _broker.SetupGet(x => x.IsCompletionActive).Returns(false);
             _broker.SetupGet(x => x.IsQuickInfoActive).Returns(false);
             _broker.SetupGet(x => x.IsSignatureHelpActive).Returns(false);
             _broker.SetupGet(x => x.IsSmartTagSessionActive).Returns(false);
             _insertUtil = _factory.Create<IInsertUtil>();
+            _motionUtil = _factory.Create<IMotionUtil>();
+            _commandUtil = _factory.Create<ICommandUtil>();
+            _capture = _factory.Create<IMotionCapture>();
 
             // Setup the mouse.  By default we say it has no buttons down as that's the normal state
             _mouseDevice = _factory.Create<IMouseDevice>();
@@ -88,19 +90,23 @@ namespace Vim.UnitTest
             _keyboardDevice.Setup(x => x.IsArrowKeyDown).Returns(false);
 
             _modeRaw = new global::Vim.Modes.Insert.InsertMode(
-                _vimBuffer.Object,
-                _operations.Object,
+                _vimBuffer,
+                _operations,
                 _broker.Object,
                 _editorOptions.Object,
-                _undoRedoOperations.Object,
+                _undoRedoOperations,
                 _textChangeTracker.Object,
                 _insertUtil.Object,
+                _motionUtil.Object,
+                _commandUtil.Object,
+                _capture.Object,
                 !insertMode,
                 _keyboardDevice.Object,
                 _mouseDevice.Object,
                 WordUtil,
                 _wordCompletionSessionFactoryService.Object);
             _mode = _modeRaw;
+            _mode.OnEnter(ModeArgument.None);
             _mode.CommandRan += (sender, e) => { _lastCommandRan = e.CommandRunData; };
         }
 

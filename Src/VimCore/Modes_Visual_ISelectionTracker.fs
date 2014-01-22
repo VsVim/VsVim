@@ -27,4 +27,6 @@ type ISelectionTracker =
     /// Reset the selection and stop tracking
     abstract Stop : unit -> unit
 
+    /// Record the caret tracking point
+    abstract RecordCaretTrackingPoint : ModeArgument -> unit
 

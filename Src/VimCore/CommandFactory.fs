@@ -128,6 +128,29 @@ type internal CommandFactory
             let keyInputSet = KeyNotationUtil.StringToKeyInputSet str
             CommandBinding.NormalBinding (keyInputSet, flags, command))
 
+    /// The set of selection starting commands.  These are only enabled when 'keymodel' contains
+    /// the startsel option
+    member x.CreateSelectionCommands () =
+        seq {
+            yield ("<S-Up>", CommandFlags.Repeatable, NormalCommand.SwitchToSelection CaretMovement.Up)
+            yield ("<S-Right>", CommandFlags.Repeatable, NormalCommand.SwitchToSelection CaretMovement.Right)
+            yield ("<S-Down>", CommandFlags.Repeatable, NormalCommand.SwitchToSelection CaretMovement.Down)
+            yield ("<S-Left>", CommandFlags.Repeatable, NormalCommand.SwitchToSelection CaretMovement.Left)
+            yield ("<S-Home>", CommandFlags.Repeatable, NormalCommand.SwitchToSelection CaretMovement.Home)
+            yield ("<S-End>", CommandFlags.Repeatable, NormalCommand.SwitchToSelection CaretMovement.End)
+            yield ("<S-PageUp>", CommandFlags.Repeatable, NormalCommand.SwitchToSelection CaretMovement.PageUp)
+            yield ("<S-PageDown>", CommandFlags.Repeatable, NormalCommand.SwitchToSelection CaretMovement.PageDown)
+            yield ("<C-S-Up>", CommandFlags.Repeatable, NormalCommand.SwitchToSelection CaretMovement.ControlUp)
+            yield ("<C-S-Right>", CommandFlags.Repeatable, NormalCommand.SwitchToSelection CaretMovement.ControlRight)
+            yield ("<C-S-Down>", CommandFlags.Repeatable, NormalCommand.SwitchToSelection CaretMovement.ControlDown)
+            yield ("<C-S-Left>", CommandFlags.Repeatable, NormalCommand.SwitchToSelection CaretMovement.ControlLeft)
+            yield ("<C-S-Home>", CommandFlags.Repeatable, NormalCommand.SwitchToSelection CaretMovement.ControlHome)
+            yield ("<C-S-End>", CommandFlags.Repeatable, NormalCommand.SwitchToSelection CaretMovement.ControlEnd)
+        }
+        |> Seq.map (fun (str, flags, command) ->
+            let keyInputSet = KeyNotationUtil.StringToKeyInputSet str
+            CommandBinding.NormalBinding (keyInputSet, flags, command))
+
     /// Create the macro editing commands for the given information.  This relies on listening to events
     /// and the observable values are added to the Disposable bag so the caller may unsubscribe at a 
     /// later time

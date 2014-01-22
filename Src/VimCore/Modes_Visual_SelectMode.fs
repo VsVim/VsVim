@@ -114,6 +114,7 @@ type internal SelectMode
         not hasShift && hasStopSelection
 
     member x.ProcessCaretMovement caretMovement keyInput =
+        _textView.Selection.Clear()
         _commonOperations.MoveCaretWithArrow caretMovement |> ignore
 
         if x.ShouldStopSelection keyInput then
@@ -188,7 +189,6 @@ type internal SelectMode
                             ProcessResult.Handled ModeSwitch.NoSwitch
 
         if processResult.IsAnySwitch then
-            _commonOperations.EnsureAtCaret ViewFlags.VirtualEdit
             _textView.Selection.Clear()
             _textView.Selection.Mode <- TextSelectionMode.Stream
 
@@ -196,16 +196,7 @@ type internal SelectMode
 
     member x.OnEnter modeArgument =
         x.EnsureCommandsBuilt()
-
-        match modeArgument with
-        | ModeArgument.InitialVisualSelection (visualSelection, caretPoint) ->
-
-            if visualSelection.VisualKind = _visualKind then
-                visualSelection.Select _textView
-                let visualCaretPoint = visualSelection.GetCaretPoint _globalSettings.SelectionKind
-                TextViewUtil.MoveCaretToPointRaw _textView visualCaretPoint MoveCaretFlags.EnsureOnScreen
-        | _ -> ()
-
+        _selectionTracker.RecordCaretTrackingPoint modeArgument
         _selectionTracker.Start()
 
     member x.OnLeave() =
@@ -231,4 +222,3 @@ type internal SelectMode
         member x.OnEnter modeArgument = x.OnEnter modeArgument
         member x.OnLeave () = x.OnLeave()
         member x.OnClose() = x.OnClose()
-

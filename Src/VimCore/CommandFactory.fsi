@@ -17,6 +17,9 @@ type internal CommandFactory =
     /// Returns the set of commands which move the caret as a scroll operation
     member CreateScrollCommands : unit -> CommandBinding seq
 
+    /// Returns the set of commands that initiate select mode
+    member CreateSelectionCommands : unit -> CommandBinding seq
+
     /// Adds in the macro edit commands
     member CreateMacroEditCommands : ICommandRunner -> IMacroRecorder -> DisposableBag -> unit
 

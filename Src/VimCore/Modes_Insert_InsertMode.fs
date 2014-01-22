@@ -194,6 +194,9 @@ type internal InsertMode
         _undoRedoOperations : IUndoRedoOperations,
         _textChangeTracker : ITextChangeTracker,
         _insertUtil : IInsertUtil,
+        _motionUtil : IMotionUtil,
+        _commandUtil : ICommandUtil,
+        _capture : IMotionCapture,
         _isReplace : bool,
         _keyboard : IKeyboardDevice,
         _mouse : IMouseDevice,
@@ -238,11 +241,34 @@ type internal InsertMode
             ("<C-t>", InsertCommand.ShiftLineRight, CommandFlags.Repeatable)
             ("<C-y>", InsertCommand.InsertCharacterAboveCaret, CommandFlags.Repeatable)
             ("<C-w>", InsertCommand.DeleteWordBeforeCursor, CommandFlags.Repeatable ||| CommandFlags.InsertEdit)
+            ("<C-v>", InsertCommand.Paste, CommandFlags.Repeatable ||| CommandFlags.InsertEdit)
             ("<C-Left>", InsertCommand.MoveCaretByWord Direction.Left, CommandFlags.Movement)
             ("<C-Right>", InsertCommand.MoveCaretByWord Direction.Right, CommandFlags.Movement)
         ]
 
     do
+        // Caret changes can end a text change operation.
+        _textView.Caret.PositionChanged
+        |> Observable.subscribe (fun _ -> this.OnCaretPositionChanged() )
+        |> _bag.Add
+
+        // Listen for text changes
+        _textChangeTracker.ChangeCompleted
+        |> Observable.filter (fun _ -> this.IsActive)
+        |> Observable.subscribe (fun args -> this.OnTextChangeCompleted args)
+        |> _bag.Add
+
+        // Listen for global settings changes
+        _globalSettings.SettingChanged
+        |> Observable.subscribe (fun args -> this.OnGlobalSettingsChanged args)
+        |> _bag.Add
+
+    member x.EnsureCommandsBuilt () =
+        if _commandMap.IsEmpty then
+            x.BuildCommands()
+
+    member x.BuildCommands () =
+
         let oldCommands : (string * RawInsertCommand) list = 
             [
                 ("<Esc>", RawInsertCommand.CustomCommand this.ProcessEscape)
@@ -255,31 +281,70 @@ type internal InsertMode
                 ("<C-u>", RawInsertCommand.CustomCommand this.UndoInsert)
             ]
 
+        let noSelectionCommands : (string * InsertCommand * CommandFlags) list =
+            [
+                ("<S-Left>", InsertCommand.MoveCaretByWord Direction.Left, CommandFlags.Movement)
+                ("<S-Right>", InsertCommand.MoveCaretByWord Direction.Right, CommandFlags.Movement)
+            ]
+
+        /// The list of commands that initiate select mode
+        ///
+        /// TODO: Because insert mode does not yet use a command runner, we have
+        /// to simulate a little mini-runner here.  Should this be upgraded?
+        let selectionCommands : (KeyInput * RawInsertCommand) list =
+
+            // Create a command factory so we can access the selection commands
+            let factory =
+                CommandFactory(_operations, _capture, _motionUtil,
+                    _vimBuffer.JumpList, _vimBuffer.LocalSettings)
+
+            // Run a normal command bound to a key input and return a command result
+            let runNormalCommand normalCommand keyInput =
+                let commandData = { Count = None; RegisterName = None }
+                let commandResult = _commandUtil.RunNormalCommand normalCommand commandData
+                ProcessResult.OfCommandResult commandResult
+
+            // Extract those bindings that are bound to normal commands and
+            // create raw insert command that runs the normal command
+            [
+                for commandBinding in factory.CreateSelectionCommands() do
+                    match commandBinding with
+                    | CommandBinding.NormalBinding (_, _,  normalCommand) ->
+                        match commandBinding.KeyInputSet.FirstKeyInput with
+                        | Some keyInput ->
+                            let customCommand = runNormalCommand normalCommand
+                            let rawInsertCommand = RawInsertCommand.CustomCommand customCommand
+                            yield (keyInput, rawInsertCommand)
+                        | None ->
+                            ()
+                    | _ ->
+                        ()
+            ]
+
+        // Choose which commands are applicable for conflicting keys
+        let (applicableNoSelectionCommands, applicableSelectionCommands) =
+            if Util.IsFlagSet _globalSettings.KeyModelOptions KeyModelOptions.StartSelection then
+                (List.empty, selectionCommands)
+            else
+                (noSelectionCommands, List.empty)
+
+        // Create a list of mapped commands
         let mappedCommands : (string * RawInsertCommand) list = 
             s_commands
+            |> Seq.append applicableNoSelectionCommands
             |> Seq.map (fun (name, command, commandFlags) ->
                 let keyInputSet = KeyNotationUtil.StringToKeyInputSet name
                 let rawInsertCommand = RawInsertCommand.InsertCommand (keyInputSet, command, commandFlags)
                 (name, rawInsertCommand))
             |> List.ofSeq
 
-        let both = Seq.append oldCommands mappedCommands
+        // Build a list of all applicable commands
         _commandMap <-
             oldCommands
             |> Seq.append mappedCommands
             |> Seq.map (fun (str, func) -> (KeyNotationUtil.StringToKeyInput str), func)
+            |> Seq.append applicableSelectionCommands
             |> Map.ofSeq
-
-        // Caret changes can end a text change operation.
-        _textView.Caret.PositionChanged
-        |> Observable.subscribe (fun _ -> this.OnCaretPositionChanged() )
-        |> _bag.Add
-
-        // Listen for text changes 
-        _textChangeTracker.ChangeCompleted
-        |> Observable.filter (fun _ -> this.IsActive)
-        |> Observable.subscribe (fun args -> this.OnTextChangeCompleted args)
-        |> _bag.Add
 
     member x.ActiveWordCompletionSession = 
         match _sessionData.ActiveEditItem with
@@ -837,6 +902,11 @@ type internal InsertMode
 
         _sessionData <- { _sessionData with CombinedEditCommand = Some command } 
 
+    /// Raised when a global setting is changed
+    member x.OnGlobalSettingsChanged (args : SettingEventArgs) =
+        if not _commandMap.IsEmpty then
+            x.BuildCommands()
+
     /// Called when the IVimBuffer is closed.  We need to unsubscribe from several events
     /// when this happens to prevent the ITextBuffer / ITextView from being kept alive
     member x.OnClose () =
@@ -845,6 +915,7 @@ type internal InsertMode
     /// Entering an insert or replace mode.  Setup the InsertSessionData based on the 
     /// ModeArgument value. 
     member x.OnEnter arg =
+        x.EnsureCommandsBuilt()
 
         // When starting insert mode we want to track the edits to the IVimBuffer as a 
         // text change

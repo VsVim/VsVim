@@ -243,7 +243,7 @@ type internal VimBufferFactory
         let createCommandRunner kind countKeyRemapMode = CommandRunner(textView, vim.RegisterMap, capture, vimBufferData.LocalSettings, commandUtil, vimBufferData.StatusUtil, kind, countKeyRemapMode) :>ICommandRunner
         let broker = _completionWindowBrokerFactoryService.GetDisplayWindowBroker textView
         let bufferOptions = _editorOptionsFactoryService.GetOptions(textView.TextBuffer)
-        let visualOptsFactory visualKind = Modes.Visual.SelectionTracker(textView, vimBufferData.LocalSettings, incrementalSearch, visualKind) :> Modes.Visual.ISelectionTracker
+        let visualOptsFactory visualKind = Modes.Visual.SelectionTracker(vimBufferData, incrementalSearch, visualKind) :> Modes.Visual.ISelectionTracker
         let undoRedoOperations = vimBufferData.UndoRedoOperations
 
         let visualModeSeq =
@@ -271,8 +271,8 @@ type internal VimBufferFactory
             [
                 ((Modes.Normal.NormalMode(vimBufferData, commonOperations, motionUtil, createCommandRunner VisualKind.Character KeyRemapMode.Normal, capture)) :> IMode)
                 ((Modes.Command.CommandMode(buffer, commonOperations)) :> IMode)
-                ((Modes.Insert.InsertMode(buffer, commonOperations, broker, editOptions, undoRedoOperations, textChangeTracker, insertUtil, false, _keyboardDevice, _mouseDevice, wordUtil, _wordCompletionSessionFactoryService)) :> IMode)
-                ((Modes.Insert.InsertMode(buffer, commonOperations, broker, editOptions, undoRedoOperations, textChangeTracker, insertUtil, true, _keyboardDevice, _mouseDevice, wordUtil, _wordCompletionSessionFactoryService)) :> IMode)
+                ((Modes.Insert.InsertMode(buffer, commonOperations, broker, editOptions, undoRedoOperations, textChangeTracker, insertUtil, motionUtil, commandUtil, capture, false, _keyboardDevice, _mouseDevice, wordUtil, _wordCompletionSessionFactoryService)) :> IMode)
+                ((Modes.Insert.InsertMode(buffer, commonOperations, broker, editOptions, undoRedoOperations, textChangeTracker, insertUtil, motionUtil, commandUtil, capture, true, _keyboardDevice, _mouseDevice, wordUtil, _wordCompletionSessionFactoryService)) :> IMode)
                 ((Modes.SubstituteConfirm.SubstituteConfirmMode(vimBufferData, commonOperations) :> IMode))
                 (DisabledMode(vimBufferData) :> IMode)
                 (ExternalEditMode(vimBufferData) :> IMode)

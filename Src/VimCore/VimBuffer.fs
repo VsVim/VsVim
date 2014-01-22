@@ -80,11 +80,16 @@ type internal ModeMap
 
         currentMode.OnLeave()
 
+        // Make sure to update the underlying IVimTextBuffer to the given mode.  Do this after
+        // we switch so that we can avoid the redundant mode switch in the event handler
+        // event which will cause us to actually switch
+        _vimTextBuffer.SwitchMode kind arg
+
         // When switching between different visual modes we don't want to lose
         // the previous non-visual mode value.  Commands executing in Visual mode
         // which return a SwitchPrevious mode value expected to actually leave 
         // Visual Mode 
-        if not (VisualKind.IsAnyVisual currentMode.ModeKind) && not (VisualKind.IsAnyVisual _previousMode.ModeKind) then
+        if not (VisualKind.IsAnyVisualOrSelect currentMode.ModeKind) && not (VisualKind.IsAnyVisualOrSelect _previousMode.ModeKind) then
             _previousMode <- currentMode
         elif _previousMode.ModeKind = ModeKind.Uninitialized then
             _previousMode <- currentMode
@@ -550,15 +555,7 @@ type internal VimBuffer
 
     /// Switch to the desired mode
     member x.SwitchMode modeKind modeArgument =
-
-        let mode = _modeMap.SwitchMode modeKind modeArgument
-
-        // Make sure to update the underlying IVimTextBuffer to the given mode.  Do this after
-        // we switch so that we can avoid the redundant mode switch in the event handler
-        // event which will cause us to actually switch
-        _vimTextBuffer.SwitchMode modeKind modeArgument
-
-        mode
+        _modeMap.SwitchMode modeKind modeArgument
 
     member x.SwitchPreviousMode () =
         x.SwitchMode _modeMap.PreviousMode.ModeKind ModeArgument.None
