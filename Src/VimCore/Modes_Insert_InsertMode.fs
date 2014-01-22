@@ -244,8 +244,6 @@ type internal InsertMode
             ("<C-v>", InsertCommand.Paste, CommandFlags.Repeatable ||| CommandFlags.InsertEdit)
             ("<C-Left>", InsertCommand.MoveCaretByWord Direction.Left, CommandFlags.Movement)
             ("<C-Right>", InsertCommand.MoveCaretByWord Direction.Right, CommandFlags.Movement)
-            ("<S-Left>", InsertCommand.MoveCaretByWord Direction.Left, CommandFlags.Movement)
-            ("<S-Right>", InsertCommand.MoveCaretByWord Direction.Right, CommandFlags.Movement)
         ]
 
     do
@@ -283,13 +281,11 @@ type internal InsertMode
                 ("<C-u>", RawInsertCommand.CustomCommand this.UndoInsert)
             ]
 
-        let mappedCommands : (string * RawInsertCommand) list = 
-            s_commands
-            |> Seq.map (fun (name, command, commandFlags) ->
-                let keyInputSet = KeyNotationUtil.StringToKeyInputSet name
-                let rawInsertCommand = RawInsertCommand.InsertCommand (keyInputSet, command, commandFlags)
-                (name, rawInsertCommand))
-            |> List.ofSeq
+        let noSelectionCommands : (string * InsertCommand * CommandFlags) list =
+            [
+                ("<S-Left>", InsertCommand.MoveCaretByWord Direction.Left, CommandFlags.Movement)
+                ("<S-Right>", InsertCommand.MoveCaretByWord Direction.Right, CommandFlags.Movement)
+            ]
 
         /// The list of commands that initiate select mode
         ///
@@ -325,12 +321,24 @@ type internal InsertMode
                         ()
             ]
 
-        let applicableSelectionCommands =
+        // Choose which commands are applicable for conflicting keys
+        let (applicableNoSelectionCommands, applicableSelectionCommands) =
             if Util.IsFlagSet _globalSettings.KeyModelOptions KeyModelOptions.StartSelection then
-                selectionCommands
+                (List.empty, selectionCommands)
             else
-                List.empty
+                (noSelectionCommands, List.empty)
 
+        // Create a list of mapped commands
+        let mappedCommands : (string * RawInsertCommand) list = 
+            s_commands
+            |> Seq.append applicableNoSelectionCommands
+            |> Seq.map (fun (name, command, commandFlags) ->
+                let keyInputSet = KeyNotationUtil.StringToKeyInputSet name
+                let rawInsertCommand = RawInsertCommand.InsertCommand (keyInputSet, command, commandFlags)
+                (name, rawInsertCommand))
+            |> List.ofSeq
+
+        // Build a list of all applicable commands
         _commandMap <-
             oldCommands
             |> Seq.append mappedCommands
