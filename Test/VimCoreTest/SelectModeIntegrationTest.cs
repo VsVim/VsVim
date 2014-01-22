@@ -100,7 +100,7 @@ namespace Vim.UnitTest
         public sealed class SpecialKeysFromNormal : SelectModeIntegrationTest
         {
             [Fact]
-            public void ShiftRightToSelect_Inclusive()
+            public void ShiftRightToSelect_NormalInclusive()
             {
                 Create("cat");
                 _globalSettings.SelectModeOptions = SelectModeOptions.Keyboard;
@@ -115,7 +115,7 @@ namespace Vim.UnitTest
             }
 
             [Fact]
-            public void ShiftRightToSelect_Exclusive()
+            public void ShiftRightToSelect_NormalExclusive()
             {
                 Create("cat");
                 _globalSettings.Selection = "exclusive";
@@ -131,7 +131,7 @@ namespace Vim.UnitTest
             }
 
             [Fact]
-            public void ControlShiftRightToSelect_Inclusive()
+            public void ControlShiftRightToSelect_NormalInclusive()
             {
                 Create("cat dog");
                 _globalSettings.SelectModeOptions = SelectModeOptions.Keyboard;
@@ -146,7 +146,7 @@ namespace Vim.UnitTest
             }
 
             [Fact]
-            public void ControlShiftRightToSelect_Exclusive()
+            public void ControlShiftRightToSelect_NormalExclusive()
             {
                 Create("cat dog");
                 _globalSettings.Selection = "exclusive";
@@ -162,7 +162,7 @@ namespace Vim.UnitTest
             }
 
             [Fact]
-            public void ShiftLeftToSelect_Inclusive()
+            public void ShiftLeftToSelect_NormalInclusive()
             {
                 Create("cat dog");
                 _textView.MoveCaretTo(4);
@@ -178,7 +178,7 @@ namespace Vim.UnitTest
             }
 
             [Fact]
-            public void ShiftLeftToSelect_Exclusive()
+            public void ShiftLeftToSelect_NormalExclusive()
             {
                 Create("cat dog");
                 _textView.MoveCaretTo(4);
@@ -195,7 +195,7 @@ namespace Vim.UnitTest
             }
 
             [Fact]
-            public void ControlShiftLeftToSelect_Inclusive()
+            public void ControlShiftLeftToSelect_NormalInclusive()
             {
                 Create("cat dog fish");
                 _textView.MoveCaretTo(8);
@@ -211,7 +211,7 @@ namespace Vim.UnitTest
             }
 
             [Fact]
-            public void ControlShiftLeftToSelect_Exclusive()
+            public void ControlShiftLeftToSelect_NormalExclusive()
             {
                 Create("cat dog fish");
                 _textView.MoveCaretTo(8);
@@ -228,7 +228,7 @@ namespace Vim.UnitTest
             }
 
             [Fact]
-            public void ControlShiftEndToSelect_InclusiveFinalLineBreak()
+            public void ControlShiftEndToSelect_NormalInclusiveFinalLineBreak()
             {
                 Create("cat dog fish", "");
                 _textView.MoveCaretTo(0);
@@ -244,7 +244,7 @@ namespace Vim.UnitTest
             }
 
             [Fact]
-            public void ControlShiftEndToSelect_ExclusiveFinalLineBreak()
+            public void ControlShiftEndToSelect_NormalExclusiveFinalLineBreak()
             {
                 Create("cat dog fish", "");
                 _textView.MoveCaretTo(0);
@@ -261,7 +261,7 @@ namespace Vim.UnitTest
             }
 
             [Fact]
-            public void ControlShiftEndToSelect_InclusiveNoFinalLineBreak()
+            public void ControlShiftEndToSelect_NormalInclusiveNoFinalLineBreak()
             {
                 Create("cat dog fish");
                 _textView.MoveCaretTo(0);
@@ -277,7 +277,7 @@ namespace Vim.UnitTest
             }
 
             [Fact]
-            public void ControlShiftEndToSelect_ExclusiveNoFinalLineBreak()
+            public void ControlShiftEndToSelect_NormalExclusiveNoFinalLineBreak()
             {
                 Create("cat dog fish");
                 _textView.MoveCaretTo(0);
@@ -294,7 +294,7 @@ namespace Vim.UnitTest
             }
 
             [Fact]
-            public void ShiftRightToVisual()
+            public void ShiftRightToVisual_Normal()
             {
                 Create("cat");
                 _globalSettings.SelectModeOptions = SelectModeOptions.None;
@@ -306,7 +306,7 @@ namespace Vim.UnitTest
             }
 
             [Fact]
-            public void ShiftRightToNothing()
+            public void ShiftRightToNothing_Normal()
             {
                 Create("cat dog");
                 _vimBuffer.ProcessNotation("<S-Right>");
@@ -315,7 +315,7 @@ namespace Vim.UnitTest
             }
 
             [Fact]
-            public void ShiftLeftToSelect()
+            public void ShiftLeftToSelect_Normal()
             {
                 Create("cat");
                 _textView.MoveCaretTo(1);
@@ -328,7 +328,7 @@ namespace Vim.UnitTest
             }
 
             [Fact]
-            public void ShiftLeftToVisual()
+            public void ShiftLeftToVisual_Normal()
             {
                 Create("cat");
                 _textView.MoveCaretTo(1);
@@ -341,12 +341,283 @@ namespace Vim.UnitTest
             }
 
             [Fact]
-            public void ShiftLeftToNothing()
+            public void ShiftLeftToNothing_Normal()
             {
                 Create("cat dog");
                 _textView.MoveCaretTo(4);
                 _vimBuffer.ProcessNotation("<S-Left>");
                 Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
+                Assert.Equal(0, _textView.GetCaretPoint().Position);
+            }
+        }
+
+        public sealed class SpecialKeysFromInsert : SelectModeIntegrationTest
+        {
+            [Fact]
+            public void ShiftRightToSelect_InsertInclusive()
+            {
+                Create("cat");
+                _vimBuffer.ProcessNotation("i");
+                _globalSettings.SelectModeOptions = SelectModeOptions.Keyboard;
+                _globalSettings.KeyModelOptions = KeyModelOptions.StartSelection;
+                _vimBuffer.ProcessNotation("<S-Right>");
+                Assert.Equal(ModeKind.SelectCharacter, _vimBuffer.ModeKind);
+                Assert.Equal("ca", _textView.GetSelectionSpan().GetText());
+                Assert.Equal(1, _textView.GetCaretPoint().Position);
+                _vimBuffer.ProcessNotation("<Esc>");
+                Assert.Equal(ModeKind.Insert, _vimBuffer.ModeKind);
+                Assert.Equal(1, _textView.GetCaretPoint().Position);
+            }
+
+            [Fact]
+            public void ShiftRightToSelect_InsertExclusive()
+            {
+                Create("cat");
+                _vimBuffer.ProcessNotation("i");
+                _globalSettings.Selection = "exclusive";
+                _globalSettings.SelectModeOptions = SelectModeOptions.Keyboard;
+                _globalSettings.KeyModelOptions = KeyModelOptions.StartSelection;
+                _vimBuffer.ProcessNotation("<S-Right>");
+                Assert.Equal(ModeKind.SelectCharacter, _vimBuffer.ModeKind);
+                Assert.Equal("c", _textView.GetSelectionSpan().GetText());
+                Assert.Equal(1, _textView.GetCaretPoint().Position);
+                _vimBuffer.ProcessNotation("<Esc>");
+                Assert.Equal(ModeKind.Insert, _vimBuffer.ModeKind);
+                Assert.Equal(1, _textView.GetCaretPoint().Position);
+            }
+
+            [Fact]
+            public void ControlShiftRightToSelect_InsertInclusive()
+            {
+                Create("cat dog");
+                _vimBuffer.ProcessNotation("i");
+                _globalSettings.SelectModeOptions = SelectModeOptions.Keyboard;
+                _globalSettings.KeyModelOptions = KeyModelOptions.StartSelection;
+                _vimBuffer.ProcessNotation("<C-S-Right>");
+                Assert.Equal(ModeKind.SelectCharacter, _vimBuffer.ModeKind);
+                Assert.Equal("cat d", _textView.GetSelectionSpan().GetText());
+                Assert.Equal(4, _textView.GetCaretPoint().Position);
+                _vimBuffer.ProcessNotation("<Esc>");
+                Assert.Equal(ModeKind.Insert, _vimBuffer.ModeKind);
+                Assert.Equal(4, _textView.GetCaretPoint().Position);
+            }
+
+            [Fact]
+            public void ControlShiftRightToSelect_InsertExclusive()
+            {
+                Create("cat dog");
+                _vimBuffer.ProcessNotation("i");
+                _globalSettings.Selection = "exclusive";
+                _globalSettings.SelectModeOptions = SelectModeOptions.Keyboard;
+                _globalSettings.KeyModelOptions = KeyModelOptions.StartSelection;
+                _vimBuffer.ProcessNotation("<C-S-Right>");
+                Assert.Equal(ModeKind.SelectCharacter, _vimBuffer.ModeKind);
+                Assert.Equal("cat ", _textView.GetSelectionSpan().GetText());
+                Assert.Equal(4, _textView.GetCaretPoint().Position);
+                _vimBuffer.ProcessNotation("<Esc>");
+                Assert.Equal(ModeKind.Insert, _vimBuffer.ModeKind);
+                Assert.Equal(4, _textView.GetCaretPoint().Position);
+            }
+
+            [Fact]
+            public void ShiftLeftToSelect_InsertInclusive()
+            {
+                Create("cat dog");
+                _textView.MoveCaretTo(4);
+                _vimBuffer.ProcessNotation("i");
+                _globalSettings.SelectModeOptions = SelectModeOptions.Keyboard;
+                _globalSettings.KeyModelOptions = KeyModelOptions.StartSelection;
+                _vimBuffer.ProcessNotation("<S-Left>");
+                Assert.Equal(ModeKind.SelectCharacter, _vimBuffer.ModeKind);
+                Assert.Equal(" d", _textView.GetSelectionSpan().GetText());
+                Assert.Equal(3, _textView.GetCaretPoint().Position);
+                _vimBuffer.ProcessNotation("<Esc>");
+                Assert.Equal(ModeKind.Insert, _vimBuffer.ModeKind);
+                Assert.Equal(3, _textView.GetCaretPoint().Position);
+            }
+
+            [Fact]
+            public void ShiftLeftToSelect_InsertExclusive()
+            {
+                Create("cat dog");
+                _textView.MoveCaretTo(4);
+                _vimBuffer.ProcessNotation("i");
+                _globalSettings.Selection = "exclusive";
+                _globalSettings.SelectModeOptions = SelectModeOptions.Keyboard;
+                _globalSettings.KeyModelOptions = KeyModelOptions.StartSelection;
+                _vimBuffer.ProcessNotation("<S-Left>");
+                Assert.Equal(ModeKind.SelectCharacter, _vimBuffer.ModeKind);
+                Assert.Equal(" ", _textView.GetSelectionSpan().GetText());
+                Assert.Equal(3, _textView.GetCaretPoint().Position);
+                _vimBuffer.ProcessNotation("<Esc>");
+                Assert.Equal(ModeKind.Insert, _vimBuffer.ModeKind);
+                Assert.Equal(3, _textView.GetCaretPoint().Position);
+            }
+
+            [Fact]
+            public void ControlShiftLeftToSelect_InsertInclusive()
+            {
+                Create("cat dog fish");
+                _textView.MoveCaretTo(8);
+                _vimBuffer.ProcessNotation("i");
+                _globalSettings.SelectModeOptions = SelectModeOptions.Keyboard;
+                _globalSettings.KeyModelOptions = KeyModelOptions.StartSelection;
+                _vimBuffer.ProcessNotation("<C-S-Left>");
+                Assert.Equal(ModeKind.SelectCharacter, _vimBuffer.ModeKind);
+                Assert.Equal("dog f", _textView.GetSelectionSpan().GetText());
+                Assert.Equal(4, _textView.GetCaretPoint().Position);
+                _vimBuffer.ProcessNotation("<Esc>");
+                Assert.Equal(ModeKind.Insert, _vimBuffer.ModeKind);
+                Assert.Equal(4, _textView.GetCaretPoint().Position);
+            }
+
+            [Fact]
+            public void ControlShiftLeftToSelect_InsertExclusive()
+            {
+                Create("cat dog fish");
+                _textView.MoveCaretTo(8);
+                _vimBuffer.ProcessNotation("i");
+                _globalSettings.Selection = "exclusive";
+                _globalSettings.SelectModeOptions = SelectModeOptions.Keyboard;
+                _globalSettings.KeyModelOptions = KeyModelOptions.StartSelection;
+                _vimBuffer.ProcessNotation("<C-S-Left>");
+                Assert.Equal(ModeKind.SelectCharacter, _vimBuffer.ModeKind);
+                Assert.Equal("dog ", _textView.GetSelectionSpan().GetText());
+                Assert.Equal(4, _textView.GetCaretPoint().Position);
+                _vimBuffer.ProcessNotation("<Esc>");
+                Assert.Equal(ModeKind.Insert, _vimBuffer.ModeKind);
+                Assert.Equal(4, _textView.GetCaretPoint().Position);
+            }
+
+            [Fact]
+            public void ControlShiftEndToSelect_InsertInclusiveFinalLineBreak()
+            {
+                Create("cat dog fish", "");
+                _textView.MoveCaretTo(0);
+                _vimBuffer.ProcessNotation("i");
+                _globalSettings.SelectModeOptions = SelectModeOptions.Keyboard;
+                _globalSettings.KeyModelOptions = KeyModelOptions.StartSelection;
+                _vimBuffer.ProcessNotation("<C-S-End>");
+                Assert.Equal(ModeKind.SelectCharacter, _vimBuffer.ModeKind);
+                Assert.Equal("cat dog fish", _textView.GetSelectionSpan().GetText());
+                Assert.Equal(12, _textView.GetCaretPoint().Position);
+                _vimBuffer.ProcessNotation("<Esc>");
+                Assert.Equal(ModeKind.Insert, _vimBuffer.ModeKind);
+                Assert.Equal(12, _textView.GetCaretPoint().Position);
+            }
+
+            [Fact]
+            public void ControlShiftEndToSelect_InsertExclusiveFinalLineBreak()
+            {
+                Create("cat dog fish", "");
+                _textView.MoveCaretTo(0);
+                _vimBuffer.ProcessNotation("i");
+                _globalSettings.Selection = "exclusive";
+                _globalSettings.SelectModeOptions = SelectModeOptions.Keyboard;
+                _globalSettings.KeyModelOptions = KeyModelOptions.StartSelection;
+                _vimBuffer.ProcessNotation("<C-S-End>");
+                Assert.Equal(ModeKind.SelectCharacter, _vimBuffer.ModeKind);
+                Assert.Equal("cat dog fish", _textView.GetSelectionSpan().GetText());
+                Assert.Equal(14, _textView.GetCaretPoint().Position);
+                _vimBuffer.ProcessNotation("<Esc>");
+                Assert.Equal(ModeKind.Insert, _vimBuffer.ModeKind);
+                Assert.Equal(14, _textView.GetCaretPoint().Position);
+            }
+
+            [Fact]
+            public void ControlShiftEndToSelect_InsertInclusiveNoFinalLineBreak()
+            {
+                Create("cat dog fish");
+                _textView.MoveCaretTo(0);
+                _vimBuffer.ProcessNotation("i");
+                _globalSettings.SelectModeOptions = SelectModeOptions.Keyboard;
+                _globalSettings.KeyModelOptions = KeyModelOptions.StartSelection;
+                _vimBuffer.ProcessNotation("<C-S-End>");
+                Assert.Equal(ModeKind.SelectCharacter, _vimBuffer.ModeKind);
+                Assert.Equal("cat dog fish", _textView.GetSelectionSpan().GetText());
+                Assert.Equal(11, _textView.GetCaretPoint().Position);
+                _vimBuffer.ProcessNotation("<Esc>");
+                Assert.Equal(ModeKind.Insert, _vimBuffer.ModeKind);
+                Assert.Equal(11, _textView.GetCaretPoint().Position);
+            }
+
+            [Fact]
+            public void ControlShiftEndToSelect_InsertExclusiveNoFinalLineBreak()
+            {
+                Create("cat dog fish");
+                _textView.MoveCaretTo(0);
+                _vimBuffer.ProcessNotation("i");
+                _globalSettings.Selection = "exclusive";
+                _globalSettings.SelectModeOptions = SelectModeOptions.Keyboard;
+                _globalSettings.KeyModelOptions = KeyModelOptions.StartSelection;
+                _vimBuffer.ProcessNotation("<C-S-End>");
+                Assert.Equal(ModeKind.SelectCharacter, _vimBuffer.ModeKind);
+                Assert.Equal("cat dog fish", _textView.GetSelectionSpan().GetText());
+                Assert.Equal(12, _textView.GetCaretPoint().Position);
+                _vimBuffer.ProcessNotation("<Esc>");
+                Assert.Equal(ModeKind.Insert, _vimBuffer.ModeKind);
+                Assert.Equal(12, _textView.GetCaretPoint().Position);
+            }
+
+            [Fact]
+            public void ShiftRightToVisual_Insert()
+            {
+                Create("cat");
+                _vimBuffer.ProcessNotation("i");
+                _globalSettings.SelectModeOptions = SelectModeOptions.None;
+                _globalSettings.KeyModelOptions = KeyModelOptions.StartSelection;
+                _vimBuffer.ProcessNotation("<S-Right>");
+                Assert.Equal(ModeKind.VisualCharacter, _vimBuffer.ModeKind);
+                Assert.Equal("ca", _textView.GetSelectionSpan().GetText());
+                Assert.Equal(1, _textView.GetCaretPoint().Position);
+            }
+
+            [Fact]
+            public void ShiftRightToNothing_Insert()
+            {
+                Create("cat dog");
+                _vimBuffer.ProcessNotation("i");
+                _vimBuffer.ProcessNotation("<S-Right>");
+                Assert.Equal(ModeKind.Insert, _vimBuffer.ModeKind);
+                Assert.Equal(4, _textView.GetCaretPoint().Position);
+            }
+
+            [Fact]
+            public void ShiftLeftToSelect_Insert()
+            {
+                Create("cat");
+                _textView.MoveCaretTo(1);
+                _vimBuffer.ProcessNotation("i");
+                _globalSettings.SelectModeOptions = SelectModeOptions.Keyboard;
+                _globalSettings.KeyModelOptions = KeyModelOptions.StartSelection;
+                _vimBuffer.ProcessNotation("<S-Left>");
+                Assert.Equal(ModeKind.SelectCharacter, _vimBuffer.ModeKind);
+                Assert.Equal("ca", _textView.GetSelectionSpan().GetText());
+                Assert.Equal(0, _textView.GetCaretPoint().Position);
+            }
+
+            [Fact]
+            public void ShiftLeftToVisual_Insert()
+            {
+                Create("cat");
+                _textView.MoveCaretTo(1);
+                _vimBuffer.ProcessNotation("i");
+                _globalSettings.SelectModeOptions = SelectModeOptions.None;
+                _globalSettings.KeyModelOptions = KeyModelOptions.StartSelection;
+                _vimBuffer.ProcessNotation("<S-Left>");
+                Assert.Equal(ModeKind.VisualCharacter, _vimBuffer.ModeKind);
+                Assert.Equal("ca", _textView.GetSelectionSpan().GetText());
+                Assert.Equal(0, _textView.GetCaretPoint().Position);
+            }
+
+            [Fact]
+            public void ShiftLeftToNothing_Insert()
+            {
+                Create("cat dog");
+                _textView.MoveCaretTo(4);
+                _vimBuffer.ProcessNotation("i");
+                _vimBuffer.ProcessNotation("<S-Left>");
+                Assert.Equal(ModeKind.Insert, _vimBuffer.ModeKind);
                 Assert.Equal(0, _textView.GetCaretPoint().Position);
             }
         }
