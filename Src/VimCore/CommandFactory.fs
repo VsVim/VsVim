@@ -7,23 +7,77 @@ open Microsoft.VisualStudio.Text.Editor
 type internal CommandFactory
     ( 
         _operations : ICommonOperations, 
-        _capture : IMotionCapture,
-        _motionUtil : IMotionUtil, 
-        _jumpList : IJumpList,
-        _settings : IVimLocalSettings
+        _capture : IMotionCapture
     ) =
 
     let _textView = _operations.TextView
 
-    /// Create the movement command bindings which are common to both Normal and 
+    /// The movement command bindings which are common to both Normal and 
     /// Visual mode
-    member x.CreateStandardMovementBindings () = 
+    static let SharedStandardMovementBindings = 
         seq {
             yield ("gd", NormalCommand.GoToLocalDeclaration)
             yield ("gD", NormalCommand.GoToGlobalDeclaration)
-        } |> Seq.map (fun (name, command) -> 
+        } 
+        |> Seq.map (fun (name, command) -> 
             let keyInputSet = KeyNotationUtil.StringToKeyInputSet name
             CommandBinding.NormalBinding (keyInputSet, CommandFlags.Movement, command))
+        |> List.ofSeq
+
+    /// The set of commands which move the caret as a scroll operation
+    static let SharedScrollCommands =
+        seq {
+            yield ("z<Enter>", CommandFlags.Movement, NormalCommand.ScrollCaretLineToTop false)
+            yield ("zt", CommandFlags.Movement, NormalCommand.ScrollCaretLineToTop true)
+            yield ("z.", CommandFlags.Movement, NormalCommand.ScrollCaretLineToMiddle false)
+            yield ("zz", CommandFlags.Movement, NormalCommand.ScrollCaretLineToMiddle true)
+            yield ("z-", CommandFlags.Movement, NormalCommand.ScrollCaretLineToBottom false)
+            yield ("zb", CommandFlags.Movement, NormalCommand.ScrollCaretLineToBottom true)
+            yield ("<C-b>", CommandFlags.Movement, NormalCommand.ScrollPages ScrollDirection.Up)
+            yield ("<C-d>", CommandFlags.Movement, NormalCommand.ScrollLines (ScrollDirection.Down, true))
+            yield ("<C-e>", CommandFlags.Movement, NormalCommand.ScrollWindow ScrollDirection.Down)
+            yield ("<C-f>", CommandFlags.Movement, NormalCommand.ScrollPages ScrollDirection.Down)
+            yield ("<C-u>", CommandFlags.Movement, NormalCommand.ScrollLines (ScrollDirection.Up, true))
+            yield ("<C-y>", CommandFlags.Movement, NormalCommand.ScrollWindow ScrollDirection.Up)
+            yield ("<S-Down>", CommandFlags.Movement, NormalCommand.ScrollPages ScrollDirection.Down)
+            yield ("<S-Up>", CommandFlags.Movement, NormalCommand.ScrollPages ScrollDirection.Up)
+            yield ("<PageUp>", CommandFlags.Movement, NormalCommand.ScrollPages ScrollDirection.Up)
+            yield ("<PageDown>", CommandFlags.Movement, NormalCommand.ScrollPages ScrollDirection.Down)
+        } 
+        |> Seq.map (fun (str, flags, command) ->
+            let keyInputSet = KeyNotationUtil.StringToKeyInputSet str
+            CommandBinding.NormalBinding (keyInputSet, flags, command))
+        |> List.ofSeq
+
+    /// The set of selection starting commands.  These are only enabled when 'keymodel' contains
+    /// the startsel option
+    static let SharedSelectionCommands =
+        seq {
+            yield ("<S-Up>", CommandFlags.Repeatable, NormalCommand.SwitchToSelection CaretMovement.Up)
+            yield ("<S-Right>", CommandFlags.Repeatable, NormalCommand.SwitchToSelection CaretMovement.Right)
+            yield ("<S-Down>", CommandFlags.Repeatable, NormalCommand.SwitchToSelection CaretMovement.Down)
+            yield ("<S-Left>", CommandFlags.Repeatable, NormalCommand.SwitchToSelection CaretMovement.Left)
+            yield ("<S-Home>", CommandFlags.Repeatable, NormalCommand.SwitchToSelection CaretMovement.Home)
+            yield ("<S-End>", CommandFlags.Repeatable, NormalCommand.SwitchToSelection CaretMovement.End)
+            yield ("<S-PageUp>", CommandFlags.Repeatable, NormalCommand.SwitchToSelection CaretMovement.PageUp)
+            yield ("<S-PageDown>", CommandFlags.Repeatable, NormalCommand.SwitchToSelection CaretMovement.PageDown)
+            yield ("<C-S-Up>", CommandFlags.Repeatable, NormalCommand.SwitchToSelection CaretMovement.ControlUp)
+            yield ("<C-S-Right>", CommandFlags.Repeatable, NormalCommand.SwitchToSelection CaretMovement.ControlRight)
+            yield ("<C-S-Down>", CommandFlags.Repeatable, NormalCommand.SwitchToSelection CaretMovement.ControlDown)
+            yield ("<C-S-Left>", CommandFlags.Repeatable, NormalCommand.SwitchToSelection CaretMovement.ControlLeft)
+            yield ("<C-S-Home>", CommandFlags.Repeatable, NormalCommand.SwitchToSelection CaretMovement.ControlHome)
+            yield ("<C-S-End>", CommandFlags.Repeatable, NormalCommand.SwitchToSelection CaretMovement.ControlEnd)
+        }
+        |> Seq.map (fun (str, flags, command) ->
+            let keyInputSet = KeyNotationUtil.StringToKeyInputSet str
+            CommandBinding.NormalBinding (keyInputSet, flags, command))
+        |> List.ofSeq
+
+    member x.CreateScrollCommands() = 
+        SharedScrollCommands
+
+    member x.CreateSelectionCommands() = 
+        SharedSelectionCommands
 
     /// Build up a set of NormalCommandBinding values from applicable Motion values.  These will 
     /// move the cursor to the result of the motion
@@ -55,6 +109,7 @@ type internal CommandFactory
         _capture.MotionBindings
         |> Seq.filter (fun binding -> Util.IsFlagSet binding.MotionFlags MotionFlags.CaretMovement)
         |> Seq.map processMotionBinding
+        |> List.ofSeq
 
     /// Create movement commands for the text-object Motions.  These are described in :help text-objects
     /// section.  All text-object motions will contain the TextObjectSelection flag
@@ -96,60 +151,17 @@ type internal CommandFactory
         _capture.MotionBindings
         |> Seq.filter (fun binding -> Util.IsFlagSet binding.MotionFlags MotionFlags.TextObject)
         |> Seq.map processMotionBinding
+        |> List.ofSeq
 
     member x.CreateMovementCommands() = 
-        let standard = x.CreateStandardMovementBindings()
+        let standard = SharedStandardMovementBindings
         let taken = standard |> Seq.map (fun command -> command.KeyInputSet) |> Set.ofSeq
         let motion = 
             x.CreateMovementsFromMotions()
             |> Seq.filter (fun command -> not (taken.Contains command.KeyInputSet))
-        standard |> Seq.append motion
-
-    /// Returns the set of commands which move the caret as a scroll operation
-    member x.CreateScrollCommands () =
-        seq {
-            yield ("z<Enter>", CommandFlags.Movement, NormalCommand.ScrollCaretLineToTop false)
-            yield ("zt", CommandFlags.Movement, NormalCommand.ScrollCaretLineToTop true)
-            yield ("z.", CommandFlags.Movement, NormalCommand.ScrollCaretLineToMiddle false)
-            yield ("zz", CommandFlags.Movement, NormalCommand.ScrollCaretLineToMiddle true)
-            yield ("z-", CommandFlags.Movement, NormalCommand.ScrollCaretLineToBottom false)
-            yield ("zb", CommandFlags.Movement, NormalCommand.ScrollCaretLineToBottom true)
-            yield ("<C-b>", CommandFlags.Movement, NormalCommand.ScrollPages ScrollDirection.Up)
-            yield ("<C-d>", CommandFlags.Movement, NormalCommand.ScrollLines (ScrollDirection.Down, true))
-            yield ("<C-e>", CommandFlags.Movement, NormalCommand.ScrollWindow ScrollDirection.Down)
-            yield ("<C-f>", CommandFlags.Movement, NormalCommand.ScrollPages ScrollDirection.Down)
-            yield ("<C-u>", CommandFlags.Movement, NormalCommand.ScrollLines (ScrollDirection.Up, true))
-            yield ("<C-y>", CommandFlags.Movement, NormalCommand.ScrollWindow ScrollDirection.Up)
-            yield ("<S-Down>", CommandFlags.Movement, NormalCommand.ScrollPages ScrollDirection.Down)
-            yield ("<S-Up>", CommandFlags.Movement, NormalCommand.ScrollPages ScrollDirection.Up)
-            yield ("<PageUp>", CommandFlags.Movement, NormalCommand.ScrollPages ScrollDirection.Up)
-            yield ("<PageDown>", CommandFlags.Movement, NormalCommand.ScrollPages ScrollDirection.Down)
-        } |> Seq.map (fun (str, flags, command) ->
-            let keyInputSet = KeyNotationUtil.StringToKeyInputSet str
-            CommandBinding.NormalBinding (keyInputSet, flags, command))
-
-    /// The set of selection starting commands.  These are only enabled when 'keymodel' contains
-    /// the startsel option
-    member x.CreateSelectionCommands () =
-        seq {
-            yield ("<S-Up>", CommandFlags.Repeatable, NormalCommand.SwitchToSelection CaretMovement.Up)
-            yield ("<S-Right>", CommandFlags.Repeatable, NormalCommand.SwitchToSelection CaretMovement.Right)
-            yield ("<S-Down>", CommandFlags.Repeatable, NormalCommand.SwitchToSelection CaretMovement.Down)
-            yield ("<S-Left>", CommandFlags.Repeatable, NormalCommand.SwitchToSelection CaretMovement.Left)
-            yield ("<S-Home>", CommandFlags.Repeatable, NormalCommand.SwitchToSelection CaretMovement.Home)
-            yield ("<S-End>", CommandFlags.Repeatable, NormalCommand.SwitchToSelection CaretMovement.End)
-            yield ("<S-PageUp>", CommandFlags.Repeatable, NormalCommand.SwitchToSelection CaretMovement.PageUp)
-            yield ("<S-PageDown>", CommandFlags.Repeatable, NormalCommand.SwitchToSelection CaretMovement.PageDown)
-            yield ("<C-S-Up>", CommandFlags.Repeatable, NormalCommand.SwitchToSelection CaretMovement.ControlUp)
-            yield ("<C-S-Right>", CommandFlags.Repeatable, NormalCommand.SwitchToSelection CaretMovement.ControlRight)
-            yield ("<C-S-Down>", CommandFlags.Repeatable, NormalCommand.SwitchToSelection CaretMovement.ControlDown)
-            yield ("<C-S-Left>", CommandFlags.Repeatable, NormalCommand.SwitchToSelection CaretMovement.ControlLeft)
-            yield ("<C-S-Home>", CommandFlags.Repeatable, NormalCommand.SwitchToSelection CaretMovement.ControlHome)
-            yield ("<C-S-End>", CommandFlags.Repeatable, NormalCommand.SwitchToSelection CaretMovement.ControlEnd)
-        }
-        |> Seq.map (fun (str, flags, command) ->
-            let keyInputSet = KeyNotationUtil.StringToKeyInputSet str
-            CommandBinding.NormalBinding (keyInputSet, flags, command))
+        standard 
+        |> Seq.append motion
+        |> List.ofSeq
 
     /// Create the macro editing commands for the given information.  This relies on listening to events
     /// and the observable values are added to the Disposable bag so the caller may unsubscribe at a 

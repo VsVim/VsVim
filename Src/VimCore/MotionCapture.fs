@@ -200,7 +200,9 @@ type internal MotionCapture
     
     let AllMotionsCore =
         let complex = ComplexMotions 
-        SharedMotions |> Seq.append complex
+        SharedMotions 
+        |> Seq.append complex
+        |> List.ofSeq
 
     let MotionBindings = AllMotionsCore
 

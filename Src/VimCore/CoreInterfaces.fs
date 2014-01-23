@@ -3168,7 +3168,7 @@ type IMotionCapture =
     abstract TextView : ITextView
     
     /// Set of MotionBinding values supported
-    abstract MotionBindings : seq<MotionBinding>
+    abstract MotionBindings : MotionBinding list
 
     /// Get the motion and count starting with the given KeyInput
     abstract GetMotionAndCount : KeyInput -> BindResult<Motion * int option>

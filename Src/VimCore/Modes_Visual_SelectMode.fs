@@ -91,7 +91,7 @@ type internal SelectMode
                 not (IsTextKeyInput keyInput)
 
         if not _builtCommands then
-            let factory = CommandFactory(_commonOperations, _capture, _motionUtil, _vimBufferData.JumpList, _vimTextBuffer.LocalSettings)
+            let factory = CommandFactory(_commonOperations, _capture)
 
             // Add in the standard non-conflicting movement commands
             factory.CreateScrollCommands() |> Seq.filter isNonTextCommand

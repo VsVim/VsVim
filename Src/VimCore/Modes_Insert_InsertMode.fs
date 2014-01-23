@@ -294,9 +294,7 @@ type internal InsertMode
         let selectionCommands : (KeyInput * RawInsertCommand) list =
 
             // Create a command factory so we can access the selection commands
-            let factory =
-                CommandFactory(_operations, _capture, _motionUtil,
-                    _vimBuffer.JumpList, _vimBuffer.LocalSettings)
+            let factory = CommandFactory(_operations, _capture)
 
             // Run a normal command bound to a key input and return a command result
             let runNormalCommand normalCommand keyInput =
