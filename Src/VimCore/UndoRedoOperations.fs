@@ -5,7 +5,7 @@ namespace Vim
 open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Editor
 open Microsoft.VisualStudio.Text.Operations
-open System.Diagnostics
+open System.Collections.Generic
 
 type UndoTransaction 
     (
@@ -67,7 +67,7 @@ type LinkedUndoTransaction
         if not _isComplete then
             VimTrace.TraceInfo("Complete Linked Undo Transaction: {0}", _name)
             _isComplete <- true
-            _undoRedoOperations.LinkedUndoTransactionClosed()
+            _undoRedoOperations.LinkedUndoTransactionClosed x
 
     interface ILinkedUndoTransaction with
         member x.Complete() = x.Complete()
@@ -87,7 +87,7 @@ and UndoRedoOperations
         _editorOperations : IEditorOperations 
     ) as this =
 
-    let mutable _openLinkedTransactionCount = 0
+    let mutable _linkedUndoTransactionStack = Stack<LinkedUndoTransaction>()
     let mutable _inUndoRedo = false
     let mutable _undoStack : UndoRedoData list = List.empty
     let mutable _redoStack : UndoRedoData list = List.empty
@@ -118,7 +118,9 @@ and UndoRedoOperations
             |> _bag.Add
 
     /// Are we in the middle of a linked undo transaction
-    member x.InLinkedUndoTransaction = _openLinkedTransactionCount > 0
+    member x.InLinkedUndoTransaction = _linkedUndoTransactionStack.Count > 0
+
+    member x.LinkedUndoTransactionStack = _linkedUndoTransactionStack
 
     member x.UndoStack = _undoStack
 
@@ -141,6 +143,15 @@ and UndoRedoOperations
                 | UndoRedoData.Linked _ -> UndoRedoData.Normal count, list
             head :: tail 
 
+    /// This method is called when the undo / redo management detects we have gotten into
+    /// a bad state.  Essentially we've lost our ability to sync with the editor undo
+    /// stack.  Reset all state at this point so that undo / redo goes back to the normal
+    /// editor functions.  Edits after this point will sync back up with us
+    member x.ResetState() =
+        _linkedUndoTransactionStack.Clear()
+        _undoStack <- List.empty
+        _redoStack <- List.empty
+
     /// If undo / redo is called when a linked undo transaction is open then we need to take
     /// action.  Tear down the vim undo / redo stacks and revert back to Visual Studio undo
     /// behavior
@@ -151,11 +162,9 @@ and UndoRedoOperations
     /// bad.  All work, potentially hours of it, which is made after the bug occurs will be undone
     /// after the very next single undo operation. 
     member x.CheckForBrokenUndoRedoChain() =
-        if _openLinkedTransactionCount > 0 then
+        if _linkedUndoTransactionStack.Count > 0 then 
+            x.ResetState()
             VimTrace.TraceInfo("!!! Broken undo / redo chain")
-            _openLinkedTransactionCount <- 0 
-            _undoStack <- List.empty
-            _redoStack <- List.empty
             _statusUtil.OnError Resources.Common_UndoChainBroken
 
     member x.CreateUndoTransaction (name : string) = 
@@ -176,11 +185,12 @@ and UndoRedoOperations
 
         // When there is a linked undo transaction active the top of the undo stack should always
         // be a Linked item
-        _openLinkedTransactionCount <- _openLinkedTransactionCount + 1
-        if _openLinkedTransactionCount = 1 then
+        if _linkedUndoTransactionStack.Count = 0 then
             _undoStack <- UndoRedoData.Linked 0 :: _undoStack
 
-        new LinkedUndoTransaction(name, x) :> ILinkedUndoTransaction
+        let linkedUndoTransaction = new LinkedUndoTransaction(name, x) 
+        _linkedUndoTransactionStack.Push(linkedUndoTransaction)
+        linkedUndoTransaction :> ILinkedUndoTransaction
 
     /// Undo and redo are basically the same operation with the stacks passing data in the 
     /// opposite order.  This is the common behavior
@@ -258,11 +268,26 @@ and UndoRedoOperations
             _undoStack <- undoStack
             _redoStack <- redoStack
 
-    member x.LinkedUndoTransactionClosed() =
+    /// Called when a linked undo transaction is completed.  Must guard heavily against errors here in 
+    /// particular
+    ///
+    ///     - transactions we orphaned in ResetState because of detected errors
+    ///     - transactions closed out of order 
+    member x.LinkedUndoTransactionClosed (linkedUndoTransaction : LinkedUndoTransaction) = 
+        if _linkedUndoTransactionStack.Count > 0 then
+            if obj.ReferenceEquals(_linkedUndoTransactionStack.Peek(), linkedUndoTransaction) then
+                // This is the most recently open linked transaction which is what we are expecting
+                _linkedUndoTransactionStack.Pop() |> ignore
+            elif _linkedUndoTransactionStack.Contains(linkedUndoTransaction) then
+                // This is a valid open transaction but it's not the top.  This means our state is corrupted
+                // in some way and we need to reset it
+                x.ResetState()
+                VimTrace.TraceInfo("!!! Bad linked undo close order")
+                _statusUtil.OnError Resources.Common_UndoChainOrderError
 
-        // Need to guard against an ILinkedUndoTransaction which is later closed.
-        if _openLinkedTransactionCount > 0 then
-            _openLinkedTransactionCount <- _openLinkedTransactionCount - 1
+        // The other important case to handle here is orphaned transactions.  Basically 
+        // instances which were alive when we called ResetState.  They are not a part of the 
+        // current stack hence will never be processed above
 
     member x.EditWithUndoTransaction name action = 
         use undoTransaction = x.CreateUndoTransaction name
@@ -275,7 +300,7 @@ and UndoRedoOperations
     /// Called when an undo transaction completes and is added to the undo stack.  Need to record that
     /// here in order to get the correct undo behavior
     member x.OnUndoTransactionCompleted result =
-        if _openLinkedTransactionCount = 0 then
+        if _linkedUndoTransactionStack.Count = 0 then
             // Just a normal undo transaction.
             _undoStack <- x.AddToStackNormal 1 _undoStack
         else
@@ -297,16 +322,12 @@ and UndoRedoOperations
     /// Called when an undo / redo operation occurs in the ITextBuffer.  If another piece of code
     /// is manipulating the ITextBuffer undo stack we need to update our stack accordingly.
     member x.OnUndoRedoHappened () = 
-
-        // If we're the ones driving the undo / redo then no update is needed.
         if not _inUndoRedo then
+            // Someone else is directly manipulating the undo / redo stack.  We've lost our ability 
+            // to do anything here.  Reset our state now to prevent undo errors
+            x.ResetState()
             VimTrace.TraceInfo("!!! Unexpected undo / redo")
-
-            // For now we just keep it simple and collapse the stacks to all normal transactions.  If
-            // we find a real scenario around this later on then we'll do smarter logic.  The code
-            // already explicitly handles incorrect stacks so just empty them
-            _undoStack <- List.empty
-            _redoStack <- List.empty
+            _statusUtil.OnError Resources.Common_UndoRedoUnexpected
 
     interface IUndoRedoOperations with
         member x.InLinkedUndoTransaction = x.InLinkedUndoTransaction
