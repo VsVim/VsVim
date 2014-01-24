@@ -230,7 +230,7 @@ type IUndoRedoOperations =
     abstract CreateUndoTransaction : name : string -> IUndoTransaction
 
     /// Creates a linked undo transaction
-    abstract CreateLinkedUndoTransaction : unit -> ILinkedUndoTransaction
+    abstract CreateLinkedUndoTransaction : name : string -> ILinkedUndoTransaction
 
     /// Wrap the passed in "action" inside an undo transaction.  This is needed
     /// when making edits such as paste so that the cursor will move properly 

@@ -57,8 +57,8 @@ namespace Vim.UnitTest
         public void LinkedUndoTransactionClosed_Count()
         {
             Create();
-            _operations.CreateLinkedUndoTransaction();
-            _operations.CreateLinkedUndoTransaction();
+            _operations.CreateLinkedUndoTransaction("Linked 1");
+            _operations.CreateLinkedUndoTransaction("Linked 2");
             Assert.Equal(2, _operationsRaw._openLinkedTransactionCount);
             _operationsRaw.LinkedUndoTransactionClosed();
             _operationsRaw.LinkedUndoTransactionClosed();
@@ -144,7 +144,7 @@ namespace Vim.UnitTest
         public void Undo_WithLinkedTransactionOpen()
         {
             Create();
-            _operations.CreateLinkedUndoTransaction();
+            _operations.CreateLinkedUndoTransaction("Linked Undo");
             _operationsRaw._undoStack = (new[] {UndoRedoData.NewLinked(10)}).ToFSharpList();
             _textUndoHistory.Setup(x => x.Undo(1)).Verifiable();
             _statusUtil.Setup(x => x.OnError(Resources.Common_UndoChainBroken)).Verifiable();

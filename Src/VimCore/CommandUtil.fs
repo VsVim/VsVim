@@ -833,7 +833,7 @@ type internal CommandUtil
     /// Used for the several commands which make an edit here and need the edit to be linked
     /// with the next insert mode change.  
     member x.EditWithLinkedChange name action =
-        let transaction = _undoRedoOperations.CreateLinkedUndoTransaction()
+        let transaction = _undoRedoOperations.CreateLinkedUndoTransaction name
 
         try
             x.EditWithUndoTransaciton name action
@@ -851,7 +851,7 @@ type internal CommandUtil
     /// Used for the several commands which make an edit here and need the edit to be linked
     /// with the next insert mode change.  
     member x.EditBlockWithLinkedChange name blockSpan action =
-        let transaction = _undoRedoOperations.CreateLinkedUndoTransaction()
+        let transaction = _undoRedoOperations.CreateLinkedUndoTransaction name
 
         try
             x.EditWithUndoTransaciton name action

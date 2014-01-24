@@ -5,10 +5,11 @@ namespace Vim
 open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Editor
 open Microsoft.VisualStudio.Text.Operations
-
+open System.Diagnostics
 
 type UndoTransaction 
     (
+        _name : string,
         _transaction : ITextUndoTransaction option,
         _editorOperations : IEditorOperations option
     ) =
@@ -23,10 +24,12 @@ type UndoTransaction
             | None -> ()
             | Some editorOperations -> editorOperations.AddBeforeTextBufferChangePrimitive()
         member x.Complete () = 
+            VimTrace.TraceInfo("Complete Undo Transaction: {0}", _name)
             match _transaction with
             | None -> ()
             | Some transaction -> transaction.Complete()
         member x.Cancel() = 
+            VimTrace.TraceInfo("Cancel Undo Transaction: {0}", _name)
             match _transaction with
             | None -> ()
             | Some transaction -> transaction.Cancel()
@@ -49,8 +52,12 @@ type UndoRedoData =
     /// with a single Vim undo / redo transaction
     | Linked of int 
 
+/// This is a method for linking together several simple undo transactions into a
+/// single undo unit.  Undo or Redo of this item will undo / redo every undo unit
+/// that it is linked to
 type LinkedUndoTransaction
     (
+        _name : string,
         _undoRedoOperations : UndoRedoOperations
     ) = 
 
@@ -58,6 +65,7 @@ type LinkedUndoTransaction
 
     member x.Complete () = 
         if not _isComplete then
+            VimTrace.TraceInfo("Complete Linked Undo Transaction: {0}", _name)
             _isComplete <- true
             _undoRedoOperations.LinkedUndoTransactionClosed()
 
@@ -87,8 +95,7 @@ and UndoRedoOperations
 
     do
         match _textUndoHistory with 
-        | None ->
-            ()
+        | None -> ()
         | Some textUndoHistory -> 
             textUndoHistory.UndoTransactionCompleted
             |> Observable.filter (fun args ->
@@ -110,9 +117,12 @@ and UndoRedoOperations
             |> Observable.subscribe (fun _ -> this.OnUndoRedoHappened())
             |> _bag.Add
 
-
     /// Are we in the middle of a linked undo transaction
     member x.InLinkedUndoTransaction = _openLinkedTransactionCount > 0
+
+    member x.UndoStack = _undoStack
+
+    member x.RedoStack = _redoStack
 
     /// Closing simply means we need to detach from our event handlers so memory can
     /// be reclaimed.  IVimBuffer operates at an ITextView level but here we are 
@@ -120,14 +130,10 @@ and UndoRedoOperations
     /// remain attached and only the ITextView is closed.  
     member x.Close () = _bag.DisposeAll()
 
-    member x.UndoStack = _undoStack
-    member x.RedoStack = _redoStack
-
     /// Add 'count' normal undo transactions to the top of the stack
     member x.AddToStackNormal count list =
         match list with
-        | [] ->
-            [ UndoRedoData.Normal count ]
+        | [] -> [ UndoRedoData.Normal count ]
         | head :: tail ->
             let head, tail = 
                 match head with
@@ -146,24 +152,28 @@ and UndoRedoOperations
     /// after the very next single undo operation. 
     member x.CheckForBrokenUndoRedoChain() =
         if _openLinkedTransactionCount > 0 then
+            Debug.Assert(false)
+            VimTrace.TraceInfo("!!! Broken undo / redo chain")
             _openLinkedTransactionCount <- 0 
             _undoStack <- List.empty
             _redoStack <- List.empty
             _statusUtil.OnError Resources.Common_UndoChainBroken
 
-    member x.CreateUndoTransaction name = 
+    member x.CreateUndoTransaction (name : string) = 
+        VimTrace.TraceInfo("Open Undo Transaction: {0}", name)
         match _textUndoHistory with
         | None -> 
             // Don't support either if the textUndoHistory is not present.  While we have an instance
             // of IEditorOperations it will still fail because internally it's trying to access
             // the same ITextUndorHistory which is null
-            new UndoTransaction(None, None) :> IUndoTransaction
+            new UndoTransaction(name, None, None) :> IUndoTransaction
         | Some textUndoHistory ->
             let transaction = textUndoHistory.CreateTransaction(name)
-            new UndoTransaction(Some transaction, Some _editorOperations) :> IUndoTransaction
+            new UndoTransaction(name, Some transaction, Some _editorOperations) :> IUndoTransaction
 
     /// Create a linked undo transaction.
-    member x.CreateLinkedUndoTransaction() =
+    member x.CreateLinkedUndoTransaction (name : string) =
+        VimTrace.TraceInfo("Open Linked Undo Transaction: {0}", name)
 
         // When there is a linked undo transaction active the top of the undo stack should always
         // be a Linked item
@@ -171,7 +181,7 @@ and UndoRedoOperations
         if _openLinkedTransactionCount = 1 then
             _undoStack <- UndoRedoData.Linked 0 :: _undoStack
 
-        new LinkedUndoTransaction(x) :> ILinkedUndoTransaction
+        new LinkedUndoTransaction(name, x) :> ILinkedUndoTransaction
 
     /// Undo and redo are basically the same operation with the stacks passing data in the 
     /// opposite order.  This is the common behavior
@@ -232,8 +242,7 @@ and UndoRedoOperations
     member x.Undo count =
         x.CheckForBrokenUndoRedoChain()
         match _textUndoHistory with
-        | None -> 
-            _statusUtil.OnError Resources.Internal_UndoRedoNotSupported
+        | None -> _statusUtil.OnError Resources.Internal_UndoRedoNotSupported
         | Some textUndoHistory ->
             let undoStack, redoStack = x.UndoRedoCommon (fun count -> textUndoHistory.Undo count) _undoStack _redoStack count Resources.Internal_CannotUndo
             _undoStack <- undoStack
@@ -267,7 +276,6 @@ and UndoRedoOperations
     /// Called when an undo transaction completes and is added to the undo stack.  Need to record that
     /// here in order to get the correct undo behavior
     member x.OnUndoTransactionCompleted result =
-
         if _openLinkedTransactionCount = 0 then
             // Just a normal undo transaction.
             _undoStack <- x.AddToStackNormal 1 _undoStack
@@ -293,6 +301,8 @@ and UndoRedoOperations
 
         // If we're the ones driving the undo / redo then no update is needed.
         if not _inUndoRedo then
+            Debug.Assert(false)
+            VimTrace.TraceInfo("!!! Unexpected undo / redo")
 
             // For now we just keep it simple and collapse the stacks to all normal transactions.  If
             // we find a real scenario around this later on then we'll do smarter logic.  The code
@@ -305,7 +315,7 @@ and UndoRedoOperations
         member x.StatusUtil = _statusUtil
         member x.Close() = x.Close()
         member x.CreateUndoTransaction name = x.CreateUndoTransaction name
-        member x.CreateLinkedUndoTransaction () = x.CreateLinkedUndoTransaction()
+        member x.CreateLinkedUndoTransaction name = x.CreateLinkedUndoTransaction name
         member x.Redo count = x.Redo count
         member x.Undo count = x.Undo count
         member x.EditWithUndoTransaction name action = x.EditWithUndoTransaction name action

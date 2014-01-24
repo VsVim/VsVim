@@ -21,11 +21,11 @@ namespace Vim.UnitTest
             if (haveRealTransaction)
             {
                 _realTransaction = _factory.Create<ITextUndoTransaction>();
-                _transactionRaw = new UndoTransaction(FSharpOption.Create(_realTransaction.Object), FSharpOption.Create(_editorOperations.Object));
+                _transactionRaw = new UndoTransaction("Undo", FSharpOption.Create(_realTransaction.Object), FSharpOption.Create(_editorOperations.Object));
             }
             else
             {
-                _transactionRaw = new UndoTransaction(FSharpOption<ITextUndoTransaction>.None, FSharpOption<IEditorOperations>.None);
+                _transactionRaw = new UndoTransaction("Undo", FSharpOption<ITextUndoTransaction>.None, FSharpOption<IEditorOperations>.None);
             }
             _transaction = _transactionRaw;
         }
