@@ -152,7 +152,6 @@ and UndoRedoOperations
     /// after the very next single undo operation. 
     member x.CheckForBrokenUndoRedoChain() =
         if _openLinkedTransactionCount > 0 then
-            Debug.Assert(false)
             VimTrace.TraceInfo("!!! Broken undo / redo chain")
             _openLinkedTransactionCount <- 0 
             _undoStack <- List.empty
@@ -301,7 +300,6 @@ and UndoRedoOperations
 
         // If we're the ones driving the undo / redo then no update is needed.
         if not _inUndoRedo then
-            Debug.Assert(false)
             VimTrace.TraceInfo("!!! Unexpected undo / redo")
 
             // For now we just keep it simple and collapse the stacks to all normal transactions.  If
