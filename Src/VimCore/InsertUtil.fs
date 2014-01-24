@@ -51,21 +51,6 @@ type internal InsertUtil
     member x.EditWithUndoTransaction<'T> (name : string) (action : unit -> 'T) : 'T = 
         _undoRedoOperations.EditWithUndoTransaction name action
 
-    /// Used for the several commands which make an edit here and need the edit to be linked
-    /// with the next insert mode change.  
-    member x.EditWithLinkedChange name action =
-        let transaction = _undoRedoOperations.CreateLinkedUndoTransaction name
-
-        try
-            x.EditWithUndoTransaction name action
-        with
-            | _ ->
-                // If the above throws we can't leave the transaction open else it will
-                // break undo / redo in the ITextBuffer.  Close it here and
-                // re-raise the exception
-                transaction.Dispose()
-                reraise()
-
     /// Apply the TextChange to the given ITextEdit at the specified position.  This will
     /// return the position of the edit after the operation completes.  None is returned
     /// if the edit cannot be completed 
