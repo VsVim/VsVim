@@ -108,8 +108,8 @@ type IStatusUtil =
 /// Factory for getting IStatusUtil instances.  This is an importable MEF component
 type IStatusUtilFactory =
 
-    /// Get the IStatusUtil instance for the given ITextView
-    abstract GetStatusUtil : ITextView -> IStatusUtil
+    /// Get the IStatusUtil instance for the given ITextBuffer
+    abstract GetStatusUtil : textBuffer : ITextBuffer -> IStatusUtil
 
 type FileContents = {
 
@@ -4042,6 +4042,9 @@ and IVimTextBuffer =
 
     /// Name of the buffer.  Used for items like Marks
     abstract Name : string
+
+    /// The IUndoRedoOperations associated with the IVimTextBuffer
+    abstract UndoRedoOperations : IUndoRedoOperations
 
     /// The associated IVim instance
     abstract Vim : IVim

@@ -38,7 +38,7 @@ namespace Vim.UnitTest
             _vimHost = (MockVimHost)Vim.VimHost;
             _textView = CreateTextView(lines);
             _textBuffer = _textView.TextBuffer;
-            _vimTextBuffer = Vim.CreateVimTextBuffer(_textBuffer);
+            _vimTextBuffer = CreateVimTextBufferCore(_textBuffer);
             _localSettings = _vimTextBuffer.LocalSettings;
 
             var foldManager = CreateFoldManager(_textView);
@@ -70,6 +70,11 @@ namespace Vim.UnitTest
 
             var outliningManagerService = CompositionContainer.GetExportedValue<IOutliningManagerService>();
             _outliningManager = outliningManagerService.GetOutliningManager(_textView);
+        }
+
+        protected virtual IVimTextBuffer CreateVimTextBufferCore(ITextBuffer textBuffer)
+        {
+            return Vim.GetOrCreateVimTextBuffer(textBuffer);
         }
 
         protected static string CreateLinesWithLineBreak(params string[] lines)
@@ -479,10 +484,12 @@ namespace Vim.UnitTest
         {
             private Mock<IUndoRedoOperations> _undoRedoOperations;
 
-            protected override IUndoRedoOperations CreateUndoRedoOperations(IStatusUtil statusUtil = null)
+            protected override IVimTextBuffer CreateVimTextBufferCore(ITextBuffer textBuffer)
             {
                 _undoRedoOperations = new Mock<IUndoRedoOperations>(MockBehavior.Strict);
-                return _undoRedoOperations.Object;
+                var vimTextBuffer = (VimTextBuffer)Vim.GetOrCreateVimTextBuffer(textBuffer);
+                vimTextBuffer._undoRedoOperations = _undoRedoOperations.Object;
+                return vimTextBuffer;
             }
 
             /// <summary>

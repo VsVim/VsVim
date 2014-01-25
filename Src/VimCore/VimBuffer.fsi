@@ -8,7 +8,7 @@ open Microsoft.VisualStudio.Text.Operations
 open Microsoft.VisualStudio.Utilities
 
 type internal VimBufferData = 
-    new : IVimTextBuffer * ITextView * IVimWindowSettings * IJumpList * IStatusUtil * IUndoRedoOperations * IWordUtil -> VimBufferData
+    new : IVimTextBuffer * ITextView * IVimWindowSettings * IJumpList * IStatusUtil * IWordUtil -> VimBufferData
 
     interface IVimBufferData
 

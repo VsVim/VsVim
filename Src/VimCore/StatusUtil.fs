@@ -34,9 +34,9 @@ type StatusUtilFactory () =
     /// service and instead manually query by a predefined key
     let _key = new System.Object()
 
-    /// Get or create an StatusUtil instance for the ITextView 
-    member x.GetOrCreateStatusUtil (textView : ITextView) =
-        textView.Properties.GetOrCreateSingletonProperty(_key, (fun _ -> StatusUtil()))
+    /// Get or create an StatusUtil instance for the ITextBuffer
+    member x.GetOrCreateStatusUtil (textBuffer : ITextBuffer) =
+        textBuffer.Properties.GetOrCreateSingletonProperty(_key, (fun _ -> StatusUtil()))
 
     /// When an IVimBuffer is created go ahead and update the backing VimBuffer value for
     /// the status util
@@ -44,7 +44,7 @@ type StatusUtilFactory () =
         let textView = buffer.TextView
         try
             let bufferRaw = buffer :?> VimBuffer
-            let statusUtil = x.GetOrCreateStatusUtil buffer.TextView
+            let statusUtil = x.GetOrCreateStatusUtil buffer.TextBuffer
             statusUtil.VimBuffer <- Some bufferRaw
             buffer.Closed |> Observable.add (fun _ ->
                 textView.Properties.RemoveProperty(_key) |> ignore
@@ -53,7 +53,7 @@ type StatusUtilFactory () =
             | :? System.InvalidCastException -> ()
 
     interface IStatusUtilFactory with
-        member x.GetStatusUtil textView = x.GetOrCreateStatusUtil textView :> IStatusUtil
+        member x.GetStatusUtil textBuffer = x.GetOrCreateStatusUtil textBuffer :> IStatusUtil
 
     interface IVimBufferCreationListener with
         member x.VimBufferCreated buffer = x.VimBufferCreated buffer

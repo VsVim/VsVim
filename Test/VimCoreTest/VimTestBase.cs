@@ -251,15 +251,6 @@ namespace Vim.UnitTest
         }
 
         /// <summary>
-        /// Create an IUndoRedoOperations instance with the given IStatusUtil
-        /// </summary>
-        protected virtual IUndoRedoOperations CreateUndoRedoOperations(IStatusUtil statusUtil = null)
-        {
-            statusUtil = statusUtil ?? new StatusUtil();
-            return new UndoRedoOperations(statusUtil, FSharpOption<ITextUndoHistory>.None, null);
-        }
-
-        /// <summary>
         /// Create an IVimTextBuffer instance with the given lines
         /// </summary>
         protected IVimTextBuffer CreateVimTextBuffer(params string[] lines)
@@ -276,7 +267,6 @@ namespace Vim.UnitTest
             ITextView textView,
             IStatusUtil statusUtil = null,
             IJumpList jumpList = null,
-            IUndoRedoOperations undoRedoOperations = null,
             IVimWindowSettings windowSettings = null,
             IWordUtil wordUtil = null)
         {
@@ -285,7 +275,6 @@ namespace Vim.UnitTest
                 textView,
                 statusUtil,
                 jumpList,
-                undoRedoOperations,
                 windowSettings,
                 wordUtil);
         }
@@ -299,13 +288,11 @@ namespace Vim.UnitTest
             ITextView textView,
             IStatusUtil statusUtil = null,
             IJumpList jumpList = null,
-            IUndoRedoOperations undoRedoOperations = null,
             IVimWindowSettings windowSettings = null,
             IWordUtil wordUtil = null)
         {
             jumpList = jumpList ?? new JumpList(textView, _bufferTrackingService);
             statusUtil = statusUtil ?? new StatusUtil();
-            undoRedoOperations = undoRedoOperations ?? CreateUndoRedoOperations(statusUtil);
             windowSettings = windowSettings ?? new WindowSettings(vimTextBuffer.GlobalSettings);
             wordUtil = wordUtil ?? WordUtil;
             return new VimBufferData(
@@ -314,7 +301,6 @@ namespace Vim.UnitTest
                 windowSettings,
                 jumpList,
                 statusUtil,
-                undoRedoOperations,
                 wordUtil);
         }
 

@@ -174,7 +174,15 @@ type internal VimBufferFactory
     member x.CreateVimTextBuffer (textBuffer : ITextBuffer) (vim : IVim) = 
         let localSettings = LocalSettings(vim.GlobalSettings) :> IVimLocalSettings
         let wordNavigator = _wordUtil.CreateTextStructureNavigator WordKind.NormalWord textBuffer.ContentType
-        VimTextBuffer(textBuffer, localSettings, wordNavigator, _bufferTrackingService, vim)
+        let statusUtil = _statusUtilFactory.GetStatusUtil textBuffer
+        let undoRedoOperations = 
+            let history = 
+                let manager = _undoManagerProvider.GetTextBufferUndoManager textBuffer
+                if manager = null then None
+                else manager.TextBufferUndoHistory |> Some
+            UndoRedoOperations(statusUtil, history, _editorOperationsFactoryService) :> IUndoRedoOperations
+
+        VimTextBuffer(textBuffer, localSettings, wordNavigator, _bufferTrackingService, undoRedoOperations, vim)
 
     /// Create a VimBufferData instance for the given ITextView and IVimTextBuffer.  This is mainly
     /// used for testing purposes
@@ -183,18 +191,11 @@ type internal VimBufferFactory
 
         let vim = vimTextBuffer.Vim
         let textBuffer = textView.TextBuffer
-        let statusUtil = _statusUtilFactory.GetStatusUtil textView
+        let statusUtil = _statusUtilFactory.GetStatusUtil textView.TextBuffer
         let localSettings = vimTextBuffer.LocalSettings
         let jumpList = JumpList(textView, _bufferTrackingService) :> IJumpList
-
-        let undoRedoOperations = 
-            let history = 
-                let manager = _undoManagerProvider.GetTextBufferUndoManager textBuffer
-                if manager = null then None
-                else manager.TextBufferUndoHistory |> Some
-            UndoRedoOperations(statusUtil, history, _editorOperationsFactoryService) :> IUndoRedoOperations
         let windowSettings = WindowSettings(vim.GlobalSettings, textView)
-        VimBufferData(vimTextBuffer,textView, windowSettings, jumpList, statusUtil, undoRedoOperations, _wordUtil) :> IVimBufferData
+        VimBufferData(vimTextBuffer, textView, windowSettings, jumpList, statusUtil, _wordUtil) :> IVimBufferData
 
     /// Create an IVimBuffer instance for the provided VimBufferData
     member x.CreateVimBuffer (vimBufferData : IVimBufferData) = 
