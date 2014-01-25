@@ -10,22 +10,20 @@ namespace Vim.UnitTest
     {
         private MockRepository _factory;
         private Mock<ITextUndoTransaction> _realTransaction;
-        private Mock<IEditorOperations> _editorOperations;
         private UndoTransaction _transactionRaw;
         private IUndoTransaction _transaction;
 
         public void Create(bool haveRealTransaction = true)
         {
             _factory = new MockRepository(MockBehavior.Strict);
-            _editorOperations = _factory.Create<IEditorOperations>();
             if (haveRealTransaction)
             {
                 _realTransaction = _factory.Create<ITextUndoTransaction>();
-                _transactionRaw = new UndoTransaction("Undo", FSharpOption.Create(_realTransaction.Object), FSharpOption.Create(_editorOperations.Object));
+                _transactionRaw = new UndoTransaction("Undo", FSharpOption.Create(_realTransaction.Object));
             }
             else
             {
-                _transactionRaw = new UndoTransaction("Undo", FSharpOption<ITextUndoTransaction>.None, FSharpOption<IEditorOperations>.None);
+                _transactionRaw = new UndoTransaction("Undo", FSharpOption<ITextUndoTransaction>.None);
             }
             _transaction = _transactionRaw;
         }

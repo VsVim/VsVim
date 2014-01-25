@@ -183,7 +183,6 @@ type internal VimBufferFactory
 
         let vim = vimTextBuffer.Vim
         let textBuffer = textView.TextBuffer
-        let editOperations = _editorOperationsFactoryService.GetEditorOperations(textView)
         let statusUtil = _statusUtilFactory.GetStatusUtil textView
         let localSettings = vimTextBuffer.LocalSettings
         let jumpList = JumpList(textView, _bufferTrackingService) :> IJumpList
@@ -193,7 +192,7 @@ type internal VimBufferFactory
                 let manager = _undoManagerProvider.GetTextBufferUndoManager textBuffer
                 if manager = null then None
                 else manager.TextBufferUndoHistory |> Some
-            UndoRedoOperations(statusUtil, history, editOperations) :> IUndoRedoOperations
+            UndoRedoOperations(statusUtil, history, _editorOperationsFactoryService) :> IUndoRedoOperations
         let windowSettings = WindowSettings(vim.GlobalSettings, textView)
         VimBufferData(vimTextBuffer,textView, windowSettings, jumpList, statusUtil, undoRedoOperations, _wordUtil) :> IVimBufferData
 

@@ -501,7 +501,7 @@ namespace Vim.UnitTest
                     .Returns(transaction.Object)
                     .Verifiable();
                 _undoRedoOperations
-                    .Setup(x => x.EditWithUndoTransaction<Unit>("Test", It.IsAny<FSharpFunc<Unit, Unit>>()))
+                    .Setup(x => x.EditWithUndoTransaction<Unit>("Test", _textView, It.IsAny<FSharpFunc<Unit, Unit>>()))
                     .Throws(new ArgumentException())
                     .Verifiable();
 
@@ -538,7 +538,7 @@ namespace Vim.UnitTest
                     .Returns(transaction.Object)
                     .Verifiable();
                 _undoRedoOperations
-                    .Setup(x => x.EditWithUndoTransaction<Unit>("Test", It.IsAny<FSharpFunc<Unit, Unit>>()))
+                    .Setup(x => x.EditWithUndoTransaction<Unit>("Test", _textView, It.IsAny<FSharpFunc<Unit, Unit>>()))
                     .Throws(new ArgumentException())
                     .Verifiable();
 

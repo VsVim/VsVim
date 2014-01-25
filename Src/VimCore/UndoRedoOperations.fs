@@ -10,19 +10,10 @@ open System.Collections.Generic
 type UndoTransaction 
     (
         _name : string,
-        _transaction : ITextUndoTransaction option,
-        _editorOperations : IEditorOperations option
+        _transaction : ITextUndoTransaction option
     ) =
 
     interface IUndoTransaction with
-        member x.AddAfterTextBufferChangePrimitive() =
-            match _editorOperations with
-            | None -> ()
-            | Some editorOperations -> editorOperations.AddAfterTextBufferChangePrimitive()
-        member x.AddBeforeTextBufferChangePrimitive() = 
-            match _editorOperations with
-            | None -> ()
-            | Some editorOperations -> editorOperations.AddBeforeTextBufferChangePrimitive()
         member x.Complete () = 
             VimTrace.TraceInfo("Complete Undo Transaction: {0}", _name)
             match _transaction with
@@ -37,6 +28,24 @@ type UndoTransaction
             match _transaction with
             | None -> ()
             | Some transaction -> transaction.Dispose()
+
+type TextViewUndoTransaction 
+    (
+        _name : string,
+        _transaction : ITextUndoTransaction option,
+        _editorOperations : IEditorOperations option
+    ) =
+    inherit UndoTransaction(_name, _transaction)
+
+    interface ITextViewUndoTransaction with
+        member x.AddAfterTextBufferChangePrimitive() =
+            match _editorOperations with
+            | None -> ()
+            | Some editorOperations -> editorOperations.AddAfterTextBufferChangePrimitive()
+        member x.AddBeforeTextBufferChangePrimitive() = 
+            match _editorOperations with
+            | None -> ()
+            | Some editorOperations -> editorOperations.AddBeforeTextBufferChangePrimitive()
 
 /// Information about how many actual undo / redo operations need
 /// to be performed to do a single Vim undo 
@@ -84,7 +93,7 @@ and UndoRedoOperations
     (
         _statusUtil : IStatusUtil,
         _textUndoHistory : ITextUndoHistory option,
-        _editorOperations : IEditorOperations 
+        _editorOperationsFactoryService : IEditorOperationsFactoryService
     ) as this =
 
     let mutable _linkedUndoTransactionStack = Stack<LinkedUndoTransaction>()
@@ -171,13 +180,23 @@ and UndoRedoOperations
         VimTrace.TraceInfo("Open Undo Transaction: {0}", name)
         match _textUndoHistory with
         | None -> 
+            new UndoTransaction(name, None) :> IUndoTransaction
+        | Some textUndoHistory ->
+            let transaction = textUndoHistory.CreateTransaction(name)
+            new UndoTransaction(name, Some transaction) :> IUndoTransaction
+
+    member x.CreateTextViewUndoTransaction (name : string) (textView : ITextView) = 
+        VimTrace.TraceInfo("Open Text View Undo Transaction: {0}", name)
+        match _textUndoHistory with
+        | None -> 
             // Don't support either if the textUndoHistory is not present.  While we have an instance
             // of IEditorOperations it will still fail because internally it's trying to access
             // the same ITextUndorHistory which is null
-            new UndoTransaction(name, None, None) :> IUndoTransaction
+            new TextViewUndoTransaction(name, None, None) :> ITextViewUndoTransaction
         | Some textUndoHistory ->
             let transaction = textUndoHistory.CreateTransaction(name)
-            new UndoTransaction(name, Some transaction, Some _editorOperations) :> IUndoTransaction
+            let editorOperations = _editorOperationsFactoryService.GetEditorOperations textView
+            new TextViewUndoTransaction(name, Some transaction, Some editorOperations) :> ITextViewUndoTransaction
 
     /// Create a linked undo transaction.
     member x.CreateLinkedUndoTransaction (name : string) =
@@ -286,8 +305,8 @@ and UndoRedoOperations
         // instances which were alive when we called ResetState.  They are not a part of the 
         // current stack hence will never be processed above
 
-    member x.EditWithUndoTransaction name action = 
-        use undoTransaction = x.CreateUndoTransaction name
+    member x.EditWithUndoTransaction name textView action = 
+        use undoTransaction = x.CreateTextViewUndoTransaction name textView
         undoTransaction.AddBeforeTextBufferChangePrimitive()
         let ret = action()
         undoTransaction.AddAfterTextBufferChangePrimitive()
@@ -331,8 +350,9 @@ and UndoRedoOperations
         member x.StatusUtil = _statusUtil
         member x.Close() = x.Close()
         member x.CreateUndoTransaction name = x.CreateUndoTransaction name
+        member x.CreateTextViewUndoTransaction name textView = x.CreateTextViewUndoTransaction name textView
         member x.CreateLinkedUndoTransaction name = x.CreateLinkedUndoTransaction name
         member x.Redo count = x.Redo count
         member x.Undo count = x.Undo count
-        member x.EditWithUndoTransaction name action = x.EditWithUndoTransaction name action
+        member x.EditWithUndoTransaction name textView action = x.EditWithUndoTransaction name textView action
 

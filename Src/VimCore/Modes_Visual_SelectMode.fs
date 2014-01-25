@@ -137,7 +137,7 @@ type internal SelectMode
         _textView.Selection.Clear()
         TextViewUtil.MoveCaretToPoint _textView span.Start
 
-        _undoRedoOperations.EditWithUndoTransaction "Replace" (fun () -> 
+        _undoRedoOperations.EditWithUndoTransaction "Replace" _textView (fun () -> 
 
             use edit = _textBuffer.CreateEdit()
 

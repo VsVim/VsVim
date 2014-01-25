@@ -13,7 +13,6 @@ namespace Vim.UnitTest
         private MockRepository _factory;
         private Mock<IStatusUtil> _statusUtil;
         private Mock<ITextUndoHistory> _textUndoHistory;
-        private Mock<IEditorOperations> _editorOperations;
         private UndoRedoOperations _undoRedoOperationsRaw;
         private IUndoRedoOperations _undoRedoOperations;
         private int m_undoCount;
@@ -22,8 +21,9 @@ namespace Vim.UnitTest
         public void Create(bool haveHistory = true)
         {
             _factory = new MockRepository(MockBehavior.Strict);
-            _editorOperations = _factory.Create<IEditorOperations>();
             _statusUtil = _factory.Create<IStatusUtil>();
+
+            var editorOperationsFactoryService = _factory.Create<IEditorOperationsFactoryService>();
             if (haveHistory)
             {
                 _textUndoHistory = _factory.Create<ITextUndoHistory>();
@@ -33,14 +33,14 @@ namespace Vim.UnitTest
                 _undoRedoOperationsRaw = new UndoRedoOperations(
                     _statusUtil.Object,
                     FSharpOption.Create(_textUndoHistory.Object),
-                    _editorOperations.Object);
+                    editorOperationsFactoryService.Object);
             }
             else
             {
                 _undoRedoOperationsRaw = new UndoRedoOperations(
                     _statusUtil.Object,
                     FSharpOption<ITextUndoHistory>.None,
-                    _editorOperations.Object);
+                    editorOperationsFactoryService.Object);
             }
             _undoRedoOperations = _undoRedoOperationsRaw;
         }
