@@ -214,53 +214,39 @@ and UndoRedoOperations
     /// Undo and redo are basically the same operation with the stacks passing data in the 
     /// opposite order.  This is the common behavior
     member x.UndoRedoCommon doUndoRedo sourceStack destStack count errorMessage =
+        _inUndoRedo <- true
         try
-            /// Do a single undo from the perspective of Vim 
-            let doOne sourceStack destStack =
-                let realCount, newSourceStack, newDestTop = 
+            try
+                let mutable sourceStack = sourceStack
+                let mutable destStack = destStack
+                for i = 1 to count do
                     match sourceStack with
                     | [] ->
                         // Happens when the user asks to undo / redo and there is nothing on the 
                         // stack.  The 'CanUndo' property is worthless here because it just returns
                         // 'true'.  Fall back to Visual Studio undo here.
-                        1, [], None
-                    | head :: tail ->
-                        match head with
-                        | UndoRedoData.Normal count ->
-                            if count <= 1 then
-                                1, tail, None
+                        doUndoRedo 1
+                        destStack <- x.AddToStackNormal 1 destStack
+                    | UndoRedoData.Linked count :: tail -> 
+                        doUndoRedo count 
+                        destStack <- UndoRedoData.Linked count :: destStack
+                        sourceStack <- tail 
+                    | UndoRedoData.Normal count :: tail ->
+                        doUndoRedo 1
+                        destStack <- x.AddToStackNormal 1 destStack
+                        sourceStack <-
+                            if count > 1 then
+                                UndoRedoData.Normal (count - 1) :: tail
                             else
-                                1, UndoRedoData.Normal (count - 1) :: tail, None
-                        | UndoRedoData.Linked count ->
-                            count, tail, Some head
+                                tail
 
-                _inUndoRedo <- true
-                try
-                    // Undo the real count of operations to get a Vim undo behavior then 
-                    // update the undo stack
-                    doUndoRedo realCount
-
-                    // Rebuild the destination stack
-                    let newDestStack = 
-                        match newDestTop with
-                        | None -> x.AddToStackNormal 1 destStack
-                        | Some linked -> linked :: destStack
-
-                    newSourceStack, newDestStack
-                finally
-                    _inUndoRedo <- false
-
-            // Do the undo / redo 'count' times
-            let rec doCount sourceStack destStack count = 
-                let sourceStack, destStack = doOne sourceStack destStack
-                if count = 1 then sourceStack, destStack
-                else doCount sourceStack destStack (count - 1)
-
-            doCount sourceStack destStack count
-        with
-        | _ ->
-            _statusUtil.OnError errorMessage
-            List.empty, List.empty
+                sourceStack, destStack
+            with
+            | _ ->
+                _statusUtil.OnError errorMessage
+                List.empty, List.empty
+        finally
+            _inUndoRedo <- false
 
     /// Do 'count' undo operations from the perspective of VsVim.  This is different than the actual
     /// number of undo operations we actually have to perform because of ILinkedUndoTransaction items

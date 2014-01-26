@@ -15,8 +15,8 @@ namespace Vim.UnitTest
         private Mock<ITextUndoHistory> _textUndoHistory;
         private UndoRedoOperations _undoRedoOperationsRaw;
         private IUndoRedoOperations _undoRedoOperations;
-        private int m_undoCount;
-        private int m_redoCount;
+        private int _undoCount;
+        private int _redoCount;
 
         public void Create(bool haveHistory = true)
         {
@@ -27,8 +27,8 @@ namespace Vim.UnitTest
             if (haveHistory)
             {
                 _textUndoHistory = _factory.Create<ITextUndoHistory>();
-                _textUndoHistory.Setup(x => x.Undo(It.IsAny<int>())).Callback<int>(count => { m_undoCount += count; });
-                _textUndoHistory.Setup(x => x.Redo(It.IsAny<int>())).Callback<int>(count => { m_redoCount += count; });
+                _textUndoHistory.Setup(x => x.Undo(It.IsAny<int>())).Callback<int>(count => { _undoCount += count; });
+                _textUndoHistory.Setup(x => x.Redo(It.IsAny<int>())).Callback<int>(count => { _redoCount += count; });
                     
                 _undoRedoOperationsRaw = new UndoRedoOperations(
                     _statusUtil.Object,
@@ -45,10 +45,13 @@ namespace Vim.UnitTest
             _undoRedoOperations = _undoRedoOperationsRaw;
         }
 
-        private void RaiseUndoTransactionCompleted()
+        private void RaiseUndoTransactionCompleted(int count = 1)
         {
-            var args = new TextUndoTransactionCompletedEventArgs(null, TextUndoTransactionCompletionResult.TransactionAdded);
-            _textUndoHistory.Raise(x => x.UndoTransactionCompleted += null, _textUndoHistory.Object, args);
+            for (int i = 0; i < count; i++)
+            {
+                var args = new TextUndoTransactionCompletedEventArgs(null, TextUndoTransactionCompletionResult.TransactionAdded);
+                _textUndoHistory.Raise(x => x.UndoTransactionCompleted += null, _textUndoHistory.Object, args);
+            }
         }
 
         private void RaiseUndoRedoHappened(bool expected = true)
@@ -70,7 +73,8 @@ namespace Vim.UnitTest
         public sealed class LinkedUndoTest : UndoRedoOperationsTest
         {
             /// <summary>
-            /// Make sure that the implementation is resilent to the broken undo chain
+            /// Make sure the implementation correctly handles a close of a linked transaction that has 
+            /// been orphaned by a ResetState call
             /// </summary>
             [Fact]
             public void ClosedBrokenChain()
@@ -84,8 +88,7 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
-            /// Make sure an orphaned LinkedUndoTransaction doesn't upset any state after
-            /// it 
+            /// Make sure an orphaned linked transaction doesn't upset any state after it 
             /// </summary>
             [Fact]
             public void ClosedBrokenChainWithNewOpen()
@@ -132,13 +135,26 @@ namespace Vim.UnitTest
                 Create();
                 using (var transaction = _undoRedoOperations.CreateLinkedUndoTransaction("test"))
                 {
-                    RaiseUndoTransactionCompleted();
-                    RaiseUndoTransactionCompleted();
-                    RaiseUndoTransactionCompleted();
+                    RaiseUndoTransactionCompleted(count: 3);
                 }
 
                 _undoRedoOperations.Undo(1);
-                Assert.Equal(3, m_undoCount);
+                Assert.Equal(3, _undoCount);
+            }
+
+            [Fact]
+            public void RedoGroup()
+            {
+                Create();
+                using (var transaction = _undoRedoOperations.CreateLinkedUndoTransaction("test"))
+                {
+                    RaiseUndoTransactionCompleted(count: 3);
+                }
+
+                _undoRedoOperations.Undo(1);
+                Assert.Equal(3, _undoCount);
+                _undoRedoOperations.Redo(1);
+                Assert.Equal(3, _redoCount);
             }
 
             [Fact]
@@ -168,15 +184,11 @@ namespace Vim.UnitTest
 
                 // Simulate another component manually manipulating the undo / redo stack
                 RaiseUndoRedoHappened(expected: false);
-
-                for (int i = 0; i < 3; i++)
-                {
-                    RaiseUndoTransactionCompleted();
-                }
+                RaiseUndoTransactionCompleted(count: 3);
 
                 linkedUndoTransaction.Complete();
                 _undoRedoOperations.Undo(1);
-                Assert.Equal(1, m_undoCount);
+                Assert.Equal(1, _undoCount);
             }
         }
 
@@ -215,9 +227,8 @@ namespace Vim.UnitTest
             public void NoStack()
             {
                 Create();
-                _textUndoHistory.Setup(x => x.Undo(1)).Verifiable();
                 _undoRedoOperationsRaw.Undo(2);
-                _factory.Verify();
+                Assert.Equal(2, _undoCount);
             }
 
             /// <summary>
@@ -228,11 +239,14 @@ namespace Vim.UnitTest
             public void StackWithLinked()
             {
                 Create();
-                _undoRedoOperationsRaw._undoStack = (new[] { UndoRedoData.NewLinked(10) }).ToFSharpList();
-                _textUndoHistory.Setup(x => x.Undo(10)).Verifiable();
+                using (var transaction = _undoRedoOperations.CreateLinkedUndoTransaction("test"))
+                {
+                    RaiseUndoTransactionCompleted(count: 10);
+                }
+
                 _undoRedoOperationsRaw.Undo(1);
-                _factory.Verify();
-                Assert.Equal(0, _undoRedoOperationsRaw._undoStack.Length);
+                Assert.Equal(10, _undoCount);
+                Assert.Equal(0, _undoRedoOperationsRaw.UndoStack.Length);
             }
 
             /// <summary>
@@ -243,14 +257,13 @@ namespace Vim.UnitTest
             public void StackWithNormal()
             {
                 Create();
-                _undoRedoOperationsRaw._undoStack = (new[] { UndoRedoData.NewNormal(10) }).ToFSharpList();
-                _textUndoHistory.Setup(x => x.Undo(1)).Verifiable();
+                RaiseUndoTransactionCompleted(count: 10);
                 _undoRedoOperationsRaw.Undo(1);
-                _factory.Verify();
-                Assert.Equal(1, _undoRedoOperationsRaw._undoStack.Length);
-                Assert.Equal(9, _undoRedoOperationsRaw._undoStack.Head.AsNormal().Item);
-                Assert.Equal(1, _undoRedoOperationsRaw._redoStack.Length);
-                Assert.Equal(1, _undoRedoOperationsRaw._redoStack.Head.AsNormal().Item);
+                Assert.Equal(1, _undoCount);
+                Assert.Equal(1, _undoRedoOperationsRaw.UndoStack.Length);
+                Assert.Equal(9, _undoRedoOperationsRaw.UndoStack.Head.AsNormal().Item);
+                Assert.Equal(1, _undoRedoOperationsRaw.RedoStack.Length);
+                Assert.Equal(1, _undoRedoOperationsRaw.RedoStack.Head.AsNormal().Item);
             }
 
             /// <summary>
@@ -261,13 +274,18 @@ namespace Vim.UnitTest
             public void WithLinkedTransactionOpen()
             {
                 Create();
-                _undoRedoOperations.CreateLinkedUndoTransaction("Linked Undo");
-                _undoRedoOperationsRaw._undoStack = (new[] { UndoRedoData.NewLinked(10) }).ToFSharpList();
-                _textUndoHistory.Setup(x => x.Undo(1)).Verifiable();
-                _statusUtil.Setup(x => x.OnError(Resources.Common_UndoChainBroken)).Verifiable();
-                _undoRedoOperations.Undo(1);
-                _factory.Verify();
-                Assert.Equal(0, _undoRedoOperationsRaw._undoStack.Length);
+                using (var transaction = _undoRedoOperations.CreateLinkedUndoTransaction("Linked Undo"))
+                {
+                    RaiseUndoTransactionCompleted(count: 10);
+                    _statusUtil.Setup(x => x.OnError(Resources.Common_UndoChainBroken)).Verifiable();
+                    _undoRedoOperations.Undo(1);
+                    Assert.Equal(1, _undoCount);
+                    Assert.Equal(0, _undoRedoOperationsRaw.UndoStack.Length);
+                    Assert.False(_undoRedoOperations.InLinkedUndoTransaction);
+                }
+
+                Assert.Equal(1, _undoCount);
+                Assert.Equal(0, _undoRedoOperationsRaw.UndoStack.Length);
                 Assert.False(_undoRedoOperations.InLinkedUndoTransaction);
             }
         }
@@ -321,12 +339,15 @@ namespace Vim.UnitTest
             public void StackWithLinked()
             {
                 Create();
-                _undoRedoOperationsRaw._redoStack = (new[] { UndoRedoData.NewLinked(10) }).ToFSharpList();
-                _textUndoHistory.Setup(x => x.Redo(10)).Verifiable();
+                using (var transaction = _undoRedoOperations.CreateLinkedUndoTransaction("test"))
+                {
+                    RaiseUndoTransactionCompleted(count: 10);
+                }
+                _undoRedoOperations.Undo(count: 1);
                 _undoRedoOperationsRaw.Redo(1);
-                _factory.Verify();
-                Assert.Equal(0, _undoRedoOperationsRaw._redoStack.Length);
-                Assert.Equal(1, _undoRedoOperationsRaw._undoStack.Length);
+                Assert.Equal(10, _redoCount);
+                Assert.Equal(0, _undoRedoOperationsRaw.RedoStack.Length);
+                Assert.Equal(1, _undoRedoOperationsRaw.UndoStack.Length);
             }
 
             /// <summary>
@@ -337,12 +358,12 @@ namespace Vim.UnitTest
             public void StackWithNormal()
             {
                 Create();
-                _undoRedoOperationsRaw._redoStack = (new[] { UndoRedoData.NewNormal(10) }).ToFSharpList();
-                _textUndoHistory.Setup(x => x.Redo(1)).Verifiable();
-                _undoRedoOperationsRaw.Redo(1);
-                _factory.Verify();
-                Assert.Equal(1, _undoRedoOperationsRaw._redoStack.Length);
-                Assert.Equal(9, _undoRedoOperationsRaw._redoStack.Head.AsNormal().Item);
+                RaiseUndoTransactionCompleted(count: 10);
+                _undoRedoOperations.Undo(count: 10);
+                _undoRedoOperations.Redo(1);
+                Assert.Equal(1, _redoCount);
+                Assert.Equal(1, _undoRedoOperationsRaw.RedoStack.Length);
+                Assert.Equal(9, _undoRedoOperationsRaw.RedoStack.Head.AsNormal().Item);
             }
         }
 
@@ -355,10 +376,13 @@ namespace Vim.UnitTest
             public void EmptyRedo()
             {
                 Create();
-                _undoRedoOperationsRaw._redoStack = (new[] { UndoRedoData.NewLinked(10) }).ToFSharpList();
+                using (var transaction = _undoRedoOperations.CreateLinkedUndoTransaction("test"))
+                {
+                    RaiseUndoTransactionCompleted(count: 10);
+                }
+                _undoRedoOperations.Undo(1);
                 RaiseUndoTransactionCompleted();
-                _textUndoHistory.Raise(x => x.UndoTransactionCompleted += null, new TextUndoTransactionCompletedEventArgs(null, TextUndoTransactionCompletionResult.TransactionAdded));
-                Assert.Equal(0, _undoRedoOperationsRaw._redoStack.Length);
+                Assert.Equal(0, _undoRedoOperationsRaw.RedoStack.Length);
             }
         }
 
