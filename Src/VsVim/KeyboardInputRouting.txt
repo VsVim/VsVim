@@ -95,6 +95,9 @@ Incremental Search / Find
     Both ITextView::HasAggregateFocus and IWpfTextView::Visual::IsKeyboardFocusWithin are
     true whether or not the caret is in the ITextView or the find ui
 
+    The FindUI adornment itself will only have IsKeyboardFocusWithin when the keyboard focus
+    is actually inside of the adornment 
+
 
 
 

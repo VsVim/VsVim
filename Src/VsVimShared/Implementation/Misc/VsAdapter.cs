@@ -351,11 +351,9 @@ namespace VsVim.Implementation.Misc
 
             foreach (var element in adornmentLayer.Elements)
             {
-                // If the adornment is visible then consider it to be active.  There are cases when it doesn't have keyboard
-                // focus but will still receive the keyboard input.  Have to be conservative here and just let it have key strokes
-                // whenever it is active
+                // If the adornment is visible and has keyboard focus then consider it active.  
                 var adornment = element.Adornment;
-                if (adornment.Visibility == Visibility.Visible && adornment.GetType().Name == "FindUI")
+                if (adornment.Visibility == Visibility.Visible && adornment.GetType().Name == "FindUI" && adornment.IsKeyboardFocusWithin)
                 {
                     return true;
                 }
