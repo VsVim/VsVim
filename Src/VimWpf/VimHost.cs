@@ -175,6 +175,11 @@ namespace Vim.UI.Wpf
             return textBuffer.IsReadOnly(span);
         }
 
+        public virtual bool IsFocused(ITextView textView)
+        {
+            return textView.HasAggregateFocus;
+        }
+
         /// <summary>
         /// Determine if the ITextView is visible.  Use the Wpf UIElement::IsVisible property
         /// to validate.  If this is not backed by an IWpfTextView then this will default to
@@ -594,6 +599,11 @@ namespace Vim.UI.Wpf
         bool IVimHost.IsVisible(ITextView textView)
         {
             return IsVisible(textView);
+        }
+
+        bool IVimHost.IsFocused(ITextView textView)
+        {
+            return IsFocused(textView);
         }
 
         void IVimHost.VimRcLoaded(VimRcState vimRcState, IVimLocalSettings localSettings, IVimWindowSettings windowSettings)
