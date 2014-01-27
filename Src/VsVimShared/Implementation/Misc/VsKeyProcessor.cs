@@ -19,6 +19,7 @@ namespace VsVim.Implementation.Misc
         private readonly IVsAdapter _adapter;
         private readonly IVimBufferCoordinator _bufferCoordinator;
         private readonly IReportDesignerUtil _reportDesignerUtil;
+        private readonly IVimHost _vimHost;
         private int _keyDownCount;
         private Lazy<PropertyInfo> _searchInProgressInfo;
 
@@ -33,6 +34,7 @@ namespace VsVim.Implementation.Misc
             _adapter = adapter;
             _reportDesignerUtil = reportDesignerUtil;
             _bufferCoordinator = bufferCoordinator;
+            _vimHost = bufferCoordinator.VimBuffer.Vim.VimHost;
             _searchInProgressInfo = new Lazy<PropertyInfo>(FindSearchInProgressPropertyInfo);
         }
 
@@ -47,7 +49,7 @@ namespace VsVim.Implementation.Misc
             // happen when a peek definition window is active.  The peek window is a child and if it fails to 
             // process a key event it will bubble up to the parent window.  If the peek window has focus the
             // parent window shouldn't be handling the key
-            if (!TextView.HasAggregateFocus)
+            if (!_vimHost.IsFocused(TextView))
             {
                 return false;
             }
