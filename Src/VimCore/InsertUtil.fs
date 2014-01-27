@@ -49,22 +49,7 @@ type internal InsertUtil
     /// Run the specified action with a wrapped undo transaction.  This is often necessary when
     /// an edit command manipulates the caret
     member x.EditWithUndoTransaction<'T> (name : string) (action : unit -> 'T) : 'T = 
-        _undoRedoOperations.EditWithUndoTransaction name action
-
-    /// Used for the several commands which make an edit here and need the edit to be linked
-    /// with the next insert mode change.  
-    member x.EditWithLinkedChange name action =
-        let transaction = _undoRedoOperations.CreateLinkedUndoTransaction()
-
-        try
-            x.EditWithUndoTransaction name action
-        with
-            | _ ->
-                // If the above throws we can't leave the transaction open else it will
-                // break undo / redo in the ITextBuffer.  Close it here and
-                // re-raise the exception
-                transaction.Dispose()
-                reraise()
+        _undoRedoOperations.EditWithUndoTransaction name _textView action
 
     /// Apply the TextChange to the given ITextEdit at the specified position.  This will
     /// return the position of the edit after the operation completes.  None is returned
@@ -500,7 +485,7 @@ type internal InsertUtil
 
         // Create a transaction so the textChange is applied as a single edit and to 
         // maintain caret position 
-        _undoRedoOperations.EditWithUndoTransaction "Repeat Edits" (fun () -> 
+        _undoRedoOperations.EditWithUndoTransaction "Repeat Edits" _textView (fun () -> 
 
             for i = 1 to count do
                 x.ApplyTextChange textChange addNewLines)

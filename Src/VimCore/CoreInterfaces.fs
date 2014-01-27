@@ -108,8 +108,8 @@ type IStatusUtil =
 /// Factory for getting IStatusUtil instances.  This is an importable MEF component
 type IStatusUtilFactory =
 
-    /// Get the IStatusUtil instance for the given ITextView
-    abstract GetStatusUtil : ITextView -> IStatusUtil
+    /// Get the IStatusUtil instance for the given ITextBuffer
+    abstract GetStatusUtil : textBuffer : ITextBuffer -> IStatusUtil
 
 type FileContents = {
 
@@ -189,6 +189,17 @@ type IWordCompletionSessionFactoryService =
 /// Wraps an ITextUndoTransaction so we can avoid all of the null checks
 type IUndoTransaction =
 
+    /// Call when it completes
+    abstract Complete : unit -> unit
+
+    /// Cancels the transaction
+    abstract Cancel : unit -> unit
+
+    inherit System.IDisposable
+
+/// This is a IUndoTransaction that is specific to a given ITextView instance
+type ITextViewUndoTransaction =
+
     /// Adds an ITextUndoPrimitive which will reset the selection to the current
     /// state when redoing this edit
     abstract AddAfterTextBufferChangePrimitive : unit -> unit
@@ -197,13 +208,7 @@ type IUndoTransaction =
     /// state when undoing this change
     abstract AddBeforeTextBufferChangePrimitive : unit -> unit
 
-    /// Call when it completes
-    abstract Complete : unit -> unit
-
-    /// Cancels the transaction
-    abstract Cancel : unit -> unit
-
-    inherit System.IDisposable
+    inherit IUndoTransaction
 
 /// Wraps a set of IUndoTransaction items such that they undo and redo as a single
 /// entity.
@@ -229,13 +234,16 @@ type IUndoRedoOperations =
     /// Creates an Undo Transaction
     abstract CreateUndoTransaction : name : string -> IUndoTransaction
 
+    /// Creates an Undo Transaction specific to the given ITextView
+    abstract CreateTextViewUndoTransaction : name : string -> textView : ITextView -> ITextViewUndoTransaction
+
     /// Creates a linked undo transaction
-    abstract CreateLinkedUndoTransaction : unit -> ILinkedUndoTransaction
+    abstract CreateLinkedUndoTransaction : name : string -> ILinkedUndoTransaction
 
     /// Wrap the passed in "action" inside an undo transaction.  This is needed
     /// when making edits such as paste so that the cursor will move properly 
     /// during an undo operation
-    abstract EditWithUndoTransaction<'T> : name : string -> action : (unit -> 'T) -> 'T
+    abstract EditWithUndoTransaction<'T> : name : string -> textView : ITextView -> action : (unit -> 'T) -> 'T
 
     /// Redo the last "count" operations
     abstract Redo : count:int -> unit
@@ -4034,6 +4042,9 @@ and IVimTextBuffer =
 
     /// Name of the buffer.  Used for items like Marks
     abstract Name : string
+
+    /// The IUndoRedoOperations associated with the IVimTextBuffer
+    abstract UndoRedoOperations : IUndoRedoOperations
 
     /// The associated IVim instance
     abstract Vim : IVim

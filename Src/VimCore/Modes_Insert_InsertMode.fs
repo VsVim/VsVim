@@ -927,13 +927,13 @@ type internal InsertMode
                 Some transaction, InsertKind.Block blockSpan
             | ModeArgument.InsertWithCount count ->
                 if count > 1 then
-                    let transaction = _undoRedoOperations.CreateLinkedUndoTransaction()
+                    let transaction = _undoRedoOperations.CreateLinkedUndoTransaction "Insert with count"
                     Some transaction, InsertKind.Repeat (count, false, TextChange.Insert StringUtil.empty)
                 else
                     None, InsertKind.Normal
             | ModeArgument.InsertWithCountAndNewLine count ->
                 if count > 1 then
-                    let transaction = _undoRedoOperations.CreateLinkedUndoTransaction()
+                    let transaction = _undoRedoOperations.CreateLinkedUndoTransaction "Insert with count and new line"
                     Some transaction, InsertKind.Repeat (count, true, TextChange.Insert StringUtil.empty)
                 else
                     None, InsertKind.Normal
@@ -942,7 +942,7 @@ type internal InsertMode
             | _ -> 
                 if _isReplace then
                     // Replace mode occurs under a transaction even if we are not repeating
-                    let transaction = _undoRedoOperations.CreateLinkedUndoTransaction()
+                    let transaction = _undoRedoOperations.CreateLinkedUndoTransaction "Insert with transaction"
                     Some transaction, InsertKind.Normal
                 else
                     None, InsertKind.Normal

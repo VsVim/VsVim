@@ -16,7 +16,6 @@ type VimBufferData
         _windowSettings : IVimWindowSettings,
         _jumpList : IJumpList,
         _statusUtil : IStatusUtil,
-        _undoRedoOperations : IUndoRedoOperations,
         _wordUtil : IWordUtil
     ) = 
 
@@ -38,7 +37,7 @@ type VimBufferData
         member x.TextView = _textView
         member x.TextBuffer = _textView.TextBuffer
         member x.StatusUtil = _statusUtil
-        member x.UndoRedoOperations = _undoRedoOperations
+        member x.UndoRedoOperations = _vimTextBuffer.UndoRedoOperations
         member x.VimTextBuffer = _vimTextBuffer
         member x.WindowSettings = _windowSettings
         member x.WordUtil = _wordUtil

@@ -70,22 +70,23 @@ namespace Vim.UnitTest
             _localSettings.SetupGet(x => x.ExpandTab).Returns(true);
             _localSettings.SetupGet(x => x.TabStop).Returns(4);
             _localSettings.SetupGet(x => x.ShiftWidth).Returns(2);
+
+            _statusUtil = _factory.Create<IStatusUtil>();
+            _undoRedoOperations = VimUtil.CreateUndoRedoOperations(_statusUtil.Object);
             _vimTextBuffer = MockObjectFactory.CreateVimTextBuffer(
                 _textBuffer,
                 localSettings: _localSettings.Object,
                 vim: vim.Object,
+                undoRedoOperations: _undoRedoOperations,
                 factory: _factory);
 
             // Create the VimBufferData instance with our Mock'd services
             _jumpList = _factory.Create<IJumpList>();
-            _statusUtil = _factory.Create<IStatusUtil>();
-            _undoRedoOperations = VimUtil.CreateUndoRedoOperations(_statusUtil.Object);
             var vimBufferData = CreateVimBufferData(
                 _vimTextBuffer.Object,
                 _textView,
                 statusUtil: _statusUtil.Object,
-                jumpList: _jumpList.Object,
-                undoRedoOperations: _undoRedoOperations);
+                jumpList: _jumpList.Object);
 
             _smartIndentationService = _factory.Create<ISmartIndentationService>();
             _outlining = _factory.Create<IOutliningManager>();

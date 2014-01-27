@@ -185,12 +185,14 @@ namespace Vim.UnitTest.Mock
             IVimLocalSettings localSettings = null,
             IVim vim = null,
             ITextStructureNavigator wordNavigator = null,
+            IUndoRedoOperations undoRedoOperations = null,
             MockRepository factory = null)
         {
             factory = factory ?? new MockRepository(MockBehavior.Strict);
             vim = vim ?? CreateVim(factory: factory).Object;
             localSettings = localSettings ?? CreateLocalSettings(factory: factory).Object;
             wordNavigator = wordNavigator ?? factory.Create<ITextStructureNavigator>().Object;
+            undoRedoOperations = undoRedoOperations ?? factory.Create<IUndoRedoOperations>().Object;
             var mock = factory.Create<IVimTextBuffer>();
             mock.SetupGet(x => x.TextBuffer).Returns(textBuffer);
             mock.SetupGet(x => x.LocalSettings).Returns(localSettings);
@@ -198,6 +200,7 @@ namespace Vim.UnitTest.Mock
             mock.SetupGet(x => x.Vim).Returns(vim);
             mock.SetupGet(x => x.WordNavigator).Returns(wordNavigator);
             mock.SetupGet(x => x.ModeKind).Returns(ModeKind.Normal);
+            mock.SetupGet(x => x.UndoRedoOperations).Returns(undoRedoOperations);
             mock.SetupProperty(x => x.LastVisualSelection);
             mock.SetupProperty(x => x.LastInsertExitPoint);
             mock.SetupProperty(x => x.LastEditPoint);
@@ -215,14 +218,12 @@ namespace Vim.UnitTest.Mock
             ITextView textView,
             IJumpList jumpList = null,
             IStatusUtil statusUtil = null,
-            IUndoRedoOperations undoRedoOperations = null,
             IVimWindowSettings windowSettings = null,
             IWordUtil wordUtil = null,
             MockRepository factory = null)
         {
             factory = factory ?? new MockRepository(MockBehavior.Strict);
             statusUtil = statusUtil ?? factory.Create<IStatusUtil>().Object;
-            undoRedoOperations = undoRedoOperations ?? factory.Create<IUndoRedoOperations>().Object;
             jumpList = jumpList ?? factory.Create<IJumpList>().Object;
             wordUtil = wordUtil ?? factory.Create<IWordUtil>().Object;
             windowSettings = windowSettings ?? factory.Create<IVimWindowSettings>().Object;
@@ -232,7 +233,6 @@ namespace Vim.UnitTest.Mock
                 windowSettings,
                 jumpList,
                 statusUtil,
-                undoRedoOperations,
                 wordUtil);
         }
 

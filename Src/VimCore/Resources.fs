@@ -32,6 +32,8 @@ module internal Resources =
     let Common_SearchHitTopWithout name = sprintf "search hit TOP without match for: %s" name
     let Common_SubstituteComplete subs lines = sprintf "%d substitutions on %d lines" subs lines
     let Common_UndoChainBroken = "Undo chain broken. Falling back to Visual Studio undo"
+    let Common_UndoChainOrderError = "Undo chain order error. Falling back to Visual Studio undo"
+    let Common_UndoRedoUnexpected = "Unexpected undo / redo event. Falling back to Visual Studio undo"
 
     let NormalMode_NoPreviousSearch = "No previous search"
     let NormalMode_NoWordUnderCursor = "No word under cursor"

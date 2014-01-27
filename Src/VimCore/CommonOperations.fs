@@ -286,7 +286,7 @@ type internal CommonOperations
                 // Use a transaction to properly position the caret for undo / redo.  We want it in the same
                 // place for undo / redo so move it before the transaction
                 TextViewUtil.MoveCaretToPoint _textView caretPoint
-                _undoRedoOperations.EditWithUndoTransaction "Delete Lines" (fun() ->
+                _undoRedoOperations.EditWithUndoTransaction "Delete Lines" _textView (fun() ->
                     let snapshot = _textBuffer.Delete(span.Span)
 
                     // After delete the span should move to the start of the line of the same number 

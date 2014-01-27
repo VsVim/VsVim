@@ -828,12 +828,12 @@ type internal CommandUtil
     /// Run the specified action with a wrapped undo transaction.  This is often necessary when
     /// an edit command manipulates the caret
     member x.EditWithUndoTransaciton<'T> (name : string) (action : unit -> 'T) : 'T = 
-        _undoRedoOperations.EditWithUndoTransaction name action
+        _undoRedoOperations.EditWithUndoTransaction name _textView action
 
     /// Used for the several commands which make an edit here and need the edit to be linked
     /// with the next insert mode change.  
     member x.EditWithLinkedChange name action =
-        let transaction = _undoRedoOperations.CreateLinkedUndoTransaction()
+        let transaction = _undoRedoOperations.CreateLinkedUndoTransaction name
 
         try
             x.EditWithUndoTransaciton name action
@@ -851,7 +851,7 @@ type internal CommandUtil
     /// Used for the several commands which make an edit here and need the edit to be linked
     /// with the next insert mode change.  
     member x.EditBlockWithLinkedChange name blockSpan action =
-        let transaction = _undoRedoOperations.CreateLinkedUndoTransaction()
+        let transaction = _undoRedoOperations.CreateLinkedUndoTransaction name
 
         try
             x.EditWithUndoTransaciton name action
@@ -1217,7 +1217,7 @@ type internal CommandUtil
         let savedCaretLine = x.CaretLine
 
         // REPEAT TODO: Need to file a bug to get the caret position correct here for redo
-        _undoRedoOperations.EditWithUndoTransaction "InsertLineAbove" (fun() -> 
+        _undoRedoOperations.EditWithUndoTransaction "InsertLineAbove" _textView (fun() -> 
             let line = x.CaretLine
             let newLineText = _commonOperations.GetNewLineText x.CaretPoint
             _textBuffer.Replace(new Span(line.Start.Position,0), newLineText) |> ignore)
@@ -1255,7 +1255,7 @@ type internal CommandUtil
         | None -> ()
         | Some point -> 
 
-            _undoRedoOperations.EditWithUndoTransaction  "InsertLineBelow" (fun () -> 
+            _undoRedoOperations.EditWithUndoTransaction  "InsertLineBelow" _textView (fun () -> 
                 let span = SnapshotSpan(point, 0)
                 _textBuffer.Replace(span.Span, newLineText) |> ignore
 
@@ -2128,7 +2128,7 @@ type internal CommandUtil
             //
             // Using .Net dictionary because we have to map by ITextBuffer which doesn't have
             // the comparison constraint
-            let map = System.Collections.Generic.Dictionary<ITextBuffer, IUndoTransaction>();
+            let map = System.Collections.Generic.Dictionary<ITextBuffer, ITextViewUndoTransaction>();
 
             use bulkOperation = _bulkOperations.BeginBulkOperation()
             try 
@@ -2159,7 +2159,7 @@ type internal CommandUtil
                             | Some buffer -> 
                                 // Make sure we have an IUndoTransaction open in the ITextBuffer
                                 if not (map.ContainsKey(buffer.TextBuffer)) then
-                                    let transaction = _undoRedoOperations.CreateUndoTransaction "Macro Run"
+                                    let transaction = _undoRedoOperations.CreateTextViewUndoTransaction "Macro Run" buffer.TextView
                                     map.Add(buffer.TextBuffer, transaction)
                                     transaction.AddBeforeTextBufferChangePrimitive()
 

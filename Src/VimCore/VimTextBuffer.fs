@@ -8,14 +8,13 @@ open Microsoft.VisualStudio.Text.Editor
 open Microsoft.VisualStudio.Text.Operations
 open Microsoft.VisualStudio.Utilities
 
-// TODO: Need to add a Close method and do actions like close the ITrackingVisualSpan.  Or
-// add tests to verify that it goes away after close
 type internal VimTextBuffer 
     (
         _textBuffer : ITextBuffer,
         _localSettings : IVimLocalSettings,
         _wordNavigator : ITextStructureNavigator,
         _bufferTrackingService : IBufferTrackingService,
+        _undoRedoOperations : IUndoRedoOperations,
         _vim : IVim
     ) =
 
@@ -183,6 +182,7 @@ type internal VimTextBuffer
         member x.LocalSettings = _localSettings
         member x.ModeKind = _modeKind
         member x.Name = _vimHost.GetName _textBuffer
+        member x.UndoRedoOperations = _undoRedoOperations
         member x.Vim = _vim
         member x.WordNavigator = _wordNavigator
         member x.Clear() = x.Clear()

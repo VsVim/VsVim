@@ -375,7 +375,7 @@ type VimInterpreter
 
                 // Use an undo transaction so that the caret move and insert is a single
                 // operation
-                _undoRedoOperations.EditWithUndoTransaction transactionName (fun() -> editOperation sourceLineRange destLine text)
+                _undoRedoOperations.EditWithUndoTransaction transactionName _textView (fun() -> editOperation sourceLineRange destLine text)
 
             RunResult.Completed)
 
@@ -633,7 +633,7 @@ type VimInterpreter
                 // All of the edits should behave as a single vim undo.  Can't do this as a single
                 // global undo as it executes as series of sub commands which create their own 
                 // global undo units
-                use transaction = _undoRedoOperations.CreateLinkedUndoTransaction()
+                use transaction = _undoRedoOperations.CreateLinkedUndoTransaction "Global Command"
                 try
     
                     // Each command we run can, and often will, change the underlying buffer whcih
@@ -820,7 +820,7 @@ type VimInterpreter
         x.RunWithLineRangeOrDefault lineRange DefaultLineRange.CurrentLine (fun lineRange ->
             // Need to get the cursor position correct for undo / redo so start an undo 
             // transaction 
-            _undoRedoOperations.EditWithUndoTransaction "PutLine" (fun () ->
+            _undoRedoOperations.EditWithUndoTransaction "PutLine" _textView (fun () ->
     
                 // Get the point to start the Put operation at 
                 let line = 
