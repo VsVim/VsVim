@@ -17,6 +17,7 @@ module GlobalSettingNames =
     let ControlCharsName = "vsvim_controlchars"
     let CurrentDirectoryPathName = "cdpath"
     let ClipboardName = "clipboard"
+    let GlobalDefaultName = "gdefault"
     let HighlightSearchName = "hlsearch"
     let HistoryName = "history"
     let IgnoreCaseName = "ignorecase"
@@ -283,6 +284,9 @@ and IVimGlobalSettings =
 
     /// The parsed set of clipboard options
     abstract ClipboardOptions : ClipboardOptions with get, set
+
+    /// Whether or not 'gdefault' is set
+    abstract GlobalDefault : bool with get, set
 
     /// Whether or not to highlight previous search patterns matching cases
     abstract HighlightSearch : bool with get, set

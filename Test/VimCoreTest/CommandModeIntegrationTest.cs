@@ -18,7 +18,7 @@ namespace Vim.UnitTest
         protected MockVimHost _vimHost;
         protected string _lastStatus;
 
-        public void Create(params string[] lines)
+        public virtual void Create(params string[] lines)
         {
             _vimBuffer = CreateVimBuffer(lines);
             _vimBuffer.StatusMessage += (sender, args) => { _lastStatus = args.Message; };
@@ -519,226 +519,264 @@ namespace Vim.UnitTest
             }
         }
 
-        public sealed class SubstituteTest : CommandModeIntegrationTest
+        public abstract class SubstituteTest : CommandModeIntegrationTest
         {
-            /// <summary>
-            /// Suppress errors shouldn't print anything
-            /// </summary>
-            [Fact]
-            public void Substitute1()
+            public sealed class GlobalDefaultTest : SubstituteTest
             {
-                Create("cat", "dog");
-                var sawError = false;
-                _vimBuffer.ErrorMessage += delegate { sawError = true; };
-                RunCommand("s/z/o/e");
-                Assert.False(sawError);
+                public override void Create(params string[] lines)
+                {
+                    base.Create(lines);
+                    _vimBuffer.Vim.GlobalSettings.GlobalDefault = true;
+                }
+
+                [Fact]
+                public void Simple()
+                {
+                    Create("cat bat");
+                    RunCommand("s/a/o");
+                    Assert.Equal("cot bot", _textBuffer.GetLine(0).GetText());
+                }
+
+                [Fact]
+                public void Invert()
+                {
+                    Create("cat bat");
+                    RunCommand("s/a/o/g");
+                    Assert.Equal("cot bat", _textBuffer.GetLine(0).GetText());
+                }
+
+                [Fact]
+                public void Repeat()
+                {
+                    Create("cat bat", "cat bat");
+                    RunCommand("s/a/o");
+                    _textView.MoveCaretToLine(1);
+                    RunCommand("s");
+                    Assert.Equal(new[] { "cot bot", "cot bot" }, _textBuffer.GetLines());
+                }
             }
 
-            /// <summary>
-            /// Simple search and replace
-            /// </summary>
-            [Fact]
-            public void Substitute2()
+            public sealed class SubstituteMiscTest : SubstituteTest
             {
-                Create("cat bat", "dag");
-                RunCommand("s/a/o/g 2");
-                Assert.Equal("cot bot", _textBuffer.GetLine(0).GetText());
-                Assert.Equal("dog", _textBuffer.GetLine(1).GetText());
-            }
+                /// <summary>
+                /// Suppress errors shouldn't print anything
+                /// </summary>
+                [Fact]
+                public void Substitute1()
+                {
+                    Create("cat", "dog");
+                    var sawError = false;
+                    _vimBuffer.ErrorMessage += delegate { sawError = true; };
+                    RunCommand("s/z/o/e");
+                    Assert.False(sawError);
+                }
 
-            /// <summary>
-            /// Repeat of the last search with a new flag
-            /// </summary>
-            [Fact]
-            public void Substitute3()
-            {
-                Create("cat bat", "dag");
-                _vimBuffer.VimData.LastSubstituteData = FSharpOption.Create(new SubstituteData("a", "o", SubstituteFlags.None));
-                RunCommand("s g 2");
-                Assert.Equal("cot bot", _textBuffer.GetLine(0).GetText());
-                Assert.Equal("dog", _textBuffer.GetLine(1).GetText());
-            }
+                /// <summary>
+                /// Simple search and replace
+                /// </summary>
+                [Fact]
+                public void Substitute2()
+                {
+                    Create("cat bat", "dag");
+                    RunCommand("s/a/o/g 2");
+                    Assert.Equal("cot bot", _textBuffer.GetLine(0).GetText());
+                    Assert.Equal("dog", _textBuffer.GetLine(1).GetText());
+                }
 
-            /// <summary>
-            /// Testing the print option
-            /// </summary>
-            [Fact]
-            public void Substitute4()
-            {
-                Create("cat bat", "dag");
-                var message = String.Empty;
-                _vimBuffer.StatusMessage += (_, e) => { message = e.Message; };
-                RunCommand("s/a/b/p");
-                Assert.Equal("cbt bat", message);
-            }
+                /// <summary>
+                /// Repeat of the last search with a new flag
+                /// </summary>
+                [Fact]
+                public void Substitute3()
+                {
+                    Create("cat bat", "dag");
+                    _vimBuffer.VimData.LastSubstituteData = FSharpOption.Create(new SubstituteData("a", "o", SubstituteFlags.None));
+                    RunCommand("s g 2");
+                    Assert.Equal("cot bot", _textBuffer.GetLine(0).GetText());
+                    Assert.Equal("dog", _textBuffer.GetLine(1).GetText());
+                }
 
-            /// <summary>
-            /// Testing the print number option
-            /// </summary>
-            [Fact]
-            public void Substitute6()
-            {
-                Create("cat bat", "dag");
-                var message = String.Empty;
-                _vimBuffer.StatusMessage += (_, e) => { message = e.Message; };
-                RunCommand("s/a/b/#");
-                Assert.Equal("  1 cbt bat", message);
-            }
+                /// <summary>
+                /// Testing the print option
+                /// </summary>
+                [Fact]
+                public void Substitute4()
+                {
+                    Create("cat bat", "dag");
+                    var message = String.Empty;
+                    _vimBuffer.StatusMessage += (_, e) => { message = e.Message; };
+                    RunCommand("s/a/b/p");
+                    Assert.Equal("cbt bat", message);
+                }
 
-            /// <summary>
-            /// Testing the print list option
-            /// </summary>
-            [Fact]
-            public void Substitute7()
-            {
-                Create("cat bat", "dag");
-                var message = String.Empty;
-                _vimBuffer.StatusMessage += (_, e) => { message = e.Message; };
-                RunCommand("s/a/b/l");
-                Assert.Equal("cbt bat$", message);
-            }
+                /// <summary>
+                /// Testing the print number option
+                /// </summary>
+                [Fact]
+                public void Substitute6()
+                {
+                    Create("cat bat", "dag");
+                    var message = String.Empty;
+                    _vimBuffer.StatusMessage += (_, e) => { message = e.Message; };
+                    RunCommand("s/a/b/#");
+                    Assert.Equal("  1 cbt bat", message);
+                }
 
-            /// <summary>
-            /// Verify we handle escaped back slashes correctly
-            /// </summary>
-            [Fact]
-            public void WithBackslashes()
-            {
-                Create(@"\\\\abc\\\\def");
-                RunCommand(@"s/\\\{4\}/\\\\/g");
-                Assert.Equal(@"\\abc\\def", _textBuffer.GetLine(0).GetText());
-            }
+                /// <summary>
+                /// Testing the print list option
+                /// </summary>
+                [Fact]
+                public void Substitute7()
+                {
+                    Create("cat bat", "dag");
+                    var message = String.Empty;
+                    _vimBuffer.StatusMessage += (_, e) => { message = e.Message; };
+                    RunCommand("s/a/b/l");
+                    Assert.Equal("cbt bat$", message);
+                }
 
-            /// <summary>
-            /// Convert a set of spaces into tabs with the '\t' replacement
-            /// </summary>
-            [Fact]
-            public void TabsForSpaces()
-            {
-                Create("    ");
-                RunCommand(@"s/  /\t");
-                Assert.Equal("\t  ", _textBuffer.GetLine(0).GetText());
-            }
+                /// <summary>
+                /// Verify we handle escaped back slashes correctly
+                /// </summary>
+                [Fact]
+                public void WithBackslashes()
+                {
+                    Create(@"\\\\abc\\\\def");
+                    RunCommand(@"s/\\\{4\}/\\\\/g");
+                    Assert.Equal(@"\\abc\\def", _textBuffer.GetLine(0).GetText());
+                }
 
-            /// <summary>
-            /// Convert spaces into new lines with the '\r' replacement
-            /// </summary>
-            [Fact]
-            public void SpacesToNewLine()
-            {
-                Create("dog chases cat");
-                RunCommand(@"s/ /\r/g");
-                Assert.Equal("dog", _textBuffer.GetLine(0).GetText());
-                Assert.Equal("chases", _textBuffer.GetLine(1).GetText());
-                Assert.Equal("cat", _textBuffer.GetLine(2).GetText());
-            }
+                /// <summary>
+                /// Convert a set of spaces into tabs with the '\t' replacement
+                /// </summary>
+                [Fact]
+                public void TabsForSpaces()
+                {
+                    Create("    ");
+                    RunCommand(@"s/  /\t");
+                    Assert.Equal("\t  ", _textBuffer.GetLine(0).GetText());
+                }
 
-            [Fact]
-            public void DefaultsToMagicMode()
-            {
-                Create("a.c", "abc");
-                RunCommand(@"%s/a\.c/replaced/g");
-                Assert.Equal(_textBuffer.GetLine(0).GetText(), "replaced");
-                Assert.Equal(_textBuffer.GetLine(1).GetText(), "abc");
-            }
+                /// <summary>
+                /// Convert spaces into new lines with the '\r' replacement
+                /// </summary>
+                [Fact]
+                public void SpacesToNewLine()
+                {
+                    Create("dog chases cat");
+                    RunCommand(@"s/ /\r/g");
+                    Assert.Equal("dog", _textBuffer.GetLine(0).GetText());
+                    Assert.Equal("chases", _textBuffer.GetLine(1).GetText());
+                    Assert.Equal("cat", _textBuffer.GetLine(2).GetText());
+                }
 
-            /// <summary>
-            /// Make sure the "\1" does a group substitution instead of pushing in the literal 1
-            /// </summary>
-            [Fact]
-            public void ReplaceWithGroup()
-            {
-                Create(@"cat (dog)");
-                RunCommand(@"s/(\(\w\+\))/\1/");
-                Assert.Equal(@"cat dog", _textBuffer.GetLine(0).GetText());
-            }
+                [Fact]
+                public void DefaultsToMagicMode()
+                {
+                    Create("a.c", "abc");
+                    RunCommand(@"%s/a\.c/replaced/g");
+                    Assert.Equal(_textBuffer.GetLine(0).GetText(), "replaced");
+                    Assert.Equal(_textBuffer.GetLine(1).GetText(), "abc");
+                }
 
-            [Fact]
-            public void NewlinesCanBeReplaced()
-            {
-                Create("foo", "bar");
-                RunCommand(@"%s/\n/ /");
-                Assert.Equal(_textBuffer.GetLine(0).GetText(), "foo bar");
-            }
+                /// <summary>
+                /// Make sure the "\1" does a group substitution instead of pushing in the literal 1
+                /// </summary>
+                [Fact]
+                public void ReplaceWithGroup()
+                {
+                    Create(@"cat (dog)");
+                    RunCommand(@"s/(\(\w\+\))/\1/");
+                    Assert.Equal(@"cat dog", _textBuffer.GetLine(0).GetText());
+                }
 
-            /// <summary>
-            /// Covers #763 where the default search for substitute uses the last substitute
-            /// instead of the last search
-            /// </summary>
-            [Fact]
-            public void SubstituteThenSearchThenUsesPatternFromLastSearch()
-            {
-                Create("foo", "bar");
+                [Fact]
+                public void NewlinesCanBeReplaced()
+                {
+                    Create("foo", "bar");
+                    RunCommand(@"%s/\n/ /");
+                    Assert.Equal(_textBuffer.GetLine(0).GetText(), "foo bar");
+                }
 
-                RunCommandRaw(":%s/foo/foos");
-                RunCommandRaw("/bar");
-                RunCommandRaw(":%s//baz");
+                /// <summary>
+                /// Covers #763 where the default search for substitute uses the last substitute
+                /// instead of the last search
+                /// </summary>
+                [Fact]
+                public void SubstituteThenSearchThenUsesPatternFromLastSearch()
+                {
+                    Create("foo", "bar");
 
-                Assert.Equal(_textBuffer.GetLine(1).Extent.GetText(), "baz");
-            }
+                    RunCommandRaw(":%s/foo/foos");
+                    RunCommandRaw("/bar");
+                    RunCommandRaw(":%s//baz");
 
-            [Fact]
-            public void SubstituteThenSearchThenUsesPatternFromLastSubstitute()
-            {
-                Create("foo foo foo");
+                    Assert.Equal(_textBuffer.GetLine(1).Extent.GetText(), "baz");
+                }
 
-                RunCommandRaw(":%s/foo/bar");
-                RunCommandRaw("/bar");
-                // Do same substitute as the last substitute, but global this time
-                RunCommandRaw(":%&g");
+                [Fact]
+                public void SubstituteThenSearchThenUsesPatternFromLastSubstitute()
+                {
+                    Create("foo foo foo");
 
-                Assert.Equal(_textBuffer.GetLine(0).Extent.GetText(), "bar bar bar");
-            }
+                    RunCommandRaw(":%s/foo/bar");
+                    RunCommandRaw("/bar");
+                    // Do same substitute as the last substitute, but global this time
+                    RunCommandRaw(":%&g");
 
-            /// <summary>
-            /// Baseline to make sure I don't break anything while fixing #763
-            /// </summary>
-            [Fact]
-            public void SubstituteThenUsesPatternFromLastSubstitute()
-            {
-                Create("foo", "bar");
+                    Assert.Equal(_textBuffer.GetLine(0).Extent.GetText(), "bar bar bar");
+                }
 
-                RunCommandRaw(":%s/foo/foos");
-                RunCommandRaw(":%s//baz");
+                /// <summary>
+                /// Baseline to make sure I don't break anything while fixing #763
+                /// </summary>
+                [Fact]
+                public void SubstituteThenUsesPatternFromLastSubstitute()
+                {
+                    Create("foo", "bar");
 
-                Assert.Equal(_textBuffer.GetLine(0).Extent.GetText(), "bazs");
-            }
+                    RunCommandRaw(":%s/foo/foos");
+                    RunCommandRaw(":%s//baz");
 
-            /// <summary>
-            /// Make sure that we can handle a space between the :substitute command name 
-            /// and the pattern
-            /// </summary>
-            [Fact]
-            public void SpaceAfterCommandName()
-            {
-                Create("ca t");
-                RunCommandRaw(":s / /");
-                Assert.Equal("cat", _textBuffer.GetLine(0).GetText());
-            }
+                    Assert.Equal(_textBuffer.GetLine(0).Extent.GetText(), "bazs");
+                }
 
-            /// <summary>
-            /// Integration test for issue #973.  The key problem here is that the regex built
-            /// from the substitute was ignoring the ignorecase and smartcase options.  It was 
-            /// instead creating literally from the substitute flags
-            /// </summary>
-            [Fact]
-            public void Issue973()
-            {
-                Create("vols.First()");
-                _vimBuffer.GlobalSettings.IgnoreCase = true;
-                RunCommandRaw(":%s/vols.first()/target/g");
-                Assert.Equal("target", _textBuffer.GetLine(0).GetText());
-            }
+                /// <summary>
+                /// Make sure that we can handle a space between the :substitute command name 
+                /// and the pattern
+                /// </summary>
+                [Fact]
+                public void SpaceAfterCommandName()
+                {
+                    Create("ca t");
+                    RunCommandRaw(":s / /");
+                    Assert.Equal("cat", _textBuffer.GetLine(0).GetText());
+                }
 
-            /// <summary>
-            /// Make sure that we can handle a space before the substitute command 
-            /// </summary>
-            [Fact]
-            public void Issue1057()
-            {
-                Create("ca t");
-                RunCommandRaw(": s / /");
-                Assert.Equal("cat", _textBuffer.GetLine(0).GetText());
+                /// <summary>
+                /// Integration test for issue #973.  The key problem here is that the regex built
+                /// from the substitute was ignoring the ignorecase and smartcase options.  It was 
+                /// instead creating literally from the substitute flags
+                /// </summary>
+                [Fact]
+                public void Issue973()
+                {
+                    Create("vols.First()");
+                    _vimBuffer.GlobalSettings.IgnoreCase = true;
+                    RunCommandRaw(":%s/vols.first()/target/g");
+                    Assert.Equal("target", _textBuffer.GetLine(0).GetText());
+                }
+
+                /// <summary>
+                /// Make sure that we can handle a space before the substitute command 
+                /// </summary>
+                [Fact]
+                public void Issue1057()
+                {
+                    Create("ca t");
+                    RunCommandRaw(": s / /");
+                    Assert.Equal("cat", _textBuffer.GetLine(0).GetText());
+                }
             }
         }
 

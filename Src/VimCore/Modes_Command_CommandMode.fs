@@ -15,7 +15,7 @@ type internal CommandMode
     let _commandChangedEvent = StandardEvent()
     let _vimData = _buffer.VimData
     let _statusUtil = _buffer.VimBufferData.StatusUtil
-    let _parser = Parser(_vimData)
+    let _parser = Parser(_buffer.Vim.GlobalSettings, _vimData)
 
     // Command to show when entering command from Visual Mode
     static let FromVisualModeString = "'<,'>"

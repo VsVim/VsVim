@@ -121,6 +121,7 @@ type internal GlobalSettings() =
             (ClipboardName, "cb", SettingValue.String "")
             (ControlCharsName, ControlCharsName, SettingValue.Toggle true)
             (CurrentDirectoryPathName, "cd", SettingValue.String ",,")
+            (GlobalDefaultName, "gd", SettingValue.Toggle false)
             (HighlightSearchName, "hls", SettingValue.Toggle false)
             (HistoryName, "hi", SettingValue.Number(Constants.DefaultHistoryLength))
             (IncrementalSearchName, "is", SettingValue.Toggle false)
@@ -304,6 +305,9 @@ type internal GlobalSettings() =
             with get() = _map.GetStringValue CurrentDirectoryPathName
             and set value = _map.TrySetValue CurrentDirectoryPathName (SettingValue.String value) |> ignore
         member x.CurrentDirectoryPathList = x.GetPathOptionList (_map.GetStringValue CurrentDirectoryPathName)
+        member x.GlobalDefault
+            with get() = _map.GetBoolValue GlobalDefaultName
+            and set value = _map.TrySetValue GlobalDefaultName (SettingValue.Toggle value) |> ignore
         member x.HighlightSearch
             with get() = _map.GetBoolValue HighlightSearchName
             and set value = _map.TrySetValue HighlightSearchName (SettingValue.Toggle value) |> ignore

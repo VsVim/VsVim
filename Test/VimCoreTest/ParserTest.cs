@@ -12,7 +12,7 @@ namespace Vim.UnitTest
     {
         protected Parser CreateParser(params string[] lines)
         {
-            return new Parser(VimUtil.CreateVimData(), lines);
+            return new Parser(new GlobalSettings(), VimUtil.CreateVimData(), lines);
         }
 
         protected Parser CreateParserOfLines(string text)
