@@ -203,7 +203,6 @@ type VimInterpreter
             | DefaultLineRange.CurrentLine -> SnapshotLineRangeUtil.CreateForLine x.CaretLine |> Some
             | DefaultLineRange.EntireBuffer -> SnapshotLineRangeUtil.CreateForSnapshot x.CurrentSnapshot |> Some
 
-
         | LineRangeSpecifier.EntireBuffer -> 
             SnapshotLineRangeUtil.CreateForSnapshot x.CurrentSnapshot |> Some
         | LineRangeSpecifier.SingleLine lineSpecifier-> 
