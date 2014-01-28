@@ -1508,7 +1508,7 @@ type VimInterpreter
 
     // Actually parse and run all of the commands which are included in the script
     member x.RunScript lines = 
-        let parser = Parser(_vimData, lines)
+        let parser = Parser(_globalSettings, _vimData, lines)
         while not parser.IsDone do
             let lineCommand = parser.ParseNextCommand()
             x.RunLineCommand lineCommand |> ignore

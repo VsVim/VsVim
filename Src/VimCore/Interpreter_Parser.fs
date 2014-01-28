@@ -102,6 +102,7 @@ type LineCommandBuilder
 [<Sealed>]
 type Parser
     (
+        _globalSettings : IVimGlobalSettings,
         _vimData : IVimData
     ) = 
 
@@ -306,8 +307,8 @@ type Parser
         ]
         |> Map.ofList
 
-    new (vimData, lines) as this =
-        Parser(vimData)
+    new (globalSettings, vimData, lines) as this =
+        Parser(globalSettings, vimData)
         then
             this.Reset lines
 
@@ -635,36 +636,44 @@ type Parser
             | _ -> false)
         let flagString = OptionUtil.getOrDefault "" flagString
 
-        let rec inner flags index  = 
-            if index >= flagString.Length then
-                ParseResult.Succeeded flags
-            else
-                let newFlag = 
-                    match flagString.[index] with
-                    | 'c' -> Some SubstituteFlags.Confirm
-                    | 'r' -> Some SubstituteFlags.UsePreviousSearchPattern
-                    | 'e' -> Some SubstituteFlags.SuppressError
-                    | 'g' -> Some SubstituteFlags.ReplaceAll
-                    | 'i' -> Some SubstituteFlags.IgnoreCase
-                    | 'I' -> Some SubstituteFlags.OrdinalCase
-                    | 'n' -> Some SubstituteFlags.ReportOnly
-                    | 'p' -> Some SubstituteFlags.PrintLast
-                    | 'l' -> Some SubstituteFlags.PrintLastWithList
-                    | '#' -> Some SubstituteFlags.PrintLastWithNumber
-                    | '&' -> Some SubstituteFlags.UsePreviousFlags
-                    | _  -> None
-                match newFlag, index = 0 with
-                | None, _ -> 
-                    // Illegal character was used 
-                    ParseResult.Failed Resources.CommandMode_TrailingCharacters
-                | Some SubstituteFlags.UsePreviousFlags, false ->
-                    // The '&' flag is only legal in the first position.  After that
-                    // it terminates the flag notation
-                    ParseResult.Failed Resources.CommandMode_TrailingCharacters
-                | Some newFlag, _ -> 
-                    inner (flags ||| newFlag) (index + 1)
+        let mutable parseResult : ParseResult<SubstituteFlags> option = None
+        let mutable flags = 
+            if _globalSettings.GlobalDefault then SubstituteFlags.ReplaceAll
+            else SubstituteFlags.None
+        let mutable index = 0
+        while index < flagString.Length && Option.isNone parseResult do
+            match flagString.[index] with
+            | 'c' -> flags <- flags ||| SubstituteFlags.Confirm
+            | 'r' -> flags <- flags ||| SubstituteFlags.UsePreviousSearchPattern
+            | 'e' -> flags <- flags ||| SubstituteFlags.SuppressError
+            | 'i' -> flags <- flags ||| SubstituteFlags.IgnoreCase
+            | 'I' -> flags <- flags ||| SubstituteFlags.OrdinalCase
+            | 'n' -> flags <- flags ||| SubstituteFlags.ReportOnly
+            | 'p' -> flags <- flags ||| SubstituteFlags.PrintLast
+            | 'l' -> flags <- flags ||| SubstituteFlags.PrintLastWithList
+            | '#' -> flags <- flags ||| SubstituteFlags.PrintLastWithNumber
+            | 'g' -> 
+                // This is a toggle flag that turns the value on / off
+                if Util.IsFlagSet flags SubstituteFlags.ReplaceAll then
+                    flags <- flags &&& ~~~SubstituteFlags.ReplaceAll
+                else
+                    flags <- flags ||| SubstituteFlags.ReplaceAll
+            | '&' -> 
+                // The '&' flag is only legal in the first position.  After that
+                // it terminates the flag notation
+                if index = 0 then 
+                    flags <- flags ||| SubstituteFlags.UsePreviousFlags
+                else
+                    parseResult <- ParseResult.Failed Resources.CommandMode_TrailingCharacters |> Some
+            | _  -> 
+                // Illegal character in the flags string 
+                parseResult <- ParseResult.Failed Resources.CommandMode_TrailingCharacters |> Some
 
-        inner SubstituteFlags.None 0
+            index <- index + 1
+
+        match parseResult with
+        | None -> ParseResult.Succeeded flags
+        | Some p -> p
 
     /// Parse out :autocommand
     member x.ParseAutoCommand() = 
