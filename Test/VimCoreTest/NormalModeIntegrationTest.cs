@@ -2544,6 +2544,19 @@ namespace Vim.UnitTest
                 _vimBuffer.ProcessNotation("cw<Esc>u");
                 Assert.Equal(4, _textView.GetCaretPoint().Position);
             }
+
+            /// <summary>
+            /// When a 'cw' command is repeated once with '.', 'uu' shoudl undo both
+            /// </summary>
+            [Fact]
+            public void Issue1266()
+            {
+                Create("cat cat");
+                _vimBuffer.ProcessNotation("cwdog<Esc>w.");
+                Assert.Equal("dog dog", _textView.GetLine(0).GetText());
+                _vimBuffer.ProcessNotation("uu");
+                Assert.Equal("cat cat", _textView.GetLine(0).GetText());
+            }
         }
 
         public abstract class IncrementalSearchTest : NormalModeIntegrationTest
