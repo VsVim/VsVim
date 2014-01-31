@@ -62,6 +62,12 @@ type VimKey =
     | RightMouse = 57
     | RightDrag = 58
     | RightRelease = 59
+    | X1Mouse = 60
+    | X1Drag = 61
+    | X1Release = 62
+    | X2Mouse = 63
+    | X2Drag = 64
+    | X2Release = 65
 
 module VimKeyUtil =
 

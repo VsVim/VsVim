@@ -144,7 +144,13 @@ module KeyInputUtil =
         (VimKey.MiddleRelease, None)
         (VimKey.RightMouse, None)
         (VimKey.RightDrag, None)
-        (VimKey.RightRelease, None)]
+        (VimKey.RightRelease, None)
+        (VimKey.X1Mouse, None)
+        (VimKey.X1Drag, None)
+        (VimKey.X1Release, None)
+        (VimKey.X2Mouse, None)
+        (VimKey.X2Drag, None)
+        (VimKey.X2Release, None)]
 
     /// This is a mapping of the supported control character mappings in vim.  The list of
     /// supported items is described here

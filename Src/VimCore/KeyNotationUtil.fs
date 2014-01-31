@@ -64,6 +64,12 @@ module KeyNotationUtil =
             ("<RightMouse>", KeyInputUtil.VimKeyToKeyInput VimKey.RightMouse)
             ("<RightDrag>", KeyInputUtil.VimKeyToKeyInput VimKey.RightDrag)
             ("<RightRelease>", KeyInputUtil.VimKeyToKeyInput VimKey.RightRelease)
+            ("<X1Mouse>", KeyInputUtil.VimKeyToKeyInput VimKey.X1Mouse)
+            ("<X1Drag>", KeyInputUtil.VimKeyToKeyInput VimKey.X1Drag)
+            ("<X1Release>", KeyInputUtil.VimKeyToKeyInput VimKey.X1Release)
+            ("<X2Mouse>", KeyInputUtil.VimKeyToKeyInput VimKey.X2Mouse)
+            ("<X2Drag>", KeyInputUtil.VimKeyToKeyInput VimKey.X2Drag)
+            ("<X2Release>", KeyInputUtil.VimKeyToKeyInput VimKey.X2Release)
         ]
 
     let FunctionKeys = 
