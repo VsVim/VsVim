@@ -53,6 +53,15 @@ type VimKey =
     | LineFeed = 47
     | Tab = 48
     | RawCharacter = 50     // A simple character to be processed
+    | LeftMouse = 51
+    | LeftDrag = 52
+    | LeftRelease = 53
+    | MiddleMouse = 54
+    | MiddleDrag = 55
+    | MiddleRelease = 56
+    | RightMouse = 57
+    | RightDrag = 58
+    | RightRelease = 59
 
 module VimKeyUtil =
 
