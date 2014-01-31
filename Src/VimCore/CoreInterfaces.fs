@@ -2470,6 +2470,10 @@ type NormalCommand =
     /// the indent of the current line
     | PutAfterCaretWithIndent
 
+    /// Put the contents of the register after the current mouse position.  This will move
+    /// the mouse to that position before inserting 
+    | PutAfterCaretMouse
+
     /// Put the contents of the register into the buffer before the cursor.  The bool is 
     /// whether or not the caret should be placed after the inserted text
     | PutBeforeCaret of bool

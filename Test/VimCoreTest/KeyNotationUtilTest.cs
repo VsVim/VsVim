@@ -203,6 +203,25 @@ namespace Vim.UnitTest
                 func(VimKey.KeypadMultiply, "<kMultiply>");
                 func(VimKey.KeypadPlus, "<kPlus>");
             }
+
+            [Fact]
+            public void Mouse()
+            {
+                Action<VimKey, string> func = (vimKey, name) =>
+                    {
+                        var keyInput = KeyNotationUtil.StringToKeyInput(name);
+                        Assert.Equal(vimKey, keyInput.Key);
+                    };
+                func(VimKey.LeftMouse, "<LeftMouse>");
+                func(VimKey.LeftDrag, "<LeftDrag>");
+                func(VimKey.LeftRelease, "<LeftRelease>");
+                func(VimKey.MiddleMouse, "<MiddleMouse>");
+                func(VimKey.MiddleDrag, "<MiddleDrag>");
+                func(VimKey.MiddleRelease, "<MiddleRelease>");
+                func(VimKey.RightMouse, "<RightMouse>");
+                func(VimKey.RightDrag, "<RightDrag>");
+                func(VimKey.RightRelease, "<RightRelease>");
+            }
         }
 
         public sealed class ManyTest : KeyNotationUtilTest

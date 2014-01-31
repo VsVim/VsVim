@@ -22,7 +22,7 @@ namespace Vim.UI.Wpf.UnitTest
         {
             _vimBuffer = CreateVimBuffer(lines);
             _textBuffer = _vimBuffer.TextBuffer;
-            _vimKeyProcessor = new VimKeyProcessor(_vimBuffer, KeyUtil, (IWpfTextView)(_vimBuffer.TextView));
+            _vimKeyProcessor = new VimKeyProcessor(_vimBuffer, KeyUtil);
             _simulation = new KeyboardInputSimulation((IWpfTextView)_vimBuffer.TextView);
             _simulation.KeyProcessors.Add(_vimKeyProcessor);
         }

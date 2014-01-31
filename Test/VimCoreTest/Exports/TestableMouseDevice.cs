@@ -1,4 +1,6 @@
-﻿using System.ComponentModel.Composition;
+﻿using Microsoft.VisualStudio.Text.Editor;
+using System.ComponentModel.Composition;
+using System.Windows;
 using Vim;
 
 namespace Vim.UnitTest.Exports
@@ -11,6 +13,11 @@ namespace Vim.UnitTest.Exports
         bool IMouseDevice.IsLeftButtonPressed
         {
             get { return IsLeftButtonPressed; }
+        }
+
+        public Point? GetPosition(ITextView textView)
+        {
+            return null;
         }
     }
 }

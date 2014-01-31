@@ -40,7 +40,7 @@ namespace VsVim.Implementation.Misc
             }
 
             var vimBufferCoordinator = _bufferCoordinatorFactory.GetVimBufferCoordinator(vimBuffer);
-            return new VsKeyProcessor(_adapter, vimBufferCoordinator, _keyUtil, _reportDesignerUtil, wpfTextView);
+            return new VsKeyProcessor(_adapter, vimBufferCoordinator, _keyUtil, _reportDesignerUtil);
         }
     }
 }

@@ -135,7 +135,22 @@ module KeyInputUtil =
         (VimKey.LineFeed, Some (CharUtil.OfAsciiValue 10uy))
         (VimKey.Null, Some (CharUtil.OfAsciiValue 0uy))
         (VimKey.Tab, Some '\t')
-        (VimKey.Nop, None)]
+        (VimKey.Nop, None)
+        (VimKey.LeftMouse, None)
+        (VimKey.LeftDrag, None)
+        (VimKey.LeftRelease, None)
+        (VimKey.MiddleMouse, None)
+        (VimKey.MiddleDrag, None)
+        (VimKey.MiddleRelease, None)
+        (VimKey.RightMouse, None)
+        (VimKey.RightDrag, None)
+        (VimKey.RightRelease, None)
+        (VimKey.X1Mouse, None)
+        (VimKey.X1Drag, None)
+        (VimKey.X1Release, None)
+        (VimKey.X2Mouse, None)
+        (VimKey.X2Drag, None)
+        (VimKey.X2Release, None)]
 
     /// This is a mapping of the supported control character mappings in vim.  The list of
     /// supported items is described here

@@ -66,6 +66,8 @@
     <Compile Include="Implementation\BlockCaret\BlockCaretFormatDefinition.cs" />
     <Compile Include="Implementation\CommandMargin\CommandMarginFormatDefinition.cs" />
     <Compile Include="Implementation\Misc\VimProtectedOperations.cs" />
+    <Compile Include="Implementation\Mouse\VimMouseProcessor.cs" />
+    <Compile Include="Implementation\Mouse\VimMouseProcessorProvider.cs" />
     <Compile Include="Implementation\Paste\PasteAdornment.cs" />
     <Compile Include="Implementation\Paste\PasteController.cs" />
     <Compile Include="Implementation\Paste\PasteFactoryService.cs" />
