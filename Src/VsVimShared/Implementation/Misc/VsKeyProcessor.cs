@@ -28,8 +28,8 @@ namespace VsVim.Implementation.Misc
             get { return _keyDownCount; }
         }
 
-        internal VsKeyProcessor(IVsAdapter adapter, IVimBufferCoordinator bufferCoordinator, IKeyUtil keyUtil, IReportDesignerUtil reportDesignerUtil, IWpfTextView wpfTextView)
-            : base(bufferCoordinator.VimBuffer, keyUtil, wpfTextView)
+        internal VsKeyProcessor(IVsAdapter adapter, IVimBufferCoordinator bufferCoordinator, IKeyUtil keyUtil, IReportDesignerUtil reportDesignerUtil)
+            : base(bufferCoordinator.VimBuffer, keyUtil)
         {
             _adapter = adapter;
             _reportDesignerUtil = reportDesignerUtil;

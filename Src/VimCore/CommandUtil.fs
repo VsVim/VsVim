@@ -49,7 +49,8 @@ type internal CommandUtil
         _commonOperations : ICommonOperations,
         _foldManager : IFoldManager,
         _insertUtil : IInsertUtil,
-        _bulkOperations : IBulkOperations
+        _bulkOperations : IBulkOperations,
+        _mouseDevice : IMouseDevice
     ) =
 
     let _vimTextBuffer = _vimBufferData.VimTextBuffer
@@ -1627,6 +1628,29 @@ type internal CommandUtil
         x.PutAfterCaretCore registerValue count false
         CommandResult.Completed ModeSwitch.NoSwitch
 
+    /// Happens when the middle mouse button is clicked.  Need to paste the contents of the default
+    /// register at the current position 
+    member x.PutAfterCaretMouse() = 
+        try
+            match _mouseDevice.GetPosition _textView with
+            | NullableUtil.Null -> ()
+            | NullableUtil.HasValue position ->
+
+                // First move the caret to the current mouse position
+                let textViewLine = _textView.TextViewLines.GetTextViewLineContainingYCoordinate(position.Y + _textView.ViewportTop)
+                _textView.Caret.MoveTo(textViewLine, position.X + _textView.ViewportLeft) |> ignore
+
+                // Now run the put after command
+                let register = _registerMap.GetRegister RegisterName.Unnamed
+                x.PutAfterCaretCore register.RegisterValue 1 false
+        with 
+        // Dealing with ITextViewLines can lead to an exception (particularly during layout).  Need
+        // to be safe here and handle the exception.  If we can't access the ITextViewLines there
+        // isn't much that can be done for scrolling 
+        | _ -> ()
+
+        CommandResult.Completed ModeSwitch.NoSwitch
+
     /// Put the contents of the specified register before the cursor.  Used for the
     /// 'P' and 'gP' commands in normal mode
     member x.PutBeforeCaret (register : Register) count moveCaretAfterText =
@@ -2251,6 +2275,7 @@ type internal CommandUtil
         | NormalCommand.Ping pingData -> x.Ping pingData data
         | NormalCommand.PutAfterCaret moveCaretAfterText -> x.PutAfterCaret register count moveCaretAfterText
         | NormalCommand.PutAfterCaretWithIndent -> x.PutAfterCaretWithIndent register count
+        | NormalCommand.PutAfterCaretMouse -> x.PutAfterCaretMouse()
         | NormalCommand.PutBeforeCaret moveCaretBeforeText -> x.PutBeforeCaret register count moveCaretBeforeText
         | NormalCommand.PutBeforeCaretWithIndent -> x.PutBeforeCaretWithIndent register count
         | NormalCommand.RecordMacroStart c -> x.RecordMacroStart c

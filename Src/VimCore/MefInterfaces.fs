@@ -197,6 +197,9 @@ type IMouseDevice =
     /// Is the left button pressed
     abstract IsLeftButtonPressed : bool
 
+    /// Get the position of the mouse positine within the ITextView
+    abstract GetPosition : textView : ITextView -> Nullable<System.Windows.Point>
+
 /// Abstract representation of the keyboard 
 type IKeyboardDevice = 
 

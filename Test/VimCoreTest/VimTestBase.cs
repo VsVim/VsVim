@@ -360,7 +360,8 @@ namespace Vim.UnitTest
                 operations,
                 foldManager,
                 insertUtil,
-                _bulkOperations);
+                _bulkOperations,
+                MouseDevice);
         }
 
         protected override void GetEditorHostParts(List<ComposablePartCatalog> composablePartCatalogList, List<ExportProvider> exportProviderList)
