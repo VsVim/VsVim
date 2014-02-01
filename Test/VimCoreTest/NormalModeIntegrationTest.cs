@@ -2546,7 +2546,7 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
-            /// When a 'cw' command is repeated once with '.', 'uu' shoudl undo both
+            /// When a 'cw' command is repeated once with '.', 'uu' should undo both
             /// </summary>
             [Fact]
             public void Issue1266()
