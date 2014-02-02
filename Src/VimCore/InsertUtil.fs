@@ -209,10 +209,8 @@ type internal InsertUtil
 
     /// Adjust beginning of text deletion obeying 'backspace' settings
     member x.AdjustForStartPoint (point : SnapshotPoint) (startPoint : SnapshotPoint) =
-        if not _globalSettings.IsBackspaceStart  then
-            if startPoint.Position > point.Position then startPoint else point
-        else
-            point
+        let startPosition = startPoint.Position
+        if startPosition < x.CaretPoint.Position && startPosition > point.Position then startPoint else point
 
     /// Delete the character before the cursor
     member x.Back startPoint =
@@ -633,10 +631,10 @@ type internal InsertUtil
             CommandResult.Error
         else
             let point = SnapshotLineUtil.GetFirstNonBlankOrEnd x.CaretLine
-            if x.CaretPoint.Position > point.Position then
+            if point.Position < x.CaretPoint.Position then
                 let point = x.AdjustForStartPoint point startPoint
                 x.EditWithUndoTransaction "Delete Line Before Cursor" (fun () ->
-                    let span = new SnapshotSpan(x.CaretPoint, point)
+                    let span = new SnapshotSpan(point, x.CaretPoint)
                     _textBuffer.Delete(span.Span) |> ignore
                     TextViewUtil.MoveCaretToPosition _textView span.Start.Position)
                 CommandResult.Completed ModeSwitch.NoSwitch
