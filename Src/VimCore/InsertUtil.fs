@@ -194,12 +194,34 @@ type internal InsertUtil
         fixOverlapEdits ()
         doApply ()
 
+    /// Whether we can delete before the cursor according to the 'backspace' setting
+    member x.CanDeleteBeforeCursor (startPoint : SnapshotPoint) =
+        if not _globalSettings.IsBackspaceStart && x.CaretPoint.Position <= startPoint.Position then
+            false
+        else
+            if x.CaretPoint = x.CaretLine.Start then
+                _globalSettings.IsBackspaceEol && x.CaretLineNumber <> 0
+            elif not _globalSettings.IsBackspaceIndent then
+                let point = SnapshotLineUtil.GetFirstNonBlankOrEnd x.CaretLine
+                x.CaretPoint.Position > point.Position
+            else
+                true
+
+    /// Adjust beginning of text deletion obeying 'backspace' settings
+    member x.AdjustForStartPoint (point : SnapshotPoint) (startPoint : SnapshotPoint) =
+        if not _globalSettings.IsBackspaceStart  then
+            if startPoint.Position > point.Position then startPoint else point
+        else
+            point
+
     /// Delete the character before the cursor
-    ///
-    /// TODO: This needs to respect the 'backspace' option
-    member x.Back () = 
-        _editorOperations.Backspace() |> ignore
-        CommandResult.Completed ModeSwitch.NoSwitch
+    member x.Back startPoint =
+        if not (x.CanDeleteBeforeCursor startPoint) then
+            _operations.Beep()
+            CommandResult.Error
+        else
+            _editorOperations.Backspace() |> ignore
+            CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Block insert the specified text at the caret point over the specified number of lines
     member x.BlockInsert text height = 
@@ -265,49 +287,50 @@ type internal InsertUtil
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Delete the word before the cursor
-    ///
-    /// TODO: This needs to respect the IsBackspaceStart sub option. 
-    member x.DeleteWordBeforeCursor () =
+    member x.DeleteWordBeforeCursor startPoint =
 
         // Called when the caret is positioned at the start of the line.  The line break 
         // should be deleted and the caret positioned at the end of the previous line
         let deleteLineBreak () = 
-            if x.CaretLineNumber = 0 || not _globalSettings.IsBackspaceEol then
-                _operations.Beep()
-            else
-                x.EditWithUndoTransaction "Delete Word Before Cursor" (fun () ->
-                    let line = SnapshotUtil.GetLine x.CurrentSnapshot (x.CaretLineNumber - 1)
-                    let span = Span.FromBounds(line.End.Position, line.EndIncludingLineBreak.Position)
-                    _textBuffer.Delete span |> ignore
-                    TextViewUtil.MoveCaretToPosition _textView line.End.Position)
+            x.EditWithUndoTransaction "Delete Word Before Cursor" (fun () ->
+                let line = SnapshotUtil.GetLine x.CurrentSnapshot (x.CaretLineNumber - 1)
+                let span = Span.FromBounds(line.End.Position, line.EndIncludingLineBreak.Position)
+                _textBuffer.Delete span |> ignore
+                TextViewUtil.MoveCaretToPosition _textView line.End.Position)
 
         // To delete the word we need to first categorize the type of delete we are doing. This
         // is judged by the content of the caret
-        if x.CaretPoint = x.CaretLine.Start then
-            deleteLineBreak()
+        if not (x.CanDeleteBeforeCursor startPoint) then
+            _operations.Beep()
+            CommandResult.Error
         else
-            // Need to find the start of the previous word and delete from that to the original 
-            // caret point
-            let start = 
+            if x.CaretPoint = x.CaretLine.Start then
+                deleteLineBreak()
+            else
+                // Need to find the start of the previous word and delete from that to the original 
+                // caret point
+                let start = 
 
-                // Jump past any blanks before the caret
-                let searchEndPoint = 
-                    SnapshotSpan(x.CaretLine.Start, x.CaretPoint)
-                    |> SnapshotSpanUtil.GetPoints Path.Backward
-                    |> Seq.skipWhile SnapshotPointUtil.IsBlank
-                    |> SeqUtil.headOrDefault x.CaretLine.Start
+                    // Jump past any blanks before the caret
+                    let searchEndPoint = 
+                        SnapshotSpan(x.CaretLine.Start, x.CaretPoint)
+                        |> SnapshotSpanUtil.GetPoints Path.Backward
+                        |> Seq.skipWhile SnapshotPointUtil.IsBlank
+                        |> SeqUtil.headOrDefault x.CaretLine.Start
 
-                match _wordUtil.GetFullWordSpan WordKind.NormalWord searchEndPoint with
-                | None -> searchEndPoint
-                | Some span -> span.Start
+                    match _wordUtil.GetFullWordSpan WordKind.NormalWord searchEndPoint with
+                    | None -> searchEndPoint
+                    | Some span -> span.Start
 
-            // Delete the span and position the caret at it's original start
-            x.EditWithUndoTransaction "Delete Word Before Cursor" (fun () ->
-                let span = SnapshotSpan(start, x.CaretPoint)
-                _textBuffer.Delete span.Span |> ignore
-                TextViewUtil.MoveCaretToPosition _textView span.Start.Position)
+                let start = x.AdjustForStartPoint start startPoint
 
-        CommandResult.Completed ModeSwitch.NoSwitch
+                // Delete the span and position the caret at it's original start
+                x.EditWithUndoTransaction "Delete Word Before Cursor" (fun () ->
+                    let span = SnapshotSpan(start, x.CaretPoint)
+                    _textBuffer.Delete span.Span |> ignore
+                    TextViewUtil.MoveCaretToPosition _textView span.Start.Position)
+
+            CommandResult.Completed ModeSwitch.NoSwitch
 
     member x.DirectInsert (c : char) = 
         let text = c.ToString()
@@ -528,7 +551,7 @@ type internal InsertUtil
             CommandResult.Completed ModeSwitch.NoSwitch
         else
             match command with
-            | InsertCommand.Back -> x.Back()
+            | InsertCommand.Back startPoint -> x.Back startPoint
             | InsertCommand.BlockInsert (text, count) -> x.BlockInsert text count
             | InsertCommand.Combined (left, right) -> x.Combined left right
             | InsertCommand.CompleteMode moveCaretLeft -> x.CompleteMode moveCaretLeft
@@ -536,7 +559,7 @@ type internal InsertUtil
             | InsertCommand.DeleteLeft count -> x.DeleteLeft count
             | InsertCommand.DeleteRight count -> x.DeleteRight count
             | InsertCommand.DeleteAllIndent -> x.DeleteAllIndent() 
-            | InsertCommand.DeleteWordBeforeCursor -> x.DeleteWordBeforeCursor()
+            | InsertCommand.DeleteWordBeforeCursor startPoint -> x.DeleteWordBeforeCursor startPoint
             | InsertCommand.DirectInsert c -> x.DirectInsert c
             | InsertCommand.DirectReplace c -> x.DirectReplace c
             | InsertCommand.InsertCharacterAboveCaret -> x.InsertCharacterAboveCaret()
@@ -549,7 +572,7 @@ type internal InsertUtil
             | InsertCommand.MoveCaretByWord direction -> x.MoveCaretByWord direction
             | InsertCommand.ShiftLineLeft -> x.ShiftLineLeft ()
             | InsertCommand.ShiftLineRight -> x.ShiftLineRight ()
-            | InsertCommand.DeleteLineBeforeCursor -> x.DeleteLineBeforeCursor()
+            | InsertCommand.DeleteLineBeforeCursor startPoint -> x.DeleteLineBeforeCursor startPoint
             | InsertCommand.Paste -> x.Paste()
 
     member x.RunInsertCommand command = 
@@ -604,15 +627,21 @@ type internal InsertUtil
         x.ShiftLine 1
 
     /// Delete the line before the cursor
-    member x.DeleteLineBeforeCursor () =
-        let caretPosition = x.CaretPoint.Position
-        let position = (SnapshotLineUtil.GetFirstNonBlankOrStart x.CaretLine).Position
-        if caretPosition > position then
-            let span = new Span(position, caretPosition - position)
-            _textBuffer.Delete(span) |> ignore
-            CommandResult.Completed ModeSwitch.NoSwitch
+    member x.DeleteLineBeforeCursor startPoint =
+        if not (x.CanDeleteBeforeCursor startPoint) then
+            _operations.Beep()
+            CommandResult.Error
         else
-            x.DeleteWordBeforeCursor()
+            let point = SnapshotLineUtil.GetFirstNonBlankOrEnd x.CaretLine
+            if x.CaretPoint.Position > point.Position then
+                let point = x.AdjustForStartPoint point startPoint
+                x.EditWithUndoTransaction "Delete Line Before Cursor" (fun () ->
+                    let span = new SnapshotSpan(x.CaretPoint, point)
+                    _textBuffer.Delete(span.Span) |> ignore
+                    TextViewUtil.MoveCaretToPosition _textView span.Start.Position)
+                CommandResult.Completed ModeSwitch.NoSwitch
+            else
+                x.DeleteWordBeforeCursor startPoint
 
     /// Paste clipboard
     member x.Paste () =

@@ -311,11 +311,7 @@ type TextChange =
         // progress could be made by reducing the specified values.  If further progress can be made
         // keep it else keep at least the progress already made
         let tryReduceAgain left right = 
-            let value = 
-                match TextChange.ReduceCore left right with
-                | None -> Combination (left, right) 
-                | Some reducedTextChange -> reducedTextChange
-            Some value 
+            Some (TextChange.CreateReduced left right)
 
         // Insert can only merge with a previous insert operation.  It can't 
         // merge with any deletes that came before it
@@ -2681,7 +2677,7 @@ type VisualCommand =
 type InsertCommand  =
 
     /// Backspace at the current caret position
-    | Back
+    | Back of SnapshotPoint
 
     /// Block edit of the specified TextChange value.  The int represents the number of 
     /// lines on which this block insert should take place
@@ -2710,7 +2706,7 @@ type InsertCommand  =
     | DeleteAllIndent
 
     /// Delete the word before the cursor
-    | DeleteWordBeforeCursor
+    | DeleteWordBeforeCursor of SnapshotPoint
 
     /// Direct insert of the specified char
     | DirectInsert of char
@@ -2749,7 +2745,7 @@ type InsertCommand  =
     | ShiftLineRight
 
     /// Delete non-blank characters before cursor on current line
-    | DeleteLineBeforeCursor
+    | DeleteLineBeforeCursor of SnapshotPoint
 
     /// Paste clipboard
     | Paste
@@ -2770,7 +2766,7 @@ type InsertCommand  =
     /// Convert this InsertCommand to a TextChange object
     member x.TextChange editorOptions = 
         match x with 
-        | InsertCommand.Back ->  Some (TextChange.DeleteLeft 1)
+        | InsertCommand.Back startPoint ->  Some (TextChange.DeleteLeft 1)
         | InsertCommand.BlockInsert _ -> None
         | InsertCommand.Combined (left, right) -> 
             match left.TextChange editorOptions, right.TextChange editorOptions with
@@ -2781,7 +2777,7 @@ type InsertCommand  =
         | InsertCommand.DeleteLeft count -> Some (TextChange.DeleteLeft count)
         | InsertCommand.DeleteRight count -> Some (TextChange.DeleteRight count)
         | InsertCommand.DeleteAllIndent -> None
-        | InsertCommand.DeleteWordBeforeCursor -> None
+        | InsertCommand.DeleteWordBeforeCursor startPoint -> None
         | InsertCommand.DirectInsert c -> Some (TextChange.Insert (c.ToString()))
         | InsertCommand.DirectReplace c -> Some (TextChange.Combination ((TextChange.DeleteRight 1), (TextChange.Insert (c.ToString()))))
         | InsertCommand.InsertCharacterAboveCaret -> None
@@ -2794,7 +2790,7 @@ type InsertCommand  =
         | InsertCommand.MoveCaretByWord _ -> None
         | InsertCommand.ShiftLineLeft -> None
         | InsertCommand.ShiftLineRight -> None
-        | InsertCommand.DeleteLineBeforeCursor -> None
+        | InsertCommand.DeleteLineBeforeCursor startPoint -> None
         | InsertCommand.Paste -> None
 
 /// Commands which can be executed by the user

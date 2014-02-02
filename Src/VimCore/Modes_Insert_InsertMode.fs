@@ -225,7 +225,6 @@ type internal InsertMode
     /// The set of commands supported by insert mode
     static let s_commands : (string * InsertCommand * CommandFlags) list =
         [
-            ("<BS>", InsertCommand.Back, CommandFlags.Repeatable ||| CommandFlags.InsertEdit)
             ("<Del>", InsertCommand.Delete, CommandFlags.Repeatable ||| CommandFlags.InsertEdit)
             ("<Enter>", InsertCommand.InsertNewLine, CommandFlags.Repeatable ||| CommandFlags.InsertEdit)
             ("<Left>", InsertCommand.MoveCaretWithArrow Direction.Left, CommandFlags.Movement)
@@ -233,14 +232,12 @@ type internal InsertMode
             ("<Right>", InsertCommand.MoveCaretWithArrow Direction.Right, CommandFlags.Movement)
             ("<Tab>", InsertCommand.InsertTab, CommandFlags.Repeatable ||| CommandFlags.InsertEdit)
             ("<Up>", InsertCommand.MoveCaret Direction.Up, CommandFlags.Movement)
-            ("<C-h>", InsertCommand.Back, CommandFlags.Repeatable ||| CommandFlags.InsertEdit)
             ("<C-i>", InsertCommand.InsertTab, CommandFlags.Repeatable ||| CommandFlags.InsertEdit)
             ("<C-d>", InsertCommand.ShiftLineLeft, CommandFlags.Repeatable)
             ("<C-e>", InsertCommand.InsertCharacterBelowCaret, CommandFlags.Repeatable)
             ("<C-m>", InsertCommand.InsertNewLine, CommandFlags.Repeatable ||| CommandFlags.InsertEdit)
             ("<C-t>", InsertCommand.ShiftLineRight, CommandFlags.Repeatable)
             ("<C-y>", InsertCommand.InsertCharacterAboveCaret, CommandFlags.Repeatable)
-            ("<C-w>", InsertCommand.DeleteWordBeforeCursor, CommandFlags.Repeatable ||| CommandFlags.InsertEdit)
             ("<C-v>", InsertCommand.Paste, CommandFlags.Repeatable ||| CommandFlags.InsertEdit)
             ("<C-Left>", InsertCommand.MoveCaretByWord Direction.Left, CommandFlags.Movement)
             ("<C-Right>", InsertCommand.MoveCaretByWord Direction.Right, CommandFlags.Movement)
@@ -278,7 +275,10 @@ type internal InsertMode
                 ("<C-o>", RawInsertCommand.CustomCommand this.ProcessNormalModeOneCommand)
                 ("<C-p>", RawInsertCommand.CustomCommand this.ProcessWordCompletionPrevious)
                 ("<C-r>", RawInsertCommand.CustomCommand this.ProcessPasteStart)
-                ("<C-u>", RawInsertCommand.CustomCommand this.UndoInsert)
+                ("<BS>", RawInsertCommand.CustomCommand (this.RunWithStartPoint InsertCommand.Back))
+                ("<C-h>", RawInsertCommand.CustomCommand (this.RunWithStartPoint InsertCommand.Back))
+                ("<C-w>", RawInsertCommand.CustomCommand (this.RunWithStartPoint InsertCommand.DeleteWordBeforeCursor))
+                ("<C-u>", RawInsertCommand.CustomCommand (this.RunWithStartPoint InsertCommand.DeleteLineBeforeCursor))
             ]
 
         let noSelectionCommands : (string * InsertCommand * CommandFlags) list =
@@ -611,32 +611,35 @@ type internal InsertMode
             finally
                 _textChangeTracker.TrackCurrentChange <- true
 
-        x.OnAfterRunInsertCommand command
+        match result with
+        | CommandResult.Completed _ ->
+            x.OnAfterRunInsertCommand command
 
-        // Now we need to decided how the external world sees this edit.  If it links with an
-        // existing edit then we save it and send it out as a batch later.
-        let isEdit = Util.IsFlagSet commandFlags CommandFlags.InsertEdit
-        if isEdit then
+            // Now we need to decided how the external world sees this edit.  If it links with an
+            // existing edit then we save it and send it out as a batch later.
+            let isEdit = Util.IsFlagSet commandFlags CommandFlags.InsertEdit
+            if isEdit then
 
-            // If it's an edit then combine it with the existing command and batch them 
-            // together.  Don't raise the event yet
-            let command = 
-                match _sessionData.CombinedEditCommand with
-                | None -> command
-                | Some previousCommand -> InsertCommand.Combined (previousCommand, command)
-            _sessionData <- { _sessionData with CombinedEditCommand = Some command }
+                // If it's an edit then combine it with the existing command and batch them 
+                // together.  Don't raise the event yet
+                let command = 
+                    match _sessionData.CombinedEditCommand with
+                    | None -> command
+                    | Some previousCommand -> InsertCommand.Combined (previousCommand, command)
+                _sessionData <- { _sessionData with CombinedEditCommand = Some command }
 
-        else
-            // Not an edit command.  If there is an existing edit command then go ahead and flush
-            // it out before raising this command
-            x.CompleteCombinedEditCommand()
+            else
+                // Not an edit command.  If there is an existing edit command then go ahead and flush
+                // it out before raising this command
+                x.CompleteCombinedEditCommand()
 
-            let data = {
-                CommandBinding = CommandBinding.InsertBinding (keyInputSet, commandFlags, command)
-                Command = Command.InsertCommand command
-                CommandResult = result }
-            let args = CommandRunDataEventArgs(data)
-            _commandRanEvent.Trigger x args
+                let data = {
+                    CommandBinding = CommandBinding.InsertBinding (keyInputSet, commandFlags, command)
+                    Command = Command.InsertCommand command
+                    CommandResult = result }
+                let args = CommandRunDataEventArgs(data)
+                _commandRanEvent.Trigger x args
+        | _ -> ()
 
         ProcessResult.OfCommandResult result
 
@@ -677,51 +680,22 @@ type internal InsertMode
                 let insertCommand = InsertCommand.InsertText text
                 x.RunInsertCommand insertCommand keyInputSet CommandFlags.None
 
-    /// Undo from insert mode
-    ///
-    /// This operation is somewhat complex in that it starts by undoing
-    /// recently entered text and optionally continues "undoing"
-    /// by deleting to the beginning of the line and then optionally
-    /// even deleting back to the end of previous lines
-    member x.UndoInsert keyInput =
-
-        let deleteLineBeforeCursor () =
-            let keyInputSet = KeyInputSet.OneKeyInput keyInput
-            let insertCommand = InsertCommand.DeleteLineBeforeCursor
-            x.RunInsertCommand insertCommand keyInputSet CommandFlags.None
-
-        let undoTextInsertion (text : String) =
-            if text.Contains("\n") then
-                deleteLineBeforeCursor ()
-            else
-                try 
-                    _textChangeTracker.TrackCurrentChange <- false
-                    let count = String.length text
-                    _insertUtil.RunInsertCommand (InsertCommand.DeleteLeft count) |> ignore
-                    _sessionData <- {
-                        _sessionData with
-                            InsertTextChange = None
-                            CombinedEditCommand = None
-                    }
-                finally 
-                    _textChangeTracker.TrackCurrentChange <- true
-                ProcessResult.Handled ModeSwitch.NoSwitch
-
-        let insertText =
+    /// Run an insert command that takes a start point
+    member x.RunWithStartPoint insertCommandFunction keyInput =
+        let startPoint =
             match _sessionData.InsertTextChange with
             | None ->
-                None
+                x.CaretPoint
             | Some textChange ->
-                textChange.InsertText
-        match insertText with
-        | None ->
-            if _globalSettings.IsBackspaceStart then
-                deleteLineBeforeCursor ()
-            else
-                _operations.Beep()
-                ProcessResult.Handled ModeSwitch.NoSwitch
-        | Some text ->
-            undoTextInsertion text
+                match textChange.InsertText with
+                | None ->
+                    x.CaretPoint
+                | Some text ->
+                    SnapshotPointUtil.Add (-text.Length) x.CaretPoint
+        let keyInputSet = KeyInputSet.OneKeyInput keyInput
+        let insertCommand = insertCommandFunction startPoint
+        let flags = CommandFlags.Repeatable ||| CommandFlags.InsertEdit
+        x.RunInsertCommand insertCommand keyInputSet flags
 
     /// Try and process the KeyInput by considering the current text edit in Insert Mode
     member x.ProcessWithCurrentChange keyInput = 

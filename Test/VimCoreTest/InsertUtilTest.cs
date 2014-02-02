@@ -176,7 +176,7 @@ namespace Vim.UnitTest
                 Create("dog bear cat");
                 _globalSettings.Backspace = "start";
                 _textView.MoveCaretTo(9);
-                _insertUtilRaw.DeleteWordBeforeCursor();
+                _insertUtilRaw.DeleteWordBeforeCursor(_textView.GetStartPoint());
                 Assert.Equal("dog cat", _textView.GetLine(0).GetText());
                 Assert.Equal(4, _textView.GetCaretPoint().Position);
             }
@@ -190,7 +190,7 @@ namespace Vim.UnitTest
                 Create("dog bear cat");
                 _globalSettings.Backspace = "start";
                 _textView.MoveCaretTo(10);
-                _insertUtilRaw.DeleteWordBeforeCursor();
+                _insertUtilRaw.DeleteWordBeforeCursor(_textView.GetStartPoint());
                 Assert.Equal("dog bear at", _textView.GetLine(0).GetText());
                 Assert.Equal(9, _textView.GetCaretPoint().Position);
             }
@@ -204,7 +204,7 @@ namespace Vim.UnitTest
                 Create("   dog cat");
                 _globalSettings.Backspace = "start";
                 _textView.MoveCaretTo(3);
-                _insertUtilRaw.DeleteWordBeforeCursor();
+                _insertUtilRaw.DeleteWordBeforeCursor(_textView.GetStartPoint());
                 Assert.Equal("dog cat", _textView.GetLine(0).GetText());
                 Assert.Equal(0, _textView.GetCaretPoint().Position);
             }
@@ -218,7 +218,7 @@ namespace Vim.UnitTest
                 Create("dog", "cat");
                 _globalSettings.Backspace = "start";
                 _textView.MoveCaretToLine(1);
-                _insertUtilRaw.DeleteWordBeforeCursor();
+                _insertUtilRaw.DeleteWordBeforeCursor(_textView.GetStartPoint());
                 Assert.Equal("dog", _textView.GetLine(0).GetText());
                 Assert.Equal("cat", _textView.GetLine(1).GetText());
             }
@@ -232,7 +232,7 @@ namespace Vim.UnitTest
                 Create("dog", "cat");
                 _globalSettings.Backspace = "start,eol";
                 _textView.MoveCaretToLine(1);
-                _insertUtilRaw.DeleteWordBeforeCursor();
+                _insertUtilRaw.DeleteWordBeforeCursor(_textView.GetStartPoint());
                 Assert.Equal("dogcat", _textView.GetLine(0).GetText());
                 Assert.Equal(3, _textView.GetCaretPoint().Position);
             }
@@ -249,7 +249,7 @@ namespace Vim.UnitTest
                 Create("dog bear cat");
                 _globalSettings.Backspace = "start";
                 _textView.MoveCaretTo(12);
-                _insertUtilRaw.DeleteLineBeforeCursor();
+                _insertUtilRaw.DeleteLineBeforeCursor(_textView.GetStartPoint());
                 Assert.Equal("", _textView.GetLine(0).GetText());
                 Assert.Equal(0, _textView.GetCaretPoint().Position);
             }
@@ -263,7 +263,7 @@ namespace Vim.UnitTest
                 Create("dog bear cat");
                 _globalSettings.Backspace = "start";
                 _textView.MoveCaretTo(4);
-                _insertUtilRaw.DeleteLineBeforeCursor();
+                _insertUtilRaw.DeleteLineBeforeCursor(_textView.GetStartPoint());
                 Assert.Equal("bear cat", _textView.GetLine(0).GetText());
                 Assert.Equal(0, _textView.GetCaretPoint().Position);
             }
@@ -277,7 +277,7 @@ namespace Vim.UnitTest
                 Create("   dog cat");
                 _globalSettings.Backspace = "start";
                 _textView.MoveCaretTo(3);
-                _insertUtilRaw.DeleteLineBeforeCursor();
+                _insertUtilRaw.DeleteLineBeforeCursor(_textView.GetStartPoint());
                 Assert.Equal("dog cat", _textView.GetLine(0).GetText());
                 Assert.Equal(0, _textView.GetCaretPoint().Position);
             }
@@ -291,7 +291,7 @@ namespace Vim.UnitTest
                 Create("dog", "cat");
                 _globalSettings.Backspace = "start";
                 _textView.MoveCaretToLine(1);
-                _insertUtilRaw.DeleteLineBeforeCursor();
+                _insertUtilRaw.DeleteLineBeforeCursor(_textView.GetStartPoint());
                 Assert.Equal("dog", _textView.GetLine(0).GetText());
                 Assert.Equal("cat", _textView.GetLine(1).GetText());
             }
@@ -305,7 +305,7 @@ namespace Vim.UnitTest
                 Create("dog", "cat");
                 _globalSettings.Backspace = "start,eol";
                 _textView.MoveCaretToLine(1);
-                _insertUtilRaw.DeleteLineBeforeCursor();
+                _insertUtilRaw.DeleteLineBeforeCursor(_textView.GetStartPoint());
                 Assert.Equal("dogcat", _textView.GetLine(0).GetText());
                 Assert.Equal(3, _textView.GetCaretPoint().Position);
             }
