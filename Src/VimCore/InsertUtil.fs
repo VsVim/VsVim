@@ -9,6 +9,7 @@ open Microsoft.VisualStudio.Text.Outlining
 type internal InsertUtil
     (
         _vimBufferData : IVimBufferData,
+        _motionUtil : IMotionUtil,
         _operations : ICommonOperations
     ) =
 
@@ -446,38 +447,38 @@ type internal InsertUtil
             _operations.Beep()
             CommandResult.Error
 
+    /// Move the card by word in the specified direction
     member x.MoveCaretByWord direction = 
-        let moveLeft () = 
-            if x.CaretPoint.Position > x.CaretLine.Start.Position then
-                let point = 
-                    let defaultIfNotFound = SnapshotUtil.GetStartPoint x.CurrentSnapshot
-                    _wordUtil.GetWords WordKind.NormalWord Path.Backward x.CaretPoint
-                    |> Seq.map SnapshotSpanUtil.GetStartPoint
-                    |> SeqUtil.headOrDefault defaultIfNotFound
-                _operations.MoveCaretToPoint point ViewFlags.Standard
-                CommandResult.Completed ModeSwitch.NoSwitch
-            else
-                _operations.Beep()
-                CommandResult.Error
 
-        let moveRight () = 
-            if x.CaretPoint.Position < x.CaretLine.End.Position then
-                let point = 
-                    let defaultIfNotFound = SnapshotUtil.GetStartPoint x.CurrentSnapshot
-                    _wordUtil.GetWords WordKind.NormalWord Path.Forward x.CaretPoint
-                    |> Seq.skip 1
-                    |> Seq.map SnapshotSpanUtil.GetStartPoint
-                    |> SeqUtil.headOrDefault defaultIfNotFound
-                _operations.MoveCaretToPoint point ViewFlags.Standard
-                CommandResult.Completed ModeSwitch.NoSwitch
-            else
-                _operations.Beep()
-                CommandResult.Error
+        // Note: This could be simplified somewhat if we were to use
+        // ICommonOperations.MoveCaretToMotionResult but then the final
+        // caret position would depend on the current mode and we would
+        // rather InsertUtil not be affected by the current mode.
+        let doMotion wordMotion spanPoint =
+            let argument = { MotionContext = MotionContext.Movement; OperatorCount = None; MotionCount = None }
+            match _motionUtil.GetMotion (wordMotion WordKind.NormalWord) argument with
+            | Some motionResult ->
+                let point = spanPoint motionResult.Span
+                let viewFlags = ViewFlags.All &&& ~~~ViewFlags.VirtualEdit
+                _operations.MoveCaretToPoint point viewFlags
+                true
+            | None ->
+                false
 
-        match direction with
-        | Direction.Left -> moveLeft()
-        | Direction.Right -> moveRight()
-        | _ -> CommandResult.Error
+        let success =
+            match direction with
+            | Direction.Left ->
+                doMotion Motion.WordBackward (fun span -> span.Start)
+            | Direction.Right ->
+                doMotion Motion.WordForward (fun span -> span.End)
+            | _ ->
+                false
+
+        if success then
+            CommandResult.Completed ModeSwitch.NoSwitch
+        else
+            _operations.Beep()
+            CommandResult.Error
 
     /// Repeat the given edit InsertCommand.  This is used at the exit of insert mode to
     /// apply the edits again and again

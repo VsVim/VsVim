@@ -65,7 +65,7 @@ namespace Vim.UnitTest
                 _motionUtil,
                 operations,
                 foldManager,
-                new InsertUtil(vimBufferData, operations),
+                new InsertUtil(vimBufferData, _motionUtil, operations),
                 _bulkOperations,
                 MouseDevice);
 

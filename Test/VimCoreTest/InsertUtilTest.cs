@@ -33,7 +33,8 @@ namespace Vim.UnitTest
             _localSettings = _vimBuffer.LocalSettings;
 
             var operations = CommonOperationsFactory.GetCommonOperations(_vimBuffer.VimBufferData);
-            _insertUtilRaw = new InsertUtil(_vimBuffer.VimBufferData, operations);
+            var motionUtil = new MotionUtil(_vimBuffer.VimBufferData, operations);
+            _insertUtilRaw = new InsertUtil(_vimBuffer.VimBufferData, motionUtil, operations);
             _insertUtil = _insertUtilRaw;
         }
 
@@ -550,7 +551,7 @@ namespace Vim.UnitTest
 
                 _insertUtilRaw.MoveCaretByWord(Direction.Right);
 
-                Assert.Equal(3, _textView.GetCaretPoint().Position);
+                Assert.Equal(2, _textView.GetCaretPoint().Position);
             }
 
             /// <summary>
