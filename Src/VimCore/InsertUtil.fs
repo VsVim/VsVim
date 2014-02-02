@@ -216,7 +216,8 @@ type internal InsertUtil
             point
 
     /// Delete the character before the cursor
-    member x.Back startPoint =
+    member x.Back startOffset =
+        let startPoint = SnapshotPointUtil.Add startOffset x.CaretPoint
         if not (x.CanDeleteBeforeCursor startPoint) then
             _operations.Beep()
             CommandResult.Error
@@ -288,7 +289,8 @@ type internal InsertUtil
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Delete the word before the cursor
-    member x.DeleteWordBeforeCursor startPoint =
+    member x.DeleteWordBeforeCursor startOffset =
+        let startPoint = SnapshotPointUtil.Add startOffset x.CaretPoint
 
         // Called when the caret is positioned at the start of the line.  The line break 
         // should be deleted and the caret positioned at the end of the previous line
@@ -552,7 +554,7 @@ type internal InsertUtil
             CommandResult.Completed ModeSwitch.NoSwitch
         else
             match command with
-            | InsertCommand.Back startPoint -> x.Back startPoint
+            | InsertCommand.Back startOffset -> x.Back startOffset
             | InsertCommand.BlockInsert (text, count) -> x.BlockInsert text count
             | InsertCommand.Combined (left, right) -> x.Combined left right
             | InsertCommand.CompleteMode moveCaretLeft -> x.CompleteMode moveCaretLeft
@@ -560,7 +562,7 @@ type internal InsertUtil
             | InsertCommand.DeleteLeft count -> x.DeleteLeft count
             | InsertCommand.DeleteRight count -> x.DeleteRight count
             | InsertCommand.DeleteAllIndent -> x.DeleteAllIndent() 
-            | InsertCommand.DeleteWordBeforeCursor startPoint -> x.DeleteWordBeforeCursor startPoint
+            | InsertCommand.DeleteWordBeforeCursor startOffset -> x.DeleteWordBeforeCursor startOffset
             | InsertCommand.DirectInsert c -> x.DirectInsert c
             | InsertCommand.DirectReplace c -> x.DirectReplace c
             | InsertCommand.InsertCharacterAboveCaret -> x.InsertCharacterAboveCaret()
@@ -573,7 +575,7 @@ type internal InsertUtil
             | InsertCommand.MoveCaretByWord direction -> x.MoveCaretByWord direction
             | InsertCommand.ShiftLineLeft -> x.ShiftLineLeft ()
             | InsertCommand.ShiftLineRight -> x.ShiftLineRight ()
-            | InsertCommand.DeleteLineBeforeCursor startPoint -> x.DeleteLineBeforeCursor startPoint
+            | InsertCommand.DeleteLineBeforeCursor startOffset -> x.DeleteLineBeforeCursor startOffset
             | InsertCommand.Paste -> x.Paste()
 
     member x.RunInsertCommand command = 
@@ -628,7 +630,8 @@ type internal InsertUtil
         x.ShiftLine 1
 
     /// Delete the line before the cursor
-    member x.DeleteLineBeforeCursor startPoint =
+    member x.DeleteLineBeforeCursor startOffset =
+        let startPoint = SnapshotPointUtil.Add startOffset x.CaretPoint
         if not (x.CanDeleteBeforeCursor startPoint) then
             _operations.Beep()
             CommandResult.Error
@@ -642,7 +645,7 @@ type internal InsertUtil
                     TextViewUtil.MoveCaretToPosition _textView span.Start.Position)
                 CommandResult.Completed ModeSwitch.NoSwitch
             else
-                x.DeleteWordBeforeCursor startPoint
+                x.DeleteWordBeforeCursor startOffset
 
     /// Paste clipboard
     member x.Paste () =

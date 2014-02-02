@@ -275,10 +275,10 @@ type internal InsertMode
                 ("<C-o>", RawInsertCommand.CustomCommand this.ProcessNormalModeOneCommand)
                 ("<C-p>", RawInsertCommand.CustomCommand this.ProcessWordCompletionPrevious)
                 ("<C-r>", RawInsertCommand.CustomCommand this.ProcessPasteStart)
-                ("<BS>", RawInsertCommand.CustomCommand (this.RunWithStartPoint InsertCommand.Back))
-                ("<C-h>", RawInsertCommand.CustomCommand (this.RunWithStartPoint InsertCommand.Back))
-                ("<C-w>", RawInsertCommand.CustomCommand (this.RunWithStartPoint InsertCommand.DeleteWordBeforeCursor))
-                ("<C-u>", RawInsertCommand.CustomCommand (this.RunWithStartPoint InsertCommand.DeleteLineBeforeCursor))
+                ("<BS>", RawInsertCommand.CustomCommand (this.RunWithStartOffset InsertCommand.Back))
+                ("<C-h>", RawInsertCommand.CustomCommand (this.RunWithStartOffset InsertCommand.Back))
+                ("<C-w>", RawInsertCommand.CustomCommand (this.RunWithStartOffset InsertCommand.DeleteWordBeforeCursor))
+                ("<C-u>", RawInsertCommand.CustomCommand (this.RunWithStartOffset InsertCommand.DeleteLineBeforeCursor))
             ]
 
         let noSelectionCommands : (string * InsertCommand * CommandFlags) list =
@@ -680,20 +680,20 @@ type internal InsertMode
                 let insertCommand = InsertCommand.InsertText text
                 x.RunInsertCommand insertCommand keyInputSet CommandFlags.None
 
-    /// Run an insert command that takes a start point
-    member x.RunWithStartPoint insertCommandFunction keyInput =
-        let startPoint =
+    /// Run an insert command that takes a starting offset
+    member x.RunWithStartOffset insertCommandFunction keyInput =
+        let startOffset =
             match _sessionData.InsertTextChange with
             | None ->
-                x.CaretPoint
+                0
             | Some textChange ->
                 match textChange.InsertText with
                 | None ->
-                    x.CaretPoint
+                    0
                 | Some text ->
-                    SnapshotPointUtil.Add (-text.Length) x.CaretPoint
+                    -text.Length
         let keyInputSet = KeyInputSet.OneKeyInput keyInput
-        let insertCommand = insertCommandFunction startPoint
+        let insertCommand = insertCommandFunction startOffset
         let flags = CommandFlags.Repeatable ||| CommandFlags.InsertEdit
         x.RunInsertCommand insertCommand keyInputSet flags
 
