@@ -202,7 +202,7 @@ namespace Vim.UnitTest
             public void DeleteWordBeforeCursor_BeforeFirstWord()
             {
                 Create("   dog cat");
-                _globalSettings.Backspace = "start";
+                _globalSettings.Backspace = "start,indent";
                 _textView.MoveCaretTo(3);
                 _insertUtilRaw.DeleteWordBeforeCursor(_textView.GetStartPoint());
                 Assert.Equal("dog cat", _textView.GetLine(0).GetText());
@@ -275,7 +275,7 @@ namespace Vim.UnitTest
             public void DeleteLineBeforeCursor_BeforeFirstNonBlank()
             {
                 Create("   dog cat");
-                _globalSettings.Backspace = "start";
+                _globalSettings.Backspace = "start,indent";
                 _textView.MoveCaretTo(3);
                 _insertUtilRaw.DeleteLineBeforeCursor(_textView.GetStartPoint());
                 Assert.Equal("dog cat", _textView.GetLine(0).GetText());

@@ -781,6 +781,7 @@ namespace Vim.UnitTest
             public void Delete_WithShift()
             {
                 Create("cat dog");
+                _globalSettings.Backspace = "start";
                 _textView.MoveCaretTo(1);
                 _vimBuffer.ProcessNotation("<S-BS>");
                 Assert.Equal("at dog", _textBuffer.GetLine(0).GetText());
@@ -920,6 +921,7 @@ namespace Vim.UnitTest
             public void Repeat_Backspace_Single()
             {
                 Create("dog toy", "fish chips");
+                _globalSettings.Backspace = "start";
                 _textView.MoveCaretToLine(1, 5);
                 _vimBuffer.Process(VimKey.Back, VimKey.Escape);
                 Assert.Equal("fishchips", _textView.GetLine(1).GetText());

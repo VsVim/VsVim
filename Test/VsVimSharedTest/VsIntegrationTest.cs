@@ -346,6 +346,7 @@ namespace VsVim.UnitTest
                 public void Repeat()
                 {
                     Create("dog toy", "fish chips");
+                    _vimBuffer.GlobalSettings.Backspace = "start";
                     _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
                     _textView.MoveCaretToLine(1, 5);
                     _vsSimulation.Run(VimKey.Back, VimKey.Escape);

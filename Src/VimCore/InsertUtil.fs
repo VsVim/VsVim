@@ -210,7 +210,10 @@ type internal InsertUtil
     /// Adjust beginning of text deletion obeying 'backspace' settings
     member x.AdjustForStartPoint (point : SnapshotPoint) (startPoint : SnapshotPoint) =
         let startPosition = startPoint.Position
-        if startPosition < x.CaretPoint.Position && startPosition > point.Position then startPoint else point
+        if startPosition < x.CaretPoint.Position && startPosition > point.Position then
+            startPoint
+        else
+            point
 
     /// Delete the character before the cursor
     member x.Back startPoint =

@@ -456,7 +456,7 @@ namespace Vim.UnitTest
                 Create(insertMode: true, lines: "");
                 _textView.SetText("hello world");
                 _globalSettings.Backspace = "start";
-                _insertUtil.Setup(x => x.RunInsertCommand(InsertCommand.NewDeleteLineBeforeCursor(_textView.GetStartPoint()))).Returns(CommandResult.NewCompleted(ModeSwitch.NoSwitch)).Verifiable();
+                _insertUtil.Setup(x => x.RunInsertCommand(It.IsAny<InsertCommand>())).Returns(CommandResult.NewCompleted(ModeSwitch.NoSwitch)).Verifiable();
                 _mode.Process(KeyNotationUtil.StringToKeyInput("<C-U>"));
                 _factory.Verify();
             }
