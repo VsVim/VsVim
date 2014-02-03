@@ -580,8 +580,9 @@ type internal InsertUtil
             CommandResult.Error
         else
             let span = new SnapshotSpan(point, x.CaretPoint)
-            _textBuffer.Delete(span.Span) |> ignore
-            TextViewUtil.MoveCaretToPosition _textView span.Start.Position
+            x.EditWithUndoTransaction "Insert Character Above" (fun () ->
+                _textBuffer.Delete(span.Span) |> ignore
+                TextViewUtil.MoveCaretToPosition _textView span.Start.Position)
             CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Get the backspacing point for an insert command

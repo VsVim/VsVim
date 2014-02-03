@@ -664,6 +664,58 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
+            /// Make sure backspace over char at indent without 'backspace=indent' works
+            /// </summary>
+            [Fact]
+            public void BackspaceOverChar_NoIndent()
+            {
+                Create("    dog");
+                _globalSettings.Backspace = "start";
+                _textView.MoveCaretTo(4);
+                _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<BS>"));
+                Assert.Equal("    dog", _textBuffer.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// Make sure backspace over char at indent with 'backspace=indent' works
+            /// </summary>
+            [Fact]
+            public void BackspaceOverChar_Indent()
+            {
+                Create("    dog");
+                _globalSettings.Backspace = "start,indent";
+                _textView.MoveCaretTo(4);
+                _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<BS>"));
+                Assert.Equal("   dog", _textBuffer.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// Make sure backspace over char at beginning of line without 'backspace=eol' works
+            /// </summary>
+            [Fact]
+            public void BackspaceOverChar_NoEol()
+            {
+                Create("cat", "dog");
+                _globalSettings.Backspace = "start,indent";
+                _textView.MoveCaretTo(5);
+                _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<BS>"));
+                Assert.Equal("cat", _textBuffer.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// Make sure backspace over char at beginning of line with 'backspace=eol' works
+            /// </summary>
+            [Fact]
+            public void BackspaceOverChar_Eol()
+            {
+                Create("cat", "dog");
+                _globalSettings.Backspace = "start,indent,eol";
+                _textView.MoveCaretTo(5);
+                _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<BS>"));
+                Assert.Equal("catdog", _textBuffer.GetLine(0).GetText());
+            }
+
+            /// <summary>
             /// Make sure line backspacing starting from an empty line works
             /// </summary>
             [Fact]

@@ -620,9 +620,9 @@ type internal InsertMode
             let isEdit = Util.IsFlagSet commandFlags CommandFlags.InsertEdit
             if isEdit then
 
-                // If it's an edit then combine it with the existing command and batch them 
+                // If it's an edit then combine it with the existing command and batch them
                 // together.  Don't raise the event yet
-                let command = 
+                let command =
                     match _sessionData.CombinedEditCommand with
                     | None -> command
                     | Some previousCommand -> InsertCommand.Combined (previousCommand, command)
@@ -696,7 +696,7 @@ type internal InsertMode
         let point = _insertUtil.GetBackspacingPoint command
 
         // The start position is always an intermediate point for any
-        // backspacing command.  
+        // backspacing command.
         let point =
             if point.Position < startPoint.Position && startPoint.Position < x.CaretPoint.Position then
                 startPoint
