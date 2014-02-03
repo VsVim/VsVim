@@ -275,10 +275,10 @@ type internal InsertMode
                 ("<C-o>", RawInsertCommand.CustomCommand this.ProcessNormalModeOneCommand)
                 ("<C-p>", RawInsertCommand.CustomCommand this.ProcessWordCompletionPrevious)
                 ("<C-r>", RawInsertCommand.CustomCommand this.ProcessPasteStart)
-                ("<BS>", RawInsertCommand.CustomCommand (this.RunWithStartOffset InsertCommand.Back))
-                ("<C-h>", RawInsertCommand.CustomCommand (this.RunWithStartOffset InsertCommand.Back))
-                ("<C-w>", RawInsertCommand.CustomCommand (this.RunWithStartOffset InsertCommand.DeleteWordBeforeCursor))
-                ("<C-u>", RawInsertCommand.CustomCommand (this.RunWithStartOffset InsertCommand.DeleteLineBeforeCursor))
+                ("<BS>", RawInsertCommand.CustomCommand (this.RunBackspacingCommand InsertCommand.Back))
+                ("<C-h>", RawInsertCommand.CustomCommand (this.RunBackspacingCommand InsertCommand.Back))
+                ("<C-w>", RawInsertCommand.CustomCommand (this.RunBackspacingCommand InsertCommand.DeleteWordBeforeCursor))
+                ("<C-u>", RawInsertCommand.CustomCommand (this.RunBackspacingCommand InsertCommand.DeleteLineBeforeCursor))
             ]
 
         let noSelectionCommands : (string * InsertCommand * CommandFlags) list =
@@ -680,22 +680,60 @@ type internal InsertMode
                 let insertCommand = InsertCommand.InsertText text
                 x.RunInsertCommand insertCommand keyInputSet CommandFlags.None
 
-    /// Run an insert command that takes a starting offset
-    member x.RunWithStartOffset insertCommandFunction keyInput =
-        let startOffset =
+    /// Run an insert command that backspaces over recent input
+    ///
+    /// Here we enforce the 'backspace=start' setting and also ensure
+    /// that commands within the current edit don't interrupt it.
+    /// That means that a context-dependent command like DeleteWordBeforeCursor
+    /// will be converted into the corresponding context-independent DeleteLeft
+    /// command.
+    member x.RunBackspacingCommand command keyInput =
+
+        // Find the point that represents the starting point of the the current edit
+        let startPoint =
             match _sessionData.InsertTextChange with
             | None ->
-                0
+                x.CaretPoint
             | Some textChange ->
                 match textChange.InsertText with
                 | None ->
-                    0
+                    x.CaretPoint
                 | Some text ->
-                    -text.Length
-        let keyInputSet = KeyInputSet.OneKeyInput keyInput
-        let insertCommand = insertCommandFunction startOffset
-        let flags = CommandFlags.Repeatable ||| CommandFlags.InsertEdit
-        x.RunInsertCommand insertCommand keyInputSet flags
+                    SnapshotPointUtil.Add (-text.Length) x.CaretPoint
+
+        // Ask the insert utils how far it would backspace to for this command
+        let point = _insertUtil.GetBackspacingPoint command
+
+        // The start position is always an intermediate point for any
+        // backspacing command.  
+        let point =
+            if point.Position < startPoint.Position && startPoint.Position < x.CaretPoint.Position then
+                startPoint
+            else
+                point
+
+        // Enforce 'backspace=start'
+        let point =
+            if not _globalSettings.IsBackspaceStart && point.Position < startPoint.Position then
+                startPoint
+            else
+                point
+
+        // If there is nothing to backspace over, it's an error
+        // If the point is within the current edit, convert it to a DeleteLeft command
+        // Otherwise process the command as is
+        if point.Position = x.CaretPoint.Position then
+            _operations.Beep()
+            ProcessResult.Error
+        else
+            let keyInputSet = KeyInputSet.OneKeyInput keyInput
+            let flags = CommandFlags.Repeatable ||| CommandFlags.InsertEdit
+            let command =
+                if point.Position >= startPoint.Position then
+                    InsertCommand.DeleteLeft (x.CaretPoint.Position - point.Position)
+                else
+                    command
+            x.RunInsertCommand command keyInputSet flags
 
     /// Try and process the KeyInput by considering the current text edit in Insert Mode
     member x.ProcessWithCurrentChange keyInput = 
@@ -831,7 +869,7 @@ type internal InsertMode
 
     member x.OnAfterRunInsertCommand (insertCommand : InsertCommand) =
 
-        let commandTextChange = insertCommand.TextChange _editorOptions
+        let commandTextChange = insertCommand.TextChange
 
         let insertTextChange = 
             match _sessionData.InsertTextChange, commandTextChange with

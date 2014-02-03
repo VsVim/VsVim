@@ -2190,7 +2190,7 @@ type CommandResult =
 
     /// The command completed and requested a switch to the provided Mode which 
     /// may just be a no-op
-    | Completed  of ModeSwitch
+    | Completed of ModeSwitch
 
     /// An error was encountered and the command was unable to run.  If this is encountered
     /// during a macro run it will cause the macro to stop executing
@@ -2677,7 +2677,7 @@ type VisualCommand =
 type InsertCommand  =
 
     /// Backspace at the current caret position
-    | Back of int
+    | Back
 
     /// Block edit of the specified TextChange value.  The int represents the number of 
     /// lines on which this block insert should take place
@@ -2706,7 +2706,7 @@ type InsertCommand  =
     | DeleteAllIndent
 
     /// Delete the word before the cursor
-    | DeleteWordBeforeCursor of int
+    | DeleteWordBeforeCursor
 
     /// Direct insert of the specified char
     | DirectInsert of char
@@ -2745,7 +2745,7 @@ type InsertCommand  =
     | ShiftLineRight
 
     /// Delete non-blank characters before cursor on current line
-    | DeleteLineBeforeCursor of int
+    | DeleteLineBeforeCursor
 
     /// Paste clipboard
     | Paste
@@ -2764,12 +2764,12 @@ type InsertCommand  =
             InsertCommand.Combined (leftCommand, rightCommand)
 
     /// Convert this InsertCommand to a TextChange object
-    member x.TextChange editorOptions = 
-        match x with 
-        | InsertCommand.Back startOffset ->  Some (TextChange.DeleteLeft 1)
+    member x.TextChange =
+        match x with
+        | InsertCommand.Back ->  Some (TextChange.DeleteLeft 1)
         | InsertCommand.BlockInsert _ -> None
-        | InsertCommand.Combined (left, right) -> 
-            match left.TextChange editorOptions, right.TextChange editorOptions with
+        | InsertCommand.Combined (left, right) ->
+            match left.TextChange, right.TextChange with
             | Some l, Some r -> TextChange.Combination (l, r) |> Some
             | _ -> None
         | InsertCommand.CompleteMode _ -> None
@@ -2777,12 +2777,12 @@ type InsertCommand  =
         | InsertCommand.DeleteLeft count -> Some (TextChange.DeleteLeft count)
         | InsertCommand.DeleteRight count -> Some (TextChange.DeleteRight count)
         | InsertCommand.DeleteAllIndent -> None
-        | InsertCommand.DeleteWordBeforeCursor startOffset -> None
+        | InsertCommand.DeleteWordBeforeCursor -> None
         | InsertCommand.DirectInsert c -> Some (TextChange.Insert (c.ToString()))
         | InsertCommand.DirectReplace c -> Some (TextChange.Combination ((TextChange.DeleteRight 1), (TextChange.Insert (c.ToString()))))
         | InsertCommand.InsertCharacterAboveCaret -> None
         | InsertCommand.InsertCharacterBelowCaret -> None
-        | InsertCommand.InsertNewLine -> Some (TextChange.Insert (EditUtil.NewLine editorOptions))
+        | InsertCommand.InsertNewLine -> Some (TextChange.Insert "\n")
         | InsertCommand.InsertTab -> Some (TextChange.Insert "\t")
         | InsertCommand.InsertText text -> Some (TextChange.Insert text)
         | InsertCommand.MoveCaret _ -> None
@@ -2790,7 +2790,7 @@ type InsertCommand  =
         | InsertCommand.MoveCaretByWord _ -> None
         | InsertCommand.ShiftLineLeft -> None
         | InsertCommand.ShiftLineRight -> None
-        | InsertCommand.DeleteLineBeforeCursor startOffset -> None
+        | InsertCommand.DeleteLineBeforeCursor -> None
         | InsertCommand.Paste -> None
 
 /// Commands which can be executed by the user
@@ -3005,6 +3005,9 @@ and ICommandUtil =
     abstract RunCommand : command : Command -> CommandResult
 
 type internal IInsertUtil = 
+
+    /// Get the backspacing point for an insert command
+    abstract GetBackspacingPoint : InsertCommand -> SnapshotPoint
 
     /// Run a insert command
     abstract RunInsertCommand : InsertCommand -> CommandResult
