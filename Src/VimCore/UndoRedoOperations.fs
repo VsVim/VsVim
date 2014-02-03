@@ -149,6 +149,7 @@ and UndoRedoOperations
             let head, tail = 
                 match head with
                 | UndoRedoData.Normal c -> UndoRedoData.Normal (count + c), tail
+                | UndoRedoData.Linked 0 -> UndoRedoData.Normal count, tail
                 | UndoRedoData.Linked _ -> UndoRedoData.Normal count, list
             head :: tail 
 

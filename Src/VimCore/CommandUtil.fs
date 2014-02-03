@@ -1879,7 +1879,7 @@ type internal CommandUtil
         _macroRecorder.StopRecording()
         CommandResult.Completed ModeSwitch.NoSwitch
 
-    /// Undo count operations in the ITextBuffer
+    /// Redo count operations in the ITextBuffer
     member x.Redo count = 
         _commonOperations.Redo count
         CommandResult.Completed ModeSwitch.NoSwitch
