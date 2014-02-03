@@ -686,20 +686,11 @@ type internal InsertMode
     /// that commands within the current edit don't interrupt it.
     /// That means that a context-dependent command like DeleteWordBeforeCursor
     /// will be converted into the corresponding context-independent DeleteLeft
-    /// command.
+    /// command, which also makes the command repeat correctly
     member x.RunBackspacingCommand command keyInput =
 
-        // Find the point that represents the starting point of the the current edit
-        let startPoint =
-            match _sessionData.InsertTextChange with
-            | None ->
-                x.CaretPoint
-            | Some textChange ->
-                match textChange.InsertText with
-                | None ->
-                    x.CaretPoint
-                | Some text ->
-                    SnapshotPointUtil.Add (-text.Length) x.CaretPoint
+        // Get the point that 'backspace=start' allows backspacing over
+        let startPoint = x.StartPoint
 
         // Ask the insert utils how far it would backspace to for this command
         let point = _insertUtil.GetBackspacingPoint command
@@ -734,6 +725,18 @@ type internal InsertMode
                 else
                     command
             x.RunInsertCommand command keyInputSet flags
+
+    /// Find the point that represents the start of the the current edit
+    member x.StartPoint : SnapshotPoint =
+        match _sessionData.InsertTextChange with
+        | None ->
+            x.CaretPoint
+        | Some textChange ->
+            match textChange.InsertText with
+            | None ->
+                x.CaretPoint
+            | Some text ->
+                SnapshotPointUtil.Add (-text.Length) x.CaretPoint
 
     /// Try and process the KeyInput by considering the current text edit in Insert Mode
     member x.ProcessWithCurrentChange keyInput = 
@@ -861,11 +864,16 @@ type internal InsertMode
     /// '1' to 'Left' then we will misfire here.  Not a huge concern I think but we need
     /// to find a crisper solution here.
     member x.OnCaretPositionChanged () = 
-        if _mouse.IsLeftButtonPressed then 
+        let shouldBeNewEdit =
+            if _mouse.IsLeftButtonPressed then 
+                true
+            elif _vimBuffer.ModeKind = ModeKind.Insert then 
+                _keyboard.IsArrowKeyDown
+            else
+                false
+        if shouldBeNewEdit then
             _textChangeTracker.CompleteChange()
-        elif _vimBuffer.ModeKind = ModeKind.Insert then 
-            if _keyboard.IsArrowKeyDown then
-                _textChangeTracker.CompleteChange()
+            _sessionData <- { _sessionData with InsertTextChange = None }
 
     member x.OnAfterRunInsertCommand (insertCommand : InsertCommand) =
 
