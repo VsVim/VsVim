@@ -588,7 +588,8 @@ type internal InsertUtil
     /// Get the backspacing point for an insert command
     member x.GetBackspacingPoint command =
 
-        let canDeleteBeforeCursor =
+        // Whether we can backspace taking into account 'backspace=indent,eol' settings
+        let canBackspace =
             if x.CaretPoint = x.CaretLine.Start then
                 _globalSettings.IsBackspaceEol && x.CaretLineNumber <> 0
             elif not _globalSettings.IsBackspaceIndent then
@@ -597,7 +598,7 @@ type internal InsertUtil
             else
                 true
 
-        if not canDeleteBeforeCursor then
+        if not canBackspace then
             x.CaretPoint
         elif x.CaretPoint = x.CaretLine.Start then
             let previousLineNumber = x.CaretLineNumber - 1
@@ -614,9 +615,11 @@ type internal InsertUtil
             | _ ->
                 x.CaretPoint
 
+    /// The point we should backspace to in order to delete a character
     member x.BackspaceOverCharPoint =
         SnapshotPointUtil.SubtractOne x.CaretPoint
 
+    /// The point we should backspace to in order to delete a word
     member x.BackspaceOverWordPoint =
 
         // Jump past any blanks before the caret
@@ -630,6 +633,7 @@ type internal InsertUtil
         | None -> searchEndPoint
         | Some span -> span.Start
 
+    /// The point we should backspace to in order to delete a line
     member x.BackspaceOverLinePoint =
         let point = SnapshotLineUtil.GetFirstNonBlankOrEnd x.CaretLine
         if point.Position < x.CaretPoint.Position then
