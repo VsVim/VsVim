@@ -353,7 +353,7 @@ namespace Vim.UnitTest
             motionUtil = motionUtil ?? new MotionUtil(vimBufferData, operations);
             operations = operations ?? CommonOperationsFactory.GetCommonOperations(vimBufferData);
             foldManager = foldManager ?? VimUtil.CreateFoldManager(vimBufferData.TextView, vimBufferData.StatusUtil);
-            insertUtil = insertUtil ?? new InsertUtil(vimBufferData, operations);
+            insertUtil = insertUtil ?? new InsertUtil(vimBufferData, motionUtil, operations);
             return new CommandUtil(
                 vimBufferData,
                 motionUtil,

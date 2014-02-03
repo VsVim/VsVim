@@ -178,6 +178,7 @@ type internal CommonOperations
     member x.AdjustCaretForVirtualEdit() =
 
         let allowPastEndOfLine = 
+            _vimTextBuffer.ModeKind = ModeKind.Insert ||
             _globalSettings.IsVirtualEditOneMore ||
             (_globalSettings.SelectionKind = SelectionKind.Exclusive && VisualKind.IsAnyVisualOrSelect _vimTextBuffer.ModeKind)
 

@@ -33,7 +33,8 @@ namespace Vim.UnitTest
             _localSettings = _vimBuffer.LocalSettings;
 
             var operations = CommonOperationsFactory.GetCommonOperations(_vimBuffer.VimBufferData);
-            _insertUtilRaw = new InsertUtil(_vimBuffer.VimBufferData, operations);
+            var motionUtil = new MotionUtil(_vimBuffer.VimBufferData, operations);
+            _insertUtilRaw = new InsertUtil(_vimBuffer.VimBufferData, motionUtil, operations);
             _insertUtil = _insertUtilRaw;
         }
 
@@ -361,10 +362,10 @@ namespace Vim.UnitTest
                 _insertUtilRaw.ShiftLineLeft();
 
                 Assert.Equal("    ", _textView.GetLine(0).GetText());
-                Assert.Equal(_insertUtilRaw.CaretColumn, 4);
+                Assert.Equal(4, _insertUtilRaw.CaretColumn);
                 Assert.False(_textView.Caret.InVirtualSpace);
                 // probably redundant, but we just want to be sure...
-                Assert.Equal(_textView.Caret.Position.VirtualSpaces, 0);
+                Assert.Equal(0, _textView.Caret.Position.VirtualSpaces);
             }
 
             /// <summary>
@@ -380,9 +381,9 @@ namespace Vim.UnitTest
 
                 _insertUtilRaw.ShiftLineLeft();
 
-                Assert.Equal(_textView.GetLine(0).GetText(), "  foo");
-                Assert.Equal(_insertUtilRaw.CaretColumn, 2);
-                Assert.Equal(_textView.Caret.Position.VirtualSpaces, 0);
+                Assert.Equal("  foo", _textView.GetLine(0).GetText());
+                Assert.Equal(2, _insertUtilRaw.CaretColumn);
+                Assert.Equal(0, _textView.Caret.Position.VirtualSpaces);
             }
 
             /// <summary>
@@ -401,10 +402,10 @@ namespace Vim.UnitTest
                 _insertUtilRaw.ShiftLineRight();
 
                 Assert.Equal("            ", _textView.GetLine(0).GetText());
-                Assert.Equal(_insertUtilRaw.CaretColumn, 12);
+                Assert.Equal(12, _insertUtilRaw.CaretColumn);
                 Assert.False(_textView.Caret.InVirtualSpace);
                 // probably redundant, but we just want to be sure...
-                Assert.Equal(_textView.Caret.Position.VirtualSpaces, 0);
+                Assert.Equal(0, _textView.Caret.Position.VirtualSpaces);
             }
 
             /// <summary>
@@ -422,10 +423,10 @@ namespace Vim.UnitTest
                 _insertUtilRaw.ShiftLineRight();
 
                 Assert.Equal("            ", _textView.GetLine(0).GetText());
-                Assert.Equal(_insertUtilRaw.CaretColumn, 12);
+                Assert.Equal(12, _insertUtilRaw.CaretColumn);
                 Assert.False(_textView.Caret.InVirtualSpace);
                 // probably redundant, but we just want to be sure...
-                Assert.Equal(_textView.Caret.Position.VirtualSpaces, 0);
+                Assert.Equal(0, _textView.Caret.Position.VirtualSpaces);
             }
 
             /// <summary>
@@ -443,10 +444,10 @@ namespace Vim.UnitTest
                 _insertUtilRaw.ShiftLineRight();
 
                 Assert.Equal("\t    ", _textView.GetLine(0).GetText());
-                Assert.Equal(_insertUtilRaw.CaretColumn, 5);
+                Assert.Equal(5, _insertUtilRaw.CaretColumn);
                 Assert.False(_textView.Caret.InVirtualSpace);
                 // probably redundant, but we just want to be sure...
-                Assert.Equal(_textView.Caret.Position.VirtualSpaces, 0);
+                Assert.Equal(0, _textView.Caret.Position.VirtualSpaces);
             }
 
             /// <summary>
@@ -460,7 +461,7 @@ namespace Vim.UnitTest
                 _insertUtilRaw.ShiftLineRight();
 
                 Assert.Equal("    ", _textView.GetLine(0).GetText());
-                Assert.Equal(_insertUtilRaw.CaretColumn, 4);
+                Assert.Equal(4, _insertUtilRaw.CaretColumn);
             }
 
             /// <summary>
@@ -476,7 +477,7 @@ namespace Vim.UnitTest
                 _insertUtilRaw.ShiftLineRight();
 
                 Assert.Equal("    abc", _textView.GetLine(0).GetText());
-                Assert.Equal(_insertUtilRaw.CaretColumn, 4);
+                Assert.Equal(4, _insertUtilRaw.CaretColumn);
             }
         }
 
@@ -490,7 +491,7 @@ namespace Vim.UnitTest
 
                 _insertUtilRaw.MoveCaretByWord(Direction.Left);
 
-                Assert.Equal(_insertUtilRaw.CaretColumn, 5);
+                Assert.Equal(5, _insertUtilRaw.CaretColumn);
             }
 
             [Fact]
@@ -502,7 +503,7 @@ namespace Vim.UnitTest
                 _insertUtilRaw.MoveCaretByWord(Direction.Left);
                 _insertUtilRaw.MoveCaretByWord(Direction.Left);
 
-                Assert.Equal(_insertUtilRaw.CaretColumn, 0);
+                Assert.Equal(0, _insertUtilRaw.CaretColumn);
             }
 
             [Fact]
@@ -513,7 +514,7 @@ namespace Vim.UnitTest
 
                 _insertUtilRaw.MoveCaretByWord(Direction.Right);
 
-                Assert.Equal(_insertUtilRaw.CaretColumn, 10);
+                Assert.Equal(10, _insertUtilRaw.CaretColumn);
             }
 
             [Fact]
@@ -525,7 +526,7 @@ namespace Vim.UnitTest
                 _insertUtilRaw.MoveCaretByWord(Direction.Right);
                 _insertUtilRaw.MoveCaretByWord(Direction.Right);
 
-                Assert.Equal(_insertUtilRaw.CaretColumn, 14);
+                Assert.Equal(14, _insertUtilRaw.CaretColumn);
             }
 
             [Fact]
@@ -536,7 +537,35 @@ namespace Vim.UnitTest
 
                 _insertUtilRaw.MoveCaretByWord(Direction.Right);
 
-                Assert.Equal(_textView.GetCaretPoint().Position, 6);
+                Assert.Equal(6, _textView.GetCaretPoint().Position);
+            }
+
+            /// <summary>
+            /// Issue #1269 - part I
+            /// </summary>
+            [Fact]
+            public void Forward_NextLineFromBlankLine()
+            {
+                Create("", "dogs look bad with greasy fur");
+                _textView.MoveCaretTo(0);
+
+                _insertUtilRaw.MoveCaretByWord(Direction.Right);
+
+                Assert.Equal(2, _textView.GetCaretPoint().Position);
+            }
+
+            /// <summary>
+            /// Issue #1269 - part II
+            /// </summary>
+            [Fact]
+            public void Forward_FromLastWordOfLastLine()
+            {
+                Create("cat", "dog");
+                _textView.MoveCaretTo(5);
+
+                _insertUtilRaw.MoveCaretByWord(Direction.Right);
+
+                Assert.Equal(8, _textView.GetCaretPoint().Position);
             }
         }
 
