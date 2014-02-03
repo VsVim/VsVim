@@ -716,6 +716,84 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
+            /// Make sure backspace over word at start without 'backspace=start' works
+            /// </summary>
+            [Fact]
+            public void BackspaceOverWord_NoStart()
+            {
+                Create("cat dog elk");
+                _globalSettings.Backspace = "";
+                _textView.MoveCaretTo(8);
+                _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<C-w>"));
+                Assert.Equal("cat dog elk", _textBuffer.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// Make sure backspace over word at start with 'backspace=start' works
+            /// </summary>
+            [Fact]
+            public void BackspaceOverWord_Start()
+            {
+                Create("cat dog elk");
+                _globalSettings.Backspace = "start";
+                _textView.MoveCaretTo(8);
+                _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<C-w>"));
+                Assert.Equal("cat elk", _textBuffer.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// Make sure backspace over word at indent without 'backspace=indent' works
+            /// </summary>
+            [Fact]
+            public void BackspaceOverWord_NoIndent()
+            {
+                Create("    dog");
+                _globalSettings.Backspace = "start";
+                _textView.MoveCaretTo(4);
+                _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<C-w>"));
+                Assert.Equal("    dog", _textBuffer.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// Make sure backspace over word at indent with 'backspace=indent' works
+            /// </summary>
+            [Fact]
+            public void BackspaceOverWord_Indent()
+            {
+                Create("    dog");
+                _globalSettings.Backspace = "start,indent";
+                _textView.MoveCaretTo(4);
+                _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<C-w>"));
+                Assert.Equal("dog", _textBuffer.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// Make sure backspace over word at beginning of line without 'backspace=eol' works
+            /// </summary>
+            [Fact]
+            public void BackspaceOverWord_NoEol()
+            {
+                Create("cat", "dog");
+                _globalSettings.Backspace = "start,indent";
+                _textView.MoveCaretTo(5);
+                _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<C-w>"));
+                Assert.Equal("cat", _textBuffer.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// Make sure backspace over word at beginning of line with 'backspace=eol' works
+            /// </summary>
+            [Fact]
+            public void BackspaceOverWord_Eol()
+            {
+                Create("cat", "dog");
+                _globalSettings.Backspace = "start,indent,eol";
+                _textView.MoveCaretTo(5);
+                _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<C-w>"));
+                Assert.Equal("catdog", _textBuffer.GetLine(0).GetText());
+            }
+
+            /// <summary>
             /// Make sure line backspacing starting from an empty line works
             /// </summary>
             [Fact]
