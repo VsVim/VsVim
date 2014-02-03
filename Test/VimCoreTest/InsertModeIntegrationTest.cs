@@ -1227,10 +1227,10 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
-            /// Make sure undoing insert starting from an empty line works
+            /// Make sure line backspacing starting from an empty line works
             /// </summary>
             [Fact]
-            public void UndoInsert_FromEmptyLine()
+            public void DeleteLineBeforeCursor_FromEmptyLine()
             {
                 Create("");
                 _vimBuffer.Process("cat");
@@ -1240,10 +1240,10 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
-            /// Make sure undoing an insert from the start of a non-empty line works
+            /// Make sure line backspacing from the start of a non-empty line works
             /// </summary>
             [Fact]
-            public void UndoInsert_FromStarrtOfNonEmpyLine()
+            public void DeleteLineBeforeCursor_FromStarrtOfNonEmpyLine()
             {
                 Create("cat");
                 _textView.MoveCaretTo(0);
@@ -1254,10 +1254,10 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
-            /// Make sure undoing an insert from the end of a non-empty line works
+            /// Make sure line backspacing from the end of a non-empty line works
             /// </summary>
             [Fact]
-            public void UndoInsert_FromEndOfNonEmpyLine()
+            public void DeleteLineBeforeCursor_FromEndOfNonEmpyLine()
             {
                 Create("cat");
                 _textView.MoveCaretTo(3);
@@ -1268,10 +1268,10 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
-            /// Make sure undoing an insert from the middle of a non-empty line works
+            /// Make sure line backspacing from the middle of a non-empty line works
             /// </summary>
             [Fact]
-            public void UndoInsert_FromMiddleOfNonEmpyLine()
+            public void DeleteLineBeforeCursor_FromMiddleOfNonEmpyLine()
             {
                 Create("cat dog");
                 _textView.MoveCaretTo(4);
@@ -1282,10 +1282,10 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
-            /// Make sure undoing an insert from the start position stays put
+            /// Make sure line backspacing from the start position stays put
             /// </summary>
             [Fact]
-            public void UndoInsert_UndoAtStart_NoBackspaceStart()
+            public void DeleteLineBeforeCursor_AtStart_NoBackspaceStart()
             {
                 Create("cat dog");
                 _textView.MoveCaretTo(4);
@@ -1294,10 +1294,10 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
-            /// Make sure undoing an insert and then undoing again from the start position stays put
+            /// Make sure line backspacing and then doing it again from the start position stays put
             /// </summary>
             [Fact]
-            public void UndoInsert_UndoAgainAtStart_NoBackspaceStart()
+            public void DeleteLineBeforeCursor_AgainAtStart_NoBackspaceStart()
             {
                 Create("cat dog");
                 _textView.MoveCaretTo(4);
@@ -1310,11 +1310,11 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
-            /// Make sure undoing an insert from the start position with 'backspace=start'
+            /// Make sure line backspacing from the start position with 'backspace=start'
             /// performs delete line before cursor
             /// </summary>
             [Fact]
-            public void UndoInsert_UndoAtStart_BackspaceStart()
+            public void DeleteLineBeforeCursor_AtStart_BackspaceStart()
             {
                 Create("cat dog");
                 _globalSettings.Backspace = "start";
@@ -1324,11 +1324,11 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
-            /// Make sure undoing an insert and then undoing again from the start position with 'backspace=start'
+            /// Make sure line backspacing and then doing it again from the start position with 'backspace=start'
             /// performs delete line before cursor
             /// </summary>
             [Fact]
-            public void UndoInsert_UndoAgainAtStart_BackspaceStart()
+            public void DeleteLineBeforeCursor_AgainAtStart_BackspaceStart()
             {
                 Create("cat dog");
                 _globalSettings.Backspace = "start";
@@ -1342,12 +1342,12 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
-            /// Make sure undoing insert from the start of the next line
+            /// Make sure line backspacing from the start of the next line
             /// of an insert without 'backspace=eol' does nothing
             /// 
             /// </summary>
             [Fact]
-            public void UndoInsert_FromStartOfNextLine_NoBackspaceEol()
+            public void DeleteLineBeforeCursor_FromStartOfNextLine_NoBackspaceEol()
             {
                 Create("cat dog");
                 _textView.MoveCaretTo(4);
@@ -1362,12 +1362,12 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
-            /// Make sure undoing insert from the start of the next line
+            /// Make sure line backspacing from the start of the next line
             /// of an insert without 'backspace=eol' wraps to previous line
             /// 
             /// </summary>
             [Fact]
-            public void UndoInsert_FromStartOfNextLine_BackspaceEol()
+            public void DeleteLineBeforeCursor_FromStartOfNextLine_BackspaceEol()
             {
                 Create("cat dog");
                 _globalSettings.Backspace = "eol";
@@ -1382,10 +1382,10 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
-            /// Make sure undoing an insert twice from the same edit
+            /// Make sure line backspacing twice from the same edit
             /// </summary>
             [Fact]
-            public void UndoInsert_TwiceFromSameEdit()
+            public void DeleteLineBeforeCursor_TwiceFromSameEdit()
             {
                 Create("cat dog");
                 _textView.MoveCaretTo(4);
@@ -1403,7 +1403,7 @@ namespace Vim.UnitTest
             /// Make sure a redo after an undo in insert works
             /// </summary>
             [Fact]
-            public void UndoInsert_WithRedo()
+            public void DeleteLineBeforeCursor_WithRedo()
             {
                 Create("cat dog");
                 _textView.MoveCaretTo(4);
