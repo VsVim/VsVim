@@ -156,6 +156,9 @@ type internal SelectMode
 
         ProcessResult.Handled (ModeSwitch.SwitchMode ModeKind.Insert)
 
+    member x.CanProcess keyInput =
+        true
+
     member x.Process keyInput = 
 
         let processResult = 
@@ -183,7 +186,7 @@ type internal SelectMode
                             ProcessResult.OfCommandResult commandRanData.CommandResult
                         | BindResult.Error ->
                             _commonOperations.Beep()
-                            ProcessResult.Handled ModeSwitch.SwitchPreviousMode
+                            ProcessResult.NotHandled
                         | BindResult.Cancelled ->
                             _selectionTracker.UpdateSelection()
                             ProcessResult.Handled ModeSwitch.NoSwitch
@@ -217,7 +220,7 @@ type internal SelectMode
         member x.VimTextBuffer = _vimTextBuffer
         member x.CommandNames = Seq.empty
         member x.ModeKind = _modeKind
-        member x.CanProcess _ = true
+        member x.CanProcess keyInput = x.CanProcess keyInput
         member x.Process keyInput =  x.Process keyInput
         member x.OnEnter modeArgument = x.OnEnter modeArgument
         member x.OnLeave () = x.OnLeave()
