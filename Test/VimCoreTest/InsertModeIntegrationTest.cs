@@ -638,7 +638,8 @@ namespace Vim.UnitTest
         public sealed class BackspacingTest : InsertModeIntegrationTest
         {
             /// <summary>
-            /// Make sure backspace over char at start without 'backspace=start' works
+            /// Make sure backspace over char at start without
+            /// 'backspace=start' works
             /// </summary>
             [Fact]
             public void BackspaceOverChar_NoStart()
@@ -651,7 +652,8 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
-            /// Make sure backspace over char at start with 'backspace=start' works
+            /// Make sure backspace over char at start with 'backspace=start'
+            /// works
             /// </summary>
             [Fact]
             public void BackspaceOverChar_Start()
@@ -664,7 +666,8 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
-            /// Make sure backspace over char at indent without 'backspace=indent' works
+            /// Make sure backspace over char at indent without
+            /// 'backspace=indent' works
             /// </summary>
             [Fact]
             public void BackspaceOverChar_NoIndent()
@@ -677,7 +680,8 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
-            /// Make sure backspace over char at indent with 'backspace=indent' works
+            /// Make sure backspace over char at indent with
+            /// 'backspace=indent' works
             /// </summary>
             [Fact]
             public void BackspaceOverChar_Indent()
@@ -690,7 +694,8 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
-            /// Make sure backspace over char at beginning of line without 'backspace=eol' works
+            /// Make sure backspace over char at beginning of line without
+            /// 'backspace=eol' works
             /// </summary>
             [Fact]
             public void BackspaceOverChar_NoEol()
@@ -703,7 +708,8 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
-            /// Make sure backspace over char at beginning of line with 'backspace=eol' works
+            /// Make sure backspace over char at beginning of line with
+            /// 'backspace=eol' works
             /// </summary>
             [Fact]
             public void BackspaceOverChar_Eol()
@@ -716,7 +722,8 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
-            /// Make sure backspace over word at start without 'backspace=start' works
+            /// Make sure backspace over word at start without
+            /// 'backspace=start' works
             /// </summary>
             [Fact]
             public void BackspaceOverWord_NoStart()
@@ -729,7 +736,8 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
-            /// Make sure backspace over word at start with 'backspace=start' works
+            /// Make sure backspace over word at start with 'backspace=start'
+            /// works
             /// </summary>
             [Fact]
             public void BackspaceOverWord_Start()
@@ -742,7 +750,8 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
-            /// Make sure backspace over word at indent without 'backspace=indent' works
+            /// Make sure backspace over word at indent without
+            /// 'backspace=indent' works
             /// </summary>
             [Fact]
             public void BackspaceOverWord_NoIndent()
@@ -755,7 +764,8 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
-            /// Make sure backspace over word at indent with 'backspace=indent' works
+            /// Make sure backspace over word at indent with
+            /// 'backspace=indent' works
             /// </summary>
             [Fact]
             public void BackspaceOverWord_Indent()
@@ -768,7 +778,8 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
-            /// Make sure backspace over word at beginning of line without 'backspace=eol' works
+            /// Make sure backspace over word at beginning of line without
+            /// 'backspace=eol' works
             /// </summary>
             [Fact]
             public void BackspaceOverWord_NoEol()
@@ -781,7 +792,8 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
-            /// Make sure backspace over word at beginning of line with 'backspace=eol' works
+            /// Make sure backspace over word at beginning of line with
+            /// 'backspace=eol' works
             /// </summary>
             [Fact]
             public void BackspaceOverWord_Eol()
@@ -794,10 +806,11 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
-            /// Make sure line backspacing starting from an empty line works
+            /// Make sure backspacing over line starting from an empty line
+            /// works
             /// </summary>
             [Fact]
-            public void DeleteLineBeforeCursor_FromEmptyLine()
+            public void BackspaceOverLine_FromEmptyLine()
             {
                 Create("");
                 _vimBuffer.Process("cat");
@@ -807,10 +820,11 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
-            /// Make sure line backspacing from the start of a non-empty line works
+            /// Make sure backspacing over line from the start of a non-empty
+            /// line works
             /// </summary>
             [Fact]
-            public void DeleteLineBeforeCursor_FromStarrtOfNonEmpyLine()
+            public void BackspaceOverLine_FromStarrtOfNonEmpyLine()
             {
                 Create("cat");
                 _textView.MoveCaretTo(0);
@@ -821,10 +835,11 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
-            /// Make sure line backspacing from the end of a non-empty line works
+            /// Make sure backspacing over line from the end of a non-empty
+            /// line works
             /// </summary>
             [Fact]
-            public void DeleteLineBeforeCursor_FromEndOfNonEmpyLine()
+            public void BackspaceOverLine_FromEndOfNonEmpyLine()
             {
                 Create("cat");
                 _textView.MoveCaretTo(3);
@@ -835,10 +850,11 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
-            /// Make sure line backspacing from the middle of a non-empty line works
+            /// Make sure backspacing over line from the middle of a non-empty
+            /// line works
             /// </summary>
             [Fact]
-            public void DeleteLineBeforeCursor_FromMiddleOfNonEmpyLine()
+            public void BackspaceOverLine_FromMiddleOfNonEmpyLine()
             {
                 Create("cat dog");
                 _textView.MoveCaretTo(4);
@@ -849,10 +865,11 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
-            /// Make sure line backspacing from the start position stays put
+            /// Make sure backspacing over line from the start position stays
+            /// put
             /// </summary>
             [Fact]
-            public void DeleteLineBeforeCursor_AtStart_NoBackspaceStart()
+            public void BackspaceOverLine_AtStart_NoBackspaceStart()
             {
                 Create("cat dog");
                 _textView.MoveCaretTo(4);
@@ -861,10 +878,11 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
-            /// Make sure line backspacing and then doing it again from the start position stays put
+            /// Make sure backspacing over line and then doing it again from
+            /// the start position stays put
             /// </summary>
             [Fact]
-            public void DeleteLineBeforeCursor_AgainAtStart_NoBackspaceStart()
+            public void BackspaceOverLine_AgainAtStart_NoBackspaceStart()
             {
                 Create("cat dog");
                 _textView.MoveCaretTo(4);
@@ -877,11 +895,11 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
-            /// Make sure line backspacing from the start position with 'backspace=start'
-            /// performs delete line before cursor
+            /// Make sure backspacing over line from the start position with
+            /// 'backspace=start' performs delete line before cursor
             /// </summary>
             [Fact]
-            public void DeleteLineBeforeCursor_AtStart_BackspaceStart()
+            public void BackspaceOverLine_AtStart_BackspaceStart()
             {
                 Create("cat dog");
                 _globalSettings.Backspace = "start";
@@ -891,11 +909,12 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
-            /// Make sure line backspacing and then doing it again from the start position with 'backspace=start'
-            /// performs delete line before cursor
+            /// Make sure backspacing over line and then doing it again from
+            /// the start position with 'backspace=start' performs delete
+            /// line before cursor
             /// </summary>
             [Fact]
-            public void DeleteLineBeforeCursor_AgainAtStart_BackspaceStart()
+            public void BackspaceOverLine_AgainAtStart_BackspaceStart()
             {
                 Create("cat dog");
                 _globalSettings.Backspace = "start";
@@ -909,12 +928,12 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
-            /// Make sure line backspacing from the start of the next line
+            /// Make sure backspacing over line from the start of the next line
             /// of an insert without 'backspace=eol' does nothing
             /// 
             /// </summary>
             [Fact]
-            public void DeleteLineBeforeCursor_FromStartOfNextLine_NoBackspaceEol()
+            public void BackspaceOverLine_FromStartOfNextLine_NoBackspaceEol()
             {
                 Create("cat dog");
                 _textView.MoveCaretTo(4);
@@ -929,12 +948,12 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
-            /// Make sure line backspacing from the start of the next line
+            /// Make sure backspacing over line from the start of the next line
             /// of an insert without 'backspace=eol' wraps to previous line
             /// 
             /// </summary>
             [Fact]
-            public void DeleteLineBeforeCursor_FromStartOfNextLine_BackspaceEol()
+            public void BackspaceOverLine_FromStartOfNextLine_BackspaceEol()
             {
                 Create("cat dog");
                 _globalSettings.Backspace = "eol";
@@ -949,10 +968,10 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
-            /// Make sure line backspacing twice from the same edit
+            /// Make sure backspacing over line twice from the same edit
             /// </summary>
             [Fact]
-            public void DeleteLineBeforeCursor_TwiceFromSameEdit()
+            public void BackspaceOverLine_TwiceFromSameEdit()
             {
                 Create("cat dog");
                 _textView.MoveCaretTo(4);
@@ -970,7 +989,7 @@ namespace Vim.UnitTest
             /// Make sure a redo after an undo in insert works
             /// </summary>
             [Fact]
-            public void DeleteLineBeforeCursor_WithRedo()
+            public void BackspaceOverLine_WithRedo()
             {
                 Create("cat dog");
                 _textView.MoveCaretTo(4);
@@ -983,6 +1002,79 @@ namespace Vim.UnitTest
                 _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<Esc>"));
                 _vimBuffer.Process(" .");
                 Assert.Equal("cat lion lion dog", _textBuffer.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// Make sure backspacing over word hits all the right "pause"
+            /// points in a multi-line edit
+            /// </summary>
+            [Fact]
+            public void BackspaceOverWord_RepeatedOverMultiLine()
+            {
+                Create("aaa bbb");
+                _globalSettings.Backspace = "indent,eol,start";
+                _textView.MoveCaretTo(7);
+                _vimBuffer.ProcessNotation("ccc ddd<Enter>");
+                _vimBuffer.ProcessNotation("    eee fff<Enter>");
+                _vimBuffer.ProcessNotation("<Enter>");
+                _vimBuffer.ProcessNotation("ggg hhh");
+                Assert.Equal(new[] { "aaa bbbccc ddd", "    eee fff", "", "ggg hhh" }, _textBuffer.GetLines());
+                _vimBuffer.ProcessNotation("<C-w>");
+                Assert.Equal(new[] { "aaa bbbccc ddd", "    eee fff", "", "ggg " }, _textBuffer.GetLines());
+                _vimBuffer.ProcessNotation("<C-w>");
+                Assert.Equal(new[] { "aaa bbbccc ddd", "    eee fff", "", "" }, _textBuffer.GetLines());
+                _vimBuffer.ProcessNotation("<C-w>");
+                Assert.Equal(new[] { "aaa bbbccc ddd", "    eee fff", "" }, _textBuffer.GetLines());
+                _vimBuffer.ProcessNotation("<C-w>");
+                Assert.Equal(new[] { "aaa bbbccc ddd", "    eee fff" }, _textBuffer.GetLines());
+                _vimBuffer.ProcessNotation("<C-w>");
+                Assert.Equal(new[] { "aaa bbbccc ddd", "    eee " }, _textBuffer.GetLines());
+                _vimBuffer.ProcessNotation("<C-w>");
+                Assert.Equal(new[] { "aaa bbbccc ddd", "    " }, _textBuffer.GetLines());
+                _vimBuffer.ProcessNotation("<C-w>");
+                Assert.Equal(new[] { "aaa bbbccc ddd", "" }, _textBuffer.GetLines());
+                _vimBuffer.ProcessNotation("<C-w>");
+                Assert.Equal(new[] { "aaa bbbccc ddd", }, _textBuffer.GetLines());
+                _vimBuffer.ProcessNotation("<C-w>");
+                Assert.Equal(new[] { "aaa bbbccc ", }, _textBuffer.GetLines());
+                _vimBuffer.ProcessNotation("<C-w>");
+                Assert.Equal(new[] { "aaa bbb", }, _textBuffer.GetLines());
+                _vimBuffer.ProcessNotation("<C-w>");
+                Assert.Equal(new[] { "aaa ", }, _textBuffer.GetLines());
+                _vimBuffer.ProcessNotation("<C-w>");
+                Assert.Equal(new[] { "", }, _textBuffer.GetLines());
+            }
+            /// <summary>
+            /// Make sure backspacing over line hits all the right "pause"
+            /// points in a multi-line edit
+            /// </summary>
+            [Fact]
+            public void BackspaceOverLine_RepeatedOverMultiLine()
+            {
+                Create("aaa bbb");
+                _globalSettings.Backspace = "indent,eol,start";
+                _textView.MoveCaretTo(7);
+                _vimBuffer.ProcessNotation("ccc ddd<Enter>");
+                _vimBuffer.ProcessNotation("    eee fff<Enter>");
+                _vimBuffer.ProcessNotation("<Enter>");
+                _vimBuffer.ProcessNotation("ggg hhh");
+                Assert.Equal(new[] { "aaa bbbccc ddd", "    eee fff", "", "ggg hhh" }, _textBuffer.GetLines());
+                _vimBuffer.ProcessNotation("<C-u>");
+                Assert.Equal(new[] { "aaa bbbccc ddd", "    eee fff", "", "" }, _textBuffer.GetLines());
+                _vimBuffer.ProcessNotation("<C-u>");
+                Assert.Equal(new[] { "aaa bbbccc ddd", "    eee fff", "" }, _textBuffer.GetLines());
+                _vimBuffer.ProcessNotation("<C-u>");
+                Assert.Equal(new[] { "aaa bbbccc ddd", "    eee fff" }, _textBuffer.GetLines());
+                _vimBuffer.ProcessNotation("<C-u>");
+                Assert.Equal(new[] { "aaa bbbccc ddd", "    " }, _textBuffer.GetLines());
+                _vimBuffer.ProcessNotation("<C-u>");
+                Assert.Equal(new[] { "aaa bbbccc ddd", "" }, _textBuffer.GetLines());
+                _vimBuffer.ProcessNotation("<C-u>");
+                Assert.Equal(new[] { "aaa bbbccc ddd", }, _textBuffer.GetLines());
+                _vimBuffer.ProcessNotation("<C-u>");
+                Assert.Equal(new[] { "aaa bbb", }, _textBuffer.GetLines());
+                _vimBuffer.ProcessNotation("<C-u>");
+                Assert.Equal(new[] { "", }, _textBuffer.GetLines());
             }
         }
 
