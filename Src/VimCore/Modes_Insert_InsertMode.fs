@@ -221,6 +221,7 @@ type internal InsertMode
     let _wordCompletionUtil = WordCompletionUtil(_vimBuffer.Vim, _wordUtil)
     let mutable _commandMap : Map<KeyInput, RawInsertCommand> = Map.empty
     let mutable _sessionData = _emptySessionData
+    let mutable _isInProcess = false
 
     /// The set of commands supported by insert mode
     static let s_commands : (string * InsertCommand * CommandFlags) list =
@@ -246,6 +247,7 @@ type internal InsertMode
     do
         // Caret changes can end a text change operation.
         _textView.Caret.PositionChanged
+        |> Observable.filter (fun _ -> this.IsActive && not this.IsInProcess)
         |> Observable.subscribe (fun _ -> this.OnCaretPositionChanged() )
         |> _bag.Add
 
@@ -369,6 +371,9 @@ type internal InsertMode
 
     /// Is this the currently active mode?
     member x.IsActive = x.ModeKind = _vimBuffer.ModeKind
+
+    /// Is this mode processing key input?
+    member x.IsInProcess = _isInProcess
 
     /// Cancel the active IWordCompletionSession if there is such a session 
     /// active
@@ -690,9 +695,14 @@ type internal InsertMode
     member x.RunBackspacingCommand command keyInput =
 
         // Get the point that 'backspace=start' allows backspacing over
-        let startPoint = x.StartPoint
+        let startPoint =
+            match _vimBuffer.VimTextBuffer.LastInsertEntryPoint with
+            | Some startPoint ->
+                startPoint
+            | None ->
+                x.CaretPoint
 
-        // Ask the insert utils how far it would backspace to for this command
+        // Ask the insert utilties how far it would backspace to for this command
         let point = _insertUtil.GetBackspacingPoint command
 
         // The start position is always an intermediate point for any
@@ -725,18 +735,6 @@ type internal InsertMode
                 else
                     command
             x.RunInsertCommand command keyInputSet flags
-
-    /// Find the point that represents the start of the the current edit
-    member x.StartPoint : SnapshotPoint =
-        match _sessionData.InsertTextChange with
-        | None ->
-            x.CaretPoint
-        | Some textChange ->
-            match textChange.InsertText with
-            | None ->
-                x.CaretPoint
-            | Some text ->
-                SnapshotPointUtil.Add (-text.Length) x.CaretPoint
 
     /// Try and process the KeyInput by considering the current text edit in Insert Mode
     member x.ProcessWithCurrentChange keyInput = 
@@ -831,7 +829,13 @@ type internal InsertMode
 
     /// Process the KeyInput value
     member x.Process keyInput = 
+        _isInProcess <- true
+        try
+            x.ProcessCore keyInput
+        finally
+            _isInProcess <- false
 
+    member x.ProcessCore keyInput =
         match _sessionData.ActiveEditItem with
         | ActiveEditItem.WordCompletion wordCompletionSession ->
             x.ProcessWithWordCompletionSession wordCompletionSession keyInput
@@ -859,21 +863,10 @@ type internal InsertMode
     ///
     /// Need to be careful to not end the edit due to the caret moving as a result of 
     /// normal typing
-    ///
-    /// TODO: We really need to reconsider how this is used.  If the user has mapped say 
-    /// '1' to 'Left' then we will misfire here.  Not a huge concern I think but we need
-    /// to find a crisper solution here.
     member x.OnCaretPositionChanged () = 
-        let shouldBeNewEdit =
-            if _mouse.IsLeftButtonPressed then 
-                true
-            elif _vimBuffer.ModeKind = ModeKind.Insert then 
-                _keyboard.IsArrowKeyDown
-            else
-                false
-        if shouldBeNewEdit then
-            _textChangeTracker.CompleteChange()
-            _sessionData <- { _sessionData with InsertTextChange = None }
+        _textChangeTracker.CompleteChange()
+        _sessionData <- { _sessionData with InsertTextChange = None }
+        _vimBuffer.VimTextBuffer.LastInsertEntryPoint <- Some x.CaretPoint
 
     member x.OnAfterRunInsertCommand (insertCommand : InsertCommand) =
 
@@ -885,6 +878,10 @@ type internal InsertMode
             | None, Some right -> Some right
             | _ -> None
         _sessionData <- { _sessionData with InsertTextChange = insertTextChange }
+
+        // If the command cannot be converted into a text change, reset the start point
+        if Option.isNone commandTextChange then
+            _vimBuffer.VimTextBuffer.LastInsertEntryPoint <- Some x.CaretPoint
 
         let updateRepeat count addNewLines textChange =
 
@@ -934,6 +931,9 @@ type internal InsertMode
     /// ModeArgument value. 
     member x.OnEnter arg =
         x.EnsureCommandsBuilt()
+
+        // Record start point upon initial entry to insert mode
+        _vimBuffer.VimTextBuffer.LastInsertEntryPoint <- Some x.CaretPoint
 
         // When starting insert mode we want to track the edits to the IVimBuffer as a 
         // text change

@@ -4027,6 +4027,9 @@ and IVimTextBuffer =
     /// and the SnapshotPoint within the span where the caret should be positioned
     abstract LastVisualSelection : VisualSelection option with get, set
 
+    /// The point the caret occupied after Insert mode was entered 
+    abstract LastInsertEntryPoint : SnapshotPoint option with get, set
+
     /// The point the caret occupied when Insert mode was exited 
     abstract LastInsertExitPoint : SnapshotPoint option with get, set
 

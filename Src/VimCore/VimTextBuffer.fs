@@ -23,6 +23,7 @@ type internal VimTextBuffer
     let _switchedModeEvent = StandardEvent<SwitchModeKindEventArgs>()
     let mutable _modeKind = ModeKind.Normal
     let mutable _lastVisualSelection : ITrackingVisualSelection option = None
+    let mutable _lastInsertEntryPoint : ITrackingLineColumn option = None
     let mutable _lastInsertExitPoint : ITrackingLineColumn option = None
     let mutable _lastEditPoint : ITrackingLineColumn option = None
 
@@ -42,6 +43,26 @@ type internal VimTextBuffer
                 match value with
                 | None -> None
                 | Some visualSelection -> Some (_bufferTrackingService.CreateVisualSelection visualSelection)
+
+    member x.LastInsertEntryPoint
+        with get() = 
+            match _lastInsertEntryPoint with
+            | None -> None
+            | Some lastInsertEntryPoint -> lastInsertEntryPoint.Point
+        and set value = 
+
+            // First clear out the previous information
+            match _lastInsertEntryPoint with
+            | None -> ()
+            | Some lastInsertEntryPoint -> lastInsertEntryPoint.Close()
+
+            _lastInsertEntryPoint <-
+                match value with
+                | None -> None
+                | Some point -> 
+                    let line, column = SnapshotPointUtil.GetLineColumn point
+                    let trackingLineColumn = _bufferTrackingService.CreateLineColumn _textBuffer line column LineColumnTrackingMode.Default
+                    Some trackingLineColumn
 
     member x.LastInsertExitPoint
         with get() = 
@@ -103,6 +124,7 @@ type internal VimTextBuffer
 
         // Clear out the other items
         x.LastEditPoint <- None
+        x.LastInsertEntryPoint <- None
         x.LastInsertExitPoint <- None
         x.LastVisualSelection <- None
 
@@ -172,6 +194,9 @@ type internal VimTextBuffer
         member x.LastVisualSelection 
             with get() = x.LastVisualSelection
             and set value = x.LastVisualSelection <- value
+        member x.LastInsertEntryPoint
+            with get() = x.LastInsertEntryPoint
+            and set value = x.LastInsertEntryPoint <- value
         member x.LastInsertExitPoint
             with get() = x.LastInsertExitPoint
             and set value = x.LastInsertExitPoint <- value
