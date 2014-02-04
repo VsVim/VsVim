@@ -85,6 +85,7 @@ type internal NormalMode
                 yield ("s", CommandFlags.LinkedWithNextCommand ||| CommandFlags.Repeatable, NormalCommand.SubstituteCharacterAtCaret)
                 yield ("S", CommandFlags.LinkedWithNextCommand ||| CommandFlags.Repeatable, NormalCommand.ChangeLines)
                 yield ("u", CommandFlags.Special, NormalCommand.Undo)
+                yield ("U", CommandFlags.Special, NormalCommand.UndoLine)
                 yield ("v", CommandFlags.Special, NormalCommand.SwitchMode (ModeKind.VisualCharacter, ModeArgument.None))
                 yield ("V", CommandFlags.Special, NormalCommand.SwitchMode (ModeKind.VisualLine, ModeArgument.None))
                 yield ("x", CommandFlags.Repeatable, NormalCommand.DeleteCharacterAtCaret)

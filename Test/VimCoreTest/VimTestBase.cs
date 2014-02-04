@@ -354,6 +354,7 @@ namespace Vim.UnitTest
             operations = operations ?? CommonOperationsFactory.GetCommonOperations(vimBufferData);
             foldManager = foldManager ?? VimUtil.CreateFoldManager(vimBufferData.TextView, vimBufferData.StatusUtil);
             insertUtil = insertUtil ?? new InsertUtil(vimBufferData, motionUtil, operations);
+            var lineChangeTracker = new LineChangeTracker(vimBufferData);
             return new CommandUtil(
                 vimBufferData,
                 motionUtil,
@@ -361,7 +362,8 @@ namespace Vim.UnitTest
                 foldManager,
                 insertUtil,
                 _bulkOperations,
-                MouseDevice);
+                MouseDevice,
+                lineChangeTracker);
         }
 
         protected override void GetEditorHostParts(List<ComposablePartCatalog> composablePartCatalogList, List<ExportProvider> exportProviderList)

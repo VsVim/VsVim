@@ -50,7 +50,8 @@ type internal CommandUtil
         _foldManager : IFoldManager,
         _insertUtil : IInsertUtil,
         _bulkOperations : IBulkOperations,
-        _mouseDevice : IMouseDevice
+        _mouseDevice : IMouseDevice,
+        _lineChangeTracker : ILineChangeTracker
     ) =
 
     let _vimTextBuffer = _vimBufferData.VimTextBuffer
@@ -2307,6 +2308,7 @@ type internal CommandUtil
         | NormalCommand.ToggleFoldUnderCaret -> x.ToggleFoldUnderCaret count
         | NormalCommand.ToggleAllFolds -> x.ToggleAllFolds()
         | NormalCommand.Undo -> x.Undo count
+        | NormalCommand.UndoLine -> x.UndoLine()
         | NormalCommand.WriteBufferAndQuit -> x.WriteBufferAndQuit()
         | NormalCommand.Yank motion -> x.RunWithMotion motion (x.YankMotion register)
         | NormalCommand.YankLines -> x.YankLines count register
@@ -2833,6 +2835,19 @@ type internal CommandUtil
     member x.Undo count = 
         _commonOperations.Undo count
         CommandResult.Completed ModeSwitch.NoSwitch
+
+    /// Undo all recent changes make to the current line
+    member x.UndoLine () =
+        match _lineChangeTracker.OriginalLine with
+        | Some originalLine ->
+            let span = x.CaretLine.Extent
+            _undoRedoOperations.EditWithUndoTransaction "Undo Line" _textView (fun () ->
+                _textBuffer.Delete span.Span |> ignore
+                _textBuffer.Insert(span.Start.Position, originalLine) |> ignore
+                TextViewUtil.MoveCaretToPosition _textView span.Start.Position)
+            CommandResult.Completed ModeSwitch.NoSwitch
+        | None ->
+            CommandResult.Error
 
     /// Write out the ITextBuffer and quit
     member x.WriteBufferAndQuit () =
