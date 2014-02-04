@@ -2764,12 +2764,12 @@ type InsertCommand  =
             InsertCommand.Combined (leftCommand, rightCommand)
 
     /// Convert this InsertCommand to a TextChange object
-    member x.TextChange =
-        match x with
+    member x.TextChange editorOptions = 
+        match x with 
         | InsertCommand.Back ->  Some (TextChange.DeleteLeft 1)
         | InsertCommand.BlockInsert _ -> None
-        | InsertCommand.Combined (left, right) ->
-            match left.TextChange, right.TextChange with
+        | InsertCommand.Combined (left, right) -> 
+            match left.TextChange editorOptions, right.TextChange editorOptions with
             | Some l, Some r -> TextChange.Combination (l, r) |> Some
             | _ -> None
         | InsertCommand.CompleteMode _ -> None
@@ -2782,7 +2782,7 @@ type InsertCommand  =
         | InsertCommand.DirectReplace c -> Some (TextChange.Combination ((TextChange.DeleteRight 1), (TextChange.Insert (c.ToString()))))
         | InsertCommand.InsertCharacterAboveCaret -> None
         | InsertCommand.InsertCharacterBelowCaret -> None
-        | InsertCommand.InsertNewLine -> Some (TextChange.Insert "\n")
+        | InsertCommand.InsertNewLine -> Some (TextChange.Insert (EditUtil.NewLine editorOptions))
         | InsertCommand.InsertTab -> Some (TextChange.Insert "\t")
         | InsertCommand.InsertText text -> Some (TextChange.Insert text)
         | InsertCommand.MoveCaret _ -> None

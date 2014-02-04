@@ -877,7 +877,7 @@ type internal InsertMode
 
     member x.OnAfterRunInsertCommand (insertCommand : InsertCommand) =
 
-        let commandTextChange = insertCommand.TextChange
+        let commandTextChange = insertCommand.TextChange _editorOptions
 
         let insertTextChange = 
             match _sessionData.InsertTextChange, commandTextChange with

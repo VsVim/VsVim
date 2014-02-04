@@ -460,7 +460,7 @@ type internal InsertUtil
         // Block edits don't apply if the user inserts a new line into the buffer.  Check for that
         // early on
         let isRepeatable = blockSpan.Snasphot.LineCount = x.CurrentSnapshot.LineCount && blockSpan.Height > 1 
-        match isRepeatable, insertCommand.TextChange |> Option.map (fun textChange -> textChange.Reduce) with
+        match isRepeatable, insertCommand.TextChange _editorOptions |> Option.map (fun textChange -> textChange.Reduce) with
         | true, Some textChange -> 
             match textChange with
             | TextChange.Insert text -> 
