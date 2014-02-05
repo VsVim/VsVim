@@ -34,12 +34,11 @@ type internal LineChangeTracker
     do
         x.Initialize()
 
+    // Promote fields to members
     member x.TextView = _textView
     member x.TextBuffer = _textBuffer
     member x.UndoRedoOperations = _undoRedoOperations
-    member x.CaretLine = TextViewUtil.GetCaretLine _textView
     member x.Disposables = _disposables
-
     member x.CurrentData
         with get() = _currentData
         and set value = _currentData <- value
@@ -47,6 +46,16 @@ type internal LineChangeTracker
         with get() = _changedData
         and set value = _changedData <- value
 
+    // Add a few utility members
+    member x.CaretLine = TextViewUtil.GetCaretLine x.TextView
+    member x.CaretLineNumber = x.CaretLine.LineNumber
+    member x.GetLine lineNumber =
+        x.TextBuffer.CurrentSnapshot.GetLineFromLineNumber(lineNumber)
+    member x.MoveCaretToPoint point =
+            TextViewUtil.MoveCaretToPoint x.TextView point
+
+    /// Initialize the line change tracker by registering for events
+    /// and setting up the initial state
     member x.Initialize () =
 
         // Listen to caret changes to detect line changes
@@ -68,18 +77,17 @@ type internal LineChangeTracker
 
     /// Handler for caret position changes
     member x.OnCaretPositionChanged () = 
-        let caretLineNumber = x.CaretLine.LineNumber
-        if caretLineNumber <> x.CurrentData.LineNumber then
+        if x.CaretLineNumber <> x.CurrentData.LineNumber then
+            let line = x.GetLine x.CaretLineNumber
             x.CurrentData <- {
-                LineNumber = caretLineNumber
-                SavedLine = x.CaretLine.GetText() |> Some
+                LineNumber = x.CaretLineNumber
+                SavedLine = line.GetText() |> Some
             }
 
     /// Handler for text changes
     member x.OnTextChanged args = 
         x.ChangedData <-
-            let caretLineNumber = x.CaretLine.LineNumber
-            if caretLineNumber = x.CurrentData.LineNumber then
+            if x.CaretLineNumber = x.CurrentData.LineNumber then
                 x.CurrentData
             else
                 LineChangeTrackingData.Empty
@@ -89,12 +97,13 @@ type internal LineChangeTracker
         match x.ChangedData.SavedLine with
         | Some savedLine ->
             let lineNumber = x.ChangedData.LineNumber
-            let span = x.TextBuffer.CurrentSnapshot.GetLineFromLineNumber(lineNumber).Extent
-            let changedLine = span.GetText()
+            let line = x.GetLine lineNumber
+            let changedLine = line.GetText()
             x.UndoRedoOperations.EditWithUndoTransaction "Undo Line" x.TextView <| fun () ->
-                x.TextBuffer.Delete span.Span |> ignore
-                x.TextBuffer.Insert(span.Start.Position, savedLine) |> ignore
-                TextViewUtil.MoveCaretToPosition x.TextView span.Start.Position
+                x.TextBuffer.Replace(line.Extent.Span, savedLine) |> ignore
+                let line = x.GetLine lineNumber
+                let point = SnapshotLineUtil.GetFirstNonBlankOrStart line
+                x.MoveCaretToPoint point
             x.ChangedData <- {
                 LineNumber = lineNumber
                 SavedLine = Some changedLine

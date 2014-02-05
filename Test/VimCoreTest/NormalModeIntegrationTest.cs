@@ -2559,6 +2559,71 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class UndoLineTest : NormalModeIntegrationTest
+        {
+            /// <summary>
+            /// Undo line should work when all edits occur one the same line
+            /// </summary>
+            [Fact]
+            public void UndoLine_Basic()
+            {
+                Create("aaa bbb ccc", "ddd eee fff");
+                _textView.MoveCaretToLine(1);
+                _vimBuffer.ProcessNotation("1Gwixxx <Esc>ww.");
+                Assert.Equal("aaa xxx bbb xxx ccc", _textView.GetLine(0).GetText());
+                _vimBuffer.ProcessNotation("U");
+                Assert.Equal("aaa bbb ccc", _textView.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// Undo line should work even when the caret has moved off of the line
+            /// </summary>
+            [Fact]
+            public void UndoLine_WithMotionAfterChanges()
+            {
+                Create("aaa bbb ccc", "ddd eee fff");
+                _textView.MoveCaretToLine(1);
+                _vimBuffer.ProcessNotation("1Gwixxx <Esc>ww.G");
+                Assert.Equal("aaa xxx bbb xxx ccc", _textView.GetLine(0).GetText());
+                _vimBuffer.ProcessNotation("U");
+                Assert.Equal("aaa bbb ccc", _textView.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// Undo line twice should reapply the line changes
+            /// </summary>
+            [Fact]
+            public void UndoLine_Twice()
+            {
+                Create("aaa bbb ccc", "ddd eee fff");
+                _textView.MoveCaretToLine(1);
+                _vimBuffer.ProcessNotation("1Gwixxx <Esc>ww.");
+                Assert.Equal("aaa xxx bbb xxx ccc", _textView.GetLine(0).GetText());
+                _vimBuffer.ProcessNotation("U");
+                Assert.Equal("aaa bbb ccc", _textView.GetLine(0).GetText());
+                _vimBuffer.ProcessNotation("U");
+                Assert.Equal("aaa xxx bbb xxx ccc", _textView.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// Undo line should itself be undoable and redoable
+            /// </summary>
+            [Fact]
+            public void UndoLine_FollowedByUndoAndRedo()
+            {
+                Create("aaa bbb ccc", "ddd eee fff");
+                _textView.MoveCaretToLine(1);
+                _vimBuffer.ProcessNotation("1Gwixxx <Esc>ww.");
+                Assert.Equal("aaa xxx bbb xxx ccc", _textView.GetLine(0).GetText());
+                _vimBuffer.ProcessNotation("U");
+                Assert.Equal("aaa bbb ccc", _textView.GetLine(0).GetText());
+                _vimBuffer.ProcessNotation("u");
+                Assert.Equal("aaa xxx bbb xxx ccc", _textView.GetLine(0).GetText());
+                _vimBuffer.ProcessNotation("<C-r>");
+                Assert.Equal("aaa bbb ccc", _textView.GetLine(0).GetText());
+            }
+        }
+
         public abstract class IncrementalSearchTest : NormalModeIntegrationTest
         {
             public sealed class StandardTest : IncrementalSearchTest
