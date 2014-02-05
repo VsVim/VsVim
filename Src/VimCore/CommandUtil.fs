@@ -2836,7 +2836,7 @@ type internal CommandUtil
         _commonOperations.Undo count
         CommandResult.Completed ModeSwitch.NoSwitch
 
-    /// Undo all recent changes make to the current line
+    /// Undo all recent changes made to the current line
     member x.UndoLine () =
         if _lineChangeTracker.Swap() then
             CommandResult.Completed ModeSwitch.NoSwitch

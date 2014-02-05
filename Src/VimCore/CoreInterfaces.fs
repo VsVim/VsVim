@@ -2443,7 +2443,7 @@ type NormalCommand =
     /// Undo count operations in the ITextBuffer
     | Undo
 
-    /// Undo all recent changes make to the current line
+    /// Undo all recent changes made to the current line
     | UndoLine
 
     /// Open all folds in the buffer
