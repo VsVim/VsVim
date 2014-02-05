@@ -238,14 +238,8 @@ type ITextChangeTrackerFactory =
 /// Tracks changes to the associated ITextView
 type ILineChangeTracker =
 
-    /// Associated ITextView
-    abstract TextView : ITextView
-
-    /// The current line number
-    abstract CurrentLineNumber : int
-
-    /// Current line before any modifications were made to it
-    abstract OriginalLine : string option
+    /// Swap the most recently changed line with its saved copy
+    abstract Swap : unit -> bool
 
 /// Manages the ILineChangeTracker instances
 type ILineChangeTrackerFactory =

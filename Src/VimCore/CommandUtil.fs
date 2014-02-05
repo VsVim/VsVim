@@ -2838,15 +2838,9 @@ type internal CommandUtil
 
     /// Undo all recent changes make to the current line
     member x.UndoLine () =
-        match _lineChangeTracker.OriginalLine with
-        | Some originalLine ->
-            let span = x.CaretLine.Extent
-            _undoRedoOperations.EditWithUndoTransaction "Undo Line" _textView (fun () ->
-                _textBuffer.Delete span.Span |> ignore
-                _textBuffer.Insert(span.Start.Position, originalLine) |> ignore
-                TextViewUtil.MoveCaretToPosition _textView span.Start.Position)
+        if _lineChangeTracker.Swap() then
             CommandResult.Completed ModeSwitch.NoSwitch
-        | None ->
+        else
             CommandResult.Error
 
     /// Write out the ITextBuffer and quit
