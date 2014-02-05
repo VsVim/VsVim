@@ -2674,6 +2674,9 @@ type VisualCommand =
     /// Cut selection and paste
     | CutSelectionAndPaste
 
+    /// Select the whole document
+    | SelectAll
+
 /// Insert mode commands that can be executed by the user
 [<RequireQualifiedAccess>]
 [<NoComparison>]
