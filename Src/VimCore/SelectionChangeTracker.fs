@@ -106,13 +106,15 @@ type internal SelectionChangeTracker
 
         // What should the mode be based on the current selection
         let desiredMode () = 
+            let isSelectModeMouse =
+                Util.IsFlagSet _globalSettings.SelectModeOptions SelectModeOptions.Mouse 
             let inner = 
                 if _textView.Selection.IsEmpty then 
                     if VisualKind.IsAnyVisualOrSelect _vimBuffer.ModeKind then
                         Some ModeKind.Normal
                     else 
                         None
-                elif Util.IsFlagSet _globalSettings.SelectModeOptions SelectModeOptions.Mouse && isLeftButtonPressed then
+                elif isSelectModeMouse && isLeftButtonPressed then
                     // When the "mouse" is set in 'selectmode' then selection change should ensure
                     // we are in select.  If we are already in select then maintain the current mode
                     // else transition into the standard character one
@@ -123,14 +125,29 @@ type internal SelectionChangeTracker
                 elif _textView.Selection.Mode = TextSelectionMode.Stream then 
                     let modeKind = 
                         match _vimBuffer.ModeKind with
+                        | ModeKind.VisualCharacter -> ModeKind.VisualCharacter
                         | ModeKind.VisualLine -> ModeKind.VisualLine
+                        | ModeKind.VisualBlock -> ModeKind.VisualCharacter
                         | ModeKind.SelectCharacter -> ModeKind.SelectCharacter
                         | ModeKind.SelectLine -> ModeKind.SelectLine
-                        | ModeKind.SelectBlock -> ModeKind.SelectBlock
-                        | _ -> ModeKind.VisualCharacter
+                        | ModeKind.SelectBlock -> ModeKind.SelectCharacter
+                        | _ ->
+                            // We were not already in a visual mode and the
+                            // user did not initiate the selection with the
+                            // mouse.  In that case handle the external select
+                            // by using the 'selectmode=mouse' setting
+                            if isSelectModeMouse then
+                                ModeKind.SelectCharacter
+                            else
+                                ModeKind.VisualCharacter
                     Some modeKind
                 else 
+                    // Handle TextSelectionMode.Box cases
                     if _vimBuffer.ModeKind = ModeKind.SelectBlock then
+                        Some ModeKind.SelectBlock
+                    elif _vimBuffer.ModeKind = ModeKind.VisualBlock then
+                        Some ModeKind.VisualBlock
+                    elif isSelectModeMouse then
                         Some ModeKind.SelectBlock
                     else
                         Some ModeKind.VisualBlock
