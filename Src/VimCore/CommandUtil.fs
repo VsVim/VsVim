@@ -2838,10 +2838,9 @@ type internal CommandUtil
 
     /// Undo all recent changes made to the current line
     member x.UndoLine () =
-        if _lineChangeTracker.Swap() then
-            CommandResult.Completed ModeSwitch.NoSwitch
-        else
-            CommandResult.Error
+        if not (_lineChangeTracker.Swap()) then
+            _commonOperations.Beep()
+        CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Write out the ITextBuffer and quit
     member x.WriteBufferAndQuit () =
