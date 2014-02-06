@@ -715,6 +715,21 @@ namespace Vim.UnitTest
                 Assert.Equal("cat bear", _textBuffer.GetLine(0).GetText());
                 Assert.Equal(0, _textView.GetCaretPoint().Position);
             }
+
+            /// <summary>
+            /// The initial replacement and any subsequent insert mode input should be linked
+            /// into a single undo
+            /// </summary>
+            [Fact]
+            public void UndoAfterMultipleInputChars()
+            {
+                Create("dog cat bear");
+                EnterSelect(4, 4);
+                _vimBuffer.ProcessNotation("and <Esc>");
+                Assert.Equal("dog and bear", _textBuffer.GetLine(0).GetText());
+                _vimBuffer.ProcessNotation("u");
+                Assert.Equal("dog cat bear", _textBuffer.GetLine(0).GetText());
+            }
         }
 
         public sealed class KeyMovementCharacter : SelectModeIntegrationTest

@@ -2355,6 +2355,7 @@ type internal CommandUtil
         | VisualCommand.CutSelection -> x.CutSelection streamSelectionSpan
         | VisualCommand.CopySelection -> x.CopySelection streamSelectionSpan
         | VisualCommand.CutSelectionAndPaste -> x.CutSelectionAndPaste streamSelectionSpan
+        | VisualCommand.SelectAll -> x.SelectAll()
 
     /// Get the MotionResult value for the provided MotionData and pass it
     /// if found to the provided function
@@ -2920,6 +2921,11 @@ type internal CommandUtil
         _textView.Selection.Select(streamSelectionSpan.Start, streamSelectionSpan.End)
         _editorOperations.Paste() |> ignore
         CommandResult.Completed ModeSwitch.SwitchPreviousMode
+
+    /// Select the whole document
+    member x.SelectAll () =
+        _textView.Selection.Select(_textBuffer.CurrentSnapshot.GetExtent(), false)
+        CommandResult.Completed ModeSwitch.NoSwitch
 
     interface ICommandUtil with
         member x.RunNormalCommand command data = x.RunNormalCommand command data

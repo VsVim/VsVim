@@ -35,6 +35,7 @@ type internal SelectMode
                 yield ("<C-x>", CommandFlags.Special, VisualCommand.CutSelection)
                 yield ("<C-c>", CommandFlags.Special, VisualCommand.CopySelection)
                 yield ("<C-v>", CommandFlags.Special, VisualCommand.CutSelectionAndPaste)
+                yield ("<C-a>", CommandFlags.Special, VisualCommand.SelectAll)
             } |> Seq.map (fun (str, flags, command) ->
                 let keyInputSet = KeyNotationUtil.StringToKeyInputSet str
                 CommandBinding.VisualBinding (keyInputSet, flags, command))
@@ -124,10 +125,28 @@ type internal SelectMode
             _selectionTracker.UpdateSelection()
             ProcessResult.Handled ModeSwitch.NoSwitch
 
-    /// The user hit an input key.  Need to replace the current selection with the given 
-    /// text and put the caret just after the insert.  This needs to be a single undo 
-    /// transaction 
-    member x.ProcessInput text = 
+    /// The user hit an input key.  Need to replace the current selection with the given
+    /// text and put the caret just after the insert.  This needs to be a single undo
+    /// transaction
+    member x.ProcessInput text linked =
+
+        let replaceSelection (span : SnapshotSpan) text =
+            _undoRedoOperations.EditWithUndoTransaction "Replace" _textView <| fun () ->
+
+                use edit = _textBuffer.CreateEdit()
+
+                // First step is to replace the deleted text with the new one
+                edit.Delete(span.Span) |> ignore
+                edit.Insert(span.End.Position, text) |> ignore
+
+                // Now move the caret past the insert point in the new snapshot. We don't need to
+                // add one here (or even the length of the insert text).  The insert occurred at
+                // the exact point we are tracking and we chose PointTrackingMode.Positive so this
+                // will push the point past the insert
+                let snapshot = edit.Apply()
+                match TrackingPointUtil.GetPointInSnapshot span.End PointTrackingMode.Positive snapshot with
+                | None -> ()
+                | Some point -> TextViewUtil.MoveCaretToPoint _textView point
 
         // During undo we don't want the currently selected text to be reselected as that
         // would put the editor back into select mode.  Clear the selection now so that
@@ -137,24 +156,19 @@ type internal SelectMode
         _textView.Selection.Clear()
         TextViewUtil.MoveCaretToPoint _textView span.Start
 
-        _undoRedoOperations.EditWithUndoTransaction "Replace" _textView (fun () -> 
-
-            use edit = _textBuffer.CreateEdit()
-
-            // First step is to replace the deleted text with the new one
-            edit.Delete(span.Span) |> ignore
-            edit.Insert(span.End.Position, text) |> ignore
-
-            // Now move the caret past the insert point in the new snapshot. We don't need to 
-            // add one here (or even the length of the insert text).  The insert occurred at
-            // the exact point we are tracking and we chose PointTrackingMode.Positive so this 
-            // will push the point past the insert
-            let snapshot = edit.Apply()
-            match TrackingPointUtil.GetPointInSnapshot span.End PointTrackingMode.Positive snapshot with
-            | None -> ()
-            | Some point -> TextViewUtil.MoveCaretToPoint _textView point)
-
-        ProcessResult.Handled (ModeSwitch.SwitchMode ModeKind.Insert)
+        if linked then
+            let transaction = _undoRedoOperations.CreateLinkedUndoTransaction "Replace"
+            try
+                replaceSelection span text
+            with
+                | _ ->
+                    transaction.Dispose()
+                    reraise()
+            let arg = ModeArgument.InsertWithTransaction transaction
+            ProcessResult.Handled (ModeSwitch.SwitchModeWithArgument (ModeKind.Insert, arg))
+        else
+            replaceSelection span text
+            ProcessResult.Handled (ModeSwitch.SwitchMode ModeKind.Insert)
 
     member x.CanProcess keyInput =
         true
@@ -167,9 +181,9 @@ type internal SelectMode
             elif keyInput = KeyInputUtil.EnterKey then
                 let caretPoint = TextViewUtil.GetCaretPoint _textView
                 let text = _commonOperations.GetNewLineText caretPoint
-                x.ProcessInput text
+                x.ProcessInput text true
             elif keyInput.Key = VimKey.Delete || keyInput.Key = VimKey.Back then
-                x.ProcessInput "" |> ignore
+                x.ProcessInput "" false |> ignore
                 ProcessResult.Handled ModeSwitch.SwitchPreviousMode
             else
                 match GetCaretMovement keyInput with
@@ -177,7 +191,7 @@ type internal SelectMode
                     x.ProcessCaretMovement caretMovement keyInput
                 | None ->
                     if IsTextKeyInput keyInput then
-                        x.ProcessInput (StringUtil.ofChar keyInput.Char)
+                        x.ProcessInput (StringUtil.ofChar keyInput.Char) true
                     else
                         match _runner.Run keyInput with
                         | BindResult.NeedMoreInput _ ->
