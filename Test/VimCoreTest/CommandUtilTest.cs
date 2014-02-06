@@ -59,6 +59,7 @@ namespace Vim.UnitTest
             _globalSettings = Vim.GlobalSettings;
 
             var operations = CreateCommonOperations(vimBufferData);
+            var lineChangeTracker = new LineChangeTracker(vimBufferData);
             _motionUtil = new MotionUtil(vimBufferData, operations);
             _commandUtil = new CommandUtil(
                 vimBufferData,
@@ -67,7 +68,8 @@ namespace Vim.UnitTest
                 foldManager,
                 new InsertUtil(vimBufferData, _motionUtil, operations),
                 _bulkOperations,
-                MouseDevice);
+                MouseDevice,
+                lineChangeTracker);
 
             var outliningManagerService = CompositionContainer.GetExportedValue<IOutliningManagerService>();
             _outliningManager = outliningManagerService.GetOutliningManager(_textView);

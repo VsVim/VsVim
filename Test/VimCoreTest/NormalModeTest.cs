@@ -54,6 +54,7 @@ namespace Vim.UnitTest
             var vimBufferData = CreateVimBufferData(vimTextBuffer, _textView);
             var operations = CommonOperationsFactory.GetCommonOperations(vimBufferData);
             motionUtil = motionUtil ?? new MotionUtil(vimBufferData, operations);
+            var lineChangeTracker = new LineChangeTracker(vimBufferData);
 
             var capture = new MotionCapture(vimBufferData, _incrementalSearch.Object);
             var runner = new CommandRunner(

@@ -159,6 +159,7 @@ type internal VimBufferFactory
         _commonOperationsFactory : ICommonOperationsFactory,
         _wordUtil : IWordUtil,
         _textChangeTrackerFactory : ITextChangeTrackerFactory,
+        _lineChangeTrackerFactory : ILineChangeTrackerFactory,
         _textSearchService : ITextSearchService,
         _bufferTrackingService : IBufferTrackingService,
         _undoManagerProvider : ITextBufferUndoManagerProvider,
@@ -231,10 +232,11 @@ type internal VimBufferFactory
         let capture = MotionCapture(vimBufferData, incrementalSearch) :> IMotionCapture
 
         let textChangeTracker = _textChangeTrackerFactory.GetTextChangeTracker vimBufferData
+        let lineChangeTracker = _lineChangeTrackerFactory.GetLineChangeTracker vimBufferData
         let motionUtil = MotionUtil(vimBufferData, commonOperations) :> IMotionUtil
         let foldManager = _foldManagerFactory.GetFoldManager textView
         let insertUtil = InsertUtil(vimBufferData, motionUtil, commonOperations) :> IInsertUtil
-        let commandUtil = CommandUtil(vimBufferData, motionUtil, commonOperations, foldManager, insertUtil, _bulkOperations, _mouseDevice) :> ICommandUtil
+        let commandUtil = CommandUtil(vimBufferData, motionUtil, commonOperations, foldManager, insertUtil, _bulkOperations, _mouseDevice, lineChangeTracker) :> ICommandUtil
 
         let bufferRaw = VimBuffer(vimBufferData, incrementalSearch, motionUtil, wordNav, vimBufferData.WindowSettings, commandUtil)
         let buffer = bufferRaw :> IVimBuffer

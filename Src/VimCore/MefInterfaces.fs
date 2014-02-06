@@ -235,6 +235,18 @@ type ITextChangeTrackerFactory =
     /// Get the ITextChangeTracker associated with the given vim buffer information
     abstract GetTextChangeTracker : vimBufferData : IVimBufferData -> ITextChangeTracker
 
+/// Tracks changes to the associated ITextView
+type ILineChangeTracker =
+
+    /// Swap the most recently changed line with its saved copy
+    abstract Swap : unit -> bool
+
+/// Manages the ILineChangeTracker instances
+type ILineChangeTrackerFactory =
+
+    /// Get the ILineChangeTracker associated with the given vim buffer information
+    abstract GetLineChangeTracker : vimBufferData : IVimBufferData -> ILineChangeTracker
+
 /// Provides access to the system clipboard 
 type IClipboardDevice =
 

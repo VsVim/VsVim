@@ -150,6 +150,8 @@
     <Compile Include="StatusUtil.fs" />
     <Compile Include="TextChangeTracker.fsi" />
     <Compile Include="TextChangeTracker.fs" />
+    <Compile Include="LineChangeTracker.fsi" />
+    <Compile Include="LineChangeTracker.fs" />
     <Compile Include="MefComponents.fsi" />
     <Compile Include="MefComponents.fs" />
     <Compile Include="FSharpExtensions.fs" />
