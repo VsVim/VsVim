@@ -616,35 +616,32 @@ type internal InsertMode
             finally
                 _textChangeTracker.TrackCurrentChange <- true
 
-        match result with
-        | CommandResult.Completed _ ->
-            x.OnAfterRunInsertCommand command
+        x.OnAfterRunInsertCommand command
 
-            // Now we need to decided how the external world sees this edit.  If it links with an
-            // existing edit then we save it and send it out as a batch later.
-            let isEdit = Util.IsFlagSet commandFlags CommandFlags.InsertEdit
-            if isEdit then
+        // Now we need to decided how the external world sees this edit.  If it links with an
+        // existing edit then we save it and send it out as a batch later.
+        let isEdit = Util.IsFlagSet commandFlags CommandFlags.InsertEdit
+        if isEdit then
 
-                // If it's an edit then combine it with the existing command and batch them
-                // together.  Don't raise the event yet
-                let command =
-                    match _sessionData.CombinedEditCommand with
-                    | None -> command
-                    | Some previousCommand -> InsertCommand.Combined (previousCommand, command)
-                _sessionData <- { _sessionData with CombinedEditCommand = Some command }
+            // If it's an edit then combine it with the existing command and batch them 
+            // together.  Don't raise the event yet
+            let command = 
+                match _sessionData.CombinedEditCommand with
+                | None -> command
+                | Some previousCommand -> InsertCommand.Combined (previousCommand, command)
+            _sessionData <- { _sessionData with CombinedEditCommand = Some command }
 
-            else
-                // Not an edit command.  If there is an existing edit command then go ahead and flush
-                // it out before raising this command
-                x.CompleteCombinedEditCommand()
+        else
+            // Not an edit command.  If there is an existing edit command then go ahead and flush
+            // it out before raising this command
+            x.CompleteCombinedEditCommand()
 
-                let data = {
-                    CommandBinding = CommandBinding.InsertBinding (keyInputSet, commandFlags, command)
-                    Command = Command.InsertCommand command
-                    CommandResult = result }
-                let args = CommandRunDataEventArgs(data)
-                _commandRanEvent.Trigger x args
-        | _ -> ()
+            let data = {
+                CommandBinding = CommandBinding.InsertBinding (keyInputSet, commandFlags, command)
+                Command = Command.InsertCommand command
+                CommandResult = result }
+            let args = CommandRunDataEventArgs(data)
+            _commandRanEvent.Trigger x args
 
         ProcessResult.OfCommandResult result
 
@@ -725,7 +722,7 @@ type internal InsertMode
         // Otherwise process the command as is
         if point.Position = x.CaretPoint.Position then
             _operations.Beep()
-            ProcessResult.Error
+            ProcessResult.Handled ModeSwitch.NoSwitch
         else
             let keyInputSet = KeyInputSet.OneKeyInput keyInput
             let flags = CommandFlags.Repeatable ||| CommandFlags.InsertEdit
