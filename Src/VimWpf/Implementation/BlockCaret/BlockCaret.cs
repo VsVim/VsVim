@@ -270,12 +270,11 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
         private Size CalculateCaretSize()
         {
             double defaultWidth = FormattedText.Width;
-            double defaultHeight = FormattedText.Height;
 
             var caret = _textView.Caret;
             var line = caret.ContainingTextViewLine;
             double width = defaultWidth;
-            double height = line.IsValid ? line.Height : defaultHeight;
+            double height = caret.Height;
             if (IsRealCaretVisible)
             {
                 // Get the size of the character to which we need to paint the caret.  Special case
