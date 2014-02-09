@@ -572,6 +572,18 @@ type internal Vim
                     _vimRcLocalSettings <- LocalSettings(_globalSettings) 
                     _vimRcWindowSettings <- WindowSettings(_globalSettings)
                     _vimRcState <- VimRcState.LoadFailed
+
+                    // User-friendly overrides for users without an rc file.
+                    // Compare with Vim 7.4 "C:\Program Files (x86)\Vim\_vimrc"
+                    //
+                    // TODO: Should this be moved to an actual file?
+                    _globalSettings.SelectMode <- "mouse,key"
+                    _globalSettings.MouseModel <- "popup"
+                    _globalSettings.KeyModel <- "startsel,stopsel"
+                    _globalSettings.Selection <- "exclusive"
+                    _globalSettings.Backspace <- "indent,eol,start"
+                    _globalSettings.WhichWrap <- "<,>,[,]"
+
                 | Some fileContents ->
                     _globalSettings.VimRc <- fileContents.FilePath
                     let textView = _vimHost.CreateHiddenTextView()
