@@ -2303,6 +2303,7 @@ type internal CommandUtil
         | NormalCommand.SplitViewHorizontally -> x.SplitViewHorizontally()
         | NormalCommand.SplitViewVertically -> x.SplitViewVertically()
         | NormalCommand.SwitchMode (modeKind, modeArgument) -> x.SwitchMode modeKind modeArgument
+        | NormalCommand.SwitchModeVisualCommand visualKind -> x.SwitchModeVisualCommand visualKind
         | NormalCommand.SwitchPreviousVisualMode -> x.SwitchPreviousVisualMode()
         | NormalCommand.SwitchToSelection caretMovement -> x.SwitchToSelection caretMovement
         | NormalCommand.ToggleFoldUnderCaret -> x.ToggleFoldUnderCaret count
@@ -2720,6 +2721,15 @@ type internal CommandUtil
     /// Switch to the given mode
     member x.SwitchMode modeKind modeArgument = 
         CommandResult.Completed (ModeSwitch.SwitchModeWithArgument (modeKind, modeArgument))
+
+    /// Switch to the visual mode specified by 'selectmode=cmd'
+    member x.SwitchModeVisualCommand visualKind = 
+        let modeKind =
+            if Util.IsFlagSet _globalSettings.SelectModeOptions SelectModeOptions.Command then
+                visualKind.SelectModeKind
+            else
+                visualKind.VisualModeKind
+        CommandResult.Completed (ModeSwitch.SwitchModeWithArgument (modeKind, ModeArgument.None))
 
     /// Switch to the previous Visual Span selection
     member x.SwitchPreviousVisualMode () = 
