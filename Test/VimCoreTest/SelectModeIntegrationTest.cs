@@ -836,6 +836,54 @@ namespace Vim.UnitTest
                 Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
                 Assert.Equal(2, _textView.GetCaretPoint().Position);
             }
+
+            /// <summary>
+            /// Make sure 'v' with 'selectmode=cmd' enters select mode
+            /// </summary>
+            [Fact]
+            public void SelectCharacterModeWithSelectModeCommand()
+            {
+                Create("cat dog");
+                _globalSettings.SelectMode = "cmd";
+                _vimBuffer.ProcessNotation("v");
+                Assert.Equal(ModeKind.SelectCharacter, _vimBuffer.ModeKind);
+            }
+
+            /// <summary>
+            /// Make sure 'V' with 'selectmode=cmd' enters select mode
+            /// </summary>
+            [Fact]
+            public void SelectLineModeWithSelectModeCommand()
+            {
+                Create("cat dog");
+                _globalSettings.SelectMode = "cmd";
+                _vimBuffer.ProcessNotation("V");
+                Assert.Equal(ModeKind.SelectLine, _vimBuffer.ModeKind);
+            }
+
+            /// <summary>
+            /// Make sure 'C-v' with 'selectmode=cmd' enters select mode
+            /// </summary>
+            [Fact]
+            public void SelectBlockModeWithSelectModeCommand()
+            {
+                Create("cat dog");
+                _globalSettings.SelectMode = "cmd";
+                _vimBuffer.ProcessNotation("<C-v>");
+                Assert.Equal(ModeKind.SelectBlock, _vimBuffer.ModeKind);
+            }
+
+            /// <summary>
+            /// Make sure 'C-q' with 'selectmode=cmd' enters select mode
+            /// </summary>
+            [Fact]
+            public void SelectBlockModeAlternateWithSelectModeCommand()
+            {
+                Create("cat dog");
+                _globalSettings.SelectMode = "cmd";
+                _vimBuffer.ProcessNotation("<C-q>");
+                Assert.Equal(ModeKind.SelectBlock, _vimBuffer.ModeKind);
+            }
         }
     }
 }

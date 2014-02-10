@@ -2558,6 +2558,9 @@ type NormalCommand =
     /// Switch modes with the specified information
     | SwitchMode of ModeKind * ModeArgument
 
+    /// Switch to the visual mode specified by 'selectmode=cmd'
+    | SwitchModeVisualCommand of VisualKind
+
     /// Switch to the previous Visual Mode selection
     | SwitchPreviousVisualMode
 

@@ -1438,28 +1438,37 @@ namespace Vim.UnitTest
         #region Visual Mode
 
         [Fact]
-        public void Bind_SwitchMode_VisualCharacter()
+        public void Bind_SwitchModeVisualCommand_Character()
         {
             Create("");
-            _commandUtil.SetupCommandNormal(NormalCommand.NewSwitchMode(ModeKind.VisualCharacter, ModeArgument.None));
+            _commandUtil.SetupCommandNormal(NormalCommand.NewSwitchModeVisualCommand(VisualKind.Character));
             _mode.Process('v');
             _commandUtil.Verify();
         }
 
         [Fact]
-        public void Bind_SwitchMode_VisualLine()
+        public void Bind_SwitchModeVisualCommand_Line()
         {
             Create("");
-            _commandUtil.SetupCommandNormal(NormalCommand.NewSwitchMode(ModeKind.VisualLine, ModeArgument.None));
+            _commandUtil.SetupCommandNormal(NormalCommand.NewSwitchModeVisualCommand(VisualKind.Line));
             _mode.Process('V');
             _commandUtil.Verify();
         }
 
         [Fact]
-        public void Bind_SwitchMode_VisualBlock()
+        public void Bind_SwitchModeVisualCommand_Block()
         {
             Create("");
-            _commandUtil.SetupCommandNormal(NormalCommand.NewSwitchMode(ModeKind.VisualBlock, ModeArgument.None));
+            _commandUtil.SetupCommandNormal(NormalCommand.NewSwitchModeVisualCommand(VisualKind.Block));
+            _mode.Process(KeyInputUtil.CharWithControlToKeyInput('v'));
+            _commandUtil.Verify();
+        }
+
+        [Fact]
+        public void BindAlternate_SwitchModeVisualCommand_Block()
+        {
+            Create("");
+            _commandUtil.SetupCommandNormal(NormalCommand.NewSwitchModeVisualCommand(VisualKind.Block));
             _mode.Process(KeyInputUtil.CharWithControlToKeyInput('q'));
             _commandUtil.Verify();
         }
