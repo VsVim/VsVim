@@ -27,6 +27,9 @@ type KeyInput
     /// Is this a function key
     member x.IsFunctionKey = VimKeyUtil.IsFunctionKey _key
 
+    /// Is this a mouse key
+    member x.IsMouseKey = VimKeyUtil.IsMouseKey _key
+
     /// In general Vim keys compare ordinally.  The one exception is when the control
     /// modifier is applied to a letter key.  In that case the keys compare in a case 
     /// insensitive fashion.  
