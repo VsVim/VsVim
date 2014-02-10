@@ -221,11 +221,11 @@ type internal InsertMode
     let _wordCompletionUtil = WordCompletionUtil(_vimBuffer.Vim, _wordUtil)
     let mutable _commandMap : Map<KeyInput, RawInsertCommand> = Map.empty
     let mutable _sessionData = _emptySessionData
+    let mutable _isInProcess = false
 
     /// The set of commands supported by insert mode
     static let s_commands : (string * InsertCommand * CommandFlags) list =
         [
-            ("<BS>", InsertCommand.Back, CommandFlags.Repeatable ||| CommandFlags.InsertEdit)
             ("<Del>", InsertCommand.Delete, CommandFlags.Repeatable ||| CommandFlags.InsertEdit)
             ("<Enter>", InsertCommand.InsertNewLine, CommandFlags.Repeatable ||| CommandFlags.InsertEdit)
             ("<Left>", InsertCommand.MoveCaretWithArrow Direction.Left, CommandFlags.Movement)
@@ -233,14 +233,12 @@ type internal InsertMode
             ("<Right>", InsertCommand.MoveCaretWithArrow Direction.Right, CommandFlags.Movement)
             ("<Tab>", InsertCommand.InsertTab, CommandFlags.Repeatable ||| CommandFlags.InsertEdit)
             ("<Up>", InsertCommand.MoveCaret Direction.Up, CommandFlags.Movement)
-            ("<C-h>", InsertCommand.Back, CommandFlags.Repeatable ||| CommandFlags.InsertEdit)
             ("<C-i>", InsertCommand.InsertTab, CommandFlags.Repeatable ||| CommandFlags.InsertEdit)
             ("<C-d>", InsertCommand.ShiftLineLeft, CommandFlags.Repeatable)
             ("<C-e>", InsertCommand.InsertCharacterBelowCaret, CommandFlags.Repeatable)
             ("<C-m>", InsertCommand.InsertNewLine, CommandFlags.Repeatable ||| CommandFlags.InsertEdit)
             ("<C-t>", InsertCommand.ShiftLineRight, CommandFlags.Repeatable)
             ("<C-y>", InsertCommand.InsertCharacterAboveCaret, CommandFlags.Repeatable)
-            ("<C-w>", InsertCommand.DeleteWordBeforeCursor, CommandFlags.Repeatable ||| CommandFlags.InsertEdit)
             ("<C-v>", InsertCommand.Paste, CommandFlags.Repeatable ||| CommandFlags.InsertEdit)
             ("<C-Left>", InsertCommand.MoveCaretByWord Direction.Left, CommandFlags.Movement)
             ("<C-Right>", InsertCommand.MoveCaretByWord Direction.Right, CommandFlags.Movement)
@@ -249,6 +247,7 @@ type internal InsertMode
     do
         // Caret changes can end a text change operation.
         _textView.Caret.PositionChanged
+        |> Observable.filter (fun _ -> this.IsActive && not this.IsInProcess)
         |> Observable.subscribe (fun _ -> this.OnCaretPositionChanged() )
         |> _bag.Add
 
@@ -278,7 +277,10 @@ type internal InsertMode
                 ("<C-o>", RawInsertCommand.CustomCommand this.ProcessNormalModeOneCommand)
                 ("<C-p>", RawInsertCommand.CustomCommand this.ProcessWordCompletionPrevious)
                 ("<C-r>", RawInsertCommand.CustomCommand this.ProcessPasteStart)
-                ("<C-u>", RawInsertCommand.CustomCommand this.UndoInsert)
+                ("<BS>", RawInsertCommand.CustomCommand (this.RunBackspacingCommand InsertCommand.Back))
+                ("<C-h>", RawInsertCommand.CustomCommand (this.RunBackspacingCommand InsertCommand.Back))
+                ("<C-w>", RawInsertCommand.CustomCommand (this.RunBackspacingCommand InsertCommand.DeleteWordBeforeCursor))
+                ("<C-u>", RawInsertCommand.CustomCommand (this.RunBackspacingCommand InsertCommand.DeleteLineBeforeCursor))
             ]
 
         let noSelectionCommands : (string * InsertCommand * CommandFlags) list =
@@ -369,6 +371,9 @@ type internal InsertMode
 
     /// Is this the currently active mode?
     member x.IsActive = x.ModeKind = _vimBuffer.ModeKind
+
+    /// Is this mode processing key input?
+    member x.IsInProcess = _isInProcess
 
     /// Cancel the active IWordCompletionSession if there is such a session 
     /// active
@@ -677,51 +682,56 @@ type internal InsertMode
                 let insertCommand = InsertCommand.InsertText text
                 x.RunInsertCommand insertCommand keyInputSet CommandFlags.None
 
-    /// Undo from insert mode
+    /// Run an insert command that backspaces over recent input
     ///
-    /// This operation is somewhat complex in that it starts by undoing
-    /// recently entered text and optionally continues "undoing"
-    /// by deleting to the beginning of the line and then optionally
-    /// even deleting back to the end of previous lines
-    member x.UndoInsert keyInput =
+    /// Here we enforce the 'backspace=start' setting and also ensure
+    /// that commands within the current edit don't interrupt it.
+    /// That means that a context-dependent command like DeleteWordBeforeCursor
+    /// will be converted into the corresponding context-independent DeleteLeft
+    /// command, which also makes the command repeat correctly
+    member x.RunBackspacingCommand command keyInput =
 
-        let deleteLineBeforeCursor () =
-            let keyInputSet = KeyInputSet.OneKeyInput keyInput
-            let insertCommand = InsertCommand.DeleteLineBeforeCursor
-            x.RunInsertCommand insertCommand keyInputSet CommandFlags.None
-
-        let undoTextInsertion (text : String) =
-            if text.Contains("\n") then
-                deleteLineBeforeCursor ()
-            else
-                try 
-                    _textChangeTracker.TrackCurrentChange <- false
-                    let count = String.length text
-                    _insertUtil.RunInsertCommand (InsertCommand.DeleteLeft count) |> ignore
-                    _sessionData <- {
-                        _sessionData with
-                            InsertTextChange = None
-                            CombinedEditCommand = None
-                    }
-                finally 
-                    _textChangeTracker.TrackCurrentChange <- true
-                ProcessResult.Handled ModeSwitch.NoSwitch
-
-        let insertText =
-            match _sessionData.InsertTextChange with
+        // Get the point that 'backspace=start' allows backspacing over
+        let startPoint =
+            match _vimBuffer.VimTextBuffer.LastInsertEntryPoint with
+            | Some startPoint ->
+                startPoint
             | None ->
-                None
-            | Some textChange ->
-                textChange.InsertText
-        match insertText with
-        | None ->
-            if _globalSettings.IsBackspaceStart then
-                deleteLineBeforeCursor ()
+                x.CaretPoint
+
+        // Ask the insert utilties how far it would backspace to for this command
+        let point = _insertUtil.GetBackspacingPoint command
+
+        // The start position is always an intermediate point for any
+        // backspacing command.
+        let point =
+            if point.Position < startPoint.Position && startPoint.Position < x.CaretPoint.Position then
+                startPoint
             else
-                _operations.Beep()
-                ProcessResult.Handled ModeSwitch.NoSwitch
-        | Some text ->
-            undoTextInsertion text
+                point
+
+        // Enforce 'backspace=start'
+        let point =
+            if not _globalSettings.IsBackspaceStart && point.Position < startPoint.Position then
+                startPoint
+            else
+                point
+
+        // If there is nothing to backspace over, it's an error
+        // If the point is within the current edit, convert it to a DeleteLeft command
+        // Otherwise process the command as is
+        if point.Position = x.CaretPoint.Position then
+            _operations.Beep()
+            ProcessResult.Handled ModeSwitch.NoSwitch
+        else
+            let keyInputSet = KeyInputSet.OneKeyInput keyInput
+            let flags = CommandFlags.Repeatable ||| CommandFlags.InsertEdit
+            let command =
+                if point.Position >= startPoint.Position then
+                    InsertCommand.DeleteLeft (x.CaretPoint.Position - point.Position)
+                else
+                    command
+            x.RunInsertCommand command keyInputSet flags
 
     /// Try and process the KeyInput by considering the current text edit in Insert Mode
     member x.ProcessWithCurrentChange keyInput = 
@@ -816,7 +826,13 @@ type internal InsertMode
 
     /// Process the KeyInput value
     member x.Process keyInput = 
+        _isInProcess <- true
+        try
+            x.ProcessCore keyInput
+        finally
+            _isInProcess <- false
 
+    member x.ProcessCore keyInput =
         match _sessionData.ActiveEditItem with
         | ActiveEditItem.WordCompletion wordCompletionSession ->
             x.ProcessWithWordCompletionSession wordCompletionSession keyInput
@@ -844,16 +860,10 @@ type internal InsertMode
     ///
     /// Need to be careful to not end the edit due to the caret moving as a result of 
     /// normal typing
-    ///
-    /// TODO: We really need to reconsider how this is used.  If the user has mapped say 
-    /// '1' to 'Left' then we will misfire here.  Not a huge concern I think but we need
-    /// to find a crisper solution here.
     member x.OnCaretPositionChanged () = 
-        if _mouse.IsLeftButtonPressed then 
-            _textChangeTracker.CompleteChange()
-        elif _vimBuffer.ModeKind = ModeKind.Insert then 
-            if _keyboard.IsArrowKeyDown then
-                _textChangeTracker.CompleteChange()
+        _textChangeTracker.CompleteChange()
+        _sessionData <- { _sessionData with InsertTextChange = None }
+        _vimBuffer.VimTextBuffer.LastInsertEntryPoint <- Some x.CaretPoint
 
     member x.OnAfterRunInsertCommand (insertCommand : InsertCommand) =
 
@@ -865,6 +875,10 @@ type internal InsertMode
             | None, Some right -> Some right
             | _ -> None
         _sessionData <- { _sessionData with InsertTextChange = insertTextChange }
+
+        // If the command cannot be converted into a text change, reset the start point
+        if Option.isNone commandTextChange then
+            _vimBuffer.VimTextBuffer.LastInsertEntryPoint <- Some x.CaretPoint
 
         let updateRepeat count addNewLines textChange =
 
@@ -914,6 +928,9 @@ type internal InsertMode
     /// ModeArgument value. 
     member x.OnEnter arg =
         x.EnsureCommandsBuilt()
+
+        // Record start point upon initial entry to insert mode
+        _vimBuffer.VimTextBuffer.LastInsertEntryPoint <- Some x.CaretPoint
 
         // When starting insert mode we want to track the edits to the IVimBuffer as a 
         // text change

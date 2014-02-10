@@ -447,20 +447,6 @@ namespace Vim.UnitTest
                 _factory.Verify();
             }
 
-            /// <summary>
-            /// Make sure we bind the delete line before cursor
-            /// </summary>
-            [Fact]
-            public void Command_DeleteLineBeforeCursor()
-            {
-                Create(insertMode: true, lines: "");
-                _textView.SetText("hello world");
-                _globalSettings.Backspace = "start";
-                _insertUtil.Setup(x => x.RunInsertCommand(InsertCommand.DeleteLineBeforeCursor)).Returns(CommandResult.NewCompleted(ModeSwitch.NoSwitch)).Verifiable();
-                _mode.Process(KeyNotationUtil.StringToKeyInput("<C-U>"));
-                _factory.Verify();
-            }
-
             [Fact]
             public void OnLeave1()
             {
@@ -497,28 +483,27 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
-            /// When the caret moves due to the mouse being clicked that should complete the current text change
+            /// When the caret moves while insert mode is active, it should complete the current text change
             /// </summary>
             [Fact]
             public void TextChange_CaretMoveFromClickShouldComplete()
             {
                 Create("the quick brown fox");
+                _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
                 _textBuffer.Insert(0, "a");
                 _textChangeTracker.Setup(x => x.CompleteChange()).Verifiable();
-                _mouseDevice.SetupGet(x => x.IsLeftButtonPressed).Returns(true).Verifiable();
                 _textView.MoveCaretTo(7);
                 _factory.Verify();
             }
 
             /// <summary>
-            /// When the caret moves as a part of the edit then it shouldn't cause the change to complete
+            /// When the caret moves when insert mode is not active, it shouldn't cause the change to complete
             /// </summary>
             [Fact]
             public void TextChange_CaretMoveFromEdit()
             {
                 Create("the quick brown fox");
                 _textChangeTracker.Setup(x => x.CompleteChange()).Throws(new Exception());
-                _mouseDevice.SetupGet(x => x.IsLeftButtonPressed).Returns(false).Verifiable();
                 _textBuffer.Insert(0, "a");
                 _textView.MoveCaretTo(7);
                 _factory.Verify();

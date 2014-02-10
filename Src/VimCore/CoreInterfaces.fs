@@ -311,11 +311,7 @@ type TextChange =
         // progress could be made by reducing the specified values.  If further progress can be made
         // keep it else keep at least the progress already made
         let tryReduceAgain left right = 
-            let value = 
-                match TextChange.ReduceCore left right with
-                | None -> Combination (left, right) 
-                | Some reducedTextChange -> reducedTextChange
-            Some value 
+            Some (TextChange.CreateReduced left right)
 
         // Insert can only merge with a previous insert operation.  It can't 
         // merge with any deletes that came before it
@@ -2194,7 +2190,7 @@ type CommandResult =
 
     /// The command completed and requested a switch to the provided Mode which 
     /// may just be a no-op
-    | Completed  of ModeSwitch
+    | Completed of ModeSwitch
 
     /// An error was encountered and the command was unable to run.  If this is encountered
     /// during a macro run it will cause the macro to stop executing
@@ -3015,6 +3011,9 @@ and ICommandUtil =
     abstract RunCommand : command : Command -> CommandResult
 
 type internal IInsertUtil = 
+
+    /// Get the backspacing point for an insert command
+    abstract GetBackspacingPoint : InsertCommand -> SnapshotPoint
 
     /// Run a insert command
     abstract RunInsertCommand : InsertCommand -> CommandResult
@@ -4033,6 +4032,9 @@ and IVimTextBuffer =
     /// The last VisualSpan selection for the IVimTextBuffer.  This is a combination of a VisualSpan
     /// and the SnapshotPoint within the span where the caret should be positioned
     abstract LastVisualSelection : VisualSelection option with get, set
+
+    /// The point the caret occupied after Insert mode was entered 
+    abstract LastInsertEntryPoint : SnapshotPoint option with get, set
 
     /// The point the caret occupied when Insert mode was exited 
     abstract LastInsertExitPoint : SnapshotPoint option with get, set
