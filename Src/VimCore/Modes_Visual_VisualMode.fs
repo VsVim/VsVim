@@ -229,22 +229,6 @@ type internal VisualMode
         // we are the active IMode.  It's very possible that we were switched out already 
         // as part of a complex command
         if result.IsAnySwitch && _selectionTracker.IsRunning then
-            // Is this a switch to command mode? 
-            let toCommandMode = 
-                match result with
-                | ProcessResult.NotHandled -> 
-                    false
-                | ProcessResult.Error ->
-                    false
-                | ProcessResult.HandledNeedMoreInput ->
-                    false
-                | ProcessResult.Handled switch ->
-                    match switch with 
-                    | ModeSwitch.NoSwitch -> false
-                    | ModeSwitch.SwitchMode modeKind -> modeKind = ModeKind.Command
-                    | ModeSwitch.SwitchModeWithArgument (modeKind, _) -> modeKind = ModeKind.Command
-                    | ModeSwitch.SwitchPreviousMode -> false
-                    | ModeSwitch.SwitchModeOneTimeCommand -> false
 
             // On teardown we will get calls to Stop when the view is closed.  It's invalid to access 
             // the selection at that point
@@ -253,7 +237,9 @@ type internal VisualMode
                 // Before resetting the selection save it
                 _vimTextBuffer.LastVisualSelection <- Some lastVisualSelection
 
-                if not toCommandMode then
+                if result.IsAnySwitchToVisual then
+                    _selectionTracker.UpdateSelection()
+                elif not result.IsAnySwitchToCommand then
                     _textView.Selection.Clear()
                     _textView.Selection.Mode <- TextSelectionMode.Stream
 

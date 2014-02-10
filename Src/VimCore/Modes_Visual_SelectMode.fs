@@ -185,6 +185,8 @@ type internal SelectMode
             elif keyInput.Key = VimKey.Delete || keyInput.Key = VimKey.Back then
                 x.ProcessInput "" false |> ignore
                 ProcessResult.Handled ModeSwitch.SwitchPreviousMode
+            elif keyInput = KeyInputUtil.CharWithControlToKeyInput 'o' then
+                x.ProcessVisualModeOneCommand keyInput
             else
                 match GetCaretMovement keyInput with
                 | Some caretMovement ->
@@ -205,11 +207,24 @@ type internal SelectMode
                             _selectionTracker.UpdateSelection()
                             ProcessResult.Handled ModeSwitch.NoSwitch
 
-        if processResult.IsAnySwitch then
+        /// Restore or clear the selection depending on the next mode
+        if processResult.IsAnySwitchToVisual then
+            _selectionTracker.UpdateSelection()
+        elif processResult.IsAnySwitch then
             _textView.Selection.Clear()
             _textView.Selection.Mode <- TextSelectionMode.Stream
 
         processResult
+
+    /// Enter visual mode for a single command.
+    member x.ProcessVisualModeOneCommand keyInput =
+        match VisualKind.OfModeKind _modeKind with
+        | Some visualKind ->
+            let modeKind = visualKind.VisualModeKind
+            let modeSwitch = ModeSwitch.SwitchModeOneTimeCommand modeKind
+            ProcessResult.Handled modeSwitch
+        | None ->
+            ProcessResult.Error
 
     member x.OnEnter modeArgument =
         x.EnsureCommandsBuilt()

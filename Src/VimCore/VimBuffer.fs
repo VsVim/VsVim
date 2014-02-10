@@ -368,8 +368,13 @@ type internal VimBuffer
                     let maybeLeaveOneCommand() = 
                         match _inOneTimeCommand with
                         | Some modeKind ->
-                            _inOneTimeCommand <- None
-                            x.SwitchMode modeKind ModeArgument.None |> ignore
+
+                            // A completed command ends one command mode for all modes but visual.  We
+                            // stay in Visual Mode until it actually exists.  Else the simplest movement
+                            // command like 'l' would cause it to exit immediately
+                            if VisualKind.IsAnySelect modeKind || not (VisualKind.IsAnyVisual x.Mode.ModeKind) then
+                                _inOneTimeCommand <- None
+                                x.SwitchMode modeKind ModeArgument.None |> ignore
                         | None ->
                             ()
 
@@ -377,10 +382,6 @@ type internal VimBuffer
                     | ProcessResult.Handled modeSwitch ->
                         match modeSwitch with
                         | ModeSwitch.NoSwitch -> 
-                            // A completed command ends one command mode for all modes but visual.  We
-                            // stay in Visual Mode until it actually exists.  Else the simplest movement
-                            // command like 'l' would cause it to exit immediately
-                            if not (VisualKind.IsAnyVisual x.Mode.ModeKind) then
                                 maybeLeaveOneCommand()
                         | ModeSwitch.SwitchMode kind -> 
                             // An explicit mode switch doesn't affect one command mode
@@ -397,10 +398,10 @@ type internal VimBuffer
                                 x.SwitchMode modeKind ModeArgument.None |> ignore
                             | None ->
                                 x.SwitchPreviousMode() |> ignore
-                        | ModeSwitch.SwitchModeOneTimeCommand ->
+                        | ModeSwitch.SwitchModeOneTimeCommand modeKind ->
                             // Begins one command mode and immediately switches to the target mode
                             _inOneTimeCommand <- Some x.Mode.ModeKind
-                            x.SwitchMode ModeKind.Normal ModeArgument.None |> ignore
+                            x.SwitchMode modeKind ModeArgument.None |> ignore
                     | ProcessResult.HandledNeedMoreInput ->
                         ()
                     | ProcessResult.NotHandled -> 
