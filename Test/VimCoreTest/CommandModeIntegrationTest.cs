@@ -777,6 +777,19 @@ namespace Vim.UnitTest
                     RunCommandRaw(": s / /");
                     Assert.Equal("cat", _textBuffer.GetLine(0).GetText());
                 }
+
+                /// <summary>
+                /// Even a failed substitution should update the last pattern
+                /// </summary>
+                [Fact]
+                public void Issue1244()
+                {
+                    Create("cat", "dog", "fish");
+                    RunCommandRaw(":s/dog/food");
+                    Assert.Equal(_textView.GetPointInLine(0, 0), _textView.GetCaretPoint());
+                    _vimBuffer.Process("n");
+                    Assert.Equal(_textView.GetPointInLine(1, 0), _textView.GetCaretPoint());
+                }
             }
         }
 
