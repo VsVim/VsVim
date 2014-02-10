@@ -125,6 +125,26 @@ module VimKeyUtil =
         | VimKey.F12 -> true
         | _ -> false
 
+    /// Is this a mouse key
+    let IsMouseKey key =
+        match key with
+        | VimKey.LeftMouse -> true
+        | VimKey.LeftRelease -> true
+        | VimKey.LeftDrag -> true
+        | VimKey.RightMouse -> true
+        | VimKey.RightRelease -> true
+        | VimKey.RightDrag -> true
+        | VimKey.MiddleMouse -> true
+        | VimKey.MiddleRelease -> true
+        | VimKey.MiddleDrag -> true
+        | VimKey.X1Mouse -> true
+        | VimKey.X1Release -> true
+        | VimKey.X1Drag -> true
+        | VimKey.X2Mouse -> true
+        | VimKey.X2Release -> true
+        | VimKey.X2Drag -> true
+        | _ -> false
+
 [<System.Flags>]
 type KeyModifiers = 
     | None = 0x0

@@ -31,6 +31,9 @@ type KeyInput =
     /// Is this a function key
     member IsFunctionKey : bool
 
+    /// Is this a mouse key
+    member IsMouseKey : bool
+
     /// The empty KeyInput.  Used in places where a KeyInput is required but no 
     /// good mapping exists
     static member DefaultValue : KeyInput

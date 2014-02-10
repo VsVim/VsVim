@@ -217,7 +217,10 @@ type internal VisualMode
                 | BindResult.Error ->
                     _selectionTracker.UpdateSelection()
                     _operations.Beep()
-                    ProcessResult.Handled ModeSwitch.NoSwitch
+                    if ki.IsMouseKey then
+                        ProcessResult.NotHandled
+                    else
+                        ProcessResult.Handled ModeSwitch.NoSwitch
                 | BindResult.Cancelled -> 
                     _selectionTracker.UpdateSelection()
                     ProcessResult.Handled ModeSwitch.NoSwitch
