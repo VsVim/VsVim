@@ -648,18 +648,31 @@ type internal Vim
         | None ->
             false
 
+    member x.DisableVimBuffer (vimBuffer : IVimBuffer) =
+        vimBuffer.SwitchMode ModeKind.Disabled ModeArgument.None |> ignore
+
+    member x.EnableVimBuffer (vimBuffer : IVimBuffer) =
+        let modeKind =
+            if vimBuffer.TextView.Selection.IsEmpty then
+                ModeKind.Normal
+            elif Util.IsFlagSet _globalSettings.SelectModeOptions SelectModeOptions.Mouse then
+                ModeKind.SelectCharacter
+            else
+                ModeKind.VisualCharacter
+        vimBuffer.SwitchMode modeKind ModeArgument.None |> ignore
+
     /// Toggle disabled mode for all active IVimBuffer instances to sync up with the current
     /// state of _isDisabled
     member x.UpdatedDisabledMode() = 
         if _isDisabled then
             x.VimBuffers
             |> Seq.filter (fun vimBuffer -> vimBuffer.Mode.ModeKind <> ModeKind.Disabled)
-            |> Seq.iter (fun vimBuffer -> vimBuffer.SwitchMode ModeKind.Disabled ModeArgument.None |> ignore)
+            |> Seq.iter x.DisableVimBuffer
 
         else
             x.VimBuffers
             |> Seq.filter (fun vimBuffer -> vimBuffer.Mode.ModeKind = ModeKind.Disabled)
-            |> Seq.iter (fun vimBuffer -> vimBuffer.SwitchMode ModeKind.Normal ModeArgument.None |> ignore)
+            |> Seq.iter x.EnableVimBuffer
 
     interface IVim with
         member x.ActiveBuffer = x.ActiveBuffer
