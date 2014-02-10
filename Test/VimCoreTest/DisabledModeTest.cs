@@ -111,6 +111,39 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
+            /// Re-enabling with an active selection and 'selectmode='
+            /// should enable visual mode and return to normal mode
+            /// </summary>
+            [Fact]
+            public void ReenableActiveSelectionNoSelectModeMouse()
+            {
+                _vimBuffer1.Process(GlobalSettings.DisableAllCommand);
+                Assert.Equal(ModeKind.Disabled, _vimBuffer1.ModeKind);
+                _vimBuffer1.TextView.Selection.Select(0, _vimBuffer1.TextView.GetEndPoint().Position);
+                _vimBuffer1.Process(GlobalSettings.DisableAllCommand);
+                Assert.Equal(ModeKind.VisualCharacter, _vimBuffer1.ModeKind);
+                _vimBuffer1.ProcessNotation("<Esc>");
+                Assert.Equal(ModeKind.Normal, _vimBuffer1.ModeKind);
+            }
+
+            /// <summary>
+            /// Re-enabling with an active selection and 'selectmode=mouse'
+            /// should enable select mode and return to normal mode
+            /// </summary>
+            [Fact]
+            public void ReenableActiveSelectionSelectModeMouse()
+            {
+                _vimBuffer1.GlobalSettings.SelectMode = "mouse";
+                _vimBuffer1.Process(GlobalSettings.DisableAllCommand);
+                Assert.Equal(ModeKind.Disabled, _vimBuffer1.ModeKind);
+                _vimBuffer1.TextView.Selection.Select(0, _vimBuffer1.TextView.GetEndPoint().Position);
+                _vimBuffer1.Process(GlobalSettings.DisableAllCommand);
+                Assert.Equal(ModeKind.SelectCharacter, _vimBuffer1.ModeKind);
+                _vimBuffer1.ProcessNotation("<Esc>");
+                Assert.Equal(ModeKind.Normal, _vimBuffer1.ModeKind);
+            }
+
+            /// <summary>
             /// When we re-enable Vim they buffers which are already out of Disabled Mode should remain in 
             /// whatever mode they are in 
             /// </summary>
