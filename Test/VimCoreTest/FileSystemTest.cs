@@ -21,9 +21,9 @@ namespace Vim.UnitTest
             _savedEnvVariables = new Dictionary<string, string>();
 
             // Clear variables used while processing "~"
-            Environment.SetEnvironmentVariable("HOME", null);
-            Environment.SetEnvironmentVariable("HOMEDRIVE", null);
-            Environment.SetEnvironmentVariable("HOMEPATH", null);
+            RecordAndClearVariable("HOME");
+            RecordAndClearVariable("HOMEDRIVE");
+            RecordAndClearVariable("HOMEPATH");
 
             // Clear variables used while processing candidate directories
             var names = _fileSystem.VimRcDirectoryCandidates
@@ -31,9 +31,14 @@ namespace Vim.UnitTest
                 .Select(candidate => candidate.Substring(1));
             foreach (var name in names)
             {
-                _savedEnvVariables[name] = Environment.GetEnvironmentVariable(name);
-                Environment.SetEnvironmentVariable(name, null);
+                RecordAndClearVariable(name);
             }
+        }
+
+        public void RecordAndClearVariable(string name)
+        {
+            _savedEnvVariables[name] = Environment.GetEnvironmentVariable(name);
+            Environment.SetEnvironmentVariable(name, null);
         }
 
         public virtual void Dispose()
