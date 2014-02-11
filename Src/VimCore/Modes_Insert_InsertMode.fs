@@ -680,7 +680,7 @@ type internal InsertMode
 
                 let keyInputSet = KeyInputSet.OneKeyInput keyInput
                 let insertCommand = InsertCommand.InsertText text
-                x.RunInsertCommand insertCommand keyInputSet CommandFlags.None
+                x.RunInsertCommand insertCommand keyInputSet CommandFlags.InsertEdit
 
     /// Run an insert command that backspaces over recent input
     ///
