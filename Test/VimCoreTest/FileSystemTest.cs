@@ -31,7 +31,7 @@ namespace Vim.UnitTest
                 .Select(candidate => candidate.Substring(1));
             foreach (var name in names)
             {
-                _savedEnvVariables[name] = Environment.GetEnvironmentVariable(name.Substring(1));
+                _savedEnvVariables[name] = Environment.GetEnvironmentVariable(name);
                 Environment.SetEnvironmentVariable(name, null);
             }
         }
