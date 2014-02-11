@@ -10,7 +10,7 @@ open System.Text
 type internal FileSystem() =
 
     /// The environment variables considered when loading a .vimrc
-    let _environmentVariables = ["%HOME%"; "%HOMEDRIVE%%HOMEPATH%"; "%VIM%"; "%USERPROFILE%"]
+    let _vimRcDirectoryCandidates = ["~"; "$VIM"; "$USERPROFILE"]
 
     let _fileNames = [".vsvimrc"; "_vsvimrc"; ".vimrc"; "_vimrc" ]
 
@@ -82,6 +82,13 @@ type internal FileSystem() =
     /// Read all of the lines from the file at the given path.  If this fails None
     /// will be returned
     member x.ReadAllLines path =
+        match SystemUtil.TryExpandEnvironmentVariables path with
+        | Some expanded ->
+            x.ReadAllLinesExpanded expanded
+        | None ->
+            None
+
+    member x.ReadAllLinesExpanded path =
 
         // Yes I realize I wrote an entire blog post on why File.Exists is an evil
         // API to use and I'm using it in this code.  In this particular case though
@@ -105,22 +112,13 @@ type internal FileSystem() =
             None
 
     member x.GetVimRcDirectories() = 
-        let getEnvVarValue var = 
-            match System.Environment.ExpandEnvironmentVariables(var) with
-            | var1 when System.String.Equals(var1,var,System.StringComparison.InvariantCultureIgnoreCase) -> None
-            | null -> None
-            | value -> Some(value)
-
-        _environmentVariables
-        |> Seq.map getEnvVarValue
-        |> SeqUtil.filterToSome
+        _vimRcDirectoryCandidates
+        |> Seq.choose SystemUtil.TryExpandEnvironmentVariables
 
     member x.GetVimRcFilePaths() =
-
-        let standard = 
+        let standard =
             x.GetVimRcDirectories()
-            |> Seq.map (fun path -> _fileNames |> Seq.map (fun name -> Path.Combine(path,name)))
-            |> Seq.concat
+            |> Seq.collect (fun path -> _fileNames |> Seq.map (fun name -> Path.Combine(path,name)))
 
         // If the MYVIMRC environment variable is set then prefer that path over the standard
         // paths
@@ -141,7 +139,7 @@ type internal FileSystem() =
         x.GetVimRcFilePaths()  |> Seq.tryPick readLines
 
     interface IFileSystem with
-        member x.EnvironmentVariables = _environmentVariables 
+        member x.VimRcDirectoryCandidates = _vimRcDirectoryCandidates 
         member x.VimRcFileNames = _fileNames
         member x.GetVimRcDirectories () = x.GetVimRcDirectories()
         member x.GetVimRcFilePaths() = x.GetVimRcFilePaths()

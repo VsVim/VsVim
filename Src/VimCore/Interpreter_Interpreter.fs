@@ -581,6 +581,14 @@ type VimInterpreter
 
     /// Edit the specified file
     member x.RunEdit hasBang fileOptions commandOption filePath =
+        match SystemUtil.TryExpandEnvironmentVariables filePath with
+        | Some expandedFilePath ->
+            x.RunEditExpanded hasBang fileOptions commandOption expandedFilePath
+        | None ->
+            _statusUtil.OnError Resources.Common_NoEnvironmentVariableFound
+            RunResult.Completed
+
+    member x.RunEditExpanded hasBang fileOptions commandOption filePath =
         if not (List.isEmpty fileOptions) then
             _statusUtil.OnError (Resources.Interpreter_OptionNotSupported "[++opt]")
         elif Option.isSome commandOption then

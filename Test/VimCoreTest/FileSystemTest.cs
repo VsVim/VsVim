@@ -20,9 +20,18 @@ namespace Vim.UnitTest
             _fileSystem = _fileSystemRaw;
             _savedEnvVariables = new Dictionary<string, string>();
 
-            foreach (var name in _fileSystem.EnvironmentVariables.SelectMany(ev => ev.Split(new[] { '%' }, StringSplitOptions.RemoveEmptyEntries)))
+            // Clear variables used while processing "~"
+            Environment.SetEnvironmentVariable("HOME", null);
+            Environment.SetEnvironmentVariable("HOMEDRIVE", null);
+            Environment.SetEnvironmentVariable("HOMEPATH", null);
+
+            // Clear variables used while processing candidate directories
+            var names = _fileSystem.VimRcDirectoryCandidates
+                .Where(candidate => candidate.StartsWith("$"))
+                .Select(candidate => candidate.Substring(1));
+            foreach (var name in names)
             {
-                _savedEnvVariables[name] = Environment.GetEnvironmentVariable(name);
+                _savedEnvVariables[name] = Environment.GetEnvironmentVariable(name.Substring(1));
                 Environment.SetEnvironmentVariable(name, null);
             }
         }
@@ -58,10 +67,10 @@ namespace Vim.UnitTest
             [Fact]
             public void UmlautNoBom()
             {
-		var line = "let map = ö";
+                var line = "let map = ö";
                 var encoding = Encoding.GetEncoding("Latin1");
                 var bytes = encoding.GetBytes(line);
-		File.WriteAllBytes(_tempFilePath, bytes);
+                File.WriteAllBytes(_tempFilePath, bytes);
                 var lines = _fileSystem.ReadAllLines(_tempFilePath).Value;
                 Assert.Equal(line, lines[0]);
             }
@@ -69,7 +78,7 @@ namespace Vim.UnitTest
             [Fact]
             public void UmlautWithBom()
             {
-		var line = "let map = ö";
+                var line = "let map = ö";
                 var encoding = Encoding.GetEncoding("Latin1");
                 File.WriteAllLines(_tempFilePath, new[] { line }, encoding);
                 var lines = _fileSystem.ReadAllLines(_tempFilePath).Value;

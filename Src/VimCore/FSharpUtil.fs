@@ -4,6 +4,7 @@ namespace Vim
 open Microsoft.VisualStudio.Text
 open System.Collections.ObjectModel
 open System.Text
+open System.Text.RegularExpressions
 
 [<AbstractClass>]
 type internal ToggleHandler() =
@@ -802,6 +803,41 @@ module internal SystemUtil =
                 Some value
         with
             | _ -> None
+
+    let rec TryExpandEnvironmentVariables text =
+
+        let processMatch (regexMatch : Match) =
+            let token = regexMatch.Value
+            if token = "~" then
+                match TryGetEnvironmentVariable "HOME" with
+                | Some value ->
+                    value
+                | None ->
+                    match TryExpandEnvironmentVariables "$HOMEDRIVE$HOMEPATH" with
+                    | Some value ->
+                        value
+                    | None ->
+                        token
+            elif token.StartsWith("$") then
+                let variable = token.Substring(1)
+                match TryGetEnvironmentVariable variable with
+                | Some value ->
+                    value
+                | None ->
+                    token
+            else
+                token
+
+        let newText =
+            Regex.Matches(text, "(^~)|(\$[A-Z]+)|([^$]+)")
+            |> Seq.cast
+            |> Seq.map processMatch
+            |> String.concat ""
+
+        if newText.StartsWith("~") || newText.Contains("$") then
+            None
+        else
+            Some newText
 
     let GetEnvironmentVariable name = 
         match TryGetEnvironmentVariable name with
