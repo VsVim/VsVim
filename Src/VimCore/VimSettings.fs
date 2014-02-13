@@ -538,6 +538,7 @@ type internal WindowSettings
         [|
             (CursorLineName, "cul", SettingValue.Toggle false)
             (ScrollName, "scr", SettingValue.Number 25)
+            (WrapName, WrapName, SettingValue.Toggle false)
         |]
 
     let _map = SettingsMap(WindowSettingInfo, false)
@@ -587,6 +588,9 @@ type internal WindowSettings
         member x.Scroll 
             with get() = _map.GetNumberValue ScrollName
             and set value = _map.TrySetValue ScrollName (SettingValue.Number value) |> ignore
+        member x.Wrap
+            with get() = _map.GetBoolValue WrapName
+            and set value = _map.TrySetValue WrapName (SettingValue.Toggle value) |> ignore
 
         [<CLIEvent>]
         member x.SettingChanged = _map.SettingChanged
@@ -663,7 +667,12 @@ type internal EditorToSettingSynchronizer
 
     /// Is this a window setting of note
     member x.IsTrackedWindowSetting (setting : Setting) = 
-        setting.Name = WindowSettingNames.CursorLineName
+        if setting.Name = WindowSettingNames.CursorLineName then
+            true
+        elif setting.Name = WindowSettingNames.WrapName then
+            true
+        else 
+            false
 
     /// Is this an editor setting of note
     member x.IsTrackedEditorSetting optionId =
@@ -676,6 +685,8 @@ type internal EditorToSettingSynchronizer
         elif optionId = DefaultTextViewHostOptions.LineNumberMarginId.Name then
             true
         elif optionId = DefaultWpfViewOptions.EnableHighlightCurrentLineId.Name then
+            true
+        elif optionId = DefaultTextViewOptions.WordWrapStyleId.Name then
             true
         else
             false
@@ -699,7 +710,20 @@ type internal EditorToSettingSynchronizer
             EditorOptionsUtil.SetOptionValue editorOptions DefaultOptions.IndentSizeOptionId localSettings.ShiftWidth
             EditorOptionsUtil.SetOptionValue editorOptions DefaultOptions.ConvertTabsToSpacesOptionId localSettings.ExpandTab
             EditorOptionsUtil.SetOptionValue editorOptions DefaultTextViewHostOptions.LineNumberMarginId localSettings.Number
-            EditorOptionsUtil.SetOptionValue editorOptions DefaultWpfViewOptions.EnableHighlightCurrentLineId windowSettings.CursorLine)
+            EditorOptionsUtil.SetOptionValue editorOptions DefaultWpfViewOptions.EnableHighlightCurrentLineId windowSettings.CursorLine
+
+            // Wrap is a difficult option because vim has wrap as on / off while the core editor has
+            // 3 different kinds of wrapping.  If we default to only one of them then we will constantly
+            // be undoing user settings.  Hence we consider anything but off to be on and hence won't change it 
+            if windowSettings.Wrap then
+                match EditorOptionsUtil.GetOptionValue editorOptions DefaultTextViewOptions.WordWrapStyleId with
+                | None -> EditorOptionsUtil.SetOptionValue editorOptions DefaultTextViewOptions.WordWrapStyleId WordWrapStyles.WordWrap
+                | Some wordWrapStyle -> 
+                    if wordWrapStyle = WordWrapStyles.None then
+                        EditorOptionsUtil.SetOptionValue editorOptions DefaultTextViewOptions.WordWrapStyleId WordWrapStyles.WordWrap
+            else
+                EditorOptionsUtil.SetOptionValue editorOptions DefaultTextViewOptions.WordWrapStyleId WordWrapStyles.None
+            )
 
     /// Synchronize the settings from the local settings to the editor.  Do not
     /// call this directly but instead call through SynchronizeSettings
@@ -714,6 +738,9 @@ type internal EditorToSettingSynchronizer
             match EditorOptionsUtil.GetOptionValue editorOptions DefaultOptions.ConvertTabsToSpacesOptionId with
             | None -> ()
             | Some convertTabToSpace -> localSettings.ExpandTab <- convertTabToSpace
+            match EditorOptionsUtil.GetOptionValue editorOptions DefaultTextViewOptions.WordWrapStyleId with
+            | None -> ()
+            | Some wordWrapStyle -> windowSettings.Wrap <- wordWrapStyle <> WordWrapStyles.None
             match EditorOptionsUtil.GetOptionValue editorOptions DefaultTextViewHostOptions.LineNumberMarginId with
             | None -> ()
             | Some show -> localSettings.Number <- show

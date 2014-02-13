@@ -66,6 +66,7 @@ module WindowSettingNames =
 
     let CursorLineName = "cursorline"
     let ScrollName = "scroll"
+    let WrapName = "wrap"
 
 /// Types of number formats supported by CTRL-A CTRL-A
 [<RequireQualifiedAccess>]
@@ -506,5 +507,8 @@ and IVimWindowSettings =
 
     /// The scroll size 
     abstract Scroll : int with get, set
+
+    /// Whether or not the window should be wrapping
+    abstract Wrap : bool with get, set
 
     inherit IVimSettings

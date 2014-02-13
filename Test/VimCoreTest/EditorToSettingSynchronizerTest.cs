@@ -89,6 +89,40 @@ namespace Vim.UnitTest
                 _editorOptions.SetOptionValue(DefaultWpfViewOptions.EnableHighlightCurrentLineId, false);
                 Assert.False(_windowSettings.CursorLine);
             }
+
+            [Fact]
+            public void WordWrapSimple()
+            {
+                _windowSettings.Wrap = true;
+                Assert.Equal(WordWrapStyles.WordWrap, _editorOptions.GetOptionValue<WordWrapStyles>(DefaultTextViewOptions.WordWrapStyleId));
+
+                _windowSettings.Wrap = false;
+                Assert.Equal(WordWrapStyles.None, _editorOptions.GetOptionValue<WordWrapStyles>(DefaultTextViewOptions.WordWrapStyleId));
+            }
+
+            [Fact]
+            public void WordWrapReverse()
+            {
+                _editorOptions.SetOptionValue(DefaultTextViewOptions.WordWrapStyleId, WordWrapStyles.WordWrap);
+                Assert.True(_windowSettings.Wrap);
+
+                _editorOptions.SetOptionValue(DefaultTextViewOptions.WordWrapStyleId, WordWrapStyles.None);
+                Assert.False(_windowSettings.Wrap);
+            }
+
+            /// <summary>
+            /// If the wrap is a non-standard value don't overwrite it 
+            /// </summary>
+            [Fact]
+            public void WordWrapAutoIndent()
+            {
+                _editorOptions.SetOptionValue(DefaultTextViewOptions.WordWrapStyleId, WordWrapStyles.AutoIndent);
+                Assert.True(_windowSettings.Wrap);
+                Assert.Equal(WordWrapStyles.AutoIndent, _editorOptions.GetOptionValue<WordWrapStyles>(DefaultTextViewOptions.WordWrapStyleId));
+
+                _windowSettings.Wrap = false;
+                Assert.Equal(WordWrapStyles.None, _editorOptions.GetOptionValue<WordWrapStyles>(DefaultTextViewOptions.WordWrapStyleId));
+            }
         }
 
         public sealed class CopyTest : EditorToSettingSynchronizerTest
