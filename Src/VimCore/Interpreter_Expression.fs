@@ -321,6 +321,13 @@ type BinaryKind =
     | Modulo
     | Subtract
 
+/// Data for the :call command
+type CallInfo = {
+    Name : string
+    Arguments : string
+    LineRange : LineRangeSpecifier
+}
+
 type FunctionDefinition = {
 
     /// Name of the function
@@ -394,6 +401,9 @@ and [<RequireQualifiedAccess>] LineCommand =
 
     /// The :behave command to set common behaviors in certain environments
     | Behave of string
+
+    /// The :call command to invoke a function.  The first string is the 
+    | Call of CallInfo
 
     /// Change the current directory to the given value
     | ChangeDirectory of string option

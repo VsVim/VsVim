@@ -116,6 +116,7 @@ type Parser
     static let s_LineCommandNamePair = [
         ("autocmd", "au")
         ("behave", "be")
+        ("call", "cal")
         ("cd", "cd")
         ("chdir", "chd")
         ("close", "clo")
@@ -827,6 +828,20 @@ type Parser
             let mode = _tokenizer.CurrentToken.TokenText
             _tokenizer.MoveNextToken()
             LineCommand.Behave mode
+
+    member x.ParseCall lineRange = 
+        x.SkipBlanks()
+        match _tokenizer.CurrentTokenKind with
+        | TokenKind.Word name ->
+            _tokenizer.MoveNextToken()
+            let arguments = x.ParseRestOfLine()
+            let callInfo = {
+                LineRange = lineRange
+                Name = name
+                Arguments = arguments
+            }
+            LineCommand.Call callInfo 
+        | _ -> LineCommand.ParseError Resources.Parser_Error
 
     /// Parse out the change directory command.  The path here is optional
     member x.ParseChangeDirectory() =
@@ -1935,6 +1950,7 @@ type Parser
                 match name with
                 | "autocmd" -> noRange x.ParseAutoCommand
                 | "behave" -> noRange x.ParseBehave
+                | "call" -> x.ParseCall lineRange
                 | "cd" -> noRange x.ParseChangeDirectory
                 | "chdir" -> noRange x.ParseChangeDirectory
                 | "close" -> noRange x.ParseClose

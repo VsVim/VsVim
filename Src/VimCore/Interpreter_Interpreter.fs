@@ -288,6 +288,10 @@ type VimInterpreter
 
         RunResult.Completed
 
+    member x.RunCall (callInfo : CallInfo) = 
+        _statusUtil.OnError (Resources.Interpreter_CallNotSupported callInfo.Name)
+        RunResult.Completed
+
     /// Change the directory to the given value
     member x.RunChangeDirectory directoryPath = 
         match directoryPath with
@@ -1424,6 +1428,7 @@ type VimInterpreter
         match lineCommand with
         | LineCommand.AddAutoCommand autoCommandDefinition -> x.RunAddAutoCommand autoCommandDefinition
         | LineCommand.Behave model -> x.RunBehave model
+        | LineCommand.Call callInfo -> x.RunCall callInfo
         | LineCommand.ChangeDirectory path -> x.RunChangeDirectory path
         | LineCommand.ChangeLocalDirectory path -> x.RunChangeLocalDirectory path
         | LineCommand.CopyTo (sourceLineRange, destLineRange, count) -> x.RunCopyTo sourceLineRange destLineRange count

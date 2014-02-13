@@ -104,5 +104,6 @@ module internal Resources =
     let Interpreter_NoSuchVariable name = sprintf "No such variable: %s" name
     let Interpreter_UndefinedVariable name = sprintf "Undefined variable: %s" name
     let Interpreter_FunctionNotSupported = "function definitions are not supported"
+    let Interpreter_CallNotSupported name = sprintf ":call to function %s not supported" name
 
 

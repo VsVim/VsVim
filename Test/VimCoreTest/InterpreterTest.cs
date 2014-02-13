@@ -80,6 +80,33 @@ namespace Vim.UnitTest
             _interpreter.RunLineCommand(lineCommand);
         }
 
+        public sealed class CallTest : InterpreterTest
+        {
+            [Fact]
+            public void NoArguments()
+            {
+                Create();
+                ParseAndRun("call target()");
+                Assert.Equal(Resources.Interpreter_CallNotSupported("target"), _statusUtil.LastError);
+            }
+
+            [Fact]
+            public void OneArguments()
+            {
+                Create();
+                ParseAndRun("call target(a)");
+                Assert.Equal(Resources.Interpreter_CallNotSupported("target"), _statusUtil.LastError);
+            }
+
+            [Fact]
+            public void TwoArguments()
+            {
+                Create();
+                ParseAndRun("call target(a, b)");
+                Assert.Equal(Resources.Interpreter_CallNotSupported("target"), _statusUtil.LastError);
+            }
+        }
+
         public sealed class CopyTest : InterpreterTest
         {
             /// <summary>
