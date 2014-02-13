@@ -9,6 +9,7 @@ namespace VsVim.Implementation.NavigateTo
     internal sealed class NavigateToItemProvider : INavigateToItemProvider
     {
         private readonly IThreadCommunicator _threadCommunicator;
+        private string _searchText = "";
 
         internal NavigateToItemProvider(IThreadCommunicator threadCommunicator)
         {
@@ -19,18 +20,20 @@ namespace VsVim.Implementation.NavigateTo
 
         void INavigateToItemProvider.StartSearch(INavigateToCallback callback, string searchValue)
         {
-            _threadCommunicator.StartSearch();
+            _searchText = searchValue;
+            _threadCommunicator.StartSearch(searchValue);
             callback.Done();
         }
 
         void INavigateToItemProvider.StopSearch()
         {
-            _threadCommunicator.StopSearch();
+            _threadCommunicator.StopSearch(_searchText);
+            _searchText = "";
         }
 
         void IDisposable.Dispose()
         {
-            _threadCommunicator.StopSearch();
+            _threadCommunicator.Dispose();
         }
 
         #endregion

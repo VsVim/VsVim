@@ -35,13 +35,15 @@ namespace VsVim.Implementation.NavigateTo
             _synchronizationContext = WindowsFormsSynchronizationContext.Current;
         }
 
-        private void OnSearchStarted()
+        private void OnSearchStarted(string searchText)
         {
             _inSearch = true;
+            VimTrace.TraceInfo("NavigateTo Start: {0}", searchText);
         }
 
-        private void OnSearchStopped()
+        private void OnSearchStopped(string searchText)
         {
+            VimTrace.TraceInfo("NavigateTo Stop: {0}", searchText);
             if (_inSearch)
             {
                 // Once the search is stopped clear out all of the selections in active buffers.  Leaving the 
@@ -52,6 +54,11 @@ namespace VsVim.Implementation.NavigateTo
                     .Where(x => !x.Selection.IsEmpty)
                     .ForEach(x => x.Selection.Clear());
             }
+        }
+
+        private void Dispose()
+        {
+            VimTrace.TraceInfo("NavigateTo Disposed");
         }
 
         private void CallOnMainThread(Action action)
@@ -100,17 +107,25 @@ namespace VsVim.Implementation.NavigateTo
         /// <summary>
         /// WARNING!!! This method is executed from a background thread
         /// </summary>
-        void IThreadCommunicator.StartSearch()
+        void IThreadCommunicator.StartSearch(string searchText)
         {
-            CallOnMainThread(OnSearchStarted);
+            CallOnMainThread(() => OnSearchStarted(searchText));
         }
 
         /// <summary>
         /// WARNING!!! This method is executed from a background thread
         /// </summary>
-        void IThreadCommunicator.StopSearch()
+        void IThreadCommunicator.StopSearch(string searchText)
         {
-            CallOnMainThread(OnSearchStopped);
+            CallOnMainThread(() => OnSearchStopped(searchText));
+        }
+
+        /// <summary>
+        /// WARNING!!! This method is executed from a background thread
+        /// </summary>
+        void IThreadCommunicator.Dispose()
+        {
+            CallOnMainThread(Dispose);
         }
 
         #endregion
