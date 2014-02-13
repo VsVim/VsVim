@@ -969,6 +969,12 @@ type Motion =
     /// wrap is enabled
     | DisplayLineDown
 
+    /// Start of the display line 
+    | DisplayLineStart 
+
+    /// End of the display line 
+    | DisplayLineEnd
+
     /// Get the point in the middle of the screen.  This looks at the entire screen not just 
     /// the width of the current line
     | DisplayLineMiddleOfScreen

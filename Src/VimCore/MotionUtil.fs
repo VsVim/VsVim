@@ -692,6 +692,22 @@ type internal MotionUtil
 
         | _ -> x.LineUp count
 
+    member x.DisplayLineStart() =
+        match TextViewUtil.GetTextViewLines _textView with
+        | None -> None
+        | Some textViewLines ->
+            let caretLine = textViewLines.GetTextViewLineContainingBufferPosition(x.CaretPoint)
+            let span = SnapshotSpan(caretLine.Start, x.CaretPoint)
+            MotionResult.Create span false MotionKind.CharacterWiseExclusive |> Some
+
+    member x.DisplayLineEnd() =
+        match TextViewUtil.GetTextViewLines _textView with
+        | None -> None
+        | Some textViewLines ->
+            let caretLine = textViewLines.GetTextViewLineContainingBufferPosition(x.CaretPoint)
+            let span = SnapshotSpan(x.CaretPoint, caretLine.End)
+            MotionResult.Create span true MotionKind.CharacterWiseExclusive |> Some
+
     member x.DisplayLineMiddleOfScreen() =
         let createForPoint (point : SnapshotPoint) = 
             let isForward = x.CaretPoint.Position <= point.Position
@@ -2226,6 +2242,8 @@ type internal MotionUtil
             | Motion.CharSearch (kind, direction, c) -> x.CharSearch c motionArgument.Count kind direction
             | Motion.DisplayLineDown -> x.DisplayLineDown motionArgument.Count
             | Motion.DisplayLineUp -> x.DisplayLineUp motionArgument.Count
+            | Motion.DisplayLineStart -> x.DisplayLineStart()
+            | Motion.DisplayLineEnd -> x.DisplayLineEnd()
             | Motion.DisplayLineMiddleOfScreen -> x.DisplayLineMiddleOfScreen () 
             | Motion.EndOfLine -> x.EndOfLine motionArgument.Count |> Some
             | Motion.EndOfWord wordKind -> x.EndOfWord wordKind motionArgument.Count |> Some
