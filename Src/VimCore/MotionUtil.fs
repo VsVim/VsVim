@@ -697,7 +697,11 @@ type internal MotionUtil
         | None -> None
         | Some textViewLines ->
             let caretLine = textViewLines.GetTextViewLineContainingBufferPosition(x.CaretPoint)
-            let span = SnapshotSpan(caretLine.Start, x.CaretPoint)
+            let point = 
+                match caretLine.GetBufferPositionFromXCoordinate(_textView.ViewportLeft) with
+                | NullableUtil.Null -> caretLine.Start
+                | NullableUtil.HasValue point -> point
+            let span = SnapshotSpan(point, x.CaretPoint)
             MotionResult.Create span false MotionKind.CharacterWiseExclusive |> Some
 
     member x.DisplayLineEnd() =
@@ -705,7 +709,11 @@ type internal MotionUtil
         | None -> None
         | Some textViewLines ->
             let caretLine = textViewLines.GetTextViewLineContainingBufferPosition(x.CaretPoint)
-            let span = SnapshotSpan(x.CaretPoint, caretLine.End)
+            let point = 
+                match caretLine.GetBufferPositionFromXCoordinate(_textView.ViewportRight) with
+                | NullableUtil.Null -> SnapshotPointUtil.SubtractOneOrCurrent caretLine.End
+                | NullableUtil.HasValue point -> point
+            let span = SnapshotSpan(x.CaretPoint, point)
             MotionResult.Create span true MotionKind.CharacterWiseExclusive |> Some
 
     member x.DisplayLineMiddleOfScreen() =
