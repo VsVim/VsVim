@@ -969,6 +969,10 @@ type Motion =
     /// wrap is enabled
     | DisplayLineDown
 
+    /// Get the point in the middle of the screen.  This looks at the entire screen not just 
+    /// the width of the current line
+    | DisplayLineMiddleOfScreen
+
     /// Implement the 'e' motion.  This goes to the end of the current word.  If we're
     /// not currently on a word it will find the next word and then go to the end of that
     | EndOfWord of WordKind

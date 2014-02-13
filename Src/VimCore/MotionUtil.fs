@@ -692,6 +692,28 @@ type internal MotionUtil
 
         | _ -> x.LineUp count
 
+    member x.DisplayLineMiddleOfScreen() =
+        let createForPoint (point : SnapshotPoint) = 
+            let isForward = x.CaretPoint.Position <= point.Position
+            let startPoint, endPoint = SnapshotPointUtil.OrderAscending x.CaretPoint point
+            let span = SnapshotSpan(startPoint, endPoint)
+            MotionResult.Create span isForward MotionKind.CharacterWiseExclusive |> Some
+
+        match TextViewUtil.GetTextViewLines _textView with
+        | None -> None
+        | Some textViewLines ->
+            let caretLine = textViewLines.GetTextViewLineContainingBufferPosition(x.CaretPoint)
+            let middle = _textView.ViewportWidth / 2.0
+            match caretLine.GetBufferPositionFromXCoordinate(middle) with
+            | NullableUtil.Null -> 
+                // If the point is beyond the width of the line then the motion should go to the 
+                // end of the line 
+                if middle >= caretLine.Width then
+                    createForPoint caretLine.End
+                else    
+                    None
+            | NullableUtil.HasValue point -> createForPoint point
+
     /// Get the motion between the provided two lines.  The motion will be linewise
     /// and have a column of the first non-whitespace character.  If the 'startofline'
     /// option is not set it will keep the original column
@@ -2204,6 +2226,7 @@ type internal MotionUtil
             | Motion.CharSearch (kind, direction, c) -> x.CharSearch c motionArgument.Count kind direction
             | Motion.DisplayLineDown -> x.DisplayLineDown motionArgument.Count
             | Motion.DisplayLineUp -> x.DisplayLineUp motionArgument.Count
+            | Motion.DisplayLineMiddleOfScreen -> x.DisplayLineMiddleOfScreen () 
             | Motion.EndOfLine -> x.EndOfLine motionArgument.Count |> Some
             | Motion.EndOfWord wordKind -> x.EndOfWord wordKind motionArgument.Count |> Some
             | Motion.FirstNonBlankOnCurrentLine -> x.FirstNonBlankOnCurrentLine() |> Some
