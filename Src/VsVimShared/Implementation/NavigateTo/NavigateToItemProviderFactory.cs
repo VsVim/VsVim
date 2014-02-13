@@ -6,6 +6,7 @@ using System.Windows.Forms;
 using Microsoft.VisualStudio.Language.NavigateTo.Interfaces;
 using Microsoft.VisualStudio.Text.Editor;
 using Vim;
+using System.Windows.Input;
 
 namespace VsVim.Implementation.NavigateTo
 {
@@ -59,6 +60,21 @@ namespace VsVim.Implementation.NavigateTo
         private void Dispose()
         {
             VimTrace.TraceInfo("NavigateTo Disposed");
+
+            // In some configurations the C++ editor will not set focus to the ITextView which is displayed
+            // as a result of completing a NavigateTo operation.  Instead focus will be on the navigation 
+            // bar.  This is not a function of VsVim but does mess up the general keyboard usage and 
+            // hence we force the focus to be correct
+            //
+            // Note: The exact scenarios under which this happens is not well understood.  It does repro under
+            // a clean machine and Windows 8.1 but doesn't always repro under other configurations.  Either way
+            // need to fix
+            var wpfTextView = _textManager.ActiveTextViewOptional as IWpfTextView;
+            if (wpfTextView != null && !wpfTextView.HasAggregateFocus && wpfTextView.TextSnapshot.ContentType.IsCPlusPlus())
+            {
+                VimTrace.TraceInfo("NavigateTo adjust C++ focus");
+                Keyboard.Focus(wpfTextView.VisualElement);
+            }
         }
 
         private void CallOnMainThread(Action action)
