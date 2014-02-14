@@ -387,38 +387,41 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
         }
 
         /// <summary>
-        /// Update the current command to the given value
+        /// Update the current command from the given input
         /// </summary>
-        private void UpdateCommand(string command)
+        private void UpdateCommand(string input)
         {
             _inCommandUpdate = true;
             try
             {
-                command = command ?? "";
+                input = input ?? "";
                 switch (_editKind)
                 {
                     case EditKind.Command:
 
                         if (_vimBuffer.ModeKind == ModeKind.Command)
                         {
+                            var command = input.Length > 0 && input[0] == ':'
+                                ? input.Substring(1)
+                                : input;
                             _vimBuffer.CommandMode.Command = command;
                         }
                         break;
                     case EditKind.SearchBackward:
                         if (_vimBuffer.IncrementalSearch.InSearch)
                         {
-                            var pattern = command.Length > 0 && command[0] == '?'
-                                ? command.Substring(1)
-                                : command;
+                            var pattern = input.Length > 0 && input[0] == '?'
+                                ? input.Substring(1)
+                                : input;
                             _vimBuffer.IncrementalSearch.ResetSearch(pattern);
                         }
                         break;
                     case EditKind.SearchForward:
                         if (_vimBuffer.IncrementalSearch.InSearch)
                         {
-                            var pattern = command.Length > 0 && command[0] == '/'
-                                ? command.Substring(1)
-                                : command;
+                            var pattern = input.Length > 0 && input[0] == '/'
+                                ? input.Substring(1)
+                                : input;
                             _vimBuffer.IncrementalSearch.ResetSearch(pattern);
                         }
                         break;
@@ -445,9 +448,9 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
                 return;
             }
 
+            ChangeEditKind(EditKind.None);
             UpdateCommand(command);
             _vimBuffer.Process(KeyInputUtil.EnterKey);
-            ChangeEditKind(EditKind.None);
         }
 
         #region Event Handlers
