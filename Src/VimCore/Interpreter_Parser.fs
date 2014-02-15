@@ -1177,10 +1177,13 @@ type Parser
                 _tokenizer.MoveNextToken()
                 Some LineSpecifier.CurrentLine
             elif _tokenizer.CurrentChar = '\'' then
+                let mark = _tokenizer.Mark
                 _tokenizer.MoveNextToken()
 
                 match Mark.OfChar _tokenizer.CurrentChar with
-                | None -> None
+                | None -> 
+                    _tokenizer.MoveToMark mark
+                    None
                 | Some mark -> 
                     _tokenizer.MoveNextChar()
                     LineSpecifier.MarkLine mark |> Some
@@ -2070,7 +2073,7 @@ type Parser
             c |> StringUtil.ofChar |> x.TryExpand |> doParse
         | TokenKind.EndOfLine ->
             match lineRange with
-            | LineRangeSpecifier.None -> LineCommand.Nop
+            | LineRangeSpecifier.None -> handleParseResult LineCommand.Nop
             | _ -> x.ParseJumpToLine lineRange |> handleParseResult
         | _ -> 
             x.ParseJumpToLine lineRange |> handleParseResult
@@ -2079,7 +2082,6 @@ type Parser
     /// it won't ever return LineCommand.FuntionStart but instead will return LineCommand.Function
     /// instead
     member x.ParseSingleCommand() =
-
         match x.ParseSingleLine() with 
         | LineCommand.FunctionStart functionDefinition -> x.ParseFunction functionDefinition 
         | LineCommand.IfStart expr -> x.ParseIf expr
