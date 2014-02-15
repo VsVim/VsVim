@@ -4,6 +4,7 @@ namespace Vim
 open Microsoft.VisualStudio.Text
 open System.Collections.ObjectModel
 open System.Text
+open System.Text.RegularExpressions
 
 [<AbstractClass>]
 type internal ToggleHandler() =
@@ -556,7 +557,7 @@ module internal CharUtil =
 
                 // The following can only be detected with pairs of characters
                 //   (surrogate characters)
-                // Supplementary ideographic plane
+                // Supplementary ideographic plane
                 //(ucs >= 0x20000 && ucs <= 0x2fffd) ||
                 // Tertiary ideographic plane
                 //(ucs >= 0x30000 && ucs <= 0x3fffd)));
@@ -847,13 +848,56 @@ module internal SystemUtil =
             | Some drive, Some path -> CombinePath drive path
             | _ -> @"c:\"
 
-    /// Resolve the specified path.  If it starts with ~ then replace with the appropriate 
-    /// expansion
-    let ResolvePath (path : string) =
-        if System.String.IsNullOrEmpty(path) || path.[0] <> '~' then
-            path
+    /// Whether text starts with a leading tilde and is followed by either
+    // nothing else or a directory separator
+    let StartsWithTilde (text : string) =
+        if text.StartsWith("~") then
+            if text.Length = 1 then
+                true
+            else
+                let separator = text.Chars(1)
+                if separator = System.IO.Path.DirectorySeparatorChar then
+                    true
+                elif separator = System.IO.Path.AltDirectorySeparatorChar then
+                    true
+                else
+                    false
         else
-            let home = GetHome()
-            let path = path.Substring(1)
-            CombinePath home path
+            false
+                
+    /// Expand environment variables leaving undefined variables "as is"
+    ///
+    /// This function considers a leading tilde as equivalent to "$HOME" or
+    /// "$HOMEDRIVE$HOMEPATH" if those variables are defined
+    let ResolvePath text =
 
+        let processMatch (regexMatch : Match) =
+            let token = regexMatch.Value
+            if token.StartsWith("$") then
+                let variable = token.Substring(1)
+                match TryGetEnvironmentVariable variable with
+                | Some value ->
+                    value
+                | None ->
+                    token
+            else
+                token
+
+        let text =
+            Regex.Matches(text, "(\$[A-Z]+)|([^$]+)")
+            |> Seq.cast
+            |> Seq.map processMatch
+            |> String.concat ""
+
+        if StartsWithTilde text then
+            GetHome() + text.Substring(1)
+        else
+            text
+
+    /// Try to expand all the referenced environment variables
+    let TryResolvePath text =
+        let text = ResolvePath text
+        if StartsWithTilde text || text.Contains("$") then
+            None
+        else
+            Some text

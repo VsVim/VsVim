@@ -585,6 +585,7 @@ type VimInterpreter
 
     /// Edit the specified file
     member x.RunEdit hasBang fileOptions commandOption filePath =
+        let filePath = SystemUtil.ResolvePath filePath
         if not (List.isEmpty fileOptions) then
             _statusUtil.OnError (Resources.Interpreter_OptionNotSupported "[++opt]")
         elif Option.isSome commandOption then
@@ -886,7 +887,9 @@ type VimInterpreter
     
                 match filePath with
                 | None -> _vimHost.Save _textView.TextBuffer |> ignore  
-                | Some filePath -> _vimHost.SaveTextAs (lineRange.GetTextIncludingLineBreak()) filePath |> ignore
+                | Some filePath ->
+                    let filePath = SystemUtil.ResolvePath filePath
+                    _vimHost.SaveTextAs (lineRange.GetTextIncludingLineBreak()) filePath |> ignore
     
                 x.RunClose false |> ignore
     
@@ -916,6 +919,7 @@ type VimInterpreter
 
     /// Run the read file command.
     member x.RunReadFile lineRange fileOptionList filePath =
+        let filePath = SystemUtil.ResolvePath filePath
         x.RunWithLineRangeOrDefault lineRange DefaultLineRange.CurrentLine (fun lineRange ->
             if not (List.isEmpty fileOptionList) then
                 _statusUtil.OnError (Resources.Interpreter_OptionNotSupported "[++opt]")
@@ -1370,6 +1374,12 @@ type VimInterpreter
         RunResult.Completed
 
     member x.RunWrite lineRange hasBang fileOptionList filePath =
+        let filePath =
+            match filePath with
+            | Some filePath ->
+                Some (SystemUtil.ResolvePath filePath)
+            | None ->
+                None
         if not (List.isEmpty fileOptionList) then
             _statusUtil.OnError (Resources.Interpreter_OptionNotSupported "[++opt]")
         else

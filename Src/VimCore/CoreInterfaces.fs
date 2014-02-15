@@ -123,8 +123,8 @@ type FileContents = {
 /// Abstracts away VsVim's interaction with the file system to facilitate testing
 type IFileSystem =
 
-    /// Set of environment variables considered when looking for VimRC paths
-    abstract EnvironmentVariables : list<string>
+    /// Set of directories considered when looking for VimRC paths (may contain environment variables)
+    abstract VimRcDirectoryCandidates : list<string>
 
     /// Set of file names considered (in preference order) when looking for vim rc files
     abstract VimRcFileNames : list<string>
