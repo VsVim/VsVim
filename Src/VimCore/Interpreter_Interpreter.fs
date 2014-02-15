@@ -581,14 +581,7 @@ type VimInterpreter
 
     /// Edit the specified file
     member x.RunEdit hasBang fileOptions commandOption filePath =
-        match SystemUtil.TryExpandEnvironmentVariables filePath with
-        | Some expandedFilePath ->
-            x.RunEditExpanded hasBang fileOptions commandOption expandedFilePath
-        | None ->
-            _statusUtil.OnError Resources.Common_NoEnvironmentVariableFound
-            RunResult.Completed
-
-    member x.RunEditExpanded hasBang fileOptions commandOption filePath =
+        let filePath = SystemUtil.ResolvePath filePath
         if not (List.isEmpty fileOptions) then
             _statusUtil.OnError (Resources.Interpreter_OptionNotSupported "[++opt]")
         elif Option.isSome commandOption then
@@ -891,11 +884,8 @@ type VimInterpreter
                 match filePath with
                 | None -> _vimHost.Save _textView.TextBuffer |> ignore  
                 | Some filePath ->
-                    match SystemUtil.TryExpandEnvironmentVariables filePath with
-                    | Some expandedFilePath ->
-                        _vimHost.SaveTextAs (lineRange.GetTextIncludingLineBreak()) expandedFilePath |> ignore
-                    | None ->
-                        _statusUtil.OnError Resources.Common_NoEnvironmentVariableFound
+                    let filePath = SystemUtil.ResolvePath filePath
+                    _vimHost.SaveTextAs (lineRange.GetTextIncludingLineBreak()) filePath |> ignore
     
                 x.RunClose false |> ignore
     
@@ -925,14 +915,7 @@ type VimInterpreter
 
     /// Run the read file command.
     member x.RunReadFile lineRange fileOptionList filePath =
-        match SystemUtil.TryExpandEnvironmentVariables filePath with
-        | Some expandedFilePath ->
-            x.RunReadFileExpanded lineRange fileOptionList expandedFilePath
-        | None ->
-            _statusUtil.OnError Resources.Common_NoEnvironmentVariableFound
-            RunResult.Completed
-
-    member x.RunReadFileExpanded lineRange fileOptionList filePath =
+        let filePath = SystemUtil.ResolvePath filePath
         x.RunWithLineRangeOrDefault lineRange DefaultLineRange.CurrentLine (fun lineRange ->
             if not (List.isEmpty fileOptionList) then
                 _statusUtil.OnError (Resources.Interpreter_OptionNotSupported "[++opt]")
@@ -1250,14 +1233,6 @@ type VimInterpreter
 
     /// Run the :source command
     member x.RunSource hasBang filePath =
-        match SystemUtil.TryExpandEnvironmentVariables filePath with
-        | Some expandedFilePath ->
-            x.RunSourceExpanded hasBang expandedFilePath
-        | None ->
-            _statusUtil.OnError Resources.Common_NoEnvironmentVariableFound
-            RunResult.Completed
-
-    member x.RunSourceExpanded hasBang filePath =
         if hasBang then
             _statusUtil.OnError (Resources.Interpreter_OptionNotSupported "!")
         else
@@ -1395,18 +1370,12 @@ type VimInterpreter
         RunResult.Completed
 
     member x.RunWrite lineRange hasBang fileOptionList filePath =
-        match filePath with
-        | Some filePath ->
-            match SystemUtil.TryExpandEnvironmentVariables filePath with
-            | Some expandedFilePath ->
-                x.RunWriteExpanded lineRange hasBang fileOptionList (Some expandedFilePath)
+        let filePath =
+            match filePath with
+            | Some filePath ->
+                Some (SystemUtil.ResolvePath filePath)
             | None ->
-                _statusUtil.OnError Resources.Common_NoEnvironmentVariableFound
-                RunResult.Completed
-        | None ->
-            x.RunWriteExpanded lineRange hasBang fileOptionList None
-
-    member x.RunWriteExpanded lineRange hasBang fileOptionList filePath =
+                None
         if not (List.isEmpty fileOptionList) then
             _statusUtil.OnError (Resources.Interpreter_OptionNotSupported "[++opt]")
         else

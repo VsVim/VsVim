@@ -96,7 +96,8 @@ namespace Vim.UnitTest
             [Fact]
             public void GetVimRcDirectories1()
             {
-                Assert.Equal(0, _fileSystem.GetVimRcDirectories().Count());
+                // "~" is always valid, even if HOME, etc. are undefined.
+                Assert.Equal(1, _fileSystem.GetVimRcDirectories().Count());
             }
 
             [Fact]

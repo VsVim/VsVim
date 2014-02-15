@@ -82,7 +82,7 @@ type internal FileSystem() =
     /// Read all of the lines from the file at the given path.  If this fails None
     /// will be returned
     member x.ReadAllLines path =
-        match SystemUtil.TryExpandEnvironmentVariables path with
+        match SystemUtil.TryResolvePath path with
         | Some expanded ->
             x.ReadAllLinesExpanded expanded
         | None ->
@@ -113,7 +113,7 @@ type internal FileSystem() =
 
     member x.GetVimRcDirectories() = 
         _vimRcDirectoryCandidates
-        |> Seq.choose SystemUtil.TryExpandEnvironmentVariables
+        |> Seq.choose SystemUtil.TryResolvePath
 
     member x.GetVimRcFilePaths() =
         let standard =
