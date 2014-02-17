@@ -258,7 +258,7 @@ type internal InsertMode
         |> _bag.Add
 
         // Listen for global settings changes
-        _globalSettings.SettingChanged
+        (_globalSettings :> IVimSettings).SettingChanged 
         |> Observable.subscribe (fun args -> this.OnGlobalSettingsChanged args)
         |> _bag.Add
 
