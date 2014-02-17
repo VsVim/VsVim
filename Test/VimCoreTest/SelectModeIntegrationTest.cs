@@ -884,6 +884,28 @@ namespace Vim.UnitTest
                 _vimBuffer.ProcessNotation("<C-q>");
                 Assert.Equal(ModeKind.SelectBlock, _vimBuffer.ModeKind);
             }
+
+            /// <summary>
+            /// Make sure 'C-o' works from select mode
+            /// </summary>
+            [Fact]
+            public void SelectOneTimeCommand()
+            {
+                Create("cat dog eel");
+                _globalSettings.Selection = "exclusive";
+                _vimBuffer.ProcessNotation("wgh");
+                Assert.Equal(ModeKind.SelectCharacter, _vimBuffer.ModeKind);
+                Assert.Equal("d", _textView.GetSelectionSpan().GetText());
+                _vimBuffer.ProcessNotation("<C-o>");
+                Assert.Equal(ModeKind.VisualCharacter, _vimBuffer.ModeKind);
+                Assert.Equal("d", _textView.GetSelectionSpan().GetText());
+                _vimBuffer.ProcessNotation("w");
+                Assert.Equal("dog ", _textView.GetSelectionSpan().GetText());
+                Assert.Equal(ModeKind.SelectCharacter, _vimBuffer.ModeKind);
+                _vimBuffer.ProcessNotation("bear ");
+                Assert.Equal(ModeKind.Insert, _vimBuffer.ModeKind);
+                Assert.Equal("cat bear eel", _textBuffer.GetLine(0).GetText());
+            }
         }
     }
 }

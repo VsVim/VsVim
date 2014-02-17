@@ -1174,16 +1174,22 @@ type VisualKind =
 
     static member All = [ Character; Line; Block ] |> Seq.ofList
 
-    static member OfModeKind kind = 
-        match kind with 
-        | ModeKind.VisualBlock -> VisualKind.Block |> Some
-        | ModeKind.VisualLine -> VisualKind.Line |> Some
-        | ModeKind.VisualCharacter -> VisualKind.Character |> Some
+    static member OfModeKind kind =
+        match kind with
+        | ModeKind.VisualCharacter | ModeKind.SelectCharacter -> VisualKind.Character |> Some
+        | ModeKind.VisualLine | ModeKind.SelectLine -> VisualKind.Line |> Some
+        | ModeKind.VisualBlock | ModeKind.SelectBlock -> VisualKind.Block |> Some
         | _ -> None
 
-    static member IsAnyVisual kind = VisualKind.OfModeKind kind |> Option.isSome
+    static member IsAnyVisual kind =
+        match kind with
+        | ModeKind.VisualCharacter -> true
+        | ModeKind.VisualLine -> true
+        | ModeKind.VisualBlock -> true
+        | _ -> false
 
-    static member IsAnySelect kind = 
+
+    static member IsAnySelect kind =
         match kind with
         | ModeKind.SelectCharacter -> true
         | ModeKind.SelectLine -> true
@@ -2192,7 +2198,7 @@ type ModeSwitch =
 
     /// Switch to the given mode for a single command.  After the command is processed switch
     /// back to the original mode
-    | SwitchModeOneTimeCommand
+    | SwitchModeOneTimeCommand of ModeKind
 
 [<RequireQualifiedAccess>]
 [<NoComparison>]
@@ -3443,6 +3449,33 @@ type ProcessResult =
         | NotHandled -> 
             false
         | Error -> 
+            false
+
+    /// Is this any type of switch to a visual mode
+    member x.IsAnySwitchToVisual =
+        match x with
+        | ProcessResult.Handled modeSwitch ->
+            match modeSwitch with
+            | ModeSwitch.SwitchMode modeKind ->
+                VisualKind.IsAnyVisualOrSelect modeKind
+            | ModeSwitch.SwitchModeWithArgument(modeKind, _) ->
+                VisualKind.IsAnyVisualOrSelect modeKind
+            | ModeSwitch.SwitchModeOneTimeCommand modeKind ->
+                VisualKind.IsAnyVisualOrSelect modeKind
+            | _ ->
+                false
+        | _ ->
+            false
+
+    // Is this a switch to command mode?
+    member x.IsAnySwitchToCommand =
+        match x with
+        | ProcessResult.Handled modeSwitch ->
+            match modeSwitch with
+            | ModeSwitch.SwitchMode modeKind -> modeKind = ModeKind.Command
+            | ModeSwitch.SwitchModeWithArgument (modeKind, _) -> modeKind = ModeKind.Command
+            | _ -> false
+        | _ ->
             false
 
     /// Did this actually handle the KeyInput
