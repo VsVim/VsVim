@@ -451,6 +451,8 @@ type SearchKind =
         | Path.Forward -> if wrap then SearchKind.ForwardWithWrap else SearchKind.Forward
         | Path.Backward -> if wrap then SearchKind.BackwardWithWrap else SearchKind.Backward
 
+// TODO: This type should be deleted.  Instead of redundantly returning this value everywhere 
+// the confirm mode should just have a better way to return this 
 [<RequireQualifiedAccess>]
 [<NoComparison>]
 [<NoEquality>]

@@ -12,7 +12,6 @@ using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Operations;
 using Vim.Interpreter;
 using Vim.UI.Wpf;
-using Vim.UI.Wpf.Implementation.Keyboard;
 using Vim.UI.Wpf.Implementation.Misc;
 using Vim.UI.Wpf.Implementation.WordCompletion;
 using Vim.UnitTest.Exports;
@@ -33,7 +32,7 @@ namespace Vim.UnitTest
         private IVimBufferFactory _vimBufferFactory;
         private ICommonOperationsFactory _commonOperationsFactory;
         private IVimErrorDetector _vimErrorDetector;
-        private IWordUtilFactory _wordUtilFactory;
+        private IWordUtil _wordUtil;
         private IFoldManagerFactory _foldManagerFactory;
         private IBufferTrackingService _bufferTrackingService;
         private IBulkOperations _bulkOperations;
@@ -83,9 +82,9 @@ namespace Vim.UnitTest
             get { return _commonOperationsFactory; }
         }
 
-        public IWordUtilFactory WordUtilFactory
+        public IWordUtil WordUtil
         {
-            get { return _wordUtilFactory; }
+            get { return _wordUtil; }
         }
 
         public IFoldManagerFactory FoldManagerFactory
@@ -162,7 +161,7 @@ namespace Vim.UnitTest
             _vimBufferFactory = CompositionContainer.GetExportedValue<IVimBufferFactory>();
             _vimErrorDetector = CompositionContainer.GetExportedValue<IVimErrorDetector>();
             _commonOperationsFactory = CompositionContainer.GetExportedValue<ICommonOperationsFactory>();
-            _wordUtilFactory = CompositionContainer.GetExportedValue<IWordUtilFactory>();
+            _wordUtil = CompositionContainer.GetExportedValue<IWordUtil>();
             _bufferTrackingService = CompositionContainer.GetExportedValue<IBufferTrackingService>();
             _foldManagerFactory = CompositionContainer.GetExportedValue<IFoldManagerFactory>();
             _bulkOperations = CompositionContainer.GetExportedValue<IBulkOperations>();
@@ -252,15 +251,6 @@ namespace Vim.UnitTest
         }
 
         /// <summary>
-        /// Create an IUndoRedoOperations instance with the given IStatusUtil
-        /// </summary>
-        protected virtual IUndoRedoOperations CreateUndoRedoOperations(IStatusUtil statusUtil = null)
-        {
-            statusUtil = statusUtil ?? new StatusUtil();
-            return new UndoRedoOperations(statusUtil, FSharpOption<ITextUndoHistory>.None, null);
-        }
-
-        /// <summary>
         /// Create an IVimTextBuffer instance with the given lines
         /// </summary>
         protected IVimTextBuffer CreateVimTextBuffer(params string[] lines)
@@ -277,7 +267,6 @@ namespace Vim.UnitTest
             ITextView textView,
             IStatusUtil statusUtil = null,
             IJumpList jumpList = null,
-            IUndoRedoOperations undoRedoOperations = null,
             IVimWindowSettings windowSettings = null,
             IWordUtil wordUtil = null)
         {
@@ -286,7 +275,6 @@ namespace Vim.UnitTest
                 textView,
                 statusUtil,
                 jumpList,
-                undoRedoOperations,
                 windowSettings,
                 wordUtil);
         }
@@ -300,22 +288,19 @@ namespace Vim.UnitTest
             ITextView textView,
             IStatusUtil statusUtil = null,
             IJumpList jumpList = null,
-            IUndoRedoOperations undoRedoOperations = null,
             IVimWindowSettings windowSettings = null,
             IWordUtil wordUtil = null)
         {
             jumpList = jumpList ?? new JumpList(textView, _bufferTrackingService);
             statusUtil = statusUtil ?? new StatusUtil();
-            undoRedoOperations = undoRedoOperations ?? CreateUndoRedoOperations(statusUtil);
             windowSettings = windowSettings ?? new WindowSettings(vimTextBuffer.GlobalSettings);
-            wordUtil = wordUtil ?? WordUtilFactory.GetWordUtil(vimTextBuffer.TextBuffer);
+            wordUtil = wordUtil ?? WordUtil;
             return new VimBufferData(
                 vimTextBuffer,
                 textView,
                 windowSettings,
                 jumpList,
                 statusUtil,
-                undoRedoOperations,
                 wordUtil);
         }
 
@@ -355,7 +340,7 @@ namespace Vim.UnitTest
 
         protected ITextStructureNavigator CreateTextStructureNavigator(ITextBuffer textBuffer, WordKind kind)
         {
-            return WordUtilFactory.GetWordUtil(textBuffer).CreateTextStructureNavigator(kind);
+            return WordUtil.CreateTextStructureNavigator(kind, textBuffer.ContentType);
         }
 
         internal CommandUtil CreateCommandUtil(
@@ -368,14 +353,17 @@ namespace Vim.UnitTest
             motionUtil = motionUtil ?? new MotionUtil(vimBufferData, operations);
             operations = operations ?? CommonOperationsFactory.GetCommonOperations(vimBufferData);
             foldManager = foldManager ?? VimUtil.CreateFoldManager(vimBufferData.TextView, vimBufferData.StatusUtil);
-            insertUtil = insertUtil ?? new InsertUtil(vimBufferData, operations);
+            insertUtil = insertUtil ?? new InsertUtil(vimBufferData, motionUtil, operations);
+            var lineChangeTracker = new LineChangeTracker(vimBufferData);
             return new CommandUtil(
                 vimBufferData,
                 motionUtil,
                 operations,
                 foldManager,
                 insertUtil,
-                _bulkOperations);
+                _bulkOperations,
+                MouseDevice,
+                lineChangeTracker);
         }
 
         protected override void GetEditorHostParts(List<ComposablePartCatalog> composablePartCatalogList, List<ExportProvider> exportProviderList)

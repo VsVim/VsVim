@@ -31,6 +31,17 @@ namespace VsVim.Implementation.Settings
         private readonly IVimProtectedOperations _protectedOperations;
         private readonly bool _legacySettingsSupported;
 
+        internal event EventHandler<ApplicationSettingsEventArgs> SettingsChanged;
+
+        internal void OnSettingsChanged()
+        {
+            var handler = SettingsChanged;
+            if (handler != null)
+            {
+                handler(this, new ApplicationSettingsEventArgs());
+            }
+        }
+
         internal bool LegacySettingsMigrated
         {
             get
@@ -124,6 +135,7 @@ namespace VsVim.Implementation.Settings
             try
             {
                 _settingsStore.SetBoolean(CollectionPath, propertyName, value);
+                OnSettingsChanged();
             }
             catch (Exception e)
             {
@@ -156,6 +168,7 @@ namespace VsVim.Implementation.Settings
             try
             {
                 _settingsStore.SetString(CollectionPath, propertyName, value);
+                OnSettingsChanged();
             }
             catch (Exception e)
             {
@@ -222,6 +235,12 @@ namespace VsVim.Implementation.Settings
         {
             get { return GetRemovedBindings(); }
             set { SetRemovedBindings(value); }
+        }
+
+        event EventHandler<ApplicationSettingsEventArgs> IVimApplicationSettings.SettingsChanged
+        {
+            add { SettingsChanged += value; }
+            remove { SettingsChanged -= value; }
         }
 
         #endregion

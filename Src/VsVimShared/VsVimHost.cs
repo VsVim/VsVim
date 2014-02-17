@@ -35,7 +35,6 @@ namespace VsVim
 
         private readonly IVsAdapter _vsAdapter;
         private readonly ITextManager _textManager;
-        private readonly IWordUtilFactory _wordUtilFactory;
         private readonly IVsEditorAdaptersFactoryService _editorAdaptersFactoryService;
         private readonly _DTE _dte;
         private readonly IVsExtensibility _vsExtensibility;
@@ -85,7 +84,6 @@ namespace VsVim
             ITextBufferUndoManagerProvider undoManagerProvider,
             IVsEditorAdaptersFactoryService editorAdaptersFactoryService,
             IEditorOperationsFactoryService editorOperationsFactoryService,
-            IWordUtilFactory wordUtilFactory,
             ITextManager textManager,
             ISharedServiceFactory sharedServiceFactory,
             SVsServiceProvider serviceProvider)
@@ -93,7 +91,6 @@ namespace VsVim
         {
             _vsAdapter = adapter;
             _editorAdaptersFactoryService = editorAdaptersFactoryService;
-            _wordUtilFactory = wordUtilFactory;
             _dte = (_DTE)serviceProvider.GetService(typeof(_DTE));
             _vsExtensibility = (IVsExtensibility)serviceProvider.GetService(typeof(IVsExtensibility));
             _textManager = textManager;

@@ -49,7 +49,9 @@ type internal CommandUtil
         _commonOperations : ICommonOperations,
         _foldManager : IFoldManager,
         _insertUtil : IInsertUtil,
-        _bulkOperations : IBulkOperations
+        _bulkOperations : IBulkOperations,
+        _mouseDevice : IMouseDevice,
+        _lineChangeTracker : ILineChangeTracker
     ) =
 
     let _vimTextBuffer = _vimBufferData.VimTextBuffer
@@ -828,12 +830,12 @@ type internal CommandUtil
     /// Run the specified action with a wrapped undo transaction.  This is often necessary when
     /// an edit command manipulates the caret
     member x.EditWithUndoTransaciton<'T> (name : string) (action : unit -> 'T) : 'T = 
-        _undoRedoOperations.EditWithUndoTransaction name action
+        _undoRedoOperations.EditWithUndoTransaction name _textView action
 
     /// Used for the several commands which make an edit here and need the edit to be linked
     /// with the next insert mode change.  
     member x.EditWithLinkedChange name action =
-        let transaction = _undoRedoOperations.CreateLinkedUndoTransaction()
+        let transaction = _undoRedoOperations.CreateLinkedUndoTransaction name
 
         try
             x.EditWithUndoTransaciton name action
@@ -851,7 +853,7 @@ type internal CommandUtil
     /// Used for the several commands which make an edit here and need the edit to be linked
     /// with the next insert mode change.  
     member x.EditBlockWithLinkedChange name blockSpan action =
-        let transaction = _undoRedoOperations.CreateLinkedUndoTransaction()
+        let transaction = _undoRedoOperations.CreateLinkedUndoTransaction name
 
         try
             x.EditWithUndoTransaciton name action
@@ -1217,7 +1219,7 @@ type internal CommandUtil
         let savedCaretLine = x.CaretLine
 
         // REPEAT TODO: Need to file a bug to get the caret position correct here for redo
-        _undoRedoOperations.EditWithUndoTransaction "InsertLineAbove" (fun() -> 
+        _undoRedoOperations.EditWithUndoTransaction "InsertLineAbove" _textView (fun() -> 
             let line = x.CaretLine
             let newLineText = _commonOperations.GetNewLineText x.CaretPoint
             _textBuffer.Replace(new Span(line.Start.Position,0), newLineText) |> ignore)
@@ -1255,7 +1257,7 @@ type internal CommandUtil
         | None -> ()
         | Some point -> 
 
-            _undoRedoOperations.EditWithUndoTransaction  "InsertLineBelow" (fun () -> 
+            _undoRedoOperations.EditWithUndoTransaction  "InsertLineBelow" _textView (fun () -> 
                 let span = SnapshotSpan(point, 0)
                 _textBuffer.Replace(span.Span, newLineText) |> ignore
 
@@ -1627,6 +1629,29 @@ type internal CommandUtil
         x.PutAfterCaretCore registerValue count false
         CommandResult.Completed ModeSwitch.NoSwitch
 
+    /// Happens when the middle mouse button is clicked.  Need to paste the contents of the default
+    /// register at the current position 
+    member x.PutAfterCaretMouse() = 
+        try
+            match _mouseDevice.GetPosition _textView with
+            | NullableUtil.Null -> ()
+            | NullableUtil.HasValue position ->
+
+                // First move the caret to the current mouse position
+                let textViewLine = _textView.TextViewLines.GetTextViewLineContainingYCoordinate(position.Y + _textView.ViewportTop)
+                _textView.Caret.MoveTo(textViewLine, position.X + _textView.ViewportLeft) |> ignore
+
+                // Now run the put after command
+                let register = _registerMap.GetRegister RegisterName.Unnamed
+                x.PutAfterCaretCore register.RegisterValue 1 false
+        with 
+        // Dealing with ITextViewLines can lead to an exception (particularly during layout).  Need
+        // to be safe here and handle the exception.  If we can't access the ITextViewLines there
+        // isn't much that can be done for scrolling 
+        | _ -> ()
+
+        CommandResult.Completed ModeSwitch.NoSwitch
+
     /// Put the contents of the specified register before the cursor.  Used for the
     /// 'P' and 'gP' commands in normal mode
     member x.PutBeforeCaret (register : Register) count moveCaretAfterText =
@@ -1855,7 +1880,7 @@ type internal CommandUtil
         _macroRecorder.StopRecording()
         CommandResult.Completed ModeSwitch.NoSwitch
 
-    /// Undo count operations in the ITextBuffer
+    /// Redo count operations in the ITextBuffer
     member x.Redo count = 
         _commonOperations.Redo count
         CommandResult.Completed ModeSwitch.NoSwitch
@@ -1999,50 +2024,54 @@ type internal CommandUtil
     /// Replace the char under the cursor with the specified character
     member x.ReplaceChar keyInput count = 
 
-        let succeeded = 
-            let point = x.CaretPoint
-            let line = point.GetContainingLine()
-            if (point.Position + count) > line.End.Position then
-                // If the replace operation exceeds the line length then the operation
-                // can't succeed
-                false
-            else
-                // Do the replace in an undo transaction since we are explicitly positioning
-                // the caret
-                x.EditWithUndoTransaciton "ReplaceChar" (fun () -> 
+        let point = x.CaretPoint
+        let line = point.GetContainingLine()
 
-                    let replaceText = 
-                        if keyInput = KeyInputUtil.EnterKey then 
-                            let previousIndent = SnapshotLineUtil.GetIndentText line |> _commonOperations.NormalizeBlanks
-                            let replaceText = _commonOperations.GetNewLineText x.CaretPoint
-                            replaceText + previousIndent 
-                        else 
-                            new System.String(keyInput.Char, count)
-                    let span = new Span(point.Position, count)
-                    _textBuffer.Replace(span, replaceText) |> ignore
-
-                    // Don't use the ITextSnapshot that is returned from Replace.  This represents the ITextSnapshot
-                    // after our change.  If other components are listening to the Change events they could make their
-                    // own change.  The ITextSnapshot returned reflects only our change, not theirs.  To properly 
-                    // position the caret we need the current ITextSnapshot
-                    let snapshot = _textBuffer.CurrentSnapshot
-
-                    // It's possible for any edit to occur after ours including the complete deletion of the buffer
-                    // contents.  Need to account for this in the caret positioning 
-                    let position = min point.Position snapshot.Length
-
+        let replaceChar () =
+            let span = new Span(point.Position, count)
+            let position =
+                if keyInput = KeyInputUtil.EnterKey then 
+                    // Special case for replacement with a newline.  First, vim only inserts a
+                    // single newline regardless of the count.  Second, let the host do any magic
+                    // by simulating a keystroke, e.g. from inside a C# documentation comment.
+                    // The caret goes one character to the left of whereever it ended up
+                    _textBuffer.Delete(span) |> ignore
+                    _insertUtil.RunInsertCommand(InsertCommand.InsertNewLine) |> ignore
+                    _textView.GetCaretPoint().Position - 1
+                else
                     // The caret should move to the end of the replace operation which is 
                     // 'count - 1' characters from the original position 
-                    let point = SnapshotPoint(snapshot, position + (replaceText.Length - 1))
+                    let replaceText = new System.String(keyInput.Char, count)
+                    _textBuffer.Replace(span, replaceText) |> ignore
+                    point.Position + count - 1
 
-                    _textView.Caret.MoveTo(point) |> ignore)
-                true
+            // Don't use the ITextSnapshot that is returned from Replace.  This represents the ITextSnapshot
+            // after our change.  If other components are listening to the Change events they could make their
+            // own change.  The ITextSnapshot returned reflects only our change, not theirs.  To properly 
+            // position the caret we need the current ITextSnapshot
+            let snapshot = _textBuffer.CurrentSnapshot
 
-        // If the replace failed then we should beep the console
-        if not succeeded then
+            // It's possible for any edit to occur after ours including the complete deletion of the buffer
+            // contents.  Need to account for this in the caret positioning.
+            let position = min position snapshot.Length
+            let point = SnapshotPoint(snapshot, position)
+            let point =
+                if SnapshotPointUtil.IsInsideLineBreak point then
+                    SnapshotPointUtil.GetNextPointWithWrap point
+                else
+                    point
+            TextViewUtil.MoveCaretToPoint _textView point
+
+        // If the replace operation exceeds the line length then the operation
+        // can't succeed
+        if (point.Position + count) > line.End.Position then
+            // If the replace failed then we should beep the console
             _commonOperations.Beep()
             CommandResult.Error
-        else 
+        else
+            // Do the replace in an undo transaction since we are explicitly positioning
+            // the caret
+            x.EditWithUndoTransaciton "ReplaceChar" (fun () -> replaceChar())
             CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Replace the char under the cursor in visual mode.
@@ -2124,7 +2153,7 @@ type internal CommandUtil
             //
             // Using .Net dictionary because we have to map by ITextBuffer which doesn't have
             // the comparison constraint
-            let map = System.Collections.Generic.Dictionary<ITextBuffer, IUndoTransaction>();
+            let map = System.Collections.Generic.Dictionary<ITextBuffer, ITextViewUndoTransaction>();
 
             use bulkOperation = _bulkOperations.BeginBulkOperation()
             try 
@@ -2155,7 +2184,7 @@ type internal CommandUtil
                             | Some buffer -> 
                                 // Make sure we have an IUndoTransaction open in the ITextBuffer
                                 if not (map.ContainsKey(buffer.TextBuffer)) then
-                                    let transaction = _undoRedoOperations.CreateUndoTransaction "Macro Run"
+                                    let transaction = _undoRedoOperations.CreateTextViewUndoTransaction "Macro Run" buffer.TextView
                                     map.Add(buffer.TextBuffer, transaction)
                                     transaction.AddBeforeTextBufferChangePrimitive()
 
@@ -2247,6 +2276,7 @@ type internal CommandUtil
         | NormalCommand.Ping pingData -> x.Ping pingData data
         | NormalCommand.PutAfterCaret moveCaretAfterText -> x.PutAfterCaret register count moveCaretAfterText
         | NormalCommand.PutAfterCaretWithIndent -> x.PutAfterCaretWithIndent register count
+        | NormalCommand.PutAfterCaretMouse -> x.PutAfterCaretMouse()
         | NormalCommand.PutBeforeCaret moveCaretBeforeText -> x.PutBeforeCaret register count moveCaretBeforeText
         | NormalCommand.PutBeforeCaretWithIndent -> x.PutBeforeCaretWithIndent register count
         | NormalCommand.RecordMacroStart c -> x.RecordMacroStart c
@@ -2273,11 +2303,13 @@ type internal CommandUtil
         | NormalCommand.SplitViewHorizontally -> x.SplitViewHorizontally()
         | NormalCommand.SplitViewVertically -> x.SplitViewVertically()
         | NormalCommand.SwitchMode (modeKind, modeArgument) -> x.SwitchMode modeKind modeArgument
+        | NormalCommand.SwitchModeVisualCommand visualKind -> x.SwitchModeVisualCommand visualKind
         | NormalCommand.SwitchPreviousVisualMode -> x.SwitchPreviousVisualMode()
         | NormalCommand.SwitchToSelection caretMovement -> x.SwitchToSelection caretMovement
         | NormalCommand.ToggleFoldUnderCaret -> x.ToggleFoldUnderCaret count
         | NormalCommand.ToggleAllFolds -> x.ToggleAllFolds()
         | NormalCommand.Undo -> x.Undo count
+        | NormalCommand.UndoLine -> x.UndoLine()
         | NormalCommand.WriteBufferAndQuit -> x.WriteBufferAndQuit()
         | NormalCommand.Yank motion -> x.RunWithMotion motion (x.YankMotion register)
         | NormalCommand.YankLines -> x.YankLines count register
@@ -2318,10 +2350,15 @@ type internal CommandUtil
         | VisualCommand.SwitchModeInsert -> x.SwitchModeInsert visualSpan 
         | VisualCommand.SwitchModePrevious -> x.SwitchPreviousMode()
         | VisualCommand.SwitchModeVisual visualKind -> x.SwitchModeVisual visualKind 
+        | VisualCommand.SwitchModeOtherVisual -> x.SwitchModeOtherVisual visualSpan
         | VisualCommand.ToggleFoldInSelection -> x.ToggleFoldUnderCaret count
         | VisualCommand.ToggleAllFoldsInSelection-> x.ToggleAllFolds()
         | VisualCommand.YankLineSelection -> x.YankLineSelection register visualSpan
         | VisualCommand.YankSelection -> x.YankSelection register visualSpan
+        | VisualCommand.CutSelection -> x.CutSelection streamSelectionSpan
+        | VisualCommand.CopySelection -> x.CopySelection streamSelectionSpan
+        | VisualCommand.CutSelectionAndPaste -> x.CutSelectionAndPaste streamSelectionSpan
+        | VisualCommand.SelectAll -> x.SelectAll()
 
     /// Get the MotionResult value for the provided MotionData and pass it
     /// if found to the provided function
@@ -2685,6 +2722,15 @@ type internal CommandUtil
     member x.SwitchMode modeKind modeArgument = 
         CommandResult.Completed (ModeSwitch.SwitchModeWithArgument (modeKind, modeArgument))
 
+    /// Switch to the visual mode specified by 'selectmode=cmd'
+    member x.SwitchModeVisualCommand visualKind = 
+        let modeKind =
+            if Util.IsFlagSet _globalSettings.SelectModeOptions SelectModeOptions.Command then
+                visualKind.SelectModeKind
+            else
+                visualKind.VisualModeKind
+        CommandResult.Completed (ModeSwitch.SwitchModeWithArgument (modeKind, ModeArgument.None))
+
     /// Switch to the previous Visual Span selection
     member x.SwitchPreviousVisualMode () = 
         match _vimTextBuffer.LastVisualSelection with
@@ -2703,10 +2749,11 @@ type internal CommandUtil
     /// a motion or initiate a select in the editor
     member x.SwitchToSelection caretMovement =
         let anchorPoint = x.CaretPoint
-        if not (_commonOperations.MoveCaret caretMovement) then
+        if not (_commonOperations.MoveCaretWithArrow caretMovement) then
             CommandResult.Error
         else
             let visualSelection = VisualSelection.CreateForPoints VisualKind.Character anchorPoint x.CaretPoint _localSettings.TabStop
+            let visualSelection = visualSelection.AdjustForSelectionKind _globalSettings.SelectionKind
             let modeKind = 
                 if Util.IsFlagSet _globalSettings.SelectModeOptions SelectModeOptions.Keyboard then
                     ModeKind.SelectCharacter
@@ -2741,6 +2788,21 @@ type internal CommandUtil
     member x.SwitchPreviousMode() = 
         CommandResult.Completed ModeSwitch.SwitchPreviousMode 
 
+    /// Switch to other visual mode: visual from select or vice versa
+    member x.SwitchModeOtherVisual visualSpan =
+        let currentModeKind = _vimBufferData.VimTextBuffer.ModeKind
+        match VisualKind.OfModeKind currentModeKind with
+        | Some visualKind ->
+            let newModeKind =
+                if VisualKind.IsAnySelect currentModeKind then
+                    visualKind.VisualModeKind
+                else
+                    visualKind.SelectModeKind
+            x.SwitchMode newModeKind ModeArgument.None
+        | None ->
+            _commonOperations.Beep()
+            CommandResult.Completed ModeSwitch.NoSwitch
+
     /// Switch from the current visual mode into the specified visual mode
     member x.SwitchModeVisual newVisualKind = 
 
@@ -2772,6 +2834,12 @@ type internal CommandUtil
     /// Undo count operations in the ITextBuffer
     member x.Undo count = 
         _commonOperations.Undo count
+        CommandResult.Completed ModeSwitch.NoSwitch
+
+    /// Undo all recent changes made to the current line
+    member x.UndoLine () =
+        if not (_lineChangeTracker.Swap()) then
+            _commonOperations.Beep()
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Write out the ITextBuffer and quit
@@ -2842,6 +2910,29 @@ type internal CommandUtil
         let value = x.CreateRegisterValue data visualSpan.OperationKind
         _registerMap.SetRegisterValue register RegisterOperation.Yank value
         CommandResult.Completed ModeSwitch.SwitchPreviousMode
+
+    /// Cut selection
+    member x.CutSelection streamSelectionSpan =
+        _textView.Selection.Select(streamSelectionSpan.Start, streamSelectionSpan.End)
+        _editorOperations.CutSelection() |> ignore
+        CommandResult.Completed ModeSwitch.SwitchPreviousMode
+
+    /// Copy selection
+    member x.CopySelection streamSelectionSpan =
+        _textView.Selection.Select(streamSelectionSpan.Start, streamSelectionSpan.End)
+        _editorOperations.CopySelection() |> ignore
+        CommandResult.Completed ModeSwitch.NoSwitch
+
+    /// Cut selection and paste
+    member x.CutSelectionAndPaste streamSelectionSpan =
+        _textView.Selection.Select(streamSelectionSpan.Start, streamSelectionSpan.End)
+        _editorOperations.Paste() |> ignore
+        CommandResult.Completed ModeSwitch.SwitchPreviousMode
+
+    /// Select the whole document
+    member x.SelectAll () =
+        _textView.Selection.Select(_textBuffer.CurrentSnapshot.GetExtent(), false)
+        CommandResult.Completed ModeSwitch.NoSwitch
 
     interface ICommandUtil with
         member x.RunNormalCommand command data = x.RunNormalCommand command data

@@ -8,14 +8,13 @@ open Microsoft.VisualStudio.Text.Editor
 open Microsoft.VisualStudio.Text.Operations
 open Microsoft.VisualStudio.Utilities
 
-// TODO: Need to add a Close method and do actions like close the ITrackingVisualSpan.  Or
-// add tests to verify that it goes away after close
 type internal VimTextBuffer 
     (
         _textBuffer : ITextBuffer,
         _localSettings : IVimLocalSettings,
         _wordNavigator : ITextStructureNavigator,
         _bufferTrackingService : IBufferTrackingService,
+        _undoRedoOperations : IUndoRedoOperations,
         _vim : IVim
     ) =
 
@@ -24,6 +23,7 @@ type internal VimTextBuffer
     let _switchedModeEvent = StandardEvent<SwitchModeKindEventArgs>()
     let mutable _modeKind = ModeKind.Normal
     let mutable _lastVisualSelection : ITrackingVisualSelection option = None
+    let mutable _lastInsertEntryPoint : ITrackingLineColumn option = None
     let mutable _lastInsertExitPoint : ITrackingLineColumn option = None
     let mutable _lastEditPoint : ITrackingLineColumn option = None
 
@@ -43,6 +43,26 @@ type internal VimTextBuffer
                 match value with
                 | None -> None
                 | Some visualSelection -> Some (_bufferTrackingService.CreateVisualSelection visualSelection)
+
+    member x.LastInsertEntryPoint
+        with get() = 
+            match _lastInsertEntryPoint with
+            | None -> None
+            | Some lastInsertEntryPoint -> lastInsertEntryPoint.Point
+        and set value = 
+
+            // First clear out the previous information
+            match _lastInsertEntryPoint with
+            | None -> ()
+            | Some lastInsertEntryPoint -> lastInsertEntryPoint.Close()
+
+            _lastInsertEntryPoint <-
+                match value with
+                | None -> None
+                | Some point -> 
+                    let line, column = SnapshotPointUtil.GetLineColumn point
+                    let trackingLineColumn = _bufferTrackingService.CreateLineColumn _textBuffer line column LineColumnTrackingMode.Default
+                    Some trackingLineColumn
 
     member x.LastInsertExitPoint
         with get() = 
@@ -104,6 +124,7 @@ type internal VimTextBuffer
 
         // Clear out the other items
         x.LastEditPoint <- None
+        x.LastInsertEntryPoint <- None
         x.LastInsertExitPoint <- None
         x.LastVisualSelection <- None
 
@@ -173,6 +194,9 @@ type internal VimTextBuffer
         member x.LastVisualSelection 
             with get() = x.LastVisualSelection
             and set value = x.LastVisualSelection <- value
+        member x.LastInsertEntryPoint
+            with get() = x.LastInsertEntryPoint
+            and set value = x.LastInsertEntryPoint <- value
         member x.LastInsertExitPoint
             with get() = x.LastInsertExitPoint
             and set value = x.LastInsertExitPoint <- value
@@ -183,6 +207,7 @@ type internal VimTextBuffer
         member x.LocalSettings = _localSettings
         member x.ModeKind = _modeKind
         member x.Name = _vimHost.GetName _textBuffer
+        member x.UndoRedoOperations = _undoRedoOperations
         member x.Vim = _vim
         member x.WordNavigator = _wordNavigator
         member x.Clear() = x.Clear()

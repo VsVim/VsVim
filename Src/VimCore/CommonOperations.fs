@@ -178,8 +178,9 @@ type internal CommonOperations
     member x.AdjustCaretForVirtualEdit() =
 
         let allowPastEndOfLine = 
+            _vimTextBuffer.ModeKind = ModeKind.Insert ||
             _globalSettings.IsVirtualEditOneMore ||
-            (_globalSettings.SelectionKind = SelectionKind.Exclusive && VisualKind.IsAnyVisual _vimTextBuffer.ModeKind)
+            (_globalSettings.SelectionKind = SelectionKind.Exclusive && VisualKind.IsAnyVisualOrSelect _vimTextBuffer.ModeKind)
 
         if not allowPastEndOfLine then
             let point = TextViewUtil.GetCaretPoint _textView
@@ -286,7 +287,7 @@ type internal CommonOperations
                 // Use a transaction to properly position the caret for undo / redo.  We want it in the same
                 // place for undo / redo so move it before the transaction
                 TextViewUtil.MoveCaretToPoint _textView caretPoint
-                _undoRedoOperations.EditWithUndoTransaction "Delete Lines" (fun() ->
+                _undoRedoOperations.EditWithUndoTransaction "Delete Lines" _textView (fun() ->
                     let snapshot = _textBuffer.Delete(span.Span)
 
                     // After delete the span should move to the start of the line of the same number 
@@ -399,6 +400,28 @@ type internal CommonOperations
             _editorOperations.PageDown(false)
             true
 
+        let moveControlUp () =
+            moveUp()
+
+        let moveControlDown () =
+            moveDown()
+
+        let moveControlLeft () =
+            _editorOperations.MoveToPreviousWord(false)
+            true
+
+        let moveControlRight () =
+            _editorOperations.MoveToNextWord(false)
+            true
+
+        let moveControlHome () =
+            _editorOperations.MoveToStartOfDocument(false)
+            true
+
+        let moveControlEnd () =
+            _editorOperations.MoveToEndOfDocument(false)
+            true
+
         match caretMovement with
         | CaretMovement.Up -> moveUp()
         | CaretMovement.Down -> moveDown()
@@ -408,6 +431,44 @@ type internal CommonOperations
         | CaretMovement.End -> moveEnd()
         | CaretMovement.PageUp -> movePageUp()
         | CaretMovement.PageDown -> movePageDown()
+        | CaretMovement.ControlUp -> moveControlUp()
+        | CaretMovement.ControlDown -> moveControlDown()
+        | CaretMovement.ControlLeft -> moveControlLeft()
+        | CaretMovement.ControlRight -> moveControlRight()
+        | CaretMovement.ControlHome -> moveControlHome()
+        | CaretMovement.ControlEnd -> moveControlEnd()
+
+    /// Move the caret in the given direction with an arrow key
+    member x.MoveCaretWithArrow caretMovement =
+
+        /// Move left one character taking into account 'whichwrap'
+        let moveLeft () =
+            if _globalSettings.IsWhichWrapArrowLeftInsert then
+                if SnapshotPointUtil.IsStartPoint x.CaretPoint then
+                    false
+                else
+                    let point = SnapshotPointUtil.GetPreviousPointWithWrap x.CaretPoint
+                    x.MoveCaretToPoint point ViewFlags.Standard
+                    true
+            else
+                x.MoveCaret caretMovement
+
+        /// Move right one character taking into account 'whichwrap'
+        let moveRight () =
+            if _globalSettings.IsWhichWrapArrowRightInsert then
+                if SnapshotPointUtil.IsEndPoint x.CaretPoint then
+                    false
+                else
+                    let point = SnapshotPointUtil.GetNextPointWithWrap x.CaretPoint
+                    x.MoveCaretToPoint point ViewFlags.Standard
+                    true
+            else
+                x.MoveCaret caretMovement
+
+        match caretMovement with
+        | CaretMovement.Left -> moveLeft()
+        | CaretMovement.Right -> moveRight()
+        | _ -> x.MoveCaret caretMovement
 
     /// Move the caret to the specified point and ensure the specified view properties are 
     /// correct at that point 
@@ -903,7 +964,7 @@ type internal CommonOperations
             //
             // A substitute command should update both of them 
             _vimData.LastSubstituteData <- Some { SearchPattern = pattern; Substitute = replace; Flags = flags}
-            _vimData.LastPatternData <- { Pattern = pattern; Path = Path.Forward }
+            _vimData.LastSearchData <- SearchData(pattern, Path.Forward, _globalSettings.WrapScan)
 
     /// Convert the provided whitespace into spaces.  The conversion of 
     /// tabs into spaces will be done based on the TabSize setting
@@ -1167,6 +1228,7 @@ type internal CommonOperations
         member x.GoToTab index = x.GoToTab index
         member x.Join range kind = x.Join range kind
         member x.MoveCaret caretMovement = x.MoveCaret caretMovement
+        member x.MoveCaretWithArrow caretMovement = x.MoveCaretWithArrow caretMovement
         member x.MoveCaretToPoint point viewFlags =  x.MoveCaretToPoint point viewFlags
         member x.MoveCaretToMotionResult data = x.MoveCaretToMotionResult data
         member x.NavigateToPoint point = x.NavigateToPoint point

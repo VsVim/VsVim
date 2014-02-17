@@ -41,9 +41,14 @@ type internal MotionCapture
                 yield ("gg", MotionFlags.CaretMovement, Motion.LineOrFirstToFirstNonBlank)
                 yield ("gj", MotionFlags.CaretMovement, Motion.DisplayLineDown)
                 yield ("gk", MotionFlags.CaretMovement, Motion.DisplayLineUp)
+                yield ("gm", MotionFlags.CaretMovement, Motion.DisplayLineMiddleOfScreen)
+                yield ("g0", MotionFlags.CaretMovement, Motion.DisplayLineStart)
+                yield ("g$", MotionFlags.CaretMovement, Motion.DisplayLineEnd)
                 yield ("g_", MotionFlags.CaretMovement, Motion.LastNonBlankOnLine)
                 yield ("g*", MotionFlags.CaretMovement, Motion.NextPartialWord Path.Forward)
                 yield ("g#", MotionFlags.CaretMovement, Motion.NextPartialWord Path.Backward)
+                yield ("g<Home>", MotionFlags.CaretMovement, Motion.DisplayLineStart)
+                yield ("g<End>", MotionFlags.CaretMovement, Motion.DisplayLineEnd)
                 yield ("G", MotionFlags.CaretMovement, Motion.LineOrLastToFirstNonBlank)
                 yield ("h", MotionFlags.CaretMovement, Motion.CharLeft)
                 yield ("H", MotionFlags.CaretMovement, Motion.LineFromTopOfVisibleWindow)
@@ -71,9 +76,9 @@ type internal MotionCapture
                 yield ("L", MotionFlags.CaretMovement, Motion.LineFromBottomOfVisibleWindow)
                 yield ("w", MotionFlags.CaretMovement, Motion.WordForward WordKind.NormalWord)
                 yield ("W", MotionFlags.CaretMovement, Motion.WordForward WordKind.BigWord)
-                yield ("<Bs>", MotionFlags.CaretMovement, Motion.CharLeft)
+                yield ("<Bs>", MotionFlags.CaretMovement, Motion.SpaceLeft)
                 yield ("<C-Home>", MotionFlags.CaretMovement, Motion.LineOrFirstToFirstNonBlank)
-                yield ("<C-h>", MotionFlags.CaretMovement, Motion.CharLeft)
+                yield ("<C-h>", MotionFlags.CaretMovement, Motion.SpaceLeft)
                 yield ("<C-Right>", MotionFlags.CaretMovement, Motion.WordForward WordKind.BigWord)
                 yield ("<C-Left>", MotionFlags.CaretMovement, Motion.WordBackward WordKind.BigWord)
                 yield ("<C-j>", MotionFlags.CaretMovement, Motion.LineDown)
@@ -83,9 +88,9 @@ type internal MotionCapture
                 yield ("<Down>", MotionFlags.CaretMovement, Motion.LineDown)
                 yield ("<End>", MotionFlags.CaretMovement, Motion.EndOfLine)
                 yield ("<Home>", MotionFlags.CaretMovement, Motion.BeginingOfLine)
-                yield ("<Left>", MotionFlags.CaretMovement, Motion.CharLeft)
-                yield ("<Right>", MotionFlags.CaretMovement, Motion.CharRight)
-                yield ("<Space>", MotionFlags.CaretMovement, Motion.CharRight)
+                yield ("<Left>", MotionFlags.CaretMovement, Motion.ArrowLeft)
+                yield ("<Right>", MotionFlags.CaretMovement, Motion.ArrowRight)
+                yield ("<Space>", MotionFlags.CaretMovement, Motion.SpaceRight)
                 yield ("<S-Left>", MotionFlags.CaretMovement, Motion.WordBackward WordKind.NormalWord)
                 yield ("<S-Space>", MotionFlags.CaretMovement, Motion.WordForward WordKind.NormalWord)
                 yield ("<S-Right>", MotionFlags.CaretMovement, Motion.WordForward WordKind.NormalWord)
@@ -200,7 +205,9 @@ type internal MotionCapture
     
     let AllMotionsCore =
         let complex = ComplexMotions 
-        SharedMotions |> Seq.append complex
+        SharedMotions 
+        |> Seq.append complex
+        |> List.ofSeq
 
     let MotionBindings = AllMotionsCore
 

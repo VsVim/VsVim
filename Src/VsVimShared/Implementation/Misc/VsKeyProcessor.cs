@@ -19,6 +19,7 @@ namespace VsVim.Implementation.Misc
         private readonly IVsAdapter _adapter;
         private readonly IVimBufferCoordinator _bufferCoordinator;
         private readonly IReportDesignerUtil _reportDesignerUtil;
+        private readonly IVimHost _vimHost;
         private int _keyDownCount;
         private Lazy<PropertyInfo> _searchInProgressInfo;
 
@@ -27,12 +28,13 @@ namespace VsVim.Implementation.Misc
             get { return _keyDownCount; }
         }
 
-        internal VsKeyProcessor(IVsAdapter adapter, IVimBufferCoordinator bufferCoordinator, IKeyUtil keyUtil, IReportDesignerUtil reportDesignerUtil, IWpfTextView wpfTextView)
-            : base(bufferCoordinator.VimBuffer, keyUtil, wpfTextView)
+        internal VsKeyProcessor(IVsAdapter adapter, IVimBufferCoordinator bufferCoordinator, IKeyUtil keyUtil, IReportDesignerUtil reportDesignerUtil)
+            : base(bufferCoordinator.VimBuffer, keyUtil)
         {
             _adapter = adapter;
             _reportDesignerUtil = reportDesignerUtil;
             _bufferCoordinator = bufferCoordinator;
+            _vimHost = bufferCoordinator.VimBuffer.Vim.VimHost;
             _searchInProgressInfo = new Lazy<PropertyInfo>(FindSearchInProgressPropertyInfo);
         }
 
@@ -43,6 +45,15 @@ namespace VsVim.Implementation.Misc
         /// </summary>
         protected override bool TryProcess(KeyInput keyInput)
         {
+            // If the ITextView doesn't have aggregate focus then this event needs to be discarded.  This will
+            // happen when a peek definition window is active.  The peek window is a child and if it fails to 
+            // process a key event it will bubble up to the parent window.  If the peek window has focus the
+            // parent window shouldn't be handling the key
+            if (!_vimHost.IsFocused(TextView))
+            {
+                return false;
+            }
+
             // Check to see if we should be discarding this KeyInput value.  If it is discarded and 
             // made it back to us then we need to pretend that it was handled here
             if (_bufferCoordinator.IsDiscarded(keyInput))

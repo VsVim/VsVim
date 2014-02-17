@@ -24,7 +24,7 @@ namespace Vim.UnitTest
         public virtual void Create(ITextSearchService textSearchService, params string[] lines)
         {
             _textBuffer = CreateTextBuffer(lines);
-            _wordNavigator = WordUtilFactory.GetWordUtil(_textBuffer).CreateTextStructureNavigator(WordKind.NormalWord);
+            _wordNavigator = WordUtil.CreateTextStructureNavigator(WordKind.NormalWord, _textBuffer.ContentType);
             _globalSettings = Vim.GlobalSettings;
             _globalSettings.Magic = true;
             _globalSettings.IgnoreCase = true;

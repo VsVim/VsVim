@@ -911,6 +911,170 @@ namespace Vim.UnitTest
                 Assert.Equal("", data.Span.GetText());
             }
 
+            /// <summary>
+            /// Space right on the last character of the line should produce a
+            /// span to the beginning of the next line
+            /// </summary>
+            [Fact]
+            public void SpaceRight_LastCharacter()
+            {
+                Create("cat", "dog");
+                _textView.MoveCaretTo(2);
+                var data = _motionUtil.SpaceRight(1);
+                Assert.Equal("t\r\n", data.Span.GetText());
+            }
+
+            /// <summary>
+            /// Space right after the last character of the line should produce a
+            /// span containing just the line break
+            /// </summary>
+            [Fact]
+            public void SpaceRight_EndOfLine()
+            {
+                Create("cat", "dog");
+                _textView.MoveCaretTo(3);
+                var data = _motionUtil.SpaceRight(1);
+                Assert.Equal("\r\n", data.Span.GetText());
+            }
+
+            /// <summary>
+            /// Space right on the last character of the line with
+            /// 'virtualedit=onemore' should produce a span containing
+            /// just that character
+            /// </summary>
+            [Fact]
+            public void SpaceRight_LastCharacterVirtualEdit()
+            {
+                Create("cat", "dog");
+                _globalSettings.VirtualEdit = "onemore";
+                _textView.MoveCaretTo(2);
+                var data = _motionUtil.SpaceRight(1);
+                Assert.Equal("t", data.Span.GetText());
+            }
+
+            /// <summary>
+            /// Space right after the last character of the line with
+            /// 'virtualedit=onemore' should produce a span containing
+            /// just the line break
+            /// </summary>
+            [Fact]
+            public void SpaceRight_EndOfLineVirtualEdit()
+            {
+                Create("cat", "dog");
+                _globalSettings.VirtualEdit = "onemore";
+                _textView.MoveCaretTo(3);
+                var data = _motionUtil.SpaceRight(1);
+                Assert.Equal("\r\n", data.Span.GetText());
+            }
+
+            /// <summary>
+            /// Space right before a blank line should produce a span to the
+            /// beginning of the next line
+            /// </summary>
+            [Fact]
+            public void SpaceRight_ToBlankLine()
+            {
+                Create("cat", "", "dog");
+                _textView.MoveCaretTo(2);
+                var data = _motionUtil.SpaceRight(1);
+                Assert.Equal("t\r\n", data.Span.GetText());
+            }
+
+            /// <summary>
+            /// Space right on a blank line should produce a span to the
+            /// beginning of the next line
+            /// </summary>
+            [Fact]
+            public void SpaceRight_FromBlankLine()
+            {
+                Create("cat", "", "dog");
+                _textView.MoveCaretTo(_textView.GetLine(1).Start);
+                var data = _motionUtil.SpaceRight(1);
+                Assert.Equal("\r\n", data.Span.GetText());
+            }
+
+            /// <summary>
+            /// Space left on the first character of the line should produce a
+            /// span to the last character of the previous line
+            /// </summary>
+            [Fact]
+            public void SpaceLeft_FirstCharacter()
+            {
+                Create("cat", "dog");
+                _textView.MoveCaretTo(_textView.GetLine(1).Start);
+                var data = _motionUtil.SpaceLeft(1);
+                Assert.Equal("t\r\n", data.Span.GetText());
+            }
+
+            /// <summary>
+            /// Space left after the last character of the line should produce a
+            /// span containing just the last character of the line
+            /// </summary>
+            [Fact]
+            public void SpaceLeft_EndOfLine()
+            {
+                Create("cat", "dog");
+                _textView.MoveCaretTo(3);
+                var data = _motionUtil.SpaceLeft(1);
+                Assert.Equal("t", data.Span.GetText());
+            }
+
+            /// <summary>
+            /// Space left on the first character of the line with
+            /// 'virtualedit=onemore' should produce a
+            /// span to the end of the previous line
+            /// </summary>
+            [Fact]
+            public void SpaceLeft_FirstCharacterVirtualEdit()
+            {
+                Create("cat", "dog");
+                _globalSettings.VirtualEdit = "onemore";
+                _textView.MoveCaretTo(_textView.GetLine(1).Start);
+                var data = _motionUtil.SpaceLeft(1);
+                Assert.Equal("\r\n", data.Span.GetText());
+            }
+
+            /// <summary>
+            /// Space left after the last character of the line with
+            /// 'virtualedit=onemore' should produce a span containing
+            /// just the last character of the line
+            /// </summary>
+            [Fact]
+            public void SpaceLeft_EndOfLineVirtualEdit()
+            {
+                Create("cat", "dog");
+                _globalSettings.VirtualEdit = "onemore";
+                _textView.MoveCaretTo(3);
+                var data = _motionUtil.SpaceLeft(1);
+                Assert.Equal("t", data.Span.GetText());
+            }
+
+            /// <summary>
+            /// Space left before a blank line should produce a span to the
+            /// end of the previous line
+            /// </summary>
+            [Fact]
+            public void SpaceLeft_ToBlankLine()
+            {
+                Create("cat", "", "dog");
+                _textView.MoveCaretTo(_textView.GetLine(2).Start);
+                var data = _motionUtil.SpaceLeft(1);
+                Assert.Equal("\r\n", data.Span.GetText());
+            }
+
+            /// <summary>
+            /// Space left on a blank line should produce a span to the
+            /// last character of the previous line
+            /// </summary>
+            [Fact]
+            public void SpaceLeft_FromBlankLine()
+            {
+                Create("cat", "", "dog");
+                _textView.MoveCaretTo(_textView.GetLine(1).Start);
+                var data = _motionUtil.SpaceLeft(1);
+                Assert.Equal("t\r\n", data.Span.GetText());
+            }
+
             [Fact]
             public void EndOfWord1()
             {
@@ -2263,11 +2427,11 @@ namespace Vim.UnitTest
             public void NextWord_NoWordUnderCaret()
             {
                 Create("  ", "foo bar baz");
-                _vimData.LastPatternData = VimUtil.CreatePatternData("cat");
+                _vimData.LastSearchData = VimUtil.CreateSearchData("cat");
                 _statusUtil.Setup(x => x.OnError(Resources.NormalMode_NoWordUnderCursor)).Verifiable();
                 _motionUtil.NextWord(Path.Forward, 1);
                 _statusUtil.Verify();
-                Assert.Equal("cat", _vimData.LastPatternData.Pattern);
+                Assert.Equal("cat", _vimData.LastSearchData.Pattern);
             }
 
             /// <summary>
@@ -2279,7 +2443,7 @@ namespace Vim.UnitTest
                 Create("hello world", "hello");
                 var result = _motionUtil.NextWord(Path.Forward, 1).Value;
                 Assert.Equal(_textView.GetLine(0).ExtentIncludingLineBreak, result.Span);
-                Assert.Equal(@"\<hello\>", _vimData.LastPatternData.Pattern);
+                Assert.Equal(@"\<hello\>", _vimData.LastSearchData.Pattern);
             }
 
             /// <summary>
@@ -2330,8 +2494,8 @@ namespace Vim.UnitTest
             public void LastSearch_UsePattern()
             {
                 Create("foo bar", "foo");
-                var data = VimUtil.CreatePatternData("foo", Path.Forward);
-                _vimData.LastPatternData = data;
+                var data = new SearchData("foo", Path.Forward);
+                _vimData.LastSearchData = data;
                 var result = _motionUtil.LastSearch(false, 1).Value;
                 Assert.Equal("foo bar" + Environment.NewLine, result.Span.GetText());
             }
@@ -2344,11 +2508,11 @@ namespace Vim.UnitTest
             public void LastSearch_DontUpdateLastSearch()
             {
                 Create("dog cat", "dog", "dog");
-                var data = VimUtil.CreatePatternData("dog", Path.Forward);
-                _vimData.LastPatternData = data;
+                var data = new SearchData("dog", Path.Forward);
+                _vimData.LastSearchData = data;
                 _statusUtil.Setup(x => x.OnWarning(Resources.Common_SearchBackwardWrapped)).Verifiable();
                 _motionUtil.LastSearch(true, 1);
-                Assert.Equal(data, _vimData.LastPatternData);
+                Assert.Equal(data, _vimData.LastSearchData);
                 _statusUtil.Verify();
             }
 

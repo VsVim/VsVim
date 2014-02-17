@@ -6,6 +6,7 @@ using System.Windows.Forms;
 using Microsoft.VisualStudio.Language.NavigateTo.Interfaces;
 using Microsoft.VisualStudio.Text.Editor;
 using Vim;
+using System.Windows.Input;
 
 namespace VsVim.Implementation.NavigateTo
 {
@@ -35,13 +36,15 @@ namespace VsVim.Implementation.NavigateTo
             _synchronizationContext = WindowsFormsSynchronizationContext.Current;
         }
 
-        private void OnSearchStarted()
+        private void OnSearchStarted(string searchText)
         {
             _inSearch = true;
+            VimTrace.TraceInfo("NavigateTo Start: {0}", searchText);
         }
 
-        private void OnSearchStopped()
+        private void OnSearchStopped(string searchText)
         {
+            VimTrace.TraceInfo("NavigateTo Stop: {0}", searchText);
             if (_inSearch)
             {
                 // Once the search is stopped clear out all of the selections in active buffers.  Leaving the 
@@ -51,6 +54,26 @@ namespace VsVim.Implementation.NavigateTo
                 _textManager.GetDocumentTextViews(DocumentLoad.RespectLazy)
                     .Where(x => !x.Selection.IsEmpty)
                     .ForEach(x => x.Selection.Clear());
+            }
+        }
+
+        private void Dispose()
+        {
+            VimTrace.TraceInfo("NavigateTo Disposed");
+
+            // In some configurations the C++ editor will not set focus to the ITextView which is displayed
+            // as a result of completing a NavigateTo operation.  Instead focus will be on the navigation 
+            // bar.  This is not a function of VsVim but does mess up the general keyboard usage and 
+            // hence we force the focus to be correct
+            //
+            // Note: The exact scenarios under which this happens is not well understood.  It does repro under
+            // a clean machine and Windows 8.1 but doesn't always repro under other configurations.  Either way
+            // need to fix
+            var wpfTextView = _textManager.ActiveTextViewOptional as IWpfTextView;
+            if (wpfTextView != null && !wpfTextView.HasAggregateFocus && wpfTextView.TextSnapshot.ContentType.IsCPlusPlus())
+            {
+                VimTrace.TraceInfo("NavigateTo adjust C++ focus");
+                Keyboard.Focus(wpfTextView.VisualElement);
             }
         }
 
@@ -100,17 +123,25 @@ namespace VsVim.Implementation.NavigateTo
         /// <summary>
         /// WARNING!!! This method is executed from a background thread
         /// </summary>
-        void IThreadCommunicator.StartSearch()
+        void IThreadCommunicator.StartSearch(string searchText)
         {
-            CallOnMainThread(OnSearchStarted);
+            CallOnMainThread(() => OnSearchStarted(searchText));
         }
 
         /// <summary>
         /// WARNING!!! This method is executed from a background thread
         /// </summary>
-        void IThreadCommunicator.StopSearch()
+        void IThreadCommunicator.StopSearch(string searchText)
         {
-            CallOnMainThread(OnSearchStopped);
+            CallOnMainThread(() => OnSearchStopped(searchText));
+        }
+
+        /// <summary>
+        /// WARNING!!! This method is executed from a background thread
+        /// </summary>
+        void IThreadCommunicator.Dispose()
+        {
+            CallOnMainThread(Dispose);
         }
 
         #endregion

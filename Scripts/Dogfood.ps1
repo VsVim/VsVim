@@ -8,7 +8,7 @@ function build-project()
     param ([string]$fileName = $(throw "Need a project file name"))
     $name = split-path -leaf $fileName
     write-host "Building $name"
-    & $msbuild /nologo /verbosity:m /p:Configuration=Debug $fileName
+    & $msbuild /nologo /verbosity:m /p:Configuration=Debug /p:VisualStudioVersion=12.0 $fileName
 }
 
 function test-return() {

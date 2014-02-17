@@ -32,8 +32,8 @@ type AppendRegisterValueBacking (_register : Register) =
 type LastSearchRegisterValueBacking (_vimData : IVimData) = 
     interface IRegisterValueBacking with
         member x.RegisterValue 
-            with get () = RegisterValue(_vimData.LastPatternData.Pattern, OperationKind.CharacterWise)
-            and set value = _vimData.LastPatternData <- { Pattern = value.StringValue; Path = Path.Forward }
+            with get () = RegisterValue(_vimData.LastSearchData.Pattern, OperationKind.CharacterWise)
+            and set value = _vimData.LastSearchData <- SearchData(value.StringValue, Path.Forward, false)
 
 type internal RegisterMap (_map: Map<RegisterName, Register>) =
     new(vimData : IVimData, clipboard : IClipboardDevice, currentFileNameFunc : unit -> string option) = 

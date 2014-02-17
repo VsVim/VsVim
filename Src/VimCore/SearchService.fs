@@ -99,27 +99,8 @@ type internal SearchService
         SnapshotSpan(line.Start, 1)
 
     member x.ApplySearchOffsetDataStartEnd startPoint count = 
-        let mutable column = SnapshotColumn(startPoint)
-        let isForward = count >= 0
-        let mutable count = abs count
-        let mutable foundEnd = false
-
-        while count > 0 && not foundEnd do
-            if isForward then
-                if SnapshotPointUtil.IsEndPoint column.Point then
-                    foundEnd <- true
-                else    
-                    column <- column.Add 1
-            else
-                if column.Point.Position = 0 then
-                    foundEnd <- true
-                else
-                    column <- column.Subtract 1
-
-            if not column.IsInsideLineBreak then
-                count <- count - 1
-
-        SnapshotSpan(column.Point, 1)
+        let point = SnapshotPointUtil.GetRelativePoint startPoint count true
+        SnapshotSpan(point, 1)
 
     member x.ApplySearchOffsetDataSearch (serviceSearchData : ServiceSearchData) point (patternData : PatternData) = 
         let searchData = SearchData(patternData.Pattern, patternData.Path, true)

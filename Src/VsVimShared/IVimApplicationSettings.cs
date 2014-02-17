@@ -1,7 +1,15 @@
-﻿
+﻿using System;
 using System.Collections.ObjectModel;
+
 namespace VsVim
 {
+    /// <summary>
+    /// Arguments passed to application settings changed event handlers
+    /// </summary>
+    public class ApplicationSettingsEventArgs : EventArgs
+    {
+    }
+
     /// <summary>
     /// Settings specific to the VsVim application.  These specifically don't include Vim specific
     /// settings but instead have items like first usage, first import, etc ... 
@@ -27,5 +35,10 @@ namespace VsVim
         /// The set of CommandKeyBinding that VsVim unbound in the conflicting key dialog
         /// </summary>
         ReadOnlyCollection<CommandKeyBinding> RemovedBindings { get; set; }
+
+        /// <summary>
+        /// Raised when a settings changes
+        /// </summary>
+        event EventHandler<ApplicationSettingsEventArgs> SettingsChanged;
     }
 }

@@ -203,7 +203,6 @@ type VimInterpreter
             | DefaultLineRange.CurrentLine -> SnapshotLineRangeUtil.CreateForLine x.CaretLine |> Some
             | DefaultLineRange.EntireBuffer -> SnapshotLineRangeUtil.CreateForSnapshot x.CurrentSnapshot |> Some
 
-
         | LineRangeSpecifier.EntireBuffer -> 
             SnapshotLineRangeUtil.CreateForSnapshot x.CurrentSnapshot |> Some
         | LineRangeSpecifier.SingleLine lineSpecifier-> 
@@ -287,6 +286,10 @@ type VimInterpreter
             _globalSettings.Selection <- "inclusive"
         | _ -> _statusUtil.OnError (Resources.Interpreter_InvalidArgument model)
 
+        RunResult.Completed
+
+    member x.RunCall (callInfo : CallInfo) = 
+        _statusUtil.OnError (Resources.Interpreter_CallNotSupported callInfo.Name)
         RunResult.Completed
 
     /// Change the directory to the given value
@@ -375,7 +378,7 @@ type VimInterpreter
 
                 // Use an undo transaction so that the caret move and insert is a single
                 // operation
-                _undoRedoOperations.EditWithUndoTransaction transactionName (fun() -> editOperation sourceLineRange destLine text)
+                _undoRedoOperations.EditWithUndoTransaction transactionName _textView (fun() -> editOperation sourceLineRange destLine text)
 
             RunResult.Completed)
 
@@ -582,6 +585,7 @@ type VimInterpreter
 
     /// Edit the specified file
     member x.RunEdit hasBang fileOptions commandOption filePath =
+        let filePath = SystemUtil.ResolvePath filePath
         if not (List.isEmpty fileOptions) then
             _statusUtil.OnError (Resources.Interpreter_OptionNotSupported "[++opt]")
         elif Option.isSome commandOption then
@@ -633,7 +637,7 @@ type VimInterpreter
                 // All of the edits should behave as a single vim undo.  Can't do this as a single
                 // global undo as it executes as series of sub commands which create their own 
                 // global undo units
-                use transaction = _undoRedoOperations.CreateLinkedUndoTransaction()
+                use transaction = _undoRedoOperations.CreateLinkedUndoTransaction "Global Command"
                 try
     
                     // Each command we run can, and often will, change the underlying buffer whcih
@@ -820,7 +824,7 @@ type VimInterpreter
         x.RunWithLineRangeOrDefault lineRange DefaultLineRange.CurrentLine (fun lineRange ->
             // Need to get the cursor position correct for undo / redo so start an undo 
             // transaction 
-            _undoRedoOperations.EditWithUndoTransaction "PutLine" (fun () ->
+            _undoRedoOperations.EditWithUndoTransaction "PutLine" _textView (fun () ->
     
                 // Get the point to start the Put operation at 
                 let line = 
@@ -883,7 +887,9 @@ type VimInterpreter
     
                 match filePath with
                 | None -> _vimHost.Save _textView.TextBuffer |> ignore  
-                | Some filePath -> _vimHost.SaveTextAs (lineRange.GetTextIncludingLineBreak()) filePath |> ignore
+                | Some filePath ->
+                    let filePath = SystemUtil.ResolvePath filePath
+                    _vimHost.SaveTextAs (lineRange.GetTextIncludingLineBreak()) filePath |> ignore
     
                 x.RunClose false |> ignore
     
@@ -913,6 +919,7 @@ type VimInterpreter
 
     /// Run the read file command.
     member x.RunReadFile lineRange fileOptionList filePath =
+        let filePath = SystemUtil.ResolvePath filePath
         x.RunWithLineRangeOrDefault lineRange DefaultLineRange.CurrentLine (fun lineRange ->
             if not (List.isEmpty fileOptionList) then
                 _statusUtil.OnError (Resources.Interpreter_OptionNotSupported "[++opt]")
@@ -1020,7 +1027,7 @@ type VimInterpreter
     member x.RunSearch lineRange path pattern = 
         x.RunWithLineRangeOrDefault lineRange DefaultLineRange.CurrentLine (fun lineRange ->
             let pattern = 
-                if StringUtil.isNullOrEmpty pattern then _vimData.LastPatternData.Pattern
+                if StringUtil.isNullOrEmpty pattern then _vimData.LastSearchData.Pattern
                 else pattern
     
             // Searches start after the end of the specified line range
@@ -1037,7 +1044,7 @@ type VimInterpreter
                     |> SnapshotPointUtil.GetContainingLine 
                     |> SnapshotLineUtil.GetFirstNonBlankOrStart
                 _commonOperations.MoveCaretToPoint point ViewFlags.Standard
-                _vimData.LastPatternData <- searchData.LastPatternData
+                _vimData.LastSearchData <- searchData
             | SearchResult.NotFound _ -> ()
     
             RunResult.Completed)
@@ -1298,7 +1305,7 @@ type VimInterpreter
         // Get the actual pattern to use
         let pattern = 
             if pattern = "" then 
-                _vimData.LastPatternData.Pattern
+                _vimData.LastSearchData.Pattern
             else
                 // If a pattern is given then it is the one that we will use 
                 pattern
@@ -1367,6 +1374,12 @@ type VimInterpreter
         RunResult.Completed
 
     member x.RunWrite lineRange hasBang fileOptionList filePath =
+        let filePath =
+            match filePath with
+            | Some filePath ->
+                Some (SystemUtil.ResolvePath filePath)
+            | None ->
+                None
         if not (List.isEmpty fileOptionList) then
             _statusUtil.OnError (Resources.Interpreter_OptionNotSupported "[++opt]")
         else
@@ -1425,6 +1438,7 @@ type VimInterpreter
         match lineCommand with
         | LineCommand.AddAutoCommand autoCommandDefinition -> x.RunAddAutoCommand autoCommandDefinition
         | LineCommand.Behave model -> x.RunBehave model
+        | LineCommand.Call callInfo -> x.RunCall callInfo
         | LineCommand.ChangeDirectory path -> x.RunChangeDirectory path
         | LineCommand.ChangeLocalDirectory path -> x.RunChangeLocalDirectory path
         | LineCommand.CopyTo (sourceLineRange, destLineRange, count) -> x.RunCopyTo sourceLineRange destLineRange count
@@ -1509,7 +1523,7 @@ type VimInterpreter
 
     // Actually parse and run all of the commands which are included in the script
     member x.RunScript lines = 
-        let parser = Parser(_vimData, lines)
+        let parser = Parser(_globalSettings, _vimData, lines)
         while not parser.IsDone do
             let lineCommand = parser.ParseNextCommand()
             x.RunLineCommand lineCommand |> ignore

@@ -6,7 +6,7 @@ using System.Windows.Input;
 using Microsoft.VisualStudio.Text.Editor;
 using Moq;
 using Vim.Extensions;
-using Vim.UI.Wpf.Implementation.Keyboard;
+using Vim.UI.Wpf.Implementation.Misc;
 using Vim.UnitTest;
 
 namespace Vim.UI.Wpf.UnitTest
@@ -172,11 +172,58 @@ namespace Vim.UI.Wpf.UnitTest
 
         #endregion
 
+        #region KeyData
+
+        private struct KeyData
+        {
+            internal readonly Key Key;
+            internal readonly ModifierKeys ModifierKeys;
+            internal KeyData(Key key, ModifierKeys modifierKeys)
+            {
+                Key = key;
+                ModifierKeys = modifierKeys;
+            }
+        }
+
+        #endregion
+
+        private static readonly Dictionary<KeyInput, KeyData> KeyDataMap;
+
+        static KeyboardInputSimulation()
+        {
+            var combos = new[]
+                {
+                    ModifierKeys.None,
+                    ModifierKeys.Shift,
+                    ModifierKeys.Control,
+                    ModifierKeys.Alt,
+                    ModifierKeys.Alt | ModifierKeys.Shift
+                };
+
+            var map = new Dictionary<KeyInput, KeyData>();
+            foreach (char c in KeyInputUtilTest.CharLettersLower)
+            {
+                foreach (var mod in combos)
+                {
+                    var keyMod = AlternateKeyUtil.ConvertToKeyModifiers(mod);
+                    var keyInput = KeyInputUtil.ApplyModifiersToChar(c, keyMod);
+                    var key = (Key)((c - 'a') + (int)Key.A);
+                    map[keyInput] = new KeyData(key, mod);
+                }
+            }
+
+            map[KeyInputUtil.CharToKeyInput(' ')] = new KeyData(Key.Space, ModifierKeys.None);
+            map[KeyInputUtil.CharToKeyInput('.')] = new KeyData(Key.OemPeriod, ModifierKeys.None);
+            map[KeyInputUtil.CharToKeyInput(';')] = new KeyData(Key.OemSemicolon, ModifierKeys.None);
+            map[KeyInputUtil.CharToKeyInput(':')] = new KeyData(Key.OemSemicolon, ModifierKeys.Shift);
+
+            KeyDataMap = map;
+        }
+
         private readonly DefaultKeyboardDevice _defaultKeyboardDevice;
         private readonly DefaultInputController _defaultInputController;
         private readonly Mock<PresentationSource> _presentationSource;
         private readonly IWpfTextView _wpfTextView;
-        private readonly IVirtualKeyboard _virtualKeyboard;
 
         public KeyboardDevice KeyBoardDevice
         {
@@ -193,7 +240,6 @@ namespace Vim.UI.Wpf.UnitTest
             _defaultInputController = new DefaultInputController(wpfTextView);
             _defaultKeyboardDevice = new DefaultKeyboardDevice(InputManager.Current);
             _wpfTextView = wpfTextView;
-            _virtualKeyboard = new StandardVirtualKeyboard(NativeMethods.GetKeyboardLayout(0));
 
             Castle.DynamicProxy.Generators.AttributesToAvoidReplicating.Add(typeof(UIPermissionAttribute));
             _presentationSource = new Mock<PresentationSource>(MockBehavior.Strict);
@@ -227,7 +273,7 @@ namespace Vim.UI.Wpf.UnitTest
 
             if (!TryConvert(keyInput, out key, out modifierKeys))
             {
-                throw new Exception(String.Format("Couldn't convert {0} to Wpf keys", keyInput));
+                throw new Exception(String.Format("Couldn't convert '{0}' to Wpf keys", keyInput));
             }
 
             try
@@ -351,33 +397,12 @@ namespace Vim.UI.Wpf.UnitTest
                 return true;
             }
 
-            if (keyInput.RawChar.IsSome())
+            KeyData keyData;
+            if (KeyDataMap.TryGetValue(keyInput, out keyData))
             {
-                uint virtualKey;
-                VirtualKeyModifiers virtualKeyModifiers;
-
-                if (_virtualKeyboard.TryMapChar(keyInput.Char, out virtualKey, out virtualKeyModifiers))
-                {
-                    key = KeyInterop.KeyFromVirtualKey((int)virtualKey);
-                    modifierKeys = ModifierKeys.None;
-
-                    if (VirtualKeyModifiers.Control == (virtualKeyModifiers & VirtualKeyModifiers.Control))
-                    {
-                        modifierKeys |= ModifierKeys.Control;
-                    }
-
-                    if (VirtualKeyModifiers.Shift == (virtualKeyModifiers & VirtualKeyModifiers.Shift))
-                    {
-                        modifierKeys |= ModifierKeys.Shift;
-                    }
-
-                    if (VirtualKeyModifiers.Alt == (virtualKeyModifiers & VirtualKeyModifiers.Alt))
-                    {
-                        modifierKeys |= ModifierKeys.Alt;
-                    }
-
-                    return true;
-                }
+                key = keyData.Key;
+                modifierKeys = keyData.ModifierKeys;
+                return true;
             }
 
             key = Key.None;

@@ -3,9 +3,6 @@
 
 namespace Vim
 
-/// Virtual Key Codes are typed as int's
-type VirtualKeyCode = int
-
 /// Represents a key input by the user.  This mapping is independent of keyboard 
 /// layout and simply represents Vim's view of key input
 [<Sealed>]
@@ -33,6 +30,9 @@ type KeyInput =
 
     /// Is this a function key
     member IsFunctionKey : bool
+
+    /// Is this a mouse key
+    member IsMouseKey : bool
 
     /// The empty KeyInput.  Used in places where a KeyInput is required but no 
     /// good mapping exists

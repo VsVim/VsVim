@@ -55,6 +55,21 @@ module KeyNotationUtil =
             ("<k8>", KeyInputUtil.VimKeyToKeyInput VimKey.Keypad8)
             ("<k9>", KeyInputUtil.VimKeyToKeyInput VimKey.Keypad9)
             ("<nop>", KeyInputUtil.VimKeyToKeyInput VimKey.Nop)
+            ("<LeftMouse>", KeyInputUtil.VimKeyToKeyInput VimKey.LeftMouse)
+            ("<LeftDrag>", KeyInputUtil.VimKeyToKeyInput VimKey.LeftDrag)
+            ("<LeftRelease>", KeyInputUtil.VimKeyToKeyInput VimKey.LeftRelease)
+            ("<MiddleMouse>", KeyInputUtil.VimKeyToKeyInput VimKey.MiddleMouse)
+            ("<MiddleDrag>", KeyInputUtil.VimKeyToKeyInput VimKey.MiddleDrag)
+            ("<MiddleRelease>", KeyInputUtil.VimKeyToKeyInput VimKey.MiddleRelease)
+            ("<RightMouse>", KeyInputUtil.VimKeyToKeyInput VimKey.RightMouse)
+            ("<RightDrag>", KeyInputUtil.VimKeyToKeyInput VimKey.RightDrag)
+            ("<RightRelease>", KeyInputUtil.VimKeyToKeyInput VimKey.RightRelease)
+            ("<X1Mouse>", KeyInputUtil.VimKeyToKeyInput VimKey.X1Mouse)
+            ("<X1Drag>", KeyInputUtil.VimKeyToKeyInput VimKey.X1Drag)
+            ("<X1Release>", KeyInputUtil.VimKeyToKeyInput VimKey.X1Release)
+            ("<X2Mouse>", KeyInputUtil.VimKeyToKeyInput VimKey.X2Mouse)
+            ("<X2Drag>", KeyInputUtil.VimKeyToKeyInput VimKey.X2Drag)
+            ("<X2Release>", KeyInputUtil.VimKeyToKeyInput VimKey.X2Release)
         ]
 
     let FunctionKeys = 

@@ -9,6 +9,21 @@ using Microsoft.Win32;
 
 namespace VsVim.Implementation.Misc
 {
+    internal enum ScopeKind
+    {
+        Global,
+        TextEditor,
+        SolutionExplorer,
+
+        /// <summary>
+        /// This is different than Unknown because it's possible for a key binding to simply have 
+        /// no scope at all
+        /// </summary>
+        EmptyName,
+
+        Unknown
+    }
+
     /// <summary>
     /// Contains the information about the main scope information in Visual Studio key bindings.  Every 
     /// key binding is associated with a scope, the main one being Global in 1033.  These values are 
@@ -16,9 +31,9 @@ namespace VsVim.Implementation.Misc
     /// </summary>
     internal sealed class ScopeData
     {
-        internal const string DefaultGlobalScopeName = "Global";
-        internal const string DefaultTextEditorScopeName = "Text Editor";
-        internal const string DefaultSolutionExplorerScopeName = "Solution Explorer";
+        private const string DefaultGlobalScopeName = "Global";
+        private const string DefaultTextEditorScopeName = "Text Editor";
+        private const string DefaultSolutionExplorerScopeName = "Solution Explorer";
 
         internal static ScopeData Default
         {
@@ -28,19 +43,19 @@ namespace VsVim.Implementation.Misc
         private readonly string _globalScopeName;
         private readonly string _textEditorScopeName;
         private readonly string _solutionExplorerScopeName;
-        private readonly HashSet<string> _importantScopeSet;
+        private readonly Dictionary<string, ScopeKind> _scopeKindMap;
 
         internal string GlobalScopeName
         {
             get { return _globalScopeName; }
         }
 
-        internal ScopeData(string globalScopeName, string textEditorScopeName = null, string solutionExplorerScopeName = null)
+        internal ScopeData(string globalScopeName = null, string textEditorScopeName = null, string solutionExplorerScopeName = null)
         {
             _globalScopeName = globalScopeName ?? DefaultGlobalScopeName;
             _textEditorScopeName = textEditorScopeName ?? DefaultTextEditorScopeName;
             _solutionExplorerScopeName = solutionExplorerScopeName ?? DefaultSolutionExplorerScopeName;
-            _importantScopeSet = CreateImportantScopeSet(_globalScopeName, _textEditorScopeName, _solutionExplorerScopeName);
+            _scopeKindMap = BuildScopeKindMap();
         }
 
         internal ScopeData(IVsShell vsShell)
@@ -52,24 +67,28 @@ namespace VsVim.Implementation.Misc
                 _solutionExplorerScopeName = DefaultSolutionExplorerScopeName;
             }
 
-            _importantScopeSet = CreateImportantScopeSet(_globalScopeName, _textEditorScopeName, _solutionExplorerScopeName);
+            _scopeKindMap = BuildScopeKindMap();
         }
 
-        internal bool IsImportantScope(string name)
+        internal ScopeKind GetScopeKind(string name)
         {
-            return _importantScopeSet.Contains(name);
+            ScopeKind kind;
+            if (!_scopeKindMap.TryGetValue(name, out kind))
+            {
+                kind = ScopeKind.Unknown;
+            }
+
+            return kind;
         }
 
-        private static HashSet<string> CreateImportantScopeSet(string globalScopeName, string textEditorScopeName, string solutionExplorerScopeName)
+        private Dictionary<string, ScopeKind> BuildScopeKindMap()
         {
-            var set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            set.Add(globalScopeName);
-            set.Add(textEditorScopeName);
-            set.Add(solutionExplorerScopeName);
-
-            // No scope is considered interesting as well
-            set.Add("");
-            return set;
+            var map = new Dictionary<string, ScopeKind>(StringComparer.OrdinalIgnoreCase);
+            map[_globalScopeName] = ScopeKind.Global;
+            map[_textEditorScopeName] = ScopeKind.TextEditor;
+            map[_solutionExplorerScopeName] = ScopeKind.SolutionExplorer;
+            map[""] = ScopeKind.EmptyName;
+            return map;
         }
 
         /// <summary>

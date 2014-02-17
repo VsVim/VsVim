@@ -1157,6 +1157,47 @@ module SnapshotPointUtil =
         else
             None
 
+    /// Get a point relative to a starting point backward or forward
+    /// 'count' characters skipping line breaks if 'skipLineBreaks' is
+    /// specified.  Goes as far as possible in the specified direction
+    let GetRelativePoint startPoint count skipLineBreaks =
+
+        /// Get the relative column in 'direction' using predicate 'isEnd'
+        /// to stop the motion
+        let GetRelativeColumn direction (isEnd : SnapshotPoint -> bool) =
+
+            /// Adjust 'column' backward or forward if it is in the
+            /// middle of a line break
+            let AdjustLineBreak (column : SnapshotColumn) =
+                if column.Column <= column.Line.Length then
+                    column
+                else if direction = -1 then
+                    SnapshotColumn(column.Line, column.Line.Length)
+                else
+                    SnapshotColumn(column.Line.EndIncludingLineBreak)
+
+            let mutable column = SnapshotColumn(startPoint)
+            let mutable remaining = abs count
+            while remaining > 0 && not (isEnd column.Point) do
+                column <- column.Add direction |> AdjustLineBreak
+                remaining <- remaining -
+                    if skipLineBreaks then
+                        if column.Line.Length = 0 || not column.IsInsideLineBreak then
+                            1
+                        else
+                            0
+                    else
+                        1
+            column
+
+        let column =
+            if count < 0 then
+                GetRelativeColumn -1 IsStartPoint
+            else
+                GetRelativeColumn 1 IsEndPoint
+
+        column.Point
+
     /// Is this the last point on the line?
     let IsLastPointOnLine point = 
         let line = GetContainingLine point

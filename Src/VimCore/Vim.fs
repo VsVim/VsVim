@@ -50,7 +50,7 @@ type internal VimData(_globalSettings : IVimGlobalSettings) as this =
     let mutable _commandHistory = HistoryList()
     let mutable _searchHistory = HistoryList()
     let mutable _lastSubstituteData : SubstituteData option = None
-    let mutable _lastPatternData = { Pattern = StringUtil.empty; Path = Path.Forward }
+    let mutable _lastSearchData = SearchData("", Path.Forward)
     let mutable _lastShellCommand : string option = None
     let mutable _lastCharSearch : (CharSearchKind * Path * char) option = None
     let mutable _lastMacroRun : char option = None
@@ -74,10 +74,10 @@ type internal VimData(_globalSettings : IVimGlobalSettings) as this =
 
         this.CheckDisplayPattern()
 
-    member x.LastPatternData 
-        with get() = _lastPatternData
+    member x.LastSearchData 
+        with get() = _lastSearchData
         and set value = 
-            _lastPatternData <- value
+            _lastSearchData <- value
             _displayPatternSuspended <- false
             x.CheckDisplayPattern()
 
@@ -98,7 +98,7 @@ type internal VimData(_globalSettings : IVimGlobalSettings) as this =
             elif not _globalSettings.HighlightSearch then
                 ""
             else
-                _lastPatternData.Pattern
+                _lastSearchData.Pattern
         if currentDisplayPattern <> _displayPattern then
             _displayPattern <- currentDisplayPattern
             _displayPatternChanged.Trigger x
@@ -131,9 +131,9 @@ type internal VimData(_globalSettings : IVimGlobalSettings) as this =
         member x.LastShellCommand
             with get() = _lastShellCommand
             and set value = _lastShellCommand <- value
-        member x.LastPatternData 
-            with get() = x.LastPatternData
-            and set value = x.LastPatternData <- value
+        member x.LastSearchData 
+            with get() = x.LastSearchData
+            and set value = x.LastSearchData <- value
         member x.PreviousCurrentDirectory = _previousCurrentDirecotry
         member x.LastCharSearch 
             with get() = _lastCharSearch
@@ -157,8 +157,9 @@ type internal VimBufferFactory
         _outliningManagerService : IOutliningManagerService,
         _completionWindowBrokerFactoryService : IDisplayWindowBrokerFactoryService,
         _commonOperationsFactory : ICommonOperationsFactory,
-        _wordUtilFactory : IWordUtilFactory,
+        _wordUtil : IWordUtil,
         _textChangeTrackerFactory : ITextChangeTrackerFactory,
+        _lineChangeTrackerFactory : ILineChangeTrackerFactory,
         _textSearchService : ITextSearchService,
         _bufferTrackingService : IBufferTrackingService,
         _undoManagerProvider : ITextBufferUndoManagerProvider,
@@ -171,11 +172,18 @@ type internal VimBufferFactory
     ) =
 
     /// Create an IVimTextBuffer instance for the provided ITextBuffer
-    member x.CreateVimTextBuffer textBuffer (vim : IVim) = 
+    member x.CreateVimTextBuffer (textBuffer : ITextBuffer) (vim : IVim) = 
         let localSettings = LocalSettings(vim.GlobalSettings) :> IVimLocalSettings
-        let wordUtil = _wordUtilFactory.GetWordUtil textBuffer
-        let wordNavigator = wordUtil.CreateTextStructureNavigator WordKind.NormalWord
-        VimTextBuffer(textBuffer, localSettings, wordNavigator, _bufferTrackingService, vim)
+        let wordNavigator = _wordUtil.CreateTextStructureNavigator WordKind.NormalWord textBuffer.ContentType
+        let statusUtil = _statusUtilFactory.GetStatusUtil textBuffer
+        let undoRedoOperations = 
+            let history = 
+                let manager = _undoManagerProvider.GetTextBufferUndoManager textBuffer
+                if manager = null then None
+                else manager.TextBufferUndoHistory |> Some
+            UndoRedoOperations(statusUtil, history, _editorOperationsFactoryService) :> IUndoRedoOperations
+
+        VimTextBuffer(textBuffer, localSettings, wordNavigator, _bufferTrackingService, undoRedoOperations, vim)
 
     /// Create a VimBufferData instance for the given ITextView and IVimTextBuffer.  This is mainly
     /// used for testing purposes
@@ -184,20 +192,11 @@ type internal VimBufferFactory
 
         let vim = vimTextBuffer.Vim
         let textBuffer = textView.TextBuffer
-        let editOperations = _editorOperationsFactoryService.GetEditorOperations(textView)
-        let statusUtil = _statusUtilFactory.GetStatusUtil textView
+        let statusUtil = _statusUtilFactory.GetStatusUtil textView.TextBuffer
         let localSettings = vimTextBuffer.LocalSettings
         let jumpList = JumpList(textView, _bufferTrackingService) :> IJumpList
-
-        let undoRedoOperations = 
-            let history = 
-                let manager = _undoManagerProvider.GetTextBufferUndoManager textBuffer
-                if manager = null then None
-                else manager.TextBufferUndoHistory |> Some
-            UndoRedoOperations(statusUtil, history, editOperations) :> IUndoRedoOperations
-        let wordUtil = _wordUtilFactory.GetWordUtil textBuffer
         let windowSettings = WindowSettings(vim.GlobalSettings, textView)
-        VimBufferData(vimTextBuffer,textView, windowSettings, jumpList, statusUtil, undoRedoOperations, wordUtil) :> IVimBufferData
+        VimBufferData(vimTextBuffer, textView, windowSettings, jumpList, statusUtil, _wordUtil) :> IVimBufferData
 
     /// Create an IVimBuffer instance for the provided VimBufferData
     member x.CreateVimBuffer (vimBufferData : IVimBufferData) = 
@@ -228,15 +227,16 @@ type internal VimBufferFactory
                 // the uninitialized state.  Do the switch now to the correct mode
                 vimBuffer.SwitchMode vimBufferData.VimTextBuffer.ModeKind ModeArgument.None |> ignore
 
-        let wordNav = wordUtil.CreateTextStructureNavigator WordKind.NormalWord
+        let wordNav = _wordUtil.CreateTextStructureNavigator WordKind.NormalWord vimBufferData.TextBuffer.ContentType
         let incrementalSearch = IncrementalSearch(vimBufferData, commonOperations) :> IIncrementalSearch
         let capture = MotionCapture(vimBufferData, incrementalSearch) :> IMotionCapture
 
         let textChangeTracker = _textChangeTrackerFactory.GetTextChangeTracker vimBufferData
+        let lineChangeTracker = _lineChangeTrackerFactory.GetLineChangeTracker vimBufferData
         let motionUtil = MotionUtil(vimBufferData, commonOperations) :> IMotionUtil
         let foldManager = _foldManagerFactory.GetFoldManager textView
-        let insertUtil = InsertUtil(vimBufferData, commonOperations) :> IInsertUtil
-        let commandUtil = CommandUtil(vimBufferData, motionUtil, commonOperations, foldManager, insertUtil, _bulkOperations) :> ICommandUtil
+        let insertUtil = InsertUtil(vimBufferData, motionUtil, commonOperations) :> IInsertUtil
+        let commandUtil = CommandUtil(vimBufferData, motionUtil, commonOperations, foldManager, insertUtil, _bulkOperations, _mouseDevice, lineChangeTracker) :> ICommandUtil
 
         let bufferRaw = VimBuffer(vimBufferData, incrementalSearch, motionUtil, wordNav, vimBufferData.WindowSettings, commandUtil)
         let buffer = bufferRaw :> IVimBuffer
@@ -245,7 +245,7 @@ type internal VimBufferFactory
         let createCommandRunner kind countKeyRemapMode = CommandRunner(textView, vim.RegisterMap, capture, vimBufferData.LocalSettings, commandUtil, vimBufferData.StatusUtil, kind, countKeyRemapMode) :>ICommandRunner
         let broker = _completionWindowBrokerFactoryService.GetDisplayWindowBroker textView
         let bufferOptions = _editorOptionsFactoryService.GetOptions(textView.TextBuffer)
-        let visualOptsFactory visualKind = Modes.Visual.SelectionTracker(textView, vimBufferData.LocalSettings, incrementalSearch, visualKind) :> Modes.Visual.ISelectionTracker
+        let visualOptsFactory visualKind = Modes.Visual.SelectionTracker(vimBufferData, incrementalSearch, visualKind) :> Modes.Visual.ISelectionTracker
         let undoRedoOperations = vimBufferData.UndoRedoOperations
 
         let visualModeSeq =
@@ -258,7 +258,8 @@ type internal VimBufferFactory
             VisualKind.All
             |> Seq.map (fun visualKind ->
                 let tracker = visualOptsFactory visualKind
-                Modes.Visual.SelectMode(vimBufferData, visualKind, commonOperations, undoRedoOperations, tracker) :> IMode)
+                let runner = createCommandRunner visualKind KeyRemapMode.Select
+                Modes.Visual.SelectMode(vimBufferData, commonOperations, motionUtil, visualKind, runner, capture, undoRedoOperations, tracker) :> IMode)
             |> List.ofSeq
 
         let visualModeList =
@@ -272,8 +273,8 @@ type internal VimBufferFactory
             [
                 ((Modes.Normal.NormalMode(vimBufferData, commonOperations, motionUtil, createCommandRunner VisualKind.Character KeyRemapMode.Normal, capture)) :> IMode)
                 ((Modes.Command.CommandMode(buffer, commonOperations)) :> IMode)
-                ((Modes.Insert.InsertMode(buffer, commonOperations, broker, editOptions, undoRedoOperations, textChangeTracker, insertUtil, false, _keyboardDevice, _mouseDevice, wordUtil, _wordCompletionSessionFactoryService)) :> IMode)
-                ((Modes.Insert.InsertMode(buffer, commonOperations, broker, editOptions, undoRedoOperations, textChangeTracker, insertUtil, true, _keyboardDevice, _mouseDevice, wordUtil, _wordCompletionSessionFactoryService)) :> IMode)
+                ((Modes.Insert.InsertMode(buffer, commonOperations, broker, editOptions, undoRedoOperations, textChangeTracker, insertUtil, motionUtil, commandUtil, capture, false, _keyboardDevice, _mouseDevice, wordUtil, _wordCompletionSessionFactoryService)) :> IMode)
+                ((Modes.Insert.InsertMode(buffer, commonOperations, broker, editOptions, undoRedoOperations, textChangeTracker, insertUtil, motionUtil, commandUtil, capture, true, _keyboardDevice, _mouseDevice, wordUtil, _wordCompletionSessionFactoryService)) :> IMode)
                 ((Modes.SubstituteConfirm.SubstituteConfirmMode(vimBufferData, commonOperations) :> IMode))
                 (DisabledMode(vimBufferData) :> IMode)
                 (ExternalEditMode(vimBufferData) :> IMode)
@@ -573,6 +574,18 @@ type internal Vim
                     _vimRcLocalSettings <- LocalSettings(_globalSettings) 
                     _vimRcWindowSettings <- WindowSettings(_globalSettings)
                     _vimRcState <- VimRcState.LoadFailed
+
+                    // User-friendly overrides for users without an rc file.
+                    // Compare with Vim 7.4 "C:\Program Files (x86)\Vim\_vimrc"
+                    //
+                    // TODO: Should this be moved to an actual file?
+                    _globalSettings.SelectMode <- "mouse,key"
+                    _globalSettings.MouseModel <- "popup"
+                    _globalSettings.KeyModel <- "startsel,stopsel"
+                    _globalSettings.Selection <- "exclusive"
+                    _globalSettings.Backspace <- "indent,eol,start"
+                    _globalSettings.WhichWrap <- "<,>,[,]"
+
                 | Some fileContents ->
                     _globalSettings.VimRc <- fileContents.FilePath
                     let textView = _vimHost.CreateHiddenTextView()
@@ -635,18 +648,31 @@ type internal Vim
         | None ->
             false
 
+    member x.DisableVimBuffer (vimBuffer : IVimBuffer) =
+        vimBuffer.SwitchMode ModeKind.Disabled ModeArgument.None |> ignore
+
+    member x.EnableVimBuffer (vimBuffer : IVimBuffer) =
+        let modeKind =
+            if vimBuffer.TextView.Selection.IsEmpty then
+                ModeKind.Normal
+            elif Util.IsFlagSet _globalSettings.SelectModeOptions SelectModeOptions.Mouse then
+                ModeKind.SelectCharacter
+            else
+                ModeKind.VisualCharacter
+        vimBuffer.SwitchMode modeKind ModeArgument.None |> ignore
+
     /// Toggle disabled mode for all active IVimBuffer instances to sync up with the current
     /// state of _isDisabled
     member x.UpdatedDisabledMode() = 
         if _isDisabled then
             x.VimBuffers
             |> Seq.filter (fun vimBuffer -> vimBuffer.Mode.ModeKind <> ModeKind.Disabled)
-            |> Seq.iter (fun vimBuffer -> vimBuffer.SwitchMode ModeKind.Disabled ModeArgument.None |> ignore)
+            |> Seq.iter x.DisableVimBuffer
 
         else
             x.VimBuffers
             |> Seq.filter (fun vimBuffer -> vimBuffer.Mode.ModeKind = ModeKind.Disabled)
-            |> Seq.iter (fun vimBuffer -> vimBuffer.SwitchMode ModeKind.Normal ModeArgument.None |> ignore)
+            |> Seq.iter x.EnableVimBuffer
 
     interface IVim with
         member x.ActiveBuffer = x.ActiveBuffer

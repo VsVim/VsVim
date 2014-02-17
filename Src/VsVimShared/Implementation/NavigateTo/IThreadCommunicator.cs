@@ -6,7 +6,8 @@ namespace VsVim.Implementation.NavigateTo
     /// </summary>
     internal interface IThreadCommunicator
     {
-        void StartSearch();
-        void StopSearch();
+        void StartSearch(string text);
+        void StopSearch(string text);
+        void Dispose();
     }
 }

@@ -1,4 +1,6 @@
-﻿using System.ComponentModel.Composition;
+﻿using Microsoft.VisualStudio.Text.Editor;
+using System.ComponentModel.Composition;
+using System.Windows;
 using System.Windows.Input;
 
 namespace Vim.UI.Wpf.Implementation.Misc
@@ -11,6 +13,17 @@ namespace Vim.UI.Wpf.Implementation.Misc
         public bool IsLeftButtonPressed
         {
             get { return _mouseDevice.LeftButton == MouseButtonState.Pressed; }
+        }
+
+        public Point? GetPosition(ITextView textView)
+        {
+            var wpfTextView = textView as IWpfTextView;
+            if (wpfTextView != null)
+            {
+                return _mouseDevice.GetPosition(wpfTextView.VisualElement);
+            }
+
+            return null;
         }
     }
 }

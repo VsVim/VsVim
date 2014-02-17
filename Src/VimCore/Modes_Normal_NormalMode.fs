@@ -85,8 +85,9 @@ type internal NormalMode
                 yield ("s", CommandFlags.LinkedWithNextCommand ||| CommandFlags.Repeatable, NormalCommand.SubstituteCharacterAtCaret)
                 yield ("S", CommandFlags.LinkedWithNextCommand ||| CommandFlags.Repeatable, NormalCommand.ChangeLines)
                 yield ("u", CommandFlags.Special, NormalCommand.Undo)
-                yield ("v", CommandFlags.Special, NormalCommand.SwitchMode (ModeKind.VisualCharacter, ModeArgument.None))
-                yield ("V", CommandFlags.Special, NormalCommand.SwitchMode (ModeKind.VisualLine, ModeArgument.None))
+                yield ("U", CommandFlags.Special, NormalCommand.UndoLine)
+                yield ("v", CommandFlags.Special, NormalCommand.SwitchModeVisualCommand VisualKind.Character)
+                yield ("V", CommandFlags.Special, NormalCommand.SwitchModeVisualCommand VisualKind.Line)
                 yield ("x", CommandFlags.Repeatable, NormalCommand.DeleteCharacterAtCaret)
                 yield ("X", CommandFlags.Repeatable, NormalCommand.DeleteCharacterBeforeCaret)
                 yield ("Y", CommandFlags.None, NormalCommand.YankLines)
@@ -111,9 +112,9 @@ type internal NormalMode
                 yield ("<C-o>", CommandFlags.Movement, NormalCommand.JumpToOlderPosition)
                 yield ("<C-PageDown>", CommandFlags.Special, NormalCommand.GoToNextTab Path.Forward)
                 yield ("<C-PageUp>", CommandFlags.Special, NormalCommand.GoToNextTab Path.Backward)
-                yield ("<C-q>", CommandFlags.Special, NormalCommand.SwitchMode (ModeKind.VisualBlock, ModeArgument.None))
+                yield ("<C-q>", CommandFlags.Special, NormalCommand.SwitchModeVisualCommand VisualKind.Block)
                 yield ("<C-r>", CommandFlags.Special, NormalCommand.Redo)
-                yield ("<C-v>", CommandFlags.Special, NormalCommand.SwitchMode (ModeKind.VisualBlock, ModeArgument.None))
+                yield ("<C-v>", CommandFlags.Special, NormalCommand.SwitchModeVisualCommand VisualKind.Block)
                 yield ("<C-w><C-j>", CommandFlags.None, NormalCommand.GoToView Direction.Down)
                 yield ("<C-w>j", CommandFlags.None, NormalCommand.GoToView Direction.Down)
                 yield ("<C-w><C-k>", CommandFlags.None, NormalCommand.GoToView Direction.Up)
@@ -131,6 +132,7 @@ type internal NormalMode
                 yield ("<C-x>", CommandFlags.Repeatable, NormalCommand.SubtractFromWord)
                 yield ("<C-]>", CommandFlags.Special, NormalCommand.GoToDefinition)
                 yield ("<Del>", CommandFlags.Repeatable, NormalCommand.DeleteCharacterAtCaret)
+                yield ("<MiddleMouse>", CommandFlags.Repeatable, NormalCommand.PutAfterCaretMouse)
                 yield ("[p", CommandFlags.Repeatable, NormalCommand.PutBeforeCaretWithIndent)
                 yield ("[P", CommandFlags.Repeatable, NormalCommand.PutBeforeCaretWithIndent)
                 yield ("]p", CommandFlags.Repeatable, NormalCommand.PutAfterCaretWithIndent)
@@ -164,28 +166,9 @@ type internal NormalMode
         Seq.append normalSeq motionSeq 
         |> List.ofSeq
 
-    /// The set of selection starting commands.  These are only enabled when 'keymodel' contains
-    /// the startsel option
-    static let SharedSelectionCommands =
-        seq {
-            yield ("<S-Up>", CommandFlags.Repeatable, NormalCommand.SwitchToSelection CaretMovement.Up)
-            yield ("<S-Right>", CommandFlags.Repeatable, NormalCommand.SwitchToSelection CaretMovement.Right)
-            yield ("<S-Down>", CommandFlags.Repeatable, NormalCommand.SwitchToSelection CaretMovement.Down)
-            yield ("<S-Left>", CommandFlags.Repeatable, NormalCommand.SwitchToSelection CaretMovement.Left)
-            yield ("<S-Home>", CommandFlags.Repeatable, NormalCommand.SwitchToSelection CaretMovement.Home)
-            yield ("<S-End>", CommandFlags.Repeatable, NormalCommand.SwitchToSelection CaretMovement.End)
-            yield ("<S-PageUp>", CommandFlags.Repeatable, NormalCommand.SwitchToSelection CaretMovement.PageUp)
-            yield ("<S-PageDown>", CommandFlags.Repeatable, NormalCommand.SwitchToSelection CaretMovement.PageDown)
-        } 
-        |> Seq.map (fun (str, flags, command) -> 
-            let keyInputSet = KeyNotationUtil.StringToKeyInputSet str
-            CommandBinding.NormalBinding (keyInputSet, flags, command))
-        |> List.ofSeq
+    let mutable _sharedSelectionCommands : List<CommandBinding> = List.empty
 
-    static let SharedSelectionCommandNameSet = 
-        SharedSelectionCommands
-        |> Seq.map (fun binding -> binding.KeyInputSet)
-        |> Set.ofSeq
+    let mutable _sharedSelectionCommandNameSet : Set<KeyInputSet> = Set.empty
 
     do
         // Up cast here to work around the F# bug which prevents accessing a CLIEvent from
@@ -212,7 +195,13 @@ type internal NormalMode
 
     member x.EnsureCommands() = 
         if not x.IsCommandRunnerPopulated then
-            let factory = CommandFactory(_operations, _capture, _motionUtil, _vimBufferData.JumpList, _localSettings)
+            let factory = CommandFactory(_operations, _capture)
+
+            _sharedSelectionCommands <- factory.CreateSelectionCommands() |> List.ofSeq
+            _sharedSelectionCommandNameSet <-
+                _sharedSelectionCommands
+                |> Seq.map (fun binding -> binding.KeyInputSet)
+                |> Set.ofSeq
 
             let complexSeq = 
                 seq {
@@ -241,7 +230,7 @@ type internal NormalMode
             // Save the alternate selection command bindings
             _selectionAlternateCommands <-
                 _runner.Commands
-                |> Seq.filter (fun commandBinding -> Set.contains commandBinding.KeyInputSet SharedSelectionCommandNameSet)
+                |> Seq.filter (fun commandBinding -> Set.contains commandBinding.KeyInputSet _sharedSelectionCommandNameSet)
                 |> List.ofSeq
 
             // The command list is built without selection commands.  If selection is enabled go 
@@ -302,11 +291,11 @@ type internal NormalMode
     member x.UpdateSelectionCommands() =
 
         // Remove all of the commands with that binding
-        SharedSelectionCommandNameSet |> Seq.iter _runner.Remove
+        _sharedSelectionCommandNameSet |> Seq.iter _runner.Remove
 
         let commandList = 
             if Util.IsFlagSet _globalSettings.KeyModelOptions KeyModelOptions.StartSelection then
-                SharedSelectionCommands
+                _sharedSelectionCommands
             else
                 _selectionAlternateCommands
         commandList |> List.iter _runner.Add
@@ -359,6 +348,10 @@ type internal NormalMode
     member x.OnEnter arg =
         x.EnsureCommands()
         x.Reset()
+
+        // Ensure the caret is positioned correctly vis a vis virtual edit
+        if not (TextViewUtil.GetCaretPoint(_operations.TextView).Position = 0) then
+            _operations.EnsureAtCaret ViewFlags.VirtualEdit
 
         // Process the argument if it's applicable
         match arg with 

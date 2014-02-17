@@ -197,6 +197,9 @@ type IMouseDevice =
     /// Is the left button pressed
     abstract IsLeftButtonPressed : bool
 
+    /// Get the position of the mouse positine within the ITextView
+    abstract GetPosition : textView : ITextView -> Nullable<System.Windows.Point>
+
 /// Abstract representation of the keyboard 
 type IKeyboardDevice = 
 
@@ -231,6 +234,18 @@ type ITextChangeTrackerFactory =
 
     /// Get the ITextChangeTracker associated with the given vim buffer information
     abstract GetTextChangeTracker : vimBufferData : IVimBufferData -> ITextChangeTracker
+
+/// Tracks changes to the associated ITextView
+type ILineChangeTracker =
+
+    /// Swap the most recently changed line with its saved copy
+    abstract Swap : unit -> bool
+
+/// Manages the ILineChangeTracker instances
+type ILineChangeTrackerFactory =
+
+    /// Get the ILineChangeTracker associated with the given vim buffer information
+    abstract GetLineChangeTracker : vimBufferData : IVimBufferData -> ILineChangeTracker
 
 /// Provides access to the system clipboard 
 type IClipboardDevice =
@@ -384,6 +399,9 @@ type ICommonOperations =
 
     /// Move the caret in the specified direction
     abstract MoveCaret : caretMovement : CaretMovement -> bool
+
+    /// Move the caret in the specified direction with an arrow key
+    abstract MoveCaretWithArrow : caretMovement : CaretMovement -> bool
 
     /// Move the caret to a given point on the screen and ensure the view has the specified
     /// properties at that point 

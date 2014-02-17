@@ -6,6 +6,114 @@ open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Operations
 open Microsoft.VisualStudio.Text.Editor
 open System
+open System.Threading.Tasks
+open System.Threading
+open System.Collections.Generic
+
+type WordCompletionUtil
+    (
+        _vim : IVim,
+        _wordUtil : IWordUtil
+    ) =
+
+    let _globalSettings = _vim.GlobalSettings
+
+    /// Get a fun (string -> bool) that determines if a particular word should be included in the output
+    /// based on the text that we are searching for 
+    ///
+    /// This method will be called for every single word in the file hence avoid allocations whenever
+    /// possible.  That dramatically reduces the allocations
+    static member private GetFilterFunc (filterText : string) (comparer : CharComparer) =
+
+        // Is this actually a word we're interest in.  Need to clear out new lines, 
+        // comment characters, one character items, etc ... 
+        let isWord (span : SnapshotSpan) =
+            if span.Length = 0 || span.Length = 1 then
+                false
+            else
+                let c = span.Start.GetChar()
+                TextUtil.IsWordChar WordKind.NormalWord c
+
+        // Is this span a match for the filter text? 
+        let isMatch (span : SnapshotSpan) =
+            if span.Length < filterText.Length then
+                false
+            else
+                let mutable same = true
+                let mutable point = span.Start
+                let mutable i = 0
+                while i < filterText.Length && same do
+                    if not (comparer.IsEqual filterText.[i] (point.GetChar())) then
+                        same <- false
+                    else 
+                        i <- i + 1
+                        point <- point.Add(1)
+                same
+
+        if String.IsNullOrEmpty filterText then
+            isWord
+        else
+            isMatch
+
+    /// Get the word completions for the given word text in the ITextBuffer
+    member private x.GetWordCompletionsCore (wordSpan : SnapshotSpan) (comparer : CharComparer) =
+        // Get the sequence of words before the completion word 
+        let snapshot = wordSpan.Snapshot
+        let wordsBefore = 
+            let startPoint = SnapshotUtil.GetStartPoint snapshot
+            _wordUtil.GetWords WordKind.NormalWord Path.Forward startPoint
+            |> Seq.filter (fun span -> span.End.Position <= wordSpan.Start.Position)
+
+        // Get the sequence of words after the completion word 
+        let wordsAfter =
+
+            // The provided SnapshotSpan can be a subset of an entire word.  If so then
+            // we want to consider the text to the right of the caret as a full word
+            match _wordUtil.GetFullWordSpan WordKind.NormalWord wordSpan.Start with
+            | None -> _wordUtil.GetWords WordKind.NormalWord Path.Forward wordSpan.End
+            | Some fullWordSpan ->
+                if fullWordSpan = wordSpan then
+                    _wordUtil.GetWords WordKind.NormalWord Path.Forward wordSpan.End
+                else
+                    let remaining = SnapshotSpan(wordSpan.End, fullWordSpan.End)
+                    let after = _wordUtil.GetWords WordKind.NormalWord Path.Forward fullWordSpan.End
+                    Seq.append (Seq.singleton remaining) after
+
+        let filterText = wordSpan.GetText()
+        let filterFunc = WordCompletionUtil.GetFilterFunc filterText comparer
+
+        // Combine the collections
+        Seq.append wordsAfter wordsBefore
+        |> Seq.filter filterFunc
+        |> Seq.map SnapshotSpanUtil.GetText
+
+    /// Get the word completion entries in the specified ITextSnapshot.  If the token is cancelled the 
+    /// exception will be propagated out of this method.  This method will return duplicate words too
+    member private x.GetWordCompletionsInFile (filterText : string) comparer (snapshot : ITextSnapshot) =
+        let filterFunc = WordCompletionUtil.GetFilterFunc filterText comparer
+        let startPoint = SnapshotPoint(snapshot, 0) 
+        startPoint
+        |> _wordUtil.GetWords WordKind.NormalWord Path.Forward
+        |> Seq.filter filterFunc
+        |> Seq.map (fun wordSpan -> wordSpan.GetText())
+
+    member x.GetWordCompletions (wordSpan : SnapshotSpan) =
+        let comparer = if _globalSettings.IgnoreCase then CharComparer.IgnoreCase else CharComparer.Exact
+        let filterText = wordSpan.GetText()
+        let fileCompletions = x.GetWordCompletionsCore wordSpan comparer 
+        let fileTextBuffer = wordSpan.Snapshot.TextBuffer
+
+        let otherFileCompletions = 
+            _vim.VimBuffers
+            |> Seq.map (fun vimBuffer -> vimBuffer.TextSnapshot)
+            |> Seq.filter (fun snapshot -> snapshot.TextBuffer <> fileTextBuffer)
+            |> Seq.collect (fun snapshot -> x.GetWordCompletionsInFile filterText comparer snapshot)
+
+        fileCompletions
+        |> Seq.append otherFileCompletions  
+        |> Seq.filter (fun word -> word.Length > 1)
+        |> Seq.distinct
+        |> List.ofSeq
 
 [<RequireQualifiedAccess>]
 type InsertKind =
@@ -75,7 +183,7 @@ type InsertSessionData = {
 [<RequireQualifiedAccess>]
 type RawInsertCommand =
     | InsertCommand of KeyInputSet * InsertCommand * CommandFlags
-    | CustomCommand of (unit -> ProcessResult)
+    | CustomCommand of (KeyInput -> ProcessResult)
 
 type internal InsertMode
     ( 
@@ -86,6 +194,9 @@ type internal InsertMode
         _undoRedoOperations : IUndoRedoOperations,
         _textChangeTracker : ITextChangeTracker,
         _insertUtil : IInsertUtil,
+        _motionUtil : IMotionUtil,
+        _commandUtil : ICommandUtil,
+        _capture : IMotionCapture,
         _isReplace : bool,
         _keyboard : IKeyboardDevice,
         _mouse : IMouseDevice,
@@ -107,33 +218,56 @@ type internal InsertMode
     let _globalSettings = _vimBuffer.GlobalSettings
     let _editorOperations = _operations.EditorOperations
     let _commandRanEvent = StandardEvent<CommandRunDataEventArgs>()
+    let _wordCompletionUtil = WordCompletionUtil(_vimBuffer.Vim, _wordUtil)
     let mutable _commandMap : Map<KeyInput, RawInsertCommand> = Map.empty
     let mutable _sessionData = _emptySessionData
+    let mutable _isInProcess = false
 
     /// The set of commands supported by insert mode
     static let s_commands : (string * InsertCommand * CommandFlags) list =
         [
-            ("<BS>", InsertCommand.Back, CommandFlags.Repeatable ||| CommandFlags.InsertEdit)
             ("<Del>", InsertCommand.Delete, CommandFlags.Repeatable ||| CommandFlags.InsertEdit)
             ("<Enter>", InsertCommand.InsertNewLine, CommandFlags.Repeatable ||| CommandFlags.InsertEdit)
-            ("<Left>", InsertCommand.MoveCaret Direction.Left, CommandFlags.Movement)
+            ("<Left>", InsertCommand.MoveCaretWithArrow Direction.Left, CommandFlags.Movement)
             ("<Down>", InsertCommand.MoveCaret Direction.Down, CommandFlags.Movement)
-            ("<Right>", InsertCommand.MoveCaret Direction.Right, CommandFlags.Movement)
+            ("<Right>", InsertCommand.MoveCaretWithArrow Direction.Right, CommandFlags.Movement)
             ("<Tab>", InsertCommand.InsertTab, CommandFlags.Repeatable ||| CommandFlags.InsertEdit)
             ("<Up>", InsertCommand.MoveCaret Direction.Up, CommandFlags.Movement)
-            ("<C-h>", InsertCommand.Back, CommandFlags.Repeatable ||| CommandFlags.InsertEdit)
             ("<C-i>", InsertCommand.InsertTab, CommandFlags.Repeatable ||| CommandFlags.InsertEdit)
             ("<C-d>", InsertCommand.ShiftLineLeft, CommandFlags.Repeatable)
             ("<C-e>", InsertCommand.InsertCharacterBelowCaret, CommandFlags.Repeatable)
             ("<C-m>", InsertCommand.InsertNewLine, CommandFlags.Repeatable ||| CommandFlags.InsertEdit)
             ("<C-t>", InsertCommand.ShiftLineRight, CommandFlags.Repeatable)
             ("<C-y>", InsertCommand.InsertCharacterAboveCaret, CommandFlags.Repeatable)
-            ("<C-w>", InsertCommand.DeleteWordBeforeCursor, CommandFlags.Repeatable ||| CommandFlags.InsertEdit)
+            ("<C-v>", InsertCommand.Paste, CommandFlags.Repeatable ||| CommandFlags.InsertEdit)
             ("<C-Left>", InsertCommand.MoveCaretByWord Direction.Left, CommandFlags.Movement)
             ("<C-Right>", InsertCommand.MoveCaretByWord Direction.Right, CommandFlags.Movement)
         ]
 
     do
+        // Caret changes can end a text change operation.
+        _textView.Caret.PositionChanged
+        |> Observable.filter (fun _ -> this.IsActive && not this.IsInProcess)
+        |> Observable.subscribe (fun _ -> this.OnCaretPositionChanged() )
+        |> _bag.Add
+
+        // Listen for text changes
+        _textChangeTracker.ChangeCompleted
+        |> Observable.filter (fun _ -> this.IsActive)
+        |> Observable.subscribe (fun args -> this.OnTextChangeCompleted args)
+        |> _bag.Add
+
+        // Listen for global settings changes
+        _globalSettings.SettingChanged
+        |> Observable.subscribe (fun args -> this.OnGlobalSettingsChanged args)
+        |> _bag.Add
+
+    member x.EnsureCommandsBuilt () =
+        if _commandMap.IsEmpty then
+            x.BuildCommands()
+
+    member x.BuildCommands () =
+
         let oldCommands : (string * RawInsertCommand) list = 
             [
                 ("<Esc>", RawInsertCommand.CustomCommand this.ProcessEscape)
@@ -143,33 +277,74 @@ type internal InsertMode
                 ("<C-o>", RawInsertCommand.CustomCommand this.ProcessNormalModeOneCommand)
                 ("<C-p>", RawInsertCommand.CustomCommand this.ProcessWordCompletionPrevious)
                 ("<C-r>", RawInsertCommand.CustomCommand this.ProcessPasteStart)
+                ("<BS>", RawInsertCommand.CustomCommand (this.RunBackspacingCommand InsertCommand.Back))
+                ("<C-h>", RawInsertCommand.CustomCommand (this.RunBackspacingCommand InsertCommand.Back))
+                ("<C-w>", RawInsertCommand.CustomCommand (this.RunBackspacingCommand InsertCommand.DeleteWordBeforeCursor))
+                ("<C-u>", RawInsertCommand.CustomCommand (this.RunBackspacingCommand InsertCommand.DeleteLineBeforeCursor))
             ]
 
+        let noSelectionCommands : (string * InsertCommand * CommandFlags) list =
+            [
+                ("<S-Left>", InsertCommand.MoveCaretByWord Direction.Left, CommandFlags.Movement)
+                ("<S-Right>", InsertCommand.MoveCaretByWord Direction.Right, CommandFlags.Movement)
+            ]
+
+        /// The list of commands that initiate select mode
+        ///
+        /// TODO: Because insert mode does not yet use a command runner, we have
+        /// to simulate a little mini-runner here.  Should this be upgraded?
+        let selectionCommands : (KeyInput * RawInsertCommand) list =
+
+            // Create a command factory so we can access the selection commands
+            let factory = CommandFactory(_operations, _capture)
+
+            // Run a normal command bound to a key input and return a command result
+            let runNormalCommand normalCommand keyInput =
+                let commandData = { Count = None; RegisterName = None }
+                let commandResult = _commandUtil.RunNormalCommand normalCommand commandData
+                ProcessResult.OfCommandResult commandResult
+
+            // Extract those bindings that are bound to normal commands and
+            // create raw insert command that runs the normal command
+            [
+                for commandBinding in factory.CreateSelectionCommands() do
+                    match commandBinding with
+                    | CommandBinding.NormalBinding (_, _,  normalCommand) ->
+                        match commandBinding.KeyInputSet.FirstKeyInput with
+                        | Some keyInput ->
+                            let customCommand = runNormalCommand normalCommand
+                            let rawInsertCommand = RawInsertCommand.CustomCommand customCommand
+                            yield (keyInput, rawInsertCommand)
+                        | None ->
+                            ()
+                    | _ ->
+                        ()
+            ]
+
+        // Choose which commands are applicable for conflicting keys
+        let (applicableNoSelectionCommands, applicableSelectionCommands) =
+            if Util.IsFlagSet _globalSettings.KeyModelOptions KeyModelOptions.StartSelection then
+                (List.empty, selectionCommands)
+            else
+                (noSelectionCommands, List.empty)
+
+        // Create a list of mapped commands
         let mappedCommands : (string * RawInsertCommand) list = 
             s_commands
+            |> Seq.append applicableNoSelectionCommands
             |> Seq.map (fun (name, command, commandFlags) ->
                 let keyInputSet = KeyNotationUtil.StringToKeyInputSet name
                 let rawInsertCommand = RawInsertCommand.InsertCommand (keyInputSet, command, commandFlags)
                 (name, rawInsertCommand))
             |> List.ofSeq
 
-        let both = Seq.append oldCommands mappedCommands
+        // Build a list of all applicable commands
         _commandMap <-
             oldCommands
             |> Seq.append mappedCommands
             |> Seq.map (fun (str, func) -> (KeyNotationUtil.StringToKeyInput str), func)
+            |> Seq.append applicableSelectionCommands
             |> Map.ofSeq
-
-        // Caret changes can end a text change operation.
-        _textView.Caret.PositionChanged
-        |> Observable.subscribe (fun _ -> this.OnCaretPositionChanged() )
-        |> _bag.Add
-
-        // Listen for text changes 
-        _textChangeTracker.ChangeCompleted
-        |> Observable.filter (fun _ -> this.IsActive)
-        |> Observable.subscribe (fun args -> this.OnTextChangeCompleted args)
-        |> _bag.Add
 
     member x.ActiveWordCompletionSession = 
         match _sessionData.ActiveEditItem with
@@ -192,12 +367,17 @@ type internal InsertMode
 
     member x.ModeKind = if _isReplace then ModeKind.Replace else ModeKind.Insert
 
+    member x.WordCompletionUtil = _wordCompletionUtil
+
     /// Is this the currently active mode?
     member x.IsActive = x.ModeKind = _vimBuffer.ModeKind
 
+    /// Is this mode processing key input?
+    member x.IsInProcess = _isInProcess
+
     /// Cancel the active IWordCompletionSession if there is such a session 
     /// active
-    member x.CancelWordCompletionSession () = 
+    member x.CancelWordCompletionSession keyInput = 
         match _sessionData.ActiveEditItem with
         | ActiveEditItem.WordCompletion wordCompletionSession -> 
             if not wordCompletionSession.IsDismissed then
@@ -210,7 +390,7 @@ type internal InsertMode
     member x.CanProcess keyInput = x.GetRawInsertCommand keyInput |> Option.isSome
 
     /// Complete the current batched edit command if one exists
-    member x.CompleteCombinedEditCommand () = 
+    member x.CompleteCombinedEditCommand keyInput = 
         match _sessionData.CombinedEditCommand with
         | None ->
             // Nothing to do
@@ -278,65 +458,6 @@ type internal InsertMode
             | None -> None
             | Some span -> SnapshotSpan(span.Start, x.CaretPoint) |> Some
 
-    /// Get the word completions for the given word text in the ITextBuffer
-    member x.GetWordCompletions (wordSpan : SnapshotSpan) =
-
-        // Get the sequence of words before the completion word 
-        let wordsBefore = 
-            let startPoint = SnapshotUtil.GetStartPoint x.CurrentSnapshot
-            _wordUtil.GetWords WordKind.NormalWord Path.Forward startPoint
-            |> Seq.filter (fun span -> span.End.Position <= wordSpan.Start.Position)
-
-        // Get the sequence of words after the completion word 
-        let wordsAfter =
-
-            // The provided SnapshotSpan can be a subset of an entire word.  If so then
-            // we want to consider the text to the right of the caret as a full word
-            match _wordUtil.GetFullWordSpan WordKind.NormalWord wordSpan.Start with
-            | None -> 
-                _wordUtil.GetWords WordKind.NormalWord Path.Forward wordSpan.End
-            | Some fullWordSpan ->
-                if fullWordSpan = wordSpan then
-                    _wordUtil.GetWords WordKind.NormalWord Path.Forward wordSpan.End
-                else
-                    let remaining = SnapshotSpan(wordSpan.End, fullWordSpan.End)
-                    let after = _wordUtil.GetWords WordKind.NormalWord Path.Forward fullWordSpan.End
-                    Seq.append (Seq.singleton remaining) after
-
-        let filterText = wordSpan.GetText()
-        let filterFunc =
-
-            // Is this actually a word we're interest in.  Need to clear out new lines, 
-            // comment characters, one character items, etc ... 
-            let isWord text =
-                if StringUtil.isNullOrEmpty text then 
-                    false
-                elif text.Length = 1 then
-                    // One character items don't get included in the list
-                    false
-                else
-                    TextUtil.IsWordChar WordKind.NormalWord (text.[0])
-
-            if String.IsNullOrEmpty filterText then
-                (fun (wordSpan : SnapshotSpan) ->
-                    let wordText = wordSpan.GetText()
-                    isWord wordText)
-            else
-                let comparer = if _globalSettings.IgnoreCase then StringComparison.OrdinalIgnoreCase else StringComparison.Ordinal
-                (fun (wordSpan : SnapshotSpan) -> 
-                    let wordText = wordSpan.GetText()
-                    if wordText.StartsWith(filterText, comparer) && isWord wordText then
-                        true
-                    else
-                        false)
-
-        // Combine the collections
-        Seq.append wordsAfter wordsBefore
-        |> Seq.filter filterFunc
-        |> Seq.map SnapshotSpanUtil.GetText
-        |> Seq.distinct
-        |> List.ofSeq
-
     /// Is this KeyInput a raw text insert into the ITextBuffer.  Anything that would be 
     /// processed by adding characters to the ITextBuffer.  This is anything which has an
     /// associated character that is not an insert mode command
@@ -386,26 +507,26 @@ type internal InsertMode
                 _sessionData <- { _sessionData with Transaction = None }
 
     /// Process the <Insert> command.  This toggles between insert an replace mode
-    member x.ProcessInsert () = 
+    member x.ProcessInsert keyInput = 
 
         let mode = if _isReplace then ModeKind.Insert else ModeKind.Replace
         ProcessResult.Handled (ModeSwitch.SwitchMode mode)
 
     /// Enter normal mode for a single command.
-    member x.ProcessNormalModeOneCommand () =
+    member x.ProcessNormalModeOneCommand keyInput =
 
-        let switch = ModeSwitch.SwitchModeOneTimeCommand
+        let switch = ModeSwitch.SwitchModeOneTimeCommand ModeKind.Normal
         ProcessResult.Handled switch
 
     /// Process the CTRL-N key stroke which calls for the previous word completion
-    member x.ProcessWordCompletionNext () = 
+    member x.ProcessWordCompletionNext keyInput = 
         x.StartWordCompletionSession true
 
     /// Process the CTRL-P key stroke which calls for the previous word completion
-    member x.ProcessWordCompletionPrevious () =
+    member x.ProcessWordCompletionPrevious keyInput =
         x.StartWordCompletionSession false
 
-    member x.ProcessEscape () =
+    member x.ProcessEscape keyInput =
 
         x.ApplyAfterEdits()
 
@@ -456,7 +577,7 @@ type internal InsertMode
             match x.GetWordCompletionSpan() with
             | Some span -> span
             | None -> SnapshotSpan(x.CaretPoint, 0)
-        let wordList  = x.GetWordCompletions wordSpan
+        let wordList  = _wordCompletionUtil.GetWordCompletions wordSpan
 
         // If we have at least one item then begin a word completion session.  Don't do this for an 
         // empty completion list as there is nothing to display.  The lack of anything to display 
@@ -465,7 +586,6 @@ type internal InsertMode
             let wordCompletionSession = _wordCompletionSessionFactoryService.CreateWordCompletionSession _textView wordSpan wordList true
 
             if not wordCompletionSession.IsDismissed then
-
                 // When the completion session is dismissed we want to clean out the session 
                 // data 
                 wordCompletionSession.Dismissed
@@ -560,7 +680,58 @@ type internal InsertMode
 
                 let keyInputSet = KeyInputSet.OneKeyInput keyInput
                 let insertCommand = InsertCommand.InsertText text
-                x.RunInsertCommand insertCommand keyInputSet CommandFlags.None
+                x.RunInsertCommand insertCommand keyInputSet CommandFlags.InsertEdit
+
+    /// Run an insert command that backspaces over recent input
+    ///
+    /// Here we enforce the 'backspace=start' setting and also ensure
+    /// that commands within the current edit don't interrupt it.
+    /// That means that a context-dependent command like DeleteWordBeforeCursor
+    /// will be converted into the corresponding context-independent DeleteLeft
+    /// command, which also makes the command repeat correctly
+    member x.RunBackspacingCommand command keyInput =
+
+        // Get the point that 'backspace=start' allows backspacing over
+        let startPoint =
+            match _vimBuffer.VimTextBuffer.LastInsertEntryPoint with
+            | Some startPoint ->
+                startPoint
+            | None ->
+                x.CaretPoint
+
+        // Ask the insert utilties how far it would backspace to for this command
+        let point = _insertUtil.GetBackspacingPoint command
+
+        // The start position is always an intermediate point for any
+        // backspacing command.
+        let point =
+            if point.Position < startPoint.Position && startPoint.Position < x.CaretPoint.Position then
+                startPoint
+            else
+                point
+
+        // Enforce 'backspace=start'
+        let point =
+            if not _globalSettings.IsBackspaceStart && point.Position < startPoint.Position then
+                startPoint
+            else
+                point
+
+        // If there is nothing to backspace over, it's an error
+        // If the point is within the current edit, convert it to a DeleteLeft command
+        // Otherwise process the command as is
+        if point.Position = x.CaretPoint.Position then
+            _operations.Beep()
+            ProcessResult.Handled ModeSwitch.NoSwitch
+        else
+            let keyInputSet = KeyInputSet.OneKeyInput keyInput
+            let flags = CommandFlags.Repeatable ||| CommandFlags.InsertEdit
+            let command =
+                if point.Position >= startPoint.Position then
+                    InsertCommand.DeleteLeft (x.CaretPoint.Position - point.Position)
+                else
+                    command
+            x.RunInsertCommand command keyInputSet flags
 
     /// Try and process the KeyInput by considering the current text edit in Insert Mode
     member x.ProcessWithCurrentChange keyInput = 
@@ -627,7 +798,7 @@ type internal InsertMode
             x.Process keyInput
 
     /// Start a paste session in insert mode
-    member x.ProcessPasteStart() =
+    member x.ProcessPasteStart keyInput =
         x.CancelWordCompletionSession()
         _sessionData <- { _sessionData with ActiveEditItem = ActiveEditItem.Paste }
         ProcessResult.Handled ModeSwitch.NoSwitch
@@ -655,7 +826,13 @@ type internal InsertMode
 
     /// Process the KeyInput value
     member x.Process keyInput = 
+        _isInProcess <- true
+        try
+            x.ProcessCore keyInput
+        finally
+            _isInProcess <- false
 
+    member x.ProcessCore keyInput =
         match _sessionData.ActiveEditItem with
         | ActiveEditItem.WordCompletion wordCompletionSession ->
             x.ProcessWithWordCompletionSession wordCompletionSession keyInput
@@ -673,7 +850,7 @@ type internal InsertMode
                 match x.GetRawInsertCommand keyInput with
                 | Some rawInsertCommand ->
                     match rawInsertCommand with
-                    | RawInsertCommand.CustomCommand func -> func()
+                    | RawInsertCommand.CustomCommand func -> func keyInput
                     | RawInsertCommand.InsertCommand (keyInputSet, insertCommand, commandFlags) -> x.RunInsertCommand insertCommand keyInputSet commandFlags
                 | None -> 
                     ProcessResult.NotHandled
@@ -683,16 +860,10 @@ type internal InsertMode
     ///
     /// Need to be careful to not end the edit due to the caret moving as a result of 
     /// normal typing
-    ///
-    /// TODO: We really need to reconsider how this is used.  If the user has mapped say 
-    /// '1' to 'Left' then we will misfire here.  Not a huge concern I think but we need
-    /// to find a crisper solution here.
     member x.OnCaretPositionChanged () = 
-        if _mouse.IsLeftButtonPressed then 
-            _textChangeTracker.CompleteChange()
-        elif _vimBuffer.ModeKind = ModeKind.Insert then 
-            if _keyboard.IsArrowKeyDown then
-                _textChangeTracker.CompleteChange()
+        _textChangeTracker.CompleteChange()
+        _sessionData <- { _sessionData with InsertTextChange = None }
+        _vimBuffer.VimTextBuffer.LastInsertEntryPoint <- Some x.CaretPoint
 
     member x.OnAfterRunInsertCommand (insertCommand : InsertCommand) =
 
@@ -704,6 +875,10 @@ type internal InsertMode
             | None, Some right -> Some right
             | _ -> None
         _sessionData <- { _sessionData with InsertTextChange = insertTextChange }
+
+        // If the command cannot be converted into a text change, reset the start point
+        if Option.isNone commandTextChange then
+            _vimBuffer.VimTextBuffer.LastInsertEntryPoint <- Some x.CaretPoint
 
         let updateRepeat count addNewLines textChange =
 
@@ -739,6 +914,11 @@ type internal InsertMode
 
         _sessionData <- { _sessionData with CombinedEditCommand = Some command } 
 
+    /// Raised when a global setting is changed
+    member x.OnGlobalSettingsChanged (args : SettingEventArgs) =
+        if not _commandMap.IsEmpty then
+            x.BuildCommands()
+
     /// Called when the IVimBuffer is closed.  We need to unsubscribe from several events
     /// when this happens to prevent the ITextBuffer / ITextView from being kept alive
     member x.OnClose () =
@@ -747,6 +927,10 @@ type internal InsertMode
     /// Entering an insert or replace mode.  Setup the InsertSessionData based on the 
     /// ModeArgument value. 
     member x.OnEnter arg =
+        x.EnsureCommandsBuilt()
+
+        // Record start point upon initial entry to insert mode
+        _vimBuffer.VimTextBuffer.LastInsertEntryPoint <- Some x.CaretPoint
 
         // When starting insert mode we want to track the edits to the IVimBuffer as a 
         // text change
@@ -760,13 +944,13 @@ type internal InsertMode
                 Some transaction, InsertKind.Block blockSpan
             | ModeArgument.InsertWithCount count ->
                 if count > 1 then
-                    let transaction = _undoRedoOperations.CreateLinkedUndoTransaction()
+                    let transaction = _undoRedoOperations.CreateLinkedUndoTransaction "Insert with count"
                     Some transaction, InsertKind.Repeat (count, false, TextChange.Insert StringUtil.empty)
                 else
                     None, InsertKind.Normal
             | ModeArgument.InsertWithCountAndNewLine count ->
                 if count > 1 then
-                    let transaction = _undoRedoOperations.CreateLinkedUndoTransaction()
+                    let transaction = _undoRedoOperations.CreateLinkedUndoTransaction "Insert with count and new line"
                     Some transaction, InsertKind.Repeat (count, true, TextChange.Insert StringUtil.empty)
                 else
                     None, InsertKind.Normal
@@ -775,7 +959,7 @@ type internal InsertMode
             | _ -> 
                 if _isReplace then
                     // Replace mode occurs under a transaction even if we are not repeating
-                    let transaction = _undoRedoOperations.CreateLinkedUndoTransaction()
+                    let transaction = _undoRedoOperations.CreateLinkedUndoTransaction "Insert with transaction"
                     Some transaction, InsertKind.Normal
                 else
                     None, InsertKind.Normal

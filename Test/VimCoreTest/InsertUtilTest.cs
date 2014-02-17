@@ -33,7 +33,8 @@ namespace Vim.UnitTest
             _localSettings = _vimBuffer.LocalSettings;
 
             var operations = CommonOperationsFactory.GetCommonOperations(_vimBuffer.VimBufferData);
-            _insertUtilRaw = new InsertUtil(_vimBuffer.VimBufferData, operations);
+            var motionUtil = new MotionUtil(_vimBuffer.VimBufferData, operations);
+            _insertUtilRaw = new InsertUtil(_vimBuffer.VimBufferData, motionUtil, operations);
             _insertUtil = _insertUtilRaw;
         }
 
@@ -201,7 +202,7 @@ namespace Vim.UnitTest
             public void DeleteWordBeforeCursor_BeforeFirstWord()
             {
                 Create("   dog cat");
-                _globalSettings.Backspace = "start";
+                _globalSettings.Backspace = "start,indent";
                 _textView.MoveCaretTo(3);
                 _insertUtilRaw.DeleteWordBeforeCursor();
                 Assert.Equal("dog cat", _textView.GetLine(0).GetText());
@@ -232,6 +233,79 @@ namespace Vim.UnitTest
                 _globalSettings.Backspace = "start,eol";
                 _textView.MoveCaretToLine(1);
                 _insertUtilRaw.DeleteWordBeforeCursor();
+                Assert.Equal("dogcat", _textView.GetLine(0).GetText());
+                Assert.Equal(3, _textView.GetCaretPoint().Position);
+            }
+        }
+
+        public sealed class DeleteLineBeforeCursorTest : InsertUtilTest
+        {
+            /// <summary>
+            /// Run the command from the end of the line
+            /// </summary>
+            [Fact]
+            public void DeleteLineBeforeCursor_EndOfLine()
+            {
+                Create("dog bear cat");
+                _globalSettings.Backspace = "start";
+                _textView.MoveCaretTo(12);
+                _insertUtilRaw.DeleteLineBeforeCursor();
+                Assert.Equal("", _textView.GetLine(0).GetText());
+                Assert.Equal(0, _textView.GetCaretPoint().Position);
+            }
+
+            /// <summary>
+            /// Run the command from the middle of a line
+            /// </summary>
+            [Fact]
+            public void DeleteLineBeforeCursor_MiddleOfLine()
+            {
+                Create("dog bear cat");
+                _globalSettings.Backspace = "start";
+                _textView.MoveCaretTo(4);
+                _insertUtilRaw.DeleteLineBeforeCursor();
+                Assert.Equal("bear cat", _textView.GetLine(0).GetText());
+                Assert.Equal(0, _textView.GetCaretPoint().Position);
+            }
+
+            /// <summary>
+            /// Before the first non-blank this should delete the indent on the line
+            /// </summary>
+            [Fact]
+            public void DeleteLineBeforeCursor_BeforeFirstNonBlank()
+            {
+                Create("   dog cat");
+                _globalSettings.Backspace = "start,indent";
+                _textView.MoveCaretTo(3);
+                _insertUtilRaw.DeleteLineBeforeCursor();
+                Assert.Equal("dog cat", _textView.GetLine(0).GetText());
+                Assert.Equal(0, _textView.GetCaretPoint().Position);
+            }
+
+            /// <summary>
+            /// Don't delete a line break if the eol suboption isn't set 
+            /// </summary>
+            [Fact]
+            public void DeleteLineBeforeCursor_LineNoOption()
+            {
+                Create("dog", "cat");
+                _globalSettings.Backspace = "start";
+                _textView.MoveCaretToLine(1);
+                _insertUtilRaw.DeleteLineBeforeCursor();
+                Assert.Equal("dog", _textView.GetLine(0).GetText());
+                Assert.Equal("cat", _textView.GetLine(1).GetText());
+            }
+
+            /// <summary>
+            /// If the eol option is set then delete the line break and move the caret back a line
+            /// </summary>
+            [Fact]
+            public void DeleteLineBeforeCursor_LineWithOption()
+            {
+                Create("dog", "cat");
+                _globalSettings.Backspace = "start,eol";
+                _textView.MoveCaretToLine(1);
+                _insertUtilRaw.DeleteLineBeforeCursor();
                 Assert.Equal("dogcat", _textView.GetLine(0).GetText());
                 Assert.Equal(3, _textView.GetCaretPoint().Position);
             }
@@ -288,10 +362,10 @@ namespace Vim.UnitTest
                 _insertUtilRaw.ShiftLineLeft();
 
                 Assert.Equal("    ", _textView.GetLine(0).GetText());
-                Assert.Equal(_insertUtilRaw.CaretColumn, 4);
+                Assert.Equal(4, _insertUtilRaw.CaretColumn);
                 Assert.False(_textView.Caret.InVirtualSpace);
                 // probably redundant, but we just want to be sure...
-                Assert.Equal(_textView.Caret.Position.VirtualSpaces, 0);
+                Assert.Equal(0, _textView.Caret.Position.VirtualSpaces);
             }
 
             /// <summary>
@@ -307,9 +381,9 @@ namespace Vim.UnitTest
 
                 _insertUtilRaw.ShiftLineLeft();
 
-                Assert.Equal(_textView.GetLine(0).GetText(), "  foo");
-                Assert.Equal(_insertUtilRaw.CaretColumn, 2);
-                Assert.Equal(_textView.Caret.Position.VirtualSpaces, 0);
+                Assert.Equal("  foo", _textView.GetLine(0).GetText());
+                Assert.Equal(2, _insertUtilRaw.CaretColumn);
+                Assert.Equal(0, _textView.Caret.Position.VirtualSpaces);
             }
 
             /// <summary>
@@ -328,10 +402,10 @@ namespace Vim.UnitTest
                 _insertUtilRaw.ShiftLineRight();
 
                 Assert.Equal("            ", _textView.GetLine(0).GetText());
-                Assert.Equal(_insertUtilRaw.CaretColumn, 12);
+                Assert.Equal(12, _insertUtilRaw.CaretColumn);
                 Assert.False(_textView.Caret.InVirtualSpace);
                 // probably redundant, but we just want to be sure...
-                Assert.Equal(_textView.Caret.Position.VirtualSpaces, 0);
+                Assert.Equal(0, _textView.Caret.Position.VirtualSpaces);
             }
 
             /// <summary>
@@ -349,10 +423,10 @@ namespace Vim.UnitTest
                 _insertUtilRaw.ShiftLineRight();
 
                 Assert.Equal("            ", _textView.GetLine(0).GetText());
-                Assert.Equal(_insertUtilRaw.CaretColumn, 12);
+                Assert.Equal(12, _insertUtilRaw.CaretColumn);
                 Assert.False(_textView.Caret.InVirtualSpace);
                 // probably redundant, but we just want to be sure...
-                Assert.Equal(_textView.Caret.Position.VirtualSpaces, 0);
+                Assert.Equal(0, _textView.Caret.Position.VirtualSpaces);
             }
 
             /// <summary>
@@ -370,10 +444,10 @@ namespace Vim.UnitTest
                 _insertUtilRaw.ShiftLineRight();
 
                 Assert.Equal("\t    ", _textView.GetLine(0).GetText());
-                Assert.Equal(_insertUtilRaw.CaretColumn, 5);
+                Assert.Equal(5, _insertUtilRaw.CaretColumn);
                 Assert.False(_textView.Caret.InVirtualSpace);
                 // probably redundant, but we just want to be sure...
-                Assert.Equal(_textView.Caret.Position.VirtualSpaces, 0);
+                Assert.Equal(0, _textView.Caret.Position.VirtualSpaces);
             }
 
             /// <summary>
@@ -387,7 +461,7 @@ namespace Vim.UnitTest
                 _insertUtilRaw.ShiftLineRight();
 
                 Assert.Equal("    ", _textView.GetLine(0).GetText());
-                Assert.Equal(_insertUtilRaw.CaretColumn, 4);
+                Assert.Equal(4, _insertUtilRaw.CaretColumn);
             }
 
             /// <summary>
@@ -403,7 +477,7 @@ namespace Vim.UnitTest
                 _insertUtilRaw.ShiftLineRight();
 
                 Assert.Equal("    abc", _textView.GetLine(0).GetText());
-                Assert.Equal(_insertUtilRaw.CaretColumn, 4);
+                Assert.Equal(4, _insertUtilRaw.CaretColumn);
             }
         }
 
@@ -417,7 +491,7 @@ namespace Vim.UnitTest
 
                 _insertUtilRaw.MoveCaretByWord(Direction.Left);
 
-                Assert.Equal(_insertUtilRaw.CaretColumn, 5);
+                Assert.Equal(5, _insertUtilRaw.CaretColumn);
             }
 
             [Fact]
@@ -429,7 +503,7 @@ namespace Vim.UnitTest
                 _insertUtilRaw.MoveCaretByWord(Direction.Left);
                 _insertUtilRaw.MoveCaretByWord(Direction.Left);
 
-                Assert.Equal(_insertUtilRaw.CaretColumn, 0);
+                Assert.Equal(0, _insertUtilRaw.CaretColumn);
             }
 
             [Fact]
@@ -440,7 +514,7 @@ namespace Vim.UnitTest
 
                 _insertUtilRaw.MoveCaretByWord(Direction.Right);
 
-                Assert.Equal(_insertUtilRaw.CaretColumn, 10);
+                Assert.Equal(10, _insertUtilRaw.CaretColumn);
             }
 
             [Fact]
@@ -452,7 +526,7 @@ namespace Vim.UnitTest
                 _insertUtilRaw.MoveCaretByWord(Direction.Right);
                 _insertUtilRaw.MoveCaretByWord(Direction.Right);
 
-                Assert.Equal(_insertUtilRaw.CaretColumn, 14);
+                Assert.Equal(14, _insertUtilRaw.CaretColumn);
             }
 
             [Fact]
@@ -463,7 +537,97 @@ namespace Vim.UnitTest
 
                 _insertUtilRaw.MoveCaretByWord(Direction.Right);
 
-                Assert.Equal(_textView.GetCaretPoint().Position, 6);
+                Assert.Equal(6, _textView.GetCaretPoint().Position);
+            }
+
+            /// <summary>
+            /// Issue #1269 - part I
+            /// </summary>
+            [Fact]
+            public void Forward_NextLineFromBlankLine()
+            {
+                Create("", "dogs look bad with greasy fur");
+                _textView.MoveCaretTo(0);
+
+                _insertUtilRaw.MoveCaretByWord(Direction.Right);
+
+                Assert.Equal(2, _textView.GetCaretPoint().Position);
+            }
+
+            /// <summary>
+            /// Issue #1269 - part II
+            /// </summary>
+            [Fact]
+            public void Forward_FromLastWordOfLastLine()
+            {
+                Create("cat", "dog");
+                _textView.MoveCaretTo(5);
+
+                _insertUtilRaw.MoveCaretByWord(Direction.Right);
+
+                Assert.Equal(8, _textView.GetCaretPoint().Position);
+            }
+        }
+
+        /// <summary>
+        /// Tests for moving the caret in insert mode
+        /// </summary>
+        public sealed class MoveCaretWithArrowTest : InsertUtilTest
+        {
+            /// <summary>
+            /// Arrow left at beginning of line without 'whichwrap=['
+            /// should stay put
+            /// </summary>
+            [Fact]
+            public void Without_IsWhichWrapArrowLeftInsert()
+            {
+                Create("dog", "cat");
+                _globalSettings.WhichWrap = "";
+                _textView.MoveCaretTo(5);
+                _insertUtilRaw.MoveCaretWithArrow(Direction.Left);
+                Assert.Equal(5, _textView.GetCaretPoint().Position);
+            }
+
+            /// <summary>
+            /// Arrow left at beginning of line with 'whichwrap=['
+            /// should move the end of the previous line
+            /// </summary>
+            [Fact]
+            public void With_IsWhichWrapArrowLeftInsert()
+            {
+                Create("dog", "cat");
+                _globalSettings.WhichWrap = "[";
+                _textView.MoveCaretTo(5);
+                _insertUtilRaw.MoveCaretWithArrow(Direction.Left);
+                Assert.Equal(3, _textView.GetCaretPoint().Position);
+            }
+
+            /// <summary>
+            /// Arrow right at end of line without 'whichwrap=['
+            /// should stay put
+            /// </summary>
+            [Fact]
+            public void Without_IsWhichWrapArrowRightInsert()
+            {
+                Create("dog", "cat");
+                _globalSettings.WhichWrap = "";
+                _textView.MoveCaretTo(3);
+                _insertUtilRaw.MoveCaretWithArrow(Direction.Right);
+                Assert.Equal(3, _textView.GetCaretPoint().Position);
+            }
+
+            /// <summary>
+            /// Arrow right at end of line with 'whichwrap=]'
+            /// should move the beginning of the next line
+            /// </summary>
+            [Fact]
+            public void With_IsWhichWrapArrowRightInsert()
+            {
+                Create("dog", "cat");
+                _globalSettings.WhichWrap = "]";
+                _textView.MoveCaretTo(3);
+                _insertUtilRaw.MoveCaretWithArrow(Direction.Right);
+                Assert.Equal(5, _textView.GetCaretPoint().Position);
             }
         }
     }

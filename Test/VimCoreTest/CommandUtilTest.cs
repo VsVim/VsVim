@@ -38,7 +38,7 @@ namespace Vim.UnitTest
             _vimHost = (MockVimHost)Vim.VimHost;
             _textView = CreateTextView(lines);
             _textBuffer = _textView.TextBuffer;
-            _vimTextBuffer = Vim.CreateVimTextBuffer(_textBuffer);
+            _vimTextBuffer = CreateVimTextBufferCore(_textBuffer);
             _localSettings = _vimTextBuffer.LocalSettings;
 
             var foldManager = CreateFoldManager(_textView);
@@ -59,17 +59,25 @@ namespace Vim.UnitTest
             _globalSettings = Vim.GlobalSettings;
 
             var operations = CreateCommonOperations(vimBufferData);
+            var lineChangeTracker = new LineChangeTracker(vimBufferData);
             _motionUtil = new MotionUtil(vimBufferData, operations);
             _commandUtil = new CommandUtil(
                 vimBufferData,
                 _motionUtil,
                 operations,
                 foldManager,
-                new InsertUtil(vimBufferData, operations),
-                _bulkOperations);
+                new InsertUtil(vimBufferData, _motionUtil, operations),
+                _bulkOperations,
+                MouseDevice,
+                lineChangeTracker);
 
             var outliningManagerService = CompositionContainer.GetExportedValue<IOutliningManagerService>();
             _outliningManager = outliningManagerService.GetOutliningManager(_textView);
+        }
+
+        protected virtual IVimTextBuffer CreateVimTextBufferCore(ITextBuffer textBuffer)
+        {
+            return Vim.GetOrCreateVimTextBuffer(textBuffer);
         }
 
         protected static string CreateLinesWithLineBreak(params string[] lines)
@@ -479,10 +487,12 @@ namespace Vim.UnitTest
         {
             private Mock<IUndoRedoOperations> _undoRedoOperations;
 
-            protected override IUndoRedoOperations CreateUndoRedoOperations(IStatusUtil statusUtil = null)
+            protected override IVimTextBuffer CreateVimTextBufferCore(ITextBuffer textBuffer)
             {
                 _undoRedoOperations = new Mock<IUndoRedoOperations>(MockBehavior.Strict);
-                return _undoRedoOperations.Object;
+                var vimTextBuffer = (VimTextBuffer)Vim.GetOrCreateVimTextBuffer(textBuffer);
+                vimTextBuffer._undoRedoOperations = _undoRedoOperations.Object;
+                return vimTextBuffer;
             }
 
             /// <summary>
@@ -497,11 +507,11 @@ namespace Vim.UnitTest
                 var transaction = new Mock<ILinkedUndoTransaction>(MockBehavior.Strict);
                 transaction.Setup(x => x.Dispose()).Verifiable();
                 _undoRedoOperations
-                    .Setup(x => x.CreateLinkedUndoTransaction())
+                    .Setup(x => x.CreateLinkedUndoTransaction(It.IsAny<String>()))
                     .Returns(transaction.Object)
                     .Verifiable();
                 _undoRedoOperations
-                    .Setup(x => x.EditWithUndoTransaction<Unit>("Test", It.IsAny<FSharpFunc<Unit, Unit>>()))
+                    .Setup(x => x.EditWithUndoTransaction<Unit>("Test", _textView, It.IsAny<FSharpFunc<Unit, Unit>>()))
                     .Throws(new ArgumentException())
                     .Verifiable();
 
@@ -534,11 +544,11 @@ namespace Vim.UnitTest
                 var transaction = new Mock<ILinkedUndoTransaction>(MockBehavior.Strict);
                 transaction.Setup(x => x.Dispose()).Verifiable();
                 _undoRedoOperations
-                    .Setup(x => x.CreateLinkedUndoTransaction())
+                    .Setup(x => x.CreateLinkedUndoTransaction(It.IsAny<String>()))
                     .Returns(transaction.Object)
                     .Verifiable();
                 _undoRedoOperations
-                    .Setup(x => x.EditWithUndoTransaction<Unit>("Test", It.IsAny<FSharpFunc<Unit, Unit>>()))
+                    .Setup(x => x.EditWithUndoTransaction<Unit>("Test", _textView, It.IsAny<FSharpFunc<Unit, Unit>>()))
                     .Throws(new ArgumentException())
                     .Verifiable();
 

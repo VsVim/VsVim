@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices.ComTypes;
 using System.Text;
+using System.Windows;
 using System.Windows.Media;
 using Vim;
 
@@ -79,9 +80,17 @@ namespace VsVim
         {
             get
             {
-                var fontProperties = _dte.Properties[CategoryFontsAndColors, PageTextEditor];
-                var fontFamily = fontProperties.Item(PropertyFontFamily).Value.ToString();
-                return new FontFamily(fontFamily);
+                try
+                {
+                    var fontProperties = _dte.Properties[CategoryFontsAndColors, PageTextEditor];
+                    var fontFamily = fontProperties.Item(PropertyFontFamily).Value.ToString();
+                    return new FontFamily(fontFamily);
+                }
+                catch (Exception ex)
+                {
+                    VimTrace.TraceError(ex);
+                    return SystemFonts.MessageFontFamily;
+                }
             }
         }
 
@@ -89,9 +98,17 @@ namespace VsVim
         {
             get
             {
-                var fontProperties = _dte.Properties[CategoryFontsAndColors, PageTextEditor];
-                var fontSize = Convert.ToDouble(fontProperties.Item(PropertyFontSize).Value);
-                return fontSize;
+                try
+                {
+                    var fontProperties = _dte.Properties[CategoryFontsAndColors, PageTextEditor];
+                    var fontSize = Convert.ToDouble(fontProperties.Item(PropertyFontSize).Value);
+                    return fontSize;
+                }
+                catch (Exception ex)
+                {
+                    VimTrace.TraceError(ex);
+                    return SystemFonts.MessageFontSize;
+                }
             }
         }
 

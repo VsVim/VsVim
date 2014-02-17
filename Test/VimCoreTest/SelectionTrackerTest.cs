@@ -7,6 +7,7 @@ using Moq;
 using Vim.Extensions;
 using Vim.Modes.Visual;
 using Xunit;
+using Vim.UnitTest.Mock;
 
 namespace Vim.UnitTest
 {
@@ -14,6 +15,7 @@ namespace Vim.UnitTest
     {
         private ITextView _textView;
         private IVimGlobalSettings _globalSettings;
+        private IVimBufferData _vimBufferData;
         private SelectionTracker _tracker;
         private Mock<IIncrementalSearch> _incrementalSearch;
         private TestableSynchronizationContext _context;
@@ -43,8 +45,10 @@ namespace Vim.UnitTest
             _textView.MoveCaretTo(caretPosition);
             _globalSettings = new GlobalSettings();
             var localSettings = new LocalSettings(_globalSettings);
+            var vimTextBuffer = MockObjectFactory.CreateVimTextBuffer(_textView.TextBuffer, localSettings);
+            _vimBufferData = MockObjectFactory.CreateVimBufferData(vimTextBuffer.Object, _textView);
             _incrementalSearch = new Mock<IIncrementalSearch>(MockBehavior.Loose);
-            _tracker = new SelectionTracker(_textView, localSettings, _incrementalSearch.Object, kind);
+            _tracker = new SelectionTracker(_vimBufferData, _incrementalSearch.Object, kind);
             _tracker.Start();
         }
 
@@ -101,8 +105,10 @@ namespace Vim.UnitTest
             view.SetupGet(x => x.Caret).Returns(realView.Caret);
             view.SetupGet(x => x.TextSnapshot).Returns(realView.TextSnapshot);
             view.SetupGet(x => x.Selection).Returns(selection.Object);
-            var localSettings2 = new LocalSettings(_globalSettings);
-            var tracker = new SelectionTracker(view.Object, localSettings2, _incrementalSearch.Object, VisualKind.Character);
+            var vimTextBuffer = new Mock<IVimTextBuffer>(MockBehavior.Strict);
+            vimTextBuffer.SetupGet(x => x.LocalSettings).Returns(new LocalSettings(_globalSettings));
+            var vimBufferData = MockObjectFactory.CreateVimBufferData(vimTextBuffer.Object, view.Object);
+            var tracker = new SelectionTracker(vimBufferData, _incrementalSearch.Object, VisualKind.Character);
             tracker.Start();
             selection.Verify();
         }
@@ -116,7 +122,10 @@ namespace Vim.UnitTest
             Create(VisualKind.Character);
             var view = CreateTextView("foo bar baz");
             view.Selection.Select(new SnapshotSpan(view.TextSnapshot, 1, 3), false);
-            var tracker = new SelectionTracker(view, new LocalSettings(_globalSettings), _incrementalSearch.Object, VisualKind.Character);
+            var vimTextBuffer = new Mock<IVimTextBuffer>(MockBehavior.Strict);
+            vimTextBuffer.SetupGet(x => x.LocalSettings).Returns(new LocalSettings(_globalSettings));
+            var vimBufferData = MockObjectFactory.CreateVimBufferData(vimTextBuffer.Object, view);
+            var tracker = new SelectionTracker(vimBufferData, _incrementalSearch.Object, VisualKind.Character);
             tracker.Start();
             Assert.Equal(view.Selection.AnchorPoint.Position.Position, tracker.AnchorPoint.Position);
         }

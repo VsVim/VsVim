@@ -67,7 +67,7 @@ namespace Vim.UnitTest
             Create("foo bar");
             Assert.True(_search.Begin(Path.Forward).Run("f").Run(VimKey.Enter).IsComplete);
             _factory.Verify();
-            Assert.Equal("f", _vimData.LastPatternData.Pattern);
+            Assert.Equal("f", _vimData.LastSearchData.Pattern);
         }
 
         /// <summary>
@@ -87,9 +87,9 @@ namespace Vim.UnitTest
         public void LastSearch1()
         {
             Create(" foo bar");
-            var data = VimUtil.CreatePatternData("foo", Path.Forward);
             ProcessWithEnter("foo");
-            Assert.Equal(data, _vimData.LastPatternData);
+            Assert.Equal("foo", _vimData.LastSearchData.Pattern);
+            Assert.True(_vimData.LastSearchData.Kind.IsAnyForward);
             _factory.Verify();
         }
 
@@ -99,12 +99,12 @@ namespace Vim.UnitTest
             Create(" foo bar");
 
             ProcessWithEnter("foo bar");
-            Assert.Equal(VimUtil.CreatePatternData("foo bar", Path.Forward), _vimData.LastPatternData);
+            Assert.Equal("foo bar", _vimData.LastSearchData.Pattern);
             _factory.Verify();
 
             _textView.MoveCaretTo(0);
             ProcessWithEnter("bar");
-            Assert.Equal(VimUtil.CreatePatternData("bar", Path.Forward), _vimData.LastPatternData);
+            Assert.Equal("bar",  _vimData.LastSearchData.Pattern);
             _factory.Verify();
         }
 
@@ -158,7 +158,7 @@ namespace Vim.UnitTest
 
             ProcessWithEnter("foo");
             Assert.True(didRun);
-            Assert.Equal(VimUtil.CreatePatternData("foo", Path.Forward), _vimData.LastPatternData);
+            Assert.Equal(new SearchData("foo", Path.Forward), _vimData.LastSearchData);
         }
 
         [Fact]
@@ -191,7 +191,7 @@ namespace Vim.UnitTest
             Create("foo bar");
             _search.DoSearch("foo");
             Assert.False(_search.InSearch);
-            Assert.Equal("foo", _vimData.LastPatternData.Pattern);
+            Assert.Equal("foo", _vimData.LastSearchData.Pattern);
         }
 
         /// <summary>

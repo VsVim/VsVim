@@ -81,6 +81,7 @@ type internal VisualMode
                 yield ("<C-q>", CommandFlags.Special, VisualCommand.SwitchModeVisual VisualKind.Block)
                 yield ("<C-v>", CommandFlags.Special, VisualCommand.SwitchModeVisual VisualKind.Block)
                 yield ("<S-i>", CommandFlags.Special, VisualCommand.SwitchModeInsert)
+                yield ("<C-g>", CommandFlags.Special, VisualCommand.SwitchModeOtherVisual)
                 yield ("<Del>", CommandFlags.Repeatable, VisualCommand.DeleteSelection)
                 yield ("<lt>", CommandFlags.Repeatable, VisualCommand.ShiftLinesLeft)
                 yield (">", CommandFlags.Repeatable, VisualCommand.ShiftLinesRight)
@@ -146,7 +147,7 @@ type internal VisualMode
 
     member x.EnsureCommandsBuilt() =
         if not _builtCommands then
-            let factory = CommandFactory(_operations, _capture, _motionUtil, _vimBufferData.JumpList, _vimTextBuffer.LocalSettings)
+            let factory = CommandFactory(_operations, _capture)
 
             // Add in the standard commands
             factory.CreateMovementCommands()
@@ -162,40 +163,7 @@ type internal VisualMode
 
     member x.OnEnter modeArgument = 
         x.EnsureCommandsBuilt()
-
-        // If we are provided an InitialVisualSpan value here go ahead and use it.  Do this before we
-        // begin selection tracking as it will properly update the resulting selection to the appropriate
-        // mode
-        let caretPoint = 
-            match modeArgument with
-            | ModeArgument.InitialVisualSelection (visualSelection, caretPoint) ->
-
-                if visualSelection.VisualKind = _visualKind then
-                    visualSelection.Select _textView
-                    let visualCaretPoint = visualSelection.GetCaretPoint _globalSettings.SelectionKind
-                    TextViewUtil.MoveCaretToPointRaw _textView visualCaretPoint MoveCaretFlags.EnsureOnScreen
-                    caretPoint
-                else
-                    None
-            | _ ->
-                None
-
-        // Save the start point of the visual selection so we can potentially reset to it later
-        let caretPosition = 
-            match caretPoint with
-            | Some caretPoint -> caretPoint.Position
-            | None -> 
-                // If there is an existing explicit selection then the anchor point is considered
-                // the original start point.  Else just use the caret point
-                if _textView.Selection.IsEmpty then
-                    x.CaretPoint.Position
-                else 
-                    _textView.Selection.AnchorPoint.Position.Position
-
-        let caretTrackingPoint = x.CurrentSnapshot.CreateTrackingPoint(caretPosition, PointTrackingMode.Negative) |> Some
-        _vimBufferData.VisualCaretStartPoint <- caretTrackingPoint
-        _vimBufferData.VisualAnchorPoint <- caretTrackingPoint
-
+        _selectionTracker.RecordCaretTrackingPoint modeArgument
         _selectionTracker.Start()
 
     member x.OnClose() =
@@ -249,7 +217,10 @@ type internal VisualMode
                 | BindResult.Error ->
                     _selectionTracker.UpdateSelection()
                     _operations.Beep()
-                    ProcessResult.Handled ModeSwitch.NoSwitch
+                    if ki.IsMouseKey then
+                        ProcessResult.NotHandled
+                    else
+                        ProcessResult.Handled ModeSwitch.NoSwitch
                 | BindResult.Cancelled -> 
                     _selectionTracker.UpdateSelection()
                     ProcessResult.Handled ModeSwitch.NoSwitch
@@ -258,22 +229,6 @@ type internal VisualMode
         // we are the active IMode.  It's very possible that we were switched out already 
         // as part of a complex command
         if result.IsAnySwitch && _selectionTracker.IsRunning then
-            // Is this a switch to command mode? 
-            let toCommandMode = 
-                match result with
-                | ProcessResult.NotHandled -> 
-                    false
-                | ProcessResult.Error ->
-                    false
-                | ProcessResult.HandledNeedMoreInput ->
-                    false
-                | ProcessResult.Handled switch ->
-                    match switch with 
-                    | ModeSwitch.NoSwitch -> false
-                    | ModeSwitch.SwitchMode modeKind -> modeKind = ModeKind.Command
-                    | ModeSwitch.SwitchModeWithArgument (modeKind, _) -> modeKind = ModeKind.Command
-                    | ModeSwitch.SwitchPreviousMode -> false
-                    | ModeSwitch.SwitchModeOneTimeCommand -> false
 
             // On teardown we will get calls to Stop when the view is closed.  It's invalid to access 
             // the selection at that point
@@ -282,7 +237,9 @@ type internal VisualMode
                 // Before resetting the selection save it
                 _vimTextBuffer.LastVisualSelection <- Some lastVisualSelection
 
-                if not toCommandMode then
+                if result.IsAnySwitchToVisual then
+                    _selectionTracker.UpdateSelection()
+                elif not result.IsAnySwitchToCommand then
                     _textView.Selection.Clear()
                     _textView.Selection.Mode <- TextSelectionMode.Stream
 

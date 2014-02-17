@@ -8,6 +8,7 @@ using Vim.UI.Wpf;
 namespace VsVim.Implementation.Misc
 {
     [Export(typeof(IKeyProcessorProvider))]
+    [Order(Before = Constants.FallbackKeyProcessorName)]
     [Order(Before = Constants.VisualStudioKeyProcessorName)]
     [Name(Constants.VsKeyProcessorName)]
     [TextViewRole(PredefinedTextViewRoles.Editable)]
@@ -39,7 +40,7 @@ namespace VsVim.Implementation.Misc
             }
 
             var vimBufferCoordinator = _bufferCoordinatorFactory.GetVimBufferCoordinator(vimBuffer);
-            return new VsKeyProcessor(_adapter, vimBufferCoordinator, _keyUtil, _reportDesignerUtil, wpfTextView);
+            return new VsKeyProcessor(_adapter, vimBufferCoordinator, _keyUtil, _reportDesignerUtil);
         }
     }
 }

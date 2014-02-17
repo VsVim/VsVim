@@ -39,23 +39,23 @@ namespace Vim.UnitTest
             }
         }
 
-        public abstract class LastPatternDataTest : VimDataTest
+        public abstract class LastSearchDataTest : VimDataTest
         {
-            public sealed class EventTest : LastPatternDataTest
+            public sealed class EventTest : LastSearchDataTest
             {
                 private int _runCount;
 
                 public EventTest()
                 {
                     _globalSettings.HighlightSearch = true;
-                    _vimData.LastPatternData = new PatternData("cat", Path.Forward);
+                    _vimData.LastSearchData = new SearchData("cat", Path.Forward);
                     _vimData.DisplayPatternChanged += delegate { _runCount++; };
                 }
 
                 [Fact]
                 public void PatternChanged()
                 {
-                    _vimData.LastPatternData = new PatternData("dog", Path.Forward);
+                    _vimData.LastSearchData = new SearchData("dog", Path.Forward);
                     Assert.Equal(1, _runCount);
                 }
 
@@ -66,7 +66,7 @@ namespace Vim.UnitTest
                 [Fact]
                 public void PatternDataSame()
                 {
-                    _vimData.LastPatternData = _vimData.LastPatternData;
+                    _vimData.LastSearchData = _vimData.LastSearchData;
                     Assert.Equal(0, _runCount);
                 }
 
@@ -77,9 +77,9 @@ namespace Vim.UnitTest
                 [Fact]
                 public void PathChanged()
                 {
-                    _vimData.LastPatternData = new PatternData("dog", Path.Forward);
+                    _vimData.LastSearchData = new SearchData("dog", Path.Forward);
                     _runCount = 0;
-                    _vimData.LastPatternData = new PatternData("dog", Path.Backward);
+                    _vimData.LastSearchData = new SearchData("dog", Path.Backward);
                     Assert.Equal(0, _runCount);
                 }
 
@@ -95,7 +95,7 @@ namespace Vim.UnitTest
                 }
             }
 
-            public sealed class DisplayPatternTest : LastPatternDataTest
+            public sealed class DisplayPatternTest : LastSearchDataTest
             {
                 public DisplayPatternTest()
                 {
@@ -105,7 +105,7 @@ namespace Vim.UnitTest
                 [Fact]
                 public void Standard()
                 {
-                    _vimData.LastPatternData = new PatternData("dog", Path.Forward);
+                    _vimData.LastSearchData = new SearchData("dog", Path.Forward);
                     Assert.Equal("dog", _vimData.DisplayPattern);
                 }
 
@@ -113,7 +113,7 @@ namespace Vim.UnitTest
                 public void HighlightDisabled()
                 {
                     _globalSettings.HighlightSearch = false;
-                    _vimData.LastPatternData = new PatternData("dog", Path.Forward);
+                    _vimData.LastSearchData = new SearchData("dog", Path.Forward);
                     Assert.True(String.IsNullOrEmpty(_vimData.DisplayPattern));
                 }
             }
@@ -128,7 +128,7 @@ namespace Vim.UnitTest
                 public EventTest()
                 {
                     _globalSettings.HighlightSearch = true;
-                    _vimData.LastPatternData = new PatternData("cat", Path.Forward);
+                    _vimData.LastSearchData = new SearchData("cat", Path.Forward);
                     _vimData.DisplayPatternChanged += delegate { _runCount++; };
                 }
 
@@ -195,7 +195,7 @@ namespace Vim.UnitTest
                 public DisplayPatternTest()
                 {
                     _globalSettings.HighlightSearch = true;
-                    _vimData.LastPatternData = new PatternData("cat", Path.Forward);
+                    _vimData.LastSearchData = new SearchData("cat", Path.Forward);
                 }
 
                 [Fact]

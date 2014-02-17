@@ -229,6 +229,16 @@ namespace Vim.UnitTest.Mock
             return FSharpOption.CreateForReference(FocusedTextView);
         }
 
+        bool IVimHost.IsFocused(ITextView textView)
+        {
+            if (FocusedTextView != null)
+            {
+                return textView == FocusedTextView;
+            }
+
+            return true;
+        }
+
         void IVimHost.Quit()
         {
             throw new NotImplementedException();

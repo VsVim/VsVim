@@ -2,7 +2,7 @@
 using System.ComponentModel.Composition;
 using System.Windows.Input;
 
-namespace Vim.UI.Wpf.Implementation.Keyboard
+namespace Vim.UI.Wpf.Implementation.Misc
 {
     [Export(typeof(IKeyUtil))]
     internal sealed class AlternateKeyUtil : IKeyUtil
@@ -90,6 +90,43 @@ namespace Vim.UI.Wpf.Implementation.Keyboard
         internal static bool TrySpecialVimKeyToKey(VimKey vimKey, out Key key)
         {
             return VimKeyToWpfKeyMap.TryGetValue(vimKey, out key);
+
+        }
+
+        internal static KeyModifiers ConvertToKeyModifiers(ModifierKeys keys)
+        {
+            var res = KeyModifiers.None;
+            if (0 != (keys & ModifierKeys.Shift))
+            {
+                res = res | KeyModifiers.Shift;
+            }
+            if (0 != (keys & ModifierKeys.Alt))
+            {
+                res = res | KeyModifiers.Alt;
+            }
+            if (0 != (keys & ModifierKeys.Control))
+            {
+                res = res | KeyModifiers.Control;
+            }
+            return res;
+        }
+
+        internal static ModifierKeys ConvertToModifierKeys(KeyModifiers keys)
+        {
+            var res = ModifierKeys.None;
+            if (0 != (keys & KeyModifiers.Shift))
+            {
+                res = res | ModifierKeys.Shift;
+            }
+            if (0 != (keys & KeyModifiers.Alt))
+            {
+                res = res | ModifierKeys.Alt;
+            }
+            if (0 != (keys & KeyModifiers.Control))
+            {
+                res = res | ModifierKeys.Control;
+            }
+            return res;
         }
 
         #region IKeyUtil
@@ -101,14 +138,14 @@ namespace Vim.UI.Wpf.Implementation.Keyboard
 
         KeyModifiers IKeyUtil.GetKeyModifiers(ModifierKeys modifierKeys)
         {
-            return KeyboardMap.ConvertToKeyModifiers(modifierKeys);
+            return ConvertToKeyModifiers(modifierKeys);
         }
 
         bool IKeyUtil.TryConvertSpecialToKeyInput(Key key, ModifierKeys modifierKeys, out KeyInput keyInput)
         {
             if (WpfKeyToKeyInputMap.TryGetValue(key, out keyInput))
             {
-                var keyModifiers = KeyboardMap.ConvertToKeyModifiers(modifierKeys);
+                var keyModifiers = ConvertToKeyModifiers(modifierKeys);
                 keyInput = KeyInputUtil.ApplyModifiers(keyInput, keyModifiers);
                 return true;
             }

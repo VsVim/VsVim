@@ -692,6 +692,52 @@ type internal MotionUtil
 
         | _ -> x.LineUp count
 
+    member x.DisplayLineStart() =
+        match TextViewUtil.GetTextViewLines _textView with
+        | None -> None
+        | Some textViewLines ->
+            let caretLine = textViewLines.GetTextViewLineContainingBufferPosition(x.CaretPoint)
+            let point = 
+                match caretLine.GetBufferPositionFromXCoordinate(_textView.ViewportLeft) with
+                | NullableUtil.Null -> caretLine.Start
+                | NullableUtil.HasValue point -> point
+            let span = SnapshotSpan(point, x.CaretPoint)
+            MotionResult.Create span false MotionKind.CharacterWiseExclusive |> Some
+
+    member x.DisplayLineEnd() =
+        match TextViewUtil.GetTextViewLines _textView with
+        | None -> None
+        | Some textViewLines ->
+            let caretLine = textViewLines.GetTextViewLineContainingBufferPosition(x.CaretPoint)
+            let point = 
+                match caretLine.GetBufferPositionFromXCoordinate(_textView.ViewportRight) with
+                | NullableUtil.Null -> SnapshotPointUtil.SubtractOneOrCurrent caretLine.End
+                | NullableUtil.HasValue point -> point
+            let span = SnapshotSpan(x.CaretPoint, point)
+            MotionResult.Create span true MotionKind.CharacterWiseExclusive |> Some
+
+    member x.DisplayLineMiddleOfScreen() =
+        let createForPoint (point : SnapshotPoint) = 
+            let isForward = x.CaretPoint.Position <= point.Position
+            let startPoint, endPoint = SnapshotPointUtil.OrderAscending x.CaretPoint point
+            let span = SnapshotSpan(startPoint, endPoint)
+            MotionResult.Create span isForward MotionKind.CharacterWiseExclusive |> Some
+
+        match TextViewUtil.GetTextViewLines _textView with
+        | None -> None
+        | Some textViewLines ->
+            let caretLine = textViewLines.GetTextViewLineContainingBufferPosition(x.CaretPoint)
+            let middle = _textView.ViewportWidth / 2.0
+            match caretLine.GetBufferPositionFromXCoordinate(middle) with
+            | NullableUtil.Null -> 
+                // If the point is beyond the width of the line then the motion should go to the 
+                // end of the line 
+                if middle >= caretLine.Width then
+                    createForPoint caretLine.End
+                else    
+                    None
+            | NullableUtil.HasValue point -> createForPoint point
+
     /// Get the motion between the provided two lines.  The motion will be linewise
     /// and have a column of the first non-whitespace character.  If the 'startofline'
     /// option is not set it will keep the original column
@@ -1334,12 +1380,12 @@ type internal MotionUtil
             | MotionContext.Movement -> endPoint
             | MotionContext.AfterOperator -> 
                 // If the word motion comes after an operator and ends on the first word 
-                // of a different line then the motion is moved back to the last line containg
+                // of a different line, then the motion is moved back to the last line containing
                 // a word
                 let endLine = SnapshotPointUtil.GetContainingLine endPoint
                 let isFirstNonBlank = SnapshotLineUtil.GetFirstNonBlankOrStart endLine = endPoint
 
-                if isFirstNonBlank && endLine.Length > 0 && endLine.LineNumber > x.CaretLine.LineNumber then
+                if isFirstNonBlank && endLine.LineNumber > x.CaretLine.LineNumber then
                     let previousLine = 
                         SnapshotUtil.GetLines x.CurrentSnapshot (endLine.LineNumber - 1) Path.Backward
                         |> Seq.skipWhile (fun textLine -> SnapshotLineUtil.IsBlank textLine && textLine.LineNumber > x.CaretLine.LineNumber)
@@ -1635,7 +1681,7 @@ type internal MotionUtil
 
     /// Get the motion which is 'count' characters to the left of the caret on
     /// the same line
-    member x.CharLeft count = 
+    member x.CharLeftOnSameLine count = 
         let startPoint = 
             SnapshotPointUtil.TryGetPreviousPointOnLine x.CaretPoint count
             |> OptionUtil.getOrDefault x.CaretLine.Start
@@ -1644,7 +1690,7 @@ type internal MotionUtil
 
     /// Get the motion which is 'count' characters to the right of the caret 
     /// on the same line
-    member x.CharRight count =
+    member x.CharRightOnSameLine count =
         let endPoint = 
             if SnapshotPointUtil.IsInsideLineBreak x.CaretPoint then 
                 x.CaretPoint
@@ -1655,6 +1701,60 @@ type internal MotionUtil
                 |> OptionUtil.getOrDefault x.CaretLine.End
         let span = SnapshotSpan(x.CaretPoint, endPoint)
         MotionResult.Create span true MotionKind.CharacterWiseExclusive
+
+    /// Get the motion which is 'count' characters before the caret
+    /// through the buffer taking into acount 'virtualedit'
+    member x.CharLeftWithLineWrap count =
+        let skipLineBreaks = not _globalSettings.IsVirtualEditOneMore
+        let startPoint = SnapshotPointUtil.GetRelativePoint x.CaretPoint -count skipLineBreaks
+        let span = SnapshotSpan(startPoint, x.CaretPoint)
+        MotionResult.Create span false MotionKind.CharacterWiseExclusive
+
+    /// Get the motion which is 'count' characters after the caret 
+    /// through the buffer taking into acount 'virtualedit'
+    member x.CharRightWithLineWrap count =
+        let skipLineBreaks = not _globalSettings.IsVirtualEditOneMore
+        let endPoint = SnapshotPointUtil.GetRelativePoint x.CaretPoint count skipLineBreaks
+        let span = SnapshotSpan(x.CaretPoint, endPoint)
+        MotionResult.Create span true MotionKind.CharacterWiseExclusive
+
+    /// Get a relative character motion backward or forward 'count' characters
+    /// wrapping lines if 'withLineWrap' is specified
+    member x.CharMotion count withLineWrap =
+        if count < 0 then
+            if withLineWrap then
+                x.CharLeftWithLineWrap -count
+            else
+                x.CharLeftOnSameLine -count
+        else
+            if withLineWrap then
+                x.CharRightWithLineWrap count
+            else
+                x.CharRightOnSameLine count
+
+    /// Count chars left using the h key
+    member x.CharLeft count =
+        x.CharMotion -count _globalSettings.IsWhichWrapCharLeft
+
+    /// Count chars right using the l key
+    member x.CharRight count =
+        x.CharMotion count _globalSettings.IsWhichWrapCharRight
+
+    /// Count chars left using the backspace key
+    member x.SpaceLeft count =
+        x.CharMotion -count _globalSettings.IsWhichWrapSpaceLeft
+
+    /// Count chars right using the space key
+    member x.SpaceRight count =
+        x.CharMotion count _globalSettings.IsWhichWrapSpaceRight
+
+    /// Count chars left using the arrow key
+    member x.ArrowLeft count =
+        x.CharMotion -count _globalSettings.IsWhichWrapArrowLeft
+
+    /// Count chars right using the arrow key
+    member x.ArrowRight count =
+        x.CharMotion count _globalSettings.IsWhichWrapArrowRight
 
     /// Move a single line up from the current line.  Should fail if we are currenly
     /// on the first line of the ITextBuffer
@@ -1933,7 +2033,7 @@ type internal MotionUtil
 
         // Searching as part of a motion should update the last pattern information
         // irrespective of whether or not the search completes
-        _vimData.LastPatternData <- searchData.LastPatternData
+        _vimData.LastSearchData <- searchData.LastSearchData
 
         x.SearchCore searchData x.CaretPoint count
 
@@ -2003,16 +2103,16 @@ type internal MotionUtil
 
     /// Move the caret to the next occurrence of the last search
     member x.LastSearch isReverse count =
-        let last = _vimData.LastPatternData
-        let last = 
-            if isReverse then { last with Path = Path.Reverse last.Path }
-            else last
-
+        let last = _vimData.LastSearchData
         if StringUtil.isNullOrEmpty last.Pattern then
             _statusUtil.OnError Resources.NormalMode_NoPreviousSearch
             None
         else
-            let searchData = SearchData(last.Pattern, last.Path, _globalSettings.WrapScan)
+            let path = 
+                if isReverse then Path.Reverse last.Path
+                else last.Path
+            let searchKind = SearchKind.OfPathAndWrap path _globalSettings.WrapScan
+            let searchData = SearchData(last.Pattern, last.Offset, searchKind, last.Options)
             x.SearchCore searchData x.CaretPoint count
 
     /// Motion from the caret to the next occurrence of the partial word under the caret
@@ -2063,9 +2163,9 @@ type internal MotionUtil
             let pattern = if isWholeWord then PatternUtil.CreateWholeWord word else word
             let searchData = SearchData(pattern, path, _globalSettings.WrapScan)
 
-            // Make sure to update the LastPatternData here.  It needs to be done 
+            // Make sure to update the LastSearchData here.  It needs to be done 
             // whether or not the search actually succeeds
-            _vimData.LastPatternData <- searchData.LastPatternData
+            _vimData.LastSearchData <- searchData
 
             // A word search always starts at the beginning of the word.  The pattern
             // based search will ensure that we don't match this word again because it
@@ -2143,9 +2243,16 @@ type internal MotionUtil
             | Motion.BeginingOfLine -> x.BeginingOfLine() |> Some
             | Motion.CharLeft -> x.CharLeft motionArgument.Count |> Some
             | Motion.CharRight -> x.CharRight motionArgument.Count |> Some
+            | Motion.SpaceLeft -> x.SpaceLeft motionArgument.Count |> Some
+            | Motion.SpaceRight -> x.SpaceRight motionArgument.Count |> Some
+            | Motion.ArrowLeft -> x.ArrowLeft motionArgument.Count |> Some
+            | Motion.ArrowRight -> x.ArrowRight motionArgument.Count |> Some
             | Motion.CharSearch (kind, direction, c) -> x.CharSearch c motionArgument.Count kind direction
             | Motion.DisplayLineDown -> x.DisplayLineDown motionArgument.Count
             | Motion.DisplayLineUp -> x.DisplayLineUp motionArgument.Count
+            | Motion.DisplayLineStart -> x.DisplayLineStart()
+            | Motion.DisplayLineEnd -> x.DisplayLineEnd()
+            | Motion.DisplayLineMiddleOfScreen -> x.DisplayLineMiddleOfScreen () 
             | Motion.EndOfLine -> x.EndOfLine motionArgument.Count |> Some
             | Motion.EndOfWord wordKind -> x.EndOfWord wordKind motionArgument.Count |> Some
             | Motion.FirstNonBlankOnCurrentLine -> x.FirstNonBlankOnCurrentLine() |> Some

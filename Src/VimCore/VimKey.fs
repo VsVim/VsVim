@@ -53,6 +53,21 @@ type VimKey =
     | LineFeed = 47
     | Tab = 48
     | RawCharacter = 50     // A simple character to be processed
+    | LeftMouse = 51
+    | LeftDrag = 52
+    | LeftRelease = 53
+    | MiddleMouse = 54
+    | MiddleDrag = 55
+    | MiddleRelease = 56
+    | RightMouse = 57
+    | RightDrag = 58
+    | RightRelease = 59
+    | X1Mouse = 60
+    | X1Drag = 61
+    | X1Release = 62
+    | X2Mouse = 63
+    | X2Drag = 64
+    | X2Release = 65
 
 module VimKeyUtil =
 
@@ -108,6 +123,26 @@ module VimKeyUtil =
         | VimKey.F10 -> true
         | VimKey.F11 -> true
         | VimKey.F12 -> true
+        | _ -> false
+
+    /// Is this a mouse key
+    let IsMouseKey key =
+        match key with
+        | VimKey.LeftMouse -> true
+        | VimKey.LeftRelease -> true
+        | VimKey.LeftDrag -> true
+        | VimKey.RightMouse -> true
+        | VimKey.RightRelease -> true
+        | VimKey.RightDrag -> true
+        | VimKey.MiddleMouse -> true
+        | VimKey.MiddleRelease -> true
+        | VimKey.MiddleDrag -> true
+        | VimKey.X1Mouse -> true
+        | VimKey.X1Release -> true
+        | VimKey.X1Drag -> true
+        | VimKey.X2Mouse -> true
+        | VimKey.X2Release -> true
+        | VimKey.X2Drag -> true
         | _ -> false
 
 [<System.Flags>]

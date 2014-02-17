@@ -121,6 +121,7 @@ type internal GlobalSettings() =
             (ClipboardName, "cb", SettingValue.String "")
             (ControlCharsName, ControlCharsName, SettingValue.Toggle true)
             (CurrentDirectoryPathName, "cd", SettingValue.String ",,")
+            (GlobalDefaultName, "gd", SettingValue.Toggle false)
             (HighlightSearchName, "hls", SettingValue.Toggle false)
             (HistoryName, "hi", SettingValue.Number(Constants.DefaultHistoryLength))
             (IncrementalSearchName, "is", SettingValue.Toggle false)
@@ -153,6 +154,7 @@ type internal GlobalSettings() =
             (VimRcPathsName, VimRcPathsName, SettingValue.String(StringUtil.empty))
             (VirtualEditName, "ve", SettingValue.String(StringUtil.empty))
             (VisualBellName, "vb", SettingValue.Toggle false)
+            (WhichWrapName, "ww", SettingValue.String "b,s")
             (WrapScanName, "ws", SettingValue.Toggle true)
         |]
 
@@ -303,6 +305,9 @@ type internal GlobalSettings() =
             with get() = _map.GetStringValue CurrentDirectoryPathName
             and set value = _map.TrySetValue CurrentDirectoryPathName (SettingValue.String value) |> ignore
         member x.CurrentDirectoryPathList = x.GetPathOptionList (_map.GetStringValue CurrentDirectoryPathName)
+        member x.GlobalDefault
+            with get() = _map.GetBoolValue GlobalDefaultName
+            and set value = _map.TrySetValue GlobalDefaultName (SettingValue.Toggle value) |> ignore
         member x.HighlightSearch
             with get() = _map.GetBoolValue HighlightSearchName
             and set value = _map.TrySetValue HighlightSearchName (SettingValue.Toggle value) |> ignore
@@ -411,6 +416,9 @@ type internal GlobalSettings() =
         member x.VisualBell
             with get() = _map.GetBoolValue VisualBellName
             and set value = _map.TrySetValue VisualBellName (SettingValue.Toggle value) |> ignore
+        member x.WhichWrap
+            with get() = _map.GetStringValue WhichWrapName
+            and set value = _map.TrySetValue WhichWrapName (SettingValue.String value) |> ignore
         member x.WrapScan
             with get() = _map.GetBoolValue WrapScanName
             and set value = _map.TrySetValue WrapScanName (SettingValue.Toggle value) |> ignore
@@ -419,6 +427,15 @@ type internal GlobalSettings() =
         member x.IsBackspaceIndent = x.IsCommaSubOptionPresent BackspaceName "indent"
         member x.IsBackspaceStart = x.IsCommaSubOptionPresent BackspaceName "start"
         member x.IsVirtualEditOneMore = x.IsCommaSubOptionPresent VirtualEditName "onemore"
+        member x.IsWhichWrapSpaceLeft = x.IsCommaSubOptionPresent WhichWrapName "b"
+        member x.IsWhichWrapSpaceRight = x.IsCommaSubOptionPresent WhichWrapName "s"
+        member x.IsWhichWrapCharLeft = x.IsCommaSubOptionPresent WhichWrapName "h"
+        member x.IsWhichWrapCharRight = x.IsCommaSubOptionPresent WhichWrapName "l"
+        member x.IsWhichWrapArrowLeft = x.IsCommaSubOptionPresent WhichWrapName "<"
+        member x.IsWhichWrapArrowRight = x.IsCommaSubOptionPresent WhichWrapName ">"
+        member x.IsWhichWrapTilde = x.IsCommaSubOptionPresent WhichWrapName "~"
+        member x.IsWhichWrapArrowLeftInsert = x.IsCommaSubOptionPresent WhichWrapName "["
+        member x.IsWhichWrapArrowRightInsert = x.IsCommaSubOptionPresent WhichWrapName "]"
 
         [<CLIEvent>]
         member x.SettingChanged = _map.SettingChanged
@@ -521,6 +538,7 @@ type internal WindowSettings
         [|
             (CursorLineName, "cul", SettingValue.Toggle false)
             (ScrollName, "scr", SettingValue.Number 25)
+            (WrapName, WrapName, SettingValue.Toggle false)
         |]
 
     let _map = SettingsMap(WindowSettingInfo, false)
@@ -570,6 +588,9 @@ type internal WindowSettings
         member x.Scroll 
             with get() = _map.GetNumberValue ScrollName
             and set value = _map.TrySetValue ScrollName (SettingValue.Number value) |> ignore
+        member x.Wrap
+            with get() = _map.GetBoolValue WrapName
+            and set value = _map.TrySetValue WrapName (SettingValue.Toggle value) |> ignore
 
         [<CLIEvent>]
         member x.SettingChanged = _map.SettingChanged
@@ -646,7 +667,12 @@ type internal EditorToSettingSynchronizer
 
     /// Is this a window setting of note
     member x.IsTrackedWindowSetting (setting : Setting) = 
-        setting.Name = WindowSettingNames.CursorLineName
+        if setting.Name = WindowSettingNames.CursorLineName then
+            true
+        elif setting.Name = WindowSettingNames.WrapName then
+            true
+        else 
+            false
 
     /// Is this an editor setting of note
     member x.IsTrackedEditorSetting optionId =
@@ -659,6 +685,8 @@ type internal EditorToSettingSynchronizer
         elif optionId = DefaultTextViewHostOptions.LineNumberMarginId.Name then
             true
         elif optionId = DefaultWpfViewOptions.EnableHighlightCurrentLineId.Name then
+            true
+        elif optionId = DefaultTextViewOptions.WordWrapStyleId.Name then
             true
         else
             false
@@ -682,7 +710,20 @@ type internal EditorToSettingSynchronizer
             EditorOptionsUtil.SetOptionValue editorOptions DefaultOptions.IndentSizeOptionId localSettings.ShiftWidth
             EditorOptionsUtil.SetOptionValue editorOptions DefaultOptions.ConvertTabsToSpacesOptionId localSettings.ExpandTab
             EditorOptionsUtil.SetOptionValue editorOptions DefaultTextViewHostOptions.LineNumberMarginId localSettings.Number
-            EditorOptionsUtil.SetOptionValue editorOptions DefaultWpfViewOptions.EnableHighlightCurrentLineId windowSettings.CursorLine)
+            EditorOptionsUtil.SetOptionValue editorOptions DefaultWpfViewOptions.EnableHighlightCurrentLineId windowSettings.CursorLine
+
+            // Wrap is a difficult option because vim has wrap as on / off while the core editor has
+            // 3 different kinds of wrapping.  If we default to only one of them then we will constantly
+            // be undoing user settings.  Hence we consider anything but off to be on and hence won't change it 
+            if windowSettings.Wrap then
+                match EditorOptionsUtil.GetOptionValue editorOptions DefaultTextViewOptions.WordWrapStyleId with
+                | None -> EditorOptionsUtil.SetOptionValue editorOptions DefaultTextViewOptions.WordWrapStyleId WordWrapStyles.WordWrap
+                | Some wordWrapStyle -> 
+                    if wordWrapStyle = WordWrapStyles.None then
+                        EditorOptionsUtil.SetOptionValue editorOptions DefaultTextViewOptions.WordWrapStyleId WordWrapStyles.WordWrap
+            else
+                EditorOptionsUtil.SetOptionValue editorOptions DefaultTextViewOptions.WordWrapStyleId WordWrapStyles.None
+            )
 
     /// Synchronize the settings from the local settings to the editor.  Do not
     /// call this directly but instead call through SynchronizeSettings
@@ -697,6 +738,9 @@ type internal EditorToSettingSynchronizer
             match EditorOptionsUtil.GetOptionValue editorOptions DefaultOptions.ConvertTabsToSpacesOptionId with
             | None -> ()
             | Some convertTabToSpace -> localSettings.ExpandTab <- convertTabToSpace
+            match EditorOptionsUtil.GetOptionValue editorOptions DefaultTextViewOptions.WordWrapStyleId with
+            | None -> ()
+            | Some wordWrapStyle -> windowSettings.Wrap <- wordWrapStyle <> WordWrapStyles.None
             match EditorOptionsUtil.GetOptionValue editorOptions DefaultTextViewHostOptions.LineNumberMarginId with
             | None -> ()
             | Some show -> localSettings.Number <- show

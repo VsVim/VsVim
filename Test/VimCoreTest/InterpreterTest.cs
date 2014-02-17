@@ -80,6 +80,33 @@ namespace Vim.UnitTest
             _interpreter.RunLineCommand(lineCommand);
         }
 
+        public sealed class CallTest : InterpreterTest
+        {
+            [Fact]
+            public void NoArguments()
+            {
+                Create();
+                ParseAndRun("call target()");
+                Assert.Equal(Resources.Interpreter_CallNotSupported("target"), _statusUtil.LastError);
+            }
+
+            [Fact]
+            public void OneArguments()
+            {
+                Create();
+                ParseAndRun("call target(a)");
+                Assert.Equal(Resources.Interpreter_CallNotSupported("target"), _statusUtil.LastError);
+            }
+
+            [Fact]
+            public void TwoArguments()
+            {
+                Create();
+                ParseAndRun("call target(a, b)");
+                Assert.Equal(Resources.Interpreter_CallNotSupported("target"), _statusUtil.LastError);
+            }
+        }
+
         public sealed class CopyTest : InterpreterTest
         {
             /// <summary>
@@ -199,7 +226,7 @@ namespace Vim.UnitTest
             public void EmptySearchUsesLastSearch()
             {
                 Create("cat tree");
-                Vim.VimData.LastPatternData = new PatternData("cat", new Path(0));
+                Vim.VimData.LastSearchData = new SearchData("cat", new Path(0));
                 ParseAndRun("s//dog/");
                 Assert.Equal("dog tree", _textBuffer.GetLine(0).GetText());
             }
@@ -352,8 +379,8 @@ namespace Vim.UnitTest
             {
                 Create("cat", "dog");
                 ParseAndRun(":/dog");
-                Assert.Equal("dog", _vimData.LastPatternData.Pattern);
-                Assert.Equal(Path.Forward, _vimData.LastPatternData.Path);
+                Assert.Equal("dog", _vimData.LastSearchData.Pattern);
+                Assert.Equal(Path.Forward, _vimData.LastSearchData.Path);
             }
 
             [Fact]
@@ -361,8 +388,8 @@ namespace Vim.UnitTest
             {
                 Create("cat", "dog");
                 ParseAndRun(":?dog");
-                Assert.Equal("dog", _vimData.LastPatternData.Pattern);
-                Assert.Equal(Path.Backward, _vimData.LastPatternData.Path);
+                Assert.Equal("dog", _vimData.LastSearchData.Pattern);
+                Assert.Equal(Path.Backward, _vimData.LastSearchData.Path);
             }
         }
 
@@ -969,13 +996,13 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
-            /// The last search register should be binding to the LastPatternData member
+            /// The last search register should be binding to the LastSearchData member
             /// </summary>
             [Fact]
             public void LastSearch_ViaLastPattern()
             {
                 Create("");
-                _vimData.LastPatternData = new PatternData("test", Path.Forward);
+                _vimData.LastSearchData = new SearchData("test", Path.Forward);
                 ParseAndRun("reg");
                 AssertLine(@"""/   test");
 

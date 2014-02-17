@@ -17,6 +17,7 @@ module GlobalSettingNames =
     let ControlCharsName = "vsvim_controlchars"
     let CurrentDirectoryPathName = "cdpath"
     let ClipboardName = "clipboard"
+    let GlobalDefaultName = "gdefault"
     let HighlightSearchName = "hlsearch"
     let HistoryName = "history"
     let IgnoreCaseName = "ignorecase"
@@ -48,6 +49,7 @@ module GlobalSettingNames =
     let VirtualEditName = "virtualedit"
     let VimRcName = "vimrc"
     let VimRcPathsName = "vimrcpaths"
+    let WhichWrapName = "whichwrap"
     let WrapScanName = "wrapscan"
 
 module LocalSettingNames =
@@ -64,6 +66,7 @@ module WindowSettingNames =
 
     let CursorLineName = "cursorline"
     let ScrollName = "scroll"
+    let WrapName = "wrap"
 
 /// Types of number formats supported by CTRL-A CTRL-A
 [<RequireQualifiedAccess>]
@@ -283,6 +286,9 @@ and IVimGlobalSettings =
     /// The parsed set of clipboard options
     abstract ClipboardOptions : ClipboardOptions with get, set
 
+    /// Whether or not 'gdefault' is set
+    abstract GlobalDefault : bool with get, set
+
     /// Whether or not to highlight previous search patterns matching cases
     abstract HighlightSearch : bool with get, set
 
@@ -321,6 +327,33 @@ and IVimGlobalSettings =
 
     /// Is the 'onemore' option inside of VirtualEdit set
     abstract IsVirtualEditOneMore : bool with get
+
+    /// Is the 'b' option inside of WhichWrap set
+    abstract IsWhichWrapSpaceLeft : bool with get
+
+    /// Is the 's' option inside of WhichWrap set
+    abstract IsWhichWrapSpaceRight : bool with get
+
+    /// Is the 'h' option inside of WhichWrap set
+    abstract IsWhichWrapCharLeft : bool with get
+
+    /// Is the 'l' option inside of WhichWrap set
+    abstract IsWhichWrapCharRight : bool with get
+
+    /// Is the '<' option inside of WhichWrap set
+    abstract IsWhichWrapArrowLeft : bool with get
+
+    /// Is the '>' option inside of WhichWrap set
+    abstract IsWhichWrapArrowRight : bool with get
+
+    /// Is the '~' option inside of WhichWrap set
+    abstract IsWhichWrapTilde : bool with get
+
+    /// Is the '[' option inside of WhichWrap set
+    abstract IsWhichWrapArrowLeftInsert : bool with get
+
+    /// Is the ']' option inside of WhichWrap set
+    abstract IsWhichWrapArrowRightInsert : bool with get
 
     /// Is the Selection setting set to a value which calls for inclusive 
     /// selection.  This does not directly track if Setting = "inclusive" 
@@ -420,6 +453,9 @@ and IVimGlobalSettings =
     /// Whether or not to use a visual indicator of errors instead of a beep
     abstract VisualBell : bool with get, set
 
+    /// Which operations should wrap in the buffer
+    abstract WhichWrap : string with get, set
+
     /// Whether or not searches should wrap at the end of the file
     abstract WrapScan : bool with get, set
 
@@ -471,5 +507,8 @@ and IVimWindowSettings =
 
     /// The scroll size 
     abstract Scroll : int with get, set
+
+    /// Whether or not the window should be wrapping
+    abstract Wrap : bool with get, set
 
     inherit IVimSettings

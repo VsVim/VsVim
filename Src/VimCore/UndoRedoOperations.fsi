@@ -8,5 +8,5 @@ open Microsoft.VisualStudio.Text.Operations
 
 type UndoRedoOperations =
     interface IUndoRedoOperations
-    new : IStatusUtil * ITextUndoHistory option * IEditorOperations -> UndoRedoOperations
+    new : IStatusUtil * ITextUndoHistory option * IEditorOperationsFactoryService -> UndoRedoOperations
 

@@ -10,6 +10,7 @@ using Vim.Extensions;
 using Vim.Modes.Insert;
 using Vim.UnitTest.Mock;
 using Xunit;
+using Microsoft.VisualStudio.Text.Operations;
 
 namespace Vim.UnitTest
 {
@@ -23,19 +24,23 @@ namespace Vim.UnitTest
         protected IInsertMode _mode;
         protected ITextView _textView;
         protected ITextBuffer _textBuffer;
+        protected IVimGlobalSettings _globalSettings;
         protected CommandRunData _lastCommandRan;
-        protected Mock<ICommonOperations> _operations;
+        protected ICommonOperations _operations;
         protected Mock<IDisplayWindowBroker> _broker;
         protected Mock<IEditorOptions> _editorOptions;
-        protected Mock<IUndoRedoOperations> _undoRedoOperations;
+        protected IUndoRedoOperations _undoRedoOperations;
         protected Mock<ITextChangeTracker> _textChangeTracker;
         internal Mock<IInsertUtil> _insertUtil;
         protected Mock<IKeyboardDevice> _keyboardDevice;
         protected Mock<IMouseDevice> _mouseDevice;
         protected Mock<IVim> _vim;
-        protected Mock<IVimBuffer> _vimBuffer;
+        protected IVimBuffer _vimBuffer;
         protected Mock<IWordCompletionSessionFactoryService> _wordCompletionSessionFactoryService;
         protected Mock<IWordCompletionSession> _activeWordCompletionSession;
+        protected Mock<IMotionUtil> _motionUtil;
+        protected Mock<ICommandUtil> _commandUtil;
+        protected Mock<IMotionCapture> _capture;
 
         public InsertModeTest()
         {
@@ -57,24 +62,24 @@ namespace Vim.UnitTest
             _editorOptions = _factory.Create<IEditorOptions>(MockBehavior.Loose);
             _textChangeTracker = _factory.Create<ITextChangeTracker>(MockBehavior.Loose);
             _textChangeTracker.SetupGet(x => x.CurrentChange).Returns(FSharpOption<TextChange>.None);
-            _undoRedoOperations = _factory.Create<IUndoRedoOperations>();
+            _undoRedoOperations = new UndoRedoOperations(new StatusUtil(), FSharpOption<ITextUndoHistory>.None, null); 
             _wordCompletionSessionFactoryService = _factory.Create<IWordCompletionSessionFactoryService>();
 
             var localSettings = new LocalSettings(Vim.GlobalSettings);
-            _vimBuffer = MockObjectFactory.CreateVimBuffer(
-                _textView,
-                localSettings: localSettings,
-                vim: _vim.Object,
-                factory: _factory);
-            _vimBuffer.SetupGet(x => x.ModeKind).Returns(ModeKind.Insert);
-            _operations = _factory.Create<ICommonOperations>();
-            _operations.SetupGet(x => x.EditorOperations).Returns(EditorOperationsFactoryService.GetEditorOperations(_textView));
+            _vimBuffer = Vim.CreateVimBuffer(_textView);
+            _globalSettings = _vimBuffer.GlobalSettings;
+            var vimTextBuffer = Vim.GetOrCreateVimTextBuffer(_textView.TextBuffer);
+            var vimBufferData = CreateVimBufferData(vimTextBuffer, _textView);
+            _operations = CommonOperationsFactory.GetCommonOperations(vimBufferData);
             _broker = _factory.Create<IDisplayWindowBroker>();
             _broker.SetupGet(x => x.IsCompletionActive).Returns(false);
             _broker.SetupGet(x => x.IsQuickInfoActive).Returns(false);
             _broker.SetupGet(x => x.IsSignatureHelpActive).Returns(false);
             _broker.SetupGet(x => x.IsSmartTagSessionActive).Returns(false);
             _insertUtil = _factory.Create<IInsertUtil>();
+            _motionUtil = _factory.Create<IMotionUtil>();
+            _commandUtil = _factory.Create<ICommandUtil>();
+            _capture = _factory.Create<IMotionCapture>();
 
             // Setup the mouse.  By default we say it has no buttons down as that's the normal state
             _mouseDevice = _factory.Create<IMouseDevice>();
@@ -86,19 +91,23 @@ namespace Vim.UnitTest
             _keyboardDevice.Setup(x => x.IsArrowKeyDown).Returns(false);
 
             _modeRaw = new global::Vim.Modes.Insert.InsertMode(
-                _vimBuffer.Object,
-                _operations.Object,
+                _vimBuffer,
+                _operations,
                 _broker.Object,
                 _editorOptions.Object,
-                _undoRedoOperations.Object,
+                _undoRedoOperations,
                 _textChangeTracker.Object,
                 _insertUtil.Object,
+                _motionUtil.Object,
+                _commandUtil.Object,
+                _capture.Object,
                 !insertMode,
                 _keyboardDevice.Object,
                 _mouseDevice.Object,
-                WordUtilFactory.GetWordUtil(_textView.TextBuffer),
+                WordUtil,
                 _wordCompletionSessionFactoryService.Object);
             _mode = _modeRaw;
+            _mode.OnEnter(ModeArgument.None);
             _mode.CommandRan += (sender, e) => { _lastCommandRan = e.CommandRunData; };
         }
 
@@ -246,7 +255,7 @@ namespace Vim.UnitTest
             public void GetWordCompletions_All()
             {
                 Create("cat dog tree");
-                var words = _modeRaw.GetWordCompletions(new SnapshotSpan(_textView.TextSnapshot, 3, 0));
+                var words = _modeRaw.WordCompletionUtil.GetWordCompletions(new SnapshotSpan(_textView.TextSnapshot, 3, 0));
                 Assert.Equal(
                     new[] { "dog", "tree", "cat" },
                     words.ToList());
@@ -259,7 +268,7 @@ namespace Vim.UnitTest
             public void GetWordCompletions_All_JustWords()
             {
                 Create("cat dog // tree &&");
-                var words = _modeRaw.GetWordCompletions(new SnapshotSpan(_textView.TextSnapshot, 3, 0));
+                var words = _modeRaw.WordCompletionUtil.GetWordCompletions(new SnapshotSpan(_textView.TextSnapshot, 3, 0));
                 Assert.Equal(
                     new[] { "dog", "tree", "cat" },
                     words.ToList());
@@ -272,7 +281,7 @@ namespace Vim.UnitTest
             public void GetWordCompletions_Prefix()
             {
                 Create("c cat dog // tree && copter");
-                var words = _modeRaw.GetWordCompletions(new SnapshotSpan(_textView.TextSnapshot, 0, 1));
+                var words = _modeRaw.WordCompletionUtil.GetWordCompletions(new SnapshotSpan(_textView.TextSnapshot, 0, 1));
                 Assert.Equal(
                     new[] { "cat", "copter" },
                     words.ToList());
@@ -286,7 +295,7 @@ namespace Vim.UnitTest
             public void GetWordCompletions_MiddleOfWord()
             {
                 Create("test", "ccrook cat caturday");
-                var words = _modeRaw.GetWordCompletions(new SnapshotSpan(_textView.GetLine(1).Start, 1));
+                var words = _modeRaw.WordCompletionUtil.GetWordCompletions(new SnapshotSpan(_textView.GetLine(1).Start, 1));
                 Assert.Equal(
                     new[] { "crook", "cat", "caturday" },
                     words.ToList());
@@ -299,7 +308,7 @@ namespace Vim.UnitTest
             public void GetWordCompletions_ExcludeOneLengthValues()
             {
                 Create("c cat dog // tree && copter a b c");
-                var words = _modeRaw.GetWordCompletions(new SnapshotSpan(_textView.TextSnapshot, 0, 1));
+                var words = _modeRaw.WordCompletionUtil.GetWordCompletions(new SnapshotSpan(_textView.TextSnapshot, 0, 1));
                 Assert.Equal(
                     new[] { "cat", "copter" },
                     words.ToList());
@@ -474,28 +483,27 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
-            /// When the caret moves due to the mouse being clicked that should complete the current text change
+            /// When the caret moves while insert mode is active, it should complete the current text change
             /// </summary>
             [Fact]
             public void TextChange_CaretMoveFromClickShouldComplete()
             {
                 Create("the quick brown fox");
+                _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
                 _textBuffer.Insert(0, "a");
                 _textChangeTracker.Setup(x => x.CompleteChange()).Verifiable();
-                _mouseDevice.SetupGet(x => x.IsLeftButtonPressed).Returns(true).Verifiable();
                 _textView.MoveCaretTo(7);
                 _factory.Verify();
             }
 
             /// <summary>
-            /// When the caret moves as a part of the edit then it shouldn't cause the change to complete
+            /// When the caret moves when insert mode is not active, it shouldn't cause the change to complete
             /// </summary>
             [Fact]
             public void TextChange_CaretMoveFromEdit()
             {
                 Create("the quick brown fox");
                 _textChangeTracker.Setup(x => x.CompleteChange()).Throws(new Exception());
-                _mouseDevice.SetupGet(x => x.IsLeftButtonPressed).Returns(false).Verifiable();
                 _textBuffer.Insert(0, "a");
                 _textView.MoveCaretTo(7);
                 _factory.Verify();

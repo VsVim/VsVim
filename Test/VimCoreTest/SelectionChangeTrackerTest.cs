@@ -13,6 +13,7 @@ namespace Vim.UnitTest
     {
         private readonly MockRepository _factory;
         private readonly Mock<IVimBuffer> _vimBuffer;
+        private readonly Mock<IVimHost> _vimHost;
         private readonly Mock<ITextSelection> _selection;
         private readonly Mock<ITextView> _textView;
         private readonly Mock<IVisualModeSelectionOverride> _selectionOverride;
@@ -27,8 +28,11 @@ namespace Vim.UnitTest
             _textView = MockObjectFactory.CreateTextView(
                 selection: _selection.Object,
                 factory: _factory);
+            _vimHost = _factory.Create<IVimHost>();
+            _vimHost.Setup(x => x.IsFocused(_textView.Object)).Returns(true);
             _vimBuffer = MockObjectFactory.CreateVimBuffer(
                 textView: _textView.Object,
+                vim: MockObjectFactory.CreateVim(host: _vimHost.Object).Object,
                 factory: _factory);
             _vimBuffer.SetupGet(x => x.IsClosed).Returns(false);
 
@@ -270,6 +274,20 @@ namespace Vim.UnitTest
             _selection.SetupGet(x => x.IsEmpty).Returns(false).Verifiable();
             _selection.Raise(x => x.SelectionChanged += null, null, EventArgs.Empty);
             Assert.False(_context.IsEmpty);
+        }
+
+        /// <summary>
+        /// The selection change tracker should only be dealing with the ITextView which is actually
+        /// being used by the user.  It's possible for a single ITextBuffer to have multiple ITextView
+        /// instances and edits from one can affect anothers selection.  Hence we should only process the
+        /// one which has aggregate focus
+        /// </summary>
+        [Fact]
+        public void HasAggregateFocus()
+        {
+            _vimHost.Setup(x => x.IsFocused(_textView.Object)).Returns(false);
+            _selection.Raise(x => x.SelectionChanged += null, (object)null, EventArgs.Empty);
+            Assert.True(_context.IsEmpty);
         }
     }
 }

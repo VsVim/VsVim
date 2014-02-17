@@ -24,6 +24,12 @@ type CaretMovement =
     | End
     | PageUp
     | PageDown
+    | ControlUp
+    | ControlRight
+    | ControlDown
+    | ControlLeft
+    | ControlHome
+    | ControlEnd
 
     with 
 
@@ -102,8 +108,8 @@ type IStatusUtil =
 /// Factory for getting IStatusUtil instances.  This is an importable MEF component
 type IStatusUtilFactory =
 
-    /// Get the IStatusUtil instance for the given ITextView
-    abstract GetStatusUtil : ITextView -> IStatusUtil
+    /// Get the IStatusUtil instance for the given ITextBuffer
+    abstract GetStatusUtil : textBuffer : ITextBuffer -> IStatusUtil
 
 type FileContents = {
 
@@ -117,8 +123,8 @@ type FileContents = {
 /// Abstracts away VsVim's interaction with the file system to facilitate testing
 type IFileSystem =
 
-    /// Set of environment variables considered when looking for VimRC paths
-    abstract EnvironmentVariables : list<string>
+    /// Set of directories considered when looking for VimRC paths (may contain environment variables)
+    abstract VimRcDirectoryCandidates : list<string>
 
     /// Set of file names considered (in preference order) when looking for vim rc files
     abstract VimRcFileNames : list<string>
@@ -136,28 +142,21 @@ type IFileSystem =
     /// Attempt to read all of the lines from the given file 
     abstract ReadAllLines : filePath : string -> string[] option
 
-/// Utility functions relating to Word values in an ITextBuffer
+/// Utility function for searching for Word values.  This is a MEF importable
+/// component
+[<UsedInBackgroundThread>]
 type IWordUtil = 
 
-    /// The ITextBuffer associated with this word utility
-    abstract TextBuffer : ITextBuffer
-
     /// Get the full word span for the word value which crosses the given SnapshotPoint
-    abstract GetFullWordSpan : WordKind -> SnapshotPoint -> SnapshotSpan option
+    abstract GetFullWordSpan : wordKind : WordKind -> point : SnapshotPoint -> SnapshotSpan option
 
     /// Get the SnapshotSpan for Word values from the given point.  If the provided point is 
     /// in the middle of a word the span of the entire word will be returned
-    abstract GetWords : WordKind -> Path -> SnapshotPoint -> SnapshotSpan seq
+    abstract GetWords : wordKind : WordKind -> path : Path -> point : SnapshotPoint -> SnapshotSpan seq
 
     /// Create an ITextStructureNavigator where the extent of words is calculated for
     /// the specified WordKind value
-    abstract CreateTextStructureNavigator : WordKind -> ITextStructureNavigator
-
-/// Factory for getting IWordUtil instances.  This is an importable MEF component
-type IWordUtilFactory = 
-
-    /// Get the IWordUtil instance for the given ITextView
-    abstract GetWordUtil : ITextBuffer -> IWordUtil
+    abstract CreateTextStructureNavigator : wordKind : WordKind -> contentType : IContentType -> ITextStructureNavigator
 
 /// Used to display a word completion list to the user
 type IWordCompletionSession =
@@ -190,6 +189,17 @@ type IWordCompletionSessionFactoryService =
 /// Wraps an ITextUndoTransaction so we can avoid all of the null checks
 type IUndoTransaction =
 
+    /// Call when it completes
+    abstract Complete : unit -> unit
+
+    /// Cancels the transaction
+    abstract Cancel : unit -> unit
+
+    inherit System.IDisposable
+
+/// This is a IUndoTransaction that is specific to a given ITextView instance
+type ITextViewUndoTransaction =
+
     /// Adds an ITextUndoPrimitive which will reset the selection to the current
     /// state when redoing this edit
     abstract AddAfterTextBufferChangePrimitive : unit -> unit
@@ -198,13 +208,7 @@ type IUndoTransaction =
     /// state when undoing this change
     abstract AddBeforeTextBufferChangePrimitive : unit -> unit
 
-    /// Call when it completes
-    abstract Complete : unit -> unit
-
-    /// Cancels the transaction
-    abstract Cancel : unit -> unit
-
-    inherit System.IDisposable
+    inherit IUndoTransaction
 
 /// Wraps a set of IUndoTransaction items such that they undo and redo as a single
 /// entity.
@@ -230,13 +234,16 @@ type IUndoRedoOperations =
     /// Creates an Undo Transaction
     abstract CreateUndoTransaction : name : string -> IUndoTransaction
 
+    /// Creates an Undo Transaction specific to the given ITextView
+    abstract CreateTextViewUndoTransaction : name : string -> textView : ITextView -> ITextViewUndoTransaction
+
     /// Creates a linked undo transaction
-    abstract CreateLinkedUndoTransaction : unit -> ILinkedUndoTransaction
+    abstract CreateLinkedUndoTransaction : name : string -> ILinkedUndoTransaction
 
     /// Wrap the passed in "action" inside an undo transaction.  This is needed
     /// when making edits such as paste so that the cursor will move properly 
     /// during an undo operation
-    abstract EditWithUndoTransaction<'T> : name : string -> action : (unit -> 'T) -> 'T
+    abstract EditWithUndoTransaction<'T> : name : string -> textView : ITextView -> action : (unit -> 'T) -> 'T
 
     /// Redo the last "count" operations
     abstract Redo : count:int -> unit
@@ -304,11 +311,7 @@ type TextChange =
         // progress could be made by reducing the specified values.  If further progress can be made
         // keep it else keep at least the progress already made
         let tryReduceAgain left right = 
-            let value = 
-                match TextChange.ReduceCore left right with
-                | None -> Combination (left, right) 
-                | Some reducedTextChange -> reducedTextChange
-            Some value 
+            Some (TextChange.CreateReduced left right)
 
         // Insert can only merge with a previous insert operation.  It can't 
         // merge with any deletes that came before it
@@ -424,6 +427,7 @@ type PatternDataEventArgs(_patternData : PatternData) =
 [<RequireQualifiedAccess>]
 [<StructuralEquality>]
 [<NoComparison>]
+[<DebuggerDisplay("{ToString(),nq}")>]
 type SearchOffsetData =
     | None
     | Line of int
@@ -526,6 +530,7 @@ type SearchOffsetData =
             SearchOffsetData.ParseCore offset
 
 [<Sealed>]
+[<DebuggerDisplay("{ToString(),nq}")>]
 type SearchData
     (
         _pattern : string,
@@ -558,16 +563,16 @@ type SearchData
     /// for in the offset
     member x.PatternData = { Pattern = x.Pattern; Path = x.Kind.Path }
 
-    /// The PatternData which should be used for IVimData.LastPatternData if this search needs
+    /// The SearchData which should be used for IVimData.LastSearchData if this search needs
     /// to update that value.  It takes into account the search pattern in an offset string
     /// as specified in ':help //;'
-    member x.LastPatternData =
+    member x.LastSearchData =
         let path = x.Path
         let pattern = 
             match x.Offset with
             | SearchOffsetData.Search patternData -> patternData.Pattern
             | _ -> x.Pattern
-        { Pattern = pattern; Path = path }
+        SearchData(pattern, x.Offset, x.Kind, x.Options)
 
     member x.Equals(other: SearchData) =
         if obj.ReferenceEquals(other, null) then
@@ -585,6 +590,9 @@ type SearchData
 
     override x.GetHashCode() =
         _pattern.GetHashCode()
+
+    override x.ToString() =
+        x.Pattern
 
     static member op_Equality(this, other) = System.Collections.Generic.EqualityComparer<SearchData>.Default.Equals(this, other)
     static member op_Inequality(this, other) = not (System.Collections.Generic.EqualityComparer<SearchData>.Default.Equals(this, other))
@@ -932,11 +940,23 @@ type Motion =
     /// for command '0'
     | BeginingOfLine
 
-    /// The left motion for h, <Left>, etc ...
+    /// The left motion for h
     | CharLeft 
 
-    /// The right motion for l, <Right>, etc ...
+    /// The right motion for l
     | CharRight
+
+    /// The backspace motion
+    | SpaceLeft 
+
+    /// The space motion
+    | SpaceRight
+
+    /// The arrow motion for <Left>
+    | ArrowLeft 
+
+    /// The arrow motion for <Right>
+    | ArrowRight
 
     /// Implements the f, F, t and T motions
     | CharSearch of CharSearchKind * Path * char
@@ -948,6 +968,16 @@ type Motion =
     /// Get the span of "count" display lines downward.  Display lines can differ when
     /// wrap is enabled
     | DisplayLineDown
+
+    /// Start of the display line 
+    | DisplayLineStart 
+
+    /// End of the display line 
+    | DisplayLineEnd
+
+    /// Get the point in the middle of the screen.  This looks at the entire screen not just 
+    /// the width of the current line
+    | DisplayLineMiddleOfScreen
 
     /// Implement the 'e' motion.  This goes to the end of the current word.  If we're
     /// not currently on a word it will find the next word and then go to the end of that
@@ -1144,16 +1174,22 @@ type VisualKind =
 
     static member All = [ Character; Line; Block ] |> Seq.ofList
 
-    static member OfModeKind kind = 
-        match kind with 
-        | ModeKind.VisualBlock -> VisualKind.Block |> Some
-        | ModeKind.VisualLine -> VisualKind.Line |> Some
-        | ModeKind.VisualCharacter -> VisualKind.Character |> Some
+    static member OfModeKind kind =
+        match kind with
+        | ModeKind.VisualCharacter | ModeKind.SelectCharacter -> VisualKind.Character |> Some
+        | ModeKind.VisualLine | ModeKind.SelectLine -> VisualKind.Line |> Some
+        | ModeKind.VisualBlock | ModeKind.SelectBlock -> VisualKind.Block |> Some
         | _ -> None
 
-    static member IsAnyVisual kind = VisualKind.OfModeKind kind |> Option.isSome
+    static member IsAnyVisual kind =
+        match kind with
+        | ModeKind.VisualCharacter -> true
+        | ModeKind.VisualLine -> true
+        | ModeKind.VisualBlock -> true
+        | _ -> false
 
-    static member IsAnySelect kind = 
+
+    static member IsAnySelect kind =
         match kind with
         | ModeKind.SelectCharacter -> true
         | ModeKind.SelectLine -> true
@@ -1892,10 +1928,13 @@ type VisualSelection =
         | SelectionKind.Exclusive -> 
             match x with
             | Character (characterSpan, path) -> 
-                // The span decreases by a single character in exclusive 
-                let endPoint = characterSpan.Last |> OptionUtil.getOrDefault characterSpan.Start
-                let characterSpan = CharacterSpan(SnapshotSpan(characterSpan.Start, endPoint))
-                VisualSelection.Character (characterSpan, path)
+                if SnapshotPointUtil.IsEndPoint characterSpan.End then
+                    x
+                else
+                    // The span decreases by a single character in exclusive
+                    let endPoint = characterSpan.Last |> OptionUtil.getOrDefault characterSpan.Start
+                    let characterSpan = CharacterSpan(SnapshotSpan(characterSpan.Start, endPoint))
+                    VisualSelection.Character (characterSpan, path)
             | Line _ ->
                 // The span isn't effected
                 x
@@ -1928,7 +1967,7 @@ type VisualSelection =
             // SnapshotSpan
             match path with
             | Path.Forward ->
-                if characterSpan.LastLine.Length = 0 then
+                if selectionKind = SelectionKind.Inclusive && characterSpan.LastLine.Length = 0 then
                     // Need to special case the empty last line because there is no character which
                     // isn't inside the line break here.  Just return the start as the caret position
                     characterSpan.LastLine.Start
@@ -2159,7 +2198,7 @@ type ModeSwitch =
 
     /// Switch to the given mode for a single command.  After the command is processed switch
     /// back to the original mode
-    | SwitchModeOneTimeCommand
+    | SwitchModeOneTimeCommand of ModeKind
 
 [<RequireQualifiedAccess>]
 [<NoComparison>]
@@ -2167,7 +2206,7 @@ type CommandResult =
 
     /// The command completed and requested a switch to the provided Mode which 
     /// may just be a no-op
-    | Completed  of ModeSwitch
+    | Completed of ModeSwitch
 
     /// An error was encountered and the command was unable to run.  If this is encountered
     /// during a macro run it will cause the macro to stop executing
@@ -2416,6 +2455,9 @@ type NormalCommand =
     /// Undo count operations in the ITextBuffer
     | Undo
 
+    /// Undo all recent changes made to the current line
+    | UndoLine
+
     /// Open all folds in the buffer
     | OpenAllFolds
 
@@ -2442,6 +2484,10 @@ type NormalCommand =
     /// Put the contents of the register into the buffer after the cursor and respecting 
     /// the indent of the current line
     | PutAfterCaretWithIndent
+
+    /// Put the contents of the register after the current mouse position.  This will move
+    /// the mouse to that position before inserting 
+    | PutAfterCaretMouse
 
     /// Put the contents of the register into the buffer before the cursor.  The bool is 
     /// whether or not the caret should be placed after the inserted text
@@ -2527,6 +2573,9 @@ type NormalCommand =
 
     /// Switch modes with the specified information
     | SwitchMode of ModeKind * ModeArgument
+
+    /// Switch to the visual mode specified by 'selectmode=cmd'
+    | SwitchModeVisualCommand of VisualKind
 
     /// Switch to the previous Visual Mode selection
     | SwitchPreviousVisualMode
@@ -2631,6 +2680,21 @@ type VisualCommand =
     /// Yank the selection into the specified register
     | YankSelection
 
+    /// Switch to the other visual mode, visual or select
+    | SwitchModeOtherVisual
+
+    /// Cut selection
+    | CutSelection
+
+    /// Copy selection
+    | CopySelection
+
+    /// Cut selection and paste
+    | CutSelectionAndPaste
+
+    /// Select the whole document
+    | SelectAll
+
 /// Insert mode commands that can be executed by the user
 [<RequireQualifiedAccess>]
 [<NoComparison>]
@@ -2693,6 +2757,9 @@ type InsertCommand  =
     /// Move the caret in the given direction
     | MoveCaret of Direction
 
+    /// Move the caret in the given direction with an arrow key
+    | MoveCaretWithArrow of Direction
+
     /// Move the caret in the given direction by a whole word
     | MoveCaretByWord of Direction
 
@@ -2701,6 +2768,12 @@ type InsertCommand  =
 
     /// Shift the current line one indent width to the right
     | ShiftLineRight
+
+    /// Delete non-blank characters before cursor on current line
+    | DeleteLineBeforeCursor
+
+    /// Paste clipboard
+    | Paste
 
     with
 
@@ -2738,9 +2811,12 @@ type InsertCommand  =
         | InsertCommand.InsertTab -> Some (TextChange.Insert "\t")
         | InsertCommand.InsertText text -> Some (TextChange.Insert text)
         | InsertCommand.MoveCaret _ -> None
+        | InsertCommand.MoveCaretWithArrow _ -> None
         | InsertCommand.MoveCaretByWord _ -> None
         | InsertCommand.ShiftLineLeft -> None
         | InsertCommand.ShiftLineRight -> None
+        | InsertCommand.DeleteLineBeforeCursor -> None
+        | InsertCommand.Paste -> None
 
 /// Commands which can be executed by the user
 [<RequireQualifiedAccess>]
@@ -2955,6 +3031,9 @@ and ICommandUtil =
 
 type internal IInsertUtil = 
 
+    /// Get the backspacing point for an insert command
+    abstract GetBackspacingPoint : InsertCommand -> SnapshotPoint
+
     /// Run a insert command
     abstract RunInsertCommand : InsertCommand -> CommandResult
 
@@ -3125,7 +3204,7 @@ type IMotionCapture =
     abstract TextView : ITextView
     
     /// Set of MotionBinding values supported
-    abstract MotionBindings : seq<MotionBinding>
+    abstract MotionBindings : MotionBinding list
 
     /// Get the motion and count starting with the given KeyInput
     abstract GetMotionAndCount : KeyInput -> BindResult<Motion * int option>
@@ -3372,6 +3451,33 @@ type ProcessResult =
         | Error -> 
             false
 
+    /// Is this any type of switch to a visual mode
+    member x.IsAnySwitchToVisual =
+        match x with
+        | ProcessResult.Handled modeSwitch ->
+            match modeSwitch with
+            | ModeSwitch.SwitchMode modeKind ->
+                VisualKind.IsAnyVisualOrSelect modeKind
+            | ModeSwitch.SwitchModeWithArgument(modeKind, _) ->
+                VisualKind.IsAnyVisualOrSelect modeKind
+            | ModeSwitch.SwitchModeOneTimeCommand modeKind ->
+                VisualKind.IsAnyVisualOrSelect modeKind
+            | _ ->
+                false
+        | _ ->
+            false
+
+    // Is this a switch to command mode?
+    member x.IsAnySwitchToCommand =
+        match x with
+        | ProcessResult.Handled modeSwitch ->
+            match modeSwitch with
+            | ModeSwitch.SwitchMode modeKind -> modeKind = ModeKind.Command
+            | ModeSwitch.SwitchModeWithArgument (modeKind, _) -> modeKind = ModeKind.Command
+            | _ -> false
+        | _ ->
+            false
+
     /// Did this actually handle the KeyInput
     member x.IsAnyHandled = 
         match x with
@@ -3581,7 +3687,7 @@ type IVimData =
     abstract LastMacroRun : char option with get, set
 
     /// Last pattern searched for in any buffer.
-    abstract LastPatternData : PatternData with get, set
+    abstract LastSearchData : SearchData with get, set
 
     /// Data for the last substitute command performed
     abstract LastSubstituteData : SubstituteData option with get, set
@@ -3705,6 +3811,9 @@ type IVimHost =
 
     /// Is the ITextView visible to the user
     abstract IsVisible : textView : ITextView -> bool
+
+    /// Is the ITextView in focus
+    abstract IsFocused : textView : ITextView -> bool
 
     /// Loads the new file into the existing window
     abstract LoadFileIntoExistingWindow : filePath : string -> textView : ITextView -> HostResult
@@ -3970,6 +4079,9 @@ and IVimTextBuffer =
     /// and the SnapshotPoint within the span where the caret should be positioned
     abstract LastVisualSelection : VisualSelection option with get, set
 
+    /// The point the caret occupied after Insert mode was entered 
+    abstract LastInsertEntryPoint : SnapshotPoint option with get, set
+
     /// The point the caret occupied when Insert mode was exited 
     abstract LastInsertExitPoint : SnapshotPoint option with get, set
 
@@ -3991,6 +4103,9 @@ and IVimTextBuffer =
 
     /// Name of the buffer.  Used for items like Marks
     abstract Name : string
+
+    /// The IUndoRedoOperations associated with the IVimTextBuffer
+    abstract UndoRedoOperations : IUndoRedoOperations
 
     /// The associated IVim instance
     abstract Vim : IVim

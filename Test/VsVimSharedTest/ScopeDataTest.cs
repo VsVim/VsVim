@@ -12,20 +12,20 @@ namespace VsVim.UnitTest
         public sealed class ImportantScopeTest : ScopeDataTest
         {
             [Fact]
-            public void IsImportantScope1()
+            public void GetScopeKind1()
             {
                 var scopeData = ScopeData.Default;
-                Assert.True(scopeData.IsImportantScope("Global"));
-                Assert.True(scopeData.IsImportantScope("Text Editor"));
-                Assert.True(scopeData.IsImportantScope(String.Empty));
+                Assert.Equal(ScopeKind.Global, scopeData.GetScopeKind("Global"));
+                Assert.Equal(ScopeKind.TextEditor, scopeData.GetScopeKind("Text Editor"));
+                Assert.Equal(ScopeKind.EmptyName, scopeData.GetScopeKind(String.Empty));
             }
 
             [Fact]
-            public void IsImportantScope2()
+            public void GetScopeKind2()
             {
                 var scopeData = ScopeData.Default;
-                Assert.False(scopeData.IsImportantScope("blah"));
-                Assert.False(scopeData.IsImportantScope("VC Image Editor"));
+                Assert.Equal(ScopeKind.Unknown, scopeData.GetScopeKind("blah"));
+                Assert.Equal(ScopeKind.Unknown, scopeData.GetScopeKind("VC Image Editor"));
             }
         }
     }

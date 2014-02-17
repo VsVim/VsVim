@@ -16,7 +16,6 @@ type VimBufferData
         _windowSettings : IVimWindowSettings,
         _jumpList : IJumpList,
         _statusUtil : IStatusUtil,
-        _undoRedoOperations : IUndoRedoOperations,
         _wordUtil : IWordUtil
     ) = 
 
@@ -38,7 +37,7 @@ type VimBufferData
         member x.TextView = _textView
         member x.TextBuffer = _textView.TextBuffer
         member x.StatusUtil = _statusUtil
-        member x.UndoRedoOperations = _undoRedoOperations
+        member x.UndoRedoOperations = _vimTextBuffer.UndoRedoOperations
         member x.VimTextBuffer = _vimTextBuffer
         member x.WindowSettings = _windowSettings
         member x.WordUtil = _wordUtil
@@ -80,11 +79,18 @@ type internal ModeMap
 
         currentMode.OnLeave()
 
+        // Make sure to update the underlying IVimTextBuffer to the given mode.  Do this after
+        // we switch so that we can avoid the redundant mode switch in the event handler
+        // event which will cause us to actually switch
+        _vimTextBuffer.SwitchMode kind arg
+
         // When switching between different visual modes we don't want to lose
         // the previous non-visual mode value.  Commands executing in Visual mode
         // which return a SwitchPrevious mode value expected to actually leave 
         // Visual Mode 
-        if not (VisualKind.IsAnyVisual currentMode.ModeKind) && not (VisualKind.IsAnyVisual _previousMode.ModeKind) then
+        if currentMode.ModeKind = ModeKind.Disabled then
+            _previousMode <- _modeMap.Item ModeKind.Normal
+        elif not (VisualKind.IsAnyVisualOrSelect currentMode.ModeKind) && not (VisualKind.IsAnyVisualOrSelect _previousMode.ModeKind) then
             _previousMode <- currentMode
         elif _previousMode.ModeKind = ModeKind.Uninitialized then
             _previousMode <- currentMode
@@ -362,8 +368,13 @@ type internal VimBuffer
                     let maybeLeaveOneCommand() = 
                         match _inOneTimeCommand with
                         | Some modeKind ->
-                            _inOneTimeCommand <- None
-                            x.SwitchMode modeKind ModeArgument.None |> ignore
+
+                            // A completed command ends one command mode for all modes but visual.  We
+                            // stay in Visual Mode until it actually exists.  Else the simplest movement
+                            // command like 'l' would cause it to exit immediately
+                            if VisualKind.IsAnySelect modeKind || not (VisualKind.IsAnyVisual x.Mode.ModeKind) then
+                                _inOneTimeCommand <- None
+                                x.SwitchMode modeKind ModeArgument.None |> ignore
                         | None ->
                             ()
 
@@ -371,10 +382,6 @@ type internal VimBuffer
                     | ProcessResult.Handled modeSwitch ->
                         match modeSwitch with
                         | ModeSwitch.NoSwitch -> 
-                            // A completed command ends one command mode for all modes but visual.  We
-                            // stay in Visual Mode until it actually exists.  Else the simplest movement
-                            // command like 'l' would cause it to exit immediately
-                            if not (VisualKind.IsAnyVisual x.Mode.ModeKind) then
                                 maybeLeaveOneCommand()
                         | ModeSwitch.SwitchMode kind -> 
                             // An explicit mode switch doesn't affect one command mode
@@ -391,10 +398,10 @@ type internal VimBuffer
                                 x.SwitchMode modeKind ModeArgument.None |> ignore
                             | None ->
                                 x.SwitchPreviousMode() |> ignore
-                        | ModeSwitch.SwitchModeOneTimeCommand ->
+                        | ModeSwitch.SwitchModeOneTimeCommand modeKind ->
                             // Begins one command mode and immediately switches to the target mode
                             _inOneTimeCommand <- Some x.Mode.ModeKind
-                            x.SwitchMode ModeKind.Normal ModeArgument.None |> ignore
+                            x.SwitchMode modeKind ModeArgument.None |> ignore
                     | ProcessResult.HandledNeedMoreInput ->
                         ()
                     | ProcessResult.NotHandled -> 
@@ -550,15 +557,7 @@ type internal VimBuffer
 
     /// Switch to the desired mode
     member x.SwitchMode modeKind modeArgument =
-
-        let mode = _modeMap.SwitchMode modeKind modeArgument
-
-        // Make sure to update the underlying IVimTextBuffer to the given mode.  Do this after
-        // we switch so that we can avoid the redundant mode switch in the event handler
-        // event which will cause us to actually switch
-        _vimTextBuffer.SwitchMode modeKind modeArgument
-
-        mode
+        _modeMap.SwitchMode modeKind modeArgument
 
     member x.SwitchPreviousMode () =
         x.SwitchMode _modeMap.PreviousMode.ModeKind ModeArgument.None

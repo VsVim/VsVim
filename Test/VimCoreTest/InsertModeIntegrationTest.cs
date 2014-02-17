@@ -612,7 +612,7 @@ namespace Vim.UnitTest
             }
         }
 
-        public sealed class ShiftLineRigth : InsertModeIntegrationTest
+        public sealed class ShiftLineRight : InsertModeIntegrationTest
         {
             [Fact]
             public void Simple()
@@ -632,6 +632,449 @@ namespace Vim.UnitTest
                 _vimBuffer.ProcessNotation("<C-t>");
                 Assert.Equal("  cat", _textBuffer.GetLine(0).GetText());
                 Assert.Equal(2, _textView.GetCaretPoint().Position);
+            }
+        }
+
+        public sealed class BackspacingTest : InsertModeIntegrationTest
+        {
+            /// <summary>
+            /// Make sure backspace over char at start without
+            /// 'backspace=start' works
+            /// </summary>
+            [Fact]
+            public void BackspaceOverChar_NoStart()
+            {
+                Create("cat dog");
+                _globalSettings.Backspace = "";
+                _textView.MoveCaretTo(4);
+                _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<BS>"));
+                Assert.Equal("cat dog", _textBuffer.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// Make sure backspace over char at start with 'backspace=start'
+            /// works
+            /// </summary>
+            [Fact]
+            public void BackspaceOverChar_Start()
+            {
+                Create("cat dog");
+                _globalSettings.Backspace = "start";
+                _textView.MoveCaretTo(4);
+                _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<BS>"));
+                Assert.Equal("catdog", _textBuffer.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// Make sure backspace over char at indent without
+            /// 'backspace=indent' works
+            /// </summary>
+            [Fact]
+            public void BackspaceOverChar_NoIndent()
+            {
+                Create("    dog");
+                _globalSettings.Backspace = "start";
+                _textView.MoveCaretTo(4);
+                _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<BS>"));
+                Assert.Equal("    dog", _textBuffer.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// Make sure backspace over char at indent with
+            /// 'backspace=indent' works
+            /// </summary>
+            [Fact]
+            public void BackspaceOverChar_Indent()
+            {
+                Create("    dog");
+                _globalSettings.Backspace = "start,indent";
+                _textView.MoveCaretTo(4);
+                _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<BS>"));
+                Assert.Equal("   dog", _textBuffer.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// Make sure backspace over char at beginning of line without
+            /// 'backspace=eol' works
+            /// </summary>
+            [Fact]
+            public void BackspaceOverChar_NoEol()
+            {
+                Create("cat", "dog");
+                _globalSettings.Backspace = "start,indent";
+                _textView.MoveCaretTo(5);
+                _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<BS>"));
+                Assert.Equal("cat", _textBuffer.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// Make sure backspace over char at beginning of line with
+            /// 'backspace=eol' works
+            /// </summary>
+            [Fact]
+            public void BackspaceOverChar_Eol()
+            {
+                Create("cat", "dog");
+                _globalSettings.Backspace = "start,indent,eol";
+                _textView.MoveCaretTo(5);
+                _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<BS>"));
+                Assert.Equal("catdog", _textBuffer.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// Make sure backspace over word at start without
+            /// 'backspace=start' works
+            /// </summary>
+            [Fact]
+            public void BackspaceOverWord_NoStart()
+            {
+                Create("cat dog elk");
+                _globalSettings.Backspace = "";
+                _textView.MoveCaretTo(8);
+                _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<C-w>"));
+                Assert.Equal("cat dog elk", _textBuffer.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// Make sure backspace over word at start with 'backspace=start'
+            /// works
+            /// </summary>
+            [Fact]
+            public void BackspaceOverWord_Start()
+            {
+                Create("cat dog elk");
+                _globalSettings.Backspace = "start";
+                _textView.MoveCaretTo(8);
+                _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<C-w>"));
+                Assert.Equal("cat elk", _textBuffer.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// Make sure backspace over word at indent without
+            /// 'backspace=indent' works
+            /// </summary>
+            [Fact]
+            public void BackspaceOverWord_NoIndent()
+            {
+                Create("    dog");
+                _globalSettings.Backspace = "start";
+                _textView.MoveCaretTo(4);
+                _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<C-w>"));
+                Assert.Equal("    dog", _textBuffer.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// Make sure backspace over word at indent with
+            /// 'backspace=indent' works
+            /// </summary>
+            [Fact]
+            public void BackspaceOverWord_Indent()
+            {
+                Create("    dog");
+                _globalSettings.Backspace = "start,indent";
+                _textView.MoveCaretTo(4);
+                _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<C-w>"));
+                Assert.Equal("dog", _textBuffer.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// Make sure backspace over word at beginning of line without
+            /// 'backspace=eol' works
+            /// </summary>
+            [Fact]
+            public void BackspaceOverWord_NoEol()
+            {
+                Create("cat", "dog");
+                _globalSettings.Backspace = "start,indent";
+                _textView.MoveCaretTo(5);
+                _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<C-w>"));
+                Assert.Equal("cat", _textBuffer.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// Make sure backspace over word at beginning of line with
+            /// 'backspace=eol' works
+            /// </summary>
+            [Fact]
+            public void BackspaceOverWord_Eol()
+            {
+                Create("cat", "dog");
+                _globalSettings.Backspace = "start,indent,eol";
+                _textView.MoveCaretTo(5);
+                _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<C-w>"));
+                Assert.Equal("catdog", _textBuffer.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// Make sure backspacing over line starting from an empty line
+            /// works
+            /// </summary>
+            [Fact]
+            public void BackspaceOverLine_FromEmptyLine()
+            {
+                Create("");
+                _vimBuffer.Process("cat");
+                Assert.Equal("cat", _textBuffer.GetLine(0).GetText());
+                _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<C-U>"));
+                Assert.Equal("", _textBuffer.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// Make sure backspacing over line from the start of a non-empty
+            /// line works
+            /// </summary>
+            [Fact]
+            public void BackspaceOverLine_FromStarrtOfNonEmpyLine()
+            {
+                Create("cat");
+                _textView.MoveCaretTo(0);
+                _vimBuffer.Process("dog ");
+                Assert.Equal("dog cat", _textBuffer.GetLine(0).GetText());
+                _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<C-U>"));
+                Assert.Equal("cat", _textBuffer.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// Make sure backspacing over line from the end of a non-empty
+            /// line works
+            /// </summary>
+            [Fact]
+            public void BackspaceOverLine_FromEndOfNonEmpyLine()
+            {
+                Create("cat");
+                _textView.MoveCaretTo(3);
+                _vimBuffer.Process(" dog");
+                Assert.Equal("cat dog", _textBuffer.GetLine(0).GetText());
+                _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<C-U>"));
+                Assert.Equal("cat", _textBuffer.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// Make sure backspacing over line from the middle of a non-empty
+            /// line works
+            /// </summary>
+            [Fact]
+            public void BackspaceOverLine_FromMiddleOfNonEmpyLine()
+            {
+                Create("cat dog");
+                _textView.MoveCaretTo(4);
+                _vimBuffer.Process("bear ");
+                Assert.Equal("cat bear dog", _textBuffer.GetLine(0).GetText());
+                _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<C-U>"));
+                Assert.Equal("cat dog", _textBuffer.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// Make sure backspacing over line from the start position stays
+            /// put
+            /// </summary>
+            [Fact]
+            public void BackspaceOverLine_AtStart_NoBackspaceStart()
+            {
+                Create("cat dog");
+                _textView.MoveCaretTo(4);
+                _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<C-U>"));
+                Assert.Equal("cat dog", _textBuffer.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// Make sure backspacing over line and then doing it again from
+            /// the start position stays put
+            /// </summary>
+            [Fact]
+            public void BackspaceOverLine_AgainAtStart_NoBackspaceStart()
+            {
+                Create("cat dog");
+                _textView.MoveCaretTo(4);
+                _vimBuffer.Process("bear ");
+                Assert.Equal("cat bear dog", _textBuffer.GetLine(0).GetText());
+                _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<C-U>"));
+                Assert.Equal("cat dog", _textBuffer.GetLine(0).GetText());
+                _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<C-U>"));
+                Assert.Equal("cat dog", _textBuffer.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// Make sure backspacing over line from the start position with
+            /// 'backspace=start' performs delete line before cursor
+            /// </summary>
+            [Fact]
+            public void BackspaceOverLine_AtStart_BackspaceStart()
+            {
+                Create("cat dog");
+                _globalSettings.Backspace = "start";
+                _textView.MoveCaretTo(4);
+                _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<C-U>"));
+                Assert.Equal("dog", _textBuffer.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// Make sure backspacing over line and then doing it again from
+            /// the start position with 'backspace=start' performs delete
+            /// line before cursor
+            /// </summary>
+            [Fact]
+            public void BackspaceOverLine_AgainAtStart_BackspaceStart()
+            {
+                Create("cat dog");
+                _globalSettings.Backspace = "start";
+                _textView.MoveCaretTo(4);
+                _vimBuffer.Process("bear ");
+                Assert.Equal("cat bear dog", _textBuffer.GetLine(0).GetText());
+                _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<C-U>"));
+                Assert.Equal("cat dog", _textBuffer.GetLine(0).GetText());
+                _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<C-U>"));
+                Assert.Equal("dog", _textBuffer.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// Make sure backspacing over line from the start of the next line
+            /// of an insert without 'backspace=eol' does nothing
+            /// 
+            /// </summary>
+            [Fact]
+            public void BackspaceOverLine_FromStartOfNextLine_NoBackspaceEol()
+            {
+                Create("cat dog");
+                _textView.MoveCaretTo(4);
+                _vimBuffer.Process("bear");
+                Assert.Equal("cat beardog", _textBuffer.GetLine(0).GetText());
+                _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<Enter>"));
+                Assert.Equal("cat bear", _textBuffer.GetLine(0).GetText());
+                Assert.Equal("dog", _textBuffer.GetLine(1).GetText());
+                _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<C-U>"));
+                Assert.Equal("cat bear", _textBuffer.GetLine(0).GetText());
+                Assert.Equal("dog", _textBuffer.GetLine(1).GetText());
+            }
+
+            /// <summary>
+            /// Make sure backspacing over line from the start of the next line
+            /// of an insert without 'backspace=eol' wraps to previous line
+            /// 
+            /// </summary>
+            [Fact]
+            public void BackspaceOverLine_FromStartOfNextLine_BackspaceEol()
+            {
+                Create("cat dog");
+                _globalSettings.Backspace = "eol";
+                _textView.MoveCaretTo(4);
+                _vimBuffer.Process("bear");
+                Assert.Equal("cat beardog", _textBuffer.GetLine(0).GetText());
+                _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<Enter>"));
+                Assert.Equal("cat bear", _textBuffer.GetLine(0).GetText());
+                Assert.Equal("dog", _textBuffer.GetLine(1).GetText());
+                _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<C-U>"));
+                Assert.Equal("cat beardog", _textBuffer.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// Make sure backspacing over line twice from the same edit
+            /// </summary>
+            [Fact]
+            public void BackspaceOverLine_TwiceFromSameEdit()
+            {
+                Create("cat dog");
+                _textView.MoveCaretTo(4);
+                _vimBuffer.Process("bear ");
+                Assert.Equal("cat bear dog", _textBuffer.GetLine(0).GetText());
+                _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<C-U>"));
+                Assert.Equal("cat dog", _textBuffer.GetLine(0).GetText());
+                _vimBuffer.Process("lion ");
+                Assert.Equal("cat lion dog", _textBuffer.GetLine(0).GetText());
+                _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<C-U>"));
+                Assert.Equal("cat dog", _textBuffer.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// Make sure a redo after an undo in insert works
+            /// </summary>
+            [Fact]
+            public void BackspaceOverLine_WithRedo()
+            {
+                Create("cat dog");
+                _textView.MoveCaretTo(4);
+                _vimBuffer.Process("bear ");
+                Assert.Equal("cat bear dog", _textBuffer.GetLine(0).GetText());
+                _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<C-U>"));
+                Assert.Equal("cat dog", _textBuffer.GetLine(0).GetText());
+                _vimBuffer.Process("lion ");
+                Assert.Equal("cat lion dog", _textBuffer.GetLine(0).GetText());
+                _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<Esc>"));
+                _vimBuffer.Process(" .");
+                Assert.Equal("cat lion lion dog", _textBuffer.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// Make sure backspacing over word hits all the right "pause"
+            /// points in a multi-line edit
+            /// </summary>
+            [Fact]
+            public void BackspaceOverWord_RepeatedOverMultiLine()
+            {
+                Create("aaa bbb");
+                _globalSettings.Backspace = "indent,eol,start";
+                _textView.MoveCaretTo(7);
+                _vimBuffer.ProcessNotation("ccc ddd<Enter>");
+                _vimBuffer.ProcessNotation("    eee fff<Enter>");
+                _vimBuffer.ProcessNotation("<Enter>");
+                _vimBuffer.ProcessNotation("ggg hhh");
+                Assert.Equal(new[] { "aaa bbbccc ddd", "    eee fff", "", "ggg hhh" }, _textBuffer.GetLines());
+                _vimBuffer.ProcessNotation("<C-w>");
+                Assert.Equal(new[] { "aaa bbbccc ddd", "    eee fff", "", "ggg " }, _textBuffer.GetLines());
+                _vimBuffer.ProcessNotation("<C-w>");
+                Assert.Equal(new[] { "aaa bbbccc ddd", "    eee fff", "", "" }, _textBuffer.GetLines());
+                _vimBuffer.ProcessNotation("<C-w>");
+                Assert.Equal(new[] { "aaa bbbccc ddd", "    eee fff", "" }, _textBuffer.GetLines());
+                _vimBuffer.ProcessNotation("<C-w>");
+                Assert.Equal(new[] { "aaa bbbccc ddd", "    eee fff" }, _textBuffer.GetLines());
+                _vimBuffer.ProcessNotation("<C-w>");
+                Assert.Equal(new[] { "aaa bbbccc ddd", "    eee " }, _textBuffer.GetLines());
+                _vimBuffer.ProcessNotation("<C-w>");
+                Assert.Equal(new[] { "aaa bbbccc ddd", "    " }, _textBuffer.GetLines());
+                _vimBuffer.ProcessNotation("<C-w>");
+                Assert.Equal(new[] { "aaa bbbccc ddd", "" }, _textBuffer.GetLines());
+                _vimBuffer.ProcessNotation("<C-w>");
+                Assert.Equal(new[] { "aaa bbbccc ddd", }, _textBuffer.GetLines());
+                _vimBuffer.ProcessNotation("<C-w>");
+                Assert.Equal(new[] { "aaa bbbccc ", }, _textBuffer.GetLines());
+                _vimBuffer.ProcessNotation("<C-w>");
+                Assert.Equal(new[] { "aaa bbb", }, _textBuffer.GetLines());
+                _vimBuffer.ProcessNotation("<C-w>");
+                Assert.Equal(new[] { "aaa ", }, _textBuffer.GetLines());
+                _vimBuffer.ProcessNotation("<C-w>");
+                Assert.Equal(new[] { "", }, _textBuffer.GetLines());
+            }
+            /// <summary>
+            /// Make sure backspacing over line hits all the right "pause"
+            /// points in a multi-line edit
+            /// </summary>
+            [Fact]
+            public void BackspaceOverLine_RepeatedOverMultiLine()
+            {
+                Create("aaa bbb");
+                _globalSettings.Backspace = "indent,eol,start";
+                _textView.MoveCaretTo(7);
+                _vimBuffer.ProcessNotation("ccc ddd<Enter>");
+                _vimBuffer.ProcessNotation("    eee fff<Enter>");
+                _vimBuffer.ProcessNotation("<Enter>");
+                _vimBuffer.ProcessNotation("ggg hhh");
+                Assert.Equal(new[] { "aaa bbbccc ddd", "    eee fff", "", "ggg hhh" }, _textBuffer.GetLines());
+                _vimBuffer.ProcessNotation("<C-u>");
+                Assert.Equal(new[] { "aaa bbbccc ddd", "    eee fff", "", "" }, _textBuffer.GetLines());
+                _vimBuffer.ProcessNotation("<C-u>");
+                Assert.Equal(new[] { "aaa bbbccc ddd", "    eee fff", "" }, _textBuffer.GetLines());
+                _vimBuffer.ProcessNotation("<C-u>");
+                Assert.Equal(new[] { "aaa bbbccc ddd", "    eee fff" }, _textBuffer.GetLines());
+                _vimBuffer.ProcessNotation("<C-u>");
+                Assert.Equal(new[] { "aaa bbbccc ddd", "    " }, _textBuffer.GetLines());
+                _vimBuffer.ProcessNotation("<C-u>");
+                Assert.Equal(new[] { "aaa bbbccc ddd", "" }, _textBuffer.GetLines());
+                _vimBuffer.ProcessNotation("<C-u>");
+                Assert.Equal(new[] { "aaa bbbccc ddd", }, _textBuffer.GetLines());
+                _vimBuffer.ProcessNotation("<C-u>");
+                Assert.Equal(new[] { "aaa bbb", }, _textBuffer.GetLines());
+                _vimBuffer.ProcessNotation("<C-u>");
+                Assert.Equal(new[] { "", }, _textBuffer.GetLines());
             }
         }
 
@@ -781,6 +1224,7 @@ namespace Vim.UnitTest
             public void Delete_WithShift()
             {
                 Create("cat dog");
+                _globalSettings.Backspace = "start";
                 _textView.MoveCaretTo(1);
                 _vimBuffer.ProcessNotation("<S-BS>");
                 Assert.Equal("at dog", _textBuffer.GetLine(0).GetText());
@@ -920,6 +1364,7 @@ namespace Vim.UnitTest
             public void Repeat_Backspace_Single()
             {
                 Create("dog toy", "fish chips");
+                _globalSettings.Backspace = "start";
                 _textView.MoveCaretToLine(1, 5);
                 _vimBuffer.Process(VimKey.Back, VimKey.Escape);
                 Assert.Equal("fishchips", _textView.GetLine(1).GetText());
@@ -1302,6 +1747,39 @@ namespace Vim.UnitTest
                 _vimBuffer.ProcessNotation(@"<Esc>");
                 Assert.Equal(0, VimHost.BeepCount);
                 Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
+            }
+
+            /// <summary>
+            /// If 'cw' is issued on an indented line consisting of a single
+            /// word, the caret shouldn't move
+            /// </summary>
+            [Fact]
+            public void ChangeWord_OneIndentedWord()
+            {
+                Create("    cat", "dog");
+                _vimBuffer.Process(VimKey.Escape);
+                _textView.MoveCaretTo(4);
+                Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
+                _vimBuffer.ProcessNotation("cw");
+                Assert.Equal(ModeKind.Insert, _vimBuffer.ModeKind);
+                Assert.Equal(4, _textView.GetCaretPoint().Position);
+            }
+
+            /// <summary>
+            /// If 'cw' is issued on an indented line consisting of a single
+            /// word, and the line is followed by a blank line, the caret
+            /// still shouldn't move
+            /// </summary>
+            [Fact]
+            public void ChangeWord_OneIndentedWordBeforeBlankLine()
+            {
+                Create("    cat", "", "dog");
+                _vimBuffer.Process(VimKey.Escape);
+                _textView.MoveCaretTo(4);
+                Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
+                _vimBuffer.ProcessNotation("cw");
+                Assert.Equal(ModeKind.Insert, _vimBuffer.ModeKind);
+                Assert.Equal(4, _textView.GetCaretPoint().Position);
             }
         }
     }
