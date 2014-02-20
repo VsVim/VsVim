@@ -1786,6 +1786,35 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
+            /// Do a put before operation on an empty buffer and make sure
+            /// the buffer contains what we put
+            /// </summary>
+            [Fact]
+            public void PutBefore_EmptyBuffer()
+            {
+                Create("");
+                UnnamedRegister.UpdateValue("cat\n", OperationKind.LineWise);
+                _commandUtil.PutBeforeCaret(UnnamedRegister, 1, false);
+                Assert.Equal("cat", _textView.GetLine(0).GetText());
+                Assert.Equal("", _textView.GetLine(1).GetText());
+            }
+
+            /// <summary>
+            /// Do a put after operation on an empty buffer and make sure
+            /// the buffer contains what we put with the final line break
+            /// moved to the beginning of the buffer
+            /// </summary>
+            [Fact]
+            public void PutAfter_EmptyBuffer()
+            {
+                Create("");
+                UnnamedRegister.UpdateValue("cat\n", OperationKind.LineWise);
+                _commandUtil.PutAfterCaret(UnnamedRegister, 1, false);
+                Assert.Equal("", _textView.GetLine(0).GetText());
+                Assert.Equal("cat", _textView.GetLine(1).GetText());
+            }
+
+            /// <summary>
             /// Do a put operation on an empty line and ensure we don't accidentaly move off 
             /// of the end of the line and insert the text in the middle of the line break
             /// </summary>
