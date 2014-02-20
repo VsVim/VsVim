@@ -9,8 +9,7 @@ using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.OLE.Interop;
 using Microsoft.VisualStudio.Shell;
 
-// TODO: the namespaces are wrong
-namespace Company.VsVim
+namespace VsVim
 {
     /// <summary>
     /// This is the class that implements the package exposed by this assembly.
@@ -62,7 +61,7 @@ namespace Company.VsVim
             if ( null != mcs )
             {
                 // Create the command for the menu item.
-                CommandID menuCommandID = new CommandID(GuidList.guidVsVimCmdSet, (int)PkgCmdIDList.cmdidMyCommand);
+                CommandID menuCommandID = new CommandID(GuidList.guidVsVimCmdSet, (int)CommandIds.Options);
                 MenuCommand menuItem = new MenuCommand(MenuItemCallback, menuCommandID );
                 mcs.AddCommand( menuItem );
             }

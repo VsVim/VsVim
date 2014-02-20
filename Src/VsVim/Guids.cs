@@ -2,7 +2,7 @@
 // MUST match guids.h
 using System;
 
-namespace Company.VsVim
+namespace VsVim
 {
     static class GuidList
     {
@@ -11,6 +11,4 @@ namespace Company.VsVim
 
         public static readonly Guid guidVsVimCmdSet = new Guid(guidVsVimCmdSetString);
     };
-
-
 }

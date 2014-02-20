@@ -2,12 +2,13 @@
 // MUST match PkgCmdID.h
 using System;
 
-namespace Company.VsVim
+namespace VsVim
 {
-    static class PkgCmdIDList
+    /// <summary>
+    /// The values in this class must match up with the IDSymbol values in VsVim.vsct
+    /// </summary>
+    static class CommandIds
     {
-        public const uint cmdidMyCommand =        0x100;
-
-
+        internal const uint Options = 0x100;
     };
 }
