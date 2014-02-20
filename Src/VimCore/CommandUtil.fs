@@ -1620,7 +1620,7 @@ type internal CommandUtil
                 match stringData with
                 | StringData.Simple _ -> true
                 | _ -> false
-            if isLineWise && isEmpty then
+            if isLineWise && isEmpty && isSimple then
                 let newLine = _commonOperations.GetNewLineText x.CaretPoint
                 let newString = newLine + (EditUtil.RemoveEndingNewLine stringData.String)
                 StringData.Simple newString
