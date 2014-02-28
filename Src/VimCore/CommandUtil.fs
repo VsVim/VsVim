@@ -1608,6 +1608,25 @@ type internal CommandUtil
     /// Core put after function used by many of the put after operations
     member x.PutAfterCaretCore (registerValue : RegisterValue) count moveCaretAfterText =
         let stringData = registerValue.StringData.ApplyCount count
+
+        // Adjust for simple putting line-wise "after" in an empty buffer.
+        // This is just the way vim works and cannot be handled later
+        // because the behavior depends not on the point but the "after"
+        // part, which is lost by the time we get to 'PutCore' and beyond
+        let stringData =
+            let isLineWise = registerValue.OperationKind = OperationKind.LineWise
+            let isEmpty = _textBuffer.CurrentSnapshot.Length = 0
+            let isSimple =
+                match stringData with
+                | StringData.Simple _ -> true
+                | _ -> false
+            if isLineWise && isEmpty && isSimple then
+                let newLine = _commonOperations.GetNewLineText x.CaretPoint
+                let newString = newLine + (EditUtil.RemoveEndingNewLine stringData.String)
+                StringData.Simple newString
+            else
+                stringData
+
         let point = 
             match registerValue.OperationKind with
             | OperationKind.CharacterWise -> 

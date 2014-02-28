@@ -513,10 +513,37 @@ namespace Vim.UnitTest
         public void Put_EndOfBufferLinewise()
         {
             Create("cat");
+            Assert.Equal(1, _textView.TextSnapshot.LineCount);
             _operations.Put(_textView.GetEndPoint(), StringData.NewSimple("dog\n"), OperationKind.LineWise);
             Assert.Equal("cat", _textView.GetLine(0).GetText());
             Assert.Equal("dog", _textView.GetLine(1).GetText());
             Assert.Equal(2, _textView.TextSnapshot.LineCount);
+        }
+
+        /// <summary>
+        /// Do a put at the end of the ITextBuffer linewise.  Same as previous
+        /// test but the buffer contains a trailing line break
+        /// </summary>
+        [Fact]
+        public void Put_EndOfBufferLinewiseWithTrailingLineBreak()
+        {
+            Create("cat", "");
+            Assert.Equal(2, _textView.TextSnapshot.LineCount);
+            _operations.Put(_textView.GetEndPoint(), StringData.NewSimple("dog\n"), OperationKind.LineWise);
+            Assert.Equal("cat", _textView.GetLine(0).GetText());
+            Assert.Equal("dog", _textView.GetLine(1).GetText());
+            Assert.Equal(3, _textView.TextSnapshot.LineCount);
+        }
+
+        /// <summary>
+        /// Put into empty buffer should create a buffer with the contents being put
+        /// </summary>
+        [Fact]
+        public void Put_IntoEmptyBuffer()
+        {
+            Create("");
+            _operations.Put(_textView.GetLine(0).Start, StringData.NewSimple("fish\n"), OperationKind.LineWise);
+            Assert.Equal("fish", _textView.GetLine(0).GetText());
         }
 
         /// <summary>
