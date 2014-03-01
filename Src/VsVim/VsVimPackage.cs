@@ -8,6 +8,11 @@ using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.OLE.Interop;
 using Microsoft.VisualStudio.Shell;
+using Microsoft.VisualStudio.ComponentModelHost;
+using Vim.UI.Wpf;
+using System.ComponentModel.Composition.Hosting;
+using Vim;
+using Vim.Extensions;
 
 namespace VsVim
 {
@@ -32,20 +37,15 @@ namespace VsVim
     [Guid(GuidList.guidVsVimPkgString)]
     public sealed class VsVimPackage : Package
     {
-        /// <summary>
-        /// Default constructor of the package.
-        /// Inside this method you can place any initialization code that does not require 
-        /// any Visual Studio service because at this point the package object is created but 
-        /// not sited yet inside Visual Studio environment. The place to do all the other 
-        /// initialization is the Initialize method.
-        /// </summary>
+        private IComponentModel _componentModel;
+        private ExportProvider _exportProvider;
+        private ITextManager _textManager;
+        private IVim _vim;
+
         public VsVimPackage()
         {
-            Trace.WriteLine(string.Format(CultureInfo.CurrentCulture, "Entering constructor for: {0}", this.ToString()));
-        }
 
-        /////////////////////////////////////////////////////////////////////////////
-        // Overriden Package Implementation
+        }
 
         /// <summary>
         /// Initialization of the package; this method is called right after the package is sited, so this is the place
@@ -53,20 +53,37 @@ namespace VsVim
         /// </summary>
         protected override void Initialize()
         {
-            Trace.WriteLine (string.Format(CultureInfo.CurrentCulture, "Entering Initialize() of: {0}", this.ToString()));
             base.Initialize();
+
+            _componentModel = (IComponentModel)GetService(typeof(SComponentModel));
+            _exportProvider = _componentModel.DefaultExportProvider;
+            _vim = _exportProvider.GetExportedValue<IVim>();
 
             // Add our command handlers for menu (commands must exist in the .vsct file)
             OleMenuCommandService mcs = GetService(typeof(IMenuCommandService)) as OleMenuCommandService;
-            if ( null != mcs )
+            if (null != mcs)
             {
                 // Create the command for the menu item.
-                CommandID menuCommandID = new CommandID(GuidList.guidVsVimCmdSet, (int)CommandIds.Options);
-                MenuCommand menuItem = new MenuCommand(MenuItemCallback, menuCommandID );
-                mcs.AddCommand( menuItem );
+                var optionsId = new CommandID(GuidList.guidVsVimCmdSet, (int)CommandIds.Options);
+                var optionsMenuItem = new MenuCommand(OnOptionsClick, optionsId);
+                mcs.AddCommand(optionsMenuItem);
             }
         }
 
+        private void OnOptionsClick(object sender, EventArgs e)
+        {
+            // TODO: must handle the case better when there isn't an active buffer
+            var vimBufferOption = _vim.FocusedBuffer;
+            if (vimBufferOption.IsNone())
+            {
+                return;
+            }
+
+            var optionsProviderFactory = _componentModel.DefaultExportProvider.GetExportedValue<IOptionsProviderFactory>();
+            optionsProviderFactory.CreateOptionsProvider().ShowDialog(vimBufferOption.Value);
+        }
+
+        /*
         /// <summary>
         /// This function is the callback used to execute a command when the a menu item is clicked.
         /// See the Initialize method to see how the menu item is associated to this function using
@@ -91,6 +108,6 @@ namespace VsVim
                        0,        // false
                        out result));
         }
-
+        */
     }
 }
