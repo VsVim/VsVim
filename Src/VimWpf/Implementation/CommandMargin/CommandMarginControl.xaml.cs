@@ -106,11 +106,6 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             get { return _commandLineInput; }
         }
 
-        public Button OptionsButton
-        {
-            get { return _optionsButton; }
-        }
-
         public CommandMarginControl()
         {
             InitializeComponent();

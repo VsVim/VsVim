@@ -36,8 +36,7 @@ namespace Vim.UI.Wpf.UnitTest
                 parentVisualElement.Object,
                 _marginControl,
                 editorFormatMap.Object,
-                fontProperties.Object,
-                new List<Lazy<IOptionsProviderFactory>>());
+                fontProperties.Object);
         }
 
         protected abstract IVimBuffer CreateVimBuffer();

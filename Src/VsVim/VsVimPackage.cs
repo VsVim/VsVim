@@ -39,7 +39,6 @@ namespace VsVim
     {
         private IComponentModel _componentModel;
         private ExportProvider _exportProvider;
-        private ITextManager _textManager;
         private IVim _vim;
 
         public VsVimPackage()
@@ -79,8 +78,8 @@ namespace VsVim
                 return;
             }
 
-            var optionsProviderFactory = _componentModel.DefaultExportProvider.GetExportedValue<IOptionsProviderFactory>();
-            optionsProviderFactory.CreateOptionsProvider().ShowDialog(vimBufferOption.Value);
+            var optionsProvider = _componentModel.DefaultExportProvider.GetExportedValue<IOptionsProvider>();
+            optionsProvider.ShowDialog(vimBufferOption.Value);
         }
 
         /*
