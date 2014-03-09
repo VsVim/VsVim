@@ -113,6 +113,10 @@
     <Compile Include="Implementation\Settings\VimApplicationSettings.cs" />
     <Compile Include="Implementation\SharedService\DefaultSharedServiceFactory.cs" />
     <Compile Include="Implementation\SharedService\SharedServiceFactory.cs" />
+    <Compile Include="Implementation\UpgradeNotification\LinkBanner.xaml.cs">
+      <DependentUpon>LinkBanner.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Implementation\UpgradeNotification\BackspaceNotificationMarginProvider.cs" />
     <Compile Include="TextEditorFontProperties.cs" />
     <Compile Include="Implementation\VisualAssist\IVisualAssistUtil.cs" />
     <Compile Include="Implementation\VisualAssist\VisualAssistKeyProcessor.cs" />
@@ -167,6 +171,10 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <Page Include="Implementation\UpgradeNotification\LinkBanner.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="Implementation\VisualAssist\VisualAssistMargin.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
