@@ -9,6 +9,8 @@
     <MoreInfoUrl>http://blogs.msdn.com/b/jaredpar</MoreInfoUrl>
     <License>License.rtf</License>
     <GettingStartedGuide>https://github.com/jaredpar/VsVim/wiki/Release-Notes</GettingStartedGuide>
+    <Icon>VsVim_small.png</Icon>
+    <PreviewImage>VsVim_large.png</PreviewImage>
     <SupportedProducts>
       <VisualStudio Version="10.0">
         <Edition>Ultimate</Edition>
