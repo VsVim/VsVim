@@ -16,7 +16,7 @@ namespace Vim.UI.Wpf.Implementation.Mouse
             _vimBuffer = vimBuffer;
         }
 
-        private bool TryProcess(VimKey vimKey)
+        internal bool TryProcess(VimKey vimKey)
         {
             var keyInput = KeyInputUtil.VimKeyToKeyInput(vimKey);
             if (_vimBuffer.CanProcess(keyInput))

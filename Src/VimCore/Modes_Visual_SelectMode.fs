@@ -170,8 +170,9 @@ type internal SelectMode
             replaceSelection span text
             ProcessResult.Handled (ModeSwitch.SwitchMode ModeKind.Insert)
 
-    member x.CanProcess keyInput =
-        true
+    /// Select Mode doesn't actually process any mouse keys.  Actual mouse events for
+    /// selection are handled by the selection tracker 
+    member x.CanProcess (keyInput : KeyInput) = not keyInput.IsMouseKey
 
     member x.Process keyInput = 
 
