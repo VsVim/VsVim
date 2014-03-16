@@ -103,6 +103,12 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
+    <Content Include="VsVim_large.png">
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
+    <Content Include="VsVim_small.png">
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
     <None Include="app.config" />
     <Content Include="Colors.pkgdef">
       <IncludeInVSIX>true</IncludeInVSIX>

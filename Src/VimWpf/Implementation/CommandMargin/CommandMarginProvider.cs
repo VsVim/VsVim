@@ -47,7 +47,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
 
             var editorFormatMap = _editorFormatMapService.GetEditorFormatMap(wpfTextViewHost.TextView);
             var fontProperties = _vim.VimHost.FontProperties;
-			return new CommandMargin(wpfTextViewHost.TextView.VisualElement, vimBuffer, editorFormatMap, fontProperties, _optionsProviderFactories);
+            return new CommandMargin(wpfTextViewHost.TextView.VisualElement, vimBuffer, editorFormatMap, fontProperties, _optionsProviderFactories);
         }
 
         #endregion

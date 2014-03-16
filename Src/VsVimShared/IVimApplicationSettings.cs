@@ -22,6 +22,11 @@ namespace VsVim
         bool HaveUpdatedKeyBindings { get; set; }
 
         /// <summary>
+        /// Have the settings for 'backspace' and 'whichwrap'
+        /// </summary>
+        bool HaveNotifiedBackspaceSetting { get; set; }
+
+        /// <summary>
         /// The conflicting key binding margin was ignored
         /// </summary>
         bool IgnoredConflictingKeyBinding { get; set; }

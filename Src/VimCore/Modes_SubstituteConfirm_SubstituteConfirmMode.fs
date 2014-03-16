@@ -64,6 +64,8 @@ type internal SubstituteConfirmMode
 
     member x.CurrentSnapshot = _textBuffer.CurrentSnapshot
 
+    member x.CanProcess (keyInput : KeyInput) = not keyInput.IsMouseKey
+
     member x.CaretPoint = TextViewUtil.GetCaretPoint _textView
 
     member x.CaretLine = TextViewUtil.GetCaretLine _textView
@@ -179,7 +181,7 @@ type internal SubstituteConfirmMode
         x.EndOperation()
 
     interface ISubstituteConfirmMode with
-        member x.CanProcess ki = true
+        member x.CanProcess keyInput = x.CanProcess keyInput
         member x.CommandNames = _commandMap |> Seq.map (fun pair -> KeyInputSet.OneKeyInput pair.Key)
         member x.CurrentMatch = x.CurrentMatch
         member x.CurrentSubstitute = x.CurrentSubstitute

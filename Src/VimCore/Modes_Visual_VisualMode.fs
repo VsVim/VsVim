@@ -133,6 +133,10 @@ type internal VisualMode
 
     member x.CaretPoint = TextViewUtil.GetCaretPoint _textView
 
+    /// Visual Mode doesn't actually process any mouse keys.  Actual mouse events for
+    /// selection are handled by the selection tracker 
+    member x.CanProcess (keyInput : KeyInput) = not keyInput.IsMouseKey
+
     member x.CommandNames = 
         x.EnsureCommandsBuilt()
         _runner.Commands |> Seq.map (fun command -> command.KeyInputSet)
@@ -283,7 +287,7 @@ type internal VisualMode
         member x.VimTextBuffer = _vimTextBuffer
         member x.CommandNames = x.CommandNames
         member x.ModeKind = _modeKind
-        member x.CanProcess _ = true
+        member x.CanProcess keyInput = x.CanProcess keyInput
         member x.Process keyInput =  x.Process keyInput
         member x.OnEnter modeArgument = x.OnEnter modeArgument
         member x.OnLeave () = x.OnLeave()

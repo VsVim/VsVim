@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Threading;
 using EditorUtils;
 using Microsoft.FSharp.Core;
@@ -1163,6 +1164,33 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class CanProcessTest : VisualModeIntegrationTest
+        {
+            /// <summary>
+            /// Visual Mode itself doesn't actually process mouse commands.  That is the job of
+            /// the selection mode tracker.  
+            /// </summary>
+            [Fact]
+            public void MouseCommands()
+            {
+                Create("");
+                _vimBuffer.Process("v");
+                foreach (var keyInput in KeyInputUtil.VimKeyInputList.Where(x => x.IsMouseKey))
+                {
+                    bool ret = _vimBuffer.CanProcess(keyInput);
+                    Assert.False(_vimBuffer.CanProcess(keyInput));
+                }
+            }
+
+            [Fact]
+            public void Simple()
+            {
+                Create("");
+                Assert.True(_vimBuffer.CanProcess('l'));
+                Assert.True(_vimBuffer.CanProcess('k'));
+            }
+        }
+
         public sealed class ChangeCase : VisualModeIntegrationTest
         {
             [Fact]
@@ -2277,6 +2305,14 @@ namespace Vim.UnitTest
                 Create("hello world");
                 _vimBuffer.ProcessNotation("v<c-c>");
                 Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
+            }
+
+            [Fact]
+            public void Issue1317()
+            {
+                Create("hello world");
+                _vimBuffer.ProcessNotation("vl");
+                Assert.False(_vimBuffer.CanProcess(VimKey.LeftDrag));
             }
         }
 

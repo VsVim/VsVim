@@ -906,6 +906,14 @@ namespace Vim.UnitTest
                 Assert.Equal(ModeKind.Insert, _vimBuffer.ModeKind);
                 Assert.Equal("cat bear eel", _textBuffer.GetLine(0).GetText());
             }
+
+            [Fact]
+            public void Issue1317()
+            {
+                Create("hello world");
+                _vimBuffer.ProcessNotation("vl");
+                Assert.False(_vimBuffer.CanProcess(VimKey.LeftDrag));
+            }
         }
     }
 }
