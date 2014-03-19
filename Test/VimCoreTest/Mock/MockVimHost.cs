@@ -121,6 +121,7 @@ namespace Vim.UnitTest.Mock
         void IVimHost.Close(ITextView textView)
         {
             LastClosed = textView;
+            textView.Close();
         }
 
         ITextView IVimHost.CreateHiddenTextView()

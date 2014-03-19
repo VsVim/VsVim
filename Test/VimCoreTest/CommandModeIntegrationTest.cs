@@ -1113,6 +1113,14 @@ namespace Vim.UnitTest
                 Assert.Equal(1, _textView.Caret.Position.BufferPosition.GetColumn().Column);
                 Assert.Equal(1, _textView.GetCaretLine().LineNumber);
             }
+
+            [Fact]
+            public void Issue1327()
+            {
+                Create("cat", "dog");
+                _textView.MoveCaretTo(3);
+                RunCommand("wq");
+            }
         }
     }
 }
