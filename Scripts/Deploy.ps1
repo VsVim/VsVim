@@ -97,6 +97,20 @@ function test-version() {
         return
     }
 
+    $foundPackageVersion = $false
+    foreach ($line in gc "Src\VsVim\VsVimPackage.cs") {
+        if ($line -match 'productId: Vim.Constants.VersionNumber') {
+            $foundPackageVersion = $true
+            break
+        }
+    }
+
+    if (-not $foundPackageVersion) {
+        $msg = "Could not verify the version of VsVimPackage.cs"
+        write-error $msg
+        return
+    }
+
     $data = [xml](gc "Src\VsVim\source.extension.vsixmanifest")
     $manifestVersion = $data.Vsix.Identifier.Version
     if ($manifestVersion -ne $version) { 
