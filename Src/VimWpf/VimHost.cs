@@ -56,6 +56,11 @@ namespace Vim.UI.Wpf
             get;
         }
 
+        public virtual DefaultSettings DefaultSettings
+        {
+            get { return DefaultSettings.GVim74; }
+        }
+
         protected VimHost(
             ITextBufferFactoryService textBufferFactoryService,
             ITextEditorFactoryService textEditorFactoryService,
@@ -431,6 +436,11 @@ namespace Vim.UI.Wpf
         bool IVimHost.AutoSynchronizeSettings
         {
             get { return AutoSynchronizeSettings; }
+        }
+
+        DefaultSettings IVimHost.DefaultSettings
+        {
+            get { return DefaultSettings; }
         }
 
         void IVimHost.Beep()

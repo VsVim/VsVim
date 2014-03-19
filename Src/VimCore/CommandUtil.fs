@@ -1608,6 +1608,25 @@ type internal CommandUtil
     /// Core put after function used by many of the put after operations
     member x.PutAfterCaretCore (registerValue : RegisterValue) count moveCaretAfterText =
         let stringData = registerValue.StringData.ApplyCount count
+
+        // Adjust for simple putting line-wise "after" in an empty buffer.
+        // This is just the way vim works and cannot be handled later
+        // because the behavior depends not on the point but the "after"
+        // part, which is lost by the time we get to 'PutCore' and beyond
+        let stringData =
+            let isLineWise = registerValue.OperationKind = OperationKind.LineWise
+            let isEmpty = _textBuffer.CurrentSnapshot.Length = 0
+            let isSimple =
+                match stringData with
+                | StringData.Simple _ -> true
+                | _ -> false
+            if isLineWise && isEmpty && isSimple then
+                let newLine = _commonOperations.GetNewLineText x.CaretPoint
+                let newString = newLine + (EditUtil.RemoveEndingNewLine stringData.String)
+                StringData.Simple newString
+            else
+                stringData
+
         let point = 
             match registerValue.OperationKind with
             | OperationKind.CharacterWise -> 
@@ -2791,28 +2810,17 @@ type internal CommandUtil
     /// Switch to other visual mode: visual from select or vice versa
     member x.SwitchModeOtherVisual visualSpan =
         let currentModeKind = _vimBufferData.VimTextBuffer.ModeKind
-        let newModeKind =
-            match currentModeKind with
-            | ModeKind.VisualBlock -> ModeKind.SelectBlock
-            | ModeKind.VisualCharacter -> ModeKind.SelectCharacter
-            | ModeKind.VisualLine -> ModeKind.SelectLine
-            | ModeKind.SelectBlock -> ModeKind.VisualBlock
-            | ModeKind.SelectCharacter -> ModeKind.VisualCharacter
-            | ModeKind.SelectLine -> ModeKind.VisualLine
-            | _ -> currentModeKind
-        let anchorPoint =
-            _vimBufferData.VisualCaretStartPoint
-            |> OptionUtil.map2 (TrackingPointUtil.GetPoint x.CurrentSnapshot)
-        match anchorPoint with
+        match VisualKind.OfModeKind currentModeKind with
+        | Some visualKind ->
+            let newModeKind =
+                if VisualKind.IsAnySelect currentModeKind then
+                    visualKind.VisualModeKind
+                else
+                    visualKind.SelectModeKind
+            x.SwitchMode newModeKind ModeArgument.None
         | None ->
             _commonOperations.Beep()
             CommandResult.Completed ModeSwitch.NoSwitch
-        | Some anchorPoint ->
-            let caretPoint = x.CaretPoint
-            let visualSelection = VisualSelection.CreateForPoints visualSpan.VisualKind anchorPoint caretPoint _localSettings.TabStop
-            let visualSelection = visualSelection.AdjustForSelectionKind _globalSettings.SelectionKind
-            let modeArgument = ModeArgument.InitialVisualSelection (visualSelection, Some anchorPoint)
-            x.SwitchMode newModeKind modeArgument
 
     /// Switch from the current visual mode into the specified visual mode
     member x.SwitchModeVisual newVisualKind = 

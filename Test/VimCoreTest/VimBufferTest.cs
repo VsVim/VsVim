@@ -493,7 +493,7 @@ namespace Vim.UnitTest
             public void SwitchModeOneTimeCommand_SetProperty()
             {
                 var mode = CreateAndAddInsertMode(MockBehavior.Loose);
-                mode.Setup(x => x.Process(It.IsAny<KeyInput>())).Returns(ProcessResult.NewHandled(ModeSwitch.SwitchModeOneTimeCommand));
+                mode.Setup(x => x.Process(It.IsAny<KeyInput>())).Returns(ProcessResult.NewHandled(ModeSwitch.NewSwitchModeOneTimeCommand(ModeKind.Normal)));
                 _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
                 _vimBuffer.Process('c');
                 Assert.True(_vimBuffer.InOneTimeCommand.IsSome(ModeKind.Insert));

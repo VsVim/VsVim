@@ -20,6 +20,7 @@ namespace VsVim.Implementation.Settings
     {
         internal const string CollectionPath = "VsVim";
         internal const string HaveUpdatedKeyBindingsName = "HaveUpdatedKeyBindings";
+        internal const string HaveNotifiedBackspaceSetting = "HaveNotifiedBackspaceSetting";
         internal const string IgnoredConflictingKeyBindingName = "IgnoredConflictingKeyBinding";
         internal const string RemovedBindingsName = "RemovedBindings";
         internal const string LegacySettingsMigratedName = "LegacySettingsMigrated";
@@ -217,6 +218,12 @@ namespace VsVim.Implementation.Settings
         {
             get { return GetBoolean(HaveUpdatedKeyBindingsName, defaultValue: false); }
             set { SetBoolean(HaveUpdatedKeyBindingsName, value); }
+        }
+
+        bool IVimApplicationSettings.HaveNotifiedBackspaceSetting
+        {
+            get { return GetBoolean(HaveNotifiedBackspaceSetting, defaultValue: false); }
+            set { SetBoolean(HaveNotifiedBackspaceSetting, value); }
         }
 
         bool IVimApplicationSettings.IgnoredConflictingKeyBinding

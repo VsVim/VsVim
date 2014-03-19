@@ -30,13 +30,13 @@ function test-vsixcontents() {
     & $zip x "-o$target" $vsixPath | out-null
 
     $files = gci $target | %{ $_.Name }
-    if ($files.Count -ne 13) { 
+    if ($files.Count -ne 15) { 
         write-host "Wrong number of files in VSIX. Found ..."
         foreach ($file in $files) {
             write-host "`t$file"
         }
         write-host "Location: $target"
-        write-error "Found $($files.Count) but expected 13"
+        write-error "Found $($files.Count) but expected 15"
     }
 
     # The set of important files that are easy to miss 

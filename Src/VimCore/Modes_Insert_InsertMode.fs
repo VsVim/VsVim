@@ -258,7 +258,7 @@ type internal InsertMode
         |> _bag.Add
 
         // Listen for global settings changes
-        _globalSettings.SettingChanged
+        (_globalSettings :> IVimSettings).SettingChanged 
         |> Observable.subscribe (fun args -> this.OnGlobalSettingsChanged args)
         |> _bag.Add
 
@@ -515,7 +515,7 @@ type internal InsertMode
     /// Enter normal mode for a single command.
     member x.ProcessNormalModeOneCommand keyInput =
 
-        let switch = ModeSwitch.SwitchModeOneTimeCommand
+        let switch = ModeSwitch.SwitchModeOneTimeCommand ModeKind.Normal
         ProcessResult.Handled switch
 
     /// Process the CTRL-N key stroke which calls for the previous word completion

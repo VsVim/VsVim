@@ -1071,9 +1071,10 @@ type internal CommonOperations
                 let newLine = EditUtil.NewLine _editorOptions
                 match opKind with
                 | OperationKind.LineWise -> 
-                    if SnapshotPointUtil.IsEndPoint point then
-                        // At the end of the file so we need to manipulate the new line character
-                        // a bit.  It's typically at the end of the line but at the end of the 
+                    if SnapshotPointUtil.IsEndPoint point && not (SnapshotPointUtil.IsStartOfLine point) then
+                        // At the end of the file without a trailing line break so we need to
+                        // manipulate the new line character a bit.
+                        // It's typically at the end of the line but at the end of the 
                         // ITextBuffer we need it to be at the beginning since there is no newline 
                         // to append after at the end of the buffer.  
                         let str = EditUtil.RemoveEndingNewLine str

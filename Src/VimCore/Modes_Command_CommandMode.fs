@@ -126,7 +126,7 @@ type internal CommandMode
                     _bindData <- None
         member x.CommandNames = HistoryUtil.CommandNames |> Seq.map KeyInputSet.OneKeyInput
         member x.ModeKind = ModeKind.Command
-        member x.CanProcess ki = true
+        member x.CanProcess keyInput = not keyInput.IsMouseKey
         member x.Process keyInput = x.Process keyInput
         member x.OnEnter arg =
             x.Command <- 

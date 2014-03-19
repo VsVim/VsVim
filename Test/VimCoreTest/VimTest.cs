@@ -53,6 +53,7 @@ namespace Vim.UnitTest
             _vimHost = _factory.Create<IVimHost>(MockBehavior.Strict);
             _vimHost.Setup(x => x.CreateHiddenTextView()).Returns(CreateTextView());
             _vimHost.Setup(x => x.AutoSynchronizeSettings).Returns(true);
+            _vimHost.SetupGet(x => x.DefaultSettings).Returns(DefaultSettings.GVim73);
             _vimRaw = new Vim(
                 _vimHost.Object,
                 _bufferFactory,

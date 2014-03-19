@@ -122,6 +122,12 @@ namespace Vim.UnitTest
                 Assert.True(Vim.LoadVimRc().IsLoadSucceeded);
             }
 
+            private void RunNone()
+            {
+                _fileSystem.Setup(x => x.LoadVimRcContents()).Returns(FSharpOption<FileContents>.None);
+                Assert.True(Vim.LoadVimRc().IsLoadFailed);
+            }
+
             [Fact]
             public void Simple()
             {
@@ -195,6 +201,25 @@ autocmd BufEnter *.html set ts=12
                 Run(text);
                 var vimBuffer = CreateVimBufferWithName("test.html");
                 Assert.NotEqual(12, vimBuffer.LocalSettings.TabStop);
+            }
+
+            [Fact]
+            public void DefaultSettings73()
+            {
+                VimHost.DefaultSettings = DefaultSettings.GVim73;
+                RunNone();
+                Assert.True(_globalSettings.IsBackspaceEol && _globalSettings.IsBackspaceIndent && _globalSettings.IsBackspaceStart);
+                Assert.Equal("", _globalSettings.SelectMode);
+            }
+
+            [Fact]
+            public void DefaultSettings7g()
+            {
+                VimHost.DefaultSettings = DefaultSettings.GVim74;
+                RunNone();
+                Assert.True(_globalSettings.IsBackspaceEol && _globalSettings.IsBackspaceIndent && _globalSettings.IsBackspaceStart);
+                Assert.Equal("mouse,key", _globalSettings.SelectMode);
+                Assert.Equal("popup", _globalSettings.MouseModel);
             }
         }
 
