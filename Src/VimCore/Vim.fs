@@ -574,17 +574,7 @@ type internal Vim
                     _vimRcLocalSettings <- LocalSettings(_globalSettings) 
                     _vimRcWindowSettings <- WindowSettings(_globalSettings)
                     _vimRcState <- VimRcState.LoadFailed
-
-                    // User-friendly overrides for users without an rc file.
-                    // Compare with Vim 7.4 "C:\Program Files (x86)\Vim\_vimrc"
-                    //
-                    // TODO: Should this be moved to an actual file?
-                    _globalSettings.SelectMode <- "mouse,key"
-                    _globalSettings.MouseModel <- "popup"
-                    _globalSettings.KeyModel <- "startsel,stopsel"
-                    _globalSettings.Selection <- "exclusive"
-                    _globalSettings.Backspace <- "indent,eol,start"
-                    _globalSettings.WhichWrap <- "<,>,[,]"
+                    x.LoadDefaultSettings()
 
                 | Some fileContents ->
                     _globalSettings.VimRc <- fileContents.FilePath
@@ -613,6 +603,26 @@ type internal Vim
 
             _vimHost.VimRcLoaded _vimRcState _vimRcLocalSettings _vimRcWindowSettings
             _vimRcState
+
+    /// Called when there is no vimrc file.  Update IVimGlobalSettings to be the appropriate
+    /// value for what the host requests
+    member x.LoadDefaultSettings() : unit = 
+        match _vimHost.DefaultSettings with
+        | DefaultSettings.GVim73 ->
+            // Strictly speaking this is not the default for 7.3.  However given this is running
+            // on windows there is little sense in disallowing backspace in insert mode as the
+            // out of the box experience.  If users truly want that they can put in a vimrc
+            // file that adds it in 
+            _globalSettings.Backspace <- "indent,eol,start"
+        | DefaultSettings.GVim74 ->
+            // User-friendly overrides for users without an rc file.
+            // Compare with Vim 7.4 "C:\Program Files (x86)\Vim\_vimrc"
+            _globalSettings.SelectMode <- "mouse,key"
+            _globalSettings.MouseModel <- "popup"
+            _globalSettings.KeyModel <- "startsel,stopsel"
+            _globalSettings.Selection <- "exclusive"
+            _globalSettings.Backspace <- "indent,eol,start"
+            _globalSettings.WhichWrap <- "<,>,[,]"
 
     member x.RemoveVimBuffer textView = 
         let found, tuple = _vimBufferMap.TryGetValue(textView)

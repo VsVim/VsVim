@@ -3740,11 +3740,23 @@ type TextViewChangedEventArgs
 
     member x.NewTextView = _newTextView
 
+/// What settings default should VsVim use when there is not a _vimrc file present 
+/// on the users machine?  There is a significant difference between gVim 7.3 and 
+/// 7.4.  
+[<RequireQualifiedAccess>]
+[<NoComparison>]
+type DefaultSettings =
+    | GVim73
+    | GVim74
+
 type IVimHost =
 
     /// Should vim automatically start synchronization of IVimBuffer instances when they are 
     /// created
     abstract AutoSynchronizeSettings : bool 
+
+    /// What settings defaults should be used when there is no vimrc file present
+    abstract DefaultSettings : DefaultSettings
 
     /// Get the count of tabs that are active in the host.  If tabs are not supported then
     /// -1 should be returned
