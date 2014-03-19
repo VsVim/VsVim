@@ -34,7 +34,7 @@ namespace VsVim
     [InstalledProductRegistration("#110", "#112", "1.0", IconResourceID = 400)]
     // This attribute is needed to let the shell know that this package exposes some menus.
     [ProvideMenuResource("Menus.ctmenu", 1)]
-    [Guid(GuidList.guidVsVimPkgString)]
+    [Guid(GuidList.VsVimPackageString)]
     public sealed class VsVimPackage : Package
     {
         private IComponentModel _componentModel;
@@ -63,7 +63,7 @@ namespace VsVim
             if (null != mcs)
             {
                 // Create the command for the menu item.
-                var optionsId = new CommandID(GuidList.guidVsVimCmdSet, (int)CommandIds.Options);
+                var optionsId = new CommandID(GuidList.VsVimCommandSet, (int)CommandIds.Options);
                 var optionsMenuItem = new MenuCommand(OnOptionsClick, optionsId);
                 mcs.AddCommand(optionsMenuItem);
             }

@@ -23,7 +23,6 @@
   <!--Definition of some VSCT specific constants. In this sample we use it for the IDs inside the guidOfficeIcon group. -->
   <!--<Extern href="msobtnid.h" xmlns="http://schemas.microsoft.com/VisualStudio/2005-10-18/CommandTable" />-->
 
-
   <!--The Commands section is where we the commands, menus and menu groups are defined.
       This section uses a Guid to identify the package that provides the command defined inside it. -->
   <Commands package="guidVsVimPkg">
@@ -94,10 +93,6 @@
  
   </Commands>
 
-
-
-
-
   <Symbols>
     <!-- This is the package guid. -->
     <GuidSymbol name="guidVsVimPkg" value="{a284d12c-1e96-451b-a3b0-5486a1beb6ca}" />
@@ -116,5 +111,4 @@
       <IDSymbol name="bmpPicArrows" value="5" />
     </GuidSymbol>
   </Symbols>
-
 </CommandTable>

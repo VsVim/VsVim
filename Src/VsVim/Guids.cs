@@ -1,14 +1,16 @@
-﻿// Guids.cs
-// MUST match guids.h
-using System;
+﻿using System;
 
 namespace VsVim
 {
-    static class GuidList
+    /// <summary>
+    /// These values must match up with those defined in VsVim.vsct
+    /// </summary>
+    internal static class GuidList
     {
-        public const string guidVsVimPkgString = "a284d12c-1e96-451b-a3b0-5486a1beb6ca";
-        public const string guidVsVimCmdSetString = "c7509f48-7d69-4344-8221-01989a8c4be5";
+        internal const string VsVimPackageString = "a284d12c-1e96-451b-a3b0-5486a1beb6ca";
+        internal const string VsVimCommandSetString = "c7509f48-7d69-4344-8221-01989a8c4be5";
 
-        public static readonly Guid guidVsVimCmdSet = new Guid(guidVsVimCmdSetString);
+        internal static readonly Guid VsVimPackage = new Guid(VsVimPackageString);
+        internal static readonly Guid VsVimCommandSet = new Guid(VsVimCommandSetString);
     };
 }
