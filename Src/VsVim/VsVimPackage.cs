@@ -71,15 +71,8 @@ namespace VsVim
 
         private void OnOptionsClick(object sender, EventArgs e)
         {
-            // TODO: must handle the case better when there isn't an active buffer
-            var vimBufferOption = _vim.FocusedBuffer;
-            if (vimBufferOption.IsNone())
-            {
-                return;
-            }
-
             var optionsProvider = _componentModel.DefaultExportProvider.GetExportedValue<IOptionsProvider>();
-            optionsProvider.ShowDialog(vimBufferOption.Value);
+            optionsProvider.ShowDialog();
         }
 
         /*

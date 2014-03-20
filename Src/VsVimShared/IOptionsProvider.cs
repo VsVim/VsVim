@@ -7,6 +7,6 @@ namespace Vim.UI.Wpf
 {
     public interface IOptionsProvider
     {
-        void ShowDialog(IVimBuffer contextBuffer);
+        void ShowDialog();
     }
 }

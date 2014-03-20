@@ -5,6 +5,8 @@ using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using Vim;
 using Vim.UI.Wpf;
+using Vim.Extensions;
+using Microsoft.VisualStudio.Text.Editor;
 
 namespace VsVim.Implementation.ConflictingKey
 {
@@ -15,21 +17,35 @@ namespace VsVim.Implementation.ConflictingKey
         private readonly IServiceProvider _serviceProvider;
         private readonly IVimApplicationSettings _vimApplicationSettings;
         private readonly IVimProtectedOperations _protectedOperations;
+        private readonly IVim _vim;
 
         [ImportingConstructor]
-        internal OptionsProvider(IKeyBindingService keyBindingService, SVsServiceProvider provider, IVimApplicationSettings vimApplicationSettings, IVimProtectedOperations protectedOperations)
+        internal OptionsProvider(IVim vim, IKeyBindingService keyBindingService, SVsServiceProvider provider, IVimApplicationSettings vimApplicationSettings, IVimProtectedOperations protectedOperations)
         {
+            _vim = vim;
             _keyBindingService = keyBindingService;
             _serviceProvider = provider;
             _vimApplicationSettings = vimApplicationSettings;
             _protectedOperations = protectedOperations;
         }
 
-        public void ShowDialog(IVimBuffer vimBuffer)
+        public void ShowDialog()
         {
             try
             {
-                var snapshot = _keyBindingService.CreateCommandKeyBindingSnapshot(vimBuffer);
+                CommandKeyBindingSnapshot snapshot;
+                if (_vim.FocusedBuffer.IsSome())
+                {
+                    snapshot = _keyBindingService.CreateCommandKeyBindingSnapshot(_vim.FocusedBuffer.Value);
+                }
+                else
+                {
+                    var textView = _vim.VimHost.CreateHiddenTextView();
+                    var vimBuffer = _vim.CreateVimBuffer(textView);
+                    snapshot = _keyBindingService.CreateCommandKeyBindingSnapshot(vimBuffer);
+                    textView.Close();
+                }
+
                 new ConflictingKeyBindingDialog(snapshot, _vimApplicationSettings, _protectedOperations).ShowDialog();
             }
             catch (Exception)
