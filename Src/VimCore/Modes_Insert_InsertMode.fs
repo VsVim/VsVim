@@ -557,11 +557,9 @@ type internal InsertMode
 
         ProcessResult.OfModeKind ModeKind.Normal
 
-    /// Start a word completion session in the given direction at the current caret point
-    member x.StartWordCompletionSession isForward = 
+    // Convert any virtual spaces to real normalized spaces
+    member x.FillInVirtualSpace () =
 
-        // If the caret is currently in virtual space we need to fill in that space with
-        // real spaces before starting a completion session.
         if x.CaretVirtualPoint.IsInVirtualSpace then
             let blanks = 
                 let blanks = StringUtil.repeatChar x.CaretVirtualPoint.VirtualSpaces ' '
@@ -571,6 +569,13 @@ type internal InsertMode
             let position = x.CaretPoint.Position + blanks.Length
             _textBuffer.Insert(x.CaretPoint.Position, blanks) |> ignore
             TextViewUtil.MoveCaretToPosition _textView position
+
+    /// Start a word completion session in the given direction at the current caret point
+    member x.StartWordCompletionSession isForward = 
+
+        // If the caret is currently in virtual space we need to fill in that space with
+        // real spaces before starting a completion session.
+        x.FillInVirtualSpace()
 
         // Time to start a completion.  
         let wordSpan = 
@@ -690,6 +695,10 @@ type internal InsertMode
     /// will be converted into the corresponding context-independent DeleteLeft
     /// command, which also makes the command repeat correctly
     member x.RunBackspacingCommand command keyInput =
+
+        // We cannot be in virtual space because the insert utilities
+        // operate in terms of real points
+        x.FillInVirtualSpace()
 
         // Get the point that 'backspace=start' allows backspacing over
         let startPoint =
