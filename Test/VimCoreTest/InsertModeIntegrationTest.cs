@@ -736,7 +736,6 @@ namespace Vim.UnitTest
                 _vimBuffer.ProcessNotation("<Enter><BS>");
                 Assert.Equal("  hello", _textView.GetLine(0).GetText());
                 Assert.Equal(" ", _textView.GetLine(1).GetText());
-                Assert.Equal(2, _textView.GetCaretVirtualPoint().VirtualSpaces);
             }
 
             /// <summary>
