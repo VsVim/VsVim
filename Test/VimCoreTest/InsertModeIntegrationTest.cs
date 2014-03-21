@@ -722,6 +722,23 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
+            /// Make sure backspace over char from virtual space works
+            /// 'backspace=eol' works
+            /// </summary>
+            [Fact]
+            public void BackspaceOverChar_FromVirtualSpace()
+            {
+                Create("  hello", "world");
+                _globalSettings.Backspace = "start,indent,eol";
+                _globalSettings.UseEditorIndent = false;
+                _localSettings.AutoIndent = true;
+                _textView.MoveCaretTo(_textView.GetLine(0).End);
+                _vimBuffer.ProcessNotation("<Enter><BS>");
+                Assert.Equal("  hello", _textView.GetLine(0).GetText());
+                Assert.Equal(" ", _textView.GetLine(1).GetText());
+            }
+
+            /// <summary>
             /// Make sure backspace over word at start without
             /// 'backspace=start' works
             /// </summary>
