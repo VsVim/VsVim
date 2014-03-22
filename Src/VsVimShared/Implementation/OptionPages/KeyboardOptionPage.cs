@@ -9,9 +9,9 @@ using System.Windows.Forms.Integration;
 using Vim;
 using Vim.UI.Wpf;
 
-namespace VsVim.Implementation.Options
+namespace VsVim.Implementation.OptionPages
 {
-    internal sealed class KeyboardOptionPage : DialogPage
+    public sealed class KeyboardOptionPage : DialogPage
     {
         private ElementHost _elementHost;
         private KeyboardSettingsControl _keyboardSettingsControl;

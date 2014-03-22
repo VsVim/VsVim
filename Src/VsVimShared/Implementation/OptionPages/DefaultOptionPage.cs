@@ -5,9 +5,9 @@ using System.Linq;
 using System.Text;
 using Vim;
 
-namespace VsVim.Implementation.Options
+namespace VsVim.Implementation.OptionPages
 {
-    internal sealed class DefaultOptionPage : DialogPage
+    public sealed class DefaultOptionPage : DialogPage
     {
         public DefaultSettings DefaultSettings
         {

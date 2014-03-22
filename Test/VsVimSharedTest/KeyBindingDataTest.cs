@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using Xunit;
 using VsVim;
-using VsVim.Implementation.ConflictingKey;
+using VsVim.Implementation.OptionPages;
 using System.Collections.ObjectModel;
 
 namespace VsVim.UnitTest

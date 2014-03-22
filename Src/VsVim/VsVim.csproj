@@ -92,18 +92,6 @@
     <Reference Include="WindowsFormsIntegration" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Implementation\Options\ComboBoxTemplateSelector.cs" />
-    <Compile Include="Implementation\Options\DefaultOptionPage.cs">
-      <SubType>Component</SubType>
-    </Compile>
-    <Compile Include="Implementation\Options\KeyBindingData.cs" />
-    <Compile Include="Implementation\Options\KeyBindingHandledByOption.cs" />
-    <Compile Include="Implementation\Options\KeyboardSettingsControl.xaml.cs">
-      <DependentUpon>KeyboardSettingsControl.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="Implementation\Options\KeyboardOptionPage.cs">
-      <SubType>Component</SubType>
-    </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Properties\Resources.Designer.cs">
       <AutoGen>True</AutoGen>
@@ -233,12 +221,7 @@
   <ItemGroup>
     <Content Include="KeyboardInputRouting.txt" />
   </ItemGroup>
-  <ItemGroup>
-    <Page Include="Implementation\Options\KeyboardSettingsControl.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-  </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Condition="Exists($(VsSdkTargets))" Project="$(VsSdkTargets)" />
   <Import Project="$(SolutionDir)\.nuget\nuget.targets" />
