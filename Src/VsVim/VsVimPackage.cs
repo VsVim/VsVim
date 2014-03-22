@@ -34,6 +34,8 @@ namespace VsVim
     [InstalledProductRegistration("#110", "#112", productId: Vim.Constants.VersionNumber, IconResourceID = 400)]
     // This attribute is needed to let the shell know that this package exposes some menus.
     [ProvideMenuResource("Menus.ctmenu", 1)]
+    [ProvideOptionPage(typeof(VsVim.Implementation.Options.DefaultOptionPage), "VsVim", "Defaults", 0, 0, supportsAutomation: true)]
+    [ProvideOptionPage(typeof(VsVim.Implementation.Options.KeyboardOptionPage), "VsVim", "Keyboard", 0, 0, supportsAutomation: true)]
     [Guid(GuidList.VsVimPackageString)]
     public sealed class VsVimPackage : Package
     {

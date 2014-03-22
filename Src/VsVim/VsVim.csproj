@@ -85,11 +85,22 @@
     <Reference Include="System.Data" />
     <Reference Include="System.Design" />
     <Reference Include="System.Drawing" />
+    <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml" />
     <Reference Include="System.Xaml" />
     <Reference Include="WindowsBase" />
+    <Reference Include="WindowsFormsIntegration" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Implementation\Options\DefaultOptionPage.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Implementation\Options\KeyboardSettingsControl.xaml.cs">
+      <DependentUpon>KeyboardSettingsControl.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Implementation\Options\KeyboardOptionPage.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Properties\Resources.Designer.cs">
       <AutoGen>True</AutoGen>
@@ -218,6 +229,12 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="KeyboardInputRouting.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Page Include="Implementation\Options\KeyboardSettingsControl.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Condition="Exists($(VsSdkTargets))" Project="$(VsSdkTargets)" />
