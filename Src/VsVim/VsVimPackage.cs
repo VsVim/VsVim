@@ -73,35 +73,7 @@ namespace VsVim
 
         private void OnOptionsClick(object sender, EventArgs e)
         {
-            var optionsProvider = _componentModel.DefaultExportProvider.GetExportedValue<IKeyboardOptionsProvider>();
-            optionsProvider.ShowOptionsPage();
+            ShowOptionPage(typeof(VsVim.Implementation.OptionPages.KeyboardOptionPage));
         }
-
-        /*
-        /// <summary>
-        /// This function is the callback used to execute a command when the a menu item is clicked.
-        /// See the Initialize method to see how the menu item is associated to this function using
-        /// the OleMenuCommandService service and the MenuCommand class.
-        /// </summary>
-        private void MenuItemCallback(object sender, EventArgs e)
-        {
-            // Show a Message Box to prove we were here
-            IVsUIShell uiShell = (IVsUIShell)GetService(typeof(SVsUIShell));
-            Guid clsid = Guid.Empty;
-            int result;
-            Microsoft.VisualStudio.ErrorHandler.ThrowOnFailure(uiShell.ShowMessageBox(
-                       0,
-                       ref clsid,
-                       "VsVim",
-                       string.Format(CultureInfo.CurrentCulture, "Inside {0}.MenuItemCallback()", this.ToString()),
-                       string.Empty,
-                       0,
-                       OLEMSGBUTTON.OLEMSGBUTTON_OK,
-                       OLEMSGDEFBUTTON.OLEMSGDEFBUTTON_FIRST,
-                       OLEMSGICON.OLEMSGICON_INFO,
-                       0,        // false
-                       out result));
-        }
-        */
     }
 }
