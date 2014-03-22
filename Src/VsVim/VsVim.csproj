@@ -92,9 +92,12 @@
     <Reference Include="WindowsFormsIntegration" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Implementation\Options\ComboBoxTemplateSelector.cs" />
     <Compile Include="Implementation\Options\DefaultOptionPage.cs">
       <SubType>Component</SubType>
     </Compile>
+    <Compile Include="Implementation\Options\KeyBindingData.cs" />
+    <Compile Include="Implementation\Options\KeyBindingHandledByOption.cs" />
     <Compile Include="Implementation\Options\KeyboardSettingsControl.xaml.cs">
       <DependentUpon>KeyboardSettingsControl.xaml</DependentUpon>
     </Compile>
