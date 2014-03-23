@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.ObjectModel;
+using Vim;
 
 namespace VsVim
 {
@@ -16,6 +17,11 @@ namespace VsVim
     /// </summary>
     public interface IVimApplicationSettings
     {
+        /// <summary>
+        /// The default settings that should be used 
+        /// </summary>
+        DefaultSettings DefaultSettings { get; set; }
+
         /// <summary>
         /// The key bindings were updated 
         /// </summary>
