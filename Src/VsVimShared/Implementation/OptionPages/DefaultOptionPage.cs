@@ -15,6 +15,10 @@ namespace VsVim.Implementation.OptionPages
         [Description("Default settings to use when no vimrc file is found")]
         public DefaultSettings DefaultSettings { get; set; }
 
+        [DisplayName("Rename and Snippet Tracking")]
+        [Description("Integrate with R# renames, snippet insertion, etc ... Disabling will cause R# integration issues")]
+        public bool EnableExternalEditMonitoring { get; set; }
+
         protected override void OnActivate(System.ComponentModel.CancelEventArgs e)
         {
             base.OnActivate(e);
@@ -23,6 +27,7 @@ namespace VsVim.Implementation.OptionPages
             if (vimApplicationSettings != null)
             {
                 DefaultSettings = vimApplicationSettings.DefaultSettings;
+                EnableExternalEditMonitoring = vimApplicationSettings.EnableExternalEditMonitoring;
             }
         }
 
@@ -34,6 +39,7 @@ namespace VsVim.Implementation.OptionPages
             if (vimApplicationSettings != null)
             {
                 vimApplicationSettings.DefaultSettings = DefaultSettings;
+                vimApplicationSettings.EnableExternalEditMonitoring = EnableExternalEditMonitoring;
             }
         }
 

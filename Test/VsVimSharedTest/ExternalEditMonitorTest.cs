@@ -30,6 +30,7 @@ namespace VsVim.UnitTest
         private Mock<IExternalEditAdapter> _adapter;
         private Mock<ITagger<ITag>> _tagger;
         private Mock<IVsTextLines> _vsTextLines;
+        private Mock<IVimApplicationSettings> _vimApplicationSettings;
         private ExternalEditMonitor _monitor;
 
         public void Create(params string[] lines)
@@ -43,6 +44,7 @@ namespace VsVim.UnitTest
             _textView = CreateTextView(lines);
             _textBuffer = _textView.TextBuffer;
             _buffer = Vim.CreateVimBuffer(_textView);
+            _vimApplicationSettings = _factory.Create<IVimApplicationSettings>();
 
             // Have adatper ignore by default
             _adapter = _factory.Create<IExternalEditAdapter>(MockBehavior.Strict);
@@ -67,6 +69,7 @@ namespace VsVim.UnitTest
             }
 
             _monitor = new ExternalEditMonitor(
+                _vimApplicationSettings.Object,
                 _buffer,
                 ProtectedOperations,
                 textLines,

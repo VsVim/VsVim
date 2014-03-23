@@ -23,6 +23,11 @@ namespace VsVim
         DefaultSettings DefaultSettings { get; set; }
 
         /// <summary>
+        /// Do we want to track events like external edits in R#, snippets, etc ...
+        /// </summary>
+        bool EnableExternalEditMonitoring { get; set; }
+
+        /// <summary>
         /// The key bindings were updated 
         /// </summary>
         bool HaveUpdatedKeyBindings { get; set; }

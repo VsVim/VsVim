@@ -21,6 +21,7 @@ namespace VsVim.Implementation.Settings
     {
         internal const string CollectionPath = "VsVim";
         internal const string DefaultSettingsName = "DefaultSettings";
+        internal const string EnableExternalEditMonitoring = "EnableExternalEditMonitoring";
         internal const string HaveUpdatedKeyBindingsName = "HaveUpdatedKeyBindings";
         internal const string HaveNotifiedBackspaceSetting = "HaveNotifiedBackspaceSetting";
         internal const string IgnoredConflictingKeyBindingName = "IgnoredConflictingKeyBinding";
@@ -242,6 +243,12 @@ namespace VsVim.Implementation.Settings
         {
             get { return GetEnum(DefaultSettingsName, defaultValue: DefaultSettings.GVim74); }
             set { SetEnum(DefaultSettingsName, value); }
+        }
+
+        bool IVimApplicationSettings.EnableExternalEditMonitoring
+        {
+            get { return GetBoolean(EnableExternalEditMonitoring, defaultValue: true); }
+            set { SetBoolean(EnableExternalEditMonitoring, value); }
         }
 
         bool IVimApplicationSettings.HaveUpdatedKeyBindings
