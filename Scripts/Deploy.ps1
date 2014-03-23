@@ -30,13 +30,13 @@ function test-vsixcontents() {
     & $zip x "-o$target" $vsixPath | out-null
 
     $files = gci $target | %{ $_.Name }
-    if ($files.Count -ne 15) { 
+    if ($files.Count -ne 16) { 
         write-host "Wrong number of files in VSIX. Found ..."
         foreach ($file in $files) {
             write-host "`t$file"
         }
         write-host "Location: $target"
-        write-error "Found $($files.Count) but expected 15"
+        write-error "Found $($files.Count) but expected 16"
     }
 
     # The set of important files that are easy to miss 
@@ -53,7 +53,9 @@ function test-vsixcontents() {
         "VsVim.Vs2013.dll",
         "VsVim.dll",
         "VsVim.Interfaces.dll",
-        "VsVim.Shared.dll"
+        "VsVim.Shared.dll",
+        "Colors.pkgdef",
+        "VsVim.pkgdef"
 
     foreach ($item in $expected) {
         if (-not ($files -contains $item)) { 
