@@ -35,11 +35,6 @@
     </SupportedProducts>
     <SupportedFrameworkRuntimeEdition MinVersion="4.0" MaxVersion="5.0" />
   </Identifier>
-  <References>
-    <Reference Id="Microsoft.VisualStudio.MPF" MinVersion="12.0">
-      <Name>Visual Studio MPF</Name>
-    </Reference>
-  </References>
   <Content>
     <MefComponent>|%CurrentProject%|</MefComponent>
     <MefComponent>|VimCore|</MefComponent>
