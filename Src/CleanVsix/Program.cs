@@ -45,7 +45,8 @@ namespace CleanVsix
             foreach (var filePath in Directory.GetFiles(path))
             {
                 var fileName = Path.GetFileName(filePath);
-                if (fileName.StartsWith("Microsoft.VisualStudio."))
+                if (fileName.StartsWith("Microsoft.VisualStudio.") ||
+                    fileName.StartsWith("FSharp.Core"))
                 {
                     File.Delete(filePath);
                 }
