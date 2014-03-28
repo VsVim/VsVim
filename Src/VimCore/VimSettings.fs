@@ -274,6 +274,17 @@ type internal GlobalSettings() =
         | "old" -> SelectionKind.Exclusive
         | _ -> SelectionKind.Exclusive
 
+    member x.SetBackspace (value : string) =
+        // 'backspace' can be set with both names and numeric values.   Normalize out the 
+        // difference here 
+        let value = 
+            match value with
+            | "0" -> ""
+            | "1" -> "indent,eol"
+            | "2" -> "indent,eol,start"
+            | _ -> value
+        _map.TrySetValue BackspaceName (SettingValue.String value) |> ignore
+
     interface IVimGlobalSettings with
         // IVimSettings
 
@@ -288,7 +299,7 @@ type internal GlobalSettings() =
             and set value = _map.TrySetValue AutoCommandName (SettingValue.Toggle value) |> ignore
         member x.Backspace 
             with get() = _map.GetStringValue BackspaceName
-            and set value = _map.TrySetValue BackspaceName (SettingValue.String value) |> ignore
+            and set value = x.SetBackspace value
         member x.CaretOpacity
             with get() = _map.GetNumberValue CaretOpacityName
             and set value = _map.TrySetValue CaretOpacityName (SettingValue.Number value) |> ignore

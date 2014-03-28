@@ -1818,6 +1818,14 @@ namespace Vim.UnitTest
                 ParseAndRun("vsc Build.BuildSelection Arg");
                 Assert.True(didRun);
             }
+
+            [Fact]
+            public void Issue1328()
+            {
+                Create("");
+                ParseAndRun(":set backspace=2");
+                Assert.True(_globalSettings.IsBackspaceEol && _globalSettings.IsBackspaceStart && _globalSettings.IsBackspaceIndent);
+            }
         }
     }
 }

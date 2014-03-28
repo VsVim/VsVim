@@ -78,6 +78,45 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class BackspaceTest : GlobalSettingsTest
+        {
+            [Fact]
+            public void Value0()
+            {
+                _globalSettings.Backspace = "start";
+                _globalSettings.Backspace = "0";
+                Assert.False(_globalSettings.IsBackspaceStart);
+            }
+
+            [Fact]
+            public void Value1()
+            {
+                _globalSettings.Backspace = "1";
+                Assert.True(_globalSettings.IsBackspaceIndent && _globalSettings.IsBackspaceEol);
+            }
+
+            [Fact]
+            public void Value2()
+            {
+                _globalSettings.Backspace = "2";
+                Assert.True(_globalSettings.IsBackspaceIndent && _globalSettings.IsBackspaceEol && _globalSettings.IsBackspaceStart);
+            }
+
+            [Fact]
+            public void StartIndent()
+            {
+                _globalSettings.Backspace = "start,indent";
+                Assert.True(_globalSettings.IsBackspaceIndent && !_globalSettings.IsBackspaceEol && _globalSettings.IsBackspaceStart);
+            }
+
+            [Fact]
+            public void StartIndentEol()
+            {
+                _globalSettings.Backspace = "start,indent,eol";
+                Assert.True(_globalSettings.IsBackspaceIndent && _globalSettings.IsBackspaceEol && _globalSettings.IsBackspaceStart);
+            }
+        }
+
         public sealed class MiscTest : GlobalSettingsTest
         {
             [Fact]
