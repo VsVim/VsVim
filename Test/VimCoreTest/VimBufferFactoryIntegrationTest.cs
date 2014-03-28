@@ -71,6 +71,7 @@ namespace Vim.UnitTest
                 var textView = MockObjectFactory.CreateTextView(textBuffer);
                 textView.SetupGet(x => x.TextViewLines).Returns((ITextViewLineCollection)null);
                 textView.SetupGet(x => x.Caret.Position).Returns(new CaretPosition());
+                textView.SetupGet(x => x.IsClosed).Returns(false);
                 var vimTextBuffer = _vimBufferFactory.CreateVimTextBuffer(textBuffer, _vim);
                 var vimBuffer = _vimBufferFactory.CreateVimBuffer(textView.Object, vimTextBuffer);
                 Assert.Equal(ModeKind.Uninitialized, vimBuffer.ModeKind);

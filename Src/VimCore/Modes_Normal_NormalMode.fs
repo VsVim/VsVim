@@ -350,7 +350,7 @@ type internal NormalMode
         x.Reset()
 
         // Ensure the caret is positioned correctly vis a vis virtual edit
-        if not (TextViewUtil.GetCaretPoint(_operations.TextView).Position = 0) then
+        if not _textView.IsClosed && not (TextViewUtil.GetCaretPoint(_textView).Position = 0) then
             _operations.EnsureAtCaret ViewFlags.VirtualEdit
 
         // Process the argument if it's applicable
