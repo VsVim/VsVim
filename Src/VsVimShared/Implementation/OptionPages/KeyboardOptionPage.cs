@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Windows.Controls;
+using System.Windows.Forms;
 using System.Windows.Forms.Integration;
 using Vim;
 using Vim.UI.Wpf;
@@ -16,7 +17,7 @@ namespace VsVim.Implementation.OptionPages
         private ElementHost _elementHost;
         private KeyboardSettingsControl _keyboardSettingsControl;
 
-        protected override System.Windows.Forms.IWin32Window Window
+        protected override IWin32Window Window
         {
             get
             {
