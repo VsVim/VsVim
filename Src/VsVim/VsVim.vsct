@@ -59,7 +59,6 @@
 
       <Button guid="guidVsVimCmdSet" id="cmdidVsVimOptions" priority="0x0100" type="Button">
         <Parent guid="guidVsVimCmdSet" id="VsVimMenuGroup" />
-        <Icon guid="guidImages" id="bmpPic1" />
         <Strings>
           <CommandName>cmdidVsVimOptions</CommandName>
           <ButtonText>VsVim Options</ButtonText>
