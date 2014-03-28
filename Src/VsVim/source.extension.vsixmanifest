@@ -35,7 +35,6 @@
     </SupportedProducts>
     <SupportedFrameworkRuntimeEdition MinVersion="4.0" MaxVersion="5.0" />
   </Identifier>
-  <References />
   <Content>
     <MefComponent>|%CurrentProject%|</MefComponent>
     <MefComponent>|VimCore|</MefComponent>
@@ -46,5 +45,6 @@
     <MefComponent>|Vs2012|</MefComponent>
     <MefComponent>|Vs2013|</MefComponent>
     <VsPackage>Colors.pkgdef</VsPackage>
+    <VsPackage>|%CurrentProject%;PkgdefProjectOutputGroup|</VsPackage>
   </Content>
 </Vsix>

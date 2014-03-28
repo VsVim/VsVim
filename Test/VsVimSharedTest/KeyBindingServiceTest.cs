@@ -19,7 +19,7 @@ namespace VsVim.UnitTest
     public abstract class KeyBindingServiceTest : VimTestBase
     {
         private Mock<_DTE> _dte;
-        private Mock<IOptionsDialogService> _optionsDialogService;
+        private Mock<IKeyboardOptionsProvider> _keyboardOptionsProvider;
         private Mock<IVimApplicationSettings> _vimApplicationSettings;
         private KeyBindingService _serviceRaw;
         private IKeyBindingService _service;
@@ -34,7 +34,7 @@ namespace VsVim.UnitTest
         {
             _dte = MockObjectFactory.CreateDteWithCommands(args);
             _commandListSnapshot = new CommandListSnapshot(_dte.Object);
-            _optionsDialogService = new Mock<IOptionsDialogService>(MockBehavior.Strict);
+            _keyboardOptionsProvider = new Mock<IKeyboardOptionsProvider>(MockBehavior.Strict);
             _vimApplicationSettings = new Mock<IVimApplicationSettings>(MockBehavior.Strict);
             _vimApplicationSettings.SetupProperty(x => x.IgnoredConflictingKeyBinding, false);
             _vimApplicationSettings.SetupProperty(x => x.HaveUpdatedKeyBindings, false);
@@ -45,7 +45,7 @@ namespace VsVim.UnitTest
 
             _serviceRaw = new KeyBindingService(
                 _dte.Object,
-                _optionsDialogService.Object,
+                _keyboardOptionsProvider.Object,
                 new Mock<IVimProtectedOperations>().Object,
                 _vimApplicationSettings.Object,
                 ScopeData.Default);
@@ -178,20 +178,9 @@ namespace VsVim.UnitTest
                 Create("::ctrl+h");
                 _serviceRaw.ConflictingKeyBindingState = ConflictingKeyBindingState.FoundConflicts;
                 _serviceRaw.VimFirstKeyInputSet = new HashSet<KeyInput>();
-                _optionsDialogService.Setup(x => x.ShowConflictingKeyBindingsDialog(It.IsAny<CommandKeyBindingSnapshot>())).Returns(true).Verifiable();
+                _keyboardOptionsProvider.Setup(x => x.ShowOptionsPage()).Verifiable();
                 _serviceRaw.ResolveAnyConflicts();
                 Assert.Equal(ConflictingKeyBindingState.ConflictsIgnoredOrResolved, _service.ConflictingKeyBindingState);
-            }
-
-            [Fact]
-            public void ResolveAnyConflicts4()
-            {
-                Create("::ctrl+h");
-                _serviceRaw.ConflictingKeyBindingState = ConflictingKeyBindingState.FoundConflicts;
-                _serviceRaw.VimFirstKeyInputSet = new HashSet<KeyInput>();
-                _optionsDialogService.Setup(x => x.ShowConflictingKeyBindingsDialog(It.IsAny<CommandKeyBindingSnapshot>())).Returns(false).Verifiable();
-                _serviceRaw.ResolveAnyConflicts();
-                Assert.Equal(ConflictingKeyBindingState.FoundConflicts, _service.ConflictingKeyBindingState);
             }
 
             [Fact]

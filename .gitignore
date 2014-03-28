@@ -17,6 +17,7 @@
 *.vspx
 *.mdf
 *.ldf
+Thumbs.db
 
 # Project Files
 *.user

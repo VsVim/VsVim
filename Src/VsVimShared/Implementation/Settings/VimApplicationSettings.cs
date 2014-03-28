@@ -12,6 +12,7 @@ using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Shell.Settings;
 using Vim.UI.Wpf;
+using Vim;
 
 namespace VsVim.Implementation.Settings
 {
@@ -19,6 +20,8 @@ namespace VsVim.Implementation.Settings
     internal sealed class VimApplicationSettings : IVimApplicationSettings
     {
         internal const string CollectionPath = "VsVim";
+        internal const string DefaultSettingsName = "DefaultSettings";
+        internal const string EnableExternalEditMonitoring = "EnableExternalEditMonitoring";
         internal const string HaveUpdatedKeyBindingsName = "HaveUpdatedKeyBindings";
         internal const string HaveNotifiedBackspaceSetting = "HaveNotifiedBackspaceSetting";
         internal const string IgnoredConflictingKeyBindingName = "IgnoredConflictingKeyBinding";
@@ -177,6 +180,28 @@ namespace VsVim.Implementation.Settings
             }
         }
 
+        internal T GetEnum<T>(string propertyName, T defaultValue) where T : struct
+        {
+            string value = GetString(propertyName, null);
+            if (value == null)
+            {
+                return defaultValue;
+            }
+
+            T enumValue;
+            if (Enum.TryParse(value, out enumValue))
+            {
+                return enumValue;
+            }
+
+            return defaultValue;
+        }
+
+        internal void SetEnum<T>(string propertyName, T value) where T : struct
+        {
+            SetString(propertyName, value.ToString());
+        }
+
         private void EnsureCollectionExists()
         {
             try
@@ -213,6 +238,18 @@ namespace VsVim.Implementation.Settings
         }
 
         #region IVimApplicationSettings
+
+        DefaultSettings IVimApplicationSettings.DefaultSettings
+        {
+            get { return GetEnum(DefaultSettingsName, defaultValue: DefaultSettings.GVim74); }
+            set { SetEnum(DefaultSettingsName, value); }
+        }
+
+        bool IVimApplicationSettings.EnableExternalEditMonitoring
+        {
+            get { return GetBoolean(EnableExternalEditMonitoring, defaultValue: true); }
+            set { SetBoolean(EnableExternalEditMonitoring, value); }
+        }
 
         bool IVimApplicationSettings.HaveUpdatedKeyBindings
         {

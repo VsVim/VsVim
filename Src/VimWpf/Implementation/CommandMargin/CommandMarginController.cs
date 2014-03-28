@@ -37,7 +37,6 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
         private readonly CommandMarginControl _margin;
         private readonly IEditorFormatMap _editorFormatMap;
         private readonly IFontProperties _fontProperties;
-        private readonly ReadOnlyCollection<Lazy<IOptionsProviderFactory>> _optionsProviderFactory;
         private readonly FrameworkElement _parentVisualElement;
         private bool _inKeyInputEvent;
         private bool _inCommandUpdate;
@@ -58,14 +57,13 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             get { return _editKind; }
         }
 
-        internal CommandMarginController(IVimBuffer buffer, FrameworkElement parentVisualElement, CommandMarginControl control, IEditorFormatMap editorFormatMap, IFontProperties fontProperties, IEnumerable<Lazy<IOptionsProviderFactory>> optionsProviderFactory)
+        internal CommandMarginController(IVimBuffer buffer, FrameworkElement parentVisualElement, CommandMarginControl control, IEditorFormatMap editorFormatMap, IFontProperties fontProperties)
         {
             _vimBuffer = buffer;
             _margin = control;
             _parentVisualElement = parentVisualElement;
             _editorFormatMap = editorFormatMap;
             _fontProperties = fontProperties;
-            _optionsProviderFactory = optionsProviderFactory.ToList().AsReadOnly();
 
             _vimBuffer.SwitchedMode += OnSwitchMode;
             _vimBuffer.KeyInputStart += OnKeyInputStart;
@@ -78,7 +76,6 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             _vimBuffer.Vim.MacroRecorder.RecordingStopped += OnRecordingStopped;
             _margin.Loaded += OnCommandMarginLoaded;
             _margin.Unloaded += OnCommandMarginUnloaded;
-            _margin.OptionsButton.Click += OnOptionsClicked;
             _margin.CommandLineTextBox.PreviewKeyDown += OnCommandLineTextBoxPreviewKeyDown;
             _margin.CommandLineTextBox.TextChanged += OnCommandLineTextBoxTextChanged;
             _margin.CommandLineTextBox.SelectionChanged += OnCommandLineTextBoxSelectionChanged;
@@ -502,19 +499,6 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
         private void OnCommandMarginUnloaded(object sender, RoutedEventArgs e)
         {
             _fontProperties.FontPropertiesChanged -= OnFontPropertiesChanged;
-        }
-
-        private void OnOptionsClicked(object sender, EventArgs e)
-        {
-            var provider = _optionsProviderFactory.Select(x => x.Value.CreateOptionsProvider()).Where(x => x != null).FirstOrDefault();
-            if (provider != null)
-            {
-                provider.ShowDialog(_vimBuffer);
-            }
-            else
-            {
-                MessageBox.Show("No options provider available");
-            }
         }
 
         private void OnFormatMappingChanged(object sender, FormatItemsEventArgs e)

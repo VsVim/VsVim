@@ -623,6 +623,8 @@ type internal Vim
             _globalSettings.Selection <- "exclusive"
             _globalSettings.Backspace <- "indent,eol,start"
             _globalSettings.WhichWrap <- "<,>,[,]"
+        | _ -> 
+            _globalSettings.Backspace <- "indent,eol,start"
 
     member x.RemoveVimBuffer textView = 
         let found, tuple = _vimBufferMap.TryGetValue(textView)

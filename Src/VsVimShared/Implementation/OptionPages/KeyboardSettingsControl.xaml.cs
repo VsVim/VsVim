@@ -1,19 +1,27 @@
-﻿using System;
+﻿using EditorUtils;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
+using System.Text;
 using System.Windows;
-using EditorUtils;
-using Microsoft.VisualStudio.PlatformUI;
+using System.Windows.Controls;
+using System.Windows.Data;
+using System.Windows.Documents;
+using System.Windows.Input;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
+using System.Windows.Navigation;
+using System.Windows.Shapes;
 using Vim;
 
-namespace VsVim.Implementation.ConflictingKey
+namespace VsVim.Implementation.OptionPages
 {
     /// <summary>
-    /// Interaction logic for ConflictingKeyBindingDialog.xaml
+    /// Interaction logic for KeyboardSettingsControl.xaml
     /// </summary>
-    public partial class ConflictingKeyBindingDialog : DialogWindow
+    public partial class KeyboardSettingsControl : UserControl
     {
         private readonly ObservableCollection<KeyBindingData> _keyBindingList = new ObservableCollection<KeyBindingData>();
         private readonly CommandKeyBindingSnapshot _snapshot;
@@ -21,7 +29,7 @@ namespace VsVim.Implementation.ConflictingKey
         private readonly IVimApplicationSettings _vimApplicationSettings;
         private readonly IProtectedOperations _protectedOperations;
 
-        public ConflictingKeyBindingDialog(CommandKeyBindingSnapshot snapshot, IVimApplicationSettings vimApplicationSettings, IProtectedOperations protectedOperations)
+        public KeyboardSettingsControl(CommandKeyBindingSnapshot snapshot, IVimApplicationSettings vimApplicationSettings, IProtectedOperations protectedOperations)
         {
             InitializeComponent();
 
@@ -32,6 +40,21 @@ namespace VsVim.Implementation.ConflictingKey
 
             BindingsListBox.ItemsSource = _keyBindingList;
             BindingsListBox.Items.SortDescriptions.Add(new SortDescription("KeyName", ListSortDirection.Ascending));
+        }
+
+        public void Apply()
+        {
+            try
+            {
+                UpdateKeyBindings();
+            }
+            catch (Exception ex)
+            {
+                // This code is run on the core message loop.  An exception here is fatal and there
+                // are a good number of COM calls here.  Catch the exception and report the error to
+                // the user 
+                _protectedOperations.Report(ex);
+            }
         }
 
         private void ComputeKeyBindings()
@@ -75,28 +98,6 @@ namespace VsVim.Implementation.ConflictingKey
         private void OnDisableAllVimKeysClick(object sender, RoutedEventArgs e)
         {
             _keyBindingList.ForEach(x => x.HandledByVsVim = false);
-        }
-
-        private void OnCancelClick(object sender, RoutedEventArgs e)
-        {
-            DialogResult = false;
-        }
-
-        private void OnOkClick(object sender, RoutedEventArgs e)
-        {
-            DialogResult = true;
-
-            try
-            {
-                UpdateKeyBindings();
-            }
-            catch (Exception ex)
-            {
-                // This code is run on the core message loop.  An exception here is fatal and there
-                // are a good number of COM calls here.  Catch the exception and report the error to
-                // the user 
-                _protectedOperations.Report(ex);
-            }
         }
 
         /// <summary>

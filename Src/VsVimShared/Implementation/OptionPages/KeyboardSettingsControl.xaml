@@ -1,27 +1,15 @@
-﻿<vs:DialogWindow x:Class="VsVim.Implementation.ConflictingKey.ConflictingKeyBindingDialog"
-             xmlns:vs="clr-namespace:Microsoft.VisualStudio.PlatformUI;assembly=Microsoft.VisualStudio.Shell.10.0"
+﻿<UserControl x:Class="VsVim.Implementation.OptionPages.KeyboardSettingsControl"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
-             xmlns:local="clr-namespace:VsVim.Implementation.ConflictingKey;assembly="
+             xmlns:local="clr-namespace:VsVim.Implementation.OptionPages;assembly="
              xmlns:scm="clr-namespace:System.ComponentModel;assembly=WindowsBase"
              mc:Ignorable="d" 
-             d:DesignHeight="400" d:DesignWidth="600"
-             MinHeight="300"
-             MinWidth="400"
-             Height="400"
-             MaxHeight="600"
-             MaxWidth="600"
-             Title="VsVim Options"
-             SizeToContent="Manual"
-             ShowInTaskbar="False"
-             TextOptions.TextFormattingMode="Display"
-             WindowStartupLocation="CenterOwner">
-
-    <vs:DialogWindow.Resources>
+             d:DesignHeight="300" d:DesignWidth="300">
+    <UserControl.Resources>
         <local:ComboBoxTemplateSelector x:Key="ComboBoxTemplateSelector" />
-        
+
         <DataTemplate x:Key="ComboBoxItemExpandedTemplate">
             <StackPanel Orientation="Vertical">
                 <TextBlock Text="{Binding HandlerName}" FontWeight="Bold" />
@@ -43,7 +31,7 @@
                           />
             </StackPanel>
         </DataTemplate>
-    </vs:DialogWindow.Resources>
+    </UserControl.Resources>
 
     <Grid Margin="10">
         <Grid.Resources>
@@ -52,7 +40,7 @@
                 <Setter Property="Padding" Value="2, 2, 2, 2" />
             </Style>
         </Grid.Resources>
-        
+
         <Grid.RowDefinitions>
             <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
@@ -60,21 +48,15 @@
 
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*" />
-            <ColumnDefinition Width="Auto" />
         </Grid.ColumnDefinitions>
 
-        <ListBox Grid.ColumnSpan="2" x:Name="BindingsListBox"
+        <ListBox x:Name="BindingsListBox"
                  ItemTemplate="{StaticResource BindingListBoxItemTemplate}"
                  Margin="0, 0, 0, 10"/>
-        
-        <WrapPanel Grid.Column="0" Grid.Row="1">
+
+        <WrapPanel Grid.Row="1">
             <Button Content="Handle all with _VsVim" Click="OnEnableAllVimKeysClick" Margin="0, 0, 5, 0" />
             <Button Content="Handle all with Visual _Studio" Click="OnDisableAllVimKeysClick" />
         </WrapPanel>
-        
-        <WrapPanel Grid.Column="1" Grid.Row="1" HorizontalAlignment="Right">
-            <Button IsDefault="True" Content="_OK" Click="OnOkClick "/>
-            <Button IsCancel="True" Content="_Cancel" Click="OnCancelClick" Margin="5, 0, 0, 0"/>
-        </WrapPanel>
     </Grid>
-</vs:DialogWindow>
+</UserControl>

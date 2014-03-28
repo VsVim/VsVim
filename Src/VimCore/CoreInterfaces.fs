@@ -3744,10 +3744,9 @@ type TextViewChangedEventArgs
 /// on the users machine?  There is a significant difference between gVim 7.3 and 
 /// 7.4.  
 [<RequireQualifiedAccess>]
-[<NoComparison>]
 type DefaultSettings =
-    | GVim73
-    | GVim74
+    | GVim73 = 0
+    | GVim74 = 1
 
 type IVimHost =
 
