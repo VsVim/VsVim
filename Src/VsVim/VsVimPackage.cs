@@ -17,7 +17,7 @@ using Vim.Extensions;
 namespace VsVim
 {
     [PackageRegistration(UseManagedResourcesOnly = true)]
-    [InstalledProductRegistration("#110", "#112", productId: Vim.Constants.VersionNumber, IconResourceID = 400)]
+    [InstalledProductRegistration("#110", "#112", productId: VimConstants.VersionNumber, IconResourceID = 400)]
     [ProvideMenuResource("Menus.ctmenu", 1)]
     [ProvideOptionPage(typeof(VsVim.Implementation.OptionPages.DefaultOptionPage), "VsVim", "Defaults", 0, 0, supportsAutomation: true)]
     [ProvideOptionPage(typeof(VsVim.Implementation.OptionPages.KeyboardOptionPage), "VsVim", "Keyboard", 0, 0, supportsAutomation: true)]

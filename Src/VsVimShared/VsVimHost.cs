@@ -27,7 +27,7 @@ namespace VsVim
     [Export(typeof(IVimHost))]
     [Export(typeof(IWpfTextViewCreationListener))]
     [Export(typeof(VsVimHost))]
-    [ContentType(Vim.Constants.ContentType)]
+    [ContentType(VimConstants.ContentType)]
     [TextViewRole(PredefinedTextViewRoles.Editable)]
     internal sealed class VsVimHost : VimHost, IVsSelectionEvents
     {

@@ -15,7 +15,7 @@ namespace Vim.UnitTest
             [Fact]
             public void Default()
             {
-                Assert.Equal(Constants.DefaultHistoryLength, _historyList.Limit);
+                Assert.Equal(VimConstants.DefaultHistoryLength, _historyList.Limit);
             }
 
             [Fact]

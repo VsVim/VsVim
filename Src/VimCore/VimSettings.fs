@@ -123,7 +123,7 @@ type internal GlobalSettings() =
             (CurrentDirectoryPathName, "cd", SettingValue.String ",,")
             (GlobalDefaultName, "gd", SettingValue.Toggle false)
             (HighlightSearchName, "hls", SettingValue.Toggle false)
-            (HistoryName, "hi", SettingValue.Number(Constants.DefaultHistoryLength))
+            (HistoryName, "hi", SettingValue.Number(VimConstants.DefaultHistoryLength))
             (IncrementalSearchName, "is", SettingValue.Toggle false)
             (IgnoreCaseName,"ic", SettingValue.Toggle false)
             (JoinSpacesName, "js", SettingValue.Toggle true)

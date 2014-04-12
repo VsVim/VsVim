@@ -6,7 +6,7 @@ using Microsoft.VisualStudio.Utilities;
 namespace Vim.UI.Wpf.Implementation.Misc
 {
     [Export(typeof(EditorFormatDefinition))]
-    [Name(Constants.IncrementalSearchTagName)]
+    [Name(VimConstants.IncrementalSearchTagName)]
     [UserVisible(true)]
     internal sealed class IncrementalSearchMarkerDefinition : MarkerFormatDefinition
     {
@@ -18,7 +18,7 @@ namespace Vim.UI.Wpf.Implementation.Misc
     }
 
     [Export(typeof(EditorFormatDefinition))]
-    [Name(Constants.HighlightIncrementalSearchTagName)]
+    [Name(VimConstants.HighlightIncrementalSearchTagName)]
     [UserVisible(true)]
     internal sealed class HighlightIncrementalSearchMarkerDefinition : MarkerFormatDefinition
     {

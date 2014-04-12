@@ -9,7 +9,7 @@ using System.Text;
 namespace Vim.UI.Wpf.Implementation.Mouse
 {
     [Export(typeof(IMouseProcessorProvider))]
-    [ContentType(Vim.Constants.AnyContentType)]
+    [ContentType(VimConstants.AnyContentType)]
     [TextViewRole(PredefinedTextViewRoles.Editable)]
     [Name("Default Mouse Processor")]
     internal sealed class VimMouseProcessorProvider : IMouseProcessorProvider

@@ -13,7 +13,7 @@ namespace VsVim.Implementation.UpgradeNotification
 {
     [Export(typeof(IWpfTextViewMarginProvider))]
     [MarginContainer(PredefinedMarginNames.Top)]
-    [ContentType(Vim.Constants.ContentType)]
+    [ContentType(VimConstants.ContentType)]
     [Name(BackspaceNotificationMarginProvider.Name)]
     [TextViewRole(PredefinedTextViewRoles.Editable)]
     internal sealed class BackspaceNotificationMarginProvider : IWpfTextViewMarginProvider

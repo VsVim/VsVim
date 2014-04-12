@@ -3,7 +3,7 @@
 namespace Vim
 
 // TODO: Should rename this to VimConstants to avoid name ambiguities 
-module Constants =
+module VimConstants =
 
     /// Content type which Vim hosts should create an IVimBuffer for
     [<Literal>]
