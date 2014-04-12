@@ -15,16 +15,32 @@ namespace VsVim.Implementation.OptionPages
 {
     public sealed class DefaultOptionPage : DialogPage
     {
+        private const string CategoryGeneral = "General";
+        private const string CategoryColors = "Item Colors";
+
+        private bool _areColorsValid;
+
         [DisplayName("Default Settings")]
         [Description("Default settings to use when no vimrc file is found")]
+        [Category(CategoryGeneral)]
         public DefaultSettings DefaultSettings { get; set; }
 
         [DisplayName("Rename and Snippet Tracking")]
         [Description("Integrate with R# renames, snippet insertion, etc ... Disabling will cause R# integration issues")]
+        [Category(CategoryGeneral)]
         public bool EnableExternalEditMonitoring { get; set; }
 
-        [DisplayName("Caret color")]
-        public System.Drawing.Color CaretColor { get; set; }
+        [DisplayName("Block Caret")]
+        [Category(CategoryColors)]
+        public Color BlockCaretColor { get; set; }
+
+        [DisplayName("Incremental Search")]
+        [Category(CategoryColors)]
+        public Color IncrementalSearchColor { get; set; }
+
+        [DisplayName("Highlight Incremental Search")]
+        [Category(CategoryColors)]
+        public Color HilightIncrementalSearchColor { get; set; }
 
         protected override void OnActivate(CancelEventArgs e)
         {
@@ -51,7 +67,7 @@ namespace VsVim.Implementation.OptionPages
                 vimApplicationSettings.EnableExternalEditMonitoring = EnableExternalEditMonitoring;
             }
 
-            SetColors();
+            SaveColors();
         }
 
         private IVimApplicationSettings GetVimApplicationSettings()
@@ -79,24 +95,24 @@ namespace VsVim.Implementation.OptionPages
                 var vsStorage = (IVsFontAndColorStorage)(Site.GetService(typeof(SVsFontAndColorStorage)));
                 ErrorHandler.ThrowOnFailure(vsStorage.OpenCategory(ref guid, (uint)flags));
 
-                var array = new ColorableItemInfo[1];
-                ErrorHandler.ThrowOnFailure(vsStorage.GetItem(VimWpfConstants.BlockCaretFormatDefinitionName, array));
+                BlockCaretColor = LoadColor(vsStorage, VimWpfConstants.BlockCaretFormatDefinitionName);
+                IncrementalSearchColor = LoadColor(vsStorage, VimConstants.IncrementalSearchTagName);
+                HilightIncrementalSearchColor = LoadColor(vsStorage, VimConstants.HighlightIncrementalSearchTagName);
+
                 ErrorHandler.ThrowOnFailure(vsStorage.CloseCategory());
 
-                if (array[0].bForegroundValid != 0)
-                {
-                    CaretColor = FromRGB((int)array[0].crForeground);
-                }
+                _areColorsValid = true;
             }
             catch (Exception ex)
             {
-                VimTrace.TraceError("Unable to save colors: {0}", ex.ToString());
+                VimTrace.TraceError("Unable to load colors: {0}", ex.ToString());
+                _areColorsValid = false;
             }
         }
 
-        private void SetColors()
+        private void SaveColors()
         {
-            if (Site == null)
+            if (Site == null || !_areColorsValid)
             {
                 return;
             }
@@ -108,16 +124,38 @@ namespace VsVim.Implementation.OptionPages
                 var vsStorage = (IVsFontAndColorStorage)(Site.GetService(typeof(SVsFontAndColorStorage)));
                 ErrorHandler.ThrowOnFailure(vsStorage.OpenCategory(ref guid, (uint)flags));
 
-                var colorableItemInfo = new ColorableItemInfo();
-                colorableItemInfo.bForegroundValid = 1;
-                colorableItemInfo.crForeground = (uint)ToRGB(CaretColor);
-                ErrorHandler.ThrowOnFailure(vsStorage.SetItem(VimWpfConstants.BlockCaretFormatDefinitionName, new[] { colorableItemInfo }));
+                SaveColor(vsStorage, VimWpfConstants.BlockCaretFormatDefinitionName, BlockCaretColor);
+                SaveColor(vsStorage, VimConstants.IncrementalSearchTagName, IncrementalSearchColor);
+                SaveColor(vsStorage, VimConstants.HighlightIncrementalSearchTagName, HilightIncrementalSearchColor);
+
                 ErrorHandler.ThrowOnFailure(vsStorage.CloseCategory());
             }
             catch (Exception ex)
             {
                 VimTrace.TraceError("Unable to save colors: {0}", ex.ToString());
             }
+        }
+
+        private static Color LoadColor(IVsFontAndColorStorage vsStorage, string name)
+        {
+            var array = new ColorableItemInfo[1];
+            ErrorHandler.ThrowOnFailure(vsStorage.GetItem(name, array));
+            if (array[0].bForegroundValid == 0)
+            {
+                throw new Exception();
+            }
+
+            // TODO: The handling of this value is incorrect.  Need to consider it could be
+            // formats other than RGB 
+            return FromRGB((int)array[0].crForeground);
+        }
+
+        private static void SaveColor(IVsFontAndColorStorage vsStorage, string name, Color color)
+        {
+            var colorableItemInfo = new ColorableItemInfo();
+            colorableItemInfo.bForegroundValid = 1;
+            colorableItemInfo.crForeground = (uint)ToRGB(color);
+            ErrorHandler.ThrowOnFailure(vsStorage.SetItem(name, new[] { colorableItemInfo }));
         }
 
         private static int ToRGB(Color color)
