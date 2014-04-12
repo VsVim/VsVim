@@ -13,7 +13,7 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
         /// <summary>
         /// Color of the block caret
         /// </summary>
-        internal const string Name = "vsvim_blockcaret";
+        internal const string Name = VimWpfConstants.BlockCaretFormatDefinitionName;
 
         internal BlockCaretFormatDefinition()
         {

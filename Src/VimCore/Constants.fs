@@ -2,6 +2,7 @@
 
 namespace Vim
 
+// TODO: Should rename this to VimConstants to avoid name ambiguities 
 module Constants =
 
     /// Content type which Vim hosts should create an IVimBuffer for
