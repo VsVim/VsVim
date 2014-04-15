@@ -43,6 +43,18 @@ namespace VsVim.Implementation.OptionPages
         [Category(CategoryColors)]
         public Color HilightIncrementalSearchColor { get; set; }
 
+        [DisplayName("Control Characters")]
+        [Category(CategoryColors)]
+        public Color ControlCharactersColor { get; set; }
+
+        [DisplayName("Command Margin")]
+        [Category(CategoryColors)]
+        public Color CommandMarginColor { get; set; }
+
+        [DisplayName("Toast Margin")]
+        [Category(CategoryColors)]
+        public Color ToastMarginColor { get; set; }
+
         protected override void OnActivate(CancelEventArgs e)
         {
             base.OnActivate(e);
@@ -96,9 +108,12 @@ namespace VsVim.Implementation.OptionPages
                 var vsStorage = (IVsFontAndColorStorage)(Site.GetService(typeof(SVsFontAndColorStorage)));
                 ErrorHandler.ThrowOnFailure(vsStorage.OpenCategory(ref guid, (uint)flags));
 
-                BlockCaretColor = LoadColor(vsStorage, VimWpfConstants.BlockCaretFormatDefinitionName);
                 IncrementalSearchColor = LoadColor(vsStorage, VimConstants.IncrementalSearchTagName);
                 HilightIncrementalSearchColor = LoadColor(vsStorage, VimConstants.HighlightIncrementalSearchTagName);
+                BlockCaretColor = LoadColor(vsStorage, VimWpfConstants.BlockCaretFormatDefinitionName);
+                ControlCharactersColor = LoadColor(vsStorage, VimWpfConstants.ControlCharactersFormatDefinitionName);
+                CommandMarginColor = LoadColor(vsStorage, VimWpfConstants.CommandMarginFormatDefinitionName);
+                ToastMarginColor = LoadColor(vsStorage, Constants.ToastMarginFormatDefinitionName);
 
                 ErrorHandler.ThrowOnFailure(vsStorage.CloseCategory());
 
@@ -125,9 +140,12 @@ namespace VsVim.Implementation.OptionPages
                 var vsStorage = (IVsFontAndColorStorage)(Site.GetService(typeof(SVsFontAndColorStorage)));
                 ErrorHandler.ThrowOnFailure(vsStorage.OpenCategory(ref guid, (uint)flags));
 
-                SaveColor(vsStorage, VimWpfConstants.BlockCaretFormatDefinitionName, BlockCaretColor);
                 SaveColor(vsStorage, VimConstants.IncrementalSearchTagName, IncrementalSearchColor);
                 SaveColor(vsStorage, VimConstants.HighlightIncrementalSearchTagName, HilightIncrementalSearchColor);
+                SaveColor(vsStorage, VimWpfConstants.BlockCaretFormatDefinitionName, BlockCaretColor);
+                SaveColor(vsStorage, VimWpfConstants.ControlCharactersFormatDefinitionName, ControlCharactersColor);
+                SaveColor(vsStorage, VimWpfConstants.CommandMarginFormatDefinitionName, CommandMarginColor);
+                SaveColor(vsStorage, Constants.ToastMarginFormatDefinitionName, ToastMarginColor);
 
                 ErrorHandler.ThrowOnFailure(vsStorage.CloseCategory());
             }

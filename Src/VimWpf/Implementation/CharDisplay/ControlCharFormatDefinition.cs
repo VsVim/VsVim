@@ -14,7 +14,7 @@ namespace Vim.UI.Wpf.Implementation.CharDisplay
     [UserVisible(true)]
     internal sealed class ControlCharFormatDefinition : EditorFormatDefinition
     {
-        internal const string Name = "vsvim_controlchar";
+        internal const string Name = VimWpfConstants.ControlCharactersFormatDefinitionName;
 
         internal static readonly Brush DefaultForegroundBrush = new SolidColorBrush(Colors.Blue);
 

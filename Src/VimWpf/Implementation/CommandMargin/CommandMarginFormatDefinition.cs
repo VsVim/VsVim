@@ -10,11 +10,11 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
     [UserVisible(true)]
     internal sealed class CommandMarginFormatDefinition : EditorFormatDefinition
     {
-        internal const string Name = "vsvim_commandmargin";
+        internal const string Name = VimWpfConstants.CommandMarginFormatDefinitionName;
 
         internal CommandMarginFormatDefinition()
         {
-            this.DisplayName = "VsVim Command Window";
+            this.DisplayName = "VsVim Command Margin";
             this.ForegroundColor = Colors.Black;
             this.BackgroundColor = Colors.White;
         }

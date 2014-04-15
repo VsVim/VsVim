@@ -2,6 +2,7 @@
 
 namespace VsVim
 {
+    // TODO: Rename to VsVimConstants to avoid ambiguity issues
     public static class Constants
     {
         /// <summary>
@@ -39,6 +40,8 @@ namespace VsVim
         /// it within our code as we compile against the VS 2010 binaries
         /// </summary>
         public const string TextViewRoleEmbeddedPeekTextView = "EMBEDDED_PEEK_TEXT_VIEW";
+
+        public const string ToastMarginFormatDefinitionName = "vsvim_margin";
 
         /// <summary>
         /// The GUID of our package 
