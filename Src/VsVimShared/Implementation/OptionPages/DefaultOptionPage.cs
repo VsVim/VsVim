@@ -10,6 +10,7 @@ using Vim;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio;
 using Vim.UI.Wpf;
+using Microsoft.VisualStudio.TextManager.Interop;
 
 namespace VsVim.Implementation.OptionPages
 {
@@ -136,7 +137,7 @@ namespace VsVim.Implementation.OptionPages
             }
         }
 
-        private static Color LoadColor(IVsFontAndColorStorage vsStorage, string name)
+        private Color LoadColor(IVsFontAndColorStorage vsStorage, string name)
         {
             var array = new ColorableItemInfo[1];
             ErrorHandler.ThrowOnFailure(vsStorage.GetItem(name, array));
@@ -145,9 +146,7 @@ namespace VsVim.Implementation.OptionPages
                 throw new Exception();
             }
 
-            // TODO: The handling of this value is incorrect.  Need to consider it could be
-            // formats other than RGB 
-            return FromRGB((int)array[0].crForeground);
+            return FromColorRef(vsStorage, array[0].crForeground);
         }
 
         private static void SaveColor(IVsFontAndColorStorage vsStorage, string name, Color color)
@@ -167,12 +166,77 @@ namespace VsVim.Implementation.OptionPages
             return i;
         }
 
-        private static Color FromRGB(int value)
+        private Color FromColorRef(IVsFontAndColorStorage vsStorage, uint colorValue)
         {
-            int b = value >> 16 & 0xFF;
-            int g = value >> 8 & 0xFF;
-            int r = value & 0xFF;
-            return Color.FromArgb(red: r, green: g, blue: b);
+            var vsUtil = (IVsFontAndColorUtilities)vsStorage;
+            int type;
+            ErrorHandler.ThrowOnFailure(vsUtil.GetColorType(colorValue, out type));
+            switch ((__VSCOLORTYPE)type)
+            {
+                case __VSCOLORTYPE.CT_SYSCOLOR:
+                case __VSCOLORTYPE.CT_RAW:
+                    return ColorTranslator.FromWin32((int)colorValue);
+                case __VSCOLORTYPE.CT_COLORINDEX:
+                    {
+                        var array = new COLORINDEX[1];
+                        ErrorHandler.ThrowOnFailure(vsUtil.GetEncodedIndex(colorValue, array));
+                        return FromCOLORINDEX(array[0]);
+                    };
+                case __VSCOLORTYPE.CT_VSCOLOR:
+                    {
+                        var vsUIShell = (IVsUIShell2)GetService(typeof(SVsUIShell));
+                        int index;
+                        ErrorHandler.ThrowOnFailure(vsUtil.GetEncodedVSColor(colorValue, out index));
+                        uint rgbValue;
+                        ErrorHandler.ThrowOnFailure(vsUIShell.GetVSSysColorEx(index, out rgbValue));
+                        return ColorTranslator.FromWin32((int)rgbValue);
+                    };
+                case __VSCOLORTYPE.CT_AUTOMATIC:
+                case __VSCOLORTYPE.CT_TRACK_BACKGROUND:
+                case __VSCOLORTYPE.CT_TRACK_FOREGROUND:
+                case __VSCOLORTYPE.CT_INVALID:
+                    throw new Exception("Invalid color value");
+                default:
+                    Contract.GetInvalidEnumException((__VSCOLORTYPE)type);
+                    return default(Color);
+            }
+        }
+
+        // TODO: this method is broken. 
+        private static Color FromCOLORINDEX(COLORINDEX colorIndex)
+        {
+            switch (colorIndex)
+            {
+                case COLORINDEX.CI_USERTEXT_FG: return SystemColors.ControlText;
+                case COLORINDEX.CI_USERTEXT_BK: return SystemColors.Control;
+                case COLORINDEX.CI_BLACK: return Color.Black;
+                case COLORINDEX.CI_WHITE: return Color.White;
+                case COLORINDEX.CI_MAROON: return Color.Maroon;
+                case COLORINDEX.CI_DARKGREEN: return Color.DarkGreen;
+                case COLORINDEX.CI_BROWN: return Color.Brown;
+                case COLORINDEX.CI_DARKBLUE: return Color.Blue;
+                case COLORINDEX.CI_PURPLE: return Color.Purple;
+                case COLORINDEX.CI_AQUAMARINE: return Color.Aquamarine;
+                case COLORINDEX.CI_LIGHTGRAY: return Color.LightGray;
+                case COLORINDEX.CI_DARKGRAY: return Color.DarkGray;
+                case COLORINDEX.CI_RED: return Color.Red;
+                case COLORINDEX.CI_GREEN: return Color.Green;
+                case COLORINDEX.CI_YELLOW: return Color.Yellow;
+                case COLORINDEX.CI_BLUE: return Color.Blue;
+                case COLORINDEX.CI_MAGENTA: return Color.Magenta;
+                case COLORINDEX.CI_CYAN: return Color.Cyan;
+                case COLORINDEX.CI_SYSSEL_FG: return SystemColors.Highlight;
+                case COLORINDEX.CI_SYSSEL_BK: return SystemColors.HighlightText;
+                case COLORINDEX.CI_SYSINACTSEL_FG: return SystemColors.InactiveCaptionText;
+                case COLORINDEX.CI_SYSINACTSEL_BK: return SystemColors.InactiveCaption;
+                case COLORINDEX.CI_SYSPLAINTEXT_FG: return SystemColors.ControlText;
+                case COLORINDEX.CI_SYSPLAINTEXT_BK: return SystemColors.Control;
+                case COLORINDEX.CI_PALETTESIZE: 
+                case COLORINDEX.CI_FORBIDCUSTOMIZATION:
+                default:
+                    Contract.GetInvalidEnumException(colorIndex);
+                    return default(Color);
+            }
         }
     }
 }
