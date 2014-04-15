@@ -180,7 +180,9 @@ namespace VsVim.Implementation.OptionPages
                     {
                         var array = new COLORINDEX[1];
                         ErrorHandler.ThrowOnFailure(vsUtil.GetEncodedIndex(colorValue, array));
-                        return FromCOLORINDEX(array[0]);
+                        uint rgb;
+                        ErrorHandler.ThrowOnFailure(vsUtil.GetRGBOfIndex(array[0], out rgb));
+                        return ColorTranslator.FromWin32((int)rgb);
                     };
                 case __VSCOLORTYPE.CT_VSCOLOR:
                     {
@@ -198,43 +200,6 @@ namespace VsVim.Implementation.OptionPages
                     throw new Exception("Invalid color value");
                 default:
                     Contract.GetInvalidEnumException((__VSCOLORTYPE)type);
-                    return default(Color);
-            }
-        }
-
-        // TODO: this method is broken. 
-        private static Color FromCOLORINDEX(COLORINDEX colorIndex)
-        {
-            switch (colorIndex)
-            {
-                case COLORINDEX.CI_USERTEXT_FG: return SystemColors.ControlText;
-                case COLORINDEX.CI_USERTEXT_BK: return SystemColors.Control;
-                case COLORINDEX.CI_BLACK: return Color.Black;
-                case COLORINDEX.CI_WHITE: return Color.White;
-                case COLORINDEX.CI_MAROON: return Color.Maroon;
-                case COLORINDEX.CI_DARKGREEN: return Color.DarkGreen;
-                case COLORINDEX.CI_BROWN: return Color.Brown;
-                case COLORINDEX.CI_DARKBLUE: return Color.Blue;
-                case COLORINDEX.CI_PURPLE: return Color.Purple;
-                case COLORINDEX.CI_AQUAMARINE: return Color.Aquamarine;
-                case COLORINDEX.CI_LIGHTGRAY: return Color.LightGray;
-                case COLORINDEX.CI_DARKGRAY: return Color.DarkGray;
-                case COLORINDEX.CI_RED: return Color.Red;
-                case COLORINDEX.CI_GREEN: return Color.Green;
-                case COLORINDEX.CI_YELLOW: return Color.Yellow;
-                case COLORINDEX.CI_BLUE: return Color.Blue;
-                case COLORINDEX.CI_MAGENTA: return Color.Magenta;
-                case COLORINDEX.CI_CYAN: return Color.Cyan;
-                case COLORINDEX.CI_SYSSEL_FG: return SystemColors.Highlight;
-                case COLORINDEX.CI_SYSSEL_BK: return SystemColors.HighlightText;
-                case COLORINDEX.CI_SYSINACTSEL_FG: return SystemColors.InactiveCaptionText;
-                case COLORINDEX.CI_SYSINACTSEL_BK: return SystemColors.InactiveCaption;
-                case COLORINDEX.CI_SYSPLAINTEXT_FG: return SystemColors.ControlText;
-                case COLORINDEX.CI_SYSPLAINTEXT_BK: return SystemColors.Control;
-                case COLORINDEX.CI_PALETTESIZE: 
-                case COLORINDEX.CI_FORBIDCUSTOMIZATION:
-                default:
-                    Contract.GetInvalidEnumException(colorIndex);
                     return default(Color);
             }
         }
