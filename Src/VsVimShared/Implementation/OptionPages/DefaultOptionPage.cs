@@ -18,8 +18,33 @@ namespace VsVim.Implementation.OptionPages
     {
         private const string CategoryGeneral = "General";
         private const string CategoryColors = "Item Colors";
+        private static readonly string[] ColorNames = new string[]
+        {
+            VimConstants.IncrementalSearchTagName,
+            VimConstants.HighlightIncrementalSearchTagName,
+            VimWpfConstants.BlockCaretFormatDefinitionName,
+            VimWpfConstants.CommandMarginFormatDefinitionName,
+            VimWpfConstants.ControlCharactersFormatDefinitionName,
+            Constants.ToastMarginFormatDefinitionName
+        };
 
-        private bool _areColorsValid;
+        private sealed class ColorInfo
+        {
+            internal readonly string Name;
+            internal readonly bool IsValid;
+            internal readonly Color OriginalColor;
+            internal Color Color;
+
+            internal ColorInfo(string name, Color color, bool isValid = true)
+            {
+                Name = name;
+                OriginalColor = color;
+                Color = color;
+                IsValid = isValid;
+            }
+        }
+
+        private readonly Dictionary<string, ColorInfo> _colorMap = new Dictionary<string, ColorInfo>();
 
         [DisplayName("Default Settings")]
         [Description("Default settings to use when no vimrc file is found")]
@@ -33,27 +58,59 @@ namespace VsVim.Implementation.OptionPages
 
         [DisplayName("Block Caret")]
         [Category(CategoryColors)]
-        public Color BlockCaretColor { get; set; }
+        public Color BlockCaretColor
+        {
+            get { return GetColor(VimWpfConstants.BlockCaretFormatDefinitionName); }
+            set { SetColor(VimWpfConstants.BlockCaretFormatDefinitionName, value); }
+        }
 
         [DisplayName("Incremental Search")]
         [Category(CategoryColors)]
-        public Color IncrementalSearchColor { get; set; }
+        public Color IncrementalSearchColor
+        {
+            get { return GetColor(VimConstants.IncrementalSearchTagName); }
+            set { SetColor(VimConstants.IncrementalSearchTagName, value); }
+        }
 
         [DisplayName("Highlight Incremental Search")]
         [Category(CategoryColors)]
-        public Color HilightIncrementalSearchColor { get; set; }
+        public Color HilightIncrementalSearchColor 
+        {
+            get { return GetColor(VimConstants.HighlightIncrementalSearchTagName); }
+            set { SetColor(VimConstants.HighlightIncrementalSearchTagName, value); }
+        }
 
         [DisplayName("Control Characters")]
         [Category(CategoryColors)]
-        public Color ControlCharactersColor { get; set; }
+        public Color ControlCharactersColor
+        {
+            get { return GetColor(VimWpfConstants.ControlCharactersFormatDefinitionName); }
+            set { SetColor(VimWpfConstants.ControlCharactersFormatDefinitionName, value); }
+        }
 
         [DisplayName("Command Margin")]
         [Category(CategoryColors)]
-        public Color CommandMarginColor { get; set; }
+        public Color CommandMarginColor 
+        {
+            get { return GetColor(VimWpfConstants.CommandMarginFormatDefinitionName); }
+            set { SetColor(VimWpfConstants.CommandMarginFormatDefinitionName, value); }
+        }
 
         [DisplayName("Toast Margin")]
         [Category(CategoryColors)]
-        public Color ToastMarginColor { get; set; }
+        public Color ToastMarginColor 
+        {
+            get { return GetColor(Constants.ToastMarginFormatDefinitionName); }
+            set { SetColor(Constants.ToastMarginFormatDefinitionName, value); }
+        }
+
+        public DefaultOptionPage()
+        {
+            foreach (var name in ColorNames)
+            {
+                _colorMap[name] = new ColorInfo(name, Color.Black);
+            }
+        }
 
         protected override void OnActivate(CancelEventArgs e)
         {
@@ -94,6 +151,16 @@ namespace VsVim.Implementation.OptionPages
             return componentModel.DefaultExportProvider.GetExportedValue<IVimApplicationSettings>();
         }
 
+        private Color GetColor(string name)
+        {
+            return _colorMap[name].Color;
+        }
+
+        private void SetColor(string name, Color value)
+        {
+            _colorMap[name].Color = value;
+        }
+
         private void LoadColors()
         {
             if (Site == null)
@@ -107,28 +174,38 @@ namespace VsVim.Implementation.OptionPages
                 var flags = __FCSTORAGEFLAGS.FCSF_LOADDEFAULTS;
                 var vsStorage = (IVsFontAndColorStorage)(Site.GetService(typeof(SVsFontAndColorStorage)));
                 ErrorHandler.ThrowOnFailure(vsStorage.OpenCategory(ref guid, (uint)flags));
-
-                IncrementalSearchColor = LoadColor(vsStorage, VimConstants.IncrementalSearchTagName);
-                HilightIncrementalSearchColor = LoadColor(vsStorage, VimConstants.HighlightIncrementalSearchTagName);
-                BlockCaretColor = LoadColor(vsStorage, VimWpfConstants.BlockCaretFormatDefinitionName);
-                ControlCharactersColor = LoadColor(vsStorage, VimWpfConstants.ControlCharactersFormatDefinitionName);
-                CommandMarginColor = LoadColor(vsStorage, VimWpfConstants.CommandMarginFormatDefinitionName);
-                ToastMarginColor = LoadColor(vsStorage, Constants.ToastMarginFormatDefinitionName);
-
+                LoadColorsCore(vsStorage);
                 ErrorHandler.ThrowOnFailure(vsStorage.CloseCategory());
-
-                _areColorsValid = true;
             }
             catch (Exception ex)
             {
                 VimTrace.TraceError("Unable to load colors: {0}", ex.ToString());
-                _areColorsValid = false;
+            }
+        }
+
+        private void LoadColorsCore(IVsFontAndColorStorage vsStorage)
+        {
+            foreach (var name in ColorNames)
+            {
+                ColorInfo colorInfo;
+                try
+                {
+                    var color = LoadColor(vsStorage, name);
+                    colorInfo = new ColorInfo(name, color);
+                }
+                catch (Exception ex)
+                {
+                    VimTrace.TraceError(ex);
+                    colorInfo = new ColorInfo(name, Color.Black, isValid: false);
+                }
+
+                _colorMap[name] = colorInfo;
             }
         }
 
         private void SaveColors()
         {
-            if (Site == null || !_areColorsValid)
+            if (Site == null)
             {
                 return;
             }
@@ -140,12 +217,15 @@ namespace VsVim.Implementation.OptionPages
                 var vsStorage = (IVsFontAndColorStorage)(Site.GetService(typeof(SVsFontAndColorStorage)));
                 ErrorHandler.ThrowOnFailure(vsStorage.OpenCategory(ref guid, (uint)flags));
 
-                SaveColor(vsStorage, VimConstants.IncrementalSearchTagName, IncrementalSearchColor);
-                SaveColor(vsStorage, VimConstants.HighlightIncrementalSearchTagName, HilightIncrementalSearchColor);
-                SaveColor(vsStorage, VimWpfConstants.BlockCaretFormatDefinitionName, BlockCaretColor);
-                SaveColor(vsStorage, VimWpfConstants.ControlCharactersFormatDefinitionName, ControlCharactersColor);
-                SaveColor(vsStorage, VimWpfConstants.CommandMarginFormatDefinitionName, CommandMarginColor);
-                SaveColor(vsStorage, Constants.ToastMarginFormatDefinitionName, ToastMarginColor);
+                foreach (var colorInfo in _colorMap.Values)
+                {
+                    if (colorInfo.OriginalColor == colorInfo.Color)
+                    {
+                        continue;
+                    }
+
+                    SaveColor(vsStorage, colorInfo.Name, colorInfo.Color);
+                }
 
                 ErrorHandler.ThrowOnFailure(vsStorage.CloseCategory());
             }
@@ -171,17 +251,8 @@ namespace VsVim.Implementation.OptionPages
         {
             var colorableItemInfo = new ColorableItemInfo();
             colorableItemInfo.bForegroundValid = 1;
-            colorableItemInfo.crForeground = (uint)ToRGB(color);
+            colorableItemInfo.crForeground = (uint)ColorTranslator.ToWin32(color);
             ErrorHandler.ThrowOnFailure(vsStorage.SetItem(name, new[] { colorableItemInfo }));
-        }
-
-        private static int ToRGB(Color color)
-        {
-            int i = 0;
-            i = i | (color.B << 16);
-            i = i | (color.G << 8);
-            i = i | color.R;
-            return i;
         }
 
         private Color FromColorRef(IVsFontAndColorStorage vsStorage, uint colorValue)
