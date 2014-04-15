@@ -171,7 +171,7 @@ namespace VsVim.Implementation.OptionPages
             try
             {
                 var guid = Guid.Parse("{A27B4E24-A735-4d1d-B8E7-9716E1E3D8E0}");
-                var flags = __FCSTORAGEFLAGS.FCSF_LOADDEFAULTS;
+                var flags = __FCSTORAGEFLAGS.FCSF_LOADDEFAULTS | __FCSTORAGEFLAGS.FCSF_NOAUTOCOLORS;
                 var vsStorage = (IVsFontAndColorStorage)(Site.GetService(typeof(SVsFontAndColorStorage)));
                 ErrorHandler.ThrowOnFailure(vsStorage.OpenCategory(ref guid, (uint)flags));
                 LoadColorsCore(vsStorage);
@@ -286,6 +286,8 @@ namespace VsVim.Implementation.OptionPages
                 case __VSCOLORTYPE.CT_TRACK_BACKGROUND:
                 case __VSCOLORTYPE.CT_TRACK_FOREGROUND:
                 case __VSCOLORTYPE.CT_INVALID:
+                    // These values should never show up because we passed the FCSF_NOAUTOCOLORS flag.  Everything
+                    // should be CT_RAW / CT_SYSCOLOR
                     throw new Exception("Invalid color value");
                 default:
                     Contract.GetInvalidEnumException((__VSCOLORTYPE)type);
