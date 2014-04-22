@@ -12,8 +12,9 @@ namespace Vim.UI.Wpf.Implementation.Misc
     {
         internal IncrementalSearchMarkerDefinition()
         {
-            this.DisplayName = "VsVim Incremental Search";
-            this.Fill = new SolidColorBrush(Colors.LightBlue);
+            DisplayName = "VsVim Incremental Search";
+            BackgroundColor = Colors.LightBlue;
+            ForegroundCustomizable = false;
         }
     }
 
@@ -24,8 +25,9 @@ namespace Vim.UI.Wpf.Implementation.Misc
     {
         internal HighlightIncrementalSearchMarkerDefinition()
         {
-            this.DisplayName = "VsVim Highlight Incremental Search";
-            this.Fill = new SolidColorBrush(Colors.LightBlue);
+            DisplayName = "VsVim Highlight Incremental Search";
+            BackgroundColor = Colors.LightBlue;
+            ForegroundCustomizable = false;
         }
     }
 }
