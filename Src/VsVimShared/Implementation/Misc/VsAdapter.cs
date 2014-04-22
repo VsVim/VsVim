@@ -94,6 +94,14 @@ namespace VsVim.Implementation.Misc
 
         internal Result<IVsCodeWindow> GetCodeWindow(ITextView textView)
         {
+            // There is a bug in some of the implementations of ITextView, SimpleTextView in 
+            // particular, which cause it to throw an exception if we query COM interfaces 
+            // that it implements.  If it is closed there is no reason to go any further
+            if (textView.IsClosed)
+            {
+                return Result.Error;
+            }
+
             var result = GetContainingWindowFrame(textView);
             if (result.IsError)
             {
