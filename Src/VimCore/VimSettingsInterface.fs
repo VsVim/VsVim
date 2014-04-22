@@ -22,6 +22,7 @@ module GlobalSettingNames =
     let IncrementalSearchName = "incsearch"
     let JoinSpacesName = "joinspaces"
     let KeyModelName = "keymodel"
+    let LastStatusName = "laststatus"
     let MagicName = "magic"
     let MaxMapDepth =  "maxmapdepth"
     let MouseModelName = "mousemodel"
@@ -34,6 +35,7 @@ module GlobalSettingNames =
     let ShellName = "shell"
     let ShellFlagName = "shellcmdflag"
     let SmartCaseName = "smartcase"
+    let StatusLineName = "statusline"
     let StartOfLineName = "startofline"
     let TildeOpName = "tildeop"
     let TimeoutExName = "ttimeout"
@@ -375,6 +377,9 @@ and IVimGlobalSettings =
     /// The 'keymodel' in a type safe form
     abstract KeyModelOptions : KeyModelOptions with get, set
 
+    /// The value of this option influences when a window will have a status line
+    abstract LastStatus : int with get, set
+
     /// The 'mousemodel' setting
     abstract MouseModel : string with get, set
 
@@ -395,6 +400,9 @@ and IVimGlobalSettings =
 
     /// The flag which is passed to the shell when executing shell commands
     abstract ShellFlag : string with get, set
+
+    /// This option determines the content of the status line.
+    abstract StatusLine : string with get, set
 
     abstract StartOfLine : bool with get, set
 

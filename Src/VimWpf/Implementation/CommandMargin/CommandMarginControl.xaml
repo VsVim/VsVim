@@ -23,8 +23,10 @@
 
         <TextBlock
             Grid.Row="0"
-            Grid.ColumnSpan="2"
+            Grid.ColumnSpan="3"
+            Text="statusline"
             FontWeight="Bold"
+            Visibility="{Binding Path=IsStatuslineVisible}"
             Foreground="{Binding Path=TextForeground}"
             Background="{Binding Path=TextBackground}"
         />
