@@ -3550,7 +3550,7 @@ type KeyInputProcessedEventArgs(_keyInput : KeyInput, _processResult : ProcessRe
 type HistoryList () = 
 
     let mutable _list : string list = List.empty
-    let mutable _limit = Constants.DefaultHistoryLength
+    let mutable _limit = VimConstants.DefaultHistoryLength
     let mutable _totalCount = 0
 
     /// Limit of the items stored in the list
@@ -3586,7 +3586,7 @@ type HistoryList () =
     member x.Reset () = 
         _list <- List.empty
         _totalCount <- 0
-        _limit <- Constants.DefaultHistoryLength
+        _limit <- VimConstants.DefaultHistoryLength
 
     member private x.MaybeTruncateList () = 
         if _list.Length > _limit then

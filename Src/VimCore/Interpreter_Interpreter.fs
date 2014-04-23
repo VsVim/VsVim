@@ -1365,7 +1365,7 @@ type VimInterpreter
         RunResult.Completed
 
     member x.RunVersion() = 
-        let msg = sprintf "VsVim Version %s" Constants.VersionNumber
+        let msg = sprintf "VsVim Version %s" VimConstants.VersionNumber
         _statusUtil.OnStatus msg
         RunResult.Completed
 

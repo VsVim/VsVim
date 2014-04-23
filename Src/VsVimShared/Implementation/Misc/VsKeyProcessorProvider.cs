@@ -12,7 +12,7 @@ namespace VsVim.Implementation.Misc
     [Order(Before = Constants.VisualStudioKeyProcessorName)]
     [Name(Constants.VsKeyProcessorName)]
     [TextViewRole(PredefinedTextViewRoles.Editable)]
-    [ContentType(Vim.Constants.ContentType)]
+    [ContentType(VimConstants.ContentType)]
     internal sealed class VsKeyProcessorProvider : IKeyProcessorProvider
     {
         private readonly IVimBufferCoordinatorFactory _bufferCoordinatorFactory;

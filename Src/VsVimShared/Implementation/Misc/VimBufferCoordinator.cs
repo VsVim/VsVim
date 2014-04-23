@@ -82,7 +82,7 @@ namespace VsVim.Implementation.Misc
     [Export(typeof(IVimBufferCoordinatorFactory))]
     [Export(typeof(IKeyProcessorProvider))]
     [Order(After = Constants.VisualStudioKeyProcessorName)]
-    [ContentType(Vim.Constants.AnyContentType)]
+    [ContentType(VimConstants.AnyContentType)]
     [TextViewRole(PredefinedTextViewRoles.Editable)]
     [Name("Buffer Coordinator Key Processor")]
     internal sealed class VimBufferCoordinatorFactory : IVimBufferCoordinatorFactory, IKeyProcessorProvider

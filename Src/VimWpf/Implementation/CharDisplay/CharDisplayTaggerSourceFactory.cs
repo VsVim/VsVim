@@ -9,7 +9,7 @@ using Microsoft.VisualStudio.Text.Classification;
 namespace Vim.UI.Wpf.Implementation.CharDisplay
 {
     [Export(typeof(IViewTaggerProvider))]
-    [ContentType(Constants.AnyContentType)]
+    [ContentType(VimConstants.AnyContentType)]
     [TextViewRole(PredefinedTextViewRoles.Editable)]
     [TagType(typeof(IntraTextAdornmentTag))]
     internal sealed class CharDisplayTaggerSourceFactory : IViewTaggerProvider

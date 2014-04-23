@@ -12,7 +12,7 @@ using Vim.Extensions;
 
 namespace VsVim.Implementation.VisualAssist
 {
-    [ContentType(Vim.Constants.ContentType)]
+    [ContentType(VimConstants.ContentType)]
     [TextViewRole(PredefinedTextViewRoles.Editable)]
     [Order(Before = Constants.VisualStudioKeyProcessorName, After = Constants.VsKeyProcessorName)]
     [MarginContainer(PredefinedMarginNames.Top)]

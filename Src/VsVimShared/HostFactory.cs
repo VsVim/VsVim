@@ -25,7 +25,7 @@ namespace VsVim
     [Export(typeof(IWpfTextViewCreationListener))]
     [Export(typeof(IVimBufferCreationListener))]
     [Export(typeof(IVsTextViewCreationListener))]
-    [ContentType(Vim.Constants.ContentType)]
+    [ContentType(VimConstants.ContentType)]
     [TextViewRole(PredefinedTextViewRoles.Editable)]
     internal sealed class HostFactory :
         IWpfTextViewCreationListener,

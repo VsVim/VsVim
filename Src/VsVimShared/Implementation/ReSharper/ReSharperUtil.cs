@@ -12,7 +12,7 @@ using Vim;
 
 namespace VsVim.Implementation.ReSharper
 {
-    [ContentType(Vim.Constants.ContentType)]
+    [ContentType(VimConstants.ContentType)]
     [TextViewRole(PredefinedTextViewRoles.Editable)]
     [Export(typeof(IReSharperUtil))]
     [Export(typeof(IExternalEditAdapter))]

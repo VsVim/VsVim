@@ -55,6 +55,7 @@
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Constants.cs" />
     <Compile Include="IControlCharUtil.cs" />
     <Compile Include="IKeyUtil.cs" />
     <Compile Include="Implementation\CharDisplay\ControlCharFormatDefinition.cs" />
