@@ -1780,7 +1780,7 @@ type Parser
                         match token.TokenKind with
                         | TokenKind.Word _ -> true
                         | TokenKind.Character c ->
-                            CharUtil.IsLetterOrDigit c || ",<>~[]".Contains(c.ToString())
+                            CharUtil.IsLetterOrDigit c || @"-:\.,<>~[]".Contains(c.ToString())
                         | TokenKind.Number number -> true
                         | _ -> false)
                     match value with 

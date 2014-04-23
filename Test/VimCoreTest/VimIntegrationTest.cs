@@ -4,6 +4,7 @@ using Microsoft.VisualStudio.Text.Editor;
 using Moq;
 using Xunit;
 using Vim.Extensions;
+using Xunit.Extensions;
 using Path = System.IO.Path;
 using Microsoft.FSharp.Core;
 using Vim.UnitTest.Mock;
@@ -126,6 +127,30 @@ namespace Vim.UnitTest
             {
                 _fileSystem.Setup(x => x.LoadVimRcContents()).Returns(FSharpOption<FileContents>.None);
                 Assert.True(Vim.LoadVimRc().IsLoadFailed);
+            }
+
+
+            [Theory,
+            InlineData(@"set shellcmdflag=-lic", @"-lic"),
+            InlineData(@"set shellcmdflag=sh", @"sh")]
+            public void ShellFlag(string command, string expected)
+            {
+                Run(command);
+                Assert.Equal(expected, _globalSettings.ShellFlag);
+            }
+
+            [Theory,
+             InlineData(@"set shell=sh.exe", @"sh.exe"),
+             InlineData(@"set shell=c:\1\sh.exe", @"c:\1\sh.exe"),
+             InlineData(@"set shell=c:\s\sh.exe", @"c:\s\sh.exe"),
+             InlineData(@"set shell=c:\sss\sh.exe", @"c:\sss\sh.exe"),
+             InlineData(@"set shell=c:\s\ s\sh.exe", @"c:\s s\sh.exe"),
+             InlineData(@"set shell=""c:\s\ s\sh.exe""", @"""c:\s s\sh.exe"""),
+             InlineData(@"set shell=c:\sh.exe", @"c:\sh.exe")]
+            public void Shell(string command, string expected)
+            {
+                Run(command);
+                Assert.Equal(expected, _globalSettings.Shell);
             }
 
             [Fact]
