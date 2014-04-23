@@ -144,8 +144,6 @@ namespace Vim.UnitTest
              InlineData(@"set shell=c:\1\sh.exe", @"c:\1\sh.exe"),
              InlineData(@"set shell=c:\s\sh.exe", @"c:\s\sh.exe"),
              InlineData(@"set shell=c:\sss\sh.exe", @"c:\sss\sh.exe"),
-             InlineData(@"set shell=c:\s\ s\sh.exe", @"c:\s s\sh.exe"),
-             InlineData(@"set shell=""c:\s\ s\sh.exe""", @"""c:\s s\sh.exe"""),
              InlineData(@"set shell=c:\sh.exe", @"c:\sh.exe")]
             public void Shell(string command, string expected)
             {

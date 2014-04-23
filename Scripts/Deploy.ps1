@@ -101,7 +101,7 @@ function test-version() {
 
     $foundPackageVersion = $false
     foreach ($line in gc "Src\VsVim\VsVimPackage.cs") {
-        if ($line -match 'productId: Vim.Constants.VersionNumber') {
+        if ($line -match 'productId: VimConstants.VersionNumber') {
             $foundPackageVersion = $true
             break
         }
