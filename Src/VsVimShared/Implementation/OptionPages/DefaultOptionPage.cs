@@ -61,9 +61,7 @@ namespace VsVim.Implementation.OptionPages
         private static readonly ColorKey IncrementalSearchColorKey = ColorKey.Background(VimConstants.IncrementalSearchTagName);
         private static readonly ColorKey HighlightIncrementalSearchColorKey = ColorKey.Background(VimConstants.HighlightIncrementalSearchTagName);
         private static readonly ColorKey BlockCaretColorKey = ColorKey.Foreground(VimWpfConstants.BlockCaretFormatDefinitionName);
-        private static readonly ColorKey CommandMarginColorKey = ColorKey.Foreground(VimWpfConstants.CommandMarginFormatDefinitionName);
         private static readonly ColorKey ControlCharacterColorKey = ColorKey.Foreground(VimWpfConstants.ControlCharactersFormatDefinitionName);
-        private static readonly ColorKey ToastMarginColorKey = ColorKey.Foreground(Constants.ToastMarginFormatDefinitionName);
 
         private static readonly ReadOnlyCollection<ColorKey> ColorKeyList;
 
@@ -74,9 +72,7 @@ namespace VsVim.Implementation.OptionPages
                 IncrementalSearchColorKey,
                 HighlightIncrementalSearchColorKey,
                 BlockCaretColorKey,
-                CommandMarginColorKey,
                 ControlCharacterColorKey,
-                ToastMarginColorKey,
             });
         }
 
@@ -122,22 +118,6 @@ namespace VsVim.Implementation.OptionPages
         {
             get { return GetColor(ControlCharacterColorKey); }
             set { SetColor(ControlCharacterColorKey, value); }
-        }
-
-        [DisplayName("Command Margin")]
-        [Category(CategoryColors)]
-        public Color CommandMarginColor 
-        {
-            get { return GetColor(CommandMarginColorKey); }
-            set { SetColor(CommandMarginColorKey, value); }
-        }
-
-        [DisplayName("Toast Margin")]
-        [Category(CategoryColors)]
-        public Color ToastMarginColor 
-        {
-            get { return GetColor(ToastMarginColorKey); }
-            set { SetColor(ToastMarginColorKey, value); }
         }
 
         public DefaultOptionPage()
