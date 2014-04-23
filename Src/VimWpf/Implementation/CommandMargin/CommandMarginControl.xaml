@@ -24,7 +24,7 @@
         <TextBlock
             Grid.Row="0"
             Grid.ColumnSpan="3"
-            Text="statusline"
+            Text="{Binding Path=StatusLine}"
             FontWeight="Bold"
             Visibility="{Binding Path=IsStatuslineVisible}"
             Foreground="{Binding Path=TextForeground}"

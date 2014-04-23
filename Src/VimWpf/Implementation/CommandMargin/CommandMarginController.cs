@@ -202,6 +202,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
                 {
                     UpdateForNoEvent();
                 }
+                UpdateStatusLine();
             }
             finally
             {
@@ -296,7 +297,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
         }
 
         /// <summary>
-        /// Update the status line at the end of a key press event which didn't result in 
+        /// Update the status in command line at the end of a key press event which didn't result in 
         /// a mode change
         /// </summary>
         private void UpdateForNoEvent()
@@ -352,6 +353,24 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             _margin.IsRecording = _vimBuffer.Vim.MacroRecorder.IsRecording
                 ? Visibility.Visible
                 : Visibility.Collapsed;
+        }
+
+        /// <summary>
+        /// Update the status line.
+        /// </summary>
+        private void UpdateStatusLine()
+        {
+            var isStatusLineVisible = _vimBuffer.GlobalSettings.LastStatus != 0;
+
+            _margin.IsStatuslineVisible = isStatusLineVisible
+                ? Visibility.Visible
+                : Visibility.Collapsed;
+
+            if (isStatusLineVisible)
+            {
+                var statusLineFormat = _vimBuffer.GlobalSettings.StatusLine;
+                _margin.StatusLine = statusLineFormat;
+            }
         }
 
         private void UpdateSubstituteConfirmMode()
