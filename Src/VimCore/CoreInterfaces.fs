@@ -3148,7 +3148,7 @@ type MotionFlags =
     | TextObjectWithAlwaysCharacter = 0x10
 
     /// Text objcet with always line.  Requires TextObject
-    | TextObjectWithAlwaysLine = 0x12
+    | TextObjectWithAlwaysLine = 0x20
 
 /// Represents the types of MotionCommands which exist
 [<RequireQualifiedAccess>]
