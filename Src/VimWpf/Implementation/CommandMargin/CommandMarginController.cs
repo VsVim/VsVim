@@ -131,6 +131,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             _vimBuffer.ErrorMessage += OnErrorMessage;
             _vimBuffer.WarningMessage += OnWarningMessage;
             _vimBuffer.CommandMode.CommandChanged += OnCommandModeCommandChanged;
+            _vimBuffer.TextView.GotAggregateFocus += OnGotAggregateFocus;
             _vimBuffer.Vim.MacroRecorder.RecordingStarted += OnRecordingStarted;
             _vimBuffer.Vim.MacroRecorder.RecordingStopped += OnRecordingStopped;
             _margin.Loaded += OnCommandMarginLoaded;
@@ -143,6 +144,11 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             _editorFormatMap.FormatMappingChanged += OnFormatMappingChanged;
             UpdateForRecordingChanged();
             UpdateTextColor();
+        }
+
+        void OnGotAggregateFocus(object sender, EventArgs e)
+        {
+            UpdateStatusLine();
         }
 
         private void ChangeEditKind(EditKind editKind)
