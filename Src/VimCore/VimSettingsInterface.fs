@@ -35,8 +35,8 @@ module GlobalSettingNames =
     let ShellName = "shell"
     let ShellFlagName = "shellcmdflag"
     let SmartCaseName = "smartcase"
-    let StatusLineName = "statusline"
     let StartOfLineName = "startofline"
+    let StatusLineName = "statusline"
     let TildeOpName = "tildeop"
     let TimeoutExName = "ttimeout"
     let TimeoutName = "timeout"
@@ -401,11 +401,11 @@ and IVimGlobalSettings =
     /// The flag which is passed to the shell when executing shell commands
     abstract ShellFlag : string with get, set
 
-    /// This option determines the content of the status line.
-    abstract StatusLine : string with get, set
-
     abstract StartOfLine : bool with get, set
 
+    /// This option determines the content of the status line.
+    abstract StatusLine : string with get, set
+    
     /// Controls the behavior of ~ in normal mode
     abstract TildeOp : bool with get, set
 
