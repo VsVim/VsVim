@@ -27,6 +27,7 @@ namespace VsVim.Implementation.Misc
         private readonly IVsEditorAdaptersFactoryService _editorAdaptersFactoryService;
         private readonly IEditorOptionsFactoryService _editorOptionsFactoryService;
         private readonly IIncrementalSearchFactoryService _incrementalSearchFactoryService;
+        private readonly IVsFindManager _vsFindManager;
         private readonly IVsTextManager _textManager;
         private readonly IVsUIShell _uiShell;
         private readonly RunningDocumentTable _table;
@@ -80,6 +81,7 @@ namespace VsVim.Implementation.Misc
             _table = new RunningDocumentTable(_serviceProvider);
             _uiShell = _serviceProvider.GetService<SVsUIShell, IVsUIShell>();
             _monitorSelection = _serviceProvider.GetService<SVsShellMonitorSelection, IVsMonitorSelection>();
+            _vsFindManager = _serviceProvider.GetService<SVsFindManager, IVsFindManager>();
             _powerToolsUtil = powerToolsUtil;
             _visualStudioVersion = vsServiceProvider.GetVisualStudioVersion();
         }
@@ -328,8 +330,7 @@ namespace VsVim.Implementation.Misc
 
             if (_visualStudioVersion != VisualStudioVersion.Vs2010)
             {
-                if (IsIncrementalSearchActiveScreenScrape(textView) ||
-                    IsSimpleTextViewIncrementalSearchActive(textView))
+                if (IsIncrementalSearchActiveScreenScrape(textView))
                 {
                     return true;
                 }
@@ -375,7 +376,7 @@ namespace VsVim.Implementation.Misc
 
                     // The Ctrl+I value will not set keyboard focus.  Have to use reflection to look 
                     // into the view to detect this case 
-                    if (IsSimpleTextViewIncrementalSearchActive(textView))
+                    if (IsFindManagerIncrementalSearchActive())
                     {
                         return true;
                     }
@@ -389,27 +390,24 @@ namespace VsVim.Implementation.Misc
         /// Starting in Vs2012 or Vs2013 (unclear) Visual Studio moved incremental search to the same
         /// FindUI dialog but does not use the IsKeyboardFocusWithin property.  Instead they use an 
         /// IOleCommandTarget to drive the UI.  Only reasonable way I've found to query whether this
-        /// is active or not is to use reflection (yay)
+        /// is active or not is to use IVsFindManager as an IVsUIDataSource (once again thanks Ryan!)
         /// </summary>
-        internal bool IsSimpleTextViewIncrementalSearchActive(ITextView textView)
+        internal bool IsFindManagerIncrementalSearchActive()
         {
             try
             {
-                var vsTextView = _editorAdaptersFactoryService.GetViewAdapter(textView);
-                if (vsTextView == null)
+                var dataSource = (IVsUIDataSource)_vsFindManager;
+
+                IVsUIObject uiObj;
+                object obj;
+                if (ErrorHandler.Failed(dataSource.GetValue("IsIncrementalSearchActive", out uiObj)) ||
+                    ErrorHandler.Failed(uiObj.get_Data(out obj)) ||
+                    !(obj is bool))
                 {
                     return false;
                 }
 
-                var type = vsTextView.GetType();
-                if (type.Name != "VsTextViewAdapter")
-                {
-                    return false;
-                }
-
-                var propertyInfo = type.GetProperty("IsIncrementalSearchInProgress");
-                var value = (bool)propertyInfo.GetValue(vsTextView, null);
-                return value;
+                return (bool)obj;
             }
             catch (Exception)
             {
