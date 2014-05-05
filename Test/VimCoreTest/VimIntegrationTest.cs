@@ -50,6 +50,20 @@ namespace Vim.UnitTest
                 var vimBuffer = Vim.CreateVimBuffer(view);
                 Assert.Throws<ArgumentException>(() => Vim.CreateVimBuffer(view));
             }
+
+            /// <summary>
+            /// If we are in the middle of an incremental search and the mode changes the search should be
+            /// cancelled 
+            /// </summary>
+            [Fact]
+            public void ModeSwitchResetIncrementalSearch()
+            {
+                var vimBuffer = CreateVimBuffer("hello world");
+                vimBuffer.ProcessNotation("/wo");
+                Assert.True(vimBuffer.IncrementalSearch.InSearch);
+                vimBuffer.SwitchMode(ModeKind.VisualCharacter, ModeArgument.None);
+                Assert.False(vimBuffer.IncrementalSearch.InSearch);
+            }
         }
 
         public sealed class DisableAllTest : VimIntegrationTest

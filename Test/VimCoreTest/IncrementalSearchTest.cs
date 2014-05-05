@@ -4,6 +4,7 @@ using Moq;
 using Xunit;
 using Vim.Extensions;
 using Vim.UnitTest.Mock;
+using Microsoft.VisualStudio.Text;
 
 namespace Vim.UnitTest
 {
@@ -390,6 +391,40 @@ namespace Vim.UnitTest
                 _vimData.SearchHistory = (new[] { "dog", "cat", "dip" }).ToHistoryList();
                 _search.DoSearch("d", enter: false).Run(VimKey.Up).Run(VimKey.Up);
                 Assert.Equal("dip", _search.CurrentSearchData.Pattern);
+            }
+        }
+
+        public sealed class CancelTest : IncrementalSearchTest
+        {
+            [Fact]
+            public void InSearchProperty()
+            {
+                Create("hello world");
+                _search.DoSearch("wo", enter: false);
+                Assert.True(_search.InSearch);
+                _search.Cancel();
+                Assert.False(_search.InSearch);
+            }
+
+            /// <summary>
+            /// Make sure we can repeat the cancel many times and get the same result
+            /// </summary>
+            [Fact]
+            public void ManyTimes()
+            {
+                Create("hello world");
+                for (int i = 0; i < 5; i++)
+                {
+                    _textView.MoveCaretTo(0);
+                    var searchResult = _search.DoSearch("el", enter: true).AsComplete().Item;
+                    Assert.True(searchResult.IsFound);
+                    var span = searchResult.AsFound().Item2;
+                    Assert.Equal(new Span(1, 2), span.Span);
+                    _search.DoSearch("wo", enter: false);
+                    Assert.True(_search.InSearch);
+                    _search.Cancel();
+                    Assert.False(_search.InSearch);
+                }
             }
         }
     }

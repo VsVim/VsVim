@@ -3371,8 +3371,11 @@ type IIncrementalSearch =
     /// The ITextStructureNavigator used for finding 'word' values in the ITextBuffer
     abstract WordNavigator : ITextStructureNavigator
 
-    /// Begin an incremental search in the ITextBuffer
+    /// Begin an incremental search in the ITextView
     abstract Begin : path : Path -> BindData<SearchResult>
+
+    /// Cancel an incremental search which is currently in progress
+    abstract Cancel : unit -> unit
 
     /// Reset the current search to be the given value 
     abstract ResetSearch : pattern : string -> unit

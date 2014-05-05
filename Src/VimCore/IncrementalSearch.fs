@@ -52,6 +52,8 @@ type internal IncrementalSearch
 
     member x.CurrentSearchText =  _incrementalSearchData.SearchText
 
+    member x.InSearch = Option.isSome _historySession
+
     /// There is a big gap between the behavior and documentation of key mapping for an 
     /// incremental search operation.  The documentation properly documents the language
     /// mapping in "help language-mapping" and 'help imsearch'.  But it doesn't document
@@ -168,18 +170,24 @@ type internal IncrementalSearch
         _historySession <- None
         _incrementalSearchData <- IncrementalSearchData.Default
 
+    member x.Cancel() =
+        Contract.Requires x.InSearch
+        let historySession = Option.get _historySession
+        historySession.Cancel()
+
     member x.ResetSearch pattern = 
         match _historySession with
         | Some historySession -> historySession.ResetCommand pattern
         | None -> ()
 
     interface IIncrementalSearch with
-        member x.InSearch = Option.isSome _historySession
+        member x.InSearch = x.InSearch
         member x.WordNavigator = _wordNavigator
         member x.CurrentSearchData = x.CurrentSearchData
         member x.CurrentSearchResult = x.CurrentSearchResult
         member x.CurrentSearchText = x.CurrentSearchText
         member x.Begin kind = x.Begin kind
+        member x.Cancel () = x.Cancel()
         member x.ResetSearch pattern = x.ResetSearch pattern
         [<CLIEvent>]
         member x.CurrentSearchUpdated = _currentSearchUpdated.Publish
