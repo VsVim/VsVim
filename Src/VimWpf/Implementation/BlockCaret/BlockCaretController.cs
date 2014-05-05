@@ -5,21 +5,21 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
 {
     internal sealed class BlockCaretController
     {
-        private readonly IVimBuffer _buffer;
+        private readonly IVimBuffer _vimBuffer;
         private readonly IBlockCaret _blockCaret;
         private readonly IVimGlobalSettings _globalSettings;
 
         internal BlockCaretController(
-            IVimBuffer buffer,
+            IVimBuffer vimBuffer,
             IBlockCaret blockCaret)
         {
-            _buffer = buffer;
+            _vimBuffer = vimBuffer;
             _blockCaret = blockCaret;
-            _globalSettings = _buffer.LocalSettings.GlobalSettings;
-            _buffer.SwitchedMode += OnCaretRelatedEvent;
-            _buffer.KeyInputStart += OnCaretRelatedEvent;
-            _buffer.KeyInputEnd += OnCaretRelatedEvent;
-            _buffer.Closed += OnBufferClosed;
+            _globalSettings = _vimBuffer.LocalSettings.GlobalSettings;
+            _vimBuffer.SwitchedMode += OnCaretRelatedEvent;
+            _vimBuffer.KeyInputStart += OnCaretRelatedEvent;
+            _vimBuffer.KeyInputEnd += OnCaretRelatedEvent;
+            _vimBuffer.Closed += OnBufferClosed;
             _globalSettings.SettingChanged += OnSettingsChanged;
             UpdateCaretDisplay();
             UpdateCaretOpacity();
@@ -60,7 +60,7 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
 
         private void UpdateCaretOpacity()
         {
-            var value = _buffer.LocalSettings.GlobalSettings.CaretOpacity;
+            var value = _vimBuffer.LocalSettings.GlobalSettings.CaretOpacity;
             if (value >= 0 && value <= 100)
             {
                 var opacity = ((double)value / 100);
@@ -75,18 +75,18 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
         {
             // The caret should be invisible during incremental search no matter what mode we are
             // in
-            if (_buffer.IncrementalSearch.InSearch)
+            if (_vimBuffer.IncrementalSearch.InSearch)
             {
                 _blockCaret.CaretDisplay = CaretDisplay.Invisible;
                 return;
             }
 
             var kind = CaretDisplay.Block;
-            switch (_buffer.ModeKind)
+            switch (_vimBuffer.ModeKind)
             {
                 case ModeKind.Normal:
                     {
-                        var mode = _buffer.NormalMode;
+                        var mode = _vimBuffer.NormalMode;
                         if (mode.InReplace)
                         {
                             kind = CaretDisplay.QuarterBlock;
