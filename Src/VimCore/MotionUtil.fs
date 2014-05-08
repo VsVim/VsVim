@@ -36,6 +36,11 @@ type DirectiveBlock = {
     IsComplete : bool
 }
 
+type CachedDirectiveBlocks = { 
+    Version : int
+    DirectiveBlocks : List<DirectiveBlock>
+}
+
 [<RequireQualifiedAccess>]
 [<NoComparison>]
 type MatchingTokenKind =
@@ -196,12 +201,12 @@ type MatchingTokenUtil() =
 
         let parseAndSave () = 
             let blocks = x.ParseDirectiveBlocks snapshot
-            propertyCollection.[_directiveBlocksKey] <- (snapshot.Version, blocks)
+            propertyCollection.[_directiveBlocksKey] <- { Version = snapshot.Version.VersionNumber; DirectiveBlocks = blocks }
             blocks
 
-        match PropertyCollectionUtil.GetValue<int * List<DirectiveBlock>> _directiveBlocksKey propertyCollection with
-        | Some (version, list) ->
-            if version = snapshot.Version.VersionNumber then list
+        match PropertyCollectionUtil.GetValue<CachedDirectiveBlocks> _directiveBlocksKey propertyCollection with
+        | Some cachedDirectiveBlocks -> 
+            if cachedDirectiveBlocks.Version = snapshot.Version.VersionNumber then cachedDirectiveBlocks.DirectiveBlocks
             else parseAndSave ()
         | None -> parseAndSave ()
 

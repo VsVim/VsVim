@@ -3,6 +3,7 @@ using EditorUtils;
 using Microsoft.VisualStudio.Text;
 using Vim.Extensions;
 using Xunit;
+using Moq;
 
 namespace Vim.UnitTest
 {
@@ -429,6 +430,29 @@ namespace Vim.UnitTest
                 _textBuffer.Delete(_textBuffer.GetLineRange(2, 3).ExtentIncludingLineBreak);
                 blocks = _matchingTokenUtil.GetDirectiveBlocks(_textBuffer.CurrentSnapshot);
                 Assert.Equal(1, blocks.Count);
+            }
+
+            /// <summary>
+            /// This addresses issue 1366.  Essentially ensure absolutely that the cache is being
+            /// used 
+            /// </summary>
+            [Fact]
+            public void EnsureCacheUsed()
+            {
+                Create("#if", "#endif", "#if", "#endif");
+                var snapshot = _textBuffer.CurrentSnapshot;
+                var blocks = _matchingTokenUtil.GetDirectiveBlocks(snapshot);
+                Assert.Equal(2, blocks.Count);
+
+                var factory = new MockRepository(MockBehavior.Strict);
+                var mockBuffer = factory.Create<ITextBuffer>();
+                mockBuffer.SetupGet(x => x.Properties).Returns(snapshot.TextBuffer.Properties);
+                var mockSnapshot = factory.Create<ITextSnapshot>();
+                mockSnapshot.SetupGet(x => x.Version).Returns(snapshot.Version);
+                mockSnapshot.SetupGet(x => x.TextBuffer).Returns(mockBuffer.Object);
+
+                blocks = _matchingTokenUtil.GetDirectiveBlocks(mockSnapshot.Object);
+                Assert.Equal(2, blocks.Count);
             }
         }
     }
