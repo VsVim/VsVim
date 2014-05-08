@@ -44,7 +44,10 @@ namespace Vim.UnitTest
 
         private void ProcessWithEnter(string value)
         {
-            var result = _search.Begin(Path.Forward).Run(value).Run(VimKey.Enter);
+            var beginData = _search.Begin(Path.Forward);
+            var result = string.IsNullOrEmpty(value)
+                ? beginData.Run(VimKey.Enter)
+                : beginData.Run(value).Run(VimKey.Enter);
             Assert.True(result.IsComplete);
         }
 
@@ -94,6 +97,15 @@ namespace Vim.UnitTest
                 Assert.Equal("foo", _vimData.LastSearchData.Pattern);
                 Assert.True(_vimData.LastSearchData.Kind.IsAnyForward);
                 _factory.Verify();
+            }
+
+            [Fact]
+            public void EmptyShouldUseLast()
+            {
+                Create("foo bar");
+                _vimData.LastSearchData = VimUtil.CreateSearchData("foo");
+                ProcessWithEnter("");
+                Assert.Equal("foo", _vimData.LastSearchData.Pattern);
             }
         }
 

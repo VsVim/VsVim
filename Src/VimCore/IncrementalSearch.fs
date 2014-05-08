@@ -143,7 +143,10 @@ type internal IncrementalSearch
              _operations.EnsureAtCaret ViewFlags.Standard
 
     member x.RunSearch incrementalSearchSession (startPoint : ITrackingPoint) rawPattern =
-        x.RunSearchCore incrementalSearchSession startPoint rawPattern
+        let incrementalSearchData = x.RunSearchCore incrementalSearchSession startPoint rawPattern
+        incrementalSearchSession.IncrementalSearchData <- incrementalSearchData
+        let args = SearchResultEventArgs(incrementalSearchData.SearchResult)
+        _currentSearchUpdated.Trigger x args
         startPoint
 
     /// Run the search for the specified text.  This will do the search, update the caret 
@@ -173,26 +176,18 @@ type internal IncrementalSearch
             match incrementalSearchData.SearchData.Path with
             | Path.Forward -> "/" + rawPattern
             | Path.Backward -> "?" + rawPattern
-        incrementalSearchSession.IncrementalSearchData <- {
-            SearchResult = searchResult
-            SearchText = searchText
-        }
-
-        let args = SearchResultEventArgs(searchResult)
-        _currentSearchUpdated.Trigger x args
+        { SearchResult = searchResult; SearchText = searchText }
 
     /// Called when the processing is completed.  Raise the completed event and return
     /// the final SearchResult
     member x.RunCompleted incrementalSearchSession startPoint =
-        let incrementalSearchData = incrementalSearchSession.IncrementalSearchData
-        let searchResult =
-            if StringUtil.isNullOrEmpty incrementalSearchData.SearchData.Pattern then
-                // When the user simply hits Enter on an empty incremental search then
-                // we should be re-using the 'LastSearch' value.
-                x.RunSearchCore incrementalSearchSession startPoint _vimData.LastSearchData.Pattern
+        if StringUtil.isNullOrEmpty incrementalSearchSession.IncrementalSearchData.SearchData.Pattern then
+            // When the user simply hits Enter on an empty incremental search then
+            // we should be re-using the 'LastSearch' value.
+            let incrementalSearchData = x.RunSearchCore incrementalSearchSession startPoint _vimData.LastSearchData.Pattern
+            incrementalSearchSession.IncrementalSearchData <- incrementalSearchData
 
-            incrementalSearchData.SearchResult
-
+        let searchResult = incrementalSearchSession.IncrementalSearchData.SearchResult
         _vimData.LastSearchData <- searchResult.SearchData.LastSearchData
         _currentSearchCompleted.Trigger x (SearchResultEventArgs(searchResult))
         _incrementalSearchSession <- None
