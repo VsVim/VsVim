@@ -60,7 +60,8 @@ type UninitializedMode(_vimTextBuffer : IVimTextBuffer) =
 
 type internal ModeMap
     (
-        _vimTextBuffer : IVimTextBuffer
+        _vimTextBuffer : IVimTextBuffer,
+        _incrementalSearch : IIncrementalSearch
     ) = 
 
     let mutable _modeMap : Map<ModeKind, IMode> = Map.empty
@@ -78,6 +79,10 @@ type internal ModeMap
         _mode <- newMode
 
         currentMode.OnLeave()
+
+        // Incremental search should not persist between mode changes.  
+        if _incrementalSearch.InSearch then
+            _incrementalSearch.Cancel()
 
         // Make sure to update the underlying IVimTextBuffer to the given mode.  Do this after
         // we switch so that we can avoid the redundant mode switch in the event handler
@@ -126,7 +131,7 @@ type internal VimBuffer
     let _statusUtil = _vimBufferData.StatusUtil
     let _properties = PropertyCollection()
     let _bag = DisposableBag()
-    let _modeMap = ModeMap(_vimBufferData.VimTextBuffer)
+    let _modeMap = ModeMap(_vimBufferData.VimTextBuffer, _incrementalSearch)
     let _keyMap = _vim.KeyMap
     let mutable _processingInputCount = 0
     let mutable _isClosed = false
