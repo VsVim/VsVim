@@ -71,6 +71,7 @@ namespace VsVim.UnitTest
                 _serviceMap[typeof(_DTE)] = dte.Object;
                 _serviceMap[typeof(SDTE)] = dte.Object;
                 _serviceMap[typeof(SVsSettingsManager)] = CreateSettingsManager().Object;
+                _serviceMap[typeof(SVsFindManager)] = _factory.Create<IVsFindManager>().Object;
             }
 
             private Mock<IVsSettingsManager> CreateSettingsManager()
