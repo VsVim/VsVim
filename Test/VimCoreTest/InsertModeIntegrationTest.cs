@@ -1829,14 +1829,14 @@ namespace Vim.UnitTest
                     Assert.Equal("\t h", _textBuffer.GetLine(0).GetText());
                 }
 
-                [Fact]
+                [Fact(Skip = "implement delete")]
                 public void DeleteSimpleIndent()
                 {
                     _vimBuffer.Process(VimKey.Tab, VimKey.Back);
                     Assert.Equal("", _textBuffer.GetLine(0).GetText());
                 }
 
-                [Fact]
+                [Fact(Skip = "implement delete")]
                 public void DeleteIndentWithChanges()
                 {
                     _textBuffer.SetText("\t cat");
@@ -1881,14 +1881,14 @@ namespace Vim.UnitTest
                     Assert.Equal("\ta", _textBuffer.GetLine(0).GetText());
                 }
 
-                [Fact]
+                [Fact(Skip = "implement delete")]
                 public void DeleteSimpleIndent()
                 {
                     _vimBuffer.Process(VimKey.Tab, VimKey.Back);
                     Assert.Equal("", _textBuffer.GetLine(0).GetText());
                 }
 
-                [Fact]
+                [Fact(Skip = "implement delete")]
                 public void DeleteDoubleIndent()
                 {
                     _vimBuffer.Process(VimKey.Tab, VimKey.Tab, VimKey.Back);
@@ -1897,7 +1897,7 @@ namespace Vim.UnitTest
                     Assert.Equal("", _textBuffer.GetLine(0).GetText());
                 }
 
-                [Fact]
+                [Fact(Skip = "implement delete")]
                 public void DeleteIndentWithContent()
                 {
                     _textBuffer.SetText("\tcat");
@@ -1907,7 +1907,7 @@ namespace Vim.UnitTest
                 }
             }
 
-            public sealed class Configuration3: TabSettingsTest
+            public sealed class Configuration3 : TabSettingsTest
             {
                 public Configuration3()
                 {
@@ -1945,27 +1945,358 @@ namespace Vim.UnitTest
                 /// 'sts' isn't set here hence the backspace is just interpretted as deleting a single
                 /// character 
                 /// </summary>
-                [Fact]
+                [Fact(Skip = "implement delete")]
                 public void DeleteSimpleIndent()
                 {
                     _vimBuffer.Process(VimKey.Tab, VimKey.Back);
                     Assert.Equal("   ", _textBuffer.GetLine(0).GetText());
                 }
 
-                [Fact]
+                [Fact(Skip = "implement delete")]
                 public void DeleteDoubleIndent()
                 {
                     _vimBuffer.Process(VimKey.Tab, VimKey.Tab, VimKey.Back, VimKey.Back);
                     Assert.Equal("      ", _textBuffer.GetLine(0).GetText());
                 }
 
-                [Fact]
+                [Fact(Skip = "implement delete")]
                 public void DeleteIndentWithContent()
                 {
                     _textBuffer.SetText("    cat");
                     _textView.MoveCaretTo(4);
                     _vimBuffer.Process(VimKey.Back);
                     Assert.Equal("   cat", _textBuffer.GetLine(0).GetText());
+                }
+            }
+
+            public sealed class Configuration4 : TabSettingsTest
+            {
+                public Configuration4()
+                {
+                    Create();
+                    _vimBuffer.GlobalSettings.Backspace = "eol,start,indent";
+                    _vimBuffer.LocalSettings.TabStop = 4;
+                    _vimBuffer.LocalSettings.SoftTabStop = 4;
+                    _vimBuffer.LocalSettings.ShiftWidth = 4;
+                    _vimBuffer.LocalSettings.ExpandTab = true;
+                    _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
+                }
+
+                [Fact]
+                public void SimpleIndent()
+                {
+                    _vimBuffer.Process(VimKey.Tab);
+                    Assert.Equal("    ", _textBuffer.GetLine(0).GetText());
+                }
+
+                [Fact]
+                public void DoubleIndent()
+                {
+                    _vimBuffer.Process(VimKey.Tab, VimKey.Tab);
+                    Assert.Equal("        ", _textBuffer.GetLine(0).GetText());
+                }
+
+                [Fact]
+                public void SimpleIndentAndType()
+                {
+                    _vimBuffer.Process("\ta");
+                    Assert.Equal("    a", _textBuffer.GetLine(0).GetText());
+                }
+
+                [Fact]
+                public void IndentMixed()
+                {
+                    _textBuffer.SetText("c\t");
+                    _textView.MoveCaretTo(2);
+                    _vimBuffer.Process("\t");
+                    Assert.Equal("c\t    ", _textBuffer.GetLine(0).GetText());
+                }
+
+                /// <summary>
+                /// 'sts' isn't set here hence the backspace is just interpretted as deleting a single
+                /// character 
+                /// </summary>
+                [Fact(Skip = "implement delete")]
+                public void DeleteSimpleIndent()
+                {
+                    _vimBuffer.Process(VimKey.Tab, VimKey.Back);
+                    Assert.Equal("", _textBuffer.GetLine(0).GetText());
+                }
+
+                [Fact(Skip = "implement delete")]
+                public void DeleteDoubleIndent()
+                {
+                    _vimBuffer.Process(VimKey.Tab, VimKey.Tab, VimKey.Back);
+                    Assert.Equal("    ", _textBuffer.GetLine(0).GetText());
+                    _vimBuffer.Process(VimKey.Back);
+                    Assert.Equal("", _textBuffer.GetLine(0).GetText());
+                }
+
+                [Fact(Skip = "implement delete")]
+                public void DeleteIndentWithContent()
+                {
+                    _textBuffer.SetText("    cat");
+                    _textView.MoveCaretTo(4);
+                    _vimBuffer.Process(VimKey.Back);
+                    Assert.Equal("cat", _textBuffer.GetLine(0).GetText());
+                }
+
+                [Fact(Skip = "implement delete")]
+                public void DeleteMixedIndentWithContent()
+                {
+                    _textBuffer.SetText("     cat");
+                    _textView.MoveCaretTo(5);
+                    _vimBuffer.Process(VimKey.Back);
+                    Assert.Equal("    cat", _textBuffer.GetLine(0).GetText());
+                    _vimBuffer.Process(VimKey.Back);
+                    Assert.Equal("cat", _textBuffer.GetLine(0).GetText());
+                }
+
+                [Fact(Skip = "implement delete")]
+                public void DeleteRealTabWithContent()
+                {
+                    _textBuffer.SetText("\tcat");
+                    _textView.MoveCaretTo(1);
+                    _vimBuffer.Process(VimKey.Back);
+                    Assert.Equal("cat", _textBuffer.GetLine(0).GetText());
+                }
+            }
+
+            public sealed class Configuration5 : TabSettingsTest
+            {
+                public Configuration5()
+                {
+                    Create();
+                    _vimBuffer.GlobalSettings.Backspace = "eol,start,indent";
+                    _vimBuffer.LocalSettings.TabStop = 8;
+                    _vimBuffer.LocalSettings.SoftTabStop = 4;
+                    _vimBuffer.LocalSettings.ShiftWidth = 4;
+                    _vimBuffer.LocalSettings.ExpandTab = false;
+                    _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
+                }
+
+                /// <summary>
+                /// 'sts' has precedence over 'ts' here 
+                /// </summary>
+                [Fact]
+                public void SimpleIndent()
+                {
+                    _vimBuffer.Process(VimKey.Tab);
+                    Assert.Equal("    ", _textBuffer.GetLine(0).GetText());
+                }
+
+                [Fact]
+                public void DoubleIndent()
+                {
+                    _vimBuffer.Process(VimKey.Tab, VimKey.Tab);
+                    Assert.Equal("\t", _textBuffer.GetLine(0).GetText());
+                }
+
+                [Fact]
+                public void SimpleIndentAndType()
+                {
+                    _vimBuffer.Process("\ta");
+                    Assert.Equal("    a", _textBuffer.GetLine(0).GetText());
+                }
+
+                [Fact(Skip = "implement delete")]
+                public void DeleteSimpleIndent()
+                {
+                    _vimBuffer.Process(VimKey.Tab, VimKey.Back);
+                    Assert.Equal("", _textBuffer.GetLine(0).GetText());
+                }
+
+                [Fact(Skip = "implement delete")]
+                public void DeleteDoubleIndent()
+                {
+                    _vimBuffer.Process(VimKey.Tab, VimKey.Tab);
+                    Assert.Equal("\t", _textBuffer.GetLine(0).GetText());
+                    _vimBuffer.Process(VimKey.Back);
+                    Assert.Equal("    ", _textBuffer.GetLine(0).GetText());
+                    _vimBuffer.Process(VimKey.Back);
+                    Assert.Equal("", _textBuffer.GetLine(0).GetText());
+                }
+
+                [Fact(Skip = "implement delete")]
+                public void DeleteIndentWithContent()
+                {
+                    _textBuffer.SetText("    cat");
+                    _textView.MoveCaretTo(4);
+                    _vimBuffer.Process(VimKey.Back);
+                    Assert.Equal("cat", _textBuffer.GetLine(0).GetText());
+                }
+
+                [Fact(Skip = "implement delete")]
+                public void DeleteMixedIndentWithContent()
+                {
+                    _textBuffer.SetText("     cat");
+                    _textView.MoveCaretTo(5);
+                    _vimBuffer.Process(VimKey.Back);
+                    Assert.Equal("    cat", _textBuffer.GetLine(0).GetText());
+                    _vimBuffer.Process(VimKey.Back);
+                    Assert.Equal("cat", _textBuffer.GetLine(0).GetText());
+                }
+
+                [Fact(Skip = "implement delete")]
+                public void DeleteRealTabWithContent()
+                {
+                    _textBuffer.SetText("\tcat");
+                    _textView.MoveCaretTo(1);
+                    _vimBuffer.Process(VimKey.Back);
+                    Assert.Equal("    cat", _textBuffer.GetLine(0).GetText());
+                }
+
+                [Fact(Skip = "implement delete")]
+                public void DeleteRealTabWithContentTwitce()
+                {
+                    _textBuffer.SetText("\tcat");
+                    _textView.MoveCaretTo(1);
+                    _vimBuffer.Process(VimKey.Back, VimKey.Back);
+                    Assert.Equal("cat", _textBuffer.GetLine(0).GetText());
+                }
+
+                /// <summary>
+                /// When deleting indent we don't convert spaces to tabs even if it lines up correctly
+                /// with the tabstop setting
+                /// </summary>
+                [Fact(Skip = "implement delete")]
+                public void DeleteTripleIndentWithContent()
+                {
+                    _vimBuffer.Process("\t\t\tcat");
+                    Assert.Equal((new string(' ', 12)) + "cat", _textBuffer.GetLine(0).GetText());
+                    _textView.MoveCaretTo(12);
+                    _vimBuffer.Process(VimKey.Back);
+                    Assert.Equal((new string(' ', 8)) + "cat", _textBuffer.GetLine(0).GetText());
+                    _vimBuffer.Process(VimKey.Back);
+                    Assert.Equal((new string(' ', 4)) + "cat", _textBuffer.GetLine(0).GetText());
+                    _vimBuffer.Process(VimKey.Back);
+                    Assert.Equal("cat", _textBuffer.GetLine(0).GetText());
+                }
+            }
+
+            public sealed class Configuration6 : TabSettingsTest
+            {
+                public Configuration6()
+                {
+                    Create();
+                    _vimBuffer.GlobalSettings.Backspace = "eol,start,indent";
+                    _vimBuffer.LocalSettings.TabStop = 4;
+                    _vimBuffer.LocalSettings.SoftTabStop = 4;
+                    _vimBuffer.LocalSettings.ShiftWidth = 4;
+                    _vimBuffer.LocalSettings.ExpandTab = false;
+                    _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
+                }
+
+                /// <summary>
+                /// 'sts' has precedence over 'ts' here 
+                /// </summary>
+                [Fact]
+                public void SimpleIndent()
+                {
+                    _vimBuffer.Process(VimKey.Tab);
+                    Assert.Equal("\t", _textBuffer.GetLine(0).GetText());
+                }
+
+                [Fact]
+                public void DoubleIndent()
+                {
+                    _vimBuffer.Process(VimKey.Tab, VimKey.Tab);
+                    Assert.Equal("\t\t", _textBuffer.GetLine(0).GetText());
+                }
+
+                [Fact]
+                public void IndentOverSpaces()
+                {
+                    _textBuffer.Insert(0, " ");
+                    _vimBuffer.Process("\t");
+                    Assert.Equal("\t", _textBuffer.GetLine(0).GetText());
+                }
+
+                [Fact]
+                public void IndentOverText()
+                {
+                    _textBuffer.Insert(0, "c");
+                    _vimBuffer.Process("\t");
+                    Assert.Equal("c\t", _textBuffer.GetLine(0).GetText());
+                }
+
+                [Fact]
+                public void SimpleIndentAndType()
+                {
+                    _vimBuffer.Process("\ta");
+                    Assert.Equal("\ta", _textBuffer.GetLine(0).GetText());
+                }
+
+                [Fact]
+                public void IndentNormalizesTabsSpaces()
+                {
+                    _vimBuffer.Process("c   \t");
+                    Assert.Equal("c\t\t", _textBuffer.GetLine(0).GetText());
+                }
+
+                [Fact(Skip = "implement delete")]
+                public void DeleteSimpleIndent()
+                {
+                    _vimBuffer.Process(VimKey.Tab, VimKey.Back);
+                    Assert.Equal("", _textBuffer.GetLine(0).GetText());
+                }
+
+                [Fact(Skip = "implement delete")]
+                public void DeleteDoubleIndent()
+                {
+                    _vimBuffer.Process(VimKey.Tab, VimKey.Tab);
+                    Assert.Equal("\t\t", _textBuffer.GetLine(0).GetText());
+                    _vimBuffer.Process(VimKey.Back);
+                    Assert.Equal("\t", _textBuffer.GetLine(0).GetText());
+                    _vimBuffer.Process(VimKey.Back);
+                    Assert.Equal("", _textBuffer.GetLine(0).GetText());
+                }
+
+                [Fact(Skip = "implement delete")]
+                public void DeleteIndentSpacesWithContent()
+                {
+                    _textBuffer.SetText("    cat");
+                    _textView.MoveCaretTo(4);
+                    _vimBuffer.Process(VimKey.Back);
+                    Assert.Equal("cat", _textBuffer.GetLine(0).GetText());
+                }
+
+                [Fact(Skip = "implement delete")]
+                public void DeleteMixedIndentWithContent()
+                {
+                    _textBuffer.SetText("\t cat");
+                    _textView.MoveCaretTo(5);
+                    _vimBuffer.Process(VimKey.Back);
+                    Assert.Equal("\tcat", _textBuffer.GetLine(0).GetText());
+                    _vimBuffer.Process(VimKey.Back);
+                    Assert.Equal("cat", _textBuffer.GetLine(0).GetText());
+                }
+
+                [Fact(Skip = "implement delete")]
+                public void DeleteRealTabWithContent()
+                {
+                    _textBuffer.SetText("\tcat");
+                    _textView.MoveCaretTo(1);
+                    _vimBuffer.Process(VimKey.Back);
+                    Assert.Equal("cat", _textBuffer.GetLine(0).GetText());
+                }
+
+                /// <summary>
+                /// When deleting indent we don't convert spaces to tabs even if it lines up correctly
+                /// with the tabstop setting
+                /// </summary>
+                [Fact(Skip = "implement delete")]
+                public void DeleteTripleIndentWithContent()
+                {
+                    _vimBuffer.Process("\t\t\tcat");
+                    Assert.Equal("\t\t\tcat", _textBuffer.GetLine(0).GetText());
+                    _textView.MoveCaretTo(12);
+                    _vimBuffer.Process(VimKey.Back);
+                    Assert.Equal("\t\tcat", _textBuffer.GetLine(0).GetText());
+                    _vimBuffer.Process(VimKey.Back);
+                    Assert.Equal("\tcat", _textBuffer.GetLine(0).GetText());
+                    _vimBuffer.Process(VimKey.Back);
+                    Assert.Equal("cat", _textBuffer.GetLine(0).GetText());
                 }
             }
         }
