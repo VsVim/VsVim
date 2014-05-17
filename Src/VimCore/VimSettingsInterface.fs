@@ -58,6 +58,7 @@ module LocalSettingNames =
     let ExpandTabName = "expandtab"
     let NumberName = "number"
     let NumberFormatsName = "nrformats"
+    let SoftTabStopName = "softtabstop"
     let ShiftWidthName = "shiftwidth"
     let TabStopName = "tabstop"
     let QuoteEscapeName = "quoteescape"
@@ -484,6 +485,9 @@ and IVimLocalSettings =
 
     /// The number of spaces a << or >> command will shift by 
     abstract ShiftWidth : int with get, set
+
+    /// Number of spaces a tab counts for when doing edit operations
+    abstract SoftTabStop : int with get, set
 
     /// How many spaces a tab counts for 
     abstract TabStop : int with get, set

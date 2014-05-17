@@ -462,6 +462,7 @@ type internal LocalSettings
             (ExpandTabName, "et", SettingValue.Toggle false)
             (NumberName, "nu", SettingValue.Toggle false)
             (NumberFormatsName, "nf", SettingValue.String "octal,hex")
+            (SoftTabStopName, "sts", SettingValue.Number 0)
             (ShiftWidthName, "sw", SettingValue.Number 8)
             (TabStopName, "ts", SettingValue.Number 8)
             (QuoteEscapeName, "qe", SettingValue.String @"\")
@@ -524,6 +525,9 @@ type internal LocalSettings
         member x.NumberFormats
             with get() = _map.GetStringValue NumberFormatsName
             and set value = _map.TrySetValue NumberFormatsName (SettingValue.String value) |> ignore
+        member x.SoftTabStop  
+            with get() = _map.GetNumberValue SoftTabStopName
+            and set value = _map.TrySetValue SoftTabStopName (SettingValue.Number value) |> ignore
         member x.ShiftWidth  
             with get() = _map.GetNumberValue ShiftWidthName
             and set value = _map.TrySetValue ShiftWidthName (SettingValue.Number value) |> ignore
