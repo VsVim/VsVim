@@ -842,12 +842,22 @@ module SnapshotLineUtil =
         overlapPoint.Point
 
     /// Get the count of spaces to get to the specified absolute column offset.  This will count
-    /// tabs as counting for 'tabstop' spaces
-    let GetSpacesToColumn line column tabStop = 
-        GetSpanInLine line 0 column
-        |> SnapshotSpanUtil.GetPoints Path.Forward
-        |> Seq.map (fun point -> EditorCoreUtil.GetCharacterWidth point tabStop)
-        |> Seq.sum
+    /// tabs as counting for 'tabstop' spaces.  Note though that tabs which don't occur on a 'tabstop'
+    /// boundary only count for the number of spaces to get to the next tabstop boundary
+    let GetSpacesToColumn (line : ITextSnapshotLine) column tabStop = 
+        let mutable spaces = 0
+        let mutable current = SnapshotColumn(line.Start)
+        let maxColumn = min column line.Length
+        while current.Column < maxColumn do
+            let c = current.Point.GetChar()
+            if c = '\t' then
+                let remainder = spaces % tabStop 
+                spaces <- spaces + (tabStop - remainder)
+            else
+                spaces <- spaces + EditorCoreUtil.GetCharacterWidth current.Point tabStop
+            current <- current.Add 1
+        
+        spaces
 
 /// Contains operations to help fudge the Editor APIs to be more F# friendly.  Does not
 /// include any Vim specific logic

@@ -415,7 +415,10 @@ type ICommonOperations =
     abstract NavigateToPoint : VirtualSnapshotPoint -> bool
 
     /// Normalize the spaces and tabs in the string
-    abstract NormalizeBlanks : string -> string
+    abstract NormalizeBlanks : text : string -> string
+
+    /// Normalize the spaces and tabs in the string at the given column in the buffer
+    abstract NormalizeBlanksAtColumn : text : string -> column : SnapshotColumn -> string
 
     /// Normalize the set of blanks into spaces
     abstract NormalizeBlanksToSpaces : string -> string

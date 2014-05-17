@@ -23,14 +23,14 @@ type internal InsertUtil
     let _wordUtil = _vimBufferData.WordUtil
     let _vimHost = _vimBufferData.Vim.VimHost
 
-    /// The column of the caret
-    member x.CaretColumn = SnapshotPointUtil.GetColumn x.CaretPoint
-
     /// The SnapshotPoint for the caret
     member x.CaretPoint = TextViewUtil.GetCaretPoint _textView
 
     /// The VirtualSnapshotPoint for the caret
     member x.CaretVirtualPoint = TextViewUtil.GetCaretVirtualPoint _textView
+
+    /// The column of the caret
+    member x.CaretColumn = SnapshotColumn(x.CaretPoint)
 
     /// The ITextSnapshotLine for the caret
     member x.CaretLine = TextViewUtil.GetCaretLine _textView
@@ -288,7 +288,7 @@ type internal InsertUtil
                 EditorOptionsUtil.SetOptionValue _editorOptions DefaultTextViewOptions.OverwriteModeId false
 
     member x.InsertCharacterCore msg lineNumber =
-        match SnapshotUtil.TryGetPointInLine _textBuffer.CurrentSnapshot lineNumber x.CaretColumn with
+        match SnapshotUtil.TryGetPointInLine _textBuffer.CurrentSnapshot lineNumber x.CaretColumn.Column with
         | None -> 
             _operations.Beep()
             CommandResult.Error
@@ -340,32 +340,58 @@ type internal InsertUtil
 
     /// Insert a single tab into the ITextBuffer.  If 'expandtab' is enabled then insert
     /// the appropriate number of spaces
+    ///
+    /// This function specifically doesn't consider the 'backspace' option.  It is the job
+    /// of the caller to see that this enforced 
     member x.InsertTab () =
 
         x.EditWithUndoTransaction "Insert Tab" (fun () -> 
 
-            let text = 
-                if _localSettings.ExpandTab then
-                    // When inserting spaces we need to consider the number of spaces to the caret.
-                    // If it's a multiple of the tab stop then we insert a full tab.  Else we insert
-                    // what it takes to get to the multiple
-                    let count = 
-                        let spaces = _operations.GetSpacesToPoint x.CaretPoint
-                        let remainder = spaces % _localSettings.TabStop
-                        if remainder = 0 then
-                            _localSettings.TabStop
-                        else
-                            _localSettings.TabStop - remainder
-
-                    StringUtil.repeatChar count ' '
+            // Stores the length in spaces of a logical tab 
+            let indentSpaces = 
+                if _localSettings.SoftTabStop <> 0 then 
+                    _localSettings.SoftTabStop
                 else
-                    "\t"
+                    _localSettings.TabStop
 
-            let position = x.CaretPoint.Position + text.Length
-            _textBuffer.Insert(x.CaretPoint.Position, text) |> ignore
+            // Calculate how many spaces are being added because of this tab operation.  If the caret
+            // is currently on an indent boundary then we add a full indent, otherwise we just move
+            // out to the end of the current indent
+            let addedSpaces = 
+                let caretSpaces = _operations.GetSpacesToPoint x.CaretPoint
+                let remainder = caretSpaces % indentSpaces
+                indentSpaces - remainder
+
+            let caretPosition = 
+                if _localSettings.ExpandTab then
+                    // When only spaces are being inserted we don't normalize away any tabs that exist before
+                    // the caret.  Just insert the spaces
+                    let caretPosition = x.CaretPoint.Position + addedSpaces
+                    let text = StringUtil.repeatChar addedSpaces ' '
+                    _textBuffer.Insert(x.CaretPoint.Position, text) |> ignore
+                    caretPosition
+                 else
+                    // When inserting tabs though spaces before the caret are actually normalized into spaces if
+                    // we've hit a tab boundary which is defined by 'tabstop'
+                    let insertColumn = 
+                        let mutable column = x.CaretColumn
+                        while column.Column > 0 && CharUtil.IsBlank (column.Point.Subtract(1).GetChar()) do
+                            column <- column.Subtract(1)
+                        column
+
+                    let existingRange = Span.FromBounds(insertColumn.Point.Position, x.CaretPoint.Position)
+
+                    let text = 
+                        let existingText = x.CurrentSnapshot.GetText(existingRange)
+                        let indentText = StringUtil.repeatChar addedSpaces ' ' 
+                        _operations.NormalizeBlanksAtColumn (existingText + indentText) insertColumn
+
+                    let caretPosition = insertColumn.Point.Position + text.Length
+                    _textBuffer.Replace(existingRange, text) |> ignore
+                    caretPosition
 
             // Move the caret to the end of the insertion
-            let point = SnapshotPoint(x.CurrentSnapshot, position)
+            let point = SnapshotPoint(x.CurrentSnapshot, caretPosition)
             _operations.MoveCaretToPoint point ViewFlags.None)
 
         CommandResult.Completed ModeSwitch.NoSwitch

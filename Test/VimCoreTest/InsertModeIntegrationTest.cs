@@ -2221,6 +2221,18 @@ namespace Vim.UnitTest
                 }
 
                 [Fact]
+                public void IndentBetweenText()
+                {
+                    _textBuffer.SetText("c m");
+                    _textView.MoveCaretTo(1);
+                    _vimBuffer.Process("\t");
+                    Assert.Equal(2, _textView.GetCaretPoint());
+                    Assert.Equal("c\t m", _textBuffer.GetLine(0).GetText());
+                    _vimBuffer.Process("\t");
+                    Assert.Equal("c\t\t m", _textBuffer.GetLine(0).GetText());
+                }
+
+                [Fact]
                 public void SimpleIndentAndType()
                 {
                     _vimBuffer.Process("\ta");
