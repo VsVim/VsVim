@@ -1799,5 +1799,175 @@ namespace Vim.UnitTest
                 Assert.Equal(4, _textView.GetCaretPoint().Position);
             }
         }
+
+        public abstract class TabSettingsTest : InsertModeIntegrationTest
+        {
+            public sealed class Configuration1 : TabSettingsTest
+            {
+                public Configuration1()
+                {
+                    Create();
+                    _vimBuffer.GlobalSettings.Backspace = "eol,start,indent";
+                    _vimBuffer.LocalSettings.TabStop = 5;
+                    _vimBuffer.LocalSettings.SoftTabStop = 6;
+                    _vimBuffer.LocalSettings.ShiftWidth = 6;
+                    _vimBuffer.LocalSettings.ExpandTab = false;
+                    _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
+                }
+
+                [Fact]
+                public void SimpleIndent()
+                {
+                    _vimBuffer.Process("\t");
+                    Assert.Equal("\t ", _textBuffer.GetLine(0).GetText());
+                }
+
+                [Fact]
+                public void SimpleIndentAndType()
+                {
+                    _vimBuffer.Process("\th");
+                    Assert.Equal("\t h", _textBuffer.GetLine(0).GetText());
+                }
+
+                [Fact]
+                public void DeleteSimpleIndent()
+                {
+                    _vimBuffer.Process(VimKey.Tab, VimKey.Back);
+                    Assert.Equal("", _textBuffer.GetLine(0).GetText());
+                }
+
+                [Fact]
+                public void DeleteIndentWithChanges()
+                {
+                    _textBuffer.SetText("\t cat");
+                    _textView.MoveCaretTo(2);
+                    Assert.Equal('c', _textView.GetCaretPoint().GetChar());
+                    _vimBuffer.Process(VimKey.Back);
+                    Assert.Equal("cat", _textBuffer.GetLine(0).GetText());
+                }
+            }
+
+            public sealed class Configuration2 : TabSettingsTest
+            {
+                public Configuration2()
+                {
+                    Create();
+                    _vimBuffer.GlobalSettings.Backspace = "eol,start,indent";
+                    _vimBuffer.LocalSettings.TabStop = 8;
+                    _vimBuffer.LocalSettings.SoftTabStop = 0;
+                    _vimBuffer.LocalSettings.ShiftWidth = 8;
+                    _vimBuffer.LocalSettings.ExpandTab = false;
+                    _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
+                }
+
+                [Fact]
+                public void SimpleIndent()
+                {
+                    _vimBuffer.Process(VimKey.Tab);
+                    Assert.Equal("\t", _textBuffer.GetLine(0).GetText());
+                }
+
+                [Fact]
+                public void DoubleIndent()
+                {
+                    _vimBuffer.Process(VimKey.Tab, VimKey.Tab);
+                    Assert.Equal("\t\t", _textBuffer.GetLine(0).GetText());
+                }
+
+                [Fact]
+                public void SimpleIndentAndType()
+                {
+                    _vimBuffer.Process("\ta");
+                    Assert.Equal("\ta", _textBuffer.GetLine(0).GetText());
+                }
+
+                [Fact]
+                public void DeleteSimpleIndent()
+                {
+                    _vimBuffer.Process(VimKey.Tab, VimKey.Back);
+                    Assert.Equal("", _textBuffer.GetLine(0).GetText());
+                }
+
+                [Fact]
+                public void DeleteDoubleIndent()
+                {
+                    _vimBuffer.Process(VimKey.Tab, VimKey.Tab, VimKey.Back);
+                    Assert.Equal("\t", _textBuffer.GetLine(0).GetText());
+                    _vimBuffer.Process(VimKey.Back);
+                    Assert.Equal("", _textBuffer.GetLine(0).GetText());
+                }
+
+                [Fact]
+                public void DeleteIndentWithContent()
+                {
+                    _textBuffer.SetText("\tcat");
+                    _textView.MoveCaretTo(1);
+                    _vimBuffer.Process(VimKey.Back);
+                    Assert.Equal("cat", _textBuffer.GetLine(0).GetText());
+                }
+            }
+
+            public sealed class Configuration3: TabSettingsTest
+            {
+                public Configuration3()
+                {
+                    Create();
+                    _vimBuffer.GlobalSettings.Backspace = "eol,start,indent";
+                    _vimBuffer.LocalSettings.TabStop = 4;
+                    _vimBuffer.LocalSettings.SoftTabStop = 0;
+                    _vimBuffer.LocalSettings.ShiftWidth = 4;
+                    _vimBuffer.LocalSettings.ExpandTab = true;
+                    _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
+                }
+
+                [Fact]
+                public void SimpleIndent()
+                {
+                    _vimBuffer.Process(VimKey.Tab);
+                    Assert.Equal("    ", _textBuffer.GetLine(0).GetText());
+                }
+
+                [Fact]
+                public void DoubleIndent()
+                {
+                    _vimBuffer.Process(VimKey.Tab, VimKey.Tab);
+                    Assert.Equal("        ", _textBuffer.GetLine(0).GetText());
+                }
+
+                [Fact]
+                public void SimpleIndentAndType()
+                {
+                    _vimBuffer.Process("\ta");
+                    Assert.Equal("    a", _textBuffer.GetLine(0).GetText());
+                }
+
+                /// <summary>
+                /// 'sts' isn't set here hence the backspace is just interpretted as deleting a single
+                /// character 
+                /// </summary>
+                [Fact]
+                public void DeleteSimpleIndent()
+                {
+                    _vimBuffer.Process(VimKey.Tab, VimKey.Back);
+                    Assert.Equal("   ", _textBuffer.GetLine(0).GetText());
+                }
+
+                [Fact]
+                public void DeleteDoubleIndent()
+                {
+                    _vimBuffer.Process(VimKey.Tab, VimKey.Tab, VimKey.Back, VimKey.Back);
+                    Assert.Equal("      ", _textBuffer.GetLine(0).GetText());
+                }
+
+                [Fact]
+                public void DeleteIndentWithContent()
+                {
+                    _textBuffer.SetText("    cat");
+                    _textView.MoveCaretTo(4);
+                    _vimBuffer.Process(VimKey.Back);
+                    Assert.Equal("   cat", _textBuffer.GetLine(0).GetText());
+                }
+            }
+        }
     }
 }
