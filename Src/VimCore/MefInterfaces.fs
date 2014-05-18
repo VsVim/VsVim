@@ -451,7 +451,7 @@ type ICommonOperations =
     abstract Substitute : pattern : string -> replace : string -> SnapshotLineRange -> flags : SubstituteFlags -> unit
 
     /// Undo the buffer changes "count" times
-    abstract Undo : count:int -> unit
+    abstract Undo : count : int -> unit
 
 /// Factory for getting ICommonOperations instances
 type ICommonOperationsFactory =

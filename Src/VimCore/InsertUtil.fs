@@ -650,7 +650,53 @@ type internal InsertUtil
     /// be called when the caret is at the start of the line
     member x.BackspaceOverCharPoint() =
         Contract.Assert (x.CaretColumn.Column > 0)
-        BackspaceCommand.Characters 1 
+        let prevPoint = x.CaretPoint.Subtract(1)
+        if _localSettings.SoftTabStop <> 0 && SnapshotPointUtil.IsBlank prevPoint then
+            x.BackspaceOverIndent()
+        else
+            BackspaceCommand.Characters 1 
+
+    /// Attempt to backspace over the indent before the caret in the line.  This only occurs when
+    /// 'softtabstop' is set and there is a blank before the caret
+    member x.BackspaceOverIndent() = 
+        Contract.Assert (_localSettings.SoftTabStop <> 0)
+        Contract.Assert (x.CaretColumn.Column > 0)
+        Contract.Assert (SnapshotPointUtil.IsBlank (x.CaretPoint.Subtract(1)))
+
+        let prevPoint = x.CaretPoint.Subtract(1)
+        if SnapshotPointUtil.IsChar '\t' prevPoint then
+            // Backspacing over a tab.  If 'sts' is the same as 'tabstop' then this is just a 
+            // single character deletion.  If it is less then we need to split the tab and 
+            // delete the appropriate number of spaces
+            let diff = _localSettings.TabStop - _localSettings.SoftTabStop
+            if diff <= 0 then
+                BackspaceCommand.Characters 1
+            else
+                let text = StringUtil.repeatChar diff ' '
+                BackspaceCommand.Replace (1, text)
+        else
+            // Backspacing over white space.  If everything between here and the previous tab boundary
+            // is indent then take it all.  
+            let tabBoundarySpaces = 
+                let caretSpaces = _operations.GetSpacesToPoint x.CaretPoint
+                let remainder = caretSpaces % _localSettings.SoftTabStop 
+                if remainder = 0 then 
+                    caretSpaces - _localSettings.SoftTabStop
+                else
+                    caretSpaces - remainder
+
+            if tabBoundarySpaces < 0 then
+                BackspaceCommand.Characters 1
+            else
+                let tabBoundaryPoint = _operations.GetPointForSpaces x.CaretLine tabBoundarySpaces
+                let allBlank = 
+                    SnapshotSpan(tabBoundaryPoint, x.CaretPoint)
+                    |> SnapshotSpanUtil.GetPoints Path.Forward 
+                    |> Seq.forall SnapshotPointUtil.IsBlank
+                if allBlank then
+                    BackspaceCommand.Characters (x.CaretPoint.Position - tabBoundaryPoint.Position)
+                else
+                    BackspaceCommand.Characters 1 
 
     /// The point we should backspace to in order to delete a word
     member x.BackspaceOverWordPoint() =

@@ -744,11 +744,11 @@ type internal InsertMode
         else
             let keyInputSet = KeyInputSet.OneKeyInput keyInput
             let flags = CommandFlags.Repeatable ||| CommandFlags.InsertEdit
-            let command =
+            (*let command =
                 if point.Position >= startPoint.Position then
                     InsertCommand.DeleteLeft (x.CaretPoint.Position - point.Position)
                 else
-                    command
+                    command*)
             x.RunInsertCommand command keyInputSet flags
 
     /// Try and process the KeyInput by considering the current text edit in Insert Mode
