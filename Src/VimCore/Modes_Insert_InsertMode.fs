@@ -709,7 +709,16 @@ type internal InsertMode
                 x.CaretPoint
 
         // Ask the insert utilties how far it would backspace to for this command
-        let point = _insertUtil.GetBackspacingPoint command
+        let point = 
+            let count = 
+                match _insertUtil.GetBackspaceCommand command with
+                | BackspaceCommand.None -> 0
+                | BackspaceCommand.Characters count -> count
+                | BackspaceCommand.Replace (count, _) -> count
+
+            match SnapshotPointUtil.TrySubtract x.CaretPoint count with
+            | Some point -> point
+            | None -> x.CaretPoint
 
         // The start position is always an intermediate point for any
         // backspacing command.

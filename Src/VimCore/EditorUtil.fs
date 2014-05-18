@@ -944,10 +944,14 @@ module SnapshotPointUtil =
     /// Subtract the count from the SnapshotPoint
     let SubtractOne (point:SnapshotPoint) =  point.Subtract(1)
 
+    let TrySubtract (point:SnapshotPoint) count =  
+        let position = point.Position - count
+        if position >= 0 then SnapshotPoint(point.Snapshot, position) |> Some
+        else None
+
     /// Maybe subtract the count from the SnapshotPoint
     let TrySubtractOne (point:SnapshotPoint) =  
-        if point.Position = 0 then None
-        else point |> SubtractOne |> Some
+        TrySubtract point 1
 
     /// Try and subtract 1 from the given point unless it's the start of the buffer in which
     /// case return the passed in value

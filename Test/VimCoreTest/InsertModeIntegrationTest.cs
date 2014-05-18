@@ -676,7 +676,7 @@ namespace Vim.UnitTest
                 _globalSettings.Backspace = "start";
                 _textView.MoveCaretTo(4);
                 _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<BS>"));
-                Assert.Equal("    dog", _textBuffer.GetLine(0).GetText());
+                Assert.Equal("   dog", _textBuffer.GetLine(0).GetText());
             }
 
             /// <summary>
@@ -777,7 +777,7 @@ namespace Vim.UnitTest
                 _globalSettings.Backspace = "start";
                 _textView.MoveCaretTo(4);
                 _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<C-w>"));
-                Assert.Equal("    dog", _textBuffer.GetLine(0).GetText());
+                Assert.Equal("dog", _textBuffer.GetLine(0).GetText());
             }
 
             /// <summary>

@@ -600,75 +600,88 @@ type internal InsertUtil
 
     /// Run an insert command that backspaces over characters before the cursor
     member x.RunBackspacingCommand command =
-        let point = x.GetBackspacingPoint command
-        if point = x.CaretPoint then
+        match x.GetBackspaceCommand command with
+        | BackspaceCommand.None -> 
             _operations.Beep()
-        else
-            let span = new SnapshotSpan(point, x.CaretPoint)
-            x.EditWithUndoTransaction "Insert Character Above" (fun () ->
+        | BackspaceCommand.Characters count ->
+            let startPoint = x.CaretPoint.Subtract(count)
+            let span = SnapshotSpan(startPoint, x.CaretPoint)
+            x.EditWithUndoTransaction "Insert Backspace Command" (fun () ->
                 _textBuffer.Delete(span.Span) |> ignore
                 TextViewUtil.MoveCaretToPosition _textView span.Start.Position)
+        | BackspaceCommand.Replace (count, text) ->
+            let startPoint = x.CaretPoint.Subtract(count)
+            let span = SnapshotSpan(startPoint, x.CaretPoint)
+            x.EditWithUndoTransaction "Insert Backspace Command" (fun () ->
+                _textBuffer.Replace(span.Span, text) |> ignore
+                TextViewUtil.MoveCaretToPosition _textView (span.Start.Position + text.Length))
         CommandResult.Completed ModeSwitch.NoSwitch
 
-    /// Get the backspacing point for an insert command
-    member x.GetBackspacingPoint command =
+    /// Get the BackspaceCommand for the given InsertCommand at the caret point
+    member x.GetBackspaceCommand insertCommand = 
 
-        // Whether we can backspace taking into account 'backspace=indent,eol' settings
-        let canBackspace =
-            if x.CaretPoint = x.CaretLine.Start then
-                _globalSettings.IsBackspaceEol && x.CaretLineNumber <> 0
-            elif not _globalSettings.IsBackspaceIndent then
-                let point = SnapshotLineUtil.GetFirstNonBlankOrEnd x.CaretLine
-                x.CaretPoint.Position > point.Position
+        let go backspaceFunc = 
+            if x.CaretVirtualPoint.IsInVirtualSpace && SnapshotLineUtil.IsBlankOrEmpty x.CaretLine && not _globalSettings.IsBackspaceIndent then
+                // The 'backspace=indent' setting covers backspacing over autoindent which 
+                // doesn't have a direct 1-1 mapping in VsVim because the host controls indent
+                // not VsVim.  The closest equivaletn is when the caret is in virtual space 
+                // on a blank line.  
+                BackspaceCommand.None
+            elif x.CaretPoint = x.CaretLine.Start then
+                // All of the delete commands when invoked at the start of the line will
+                // cause the line break of the previous line to be deleted if the 
+                // 'backspace' setting contains 'eol'
+                if _globalSettings.IsBackspaceEol && x.CaretLineNumber > 0 then
+                    let previousLineNumber = x.CaretLineNumber - 1
+                    let previousLine = SnapshotUtil.GetLine x.CurrentSnapshot previousLineNumber
+                    BackspaceCommand.Characters previousLine.LineBreakLength 
+                else
+                    BackspaceCommand.None
             else
-                true
+                backspaceFunc ()
 
-        if not canBackspace then
-            x.CaretPoint
-        elif x.CaretPoint = x.CaretLine.Start then
-            let previousLineNumber = x.CaretLineNumber - 1
-            let previousLine = SnapshotUtil.GetLine x.CurrentSnapshot previousLineNumber
-            previousLine.End
-        else
-            match command with
-            | InsertCommand.Back ->
-                x.BackspaceOverCharPoint
-            | InsertCommand.DeleteWordBeforeCursor ->
-                x.BackspaceOverWordPoint
-            | InsertCommand.DeleteLineBeforeCursor ->
-                x.BackspaceOverLinePoint
-            | _ ->
-                x.CaretPoint
+        match insertCommand with
+        | InsertCommand.Back -> go x.BackspaceOverCharPoint
+        | InsertCommand.DeleteWordBeforeCursor -> go x.BackspaceOverWordPoint
+        | InsertCommand.DeleteLineBeforeCursor -> go x.BackspaceOverLinePoint
+        | _ -> BackspaceCommand.None
 
-    /// The point we should backspace to in order to delete a character
-    member x.BackspaceOverCharPoint =
-        SnapshotPointUtil.SubtractOne x.CaretPoint
+    /// The point we should backspace to in order to delete a character.  This will never 
+    /// be called when the caret is at the start of the line
+    member x.BackspaceOverCharPoint() =
+        Contract.Assert (x.CaretColumn.Column > 0)
+        BackspaceCommand.Characters 1 
 
     /// The point we should backspace to in order to delete a word
-    member x.BackspaceOverWordPoint =
+    member x.BackspaceOverWordPoint() =
+        Contract.Assert (x.CaretColumn.Column > 0)
 
         // Jump past any blanks before the caret
-        let searchEndPoint = 
-            SnapshotSpan(x.CaretLine.Start, x.CaretPoint)
-            |> SnapshotSpanUtil.GetPoints Path.Backward
-            |> Seq.skipWhile SnapshotPointUtil.IsBlank
-            |> SeqUtil.headOrDefault x.CaretLine.Start
+        let searchPoint = 
+            let mutable current = x.CaretColumn.Subtract 1
+            while current.Column > 0 && SnapshotPointUtil.IsBlank current.Point do
+                current <- current.Subtract 1
+            current.Point
 
-        match _wordUtil.GetFullWordSpan WordKind.NormalWord searchEndPoint with
-        | None -> searchEndPoint
-        | Some span -> span.Start
+        let deletePoint =  
+            match _wordUtil.GetFullWordSpan WordKind.NormalWord searchPoint with
+            | None -> searchPoint
+            | Some span -> span.Start
+
+        let length = x.CaretPoint.Position - deletePoint.Position
+        BackspaceCommand.Characters length
 
     /// The point we should backspace to in order to delete a line
-    member x.BackspaceOverLinePoint =
+    member x.BackspaceOverLinePoint() =
         let point = SnapshotLineUtil.GetFirstNonBlankOrEnd x.CaretLine
         if point.Position < x.CaretPoint.Position then
-            point
+            let length = x.CaretPoint.Position - point.Position
+            BackspaceCommand.Characters length
         else
-            x.BackspaceOverWordPoint
+            x.BackspaceOverWordPoint()
 
     interface IInsertUtil with
-
-        member x.GetBackspacingPoint command = x.GetBackspacingPoint command
+        member x.GetBackspaceCommand command = x.GetBackspaceCommand command
         member x.RunInsertCommand command = x.RunInsertCommand command
         member x.RepeatEdit textChange addNewLines count = x.RepeatEdit textChange addNewLines count
         member x.RepeatBlock command blockSpan = x.RepeatBlock command blockSpan

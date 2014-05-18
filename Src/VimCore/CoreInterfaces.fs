@@ -3029,13 +3029,29 @@ and ICommandUtil =
     /// Run a command
     abstract RunCommand : command : Command -> CommandResult
 
+/// Gets information on the type of backspace that needs to be performed at 
+/// a given point
+[<RequireQualifiedAccess>]
+[<NoComparison>]
+[<StructuralEquality>]
+type BackspaceCommand = 
+
+    /// The command is invalid
+    | None
+
+    /// Backspace over the set number of characters
+    | Characters of int
+
+    /// Replace the number of characters with the specified string
+    | Replace of int * string
+
 type internal IInsertUtil = 
 
     /// Get the backspacing point for an insert command
-    abstract GetBackspacingPoint : InsertCommand -> SnapshotPoint
+    abstract GetBackspaceCommand : insertCommand : InsertCommand -> BackspaceCommand
 
     /// Run a insert command
-    abstract RunInsertCommand : InsertCommand -> CommandResult
+    abstract RunInsertCommand : insertCommand : InsertCommand -> CommandResult
 
     /// Repeat the given edit series. 
     abstract RepeatEdit : textChange : TextChange -> addNewLines : bool -> count : int -> unit
