@@ -774,6 +774,19 @@ namespace Vim.UnitTest
                     Assert.Equal("cat do", _textBuffer.GetLine(0).GetText());
                     Assert.Equal(1, VimHost.BeepCount);
                 }
+
+                [Fact(Skip = "Need to fix the handling of backspace=start")]
+                public void EnterDoesntChangeStartPoint()
+                {
+                    Create("cat");
+                    _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
+                    _globalSettings.Backspace = "eol";
+                    _vimBuffer.ProcessNotation("is<CR><BS><BS>");
+                    Assert.Equal("cat", _textBuffer.GetLine(0).GetText());
+                    _vimBuffer.Process("<BS>");
+                    Assert.Equal("cat", _textBuffer.GetLine(0).GetText());
+                    Assert.Equal(1, VimHost.BeepCount);
+                }
             }
 
             public sealed class BackspaceOverWordTest : BackspacingTest
@@ -1842,6 +1855,20 @@ namespace Vim.UnitTest
                 Assert.Equal(ModeKind.Insert, _vimBuffer.ModeKind);
                 Assert.Equal(4, _textView.GetCaretPoint().Position);
             }
+
+            /// <summary>
+            /// In general when the caret moves between lines this changes the 'start' point of the
+            /// insert mode edit to be the new caret point.  This is not the case when Enter is used
+            /// </summary>
+            [Fact]
+            public void EnterDoesntChangeEditStartPoint()
+            {
+                Create("");
+                Assert.Equal(0, _vimBuffer.VimTextBuffer.LastInsertEntryPoint.Value.Position);
+                _vimBuffer.ProcessNotation("a<CR>");
+                Assert.Equal(_textBuffer.GetLine(1).Start, _textView.GetCaretPoint());
+                Assert.Equal(0, _vimBuffer.VimTextBuffer.LastInsertEntryPoint.Value.Position);
+            }
         }
 
         public abstract class TabSettingsTest : InsertModeIntegrationTest
@@ -2355,6 +2382,58 @@ namespace Vim.UnitTest
                     Assert.Equal("cat", _textBuffer.GetLine(0).GetText());
                 }
             }
+
+            public sealed class TabSettingsMiscTest : TabSettingsTest
+            {
+                /// <summary>
+                /// Typing a space while editting will disable 'sts' for that line
+                /// </summary>
+                [Fact(Skip = "Need to distinguish between the space case and normal indent")]
+                public void TypingSpaceDisablesSoftTabStop()
+                {
+                    Create("");
+                    _globalSettings.Backspace = "start,eol,indent";
+                    _localSettings.SoftTabStop = 4;
+                    _localSettings.TabStop = 4;
+                    _localSettings.ExpandTab = true;
+                    _vimBuffer.ProcessNotation("<Tab> <BS><BS>");
+                    Assert.Equal(new string(' ', 3), _textBuffer.GetLine(0).GetText());
+                }
+
+                /// <summary>
+                /// Once insert mode is left and re-entered 'sts' is restored 
+                /// </summary>
+                [Fact(Skip = "Need to distinguish between the space case and normal indent")]
+                public void TypingSpaceThenEscapeRestoresSoftTabStop()
+                {
+                    Create("");
+                    _globalSettings.Backspace = "start,eol,indent";
+                    _localSettings.SoftTabStop = 4;
+                    _localSettings.TabStop = 4;
+                    _localSettings.ExpandTab = true;
+                    _vimBuffer.ProcessNotation("<Tab> <Esc><a><BS><BS>");
+                    Assert.Equal("", _textBuffer.GetLine(0).GetText());
+                }
+
+                /// <summary>
+                /// A caret movement also restores 'sts'
+                /// </summary>
+                [Fact(Skip = "Need to distinguish between the space case and normal indent")]
+                public void TypingSpaceThenCaretMoveRestoresSoftTabStop()
+                {
+                    Create("");
+                    _globalSettings.Backspace = "start,eol,indent";
+                    _localSettings.SoftTabStop = 4;
+                    _localSettings.TabStop = 4;
+                    _localSettings.ExpandTab = true;
+                    _vimBuffer.ProcessNotation("<Tab> <Esc>");
+                    _textView.MoveCaretTo(0);
+                    _textView.MoveCaretTo(2);
+                    _vimBuffer.ProcessNotation("<BS><BS>");
+                    Assert.Equal("", _textBuffer.GetLine(0).GetText());
+                }
+            }
         }
     }
 }
+
