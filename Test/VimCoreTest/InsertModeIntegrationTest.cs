@@ -739,11 +739,45 @@ namespace Vim.UnitTest
                     Assert.Equal("  hello", _textView.GetLine(0).GetText());
                     Assert.Equal(" ", _textView.GetLine(1).GetText());
                 }
+
+                /// <summary>
+                /// A repeat of a backspace operation will perform a check on the 'backspace' option
+                /// </summary>
+                [Fact(Skip = "Need to fix the handling of backspace=start")]
+                public void RepeatRechecksBackspaceOption()
+                {
+                    Create("cats");
+                    _textView.MoveCaretTo(3);
+                    _globalSettings.Backspace = "start";
+                    _vimBuffer.Process(VimKey.Back, VimKey.Escape);
+                    Assert.Equal("cas", _textBuffer.GetLine(0).GetText());
+                    _globalSettings.Backspace = "";
+                    _vimBuffer.Process(".");
+                    Assert.Equal("cas", _textBuffer.GetLine(0).GetText());
+                    Assert.Equal(1, VimHost.BeepCount);
+                }
+
+                /// <summary>
+                /// If the caret moves from anything other than an edit operation in insert mode it resets the 
+                /// start point to the new position of the caret 
+                /// </summary>
+                [Fact]
+                public void CaretChangeSameLine()
+                {
+                    Create("");
+                    _globalSettings.Backspace = "";
+                    _vimBuffer.Process("cat dog");
+                    _vimBuffer.Process(VimKey.Back);
+                    Assert.Equal("cat do", _textBuffer.GetLine(0).GetText());
+                    _textView.MoveCaretTo(3);
+                    _vimBuffer.Process(VimKey.Back);
+                    Assert.Equal("cat do", _textBuffer.GetLine(0).GetText());
+                    Assert.Equal(1, VimHost.BeepCount);
+                }
             }
 
             public sealed class BackspaceOverWordTest : BackspacingTest
             {
-
                 /// <summary>
                 /// Make sure backspace over word at start without
                 /// 'backspace=start' works
@@ -831,7 +865,6 @@ namespace Vim.UnitTest
 
             public sealed class BackspaceOverLineTest : BackspacingTest
             {
-
                 /// <summary>
                 /// Make sure backspacing over line starting from an empty line
                 /// works
