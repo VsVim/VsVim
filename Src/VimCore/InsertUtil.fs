@@ -600,7 +600,8 @@ type internal InsertUtil
 
     /// Run an insert command that backspaces over characters before the cursor
     member x.RunBackspacingCommand command =
-        match x.GetBackspaceCommand command with
+        let backspaceCommand = x.GetBackspaceCommand command |> x.AdjustBackspaceForStartSetting
+        match backspaceCommand with 
         | BackspaceCommand.None -> 
             _operations.Beep()
         | BackspaceCommand.Characters count ->
@@ -645,6 +646,21 @@ type internal InsertUtil
         | InsertCommand.DeleteWordBeforeCursor -> go x.BackspaceOverWordPoint
         | InsertCommand.DeleteLineBeforeCursor -> go x.BackspaceOverLinePoint
         | _ -> BackspaceCommand.None
+
+    /// Adjust the backspace command for the start option
+    member x.AdjustBackspaceForStartSetting backspaceCommand = 
+        match _globalSettings.IsBackspaceStart, _vimBufferData.VimTextBuffer.LastInsertEntryPoint, backspaceCommand with
+        | true, _, _ -> backspaceCommand
+        | false, None, _ -> backspaceCommand
+        | false, Some startPoint, BackspaceCommand.None -> backspaceCommand
+        | false, Some startPoint, BackspaceCommand.Characters count -> 
+            let maxCount = abs (x.CaretPoint.Position - startPoint.Position)
+            let count = min maxCount count
+            if count = 0 then
+                BackspaceCommand.None
+            else    
+                BackspaceCommand.Characters count
+        | false, Some startPoint, BackspaceCommand.Replace _ -> BackspaceCommand.None
 
     /// The point we should backspace to in order to delete a character.  This will never 
     /// be called when the caret is at the start of the line
@@ -721,7 +737,19 @@ type internal InsertUtil
     member x.BackspaceOverLinePoint() =
         let point = SnapshotLineUtil.GetFirstNonBlankOrEnd x.CaretLine
         if point.Position < x.CaretPoint.Position then
-            let length = x.CaretPoint.Position - point.Position
+            // A backspace over line (Ctrl-U) which begins to the right of the insert start
+            // point has a max delete of the start point itself.  Do the minimization here
+            let deletePoint = 
+                match _vimBufferData.VimTextBuffer.LastInsertEntryPoint with
+                | None -> point
+                | Some startPoint ->
+                    if x.CaretPoint.Position > startPoint.Position then 
+                        let position = max point.Position startPoint.Position
+                        SnapshotPoint(point.Snapshot, position)
+                    else 
+                        point
+
+            let length = x.CaretPoint.Position - deletePoint.Position
             BackspaceCommand.Characters length
         else
             x.BackspaceOverWordPoint()

@@ -2,3 +2,4 @@ For softtabstop
     - when VS settings when softtabstop needs to equal tabsize
     - figure out how forward typing affects tab, in particular delete
     - fix the interaction between delete and backspace=!start
+    - don't auto-fill in virtual spaces

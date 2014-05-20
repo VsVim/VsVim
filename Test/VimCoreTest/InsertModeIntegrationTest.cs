@@ -743,7 +743,7 @@ namespace Vim.UnitTest
                 /// <summary>
                 /// A repeat of a backspace operation will perform a check on the 'backspace' option
                 /// </summary>
-                [Fact(Skip = "Need to fix the handling of backspace=start")]
+                [Fact]
                 public void RepeatRechecksBackspaceOption()
                 {
                     Create("cats");
@@ -775,7 +775,7 @@ namespace Vim.UnitTest
                     Assert.Equal(1, VimHost.BeepCount);
                 }
 
-                [Fact(Skip = "Need to fix the handling of backspace=start")]
+                [Fact]
                 public void EnterDoesntChangeStartPoint()
                 {
                     Create("cat");
@@ -783,7 +783,7 @@ namespace Vim.UnitTest
                     _globalSettings.Backspace = "eol";
                     _vimBuffer.ProcessNotation("is<CR><BS><BS>");
                     Assert.Equal("cat", _textBuffer.GetLine(0).GetText());
-                    _vimBuffer.Process("<BS>");
+                    _vimBuffer.ProcessNotation("<BS>");
                     Assert.Equal("cat", _textBuffer.GetLine(0).GetText());
                     Assert.Equal(1, VimHost.BeepCount);
                 }
@@ -911,7 +911,7 @@ namespace Vim.UnitTest
                 /// Make sure backspacing over line from the end of a non-empty
                 /// line works
                 /// </summary>
-                [Fact(Skip = "Need to fix the handling of backspace=start")]
+                [Fact]
                 public void FromEndOfNonEmpyLine()
                 {
                     Create("cat");
@@ -926,7 +926,7 @@ namespace Vim.UnitTest
                 /// Make sure backspacing over line from the middle of a non-empty
                 /// line works
                 /// </summary>
-                [Fact(Skip = "Need to fix the handling of backspace=start")]
+                [Fact]
                 public void FromMiddleOfNonEmpyLine()
                 {
                     Create("cat dog");
@@ -954,7 +954,7 @@ namespace Vim.UnitTest
                 /// Make sure backspacing over line and then doing it again from
                 /// the start position stays put
                 /// </summary>
-                [Fact(Skip = "Need to fix the handling of backspace=start")]
+                [Fact]
                 public void AgainAtStart_NoBackspaceStart()
                 {
                     Create("cat dog");
@@ -986,7 +986,7 @@ namespace Vim.UnitTest
                 /// the start position with 'backspace=start' performs delete
                 /// line before cursor
                 /// </summary>
-                [Fact(Skip = "Need to fix the handling of backspace=start")]
+                [Fact]
                 public void AgainAtStart_BackspaceStart()
                 {
                     Create("cat dog");
@@ -1043,7 +1043,7 @@ namespace Vim.UnitTest
                 /// <summary>
                 /// Make sure backspacing over line twice from the same edit
                 /// </summary>
-                [Fact(Skip = "Need to fix the handling of backspace=start")]
+                [Fact]
                 public void TwiceFromSameEdit()
                 {
                     Create("cat dog");
@@ -1061,7 +1061,7 @@ namespace Vim.UnitTest
                 /// <summary>
                 /// Make sure a redo after an undo in insert works
                 /// </summary>
-                [Fact(Skip = "Need to fix the handling of backspace=start")]
+                [Fact(Skip = "Fix the flaw in the repeat architecture")]
                 public void WithRedo()
                 {
                     Create("cat dog");
@@ -1081,7 +1081,7 @@ namespace Vim.UnitTest
                 /// Make sure backspacing over word hits all the right "pause"
                 /// points in a multi-line edit
                 /// </summary>
-                [Fact(Skip = "Need to fix the handling of backspace=start")]
+                [Fact(Skip = "Fix the flaw in the repeat architecture")]
                 public void BackspaceOverWord_RepeatedOverMultiLine()
                 {
                     Create("aaa bbb");
@@ -1117,11 +1117,12 @@ namespace Vim.UnitTest
                     _vimBuffer.ProcessNotation("<C-w>");
                     Assert.Equal(new[] { "", }, _textBuffer.GetLines());
                 }
+
                 /// <summary>
                 /// Make sure backspacing over line hits all the right "pause"
                 /// points in a multi-line edit
                 /// </summary>
-                [Fact(Skip = "Need to fix the handling of backspace=start")]
+                [Fact(Skip = "Fix the flaw in the repeat architecture")]
                 public void RepeatedOverMultiLine()
                 {
                     Create("aaa bbb");

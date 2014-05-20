@@ -700,56 +700,9 @@ type internal InsertMode
         // operate in terms of real points
         x.FillInVirtualSpace()
 
-        // Get the point that 'backspace=start' allows backspacing over
-        let startPoint =
-            match _vimBuffer.VimTextBuffer.LastInsertEntryPoint with
-            | Some startPoint ->
-                startPoint
-            | None ->
-                x.CaretPoint
-
-        // Ask the insert utilties how far it would backspace to for this command
-        let point = 
-            let count = 
-                match _insertUtil.GetBackspaceCommand command with
-                | BackspaceCommand.None -> 0
-                | BackspaceCommand.Characters count -> count
-                | BackspaceCommand.Replace (count, _) -> count
-
-            match SnapshotPointUtil.TrySubtract x.CaretPoint count with
-            | Some point -> point
-            | None -> x.CaretPoint
-
-        // The start position is always an intermediate point for any
-        // backspacing command.
-        let point =
-            if point.Position < startPoint.Position && startPoint.Position < x.CaretPoint.Position then
-                startPoint
-            else
-                point
-
-        // Enforce 'backspace=start'
-        let point =
-            if not _globalSettings.IsBackspaceStart && point.Position < startPoint.Position then
-                startPoint
-            else
-                point
-
-        // If there is nothing to backspace over, it's an error
-        // If the point is within the current edit, convert it to a DeleteLeft command
-        // Otherwise process the command as is
-        if point.Position = x.CaretPoint.Position then
-            _operations.Beep()
-            ProcessResult.Handled ModeSwitch.NoSwitch
-        else
-            let keyInputSet = KeyInputSet.OneKeyInput keyInput
-            let flags = CommandFlags.Repeatable ||| CommandFlags.InsertEdit
-            (*let command =
-                if point.Position >= startPoint.Position then
-                    InsertCommand.DeleteLeft (x.CaretPoint.Position - point.Position)
-                else
-                    command*)
-            x.RunInsertCommand command keyInputSet flags
+        let keyInputSet = KeyInputSet.OneKeyInput keyInput
+        let flags = CommandFlags.Repeatable ||| CommandFlags.InsertEdit
+        x.RunInsertCommand command keyInputSet flags
 
     /// Try and process the KeyInput by considering the current text edit in Insert Mode
     member x.ProcessWithCurrentChange keyInput = 
