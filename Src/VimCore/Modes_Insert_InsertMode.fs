@@ -835,8 +835,15 @@ type internal InsertMode
         _textChangeTracker.CompleteChange()
         _sessionData <- { _sessionData with InsertTextChange = None }
         _vimBuffer.VimTextBuffer.InsertStartPoint <- Some x.CaretPoint
+        _vimBuffer.VimTextBuffer.IsSoftTabStopValidForBackspace <- true
 
     member x.OnAfterRunInsertCommand (insertCommand : InsertCommand) =
+
+        // If the user typed a <Space> then 'sts' shouldn't be considered for <BS> operations
+        // until the start point is reset 
+        match insertCommand with
+        | InsertCommand.DirectInsert ' ' -> _vimBuffer.VimTextBuffer.IsSoftTabStopValidForBackspace <- false
+        | _ -> ()
 
         let commandTextChange = insertCommand.TextChange _editorOptions
 
@@ -902,6 +909,7 @@ type internal InsertMode
 
         // Record start point upon initial entry to insert mode
         _vimBuffer.VimTextBuffer.InsertStartPoint <- Some x.CaretPoint
+        _vimBuffer.VimTextBuffer.IsSoftTabStopValidForBackspace <- true
 
         // When starting insert mode we want to track the edits to the IVimBuffer as a 
         // text change
@@ -979,6 +987,7 @@ type internal InsertMode
 
         // The 'start' point is not valid when we are not in insert mode 
         _vimBuffer.VimTextBuffer.InsertStartPoint <- None
+        _vimBuffer.VimTextBuffer.IsSoftTabStopValidForBackspace <- true
 
         try
             match _sessionData.Transaction with

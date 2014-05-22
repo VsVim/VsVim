@@ -4109,6 +4109,10 @@ and IVimTextBuffer =
     /// 'backspace'
     abstract InsertStartPoint : SnapshotPoint option with get, set
 
+    /// True when 'softtabstop' setting should be considered during backspace operations in insert
+    /// mode
+    abstract IsSoftTabStopValidForBackspace : bool with get, set
+
     /// The point the caret occupied when Insert mode was exited 
     abstract LastInsertExitPoint : SnapshotPoint option with get, set
 

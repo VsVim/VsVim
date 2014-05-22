@@ -22,6 +22,7 @@ type internal InsertUtil
     let _editorOptions = _textView.Options
     let _wordUtil = _vimBufferData.WordUtil
     let _vimHost = _vimBufferData.Vim.VimHost
+    let _vimTextBuffer = _vimBufferData.VimTextBuffer
 
     /// The SnapshotPoint for the caret
     member x.CaretPoint = TextViewUtil.GetCaretPoint _textView
@@ -667,7 +668,7 @@ type internal InsertUtil
     member x.BackspaceOverCharPoint() =
         Contract.Assert (x.CaretColumn.Column > 0)
         let prevPoint = x.CaretPoint.Subtract(1)
-        if _localSettings.SoftTabStop <> 0 && SnapshotPointUtil.IsBlank prevPoint then
+        if _localSettings.SoftTabStop <> 0 && SnapshotPointUtil.IsBlank prevPoint && _vimTextBuffer.IsSoftTabStopValidForBackspace then
             x.BackspaceOverIndent()
         else
             BackspaceCommand.Characters 1 

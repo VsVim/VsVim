@@ -2389,7 +2389,7 @@ namespace Vim.UnitTest
                 /// <summary>
                 /// Typing a space while editting will disable 'sts' for that line
                 /// </summary>
-                [Fact(Skip = "Need to distinguish between the space case and normal indent")]
+                [Fact]
                 public void TypingSpaceDisablesSoftTabStop()
                 {
                     Create("");
@@ -2404,7 +2404,7 @@ namespace Vim.UnitTest
                 /// <summary>
                 /// Once insert mode is left and re-entered 'sts' is restored 
                 /// </summary>
-                [Fact(Skip = "Need to distinguish between the space case and normal indent")]
+                [Fact]
                 public void TypingSpaceThenEscapeRestoresSoftTabStop()
                 {
                     Create("");
@@ -2412,14 +2412,14 @@ namespace Vim.UnitTest
                     _localSettings.SoftTabStop = 4;
                     _localSettings.TabStop = 4;
                     _localSettings.ExpandTab = true;
-                    _vimBuffer.ProcessNotation("<Tab> <Esc><a><BS><BS>");
+                    _vimBuffer.ProcessNotation("<Tab> <Esc>a<BS><BS>");
                     Assert.Equal("", _textBuffer.GetLine(0).GetText());
                 }
 
                 /// <summary>
                 /// A caret movement also restores 'sts'
                 /// </summary>
-                [Fact(Skip = "Need to distinguish between the space case and normal indent")]
+                [Fact]
                 public void TypingSpaceThenCaretMoveRestoresSoftTabStop()
                 {
                     Create("");
@@ -2429,8 +2429,8 @@ namespace Vim.UnitTest
                     _localSettings.ExpandTab = true;
                     _vimBuffer.ProcessNotation("<Tab> <Esc>");
                     _textView.MoveCaretTo(0);
-                    _textView.MoveCaretTo(2);
-                    _vimBuffer.ProcessNotation("<BS><BS>");
+                    _textView.MoveCaretTo(5);
+                    _vimBuffer.ProcessNotation("i<BS><BS>");
                     Assert.Equal("", _textBuffer.GetLine(0).GetText());
                 }
             }
