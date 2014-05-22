@@ -649,7 +649,7 @@ type internal InsertUtil
 
     /// Adjust the backspace command for the start option
     member x.AdjustBackspaceForStartSetting backspaceCommand = 
-        match _globalSettings.IsBackspaceStart, _vimBufferData.VimTextBuffer.LastInsertEntryPoint, backspaceCommand with
+        match _globalSettings.IsBackspaceStart, _vimBufferData.VimTextBuffer.InsertStartPoint, backspaceCommand with
         | true, _, _ -> backspaceCommand
         | false, None, _ -> backspaceCommand
         | false, Some startPoint, BackspaceCommand.None -> backspaceCommand
@@ -740,7 +740,7 @@ type internal InsertUtil
             // A backspace over line (Ctrl-U) which begins to the right of the insert start
             // point has a max delete of the start point itself.  Do the minimization here
             let deletePoint = 
-                match _vimBufferData.VimTextBuffer.LastInsertEntryPoint with
+                match _vimBufferData.VimTextBuffer.InsertStartPoint with
                 | None -> point
                 | Some startPoint ->
                     if x.CaretPoint.Position > startPoint.Position then 

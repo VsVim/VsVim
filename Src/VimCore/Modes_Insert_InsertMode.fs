@@ -834,7 +834,7 @@ type internal InsertMode
     member x.OnCaretPositionChanged () = 
         _textChangeTracker.CompleteChange()
         _sessionData <- { _sessionData with InsertTextChange = None }
-        _vimBuffer.VimTextBuffer.LastInsertEntryPoint <- Some x.CaretPoint
+        _vimBuffer.VimTextBuffer.InsertStartPoint <- Some x.CaretPoint
 
     member x.OnAfterRunInsertCommand (insertCommand : InsertCommand) =
 
@@ -849,7 +849,7 @@ type internal InsertMode
 
         // If the command cannot be converted into a text change, reset the start point
         if Option.isNone commandTextChange then
-            _vimBuffer.VimTextBuffer.LastInsertEntryPoint <- Some x.CaretPoint
+            _vimBuffer.VimTextBuffer.InsertStartPoint <- None
 
         let updateRepeat count addNewLines textChange =
 
@@ -901,7 +901,7 @@ type internal InsertMode
         x.EnsureCommandsBuilt()
 
         // Record start point upon initial entry to insert mode
-        _vimBuffer.VimTextBuffer.LastInsertEntryPoint <- Some x.CaretPoint
+        _vimBuffer.VimTextBuffer.InsertStartPoint <- Some x.CaretPoint
 
         // When starting insert mode we want to track the edits to the IVimBuffer as a 
         // text change
@@ -976,6 +976,9 @@ type internal InsertMode
 
         // Dismiss any active ICompletionSession 
         x.CancelWordCompletionSession()
+
+        // The 'start' point is not valid when we are not in insert mode 
+        _vimBuffer.VimTextBuffer.InsertStartPoint <- None
 
         try
             match _sessionData.Transaction with
