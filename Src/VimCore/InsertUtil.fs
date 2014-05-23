@@ -5,6 +5,23 @@ open Microsoft.VisualStudio.Text.Operations
 open Microsoft.VisualStudio.Text.Editor
 open Microsoft.VisualStudio.Text.Outlining
 
+
+/// Gets information on the type of backspace that needs to be performed at 
+/// a given point
+[<RequireQualifiedAccess>]
+[<NoComparison>]
+[<StructuralEquality>]
+type internal BackspaceCommand = 
+
+    /// The command is invalid
+    | None
+
+    /// Backspace over the set number of characters
+    | Characters of int
+
+    /// Replace the number of characters with the specified string
+    | Replace of int * string
+
 /// This type houses the functionality for many of the insert mode commands
 type internal InsertUtil
     (
@@ -756,7 +773,6 @@ type internal InsertUtil
             x.BackspaceOverWordPoint()
 
     interface IInsertUtil with
-        member x.GetBackspaceCommand command = x.GetBackspaceCommand command
         member x.RunInsertCommand command = x.RunInsertCommand command
         member x.RepeatEdit textChange addNewLines count = x.RepeatEdit textChange addNewLines count
         member x.RepeatBlock command blockSpan = x.RepeatBlock command blockSpan
