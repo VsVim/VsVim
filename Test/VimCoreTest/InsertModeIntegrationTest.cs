@@ -743,7 +743,7 @@ namespace Vim.UnitTest
                 /// <summary>
                 /// A repeat of a backspace operation will perform a check on the 'backspace' option
                 /// </summary>
-                [Fact(Skip = "Repeat bugs")]
+                [Fact]
                 public void RepeatRechecksBackspaceOption()
                 {
                     Create("cats");
@@ -954,7 +954,7 @@ namespace Vim.UnitTest
                 /// Make sure backspacing over line and then doing it again from
                 /// the start position stays put
                 /// </summary>
-                [Fact(Skip = "Repeat")]
+                [Fact]
                 public void AgainAtStart_NoBackspaceStart()
                 {
                     Create("cat dog");
@@ -1043,7 +1043,7 @@ namespace Vim.UnitTest
                 /// <summary>
                 /// Make sure backspacing over line twice from the same edit
                 /// </summary>
-                [Fact(Skip = "Repeat")]
+                [Fact]
                 public void TwiceFromSameEdit()
                 {
                     Create("cat dog");
@@ -1061,7 +1061,7 @@ namespace Vim.UnitTest
                 /// <summary>
                 /// Make sure a redo after an undo in insert works
                 /// </summary>
-                [Fact(Skip = "Fix the flaw in the repeat architecture")]
+                [Fact]
                 public void WithRedo()
                 {
                     Create("cat dog");
@@ -1081,11 +1081,12 @@ namespace Vim.UnitTest
                 /// Make sure backspacing over word hits all the right "pause"
                 /// points in a multi-line edit
                 /// </summary>
-                [Fact(Skip = "Fix the flaw in the repeat architecture")]
+                [Fact]
                 public void BackspaceOverWord_RepeatedOverMultiLine()
                 {
                     Create("aaa bbb");
                     _globalSettings.Backspace = "indent,eol,start";
+                    _textView.MoveCaretTo(0);
                     _textView.MoveCaretTo(7);
                     _vimBuffer.ProcessNotation("ccc ddd<Enter>");
                     _vimBuffer.ProcessNotation("    eee fff<Enter>");
@@ -1122,7 +1123,7 @@ namespace Vim.UnitTest
                 /// Make sure backspacing over line hits all the right "pause"
                 /// points in a multi-line edit
                 /// </summary>
-                [Fact(Skip = "Fix the flaw in the repeat architecture")]
+                [Fact]
                 public void RepeatedOverMultiLine()
                 {
                     Create("aaa bbb");

@@ -607,23 +607,36 @@ type internal InsertMode
     /// hence must be reprocessed on a repeat
     static member CreateCombinedEditCommand left right =
 
-        // Is this a simple text change which can be combined
-        let convert command = 
-            match command with 
-            | InsertCommand.Insert text -> TextChange.Insert text |> Some
-            | InsertCommand.DeleteLeft count -> TextChange.DeleteLeft count |> Some
-            | InsertCommand.DeleteRight count -> TextChange.DeleteRight count |> Some
-            | _ -> None
+        // Certain commands are simply not combinable with others.  Once executed they stand 
+        // as the lone command
+        let isUncombinable command = 
+            match command with
+            | InsertCommand.DeleteLineBeforeCursor -> true
+            | InsertCommand.DeleteWordBeforeCursor -> true
+            | _ -> false
 
-        match convert left, convert right with
-        | Some leftChange, Some rightChange ->
-            let textChange = TextChange.CreateReduced leftChange rightChange
-            match textChange with
-            | TextChange.Insert text -> InsertCommand.Insert text
-            | TextChange.DeleteLeft count -> InsertCommand.DeleteLeft count
-            | TextChange.DeleteRight count -> InsertCommand.DeleteRight count
-            | TextChange.Combination _ -> InsertCommand.Combined (left, right)
-        | _ -> InsertCommand.Combined (left, right)
+        if isUncombinable left then
+            right
+        elif isUncombinable right then
+            right
+        else
+            // Is this a simple text change which can be combined
+            let convert command = 
+                match command with 
+                | InsertCommand.Insert text -> TextChange.Insert text |> Some
+                | InsertCommand.DeleteLeft count -> TextChange.DeleteLeft count |> Some
+                | InsertCommand.DeleteRight count -> TextChange.DeleteRight count |> Some
+                | _ -> None
+
+            match convert left, convert right with
+            | Some leftChange, Some rightChange ->
+                let textChange = TextChange.CreateReduced leftChange rightChange
+                match textChange with
+                | TextChange.Insert text -> InsertCommand.Insert text
+                | TextChange.DeleteLeft count -> InsertCommand.DeleteLeft count
+                | TextChange.DeleteRight count -> InsertCommand.DeleteRight count
+                | TextChange.Combination _ -> InsertCommand.Combined (left, right)
+            | _ -> InsertCommand.Combined (left, right)
 
     /// Run the insert command with the given information
     member x.RunInsertCommand (command : InsertCommand) (keyInputSet : KeyInputSet) commandFlags : ProcessResult =
@@ -866,16 +879,10 @@ type internal InsertMode
         | InsertCommand.Insert " " -> _vimBuffer.VimTextBuffer.IsSoftTabStopValidForBackspace <- false
         | _ -> ()
 
-        // RTODO: is this or the if needed?
-        let commandTextChange = insertCommand.TextChange _editorOptions
-
-        // If the command cannot be converted into a text change, reset the start point
-        if Option.isNone commandTextChange then
-            _vimBuffer.VimTextBuffer.InsertStartPoint <- None
-
         let updateRepeat count addNewLines textChange =
 
             let insertKind = 
+                let commandTextChange = insertCommand.TextChange _editorOptions
                 match commandTextChange with
                 | None -> 
                     // Certain actions such as caret movement cause us to abandon the repeat session

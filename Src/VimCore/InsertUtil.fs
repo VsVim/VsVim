@@ -664,6 +664,19 @@ type internal InsertUtil
                 BackspaceCommand.Characters count
         | false, Some startPoint, BackspaceCommand.Replace _ -> BackspaceCommand.None
 
+
+    // A backspace over line (Ctrl-U)  and word (Ctrl-W) which begins to the right of the insert start
+    // point has a max delete of the start point itself.  Do the minimization here
+    member x.AdjustBackspaceDeletePointForStartPoint (deletePoint : SnapshotPoint) =
+        match _vimBufferData.VimTextBuffer.InsertStartPoint with
+        | None -> deletePoint
+        | Some startPoint ->
+            if x.CaretPoint.Position > startPoint.Position then 
+                let position = max deletePoint.Position startPoint.Position
+                SnapshotPoint(deletePoint.Snapshot, position)
+            else 
+                deletePoint
+
     /// The point we should backspace to in order to delete a character.  This will never 
     /// be called when the caret is at the start of the line
     member x.BackspaceOverCharPoint() =
@@ -732,25 +745,15 @@ type internal InsertUtil
             | None -> searchPoint
             | Some span -> span.Start
 
+        let deletePoint = x.AdjustBackspaceDeletePointForStartPoint deletePoint
         let length = x.CaretPoint.Position - deletePoint.Position
         BackspaceCommand.Characters length
 
     /// The point we should backspace to in order to delete a line
     member x.BackspaceOverLinePoint() =
-        let point = SnapshotLineUtil.GetFirstNonBlankOrEnd x.CaretLine
-        if point.Position < x.CaretPoint.Position then
-            // A backspace over line (Ctrl-U) which begins to the right of the insert start
-            // point has a max delete of the start point itself.  Do the minimization here
-            let deletePoint = 
-                match _vimBufferData.VimTextBuffer.InsertStartPoint with
-                | None -> point
-                | Some startPoint ->
-                    if x.CaretPoint.Position > startPoint.Position then 
-                        let position = max point.Position startPoint.Position
-                        SnapshotPoint(point.Snapshot, position)
-                    else 
-                        point
-
+        let deletePoint = SnapshotLineUtil.GetFirstNonBlankOrEnd x.CaretLine
+        if deletePoint.Position < x.CaretPoint.Position then
+            let deletePoint = x.AdjustBackspaceDeletePointForStartPoint deletePoint
             let length = x.CaretPoint.Position - deletePoint.Position
             BackspaceCommand.Characters length
         else
