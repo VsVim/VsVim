@@ -602,6 +602,33 @@ type internal InsertMode
 
         ProcessResult.Handled ModeSwitch.NoSwitch
 
+    /// When calculating a combined edit command we reduce the simple text changes down
+    /// as far as possible.  No since in creating a set of 5 combined commands for inserting 
+    /// the text "watch" when a simple InsertCommand.Insert "watch" will do.  
+    ///
+    /// It is important to only combine direct text edit commands here.  We don't want to be 
+    /// combining any logic commands like Backspace.  Those use settings to do their work and
+    /// hence must be reprocessed on a repeat
+    static member CreateCombinedEditCommand left right =
+
+        // Is this a simple text change which can be combined
+        let convert command = 
+            match command with 
+            | InsertCommand.Insert text -> TextChange.Insert text |> Some
+            | InsertCommand.DeleteLeft count -> TextChange.DeleteLeft count |> Some
+            | InsertCommand.DeleteRight count -> TextChange.DeleteRight count |> Some
+            | _ -> None
+
+        match convert left, convert right with
+        | Some leftChange, Some rightChange ->
+            let textChange = TextChange.CreateReduced leftChange rightChange
+            match textChange with
+            | TextChange.Insert text -> InsertCommand.Insert text
+            | TextChange.DeleteLeft count -> InsertCommand.DeleteLeft count
+            | TextChange.DeleteRight count -> InsertCommand.DeleteRight count
+            | TextChange.Combination _ -> InsertCommand.Combined (left, right)
+        | _ -> InsertCommand.Combined (left, right)
+
     /// Run the insert command with the given information
     member x.RunInsertCommand (command : InsertCommand) (keyInputSet : KeyInputSet) commandFlags : ProcessResult =
 
@@ -634,7 +661,7 @@ type internal InsertMode
             let command = 
                 match _sessionData.CombinedEditCommand with
                 | None -> command
-                | Some previousCommand -> InsertCommand.Combined (previousCommand, command)
+                | Some previousCommand -> InsertMode.CreateCombinedEditCommand previousCommand command
             _sessionData <- { _sessionData with CombinedEditCommand = Some command }
 
         else
