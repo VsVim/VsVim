@@ -419,9 +419,10 @@ type internal InsertMode
                 let getDirectInsert () =
                     let command = 
                         if _isReplace then
-                            InsertCommand.DirectReplace c
+                            InsertCommand.Replace c
                         else
-                            InsertCommand.DirectInsert c
+                            let text = StringUtil.ofChar c
+                            InsertCommand.Insert text
                     let commandFlags = CommandFlags.Repeatable ||| CommandFlags.InsertEdit
                     let keyInputSet = KeyInputSet.OneKeyInput keyInput
                     RawInsertCommand.InsertCommand (keyInputSet, command, commandFlags) |> Some
@@ -468,8 +469,8 @@ type internal InsertMode
             match rawInsertCommand with
             | RawInsertCommand.InsertCommand (_, insertCommand, _) ->
                 match insertCommand with
-                | InsertCommand.DirectInsert _ -> true
-                | InsertCommand.DirectReplace _ -> true
+                | InsertCommand.Insert _ -> true
+                | InsertCommand.Replace _ -> true
                 | _ -> false
             | RawInsertCommand.CustomCommand _ -> false
 
@@ -684,7 +685,7 @@ type internal InsertMode
                     EditUtil.NormalizeNewLines text newLine
 
                 let keyInputSet = KeyInputSet.OneKeyInput keyInput
-                let insertCommand = InsertCommand.InsertText text
+                let insertCommand = InsertCommand.Insert text
                 x.RunInsertCommand insertCommand keyInputSet CommandFlags.InsertEdit
 
     /// Run an insert command that backspaces over recent input
@@ -842,7 +843,7 @@ type internal InsertMode
         // If the user typed a <Space> then 'sts' shouldn't be considered for <BS> operations
         // until the start point is reset 
         match insertCommand with
-        | InsertCommand.DirectInsert ' ' -> _vimBuffer.VimTextBuffer.IsSoftTabStopValidForBackspace <- false
+        | InsertCommand.Insert " " -> _vimBuffer.VimTextBuffer.IsSoftTabStopValidForBackspace <- false
         | _ -> ()
 
         let commandTextChange = insertCommand.TextChange _editorOptions

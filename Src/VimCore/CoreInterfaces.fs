@@ -2733,12 +2733,6 @@ type InsertCommand  =
     /// Delete the word before the cursor
     | DeleteWordBeforeCursor
 
-    /// Direct insert of the specified char
-    | DirectInsert of char
-
-    /// Direct replacement of the specified char
-    | DirectReplace of char
-
     /// Insert the character which is immediately above the caret
     | InsertCharacterAboveCaret
 
@@ -2751,8 +2745,8 @@ type InsertCommand  =
     /// Insert a tab into the ITextBuffer
     | InsertTab
 
-    /// Insert the specified text into the ITextBuffer
-    | InsertText of string
+    /// Insert of text into the ITextBuffer at the caret position 
+    | Insert of string
 
     /// Move the caret in the given direction
     | MoveCaret of Direction
@@ -2762,6 +2756,9 @@ type InsertCommand  =
 
     /// Move the caret in the given direction by a whole word
     | MoveCaretByWord of Direction
+
+    /// Replace the character under the caret with the specified value
+    | Replace of char
 
     /// Shift the current line one indent width to the left
     | ShiftLineLeft 
@@ -2780,7 +2777,7 @@ type InsertCommand  =
     /// Convert a TextChange value into the appropriate InsertCommand structure
     static member OfTextChange textChange = 
         match textChange with
-        | TextChange.Insert text -> InsertCommand.InsertText text
+        | TextChange.Insert text -> InsertCommand.Insert text
         | TextChange.DeleteLeft count -> InsertCommand.DeleteLeft count
         | TextChange.DeleteRight count -> InsertCommand.DeleteRight count
         | TextChange.Combination (left, right) ->
@@ -2803,16 +2800,15 @@ type InsertCommand  =
         | InsertCommand.DeleteRight count -> Some (TextChange.DeleteRight count)
         | InsertCommand.DeleteAllIndent -> None
         | InsertCommand.DeleteWordBeforeCursor -> None
-        | InsertCommand.DirectInsert c -> Some (TextChange.Insert (c.ToString()))
-        | InsertCommand.DirectReplace c -> Some (TextChange.Combination ((TextChange.DeleteRight 1), (TextChange.Insert (c.ToString()))))
+        | InsertCommand.Insert text -> Some (TextChange.Insert text)
         | InsertCommand.InsertCharacterAboveCaret -> None
         | InsertCommand.InsertCharacterBelowCaret -> None
         | InsertCommand.InsertNewLine -> Some (TextChange.Insert (EditUtil.NewLine editorOptions))
         | InsertCommand.InsertTab -> Some (TextChange.Insert "\t")
-        | InsertCommand.InsertText text -> Some (TextChange.Insert text)
         | InsertCommand.MoveCaret _ -> None
         | InsertCommand.MoveCaretWithArrow _ -> None
         | InsertCommand.MoveCaretByWord _ -> None
+        | InsertCommand.Replace c -> Some (TextChange.Combination ((TextChange.DeleteRight 1), (TextChange.Insert (c.ToString()))))
         | InsertCommand.ShiftLineLeft -> None
         | InsertCommand.ShiftLineRight -> None
         | InsertCommand.DeleteLineBeforeCursor -> None

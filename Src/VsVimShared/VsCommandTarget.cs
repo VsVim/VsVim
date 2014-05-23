@@ -141,11 +141,14 @@ namespace VsVim
                 return true;
             }
 
-            if (command.IsDirectInsert)
+            if (command.IsInsert)
             {
-                var directInsert = (InsertCommand.DirectInsert)command;
-                commandData = OleCommandData.CreateTypeChar(directInsert.Item);
-                return true;
+                var insert = (InsertCommand.Insert)command;
+                if (insert.Item != null && insert.Item.Length == 1)
+                {
+                    commandData = OleCommandData.CreateTypeChar(insert.Item[0]);
+                    return true;
+                }
             }
 
             if (command.IsInsertTab)

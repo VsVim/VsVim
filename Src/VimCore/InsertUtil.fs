@@ -283,15 +283,14 @@ type internal InsertUtil
     member x.DeleteWordBeforeCursor () =
         x.RunBackspacingCommand InsertCommand.DeleteWordBeforeCursor
 
-    member x.DirectInsert (c : char) = 
-        let text = c.ToString()
+    member x.Insert text =
         if _editorOperations.InsertText(text) then
             CommandResult.Completed ModeSwitch.NoSwitch
         else
             CommandResult.Error
 
     /// Do a replacement under the caret of the specified char
-    member x.DirectReplace (c : char) =
+    member x.Replace (c : char) =
         // Typically we have the overwrite option set for all of replace mode so this
         // is a redundant check.  But during repeat we only see the commands and not
         // the mode changes so we need to check here
@@ -300,7 +299,8 @@ type internal InsertUtil
             EditorOptionsUtil.SetOptionValue _editorOptions DefaultTextViewOptions.OverwriteModeId true
 
         try
-            x.DirectInsert c
+            let text = StringUtil.ofChar c
+            x.Insert text
         finally 
             if not oldValue then
                 EditorOptionsUtil.SetOptionValue _editorOptions DefaultTextViewOptions.OverwriteModeId false
@@ -414,21 +414,6 @@ type internal InsertUtil
 
         CommandResult.Completed ModeSwitch.NoSwitch
 
-    /// Insert the specified text into the ITextBuffer at the current caret position and then move
-    /// the cursor to the end of the insert
-    member x.InsertText (text : string)=
-
-        x.EditWithUndoTransaction "Insert Text" (fun () -> 
-
-            let position = x.CaretPoint.Position + text.Length
-            _textBuffer.Insert(x.CaretPoint.Position, text) |> ignore
-
-            // Move the caret to the end of the insertion in the current ITextSnapshot
-            let point = SnapshotPoint(x.CurrentSnapshot, position)
-            _operations.MoveCaretToPoint point ViewFlags.None)
-
-        CommandResult.Completed ModeSwitch.NoSwitch
-
     /// Move the caret in the given direction
     member x.MoveCaret direction = 
         let caretMovement = CaretMovement.OfDirection direction
@@ -537,16 +522,15 @@ type internal InsertUtil
             | InsertCommand.DeleteRight count -> x.DeleteRight count
             | InsertCommand.DeleteAllIndent -> x.DeleteAllIndent() 
             | InsertCommand.DeleteWordBeforeCursor -> x.DeleteWordBeforeCursor()
-            | InsertCommand.DirectInsert c -> x.DirectInsert c
-            | InsertCommand.DirectReplace c -> x.DirectReplace c
+            | InsertCommand.Insert text -> x.Insert text 
             | InsertCommand.InsertCharacterAboveCaret -> x.InsertCharacterAboveCaret()
             | InsertCommand.InsertCharacterBelowCaret -> x.InsertCharacterBelowCaret()
             | InsertCommand.InsertNewLine -> x.InsertNewLine()
             | InsertCommand.InsertTab -> x.InsertTab()
-            | InsertCommand.InsertText text -> x.InsertText text
             | InsertCommand.MoveCaret direction -> x.MoveCaret direction
             | InsertCommand.MoveCaretWithArrow direction -> x.MoveCaretWithArrow direction
             | InsertCommand.MoveCaretByWord direction -> x.MoveCaretByWord direction
+            | InsertCommand.Replace c -> x.Replace c
             | InsertCommand.ShiftLineLeft -> x.ShiftLineLeft ()
             | InsertCommand.ShiftLineRight -> x.ShiftLineRight ()
             | InsertCommand.DeleteLineBeforeCursor -> x.DeleteLineBeforeCursor()

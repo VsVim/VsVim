@@ -50,7 +50,7 @@ namespace Vim.UnitTest
         {
             Create("hello");
             var runData1 = VimUtil.CreateCommandRunData(flags: CommandFlags.LinkedWithNextCommand | CommandFlags.Repeatable);
-            var runData2 = VimUtil.CreateCommandRunData(flags: CommandFlags.Repeatable, command: Command.NewInsertCommand(InsertCommand.NewInsertText("foo")));
+            var runData2 = VimUtil.CreateCommandRunData(flags: CommandFlags.Repeatable, command: Command.NewInsertCommand(InsertCommand.NewInsert("foo")));
             _runner.Raise(x => x.CommandRan += null, (object) null, new CommandRunDataEventArgs(runData1));
             _runner.Raise(x => x.CommandRan += null, (object) null, new CommandRunDataEventArgs(runData2));
             var lastCommnad = _vimData.LastCommand;

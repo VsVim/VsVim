@@ -1184,9 +1184,9 @@ namespace Vim.UnitTest
                 VimHost.TryCustomProcessFunc =
                     (textView, command) =>
                     {
-                        if (command.IsDirectInsert)
+                        if (command.IsInsert)
                         {
-                            Assert.Equal('#', command.AsDirectInsert().Item);
+                            Assert.Equal("#", command.AsInsert().Item);
                             _textBuffer.Insert(0, "hello ");
                             return true;
                         }
@@ -1231,9 +1231,9 @@ namespace Vim.UnitTest
                 VimHost.TryCustomProcessFunc =
                     (textView, command) =>
                     {
-                        if (command.IsDirectInsert)
+                        if (command.IsInsert)
                         {
-                            Assert.Equal('#', command.AsDirectInsert().Item);
+                            Assert.Equal("#", command.AsInsert().Item);
                             if (first)
                             {
                                 _textBuffer.Insert(0, "hello ");
@@ -1263,9 +1263,9 @@ namespace Vim.UnitTest
                 VimHost.TryCustomProcessFunc =
                     (textView, command) =>
                     {
-                        if (command.IsDirectInsert)
+                        if (command.IsInsert)
                         {
-                            Assert.Equal('#', command.AsDirectInsert().Item);
+                            Assert.Equal("#", command.AsInsert().Item);
                             _textBuffer.Insert(0, "hello ");
                             return true;
                         }

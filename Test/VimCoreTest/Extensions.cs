@@ -580,9 +580,9 @@ namespace Vim.UnitTest
 
         #region InsertCommand
 
-        public static InsertCommand.DirectInsert AsDirectInsert(this InsertCommand command)
+        public static InsertCommand.Insert AsInsert(this InsertCommand command)
         {
-            return (InsertCommand.DirectInsert)command;
+            return (InsertCommand.Insert)command;
         }
 
         #endregion
