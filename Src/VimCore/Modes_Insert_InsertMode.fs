@@ -170,9 +170,6 @@ type InsertSessionData = {
     /// The kind of insert we are currently performing
     InsertKind : InsertKind
 
-    /// The most recent TextChange for the insert session
-    InsertTextChange : TextChange option
-
     /// This is the current InsertCommand being built up
     CombinedEditCommand : InsertCommand option
 
@@ -206,7 +203,6 @@ type internal InsertMode
 
     static let _emptySessionData = {
         InsertKind = InsertKind.Normal
-        InsertTextChange = None
         Transaction = None
         CombinedEditCommand = None
         ActiveEditItem = ActiveEditItem.None
@@ -760,15 +756,12 @@ type internal InsertMode
                 // Now run the command
                 x.RunInsertCommand command keyInputSet CommandFlags.Repeatable |> Some
 
-        match _sessionData.InsertTextChange with
-        | None ->
-            None
-        | Some textChange ->
-            match textChange.LastChange with
-            | TextChange.DeleteLeft _ -> None
-            | TextChange.DeleteRight _ -> None
-            | TextChange.Insert text -> func text
-            | TextChange.Combination _ -> None
+        match _sessionData.CombinedEditCommand with
+        | None -> None
+        | Some insertCommand ->
+            match insertCommand.RightMostCommand with
+            | InsertCommand.Insert text -> func text
+            | _ -> None
 
     /// Called when we need to process a key stroke and an IWordCompletionSession
     /// is active.
@@ -861,7 +854,7 @@ type internal InsertMode
     /// normal typing
     member x.OnCaretPositionChanged () = 
         _textChangeTracker.CompleteChange()
-        _sessionData <- { _sessionData with InsertTextChange = None }
+        _sessionData <- { _sessionData with CombinedEditCommand = None }
         _vimBuffer.VimTextBuffer.InsertStartPoint <- Some x.CaretPoint
         _vimBuffer.VimTextBuffer.IsSoftTabStopValidForBackspace <- true
 
@@ -873,14 +866,8 @@ type internal InsertMode
         | InsertCommand.Insert " " -> _vimBuffer.VimTextBuffer.IsSoftTabStopValidForBackspace <- false
         | _ -> ()
 
+        // RTODO: is this or the if needed?
         let commandTextChange = insertCommand.TextChange _editorOptions
-
-        let insertTextChange = 
-            match _sessionData.InsertTextChange, commandTextChange with
-            | Some left, Some right -> TextChange.CreateReduced left right |> Some
-            | None, Some right -> Some right
-            | _ -> None
-        _sessionData <- { _sessionData with InsertTextChange = insertTextChange }
 
         // If the command cannot be converted into a text change, reset the start point
         if Option.isNone commandTextChange then
@@ -985,7 +972,6 @@ type internal InsertMode
         _sessionData <- {
             Transaction = transaction
             InsertKind = insertKind
-            InsertTextChange = None
             CombinedEditCommand = None
             ActiveEditItem = ActiveEditItem.None
         }
