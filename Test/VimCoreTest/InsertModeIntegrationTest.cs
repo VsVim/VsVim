@@ -743,7 +743,7 @@ namespace Vim.UnitTest
                 /// <summary>
                 /// A repeat of a backspace operation will perform a check on the 'backspace' option
                 /// </summary>
-                [Fact(Skip = "still not checking for backspace correctly")]
+                [Fact]
                 public void RepeatRechecksBackspaceOption()
                 {
                     Create("cats");

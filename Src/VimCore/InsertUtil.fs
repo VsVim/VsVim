@@ -651,7 +651,17 @@ type internal InsertUtil
 
     /// Adjust the backspace command for the start option
     member x.AdjustBackspaceForStartSetting backspaceCommand = 
-        match _globalSettings.IsBackspaceStart, _vimBufferData.VimTextBuffer.InsertStartPoint, backspaceCommand with
+
+        // It is possible for InsertUtil to be used when vim is not currently in insert 
+        // mode.  This happens during a repeat operation (.).  For operations such as that
+        // the caret point is considered to be the start point 
+        let insertStartPoint = 
+            match _vimBufferData.VimTextBuffer.ModeKind with
+            | ModeKind.Insert -> _vimTextBuffer.InsertStartPoint
+            | ModeKind.Replace -> _vimTextBuffer.InsertStartPoint
+            | _ -> Some x.CaretPoint
+
+        match _globalSettings.IsBackspaceStart, insertStartPoint, backspaceCommand with
         | true, _, _ -> backspaceCommand
         | false, None, _ -> backspaceCommand
         | false, Some startPoint, BackspaceCommand.None -> backspaceCommand
@@ -663,7 +673,6 @@ type internal InsertUtil
             else    
                 BackspaceCommand.Characters count
         | false, Some startPoint, BackspaceCommand.Replace _ -> BackspaceCommand.None
-
 
     // A backspace over line (Ctrl-U)  and word (Ctrl-W) which begins to the right of the insert start
     // point has a max delete of the start point itself.  Do the minimization here
