@@ -2182,6 +2182,33 @@ namespace Vim.UnitTest
                     _vimBuffer.Process(VimKey.Back);
                     Assert.Equal("cat", _textBuffer.GetLine(0).GetText());
                 }
+
+                /// <summary>
+                /// When the caret is in virtual space the tab command should fill in the 
+                /// virtual spaces on the blank line
+                /// </summary>
+                [Fact]
+                public void TabFillInVirtualSpacesBlankLine()
+                {
+                    _textView.MoveCaretTo(0, virtualSpaces: 4);
+                    _vimBuffer.Process(VimKey.Tab);
+                    Assert.Equal(new string(' ', 8), _textBuffer.GetLine(0).GetText());
+                    Assert.Equal(8, _textView.GetCaretPoint().Position);
+                }
+
+                /// <summary>
+                /// When the caret is in virtual space the tab command should fill in the 
+                /// virtual spaces on the blank line
+                /// </summary>
+                [Fact]
+                public void TabFillInVirtualSpacesNonBlankLine()
+                {
+                    _textBuffer.SetText("ba");
+                    _textView.MoveCaretTo(2, virtualSpaces: 2);
+                    _vimBuffer.Process(VimKey.Tab);
+                    Assert.Equal("ba" + new string(' ', 6), _textBuffer.GetLine(0).GetText());
+                    Assert.Equal(8, _textView.GetCaretPoint().Position);
+                }
             }
 
             public sealed class Configuration5 : TabSettingsTest

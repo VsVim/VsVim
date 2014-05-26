@@ -365,6 +365,9 @@ type internal InsertUtil
 
         x.EditWithUndoTransaction "Insert Tab" (fun () -> 
 
+            // First off convert any virtual spaces around the caret into actual spaces
+            _operations.FillInVirtualSpace()
+
             // Stores the length in spaces of a logical tab 
             let indentSpaces = 
                 if _localSettings.SoftTabStop <> 0 then 
