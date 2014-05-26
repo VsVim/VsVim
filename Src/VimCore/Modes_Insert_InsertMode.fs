@@ -238,6 +238,10 @@ type internal InsertMode
             ("<C-v>", InsertCommand.Paste, CommandFlags.Repeatable ||| CommandFlags.InsertEdit)
             ("<C-Left>", InsertCommand.MoveCaretByWord Direction.Left, CommandFlags.Movement)
             ("<C-Right>", InsertCommand.MoveCaretByWord Direction.Right, CommandFlags.Movement)
+            ("<BS>", InsertCommand.Back, CommandFlags.Repeatable ||| CommandFlags.InsertEdit)
+            ("<C-h>", InsertCommand.Back, CommandFlags.Repeatable ||| CommandFlags.InsertEdit)
+            ("<C-w>", InsertCommand.DeleteWordBeforeCursor, CommandFlags.Repeatable ||| CommandFlags.InsertEdit)
+            ("<C-u>", InsertCommand.DeleteLineBeforeCursor, CommandFlags.Repeatable ||| CommandFlags.InsertEdit)
         ]
 
     do
@@ -273,11 +277,6 @@ type internal InsertMode
                 ("<C-o>", RawInsertCommand.CustomCommand this.ProcessNormalModeOneCommand)
                 ("<C-p>", RawInsertCommand.CustomCommand this.ProcessWordCompletionPrevious)
                 ("<C-r>", RawInsertCommand.CustomCommand this.ProcessPasteStart)
-                // TODO: make these real commands
-                ("<BS>", RawInsertCommand.CustomCommand (this.RunBackspacingCommand InsertCommand.Back))
-                ("<C-h>", RawInsertCommand.CustomCommand (this.RunBackspacingCommand InsertCommand.Back))
-                ("<C-w>", RawInsertCommand.CustomCommand (this.RunBackspacingCommand InsertCommand.DeleteWordBeforeCursor))
-                ("<C-u>", RawInsertCommand.CustomCommand (this.RunBackspacingCommand InsertCommand.DeleteLineBeforeCursor))
             ]
 
         let noSelectionCommands : (string * InsertCommand * CommandFlags) list =
@@ -709,13 +708,6 @@ type internal InsertMode
                 let keyInputSet = KeyInputSet.OneKeyInput keyInput
                 let insertCommand = InsertCommand.Insert text
                 x.RunInsertCommand insertCommand keyInputSet CommandFlags.InsertEdit
-
-    /// Run an insert command that backspaces over recent input
-    /// TODO: delete this
-    member x.RunBackspacingCommand command keyInput =
-        let keyInputSet = KeyInputSet.OneKeyInput keyInput
-        let flags = CommandFlags.Repeatable ||| CommandFlags.InsertEdit
-        x.RunInsertCommand command keyInputSet flags
 
     /// Try and process the KeyInput by considering the current text edit in Insert Mode
     member x.ProcessWithCurrentChange keyInput = 
