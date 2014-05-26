@@ -80,12 +80,6 @@ namespace VsVim
             var oleCommandData = OleCommandData.Empty;
             try
             {
-                if (!TryGetOleCommandData(command, out oleCommandData))
-                {
-                    // Not a command that we custom process
-                    return false;
-                }
-
                 if (_vim.InBulkOperation && !command.IsInsertNewLine)
                 {
                     // If we are in the middle of a bulk operation we don't want to forward any
@@ -97,6 +91,19 @@ namespace VsVim
                     // formats Enter in a special way that we absolutely want to preserve in a change
                     // or macro operation.  Go ahead and let it go through here and we'll dismiss 
                     // any intellisense which pops up as a result
+                    return false;
+                }
+
+                if (_vimBuffer.LocalSettings.SoftTabStop != 0 && command.IsBack)
+                {
+                    // When the user has opted into 'softtabstop' then Vim has a better understanding of
+                    // <BS> than Visual Studio.  Allow that processing to win
+                    return false;
+                }
+
+                if (!TryGetOleCommandData(command, out oleCommandData))
+                {
+                    // Not a command that we custom process
                     return false;
                 }
 

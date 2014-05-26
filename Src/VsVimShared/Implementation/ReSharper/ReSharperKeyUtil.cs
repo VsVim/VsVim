@@ -42,7 +42,7 @@ namespace VsVim.Implementation.ReSharper
                 // handled the key stroke to dismiss intellisense.  Leave insert mode now to complete the operation
                 if (_vimBuffer.ModeKind == ModeKind.Insert)
                 {
-                    VimTrace.TraceInfo("ReSharperKeyUtil::PreviewKeyUp handled escape swallowed by Visual Assist");
+                    VimTrace.TraceInfo("ReSharperKeyUtil::PreviewKeyUp handled escape swallowed by ReSharper");
                     _vimBuffer.Process(KeyInputUtil.EscapeKey);
                 }
             }
