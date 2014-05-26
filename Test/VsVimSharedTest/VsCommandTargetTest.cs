@@ -160,6 +160,51 @@ namespace VsVim.UnitTest
             return new EditCommand(KeyInputUtil.CharToKeyInput('i'), editCommandKind, Guid.Empty, 42);
         }
 
+        public sealed class TryCustomProcessTest : VsCommandTargetTest
+        {
+            public TryCustomProcessTest()
+                :base(isReSharperInstalled: false)
+            {
+
+            }
+
+            [Fact]
+            public void BackNoSoftTabStop()
+            {
+                _nextTarget.SetupExecOne().Verifiable();
+                Assert.True(_targetRaw.TryCustomProcess(InsertCommand.Back));
+                _factory.Verify();
+            }
+
+            /// <summary>
+            /// Don't custom process back when 'sts' is enabled, let Vim handle it
+            /// </summary>
+            [Fact]
+            public void BackSoftTabStop()
+            {
+                _vimBuffer.LocalSettings.SoftTabStop = 4;
+                Assert.False(_targetRaw.TryCustomProcess(InsertCommand.Back));
+            }
+
+            [Fact]
+            public void TabNoSoftTabStop()
+            {
+                _nextTarget.SetupExecOne().Verifiable();
+                Assert.True(_targetRaw.TryCustomProcess(InsertCommand.InsertTab));
+                _factory.Verify();
+            }
+
+            /// <summary>
+            /// Don't custom process tab when 'sts' is enabled, let Vim handle it
+            /// </summary>
+            [Fact]
+            public void TabSoftTabStop()
+            {
+                _vimBuffer.LocalSettings.SoftTabStop = 4;
+                Assert.False(_targetRaw.TryCustomProcess(InsertCommand.InsertTab));
+            }
+        }
+
         public sealed class TryConvertTest : VsCommandTargetTest
         {
             public TryConvertTest()
