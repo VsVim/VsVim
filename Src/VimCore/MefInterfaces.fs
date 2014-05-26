@@ -394,6 +394,10 @@ type ICommonOperations =
     /// 0 and 1 can be used to access the first tab
     abstract GoToTab : int -> unit
 
+    /// Convert any virtual spaces into real spaces / tabs based on the current settings.  The caret 
+    /// will be positioned at the end of that change
+    abstract FillInVirtualSpace : unit -> unit
+
     /// Joins the lines in the range
     abstract Join : SnapshotLineRange -> JoinKind -> unit
 
@@ -415,7 +419,10 @@ type ICommonOperations =
     abstract NavigateToPoint : VirtualSnapshotPoint -> bool
 
     /// Normalize the spaces and tabs in the string
-    abstract NormalizeBlanks : string -> string
+    abstract NormalizeBlanks : text : string -> string
+
+    /// Normalize the spaces and tabs in the string at the given column in the buffer
+    abstract NormalizeBlanksAtColumn : text : string -> column : SnapshotColumn -> string
 
     /// Normalize the set of blanks into spaces
     abstract NormalizeBlanksToSpaces : string -> string
@@ -448,7 +455,7 @@ type ICommonOperations =
     abstract Substitute : pattern : string -> replace : string -> SnapshotLineRange -> flags : SubstituteFlags -> unit
 
     /// Undo the buffer changes "count" times
-    abstract Undo : count:int -> unit
+    abstract Undo : count : int -> unit
 
 /// Factory for getting ICommonOperations instances
 type ICommonOperationsFactory =

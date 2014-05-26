@@ -98,6 +98,8 @@ type internal CommonOperations
 
     member x.CaretPoint = TextViewUtil.GetCaretPoint _textView
 
+    member x.CaretVirtualPoint = TextViewUtil.GetCaretVirtualPoint _textView
+
     member x.CaretLine = TextViewUtil.GetCaretLine _textView
 
     member x.MaintainCaretColumn 
@@ -163,6 +165,18 @@ type internal CommonOperations
                 line.GetLineBreakText()
             else
                 _editorOptions.GetNewLineCharacter()
+
+    // Convert any virtual spaces to real normalized spaces
+    member x.FillInVirtualSpace () =
+        if x.CaretVirtualPoint.IsInVirtualSpace then
+            let blanks : string = 
+                let blanks = StringUtil.repeatChar x.CaretVirtualPoint.VirtualSpaces ' '
+                x.NormalizeBlanks blanks
+
+            // Make sure to position the caret to the end of the newly inserted spaces
+            let position = x.CaretPoint.Position + blanks.Length
+            _textBuffer.Insert(x.CaretPoint.Position, blanks) |> ignore
+            TextViewUtil.MoveCaretToPosition _textView position
 
     /// The caret sometimes needs to be adjusted after an Up or Down movement.  Caret position
     /// and virtual space is actually quite a predicament for VsVim because of how Vim standard 
@@ -745,7 +759,7 @@ type internal CommonOperations
                 builder.AppendChar ' '
         builder.ToString()
 
-    /// Normalize spaces into tabs / spaces based on the ExpandTab, TabSize settings
+    /// Normalize spaces into tabs / spaces based on the ExpandTab, TabStop settings
     member x.NormalizeSpaces (text : string) = 
         Contract.Assert(Seq.forall (fun c -> c = ' ') text)
         if _localSettings.ExpandTab then
@@ -765,6 +779,47 @@ type internal CommonOperations
         text
         |> x.NormalizeBlanksToSpaces
         |> x.NormalizeSpaces
+
+    /// Given the specified blank 'text' at the specified column normalize it out to the
+    /// correct spaces / tab based on the 'expandtab' setting.  This has to consider the 
+    /// difficulty of mixed spaces and tabs filling up the remaining tab boundary 
+    member x.NormalizeBlanksAtColumn text (column : SnapshotColumn) = 
+        let spacesToColumn = SnapshotLineUtil.GetSpacesToColumn  column.Line column.Column _localSettings.TabStop
+        if spacesToColumn % _localSettings.TabStop = 0 then
+            // If the column is on a 'tabstop' boundary then there is no difficulty here
+            // with accounting for partial tabs.  Just normalize as we would for any other
+            // function 
+            x.NormalizeBlanks text
+        else
+            // First step is to trim away the start of the 'text' string which will fill up
+            // the gap to the next tab boundary.  
+            let gap = _localSettings.TabStop - spacesToColumn
+            let mutable index = 0
+            let mutable count = 0
+            while count < gap && index < text.Length do
+                let c = text.[index]
+                Contract.Assert (CharUtil.IsBlank c)
+                if c = '\t' then
+                    count <- gap
+                else
+                    count <- count + 1
+
+                index <- index + 1
+
+            if count < gap then
+                // There isn't enough text here to even fill up the gap.  This can only happen when
+                // it is comprised of spaces anyways and they can't be a tab since there isn't enough
+                // of them so this just returns the input text
+                text
+            else
+                let gapText = 
+                    if _localSettings.ExpandTab then 
+                        StringUtil.repeatChar gap ' '
+                    else 
+                        "\t"
+
+                let remainder = text.Substring(index)
+                gapText + x.NormalizeBlanks remainder
 
     member x.ScrollLines dir count =
         for i = 1 to count do
@@ -1209,11 +1264,12 @@ type internal CommonOperations
         member x.EditorOperations = _editorOperations
         member x.EditorOptions = _editorOptions
 
-        member x.Beep () = x.Beep()
+        member x.Beep() = x.Beep()
         member x.CreateRegisterValue point stringData operationKind = x.CreateRegisterValue point stringData operationKind
         member x.DeleteLines startLine count register = x.DeleteLines startLine count register
         member x.EnsureAtCaret viewFlags = x.EnsureAtPoint x.CaretPoint viewFlags
         member x.EnsureAtPoint point viewFlags = x.EnsureAtPoint point viewFlags
+        member x.FillInVirtualSpace() = x.FillInVirtualSpace()
         member x.FormatLines range = _vimHost.FormatLines _textView range
         member x.GetNewLineText point = x.GetNewLineText point
         member x.GetNewLineIndent contextLine newLine = x.GetNewLineIndent contextLine newLine
@@ -1234,6 +1290,7 @@ type internal CommonOperations
         member x.MoveCaretToMotionResult data = x.MoveCaretToMotionResult data
         member x.NavigateToPoint point = x.NavigateToPoint point
         member x.NormalizeBlanks text = x.NormalizeBlanks text
+        member x.NormalizeBlanksAtColumn text column = x.NormalizeBlanksAtColumn text column
         member x.NormalizeBlanksToSpaces text = x.NormalizeBlanksToSpaces text
         member x.Put point stringData opKind = x.Put point stringData opKind
         member x.RaiseSearchResultMessage searchResult = x.RaiseSearchResultMessage searchResult

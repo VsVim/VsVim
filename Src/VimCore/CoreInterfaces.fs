@@ -2733,12 +2733,6 @@ type InsertCommand  =
     /// Delete the word before the cursor
     | DeleteWordBeforeCursor
 
-    /// Direct insert of the specified char
-    | DirectInsert of char
-
-    /// Direct replacement of the specified char
-    | DirectReplace of char
-
     /// Insert the character which is immediately above the caret
     | InsertCharacterAboveCaret
 
@@ -2751,8 +2745,8 @@ type InsertCommand  =
     /// Insert a tab into the ITextBuffer
     | InsertTab
 
-    /// Insert the specified text into the ITextBuffer
-    | InsertText of string
+    /// Insert of text into the ITextBuffer at the caret position 
+    | Insert of string
 
     /// Move the caret in the given direction
     | MoveCaret of Direction
@@ -2762,6 +2756,9 @@ type InsertCommand  =
 
     /// Move the caret in the given direction by a whole word
     | MoveCaretByWord of Direction
+
+    /// Replace the character under the caret with the specified value
+    | Replace of char
 
     /// Shift the current line one indent width to the left
     | ShiftLineLeft 
@@ -2777,10 +2774,15 @@ type InsertCommand  =
 
     with
 
+    member x.RightMostCommand =
+        match x with
+        | InsertCommand.Combined (_, right) -> right.RightMostCommand
+        | _ -> x
+
     /// Convert a TextChange value into the appropriate InsertCommand structure
     static member OfTextChange textChange = 
         match textChange with
-        | TextChange.Insert text -> InsertCommand.InsertText text
+        | TextChange.Insert text -> InsertCommand.Insert text
         | TextChange.DeleteLeft count -> InsertCommand.DeleteLeft count
         | TextChange.DeleteRight count -> InsertCommand.DeleteRight count
         | TextChange.Combination (left, right) ->
@@ -2803,16 +2805,15 @@ type InsertCommand  =
         | InsertCommand.DeleteRight count -> Some (TextChange.DeleteRight count)
         | InsertCommand.DeleteAllIndent -> None
         | InsertCommand.DeleteWordBeforeCursor -> None
-        | InsertCommand.DirectInsert c -> Some (TextChange.Insert (c.ToString()))
-        | InsertCommand.DirectReplace c -> Some (TextChange.Combination ((TextChange.DeleteRight 1), (TextChange.Insert (c.ToString()))))
+        | InsertCommand.Insert text -> Some (TextChange.Insert text)
         | InsertCommand.InsertCharacterAboveCaret -> None
         | InsertCommand.InsertCharacterBelowCaret -> None
         | InsertCommand.InsertNewLine -> Some (TextChange.Insert (EditUtil.NewLine editorOptions))
         | InsertCommand.InsertTab -> Some (TextChange.Insert "\t")
-        | InsertCommand.InsertText text -> Some (TextChange.Insert text)
         | InsertCommand.MoveCaret _ -> None
         | InsertCommand.MoveCaretWithArrow _ -> None
         | InsertCommand.MoveCaretByWord _ -> None
+        | InsertCommand.Replace c -> Some (TextChange.Combination ((TextChange.DeleteRight 1), (TextChange.Insert (c.ToString()))))
         | InsertCommand.ShiftLineLeft -> None
         | InsertCommand.ShiftLineRight -> None
         | InsertCommand.DeleteLineBeforeCursor -> None
@@ -3031,11 +3032,8 @@ and ICommandUtil =
 
 type internal IInsertUtil = 
 
-    /// Get the backspacing point for an insert command
-    abstract GetBackspacingPoint : InsertCommand -> SnapshotPoint
-
     /// Run a insert command
-    abstract RunInsertCommand : InsertCommand -> CommandResult
+    abstract RunInsertCommand : insertCommand : InsertCommand -> CommandResult
 
     /// Repeat the given edit series. 
     abstract RepeatEdit : textChange : TextChange -> addNewLines : bool -> count : int -> unit
@@ -3882,7 +3880,6 @@ type IVimHost =
     /// example).  This override allows them to do this processing
     abstract TryCustomProcess : textView : ITextView -> command : InsertCommand -> bool
 
-
     /// Raised when the visibility of an ITextView changes
     [<CLIEvent>]
     abstract IsVisibleChanged : IDelegateEvent<System.EventHandler<TextViewEventArgs>>
@@ -4089,15 +4086,20 @@ and IVimTextBuffer =
     /// The associated IVimGlobalSettings instance
     abstract GlobalSettings : IVimGlobalSettings
 
-    /// The last VisualSpan selection for the IVimTextBuffer.  This is a combination of a VisualSpan
-    /// and the SnapshotPoint within the span where the caret should be positioned
-    abstract LastVisualSelection : VisualSelection option with get, set
+    /// The 'start' point of the current insert session.  This is relevant for settings like 
+    /// 'backspace'
+    abstract InsertStartPoint : SnapshotPoint option with get, set
 
-    /// The point the caret occupied after Insert mode was entered 
-    abstract LastInsertEntryPoint : SnapshotPoint option with get, set
+    /// True when 'softtabstop' setting should be considered during backspace operations in insert
+    /// mode
+    abstract IsSoftTabStopValidForBackspace : bool with get, set
 
     /// The point the caret occupied when Insert mode was exited 
     abstract LastInsertExitPoint : SnapshotPoint option with get, set
+
+    /// The last VisualSpan selection for the IVimTextBuffer.  This is a combination of a VisualSpan
+    /// and the SnapshotPoint within the span where the caret should be positioned
+    abstract LastVisualSelection : VisualSelection option with get, set
 
     /// The point the caret occupied when the last edit occurred
     abstract LastEditPoint : SnapshotPoint option with get, set
