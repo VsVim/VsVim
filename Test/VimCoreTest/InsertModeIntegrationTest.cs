@@ -787,6 +787,55 @@ namespace Vim.UnitTest
                     Assert.Equal("cat", _textBuffer.GetLine(0).GetText());
                     Assert.Equal(1, VimHost.BeepCount);
                 }
+
+                /// <summary>
+                /// Virtual space is the VsVim equivalent of autoindent.  When indent option is not 
+                /// specified a backspace operation shouldn't change the autoindent
+                /// </summary>
+                [Fact]
+                public void NoIndentShouldntRemoveVirtualSpace()
+                {
+                    Create("cat", "");
+                    _globalSettings.Backspace = "";
+                    _textView.MoveCaretTo(_textBuffer.GetLine(1).Start, 8);
+                    _vimBuffer.ProcessNotation("<BS>");
+                    Assert.Equal(8, _textView.GetCaretVirtualPoint().VirtualSpaces);
+                    Assert.Equal("", _textBuffer.GetLine(1).GetText());
+                }
+
+                /// <summary>
+                /// A backspace over virtual space should replace it with the appropriate tabs / spaces
+                /// </summary>
+                [Fact]
+                public void IndentShouldRemoveVirtualSpace()
+                {
+                    Create("cat", "");
+                    _globalSettings.Backspace = "indent";
+                    _localSettings.TabStop = 4;
+                    _localSettings.SoftTabStop = 4;
+                    _localSettings.ExpandTab = true;
+                    _textView.MoveCaretTo(_textBuffer.GetLine(1).Start, 8);
+                    _vimBuffer.ProcessNotation("<BS>");
+                    Assert.Equal(0, _textView.GetCaretVirtualPoint().VirtualSpaces);
+                    Assert.Equal(new string(' ', 4), _textBuffer.GetLine(1).GetText());
+                    Assert.Equal(_textView.GetPointInLine(1, 4), _textView.GetCaretPoint());
+                }
+
+                /// <summary>
+                /// Don't treat virtual space on a non-blank line as indent
+                /// </summary>
+                [Fact]
+                public void VirtualSpaceInNonBlankLineIsntIndent()
+                {
+                    Create("cat", "");
+                    _globalSettings.Backspace = "start";
+                    _localSettings.TabStop = 4;
+                    _localSettings.SoftTabStop = 4;
+                    _localSettings.ExpandTab = true;
+                    _textView.MoveCaretTo(_textBuffer.GetLine(0).End, 2);
+                    _vimBuffer.ProcessNotation("<BS>");
+                    Assert.Equal("cat ", _textBuffer.GetLine(0).GetText());
+                }
             }
 
             public sealed class BackspaceOverWordTest : BackspacingTest

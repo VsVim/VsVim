@@ -622,32 +622,43 @@ type internal InsertUtil
 
     /// Get the BackspaceCommand for the given InsertCommand at the caret point
     member x.GetBackspaceCommand insertCommand = 
-
-        let go backspaceFunc = 
-            if x.CaretVirtualPoint.IsInVirtualSpace && SnapshotLineUtil.IsBlankOrEmpty x.CaretLine && not _globalSettings.IsBackspaceIndent then
-                // The 'backspace=indent' setting covers backspacing over autoindent which 
-                // doesn't have a direct 1-1 mapping in VsVim because the host controls indent
-                // not VsVim.  The closest equivaletn is when the caret is in virtual space 
-                // on a blank line.  
-                BackspaceCommand.None
-            elif x.CaretPoint = x.CaretLine.Start then
-                // All of the delete commands when invoked at the start of the line will
-                // cause the line break of the previous line to be deleted if the 
-                // 'backspace' setting contains 'eol'
-                if _globalSettings.IsBackspaceEol && x.CaretLineNumber > 0 then
-                    let previousLineNumber = x.CaretLineNumber - 1
-                    let previousLine = SnapshotUtil.GetLine x.CurrentSnapshot previousLineNumber
-                    BackspaceCommand.Characters previousLine.LineBreakLength 
-                else
-                    BackspaceCommand.None
+        if x.CaretVirtualPoint.IsInVirtualSpace && SnapshotLineUtil.IsBlankOrEmpty x.CaretLine then
+            // The 'backspace=indent' setting covers backspacing over autoindent which 
+            // doesn't have a direct 1-1 mapping in VsVim because the host controls indent
+            // not VsVim.  The closest equivaletn is when the caret is in virtual space 
+            // on a blank line.  
+            if _globalSettings.IsBackspaceIndent then
+                _operations.FillInVirtualSpace()
+                x.GetBackspaceCommandNoIndent insertCommand
             else
-                backspaceFunc ()
+                BackspaceCommand.None
+        else
+            _operations.FillInVirtualSpace()
+            x.GetBackspaceCommandNoIndent insertCommand
 
-        match insertCommand with
-        | InsertCommand.Back -> go x.BackspaceOverCharPoint
-        | InsertCommand.DeleteWordBeforeCursor -> go x.BackspaceOverWordPoint
-        | InsertCommand.DeleteLineBeforeCursor -> go x.BackspaceOverLinePoint
-        | _ -> BackspaceCommand.None
+    /// Get the BackspaceCommand for the given InsertCommand at the caret point.  This does not 
+    /// consider the indent option in the 'backspace' setting.  It runs with the assumption that
+    /// the caret is not in virtual space
+    member x.GetBackspaceCommandNoIndent insertCommand = 
+        Contract.Assert (x.CaretVirtualPoint.VirtualSpaces = 0)
+
+        if x.CaretPoint = x.CaretLine.Start then
+            // All of the delete commands when invoked at the start of the line will
+            // cause the line break of the previous line to be deleted if the 
+            // 'backspace' setting contains 'eol'
+            if _globalSettings.IsBackspaceEol && x.CaretLineNumber > 0 then
+                let previousLineNumber = x.CaretLineNumber - 1
+                let previousLine = SnapshotUtil.GetLine x.CurrentSnapshot previousLineNumber
+                BackspaceCommand.Characters previousLine.LineBreakLength 
+            else
+                BackspaceCommand.None
+        else
+            // Normal execution of a backspace command
+            match insertCommand with
+            | InsertCommand.Back -> x.BackspaceOverCharPoint()
+            | InsertCommand.DeleteWordBeforeCursor -> x.BackspaceOverWordPoint()
+            | InsertCommand.DeleteLineBeforeCursor -> x.BackspaceOverLinePoint()
+            | _ -> BackspaceCommand.None
 
     /// Adjust the backspace command for the start option
     member x.AdjustBackspaceForStartSetting backspaceCommand = 

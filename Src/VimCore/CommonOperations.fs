@@ -98,6 +98,8 @@ type internal CommonOperations
 
     member x.CaretPoint = TextViewUtil.GetCaretPoint _textView
 
+    member x.CaretVirtualPoint = TextViewUtil.GetCaretVirtualPoint _textView
+
     member x.CaretLine = TextViewUtil.GetCaretLine _textView
 
     member x.MaintainCaretColumn 
@@ -163,6 +165,18 @@ type internal CommonOperations
                 line.GetLineBreakText()
             else
                 _editorOptions.GetNewLineCharacter()
+
+    // Convert any virtual spaces to real normalized spaces
+    member x.FillInVirtualSpace () =
+        if x.CaretVirtualPoint.IsInVirtualSpace then
+            let blanks : string = 
+                let blanks = StringUtil.repeatChar x.CaretVirtualPoint.VirtualSpaces ' '
+                x.NormalizeBlanks blanks
+
+            // Make sure to position the caret to the end of the newly inserted spaces
+            let position = x.CaretPoint.Position + blanks.Length
+            _textBuffer.Insert(x.CaretPoint.Position, blanks) |> ignore
+            TextViewUtil.MoveCaretToPosition _textView position
 
     /// The caret sometimes needs to be adjusted after an Up or Down movement.  Caret position
     /// and virtual space is actually quite a predicament for VsVim because of how Vim standard 
@@ -1250,11 +1264,12 @@ type internal CommonOperations
         member x.EditorOperations = _editorOperations
         member x.EditorOptions = _editorOptions
 
-        member x.Beep () = x.Beep()
+        member x.Beep() = x.Beep()
         member x.CreateRegisterValue point stringData operationKind = x.CreateRegisterValue point stringData operationKind
         member x.DeleteLines startLine count register = x.DeleteLines startLine count register
         member x.EnsureAtCaret viewFlags = x.EnsureAtPoint x.CaretPoint viewFlags
         member x.EnsureAtPoint point viewFlags = x.EnsureAtPoint point viewFlags
+        member x.FillInVirtualSpace() = x.FillInVirtualSpace()
         member x.FormatLines range = _vimHost.FormatLines _textView range
         member x.GetNewLineText point = x.GetNewLineText point
         member x.GetNewLineIndent contextLine newLine = x.GetNewLineIndent contextLine newLine

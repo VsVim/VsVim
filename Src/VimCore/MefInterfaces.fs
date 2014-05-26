@@ -394,6 +394,10 @@ type ICommonOperations =
     /// 0 and 1 can be used to access the first tab
     abstract GoToTab : int -> unit
 
+    /// Convert any virtual spaces into real spaces / tabs based on the current settings.  The caret 
+    /// will be positioned at the end of that change
+    abstract FillInVirtualSpace : unit -> unit
+
     /// Joins the lines in the range
     abstract Join : SnapshotLineRange -> JoinKind -> unit
 

@@ -273,6 +273,7 @@ type internal InsertMode
                 ("<C-o>", RawInsertCommand.CustomCommand this.ProcessNormalModeOneCommand)
                 ("<C-p>", RawInsertCommand.CustomCommand this.ProcessWordCompletionPrevious)
                 ("<C-r>", RawInsertCommand.CustomCommand this.ProcessPasteStart)
+                // TODO: make these real commands
                 ("<BS>", RawInsertCommand.CustomCommand (this.RunBackspacingCommand InsertCommand.Back))
                 ("<C-h>", RawInsertCommand.CustomCommand (this.RunBackspacingCommand InsertCommand.Back))
                 ("<C-w>", RawInsertCommand.CustomCommand (this.RunBackspacingCommand InsertCommand.DeleteWordBeforeCursor))
@@ -354,8 +355,6 @@ type internal InsertMode
         | _ -> false
 
     member x.CaretPoint = TextViewUtil.GetCaretPoint _textView
-
-    member x.CaretVirtualPoint = TextViewUtil.GetCaretVirtualPoint _textView
 
     member x.CaretLine = TextViewUtil.GetCaretLine _textView
 
@@ -554,25 +553,12 @@ type internal InsertMode
 
         ProcessResult.OfModeKind ModeKind.Normal
 
-    // Convert any virtual spaces to real normalized spaces
-    member x.FillInVirtualSpace () =
-
-        if x.CaretVirtualPoint.IsInVirtualSpace then
-            let blanks = 
-                let blanks = StringUtil.repeatChar x.CaretVirtualPoint.VirtualSpaces ' '
-                _operations.NormalizeBlanks blanks
-
-            // Make sure to position the caret to the end of the newly inserted spaces
-            let position = x.CaretPoint.Position + blanks.Length
-            _textBuffer.Insert(x.CaretPoint.Position, blanks) |> ignore
-            TextViewUtil.MoveCaretToPosition _textView position
-
     /// Start a word completion session in the given direction at the current caret point
     member x.StartWordCompletionSession isForward = 
 
         // If the caret is currently in virtual space we need to fill in that space with
         // real spaces before starting a completion session.
-        x.FillInVirtualSpace()
+        _operations.FillInVirtualSpace()
 
         // Time to start a completion.  
         let wordSpan = 
@@ -725,18 +711,8 @@ type internal InsertMode
                 x.RunInsertCommand insertCommand keyInputSet CommandFlags.InsertEdit
 
     /// Run an insert command that backspaces over recent input
-    ///
-    /// Here we enforce the 'backspace=start' setting and also ensure
-    /// that commands within the current edit don't interrupt it.
-    /// That means that a context-dependent command like DeleteWordBeforeCursor
-    /// will be converted into the corresponding context-independent DeleteLeft
-    /// command, which also makes the command repeat correctly
+    /// TODO: delete this
     member x.RunBackspacingCommand command keyInput =
-
-        // We cannot be in virtual space because the insert utilities
-        // operate in terms of real points
-        x.FillInVirtualSpace()
-
         let keyInputSet = KeyInputSet.OneKeyInput keyInput
         let flags = CommandFlags.Repeatable ||| CommandFlags.InsertEdit
         x.RunInsertCommand command keyInputSet flags
