@@ -111,7 +111,14 @@ type IStatusUtilFactory =
     /// Get the IStatusUtil instance for the given ITextBuffer
     abstract GetStatusUtil : textBuffer : ITextBuffer -> IStatusUtil
 
-type FileContents = {
+type VimRcKind =
+    | VimRc     = 0
+    | VsVimRc   = 1
+
+type VimRcContents = {
+
+    /// Which type of file was loaded 
+    VimRcKind : VimRcKind 
 
     /// Full path to the file which the contents were loaded from
     FilePath : string
@@ -123,21 +130,12 @@ type FileContents = {
 /// Abstracts away VsVim's interaction with the file system to facilitate testing
 type IFileSystem =
 
-    /// Set of directories considered when looking for VimRC paths (may contain environment variables)
-    abstract VimRcDirectoryCandidates : list<string>
-
-    /// Set of file names considered (in preference order) when looking for vim rc files
-    abstract VimRcFileNames : list<string>
-    
     /// Get the directories to probe for RC files
-    abstract GetVimRcDirectories : unit -> seq<string>
-
-    /// Get the file paths in preference order for vim rc files
-    abstract GetVimRcFilePaths : unit -> seq<string>
+    abstract GetVimRcDirectories : unit -> list<string>
 
     /// Attempts to load the contents of the .VimRC and return both the path the file
     /// was loaded from and it's contents a
-    abstract LoadVimRcContents : unit -> FileContents option
+    abstract LoadVimRcContents : includeVimRcFiles : bool -> VimRcContents option
 
     /// Attempt to read all of the lines from the given file 
     abstract ReadAllLines : filePath : string -> string[] option
@@ -3758,12 +3756,16 @@ type IVimHost =
     /// What settings defaults should be used when there is no vimrc file present
     abstract DefaultSettings : DefaultSettings
 
-    /// Get the count of tabs that are active in the host.  If tabs are not supported then
-    /// -1 should be returned
-    abstract TabCount : int
-
     /// Get the font properties associated with the text editor
     abstract FontProperties : IFontProperties
+
+    /// Should vimrc files be considered when probing for vsvimrc files?  
+    abstract IncludeVimRc : bool
+
+    /// Get the count of window tabs that are active in the host. This refers to tabs for actual 
+    /// edit windows, not anything to do with tabs in the text file.  If window tabs are not supported 
+    /// then -1 should be returned
+    abstract TabCount : int
 
     abstract Beep : unit -> unit
 

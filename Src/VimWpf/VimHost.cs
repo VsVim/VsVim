@@ -51,6 +51,11 @@ namespace Vim.UI.Wpf
             get;
         }
 
+        public virtual bool IncludeVimRc
+        {
+            get { return false; }
+        }
+
         public abstract IFontProperties FontProperties
         {
             get;
@@ -441,6 +446,11 @@ namespace Vim.UI.Wpf
         DefaultSettings IVimHost.DefaultSettings
         {
             get { return DefaultSettings; }
+        }
+
+        bool IVimHost.IncludeVimRc
+        {
+            get { return IncludeVimRc; }
         }
 
         void IVimHost.Beep()

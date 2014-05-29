@@ -41,6 +41,7 @@ namespace VsVim
         private readonly ISharedService _sharedService;
         private readonly IVsMonitorSelection _vsMonitorSelection;
         private readonly IFontProperties _fontProperties;
+        private readonly IVimApplicationSettings _vimApplicationSettings;
 
         internal _DTE DTE
         {
@@ -70,6 +71,11 @@ namespace VsVim
             get { return _sharedService.GetWindowFrameState().WindowFrameCount; }
         }
 
+        public override bool IncludeVimRc
+        {
+            get { return _vimApplicationSettings.EnableVimRcLoading; }
+        }
+
         public override IFontProperties FontProperties
         {
             get { return _fontProperties; }
@@ -86,6 +92,7 @@ namespace VsVim
             IEditorOperationsFactoryService editorOperationsFactoryService,
             ITextManager textManager,
             ISharedServiceFactory sharedServiceFactory,
+            IVimApplicationSettings vimApplicationSettings,
             SVsServiceProvider serviceProvider)
             : base(textBufferFactoryService, textEditorFactoryService, textDocumentFactoryService, editorOperationsFactoryService)
         {
@@ -97,6 +104,7 @@ namespace VsVim
             _sharedService = sharedServiceFactory.Create();
             _vsMonitorSelection = serviceProvider.GetService<SVsShellMonitorSelection, IVsMonitorSelection>();
             _fontProperties = new TextEditorFontProperties(serviceProvider);
+            _vimApplicationSettings = vimApplicationSettings;
 
             uint cookie;
             _vsMonitorSelection.AdviseSelectionEvents(this, out cookie);

@@ -569,7 +569,7 @@ type internal Vim
                 _globalSettings.VimRc <- System.String.Empty
                 _globalSettings.VimRcPaths <- _fileSystem.GetVimRcDirectories() |> String.concat ";"
         
-                match _fileSystem.LoadVimRcContents() with
+                match _fileSystem.LoadVimRcContents(_vimHost.IncludeVimRc) with
                 | None -> 
                     _vimRcLocalSettings <- LocalSettings(_globalSettings) 
                     _vimRcWindowSettings <- WindowSettings(_globalSettings)

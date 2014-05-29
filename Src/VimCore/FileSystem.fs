@@ -10,9 +10,15 @@ open System.Text
 type internal FileSystem() =
 
     /// The environment variables considered when loading a .vimrc
-    let _vimRcDirectoryCandidates = ["~"; "$VIM"; "$USERPROFILE"]
+    static let VimRcDirectoryCandidates = ["~"; "$VIM"; "$USERPROFILE"]
 
-    let _fileNames = [".vsvimrc"; "_vsvimrc"; ".vimrc"; "_vimrc" ]
+    static let FileNames = 
+        [
+            (".vsvimrc", VimRcKind.VsVimRc)
+            ("_vsvimrc", VimRcKind.VsVimRc)
+            (".vimrc", VimRcKind.VimRc)
+            ("_vimrc", VimRcKind.VimRc)
+        ]
 
     /// Read all of the lines from the given StreamReader.  This will return whether or not 
     /// an exception occurred during processing and if not the lines that were read
@@ -112,37 +118,39 @@ type internal FileSystem() =
             None
 
     member x.GetVimRcDirectories() = 
-        _vimRcDirectoryCandidates
+        VimRcDirectoryCandidates
         |> Seq.choose SystemUtil.TryResolvePath
+        |> List.ofSeq
 
     member x.GetVimRcFilePaths() =
         let standard =
             x.GetVimRcDirectories()
-            |> Seq.collect (fun path -> _fileNames |> Seq.map (fun name -> Path.Combine(path,name)))
+            |> Seq.collect (fun path -> FileNames |> Seq.map (fun (name, kind) -> (Path.Combine(path,name), kind)))
 
         // If the MYVIMRC environment variable is set then prefer that path over the standard
         // paths
         match SystemUtil.TryGetEnvironmentVariable "MYVIMRC" with
         | None -> standard
-        | Some filePath -> Seq.append [ filePath ] standard
+        | Some filePath -> Seq.append [ (filePath, VimRcKind.VimRc) ] standard
 
-    member x.LoadVimRcContents () = 
-        let readLines path = 
+    member x.LoadVimRcContents includeVimRcFiles = 
+        let readLines (path, vimRcKind) = 
+            if vimRcKind = VimRcKind.VimRc && not includeVimRcFiles then
+                None
+            else
             match x.ReadAllLines path with
             | None -> None
             | Some lines -> 
                 let contents = {
+                    VimRcKind = vimRcKind
                     FilePath = path
                     Lines = lines
                 } 
                 Some contents
-        x.GetVimRcFilePaths()  |> Seq.tryPick readLines
+        x.GetVimRcFilePaths() |> Seq.tryPick readLines
 
     interface IFileSystem with
-        member x.VimRcDirectoryCandidates = _vimRcDirectoryCandidates 
-        member x.VimRcFileNames = _fileNames
-        member x.GetVimRcDirectories () = x.GetVimRcDirectories()
-        member x.GetVimRcFilePaths() = x.GetVimRcFilePaths()
-        member x.LoadVimRcContents () = x.LoadVimRcContents()
+        member x.GetVimRcDirectories() = x.GetVimRcDirectories()
+        member x.LoadVimRcContents includeVimRcFiles = x.LoadVimRcContents includeVimRcFiles
         member x.ReadAllLines path = x.ReadAllLines path
 

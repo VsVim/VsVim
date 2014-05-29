@@ -133,16 +133,19 @@ namespace Vim.UnitTest
             private void Run(string vimRcText)
             {
                 var lines = vimRcText.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries);
-                _fileSystem.Setup(x => x.LoadVimRcContents()).Returns(new FSharpOption<FileContents>(new FileContents("_vimrc", lines)));
+                _fileSystem
+                    .Setup(x => x.LoadVimRcContents(It.IsAny<bool>()))
+                    .Returns(new FSharpOption<VimRcContents>(new VimRcContents(VimRcKind.VimRc, "_vimrc", lines)));
                 Assert.True(Vim.LoadVimRc().IsLoadSucceeded);
             }
 
             private void RunNone()
             {
-                _fileSystem.Setup(x => x.LoadVimRcContents()).Returns(FSharpOption<FileContents>.None);
+                _fileSystem
+                    .Setup(x => x.LoadVimRcContents(It.IsAny<bool>()))
+                    .Returns(FSharpOption<VimRcContents>.None);
                 Assert.True(Vim.LoadVimRc().IsLoadFailed);
             }
-
 
             [Theory,
             InlineData(@"set shellcmdflag=-lic", @"-lic"),

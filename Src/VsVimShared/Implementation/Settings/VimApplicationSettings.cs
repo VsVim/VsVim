@@ -23,6 +23,7 @@ namespace VsVim.Implementation.Settings
         internal const string DefaultSettingsName = "DefaultSettings";
         internal const string EnableExternalEditMonitoring = "EnableExternalEditMonitoring";
         internal const string EnableVimTabAndBackspace = "EnableVimTabAndBackspace";
+        internal const string EnableVimRcLoading = "EnableVimRcLoading";
         internal const string HaveUpdatedKeyBindingsName = "HaveUpdatedKeyBindings";
         internal const string HaveNotifiedBackspaceSetting = "HaveNotifiedBackspaceSetting";
         internal const string IgnoredConflictingKeyBindingName = "IgnoredConflictingKeyBinding";
@@ -256,6 +257,12 @@ namespace VsVim.Implementation.Settings
         {
             get { return GetBoolean(EnableVimTabAndBackspace, defaultValue: false); }
             set { SetBoolean(EnableVimTabAndBackspace, value); }
+        }
+
+        bool IVimApplicationSettings.EnableVimRcLoading
+        {
+            get { return GetBoolean(EnableVimRcLoading, defaultValue: false); }
+            set { SetBoolean(EnableVimRcLoading, value); }
         }
 
         bool IVimApplicationSettings.HaveUpdatedKeyBindings

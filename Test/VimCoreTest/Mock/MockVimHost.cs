@@ -21,6 +21,7 @@ namespace Vim.UnitTest.Mock
         public DefaultSettings DefaultSettings { get; set; }
         public int BeepCount { get; set; }
         public int GoToDefinitionCount { get; set; }
+        public bool IncludeVimRc { get; set; }
         public bool GoToFileReturn { get; set; }
         public bool GoToDefinitionReturn { get; set; }
         public Func<ITextView, string, bool> GoToLocalDeclarationFunc { get; set; }
@@ -71,6 +72,7 @@ namespace Vim.UnitTest.Mock
             DefaultSettings = DefaultSettings.GVim74;
             GoToDefinitionReturn = true;
             IsCompletionWindowActive = false;
+            IncludeVimRc = false;
             NavigateToReturn = false;
             Buffers = FSharpList<IVimBuffer>.Empty;
             BeepCount = 0;

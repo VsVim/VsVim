@@ -64,6 +64,7 @@ namespace VsVim.UnitTest
                 _editorOperationsFactoryService.Object,
                 _textManager.Object,
                 _factory.Create<ISharedServiceFactory>(MockBehavior.Loose).Object,
+                _factory.Create<IVimApplicationSettings>(MockBehavior.Loose).Object,
                 sp.Object);
             _host = _hostRaw;
         }

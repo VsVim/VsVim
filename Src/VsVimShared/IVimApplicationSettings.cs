@@ -33,6 +33,12 @@ namespace VsVim
         bool EnableVimTabAndBackspace { get; set; }
 
         /// <summary>
+        /// Do we want to enable the loading of vimrc files?  This does not control vsvimcr files
+        /// which are always loaded 
+        /// </summary>
+        bool EnableVimRcLoading { get; set; }
+
+        /// <summary>
         /// The key bindings were updated 
         /// </summary>
         bool HaveUpdatedKeyBindings { get; set; }
