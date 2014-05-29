@@ -51,6 +51,7 @@ namespace Vim.UnitTest
             var map = new Dictionary<string, VariableValue>();
             _keyMap = new KeyMap(_globalSettings, map);
             _vimHost = _factory.Create<IVimHost>(MockBehavior.Strict);
+            _vimHost.SetupGet(x => x.IncludeVimRc).Returns(true);
             _vimHost.Setup(x => x.CreateHiddenTextView()).Returns(CreateTextView());
             _vimHost.Setup(x => x.AutoSynchronizeSettings).Returns(true);
             _vimHost.SetupGet(x => x.DefaultSettings).Returns(DefaultSettings.GVim73);

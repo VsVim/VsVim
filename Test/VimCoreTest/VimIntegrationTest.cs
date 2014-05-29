@@ -119,6 +119,7 @@ namespace Vim.UnitTest
                 _vim = (Vim)Vim;
                 _globalSettings = Vim.GlobalSettings;
                 _fileSystem = new Mock<IFileSystem>();
+                _fileSystem.Setup(x => x.GetVimRcDirectories()).Returns((new string[] { }).ToFSharpList());
                 _originalFileSystem = _vim._fileSystem;
                 _vim._fileSystem = _fileSystem.Object;
                 VimHost.CreateHiddenTextViewFunc = () => TextEditorFactoryService.CreateTextView();
