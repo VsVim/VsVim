@@ -242,7 +242,7 @@ namespace VsVim.Implementation.Settings
 
         DefaultSettings IVimApplicationSettings.DefaultSettings
         {
-            get { return GetEnum(DefaultSettingsName, defaultValue: DefaultSettings.GVim74); }
+            get { return GetEnum(DefaultSettingsName, defaultValue: DefaultSettings.GVim73); }
             set { SetEnum(DefaultSettingsName, value); }
         }
 
