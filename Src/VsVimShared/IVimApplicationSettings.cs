@@ -15,16 +15,9 @@ namespace VsVim
 
     public enum VimRcLoadSetting
     {
-        [DisplayName("No vsvimrc or vimrc files")]
         None,
-
-        [DisplayName("vsvimrc files only")]
         VsVimRc,
-
-        [DisplayName("vimrc files only")]
         VimRc,
-
-        [DisplayName("vsvimrc or vimrc files")]
         Both
     }
 

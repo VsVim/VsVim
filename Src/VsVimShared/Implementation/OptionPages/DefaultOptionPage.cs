@@ -12,11 +12,14 @@ using Microsoft.VisualStudio;
 using Vim.UI.Wpf;
 using Microsoft.VisualStudio.TextManager.Interop;
 using System.Collections.ObjectModel;
+using System.Globalization;
 
 namespace VsVim.Implementation.OptionPages
 {
     public sealed class DefaultOptionPage : DialogPage
     {
+        #region ColorKey 
+
         private struct ColorKey
         {
             internal readonly string Name;
@@ -39,6 +42,10 @@ namespace VsVim.Implementation.OptionPages
             }
         }
 
+        #endregion
+
+        #region ColorInfo
+
         private sealed class ColorInfo
         {
             internal readonly ColorKey ColorKey;
@@ -54,6 +61,92 @@ namespace VsVim.Implementation.OptionPages
                 IsValid = isValid;
             }
         }
+
+        #endregion
+
+        #region EnumMapConverter
+
+        public abstract class EnumMapConverter<T> : EnumConverter
+        {
+            private readonly Dictionary<T, string> _map;
+            private readonly Dictionary<string, T> _reverseMap;
+
+            public EnumMapConverter() : base(typeof(T))
+            {
+                Contract.Assert(typeof(T).IsEnum);
+                _map = CreateMap();
+                _reverseMap = _map.ToDictionary(pair => pair.Value, pair => pair.Key);
+            }
+
+            public abstract Dictionary<T, string> CreateMap();
+
+            public override bool CanConvertTo(ITypeDescriptorContext context, Type destinationType)
+            {
+                return destinationType == typeof(string);
+            }
+
+            public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
+            {
+                if (!(value is T) || destinationType != typeof(string))
+                {
+                    return null;
+                }
+
+                string convertedValue;
+                if (_map.TryGetValue((T)value, out convertedValue))
+                {
+                    return convertedValue;
+                }
+
+                return null;
+            }
+
+            public override bool CanConvertFrom(ITypeDescriptorContext context, Type sourceType)
+            {
+               return sourceType == typeof(string);
+            }
+
+            public override object ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, object value)
+            {
+                var str = value as string;
+                T convertedValue;
+                if (_reverseMap.TryGetValue(str, out convertedValue))
+                {
+                    return convertedValue;
+                }
+
+                return null;
+            }
+
+            public override bool GetStandardValuesSupported(ITypeDescriptorContext context)
+            {
+                return true;
+            }
+
+            public override StandardValuesCollection GetStandardValues(ITypeDescriptorContext context)
+            {
+                return new StandardValuesCollection(_map.Keys);
+            }
+        }
+
+        #endregion
+
+        #region VimRcLoadSettingConverter
+
+        public sealed class VimRcLoadSettingConverter : EnumMapConverter<VimRcLoadSetting>
+        {
+            public override Dictionary<VimRcLoadSetting, string> CreateMap()
+            {
+                var map = new Dictionary<VimRcLoadSetting, string>();
+                map.Add(VimRcLoadSetting.None, "No vsvimrc or vimrc files");
+                map.Add(VimRcLoadSetting.VsVimRc,"vsvimrc files only");
+                map.Add(VimRcLoadSetting.VimRc, "vimrc files only");
+                map.Add(VimRcLoadSetting.Both,"vsvimrc or vimrc files");
+                return map;
+            }
+        }
+
+        #endregion
 
         private const string CategoryGeneral = "General";
         private const string CategoryColors = "Item Colors";
@@ -96,6 +189,7 @@ namespace VsVim.Implementation.OptionPages
         [DisplayName("VimRc File Loading")]
         [Description("Controls how VsVim probes for vsvim / vimrc files")]
         [Category(CategoryGeneral)]
+        [TypeConverter(typeof(VimRcLoadSettingConverter))]
         public VimRcLoadSetting VimRcLoadSetting { get; set; }
 
         [DisplayName("Block Caret")]
