@@ -131,7 +131,7 @@ namespace VsVim.UnitTest.Utils
 
         #endregion
 
-        #region DefaultCommandTarget
+        #region SimulationCommandTarget
 
         /// <summary>
         /// Represents the end of the IOleCommandTarget chain.  This is where Visual Studio will 
@@ -139,7 +139,7 @@ namespace VsVim.UnitTest.Utils
         /// 
         /// This mimics mainly the implementation VsTextViewAdapter InnerExec and InnerQueryStatus
         /// </summary>
-        internal sealed class DefaultCommandTarget : IOleCommandTarget
+        internal sealed class SimulationCommandTarget : IOleCommandTarget
         {
             private readonly ITextView _textView;
             private readonly IEditorOperations _editorOperatins;
@@ -156,7 +156,7 @@ namespace VsVim.UnitTest.Utils
                 get { return _lastQueryStatusEditCommand; }
             }
 
-            internal DefaultCommandTarget(ITextView textView, IEditorOperations editorOperations)
+            internal SimulationCommandTarget(ITextView textView, IEditorOperations editorOperations)
             {
                 _textView = textView;
                 _editorOperatins = editorOperations;
@@ -250,7 +250,7 @@ namespace VsVim.UnitTest.Utils
         /// This is the default command target for Visual Studio.  It simulates the final command
         /// target on the chain.
         /// </summary>
-        private readonly DefaultCommandTarget _vsCommandTarget;
+        private readonly SimulationCommandTarget _vsSimulationCommandTarget;
 
         private readonly IWpfTextView _wpfTextView;
         private readonly VsKeyboardInputSimulation _vsKeyboardInputSimulation;
@@ -258,6 +258,8 @@ namespace VsVim.UnitTest.Utils
         private readonly Mock<IVsAdapter> _vsAdapter;
         private readonly Mock<IDisplayWindowBroker> _displayWindowBroker;
         private readonly Mock<IReportDesignerUtil> _reportDesignerUtil;
+        private readonly Mock<IVimApplicationSettings> _vimApplicationSettings;
+        private readonly VsCommandTarget _vsCommandTarget;
         private readonly TestableSynchronizationContext _testableSynchronizationContext;
         private readonly IKeyUtil _keyUtil;
         private readonly ReSharperCommandTargetSimulation _reSharperCommandTarget;
@@ -282,7 +284,17 @@ namespace VsVim.UnitTest.Utils
             get { return _displayWindowBroker; }
         }
 
-        internal DefaultCommandTarget VsCommandTarget
+        internal Mock<IVimApplicationSettings> VimApplicationSettings
+        {
+            get { return _vimApplicationSettings; }
+        }
+
+        internal SimulationCommandTarget VsSimulationCommandTarget
+        {
+            get { return _vsSimulationCommandTarget; }
+        }
+
+        internal VsCommandTarget VsCommandTarget
         {
             get { return _vsCommandTarget; }
         }
@@ -314,7 +326,10 @@ namespace VsVim.UnitTest.Utils
             _displayWindowBroker.SetupGet(x => x.IsSignatureHelpActive).Returns(false);
             _displayWindowBroker.SetupGet(x => x.IsSmartTagSessionActive).Returns(false);
 
-            _vsCommandTarget = new DefaultCommandTarget(
+            _vimApplicationSettings = _factory.Create<IVimApplicationSettings>();
+            _vimApplicationSettings.SetupGet(x => x.EnableVimTabAndBackspace).Returns(false);
+
+            _vsSimulationCommandTarget = new SimulationCommandTarget(
                 bufferCoordinator.VimBuffer.TextView,
                 editorOperationsFactoryService.GetEditorOperations(bufferCoordinator.VimBuffer.TextView));
 
@@ -324,18 +339,18 @@ namespace VsVim.UnitTest.Utils
             {
                 commandTargets.Add(ReSharperKeyUtil.GetOrCreate(bufferCoordinator));
             }
-            commandTargets.Add(new StandardCommandTarget(bufferCoordinator, textManager.Object, _displayWindowBroker.Object, _vsCommandTarget));
+            commandTargets.Add(new StandardCommandTarget(bufferCoordinator, textManager.Object, _displayWindowBroker.Object, _vsSimulationCommandTarget));
 
             // Create the VsCommandTarget.  It's next is the final and default Visual Studio 
             // command target
-            var vsCommandTarget = new VsCommandTarget(
+            _vsCommandTarget = new VsCommandTarget(
                 bufferCoordinator,
                 textManager.Object,
                 _vsAdapter.Object,
                 _displayWindowBroker.Object,
                 _keyUtil,
-                _factory.Create<IVimApplicationSettings>(MockBehavior.Loose).Object,
-                _vsCommandTarget,
+                _vimApplicationSettings.Object,
+                _vsSimulationCommandTarget,
                 commandTargets.ToReadOnlyCollectionShallow());
 
             // Time to setup the start command target.  If we are simulating R# then put them ahead of VsVim
@@ -343,12 +358,12 @@ namespace VsVim.UnitTest.Utils
             // behind them
             if (simulateResharper)
             {
-                _reSharperCommandTarget = new ReSharperCommandTargetSimulation(_wpfTextView, vsCommandTarget);
+                _reSharperCommandTarget = new ReSharperCommandTargetSimulation(_wpfTextView, _vsCommandTarget);
                 _commandTarget = _reSharperCommandTarget;
             }
             else
             {
-                _commandTarget = vsCommandTarget;
+                _commandTarget = _vsCommandTarget;
             }
 
             // Visual Studio hides the default IOleCommandTarget inside of the IWpfTextView property
