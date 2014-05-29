@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using EnvDTE;
 using EditorUtils;
 using Microsoft.VisualStudio.Editor;
@@ -27,6 +28,7 @@ namespace VsVim.UnitTest
         private Mock<IVsEditorAdaptersFactoryService> _editorAdaptersFactoryService;
         private Mock<ITextBufferUndoManagerProvider> _undoManagerProvider;
         private Mock<IEditorOperationsFactoryService> _editorOperationsFactoryService;
+        private Mock<IVimApplicationSettings> _vimApplicationSettings;
         private Mock<_DTE> _dte;
         private Mock<IVsUIShell4> _shell;
         private Mock<StatusBar> _statusBar;
@@ -44,6 +46,7 @@ namespace VsVim.UnitTest
             _dte.SetupGet(x => x.StatusBar).Returns(_statusBar.Object);
             _textManager = _factory.Create<ITextManager>();
             _textManager.Setup(x => x.GetDocumentTextViews(DocumentLoad.RespectLazy)).Returns(new List<ITextView>());
+            _vimApplicationSettings = _factory.Create<IVimApplicationSettings>(MockBehavior.Loose);
 
             var vsMonitorSelection = _factory.Create<IVsMonitorSelection>();
             uint cookie = 42;
@@ -64,7 +67,7 @@ namespace VsVim.UnitTest
                 _editorOperationsFactoryService.Object,
                 _textManager.Object,
                 _factory.Create<ISharedServiceFactory>(MockBehavior.Loose).Object,
-                _factory.Create<IVimApplicationSettings>(MockBehavior.Loose).Object,
+                _vimApplicationSettings.Object,
                 sp.Object);
             _host = _hostRaw;
         }
@@ -308,6 +311,17 @@ namespace VsVim.UnitTest
             {
                 Create();
                 Assert.False(_host.AutoSynchronizeSettings);
+            }
+
+            [Fact]
+            public void DefaultSettingsTiedToApplicationSettings()
+            {
+                Create();
+                foreach (var cur in Enum.GetValues(typeof(DefaultSettings)).Cast<DefaultSettings>())
+                {
+                    _vimApplicationSettings.SetupGet(x => x.DefaultSettings).Returns(cur);
+                    Assert.Equal(cur, _hostRaw.DefaultSettings);
+                }
             }
         }
     }

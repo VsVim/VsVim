@@ -66,6 +66,11 @@ namespace VsVim
             get { return false; }
         }
 
+        public override DefaultSettings DefaultSettings
+        {
+            get { return _vimApplicationSettings.DefaultSettings; }
+        }
+
         public override int TabCount
         {
             get { return _sharedService.GetWindowFrameState().WindowFrameCount; }
