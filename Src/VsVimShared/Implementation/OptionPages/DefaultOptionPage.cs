@@ -88,6 +88,11 @@ namespace VsVim.Implementation.OptionPages
         [Category(CategoryGeneral)]
         public bool EnableExternalEditMonitoring { get; set; }
 
+        [DisplayName("Enable Vim Tab / Backspace")]
+        [Description("Use vim rules for edits with tab and backspace in insert mode.  This will take into account settings like 'softtabstop', 'tabstop', 'backspace', etc ...")]
+        [Category(CategoryGeneral)]
+        public bool EnableVimTabAndBackspace { get; set; }
+
         [DisplayName("Block Caret")]
         [Category(CategoryColors)]
         public Color BlockCaretColor
@@ -137,6 +142,7 @@ namespace VsVim.Implementation.OptionPages
             {
                 DefaultSettings = vimApplicationSettings.DefaultSettings;
                 EnableExternalEditMonitoring = vimApplicationSettings.EnableExternalEditMonitoring;
+                EnableVimTabAndBackspace = vimApplicationSettings.EnableVimTabAndBackspace;
             }
 
             LoadColors();
@@ -151,6 +157,7 @@ namespace VsVim.Implementation.OptionPages
             {
                 vimApplicationSettings.DefaultSettings = DefaultSettings;
                 vimApplicationSettings.EnableExternalEditMonitoring = EnableExternalEditMonitoring;
+                vimApplicationSettings.EnableVimTabAndBackspace = EnableVimTabAndBackspace;
             }
 
             SaveColors();

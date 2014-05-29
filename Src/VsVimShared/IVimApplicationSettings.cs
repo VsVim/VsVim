@@ -28,6 +28,11 @@ namespace VsVim
         bool EnableExternalEditMonitoring { get; set; }
 
         /// <summary>
+        /// Do we want to enable vim style processing of tab and backspace
+        /// </summary>
+        bool EnableVimTabAndBackspace { get; set; }
+
+        /// <summary>
         /// The key bindings were updated 
         /// </summary>
         bool HaveUpdatedKeyBindings { get; set; }

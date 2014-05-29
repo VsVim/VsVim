@@ -334,6 +334,7 @@ namespace VsVim.UnitTest.Utils
                 _vsAdapter.Object,
                 _displayWindowBroker.Object,
                 _keyUtil,
+                _factory.Create<IVimApplicationSettings>(MockBehavior.Loose).Object,
                 _vsCommandTarget,
                 commandTargets.ToReadOnlyCollectionShallow());
 

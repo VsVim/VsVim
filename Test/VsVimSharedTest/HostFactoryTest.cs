@@ -46,6 +46,7 @@ namespace VsVim.UnitTest
                 new VimBufferCoordinatorFactory(Vim),
                 _mockFactory.Create<IKeyUtil>(MockBehavior.Loose).Object,
                 _synchronizer.Object,
+                _mockFactory.Create<IVimApplicationSettings>(MockBehavior.Loose).Object,
                 new Lazy<ICommandTargetFactory, IOrderable>[] { });
         }
 
