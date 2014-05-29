@@ -51,11 +51,6 @@ namespace Vim.UI.Wpf
             get;
         }
 
-        public virtual bool IncludeVimRc
-        {
-            get { return false; }
-        }
-
         public abstract IFontProperties FontProperties
         {
             get;
@@ -286,6 +281,14 @@ namespace Vim.UI.Wpf
             return true;
         }
 
+        /// <summary>
+        /// By default the host will only load vsvimrc files
+        /// </summary>
+        public virtual bool ShouldIncludeRcFile(VimRcPath vimRcPath)
+        {
+            return vimRcPath.VimRcKind == VimRcKind.VsVimRc;
+        }
+
         public virtual bool SaveTextAs(string text, string filePath)
         {
             try
@@ -448,11 +451,6 @@ namespace Vim.UI.Wpf
             get { return DefaultSettings; }
         }
 
-        bool IVimHost.IncludeVimRc
-        {
-            get { return IncludeVimRc; }
-        }
-
         void IVimHost.Beep()
         {
             Beep();
@@ -599,6 +597,11 @@ namespace Vim.UI.Wpf
         bool IVimHost.ShouldCreateVimBuffer(ITextView textView)
         {
             return ShouldCreateVimBuffer(textView);
+        }
+
+        bool IVimHost.ShouldIncludeRcFile(VimRcPath vimRcPath)
+        {
+            return ShouldIncludeRcFile(vimRcPath);
         }
 
         HostResult IVimHost.SplitViewHorizontally(ITextView value)

@@ -21,11 +21,11 @@ namespace VsVim.Implementation.Settings
     {
         internal const string CollectionPath = "VsVim";
         internal const string DefaultSettingsName = "DefaultSettings";
-        internal const string EnableExternalEditMonitoring = "EnableExternalEditMonitoring";
-        internal const string EnableVimTabAndBackspace = "EnableVimTabAndBackspace";
-        internal const string EnableVimRcLoading = "EnableVimRcLoading";
+        internal const string EnableExternalEditMonitoringName = "EnableExternalEditMonitoring";
+        internal const string EnableVimTabAndBackspaceName = "EnableVimTabAndBackspace";
+        internal const string VimRcLoadSettingName = "VimRcLoadSetting";
         internal const string HaveUpdatedKeyBindingsName = "HaveUpdatedKeyBindings";
-        internal const string HaveNotifiedBackspaceSetting = "HaveNotifiedBackspaceSetting";
+        internal const string HaveNotifiedBackspaceSettingName = "HaveNotifiedBackspaceSetting";
         internal const string IgnoredConflictingKeyBindingName = "IgnoredConflictingKeyBinding";
         internal const string RemovedBindingsName = "RemovedBindings";
         internal const string LegacySettingsMigratedName = "LegacySettingsMigrated";
@@ -247,22 +247,22 @@ namespace VsVim.Implementation.Settings
             set { SetEnum(DefaultSettingsName, value); }
         }
 
+        VimRcLoadSetting IVimApplicationSettings.VimRcLoadSetting
+        {
+            get { return GetEnum(VimRcLoadSettingName, defaultValue: VimRcLoadSetting.VsVimRc); }
+            set { SetEnum(VimRcLoadSettingName, value); }
+        }
+
         bool IVimApplicationSettings.EnableExternalEditMonitoring
         {
-            get { return GetBoolean(EnableExternalEditMonitoring, defaultValue: true); }
-            set { SetBoolean(EnableExternalEditMonitoring, value); }
+            get { return GetBoolean(EnableExternalEditMonitoringName, defaultValue: true); }
+            set { SetBoolean(EnableExternalEditMonitoringName, value); }
         }
 
         bool IVimApplicationSettings.EnableVimTabAndBackspace
         {
-            get { return GetBoolean(EnableVimTabAndBackspace, defaultValue: false); }
-            set { SetBoolean(EnableVimTabAndBackspace, value); }
-        }
-
-        bool IVimApplicationSettings.EnableVimRcLoading
-        {
-            get { return GetBoolean(EnableVimRcLoading, defaultValue: false); }
-            set { SetBoolean(EnableVimRcLoading, value); }
+            get { return GetBoolean(EnableVimTabAndBackspaceName, defaultValue: false); }
+            set { SetBoolean(EnableVimTabAndBackspaceName, value); }
         }
 
         bool IVimApplicationSettings.HaveUpdatedKeyBindings
@@ -273,8 +273,8 @@ namespace VsVim.Implementation.Settings
 
         bool IVimApplicationSettings.HaveNotifiedBackspaceSetting
         {
-            get { return GetBoolean(HaveNotifiedBackspaceSetting, defaultValue: false); }
-            set { SetBoolean(HaveNotifiedBackspaceSetting, value); }
+            get { return GetBoolean(HaveNotifiedBackspaceSettingName, defaultValue: false); }
+            set { SetBoolean(HaveNotifiedBackspaceSettingName, value); }
         }
 
         bool IVimApplicationSettings.IgnoredConflictingKeyBinding

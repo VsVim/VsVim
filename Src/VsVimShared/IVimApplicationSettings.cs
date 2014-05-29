@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using Vim;
 
 namespace VsVim
@@ -9,6 +10,22 @@ namespace VsVim
     /// </summary>
     public class ApplicationSettingsEventArgs : EventArgs
     {
+
+    }
+
+    public enum VimRcLoadSetting
+    {
+        [DisplayName("No vsvimrc or vimrc files")]
+        None,
+
+        [DisplayName("vsvimrc files only")]
+        VsVimRc,
+
+        [DisplayName("vimrc files only")]
+        VimRc,
+
+        [DisplayName("vsvimrc or vimrc files")]
+        Both
     }
 
     /// <summary>
@@ -33,10 +50,9 @@ namespace VsVim
         bool EnableVimTabAndBackspace { get; set; }
 
         /// <summary>
-        /// Do we want to enable the loading of vimrc files?  This does not control vsvimcr files
-        /// which are always loaded 
+        /// Controls how vimrc files are loaded
         /// </summary>
-        bool EnableVimRcLoading { get; set; }
+        VimRcLoadSetting VimRcLoadSetting { get; set; }
 
         /// <summary>
         /// The key bindings were updated 

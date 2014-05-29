@@ -119,7 +119,7 @@ namespace Vim.UnitTest
                 _vim = (Vim)Vim;
                 _globalSettings = Vim.GlobalSettings;
                 _fileSystem = new Mock<IFileSystem>();
-                _fileSystem.Setup(x => x.GetVimRcDirectories()).Returns((new string[] { }).ToFSharpList());
+                _fileSystem.Setup(x => x.GetVimRcDirectories()).Returns(new string[] { });
                 _originalFileSystem = _vim._fileSystem;
                 _vim._fileSystem = _fileSystem.Object;
                 VimHost.CreateHiddenTextViewFunc = () => TextEditorFactoryService.CreateTextView();
@@ -133,18 +133,22 @@ namespace Vim.UnitTest
 
             private void Run(string vimRcText)
             {
+                var vimRcPath = new VimRcPath(VimRcKind.VimRc, "_vimrc");
                 var lines = vimRcText.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries);
                 _fileSystem
-                    .Setup(x => x.LoadVimRcContents(It.IsAny<bool>()))
-                    .Returns(new FSharpOption<VimRcContents>(new VimRcContents(VimRcKind.VimRc, "_vimrc", lines)));
+                    .Setup(x => x.GetVimRcFilePaths())
+                    .Returns(new[] { vimRcPath });
+                _fileSystem
+                    .Setup(x => x.ReadAllLines(vimRcPath.FilePath))
+                    .Returns(FSharpOption.Create(lines));
                 Assert.True(Vim.LoadVimRc().IsLoadSucceeded);
             }
 
             private void RunNone()
             {
                 _fileSystem
-                    .Setup(x => x.LoadVimRcContents(It.IsAny<bool>()))
-                    .Returns(FSharpOption<VimRcContents>.None);
+                    .Setup(x => x.GetVimRcFilePaths())
+                    .Returns(new VimRcPath[] { });
                 Assert.True(Vim.LoadVimRc().IsLoadFailed);
             }
 

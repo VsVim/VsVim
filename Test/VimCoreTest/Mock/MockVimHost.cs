@@ -21,7 +21,6 @@ namespace Vim.UnitTest.Mock
         public DefaultSettings DefaultSettings { get; set; }
         public int BeepCount { get; set; }
         public int GoToDefinitionCount { get; set; }
-        public bool IncludeVimRc { get; set; }
         public bool GoToFileReturn { get; set; }
         public bool GoToDefinitionReturn { get; set; }
         public Func<ITextView, string, bool> GoToLocalDeclarationFunc { get; set; }
@@ -43,6 +42,7 @@ namespace Vim.UnitTest.Mock
         public ITextBuffer LastSaved { get; set; }
         public ITextView LastClosed { get; set; }
         public bool ShouldCreateVimBufferImpl { get; set; }
+        public bool ShouldIncludeRcFile { get; set; }
         public VimRcState VimRcState { get; private set; }
         public int TabCount { get; set; }
         public IFontProperties FontProperties { get; set; }
@@ -72,7 +72,6 @@ namespace Vim.UnitTest.Mock
             DefaultSettings = DefaultSettings.GVim74;
             GoToDefinitionReturn = true;
             IsCompletionWindowActive = false;
-            IncludeVimRc = false;
             NavigateToReturn = false;
             Buffers = FSharpList<IVimBuffer>.Empty;
             BeepCount = 0;
@@ -91,6 +90,7 @@ namespace Vim.UnitTest.Mock
             LastClosed = null;
             LastSaved = null;
             ShouldCreateVimBufferImpl = false;
+            ShouldIncludeRcFile = true;
         }
 
         void IVimHost.Beep()
@@ -294,6 +294,11 @@ namespace Vim.UnitTest.Mock
         bool IVimHost.ShouldCreateVimBuffer(ITextView textView)
         {
             return ShouldCreateVimBufferImpl;
+        }
+
+        bool IVimHost.ShouldIncludeRcFile(VimRcPath vimRcPath)
+        {
+            return ShouldIncludeRcFile;
         }
 
         bool IVimHost.GoToQuickFix(QuickFix quickFix, int count, bool hasBang)

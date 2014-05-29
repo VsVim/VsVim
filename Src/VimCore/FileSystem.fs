@@ -120,37 +120,24 @@ type internal FileSystem() =
     member x.GetVimRcDirectories() = 
         VimRcDirectoryCandidates
         |> Seq.choose SystemUtil.TryResolvePath
-        |> List.ofSeq
+        |> Seq.toArray
 
     member x.GetVimRcFilePaths() =
         let standard =
             x.GetVimRcDirectories()
-            |> Seq.collect (fun path -> FileNames |> Seq.map (fun (name, kind) -> (Path.Combine(path,name), kind)))
+            |> Seq.collect (fun path -> FileNames |> Seq.map (fun (name, kind) -> { VimRcKind = kind; FilePath = Path.Combine(path,name) }))
 
         // If the MYVIMRC environment variable is set then prefer that path over the standard
         // paths
-        match SystemUtil.TryGetEnvironmentVariable "MYVIMRC" with
-        | None -> standard
-        | Some filePath -> Seq.append [ (filePath, VimRcKind.VimRc) ] standard
+        let all = 
+            match SystemUtil.TryGetEnvironmentVariable "MYVIMRC" with
+            | None -> standard
+            | Some filePath -> Seq.append [ { VimRcKind = VimRcKind.VimRc; FilePath = filePath } ] standard
 
-    member x.LoadVimRcContents includeVimRcFiles = 
-        let readLines (path, vimRcKind) = 
-            if vimRcKind = VimRcKind.VimRc && not includeVimRcFiles then
-                None
-            else
-            match x.ReadAllLines path with
-            | None -> None
-            | Some lines -> 
-                let contents = {
-                    VimRcKind = vimRcKind
-                    FilePath = path
-                    Lines = lines
-                } 
-                Some contents
-        x.GetVimRcFilePaths() |> Seq.tryPick readLines
+        Seq.toArray all
 
     interface IFileSystem with
         member x.GetVimRcDirectories() = x.GetVimRcDirectories()
-        member x.LoadVimRcContents includeVimRcFiles = x.LoadVimRcContents includeVimRcFiles
+        member x.GetVimRcFilePaths() = x.GetVimRcFilePaths()
         member x.ReadAllLines path = x.ReadAllLines path
 

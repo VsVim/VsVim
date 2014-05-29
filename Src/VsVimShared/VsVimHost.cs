@@ -71,11 +71,6 @@ namespace VsVim
             get { return _sharedService.GetWindowFrameState().WindowFrameCount; }
         }
 
-        public override bool IncludeVimRc
-        {
-            get { return _vimApplicationSettings.EnableVimRcLoading; }
-        }
-
         public override IFontProperties FontProperties
         {
             get { return _fontProperties; }
@@ -508,6 +503,24 @@ namespace VsVim
             }
 
             return !DisableVimBufferCreation;
+        }
+
+        public override bool ShouldIncludeRcFile(VimRcPath vimRcPath)
+        {
+            switch (_vimApplicationSettings.VimRcLoadSetting)
+            {
+                case VimRcLoadSetting.None:
+                    return false;
+                case VimRcLoadSetting.VimRc:
+                    return vimRcPath.VimRcKind == VimRcKind.VimRc;
+                case VimRcLoadSetting.VsVimRc:
+                    return vimRcPath.VimRcKind == VimRcKind.VsVimRc;
+                case VimRcLoadSetting.Both:
+                    return true;
+                default:
+                    Contract.Assert(false);
+                    return base.ShouldIncludeRcFile(vimRcPath);
+            }
         }
 
         #region IVsSelectionEvents

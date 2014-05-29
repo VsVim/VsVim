@@ -51,7 +51,7 @@ namespace Vim.UnitTest
             var map = new Dictionary<string, VariableValue>();
             _keyMap = new KeyMap(_globalSettings, map);
             _vimHost = _factory.Create<IVimHost>(MockBehavior.Strict);
-            _vimHost.SetupGet(x => x.IncludeVimRc).Returns(true);
+            _vimHost.Setup(x => x.ShouldIncludeRcFile(It.IsAny<VimRcPath>())).Returns(true);
             _vimHost.Setup(x => x.CreateHiddenTextView()).Returns(CreateTextView());
             _vimHost.Setup(x => x.AutoSynchronizeSettings).Returns(true);
             _vimHost.SetupGet(x => x.DefaultSettings).Returns(DefaultSettings.GVim73);
@@ -78,15 +78,28 @@ namespace Vim.UnitTest
         {
             public LoadVimRcTest()
             {
-                _fileSystem.Setup(x => x.GetVimRcDirectories()).Returns((new string[] { }).ToFSharpList()).Verifiable();
-                _fileSystem.Setup(x => x.LoadVimRcContents(It.IsAny<bool>())).Returns(FSharpOption<VimRcContents>.None).Verifiable();
+                _fileSystem
+                    .Setup(x => x.GetVimRcDirectories())
+                    .Returns(new string[] { })
+                    .Verifiable();
+                _fileSystem
+                    .Setup(x => x.GetVimRcFilePaths())
+                    .Returns(new VimRcPath[] { })
+                    .Verifiable();
                 _vimHost.Setup(x => x.VimRcLoaded(It.IsAny<VimRcState>(), It.IsAny<IVimLocalSettings>(), It.IsAny<IVimWindowSettings>()));
             }
 
             private void SetRcContents(params string[] lines)
             {
-                var contents = new VimRcContents(VimRcKind.VimRc, "foo", lines);
-                _fileSystem.Setup(x => x.LoadVimRcContents(It.IsAny<bool>())).Returns(FSharpOption.Create(contents)).Verifiable();
+                var vimRcPath= new VimRcPath(VimRcKind.VimRc, "foo");
+                _fileSystem
+                    .Setup(x => x.GetVimRcFilePaths())
+                    .Returns(new [] { vimRcPath })
+                    .Verifiable();
+                _fileSystem
+                    .Setup(x => x.ReadAllLines(vimRcPath.FilePath))
+                    .Returns(FSharpOption.Create(lines))
+                    .Verifiable();
             }
 
             [Fact]
@@ -104,7 +117,7 @@ namespace Vim.UnitTest
             [Fact]
             public void BadLoadStillChangeGlobal()
             {
-                _fileSystem.Setup(x => x.GetVimRcDirectories()).Returns((new string[] { "foo" }).ToFSharpList()).Verifiable();
+                _fileSystem.Setup(x => x.GetVimRcDirectories()).Returns(new string[] { "foo" }).Verifiable();
                 Assert.True(_vim.LoadVimRc().IsLoadFailed);
                 Assert.Equal("", _globalSettings.VimRc);
                 Assert.Equal("foo", _globalSettings.VimRcPaths);
@@ -116,11 +129,7 @@ namespace Vim.UnitTest
             public void LoadUpdateSettings()
             {
                 // Setup the VimRc contents
-                var contents = new VimRcContents(
-                    VimRcKind.VimRc,
-                    "foo",
-                    new[] { "set ai" });
-                _fileSystem.Setup(x => x.LoadVimRcContents(It.IsAny<bool>())).Returns(FSharpOption.Create(contents)).Verifiable();
+                SetRcContents(new [] {"set ai" });
                 _vimHost.Setup(x => x.CreateHiddenTextView()).Returns(CreateTextView());
                 Assert.True(_vim.LoadVimRc().IsLoadSucceeded);
                 Assert.True(_vimRaw._vimRcLocalSettings.AutoIndent);

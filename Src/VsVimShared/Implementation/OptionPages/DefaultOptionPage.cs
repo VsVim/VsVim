@@ -93,6 +93,11 @@ namespace VsVim.Implementation.OptionPages
         [Category(CategoryGeneral)]
         public bool EnableVimTabAndBackspace { get; set; }
 
+        [DisplayName("VimRc File Loading")]
+        [Description("Controls how VsVim probes for vsvim / vimrc files")]
+        [Category(CategoryGeneral)]
+        public VimRcLoadSetting VimRcLoadSetting { get; set; }
+
         [DisplayName("Block Caret")]
         [Category(CategoryColors)]
         public Color BlockCaretColor
@@ -143,6 +148,7 @@ namespace VsVim.Implementation.OptionPages
                 DefaultSettings = vimApplicationSettings.DefaultSettings;
                 EnableExternalEditMonitoring = vimApplicationSettings.EnableExternalEditMonitoring;
                 EnableVimTabAndBackspace = vimApplicationSettings.EnableVimTabAndBackspace;
+                VimRcLoadSetting = vimApplicationSettings.VimRcLoadSetting;
             }
 
             LoadColors();
@@ -158,6 +164,7 @@ namespace VsVim.Implementation.OptionPages
                 vimApplicationSettings.DefaultSettings = DefaultSettings;
                 vimApplicationSettings.EnableExternalEditMonitoring = EnableExternalEditMonitoring;
                 vimApplicationSettings.EnableVimTabAndBackspace = EnableVimTabAndBackspace;
+                vimApplicationSettings.VimRcLoadSetting = VimRcLoadSetting;
             }
 
             SaveColors();

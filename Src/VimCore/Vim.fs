@@ -569,15 +569,15 @@ type internal Vim
                 _globalSettings.VimRc <- System.String.Empty
                 _globalSettings.VimRcPaths <- _fileSystem.GetVimRcDirectories() |> String.concat ";"
         
-                match _fileSystem.LoadVimRcContents(_vimHost.IncludeVimRc) with
+                match x.LoadVimRcFileContents() with
                 | None -> 
                     _vimRcLocalSettings <- LocalSettings(_globalSettings) 
                     _vimRcWindowSettings <- WindowSettings(_globalSettings)
                     _vimRcState <- VimRcState.LoadFailed
                     x.LoadDefaultSettings()
 
-                | Some fileContents ->
-                    _globalSettings.VimRc <- fileContents.FilePath
+                | Some (vimRcPath, lines) ->
+                    _globalSettings.VimRc <- vimRcPath.FilePath
                     let textView = _vimHost.CreateHiddenTextView()
         
                     try
@@ -590,11 +590,11 @@ type internal Vim
 
                         // Actually parse and run all of the commands
                         let vimInterpreter = x.GetVimInterpreter vimBuffer
-                        vimInterpreter.RunScript(fileContents.Lines)
+                        vimInterpreter.RunScript(lines)
 
                         _vimRcLocalSettings <- LocalSettings.Copy vimBuffer.LocalSettings
                         _vimRcWindowSettings <- WindowSettings.Copy vimBuffer.WindowSettings
-                        _vimRcState <- VimRcState.LoadSucceeded fileContents.FilePath
+                        _vimRcState <- VimRcState.LoadSucceeded vimRcPath.FilePath
                     finally
                         // Be careful not to leak the ITextView in the case of an exception
                         textView.Close()
@@ -603,6 +603,16 @@ type internal Vim
 
             _vimHost.VimRcLoaded _vimRcState _vimRcLocalSettings _vimRcWindowSettings
             _vimRcState
+
+    /// This actually loads the lines of the vimrc that we should be using 
+    member x.LoadVimRcFileContents() = 
+        _fileSystem.GetVimRcFilePaths()
+        |> Seq.tryPick (fun vimRcPath -> 
+            if not (_vimHost.ShouldIncludeRcFile vimRcPath) then
+                None
+            else
+                _fileSystem.ReadAllLines vimRcPath.FilePath
+                |> Option.map (fun lines -> (vimRcPath, lines)))
 
     /// Called when there is no vimrc file.  Update IVimGlobalSettings to be the appropriate
     /// value for what the host requests

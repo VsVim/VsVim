@@ -115,27 +115,24 @@ type VimRcKind =
     | VimRc     = 0
     | VsVimRc   = 1
 
-type VimRcContents = {
+type VimRcPath = { 
 
     /// Which type of file was loaded 
     VimRcKind : VimRcKind 
 
     /// Full path to the file which the contents were loaded from
     FilePath : string
-
-    /// Actual lines in the file
-    Lines : string[]
 }
 
 /// Abstracts away VsVim's interaction with the file system to facilitate testing
 type IFileSystem =
 
     /// Get the directories to probe for RC files
-    abstract GetVimRcDirectories : unit -> list<string>
+    abstract GetVimRcDirectories : unit -> string[]
 
-    /// Attempts to load the contents of the .VimRC and return both the path the file
-    /// was loaded from and it's contents a
-    abstract LoadVimRcContents : includeVimRcFiles : bool -> VimRcContents option
+    /// Get the possible paths for a vimrc file in the order they should be 
+    /// considered 
+    abstract GetVimRcFilePaths : unit -> VimRcPath[]
 
     /// Attempt to read all of the lines from the given file 
     abstract ReadAllLines : filePath : string -> string[] option
@@ -3759,9 +3756,6 @@ type IVimHost =
     /// Get the font properties associated with the text editor
     abstract FontProperties : IFontProperties
 
-    /// Should vimrc files be considered when probing for vsvimrc files?  
-    abstract IncludeVimRc : bool
-
     /// Get the count of window tabs that are active in the host. This refers to tabs for actual 
     /// edit windows, not anything to do with tabs in the text file.  If window tabs are not supported 
     /// then -1 should be returned
@@ -3865,6 +3859,10 @@ type IVimHost =
     /// Called by Vim when it encounters a new ITextView and needs to know if it should 
     /// create an IVimBuffer for it
     abstract ShouldCreateVimBuffer : textView : ITextView -> bool
+
+    /// Called by Vim when it is loading vimrc files.  This gives the host the chance to
+    /// filter out vimrc files it doesn't want to consider
+    abstract ShouldIncludeRcFile : vimRcPath : VimRcPath -> bool
 
     /// Split the views horizontally
     abstract SplitViewHorizontally : ITextView -> HostResult
