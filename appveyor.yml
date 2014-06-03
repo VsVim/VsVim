@@ -10,8 +10,14 @@ build:
   project: VimAll.sln
   verbosity: minimal
 
+after_build:
+  - Src\CleanVsix\bin\Debug\CleanVsix.exe Src\VsVim\bin\Debug\VsVim.vsix
+
+artifacts:
+  - path: Src\VsVim\bin\Debug\VsVim.vsix
+
 test_script:
-      - Tools\xunit.console.clr4.x86.exe Test\VimCoreTest\bin\Debug\Vim.Core.UnitTest.dll /silent
-      - Tools\xunit.console.clr4.x86.exe Test\VimWpfTest\bin\Debug\Vim.UI.Wpf.UnitTest.dll /silent
-      - Tools\xunit.console.clr4.x86.exe Test\VsVimSharedTest\bin\Debug\VsVim.Shared.UnitTest.dll /silent
+  - Tools\xunit.console.clr4.x86.exe Test\VimCoreTest\bin\Debug\Vim.Core.UnitTest.dll /silent
+  - Tools\xunit.console.clr4.x86.exe Test\VimWpfTest\bin\Debug\Vim.UI.Wpf.UnitTest.dll /silent
+  - Tools\xunit.console.clr4.x86.exe Test\VsVimSharedTest\bin\Debug\VsVim.Shared.UnitTest.dll /silent
 
