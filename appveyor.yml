@@ -1,0 +1,17 @@
+
+# Branchs to build
+branches:
+  only:
+    - master    
+
+configuration: Debug
+
+build:
+  project: VimAll.sln
+  verbosity: minimal
+
+test_script:
+      - Tools\xunit.console.clr4.x86.exe Test\VimCoreTest\bin\Debug\Vim.Core.UnitTest.dll /silent
+      - Tools\xunit.console.clr4.x86.exe Test\VimWpfTest\bin\Debug\Vim.UI.Wpf.UnitTest.dll /silent
+      - Tools\xunit.console.clr4.x86.exe Test\VsVimSharedTest\bin\Debug\VsVim.Shared.UnitTest.dll /silent
+
