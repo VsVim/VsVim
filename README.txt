@@ -20,3 +20,4 @@ Branching Structure
  - fixes*: Both short and long term fixes
  - dead*: Branches which will never integrate with master again.  
 
+[![Build status](https://ci.appveyor.com/api/projects/status/gf5rlu19syrja9lr)](https://ci.appveyor.com/project/jaredpar/vsvim)
