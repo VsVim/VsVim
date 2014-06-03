@@ -11,46 +11,11 @@ namespace Vim.UI.Wpf.UnitTest
 {
     public abstract class VimKeyProcessorTest : VimTestBase
     {
-        protected IntPtr _keyboardId;
-        protected bool _mustUnloadLayout;
         protected VimKeyProcessor _processor;
 
         public VimKeyProcessorTest()
         {
-            Setup(null);
-        }
-
-        /// <summary>
-        /// Setup the KeyProcessor giving it the keyboard layout specified by the provided
-        /// language id
-        /// </summary>
-        protected virtual void Setup(string languageId)
-        {
-            if (!String.IsNullOrEmpty(languageId))
-            {
-                _keyboardId = NativeMethods.LoadKeyboardLayout(languageId, NativeMethods.KLF_ACTIVATE, out _mustUnloadLayout);
-                Assert.NotEqual(_keyboardId, IntPtr.Zero);
-            }
-            else
-            {
-                _keyboardId = IntPtr.Zero;
-            }
-
             _processor = CreateKeyProcessor();
-        }
-
-        public override void Dispose()
-        {
-            if (_keyboardId != IntPtr.Zero)
-            {
-                if (_mustUnloadLayout)
-                {
-                    Assert.True(NativeMethods.UnloadKeyboardLayout(_keyboardId));
-                }
-
-                NativeMethods.LoadKeyboardLayout(NativeMethods.LayoutEnglish, NativeMethods.KLF_ACTIVATE);
-            }
-            _keyboardId = IntPtr.Zero;
         }
 
         protected static KeyEventArgs CreateKeyEventArgs(
@@ -81,7 +46,6 @@ namespace Vim.UI.Wpf.UnitTest
             [Fact]
             public void KeyDown1()
             {
-                Setup(NativeMethods.LayoutPortuguese);
                 var arg = CreateKeyEventArgs(Key.D8, ModifierKeys.Alt | ModifierKeys.Control);
                 _processor.KeyDown(arg);
                 Assert.False(arg.Handled);
