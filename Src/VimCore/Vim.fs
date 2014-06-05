@@ -378,6 +378,9 @@ type internal Vim
             _vimData.SearchHistory.Limit <- _globalSettings.History
             _vimData.CommandHistory.Limit <- _globalSettings.History)
 
+        // Allow the IVimHost to customize the IVimGlobalSettings instance
+        _vimHost.VimGlobalSettingsCreated _globalSettings
+
     [<ImportingConstructor>]
     new(
         host : IVimHost,

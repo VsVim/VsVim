@@ -307,6 +307,11 @@ namespace Vim.UnitTest.Mock
             return false;
         }
 
+        void IVimHost.VimGlobalSettingsCreated(IVimGlobalSettings globalSettings)
+        {
+
+        }
+
         void IVimHost.VimRcLoaded(VimRcState vimRcState, IVimLocalSettings localSettings, IVimWindowSettings windowSettings)
         {
             VimRcState = vimRcState;

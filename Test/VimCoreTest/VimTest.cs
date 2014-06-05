@@ -29,32 +29,42 @@ namespace Vim.UnitTest
 
         #endregion
 
-        protected readonly MockRepository _factory;
-        protected readonly Mock<IVimHost> _vimHost;
-        protected readonly Mock<IFileSystem> _fileSystem;
-        protected readonly IKeyMap _keyMap;
-        protected readonly IVimGlobalSettings _globalSettings;
-        protected readonly SimpleListener _simpleListener;
-        internal readonly IVimBufferFactory _bufferFactory;
-        internal readonly Vim _vimRaw;
-        protected readonly IVim _vim;
+        private readonly MockRepository _factory;
+        private readonly Mock<IVimHost> _vimHost;
+        private readonly Mock<IFileSystem> _fileSystem;
+        private readonly IKeyMap _keyMap;
+        private readonly IVimGlobalSettings _globalSettings;
+        private readonly SimpleListener _simpleListener;
+        private readonly IVimBufferFactory _bufferFactory;
+        private readonly Dictionary<string, VariableValue> _variableMap;
+        private Vim _vimRaw;
+        private IVim _vim;
 
-        protected VimTest()
+        protected VimTest(bool createVim = true)
         {
             _factory = new MockRepository(MockBehavior.Strict);
             _globalSettings = new GlobalSettings();
             _fileSystem = _factory.Create<IFileSystem>(MockBehavior.Strict);
             _bufferFactory = VimBufferFactory;
             _simpleListener = new SimpleListener();
-            var creationListeners = new [] { new Lazy<IVimBufferCreationListener>(() => _simpleListener) };
 
-            var map = new Dictionary<string, VariableValue>();
-            _keyMap = new KeyMap(_globalSettings, map);
+            _variableMap = new Dictionary<string, VariableValue>();
+            _keyMap = new KeyMap(_globalSettings, _variableMap);
             _vimHost = _factory.Create<IVimHost>(MockBehavior.Strict);
             _vimHost.Setup(x => x.ShouldIncludeRcFile(It.IsAny<VimRcPath>())).Returns(true);
             _vimHost.Setup(x => x.CreateHiddenTextView()).Returns(CreateTextView());
             _vimHost.Setup(x => x.AutoSynchronizeSettings).Returns(true);
+            _vimHost.Setup(x => x.VimGlobalSettingsCreated(It.IsAny<IVimGlobalSettings>()));
             _vimHost.SetupGet(x => x.DefaultSettings).Returns(DefaultSettings.GVim73);
+            if (createVim)
+            {
+                CreateVim();
+            }
+        }
+
+        private void CreateVim()
+        {
+            var creationListeners = new [] { new Lazy<IVimBufferCreationListener>(() => _simpleListener) };
             _vimRaw = new Vim(
                 _vimHost.Object,
                 _bufferFactory,
@@ -68,7 +78,7 @@ namespace Vim.UnitTest
                 _fileSystem.Object,
                 new VimData(_globalSettings),
                 _factory.Create<IBulkOperations>().Object,
-                map,
+                _variableMap,
                 new EditorToSettingSynchronizer());
             _vim = _vimRaw;
             _vim.AutoLoadVimRc = false;
@@ -244,7 +254,6 @@ namespace Vim.UnitTest
 
         public sealed class MiscTest : VimTest
         {
-
             /// <summary>
             /// Make sure that we can close multiple IVimBuffer instances
             /// </summary>
@@ -462,6 +471,26 @@ namespace Vim.UnitTest
                 var buffer = _vim.CreateVimBuffer(textView);
                 buffer.Process('a');
                 Assert.True(_vim.ActiveBuffer.IsNone());
+            }
+        }
+
+        public sealed class GlobalSettingsCustomizationTest : VimTest
+        {
+            public GlobalSettingsCustomizationTest()
+                :base(createVim: false)
+            {
+
+            }
+
+            [Fact]
+            public void Simple()
+            {
+                Assert.False(_globalSettings.HighlightSearch);
+                _vimHost
+                    .Setup(x => x.VimGlobalSettingsCreated(_globalSettings))
+                    .Callback((IVimGlobalSettings globalSettings) => { globalSettings.HighlightSearch = true; });
+                CreateVim();
+                Assert.True(_globalSettings.HighlightSearch);
             }
         }
     }

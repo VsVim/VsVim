@@ -3870,6 +3870,11 @@ type IVimHost =
     /// Split the views horizontally
     abstract SplitViewVertically : ITextView -> HostResult
 
+    /// Called when VsVim has created the IVimGlobalSettings instance.  This callback gives
+    /// the host the oppurtunity to customize the initial IVimGlobalSettings values from
+    /// their defaults
+    abstract VimGlobalSettingsCreated : globalSettings : IVimGlobalSettings -> unit
+
     /// Called when VsVim attempts to load the user _vimrc file.  If the load succeeded 
     /// then the resulting settings are passed into the method.  If the load failed it is 
     /// the defaults.  Either way, they are the default settings used for new buffers
