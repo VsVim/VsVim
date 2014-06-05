@@ -192,7 +192,7 @@ namespace VsVim.Implementation.OptionPages
         public bool UseEditorIndent { get; set; }
 
         [DisplayName("Use Visual Studio Defaults")]
-        [Description("Use Visual Studio settings for tab size and tabs vs. spaces instead of vim settings")]
+        [Description("Use Visual Studio values to initialize 'tabsize' and 'expandtab'.  This will override values specified in a vsvimrc file")]
         [Category(CategoryGeneral)]
         public bool UseEditorDefaults { get; set; }
 
