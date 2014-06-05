@@ -181,10 +181,20 @@ namespace VsVim.Implementation.OptionPages
         [Category(CategoryGeneral)]
         public bool EnableExternalEditMonitoring { get; set; }
 
-        [DisplayName("Enable Vim Tab / Backspace")]
-        [Description("Use vim rules for edits with tab and backspace in insert mode.  This will take into account settings like 'softtabstop', 'tabstop', 'backspace', etc ...")]
+        [DisplayName("Use Visual Studio Tab / Backspace")]
+        [Description("When false tab and backspace keys in insert mode will use vim rules.  This will take into account settings like 'softtabstop', 'tabstop', 'backspace', etc ...")]
         [Category(CategoryGeneral)]
-        public bool EnableVimTabAndBackspace { get; set; }
+        public bool UseEditorTabAndBackspace { get; set; }
+
+        [DisplayName("Use Visual Studio Indent")]
+        [Description("Use Visual Studio indentation for new lines instead of strict 'autoindent' rules")]
+        [Category(CategoryGeneral)]
+        public bool UseEditorIndent { get; set; }
+
+        [DisplayName("Use Visual Studio Defaults")]
+        [Description("Use Visual Studio settings for tab size and tabs vs. spaces instead of vim settings")]
+        [Category(CategoryGeneral)]
+        public bool UseEditorDefaults { get; set; }
 
         [DisplayName("VimRc File Loading")]
         [Description("Controls how VsVim probes for vsvim / vimrc files")]
@@ -241,7 +251,9 @@ namespace VsVim.Implementation.OptionPages
             {
                 DefaultSettings = vimApplicationSettings.DefaultSettings;
                 EnableExternalEditMonitoring = vimApplicationSettings.EnableExternalEditMonitoring;
-                EnableVimTabAndBackspace = vimApplicationSettings.EnableVimTabAndBackspace;
+                UseEditorDefaults = vimApplicationSettings.UseEditorDefaults;
+                UseEditorIndent = vimApplicationSettings.UseEditorIndent;
+                UseEditorTabAndBackspace = vimApplicationSettings.UseEditorTabAndBackspace;
                 VimRcLoadSetting = vimApplicationSettings.VimRcLoadSetting;
             }
 
@@ -257,7 +269,9 @@ namespace VsVim.Implementation.OptionPages
             {
                 vimApplicationSettings.DefaultSettings = DefaultSettings;
                 vimApplicationSettings.EnableExternalEditMonitoring = EnableExternalEditMonitoring;
-                vimApplicationSettings.EnableVimTabAndBackspace = EnableVimTabAndBackspace;
+                vimApplicationSettings.UseEditorDefaults = UseEditorDefaults;
+                vimApplicationSettings.UseEditorIndent = UseEditorIndent;
+                vimApplicationSettings.UseEditorTabAndBackspace = UseEditorTabAndBackspace;
                 vimApplicationSettings.VimRcLoadSetting = VimRcLoadSetting;
             }
 

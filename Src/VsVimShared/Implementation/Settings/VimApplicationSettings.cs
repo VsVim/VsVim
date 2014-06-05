@@ -22,13 +22,15 @@ namespace VsVim.Implementation.Settings
         internal const string CollectionPath = "VsVim";
         internal const string DefaultSettingsName = "DefaultSettings";
         internal const string EnableExternalEditMonitoringName = "EnableExternalEditMonitoring";
-        internal const string EnableVimTabAndBackspaceName = "EnableVimTabAndBackspace";
         internal const string VimRcLoadSettingName = "VimRcLoadSetting";
         internal const string HaveUpdatedKeyBindingsName = "HaveUpdatedKeyBindings";
         internal const string HaveNotifiedBackspaceSettingName = "HaveNotifiedBackspaceSetting";
         internal const string IgnoredConflictingKeyBindingName = "IgnoredConflictingKeyBinding";
         internal const string RemovedBindingsName = "RemovedBindings";
         internal const string KeyMappingIssueFixedName = "EnterDeletekeyMappingIssue";
+        internal const string UseEditorIndentName = "UseEditorIndent";
+        internal const string UseEditorDefaultsName = "UseEditorDefaults";
+        internal const string UseEditorTabAndBackspaceName = "UseEditorTabAndBackspace";
         internal const string ErrorGetFormat = "Cannot get setting {0}";
         internal const string ErrorSetFormat = "Cannot set setting {0}";
 
@@ -204,10 +206,22 @@ namespace VsVim.Implementation.Settings
             set { SetBoolean(EnableExternalEditMonitoringName, value); }
         }
 
-        bool IVimApplicationSettings.EnableVimTabAndBackspace
+        bool IVimApplicationSettings.UseEditorDefaults
         {
-            get { return GetBoolean(EnableVimTabAndBackspaceName, defaultValue: false); }
-            set { SetBoolean(EnableVimTabAndBackspaceName, value); }
+            get { return GetBoolean(UseEditorDefaultsName, defaultValue: false); }
+            set { SetBoolean(UseEditorDefaultsName, value); }
+        }
+
+        bool IVimApplicationSettings.UseEditorIndent
+        {
+            get { return GetBoolean(UseEditorIndentName, defaultValue: true); }
+            set { SetBoolean(UseEditorIndentName, value); }
+        }
+
+        bool IVimApplicationSettings.UseEditorTabAndBackspace
+        {
+            get { return GetBoolean(UseEditorTabAndBackspaceName, defaultValue: true); }
+            set { SetBoolean(UseEditorTabAndBackspaceName, value); }
         }
 
         bool IVimApplicationSettings.HaveUpdatedKeyBindings

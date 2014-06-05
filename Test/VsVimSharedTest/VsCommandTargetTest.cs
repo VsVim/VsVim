@@ -29,7 +29,6 @@ namespace VsVim.UnitTest
         protected readonly Mock<IOleCommandTarget> _nextTarget;
         protected readonly Mock<IDisplayWindowBroker> _broker;
         protected readonly Mock<ITextManager> _textManager;
-        protected readonly Mock<IVimApplicationSettings> _vimApplicationSettings;
         protected readonly IOleCommandTarget _target;
         internal readonly VsCommandTarget _targetRaw;
         internal readonly IVimBufferCoordinator _bufferCoordinator;
@@ -52,8 +51,7 @@ namespace VsVim.UnitTest
 
             _broker = _factory.Create<IDisplayWindowBroker>(MockBehavior.Loose);
             _textManager = _factory.Create<ITextManager>();
-            _vimApplicationSettings = _factory.Create<IVimApplicationSettings>();
-            _vimApplicationSettings.SetupGet(x => x.EnableVimTabAndBackspace).Returns(false);
+            var vimApplicationSettings = _factory.Create<IVimApplicationSettings>();
 
             var commandTargets = new List<ICommandTarget>();
             if (isReSharperInstalled)
@@ -69,7 +67,7 @@ namespace VsVim.UnitTest
                 _vsAdapter.Object,
                 _broker.Object,
                 KeyUtil,
-                _vimApplicationSettings.Object,
+                vimApplicationSettings.Object,
                 _nextTarget.Object,
                 commandTargets.ToReadOnlyCollectionShallow());
             _target = _targetRaw;
@@ -176,7 +174,7 @@ namespace VsVim.UnitTest
             public void BackNoSoftTabStop()
             {
                 _nextTarget.SetupExecOne().Verifiable();
-                _vimApplicationSettings.SetupGet(x => x.EnableVimTabAndBackspace).Returns(false);
+                _vim.GlobalSettings.UseEditorTabAndBackspace = true;
                 Assert.True(_targetRaw.TryCustomProcess(InsertCommand.Back));
                 _factory.Verify();
             }
@@ -187,14 +185,14 @@ namespace VsVim.UnitTest
             [Fact]
             public void BackSoftTabStop()
             {
-                _vimApplicationSettings.SetupGet(x => x.EnableVimTabAndBackspace).Returns(true);
+                _vim.GlobalSettings.UseEditorTabAndBackspace = false;
                 Assert.False(_targetRaw.TryCustomProcess(InsertCommand.Back));
             }
 
             [Fact]
             public void TabNoSoftTabStop()
             {
-                _vimApplicationSettings.SetupGet(x => x.EnableVimTabAndBackspace).Returns(false);
+                _vim.GlobalSettings.UseEditorTabAndBackspace = true;
                 _nextTarget.SetupExecOne().Verifiable();
                 Assert.True(_targetRaw.TryCustomProcess(InsertCommand.InsertTab));
                 _factory.Verify();
@@ -206,7 +204,7 @@ namespace VsVim.UnitTest
             [Fact]
             public void TabSoftTabStop()
             {
-                _vimApplicationSettings.SetupGet(x => x.EnableVimTabAndBackspace).Returns(true);
+                _vim.GlobalSettings.UseEditorTabAndBackspace = false;
                 _vimBuffer.LocalSettings.SoftTabStop = 4;
                 Assert.False(_targetRaw.TryCustomProcess(InsertCommand.InsertTab));
             }

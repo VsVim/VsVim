@@ -40,7 +40,17 @@ namespace VsVim
         /// <summary>
         /// Do we want to enable vim style processing of tab and backspace
         /// </summary>
-        bool EnableVimTabAndBackspace { get; set; }
+        bool UseEditorTabAndBackspace { get; set; }
+
+        /// <summary>
+        /// Do we want to enable editor style indentation?
+        /// </summary>
+        bool UseEditorIndent { get; set; }
+
+        /// <summary>
+        /// Do we want to use editor tab size, tabs / spaces or vim?
+        /// </summary>
+        bool UseEditorDefaults { get; set; }
 
         /// <summary>
         /// Controls how vimrc files are loaded

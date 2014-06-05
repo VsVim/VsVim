@@ -327,7 +327,6 @@ namespace VsVim.UnitTest.Utils
             _displayWindowBroker.SetupGet(x => x.IsSmartTagSessionActive).Returns(false);
 
             _vimApplicationSettings = _factory.Create<IVimApplicationSettings>();
-            _vimApplicationSettings.SetupGet(x => x.EnableVimTabAndBackspace).Returns(false);
 
             _vsSimulationCommandTarget = new SimulationCommandTarget(
                 bufferCoordinator.VimBuffer.TextView,

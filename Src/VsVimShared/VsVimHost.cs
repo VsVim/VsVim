@@ -485,6 +485,13 @@ namespace VsVim
             return GoToDefinitionCore(textView, target);
         }
 
+        public override void VimGlobalSettingsCreated(IVimGlobalSettings globalSettings)
+        {
+            globalSettings.UseEditorDefaults = _vimApplicationSettings.UseEditorDefaults;
+            globalSettings.UseEditorIndent = _vimApplicationSettings.UseEditorIndent;
+            globalSettings.UseEditorTabAndBackspace = _vimApplicationSettings.UseEditorTabAndBackspace;
+        }
+
         public override void VimRcLoaded(VimRcState vimRcState, IVimLocalSettings localSettings, IVimWindowSettings windowSettings)
         {
             if (vimRcState.IsLoadFailed)

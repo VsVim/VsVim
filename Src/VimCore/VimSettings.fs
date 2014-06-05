@@ -150,6 +150,7 @@ type internal GlobalSettings() =
             (TimeoutLengthExName, "ttm", SettingValue.Number -1)
             (UseEditorDefaultsName, UseEditorDefaultsName, SettingValue.Toggle false)
             (UseEditorIndentName, UseEditorIndentName, SettingValue.Toggle true)
+            (UseEditorTabAndBackspaceName, UseEditorTabAndBackspaceName, SettingValue.Toggle true)
             (VimRcName, VimRcName, SettingValue.String(StringUtil.empty))
             (VimRcPathsName, VimRcPathsName, SettingValue.String(StringUtil.empty))
             (VirtualEditName, "ve", SettingValue.String(StringUtil.empty))
@@ -415,6 +416,9 @@ type internal GlobalSettings() =
         member x.UseEditorIndent
             with get() = _map.GetBoolValue UseEditorIndentName
             and set value = _map.TrySetValue UseEditorIndentName (SettingValue.Toggle value) |> ignore
+        member x.UseEditorTabAndBackspace
+            with get() = _map.GetBoolValue UseEditorTabAndBackspaceName
+            and set value = _map.TrySetValue UseEditorTabAndBackspaceName (SettingValue.Toggle value) |> ignore
         member x.VimRc 
             with get() = _map.GetStringValue VimRcName
             and set value = _map.TrySetValue VimRcName (SettingValue.String value) |> ignore
