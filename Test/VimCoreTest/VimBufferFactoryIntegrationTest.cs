@@ -2,6 +2,7 @@
 using Moq;
 using Xunit;
 using Vim.UnitTest.Mock;
+using System;
 
 namespace Vim.UnitTest
 {
@@ -9,11 +10,13 @@ namespace Vim.UnitTest
     {
         private readonly IVim _vim;
         private readonly IVimBufferFactory _vimBufferFactory;
+        private readonly MockRepository _factory;
 
         protected VimBufferFactoryIntegrationTest()
         {
             _vimBufferFactory = VimBufferFactory;
             _vim = Vim;
+            _factory = new MockRepository(MockBehavior.Strict);
         }
 
         public sealed class CreateVimBufferTest : VimBufferFactoryIntegrationTest
@@ -46,6 +49,7 @@ namespace Vim.UnitTest
                 Assert.NotSame(buffer1, buffer2);
             }
 
+
             /// <summary>
             /// Create the IVimBuffer for an uninitialized ITextView instance.  This should create an 
             /// IVimBuffer in the uninitialized state 
@@ -54,8 +58,10 @@ namespace Vim.UnitTest
             public void UninitializedTextView()
             {
                 var textBuffer = CreateTextBuffer("");
-                var textView = MockObjectFactory.CreateTextView(textBuffer);
+                var textView = MockObjectFactory.CreateTextView(textBuffer, factory: _factory);
                 textView.SetupGet(x => x.TextViewLines).Returns((ITextViewLineCollection)null);
+                textView.SetupGet(x => x.InLayout).Returns(false);
+                textView.SetupGet(x => x.IsClosed).Returns(false);
                 var vimTextBuffer = _vimBufferFactory.CreateVimTextBuffer(textBuffer, _vim);
                 var vimBuffer = _vimBufferFactory.CreateVimBuffer(textView.Object, vimTextBuffer);
                 Assert.Equal(ModeKind.Uninitialized, vimBuffer.ModeKind);
@@ -68,8 +74,9 @@ namespace Vim.UnitTest
             public void TextViewDelayInitialize()
             {
                 var textBuffer = CreateTextBuffer("");
-                var textView = MockObjectFactory.CreateTextView(textBuffer);
+                var textView = MockObjectFactory.CreateTextView(textBuffer, factory: _factory);
                 textView.SetupGet(x => x.TextViewLines).Returns((ITextViewLineCollection)null);
+                textView.SetupGet(x => x.InLayout).Returns(false);
                 textView.SetupGet(x => x.Caret.Position).Returns(new CaretPosition());
                 textView.SetupGet(x => x.IsClosed).Returns(false);
                 var vimTextBuffer = _vimBufferFactory.CreateVimTextBuffer(textBuffer, _vim);
@@ -80,6 +87,61 @@ namespace Vim.UnitTest
                 textView.Raise(x => x.LayoutChanged += null, (TextViewLayoutChangedEventArgs)null);
 
                 Assert.Equal(ModeKind.Normal, vimBuffer.ModeKind);
+            }
+
+            /// <summary>
+            /// If another component forces a layout in the middle of a layout event we need to
+            /// further delay the creation of the IVimBuffer until the next layout event.  
+            /// 
+            /// This is the scenario which produced the stack trace in issue 1376
+            /// </summary>
+            [Fact]
+            public void TextViewInLayoutInsideLayoutEvent()
+            {
+                var textBuffer = CreateTextBuffer("");
+                var vimTextBuffer = _vimBufferFactory.CreateVimTextBuffer(textBuffer, _vim);
+
+                var textView = MockObjectFactory.CreateTextView(textBuffer, factory: _factory);
+                textView.SetupGet(x => x.TextViewLines).Returns((ITextViewLineCollection)null);
+                textView.SetupGet(x => x.InLayout).Returns(false);
+                textView.SetupGet(x => x.IsClosed).Returns(false);
+
+                var vimBuffer = _vimBufferFactory.CreateVimBuffer(textView.Object, vimTextBuffer);
+                Assert.Equal(ModeKind.Uninitialized, vimBuffer.ModeKind);
+
+                // Still can't initialize here because inside the event we are in another layout
+                // which prevents a mode change
+                textView.SetupGet(x => x.TextViewLines).Throws(new Exception());
+                textView.SetupGet(x => x.InLayout).Returns(true);
+                textView.Raise(x => x.LayoutChanged += null, (TextViewLayoutChangedEventArgs)null);
+                Assert.Equal(ModeKind.Uninitialized, vimBuffer.ModeKind);
+
+                textView.SetupGet(x => x.Caret.Position).Returns(new CaretPosition());
+                textView.SetupGet(x => x.TextViewLines).Returns(_factory.Create<ITextViewLineCollection>().Object);
+                textView.SetupGet(x => x.InLayout).Returns(false);
+                textView.Raise(x => x.LayoutChanged += null, (TextViewLayoutChangedEventArgs)null);
+                Assert.Equal(ModeKind.Normal, vimBuffer.ModeKind);
+            }
+
+            [Fact]
+            public void TextViewClosedInsideLayoutEvent()
+            {
+                var textBuffer = CreateTextBuffer("");
+                var vimTextBuffer = _vimBufferFactory.CreateVimTextBuffer(textBuffer, _vim);
+
+                var textView = MockObjectFactory.CreateTextView(textBuffer, factory: _factory);
+                textView.SetupGet(x => x.TextViewLines).Returns((ITextViewLineCollection)null);
+                textView.SetupGet(x => x.InLayout).Returns(false);
+                textView.SetupGet(x => x.IsClosed).Returns(false);
+
+                var vimBuffer = _vimBufferFactory.CreateVimBuffer(textView.Object, vimTextBuffer);
+                Assert.Equal(ModeKind.Uninitialized, vimBuffer.ModeKind);
+
+                textView.SetupGet(x => x.TextViewLines).Throws(new Exception());
+                textView.SetupGet(x => x.InLayout).Throws(new Exception());
+                textView.SetupGet(x => x.IsClosed).Returns(true);
+                textView.Raise(x => x.LayoutChanged += null, (TextViewLayoutChangedEventArgs)null);
+                Assert.Equal(ModeKind.Uninitialized, vimBuffer.ModeKind);
             }
         }
     }

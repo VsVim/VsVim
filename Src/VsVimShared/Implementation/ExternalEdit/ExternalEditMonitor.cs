@@ -142,7 +142,7 @@ namespace VsVim.Implementation.ExternalEdit
         /// </summary>
         internal void PerformCheck(CheckKind kind)
         {
-            if (!_vimApplicationSettings.EnableExternalEditMonitoring)
+            if (!_vimApplicationSettings.EnableExternalEditMonitoring || _buffer.ModeKind == ModeKind.Disabled)
             {
                 return;
             }

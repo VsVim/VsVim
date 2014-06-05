@@ -1,6 +1,8 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2012
+# Visual Studio 2013
+VisualStudioVersion = 12.0.30110.0
+MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{7CD56D22-AAAA-4A93-8D98-1A014D9A6D39}"
 	ProjectSection(SolutionItems) = preProject
 		Cleanup.txt = Cleanup.txt
@@ -32,10 +34,11 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Vs2013", "Src\VsSpecific\Vs
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VimApp", "Src\VimApp\VimApp.csproj", "{8DB1C327-21A1-448B-A7A1-23EEF6BAA785}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CleanVsix", "Src\CleanVsix\CleanVsix.csproj", "{04DA2433-0F43-42C0-AD53-DAA7F1B22E2D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VsixUtil", "Src\VsixUtil\VsixUtil.csproj", "{CE607DC9-06EA-454A-8B7E-34F5EE21CA3D}"
+EndProject
 Global
-	GlobalSection(TestCaseManagementSettings) = postSolution
-		CategoryFile = VsVim.vsmdi
-	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Debug|Mixed Platforms = Debug|Mixed Platforms
@@ -165,8 +168,31 @@ Global
 		{8DB1C327-21A1-448B-A7A1-23EEF6BAA785}.Release|Mixed Platforms.Build.0 = Release|x86
 		{8DB1C327-21A1-448B-A7A1-23EEF6BAA785}.Release|x86.ActiveCfg = Release|x86
 		{8DB1C327-21A1-448B-A7A1-23EEF6BAA785}.Release|x86.Build.0 = Release|x86
+		{04DA2433-0F43-42C0-AD53-DAA7F1B22E2D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{04DA2433-0F43-42C0-AD53-DAA7F1B22E2D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{04DA2433-0F43-42C0-AD53-DAA7F1B22E2D}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{04DA2433-0F43-42C0-AD53-DAA7F1B22E2D}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{04DA2433-0F43-42C0-AD53-DAA7F1B22E2D}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{04DA2433-0F43-42C0-AD53-DAA7F1B22E2D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{04DA2433-0F43-42C0-AD53-DAA7F1B22E2D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{04DA2433-0F43-42C0-AD53-DAA7F1B22E2D}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{04DA2433-0F43-42C0-AD53-DAA7F1B22E2D}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{04DA2433-0F43-42C0-AD53-DAA7F1B22E2D}.Release|x86.ActiveCfg = Release|Any CPU
+		{CE607DC9-06EA-454A-8B7E-34F5EE21CA3D}.Debug|Any CPU.ActiveCfg = Debug|x86
+		{CE607DC9-06EA-454A-8B7E-34F5EE21CA3D}.Debug|Mixed Platforms.ActiveCfg = Debug|x86
+		{CE607DC9-06EA-454A-8B7E-34F5EE21CA3D}.Debug|Mixed Platforms.Build.0 = Debug|x86
+		{CE607DC9-06EA-454A-8B7E-34F5EE21CA3D}.Debug|x86.ActiveCfg = Debug|x86
+		{CE607DC9-06EA-454A-8B7E-34F5EE21CA3D}.Debug|x86.Build.0 = Debug|x86
+		{CE607DC9-06EA-454A-8B7E-34F5EE21CA3D}.Release|Any CPU.ActiveCfg = Release|x86
+		{CE607DC9-06EA-454A-8B7E-34F5EE21CA3D}.Release|Mixed Platforms.ActiveCfg = Release|x86
+		{CE607DC9-06EA-454A-8B7E-34F5EE21CA3D}.Release|Mixed Platforms.Build.0 = Release|x86
+		{CE607DC9-06EA-454A-8B7E-34F5EE21CA3D}.Release|x86.ActiveCfg = Release|x86
+		{CE607DC9-06EA-454A-8B7E-34F5EE21CA3D}.Release|x86.Build.0 = Release|x86
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(TestCaseManagementSettings) = postSolution
+		CategoryFile = VsVim.vsmdi
 	EndGlobalSection
 EndGlobal
