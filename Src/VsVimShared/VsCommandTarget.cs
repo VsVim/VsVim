@@ -39,7 +39,6 @@ namespace VsVim
         private readonly IVsAdapter _vsAdapter;
         private readonly IDisplayWindowBroker _broker;
         private readonly IKeyUtil _keyUtil;
-        private readonly IVimApplicationSettings _vimApplicationSettings;
         private ReadOnlyCollection<ICommandTarget> _commandTargets;
         private IOleCommandTarget _nextCommandTarget;
 
@@ -48,8 +47,7 @@ namespace VsVim
             ITextManager textManager,
             IVsAdapter vsAdapter,
             IDisplayWindowBroker broker,
-            IKeyUtil keyUtil,
-            IVimApplicationSettings vimApplicationSettings)
+            IKeyUtil keyUtil)
         {
             _vimBuffer = vimBufferCoordinator.VimBuffer;
             _vim = _vimBuffer.Vim;
@@ -58,7 +56,6 @@ namespace VsVim
             _vsAdapter = vsAdapter;
             _broker = broker;
             _keyUtil = keyUtil;
-            _vimApplicationSettings = vimApplicationSettings;
         }
 
         internal VsCommandTarget(
@@ -67,10 +64,9 @@ namespace VsVim
             IVsAdapter vsAdapter,
             IDisplayWindowBroker broker,
             IKeyUtil keyUtil,
-            IVimApplicationSettings vimApplicationSettings,
             IOleCommandTarget nextTarget,
             ReadOnlyCollection<ICommandTarget> commandTargets)
-            : this(vimBufferCoordinator, textManager, vsAdapter, broker, keyUtil, vimApplicationSettings)
+            : this(vimBufferCoordinator, textManager, vsAdapter, broker, keyUtil)
         {
             CompleteInit(nextTarget, commandTargets);
         }
@@ -297,10 +293,9 @@ namespace VsVim
             IVsAdapter adapter,
             IDisplayWindowBroker broker,
             IKeyUtil keyUtil,
-            IVimApplicationSettings vimApplicationSettings,
             ReadOnlyCollection<ICommandTargetFactory> commandTargetFactoryList)
         {
-            var vsCommandTarget = new VsCommandTarget(vimBufferCoordinator, textManager, adapter, broker, keyUtil, vimApplicationSettings);
+            var vsCommandTarget = new VsCommandTarget(vimBufferCoordinator, textManager, adapter, broker, keyUtil);
 
             IOleCommandTarget nextCommandTarget;
             var hresult = vsTextView.AddCommandFilter(vsCommandTarget, out nextCommandTarget);

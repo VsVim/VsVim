@@ -51,7 +51,6 @@ namespace VsVim.UnitTest
 
             _broker = _factory.Create<IDisplayWindowBroker>(MockBehavior.Loose);
             _textManager = _factory.Create<ITextManager>();
-            var vimApplicationSettings = _factory.Create<IVimApplicationSettings>();
 
             var commandTargets = new List<ICommandTarget>();
             if (isReSharperInstalled)
@@ -67,7 +66,6 @@ namespace VsVim.UnitTest
                 _vsAdapter.Object,
                 _broker.Object,
                 KeyUtil,
-                vimApplicationSettings.Object,
                 _nextTarget.Object,
                 commandTargets.ToReadOnlyCollectionShallow());
             _target = _targetRaw;
