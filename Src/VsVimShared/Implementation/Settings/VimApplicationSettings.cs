@@ -28,14 +28,12 @@ namespace VsVim.Implementation.Settings
         internal const string HaveNotifiedBackspaceSettingName = "HaveNotifiedBackspaceSetting";
         internal const string IgnoredConflictingKeyBindingName = "IgnoredConflictingKeyBinding";
         internal const string RemovedBindingsName = "RemovedBindings";
-        internal const string LegacySettingsMigratedName = "LegacySettingsMigrated";
         internal const string KeyMappingIssueFixedName = "EnterDeletekeyMappingIssue";
         internal const string ErrorGetFormat = "Cannot get setting {0}";
         internal const string ErrorSetFormat = "Cannot set setting {0}";
 
         private readonly WritableSettingsStore _settingsStore;
         private readonly IVimProtectedOperations _protectedOperations;
-        private readonly bool _legacySettingsSupported;
 
         internal event EventHandler<ApplicationSettingsEventArgs> SettingsChanged;
 
@@ -48,72 +46,19 @@ namespace VsVim.Implementation.Settings
             }
         }
 
-        internal bool LegacySettingsMigrated
-        {
-            get
-            {
-                if (_legacySettingsSupported)
-                {
-                    return GetBoolean(LegacySettingsMigratedName, false);
-                }
-
-                return true;
-            }
-            set
-            {
-                if (_legacySettingsSupported)
-                {
-                    SetBoolean(LegacySettingsMigratedName, value);
-                }
-            }
-        }
-
         [ImportingConstructor]
         internal VimApplicationSettings(
             SVsServiceProvider vsServiceProvider,
-            ILegacySettings legacySettings,
             IVimProtectedOperations protectedOperations)
             : this(vsServiceProvider.GetVisualStudioVersion(), vsServiceProvider.GetWritableSettingsStore(), protectedOperations)
         {
-            var dte = vsServiceProvider.GetService<SDTE, _DTE>();
-            MigrateLegacySettings(dte, legacySettings);
+
         }
 
         internal VimApplicationSettings(VisualStudioVersion visualStudioVersion, WritableSettingsStore settingsStore, IVimProtectedOperations protectedOperations)
         {
             _settingsStore = settingsStore;
             _protectedOperations = protectedOperations;
-
-            // Legacy settings were only supported on Visual Studio 2010 and 2012.  For any other version there is no
-            // need to modify the legacy settings
-            switch (visualStudioVersion)
-            {
-                case VisualStudioVersion.Vs2010:
-                case VisualStudioVersion.Vs2012:
-                    _legacySettingsSupported = true;
-                    break;
-                default:
-                    // Intentionally do nothing 
-                    break;
-            }
-        }
-
-        /// <summary>
-        /// Migrate the legacy settings into our new storage if necessary
-        /// </summary>
-        internal void MigrateLegacySettings(_DTE dte, ILegacySettings legacySettings)
-        {
-            if (!LegacySettingsMigrated)
-            {
-                var legacySettingsUsed = legacySettings.HaveUpdatedKeyBindings || legacySettings.IgnoredConflictingKeyBinding || legacySettings.RemovedBindings.Count > 0;
-                if (legacySettingsUsed)
-                {
-                    var settingsMigrator = new SettingsMigrator(dte, this, legacySettings);
-                    settingsMigrator.DoMigration();
-                }
-
-                LegacySettingsMigrated = true;
-            }
         }
 
         internal bool GetBoolean(string propertyName, bool defaultValue)

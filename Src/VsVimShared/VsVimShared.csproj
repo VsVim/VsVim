@@ -106,7 +106,6 @@
     <Compile Include="Implementation\ExternalEdit\SnippetExternalEditAdapter.cs" />
     <Compile Include="HostFactory.cs" />
     <Compile Include="IKeyBindingService.cs" />
-    <Compile Include="ILegacySettings.cs" />
     <Compile Include="Implementation\ConflictingKey\ConflictingKeyBindingMargin.cs" />
     <Compile Include="Implementation\ConflictingKey\ConflictingKeyBindingMarginProvider.cs" />
     <Compile Include="Implementation\Misc\CSharpAdapter.cs" />
@@ -124,7 +123,6 @@
     <Compile Include="Implementation\ReSharper\ReSharperVersion.cs" />
     <Compile Include="Implementation\ReSharper\ResharperVersionutility.cs" />
     <Compile Include="Implementation\Settings\SettingSerializer.cs" />
-    <Compile Include="Implementation\Settings\SettingsMigrator.cs" />
     <Compile Include="Implementation\Settings\VimApplicationSettings.cs" />
     <Compile Include="Implementation\SharedService\DefaultSharedServiceFactory.cs" />
     <Compile Include="Implementation\SharedService\SharedServiceFactory.cs" />
