@@ -59,8 +59,8 @@ namespace VsVim
         }
 
         /// <summary>
-        /// Don't automatically synchronize settings.  Visual Studio applies settings at uncertain times and hence this
-        /// behavior must be special cased.  It is handled by HostFactory
+        /// Don't automatically synchronize settings.  The settings can't be synchronized until after Visual Studio 
+        /// applies settings which happens at an uncertain time.  HostFactor handles this timing 
         /// </summary>
         public override bool AutoSynchronizeSettings
         {
