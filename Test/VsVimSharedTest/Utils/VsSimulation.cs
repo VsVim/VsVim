@@ -258,6 +258,7 @@ namespace VsVim.UnitTest.Utils
         private readonly Mock<IVsAdapter> _vsAdapter;
         private readonly Mock<IDisplayWindowBroker> _displayWindowBroker;
         private readonly Mock<IReportDesignerUtil> _reportDesignerUtil;
+        private readonly Mock<IVimApplicationSettings> _vimApplicationSettings;
         private readonly VsCommandTarget _vsCommandTarget;
         private readonly TestableSynchronizationContext _testableSynchronizationContext;
         private readonly IKeyUtil _keyUtil;
@@ -281,6 +282,11 @@ namespace VsVim.UnitTest.Utils
         internal Mock<IDisplayWindowBroker> DisplayWindowBroker
         {
             get { return _displayWindowBroker; }
+        }
+
+        internal Mock<IVimApplicationSettings> VimApplicationSettings
+        {
+            get { return _vimApplicationSettings; }
         }
 
         internal SimulationCommandTarget VsSimulationCommandTarget
@@ -320,6 +326,8 @@ namespace VsVim.UnitTest.Utils
             _displayWindowBroker.SetupGet(x => x.IsSignatureHelpActive).Returns(false);
             _displayWindowBroker.SetupGet(x => x.IsSmartTagSessionActive).Returns(false);
 
+            _vimApplicationSettings = _factory.Create<IVimApplicationSettings>();
+
             _vsSimulationCommandTarget = new SimulationCommandTarget(
                 bufferCoordinator.VimBuffer.TextView,
                 editorOperationsFactoryService.GetEditorOperations(bufferCoordinator.VimBuffer.TextView));
@@ -340,6 +348,7 @@ namespace VsVim.UnitTest.Utils
                 _vsAdapter.Object,
                 _displayWindowBroker.Object,
                 _keyUtil,
+                _vimApplicationSettings.Object,
                 _vsSimulationCommandTarget,
                 commandTargets.ToReadOnlyCollectionShallow());
 

@@ -44,6 +44,7 @@ namespace VsVim
         private readonly IVimBufferCoordinatorFactory _bufferCoordinatorFactory;
         private readonly IKeyUtil _keyUtil;
         private readonly IEditorToSettingsSynchronizer _editorToSettingSynchronizer;
+        private readonly IVimApplicationSettings _vimApplicationSettings;
 
         [ImportingConstructor]
         public HostFactory(
@@ -56,6 +57,7 @@ namespace VsVim
             IVimBufferCoordinatorFactory bufferCoordinatorFactory,
             IKeyUtil keyUtil,
             IEditorToSettingsSynchronizer editorToSettingSynchronizer,
+            IVimApplicationSettings vimApplicationSettings,
             [ImportMany] IEnumerable<Lazy<ICommandTargetFactory, IOrderable>> commandTargetFactoryList)
         {
             _vim = vim;
@@ -67,6 +69,7 @@ namespace VsVim
             _bufferCoordinatorFactory = bufferCoordinatorFactory;
             _keyUtil = keyUtil;
             _editorToSettingSynchronizer = editorToSettingSynchronizer;
+            _vimApplicationSettings = vimApplicationSettings;
             _commandTargetFactoryList = Orderer.Order(commandTargetFactoryList).Select(x => x.Value).ToReadOnlyCollection();
 
 #if DEBUG
@@ -112,7 +115,7 @@ namespace VsVim
         {
             var broker = _displayWindowBrokerFactoryServcie.GetDisplayWindowBroker(textView);
             var vimBufferCoordinator = _bufferCoordinatorFactory.GetVimBufferCoordinator(vimBuffer);
-            var result = VsCommandTarget.Create(vimBufferCoordinator, vsTextView, _textManager, _adapter, broker, _keyUtil, _commandTargetFactoryList);
+            var result = VsCommandTarget.Create(vimBufferCoordinator, vsTextView, _textManager, _adapter, broker, _keyUtil, _vimApplicationSettings, _commandTargetFactoryList);
             if (result.IsSuccess)
             {
                 // Store the value for debugging
