@@ -28,11 +28,16 @@ type internal SettingsMap
     let mutable _settings =
          _rawData
          |> Seq.map (fun (name, abbrev, value) -> {Name = name; Abbreviation = abbrev; LiveSettingValue = LiveSettingValue.Create value; IsGlobal = _isGlobal})
-         |> Seq.map (fun setting -> (setting.Name,setting))
+         |> Seq.map (fun setting -> (setting.Name, setting))
          |> Map.ofSeq
 
+    member x.AddSetting (setting : Setting) =
+        _settings <- Map.add setting.Name setting _settings
+
     member x.AllSettings = _settings |> Map.toSeq |> Seq.map (fun (_,value) -> value)
+
     member x.OwnsSetting settingName = x.GetSetting settingName |> Option.isSome
+
     member x.SettingChanged = _settingChangedEvent.Publish
 
     /// Replace a Setting with a new value
@@ -98,7 +103,6 @@ type internal SettingsMap
         | SettingValue.Toggle _ -> failwith "invalid"
 
     member x.ConvertStringToValue str kind =
-        
         let convertToNumber() = 
             let ret,value = System.Int32.TryParse str
             if ret then Some (SettingValue.Number value) else None
@@ -185,6 +189,11 @@ type internal GlobalSettings() =
         ]
 
     static member DisableAllCommand = _disableAllCommand
+
+    member x.AddCustomSetting name abbrevation customSettingSource = 
+        let liveSettingValue = LiveSettingValue.Custom (name, customSettingSource)
+        let setting = { Name = name; Abbreviation = abbrevation; LiveSettingValue = liveSettingValue; IsGlobal = true }
+        _map.AddSetting setting
 
     member x.IsCommaSubOptionPresent optionName suboptionName =
         _map.GetStringValue optionName
@@ -295,6 +304,7 @@ type internal GlobalSettings() =
         member x.GetSetting settingName = _map.GetSetting settingName
 
         // IVimGlobalSettings 
+        member x.AddCustomSetting name abbrevation customSettingSource = x.AddCustomSetting name abbrevation customSettingSource
         member x.AutoCommand
             with get() = _map.GetBoolValue AutoCommandName
             and set value = _map.TrySetValue AutoCommandName (SettingValue.Toggle value) |> ignore

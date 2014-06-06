@@ -142,8 +142,18 @@ type SettingValue =
     member x.Kind = 
         match x with
         | Number _ -> SettingKind.Number
-        | String _ -> SettingKind.String 
+        | String _ -> SettingKind.String
         | Toggle _ -> SettingKind.Toggle
+
+/// Allows for custom setting sources to be defined.  This is used by the vim host to 
+/// add custom settings
+type IVimCustomSettingSource =
+
+    abstract GetDefaultSettingValue: name : string -> SettingValue
+
+    abstract GetSettingValue: name : string -> SettingValue
+
+    abstract SetSettingValue: name : string -> settingValue : SettingValue -> unit
 
 /// This pairs both the current setting value and the default value into a single type safe
 /// value.  The first value in every tuple is the current value while the second is the 
@@ -154,6 +164,7 @@ type LiveSettingValue =
     | String of string * string
     | Toggle of bool * bool
     | CalculatedNumber of int option * (unit -> int)
+    | Custom of string * IVimCustomSettingSource
 
     /// Is this a calculated value
     member x.IsCalculated = 
@@ -170,6 +181,7 @@ type LiveSettingValue =
             match value with
             | Some value -> SettingValue.Number value
             | None -> func() |> SettingValue.Number
+        | Custom (name, customSettingSource) -> customSettingSource.GetSettingValue name
 
     member x.DefaultValue =
         match x with
@@ -177,6 +189,7 @@ type LiveSettingValue =
         | String (_, defaultValue) -> SettingValue.String defaultValue
         | Toggle (_, defaultValue) -> SettingValue.Toggle defaultValue
         | CalculatedNumber (_, func) -> func() |> SettingValue.Number
+        | Custom (name, customSettingSource) -> customSettingSource.GetDefaultSettingValue name
 
     /// Is the value currently the default? 
     member x.IsValueDefault = x.Value = x.DefaultValue
@@ -187,6 +200,7 @@ type LiveSettingValue =
         | String _ -> SettingKind.String 
         | Toggle _ -> SettingKind.Toggle
         | CalculatedNumber _ -> SettingKind.Number
+        | Custom (name, customSettingSource) -> (customSettingSource.GetDefaultSettingValue name).Kind
 
     member x.UpdateValue value =
         match x, value with 
@@ -194,6 +208,9 @@ type LiveSettingValue =
         | String (_, defaultValue), SettingValue.String value -> String (value, defaultValue) |> Some
         | Toggle (_, defaultValue), SettingValue.Toggle value -> Toggle (value, defaultValue) |> Some
         | CalculatedNumber (_, func), SettingValue.Number value -> CalculatedNumber (Some value, func) |> Some
+        | Custom (name, customSettingSource), value -> 
+            customSettingSource.SetSettingValue name value
+            Some x
         | _ -> None
 
     static member Create value = 
@@ -259,6 +276,9 @@ type IVimSettings =
     abstract SettingChanged : IDelegateEvent<System.EventHandler<SettingEventArgs>>
 
 and IVimGlobalSettings = 
+
+    /// Add a custom setting to the current collection
+    abstract AddCustomSetting : name : string -> abbrevation : string -> customSettingSource : IVimCustomSettingSource -> unit
 
     /// Is 'autocmd' support
     abstract AutoCommand : bool with get, set

@@ -16,6 +16,69 @@ namespace Vim.UnitTest
             _globalSettings = _globalSettingsRaw;
         }
 
+        public sealed class CustomSettingsTest : GlobalSettingsTest
+        {
+            internal sealed class CustomSettingSource : IVimCustomSettingSource
+            {
+                internal readonly string Name;
+                internal string DefaultValue;
+                internal string Value;
+
+                internal CustomSettingSource(string name, string defaultValue = "")
+                {
+                    Name = name;
+                    DefaultValue = defaultValue;
+                }
+
+                SettingValue IVimCustomSettingSource.GetDefaultSettingValue(string name)
+                {
+                    Assert.Equal(name, Name);
+                    return SettingValue.NewString(DefaultValue);
+                }
+
+                SettingValue IVimCustomSettingSource.GetSettingValue(string name)
+                {
+                    Assert.Equal(name, Name);
+                    return SettingValue.NewString(Value);
+                }
+
+                void IVimCustomSettingSource.SetSettingValue(string name, SettingValue settingValue)
+                {
+                    Assert.Equal(name, Name);
+                    if (settingValue.IsString)
+                    {
+                        Value = ((SettingValue.String)settingValue).Item;
+                    }
+                }
+            }
+
+            private string GetStringValue(string name)
+            {
+                var setting = _globalSettings.GetSetting(name).Value;
+                return ((SettingValue.String)setting.LiveSettingValue.Value).Item;
+            }
+
+            [Fact]
+            public void SimpleGet()
+            {
+                var source = new CustomSettingSource("test");
+                source.Value = "foo";
+                _globalSettings.AddCustomSetting(source.Name, source.Name, source);
+                Assert.Equal("foo", GetStringValue(source.Name));
+            }
+
+            [Fact]
+            public void SimpleSet()
+            {
+                var source = new CustomSettingSource("test");
+                source.Value = "foo";
+                _globalSettings.AddCustomSetting(source.Name, source.Name, source);
+                _globalSettings.TrySetValueFromString(source.Name, "bar");
+                Assert.Equal("bar", GetStringValue(source.Name));
+                Assert.Equal("bar", source.Value);
+            }
+        }
+
         public sealed class PathTest : GlobalSettingsTest
         {
             public void Expect(string text, params PathOption[] expected)
