@@ -52,9 +52,7 @@ namespace VsVim.UnitTest
 
         private void InvalidateSynchronizer()
         {
-            _synchronizer.Setup(x => x.StartSynchronizing(It.IsAny<IVimBuffer>())).Throws(new Exception());
-            _synchronizer.Setup(x => x.CopyEditorToVimSettings(It.IsAny<IVimBuffer>())).Throws(new Exception());
-            _synchronizer.Setup(x => x.CopyVimToEditorSettings(It.IsAny<IVimBuffer>())).Throws(new Exception());
+            _synchronizer.Setup(x => x.StartSynchronizing(It.IsAny<IVimBuffer>(), It.IsAny<SettingSyncSource>())).Throws(new Exception());
         }
 
         private void RaiseTextViewCreated(ITextView textView)
@@ -115,8 +113,7 @@ namespace VsVim.UnitTest
                 VimRcState = VimRcState.LoadFailed;
                 RaiseTextViewCreated(_textView);
 
-                _synchronizer.Setup(x => x.StartSynchronizing(_vimBuffer)).Verifiable();
-                _synchronizer.Setup(x => x.CopyEditorToVimSettings(_vimBuffer)).Verifiable();
+                _synchronizer.Setup(x => x.StartSynchronizing(_vimBuffer, SettingSyncSource.Editor)).Verifiable();
                 _protectedOperations.RunAll();
                 _synchronizer.Verify();
             }
@@ -127,8 +124,7 @@ namespace VsVim.UnitTest
                 VimRcState = VimRcState.NewLoadSucceeded("test");
                 RaiseTextViewCreated(_textView);
 
-                _synchronizer.Setup(x => x.StartSynchronizing(_vimBuffer)).Verifiable();
-                _synchronizer.Setup(x => x.CopyVimToEditorSettings(_vimBuffer)).Verifiable();
+                _synchronizer.Setup(x => x.StartSynchronizing(_vimBuffer, SettingSyncSource.Vim)).Verifiable();
                 _protectedOperations.RunAll();
                 _synchronizer.Verify();
             }
@@ -140,8 +136,7 @@ namespace VsVim.UnitTest
                 _globalSettings.UseEditorDefaults = true;                
                 RaiseTextViewCreated(_textView);
 
-                _synchronizer.Setup(x => x.StartSynchronizing(_vimBuffer)).Verifiable();
-                _synchronizer.Setup(x => x.CopyEditorToVimSettings(_vimBuffer)).Verifiable();
+                _synchronizer.Setup(x => x.StartSynchronizing(_vimBuffer, SettingSyncSource.Editor)).Verifiable();
                 _protectedOperations.RunAll();
                 _synchronizer.Verify();
             }
@@ -170,8 +165,7 @@ namespace VsVim.UnitTest
                 RaiseTextViewCreated(_textView);
                 RaiseVimBufferCreated(_vimBuffer);
 
-                _synchronizer.Setup(x => x.StartSynchronizing(_vimBuffer)).Verifiable();
-                _synchronizer.Setup(x => x.CopyEditorToVimSettings(_vimBuffer)).Verifiable();
+                _synchronizer.Setup(x => x.StartSynchronizing(_vimBuffer, SettingSyncSource.Editor)).Verifiable();
                 RaiseVsTextViewCreated(_vsTextView.Object);
                 _synchronizer.Verify();
                 InvalidateSynchronizer();
@@ -186,8 +180,7 @@ namespace VsVim.UnitTest
                 RaiseTextViewCreated(_textView);
                 RaiseVimBufferCreated(_vimBuffer);
 
-                _synchronizer.Setup(x => x.StartSynchronizing(_vimBuffer)).Verifiable();
-                _synchronizer.Setup(x => x.CopyVimToEditorSettings(_vimBuffer)).Verifiable();
+                _synchronizer.Setup(x => x.StartSynchronizing(_vimBuffer, SettingSyncSource.Vim)).Verifiable();
                 RaiseVsTextViewCreated(_vsTextView.Object);
                 _synchronizer.Verify();
                 InvalidateSynchronizer();
@@ -203,8 +196,7 @@ namespace VsVim.UnitTest
                 RaiseTextViewCreated(_textView);
                 RaiseVimBufferCreated(_vimBuffer);
 
-                _synchronizer.Setup(x => x.StartSynchronizing(_vimBuffer)).Verifiable();
-                _synchronizer.Setup(x => x.CopyEditorToVimSettings(_vimBuffer)).Verifiable();
+                _synchronizer.Setup(x => x.StartSynchronizing(_vimBuffer, SettingSyncSource.Editor)).Verifiable();
                 RaiseVsTextViewCreated(_vsTextView.Object);
                 _synchronizer.Verify();
                 InvalidateSynchronizer();

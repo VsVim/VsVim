@@ -90,25 +90,18 @@ namespace VsVim
                 return;
             }
 
-            // Synchronize any further changes between the buffers
-            _editorToSettingSynchronizer.StartSynchronizing(vimBuffer);
-
             // We have to make a decision on whether Visual Studio or Vim settings win during the startup
             // process.  If there was a Vimrc file then the vim settings win, else the Visual Studio ones
             // win.  
             //
             // By the time this function is called both the Vim and Editor settings are at their final 
             // values.  We just need to decide on a winner and copy one to the other 
-            if (_vim.VimRcState.IsLoadSucceeded && !_vim.GlobalSettings.UseEditorDefaults)
-            {
-                // Vim settings win.  
-                _editorToSettingSynchronizer.CopyVimToEditorSettings(vimBuffer);
-            }
-            else
-            {
-                // Visual Studio settings win.  
-                _editorToSettingSynchronizer.CopyEditorToVimSettings(vimBuffer);
-            }
+            var settingSyncSource = (_vim.VimRcState.IsLoadSucceeded && !_vim.GlobalSettings.UseEditorDefaults)
+                ? SettingSyncSource.Vim
+                : SettingSyncSource.Editor;
+
+            // Synchronize any further changes between the buffers
+            _editorToSettingSynchronizer.StartSynchronizing(vimBuffer, settingSyncSource);
         }
 
         private void ConnectToOleCommandTarget(IVimBuffer vimBuffer, ITextView textView, IVsTextView vsTextView)

@@ -35,7 +35,7 @@ namespace Vim.UnitTest
         {
             public StartSynchronizingTest()
             {
-                _synchronizer.StartSynchronizing(_vimBuffer.Object);
+                _synchronizer.StartSynchronizing(_vimBuffer.Object, SettingSyncSource.Editor);
             }
 
             /// <summary>

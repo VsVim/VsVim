@@ -533,11 +533,10 @@ type internal Vim
         _vimBufferMap.Add(textView, (vimBuffer, vimInterpreter, eventBag))
 
         if _vimHost.AutoSynchronizeSettings then
-            _editorToSettingSynchronizer.StartSynchronizing vimBuffer
-            if _globalSettings.UseEditorDefaults then
-                _editorToSettingSynchronizer.CopyEditorToVimSettings vimBuffer
-            else
-                _editorToSettingSynchronizer.CopyVimToEditorSettings vimBuffer
+            let settingSyncSource = 
+                if _globalSettings.UseEditorDefaults then SettingSyncSource.Editor
+                else SettingSyncSource.Vim
+            _editorToSettingSynchronizer.StartSynchronizing vimBuffer settingSyncSource
 
         vimBuffer
 

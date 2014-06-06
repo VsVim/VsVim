@@ -624,11 +624,15 @@ type internal EditorToSettingSynchronizer
     let _syncronizingSet = System.Collections.Generic.HashSet<IVimLocalSettings>()
     let _key = obj()
 
-    member x.StartSynchronizing (vimBuffer : IVimBuffer) = 
+    member x.StartSynchronizing (vimBuffer : IVimBuffer) settingSyncSource = 
         let properties = vimBuffer.TextView.Properties
         if not (properties.ContainsProperty _key) then
             properties.AddProperty(_key, _key)
             x.SetupSynchronization vimBuffer
+
+            match settingSyncSource with
+            | SettingSyncSource.Editor -> x.CopyEditorToVimSettings vimBuffer
+            | SettingSyncSource.Vim -> x.CopyVimToEditorSettings vimBuffer
 
     member x.SetupSynchronization (vimBuffer : IVimBuffer) = 
         let editorOptions = vimBuffer.TextView.Options
@@ -768,6 +772,4 @@ type internal EditorToSettingSynchronizer
             | Some show -> windowSettings.CursorLine <- show)
 
     interface IEditorToSettingsSynchronizer with
-        member x.StartSynchronizing vimBuffer = x.StartSynchronizing vimBuffer
-        member x.CopyEditorToVimSettings vimBuffer = x.CopyEditorToVimSettings vimBuffer
-        member x.CopyVimToEditorSettings vimBuffer = x.CopyVimToEditorSettings vimBuffer
+        member x.StartSynchronizing vimBuffer settingSyncSource = x.StartSynchronizing vimBuffer settingSyncSource
