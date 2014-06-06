@@ -159,6 +159,11 @@ namespace Vim.UnitTest.Mock
             throw new NotImplementedException();
         }
 
+        FSharpOption<int> IVimHost.GetNewLineIndent(ITextView textView, ITextSnapshotLine contextLine, ITextSnapshotLine newLine)
+        {
+            return FSharpOption<int>.None;
+        }
+
         bool IVimHost.GoToGlobalDeclaration(ITextView value, string target)
         {
             return GoToGlobalDeclarationFunc(value, target);

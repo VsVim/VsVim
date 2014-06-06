@@ -715,6 +715,7 @@ namespace Vim.UnitTest
                 Create("    the food is especially good today");
                 const int betweenIsAndEspecially = 15;
                 _textView.MoveCaretTo(betweenIsAndEspecially);
+                _localSettings.AutoIndent = true;
                 var tss = _textView.TextSnapshot;
 
                 Assert.True(_commandUtil.ReplaceChar(KeyInputUtil.EnterKey, 1).IsCompleted);

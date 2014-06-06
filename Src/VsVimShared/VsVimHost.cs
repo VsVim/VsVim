@@ -42,6 +42,7 @@ namespace VsVim
         private readonly IVsMonitorSelection _vsMonitorSelection;
         private readonly IFontProperties _fontProperties;
         private readonly IVimApplicationSettings _vimApplicationSettings;
+        private readonly ISmartIndentationService _smartIndentationService;
 
         internal _DTE DTE
         {
@@ -52,9 +53,9 @@ namespace VsVim
         /// Should we create IVimBuffer instances for new ITextView values
         /// </summary>
         public bool DisableVimBufferCreation
-        { 
-            get; 
-            set; 
+        {
+            get;
+            set;
         }
 
         /// <summary>
@@ -90,6 +91,7 @@ namespace VsVim
             ITextBufferUndoManagerProvider undoManagerProvider,
             IVsEditorAdaptersFactoryService editorAdaptersFactoryService,
             IEditorOperationsFactoryService editorOperationsFactoryService,
+            ISmartIndentationService smartIndentationService,
             ITextManager textManager,
             ISharedServiceFactory sharedServiceFactory,
             IVimApplicationSettings vimApplicationSettings,
@@ -105,6 +107,7 @@ namespace VsVim
             _vsMonitorSelection = serviceProvider.GetService<SVsShellMonitorSelection, IVsMonitorSelection>();
             _fontProperties = new TextEditorFontProperties(serviceProvider);
             _vimApplicationSettings = vimApplicationSettings;
+            _smartIndentationService = smartIndentationService;
 
             uint cookie;
             _vsMonitorSelection.AdviseSelectionEvents(this, out cookie);
@@ -129,7 +132,7 @@ namespace VsVim
         private static string GetCPlusPlusIdentifier(ITextView textView)
         {
             var snapshot = textView.TextSnapshot;
-            Func<int, bool> isValid = (position) => 
+            Func<int, bool> isValid = (position) =>
             {
                 if (position < 0 || position >= snapshot.Length)
                 {
@@ -470,6 +473,31 @@ namespace VsVim
             }
 
             return result ? HostResult.Success : HostResult.NewError("Not Implemented");
+        }
+
+        public override FSharpOption<int> GetNewLineIndent(ITextView textView, ITextSnapshotLine contextLine, ITextSnapshotLine newLine)
+        {
+            if (_vimApplicationSettings.UseEditorIndent)
+            {
+                var indent = _smartIndentationService.GetDesiredIndentation(textView, newLine);
+                if (indent.HasValue)
+                {
+                    return FSharpOption.Create(indent.Value);
+                }
+                else
+                {
+                    // If the user wanted editor indentation but the editor doesn't support indentation
+                    // even though it proffers an indentation service then fall back to what auto
+                    // indent would do if it were enabled (don't care if it actually is)
+                    //
+                    // Several editors like XAML offer the indentation service but don't actually 
+                    // provide information.  User clearly wants indent there since the editor indent
+                    // is enabled.  Do a best effort and us Vim style indenting
+                    return FSharpOption.Create(EditUtil.GetAutoIndent(contextLine));
+                }
+            }
+
+            return FSharpOption<int>.None;
         }
 
         public override bool GoToGlobalDeclaration(ITextView textView, string target)

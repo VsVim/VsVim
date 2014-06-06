@@ -3791,6 +3791,10 @@ type IVimHost =
     /// than 0 indicates the value couldn't be determined
     abstract GetTabIndex : textView : ITextView -> int
 
+    /// Get the indent for the new line.  This has precedence over the 'autoindent'
+    /// setting
+    abstract GetNewLineIndent : textView : ITextView -> contextLine : ITextSnapshotLine -> newLine : ITextSnapshotLine -> int option
+
     /// Go to the definition of the value under the cursor
     abstract GoToDefinition : unit -> bool
 

@@ -1724,6 +1724,13 @@ module EditUtil =
 
         inner 0 0
 
+    /// Get the indentation level given the context line (the line above the line which is 
+    /// being indented)
+    let GetAutoIndent (contextLine : ITextSnapshotLine) =
+        contextLine 
+        |> SnapshotLineUtil.GetIndentPoint 
+        |> SnapshotPointUtil.GetColumn 
+
     /// Does the specified string end with a valid newline string 
     let EndsWithNewLine value = 0 <> GetLineBreakLengthAtEnd value
 

@@ -65,6 +65,7 @@ namespace VsVim.UnitTest
                 _undoManagerProvider.Object,
                 _editorAdaptersFactoryService.Object,
                 _editorOperationsFactoryService.Object,
+                _factory.Create<ISmartIndentationService>().Object,
                 _textManager.Object,
                 _factory.Create<ISharedServiceFactory>(MockBehavior.Loose).Object,
                 _vimApplicationSettings.Object,

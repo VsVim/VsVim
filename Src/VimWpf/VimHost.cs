@@ -128,6 +128,11 @@ namespace Vim.UI.Wpf
 
         public abstract void FormatLines(ITextView textView, SnapshotLineRange range);
 
+        public virtual FSharpOption<int> GetNewLineIndent(ITextView textView, ITextSnapshotLine contextLine, ITextSnapshotLine newLine)
+        {
+            return FSharpOption<int>.None;
+        }
+
         public abstract string GetName(ITextBuffer value);
 
         public abstract int GetTabIndex(ITextView textView);
@@ -489,6 +494,11 @@ namespace Vim.UI.Wpf
         void IVimHost.FormatLines(ITextView textView, SnapshotLineRange range)
         {
             FormatLines(textView, range);
+        }
+
+        FSharpOption<int> IVimHost.GetNewLineIndent(ITextView textView, ITextSnapshotLine contextLine, ITextSnapshotLine newLine)
+        {
+            return GetNewLineIndent(textView, contextLine, newLine);
         }
 
         FSharpOption<ITextView> IVimHost.GetFocusedTextView()
