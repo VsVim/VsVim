@@ -51,6 +51,11 @@ namespace Vim.UI.Wpf
             get;
         }
 
+        public virtual bool IsAutoCommandEnabled
+        {
+            get { return true; }
+        }
+
         public abstract IFontProperties FontProperties
         {
             get;
@@ -454,6 +459,11 @@ namespace Vim.UI.Wpf
         bool IVimHost.AutoSynchronizeSettings
         {
             get { return AutoSynchronizeSettings; }
+        }
+
+        bool IVimHost.IsAutoCommandEnabled
+        {
+            get { return IsAutoCommandEnabled; }
         }
 
         DefaultSettings IVimHost.DefaultSettings

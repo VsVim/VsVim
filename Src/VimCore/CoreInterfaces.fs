@@ -3756,6 +3756,9 @@ type IVimHost =
     /// Get the font properties associated with the text editor
     abstract FontProperties : IFontProperties
 
+    /// Is auto-command enabled for this host
+    abstract IsAutoCommandEnabled : bool
+
     /// Get the count of window tabs that are active in the host. This refers to tabs for actual 
     /// edit windows, not anything to do with tabs in the text file.  If window tabs are not supported 
     /// then -1 should be returned

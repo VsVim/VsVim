@@ -18,6 +18,7 @@ namespace Vim.UnitTest.Mock
 #pragma warning restore 67
 
         public bool AutoSynchronizeSettings { get; set; }
+        public bool IsAutoCommandEnabled { get; set; }
         public DefaultSettings DefaultSettings { get; set; }
         public int BeepCount { get; set; }
         public int GoToDefinitionCount { get; set; }
@@ -69,6 +70,7 @@ namespace Vim.UnitTest.Mock
         public void Clear()
         {
             AutoSynchronizeSettings = true;
+            IsAutoCommandEnabled = true;
             DefaultSettings = DefaultSettings.GVim74;
             GoToDefinitionReturn = true;
             IsCompletionWindowActive = false;

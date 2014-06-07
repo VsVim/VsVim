@@ -11,7 +11,6 @@ open System.Runtime.CompilerServices
 open System.Collections.Generic
 
 module GlobalSettingNames = 
-    let AutoCommandName = "vsvim_autocmd"
     let BackspaceName = "backspace"
     let CaretOpacityName = "vsvimcaret"
     let ControlCharsName = "vsvim_controlchars"
@@ -277,9 +276,6 @@ and IVimGlobalSettings =
     /// Add a custom setting to the current collection
     abstract AddCustomSetting : name : string -> abbrevation : string -> customSettingSource : IVimCustomSettingSource -> unit
 
-    /// Is 'autocmd' support
-    abstract AutoCommand : bool with get, set
-
     /// The multi-value option for determining backspace behavior.  Valid values include 
     /// indent, eol, start.  Usually accessed through the IsBackSpace helpers
     abstract Backspace : string with get, set
@@ -331,9 +327,6 @@ and IVimGlobalSettings =
     /// Whether or not incremental searches should be highlighted and focused 
     /// in the ITextBuffer
     abstract IncrementalSearch : bool with get, set
-
-    /// Is 'autocmd' support
-    abstract IsAutoCommandEnabled : bool with get
 
     /// Is the 'indent' option inside of Backspace set
     abstract IsBackspaceIndent : bool with get

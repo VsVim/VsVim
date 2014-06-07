@@ -67,7 +67,7 @@ type internal AutoCommandRunner
 
     /// Run the specified AutoCommand against the IVimBuffer in question 
     member x.RunAutoCommands (vimBuffer : IVimBuffer) eventKind = 
-        if _globalSettings.IsAutoCommandEnabled then
+        if _vimHost.IsAutoCommandEnabled then
             let fileName = _vimHost.GetName vimBuffer.TextBuffer
             let autoCommandList = x.GetAutoCommands fileName eventKind
             if autoCommandList.Length > 0 then
