@@ -3,6 +3,7 @@
 branches:
   only:
     - master    
+    - fixes-settings
 
 configuration: Debug
 
