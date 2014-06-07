@@ -196,6 +196,11 @@ namespace VsVim.Implementation.OptionPages
         [Category(CategoryGeneral)]
         public bool UseEditorDefaults { get; set; }
 
+        [DisplayName("Display Control Characters")]
+        [Description("Whether or not control characters will display as they do in gVim.  For example should (char)29 display as an invisible character or ^]")]
+        [Category(CategoryGeneral)]
+        public bool DisplayControlCharacters { get; set; }
+
         [DisplayName("VimRc File Loading")]
         [Description("Controls how VsVim probes for vsvim / vimrc files")]
         [Category(CategoryGeneral)]
@@ -255,6 +260,7 @@ namespace VsVim.Implementation.OptionPages
                 UseEditorIndent = vimApplicationSettings.UseEditorIndent;
                 UseEditorTabAndBackspace = vimApplicationSettings.UseEditorTabAndBackspace;
                 VimRcLoadSetting = vimApplicationSettings.VimRcLoadSetting;
+                DisplayControlCharacters = vimApplicationSettings.DisplayControlChars;
             }
 
             LoadColors();
@@ -273,9 +279,11 @@ namespace VsVim.Implementation.OptionPages
                 vimApplicationSettings.UseEditorIndent = UseEditorIndent;
                 vimApplicationSettings.UseEditorTabAndBackspace = UseEditorTabAndBackspace;
                 vimApplicationSettings.VimRcLoadSetting = VimRcLoadSetting;
+                vimApplicationSettings.DisplayControlChars = DisplayControlCharacters;
             }
 
             SaveColors();
+            SaveDisplayControlChars();
         }
 
         private IVimApplicationSettings GetVimApplicationSettings()
@@ -287,6 +295,18 @@ namespace VsVim.Implementation.OptionPages
 
             var componentModel = (IComponentModel)(Site.GetService(typeof(SComponentModel)));
             return componentModel.DefaultExportProvider.GetExportedValue<IVimApplicationSettings>();
+        }
+
+        private void SaveDisplayControlChars()
+        {
+            if (Site == null)
+            {
+                return;
+            }
+
+            var componentModel = (IComponentModel)(Site.GetService(typeof(SComponentModel)));
+            var controlCharUtil = componentModel.DefaultExportProvider.GetExportedValue<IControlCharUtil>();
+            controlCharUtil.DisplayControlChars = DisplayControlCharacters;
         }
 
         private Color GetColor(ColorKey colorKey)

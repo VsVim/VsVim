@@ -33,6 +33,11 @@ namespace VsVim
         DefaultSettings DefaultSettings { get; set; }
 
         /// <summary>
+        /// Whether or not control characters should be displayed
+        /// </summary>
+        bool DisplayControlChars { get; set; }
+
+        /// <summary>
         /// Do we want to track events like external edits in R#, snippets, etc ...
         /// </summary>
         bool EnableExternalEditMonitoring { get; set; }

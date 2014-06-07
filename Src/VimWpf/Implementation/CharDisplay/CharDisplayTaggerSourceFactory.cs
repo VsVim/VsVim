@@ -16,19 +16,21 @@ namespace Vim.UI.Wpf.Implementation.CharDisplay
     {
         private readonly object _key = new object();
         private readonly IEditorFormatMapService _editorFormatMapService;
+        private readonly IControlCharUtil _controlCharUtil;
         private readonly IVim _vim;
 
         [ImportingConstructor]
-        internal CharDisplayTaggerSourceFactory(IVim vim, IEditorFormatMapService editorFormatMapService)
+        internal CharDisplayTaggerSourceFactory(IVim vim, IEditorFormatMapService editorFormatMapService, IControlCharUtil controlCharUtil)
         {
             _editorFormatMapService = editorFormatMapService;
             _vim = vim;
+            _controlCharUtil = controlCharUtil;
         }
 
         private CharDisplayTaggerSource CreateCharDisplayTaggerSource(ITextView textView)
         {
             var editorFormatMap = _editorFormatMapService.GetEditorFormatMap(textView);
-            return new CharDisplayTaggerSource(textView, editorFormatMap, _vim.GlobalSettings);
+            return new CharDisplayTaggerSource(textView, editorFormatMap, _controlCharUtil);
         }
 
         #region IViewTaggerProvider

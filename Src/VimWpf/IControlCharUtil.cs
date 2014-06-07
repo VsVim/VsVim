@@ -13,6 +13,17 @@ namespace Vim.UI.Wpf
     public interface IControlCharUtil
     {
         /// <summary>
+        /// Whether or not to display control characters in the buffer
+        /// </summary>
+        /// <returns></returns>
+        bool DisplayControlChars { get; set; }
+
+        /// <summary>
+        /// Raised when DispalyControlChars changes
+        /// </summary>
+        event EventHandler DisplayControlCharsChanged;
+
+        /// <summary>
         /// Is this a character which has its display special cased 
         /// </summary>
         bool IsDisplayControlChar(char c);

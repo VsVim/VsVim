@@ -122,7 +122,6 @@ type internal GlobalSettings() =
             (BackspaceName, "bs", SettingValue.String "")
             (CaretOpacityName, CaretOpacityName, SettingValue.Number 65)
             (ClipboardName, "cb", SettingValue.String "")
-            (ControlCharsName, ControlCharsName, SettingValue.Toggle true)
             (CurrentDirectoryPathName, "cd", SettingValue.String ",,")
             (GlobalDefaultName, "gd", SettingValue.Toggle false)
             (HighlightSearchName, "hls", SettingValue.Toggle false)
@@ -295,9 +294,6 @@ type internal GlobalSettings() =
         member x.CaretOpacity
             with get() = _map.GetNumberValue CaretOpacityName
             and set value = _map.TrySetValue CaretOpacityName (SettingValue.Number value) |> ignore
-        member x.ControlChars
-            with get() = _map.GetBoolValue ControlCharsName
-            and set value = _map.TrySetValue ControlCharsName (SettingValue.Toggle value) |> ignore
         member x.Clipboard
             with get() = _map.GetStringValue ClipboardName
             and set value = _map.TrySetValue ClipboardName (SettingValue.String value) |> ignore

@@ -21,6 +21,7 @@ namespace VsVim.Implementation.Settings
     {
         internal const string CollectionPath = "VsVim";
         internal const string DefaultSettingsName = "DefaultSettings";
+        internal const string DisplayControlCharsName = "DisplayControlChars";
         internal const string EnableExternalEditMonitoringName = "EnableExternalEditMonitoring";
         internal const string VimRcLoadSettingName = "VimRcLoadSetting";
         internal const string HaveUpdatedKeyBindingsName = "HaveUpdatedKeyBindings";
@@ -198,6 +199,12 @@ namespace VsVim.Implementation.Settings
         {
             get { return GetEnum(VimRcLoadSettingName, defaultValue: VimRcLoadSetting.VsVimRc); }
             set { SetEnum(VimRcLoadSettingName, value); }
+        }
+
+        bool IVimApplicationSettings.DisplayControlChars
+        {
+            get { return GetBoolean(DisplayControlCharsName, defaultValue: true); }
+            set { SetBoolean(DisplayControlCharsName, value); }
         }
 
         bool IVimApplicationSettings.EnableExternalEditMonitoring

@@ -13,7 +13,6 @@ open System.Collections.Generic
 module GlobalSettingNames = 
     let BackspaceName = "backspace"
     let CaretOpacityName = "vsvimcaret"
-    let ControlCharsName = "vsvim_controlchars"
     let CurrentDirectoryPathName = "cdpath"
     let ClipboardName = "clipboard"
     let GlobalDefaultName = "gdefault"
@@ -283,10 +282,6 @@ and IVimGlobalSettings =
     /// Opacity of the caret.  This must be an integer between values 0 and 100 which
     /// will be converted into a double for the opacity of the caret
     abstract CaretOpacity : int with get, set
-
-    /// Whether or not control characters will display as they do in gVim.  For example should
-    /// (char)29 display as an invisible character or ^] 
-    abstract ControlChars : bool with get, set
 
     /// List of paths which will be searched by the :cd and :ld commands
     abstract CurrentDirectoryPath : string with get, set
