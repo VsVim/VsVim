@@ -231,23 +231,6 @@ autocmd BufEnter *.html set ts=12
                 Assert.Equal(12, vimBuffer.LocalSettings.TabStop);
             }
 
-            /// <summary>
-            /// If the user has specified that visual studio settings should override vim settings then we don't
-            /// want autocmd running.  They exist only to override settings hence they would be overriding Visual 
-            /// Studio settings
-            /// </summary>
-            [Fact]
-            public void AutoCommandRespectUseVisualStudioSettings()
-            {
-                var text = @"
-set vsvim_useeditordefaults
-autocmd BufEnter *.html set ts=12
-";
-                Run(text);
-                var vimBuffer = CreateVimBufferWithName("test.html");
-                Assert.NotEqual(12, vimBuffer.LocalSettings.TabStop);
-            }
-
             [Fact]
             public void DefaultSettings73()
             {

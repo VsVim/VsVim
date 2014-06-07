@@ -81,7 +81,7 @@ namespace VsVim.UnitTest
             public void IgnoreBackspaceSetting()
             {
                 Create("cat");
-                _vimBuffer.GlobalSettings.UseEditorTabAndBackspace = true;
+                _vsSimulation.VimApplicationSettings.SetupGet(x => x.UseEditorTabAndBackspace).Returns(true);
                 _vimBuffer.GlobalSettings.Backspace = "";
                 _vimBuffer.ProcessNotation("A<BS>");
                 Assert.Equal("ca", _textBuffer.GetLine(0).GetText());
@@ -91,7 +91,7 @@ namespace VsVim.UnitTest
             public void RespectBackspaceSetting()
             {
                 Create("cat");
-                _vimBuffer.GlobalSettings.UseEditorTabAndBackspace = false;
+                _vsSimulation.VimApplicationSettings.SetupGet(x => x.UseEditorTabAndBackspace).Returns(false);
                 _vimBuffer.GlobalSettings.Backspace = "";
                 _vimBuffer.ProcessNotation("a<BS>");
                 Assert.Equal("cat", _textBuffer.GetLine(0).GetText());
@@ -102,7 +102,7 @@ namespace VsVim.UnitTest
             public void IgnoreTab()
             {
                 Create("");
-                _vimBuffer.GlobalSettings.UseEditorTabAndBackspace = true;
+                _vsSimulation.VimApplicationSettings.SetupGet(x => x.UseEditorTabAndBackspace).Returns(true);
                 _vimBuffer.LocalSettings.ExpandTab = true;
                 _vimBuffer.LocalSettings.SoftTabStop = 3;
                 _vimBuffer.ProcessNotation("i<Tab>");
@@ -113,7 +113,7 @@ namespace VsVim.UnitTest
             public void RespectTab()
             {
                 Create("");
-                _vimBuffer.GlobalSettings.UseEditorTabAndBackspace = false;
+                _vsSimulation.VimApplicationSettings.SetupGet(x => x.UseEditorTabAndBackspace).Returns(false);
                 _vimBuffer.LocalSettings.ExpandTab = true;
                 _vimBuffer.LocalSettings.SoftTabStop = 3;
                 _vimBuffer.ProcessNotation("i<Tab>");

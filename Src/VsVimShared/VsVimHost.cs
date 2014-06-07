@@ -31,6 +31,88 @@ namespace VsVim
     [TextViewRole(PredefinedTextViewRoles.Editable)]
     internal sealed class VsVimHost : VimHost, IVsSelectionEvents
     {
+        #region SettingsSource
+
+        /// <summary>
+        /// This class provides the ability to control our host specific settings using the familiar
+        /// :set syntax in a vim file.  It is just proxying them to the real IVimApplicationSettings
+        /// </summary>
+        internal sealed class SettingsSource : IVimCustomSettingSource
+        {
+            private const string UseEditorIndentName = "vsvim_useeditorindent";
+            private const string UseEditorDefaultsName = "vsvim_useeditordefaults";
+            private const string UseEditorTabAndBackspaceName = "vsvim_useeditortab";
+
+            private readonly IVimApplicationSettings _vimApplicationSettings;
+
+            private SettingsSource(IVimApplicationSettings vimApplicationSettings)
+            {
+                _vimApplicationSettings = vimApplicationSettings;
+            }
+
+            internal static void Initialize(IVimGlobalSettings globalSettings, IVimApplicationSettings vimApplicationSettings)
+            {
+                var settingsSource = new SettingsSource(vimApplicationSettings);
+                globalSettings.AddCustomSetting(UseEditorIndentName, UseEditorIndentName, settingsSource);
+                globalSettings.AddCustomSetting(UseEditorDefaultsName, UseEditorDefaultsName, settingsSource);
+                globalSettings.AddCustomSetting(UseEditorTabAndBackspaceName, UseEditorTabAndBackspaceName, settingsSource);
+            }
+
+            SettingValue IVimCustomSettingSource.GetDefaultSettingValue(string name)
+            {
+                return SettingValue.NewToggle(true);
+            }
+
+            SettingValue IVimCustomSettingSource.GetSettingValue(string name)
+            {
+                bool value;
+                switch (name)
+                {
+                    case UseEditorIndentName:
+                        value = _vimApplicationSettings.UseEditorIndent;
+                        break;
+                    case UseEditorDefaultsName:
+                        value = _vimApplicationSettings.UseEditorDefaults;
+                        break;
+                    case UseEditorTabAndBackspaceName:
+                        value = _vimApplicationSettings.UseEditorTabAndBackspace;
+                        break;
+                    default:
+                        value = false;
+                        break;
+                }
+
+                return SettingValue.NewToggle(value);
+            }
+
+            void IVimCustomSettingSource.SetSettingValue(string name, SettingValue settingValue)
+            {
+                if (!settingValue.IsToggle)
+                {
+                    return;
+                }
+
+                bool value = ((SettingValue.Toggle)settingValue).Item;
+                switch (name)
+                {
+                    case UseEditorIndentName:
+                        _vimApplicationSettings.UseEditorIndent = value;
+                        break;
+                    case UseEditorDefaultsName:
+                        _vimApplicationSettings.UseEditorDefaults = value;
+                        break;
+                    case UseEditorTabAndBackspaceName:
+                        _vimApplicationSettings.UseEditorTabAndBackspace = value;
+                        break;
+                    default:
+                        value = false;
+                        break;
+                }
+            }
+        }
+
+#endregion
+
         internal const string CommandNameGoToDefinition = "Edit.GoToDefinition";
 
         private readonly IVsAdapter _vsAdapter;
@@ -515,9 +597,7 @@ namespace VsVim
 
         public override void VimGlobalSettingsCreated(IVimGlobalSettings globalSettings)
         {
-            globalSettings.UseEditorDefaults = _vimApplicationSettings.UseEditorDefaults;
-            globalSettings.UseEditorIndent = _vimApplicationSettings.UseEditorIndent;
-            globalSettings.UseEditorTabAndBackspace = _vimApplicationSettings.UseEditorTabAndBackspace;
+            SettingsSource.Initialize(globalSettings, _vimApplicationSettings);
         }
 
         public override void VimRcLoaded(VimRcState vimRcState, IVimLocalSettings localSettings, IVimWindowSettings windowSettings)

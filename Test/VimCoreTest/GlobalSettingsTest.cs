@@ -294,14 +294,6 @@ namespace Vim.UnitTest
                 var setting = _globalSettings.GetSetting(GlobalSettingNames.SelectModeName).Value;
                 Assert.Equal("", setting.DefaultValue.AsString().Item);
             }
-
-            [Fact]
-            public void UseEditorDeafaults_Default()
-            {
-                Assert.False(_globalSettings.UseEditorDefaults);
-                _globalSettings.UseEditorDefaults = true;
-                Assert.True(_globalSettings.UseEditorDefaults);
-            }
         }
     }
 }

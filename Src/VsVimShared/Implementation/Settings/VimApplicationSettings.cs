@@ -208,7 +208,7 @@ namespace VsVim.Implementation.Settings
 
         bool IVimApplicationSettings.UseEditorDefaults
         {
-            get { return GetBoolean(UseEditorDefaultsName, defaultValue: false); }
+            get { return GetBoolean(UseEditorDefaultsName, defaultValue: true); }
             set { SetBoolean(UseEditorDefaultsName, value); }
         }
 

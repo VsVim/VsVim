@@ -98,7 +98,7 @@ namespace VsVim
                     return false;
                 }
 
-                if (!_vim.GlobalSettings.UseEditorTabAndBackspace && (command.IsBack || command.IsInsertTab))
+                if (!_vimApplicationSettings.UseEditorTabAndBackspace && (command.IsBack || command.IsInsertTab))
                 {
                     // When the user has opted into 'softtabstop' then Vim has a better understanding of
                     // <BS> than Visual Studio.  Allow that processing to win

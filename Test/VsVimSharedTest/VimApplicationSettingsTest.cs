@@ -317,5 +317,16 @@ namespace VsVim.UnitTest
                 _settingsStore.Verify();
             }
         }
+
+        public sealed class MiscTest : VimApplicationSettingsTest
+        {
+            [Fact]
+            public void Defaults()
+            {
+                Assert.True(_vimApplicationSettings.UseEditorDefaults);
+                Assert.True(_vimApplicationSettings.UseEditorIndent);
+                Assert.True(_vimApplicationSettings.UseEditorTabAndBackspace);
+            }
+        }
     }
 }

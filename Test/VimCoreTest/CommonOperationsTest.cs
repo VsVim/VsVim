@@ -51,7 +51,6 @@ namespace Vim.UnitTest
             _globalSettings.SetupGet(x => x.IgnoreCase).Returns(true);
             _globalSettings.SetupGet(x => x.IsVirtualEditOneMore).Returns(false);
             _globalSettings.SetupGet(x => x.SelectionKind).Returns(SelectionKind.Inclusive);
-            _globalSettings.SetupGet(x => x.UseEditorIndent).Returns(false);
             _globalSettings.SetupGet(x => x.VirtualEdit).Returns(String.Empty);
             _globalSettings.SetupGet(x => x.WrapScan).Returns(true);
             _vimData = new VimData(_globalSettings.Object);
@@ -1496,7 +1495,6 @@ namespace Vim.UnitTest
         public void GetNewLineIndent_EditorTrumpsAutoIndent()
         {
             Create("cat", "dog", "");
-            _globalSettings.SetupGet(x => x.UseEditorIndent).Returns(true);
             _vimHost.Setup(x => x.GetNewLineIndent(_textView, It.IsAny<ITextSnapshotLine>(), It.IsAny<ITextSnapshotLine>())).Returns(FSharpOption.Create(8));
             var indent = _operations.GetNewLineIndent(_textView.GetLine(1), _textView.GetLine(2));
             Assert.Equal(8, indent.Value);
@@ -1509,7 +1507,6 @@ namespace Vim.UnitTest
         public void GetNewLineIndent_RevertToVimIndentIfEditorIndentFails()
         {
             Create("  cat", "  dog", "");
-            _globalSettings.SetupGet(x => x.UseEditorIndent).Returns(false);
             _localSettings.SetupGet(x => x.AutoIndent).Returns(true);
             _vimHost.Setup(x => x.GetNewLineIndent(_textView, It.IsAny<ITextSnapshotLine>(), It.IsAny<ITextSnapshotLine>())).Returns(FSharpOption<int>.None);
             var indent = _operations.GetNewLineIndent(_textView.GetLine(1), _textView.GetLine(2));

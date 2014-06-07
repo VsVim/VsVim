@@ -96,9 +96,9 @@ namespace VsVim
             //
             // By the time this function is called both the Vim and Editor settings are at their final 
             // values.  We just need to decide on a winner and copy one to the other 
-            var settingSyncSource = (_vim.VimRcState.IsLoadSucceeded && !_vim.GlobalSettings.UseEditorDefaults)
-                ? SettingSyncSource.Vim
-                : SettingSyncSource.Editor;
+            var settingSyncSource = _vimApplicationSettings.UseEditorDefaults
+                ? SettingSyncSource.Editor
+                : SettingSyncSource.Vim;
 
             // Synchronize any further changes between the buffers
             _editorToSettingSynchronizer.StartSynchronizing(vimBuffer, settingSyncSource);

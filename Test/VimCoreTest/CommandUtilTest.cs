@@ -2286,7 +2286,6 @@ namespace Vim.UnitTest
             public void InsertLineAbove_KeepCaretAtStartWithNoAutoIndent()
             {
                 Create("foo");
-                _globalSettings.UseEditorIndent = false;
                 _commandUtil.InsertLineAbove(1);
                 var point = _textView.Caret.Position.VirtualBufferPosition;
                 Assert.False(point.IsInVirtualSpace);
@@ -2300,7 +2299,6 @@ namespace Vim.UnitTest
             public void InsertLineAbove_MiddleOfLine()
             {
                 Create("foo", "bar");
-                _globalSettings.UseEditorIndent = false;
                 _textView.Caret.MoveTo(_textView.TextSnapshot.GetLineFromLineNumber(1).Start);
                 _commandUtil.InsertLineAbove(1);
                 var point = _textView.Caret.Position.BufferPosition;
@@ -2333,7 +2331,6 @@ namespace Vim.UnitTest
                     didEdit = true;
                 };
 
-                _globalSettings.UseEditorIndent = false;
                 _commandUtil.InsertLineAbove(1);
                 var buffer = _textView.TextBuffer;
                 var line = buffer.CurrentSnapshot.GetLineFromLineNumber(0);
@@ -2347,7 +2344,6 @@ namespace Vim.UnitTest
             public void InsertLineAbove_ShouldKeepIndentWhenAutoIndentSet()
             {
                 Create("  cat", "dog");
-                _globalSettings.UseEditorIndent = false;
                 _localSettings.AutoIndent = true;
                 _commandUtil.InsertLineAbove(1);
                 Assert.Equal(2, _textView.Caret.Position.VirtualSpaces);
@@ -2444,7 +2440,6 @@ namespace Vim.UnitTest
             public void InsertLineBelow_KeepIndentWhenAutoIndentSet()
             {
                 Create("  cat", "dog");
-                _globalSettings.UseEditorIndent = false;
                 _localSettings.AutoIndent = true;
                 _commandUtil.InsertLineBelow(1);
                 Assert.Equal("", _textView.GetLine(1).GetText());
