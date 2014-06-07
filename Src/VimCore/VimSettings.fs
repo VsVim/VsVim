@@ -131,7 +131,6 @@ type internal GlobalSettings() =
             (JoinSpacesName, "js", SettingValue.Toggle true)
             (KeyModelName, "km", SettingValue.String "")
             (MagicName, MagicName, SettingValue.Toggle true)
-            (MaxMapCount, MaxMapCount, SettingValue.Number 1000)
             (MaxMapDepth, "mmd", SettingValue.Number 1000)
             (MouseModelName, "mousem", SettingValue.String "popup")
             (PathName,"pa", SettingValue.String ".,,")
@@ -337,9 +336,6 @@ type internal GlobalSettings() =
         member x.Magic
             with get() = _map.GetBoolValue MagicName
             and set value = _map.TrySetValue MagicName (SettingValue.Toggle value) |> ignore
-        member x.MaxMapCount
-            with get() = _map.GetNumberValue MaxMapCount
-            and set value = _map.TrySetValue MaxMapCount (SettingValue.Number value) |> ignore
         member x.MaxMapDepth
             with get() = _map.GetNumberValue MaxMapDepth
             and set value = _map.TrySetValue MaxMapDepth (SettingValue.Number value) |> ignore

@@ -122,6 +122,11 @@ type internal VimBuffer
         _commandUtil : ICommandUtil
     ) as this =
 
+    /// Maximum number of maps which can occur for a key map.  This is not a standard vim or gVim
+    /// setting.  It's a hueristic setting meant to prevent infinite recursion in the specific cases
+    /// that maxmapdepth can't or won't catch (see :help maxmapdepth).  
+    let _maxMapCount = 1000
+
     let _vim = _vimBufferData.Vim
     let _textView = _vimBufferData.TextView
     let _jumpList = _vimBufferData.JumpList
@@ -476,7 +481,7 @@ type internal VimBuffer
                 // loop processing recursive input.  In a perfect world we would implement 
                 // Ctrl-C support and allow users to break out of this loop but right now we don't
                 // and this is a heuristic to prevent hanging the IDE until then
-                if remainingSet.Value.Length > 0 && mapCount.Value = _vim.GlobalSettings.MaxMapCount then
+                if remainingSet.Value.Length > 0 && mapCount.Value = _maxMapCount then
                     x.RaiseErrorMessage Resources.Vim_RecursiveMapping
                     processResult := ProcessResult.Error
                     remainingSet := KeyInputSet.Empty
