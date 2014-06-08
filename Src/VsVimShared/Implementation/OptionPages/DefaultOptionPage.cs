@@ -150,6 +150,7 @@ namespace VsVim.Implementation.OptionPages
 
         private const string CategoryGeneral = "General";
         private const string CategoryColors = "Item Colors";
+        private const string CategoryEditing = "Vim Edit Behavior";
 
         private static readonly ColorKey IncrementalSearchColorKey = ColorKey.Background(VimConstants.IncrementalSearchTagName);
         private static readonly ColorKey HighlightIncrementalSearchColorKey = ColorKey.Background(VimConstants.HighlightIncrementalSearchTagName);
@@ -176,6 +177,11 @@ namespace VsVim.Implementation.OptionPages
         [Category(CategoryGeneral)]
         public DefaultSettings DefaultSettings { get; set; }
 
+        [DisplayName("Display Control Characters")]
+        [Description("Whether or not control characters will display as they do in gVim.  For example should (char)29 display as an invisible character or ^]")]
+        [Category(CategoryGeneral)]
+        public bool DisplayControlCharacters { get; set; }
+
         [DisplayName("Rename and Snippet Tracking")]
         [Description("Integrate with R# renames, snippet insertion, etc ... Disabling will cause R# integration issues")]
         [Category(CategoryGeneral)]
@@ -183,23 +189,18 @@ namespace VsVim.Implementation.OptionPages
 
         [DisplayName("Use Visual Studio Tab / Backspace")]
         [Description("When false tab and backspace keys in insert mode will use vim rules.  This will take into account settings like 'softtabstop', 'tabstop', 'backspace', etc ...")]
-        [Category(CategoryGeneral)]
+        [Category(CategoryEditing)]
         public bool UseEditorTabAndBackspace { get; set; }
 
         [DisplayName("Use Visual Studio Indent")]
         [Description("Use Visual Studio indentation for new lines instead of strict 'autoindent' rules")]
-        [Category(CategoryGeneral)]
+        [Category(CategoryEditing)]
         public bool UseEditorIndent { get; set; }
 
-        [DisplayName("Use Visual Studio Defaults")]
+        [DisplayName("Use Visual Studio Tab Size / Spaces")]
         [Description("Use Visual Studio values to initialize 'tabsize' and 'expandtab'.  This will override values specified in a vsvimrc file")]
-        [Category(CategoryGeneral)]
+        [Category(CategoryEditing)]
         public bool UseEditorDefaults { get; set; }
-
-        [DisplayName("Display Control Characters")]
-        [Description("Whether or not control characters will display as they do in gVim.  For example should (char)29 display as an invisible character or ^]")]
-        [Category(CategoryGeneral)]
-        public bool DisplayControlCharacters { get; set; }
 
         [DisplayName("VimRc File Loading")]
         [Description("Controls how VsVim probes for vsvim / vimrc files")]
