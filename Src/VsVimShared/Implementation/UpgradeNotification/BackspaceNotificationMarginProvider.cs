@@ -51,7 +51,7 @@ namespace VsVim.Implementation.UpgradeNotification
 
             // If there is no vimrc or the load does allow backspace over start then there 
             // is no need to display the warning
-            if (_vim.GlobalSettings.IsBackspaceStart || !_vim.VimRcState.IsLoadSucceeded)
+            if (_vim.GlobalSettings.IsBackspaceStart || _vimApplicationSettings.UseEditorTabAndBackspace)
             {
                 return null;
             }

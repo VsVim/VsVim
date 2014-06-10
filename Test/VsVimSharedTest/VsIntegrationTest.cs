@@ -59,6 +59,66 @@ namespace VsVim.UnitTest
                 simulateStandardKeyMappings: false,
                 editorOperationsFactoryService: EditorOperationsFactoryService,
                 keyUtil: KeyUtil);
+
+            VimHost.TryCustomProcessFunc = (textView, insertCommand) =>
+                {
+                    if (textView == _textView)
+                    {
+                        return _vsSimulation.VsCommandTarget.TryCustomProcess(insertCommand);
+                    }
+
+                    return false;
+                };
+        }
+
+        public sealed class BackspaceAndTabTest : VsIntegrationTest
+        {
+            /// <summary>
+            /// As long as the Visual Studio controls tabs and backspace then the 'backspace' setting will
+            /// not be respected 
+            /// </summary>
+            [Fact]
+            public void IgnoreBackspaceSetting()
+            {
+                Create("cat");
+                _vsSimulation.VimApplicationSettings.SetupGet(x => x.UseEditorTabAndBackspace).Returns(true);
+                _vimBuffer.GlobalSettings.Backspace = "";
+                _vimBuffer.ProcessNotation("A<BS>");
+                Assert.Equal("ca", _textBuffer.GetLine(0).GetText());
+            }
+
+            [Fact]
+            public void RespectBackspaceSetting()
+            {
+                Create("cat");
+                _vsSimulation.VimApplicationSettings.SetupGet(x => x.UseEditorTabAndBackspace).Returns(false);
+                _vimBuffer.GlobalSettings.Backspace = "";
+                _vimBuffer.ProcessNotation("a<BS>");
+                Assert.Equal("cat", _textBuffer.GetLine(0).GetText());
+                Assert.Equal(1, VimHost.BeepCount);
+            }
+
+            [Fact]
+            public void IgnoreTab()
+            {
+                Create("");
+                _vsSimulation.VimApplicationSettings.SetupGet(x => x.UseEditorTabAndBackspace).Returns(true);
+                _vimBuffer.LocalSettings.ExpandTab = true;
+                _vimBuffer.LocalSettings.SoftTabStop = 3;
+                _vimBuffer.ProcessNotation("i<Tab>");
+                Assert.Equal(new string(' ', 8), _textBuffer.GetLine(0).GetText());
+            }
+
+            [Fact]
+            public void RespectTab()
+            {
+                Create("");
+                _vsSimulation.VimApplicationSettings.SetupGet(x => x.UseEditorTabAndBackspace).Returns(false);
+                _vimBuffer.LocalSettings.ExpandTab = true;
+                _vimBuffer.LocalSettings.SoftTabStop = 3;
+                _vimBuffer.ProcessNotation("i<Tab>");
+                Assert.Equal(new string(' ', 3), _textBuffer.GetLine(0).GetText());
+            }
         }
 
         public sealed class KeyMapTest : VsIntegrationTest
@@ -267,7 +327,7 @@ namespace VsVim.UnitTest
             {
                 CreatePeek("cat dog");
                 _vsSimulation.Run(VimKey.Escape);
-                Assert.Equal(KeyInputUtil.EscapeKey, _vsSimulation.VsCommandTarget.LastExecEditCommand.KeyInput);
+                Assert.Equal(KeyInputUtil.EscapeKey, _vsSimulation.VsSimulationCommandTarget.LastExecEditCommand.KeyInput);
             }
 
             /// <summary>
@@ -281,7 +341,7 @@ namespace VsVim.UnitTest
                 _vsSimulation.Run("i");
                 Assert.Equal(ModeKind.Insert, _vimBuffer.ModeKind);
                 _vsSimulation.Run(VimKey.Escape);
-                Assert.Null(_vsSimulation.VsCommandTarget.LastExecEditCommand);
+                Assert.Null(_vsSimulation.VsSimulationCommandTarget.LastExecEditCommand);
                 Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
             }
 
@@ -297,7 +357,7 @@ namespace VsVim.UnitTest
                 _vimBuffer.KeyInputProcessed += delegate { count++; };
                 _vsSimulation.Run(VimKey.Escape);
                 Assert.Equal(1, count);
-                Assert.Null(_vsSimulation.VsCommandTarget.LastExecEditCommand);
+                Assert.Null(_vsSimulation.VsSimulationCommandTarget.LastExecEditCommand);
             }
         }
 

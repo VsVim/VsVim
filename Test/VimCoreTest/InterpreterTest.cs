@@ -549,18 +549,6 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
-            /// Make sure that we can toggle the options that have an underscore in them
-            /// </summary>
-            [Fact]
-            public void Toggle_OptionWithUnderscore()
-            {
-                Create("");
-                Assert.True(_globalSettings.UseEditorIndent);
-                ParseAndRun(@"set novsvim_useeditorindent");
-                Assert.False(_globalSettings.UseEditorIndent);
-            }
-
-            /// <summary>
             /// Make sure we can deal with a trailing comment
             /// </summary>
             [Fact]

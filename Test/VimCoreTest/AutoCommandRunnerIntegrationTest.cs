@@ -58,7 +58,7 @@ namespace Vim.UnitTest
             public void NoEventsOnDisable()
             {
                 VimData.AddAutoCommand(EventKind.BufEnter, "*.html", "set ts=12");
-                _globalSettings.AutoCommand = false;
+                VimHost.IsAutoCommandEnabled = false;
                 var vimBuffer = CreateVimBufferWithName("foo.html");
                 Assert.Equal(8, vimBuffer.LocalSettings.TabStop);
             }
@@ -66,7 +66,7 @@ namespace Vim.UnitTest
             [Fact]
             public void NoEventsOnDisableClose()
             {
-                _globalSettings.AutoCommand = false;
+                VimHost.IsAutoCommandEnabled = false;
                 VimData.AddAutoCommand(EventKind.BufWinLeave, "*.html", "set ts=12");
                 var vimBuffer = CreateVimBufferWithName("foo.html");
                 vimBuffer.Close();
@@ -76,10 +76,10 @@ namespace Vim.UnitTest
             [Fact]
             public void DisableChange()
             {
-                _globalSettings.AutoCommand = false;
+                VimHost.IsAutoCommandEnabled = false;
                 VimData.AddAutoCommand(EventKind.BufWinLeave, "*.html", "set ts=12");
                 var vimBuffer = CreateVimBufferWithName("foo.html");
-                _globalSettings.AutoCommand = true;
+                VimHost.IsAutoCommandEnabled = true;
                 vimBuffer.Close();
                 Assert.Equal(12, vimBuffer.LocalSettings.TabStop);
             }

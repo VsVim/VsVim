@@ -44,6 +44,7 @@ namespace VsVim
         private readonly IVimBufferCoordinatorFactory _bufferCoordinatorFactory;
         private readonly IKeyUtil _keyUtil;
         private readonly IEditorToSettingsSynchronizer _editorToSettingSynchronizer;
+        private readonly IVimApplicationSettings _vimApplicationSettings;
 
         [ImportingConstructor]
         public HostFactory(
@@ -56,6 +57,7 @@ namespace VsVim
             IVimBufferCoordinatorFactory bufferCoordinatorFactory,
             IKeyUtil keyUtil,
             IEditorToSettingsSynchronizer editorToSettingSynchronizer,
+            IVimApplicationSettings vimApplicationSettings,
             [ImportMany] IEnumerable<Lazy<ICommandTargetFactory, IOrderable>> commandTargetFactoryList)
         {
             _vim = vim;
@@ -67,6 +69,7 @@ namespace VsVim
             _bufferCoordinatorFactory = bufferCoordinatorFactory;
             _keyUtil = keyUtil;
             _editorToSettingSynchronizer = editorToSettingSynchronizer;
+            _vimApplicationSettings = vimApplicationSettings;
             _commandTargetFactoryList = Orderer.Order(commandTargetFactoryList).Select(x => x.Value).ToReadOnlyCollection();
 
 #if DEBUG
@@ -87,32 +90,25 @@ namespace VsVim
                 return;
             }
 
-            // Synchronize any further changes between the buffers
-            _editorToSettingSynchronizer.StartSynchronizing(vimBuffer);
-
             // We have to make a decision on whether Visual Studio or Vim settings win during the startup
             // process.  If there was a Vimrc file then the vim settings win, else the Visual Studio ones
             // win.  
             //
             // By the time this function is called both the Vim and Editor settings are at their final 
             // values.  We just need to decide on a winner and copy one to the other 
-            if (_vim.VimRcState.IsLoadSucceeded && !_vim.GlobalSettings.UseEditorDefaults)
-            {
-                // Vim settings win.  
-                _editorToSettingSynchronizer.CopyVimToEditorSettings(vimBuffer);
-            }
-            else
-            {
-                // Visual Studio settings win.  
-                _editorToSettingSynchronizer.CopyEditorToVimSettings(vimBuffer);
-            }
+            var settingSyncSource = _vimApplicationSettings.UseEditorDefaults
+                ? SettingSyncSource.Editor
+                : SettingSyncSource.Vim;
+
+            // Synchronize any further changes between the buffers
+            _editorToSettingSynchronizer.StartSynchronizing(vimBuffer, settingSyncSource);
         }
 
         private void ConnectToOleCommandTarget(IVimBuffer vimBuffer, ITextView textView, IVsTextView vsTextView)
         {
             var broker = _displayWindowBrokerFactoryServcie.GetDisplayWindowBroker(textView);
             var vimBufferCoordinator = _bufferCoordinatorFactory.GetVimBufferCoordinator(vimBuffer);
-            var result = VsCommandTarget.Create(vimBufferCoordinator, vsTextView, _textManager, _adapter, broker, _keyUtil, _commandTargetFactoryList);
+            var result = VsCommandTarget.Create(vimBufferCoordinator, vsTextView, _textManager, _adapter, broker, _keyUtil, _vimApplicationSettings, _commandTargetFactoryList);
             if (result.IsSuccess)
             {
                 // Store the value for debugging

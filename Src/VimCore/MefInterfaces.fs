@@ -473,6 +473,13 @@ type IVisualModeSelectionOverride =
     /// Is insert mode preferred for the current state of the buffer
     abstract IsInsertModePreferred : textView : ITextView -> bool
 
+/// What source should the synchronizer use as the original settings?  The values
+/// in the selected source will be copied over the other settings
+[<RequireQualifiedAccess>]
+type SettingSyncSource =
+    | Editor
+    | Vim 
+
 /// This interface is used to synchronize settings between vim settings and the 
 /// editor settings
 ///
@@ -485,13 +492,5 @@ type IEditorToSettingsSynchronizer =
     ///
     /// This method can be called multiple times for the same IVimBuffer and it 
     /// will only synchronize once 
-    abstract StartSynchronizing : vimBuffer : IVimBuffer -> unit
-
-    /// Copy the settings which are synchronized from the editor to the 
-    /// corresponding vim settings
-    abstract CopyEditorToVimSettings : vimBuffer : IVimBuffer -> unit
-
-    /// Copy the settings which are synchronized from vim to the 
-    /// corresponding editor settings
-    abstract CopyVimToEditorSettings : vimBuffer : IVimBuffer -> unit
+    abstract StartSynchronizing : vimBuffer : IVimBuffer -> source : SettingSyncSource -> unit
 

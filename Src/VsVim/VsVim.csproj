@@ -25,7 +25,7 @@
     <!-- 
          When building in AppVeyor do not attempt to deploy the extension as it 
          will fail and trigger a bulid error 
-    --> 
+    -->
     <DeployExtension Condition="'$(AppVeyor)' != ''">False</DeployExtension>
   </PropertyGroup>
   <!-- This is needed to prevent forced migrations when opening the project in Vs2012 -->
@@ -104,7 +104,6 @@
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
     <Compile Include="Settings\CommandBindingSetting.cs" />
-    <Compile Include="Settings\LegacySettings.cs" />
     <Compile Include="Settings\Settings.cs" />
     <Compile Include="Settings\Settings.Designer.cs">
       <AutoGen>True</AutoGen>

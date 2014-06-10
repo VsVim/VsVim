@@ -732,7 +732,6 @@ namespace Vim.UnitTest
                 {
                     Create("  hello", "world");
                     _globalSettings.Backspace = "start,indent,eol";
-                    _globalSettings.UseEditorIndent = false;
                     _localSettings.AutoIndent = true;
                     _textView.MoveCaretTo(_textView.GetLine(0).End);
                     _vimBuffer.ProcessNotation("<Enter><BS>");
@@ -1397,7 +1396,6 @@ namespace Vim.UnitTest
             public void Insert_NewLine_IndentWithAltMapping()
             {
                 Create("  hello", "world");
-                _globalSettings.UseEditorIndent = false;
                 _localSettings.AutoIndent = true;
                 Vim.KeyMap.MapWithNoRemap("<c-e>", "<Enter>", KeyRemapMode.Insert);
                 _textView.MoveCaretTo(5);
@@ -1414,7 +1412,6 @@ namespace Vim.UnitTest
             public void Insert_NewLine_AtEndOfLine()
             {
                 Create("  hello", "world");
-                _globalSettings.UseEditorIndent = false;
                 _localSettings.AutoIndent = true;
                 _textView.MoveCaretTo(_textView.GetLine(0).End);
                 _vimBuffer.Process(VimKey.Enter);

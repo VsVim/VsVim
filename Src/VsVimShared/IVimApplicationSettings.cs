@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using Vim;
 
 namespace VsVim
@@ -9,6 +10,15 @@ namespace VsVim
     /// </summary>
     public class ApplicationSettingsEventArgs : EventArgs
     {
+
+    }
+
+    public enum VimRcLoadSetting
+    {
+        None,
+        VsVimRc,
+        VimRc,
+        Both
     }
 
     /// <summary>
@@ -23,9 +33,34 @@ namespace VsVim
         DefaultSettings DefaultSettings { get; set; }
 
         /// <summary>
+        /// Whether or not control characters should be displayed
+        /// </summary>
+        bool DisplayControlChars { get; set; }
+
+        /// <summary>
         /// Do we want to track events like external edits in R#, snippets, etc ...
         /// </summary>
         bool EnableExternalEditMonitoring { get; set; }
+
+        /// <summary>
+        /// Do we want to enable vim style processing of tab and backspace
+        /// </summary>
+        bool UseEditorTabAndBackspace { get; set; }
+
+        /// <summary>
+        /// Do we want to enable editor style indentation?
+        /// </summary>
+        bool UseEditorIndent { get; set; }
+
+        /// <summary>
+        /// Do we want to use editor tab size, tabs / spaces or vim?
+        /// </summary>
+        bool UseEditorDefaults { get; set; }
+
+        /// <summary>
+        /// Controls how vimrc files are loaded
+        /// </summary>
+        VimRcLoadSetting VimRcLoadSetting { get; set; }
 
         /// <summary>
         /// The key bindings were updated 

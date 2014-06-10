@@ -28,11 +28,16 @@ type internal SettingsMap
     let mutable _settings =
          _rawData
          |> Seq.map (fun (name, abbrev, value) -> {Name = name; Abbreviation = abbrev; LiveSettingValue = LiveSettingValue.Create value; IsGlobal = _isGlobal})
-         |> Seq.map (fun setting -> (setting.Name,setting))
+         |> Seq.map (fun setting -> (setting.Name, setting))
          |> Map.ofSeq
 
+    member x.AddSetting (setting : Setting) =
+        _settings <- Map.add setting.Name setting _settings
+
     member x.AllSettings = _settings |> Map.toSeq |> Seq.map (fun (_,value) -> value)
+
     member x.OwnsSetting settingName = x.GetSetting settingName |> Option.isSome
+
     member x.SettingChanged = _settingChangedEvent.Publish
 
     /// Replace a Setting with a new value
@@ -98,7 +103,6 @@ type internal SettingsMap
         | SettingValue.Toggle _ -> failwith "invalid"
 
     member x.ConvertStringToValue str kind =
-        
         let convertToNumber() = 
             let ret,value = System.Int32.TryParse str
             if ret then Some (SettingValue.Number value) else None
@@ -115,11 +119,9 @@ type internal GlobalSettings() =
 
     static let _globalSettings = 
         [|
-            (AutoCommandName, AutoCommandName, SettingValue.Toggle true)
             (BackspaceName, "bs", SettingValue.String "")
             (CaretOpacityName, CaretOpacityName, SettingValue.Number 65)
             (ClipboardName, "cb", SettingValue.String "")
-            (ControlCharsName, ControlCharsName, SettingValue.Toggle true)
             (CurrentDirectoryPathName, "cd", SettingValue.String ",,")
             (GlobalDefaultName, "gd", SettingValue.Toggle false)
             (HighlightSearchName, "hls", SettingValue.Toggle false)
@@ -129,7 +131,6 @@ type internal GlobalSettings() =
             (JoinSpacesName, "js", SettingValue.Toggle true)
             (KeyModelName, "km", SettingValue.String "")
             (MagicName, MagicName, SettingValue.Toggle true)
-            (MaxMapCount, MaxMapCount, SettingValue.Number 1000)
             (MaxMapDepth, "mmd", SettingValue.Number 1000)
             (MouseModelName, "mousem", SettingValue.String "popup")
             (PathName,"pa", SettingValue.String ".,,")
@@ -148,8 +149,6 @@ type internal GlobalSettings() =
             (TimeoutExName, TimeoutExName, SettingValue.Toggle false)
             (TimeoutLengthName, "tm", SettingValue.Number 1000)
             (TimeoutLengthExName, "ttm", SettingValue.Number -1)
-            (UseEditorDefaultsName, UseEditorDefaultsName, SettingValue.Toggle false)
-            (UseEditorIndentName, UseEditorIndentName, SettingValue.Toggle true)
             (VimRcName, VimRcName, SettingValue.String(StringUtil.empty))
             (VimRcPathsName, VimRcPathsName, SettingValue.String(StringUtil.empty))
             (VirtualEditName, "ve", SettingValue.String(StringUtil.empty))
@@ -184,6 +183,11 @@ type internal GlobalSettings() =
         ]
 
     static member DisableAllCommand = _disableAllCommand
+
+    member x.AddCustomSetting name abbrevation customSettingSource = 
+        let liveSettingValue = LiveSettingValue.Custom (name, customSettingSource)
+        let setting = { Name = name; Abbreviation = abbrevation; LiveSettingValue = liveSettingValue; IsGlobal = true }
+        _map.AddSetting setting
 
     member x.IsCommaSubOptionPresent optionName suboptionName =
         _map.GetStringValue optionName
@@ -256,18 +260,6 @@ type internal GlobalSettings() =
                     
         List.ofSeq list
 
-    /// The ability to run autocmd can be overridden in 2 ways
-    ///
-    ///  1. Explicitly disabling autocmd support
-    ///  2. Enabling editor defaults over those in the _vimrc
-    ///
-    /// Auto commands exist essentially to override settings on a per file type
-    /// basis.  Hence if the user explicitly chooses Visual Studio defaults (via
-    /// #2) we disable auto commands as well.  It would be confusing to do 
-    /// otherwise
-    member x.IsAutoCommandEnabled = 
-        _map.GetBoolValue AutoCommandName && not (_map.GetBoolValue UseEditorDefaultsName)
-
     member x.SelectionKind = 
         match _map.GetStringValue SelectionName with
         | "inclusive" -> SelectionKind.Inclusive
@@ -294,18 +286,13 @@ type internal GlobalSettings() =
         member x.GetSetting settingName = _map.GetSetting settingName
 
         // IVimGlobalSettings 
-        member x.AutoCommand
-            with get() = _map.GetBoolValue AutoCommandName
-            and set value = _map.TrySetValue AutoCommandName (SettingValue.Toggle value) |> ignore
+        member x.AddCustomSetting name abbrevation customSettingSource = x.AddCustomSetting name abbrevation customSettingSource
         member x.Backspace 
             with get() = _map.GetStringValue BackspaceName
             and set value = x.SetBackspace value
         member x.CaretOpacity
             with get() = _map.GetNumberValue CaretOpacityName
             and set value = _map.TrySetValue CaretOpacityName (SettingValue.Number value) |> ignore
-        member x.ControlChars
-            with get() = _map.GetBoolValue ControlCharsName
-            and set value = _map.TrySetValue ControlCharsName (SettingValue.Toggle value) |> ignore
         member x.Clipboard
             with get() = _map.GetStringValue ClipboardName
             and set value = _map.TrySetValue ClipboardName (SettingValue.String value) |> ignore
@@ -331,7 +318,6 @@ type internal GlobalSettings() =
         member x.IncrementalSearch
             with get() = _map.GetBoolValue IncrementalSearchName
             and set value = _map.TrySetValue IncrementalSearchName (SettingValue.Toggle value) |> ignore
-        member x.IsAutoCommandEnabled = x.IsAutoCommandEnabled
         member x.IsSelectionInclusive = x.SelectionKind = SelectionKind.Inclusive
         member x.IsSelectionPastLine = 
             match _map.GetStringValue SelectionName with
@@ -350,9 +336,6 @@ type internal GlobalSettings() =
         member x.Magic
             with get() = _map.GetBoolValue MagicName
             and set value = _map.TrySetValue MagicName (SettingValue.Toggle value) |> ignore
-        member x.MaxMapCount
-            with get() = _map.GetNumberValue MaxMapCount
-            and set value = _map.TrySetValue MaxMapCount (SettingValue.Number value) |> ignore
         member x.MaxMapDepth
             with get() = _map.GetNumberValue MaxMapDepth
             and set value = _map.TrySetValue MaxMapDepth (SettingValue.Number value) |> ignore
@@ -409,12 +392,6 @@ type internal GlobalSettings() =
         member x.TimeoutLengthEx
             with get() = _map.GetNumberValue TimeoutLengthExName
             and set value = _map.TrySetValue TimeoutLengthExName (SettingValue.Number value) |> ignore
-        member x.UseEditorDefaults
-            with get() = _map.GetBoolValue UseEditorDefaultsName
-            and set value = _map.TrySetValue UseEditorDefaultsName (SettingValue.Toggle value) |> ignore
-        member x.UseEditorIndent
-            with get() = _map.GetBoolValue UseEditorIndentName
-            and set value = _map.TrySetValue UseEditorIndentName (SettingValue.Toggle value) |> ignore
         member x.VimRc 
             with get() = _map.GetStringValue VimRcName
             and set value = _map.TrySetValue VimRcName (SettingValue.String value) |> ignore
@@ -620,11 +597,15 @@ type internal EditorToSettingSynchronizer
     let _syncronizingSet = System.Collections.Generic.HashSet<IVimLocalSettings>()
     let _key = obj()
 
-    member x.StartSynchronizing (vimBuffer : IVimBuffer) = 
+    member x.StartSynchronizing (vimBuffer : IVimBuffer) settingSyncSource = 
         let properties = vimBuffer.TextView.Properties
         if not (properties.ContainsProperty _key) then
             properties.AddProperty(_key, _key)
             x.SetupSynchronization vimBuffer
+
+            match settingSyncSource with
+            | SettingSyncSource.Editor -> x.CopyEditorToVimSettings vimBuffer
+            | SettingSyncSource.Vim -> x.CopyVimToEditorSettings vimBuffer
 
     member x.SetupSynchronization (vimBuffer : IVimBuffer) = 
         let editorOptions = vimBuffer.TextView.Options
@@ -764,6 +745,4 @@ type internal EditorToSettingSynchronizer
             | Some show -> windowSettings.CursorLine <- show)
 
     interface IEditorToSettingsSynchronizer with
-        member x.StartSynchronizing vimBuffer = x.StartSynchronizing vimBuffer
-        member x.CopyEditorToVimSettings vimBuffer = x.CopyEditorToVimSettings vimBuffer
-        member x.CopyVimToEditorSettings vimBuffer = x.CopyVimToEditorSettings vimBuffer
+        member x.StartSynchronizing vimBuffer settingSyncSource = x.StartSynchronizing vimBuffer settingSyncSource

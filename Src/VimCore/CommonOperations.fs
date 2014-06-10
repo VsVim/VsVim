@@ -63,8 +63,7 @@ type internal CommonOperations
     (
         _vimBufferData : IVimBufferData,
         _editorOperations : IEditorOperations,
-        _outliningManager : IOutliningManager option,
-        _smartIndentationService : ISmartIndentationService
+        _outliningManager : IOutliningManager option
     ) =
 
     let _vimTextBuffer = _vimBufferData.VimTextBuffer
@@ -608,29 +607,13 @@ type internal CommonOperations
     /// Move the caret to the proper indentation on a newly created line.  The context line 
     /// is provided to calculate an indentation off of
     member x.GetNewLineIndent  (contextLine : ITextSnapshotLine) (newLine : ITextSnapshotLine) =
-        let doAutoIndent() = contextLine |> SnapshotLineUtil.GetIndentPoint |> SnapshotPointUtil.GetColumn |> Some
-
-        let doVimIndent() = 
+        match _vimHost.GetNewLineIndent _textView contextLine newLine with
+        | Some indent -> Some indent
+        | None ->
             if _localSettings.AutoIndent then
-                doAutoIndent()
+                EditUtil.GetAutoIndent contextLine |> Some
             else
                 None
-
-        if _localSettings.GlobalSettings.UseEditorIndent then
-            let indent = _smartIndentationService.GetDesiredIndentation(_textView, newLine)
-            if indent.HasValue then 
-                indent.Value |> Some
-            else
-                // If the user wanted editor indentation but the editor doesn't support indentation
-                // even though it proffers an indentation service then fall back to what auto
-                // indent would do if it were enabled (don't care if it actually is)
-                //
-                // Several editors like XAML offer the indentation service but don't actually 
-                // provide information.  User clearly wants indent there since the editor indent
-                // is enabled.  Do a best effort and us Vim style indenting
-                doAutoIndent()
-        else 
-            doVimIndent()
 
     /// Get the standard ReplaceData for the given SnapshotPoint in the ITextBuffer
     member x.GetReplaceData point = 
@@ -1309,8 +1292,7 @@ type CommonOperationsFactory
     (
         _editorOperationsFactoryService : IEditorOperationsFactoryService,
         _outliningManagerService : IOutliningManagerService,
-        _undoManagerProvider : ITextBufferUndoManagerProvider,
-        _smartIndentationService : ISmartIndentationService
+        _undoManagerProvider : ITextBufferUndoManagerProvider
     ) = 
 
     /// Use an object instance as a key.  Makes it harder for components to ignore this
@@ -1328,7 +1310,7 @@ type CommonOperationsFactory
             let ret = _outliningManagerService.GetOutliningManager(textView)
             if ret = null then None else Some ret
 
-        CommonOperations(vimBufferData, editorOperations, outlining, _smartIndentationService) :> ICommonOperations
+        CommonOperations(vimBufferData, editorOperations, outlining) :> ICommonOperations
 
     /// Get or create the ICommonOperations for the given buffer
     member x.GetCommonOperations (bufferData : IVimBufferData) = 

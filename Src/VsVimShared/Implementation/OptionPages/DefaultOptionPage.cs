@@ -12,11 +12,14 @@ using Microsoft.VisualStudio;
 using Vim.UI.Wpf;
 using Microsoft.VisualStudio.TextManager.Interop;
 using System.Collections.ObjectModel;
+using System.Globalization;
 
 namespace VsVim.Implementation.OptionPages
 {
     public sealed class DefaultOptionPage : DialogPage
     {
+        #region ColorKey 
+
         private struct ColorKey
         {
             internal readonly string Name;
@@ -39,6 +42,10 @@ namespace VsVim.Implementation.OptionPages
             }
         }
 
+        #endregion
+
+        #region ColorInfo
+
         private sealed class ColorInfo
         {
             internal readonly ColorKey ColorKey;
@@ -55,8 +62,95 @@ namespace VsVim.Implementation.OptionPages
             }
         }
 
+        #endregion
+
+        #region EnumMapConverter
+
+        public abstract class EnumMapConverter<T> : EnumConverter
+        {
+            private readonly Dictionary<T, string> _map;
+            private readonly Dictionary<string, T> _reverseMap;
+
+            public EnumMapConverter() : base(typeof(T))
+            {
+                Contract.Assert(typeof(T).IsEnum);
+                _map = CreateMap();
+                _reverseMap = _map.ToDictionary(pair => pair.Value, pair => pair.Key);
+            }
+
+            public abstract Dictionary<T, string> CreateMap();
+
+            public override bool CanConvertTo(ITypeDescriptorContext context, Type destinationType)
+            {
+                return destinationType == typeof(string);
+            }
+
+            public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
+            {
+                if (!(value is T) || destinationType != typeof(string))
+                {
+                    return null;
+                }
+
+                string convertedValue;
+                if (_map.TryGetValue((T)value, out convertedValue))
+                {
+                    return convertedValue;
+                }
+
+                return null;
+            }
+
+            public override bool CanConvertFrom(ITypeDescriptorContext context, Type sourceType)
+            {
+               return sourceType == typeof(string);
+            }
+
+            public override object ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, object value)
+            {
+                var str = value as string;
+                T convertedValue;
+                if (_reverseMap.TryGetValue(str, out convertedValue))
+                {
+                    return convertedValue;
+                }
+
+                return null;
+            }
+
+            public override bool GetStandardValuesSupported(ITypeDescriptorContext context)
+            {
+                return true;
+            }
+
+            public override StandardValuesCollection GetStandardValues(ITypeDescriptorContext context)
+            {
+                return new StandardValuesCollection(_map.Keys);
+            }
+        }
+
+        #endregion
+
+        #region VimRcLoadSettingConverter
+
+        public sealed class VimRcLoadSettingConverter : EnumMapConverter<VimRcLoadSetting>
+        {
+            public override Dictionary<VimRcLoadSetting, string> CreateMap()
+            {
+                var map = new Dictionary<VimRcLoadSetting, string>();
+                map.Add(VimRcLoadSetting.None, "No vsvimrc or vimrc files");
+                map.Add(VimRcLoadSetting.VsVimRc,"vsvimrc files only");
+                map.Add(VimRcLoadSetting.VimRc, "vimrc files only");
+                map.Add(VimRcLoadSetting.Both,"vsvimrc or vimrc files");
+                return map;
+            }
+        }
+
+        #endregion
+
         private const string CategoryGeneral = "General";
         private const string CategoryColors = "Item Colors";
+        private const string CategoryEditing = "Vim Edit Behavior";
 
         private static readonly ColorKey IncrementalSearchColorKey = ColorKey.Background(VimConstants.IncrementalSearchTagName);
         private static readonly ColorKey HighlightIncrementalSearchColorKey = ColorKey.Background(VimConstants.HighlightIncrementalSearchTagName);
@@ -83,10 +177,36 @@ namespace VsVim.Implementation.OptionPages
         [Category(CategoryGeneral)]
         public DefaultSettings DefaultSettings { get; set; }
 
+        [DisplayName("Display Control Characters")]
+        [Description("Whether or not control characters will display as they do in gVim.  For example should (char)29 display as an invisible character or ^]")]
+        [Category(CategoryGeneral)]
+        public bool DisplayControlCharacters { get; set; }
+
         [DisplayName("Rename and Snippet Tracking")]
         [Description("Integrate with R# renames, snippet insertion, etc ... Disabling will cause R# integration issues")]
         [Category(CategoryGeneral)]
         public bool EnableExternalEditMonitoring { get; set; }
+
+        [DisplayName("Use Visual Studio Tab / Backspace")]
+        [Description("When false tab and backspace keys in insert mode will use vim rules.  This will take into account settings like 'softtabstop', 'tabstop', 'backspace', etc ...")]
+        [Category(CategoryEditing)]
+        public bool UseEditorTabAndBackspace { get; set; }
+
+        [DisplayName("Use Visual Studio Indent")]
+        [Description("Use Visual Studio indentation for new lines instead of strict 'autoindent' rules")]
+        [Category(CategoryEditing)]
+        public bool UseEditorIndent { get; set; }
+
+        [DisplayName("Use Visual Studio Tab Size / Spaces")]
+        [Description("Use Visual Studio values to initialize 'tabsize' and 'expandtab'.  This will override values specified in a vsvimrc file")]
+        [Category(CategoryEditing)]
+        public bool UseEditorDefaults { get; set; }
+
+        [DisplayName("VimRc File Loading")]
+        [Description("Controls how VsVim probes for vsvim / vimrc files")]
+        [Category(CategoryGeneral)]
+        [TypeConverter(typeof(VimRcLoadSettingConverter))]
+        public VimRcLoadSetting VimRcLoadSetting { get; set; }
 
         [DisplayName("Block Caret")]
         [Category(CategoryColors)]
@@ -137,6 +257,11 @@ namespace VsVim.Implementation.OptionPages
             {
                 DefaultSettings = vimApplicationSettings.DefaultSettings;
                 EnableExternalEditMonitoring = vimApplicationSettings.EnableExternalEditMonitoring;
+                UseEditorDefaults = vimApplicationSettings.UseEditorDefaults;
+                UseEditorIndent = vimApplicationSettings.UseEditorIndent;
+                UseEditorTabAndBackspace = vimApplicationSettings.UseEditorTabAndBackspace;
+                VimRcLoadSetting = vimApplicationSettings.VimRcLoadSetting;
+                DisplayControlCharacters = vimApplicationSettings.DisplayControlChars;
             }
 
             LoadColors();
@@ -151,9 +276,15 @@ namespace VsVim.Implementation.OptionPages
             {
                 vimApplicationSettings.DefaultSettings = DefaultSettings;
                 vimApplicationSettings.EnableExternalEditMonitoring = EnableExternalEditMonitoring;
+                vimApplicationSettings.UseEditorDefaults = UseEditorDefaults;
+                vimApplicationSettings.UseEditorIndent = UseEditorIndent;
+                vimApplicationSettings.UseEditorTabAndBackspace = UseEditorTabAndBackspace;
+                vimApplicationSettings.VimRcLoadSetting = VimRcLoadSetting;
+                vimApplicationSettings.DisplayControlChars = DisplayControlCharacters;
             }
 
             SaveColors();
+            SaveDisplayControlChars();
         }
 
         private IVimApplicationSettings GetVimApplicationSettings()
@@ -165,6 +296,18 @@ namespace VsVim.Implementation.OptionPages
 
             var componentModel = (IComponentModel)(Site.GetService(typeof(SComponentModel)));
             return componentModel.DefaultExportProvider.GetExportedValue<IVimApplicationSettings>();
+        }
+
+        private void SaveDisplayControlChars()
+        {
+            if (Site == null)
+            {
+                return;
+            }
+
+            var componentModel = (IComponentModel)(Site.GetService(typeof(SComponentModel)));
+            var controlCharUtil = componentModel.DefaultExportProvider.GetExportedValue<IControlCharUtil>();
+            controlCharUtil.DisplayControlChars = DisplayControlCharacters;
         }
 
         private Color GetColor(ColorKey colorKey)

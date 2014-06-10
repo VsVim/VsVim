@@ -171,23 +171,6 @@ namespace VsVim.UnitTest
             }
         }
 
-        [Export(typeof(ILegacySettings))]
-        private sealed class LegacySettings : ILegacySettings
-        {
-            public bool HaveUpdatedKeyBindings { get; set; }
-            public bool IgnoredConflictingKeyBinding { get; set; }
-            public ReadOnlyCollection<CommandBindingSetting> RemovedBindings
-            {
-                get { return new ReadOnlyCollection<CommandBindingSetting>(new CommandBindingSetting[] { }); }
-                set { }
-            }
-
-            public void Save()
-            {
-
-            }
-        }
-
         #endregion
 
         #region FactDebugOnly
@@ -275,7 +258,6 @@ namespace VsVim.UnitTest
             composablePartCatalogList.Add(new TypeCatalog(
                 typeof(VsVim.UnitTest.MemoryLeakTest.ServiceProvider),
                 typeof(VsVim.UnitTest.MemoryLeakTest.VsEditorAdaptersFactoryService),
-                typeof(VsVim.UnitTest.MemoryLeakTest.LegacySettings),
                 typeof(VimErrorDetector)));
         }
 

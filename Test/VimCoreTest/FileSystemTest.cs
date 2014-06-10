@@ -26,7 +26,7 @@ namespace Vim.UnitTest
             RecordAndClearVariable("HOMEPATH");
 
             // Clear variables used while processing candidate directories
-            var names = _fileSystem.VimRcDirectoryCandidates
+            var names = FileSystem.VimRcDirectoryCandidates
                 .Where(candidate => candidate.StartsWith("$"))
                 .Select(candidate => candidate.Substring(1));
             foreach (var name in names)
@@ -111,7 +111,7 @@ namespace Vim.UnitTest
             public void GetVimRcFilePaths1()
             {
                 Environment.SetEnvironmentVariable("HOME", @"c:\temp");
-                var list = _fileSystem.GetVimRcFilePaths().ToList();
+                var list = _fileSystemRaw.GetVimRcFilePaths().Select(x => x.FilePath).ToList();
                 Assert.Equal(@"c:\temp\.vsvimrc", list[0]);
                 Assert.Equal(@"c:\temp\_vsvimrc", list[1]);
                 Assert.Equal(@"c:\temp\.vimrc", list[2]);
@@ -126,7 +126,7 @@ namespace Vim.UnitTest
             public void GetVimRcFilePaths_MyVimRc()
             {
                 Environment.SetEnvironmentVariable("MYVIMRC", @"c:\temp\.vimrc");
-                var filePath = _fileSystem.GetVimRcFilePaths().First();
+                var filePath = _fileSystemRaw.GetVimRcFilePaths().Select(x => x.FilePath).First();
                 Assert.Equal(@"c:\temp\.vimrc", filePath);
                 Environment.SetEnvironmentVariable("MYVIMRC", null);
             }
@@ -137,7 +137,7 @@ namespace Vim.UnitTest
                 Environment.SetEnvironmentVariable("HOMEDRIVE", "c:");
                 Environment.SetEnvironmentVariable("HOMEPATH", "\\temp");
                 Environment.SetEnvironmentVariable("USERPROFILE", "c:\\Users");
-                var list = _fileSystem.GetVimRcFilePaths().ToList();
+                var list = _fileSystemRaw.GetVimRcFilePaths().Select(x => x.FilePath).ToList();
                 Assert.Equal(@"c:\temp\.vsvimrc", list[0]);
                 Assert.Equal(@"c:\temp\_vsvimrc", list[1]);
                 Assert.Equal(@"c:\temp\.vimrc", list[2]);

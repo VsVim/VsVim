@@ -18,6 +18,7 @@ namespace Vim.UnitTest.Mock
 #pragma warning restore 67
 
         public bool AutoSynchronizeSettings { get; set; }
+        public bool IsAutoCommandEnabled { get; set; }
         public DefaultSettings DefaultSettings { get; set; }
         public int BeepCount { get; set; }
         public int GoToDefinitionCount { get; set; }
@@ -42,6 +43,7 @@ namespace Vim.UnitTest.Mock
         public ITextBuffer LastSaved { get; set; }
         public ITextView LastClosed { get; set; }
         public bool ShouldCreateVimBufferImpl { get; set; }
+        public bool ShouldIncludeRcFile { get; set; }
         public VimRcState VimRcState { get; private set; }
         public int TabCount { get; set; }
         public IFontProperties FontProperties { get; set; }
@@ -68,6 +70,7 @@ namespace Vim.UnitTest.Mock
         public void Clear()
         {
             AutoSynchronizeSettings = true;
+            IsAutoCommandEnabled = true;
             DefaultSettings = DefaultSettings.GVim74;
             GoToDefinitionReturn = true;
             IsCompletionWindowActive = false;
@@ -89,6 +92,7 @@ namespace Vim.UnitTest.Mock
             LastClosed = null;
             LastSaved = null;
             ShouldCreateVimBufferImpl = false;
+            ShouldIncludeRcFile = true;
         }
 
         void IVimHost.Beep()
@@ -155,6 +159,11 @@ namespace Vim.UnitTest.Mock
         HostResult IVimHost.MoveFocus(ITextView textView, Direction direction)
         {
             throw new NotImplementedException();
+        }
+
+        FSharpOption<int> IVimHost.GetNewLineIndent(ITextView textView, ITextSnapshotLine contextLine, ITextSnapshotLine newLine)
+        {
+            return FSharpOption<int>.None;
         }
 
         bool IVimHost.GoToGlobalDeclaration(ITextView value, string target)
@@ -294,10 +303,20 @@ namespace Vim.UnitTest.Mock
             return ShouldCreateVimBufferImpl;
         }
 
+        bool IVimHost.ShouldIncludeRcFile(VimRcPath vimRcPath)
+        {
+            return ShouldIncludeRcFile;
+        }
+
         bool IVimHost.GoToQuickFix(QuickFix quickFix, int count, bool hasBang)
         {
             RunQuickFixFunc(quickFix, count, hasBang);
             return false;
+        }
+
+        void IVimHost.VimGlobalSettingsCreated(IVimGlobalSettings globalSettings)
+        {
+
         }
 
         void IVimHost.VimRcLoaded(VimRcState vimRcState, IVimLocalSettings localSettings, IVimWindowSettings windowSettings)

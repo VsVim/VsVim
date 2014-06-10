@@ -20,18 +20,19 @@ namespace VsVim.UnitTest
 {
     public abstract class VsCommandTargetTest : VimTestBase
     {
-        protected readonly MockRepository _factory;
-        protected readonly IVimBuffer _vimBuffer;
-        protected readonly IVim _vim;
-        protected readonly ITextBuffer _textBuffer;
-        protected readonly ITextView _textView;
-        protected readonly Mock<IVsAdapter> _vsAdapter;
-        protected readonly Mock<IOleCommandTarget> _nextTarget;
-        protected readonly Mock<IDisplayWindowBroker> _broker;
-        protected readonly Mock<ITextManager> _textManager;
-        protected readonly IOleCommandTarget _target;
-        internal readonly VsCommandTarget _targetRaw;
-        internal readonly IVimBufferCoordinator _bufferCoordinator;
+        private readonly MockRepository _factory;
+        private readonly IVimBuffer _vimBuffer;
+        private readonly IVim _vim;
+        private readonly ITextBuffer _textBuffer;
+        private readonly ITextView _textView;
+        private readonly Mock<IVsAdapter> _vsAdapter;
+        private readonly Mock<IOleCommandTarget> _nextTarget;
+        private readonly Mock<IDisplayWindowBroker> _broker;
+        private readonly Mock<ITextManager> _textManager;
+        private readonly Mock<IVimApplicationSettings> _vimApplicationSettings;
+        private readonly IOleCommandTarget _target;
+        private readonly VsCommandTarget _targetRaw;
+        private readonly IVimBufferCoordinator _bufferCoordinator;
 
         protected VsCommandTargetTest(bool isReSharperInstalled)
         {
@@ -51,6 +52,7 @@ namespace VsVim.UnitTest
 
             _broker = _factory.Create<IDisplayWindowBroker>(MockBehavior.Loose);
             _textManager = _factory.Create<ITextManager>();
+            _vimApplicationSettings = _factory.Create<IVimApplicationSettings>();
 
             var commandTargets = new List<ICommandTarget>();
             if (isReSharperInstalled)
@@ -66,6 +68,7 @@ namespace VsVim.UnitTest
                 _vsAdapter.Object,
                 _broker.Object,
                 KeyUtil,
+                _vimApplicationSettings.Object,
                 _nextTarget.Object,
                 commandTargets.ToReadOnlyCollectionShallow());
             _target = _targetRaw;
@@ -165,13 +168,14 @@ namespace VsVim.UnitTest
             public TryCustomProcessTest()
                 :base(isReSharperInstalled: false)
             {
-
+                _vimBuffer.LocalSettings.SoftTabStop = 4;
             }
 
             [Fact]
             public void BackNoSoftTabStop()
             {
                 _nextTarget.SetupExecOne().Verifiable();
+                _vimApplicationSettings.SetupGet(x => x.UseEditorTabAndBackspace).Returns(true);
                 Assert.True(_targetRaw.TryCustomProcess(InsertCommand.Back));
                 _factory.Verify();
             }
@@ -182,13 +186,14 @@ namespace VsVim.UnitTest
             [Fact]
             public void BackSoftTabStop()
             {
-                _vimBuffer.LocalSettings.SoftTabStop = 4;
+                _vimApplicationSettings.SetupGet(x => x.UseEditorTabAndBackspace).Returns(false);
                 Assert.False(_targetRaw.TryCustomProcess(InsertCommand.Back));
             }
 
             [Fact]
             public void TabNoSoftTabStop()
             {
+                _vimApplicationSettings.SetupGet(x => x.UseEditorTabAndBackspace).Returns(true);
                 _nextTarget.SetupExecOne().Verifiable();
                 Assert.True(_targetRaw.TryCustomProcess(InsertCommand.InsertTab));
                 _factory.Verify();
@@ -200,6 +205,7 @@ namespace VsVim.UnitTest
             [Fact]
             public void TabSoftTabStop()
             {
+                _vimApplicationSettings.SetupGet(x => x.UseEditorTabAndBackspace).Returns(false);
                 _vimBuffer.LocalSettings.SoftTabStop = 4;
                 Assert.False(_targetRaw.TryCustomProcess(InsertCommand.InsertTab));
             }

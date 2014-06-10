@@ -51,6 +51,11 @@ namespace Vim.UI.Wpf
             get;
         }
 
+        public virtual bool IsAutoCommandEnabled
+        {
+            get { return true; }
+        }
+
         public abstract IFontProperties FontProperties
         {
             get;
@@ -58,7 +63,7 @@ namespace Vim.UI.Wpf
 
         public virtual DefaultSettings DefaultSettings
         {
-            get { return DefaultSettings.GVim74; }
+            get { return DefaultSettings.GVim73; }
         }
 
         protected VimHost(
@@ -127,6 +132,11 @@ namespace Vim.UI.Wpf
         }
 
         public abstract void FormatLines(ITextView textView, SnapshotLineRange range);
+
+        public virtual FSharpOption<int> GetNewLineIndent(ITextView textView, ITextSnapshotLine contextLine, ITextSnapshotLine newLine)
+        {
+            return FSharpOption<int>.None;
+        }
 
         public abstract string GetName(ITextBuffer value);
 
@@ -281,6 +291,14 @@ namespace Vim.UI.Wpf
             return true;
         }
 
+        /// <summary>
+        /// By default the host will only load vsvimrc files
+        /// </summary>
+        public virtual bool ShouldIncludeRcFile(VimRcPath vimRcPath)
+        {
+            return vimRcPath.VimRcKind == VimRcKind.VsVimRc;
+        }
+
         public virtual bool SaveTextAs(string text, string filePath)
         {
             try
@@ -297,6 +315,11 @@ namespace Vim.UI.Wpf
         public abstract HostResult SplitViewHorizontally(ITextView value);
 
         public abstract HostResult SplitViewVertically(ITextView value);
+
+        public virtual void VimGlobalSettingsCreated(IVimGlobalSettings globalSettings)
+        {
+
+        }
 
         public virtual void VimRcLoaded(VimRcState vimRcState, IVimLocalSettings localSettings, IVimWindowSettings windowSettings)
         {
@@ -438,6 +461,11 @@ namespace Vim.UI.Wpf
             get { return AutoSynchronizeSettings; }
         }
 
+        bool IVimHost.IsAutoCommandEnabled
+        {
+            get { return IsAutoCommandEnabled; }
+        }
+
         DefaultSettings IVimHost.DefaultSettings
         {
             get { return DefaultSettings; }
@@ -476,6 +504,11 @@ namespace Vim.UI.Wpf
         void IVimHost.FormatLines(ITextView textView, SnapshotLineRange range)
         {
             FormatLines(textView, range);
+        }
+
+        FSharpOption<int> IVimHost.GetNewLineIndent(ITextView textView, ITextSnapshotLine contextLine, ITextSnapshotLine newLine)
+        {
+            return GetNewLineIndent(textView, contextLine, newLine);
         }
 
         FSharpOption<ITextView> IVimHost.GetFocusedTextView()
@@ -591,6 +624,11 @@ namespace Vim.UI.Wpf
             return ShouldCreateVimBuffer(textView);
         }
 
+        bool IVimHost.ShouldIncludeRcFile(VimRcPath vimRcPath)
+        {
+            return ShouldIncludeRcFile(vimRcPath);
+        }
+
         HostResult IVimHost.SplitViewHorizontally(ITextView value)
         {
             return SplitViewHorizontally(value);
@@ -614,6 +652,11 @@ namespace Vim.UI.Wpf
         bool IVimHost.IsFocused(ITextView textView)
         {
             return IsFocused(textView);
+        }
+
+        void IVimHost.VimGlobalSettingsCreated(IVimGlobalSettings globalSettings)
+        {
+            VimGlobalSettingsCreated(globalSettings);
         }
 
         void IVimHost.VimRcLoaded(VimRcState vimRcState, IVimLocalSettings localSettings, IVimWindowSettings windowSettings)
