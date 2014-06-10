@@ -36,7 +36,7 @@
   <PropertyGroup Condition=" '$(VisualStudioVersion)' == '12.0' ">
     <MinimumVisualStudioVersion>12.0</MinimumVisualStudioVersion>
   </PropertyGroup>
-  <!-- This is needed to prevent forced migrations when opening the project in Vs2013 + 1 -->
+  <!-- This is needed to prevent forced migrations when opening the project in Vs2014 -->
   <PropertyGroup Condition=" '$(VisualStudioVersion)' == '14.0' ">
     <MinimumVisualStudioVersion>14.0</MinimumVisualStudioVersion>
   </PropertyGroup>
