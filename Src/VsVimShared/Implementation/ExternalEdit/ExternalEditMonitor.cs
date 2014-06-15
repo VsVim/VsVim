@@ -59,6 +59,14 @@ namespace Vim.VisualStudio.Implementation.ExternalEdit
             }
         }
 
+        /// <summary>
+        /// Does the monitor control the current usage of ExternalEdit mode? 
+        /// </summary>
+        internal bool ControlExternalEdit
+        {
+            get { return _controlExternalEdit; }
+        }
+
         internal ExternalEditMonitor(
             IVimApplicationSettings vimApplicationSettings,
             IVimBuffer buffer,

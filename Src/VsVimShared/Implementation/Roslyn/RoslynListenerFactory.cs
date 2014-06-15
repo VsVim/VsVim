@@ -16,7 +16,7 @@ namespace VsVim.Implementation.Roslyn
     [TextViewRole(PredefinedTextViewRoles.Editable)]
     internal sealed class RoslynListenerFactory : IVimBufferCreationListener
     {
-        private readonly IComponentModel _componentModel;
+        private readonly SVsServiceProvider _vsServiceProvider;
         private RoslynRenameUtil _roslynRenameUtil;
         private bool _hasQueriedRoslyn;
         private bool _inRename;
@@ -34,7 +34,7 @@ namespace VsVim.Implementation.Roslyn
         [ImportingConstructor]
         internal RoslynListenerFactory(SVsServiceProvider vsServiceProvider)
         {
-            _componentModel = vsServiceProvider.GetService<SComponentModel, IComponentModel>();
+            _vsServiceProvider = vsServiceProvider;
         }
 
         private void MaybeLoadRoslynRenameUtil()
@@ -45,7 +45,7 @@ namespace VsVim.Implementation.Roslyn
             }
 
             _hasQueriedRoslyn = true;
-            if (RoslynRenameUtil.TryCreate(_componentModel, out _roslynRenameUtil))
+            if (RoslynRenameUtil.TryCreate(_vsServiceProvider, out _roslynRenameUtil))
             {
                 _roslynRenameUtil.IsRenameActiveChanged += OnIsRenameActiveChanged;
             }

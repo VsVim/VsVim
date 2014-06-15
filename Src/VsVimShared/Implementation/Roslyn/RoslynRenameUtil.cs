@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using Microsoft.VisualStudio.Shell;
 
 namespace VsVim.Implementation.Roslyn
 {
@@ -45,11 +46,13 @@ namespace VsVim.Implementation.Roslyn
             }
         }
 
-        internal static bool TryCreate(IComponentModel componentModel, out RoslynRenameUtil roslynRenameUtil)
+        internal static bool TryCreate(SVsServiceProvider vsServiceProvider, out RoslynRenameUtil roslynRenameUtil)
         {
             try
             {
-                var inlineRenameService = componentModel.DefaultExportProvider.GetExportedValue<object>("Microsoft.CodeAnalysis.Editor.Implementation.InlineRename.InlineRenameService");
+                var componentModel = vsServiceProvider.GetService<SComponentModel, IComponentModel>();
+                var exportProvider = componentModel.DefaultExportProvider;
+                var inlineRenameService = exportProvider.GetExportedValue<object>("Microsoft.CodeAnalysis.Editor.Implementation.InlineRename.InlineRenameService");
                 var inlineRenameServiceType = inlineRenameService.GetType();
                 var activeSessionPropertyInfo = inlineRenameServiceType.GetProperty("ActiveSession", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
 
