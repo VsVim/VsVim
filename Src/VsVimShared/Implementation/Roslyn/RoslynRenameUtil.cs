@@ -9,7 +9,7 @@ using Microsoft.VisualStudio.Shell;
 
 namespace VsVim.Implementation.Roslyn
 {
-    internal sealed class RoslynRenameUtil
+    internal sealed class RoslynRenameUtil : IRoslynRenameUtil
     {
         private readonly object _inlineRenameService;
         private readonly PropertyInfo _activeSessionPropertyInfo;
@@ -46,7 +46,15 @@ namespace VsVim.Implementation.Roslyn
             }
         }
 
-        internal static bool TryCreate(SVsServiceProvider vsServiceProvider, out RoslynRenameUtil roslynRenameUtil)
+        internal static bool TryCreate(SVsServiceProvider vsServiceProvider, out IRoslynRenameUtil roslynRenameUtil)
+        {
+            RoslynRenameUtil util;
+            bool ret = TryCreateCore(vsServiceProvider, out util);
+            roslynRenameUtil = util;
+            return ret;
+        }
+
+        internal static bool TryCreateCore(SVsServiceProvider vsServiceProvider, out RoslynRenameUtil roslynRenameUtil)
         {
             try
             {
@@ -70,7 +78,7 @@ namespace VsVim.Implementation.Roslyn
                 addMethodInfo.Invoke(inlineRenameService, new[] { delegateInstance });
 
                 return true;
-            } 
+            }
             catch (Exception)
             {
                 // If type load fails that is not a problem.  It is expected to happen in cases where
@@ -79,5 +87,21 @@ namespace VsVim.Implementation.Roslyn
                 return false;
             }
         }
+
+        #region IRoslynRenameUtil
+
+        bool IRoslynRenameUtil.IsRenameActive
+        {
+            get { return IsRenameActive; }
+        }
+
+        event EventHandler IRoslynRenameUtil.IsRenameActiveChanged
+        {
+            add { IsRenameActiveChanged += value; }
+            remove { IsRenameActiveChanged -= value; }
+        }
+
+        #endregion
+
     }
 }

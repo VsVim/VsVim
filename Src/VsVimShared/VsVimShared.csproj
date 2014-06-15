@@ -127,6 +127,7 @@
     <Compile Include="Implementation\ReSharper\ReSharperTagDetector.cs" />
     <Compile Include="Implementation\ReSharper\ReSharperVersion.cs" />
     <Compile Include="Implementation\ReSharper\ResharperVersionutility.cs" />
+    <Compile Include="Implementation\Roslyn\IRoslynRenameUtil.cs" />
     <Compile Include="Implementation\Roslyn\RoslynListenerFactory.cs" />
     <Compile Include="Implementation\Roslyn\RoslynRenameUtil.cs" />
     <Compile Include="Implementation\Settings\SettingSerializer.cs" />

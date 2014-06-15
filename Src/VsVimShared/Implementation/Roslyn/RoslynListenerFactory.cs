@@ -16,38 +16,35 @@ namespace VsVim.Implementation.Roslyn
     [TextViewRole(PredefinedTextViewRoles.Editable)]
     internal sealed class RoslynListenerFactory : IVimBufferCreationListener
     {
-        private readonly SVsServiceProvider _vsServiceProvider;
-        private RoslynRenameUtil _roslynRenameUtil;
-        private bool _hasQueriedRoslyn;
+        private IRoslynRenameUtil _roslynRenameUtil;
         private bool _inRename;
         private List<IVimBuffer> _vimBufferList = new List<IVimBuffer>();
 
-        private bool IsRoslynAvailable
+        internal IRoslynRenameUtil RenameUtil
         {
-            get
+            get { return _roslynRenameUtil; }
+            set
             {
-                MaybeLoadRoslynRenameUtil();
-                return _roslynRenameUtil != null;
+                if (_roslynRenameUtil != null)
+                {
+                    _roslynRenameUtil.IsRenameActiveChanged -= OnIsRenameActiveChanged;
+                }
+
+                _roslynRenameUtil = value;
+                if (_roslynRenameUtil != null)
+                {
+                    _roslynRenameUtil.IsRenameActiveChanged += OnIsRenameActiveChanged;
+                }
             }
         }
 
         [ImportingConstructor]
         internal RoslynListenerFactory(SVsServiceProvider vsServiceProvider)
         {
-            _vsServiceProvider = vsServiceProvider;
-        }
-
-        private void MaybeLoadRoslynRenameUtil()
-        {
-            if (_hasQueriedRoslyn)
+            IRoslynRenameUtil renameUtil;
+            if (RoslynRenameUtil.TryCreate(vsServiceProvider, out renameUtil))
             {
-                return;
-            }
-
-            _hasQueriedRoslyn = true;
-            if (RoslynRenameUtil.TryCreate(_vsServiceProvider, out _roslynRenameUtil))
-            {
-                _roslynRenameUtil.IsRenameActiveChanged += OnIsRenameActiveChanged;
+                RenameUtil = renameUtil;
             }
         }
 
@@ -58,7 +55,10 @@ namespace VsVim.Implementation.Roslyn
                 _inRename = false;
                 foreach (var vimBuffer in _vimBufferList)
                 {
-                    vimBuffer.SwitchPreviousMode();
+                    if (vimBuffer.ModeKind == ModeKind.ExternalEdit)
+                    {
+                        vimBuffer.SwitchPreviousMode();
+                    }
                 }
             }
             else if (!_inRename && _roslynRenameUtil.IsRenameActive)
@@ -71,14 +71,24 @@ namespace VsVim.Implementation.Roslyn
             }
         }
 
-        void IVimBufferCreationListener.VimBufferCreated(IVimBuffer vimBuffer)
+        internal static bool IsRoslynContentType(IContentType contentType)
+        {
+            return contentType.IsCSharp();
+        }
+
+        internal void OnVimBufferCreated(IVimBuffer vimBuffer)
         {
             var contentType = vimBuffer.TextBuffer.ContentType;
-            if (contentType.IsCSharp() && IsRoslynAvailable)
+            if (IsRoslynContentType(contentType))
             {
                 _vimBufferList.Add(vimBuffer);
                 vimBuffer.Closed += delegate { _vimBufferList.Remove(vimBuffer); };
             }
+        }
+
+        void IVimBufferCreationListener.VimBufferCreated(IVimBuffer vimBuffer)
+        {
+            OnVimBufferCreated(vimBuffer);
         }
     }
 }
