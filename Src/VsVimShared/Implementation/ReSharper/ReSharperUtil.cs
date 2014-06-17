@@ -150,9 +150,8 @@ namespace VsVim.Implementation.ReSharper
             sawName = false;
             tagger = null;
 
-            foreach (var pair in TaggerProviders)
+            foreach (var provider in GetTaggerProvidersSafe())
             {
-                var provider = pair.Value;
                 var providerType = provider.GetType();
 
                 // First step is to check the name of the tagger.  The ReSharper taggers we care
@@ -194,9 +193,8 @@ namespace VsVim.Implementation.ReSharper
         /// </summary>
         private bool TryGetGeneralTagger(ITextBuffer textBuffer, out ITagger<ITag> tagger)
         {
-            foreach (var pair in TaggerProviders)
+            foreach (var provider in GetTaggerProvidersSafe())
             {
-                var provider = pair.Value;
                 var providerType = provider.GetType();
                 if (providerType.Name == ResharperTaggerProviderName &&
                     providerType.Assembly.FullName.StartsWith("JetBrains", StringComparison.OrdinalIgnoreCase))
@@ -212,6 +210,32 @@ namespace VsVim.Implementation.ReSharper
 
             tagger = null;
             return false;
+        }
+
+        /// <summary>
+        /// The Lazy(Of ITaggerProvider) value can throw on the Value property.  The call back 
+        /// is what invokes composition and that can fail.  Handle the exception here and ignore
+        /// the individual property
+        /// </summary>
+        private IEnumerable<ITaggerProvider> GetTaggerProvidersSafe()
+        {
+            foreach (var lazy in TaggerProviders)
+            {
+                ITaggerProvider taggerProvider = null;
+                try
+                {
+                    taggerProvider = lazy.Value;
+                }
+                catch
+                {
+                    // Ignore this lazy and move onto the next
+                }
+
+                if (taggerProvider != null)
+                {
+                    yield return taggerProvider;
+                }
+            }
         }
 
         private bool IsEditTag(ITag tag)
