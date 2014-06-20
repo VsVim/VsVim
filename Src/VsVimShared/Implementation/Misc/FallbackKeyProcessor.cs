@@ -1,4 +1,5 @@
 ﻿using EnvDTE;
+using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Text.Editor;
 using System;
 using System.Collections.Generic;
@@ -34,6 +35,7 @@ namespace VsVim.Implementation.Misc
         }
 
         private readonly _DTE _dte;
+        private readonly IVsShell _vsShell;
         private readonly IKeyUtil _keyUtil;
         private readonly IVimApplicationSettings _vimApplicationSettings;
         private readonly IVimBuffer _vimBuffer;
@@ -46,8 +48,9 @@ namespace VsVim.Implementation.Misc
         /// by not making use of it, the fallback processor can be reused for
         /// multiple text views
         /// </summary>
-        internal FallbackKeyProcessor(_DTE dte, IKeyUtil keyUtil, IVimApplicationSettings vimApplicationSettings, ITextView textView, IVimBuffer vimBuffer, ScopeData scopeData)
+        internal FallbackKeyProcessor(IVsShell vsShell, _DTE dte, IKeyUtil keyUtil, IVimApplicationSettings vimApplicationSettings, ITextView textView, IVimBuffer vimBuffer, ScopeData scopeData)
         {
+            _vsShell = vsShell;
             _dte = dte;
             _keyUtil = keyUtil;
             _vimApplicationSettings = vimApplicationSettings;
@@ -188,6 +191,14 @@ namespace VsVim.Implementation.Misc
             // If this processor is associated with a IVimBuffer then don't fall back to VS commands 
             // unless vim is currently disabled
             if (_vimBuffer != null && _vimBuffer.ModeKind != ModeKind.Disabled)
+            {
+                return false;
+            }
+
+            // When a modal dialog is active don't turn key strokes into commands.  This happens when
+            // the editor is hosted as a control in a modal window.  No command routing should 
+            // take place in this scenario
+            if (_vsShell.IsInModalState())
             {
                 return false;
             }
