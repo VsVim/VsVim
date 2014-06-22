@@ -300,8 +300,8 @@ type internal CommonOperations
                     None
                 elif caretLineNumber < (topLineNumber + _globalSettings.ScrollOffset) || caretLineNumber > (bottomLineNumber - _globalSettings.ScrollOffset) then
                     let lineNumber = caretLineNumber
-                    let lineNumber = max caretLineNumber (topLineNumber + _globalSettings.ScrollOffset)
-                    let lineNumber = min caretLineNumber (bottomLineNumber - _globalSettings.ScrollOffset)
+                    let lineNumber = max lineNumber (topLineNumber + _globalSettings.ScrollOffset)
+                    let lineNumber = min lineNumber (bottomLineNumber - _globalSettings.ScrollOffset)
                     Some lineNumber
                 else
                     None
@@ -323,10 +323,7 @@ type internal CommonOperations
                 | Some visualLineNumber -> 
                     let visualLine = visualSnapshot.GetLineFromLineNumber visualLineNumber
                     match BufferGraphUtil.MapPointDownToSnapshotStandard bufferGraph visualLine.Start editSnapshot with
-                    | Some editPoint -> 
-                        let span = SnapshotSpan(editPoint, 1)
-                        let motionResult = MotionResult.CreateEx span true MotionKind.CharacterWiseInclusive MotionResultFlags.MaintainCaretColumn
-                        x.MoveCaretToMotionResult motionResult
+                    | Some editPoint -> x.MoveCaretToLine (editPoint.GetContainingLine())
                     | None -> ()
                 | None -> ()
             | _ -> ()
@@ -335,7 +332,6 @@ type internal CommonOperations
             // As always when using ITextViewLines an exception can be thrown due to layout.  Simply catch
             // this exception and move on
             | _ -> ()
-
 
     /// Delete count lines from the cursor.  The caret should be positioned at the start
     /// of the first line for both undo / redo
@@ -546,6 +542,14 @@ type internal CommonOperations
             x.EnsurePointExpanded point
         TextViewUtil.MoveCaretToPoint _textView point
         x.EnsureAtPoint point viewFlags
+
+
+    /// Move the caret to the specified line maintaining it's current column
+    member x.MoveCaretToLine line = 
+        let spaces = SnapshotPointUtil.GetSpacesToPoint x.CaretPoint _localSettings.TabStop
+        let point = SnapshotLineUtil.GetSpaceOrEnd line spaces _localSettings.TabStop
+        TextViewUtil.MoveCaretToPoint _textView point
+        _maintainCaretColumn <- MaintainCaretColumn.Spaces spaces
 
     /// Move the caret to the position dictated by the given MotionResult value
     member x.MoveCaretToMotionResult (result : MotionResult) =

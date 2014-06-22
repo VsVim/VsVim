@@ -4411,6 +4411,11 @@ namespace Vim.UnitTest
 
             public sealed class WindowOnlyTest : ScrollWindowTest
             {
+                public WindowOnlyTest()
+                {
+                    _globalSettings.ScrollOffset = 0;
+                }
+
                 [Fact]
                 public void UpDoesNotMoveCaret()
                 {
