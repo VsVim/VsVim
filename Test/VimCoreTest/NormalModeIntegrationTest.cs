@@ -4411,6 +4411,11 @@ namespace Vim.UnitTest
 
             public sealed class WindowOnlyTest : ScrollWindowTest
             {
+                public WindowOnlyTest()
+                {
+                    _globalSettings.ScrollOffset = 0;
+                }
+
                 [Fact]
                 public void UpDoesNotMoveCaret()
                 {
@@ -4465,6 +4470,16 @@ namespace Vim.UnitTest
                     _textView.MoveCaretToLine(1);
                     _vimBuffer.ProcessNotation("<C-y>");
                     Assert.Equal(1, _textView.GetCaretLine().LineNumber);
+                }
+
+                [Fact]
+                public void Issue1637()
+                {
+                    _textBuffer.SetText("abcdefghi".Select(x => x.ToString()).ToArray());
+                    _globalSettings.ScrollOffset = 1;
+                    _vimBuffer.ProcessNotation("<C-e>");
+                    Assert.Equal("c", _textView.GetCaretLine().GetText());
+                    Assert.Equal(1, _textView.GetFirstVisibleLineNumber());
                 }
             }
         }
