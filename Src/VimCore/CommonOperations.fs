@@ -285,6 +285,58 @@ type internal CommonOperations
             // this exception and move on
             | _ -> ()
 
+    /// This is the same function as AdjustTextViewForScrollOffsetAtPoint except that it moves the caret 
+    /// not the view port.  Make the caret consistent with the setting not the display 
+    ///
+    /// Once again we are dealing with visual lines, not buffer lines
+    member x.AdjustCaretForScrollOffset () =
+        try
+
+            // This function will do the actual caret positioning based on the top visual and bottom
+            // visual line.  The return will be the position within the visual buffer, not the edit
+            // buffer 
+            let getLinePosition caretLineNumber topLineNumber bottomLineNumber =
+                if _globalSettings.ScrollOffset <= 0 || _globalSettings.ScrollOffset * 2 >= (bottomLineNumber - topLineNumber) then
+                    None
+                elif caretLineNumber < (topLineNumber + _globalSettings.ScrollOffset) || caretLineNumber > (bottomLineNumber - _globalSettings.ScrollOffset) then
+                    let lineNumber = caretLineNumber
+                    let lineNumber = max caretLineNumber (topLineNumber + _globalSettings.ScrollOffset)
+                    let lineNumber = min caretLineNumber (bottomLineNumber - _globalSettings.ScrollOffset)
+                    Some lineNumber
+                else
+                    None
+
+            let textViewLines = _textView.TextViewLines
+            let visualSnapshot = _textView.VisualSnapshot
+            let editSnapshot = _textView.TextSnapshot
+            let bufferGraph = _textView.BufferGraph
+            let topVisualPoint = BufferGraphUtil.MapPointUpToSnapshotStandard bufferGraph textViewLines.FirstVisibleLine.Start visualSnapshot 
+            let bottomVisualPoint = BufferGraphUtil.MapPointUpToSnapshotStandard bufferGraph textViewLines.LastVisibleLine.Start visualSnapshot
+            let caretVisualPoint = BufferGraphUtil.MapPointUpToSnapshotStandard bufferGraph x.CaretPoint visualSnapshot
+
+            match topVisualPoint, bottomVisualPoint, caretVisualPoint with
+            | Some topVisualPoint, Some bottomVisualPoint, Some caretVisualPoint ->
+                let topLineNumber = SnapshotPointUtil.GetLineNumber topVisualPoint
+                let bottomLineNumber = SnapshotPointUtil.GetLineNumber bottomVisualPoint
+                let caretLineNumber = SnapshotPointUtil.GetLineNumber caretVisualPoint
+                match getLinePosition caretLineNumber topLineNumber bottomLineNumber with
+                | Some visualLineNumber -> 
+                    let visualLine = visualSnapshot.GetLineFromLineNumber visualLineNumber
+                    match BufferGraphUtil.MapPointDownToSnapshotStandard bufferGraph visualLine.Start editSnapshot with
+                    | Some editPoint -> 
+                        let span = SnapshotSpan(editPoint, 1)
+                        let motionResult = MotionResult.CreateEx span true MotionKind.CharacterWiseInclusive MotionResultFlags.MaintainCaretColumn
+                        x.MoveCaretToMotionResult motionResult
+                    | None -> ()
+                | None -> ()
+            | _ -> ()
+
+        with 
+            // As always when using ITextViewLines an exception can be thrown due to layout.  Simply catch
+            // this exception and move on
+            | _ -> ()
+
+
     /// Delete count lines from the cursor.  The caret should be positioned at the start
     /// of the first line for both undo / redo
     member x.DeleteLines (startLine : ITextSnapshotLine) count register = 
@@ -1247,6 +1299,7 @@ type internal CommonOperations
         member x.EditorOperations = _editorOperations
         member x.EditorOptions = _editorOptions
 
+        member x.AdjustCaretForScrollOffset() = x.AdjustCaretForScrollOffset()
         member x.Beep() = x.Beep()
         member x.CreateRegisterValue point stringData operationKind = x.CreateRegisterValue point stringData operationKind
         member x.DeleteLines startLine count register = x.DeleteLines startLine count register

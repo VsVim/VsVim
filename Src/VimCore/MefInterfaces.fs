@@ -328,6 +328,8 @@ type ICommonOperations =
     /// Associated VimBufferData instance
     abstract VimBufferData : IVimBufferData
 
+    abstract AdjustCaretForScrollOffset : unit -> unit
+
     /// Create a possibly LineWise register value with the specified string value at the given 
     /// point.  This is factored out here because a LineWise value in vim should always
     /// end with a new line but we can't always guarantee the text we are working with 

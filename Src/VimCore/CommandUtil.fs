@@ -2540,6 +2540,7 @@ type internal CommandUtil
                 _commonOperations.MaintainCaretColumn <- MaintainCaretColumn.Spaces columnSpaces
 
             _textView.ViewScroller.ScrollViewportVerticallyByLines(direction, count)
+
             let textViewLines = _textView.TextViewLines
             match direction with
             | ScrollDirection.Up ->
@@ -2549,6 +2550,8 @@ type internal CommandUtil
                 if x.CaretPoint.Position < textViewLines.FirstVisibleLine.Start.Position then
                     updateCaret textViewLines.FirstVisibleLine
             | _ -> ()
+
+            _commonOperations.AdjustCaretForScrollOffset()
 
         with 
         // Dealing with ITextViewLines can lead to an exception (particularly during layout).  Need
