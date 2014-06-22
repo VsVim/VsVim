@@ -4471,6 +4471,16 @@ namespace Vim.UnitTest
                     _vimBuffer.ProcessNotation("<C-y>");
                     Assert.Equal(1, _textView.GetCaretLine().LineNumber);
                 }
+
+                [Fact]
+                public void Issue1637()
+                {
+                    _textBuffer.SetText("abcdefghi".Select(x => x.ToString()).ToArray());
+                    _globalSettings.ScrollOffset = 1;
+                    _vimBuffer.ProcessNotation("<C-e>");
+                    Assert.Equal("c", _textView.GetCaretLine().GetText());
+                    Assert.Equal(1, _textView.GetFirstVisibleLineNumber());
+                }
             }
         }
 
