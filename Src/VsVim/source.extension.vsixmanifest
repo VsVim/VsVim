@@ -1,10 +1,10 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Vsix xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" Version="1.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2010">
-  <Identifier Id="VsVim.Microsoft.e214908b-0458-4ae2-a583-4310f29687c3">
-    <Name>VsVim</Name>
+<Identifier Id="VsVim.Microsoft.f11130de-5466-4918-8d75-1af2afc14d1c">
+    <Name>VsVim for Dev14</Name>
     <Author>Jared Parsons</Author>
     <Version>1.6.0.3</Version>
-    <Description xml:space="preserve">VIM emulation layer for Visual Studio</Description>
+    <Description xml:space="preserve">VIM emulation layer for Visual Studio (Dev14)</Description>
     <Locale>1033</Locale>
     <MoreInfoUrl>http://blogs.msdn.com/b/jaredpar</MoreInfoUrl>
     <License>License.rtf</License>
@@ -12,32 +12,12 @@
     <Icon>VsVim_small.png</Icon>
     <PreviewImage>VsVim_large.png</PreviewImage>
     <SupportedProducts>
-      <VisualStudio Version="10.0">
-        <Edition>Ultimate</Edition>
-        <Edition>Premium</Edition>
-        <Edition>Pro</Edition>
-        <Edition>IntegratedShell</Edition>
-      </VisualStudio>
-      <VisualStudio Version="11.0">
-        <Edition>Ultimate</Edition>
-        <Edition>Premium</Edition>
-        <Edition>Pro</Edition>
-        <Edition>IntegratedShell</Edition>
-      </VisualStudio>
-      <VisualStudio Version="12.0">
-        <Edition>Ultimate</Edition>
-        <Edition>Premium</Edition>
-        <Edition>Pro</Edition>
-        <Edition>IntegratedShell</Edition>
-      </VisualStudio>
       <VisualStudio Version="14.0">
         <Edition>Ultimate</Edition>
         <Edition>Premium</Edition>
         <Edition>Pro</Edition>
         <Edition>IntegratedShell</Edition>
       </VisualStudio>
-      <IsolatedShell Version="6.0">AtmelStudio</IsolatedShell>
-      <IsolatedShell Version="6.1">AtmelStudio</IsolatedShell>
     </SupportedProducts>
     <SupportedFrameworkRuntimeEdition MinVersion="4.0" MaxVersion="5.0" />
   </Identifier>
