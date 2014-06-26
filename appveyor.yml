@@ -1,9 +1,4 @@
 
-# Branchs to build
-branches:
-  only:
-    - master    
-
 configuration: Debug
 
 build:
