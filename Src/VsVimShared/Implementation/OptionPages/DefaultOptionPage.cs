@@ -188,17 +188,17 @@ namespace VsVim.Implementation.OptionPages
         public bool EnableExternalEditMonitoring { get; set; }
 
         [DisplayName("Use Visual Studio Tab / Backspace")]
-        [Description("When false tab and backspace keys in insert mode will use vim rules.  This will take into account settings like 'softtabstop', 'tabstop', 'backspace', etc ...")]
+        [Description("Let Visual Studio control tab and backspace in insert mode.  This will cause VsVim to ignore settings like 'softtabstop', 'tabstop', 'backspace', etc ...")]
         [Category(CategoryEditing)]
         public bool UseEditorTabAndBackspace { get; set; }
 
         [DisplayName("Use Visual Studio Indent")]
-        [Description("Use Visual Studio indentation for new lines instead of strict 'autoindent' rules")]
+        [Description("Let Visual Studio control indentation for new lines instead of strict 'autoindent' rules")]
         [Category(CategoryEditing)]
         public bool UseEditorIndent { get; set; }
 
         [DisplayName("Use Visual Studio Tab Size / Spaces")]
-        [Description("Use Visual Studio values to initialize 'tabsize' and 'expandtab'.  This will override values specified in a vsvimrc file")]
+        [Description("Use Visual Studio values to initialize 'tabsize', 'expandtab', 'cursorline', etc ...  This will override values specified in a vsvimrc file")]
         [Category(CategoryEditing)]
         public bool UseEditorDefaults { get; set; }
 

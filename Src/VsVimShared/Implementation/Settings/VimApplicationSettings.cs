@@ -197,7 +197,7 @@ namespace VsVim.Implementation.Settings
 
         VimRcLoadSetting IVimApplicationSettings.VimRcLoadSetting
         {
-            get { return GetEnum(VimRcLoadSettingName, defaultValue: VimRcLoadSetting.VsVimRc); }
+            get { return GetEnum(VimRcLoadSettingName, defaultValue: VimRcLoadSetting.Both); }
             set { SetEnum(VimRcLoadSettingName, value); }
         }
 
