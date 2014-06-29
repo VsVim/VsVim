@@ -626,6 +626,14 @@ module internal CollectionExtensions =
         member x.EnqueueRange (col : 'T seq) = 
             col |> Seq.iter (fun item -> x.Enqueue(item))
 
+    type System.Collections.Generic.Dictionary<'TKey, 'TValue> with
+        member x.TryGetValueEx (key : 'TKey) = 
+            let found, value = x.TryGetValue key
+            if found then
+                Some value
+            else
+                None
+
 module internal NullableUtil = 
 
     let (|HasValue|Null|) (x : System.Nullable<_>) =
