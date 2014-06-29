@@ -46,13 +46,26 @@ type TextViewEventArgs(_textView : ITextView) =
 
     member x.TextView = _textView
 
+type VimRcKind =
+    | VimRc     = 0
+    | VsVimRc   = 1
+
+type VimRcPath = { 
+
+    /// Which type of file was loaded 
+    VimRcKind : VimRcKind 
+
+    /// Full path to the file which the contents were loaded from
+    FilePath : string
+}
+
 [<RequireQualifiedAccess>]
 type VimRcState =
     /// The VimRc file has not been processed at this point
     | None
 
     /// The load succeeded and the specified file was used 
-    | LoadSucceeded of string
+    | LoadSucceeded of VimRcPath
 
     /// The load failed 
     | LoadFailed
@@ -110,19 +123,6 @@ type IStatusUtilFactory =
 
     /// Get the IStatusUtil instance for the given ITextBuffer
     abstract GetStatusUtil : textBuffer : ITextBuffer -> IStatusUtil
-
-type VimRcKind =
-    | VimRc     = 0
-    | VsVimRc   = 1
-
-type VimRcPath = { 
-
-    /// Which type of file was loaded 
-    VimRcKind : VimRcKind 
-
-    /// Full path to the file which the contents were loaded from
-    FilePath : string
-}
 
 /// Abstracts away VsVim's interaction with the file system to facilitate testing
 type IFileSystem =

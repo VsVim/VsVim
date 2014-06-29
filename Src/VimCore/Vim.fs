@@ -609,7 +609,7 @@ type internal Vim
 
                         _vimRcLocalSettings <- LocalSettings.Copy vimBuffer.LocalSettings
                         _vimRcWindowSettings <- WindowSettings.Copy vimBuffer.WindowSettings
-                        _vimRcState <- VimRcState.LoadSucceeded vimRcPath.FilePath
+                        _vimRcState <- VimRcState.LoadSucceeded vimRcPath
                     finally
                         // Be careful not to leak the ITextView in the case of an exception
                         textView.Close()

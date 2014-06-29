@@ -130,7 +130,7 @@
     <Compile Include="Implementation\UpgradeNotification\LinkBanner.xaml.cs">
       <DependentUpon>LinkBanner.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Implementation\UpgradeNotification\BackspaceNotificationMarginProvider.cs" />
+    <Compile Include="Implementation\UpgradeNotification\VimRcLoadNotificationMarginProvider.cs" />
     <Compile Include="TextEditorFontProperties.cs" />
     <Compile Include="Implementation\VisualAssist\IVisualAssistUtil.cs" />
     <Compile Include="Implementation\VisualAssist\VisualAssistKeyProcessor.cs" />

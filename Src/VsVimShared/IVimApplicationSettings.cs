@@ -68,9 +68,9 @@ namespace VsVim
         bool HaveUpdatedKeyBindings { get; set; }
 
         /// <summary>
-        /// Have the settings for 'backspace' and 'whichwrap'
+        /// Have we notified the user about loading their vimrc file?
         /// </summary>
-        bool HaveNotifiedBackspaceSetting { get; set; }
+        bool HaveNotifiedVimRcLoad { get; set; }
 
         /// <summary>
         /// The conflicting key binding margin was ignored

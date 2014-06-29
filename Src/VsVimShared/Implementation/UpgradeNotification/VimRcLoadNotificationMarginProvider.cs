@@ -14,18 +14,18 @@ namespace VsVim.Implementation.UpgradeNotification
     [Export(typeof(IWpfTextViewMarginProvider))]
     [MarginContainer(PredefinedMarginNames.Top)]
     [ContentType(VimConstants.ContentType)]
-    [Name(BackspaceNotificationMarginProvider.Name)]
+    [Name(VimRcLoadNotificationMarginProvider.Name)]
     [TextViewRole(PredefinedTextViewRoles.Editable)]
-    internal sealed class BackspaceNotificationMarginProvider : IWpfTextViewMarginProvider
+    internal sealed class VimRcLoadNotificationMarginProvider : IWpfTextViewMarginProvider
     {
-        internal const string Name = "Backspace Notification Margin";
+        internal const string Name = "VimRc Load Notification Margin";
 
         private readonly IVim _vim;
         private readonly IVimApplicationSettings _vimApplicationSettings;
         private readonly IEditorFormatMapService _editorFormatMapService;
 
         [ImportingConstructor]
-        internal BackspaceNotificationMarginProvider(IVim vim, IVimApplicationSettings vimApplicationSettings, IEditorFormatMapService editorFormatMapService)
+        internal VimRcLoadNotificationMarginProvider(IVim vim, IVimApplicationSettings vimApplicationSettings, IEditorFormatMapService editorFormatMapService)
         {
             _vim = vim;
             _vimApplicationSettings = vimApplicationSettings;
@@ -35,13 +35,13 @@ namespace VsVim.Implementation.UpgradeNotification
         IWpfTextViewMargin IWpfTextViewMarginProvider.CreateMargin(IWpfTextViewHost wpfTextViewHost, IWpfTextViewMargin marginContainer)
         {
             // If the notification has occured then there is nothing else to do.  We are done
-            if (_vimApplicationSettings.HaveNotifiedBackspaceSetting)
+            if (_vimApplicationSettings.HaveNotifiedVimRcLoad)
             {
                 return null;
             }
 
-            // On the very first IVimBuffer creation the vimrc will be loaded.  Go ahead and 
-            // attempt to get / create the buffer to ensure the vimrc load has been attempted
+            // Only display the notification for ITextView instances which are bound to a 
+            // VsVim instance 
             var wpfTextView = wpfTextViewHost.TextView;
             IVimBuffer vimBuffer;
             if (!_vim.TryGetOrCreateVimBufferForHost(wpfTextView, out vimBuffer))
@@ -49,9 +49,13 @@ namespace VsVim.Implementation.UpgradeNotification
                 return null;
             }
 
-            // If there is no vimrc or the load does allow backspace over start then there 
-            // is no need to display the warning
-            if (_vim.GlobalSettings.IsBackspaceStart || _vimApplicationSettings.UseEditorTabAndBackspace)
+            if (!_vim.VimRcState.IsLoadSucceeded)
+            {
+                return null;
+            }
+
+            var vimRcPath = ((VimRcState.LoadSucceeded)_vim.VimRcState).Item;
+            if (vimRcPath.VimRcKind != VimRcKind.VimRc)
             {
                 return null;
             }
@@ -59,11 +63,11 @@ namespace VsVim.Implementation.UpgradeNotification
             var editorFormatMap = _editorFormatMapService.GetEditorFormatMap(wpfTextView);
             var linkBanner = new LinkBanner();
             linkBanner.MarginName = Name;
-            linkBanner.LinkAddress = "https://github.com/jaredpar/VsVim/wiki/FAQ#wiki-backspace";
+            linkBanner.LinkAddress = "https://github.com/jaredpar/VsVim/wiki/FAQ#wiki-vimrcload";
             linkBanner.LinkText = "FAQ";
-            linkBanner.BannerText = "You may want to change the backspace setting in your vimrc";
+            linkBanner.BannerText = "VsVim automatically loaded an existing _vimrc file";
             linkBanner.Background = editorFormatMap.GetBackgroundBrush(EditorFormatDefinitionNames.Margin, MarginFormatDefinition.DefaultColor);
-            linkBanner.CloseClicked += (sender, e) => { _vimApplicationSettings.HaveNotifiedBackspaceSetting = true; };
+            linkBanner.CloseClicked += (sender, e) => { _vimApplicationSettings.HaveNotifiedVimRcLoad = true; };
             return linkBanner;
         }
     }

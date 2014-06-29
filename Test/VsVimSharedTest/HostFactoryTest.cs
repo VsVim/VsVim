@@ -125,7 +125,7 @@ namespace VsVim.UnitTest
             public void TextViewOnlyUseVim()
             {
                 _vimApplicationSettings.SetupGet(x => x.UseEditorDefaults).Returns(false);
-                VimRcState = VimRcState.NewLoadSucceeded("test");
+                VimRcState = VimRcState.NewLoadSucceeded(new VimRcPath(VimRcKind.VimRc, "test"));
                 RaiseTextViewCreated(_textView);
 
                 _synchronizer.Setup(x => x.StartSynchronizing(_vimBuffer, SettingSyncSource.Vim)).Verifiable();
@@ -136,7 +136,7 @@ namespace VsVim.UnitTest
             [Fact]
             public void TextViewOnlyWithVimRcAndEditorDefaults()
             {
-                VimRcState = VimRcState.NewLoadSucceeded("test");
+                VimRcState = VimRcState.NewLoadSucceeded(new VimRcPath(VimRcKind.VimRc, "test"));
                 _vimApplicationSettings.SetupGet(x => x.UseEditorDefaults).Returns(true);
                 RaiseTextViewCreated(_textView);
 
@@ -181,7 +181,7 @@ namespace VsVim.UnitTest
             public void BothViewsUseVim()
             {
                 _vimApplicationSettings.SetupGet(x => x.UseEditorDefaults).Returns(false);
-                VimRcState = VimRcState.NewLoadSucceeded("test");
+                VimRcState = VimRcState.NewLoadSucceeded(new VimRcPath(VimRcKind.VimRc, "test"));
                 SetupVsTextView();
                 RaiseTextViewCreated(_textView);
                 RaiseVimBufferCreated(_vimBuffer);
@@ -196,7 +196,7 @@ namespace VsVim.UnitTest
             [Fact]
             public void BothViewsWithVimRcAndEditorDefaults()
             {
-                VimRcState = VimRcState.NewLoadSucceeded("test");
+                VimRcState = VimRcState.NewLoadSucceeded(new VimRcPath(VimRcKind.VimRc, "test"));
                 _vimApplicationSettings.SetupGet(x => x.UseEditorDefaults).Returns(true);
                 SetupVsTextView();
                 RaiseTextViewCreated(_textView);

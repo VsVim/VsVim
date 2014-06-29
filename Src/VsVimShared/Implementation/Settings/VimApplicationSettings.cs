@@ -25,7 +25,7 @@ namespace VsVim.Implementation.Settings
         internal const string EnableExternalEditMonitoringName = "EnableExternalEditMonitoring";
         internal const string VimRcLoadSettingName = "VimRcLoadSetting";
         internal const string HaveUpdatedKeyBindingsName = "HaveUpdatedKeyBindings";
-        internal const string HaveNotifiedBackspaceSettingName = "HaveNotifiedBackspaceSetting";
+        internal const string HaveNotifiedVimRcLoadName = "HaveNotifiedVimRcLoad";
         internal const string IgnoredConflictingKeyBindingName = "IgnoredConflictingKeyBinding";
         internal const string RemovedBindingsName = "RemovedBindings";
         internal const string KeyMappingIssueFixedName = "EnterDeletekeyMappingIssue";
@@ -237,10 +237,10 @@ namespace VsVim.Implementation.Settings
             set { SetBoolean(HaveUpdatedKeyBindingsName, value); }
         }
 
-        bool IVimApplicationSettings.HaveNotifiedBackspaceSetting
+        bool IVimApplicationSettings.HaveNotifiedVimRcLoad
         {
-            get { return GetBoolean(HaveNotifiedBackspaceSettingName, defaultValue: false); }
-            set { SetBoolean(HaveNotifiedBackspaceSettingName, value); }
+            get { return GetBoolean(HaveNotifiedVimRcLoadName, defaultValue: false); }
+            set { SetBoolean(HaveNotifiedVimRcLoadName, value); }
         }
 
         bool IVimApplicationSettings.IgnoredConflictingKeyBinding
