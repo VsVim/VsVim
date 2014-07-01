@@ -791,8 +791,11 @@ type internal MotionUtil
             inner
 
         let snapshot = SnapshotPointUtil.GetSnapshot contextPoint
+        let endPoint = if isChar endChar contextPoint then contextPoint 
+                       else SnapshotPointUtil.AddOneOrCurrent contextPoint
+
         let startPoint = 
-            SnapshotSpan(SnapshotPoint(snapshot, 0), SnapshotPointUtil.AddOneOrCurrent contextPoint)
+            SnapshotSpan(SnapshotPoint(snapshot, 0), endPoint)
             |> SnapshotSpanUtil.GetPoints Path.Backward
             |> SeqUtil.tryFind 1 (findMatched endChar startChar)
 
