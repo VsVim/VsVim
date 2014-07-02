@@ -13,6 +13,7 @@ using Vim.UI.Wpf;
 using Microsoft.VisualStudio.TextManager.Interop;
 using System.Collections.ObjectModel;
 using System.Globalization;
+using System.Collections;
 
 namespace VsVim.Implementation.OptionPages
 {
@@ -148,6 +149,22 @@ namespace VsVim.Implementation.OptionPages
 
         #endregion
 
+        #region WordWrapDisplaySettingConverter
+
+        public sealed class WordWrapDisplaySettingConverter : EnumMapConverter<WordWrapDisplay>
+        {
+            public override Dictionary<WordWrapDisplay, string> CreateMap()
+            {
+                var map = new Dictionary<WordWrapDisplay, string>();
+                map.Add(WordWrapDisplay.AutoIndent, "AutoIndent");
+                map.Add(WordWrapDisplay.Glyph, "Glpyh");
+                map.Add(WordWrapDisplay.All, "AutoIndent + Glpyh");
+               return map;
+            }
+        }
+
+        #endregion
+
         private const string CategoryGeneral = "General";
         private const string CategoryColors = "Item Colors";
         private const string CategoryEditing = "Vim Edit Behavior";
@@ -208,6 +225,12 @@ namespace VsVim.Implementation.OptionPages
         [TypeConverter(typeof(VimRcLoadSettingConverter))]
         public VimRcLoadSetting VimRcLoadSetting { get; set; }
 
+        [DisplayName("Word Wrap Display")]
+        [Description("Controls how word wrap is displayed")]
+        [Category(CategoryGeneral)]
+        [TypeConverter(typeof(WordWrapDisplaySettingConverter))]
+        public WordWrapDisplay WordWrapDisplay { get; set; } 
+
         [DisplayName("Block Caret")]
         [Category(CategoryColors)]
         public Color BlockCaretColor
@@ -262,6 +285,7 @@ namespace VsVim.Implementation.OptionPages
                 UseEditorTabAndBackspace = vimApplicationSettings.UseEditorTabAndBackspace;
                 VimRcLoadSetting = vimApplicationSettings.VimRcLoadSetting;
                 DisplayControlCharacters = vimApplicationSettings.DisplayControlChars;
+                WordWrapDisplay = vimApplicationSettings.WordWrapDisplay;
             }
 
             LoadColors();
@@ -281,6 +305,7 @@ namespace VsVim.Implementation.OptionPages
                 vimApplicationSettings.UseEditorTabAndBackspace = UseEditorTabAndBackspace;
                 vimApplicationSettings.VimRcLoadSetting = VimRcLoadSetting;
                 vimApplicationSettings.DisplayControlChars = DisplayControlCharacters;
+                vimApplicationSettings.WordWrapDisplay = WordWrapDisplay;
             }
 
             SaveColors();

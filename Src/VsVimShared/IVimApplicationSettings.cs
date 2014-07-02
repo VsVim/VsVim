@@ -21,6 +21,13 @@ namespace VsVim
         Both
     }
 
+    public enum WordWrapDisplay
+    {
+        Glyph,
+        AutoIndent,
+        All,
+    }
+
     /// <summary>
     /// Settings specific to the VsVim application.  These specifically don't include Vim specific
     /// settings but instead have items like first usage, first import, etc ... 
@@ -61,6 +68,11 @@ namespace VsVim
         /// Controls how vimrc files are loaded
         /// </summary>
         VimRcLoadSetting VimRcLoadSetting { get; set; }
+
+        /// <summary>
+        /// Controls how word wraps are displayed
+        /// </summary>
+        WordWrapDisplay WordWrapDisplay { get; set; }
 
         /// <summary>
         /// The key bindings were updated 

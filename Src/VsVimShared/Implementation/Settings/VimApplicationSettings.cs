@@ -2,15 +2,9 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel.Composition;
-using System.Globalization;
-using System.Linq;
 using EditorUtils;
-using EnvDTE;
-using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.Settings;
 using Microsoft.VisualStudio.Shell;
-using Microsoft.VisualStudio.Shell.Interop;
-using Microsoft.VisualStudio.Shell.Settings;
 using Vim.UI.Wpf;
 using Vim;
 
@@ -32,6 +26,7 @@ namespace VsVim.Implementation.Settings
         internal const string UseEditorIndentName = "UseEditorIndent";
         internal const string UseEditorDefaultsName = "UseEditorDefaults";
         internal const string UseEditorTabAndBackspaceName = "UseEditorTabAndBackspace";
+        internal const string WordWrapDisplayName = "WordWrapDisplay";
         internal const string ErrorGetFormat = "Cannot get setting {0}";
         internal const string ErrorSetFormat = "Cannot set setting {0}";
 
@@ -253,6 +248,12 @@ namespace VsVim.Implementation.Settings
         {
             get { return GetBoolean(KeyMappingIssueFixedName, defaultValue: false); }
             set { SetBoolean(KeyMappingIssueFixedName, value); }
+        }
+
+        WordWrapDisplay IVimApplicationSettings.WordWrapDisplay
+        {
+            get { return GetEnum<WordWrapDisplay>(WordWrapDisplayName, WordWrapDisplay.Glyph); }
+            set { SetEnum(WordWrapDisplayName, value); }
         }
 
         ReadOnlyCollection<CommandKeyBinding> IVimApplicationSettings.RemovedBindings

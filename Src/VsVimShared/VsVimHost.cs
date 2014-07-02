@@ -557,6 +557,28 @@ namespace VsVim
             return result ? HostResult.Success : HostResult.NewError("Not Implemented");
         }
 
+        public override WordWrapStyles GetWordWrapStyle(ITextView textView)
+        {
+            var style = WordWrapStyles.WordWrap;
+            switch (_vimApplicationSettings.WordWrapDisplay)
+            {
+                case WordWrapDisplay.All:
+                    style |= (WordWrapStyles.AutoIndent | WordWrapStyles.VisibleGlyphs);
+                    break;
+                case WordWrapDisplay.Glyph:
+                    style |= WordWrapStyles.VisibleGlyphs;
+                    break;
+                case WordWrapDisplay.AutoIndent:
+                    style |= WordWrapStyles.AutoIndent;
+                    break;
+                default:
+                    Contract.Assert(false);
+                    break;
+            }
+
+            return style;
+        }
+
         public override FSharpOption<int> GetNewLineIndent(ITextView textView, ITextSnapshotLine contextLine, ITextSnapshotLine newLine)
         {
             if (_vimApplicationSettings.UseEditorIndent)
