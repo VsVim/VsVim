@@ -1575,8 +1575,7 @@ module TextViewUtil =
         let editorOptions = textView.Options
         match EditorOptionsUtil.GetOptionValue editorOptions DefaultTextViewOptions.WordWrapStyleId with
         | None -> false
-        | Some WordWrapStyles.WordWrap -> true
-        | Some _ -> false
+        | Some wordWrapStyle -> Util.IsFlagSet wordWrapStyle WordWrapStyles.WordWrap
 
 module TextSelectionUtil = 
 

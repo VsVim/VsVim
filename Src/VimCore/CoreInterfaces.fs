@@ -3798,6 +3798,10 @@ type IVimHost =
     /// setting
     abstract GetNewLineIndent : textView : ITextView -> contextLine : ITextSnapshotLine -> newLine : ITextSnapshotLine -> int option
 
+    /// Get the WordWrap style which should be used for the specified ITextView if word 
+    /// wrap is enabled
+    abstract GetWordWrapStyle : textView : ITextView -> WordWrapStyles
+
     /// Go to the definition of the value under the cursor
     abstract GoToDefinition : unit -> bool
 

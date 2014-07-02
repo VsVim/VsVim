@@ -711,15 +711,13 @@ type internal EditorToSettingSynchronizer
             // Wrap is a difficult option because vim has wrap as on / off while the core editor has
             // 3 different kinds of wrapping.  If we default to only one of them then we will constantly
             // be undoing user settings.  Hence we consider anything but off to be on and hence won't change it 
-            if windowSettings.Wrap then
-                match EditorOptionsUtil.GetOptionValue editorOptions DefaultTextViewOptions.WordWrapStyleId with
-                | None -> EditorOptionsUtil.SetOptionValue editorOptions DefaultTextViewOptions.WordWrapStyleId WordWrapStyles.WordWrap
-                | Some wordWrapStyle -> 
-                    if wordWrapStyle = WordWrapStyles.None then
-                        EditorOptionsUtil.SetOptionValue editorOptions DefaultTextViewOptions.WordWrapStyleId WordWrapStyles.WordWrap
-            else
-                EditorOptionsUtil.SetOptionValue editorOptions DefaultTextViewOptions.WordWrapStyleId WordWrapStyles.None
-            )
+            let wordWrapStyle = 
+                if windowSettings.Wrap then
+                    let vimHost = vimBuffer.Vim.VimHost
+                    vimHost.GetWordWrapStyle vimBuffer.TextView
+                else
+                    WordWrapStyles.None
+            EditorOptionsUtil.SetOptionValue editorOptions DefaultTextViewOptions.WordWrapStyleId wordWrapStyle)
 
     /// Synchronize the settings from the local settings to the editor.  Do not
     /// call this directly but instead call through SynchronizeSettings
@@ -736,7 +734,7 @@ type internal EditorToSettingSynchronizer
             | Some convertTabToSpace -> localSettings.ExpandTab <- convertTabToSpace
             match EditorOptionsUtil.GetOptionValue editorOptions DefaultTextViewOptions.WordWrapStyleId with
             | None -> ()
-            | Some wordWrapStyle -> windowSettings.Wrap <- wordWrapStyle <> WordWrapStyles.None
+            | Some wordWrapStyle -> windowSettings.Wrap <- Util.IsFlagSet wordWrapStyle WordWrapStyles.WordWrap
             match EditorOptionsUtil.GetOptionValue editorOptions DefaultTextViewHostOptions.LineNumberMarginId with
             | None -> ()
             | Some show -> localSettings.Number <- show

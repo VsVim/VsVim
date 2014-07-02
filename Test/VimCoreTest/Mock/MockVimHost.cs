@@ -49,6 +49,7 @@ namespace Vim.UnitTest.Mock
         public IFontProperties FontProperties { get; set; }
         public int GoToTabData { get; set; }
         public int GetTabIndexData { get; set; }
+        public WordWrapStyles WordWrapStyle { get; set; }
 
         public MockVimHost()
         {
@@ -93,6 +94,7 @@ namespace Vim.UnitTest.Mock
             LastSaved = null;
             ShouldCreateVimBufferImpl = false;
             ShouldIncludeRcFile = true;
+            WordWrapStyle = WordWrapStyles.WordWrap;
         }
 
         void IVimHost.Beep()
@@ -327,6 +329,11 @@ namespace Vim.UnitTest.Mock
         int IVimHost.GetTabIndex(ITextView textView)
         {
             return GetTabIndexData;            
+        }
+
+        WordWrapStyles IVimHost.GetWordWrapStyle(ITextView textView)
+        {
+            return WordWrapStyle;
         }
 
         int IVimHost.TabCount
