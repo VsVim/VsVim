@@ -142,6 +142,11 @@ namespace Vim.UI.Wpf
 
         public abstract int GetTabIndex(ITextView textView);
 
+        public virtual WordWrapStyles GetWordWrapStyle(ITextView textView)
+        {
+            return WordWrapStyles.VisibleGlyphs | WordWrapStyles.WordWrap;
+        }
+
         public virtual bool TryGetFocusedTextView(out ITextView textView)
         {
             textView = _textViewList.FirstOrDefault(x => x.HasAggregateFocus);
@@ -527,6 +532,11 @@ namespace Vim.UI.Wpf
         int IVimHost.GetTabIndex(ITextView textView)
         {
             return GetTabIndex(textView);
+        }
+
+        WordWrapStyles IVimHost.GetWordWrapStyle(ITextView textView)
+        {
+            return GetWordWrapStyle(textView);
         }
 
         bool IVimHost.GoToDefinition()
