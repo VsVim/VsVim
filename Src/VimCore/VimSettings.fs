@@ -17,6 +17,8 @@ open CollectionExtensions
 // a finite list of values.  For example backspace, virtualedit, etc ...  Setting
 // them to an invalid value should produce an error
 
+type SettingValueParseFunc = string -> SettingValue option
+
 type internal SettingsMap
     (
         _rawData : Setting seq
@@ -29,6 +31,9 @@ type internal SettingsMap
 
     /// Map from the abbreviated setting name to the full setting name
     let mutable _shortToFullNameMap = Dictionary<string, string>()
+
+    /// Custom parsing function for a given setting name
+    let mutable _customParseMap = Dictionary<string, SettingValueParseFunc>()
 
     do
         _rawData
@@ -51,6 +56,10 @@ type internal SettingsMap
 
         let args = SettingEventArgs(setting, true)
         _settingChangedEvent.Trigger x args
+
+    member x.AddSettingValueParseFunc settingNameOrAbbrev settingValueParseFunc =
+        let name = x.GetFullName settingNameOrAbbrev
+        _customParseMap.Add(name, settingValueParseFunc)
 
     member x.GetFullName settingNameOrAbbrev = 
         match _shortToFullNameMap.TryGetValueEx settingNameOrAbbrev with
@@ -75,7 +84,7 @@ type internal SettingsMap
         match x.GetSetting settingNameOrAbbrev with
         | None -> false
         | Some setting ->
-            match x.ConvertStringToValue strValue setting.Kind with
+            match x.ConvertStringToValue setting strValue with
             | None -> false
             | Some value -> x.TrySetValue setting.Name value
 
@@ -107,7 +116,15 @@ type internal SettingsMap
         | SettingValue.String _ -> failwith "invalid"
         | SettingValue.Toggle _ -> failwith "invalid"
 
-    member x.ConvertStringToValue str kind =
+    member x.ConvertStringToValue (setting : Setting) (str : string) = 
+        match _customParseMap.TryGetValueEx setting.Name with
+        | None -> x.ConvertStringToValueCore str setting.Kind
+        | Some func ->
+            match func str with
+            | Some settingValue -> Some settingValue
+            | None -> x.ConvertStringToValueCore str setting.Kind
+
+    member x.ConvertStringToValueCore str kind =
         let convertToNumber() = 
             let ret,value = System.Int32.TryParse str
             if ret then Some (SettingValue.Number value) else None
@@ -120,6 +137,16 @@ type internal SettingsMap
         | SettingKind.String -> Some (SettingValue.String str)
 
 type internal GlobalSettings() =
+
+    /// Custom parsing for the old 'vi' style values of 'backspace'.  For normal values default
+    /// to the standard parsing behavior
+    static let ParseBackspaceValue str = 
+        match str with
+        | "0" -> SettingValue.String "" |> Some
+        | "1" -> SettingValue.String "indent,eol" |> Some
+        | "2" -> SettingValue.String "indent,eol,start" |> Some
+        | _ -> None
+
     static let GlobalSettingInfoList = 
         [|
             (BackspaceName, "bs", SettingValue.String "")
@@ -164,7 +191,10 @@ type internal GlobalSettings() =
         GlobalSettingInfoList
         |> Seq.map (fun (name, abbrev, defaultValue) -> { Name = name; Abbreviation = abbrev; LiveSettingValue = LiveSettingValue.Create defaultValue; IsGlobal = true })
 
-    let _map = SettingsMap(GlobalSettingList)
+    let _map = 
+        let settingsMap = SettingsMap(GlobalSettingList)
+        settingsMap.AddSettingValueParseFunc BackspaceName ParseBackspaceValue
+        settingsMap
 
     /// Mappings between the setting names and the actual options
     static let ClipboardOptionsMapping = 
@@ -273,17 +303,6 @@ type internal GlobalSettings() =
         | "old" -> SelectionKind.Exclusive
         | _ -> SelectionKind.Exclusive
 
-    member x.SetBackspace (value : string) =
-        // 'backspace' can be set with both names and numeric values.   Normalize out the 
-        // difference here 
-        let value = 
-            match value with
-            | "0" -> ""
-            | "1" -> "indent,eol"
-            | "2" -> "indent,eol,start"
-            | _ -> value
-        _map.TrySetValue BackspaceName (SettingValue.String value) |> ignore
-
     interface IVimGlobalSettings with
         // IVimSettings
 
@@ -296,7 +315,7 @@ type internal GlobalSettings() =
         member x.AddCustomSetting name abbrevation customSettingSource = x.AddCustomSetting name abbrevation customSettingSource
         member x.Backspace 
             with get() = _map.GetStringValue BackspaceName
-            and set value = x.SetBackspace value
+            and set value = _map.TrySetValueFromString BackspaceName value |> ignore
         member x.CaretOpacity
             with get() = _map.GetNumberValue CaretOpacityName
             and set value = _map.TrySetValue CaretOpacityName (SettingValue.Number value) |> ignore
