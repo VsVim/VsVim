@@ -11,52 +11,71 @@ open Vim.GlobalSettingNames
 open Vim.LocalSettingNames
 open Vim.WindowSettingNames
 open StringBuilderExtensions
+open CollectionExtensions
 
 // TODO: We need to add verification for setting options which can contain
 // a finite list of values.  For example backspace, virtualedit, etc ...  Setting
 // them to an invalid value should produce an error
 
+type SettingValueParseFunc = string -> SettingValue option
+
 type internal SettingsMap
     (
-        _rawData : (string * string * SettingValue) seq,
-        _isGlobal : bool
-    ) =
+        _rawData : Setting seq
+    ) as this =
 
     let _settingChangedEvent = StandardEvent<SettingEventArgs>()
 
-    /// Create the settings off of the default map
-    let mutable _settings =
-         _rawData
-         |> Seq.map (fun (name, abbrev, value) -> {Name = name; Abbreviation = abbrev; LiveSettingValue = LiveSettingValue.Create value; IsGlobal = _isGlobal})
-         |> Seq.map (fun setting -> (setting.Name, setting))
-         |> Map.ofSeq
+    /// Map from full setting name to the actual Setting
+    let mutable _settingMap = Dictionary<string, Setting>()
 
-    member x.AddSetting (setting : Setting) =
-        _settings <- Map.add setting.Name setting _settings
+    /// Map from the abbreviated setting name to the full setting name
+    let mutable _shortToFullNameMap = Dictionary<string, string>()
 
-    member x.AllSettings = _settings |> Map.toSeq |> Seq.map (fun (_,value) -> value)
+    /// Custom parsing function for a given setting name
+    let mutable _customParseMap = Dictionary<string, SettingValueParseFunc>()
+
+    do
+        _rawData
+        |> Seq.iter (fun setting -> this.AddSetting setting)
+
+    member x.AllSettings = _settingMap.Values |> List.ofSeq
 
     member x.OwnsSetting settingName = x.GetSetting settingName |> Option.isSome
 
     member x.SettingChanged = _settingChangedEvent.Publish
 
+    member x.AddSetting (setting : Setting) =
+        _settingMap.Add(setting.Name, setting)
+        _shortToFullNameMap.Add(setting.Abbreviation, setting.Name)
+
     /// Replace a Setting with a new value
-    member x.ReplaceSetting settingName setting = 
-        _settings <- _settings |> Map.add settingName setting
+    member x.ReplaceSetting setting = 
+        Contract.Assert (_settingMap.ContainsKey setting.Name)
+        _settingMap.[setting.Name] <- setting
 
         let args = SettingEventArgs(setting, true)
         _settingChangedEvent.Trigger x args
 
-    member x.TrySetValue settingNameOrAbbrev (value : SettingValue) =
+    member x.AddSettingValueParseFunc settingNameOrAbbrev settingValueParseFunc =
+        let name = x.GetFullName settingNameOrAbbrev
+        _customParseMap.Add(name, settingValueParseFunc)
 
-        match x.GetSetting settingNameOrAbbrev with
+    member x.GetFullName settingNameOrAbbrev = 
+        match _shortToFullNameMap.TryGetValueEx settingNameOrAbbrev with
+        | Some fullName -> fullName
+        | None -> settingNameOrAbbrev
+
+    member x.TrySetValue settingNameOrAbbrev (value : SettingValue) =
+        let name = x.GetFullName settingNameOrAbbrev
+        match _settingMap.TryGetValueEx name with
         | None -> false
-        | Some setting ->
+        | Some setting -> 
             let isValueChanged = value <> setting.Value
             match setting.LiveSettingValue.UpdateValue value with
             | Some value ->
                 let setting = { setting with LiveSettingValue = value }
-                _settings <- _settings |> Map.add setting.Name setting
+                _settingMap.[name] <- setting
                 _settingChangedEvent.Trigger x (SettingEventArgs(setting, isValueChanged))
                 true
             | None -> false
@@ -65,44 +84,47 @@ type internal SettingsMap
         match x.GetSetting settingNameOrAbbrev with
         | None -> false
         | Some setting ->
-            match x.ConvertStringToValue strValue setting.Kind with
+            match x.ConvertStringToValue setting strValue with
             | None -> false
-            | Some(value) -> x.TrySetValue setting.Name value
+            | Some value -> x.TrySetValue setting.Name value
 
-    member x.GetSetting settingName : Setting option = 
-        match _settings |> Map.tryFind settingName with
-        | Some s -> Some s
-        | None -> 
-            _settings 
-            |> Map.toSeq 
-            |> Seq.map (fun (_,value) -> value) 
-            |> Seq.tryFind (fun setting -> setting.Abbreviation = settingName)
+    member x.GetSetting settingNameOrAbbrev : Setting option =
+        let name = x.GetFullName settingNameOrAbbrev
+        _settingMap.TryGetValueEx name
 
     /// Get a boolean setting value.  Will throw if the setting name does not exist
-    member x.GetBoolValue settingName = 
-        let setting = _settings |> Map.find settingName
+    member x.GetBoolValue settingNameOrAbbrev = 
+        let setting = x.GetSetting settingNameOrAbbrev |> Option.get
         match setting.Value with
         | SettingValue.Toggle b -> b 
         | SettingValue.Number _ -> failwith "invalid"
         | SettingValue.String _ -> failwith "invalid"
 
     /// Get a string setting value.  Will throw if the setting name does not exist
-    member x.GetStringValue settingName =
-        let setting = _settings |> Map.find settingName
+    member x.GetStringValue settingNameOrAbbrev =
+        let setting = x.GetSetting settingNameOrAbbrev |> Option.get
         match setting.Value with
         | SettingValue.String s -> s
         | SettingValue.Number _ -> failwith "invalid"
         | SettingValue.Toggle _ -> failwith "invalid"
 
     /// Get a number setting value.  Will throw if the setting name does not exist
-    member x.GetNumberValue settingName =
-        let setting = _settings |> Map.find settingName
+    member x.GetNumberValue settingNameOrAbbrev =
+        let setting = x.GetSetting settingNameOrAbbrev |> Option.get
         match setting.Value with
         | SettingValue.Number n -> n
         | SettingValue.String _ -> failwith "invalid"
         | SettingValue.Toggle _ -> failwith "invalid"
 
-    member x.ConvertStringToValue str kind =
+    member x.ConvertStringToValue (setting : Setting) (str : string) = 
+        match _customParseMap.TryGetValueEx setting.Name with
+        | None -> x.ConvertStringToValueCore str setting.Kind
+        | Some func ->
+            match func str with
+            | Some settingValue -> Some settingValue
+            | None -> x.ConvertStringToValueCore str setting.Kind
+
+    member x.ConvertStringToValueCore str kind =
         let convertToNumber() = 
             let ret,value = System.Int32.TryParse str
             if ret then Some (SettingValue.Number value) else None
@@ -115,9 +137,17 @@ type internal SettingsMap
         | SettingKind.String -> Some (SettingValue.String str)
 
 type internal GlobalSettings() =
-    static let _disableAllCommand = KeyInputUtil.ApplyModifiersToVimKey VimKey.F12 (KeyModifiers.Control ||| KeyModifiers.Shift)
 
-    static let _globalSettings = 
+    /// Custom parsing for the old 'vi' style values of 'backspace'.  For normal values default
+    /// to the standard parsing behavior
+    static let ParseBackspaceValue str = 
+        match str with
+        | "0" -> SettingValue.String "" |> Some
+        | "1" -> SettingValue.String "indent,eol" |> Some
+        | "2" -> SettingValue.String "indent,eol,start" |> Some
+        | _ -> None
+
+    static let GlobalSettingInfoList = 
         [|
             (BackspaceName, "bs", SettingValue.String "")
             (CaretOpacityName, CaretOpacityName, SettingValue.Number 65)
@@ -157,7 +187,14 @@ type internal GlobalSettings() =
             (WrapScanName, "ws", SettingValue.Toggle true)
         |]
 
-    let _map = SettingsMap(_globalSettings, true)
+    static let GlobalSettingList = 
+        GlobalSettingInfoList
+        |> Seq.map (fun (name, abbrev, defaultValue) -> { Name = name; Abbreviation = abbrev; LiveSettingValue = LiveSettingValue.Create defaultValue; IsGlobal = true })
+
+    let _map = 
+        let settingsMap = SettingsMap(GlobalSettingList)
+        settingsMap.AddSettingValueParseFunc BackspaceName ParseBackspaceValue
+        settingsMap
 
     /// Mappings between the setting names and the actual options
     static let ClipboardOptionsMapping = 
@@ -182,7 +219,7 @@ type internal GlobalSettings() =
             ("stopsel", KeyModelOptions.StopSelection)
         ]
 
-    static member DisableAllCommand = _disableAllCommand
+    static member DisableAllCommand = KeyInputUtil.ApplyModifiersToVimKey VimKey.F12 (KeyModifiers.Control ||| KeyModifiers.Shift)
 
     member x.AddCustomSetting name abbrevation customSettingSource = 
         let liveSettingValue = LiveSettingValue.Custom (name, customSettingSource)
@@ -266,17 +303,6 @@ type internal GlobalSettings() =
         | "old" -> SelectionKind.Exclusive
         | _ -> SelectionKind.Exclusive
 
-    member x.SetBackspace (value : string) =
-        // 'backspace' can be set with both names and numeric values.   Normalize out the 
-        // difference here 
-        let value = 
-            match value with
-            | "0" -> ""
-            | "1" -> "indent,eol"
-            | "2" -> "indent,eol,start"
-            | _ -> value
-        _map.TrySetValue BackspaceName (SettingValue.String value) |> ignore
-
     interface IVimGlobalSettings with
         // IVimSettings
 
@@ -289,7 +315,7 @@ type internal GlobalSettings() =
         member x.AddCustomSetting name abbrevation customSettingSource = x.AddCustomSetting name abbrevation customSettingSource
         member x.Backspace 
             with get() = _map.GetStringValue BackspaceName
-            and set value = x.SetBackspace value
+            and set value = _map.TrySetValueFromString BackspaceName value |> ignore
         member x.CaretOpacity
             with get() = _map.GetNumberValue CaretOpacityName
             and set value = _map.TrySetValue CaretOpacityName (SettingValue.Number value) |> ignore
@@ -410,7 +436,7 @@ type internal GlobalSettings() =
         member x.WrapScan
             with get() = _map.GetBoolValue WrapScanName
             and set value = _map.TrySetValue WrapScanName (SettingValue.Toggle value) |> ignore
-        member x.DisableAllCommand = _disableAllCommand
+        member x.DisableAllCommand = GlobalSettings.DisableAllCommand
         member x.IsBackspaceEol = x.IsCommaSubOptionPresent BackspaceName "eol"
         member x.IsBackspaceIndent = x.IsCommaSubOptionPresent BackspaceName "indent"
         member x.IsBackspaceStart = x.IsCommaSubOptionPresent BackspaceName "start"
@@ -433,7 +459,7 @@ type internal LocalSettings
         _globalSettings : IVimGlobalSettings
     ) =
 
-    static let LocalSettingInfo =
+    static let LocalSettingInfoList =
         [|
             (AutoIndentName, "ai", SettingValue.Toggle false)
             (ExpandTabName, "et", SettingValue.Toggle false)
@@ -445,7 +471,11 @@ type internal LocalSettings
             (QuoteEscapeName, "qe", SettingValue.String @"\")
         |]
 
-    let _map = SettingsMap(LocalSettingInfo, false)
+    static let LocalSettingList = 
+        LocalSettingInfoList
+        |> Seq.map (fun (name, abbrev, defaultValue) -> { Name = name; Abbreviation = abbrev; LiveSettingValue = LiveSettingValue.Create defaultValue; IsGlobal = false })
+
+    let _map = SettingsMap(LocalSettingList)
 
     member x.Map = _map
 
@@ -478,7 +508,7 @@ type internal LocalSettings
     interface IVimLocalSettings with 
         // IVimSettings
         
-        member x.AllSettings = _map.AllSettings |> Seq.append _globalSettings.AllSettings
+        member x.AllSettings = _map.AllSettings |> Seq.append _globalSettings.AllSettings |> List.ofSeq
         member x.TrySetValue settingName value = 
             if _map.OwnsSetting settingName then _map.TrySetValue settingName value
             else _globalSettings.TrySetValue settingName value
@@ -526,20 +556,24 @@ type internal WindowSettings
         _textView : ITextView option
     ) as this =
 
-    static let WindowSettingInfo =
+    static let WindowSettingInfoList =
         [|
             (CursorLineName, "cul", SettingValue.Toggle false)
             (ScrollName, "scr", SettingValue.Number 25)
             (WrapName, WrapName, SettingValue.Toggle false)
         |]
 
-    let _map = SettingsMap(WindowSettingInfo, false)
+    static let WindowSettingList =
+        WindowSettingInfoList
+        |> Seq.map (fun (name, abbrev, defaultValue) -> { Name = name; Abbreviation = abbrev; LiveSettingValue = LiveSettingValue.Create defaultValue; IsGlobal = false })
+
+    let _map = SettingsMap(WindowSettingList)
 
     do
         let setting = _map.GetSetting ScrollName |> Option.get
         let liveSettingValue = LiveSettingValue.CalculatedNumber (None, this.CalculateScroll)
         let setting = { setting with LiveSettingValue = liveSettingValue } 
-        _map.ReplaceSetting ScrollName setting
+        _map.ReplaceSetting setting
 
     new (settings) = WindowSettings(settings, None)
     new (settings, textView : ITextView) = WindowSettings(settings, Some textView)
@@ -562,7 +596,7 @@ type internal WindowSettings
         copy :> IVimWindowSettings
 
     interface IVimWindowSettings with 
-        member x.AllSettings = _map.AllSettings |> Seq.append _globalSettings.AllSettings
+        member x.AllSettings = _map.AllSettings |> Seq.append _globalSettings.AllSettings |> List.ofSeq
         member x.TrySetValue settingName value = 
             if _map.OwnsSetting settingName then _map.TrySetValue settingName value
             else _globalSettings.TrySetValue settingName value

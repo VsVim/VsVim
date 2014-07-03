@@ -152,6 +152,13 @@ namespace Vim.UnitTest
             }
 
             [Fact]
+            public void Value0FromString()
+            {
+                _globalSettings.TrySetValueFromString("backspace", "0");
+                Assert.False(_globalSettings.IsBackspaceStart);
+            }
+
+            [Fact]
             public void Value1()
             {
                 _globalSettings.Backspace = "1";
@@ -159,9 +166,23 @@ namespace Vim.UnitTest
             }
 
             [Fact]
+            public void Value1FromString()
+            {
+                _globalSettings.TrySetValueFromString("backspace", "1");
+                Assert.True(_globalSettings.IsBackspaceIndent && _globalSettings.IsBackspaceEol);
+            }
+
+            [Fact]
             public void Value2()
             {
                 _globalSettings.Backspace = "2";
+                Assert.True(_globalSettings.IsBackspaceIndent && _globalSettings.IsBackspaceEol && _globalSettings.IsBackspaceStart);
+            }
+
+            [Fact]
+            public void Value2FromString()
+            {
+                _globalSettings.TrySetValueFromString("backspace", "2");
                 Assert.True(_globalSettings.IsBackspaceIndent && _globalSettings.IsBackspaceEol && _globalSettings.IsBackspaceStart);
             }
 

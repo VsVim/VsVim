@@ -63,7 +63,7 @@ namespace VsVim.Implementation.UpgradeNotification
             var editorFormatMap = _editorFormatMapService.GetEditorFormatMap(wpfTextView);
             var linkBanner = new LinkBanner();
             linkBanner.MarginName = Name;
-            linkBanner.LinkAddress = "https://github.com/jaredpar/VsVim/wiki/FAQ#wiki-vimrcload";
+            linkBanner.LinkAddress = "https://github.com/jaredpar/VsVim/wiki/FAQ#vimrc";
             linkBanner.LinkText = "FAQ";
             linkBanner.BannerText = "VsVim automatically loaded an existing _vimrc file";
             linkBanner.Background = editorFormatMap.GetBackgroundBrush(EditorFormatDefinitionNames.Margin, MarginFormatDefinition.DefaultColor);
