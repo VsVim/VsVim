@@ -127,10 +127,16 @@
     <Compile Include="Implementation\SharedService\DefaultSharedServiceFactory.cs" />
     <Compile Include="Implementation\SharedService\SharedServiceFactory.cs" />
     <Compile Include="IKeyboardOptionsProvider.cs" />
+    <Compile Include="Implementation\ToastNotification\ToastControl.xaml.cs">
+      <DependentUpon>ToastControl.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Implementation\ToastNotification\ToastNotificationService.cs" />
+    <Compile Include="Implementation\ToastNotification\ToastNotificationServiceProvider.cs" />
     <Compile Include="Implementation\UpgradeNotification\LinkBanner.xaml.cs">
       <DependentUpon>LinkBanner.xaml</DependentUpon>
     </Compile>
     <Compile Include="Implementation\UpgradeNotification\VimRcLoadNotificationMarginProvider.cs" />
+    <Compile Include="IToastNotifaction.cs" />
     <Compile Include="TextEditorFontProperties.cs" />
     <Compile Include="Implementation\VisualAssist\IVisualAssistUtil.cs" />
     <Compile Include="Implementation\VisualAssist\VisualAssistKeyProcessor.cs" />
@@ -179,6 +185,10 @@
   </ItemGroup>
   <ItemGroup>
     <Page Include="Implementation\OptionPages\KeyboardSettingsControl.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Implementation\ToastNotification\ToastControl.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

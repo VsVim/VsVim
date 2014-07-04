@@ -23,13 +23,15 @@ namespace VsVim.Implementation.UpgradeNotification
         private readonly IVim _vim;
         private readonly IVimApplicationSettings _vimApplicationSettings;
         private readonly IEditorFormatMapService _editorFormatMapService;
+        private readonly IToastNotificationServiceProvider _toastNotificationServiceProvider;
 
         [ImportingConstructor]
-        internal VimRcLoadNotificationMarginProvider(IVim vim, IVimApplicationSettings vimApplicationSettings, IEditorFormatMapService editorFormatMapService)
+        internal VimRcLoadNotificationMarginProvider(IVim vim, IVimApplicationSettings vimApplicationSettings, IEditorFormatMapService editorFormatMapService, IToastNotificationServiceProvider toastNotificationServiceProvider)
         {
             _vim = vim;
             _vimApplicationSettings = vimApplicationSettings;
             _editorFormatMapService = editorFormatMapService;
+            _toastNotificationServiceProvider = toastNotificationServiceProvider;
         }
 
         IWpfTextViewMargin IWpfTextViewMarginProvider.CreateMargin(IWpfTextViewHost wpfTextViewHost, IWpfTextViewMargin marginContainer)
@@ -68,7 +70,8 @@ namespace VsVim.Implementation.UpgradeNotification
             linkBanner.BannerText = "VsVim automatically loaded an existing _vimrc file";
             linkBanner.Background = editorFormatMap.GetBackgroundBrush(EditorFormatDefinitionNames.Margin, MarginFormatDefinition.DefaultColor);
             linkBanner.CloseClicked += (sender, e) => { _vimApplicationSettings.HaveNotifiedVimRcLoad = true; };
-            return linkBanner;
+            _toastNotificationServiceProvider.GetToastNoficationService(wpfTextView).Display(linkBanner);
+            return null;
         }
     }
 }
