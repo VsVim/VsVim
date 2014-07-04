@@ -106,5 +106,6 @@ module internal Resources =
     let Interpreter_UndefinedVariable name = sprintf "Undefined variable: %s" name
     let Interpreter_FunctionNotSupported = "function definitions are not supported"
     let Interpreter_CallNotSupported name = sprintf ":call to function %s not supported" name
+    let Interpreter_KeyMappingOptionNotSupported x = sprintf "Key mapping option is not supported: '%s'" x
 
 

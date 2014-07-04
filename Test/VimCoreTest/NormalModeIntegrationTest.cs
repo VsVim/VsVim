@@ -1956,6 +1956,19 @@ namespace Vim.UnitTest
                     Assert.Equal("ll", _textBuffer.CurrentSnapshot.GetText());
                     Assert.Equal(0, _textView.GetCaretPoint().Position);
                 }
+
+                [Fact]
+                public void Issue1368()
+                {
+                    // At the moment we don't support the options although we do process the keys anyways
+                    _assertOnWarningMessage = false;
+
+                    Create("");
+                    _vimBuffer.Process(":nmap <silent> // icat<Esc>", enter: true);
+                    _vimBuffer.Process("//");
+                    Assert.Equal("cat", _textBuffer.GetLine(0).GetText());
+                    Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
+                }
             }
         }
 
