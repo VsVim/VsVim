@@ -800,7 +800,7 @@ namespace Vim.UnitTest
             {
                 Create("");
                 var didRun = false;
-                _vimHost.RunVisualStudioCommandFunc = (commandName, argument) =>
+                _vimHost.RunVisualStudioCommandFunc = (textView, commandName, argument) =>
                     {
                         didRun = true;
                         Assert.Equal("Edit.Comment", commandName);
@@ -818,7 +818,7 @@ namespace Vim.UnitTest
             {
                 Create("");
                 var didRun = false;
-                _vimHost.RunVisualStudioCommandFunc = (commandName, argument) =>
+                _vimHost.RunVisualStudioCommandFunc = (textView, commandName, argument) =>
                     {
                         didRun = true;
                         Assert.Equal("Edit_Comment", commandName);
@@ -841,7 +841,7 @@ namespace Vim.UnitTest
                 _vimBuffer.VimTextBuffer.SetLocalMark(LocalMark.NewLetter(Letter.A), 0, 1);
                 _vimBuffer.VimTextBuffer.SetLocalMark(LocalMark.NewLetter(Letter.B), 0, 1);
                 var didRun = false;
-                _vimHost.RunVisualStudioCommandFunc = (commandName, argument) =>
+                _vimHost.RunVisualStudioCommandFunc = (textView, commandName, argument) =>
                     {
                         didRun = true;
                         Assert.Equal("Edit.Comment", commandName);

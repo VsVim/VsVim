@@ -1778,7 +1778,7 @@ namespace Vim.UnitTest
                 Create("");
                 var didRun = false;
                 VimHost.RunVisualStudioCommandFunc =
-                    (command, argument) =>
+                    (textView, command, argument) =>
                     {
                         Assert.Equal("Build.BuildSelection", command);
                         Assert.Equal("", argument);
@@ -1797,7 +1797,7 @@ namespace Vim.UnitTest
                 Create("");
                 var didRun = false;
                 VimHost.RunVisualStudioCommandFunc =
-                    (command, argument) =>
+                    (textView, command, argument) =>
                     {
                         Assert.Equal("Build.BuildSelection", command);
                         Assert.Equal("Arg", argument);

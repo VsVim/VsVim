@@ -1370,7 +1370,7 @@ type VimInterpreter
         RunResult.Completed
 
     member x.RunVisualStudioCommand command argument =
-        _vimHost.RunVisualStudioCommand command argument
+        _vimHost.RunVisualStudioCommand _textView command argument
         RunResult.Completed
 
     member x.RunWrite lineRange hasBang fileOptionList filePath =

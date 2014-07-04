@@ -37,7 +37,7 @@ namespace Vim.UnitTest.Mock
         public Func<ITextView> CreateHiddenTextViewFunc { get; set; }
         public Func<ITextBuffer, bool> IsDirtyFunc { get; set; }
         public Func<string, string, IVimData, string> RunCommandFunc { get; set; }
-        public Action<string, string> RunVisualStudioCommandFunc { get; set; }
+        public Action<ITextView, string, string> RunVisualStudioCommandFunc { get; set; }
         public Action<QuickFix, int, bool> RunQuickFixFunc { get; set; }
         public Func<string, string, bool> RunSaveTextAs { get; set; }
         public ITextBuffer LastSaved { get; set; }
@@ -223,9 +223,9 @@ namespace Vim.UnitTest.Mock
             return RunCommandFunc(command, arguments, vimData);
         }
 
-        void IVimHost.RunVisualStudioCommand(string command, string argument)
+        void IVimHost.RunVisualStudioCommand(ITextView textView, string command, string argument)
         {
-            RunVisualStudioCommandFunc(command, argument);
+            RunVisualStudioCommandFunc(textView, command, argument);
         }
 
         HostResult IVimHost.SplitViewVertically(ITextView value)

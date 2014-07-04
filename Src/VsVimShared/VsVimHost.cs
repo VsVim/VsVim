@@ -195,10 +195,18 @@ namespace VsVim
             _vsMonitorSelection.AdviseSelectionEvents(this, out cookie);
         }
 
-        private bool SafeExecuteCommand(string command, string args = "")
+        private bool SafeExecuteCommand(ITextView contextTextView, string command, string args = "")
         {
             try
             {
+                // Many Visual Studio commands expect focus to be in the editor when 
+                // running.  Switch focus there if an appropriate ITextView is available
+                var wpfTextView = contextTextView as IWpfTextView;
+                if (wpfTextView != null)
+                {
+                    wpfTextView.VisualElement.Focus();
+                }
+
                 _dte.ExecuteCommand(command, args);
                 return true;
             }
@@ -259,10 +267,10 @@ namespace VsVim
 
             if (target != null)
             {
-                return SafeExecuteCommand(CommandNameGoToDefinition, target);
+                return SafeExecuteCommand(textView, CommandNameGoToDefinition, target);
             }
 
-            return SafeExecuteCommand(CommandNameGoToDefinition);
+            return SafeExecuteCommand(textView, CommandNameGoToDefinition);
         }
 
         private bool GoToDefinitionCore(ITextView textView, string target)
@@ -272,7 +280,7 @@ namespace VsVim
                 return GoToDefinitionCPlusPlus(textView, target);
             }
 
-            return SafeExecuteCommand(CommandNameGoToDefinition);
+            return SafeExecuteCommand(textView, CommandNameGoToDefinition);
         }
 
         /// <summary>
@@ -313,7 +321,8 @@ namespace VsVim
             var startedWithSelection = !textView.Selection.IsEmpty;
             textView.Selection.Clear();
             textView.Selection.Select(range.ExtentIncludingLineBreak, false);
-            SafeExecuteCommand("Edit.FormatSelection");
+            SafeExecuteCommand(textView, "Edit.FormatSelection");
+
             if (!startedWithSelection)
             {
                 textView.Selection.Clear();
@@ -463,7 +472,7 @@ namespace VsVim
                 : "View.PreviousError";
             for (var i = 0; i < count; i++)
             {
-                SafeExecuteCommand(command);
+                SafeExecuteCommand(null, command);
             }
 
             return true;
@@ -471,7 +480,7 @@ namespace VsVim
 
         public override HostResult Make(bool jumpToFirstError, string arguments)
         {
-            SafeExecuteCommand("Build.BuildSolution");
+            SafeExecuteCommand(null, "Build.BuildSolution");
             return HostResult.Success;
         }
 
@@ -510,9 +519,9 @@ namespace VsVim
             _dte.Quit();
         }
 
-        public override void RunVisualStudioCommand(string command, string argument)
+        public override void RunVisualStudioCommand(ITextView textView, string command, string argument)
         {
-            SafeExecuteCommand(command, argument);
+            SafeExecuteCommand(textView, command, argument);
         }
 
         /// <summary>
