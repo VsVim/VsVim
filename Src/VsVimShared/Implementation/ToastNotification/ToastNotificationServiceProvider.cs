@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.Linq;
 using System.Text;
+using Microsoft.VisualStudio.Text.Classification;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Utilities;
 
@@ -18,9 +19,21 @@ namespace VsVim.Implementation.ToastNotification
     {
         internal static readonly object Key = new object();
 
+        private readonly IEditorFormatMapService _editorFormatMapService;
+
+        [ImportingConstructor]
+        internal ToastNotificationServiceProvider(IEditorFormatMapService editorFormatMapService)
+        {
+            _editorFormatMapService = editorFormatMapService;
+        }
+
         private ToastNotificationService GetOrCreate(IWpfTextView wpfTextView)
         {
-            return wpfTextView.Properties.GetOrCreateSingletonProperty(Key, () => new ToastNotificationService(wpfTextView));
+            return wpfTextView.Properties.GetOrCreateSingletonProperty(Key, () =>
+            {
+                var editorFormatMap = _editorFormatMapService.GetEditorFormatMap(wpfTextView);
+                return new ToastNotificationService(wpfTextView, editorFormatMap);
+            });
         }
 
         #region IToastNotificationServiceProvider

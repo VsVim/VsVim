@@ -4,6 +4,7 @@ using System.ComponentModel.Composition;
 using System.Linq;
 using System.Text;
 using System.Windows;
+using Microsoft.VisualStudio.Text.Classification;
 using Microsoft.VisualStudio.Text.Editor;
 
 namespace VsVim.Implementation.ToastNotification
@@ -14,11 +15,26 @@ namespace VsVim.Implementation.ToastNotification
 
         private readonly IWpfTextView _wpfTextView;
         private readonly ToastControl _toastControl;
+        private readonly IEditorFormatMap _editorFormatMap;
 
-        internal ToastNotificationService(IWpfTextView wpfTextView)
+        internal ToastNotificationService(IWpfTextView wpfTextView, IEditorFormatMap editorFormatMap)
         {
             _wpfTextView = wpfTextView;
+            _editorFormatMap = editorFormatMap;
             _toastControl = new ToastControl();
+
+            _editorFormatMap.FormatMappingChanged += OnEditorFormatMappingChanged;
+            UpdateTheme();
+        }
+
+        private void UpdateTheme()
+        {
+            _toastControl.Background = _editorFormatMap.GetBackgroundBrush(EditorFormatDefinitionNames.Margin, MarginFormatDefinition.DefaultColor);
+        }
+
+        private void OnEditorFormatMappingChanged(object sender, EventArgs e)
+        {
+            UpdateTheme();
         }
 
         #region IWpfTextViewMargin
@@ -69,7 +85,7 @@ namespace VsVim.Implementation.ToastNotification
 
         void IDisposable.Dispose()
         {
-            
+            _editorFormatMap.FormatMappingChanged -= OnEditorFormatMappingChanged;
         }
 
         #endregion
