@@ -16,16 +16,8 @@ using System.Windows.Shapes;
 
 namespace VsVim.Implementation.UpgradeNotification
 {
-    public partial class LinkBanner : UserControl, IWpfTextViewMargin
+    public partial class LinkBanner : UserControl
     {
-        public const string DefaultMarginName = "Link Banner Margin";
-
-        public static readonly DependencyProperty MarginNameProperty = DependencyProperty.Register(
-            "MarginName",
-            typeof(string),
-            typeof(LinkBanner),
-            new PropertyMetadata(DefaultMarginName));
-
         public static readonly DependencyProperty BannerTextProperty = DependencyProperty.Register(
             "BannerText",
             typeof(string),
@@ -40,12 +32,6 @@ namespace VsVim.Implementation.UpgradeNotification
             "LinkAddress",
             typeof(string),
             typeof(LinkBanner));
-
-        public string MarginName
-        {
-            get { return (string)GetValue(MarginNameProperty); }
-            set { SetValue(MarginNameProperty, value); }
-        }
 
         public string BannerText
         {
@@ -89,34 +75,5 @@ namespace VsVim.Implementation.UpgradeNotification
             Process.Start(uri.ToString());
             e.Handled = true;
         }
-
-        #region IWpfTextViewMargin
-
-        FrameworkElement IWpfTextViewMargin.VisualElement
-        {
-            get { return this; }
-        }
-
-        bool ITextViewMargin.Enabled
-        {
-            get { return Visibility.Visible == Visibility; }
-        }
-
-        ITextViewMargin ITextViewMargin.GetTextViewMargin(string marginName)
-        {
-            return marginName == MarginName ? this : null;
-        }
-
-        double ITextViewMargin.MarginSize
-        {
-            get { return 25; }
-        }
-
-        void IDisposable.Dispose()
-        {
-            
-        }
-
-        #endregion
     }
 }
