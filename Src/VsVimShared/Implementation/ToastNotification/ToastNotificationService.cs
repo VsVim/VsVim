@@ -22,6 +22,8 @@ namespace VsVim.Implementation.ToastNotification
             _wpfTextView = wpfTextView;
             _editorFormatMap = editorFormatMap;
             _toastControl = new ToastControl();
+            _toastControl.Visibility = Visibility.Collapsed;
+            _toastControl.ToastNotificationCollection.CollectionChanged += OnToastControlItemsChanged;
 
             _editorFormatMap.FormatMappingChanged += OnEditorFormatMappingChanged;
             UpdateTheme();
@@ -30,6 +32,13 @@ namespace VsVim.Implementation.ToastNotification
         private void UpdateTheme()
         {
             _toastControl.Background = _editorFormatMap.GetBackgroundBrush(EditorFormatDefinitionNames.Margin, MarginFormatDefinition.DefaultColor);
+        }
+
+        private void OnToastControlItemsChanged(object sender, EventArgs e)
+        {
+            _toastControl.Visibility = _toastControl.ToastNotificationCollection.Count > 0
+                ? Visibility.Visible
+                : Visibility.Collapsed;
         }
 
         private void OnEditorFormatMappingChanged(object sender, EventArgs e)
@@ -67,7 +76,13 @@ namespace VsVim.Implementation.ToastNotification
         {
             _toastControl.ToastNotificationCollection.Add(frameworkElement);
 
-            // TODO: must remove when the element is hidden 
+            frameworkElement.IsVisibleChanged += delegate
+            {
+                if (frameworkElement.Visibility == Visibility.Collapsed)
+                {
+                    _toastControl.ToastNotificationCollection.Remove(frameworkElement);
+                }
+            };
         }
 
         #endregion
