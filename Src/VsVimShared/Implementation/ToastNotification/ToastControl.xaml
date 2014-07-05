@@ -7,7 +7,22 @@
              d:DesignHeight="50" 
              d:DesignWidth="500"
              DataContext="{Binding RelativeSource={RelativeSource Self}}">
-    <StackPanel Orientation="Vertical">
-        <ItemsControl ItemsSource="{Binding ToastNotificationCollection}" />
-    </StackPanel>
+
+    <UserControl.Resources>
+        <Style TargetType="ListBoxItem">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ListBoxItem">
+                        <Border BorderBrush="Black" BorderThickness="1">
+                            <ContentPresenter />
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </UserControl.Resources>
+    
+    <ListBox ItemsSource="{Binding ToastNotificationCollection}">
+
+    </ListBox>
 </UserControl>
