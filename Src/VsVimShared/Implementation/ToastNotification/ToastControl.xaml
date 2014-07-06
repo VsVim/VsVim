@@ -14,7 +14,26 @@
                 <Setter.Value>
                     <ControlTemplate TargetType="ListBoxItem">
                         <Border BorderBrush="Black" BorderThickness="1">
-                            <ContentPresenter />
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+
+                                <ContentPresenter Grid.Row="0" Grid.Column="0" />
+
+                                <Button
+                                    Grid.Row="0"
+                                    Grid.Column="1"
+                                    Tag="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=Content}"
+                                    Click="OnCloseClick" >
+                                    Close
+                                </Button>
+                            </Grid>
                         </Border>
                     </ControlTemplate>
                 </Setter.Value>

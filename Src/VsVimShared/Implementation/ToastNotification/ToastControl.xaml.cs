@@ -28,5 +28,22 @@ namespace VsVim.Implementation.ToastNotification
         {
             InitializeComponent();
         }
+
+        private void OnCloseClick(object sender, RoutedEventArgs e)
+        {
+            var button = e.Source as Button;
+            if (button == null)
+            {
+                return;
+            }
+
+            var toastNotification = button.Tag as FrameworkElement;
+            if (toastNotification == null)
+            {
+                return;
+            }
+
+            _toastNotificationCollection.Remove(toastNotification);
+        }
     }
 }

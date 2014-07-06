@@ -1,7 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using Microsoft.VisualStudio.Text.Classification;
@@ -72,6 +69,26 @@ namespace VsVim.Shared.UnitTest
         {
             var textBlock = new TextBlock();
             Assert.False(_toastNotificationService.Remove(textBlock));
+        }
+
+        /// <summary>
+        /// Make sure the code can handle a Remove call from the remove callback.  This should be a 
+        /// no-op but need to verify this
+        /// </summary>
+        [Fact]
+        public void RemoveRecursive()
+        {
+            var invokedCallback = false;
+            var textBlock = new TextBlock();
+            Action callback = () =>
+            {
+                invokedCallback = true;
+                Assert.False(_toastNotificationService.Remove(textBlock));
+            };
+
+            _toastNotificationService.Display(textBlock, callback);
+            Assert.True(_toastNotificationService.Remove(textBlock));
+            Assert.True(invokedCallback);
         }
     }
 }
