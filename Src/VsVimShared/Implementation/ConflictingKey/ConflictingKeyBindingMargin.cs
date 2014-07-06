@@ -12,6 +12,7 @@ namespace VsVim.Implementation.ConflictingKey
         private readonly ConflictingKeyBindingMarginControl _control;
         private readonly IVimApplicationSettings _vimApplicationSettings;
         private readonly IToastNotificationService _toastNotificationService;
+        private readonly object _toastKey = new object();
         private bool _hasDisplayed;
 
         internal ConflictingKeyBindingMargin(IKeyBindingService service, IVimApplicationSettings vimApplicationSettings, IToastNotificationService toastNotificationService)
@@ -54,11 +55,11 @@ namespace VsVim.Implementation.ConflictingKey
                 case ConflictingKeyBindingState.ConflictsIgnoredOrResolved:
                     if (_hasDisplayed)
                     {
-                        _control.Visibility = Visibility.Collapsed;
+                        _toastNotificationService.Remove(_toastKey);
                     }
                     break;
                 case ConflictingKeyBindingState.FoundConflicts:
-                    _toastNotificationService.Display(_control);
+                    _toastNotificationService.Display(_toastKey, _control);
                     _hasDisplayed = true;
                     break;
                 default:

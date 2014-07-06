@@ -52,7 +52,7 @@ namespace VsVim.Implementation.UpgradeNotification
             linkBanner.LinkText = "FAQ";
             linkBanner.BannerText = "VsVim automatically loaded an existing _vimrc file";
             linkBanner.CloseClicked += (sender, e) => { _vimApplicationSettings.HaveNotifiedVimRcLoad = true; };
-            _toastNotificationServiceProvider.GetToastNoficationService(wpfTextView).Display(linkBanner);
+            _toastNotificationServiceProvider.GetToastNoficationService(wpfTextView).Display(new object(), linkBanner);
         }
     }
 }

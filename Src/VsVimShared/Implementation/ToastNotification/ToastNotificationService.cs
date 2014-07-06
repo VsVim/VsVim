@@ -13,10 +13,24 @@ namespace VsVim.Implementation.ToastNotification
     {
         internal const string MarginName = "Toast Notification Service";
 
+        private struct ToastData
+        {
+            internal readonly object Key;
+            internal readonly FrameworkElement ToastNotification;
+            internal readonly Action OnRemove;
+
+            internal ToastData(object key, FrameworkElement toastNotification, Action onRemove)
+            {
+                Key = key;
+                ToastNotification = toastNotification;
+                OnRemove = onRemove ?? (() => { });
+            }
+        }
+
         private readonly IWpfTextView _wpfTextView;
         private readonly ToastControl _toastControl;
         private readonly IEditorFormatMap _editorFormatMap;
-        private readonly Dictionary<FrameworkElement, Action> _onRemoveMap = new Dictionary<FrameworkElement, Action>();
+        private readonly Dictionary<object, ToastData> _toastDataMap = new Dictionary<object, ToastData>();
         
         internal ToastControl ToastControl
         {
@@ -46,18 +60,18 @@ namespace VsVim.Implementation.ToastNotification
                 ? Visibility.Visible
                 : Visibility.Collapsed;
 
-            var removedList = _onRemoveMap.Keys
-                .Where(x => !_toastControl.ToastNotificationCollection.Contains(x))
+            var removedList = _toastDataMap
+                .Where(pair => !_toastControl.ToastNotificationCollection.Contains(pair.Value.ToastNotification))
                 .ToList();
 
-            foreach (var key in removedList)
+            foreach (var pair in removedList)
             {
-                _onRemoveMap[key]();
+                pair.Value.OnRemove();
             }
 
-            foreach (var key in removedList)
+            foreach (var pair in removedList)
             {
-                _onRemoveMap.Remove(key);
+                _toastDataMap.Remove(pair.Key);
             }
         }
 
@@ -92,24 +106,26 @@ namespace VsVim.Implementation.ToastNotification
             get { return _wpfTextView; }
         }
 
-        void IToastNotificationService.Display(FrameworkElement toastNotification, Action onRemoveCallback)
+        void IToastNotificationService.Display(object key, FrameworkElement toastNotification, Action onRemoveCallback)
         {
             _toastControl.ToastNotificationCollection.Add(toastNotification);
-
-            if (onRemoveCallback != null)
-            {
-                _onRemoveMap[toastNotification] = onRemoveCallback;
-            }
+            _toastDataMap.Add(key, new ToastData(key, toastNotification, onRemoveCallback));
         }
 
-        bool IToastNotificationService.Remove(FrameworkElement toastNotification)
+        bool IToastNotificationService.Remove(object key)
         {
-            return _toastControl.ToastNotificationCollection.Remove(toastNotification);
+            ToastData toastData;
+            if (!_toastDataMap.TryGetValue(key, out toastData))
+            {
+                return false;
+            }
+
+            return _toastControl.ToastNotificationCollection.Remove(toastData.ToastNotification);
         }
 
         #endregion
 
-        #region ITextView
+        #region ITextViewMargin
 
         ITextViewMargin ITextViewMargin.GetTextViewMargin(string marginName)
         {

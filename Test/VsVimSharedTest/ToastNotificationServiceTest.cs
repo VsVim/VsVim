@@ -30,7 +30,7 @@ namespace VsVim.Shared.UnitTest
         public void DisplayAddsNotification()
         {
             var textBlock = new TextBlock();
-            _toastNotificationService.Display(textBlock);
+            _toastNotificationService.Display(new object(), textBlock);
             Assert.True(_toastControl.ToastNotificationCollection.Contains(textBlock));
         }
 
@@ -38,7 +38,7 @@ namespace VsVim.Shared.UnitTest
         public void HiddenControlDoesNotRemoveNotification()
         {
             var textBlock = new TextBlock();
-            _toastNotificationService.Display(textBlock);
+            _toastNotificationService.Display(new object(), textBlock);
             textBlock.Visibility = Visibility.Collapsed;
             Assert.True(_toastControl.ToastNotificationCollection.Contains(textBlock));
         }
@@ -48,8 +48,9 @@ namespace VsVim.Shared.UnitTest
         {
             var invokedCallback = false;
             var textBlock = new TextBlock();
-            _toastNotificationService.Display(textBlock, () => { invokedCallback = true; });
-            Assert.True(_toastNotificationService.Remove(textBlock));
+            var key = new object();
+            _toastNotificationService.Display(key, textBlock, () => { invokedCallback = true; });
+            Assert.True(_toastNotificationService.Remove(key));
             Assert.True(invokedCallback);
         }
 
@@ -60,15 +61,15 @@ namespace VsVim.Shared.UnitTest
         public void RemoveNoCallback()
         {
             var textBlock = new TextBlock();
-            _toastNotificationService.Display(textBlock, null);
-            Assert.True(_toastNotificationService.Remove(textBlock));
+            var key = new object();
+            _toastNotificationService.Display(key, textBlock, null);
+            Assert.True(_toastNotificationService.Remove(key));
         }
 
         [Fact]
         public void RemoveBadToastNotification()
         {
-            var textBlock = new TextBlock();
-            Assert.False(_toastNotificationService.Remove(textBlock));
+            Assert.False(_toastNotificationService.Remove(new object()));
         }
 
         /// <summary>
@@ -79,15 +80,16 @@ namespace VsVim.Shared.UnitTest
         public void RemoveRecursive()
         {
             var invokedCallback = false;
+            var key = new object();
             var textBlock = new TextBlock();
             Action callback = () =>
             {
                 invokedCallback = true;
-                Assert.False(_toastNotificationService.Remove(textBlock));
+                Assert.False(_toastNotificationService.Remove(key));
             };
 
-            _toastNotificationService.Display(textBlock, callback);
-            Assert.True(_toastNotificationService.Remove(textBlock));
+            _toastNotificationService.Display(key, textBlock, callback);
+            Assert.True(_toastNotificationService.Remove(key));
             Assert.True(invokedCallback);
         }
     }

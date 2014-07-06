@@ -17,8 +17,6 @@
                 RequestNavigate="OnRequestNavigate"
                 BaselineAlignment="Center">FAQ Entry</Hyperlink>
         </TextBlock>
-
-        <Button Margin="5,0,0,0" Click="OnCloseClick">Close</Button>
     </StackPanel>
 
 </UserControl>
