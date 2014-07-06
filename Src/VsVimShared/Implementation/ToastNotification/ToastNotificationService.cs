@@ -16,6 +16,11 @@ namespace VsVim.Implementation.ToastNotification
         private readonly IWpfTextView _wpfTextView;
         private readonly ToastControl _toastControl;
         private readonly IEditorFormatMap _editorFormatMap;
+        
+        internal ToastControl ToastControl
+        {
+            get { return _toastControl; }
+        }
 
         internal ToastNotificationService(IWpfTextView wpfTextView, IEditorFormatMap editorFormatMap)
         {
