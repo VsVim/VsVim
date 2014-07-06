@@ -51,22 +51,9 @@ namespace VsVim.Implementation.UpgradeNotification
             set { SetValue(LinkAddressProperty, value); }
         }
 
-        public event EventHandler CloseClicked;
-
         public LinkBanner()
         {
             InitializeComponent();
-        }
-
-        private void OnCloseClick(object sender, EventArgs e)
-        {
-            Visibility = Visibility.Collapsed;
-
-            var handler = CloseClicked;
-            if (handler != null)
-            {
-                handler(this, EventArgs.Empty);
-            }
         }
 
         private void OnRequestNavigate(object sender, RoutedEventArgs e)

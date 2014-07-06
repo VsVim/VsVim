@@ -18,6 +18,7 @@ namespace VsVim.Implementation.UpgradeNotification
         private readonly IVim _vim;
         private readonly IVimApplicationSettings _vimApplicationSettings;
         private readonly IToastNotificationServiceProvider _toastNotificationServiceProvider;
+        private readonly object _toastKey = new object();
 
         [ImportingConstructor]
         internal VimRcLoadNotificationMarginProvider(IVim vim, IVimApplicationSettings vimApplicationSettings, IToastNotificationServiceProvider toastNotificationServiceProvider)
@@ -25,6 +26,14 @@ namespace VsVim.Implementation.UpgradeNotification
             _vim = vim;
             _vimApplicationSettings = vimApplicationSettings;
             _toastNotificationServiceProvider = toastNotificationServiceProvider;
+        }
+
+        private void OnNoastNotificationClosed()
+        {
+            _vim.VimBuffers
+                .Select(x => x.TextView)
+                .OfType<IWpfTextView>()
+                .ForEach(x => _toastNotificationServiceProvider.GetToastNoficationService(x).Remove(_toastKey));
         }
 
         void IVimBufferCreationListener.VimBufferCreated(IVimBuffer vimBuffer)
@@ -51,8 +60,7 @@ namespace VsVim.Implementation.UpgradeNotification
             linkBanner.LinkAddress = "https://github.com/jaredpar/VsVim/wiki/FAQ#vimrc";
             linkBanner.LinkText = "FAQ";
             linkBanner.BannerText = "VsVim automatically loaded an existing _vimrc file";
-            linkBanner.CloseClicked += (sender, e) => { _vimApplicationSettings.HaveNotifiedVimRcLoad = true; };
-            _toastNotificationServiceProvider.GetToastNoficationService(wpfTextView).Display(new object(), linkBanner);
+            _toastNotificationServiceProvider.GetToastNoficationService(wpfTextView).Display(_toastKey, linkBanner, OnNoastNotificationClosed);
         }
     }
 }

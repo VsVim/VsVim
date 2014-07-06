@@ -19,6 +19,5 @@
                 <TextBlock Text="{Binding LinkText}" />
             </Hyperlink>
         </TextBlock>
-        <Button Margin="5,0,0,0" Click="OnCloseClick">Close</Button>
     </StackPanel>
 </UserControl>

@@ -21,7 +21,6 @@ namespace VsVim.Implementation.ConflictingKey
             _vimApplicationSettings = vimApplicationSettings;
             _control = new ConflictingKeyBindingMarginControl();
             _control.ConfigureClick += OnConfigureClick;
-            _control.IgnoreClick += OnIgnoreClick;
             _keyBindingService.ConflictingKeyBindingStateChanged += OnStateChanged;
             _toastNotificationService = toastNotificationService;
 
@@ -31,7 +30,6 @@ namespace VsVim.Implementation.ConflictingKey
         private void Unsubscribe()
         {
             _control.ConfigureClick -= OnConfigureClick;
-            _control.IgnoreClick -= OnIgnoreClick;
             _keyBindingService.ConflictingKeyBindingStateChanged -= OnStateChanged;
         }
 
@@ -41,7 +39,7 @@ namespace VsVim.Implementation.ConflictingKey
             _vimApplicationSettings.IgnoredConflictingKeyBinding = true;
         }
 
-        private void OnIgnoreClick(object sender, EventArgs e)
+        private void OnNotificationClosed()
         {
             _keyBindingService.IgnoreAnyConflicts();
             _vimApplicationSettings.IgnoredConflictingKeyBinding = true;
@@ -59,7 +57,7 @@ namespace VsVim.Implementation.ConflictingKey
                     }
                     break;
                 case ConflictingKeyBindingState.FoundConflicts:
-                    _toastNotificationService.Display(_toastKey, _control);
+                    _toastNotificationService.Display(_toastKey, _control, OnNotificationClosed);
                     _hasDisplayed = true;
                     break;
                 default:
