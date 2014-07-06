@@ -11,7 +11,17 @@ namespace VsVim
     {
         IWpfTextView TextView { get; } 
 
-        void Display(FrameworkElement frameworkElement);
+        /// <summary>
+        /// Display the given toast notification.  Optionally also provide a callback to be 
+        /// invoked whenever the notifaction is removed
+        /// </summary>
+        void Display(FrameworkElement toastNotifaction, Action onRemoveCallback = null);
+
+        /// <summary>
+        /// Remove the toast notification from the display.  Returns true if the value was
+        /// actually removed
+        /// </summary>
+        bool Remove(FrameworkElement toastNotifaction);
     }
 
     /// <summary>

@@ -16,6 +16,7 @@ namespace VsVim.Implementation.ToastNotification
         private readonly IWpfTextView _wpfTextView;
         private readonly ToastControl _toastControl;
         private readonly IEditorFormatMap _editorFormatMap;
+        private readonly Dictionary<FrameworkElement, Action> _onRemoveMap = new Dictionary<FrameworkElement, Action>();
         
         internal ToastControl ToastControl
         {
@@ -44,6 +45,20 @@ namespace VsVim.Implementation.ToastNotification
             _toastControl.Visibility = _toastControl.ToastNotificationCollection.Count > 0
                 ? Visibility.Visible
                 : Visibility.Collapsed;
+
+            var removedList = _onRemoveMap.Keys
+                .Where(x => !_toastControl.ToastNotificationCollection.Contains(x))
+                .ToList();
+
+            foreach (var key in removedList)
+            {
+                _onRemoveMap[key]();
+            }
+
+            foreach (var key in removedList)
+            {
+                _onRemoveMap.Remove(key);
+            }
         }
 
         private void OnEditorFormatMappingChanged(object sender, EventArgs e)
@@ -77,17 +92,19 @@ namespace VsVim.Implementation.ToastNotification
             get { return _wpfTextView; }
         }
 
-        void IToastNotificationService.Display(FrameworkElement frameworkElement)
+        void IToastNotificationService.Display(FrameworkElement toastNotification, Action onRemoveCallback)
         {
-            _toastControl.ToastNotificationCollection.Add(frameworkElement);
+            _toastControl.ToastNotificationCollection.Add(toastNotification);
 
-            frameworkElement.IsVisibleChanged += delegate
+            if (onRemoveCallback != null)
             {
-                if (frameworkElement.Visibility == Visibility.Collapsed)
-                {
-                    _toastControl.ToastNotificationCollection.Remove(frameworkElement);
-                }
-            };
+                _onRemoveMap[toastNotification] = onRemoveCallback;
+            }
+        }
+
+        bool IToastNotificationService.Remove(FrameworkElement toastNotification)
+        {
+            return _toastControl.ToastNotificationCollection.Remove(toastNotification);
         }
 
         #endregion

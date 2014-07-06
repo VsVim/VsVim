@@ -45,5 +45,33 @@ namespace VsVim.Shared.UnitTest
             textBlock.Visibility = Visibility.Collapsed;
             Assert.True(_toastControl.ToastNotificationCollection.Contains(textBlock));
         }
+
+        [Fact]
+        public void RemoveInvokesCallback()
+        {
+            var invokedCallback = false;
+            var textBlock = new TextBlock();
+            _toastNotificationService.Display(textBlock, () => { invokedCallback = true; });
+            Assert.True(_toastNotificationService.Remove(textBlock));
+            Assert.True(invokedCallback);
+        }
+
+        /// <summary>
+        /// Make sure the code can handle a null callback
+        /// </summary>
+        [Fact]
+        public void RemoveNoCallback()
+        {
+            var textBlock = new TextBlock();
+            _toastNotificationService.Display(textBlock, null);
+            Assert.True(_toastNotificationService.Remove(textBlock));
+        }
+
+        [Fact]
+        public void RemoveBadToastNotification()
+        {
+            var textBlock = new TextBlock();
+            Assert.False(_toastNotificationService.Remove(textBlock));
+        }
     }
 }
