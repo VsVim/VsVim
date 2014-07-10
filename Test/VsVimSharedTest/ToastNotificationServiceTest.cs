@@ -7,7 +7,7 @@ using Vim.UnitTest;
 using VsVim.Implementation.ToastNotification;
 using Xunit;
 
-namespace VsVim.Shared.UnitTest
+namespace VsVim.UnitTest
 {
     public sealed class ToastNotificationServiceTest : VimTestBase
     {

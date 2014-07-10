@@ -44,6 +44,11 @@ namespace VsVim.Implementation.UpgradeNotification
                 return;
             }
 
+            if (!_vim.VimRcState.IsLoadSucceeded)
+            {
+                return;
+            }
+
             var vimRcPath = ((VimRcState.LoadSucceeded)_vim.VimRcState).Item;
             if (vimRcPath.VimRcKind != VimRcKind.VimRc)
             {

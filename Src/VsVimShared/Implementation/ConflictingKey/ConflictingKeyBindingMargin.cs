@@ -23,6 +23,7 @@ namespace VsVim.Implementation.ConflictingKey
             _control.ConfigureClick += OnConfigureClick;
             _keyBindingService.ConflictingKeyBindingStateChanged += OnStateChanged;
             _toastNotificationService = toastNotificationService;
+            _toastNotificationService.TextView.Closed += OnTextViewClosed;
 
             OnStateChanged(this, EventArgs.Empty);
         }
@@ -31,12 +32,18 @@ namespace VsVim.Implementation.ConflictingKey
         {
             _control.ConfigureClick -= OnConfigureClick;
             _keyBindingService.ConflictingKeyBindingStateChanged -= OnStateChanged;
+            _toastNotificationService.TextView.Closed -= OnTextViewClosed;
         }
 
         private void OnConfigureClick(object sender, EventArgs e)
         {
             _keyBindingService.ResolveAnyConflicts();
             _vimApplicationSettings.IgnoredConflictingKeyBinding = true;
+        }
+
+        private void OnTextViewClosed(object sender, EventArgs e)
+        {
+            Unsubscribe();
         }
 
         private void OnNotificationClosed()

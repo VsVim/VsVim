@@ -44,9 +44,17 @@ namespace VsVim.Implementation.ToastNotification
             _toastControl = new ToastControl();
             _toastControl.Visibility = Visibility.Collapsed;
             _toastControl.ToastNotificationCollection.CollectionChanged += OnToastControlItemsChanged;
-
             _editorFormatMap.FormatMappingChanged += OnEditorFormatMappingChanged;
+            _wpfTextView.Closed += OnTextViewClosed;
             UpdateTheme();
+        }
+
+        private void Unsubscribe()
+        {
+            _toastControl.ToastNotificationCollection.Clear();
+            _toastControl.ToastNotificationCollection.CollectionChanged -= OnToastControlItemsChanged;
+            _editorFormatMap.FormatMappingChanged -= OnEditorFormatMappingChanged;
+            _wpfTextView.Closed -= OnTextViewClosed;
         }
 
         private void UpdateTheme()
@@ -73,6 +81,11 @@ namespace VsVim.Implementation.ToastNotification
             {
                 _toastDataMap.Remove(pair.Key);
             }
+        }
+
+        private void OnTextViewClosed(object sender, EventArgs e)
+        {
+            Unsubscribe();
         }
 
         private void OnEditorFormatMappingChanged(object sender, EventArgs e)
@@ -138,7 +151,7 @@ namespace VsVim.Implementation.ToastNotification
 
         void IDisposable.Dispose()
         {
-            _editorFormatMap.FormatMappingChanged -= OnEditorFormatMappingChanged;
+            Unsubscribe();
         }
 
         #endregion
