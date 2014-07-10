@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.Composition;
+﻿using System;
+using System.ComponentModel.Composition;
 using Microsoft.VisualStudio.Text.Classification;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Utilities;
@@ -6,31 +7,33 @@ using Vim;
 
 namespace VsVim.Implementation.ConflictingKey
 {
-    [Export(typeof(IWpfTextViewMarginProvider))]
-    [MarginContainer(PredefinedMarginNames.Top)]
-    [ContentType(VimConstants.ContentType)]
-    [Name(ConflictingKeyBindingMargin.Name)]
-    [TextViewRole(PredefinedTextViewRoles.Document)]
-    internal sealed class ConflictingKeyBindingMarginProvider : IWpfTextViewMarginProvider
+    [Export(typeof(IVimBufferCreationListener))]
+    internal sealed class ConflictingKeyBindingMarginProvider : IVimBufferCreationListener
     {
         private readonly IVim _vim;
         private readonly IKeyBindingService _keyBindingService;
-        private readonly IEditorFormatMapService _formatMapService;
         private readonly IVimApplicationSettings _vimApplicationSettings;
+        private readonly IToastNotificationServiceProvider _toastNotificationServiceProvider;
 
         [ImportingConstructor]
-        internal ConflictingKeyBindingMarginProvider(IVim vim, IKeyBindingService keyBindingService, IEditorFormatMapService formatMapService, IVimApplicationSettings vimApplicationSettings)
+        internal ConflictingKeyBindingMarginProvider(IVim vim, IKeyBindingService keyBindingService, IVimApplicationSettings vimApplicationSettings, IToastNotificationServiceProvider toastNotificationServiceProvider)
         {
             _vim = vim;
             _keyBindingService = keyBindingService;
-            _formatMapService = formatMapService;
             _vimApplicationSettings = vimApplicationSettings;
+            _toastNotificationServiceProvider = toastNotificationServiceProvider;
         }
 
-        public IWpfTextViewMargin CreateMargin(IWpfTextViewHost wpfTextViewHost, IWpfTextViewMargin marginContainer)
+        void IVimBufferCreationListener.VimBufferCreated(IVimBuffer vimBuffer)
         {
-            var map = _formatMapService.GetEditorFormatMap(wpfTextViewHost.TextView);
-            return new ConflictingKeyBindingMargin(_keyBindingService, map, _vimApplicationSettings);
+            var wpfTextView = vimBuffer.TextView as IWpfTextView;
+            if (wpfTextView == null)
+            {
+                return;
+            }
+
+            var toastNotificationService = _toastNotificationServiceProvider.GetToastNoficationService(wpfTextView);
+            new ConflictingKeyBindingMargin(_keyBindingService, _vimApplicationSettings, toastNotificationService);
         }
     }
 }

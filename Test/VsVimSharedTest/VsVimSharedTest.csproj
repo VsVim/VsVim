@@ -93,6 +93,7 @@
     <Compile Include="ResultTest.cs" />
     <Compile Include="ScopeDataTest.cs" />
     <Compile Include="SettingSerializerTest.cs" />
+    <Compile Include="ToastNotificationServiceTest.cs" />
     <Compile Include="UnitTestExtensions.cs" />
     <Compile Include="ExternalEditMonitorTest.cs" />
     <Compile Include="KeyStrokeTest.cs" />

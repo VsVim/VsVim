@@ -6,25 +6,23 @@ using Microsoft.VisualStudio.Text.Editor;
 
 namespace VsVim.Implementation.ConflictingKey
 {
-    internal sealed class ConflictingKeyBindingMargin : IWpfTextViewMargin
+    internal sealed class ConflictingKeyBindingMargin 
     {
-        internal const string Name = "Vim Conflicting KeyBinding Margin";
-
         private readonly IKeyBindingService _keyBindingService;
         private readonly ConflictingKeyBindingMarginControl _control;
         private readonly IVimApplicationSettings _vimApplicationSettings;
-        private bool _enabled = true;
+        private readonly IToastNotificationService _toastNotificationService;
+        private readonly object _toastKey = new object();
+        private bool _hasDisplayed;
 
-        internal ConflictingKeyBindingMargin(IKeyBindingService service, IEditorFormatMap formatMap, IVimApplicationSettings vimApplicationSettings)
+        internal ConflictingKeyBindingMargin(IKeyBindingService service, IVimApplicationSettings vimApplicationSettings, IToastNotificationService toastNotificationService)
         {
             _keyBindingService = service;
             _vimApplicationSettings = vimApplicationSettings;
             _control = new ConflictingKeyBindingMarginControl();
-            _control.Background = formatMap.GetBackgroundBrush(EditorFormatDefinitionNames.Margin, MarginFormatDefinition.DefaultColor);
-
             _control.ConfigureClick += OnConfigureClick;
-            _control.IgnoreClick += OnIgnoreClick;
             _keyBindingService.ConflictingKeyBindingStateChanged += OnStateChanged;
+            _toastNotificationService = toastNotificationService;
 
             OnStateChanged(this, EventArgs.Empty);
         }
@@ -32,7 +30,6 @@ namespace VsVim.Implementation.ConflictingKey
         private void Unsubscribe()
         {
             _control.ConfigureClick -= OnConfigureClick;
-            _control.IgnoreClick -= OnIgnoreClick;
             _keyBindingService.ConflictingKeyBindingStateChanged -= OnStateChanged;
         }
 
@@ -42,7 +39,7 @@ namespace VsVim.Implementation.ConflictingKey
             _vimApplicationSettings.IgnoredConflictingKeyBinding = true;
         }
 
-        private void OnIgnoreClick(object sender, EventArgs e)
+        private void OnNotificationClosed()
         {
             _keyBindingService.IgnoreAnyConflicts();
             _vimApplicationSettings.IgnoredConflictingKeyBinding = true;
@@ -54,45 +51,18 @@ namespace VsVim.Implementation.ConflictingKey
             {
                 case ConflictingKeyBindingState.HasNotChecked:
                 case ConflictingKeyBindingState.ConflictsIgnoredOrResolved:
-                    _control.Visibility = Visibility.Collapsed;
-                    _enabled = false;
+                    if (_hasDisplayed)
+                    {
+                        _toastNotificationService.Remove(_toastKey);
+                    }
                     break;
                 case ConflictingKeyBindingState.FoundConflicts:
-                    _control.Visibility = Visibility.Visible;
-                    _enabled = true;
+                    _toastNotificationService.Display(_toastKey, _control, OnNotificationClosed);
+                    _hasDisplayed = true;
                     break;
                 default:
                     throw new Exception("Enum value unknown");
             }
         }
-
-        #region IWpfTextViewMargin
-
-        public System.Windows.FrameworkElement VisualElement
-        {
-            get { return _control; }
-        }
-
-        public bool Enabled
-        {
-            get { return _enabled; }
-        }
-
-        public ITextViewMargin GetTextViewMargin(string marginName)
-        {
-            return marginName == Name ? this : null;
-        }
-
-        public double MarginSize
-        {
-            get { return 25d; }
-        }
-
-        public void Dispose()
-        {
-            Unsubscribe();
-        }
-
-        #endregion
     }
 }
