@@ -22,7 +22,7 @@ namespace VsVim
     [ProvideOptionPage(typeof(VsVim.Implementation.OptionPages.DefaultOptionPage), "VsVim", "Defaults", 0, 0, supportsAutomation: true)]
     [ProvideOptionPage(typeof(VsVim.Implementation.OptionPages.KeyboardOptionPage), "VsVim", "Keyboard", 0, 0, supportsAutomation: true)]
     [Guid(GuidList.VsVimPackageString)]
-    public sealed class VsVimPackage : Package
+    public sealed class VsVimPackage : Package, IOleCommandTarget
     {
         private IComponentModel _componentModel;
         private ExportProvider _exportProvider;
@@ -56,5 +56,50 @@ namespace VsVim
         {
             ShowOptionPage(typeof(VsVim.Implementation.OptionPages.KeyboardOptionPage));
         }
+
+        #region IOleCommandTarget
+
+        int IOleCommandTarget.Exec(ref Guid commandGroup, uint commandId, uint commandExecOpt, IntPtr variantIn, IntPtr variantOut)
+        {
+            if (commandGroup == GuidList.VsVimCommandSet)
+            {
+                switch (commandId)
+                {
+                    case CommandIds.Options:
+                        ShowOptionPage(typeof(VsVim.Implementation.OptionPages.KeyboardOptionPage));
+                        break;
+                    default:
+                        Debug.Assert(false);
+                        break;
+                }
+
+                return VSConstants.S_OK;
+            }
+
+            return VSConstants.E_FAIL;
+        }
+
+        int IOleCommandTarget.QueryStatus(ref Guid commandGroup, uint commandsCount, OLECMD[] commands, IntPtr pCmdText)
+        {
+            if (commandGroup == GuidList.VsVimCommandSet && commandsCount == 1)
+            {
+                switch (commands[0].cmdID)
+                {
+                    case CommandIds.Options:
+                        commands[0].cmdf = (uint)(OLECMDF.OLECMDF_ENABLED | OLECMDF.OLECMDF_SUPPORTED);
+                        break;
+                    default:
+                        commands[0].cmdf = 0;
+                        break;
+
+                }
+
+                return VSConstants.S_OK;
+            }
+
+            return VSConstants.E_FAIL;
+        }
+
+        #endregion 
     }
 }
