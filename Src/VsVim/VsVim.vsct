@@ -62,6 +62,8 @@
         <Strings>
           <CommandName>cmdidVsVimOptions</CommandName>
           <ButtonText>VsVim Options</ButtonText>
+          <CanonicalName>.VsVim.Options</CanonicalName>
+          <LocCanonicalName>.VsVim.Options</LocCanonicalName>
         </Strings>
       </Button>
 
