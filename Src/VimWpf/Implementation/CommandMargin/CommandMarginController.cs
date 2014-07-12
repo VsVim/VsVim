@@ -10,6 +10,7 @@ using Vim.Extensions;
 using Vim.UI.Wpf.Properties;
 using WpfKeyboard = System.Windows.Input.Keyboard;
 using System.Text;
+using System.Diagnostics;
 
 namespace Vim.UI.Wpf.Implementation.CommandMargin
 {
@@ -33,15 +34,39 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
 
     internal sealed class CommandMarginController
     {
+        /// <summary>
+        /// Captures the changes which occur during a key press event.  Essentially the information
+        /// between the start and end key event in Vim 
+        /// </summary>
+        private struct VimBufferKeyEventState
+        {
+            internal bool InEvent;
+
+            /// <summary>
+            /// Stores any messages that occurred in the buffer (warnings, errors, etc ...) 
+            /// </summary>
+            internal string Message;
+
+            /// <summary>
+            /// Stores the last switch mode which occurred during the key event 
+            /// </summary>
+            internal SwitchModeEventArgs SwitchModeEventArgs;
+
+            internal void Clear()
+            {
+                InEvent = false;
+                Message = null;
+                SwitchModeEventArgs = null;
+            }
+        }
+
         private readonly IVimBuffer _vimBuffer;
         private readonly CommandMarginControl _margin;
         private readonly IEditorFormatMap _editorFormatMap;
         private readonly IFontProperties _fontProperties;
         private readonly FrameworkElement _parentVisualElement;
-        private bool _inKeyInputEvent;
+        private VimBufferKeyEventState _vimBufferKeyEventState;
         private bool _inUpdateVimBufferState;
-        private string _message;
-        private SwitchModeEventArgs _modeSwitchEventArgs;
         private EditKind _editKind;
 
         /// <summary>
@@ -55,6 +80,14 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
         internal EditKind CommandLineEditKind
         {
             get { return _editKind; }
+        }
+
+        /// <summary>
+        /// Are we in the middle of a key press sequence?  
+        /// </summary>
+        internal bool InVimBufferKeyEvent
+        {
+            get { return _vimBufferKeyEventState.InEvent; }
         }
 
         internal CommandMarginController(IVimBuffer buffer, FrameworkElement parentVisualElement, CommandMarginControl control, IEditorFormatMap editorFormatMap, IFontProperties fontProperties)
@@ -125,17 +158,18 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
 
         private void KeyInputEventComplete()
         {
-            _inKeyInputEvent = false;
+            Debug.Assert(_vimBufferKeyEventState.InEvent);
 
             try
             {
-                if (!String.IsNullOrEmpty(_message))
+                if (!String.IsNullOrEmpty(_vimBufferKeyEventState.Message))
                 {
-                    _margin.StatusLine = _message;
+                    _margin.StatusLine = _vimBufferKeyEventState.Message;
                 }
-                else if (_modeSwitchEventArgs != null)
+                else if (_vimBufferKeyEventState.SwitchModeEventArgs != null)
                 {
-                    UpdateForSwitchMode(_modeSwitchEventArgs.PreviousMode, _modeSwitchEventArgs.CurrentMode);
+                    var args = _vimBufferKeyEventState.SwitchModeEventArgs;
+                    UpdateForSwitchMode(args.PreviousMode, args.CurrentMode);
                 }
                 else
                 {
@@ -144,16 +178,15 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             }
             finally
             {
-                _message = null;
-                _modeSwitchEventArgs = null;
+                _vimBufferKeyEventState.Clear();
             }
         }
 
         private void MessageEvent(string message)
         {
-            if (_inKeyInputEvent)
+            if (_vimBufferKeyEventState.InEvent)
             {
-                _message = message;
+                _vimBufferKeyEventState.Message = message;
             }
             else
             {
@@ -452,9 +485,9 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
 
         private void OnSwitchMode(object sender, SwitchModeEventArgs args)
         {
-            if (_inKeyInputEvent)
+            if (InVimBufferKeyEvent)
             {
-                _modeSwitchEventArgs = args;
+                _vimBufferKeyEventState.SwitchModeEventArgs = args;
             }
             else
             {
@@ -464,7 +497,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
 
         private void OnKeyInputStart(object sender, KeyInputStartEventArgs args)
         {
-            _inKeyInputEvent = true;
+            _vimBufferKeyEventState.InEvent = true;
             CheckEnableCommandLineEdit(args);
         }
 
