@@ -67,6 +67,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
         private readonly FrameworkElement _parentVisualElement;
         private VimBufferKeyEventState _vimBufferKeyEventState;
         private bool _inUpdateVimBufferState;
+        private bool _inCommandLineUpdate;
         private EditKind _editKind;
 
         /// <summary>
@@ -88,6 +89,11 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
         internal bool InVimBufferKeyEvent
         {
             get { return _vimBufferKeyEventState.InEvent; }
+        }
+
+        internal bool InCommandLineUpdate
+        {
+            get { return _inCommandLineUpdate; }
         }
 
         internal CommandMarginController(IVimBuffer buffer, FrameworkElement parentVisualElement, CommandMarginControl control, IEditorFormatMap editorFormatMap, IFontProperties fontProperties)
@@ -164,7 +170,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             {
                 if (!String.IsNullOrEmpty(_vimBufferKeyEventState.Message))
                 {
-                    _margin.StatusLine = _vimBufferKeyEventState.Message;
+                    UpdateCommandLine(_vimBufferKeyEventState.Message);
                 }
                 else if (_vimBufferKeyEventState.SwitchModeEventArgs != null)
                 {
@@ -190,7 +196,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             }
             else
             {
-                _margin.StatusLine = message;
+                UpdateCommandLine(message);
             }
         }
 
@@ -216,54 +222,54 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             switch (currentMode.ModeKind)
             {
                 case ModeKind.Normal:
-                    _margin.StatusLine = String.IsNullOrEmpty(oneTimeArgument)
+                    UpdateCommandLine(String.IsNullOrEmpty(oneTimeArgument)
                         ? String.Empty
-                        : String.Format(Resources.NormalOneTimeCommandBanner, oneTimeArgument);
+                        : String.Format(Resources.NormalOneTimeCommandBanner, oneTimeArgument));
                     break;
                 case ModeKind.Command:
-                    _margin.StatusLine = ":" + _vimBuffer.CommandMode.Command;
+                    UpdateCommandLine(":" + _vimBuffer.CommandMode.Command);
                     break;
                 case ModeKind.Insert:
-                    _margin.StatusLine = Resources.InsertBanner;
+                    UpdateCommandLine(Resources.InsertBanner);
                     break;
                 case ModeKind.Replace:
-                    _margin.StatusLine = Resources.ReplaceBanner;
+                    UpdateCommandLine(Resources.ReplaceBanner);
                     break;
                 case ModeKind.VisualBlock:
-                    _margin.StatusLine = String.IsNullOrEmpty(oneTimeArgument)
+                    UpdateCommandLine(String.IsNullOrEmpty(oneTimeArgument)
                         ? Resources.VisualBlockBanner
-                        : String.Format(Resources.VisualBlockOneTimeCommandBanner, oneTimeArgument);
+                        : String.Format(Resources.VisualBlockOneTimeCommandBanner, oneTimeArgument));
                     break;
                 case ModeKind.VisualCharacter:
-                    _margin.StatusLine = String.IsNullOrEmpty(oneTimeArgument)
+                    UpdateCommandLine(String.IsNullOrEmpty(oneTimeArgument)
                         ? Resources.VisualCharacterBanner
-                        : String.Format(Resources.VisualCharacterOneTimeCommandBanner, oneTimeArgument);
+                        : String.Format(Resources.VisualCharacterOneTimeCommandBanner, oneTimeArgument));
                     break;
                 case ModeKind.VisualLine:
-                    _margin.StatusLine = String.IsNullOrEmpty(oneTimeArgument)
+                    UpdateCommandLine(String.IsNullOrEmpty(oneTimeArgument)
                         ? Resources.VisualLineBanner
-                        : String.Format(Resources.VisualLineOneTimeCommandBanner, oneTimeArgument);
+                        : String.Format(Resources.VisualLineOneTimeCommandBanner, oneTimeArgument));
                     break;
                 case ModeKind.SelectBlock:
-                    _margin.StatusLine = Resources.SelectBlockBanner;
+                    UpdateCommandLine(Resources.SelectBlockBanner);
                     break;
                 case ModeKind.SelectCharacter:
-                    _margin.StatusLine = Resources.SelectCharacterBanner;
+                    UpdateCommandLine(Resources.SelectCharacterBanner);
                     break;
                 case ModeKind.SelectLine:
-                    _margin.StatusLine = Resources.SelectLineBanner;
+                    UpdateCommandLine(Resources.SelectLineBanner);
                     break;
                 case ModeKind.ExternalEdit:
-                    _margin.StatusLine = Resources.ExternalEditBanner;
+                    UpdateCommandLine(Resources.ExternalEditBanner);
                     break;
                 case ModeKind.Disabled:
-                    _margin.StatusLine = _vimBuffer.DisabledMode.HelpMessage;
+                    UpdateCommandLine(_vimBuffer.DisabledMode.HelpMessage);
                     break;
                 case ModeKind.SubstituteConfirm:
                     UpdateSubstituteConfirmMode();
                     break;
                 default:
-                    _margin.StatusLine = String.Empty;
+                    UpdateCommandLine(String.Empty);
                     break;
             }
         }
@@ -284,32 +290,32 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             var search = _vimBuffer.IncrementalSearch;
             if (search.InSearch)
             {
-                _margin.StatusLine = search.CurrentSearchText;
+                UpdateCommandLine(search.CurrentSearchText);
                 return;
             }
 
             switch (_vimBuffer.ModeKind)
             {
                 case ModeKind.Command:
-                    _margin.StatusLine = ":" + _vimBuffer.CommandMode.Command.Trim('\0'); ;
+                    UpdateCommandLine(":" + _vimBuffer.CommandMode.Command.Trim('\0'));
                     break;
                 case ModeKind.Normal:
-                    _margin.StatusLine = _vimBuffer.NormalMode.Command;
+                    UpdateCommandLine(_vimBuffer.NormalMode.Command);
                     break;
                 case ModeKind.SubstituteConfirm:
                     UpdateSubstituteConfirmMode();
                     break;
                 case ModeKind.Disabled:
-                    _margin.StatusLine = _vimBuffer.DisabledMode.HelpMessage;
+                    UpdateCommandLine(_vimBuffer.DisabledMode.HelpMessage);
                     break;
                 case ModeKind.VisualBlock:
-                    _margin.StatusLine = Resources.VisualBlockBanner;
+                    UpdateCommandLine(Resources.VisualBlockBanner);
                     break;
                 case ModeKind.VisualCharacter:
-                    _margin.StatusLine = Resources.VisualCharacterBanner;
+                    UpdateCommandLine(Resources.VisualCharacterBanner);
                     break;
                 case ModeKind.VisualLine:
-                    _margin.StatusLine = Resources.VisualLineBanner;
+                    UpdateCommandLine(Resources.VisualLineBanner);
                     break;
             }
         }
@@ -324,7 +330,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
         private void UpdateSubstituteConfirmMode()
         {
             var replace = _vimBuffer.SubstituteConfirmMode.CurrentSubstitute.SomeOrDefault("");
-            _margin.StatusLine = String.Format(Resources.SubstituteConfirmBannerFormat, replace);
+            UpdateCommandLine(String.Format(Resources.SubstituteConfirmBannerFormat, replace));
         }
 
         /// <summary>
@@ -347,6 +353,25 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
 
             // Convert points (1 pt = 1/72") to pixels (1 WPF pixel = 1/96").
             _margin.TextFontSize = _fontProperties.FontSize * 96 / 72;
+        }
+
+        /// <summary>
+        /// This is the one and only function which should be updating the command line being displayed
+        /// to the user.  Having a single function to perform this allows us to distinguish between edits
+        /// from the user and mere messaging changes coming from vim events
+        /// </summary>
+        private void UpdateCommandLine(string commandLine)
+        {
+            Debug.Assert(!_inCommandLineUpdate);
+            _inCommandLineUpdate = true;
+            try
+            {
+                _margin.CommandLineTextBox.Text = commandLine;
+            }
+            finally
+            {
+                _inCommandLineUpdate = false;
+            }
         }
 
         /// <summary>
@@ -571,6 +596,13 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
 
         private void OnCommandLineTextBoxTextChanged(object sender, RoutedEventArgs e)
         {
+            // If the update is being made by the control for the purpose of displaying a message
+            // then we do not want or need to respond to this event 
+            if (_inCommandLineUpdate)
+            {
+                return;
+            }
+
             // If we are in an edit mode make sure the user didn't delete the command prefix 
             // from the edit box 
             var command = _margin.CommandLineTextBox.Text;

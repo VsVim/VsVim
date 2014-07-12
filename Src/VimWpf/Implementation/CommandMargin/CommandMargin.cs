@@ -15,7 +15,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
 
         public CommandMargin(FrameworkElement parentVisualElement, IVimBuffer buffer, IEditorFormatMap editorFormatMap, IFontProperties fontProperties)
         {
-            _margin.StatusLine = "Welcome to Vim";
+            _margin.CommandLineTextBox.Text = "Welcome to Vim";
             _controller = new CommandMarginController(buffer, parentVisualElement, _margin, editorFormatMap, fontProperties);
         }
 

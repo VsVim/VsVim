@@ -29,7 +29,7 @@ namespace Vim.UI.Wpf.UnitTest
         {
             _factory = new MockRepository(MockBehavior.Strict);
             _marginControl = new CommandMarginControl();
-            _marginControl.StatusLine = String.Empty;
+            _marginControl.CommandLineTextBox.Text = String.Empty;
             _vimBuffer = CreateVimBuffer(lines);
             _textBuffer = _vimBuffer.TextBuffer;
             _textView = _vimBuffer.TextView;
