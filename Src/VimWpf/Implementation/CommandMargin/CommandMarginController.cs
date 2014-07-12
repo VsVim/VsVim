@@ -39,7 +39,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
         private readonly IFontProperties _fontProperties;
         private readonly FrameworkElement _parentVisualElement;
         private bool _inKeyInputEvent;
-        private bool _inCommandUpdate;
+        private bool _inUpdateVimBufferState;
         private string _message;
         private SwitchModeEventArgs _modeSwitchEventArgs;
         private EditKind _editKind;
@@ -71,7 +71,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             _vimBuffer.StatusMessage += OnStatusMessage;
             _vimBuffer.ErrorMessage += OnErrorMessage;
             _vimBuffer.WarningMessage += OnWarningMessage;
-            _vimBuffer.CommandMode.CommandChanged += OnCommandChanged;
+            _vimBuffer.CommandMode.CommandChanged += OnCommandModeCommandChanged;
             _vimBuffer.Vim.MacroRecorder.RecordingStarted += OnRecordingStarted;
             _vimBuffer.Vim.MacroRecorder.RecordingStopped += OnRecordingStopped;
             _margin.Loaded += OnCommandMarginLoaded;
@@ -118,7 +118,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
 
         internal void Disconnect()
         {
-            _vimBuffer.CommandMode.CommandChanged -= OnCommandChanged;
+            _vimBuffer.CommandMode.CommandChanged -= OnCommandModeCommandChanged;
             _vimBuffer.Vim.MacroRecorder.RecordingStarted -= OnRecordingStarted;
             _vimBuffer.Vim.MacroRecorder.RecordingStopped -= OnRecordingStopped;
         }
@@ -386,9 +386,9 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
         /// <summary>
         /// Update the current command from the given input
         /// </summary>
-        private void UpdateCommand(string input)
+        private void UpdateVimBufferStateWithCommand(string input)
         {
-            _inCommandUpdate = true;
+            _inUpdateVimBufferState = true;
             try
             {
                 input = input ?? "";
@@ -431,7 +431,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             }
             finally
             {
-                _inCommandUpdate = false;
+                _inUpdateVimBufferState = false;
             }
         }
 
@@ -446,11 +446,9 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             }
 
             ChangeEditKind(EditKind.None);
-            UpdateCommand(command);
+            UpdateVimBufferStateWithCommand(command);
             _vimBuffer.Process(KeyInputUtil.EnterKey);
         }
-
-        #region Event Handlers
 
         private void OnSwitchMode(object sender, SwitchModeEventArgs args)
         {
@@ -521,9 +519,11 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             UpdateForRecordingChanged();
         }
 
-        private void OnCommandChanged(object sender, EventArgs e)
+        private void OnCommandModeCommandChanged(object sender, EventArgs e)
         {
-            if (_inCommandUpdate)
+            // It is completely expected for the command mode command to change while we are updating
+            // the vim buffer state.  
+            if (_inUpdateVimBufferState)
             {
                 return;
             }
@@ -568,7 +568,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
                 }
             }
 
-            UpdateCommand(command);
+            UpdateVimBufferStateWithCommand(command);
         }
 
         /// <summary>
@@ -656,7 +656,5 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
                     return null;
             }
         }
-
-        #endregion
     }
 }
