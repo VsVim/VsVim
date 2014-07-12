@@ -40,21 +40,6 @@ namespace VsVim
             _componentModel = (IComponentModel)GetService(typeof(SComponentModel));
             _exportProvider = _componentModel.DefaultExportProvider;
             _vim = _exportProvider.GetExportedValue<IVim>();
-
-            // Add our command handlers for menu (commands must exist in the .vsct file)
-            OleMenuCommandService mcs = GetService(typeof(IMenuCommandService)) as OleMenuCommandService;
-            if (null != mcs)
-            {
-                // Create the command for the menu item.
-                var optionsId = new CommandID(GuidList.VsVimCommandSet, (int)CommandIds.Options);
-                var optionsMenuItem = new MenuCommand(OnOptionsClick, optionsId);
-                mcs.AddCommand(optionsMenuItem);
-            }
-        }
-
-        private void OnOptionsClick(object sender, EventArgs e)
-        {
-            ShowOptionPage(typeof(VsVim.Implementation.OptionPages.KeyboardOptionPage));
         }
 
         #region IOleCommandTarget
