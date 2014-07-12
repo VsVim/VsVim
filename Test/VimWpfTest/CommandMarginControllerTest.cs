@@ -9,14 +9,17 @@ using Vim.Extensions;
 using Vim.UI.Wpf.Implementation.CommandMargin;
 using Vim.UI.Wpf.Properties;
 using Vim.UnitTest.Mock;
+using Vim.UnitTest;
 
 namespace Vim.UI.Wpf.UnitTest
 {
-    public abstract class CommandMarginControllerTest
+    public abstract class CommandMarginControllerTest 
     {
         private readonly MockRepository _factory;
         private readonly CommandMarginControl _marginControl;
         private readonly CommandMarginController _controller;
+        private readonly MockVimBuffer _vimBuffer;
+        private readonly Mock<IIncrementalSearch> _search;
 
         protected CommandMarginControllerTest()
         {
@@ -24,7 +27,13 @@ namespace Vim.UI.Wpf.UnitTest
             _marginControl = new CommandMarginControl();
             _marginControl.StatusLine = String.Empty;
 
-            var vimBuffer = CreateVimBuffer();
+            _search = _factory.Create<IIncrementalSearch>();
+            _search.SetupGet(x => x.InSearch).Returns(false);
+            _vimBuffer = new MockVimBuffer();
+            _vimBuffer.IncrementalSearchImpl = _search.Object;
+            _vimBuffer.VimImpl = MockObjectFactory.CreateVim(factory: _factory).Object;
+            _vimBuffer.CommandModeImpl = _factory.Create<ICommandMode>(MockBehavior.Loose).Object;
+
             var editorFormatMap = _factory.Create<IEditorFormatMap>(MockBehavior.Loose);
             editorFormatMap.Setup(x => x.GetProperties(It.IsAny<string>())).Returns(new ResourceDictionary());
             var fontProperties = MockObjectFactory.CreateFontProperties("Courier New", 10, _factory);
@@ -32,35 +41,56 @@ namespace Vim.UI.Wpf.UnitTest
             var parentVisualElement = _factory.Create<FrameworkElement>();
 
             _controller = new CommandMarginController(
-                vimBuffer,
+                _vimBuffer,
                 parentVisualElement.Object,
                 _marginControl,
                 editorFormatMap.Object,
                 fontProperties.Object);
         }
 
-        protected abstract IVimBuffer CreateVimBuffer();
+        public sealed class KeyInputEventTest : CommandMarginControllerTest
+        {
+            private static KeyInput GetKeyInput(char c)
+            {
+                return KeyInputUtil.CharToKeyInput(c);
+            }
+
+            [Fact]
+            public void InKeyEvent()
+            {
+                var keyInput = GetKeyInput('c');
+                _vimBuffer.RaiseKeyInputStart(keyInput);
+                Assert.True(_controller.InVimBufferKeyEvent);
+                _vimBuffer.RaiseKeyInputEnd(keyInput);
+                Assert.False(_controller.InVimBufferKeyEvent);
+            }
+
+            [Fact]
+            public void MessageEventNoKeyEvent()
+            {
+                var msg = "test";
+                _vimBuffer.RaiseErrorMessage(msg);
+                Assert.Equal(msg, _marginControl.StatusLine);
+            }
+
+            [Fact]
+            public void MessageEventKeyEvent()
+            {
+                var msg = "test";
+                var keyInput = GetKeyInput('c');
+                _vimBuffer.RaiseKeyInputStart(keyInput);
+                _vimBuffer.RaiseErrorMessage(msg);
+                Assert.NotEqual(msg, _marginControl.StatusLine);
+                _vimBuffer.RaiseKeyInputEnd(keyInput);
+                Assert.Equal(msg, _marginControl.StatusLine);
+            }
+        }
 
         public sealed class MiscTest : CommandMarginControllerTest
         {
-            private MockVimBuffer _vimBuffer;
-            private Mock<IIncrementalSearch> _search;
-
             public MiscTest()
             {
 
-            }
-
-            protected override IVimBuffer CreateVimBuffer()
-            {
-                _search = _factory.Create<IIncrementalSearch>();
-                _search.SetupGet(x => x.InSearch).Returns(false);
-                _vimBuffer = new MockVimBuffer();
-                _vimBuffer.IncrementalSearchImpl = _search.Object;
-                _vimBuffer.VimImpl = MockObjectFactory.CreateVim(factory: _factory).Object;
-                _vimBuffer.CommandModeImpl = _factory.Create<ICommandMode>(MockBehavior.Loose).Object;
-
-                return _vimBuffer;
             }
 
             private void SimulateKeystroke()
