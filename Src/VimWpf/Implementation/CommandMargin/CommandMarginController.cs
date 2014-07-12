@@ -622,14 +622,9 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
                     update = true;
                 }
 
-                // If there is an update requested then change the text and immediately return.  The change
-                // of text will cause this function to be re-entered since it's an event handler for 
-                // text change.  Hence return because the new command has already been processed
                 if (update)
                 {
-                    _margin.CommandLineTextBox.Text = command;
-                    _margin.CommandLineTextBox.Select(1, 0);
-                    return;
+                    UpdateCommandLine(command);
                 }
             }
 
