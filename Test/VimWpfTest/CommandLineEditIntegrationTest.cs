@@ -287,6 +287,15 @@ namespace Vim.UI.Wpf.UnitTest
                     ProcessNotation(@":t<Left><C-r><Esc>");
                     Assert.False(_controller.InPasteWait);
                 }
+
+                [Fact]
+                public void PasteStartCaretPosition()
+                {
+                    Create();
+                    ProcessNotation(@":t<Left><C-r>");
+                    Assert.Equal(":\"t", _marginControl.CommandLineTextBox.Text);
+                    Assert.Equal(1, _marginControl.CommandLineTextBox.SelectionStart);
+                }
             }
         }
     }

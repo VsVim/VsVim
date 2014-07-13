@@ -162,6 +162,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
                         ParentVisualElement.Focus();
                     }
                     _margin.IsEditReadOnly = true;
+                    UpdateForNoEvent();
                     break;
                 case EditKind.Command:
                 case EditKind.SearchForward:
@@ -428,8 +429,20 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
                 case Key.R:
                     if (e.KeyboardDevice.Modifiers == ModifierKeys.Control)
                     {
+                        // During edits we are responsible for handling the command line.  Need to 
+                        // put a " into the box at the edit position
+                        var textBox = _margin.CommandLineTextBox;
+                        var text = textBox.Text;
+                        var builder = new StringBuilder();
+                        var offset = textBox.SelectionStart;
+                        builder.Append(text, 0, offset);
+                        builder.Append('"');
+                        builder.Append(text, offset, text.Length - offset);
+                        UpdateCommandLine(builder.ToString());
+                        textBox.Select(offset, 0);
+
+                        // Now move the buffer into paste wait 
                         _vimBuffer.Process(KeyInputUtil.ApplyModifiersToChar('r', KeyModifiers.Control));
-                        e.Handled = true;
                     }
                     break;
             }
@@ -772,7 +785,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
                         var builder = new StringBuilder();
                         builder.Append(command, 0, change.Offset);
                         builder.Append(toPaste);
-                        builder.Append(command, change.Offset + 1, command.Length - (change.Offset + 1));
+                        builder.Append(command, change.Offset + 2, command.Length - (change.Offset + 2));
                         _margin.CommandLineTextBox.Text = builder.ToString();
                         _margin.CommandLineTextBox.Select(change.Offset + toPaste.Length, 0);
                     }
