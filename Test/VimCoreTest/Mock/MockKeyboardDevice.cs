@@ -144,6 +144,13 @@ namespace Vim.UnitTest.Mock
                 return true;
             }
 
+            if ((char)18 == keyInput.Char)
+            {
+                key = Key.R;
+                modKeys = ModifierKeys.Control;
+                return true;
+            }
+
             return false;
         }
 

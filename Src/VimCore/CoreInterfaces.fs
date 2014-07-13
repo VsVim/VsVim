@@ -3620,15 +3620,15 @@ type internal IHistoryClient<'TData, 'TResult> =
     abstract Beep : unit -> unit
 
     /// Process the new command with the previous TData value
-    abstract ProcessCommand : 'TData -> string -> 'TData
+    abstract ProcessCommand : data : 'TData -> command : string -> 'TData
 
     /// Called when the command is completed.  The last valid TData and command
     /// string will be provided
-    abstract Completed : 'TData -> string -> 'TResult
+    abstract Completed : data : 'TData -> command : string -> 'TResult
 
     /// Called when the command is cancelled.  The last valid TData value will
     /// be provided
-    abstract Cancelled : 'TData -> unit
+    abstract Cancelled : data : 'TData -> unit
 
 /// An active use of an IHistoryClient instance 
 type internal IHistorySession<'TData, 'TResult> =

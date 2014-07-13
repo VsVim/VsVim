@@ -425,6 +425,13 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
                     _vimBuffer.Process(KeyInputUtil.VimKeyToKeyInput(VimKey.Down));
                     e.Handled = true;
                     break;
+                case Key.R:
+                    if (e.KeyboardDevice.Modifiers == ModifierKeys.Control)
+                    {
+                        _vimBuffer.Process(KeyInputUtil.ApplyModifiersToChar('r', KeyModifiers.Control));
+                        e.Handled = true;
+                    }
+                    break;
             }
         }
 
@@ -750,10 +757,26 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
                 if (change.AddedLength == 1)
                 {
                     // If we are in a paste wait context then attempt to complete it by passing on the 
-                    // typed char to _vimBuffer.  This will process it as the register, create the 
-                    // event and force the UI update 
-                    var keyInput = KeyInputUtil.CharToKeyInput(command[command.Length - 1]);
+                    // typed char to _vimBuffer.  This will process it as the register
+                    var c = command[change.Offset];
+                    var keyInput = KeyInputUtil.CharToKeyInput(c);
                     _vimBuffer.Process(keyInput);
+
+                    // Now we need to update the command line.  During edits the controller is responsible
+                    // for manually updating the command line state.  Also we have to keep the caret postion
+                    // correct
+                    var name = RegisterName.OfChar('c');
+                    if (name.IsSome())
+                    {
+                        var toPaste = _vimBuffer.GetRegister(name.Value).StringValue;
+                        var builder = new StringBuilder();
+                        builder.Append(command, 0, change.Offset);
+                        builder.Append(toPaste);
+                        builder.Append(command, change.Offset + 1, command.Length - (change.Offset + 1));
+                        _margin.CommandLineTextBox.Text = builder.ToString();
+                        _margin.CommandLineTextBox.Select(change.Offset + toPaste.Length, 0);
+                    }
+
                     return;
                 }
             }

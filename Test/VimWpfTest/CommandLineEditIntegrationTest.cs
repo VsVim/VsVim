@@ -239,15 +239,54 @@ namespace Vim.UI.Wpf.UnitTest
             }
         }
 
-        public sealed class PasteTest : CommandLineEditIntegrationTest
+        public abstract class PasteTest : CommandLineEditIntegrationTest
         {
-            [Fact(Skip ="Eventually this will work")]
-            public void Simple()
+            public sealed class PasteFromVimTest : PasteTest
             {
-                Create("cat");
-                Vim.RegisterMap.GetRegister('c').UpdateValue("test");
-                ProcessNotation(@":<C-R>c");
-                Assert.Equal("test", _marginControl.CommandLineTextBox.Text);
+                [Fact]
+                public void Simple()
+                {
+                    Create("cat");
+                    Vim.RegisterMap.GetRegister('c').UpdateValue("test");
+                    ProcessNotation(@":<C-R>c");
+                    Assert.Equal(":test", _marginControl.CommandLineTextBox.Text);
+                }
+
+                [Fact]
+                public void InPasteWait()
+                {
+                    Create("cat");
+                    ProcessNotation(@":<C-R>");
+                    Assert.True(_controller.InPasteWait);
+                }
+            }
+
+            public sealed class PasteInEditTest : PasteTest
+            {
+                [Fact]
+                public void Simple()
+                {
+                    Create("cat");
+                    Vim.RegisterMap.GetRegister('c').UpdateValue("ca");
+                    ProcessNotation(@":t<Left><C-r>c");
+                    Assert.Equal(":cat", _marginControl.CommandLineTextBox.Text);
+                }
+
+                [Fact]
+                public void InPasteWait()
+                {
+                    Create("cat");
+                    ProcessNotation(@":t<Left><C-r>");
+                    Assert.True(_controller.InPasteWait);
+                }
+
+                [Fact]
+                public void EscapeCancels()
+                {
+                    Create("cat");
+                    ProcessNotation(@":t<Left><C-r><Esc>");
+                    Assert.False(_controller.InPasteWait);
+                }
             }
         }
     }

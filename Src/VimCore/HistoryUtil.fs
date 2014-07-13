@@ -38,6 +38,7 @@ type internal HistorySession<'TData, 'TResult>
         // information returned 
         _clientData <- _historyClient.ProcessCommand _clientData command
         _command <- command
+        _inPasteWait <- false
 
     member x.CreateBindResult() = 
         BindResult<_>.CreateNeedMoreInput _historyClient.RemapMode x.Process
