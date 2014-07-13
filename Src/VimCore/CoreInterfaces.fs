@@ -3607,6 +3607,9 @@ type internal IHistoryClient<'TData, 'TResult> =
     /// History list used by this client
     abstract HistoryList : HistoryList
 
+    /// Get the register map 
+    abstract RegisterMap : IRegisterMap
+
     /// What remapping mode if any should be used for key input
     abstract RemapMode : KeyRemapMode
 
@@ -3632,6 +3635,9 @@ type internal IHistorySession<'TData, 'TResult> =
 
     /// The current command that is being used 
     abstract Command : string 
+
+    /// Is the session currently waiting for a register paste operation to complete
+    abstract InPasteWait : bool
 
     /// The current client data 
     abstract ClientData : 'TData

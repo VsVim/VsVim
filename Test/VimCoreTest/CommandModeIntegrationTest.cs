@@ -519,6 +519,18 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class PasteTest : CommandModeIntegrationTest
+        {
+            [Fact]
+            public void Simple()
+            {
+                Create("");
+                Vim.RegisterMap.GetRegister('c').UpdateValue("test");
+                _vimBuffer.ProcessNotation(":<C-r>c");
+                Assert.Equal("test", _commandMode.Command);
+            }
+        }
+
         public abstract class SubstituteTest : CommandModeIntegrationTest
         {
             public sealed class GlobalDefaultTest : SubstituteTest

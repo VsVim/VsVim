@@ -18,6 +18,7 @@ type HistoryCommand =
     | Execute
     | Cancel
     | Back
+    | Paste
 
 type internal HistorySession<'TData, 'TResult>
     (
@@ -26,8 +27,10 @@ type internal HistorySession<'TData, 'TResult>
         _command : string
     ) =
 
+    let _registerMap = _historyClient.RegisterMap
     let mutable _command = _command
     let mutable _clientData = _initialClientData
+    let mutable _inPasteWait = false
     let mutable _historyState = HistoryState.Empty
 
     member x.ResetCommand command = 
@@ -44,6 +47,12 @@ type internal HistorySession<'TData, 'TResult>
 
     /// Process a single KeyInput value in the state machine. 
     member x.Process (keyInput: KeyInput) =
+        if _inPasteWait then
+            x.ProcessPaste keyInput
+        else
+            x.ProcessCore keyInput
+
+    member x.ProcessCore keyInput =
         match Map.tryFind keyInput HistoryUtil.KeyInputMap with
         | Some HistoryCommand.Execute ->
             // Enter key completes the action
@@ -68,10 +77,23 @@ type internal HistorySession<'TData, 'TResult>
             x.ProcessPrevious()
         | Some HistoryCommand.Next ->
             x.ProcessNext()
+        | Some HistoryCommand.Paste ->
+            _inPasteWait <- true
+            x.CreateBindResult()
         | None -> 
             let command = _command + (keyInput.Char.ToString())
             x.ResetCommand command
             x.CreateBindResult()
+
+    member x.ProcessPaste keyInput = 
+        match RegisterName.OfChar keyInput.Char with
+        | None -> ()
+        | Some name -> 
+            let register = _registerMap.GetRegister name
+            x.ResetCommand (_command + register.StringValue)
+
+        _inPasteWait <- false
+        x.CreateBindResult()
 
     /// Run a history scroll at the specified index
     member x.DoHistoryScroll (historyList : string list) index =
@@ -122,6 +144,7 @@ type internal HistorySession<'TData, 'TResult>
         member x.HistoryClient = _historyClient
         member x.Command = _command
         member x.ClientData = _clientData
+        member x.InPasteWait = _inPasteWait
         member x.CreateBindDataStorage() = x.CreateBindDataStorage()
         member x.Cancel() = x.Cancel()
         member x.ResetCommand command = x.ResetCommand command
@@ -142,6 +165,7 @@ and internal HistoryUtil ()  =
             yield ("<Down>", HistoryCommand.Next)
             yield ("<BS>", HistoryCommand.Back)
             yield ("<Esc>", HistoryCommand.Cancel)
+            yield ("<C-R>", HistoryCommand.Paste)
         }
         |> Seq.map (fun (name, command) -> 
             // Vim itself distinguishes between items like <BS> and <S-BS> and this can be verified by using

@@ -120,6 +120,7 @@ type internal IncrementalSearch
         let historyClient = { 
             new IHistoryClient<ITrackingPoint, SearchResult> with
                 member this.HistoryList = _vimData.SearchHistory
+                member this.RegisterMap = _vimBufferData.Vim.RegisterMap
                 member this.RemapMode = x.RemapMode
                 member this.Beep() = _operations.Beep()
                 member this.ProcessCommand data command = runActive (fun session -> x.RunSearch session data command) data
