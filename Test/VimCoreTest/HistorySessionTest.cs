@@ -123,5 +123,17 @@ namespace Vim.UnitTest
                 Assert.Equal("cat", _client.ProcessValue.Item2);
             }
         }
+
+        public sealed class ClearCommandLineTest : HistorySessionTest
+        {
+            [Fact]
+            public void Simple()
+            {
+                ProcessNotation("cat");
+                Assert.Equal("cat", _client.ProcessValue.Item2);
+                ProcessNotation("<c-u>");
+                Assert.Equal("", _client.ProcessValue.Item2);
+            }
+        }
     }
 }

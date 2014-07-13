@@ -445,6 +445,16 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
                         _vimBuffer.Process(KeyInputUtil.ApplyModifiersToChar('r', KeyModifiers.Control));
                     }
                     break;
+                case Key.U:
+                    if (e.KeyboardDevice.Modifiers == ModifierKeys.Control)
+                    {
+                        var textBox = _margin.CommandLineTextBox;
+                        var text = textBox.Text.Substring(textBox.SelectionStart);
+                        textBox.Text = text;
+
+                        UpdateVimBufferStateWithCommandText(text);
+                    }
+                    break;
             }
         }
 

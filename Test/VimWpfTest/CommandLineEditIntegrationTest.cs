@@ -117,6 +117,45 @@ namespace Vim.UI.Wpf.UnitTest
             }
         }
 
+        public sealed class ClearTest : CommandLineEditIntegrationTest
+        {
+            [Fact]
+            public void ClearCommandEditStart()
+            {
+                Create();
+                ProcessNotation(@":cat<Left><c-u>");
+                Assert.Equal(":t", _marginControl.CommandLineTextBox.Text);
+                Assert.Equal("t", _vimBuffer.CommandMode.Command);
+            }
+
+            [Fact]
+            public void ClearCommand()
+            {
+                Create();
+                ProcessNotation(@":cat<c-u>");
+                Assert.Equal(":", _marginControl.CommandLineTextBox.Text);
+                Assert.Equal("", _vimBuffer.CommandMode.Command);
+            }
+
+            [Fact]
+            public void ClearSearch()
+            {
+                Create();
+                ProcessNotation(@"/foo<c-u>");
+                Assert.Equal("/", _marginControl.CommandLineTextBox.Text);
+                Assert.Equal("/", _vimBuffer.IncrementalSearch.CurrentSearchText);
+            }
+
+            [Fact]
+            public void ClearSearchEdit()
+            {
+                Create();
+                ProcessNotation(@"/foo<Left><c-u>");
+                Assert.Equal("/o", _marginControl.CommandLineTextBox.Text);
+                Assert.Equal("/o", _vimBuffer.IncrementalSearch.CurrentSearchText);
+            }
+        }
+
         public sealed class CommandModeTest : CommandLineEditIntegrationTest
         {
             [Fact]
