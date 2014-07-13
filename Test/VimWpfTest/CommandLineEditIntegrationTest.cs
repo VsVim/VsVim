@@ -143,7 +143,7 @@ namespace Vim.UI.Wpf.UnitTest
                 Create();
                 ProcessNotation(@"/foo<c-u>");
                 Assert.Equal("/", _marginControl.CommandLineTextBox.Text);
-                Assert.Equal("/", _vimBuffer.IncrementalSearch.CurrentSearchText);
+                Assert.Equal("", _vimBuffer.IncrementalSearch.CurrentSearchText);
             }
 
             [Fact]
@@ -152,7 +152,7 @@ namespace Vim.UI.Wpf.UnitTest
                 Create();
                 ProcessNotation(@"/foo<Left><c-u>");
                 Assert.Equal("/o", _marginControl.CommandLineTextBox.Text);
-                Assert.Equal("/o", _vimBuffer.IncrementalSearch.CurrentSearchText);
+                Assert.Equal("o", _vimBuffer.IncrementalSearch.CurrentSearchText);
             }
         }
 

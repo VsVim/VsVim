@@ -312,11 +312,12 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             if (search.InSearch)
             {
                 var searchText = search.CurrentSearchText;
+                var prefix = search.CurrentSearchData.Path.IsForward ? "/" : "?";
                 if (InPasteWait)
                 {
                     searchText += "\"";
                 }
-                UpdateCommandLine(searchText);
+                UpdateCommandLine(prefix + searchText);
                 return;
             }
 

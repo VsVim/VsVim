@@ -105,7 +105,7 @@ type internal IncrementalSearch
         let searchResult = SearchResult.NotFound (searchData, false)
         let incrementalSearchData = {
             SearchResult = searchResult
-            SearchText = match path with | Path.Forward -> "/" | Path.Backward -> "?"
+            SearchText = ""
         }
         let startPoint = start.Snapshot.CreateTrackingPoint(start.Position, PointTrackingMode.Negative)
 
@@ -178,11 +178,7 @@ type internal IncrementalSearch
             | SearchResult.NotFound _ -> x.ResetView ()
 
         // Update all of our internal state before we start raising events 
-        let searchText = 
-            match incrementalSearchData.SearchData.Path with
-            | Path.Forward -> "/" + rawPattern
-            | Path.Backward -> "?" + rawPattern
-        { SearchResult = searchResult; SearchText = searchText }
+        { SearchResult = searchResult; SearchText = rawPattern }
 
     /// Called when the processing is completed.  Raise the completed event and return
     /// the final SearchResult
