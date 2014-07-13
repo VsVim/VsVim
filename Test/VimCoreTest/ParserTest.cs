@@ -36,6 +36,27 @@ namespace Vim.UnitTest
             return VimUtil.ParseLineCommand(text);
         }
 
+        public sealed class CallTest : ParserTest
+        {
+            [Fact]
+            public void Normal()
+            {
+                Assert.True(ParseLineCommand(@":call Foo()").IsCall);
+            }
+
+            [Fact]
+            public void SidTest()
+            {
+                Assert.True(ParseLineCommand(@":call <SID>Foo()").IsCall);
+            }
+
+            [Fact]
+            public void OtherScriptLocalPrefix()
+            {
+                Assert.True(ParseLineCommand(@":call s:Foo()").IsCall);
+            }
+        }
+
         public sealed class StringLiteralTest : ParserTest
         {
             public string ParseStringLiteral(string text)
