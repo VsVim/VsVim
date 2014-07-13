@@ -89,6 +89,7 @@
     <Compile Include="EditUtilTest.cs" />
     <Compile Include="Exports\OutlinerTaggerProvider.cs" />
     <Compile Include="HistoryListTest.cs" />
+    <Compile Include="HistorySessionTest.cs" />
     <Compile Include="MatchingTokenUtilTest.cs" />
     <Compile Include="ModeMapTest.cs" />
     <Compile Include="RegisterValueTest.cs" />

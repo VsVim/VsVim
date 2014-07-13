@@ -3349,6 +3349,9 @@ type IIncrementalSearch =
     /// True when a search is occurring
     abstract InSearch : bool
 
+    /// True when the search is in a paste wait state
+    abstract InPasteWait : bool
+
     /// When in the middle of a search this will return the SearchData for 
     /// the search
     abstract CurrentSearchData : SearchData 
@@ -3607,6 +3610,9 @@ type internal IHistoryClient<'TData, 'TResult> =
     /// History list used by this client
     abstract HistoryList : HistoryList
 
+    /// Get the register map 
+    abstract RegisterMap : IRegisterMap
+
     /// What remapping mode if any should be used for key input
     abstract RemapMode : KeyRemapMode
 
@@ -3614,15 +3620,15 @@ type internal IHistoryClient<'TData, 'TResult> =
     abstract Beep : unit -> unit
 
     /// Process the new command with the previous TData value
-    abstract ProcessCommand : 'TData -> string -> 'TData
+    abstract ProcessCommand : data : 'TData -> command : string -> 'TData
 
     /// Called when the command is completed.  The last valid TData and command
     /// string will be provided
-    abstract Completed : 'TData -> string -> 'TResult
+    abstract Completed : data : 'TData -> command : string -> 'TResult
 
     /// Called when the command is cancelled.  The last valid TData value will
     /// be provided
-    abstract Cancelled : 'TData -> unit
+    abstract Cancelled : data : 'TData -> unit
 
 /// An active use of an IHistoryClient instance 
 type internal IHistorySession<'TData, 'TResult> =
@@ -3632,6 +3638,9 @@ type internal IHistorySession<'TData, 'TResult> =
 
     /// The current command that is being used 
     abstract Command : string 
+
+    /// Is the session currently waiting for a register paste operation to complete
+    abstract InPasteWait : bool
 
     /// The current client data 
     abstract ClientData : 'TData
@@ -4471,6 +4480,9 @@ and ICommandMode =
 
     /// Buffered input for the current command
     abstract Command : string with get, set
+
+    /// Is command mode currently waiting for a register paste operation to complete
+    abstract InPasteWait : bool
 
     /// Run the specified command
     abstract RunCommand : string -> RunResult

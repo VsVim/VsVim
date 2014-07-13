@@ -29,7 +29,7 @@ namespace Vim.UI.Wpf.UnitTest
         {
             _factory = new MockRepository(MockBehavior.Strict);
             _marginControl = new CommandMarginControl();
-            _marginControl.StatusLine = String.Empty;
+            _marginControl.CommandLineTextBox.Text = String.Empty;
             _vimBuffer = CreateVimBuffer(lines);
             _textBuffer = _vimBuffer.TextBuffer;
             _textView = _vimBuffer.TextView;
@@ -235,6 +235,66 @@ namespace Vim.UI.Wpf.UnitTest
                     Create("cat", "dog", "fish");
                     ProcessNotation(@"/og<Home>d<Enter>");
                     Assert.Equal(_textBuffer.GetLine(1).Start, _textView.GetCaretPoint());
+                }
+            }
+        }
+
+        public abstract class PasteTest : CommandLineEditIntegrationTest
+        {
+            public sealed class PasteFromVimTest : PasteTest
+            {
+                [Fact]
+                public void Simple()
+                {
+                    Create("cat");
+                    Vim.RegisterMap.GetRegister('c').UpdateValue("test");
+                    ProcessNotation(@":<C-R>c");
+                    Assert.Equal(":test", _marginControl.CommandLineTextBox.Text);
+                }
+
+                [Fact]
+                public void InPasteWait()
+                {
+                    Create("cat");
+                    ProcessNotation(@":<C-R>");
+                    Assert.True(_controller.InPasteWait);
+                }
+            }
+
+            public sealed class PasteInEditTest : PasteTest
+            {
+                [Fact]
+                public void Simple()
+                {
+                    Create("cat");
+                    Vim.RegisterMap.GetRegister('c').UpdateValue("ca");
+                    ProcessNotation(@":t<Left><C-r>c");
+                    Assert.Equal(":cat", _marginControl.CommandLineTextBox.Text);
+                }
+
+                [Fact]
+                public void InPasteWait()
+                {
+                    Create("cat");
+                    ProcessNotation(@":t<Left><C-r>");
+                    Assert.True(_controller.InPasteWait);
+                }
+
+                [Fact]
+                public void EscapeCancels()
+                {
+                    Create("cat");
+                    ProcessNotation(@":t<Left><C-r><Esc>");
+                    Assert.False(_controller.InPasteWait);
+                }
+
+                [Fact]
+                public void PasteStartCaretPosition()
+                {
+                    Create();
+                    ProcessNotation(@":t<Left><C-r>");
+                    Assert.Equal(":\"t", _marginControl.CommandLineTextBox.Text);
+                    Assert.Equal(1, _marginControl.CommandLineTextBox.SelectionStart);
                 }
             }
         }

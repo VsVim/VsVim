@@ -40,7 +40,6 @@
                 x:Name="_commandLineInput"
                 MaxHeight="200"
                 VerticalAlignment="Center"
-                Text="{Binding Path=StatusLine}" 
                 IsReadOnly="{Binding Path=IsEditReadOnly}"
                 FontFamily="{Binding Path=TextFontFamily}"
                 FontSize="{Binding Path=TextFontSize}"

@@ -26,6 +26,7 @@ namespace Vim.UnitTest
             var commonOperations = CommonOperationsFactory.GetCommonOperations(_vimBuffer.VimBufferData);
             _modeRaw = new CommandMode(_vimBuffer, commonOperations);
             _mode = _modeRaw;
+            _mode.OnEnter(ModeArgument.None);
         }
 
         private void ProcessWithEnter(string input)
