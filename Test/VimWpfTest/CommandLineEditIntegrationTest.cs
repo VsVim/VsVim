@@ -238,5 +238,17 @@ namespace Vim.UI.Wpf.UnitTest
                 }
             }
         }
+
+        public sealed class PasteTest : CommandLineEditIntegrationTest
+        {
+            [Fact(Skip ="Eventually this will work")]
+            public void Simple()
+            {
+                Create("cat");
+                Vim.RegisterMap.GetRegister('c').UpdateValue("test");
+                ProcessNotation(@":<C-R>c");
+                Assert.Equal("test", _marginControl.CommandLineTextBox.Text);
+            }
+        }
     }
 }
