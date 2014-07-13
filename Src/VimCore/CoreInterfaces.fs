@@ -3349,6 +3349,9 @@ type IIncrementalSearch =
     /// True when a search is occurring
     abstract InSearch : bool
 
+    /// True when the search is in a paste wait state
+    abstract InPasteWait : bool
+
     /// When in the middle of a search this will return the SearchData for 
     /// the search
     abstract CurrentSearchData : SearchData 

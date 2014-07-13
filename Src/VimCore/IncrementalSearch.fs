@@ -75,6 +75,11 @@ type internal IncrementalSearch
 
     member x.InSearch = Option.isSome _incrementalSearchSession
 
+    member x.InPasteWait = 
+        match _incrementalSearchSession with
+        | Some session -> session.HistorySession.InPasteWait
+        | None -> false
+
     /// There is a big gap between the behavior and documentation of key mapping for an 
     /// incremental search operation.  The documentation properly documents the language
     /// mapping in "help language-mapping" and 'help imsearch'.  But it doesn't document
@@ -214,6 +219,7 @@ type internal IncrementalSearch
 
     interface IIncrementalSearch with
         member x.InSearch = x.InSearch
+        member x.InPasteWait = x.InPasteWait
         member x.WordNavigator = _wordNavigator
         member x.CurrentSearchData = x.CurrentSearchData
         member x.CurrentSearchResult = x.CurrentSearchResult

@@ -106,13 +106,11 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
                     return _vimBuffer.CommandMode.InPasteWait;
                 }
 
-                /* TODO: Uncomment
-            var search = _vimBuffer.IncrementalSearch;
-            if (search.InSearch && search.InPasteWait)
-            {
-            return true;
-            }
-            */
+                var search = _vimBuffer.IncrementalSearch;
+                if (search.InSearch && search.InPasteWait)
+                {
+                    return true;
+                }
 
                 return false;
             }
@@ -317,7 +315,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
                 {
                     searchText += "\"";
                 }
-                UpdateCommandLine(search.CurrentSearchText);
+                UpdateCommandLine(searchText);
                 return;
             }
 

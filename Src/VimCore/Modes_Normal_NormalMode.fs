@@ -329,8 +329,11 @@ type internal NormalMode
             false
     
     member x.Process (keyInput : KeyInput) = 
-        let command = _data.Command + keyInput.Char.ToString()
-        _data <- { _data with Command = command }
+
+        // Update the text of the command so long as this isn't a control character 
+        if not (CharUtil.IsControl keyInput.Char) then
+            let command = _data.Command + keyInput.Char.ToString()
+            _data <- { _data with Command = command }
 
         match _runner.Run keyInput with
         | BindResult.NeedMoreInput _ -> 
