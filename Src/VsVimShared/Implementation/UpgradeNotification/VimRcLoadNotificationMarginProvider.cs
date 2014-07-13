@@ -28,12 +28,13 @@ namespace VsVim.Implementation.UpgradeNotification
             _toastNotificationServiceProvider = toastNotificationServiceProvider;
         }
 
-        private void OnNoastNotificationClosed()
+        private void OnToastNotificationClosed()
         {
             _vim.VimBuffers
                 .Select(x => x.TextView)
                 .OfType<IWpfTextView>()
                 .ForEach(x => _toastNotificationServiceProvider.GetToastNoficationService(x).Remove(_toastKey));
+            _vimApplicationSettings.HaveNotifiedVimRcLoad = true;
         }
 
         void IVimBufferCreationListener.VimBufferCreated(IVimBuffer vimBuffer)
@@ -65,7 +66,7 @@ namespace VsVim.Implementation.UpgradeNotification
             linkBanner.LinkAddress = "https://github.com/jaredpar/VsVim/wiki/FAQ#vimrc";
             linkBanner.LinkText = "FAQ";
             linkBanner.BannerText = "VsVim automatically loaded an existing _vimrc file";
-            _toastNotificationServiceProvider.GetToastNoficationService(wpfTextView).Display(_toastKey, linkBanner, OnNoastNotificationClosed);
+            _toastNotificationServiceProvider.GetToastNoficationService(wpfTextView).Display(_toastKey, linkBanner, OnToastNotificationClosed);
         }
     }
 }
