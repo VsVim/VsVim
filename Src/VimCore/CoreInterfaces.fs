@@ -4478,6 +4478,9 @@ and ICommandMode =
     /// Buffered input for the current command
     abstract Command : string with get, set
 
+    /// Is command mode currently waiting for a register paste operation to complete
+    abstract InPasteWait : bool
+
     /// Run the specified command
     abstract RunCommand : string -> RunResult
 
