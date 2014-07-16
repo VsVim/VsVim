@@ -5469,6 +5469,19 @@ namespace Vim.UnitTest
             }
 
             [Fact]
+            public void AcrossLines2()
+            {
+                Create("big cat", "big dog");
+                _textView.MoveCaretToLine(1, 5);
+                _vimBuffer.ProcessNotation("ge");
+                Assert.Equal(_textBuffer.GetPointInLine(1, 2), _textView.GetCaretPoint());
+                _vimBuffer.ProcessNotation("ge");
+                Assert.Equal(_textBuffer.GetPointInLine(0, 6), _textView.GetCaretPoint());
+                _vimBuffer.ProcessNotation("ge");
+                Assert.Equal(_textBuffer.GetPointInLine(0, 2), _textView.GetCaretPoint());
+            }
+
+            [Fact]
             public void Issue1124()
             {
                 Create("cat dog fish");

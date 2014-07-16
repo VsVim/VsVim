@@ -1433,19 +1433,7 @@ type internal MotionUtil
             | None -> x.CaretPoint
             | Some span -> span.Start
 
-        // Line boundaries count as a word here hence we have to include those when counting 
-        // words.  Do the mapping here 
-        let words = seq {
-            let lastLine = ref -1 
-            for span in _wordUtil.GetWords kind Path.Backward searchPoint do
-                let line = span.Start.GetContainingLine()
-                if lastLine.Value <> -1 && lastLine.Value <> line.LineNumber then   
-                    yield SnapshotSpan(line.Start, 0)
-                lastLine := line.LineNumber
-
-                yield span
-        }
-
+        let words = _wordUtil.GetWords kind Path.Backward searchPoint 
         let startPoint = 
             match words |> Seq.skip (count - 1) |> SeqUtil.tryHeadOnly with
             | None -> SnapshotPoint(x.CurrentSnapshot, 0)
