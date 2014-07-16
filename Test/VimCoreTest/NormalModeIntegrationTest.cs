@@ -5414,7 +5414,7 @@ namespace Vim.UnitTest
 
         public sealed class BackwardMotionTest : NormalModeIntegrationTest
         {
-            [Fact(Skip = "branch fixes")]
+            [Fact]
             public void SimpleWord()
             {
                 Create("cat dog fish");
@@ -5423,7 +5423,7 @@ namespace Vim.UnitTest
                 Assert.Equal(2, _textView.GetCaretPoint().Position);
             }
 
-            [Fact(Skip = "branch fixes")]
+            [Fact]
             public void WordMixed()
             {
                 Create("cat d!g fish");
@@ -5432,7 +5432,7 @@ namespace Vim.UnitTest
                 Assert.Equal(5, _textView.GetCaretPoint().Position);
             }
 
-            [Fact(Skip = "branch fixes")]
+            [Fact]
             public void AllWordMixed()
             {
                 Create("cat d!g fish");
@@ -5441,7 +5441,7 @@ namespace Vim.UnitTest
                 Assert.Equal(2, _textView.GetCaretPoint().Position);
             }
 
-            [Fact(Skip = "branch fixes")]
+            [Fact]
             public void Issue1124()
             {
                 Create("cat dog fish");

@@ -935,6 +935,9 @@ type Motion =
     /// for command '0'
     | BeginingOfLine
 
+    /// Implement the 'ge' / 'gE' motion.  Goes backward to the end of the previous word 
+    | BackwardEndOfWord of WordKind
+
     /// The left motion for h
     | CharLeft 
 
