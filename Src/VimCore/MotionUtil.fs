@@ -1433,13 +1433,27 @@ type internal MotionUtil
             | None -> x.CaretPoint
             | Some span -> span.Start
 
-        match _wordUtil.GetWords kind Path.Backward searchPoint |> Seq.skip (count - 1) |> SeqUtil.tryHeadOnly with
-        | None -> None
-        | Some span -> 
-            let startPoint = SnapshotSpanUtil.GetLastIncludedPointOrStart span
-            let endPoint = SnapshotPointUtil.AddOneOrCurrent x.CaretPoint
-            let motionSpan = SnapshotSpan(startPoint, endPoint)
-            MotionResult.Create motionSpan false MotionKind.CharacterWiseInclusive |> Some
+        // Line boundaries count as a word here hence we have to include those when counting 
+        // words.  Do the mapping here 
+        let words = seq {
+            let lastLine = ref -1 
+            for span in _wordUtil.GetWords kind Path.Backward searchPoint do
+                let line = span.Start.GetContainingLine()
+                if lastLine.Value <> -1 && lastLine.Value <> line.LineNumber then   
+                    yield SnapshotSpan(line.Start, 0)
+                lastLine := line.LineNumber
+
+                yield span
+        }
+
+        let startPoint = 
+            match words |> Seq.skip (count - 1) |> SeqUtil.tryHeadOnly with
+            | None -> SnapshotPoint(x.CurrentSnapshot, 0)
+            | Some span -> SnapshotSpanUtil.GetLastIncludedPointOrStart span
+
+        let endPoint = SnapshotPointUtil.AddOneOrCurrent x.CaretPoint
+        let span = SnapshotSpan(startPoint, endPoint)
+        MotionResult.Create span false MotionKind.CharacterWiseInclusive |> Some
 
     /// Implements the 'e' and 'E' motions
     member x.EndOfWord kind count = 

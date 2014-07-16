@@ -5412,7 +5412,7 @@ namespace Vim.UnitTest
             }
         }
 
-        public sealed class BackwardMotionTest : NormalModeIntegrationTest
+        public sealed class BackwardEndOfWordMotionTest : NormalModeIntegrationTest
         {
             [Fact]
             public void SimpleWord()
@@ -5439,6 +5439,33 @@ namespace Vim.UnitTest
                 _textView.MoveCaretTo(6);
                 _vimBuffer.ProcessNotation("gE");
                 Assert.Equal(2, _textView.GetCaretPoint().Position);
+            }
+
+            [Fact]
+            public void FirstWordOnLine()
+            {
+                Create("cat dog fish");
+                _textView.MoveCaretTo(4);
+                _vimBuffer.ProcessNotation("gEgE");
+                Assert.Equal(0, _textView.GetCaretPoint().Position);
+            }
+
+            [Fact]
+            public void WithCount()
+            {
+                Create("cat dog fish");
+                _textView.MoveCaretTo(4);
+                _vimBuffer.ProcessNotation("2gE");
+                Assert.Equal(0, _textView.GetCaretPoint().Position);
+            }
+
+            [Fact]
+            public void AcrossLines()
+            {
+                Create("cat", "dog");
+                _textView.MoveCaretToLine(1);
+                _vimBuffer.ProcessNotation("gE");
+                Assert.Equal(2, _textView.GetCaretPoint());
             }
 
             [Fact]
