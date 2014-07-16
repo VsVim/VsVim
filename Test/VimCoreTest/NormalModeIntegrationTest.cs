@@ -5412,6 +5412,45 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class BackwardMotionTest : NormalModeIntegrationTest
+        {
+            [Fact(Skip = "branch fixes")]
+            public void SimpleWord()
+            {
+                Create("cat dog fish");
+                _textView.MoveCaretTo(4);
+                _vimBuffer.ProcessNotation("ge");
+                Assert.Equal(2, _textView.GetCaretPoint().Position);
+            }
+
+            [Fact(Skip = "branch fixes")]
+            public void WordMixed()
+            {
+                Create("cat d!g fish");
+                _textView.MoveCaretTo(6);
+                _vimBuffer.ProcessNotation("ge");
+                Assert.Equal(5, _textView.GetCaretPoint().Position);
+            }
+
+            [Fact(Skip = "branch fixes")]
+            public void AllWordMixed()
+            {
+                Create("cat d!g fish");
+                _textView.MoveCaretTo(6);
+                _vimBuffer.ProcessNotation("gE");
+                Assert.Equal(2, _textView.GetCaretPoint().Position);
+            }
+
+            [Fact(Skip = "branch fixes")]
+            public void Issue1124()
+            {
+                Create("cat dog fish");
+                _textView.MoveCaretTo(4);
+                _vimBuffer.ProcessNotation("yge");
+                Assert.Equal("t d", UnnamedRegister.StringValue);
+            }
+        }
+
         public sealed class MiscTest : NormalModeIntegrationTest
         {
             /// <summary>
