@@ -1431,12 +1431,7 @@ type internal MotionUtil
         let searchPoint = 
             match _wordUtil.GetWords kind Path.Forward x.CaretPoint |> SeqUtil.tryHeadOnly with
             | None -> x.CaretPoint
-            | Some span -> 
-                let lastPoint = SnapshotSpanUtil.GetLastIncludedPointOrStart span
-                if lastPoint.Position = x.CaretPoint.Position then
-                    SnapshotPointUtil.SubtractOneOrCurrent lastPoint
-                else
-                    SnapshotPointUtil.SubtractOneOrCurrent span.Start
+            | Some span -> span.Start
 
         match _wordUtil.GetWords kind Path.Backward searchPoint |> Seq.skip (count - 1) |> SeqUtil.tryHeadOnly with
         | None -> None
