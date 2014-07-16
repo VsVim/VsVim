@@ -1423,6 +1423,26 @@ type internal MotionUtil
         let span = SnapshotSpan(startPoint, x.CaretPoint)
         MotionResult.CreateEx span false MotionKind.CharacterWiseExclusive MotionResultFlags.AnyWord
 
+    /// Implements the 'ge' and 'gE' motions
+    member x.BackwardEndOfWord kind count = 
+
+        // If the caret is currently at the end of the word then we start searching one character
+        // back from that point 
+        let searchPoint = 
+            match _wordUtil.GetWords kind Path.Forward x.CaretPoint |> SeqUtil.tryHeadOnly with
+            | None -> x.CaretPoint
+            | Some span -> span.Start
+
+        let words = _wordUtil.GetWords kind Path.Backward searchPoint 
+        let startPoint = 
+            match words |> Seq.skip (count - 1) |> SeqUtil.tryHeadOnly with
+            | None -> SnapshotPoint(x.CurrentSnapshot, 0)
+            | Some span -> SnapshotSpanUtil.GetLastIncludedPointOrStart span
+
+        let endPoint = SnapshotPointUtil.AddOneOrCurrent x.CaretPoint
+        let span = SnapshotSpan(startPoint, endPoint)
+        MotionResult.Create span false MotionKind.CharacterWiseInclusive |> Some
+
     /// Implements the 'e' and 'E' motions
     member x.EndOfWord kind count = 
 
@@ -2248,6 +2268,7 @@ type internal MotionUtil
             | Motion.AllParagraph -> x.AllParagraph motionArgument.Count
             | Motion.AllWord wordKind -> x.AllWord wordKind motionArgument.Count x.CaretPoint
             | Motion.AllSentence -> x.AllSentence motionArgument.Count |> Some
+            | Motion.BackwardEndOfWord wordKind -> x.BackwardEndOfWord wordKind motionArgument.Count
             | Motion.BeginingOfLine -> x.BeginingOfLine() |> Some
             | Motion.CharLeft -> x.CharLeft motionArgument.Count |> Some
             | Motion.CharRight -> x.CharRight motionArgument.Count |> Some
