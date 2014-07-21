@@ -25,17 +25,22 @@ namespace Vim.UnitTest
             _localSettings = new LocalSettings(globalSettings);
             _windowSettings = new WindowSettings(globalSettings);
             _editorOptions = textView.Options;
+
+            var vim = new Mock<IVim>(MockBehavior.Strict);
+            vim.SetupGet(x => x.VimHost).Returns(VimHost);
+
             _vimBuffer = new Mock<IVimBuffer>(MockBehavior.Strict);
             _vimBuffer.SetupGet(x => x.LocalSettings).Returns(_localSettings);
             _vimBuffer.SetupGet(x => x.WindowSettings).Returns(_windowSettings);
             _vimBuffer.SetupGet(x => x.TextView).Returns(textView);
+            _vimBuffer.SetupGet(x => x.Vim).Returns(vim.Object);
         }
 
         public sealed class StartSynchronizingTest : EditorToSettingSynchronizerTest
         {
             public StartSynchronizingTest()
             {
-                _synchronizer.StartSynchronizing(_vimBuffer.Object);
+                _synchronizer.StartSynchronizing(_vimBuffer.Object, SettingSyncSource.Editor);
             }
 
             /// <summary>
@@ -93,11 +98,12 @@ namespace Vim.UnitTest
             [Fact]
             public void WordWrapSimple()
             {
+                VimHost.WordWrapStyle = WordWrapStyles.WordWrap;
                 _windowSettings.Wrap = true;
-                Assert.Equal(WordWrapStyles.WordWrap, _editorOptions.GetOptionValue<WordWrapStyles>(DefaultTextViewOptions.WordWrapStyleId));
+                Assert.Equal(WordWrapStyles.WordWrap, _editorOptions.GetOptionValue(DefaultTextViewOptions.WordWrapStyleId));
 
                 _windowSettings.Wrap = false;
-                Assert.Equal(WordWrapStyles.None, _editorOptions.GetOptionValue<WordWrapStyles>(DefaultTextViewOptions.WordWrapStyleId));
+                Assert.Equal(WordWrapStyles.None, _editorOptions.GetOptionValue(DefaultTextViewOptions.WordWrapStyleId));
             }
 
             [Fact]
@@ -111,17 +117,19 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
-            /// If the wrap is a non-standard value don't overwrite it 
+            /// Word wraps that don't line up with our definition is still a word wrap 
             /// </summary>
             [Fact]
             public void WordWrapAutoIndent()
             {
-                _editorOptions.SetOptionValue(DefaultTextViewOptions.WordWrapStyleId, WordWrapStyles.AutoIndent);
+                VimHost.WordWrapStyle = WordWrapStyles.WordWrap;
+                _editorOptions.SetOptionValue(DefaultTextViewOptions.WordWrapStyleId, WordWrapStyles.AutoIndent | WordWrapStyles.WordWrap);
                 Assert.True(_windowSettings.Wrap);
-                Assert.Equal(WordWrapStyles.AutoIndent, _editorOptions.GetOptionValue<WordWrapStyles>(DefaultTextViewOptions.WordWrapStyleId));
+
+                Assert.Equal(WordWrapStyles.WordWrap | WordWrapStyles.AutoIndent, _editorOptions.GetOptionValue(DefaultTextViewOptions.WordWrapStyleId));
 
                 _windowSettings.Wrap = false;
-                Assert.Equal(WordWrapStyles.None, _editorOptions.GetOptionValue<WordWrapStyles>(DefaultTextViewOptions.WordWrapStyleId));
+                Assert.Equal(WordWrapStyles.None, _editorOptions.GetOptionValue(DefaultTextViewOptions.WordWrapStyleId));
             }
         }
 

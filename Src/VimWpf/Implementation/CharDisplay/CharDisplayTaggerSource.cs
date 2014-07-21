@@ -34,7 +34,7 @@ namespace Vim.UI.Wpf.Implementation.CharDisplay
         private static readonly ReadOnlyCollection<ITagSpan<IntraTextAdornmentTag>> EmptyTagColllection = new ReadOnlyCollection<ITagSpan<IntraTextAdornmentTag>>(new List<ITagSpan<IntraTextAdornmentTag>>());
         private readonly ITextView _textView;
         private readonly IEditorFormatMap _editorFormatMap;
-        private readonly IVimGlobalSettings _globalSettings;
+        private readonly IControlCharUtil _controlCharUtil;
         private readonly List<AdornmentData> _adornmentCache = new List<AdornmentData>();
         private Brush _foregroundBrush;
         private EventHandler _changedEvent;
@@ -44,23 +44,23 @@ namespace Vim.UI.Wpf.Implementation.CharDisplay
             get { return _adornmentCache; }
         }
 
-        internal CharDisplayTaggerSource(ITextView textView, IEditorFormatMap editorFormatMap, IVimGlobalSettings globalSettings)
+        internal CharDisplayTaggerSource(ITextView textView, IEditorFormatMap editorFormatMap, IControlCharUtil controlCharUtil)
         {
             _textView = textView;
             _editorFormatMap = editorFormatMap;
-            _globalSettings = globalSettings;
+            _controlCharUtil = controlCharUtil;
             UpdateBrushes();
 
             _textView.TextBuffer.Changed += OnTextBufferChanged;
             _editorFormatMap.FormatMappingChanged += OnFormatMappingChanged;
-            _globalSettings.SettingChanged += OnSettingChanged;
+            _controlCharUtil.DisplayControlCharsChanged += OnSettingChanged;
         }
 
         private void Dispose()
         {
             _textView.TextBuffer.Changed -= OnTextBufferChanged;
             _editorFormatMap.FormatMappingChanged -= OnFormatMappingChanged;
-            _globalSettings.SettingChanged -= OnSettingChanged;
+            _controlCharUtil.DisplayControlCharsChanged -= OnSettingChanged;
         }
 
         internal ReadOnlyCollection<ITagSpan<IntraTextAdornmentTag>> GetTags(SnapshotSpan span)
@@ -70,7 +70,7 @@ namespace Vim.UI.Wpf.Implementation.CharDisplay
                 return EmptyTagColllection;
             }
 
-            if (!_globalSettings.ControlChars)
+            if (!_controlCharUtil.DisplayControlChars)
             {
                 return EmptyTagColllection;
             }
@@ -186,13 +186,10 @@ namespace Vim.UI.Wpf.Implementation.CharDisplay
             }
         }
 
-        private void OnSettingChanged(object sender, SettingEventArgs e)
+        private void OnSettingChanged(object sender, EventArgs e)
         {
-            if (e.Setting.Name == GlobalSettingNames.ControlCharsName && e.IsValueChanged)
-            {
-                _adornmentCache.Clear();
-                RaiseChanged();
-            }
+            _adornmentCache.Clear();
+            RaiseChanged();
         }
 
         private void OnTextBufferChanged(object sender, TextContentChangedEventArgs e)

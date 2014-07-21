@@ -326,6 +326,7 @@ type CallInfo = {
     Name : string
     Arguments : string
     LineRange : LineRangeSpecifier
+    IsScriptLocal : bool
 }
 
 type FunctionDefinition = {

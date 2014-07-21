@@ -21,7 +21,7 @@ namespace VsVim.Implementation.Misc
     internal sealed class KeyBindingService : IKeyBindingService, IVimBufferCreationListener
     {
         private readonly _DTE _dte;
-        private readonly IOptionsDialogService _optionsDialogService;
+        private readonly IKeyboardOptionsProvider _keyboardOptionsProvider;
         private readonly IVimProtectedOperations _protectedOperations;
         private readonly IVimApplicationSettings _vimApplicationSettings;
         private readonly ScopeData _scopeData;
@@ -52,16 +52,16 @@ namespace VsVim.Implementation.Misc
         }
 
         [ImportingConstructor]
-        internal KeyBindingService(SVsServiceProvider serviceProvider, IOptionsDialogService service, IVimProtectedOperations protectedOperations, IVimApplicationSettings vimApplicationSettings)
-            : this(serviceProvider.GetService<SDTE, _DTE>(), service, protectedOperations, vimApplicationSettings, new ScopeData(serviceProvider.GetService<SVsShell, IVsShell>()))
+        internal KeyBindingService(SVsServiceProvider serviceProvider, IKeyboardOptionsProvider keyboardOptionsProvider, IVimProtectedOperations protectedOperations, IVimApplicationSettings vimApplicationSettings)
+            : this(serviceProvider.GetService<SDTE, _DTE>(), keyboardOptionsProvider, protectedOperations, vimApplicationSettings, new ScopeData(serviceProvider.GetService<SVsShell, IVsShell>()))
         {
 
         }
 
-        internal KeyBindingService(_DTE dte, IOptionsDialogService service, IVimProtectedOperations protectedOperations, IVimApplicationSettings vimApplicationSettings, ScopeData scopeData)
+        internal KeyBindingService(_DTE dte, IKeyboardOptionsProvider keyboardOptionsProvider, IVimProtectedOperations protectedOperations, IVimApplicationSettings vimApplicationSettings, ScopeData scopeData)
         {
             _dte = dte;
-            _optionsDialogService = service;
+            _keyboardOptionsProvider = keyboardOptionsProvider;
             _protectedOperations = protectedOperations;
             _vimApplicationSettings = vimApplicationSettings;
             _scopeData = scopeData;
@@ -96,11 +96,8 @@ namespace VsVim.Implementation.Misc
                 return;
             }
 
-            var snapshot = CreateCommandKeyBindingSnapshot(_vimFirstKeyInputSet);
-            if (_optionsDialogService.ShowConflictingKeyBindingsDialog(snapshot))
-            {
-                ConflictingKeyBindingState = ConflictingKeyBindingState.ConflictsIgnoredOrResolved;
-            }
+            _keyboardOptionsProvider.ShowOptionsPage();
+            ConflictingKeyBindingState = ConflictingKeyBindingState.ConflictsIgnoredOrResolved;
         }
 
         internal void IgnoreAnyConflicts()

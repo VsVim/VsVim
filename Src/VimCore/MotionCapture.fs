@@ -38,6 +38,8 @@ type internal MotionCapture
                 yield ("B", MotionFlags.CaretMovement, Motion.WordBackward WordKind.BigWord)
                 yield ("e", MotionFlags.CaretMovement, Motion.EndOfWord WordKind.NormalWord)
                 yield ("E", MotionFlags.CaretMovement, Motion.EndOfWord WordKind.BigWord)
+                yield ("ge", MotionFlags.CaretMovement, Motion.BackwardEndOfWord WordKind.NormalWord)
+                yield ("gE", MotionFlags.CaretMovement, Motion.BackwardEndOfWord WordKind.BigWord)
                 yield ("gg", MotionFlags.CaretMovement, Motion.LineOrFirstToFirstNonBlank)
                 yield ("gj", MotionFlags.CaretMovement, Motion.DisplayLineDown)
                 yield ("gk", MotionFlags.CaretMovement, Motion.DisplayLineUp)

@@ -1956,6 +1956,19 @@ namespace Vim.UnitTest
                     Assert.Equal("ll", _textBuffer.CurrentSnapshot.GetText());
                     Assert.Equal(0, _textView.GetCaretPoint().Position);
                 }
+
+                [Fact]
+                public void Issue1368()
+                {
+                    // At the moment we don't support the options although we do process the keys anyways
+                    _assertOnWarningMessage = false;
+
+                    Create("");
+                    _vimBuffer.Process(":nmap <silent> // icat<Esc>", enter: true);
+                    _vimBuffer.Process("//");
+                    Assert.Equal("cat", _textBuffer.GetLine(0).GetText());
+                    Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
+                }
             }
         }
 
@@ -4411,6 +4424,11 @@ namespace Vim.UnitTest
 
             public sealed class WindowOnlyTest : ScrollWindowTest
             {
+                public WindowOnlyTest()
+                {
+                    _globalSettings.ScrollOffset = 0;
+                }
+
                 [Fact]
                 public void UpDoesNotMoveCaret()
                 {
@@ -4465,6 +4483,16 @@ namespace Vim.UnitTest
                     _textView.MoveCaretToLine(1);
                     _vimBuffer.ProcessNotation("<C-y>");
                     Assert.Equal(1, _textView.GetCaretLine().LineNumber);
+                }
+
+                [Fact]
+                public void Issue1637()
+                {
+                    _textBuffer.SetText("abcdefghi".Select(x => x.ToString()).ToArray());
+                    _globalSettings.ScrollOffset = 1;
+                    _vimBuffer.ProcessNotation("<C-e>");
+                    Assert.Equal("c", _textView.GetCaretLine().GetText());
+                    Assert.Equal(1, _textView.GetFirstVisibleLineNumber());
                 }
             }
         }
@@ -5381,6 +5409,85 @@ namespace Vim.UnitTest
                 _textView.MoveCaretTo(6);
                 _vimBuffer.Process("yi(");
                 Assert.Equal("dog", UnnamedRegister.StringValue);
+            }
+        }
+
+        public sealed class BackwardEndOfWordMotionTest : NormalModeIntegrationTest
+        {
+            [Fact]
+            public void SimpleWord()
+            {
+                Create("cat dog fish");
+                _textView.MoveCaretTo(4);
+                _vimBuffer.ProcessNotation("ge");
+                Assert.Equal(2, _textView.GetCaretPoint().Position);
+            }
+
+            [Fact]
+            public void WordMixed()
+            {
+                Create("cat d!g fish");
+                _textView.MoveCaretTo(6);
+                _vimBuffer.ProcessNotation("ge");
+                Assert.Equal(5, _textView.GetCaretPoint().Position);
+            }
+
+            [Fact]
+            public void AllWordMixed()
+            {
+                Create("cat d!g fish");
+                _textView.MoveCaretTo(6);
+                _vimBuffer.ProcessNotation("gE");
+                Assert.Equal(2, _textView.GetCaretPoint().Position);
+            }
+
+            [Fact]
+            public void FirstWordOnLine()
+            {
+                Create("cat dog fish");
+                _textView.MoveCaretTo(4);
+                _vimBuffer.ProcessNotation("gEgE");
+                Assert.Equal(0, _textView.GetCaretPoint().Position);
+            }
+
+            [Fact]
+            public void WithCount()
+            {
+                Create("cat dog fish");
+                _textView.MoveCaretTo(4);
+                _vimBuffer.ProcessNotation("2gE");
+                Assert.Equal(0, _textView.GetCaretPoint().Position);
+            }
+
+            [Fact]
+            public void AcrossLines()
+            {
+                Create("cat", "dog");
+                _textView.MoveCaretToLine(1);
+                _vimBuffer.ProcessNotation("gE");
+                Assert.Equal(2, _textView.GetCaretPoint());
+            }
+
+            [Fact]
+            public void AcrossLines2()
+            {
+                Create("big cat", "big dog");
+                _textView.MoveCaretToLine(1, 5);
+                _vimBuffer.ProcessNotation("ge");
+                Assert.Equal(_textBuffer.GetPointInLine(1, 2), _textView.GetCaretPoint());
+                _vimBuffer.ProcessNotation("ge");
+                Assert.Equal(_textBuffer.GetPointInLine(0, 6), _textView.GetCaretPoint());
+                _vimBuffer.ProcessNotation("ge");
+                Assert.Equal(_textBuffer.GetPointInLine(0, 2), _textView.GetCaretPoint());
+            }
+
+            [Fact]
+            public void Issue1124()
+            {
+                Create("cat dog fish");
+                _textView.MoveCaretTo(4);
+                _vimBuffer.ProcessNotation("yge");
+                Assert.Equal("t d", UnnamedRegister.StringValue);
             }
         }
 

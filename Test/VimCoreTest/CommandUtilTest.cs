@@ -715,6 +715,7 @@ namespace Vim.UnitTest
                 Create("    the food is especially good today");
                 const int betweenIsAndEspecially = 15;
                 _textView.MoveCaretTo(betweenIsAndEspecially);
+                _localSettings.AutoIndent = true;
                 var tss = _textView.TextSnapshot;
 
                 Assert.True(_commandUtil.ReplaceChar(KeyInputUtil.EnterKey, 1).IsCompleted);
@@ -1786,6 +1787,35 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
+            /// Do a put before operation on an empty buffer and make sure
+            /// the buffer contains what we put
+            /// </summary>
+            [Fact]
+            public void PutBefore_EmptyBuffer()
+            {
+                Create("");
+                UnnamedRegister.UpdateValue("cat\n", OperationKind.LineWise);
+                _commandUtil.PutBeforeCaret(UnnamedRegister, 1, false);
+                Assert.Equal("cat", _textView.GetLine(0).GetText());
+                Assert.Equal("", _textView.GetLine(1).GetText());
+            }
+
+            /// <summary>
+            /// Do a put after operation on an empty buffer and make sure
+            /// the buffer contains what we put with the final line break
+            /// moved to the beginning of the buffer
+            /// </summary>
+            [Fact]
+            public void PutAfter_EmptyBuffer()
+            {
+                Create("");
+                UnnamedRegister.UpdateValue("cat\n", OperationKind.LineWise);
+                _commandUtil.PutAfterCaret(UnnamedRegister, 1, false);
+                Assert.Equal("", _textView.GetLine(0).GetText());
+                Assert.Equal("cat", _textView.GetLine(1).GetText());
+            }
+
+            /// <summary>
             /// Do a put operation on an empty line and ensure we don't accidentaly move off 
             /// of the end of the line and insert the text in the middle of the line break
             /// </summary>
@@ -2256,7 +2286,6 @@ namespace Vim.UnitTest
             public void InsertLineAbove_KeepCaretAtStartWithNoAutoIndent()
             {
                 Create("foo");
-                _globalSettings.UseEditorIndent = false;
                 _commandUtil.InsertLineAbove(1);
                 var point = _textView.Caret.Position.VirtualBufferPosition;
                 Assert.False(point.IsInVirtualSpace);
@@ -2270,7 +2299,6 @@ namespace Vim.UnitTest
             public void InsertLineAbove_MiddleOfLine()
             {
                 Create("foo", "bar");
-                _globalSettings.UseEditorIndent = false;
                 _textView.Caret.MoveTo(_textView.TextSnapshot.GetLineFromLineNumber(1).Start);
                 _commandUtil.InsertLineAbove(1);
                 var point = _textView.Caret.Position.BufferPosition;
@@ -2303,7 +2331,6 @@ namespace Vim.UnitTest
                     didEdit = true;
                 };
 
-                _globalSettings.UseEditorIndent = false;
                 _commandUtil.InsertLineAbove(1);
                 var buffer = _textView.TextBuffer;
                 var line = buffer.CurrentSnapshot.GetLineFromLineNumber(0);
@@ -2317,7 +2344,6 @@ namespace Vim.UnitTest
             public void InsertLineAbove_ShouldKeepIndentWhenAutoIndentSet()
             {
                 Create("  cat", "dog");
-                _globalSettings.UseEditorIndent = false;
                 _localSettings.AutoIndent = true;
                 _commandUtil.InsertLineAbove(1);
                 Assert.Equal(2, _textView.Caret.Position.VirtualSpaces);
@@ -2414,7 +2440,6 @@ namespace Vim.UnitTest
             public void InsertLineBelow_KeepIndentWhenAutoIndentSet()
             {
                 Create("  cat", "dog");
-                _globalSettings.UseEditorIndent = false;
                 _localSettings.AutoIndent = true;
                 _commandUtil.InsertLineBelow(1);
                 Assert.Equal("", _textView.GetLine(1).GetText());

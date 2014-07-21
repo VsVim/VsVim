@@ -284,6 +284,132 @@ namespace Vim.UnitTest
             }
         }
 
+        public abstract class NormalizeBlanksAtColumnTest : CommonOperationsIntegrationTest
+        {
+            public sealed class NoExpandTab : NormalizeBlanksAtColumnTest
+            {
+                public NoExpandTab()
+                {
+                    Create("");
+                    _vimBuffer.LocalSettings.ExpandTab = false;
+                    _vimBuffer.LocalSettings.TabStop = 4;
+                }
+
+                [Fact]
+                public void Simple()
+                {
+                    var text = _commonOperations.NormalizeBlanksAtColumn(new string(' ', 8), _textBuffer.GetColumn(0));
+                    Assert.Equal("\t\t", text);
+                }
+
+                [Fact]
+                public void ExtraSpacesAtEnd()
+                {
+                    var text = _commonOperations.NormalizeBlanksAtColumn(new string(' ', 6), _textBuffer.GetColumn(0));
+                    Assert.Equal("\t  ", text);
+                }
+
+                [Fact]
+                public void NonTabBoundary()
+                {
+                    _textBuffer.SetText("a");
+                    var text = _commonOperations.NormalizeBlanksAtColumn(new string(' ', 8), _textBuffer.GetColumn(1));
+                    Assert.Equal("\t\t ", text);
+                }
+
+                [Fact]
+                public void NonTabBoundaryExactTabPlusTab()
+                {
+                    _textBuffer.SetText("a");
+                    var text = _commonOperations.NormalizeBlanksAtColumn(new string(' ', 7), _textBuffer.GetColumn(1));
+                    Assert.Equal("\t\t", text);
+                }
+
+                [Fact]
+                public void NonTabBoundaryExactTab()
+                {
+                    _textBuffer.SetText("a");
+                    var text = _commonOperations.NormalizeBlanksAtColumn(new string(' ', 3), _textBuffer.GetColumn(1));
+                    Assert.Equal("\t", text);
+                }
+
+                [Fact]
+                public void NotEnoughSpaces()
+                {
+                    var text = _commonOperations.NormalizeBlanksAtColumn(new string(' ', 3), _textBuffer.GetColumn(0));
+                    Assert.Equal("   ", text);
+                }
+
+                [Fact]
+                public void NonTabBoundaryWithTabs()
+                {
+                    _textBuffer.SetText("a");
+                    var text = _commonOperations.NormalizeBlanksAtColumn("\t\t", _textBuffer.GetColumn(1));
+                    Assert.Equal("\t\t", text);
+                }
+            }
+
+            public sealed class ExpandTab : NormalizeBlanksAtColumnTest
+            {
+                public ExpandTab()
+                {
+                    Create("");
+                    _vimBuffer.LocalSettings.ExpandTab = true;
+                    _vimBuffer.LocalSettings.TabStop = 4;
+                }
+
+                [Fact]
+                public void ExactToTabBoundary()
+                {
+                    _textBuffer.SetText("a");
+                    var text = _commonOperations.NormalizeBlanksAtColumn(new string(' ', 3), _textBuffer.GetColumn(1));
+                    Assert.Equal(new string(' ', 3), text);
+                }
+
+                [Fact]
+                public void OneOverTabBoundary()
+                {
+                    _textBuffer.SetText("a");
+                    var text = _commonOperations.NormalizeBlanksAtColumn(new string(' ', 4), _textBuffer.GetColumn(1));
+                    Assert.Equal(new string(' ', 4), text);
+                }
+            }
+
+        }
+
+        public sealed class GetSpacesToPointTest : CommonOperationsIntegrationTest
+        {
+            [Fact]
+            public void Simple()
+            {
+                Create("cat");
+                Assert.Equal(2, _commonOperations.GetSpacesToPoint(_textBuffer.GetPoint(2)));
+            }
+
+            /// <summary>
+            /// Tabs on a 'tabstop' boundary are equivalent to 'tabstop' spaces
+            /// </summary>
+            [Fact]
+            public void AfterTab()
+            {
+                Create("\tcat");
+                _vimBuffer.LocalSettings.TabStop = 20;
+                Assert.Equal(20, _commonOperations.GetSpacesToPoint(_textBuffer.GetPoint(1)));
+            }
+
+            /// <summary>
+            /// A tab which exists on a non-tabstop boundary only counts for the number of spaces remaining
+            /// until the next tabstop boundary
+            /// </summary>
+            [Fact]
+            public void AfterMixedTab()
+            {
+                Create("a\tcat");
+                _vimBuffer.LocalSettings.TabStop = 4;
+                Assert.Equal(4, _commonOperations.GetSpacesToPoint(_textBuffer.GetPoint(2)));
+            }
+        }
+
         public sealed class MiscTest : CommonOperationsIntegrationTest
         {
             [Fact]

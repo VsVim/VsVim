@@ -1608,6 +1608,25 @@ type internal CommandUtil
     /// Core put after function used by many of the put after operations
     member x.PutAfterCaretCore (registerValue : RegisterValue) count moveCaretAfterText =
         let stringData = registerValue.StringData.ApplyCount count
+
+        // Adjust for simple putting line-wise "after" in an empty buffer.
+        // This is just the way vim works and cannot be handled later
+        // because the behavior depends not on the point but the "after"
+        // part, which is lost by the time we get to 'PutCore' and beyond
+        let stringData =
+            let isLineWise = registerValue.OperationKind = OperationKind.LineWise
+            let isEmpty = _textBuffer.CurrentSnapshot.Length = 0
+            let isSimple =
+                match stringData with
+                | StringData.Simple _ -> true
+                | _ -> false
+            if isLineWise && isEmpty && isSimple then
+                let newLine = _commonOperations.GetNewLineText x.CaretPoint
+                let newString = newLine + (EditUtil.RemoveEndingNewLine stringData.String)
+                StringData.Simple newString
+            else
+                stringData
+
         let point = 
             match registerValue.OperationKind with
             | OperationKind.CharacterWise -> 
@@ -2521,6 +2540,7 @@ type internal CommandUtil
                 _commonOperations.MaintainCaretColumn <- MaintainCaretColumn.Spaces columnSpaces
 
             _textView.ViewScroller.ScrollViewportVerticallyByLines(direction, count)
+
             let textViewLines = _textView.TextViewLines
             match direction with
             | ScrollDirection.Up ->
@@ -2530,6 +2550,8 @@ type internal CommandUtil
                 if x.CaretPoint.Position < textViewLines.FirstVisibleLine.Start.Position then
                     updateCaret textViewLines.FirstVisibleLine
             | _ -> ()
+
+            _commonOperations.AdjustCaretForScrollOffset()
 
         with 
         // Dealing with ITextViewLines can lead to an exception (particularly during layout).  Need

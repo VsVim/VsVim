@@ -84,7 +84,7 @@ type IncrementalSearchTaggerSource (_vimBuffer : IVimBuffer) as this =
                 ReadOnlyCollectionUtil.Empty
             | Some span -> 
                 // We have a span so return the tag
-                let tag = TextMarkerTag(Constants.IncrementalSearchTagName)
+                let tag = TextMarkerTag(VimConstants.IncrementalSearchTagName)
                 let tagSpan = TagSpan(span, tag) :> ITagSpan<TextMarkerTag>
                 ReadOnlyCollectionUtil.Single tagSpan
 
@@ -98,7 +98,7 @@ type IncrementalSearchTaggerSource (_vimBuffer : IVimBuffer) as this =
         member x.Dispose() = _eventHandlers.DisposeAll()
 
 [<Export(typeof<IViewTaggerProvider>)>]
-[<ContentType(Constants.AnyContentType)>]
+[<ContentType(VimConstants.AnyContentType)>]
 [<TextViewRole(PredefinedTextViewRoles.Editable)>]
 [<TagType(typeof<TextMarkerTag>)>]
 type internal IncrementalSearchTaggerProvider
@@ -246,7 +246,7 @@ type HighlightSearchTaggerSource
                         // Happens when we provide an invalid regular expression.  Just return empty list
                         Seq.empty
 
-            let tag = TextMarkerTag(Constants.HighlightIncrementalSearchTagName)
+            let tag = TextMarkerTag(VimConstants.HighlightIncrementalSearchTagName)
             spans
             |> Seq.map (fun span -> TagSpan(span,tag) :> ITagSpan<TextMarkerTag> )
             |> ReadOnlyCollectionUtil.OfSeq
@@ -272,7 +272,7 @@ type HighlightSearchTaggerSource
         member x.Dispose() = _eventHandlers.DisposeAll()
 
 [<Export(typeof<IViewTaggerProvider>)>]
-[<ContentType(Constants.AnyContentType)>]
+[<ContentType(VimConstants.AnyContentType)>]
 [<TextViewRole(PredefinedTextViewRoles.Editable)>]
 [<TagType(typeof<TextMarkerTag>)>]
 type HighlightIncrementalSearchTaggerProvider
@@ -320,7 +320,7 @@ type SubstituteConfirmTaggerSource
     member x.GetTags span = 
         match _currentMatch with
         | Some currentMatch -> 
-            let tag = TextMarkerTag(Constants.HighlightIncrementalSearchTagName)
+            let tag = TextMarkerTag(VimConstants.HighlightIncrementalSearchTagName)
             let tagSpan = TagSpan(currentMatch, tag) :> ITagSpan<TextMarkerTag>
             ReadOnlyCollectionUtil.Single tagSpan
         | None -> 
@@ -336,7 +336,7 @@ type SubstituteConfirmTaggerSource
         member x.Dispose() = _eventHandlers.DisposeAll()
 
 [<Export(typeof<IViewTaggerProvider>)>]
-[<ContentType(Constants.AnyContentType)>]
+[<ContentType(VimConstants.AnyContentType)>]
 [<TextViewRole(PredefinedTextViewRoles.Editable)>]
 [<TagType(typeof<TextMarkerTag>)>]
 type SubstituteConfirmTaggerProvider
@@ -397,7 +397,7 @@ type internal FoldTaggerSource(_foldData : IFoldData) as this =
         member x.Dispose() = ()
 
 [<Export(typeof<ITaggerProvider>)>]
-[<ContentType(Constants.AnyContentType)>]
+[<ContentType(VimConstants.AnyContentType)>]
 [<TextViewRole(PredefinedTextViewRoles.Editable)>]
 [<TagType(typeof<OutliningRegionTag>)>]
 type FoldTaggerProvider

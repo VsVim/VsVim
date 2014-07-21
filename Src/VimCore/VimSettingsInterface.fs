@@ -11,10 +11,8 @@ open System.Runtime.CompilerServices
 open System.Collections.Generic
 
 module GlobalSettingNames = 
-    let AutoCommandName = "vsvim_autocmd"
     let BackspaceName = "backspace"
     let CaretOpacityName = "vsvimcaret"
-    let ControlCharsName = "vsvim_controlchars"
     let CurrentDirectoryPathName = "cdpath"
     let ClipboardName = "clipboard"
     let GlobalDefaultName = "gdefault"
@@ -25,7 +23,6 @@ module GlobalSettingNames =
     let JoinSpacesName = "joinspaces"
     let KeyModelName = "keymodel"
     let MagicName = "magic"
-    let MaxMapCount =  "vsvim_maxmapcount"
     let MaxMapDepth =  "maxmapdepth"
     let MouseModelName = "mousemodel"
     let ParagraphsName = "paragraphs"
@@ -43,8 +40,6 @@ module GlobalSettingNames =
     let TimeoutName = "timeout"
     let TimeoutLengthName = "timeoutlen"
     let TimeoutLengthExName = "ttimeoutlen"
-    let UseEditorIndentName = "vsvim_useeditorindent"
-    let UseEditorDefaultsName = "vsvim_useeditordefaults"
     let VisualBellName = "visualbell"
     let VirtualEditName = "virtualedit"
     let VimRcName = "vimrc"
@@ -58,6 +53,7 @@ module LocalSettingNames =
     let ExpandTabName = "expandtab"
     let NumberName = "number"
     let NumberFormatsName = "nrformats"
+    let SoftTabStopName = "softtabstop"
     let ShiftWidthName = "shiftwidth"
     let TabStopName = "tabstop"
     let QuoteEscapeName = "quoteescape"
@@ -140,8 +136,18 @@ type SettingValue =
     member x.Kind = 
         match x with
         | Number _ -> SettingKind.Number
-        | String _ -> SettingKind.String 
+        | String _ -> SettingKind.String
         | Toggle _ -> SettingKind.Toggle
+
+/// Allows for custom setting sources to be defined.  This is used by the vim host to 
+/// add custom settings
+type IVimCustomSettingSource =
+
+    abstract GetDefaultSettingValue: name : string -> SettingValue
+
+    abstract GetSettingValue: name : string -> SettingValue
+
+    abstract SetSettingValue: name : string -> settingValue : SettingValue -> unit
 
 /// This pairs both the current setting value and the default value into a single type safe
 /// value.  The first value in every tuple is the current value while the second is the 
@@ -152,6 +158,7 @@ type LiveSettingValue =
     | String of string * string
     | Toggle of bool * bool
     | CalculatedNumber of int option * (unit -> int)
+    | Custom of string * IVimCustomSettingSource
 
     /// Is this a calculated value
     member x.IsCalculated = 
@@ -168,6 +175,7 @@ type LiveSettingValue =
             match value with
             | Some value -> SettingValue.Number value
             | None -> func() |> SettingValue.Number
+        | Custom (name, customSettingSource) -> customSettingSource.GetSettingValue name
 
     member x.DefaultValue =
         match x with
@@ -175,6 +183,7 @@ type LiveSettingValue =
         | String (_, defaultValue) -> SettingValue.String defaultValue
         | Toggle (_, defaultValue) -> SettingValue.Toggle defaultValue
         | CalculatedNumber (_, func) -> func() |> SettingValue.Number
+        | Custom (name, customSettingSource) -> customSettingSource.GetDefaultSettingValue name
 
     /// Is the value currently the default? 
     member x.IsValueDefault = x.Value = x.DefaultValue
@@ -185,6 +194,7 @@ type LiveSettingValue =
         | String _ -> SettingKind.String 
         | Toggle _ -> SettingKind.Toggle
         | CalculatedNumber _ -> SettingKind.Number
+        | Custom (name, customSettingSource) -> (customSettingSource.GetDefaultSettingValue name).Kind
 
     member x.UpdateValue value =
         match x, value with 
@@ -192,6 +202,9 @@ type LiveSettingValue =
         | String (_, defaultValue), SettingValue.String value -> String (value, defaultValue) |> Some
         | Toggle (_, defaultValue), SettingValue.Toggle value -> Toggle (value, defaultValue) |> Some
         | CalculatedNumber (_, func), SettingValue.Number value -> CalculatedNumber (Some value, func) |> Some
+        | Custom (name, customSettingSource), value -> 
+            customSettingSource.SetSettingValue name value
+            Some x
         | _ -> None
 
     static member Create value = 
@@ -237,20 +250,20 @@ type SettingEventArgs(_setting : Setting, _isValueChanged : bool) =
 type IVimSettings =
 
     /// Returns a sequence of all of the settings and values
-    abstract AllSettings : Setting seq
+    abstract AllSettings : Setting list
 
     /// Try and set a setting to the passed in value.  This can fail if the value does not 
     /// have the correct type.  The provided name can be the full name or abbreviation
-    abstract TrySetValue : settingName : string -> value : SettingValue -> bool
+    abstract TrySetValue : settingNameOrAbbrev : string -> value : SettingValue -> bool
 
     /// Try and set a setting to the passed in value which originates in string form.  This 
     /// will fail if the setting is not found or the value cannot be converted to the appropriate
     /// value
-    abstract TrySetValueFromString : settingName : string -> strValue : string -> bool
+    abstract TrySetValueFromString : settingNameOrAbbrev : string -> strValue : string -> bool
 
     /// Get the value for the named setting.  The name can be the full setting name or an 
     /// abbreviation
-    abstract GetSetting : settingName : string -> Setting option
+    abstract GetSetting : settingNameOrAbbrev : string -> Setting option
 
     /// Raised when a Setting changes
     [<CLIEvent>]
@@ -258,8 +271,8 @@ type IVimSettings =
 
 and IVimGlobalSettings = 
 
-    /// Is 'autocmd' support
-    abstract AutoCommand : bool with get, set
+    /// Add a custom setting to the current collection
+    abstract AddCustomSetting : name : string -> abbrevation : string -> customSettingSource : IVimCustomSettingSource -> unit
 
     /// The multi-value option for determining backspace behavior.  Valid values include 
     /// indent, eol, start.  Usually accessed through the IsBackSpace helpers
@@ -268,10 +281,6 @@ and IVimGlobalSettings =
     /// Opacity of the caret.  This must be an integer between values 0 and 100 which
     /// will be converted into a double for the opacity of the caret
     abstract CaretOpacity : int with get, set
-
-    /// Whether or not control characters will display as they do in gVim.  For example should
-    /// (char)29 display as an invisible character or ^] 
-    abstract ControlChars : bool with get, set
 
     /// List of paths which will be searched by the :cd and :ld commands
     abstract CurrentDirectoryPath : string with get, set
@@ -298,11 +307,6 @@ and IVimGlobalSettings =
     /// Whether or not the magic option is set
     abstract Magic : bool with get, set
 
-    /// Maximum number of maps which can occur for a key map.  This is not a standard vim or gVim
-    /// setting.  It's a hueristic setting meant to prevent infinite recursion in the specific cases
-    /// that maxmapdepth can't or won't catch (see :help maxmapdepth).  
-    abstract MaxMapCount : int with get, set
-
     /// Maximum number of recursive depths which occur for a mapping
     abstract MaxMapDepth : int with get, set
 
@@ -312,9 +316,6 @@ and IVimGlobalSettings =
     /// Whether or not incremental searches should be highlighted and focused 
     /// in the ITextBuffer
     abstract IncrementalSearch : bool with get, set
-
-    /// Is 'autocmd' support
-    abstract IsAutoCommandEnabled : bool with get
 
     /// Is the 'indent' option inside of Backspace set
     abstract IsBackspaceIndent : bool with get
@@ -432,13 +433,6 @@ and IVimGlobalSettings =
     /// any upper case letters
     abstract SmartCase : bool with get, set
 
-    /// Use the editor default settings when creating a new buffer
-    abstract UseEditorDefaults : bool with get, set 
-
-    /// Let the editor control indentation of lines instead.  Overrides the AutoIndent
-    /// setting
-    abstract UseEditorIndent : bool with get, set
-
     /// Retrieves the location of the loaded VimRC file.  Will be the empty string if the load 
     /// did not succeed or has not been tried
     abstract VimRc : string with get, set
@@ -484,6 +478,9 @@ and IVimLocalSettings =
 
     /// The number of spaces a << or >> command will shift by 
     abstract ShiftWidth : int with get, set
+
+    /// Number of spaces a tab counts for when doing edit operations
+    abstract SoftTabStop : int with get, set
 
     /// How many spaces a tab counts for 
     abstract TabStop : int with get, set

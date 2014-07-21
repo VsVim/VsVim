@@ -60,7 +60,8 @@ type UninitializedMode(_vimTextBuffer : IVimTextBuffer) =
 
 type internal ModeMap
     (
-        _vimTextBuffer : IVimTextBuffer
+        _vimTextBuffer : IVimTextBuffer,
+        _incrementalSearch : IIncrementalSearch
     ) = 
 
     let mutable _modeMap : Map<ModeKind, IMode> = Map.empty
@@ -78,6 +79,10 @@ type internal ModeMap
         _mode <- newMode
 
         currentMode.OnLeave()
+
+        // Incremental search should not persist between mode changes.  
+        if _incrementalSearch.InSearch then
+            _incrementalSearch.Cancel()
 
         // Make sure to update the underlying IVimTextBuffer to the given mode.  Do this after
         // we switch so that we can avoid the redundant mode switch in the event handler
@@ -117,6 +122,11 @@ type internal VimBuffer
         _commandUtil : ICommandUtil
     ) as this =
 
+    /// Maximum number of maps which can occur for a key map.  This is not a standard vim or gVim
+    /// setting.  It's a hueristic setting meant to prevent infinite recursion in the specific cases
+    /// that maxmapdepth can't or won't catch (see :help maxmapdepth).  
+    let _maxMapCount = 1000
+
     let _vim = _vimBufferData.Vim
     let _textView = _vimBufferData.TextView
     let _jumpList = _vimBufferData.JumpList
@@ -126,7 +136,7 @@ type internal VimBuffer
     let _statusUtil = _vimBufferData.StatusUtil
     let _properties = PropertyCollection()
     let _bag = DisposableBag()
-    let _modeMap = ModeMap(_vimBufferData.VimTextBuffer)
+    let _modeMap = ModeMap(_vimBufferData.VimTextBuffer, _incrementalSearch)
     let _keyMap = _vim.KeyMap
     let mutable _processingInputCount = 0
     let mutable _isClosed = false
@@ -471,7 +481,7 @@ type internal VimBuffer
                 // loop processing recursive input.  In a perfect world we would implement 
                 // Ctrl-C support and allow users to break out of this loop but right now we don't
                 // and this is a heuristic to prevent hanging the IDE until then
-                if remainingSet.Value.Length > 0 && mapCount.Value = _vim.GlobalSettings.MaxMapCount then
+                if remainingSet.Value.Length > 0 && mapCount.Value = _maxMapCount then
                     x.RaiseErrorMessage Resources.Vim_RecursiveMapping
                     processResult := ProcessResult.Error
                     remainingSet := KeyInputSet.Empty

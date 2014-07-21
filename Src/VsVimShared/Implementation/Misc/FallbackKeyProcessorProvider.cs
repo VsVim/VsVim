@@ -25,10 +25,11 @@ namespace VsVim.Implementation.Misc
     [Order(Before = Constants.VisualStudioKeyProcessorName)]
     [Name(Constants.FallbackKeyProcessorName)]
     [TextViewRole(PredefinedTextViewRoles.Interactive)]
-    [ContentType(Vim.Constants.AnyContentType)]
+    [ContentType(VimConstants.AnyContentType)]
     internal sealed class FallbackKeyProcessorProvider : IKeyProcessorProvider
     {
         private readonly IKeyUtil _keyUtil;
+        private readonly IVsShell _vsShell;
         private readonly _DTE _dte;
         private readonly IVimApplicationSettings _vimApplicationSettings;
         private readonly IVim _vim;
@@ -42,8 +43,8 @@ namespace VsVim.Implementation.Misc
             _vimApplicationSettings = vimApplicationSettings;
             _vim = vim;
 
-            var vsShell = (IVsShell)serviceProvider.GetService(typeof(SVsShell));
-            _scopeData = new ScopeData(vsShell);
+            _vsShell = (IVsShell)serviceProvider.GetService(typeof(SVsShell));
+            _scopeData = new ScopeData(_vsShell);
         }
 
         /// <summary>
@@ -58,7 +59,7 @@ namespace VsVim.Implementation.Misc
                 vimBuffer = null;
             }
 
-            return new FallbackKeyProcessor(_dte, _keyUtil, _vimApplicationSettings, wpfTextView, vimBuffer, _scopeData);
+            return new FallbackKeyProcessor(_vsShell, _dte, _keyUtil, _vimApplicationSettings, wpfTextView, vimBuffer, _scopeData);
         }
     }
 }

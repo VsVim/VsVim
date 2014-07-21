@@ -330,6 +330,18 @@ namespace VsVim
             return ErrorHandler.Succeeded(vsShell.IsPackageInstalled(ref packageId, out isInstalled)) && 1 == isInstalled;
         }
 
+        internal static bool IsInModalState(this IVsShell vsShell)
+        {
+            object value;
+            if (ErrorHandler.Failed(vsShell.GetProperty((int)__VSSPROPID4.VSSPROPID_IsModal, out value)) ||
+                !(value is bool))
+            {
+                return false;
+            }
+
+            return (bool)value;
+        }
+
         #endregion
 
         #region IVsUIShell

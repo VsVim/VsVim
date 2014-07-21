@@ -12,7 +12,7 @@ using Vim;
 namespace VimApp.Implementation.NewLineDisplay
 {
     [Export(typeof(IWpfTextViewCreationListener))]
-    [ContentType(Vim.Constants.AnyContentType)]
+    [ContentType(VimConstants.AnyContentType)]
     [TextViewRole(PredefinedTextViewRoles.Editable)]
     internal sealed class NewLineDisplayFactory : IWpfTextViewCreationListener
     {

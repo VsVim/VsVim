@@ -16,6 +16,69 @@ namespace Vim.UnitTest
             _globalSettings = _globalSettingsRaw;
         }
 
+        public sealed class CustomSettingsTest : GlobalSettingsTest
+        {
+            internal sealed class CustomSettingSource : IVimCustomSettingSource
+            {
+                internal readonly string Name;
+                internal string DefaultValue;
+                internal string Value;
+
+                internal CustomSettingSource(string name, string defaultValue = "")
+                {
+                    Name = name;
+                    DefaultValue = defaultValue;
+                }
+
+                SettingValue IVimCustomSettingSource.GetDefaultSettingValue(string name)
+                {
+                    Assert.Equal(name, Name);
+                    return SettingValue.NewString(DefaultValue);
+                }
+
+                SettingValue IVimCustomSettingSource.GetSettingValue(string name)
+                {
+                    Assert.Equal(name, Name);
+                    return SettingValue.NewString(Value);
+                }
+
+                void IVimCustomSettingSource.SetSettingValue(string name, SettingValue settingValue)
+                {
+                    Assert.Equal(name, Name);
+                    if (settingValue.IsString)
+                    {
+                        Value = ((SettingValue.String)settingValue).Item;
+                    }
+                }
+            }
+
+            private string GetStringValue(string name)
+            {
+                var setting = _globalSettings.GetSetting(name).Value;
+                return ((SettingValue.String)setting.LiveSettingValue.Value).Item;
+            }
+
+            [Fact]
+            public void SimpleGet()
+            {
+                var source = new CustomSettingSource("test");
+                source.Value = "foo";
+                _globalSettings.AddCustomSetting(source.Name, source.Name, source);
+                Assert.Equal("foo", GetStringValue(source.Name));
+            }
+
+            [Fact]
+            public void SimpleSet()
+            {
+                var source = new CustomSettingSource("test");
+                source.Value = "foo";
+                _globalSettings.AddCustomSetting(source.Name, source.Name, source);
+                _globalSettings.TrySetValueFromString(source.Name, "bar");
+                Assert.Equal("bar", GetStringValue(source.Name));
+                Assert.Equal("bar", source.Value);
+            }
+        }
+
         public sealed class PathTest : GlobalSettingsTest
         {
             public void Expect(string text, params PathOption[] expected)
@@ -75,6 +138,66 @@ namespace Vim.UnitTest
             public void EscapedSpaceInPath()
             {
                 Expect(@"cat\ dog", PathOption.NewNamed(@"cat dog"));
+            }
+        }
+
+        public sealed class BackspaceTest : GlobalSettingsTest
+        {
+            [Fact]
+            public void Value0()
+            {
+                _globalSettings.Backspace = "start";
+                _globalSettings.Backspace = "0";
+                Assert.False(_globalSettings.IsBackspaceStart);
+            }
+
+            [Fact]
+            public void Value0FromString()
+            {
+                _globalSettings.TrySetValueFromString("backspace", "0");
+                Assert.False(_globalSettings.IsBackspaceStart);
+            }
+
+            [Fact]
+            public void Value1()
+            {
+                _globalSettings.Backspace = "1";
+                Assert.True(_globalSettings.IsBackspaceIndent && _globalSettings.IsBackspaceEol);
+            }
+
+            [Fact]
+            public void Value1FromString()
+            {
+                _globalSettings.TrySetValueFromString("backspace", "1");
+                Assert.True(_globalSettings.IsBackspaceIndent && _globalSettings.IsBackspaceEol);
+            }
+
+            [Fact]
+            public void Value2()
+            {
+                _globalSettings.Backspace = "2";
+                Assert.True(_globalSettings.IsBackspaceIndent && _globalSettings.IsBackspaceEol && _globalSettings.IsBackspaceStart);
+            }
+
+            [Fact]
+            public void Value2FromString()
+            {
+                _globalSettings.TrySetValueFromString("backspace", "2");
+                Assert.True(_globalSettings.IsBackspaceIndent && _globalSettings.IsBackspaceEol && _globalSettings.IsBackspaceStart);
+            }
+
+            [Fact]
+            public void StartIndent()
+            {
+                _globalSettings.Backspace = "start,indent";
+                Assert.True(_globalSettings.IsBackspaceIndent && !_globalSettings.IsBackspaceEol && _globalSettings.IsBackspaceStart);
+            }
+
+            [Fact]
+            public void StartIndentEol()
+            {
+                _globalSettings.Backspace = "start,indent,eol";
+                Assert.True(_globalSettings.IsBackspaceIndent && _globalSettings.IsBackspaceEol && _globalSettings.IsBackspaceStart);
             }
         }
 
@@ -191,14 +314,6 @@ namespace Vim.UnitTest
                 Assert.Equal(SelectModeOptions.None, _globalSettings.SelectModeOptions);
                 var setting = _globalSettings.GetSetting(GlobalSettingNames.SelectModeName).Value;
                 Assert.Equal("", setting.DefaultValue.AsString().Item);
-            }
-
-            [Fact]
-            public void UseEditorDeafaults_Default()
-            {
-                Assert.False(_globalSettings.UseEditorDefaults);
-                _globalSettings.UseEditorDefaults = true;
-                Assert.True(_globalSettings.UseEditorDefaults);
             }
         }
     }

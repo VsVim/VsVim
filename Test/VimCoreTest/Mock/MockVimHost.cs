@@ -18,6 +18,8 @@ namespace Vim.UnitTest.Mock
 #pragma warning restore 67
 
         public bool AutoSynchronizeSettings { get; set; }
+        public bool IsAutoCommandEnabled { get; set; }
+        public DefaultSettings DefaultSettings { get; set; }
         public int BeepCount { get; set; }
         public int GoToDefinitionCount { get; set; }
         public bool GoToFileReturn { get; set; }
@@ -35,17 +37,19 @@ namespace Vim.UnitTest.Mock
         public Func<ITextView> CreateHiddenTextViewFunc { get; set; }
         public Func<ITextBuffer, bool> IsDirtyFunc { get; set; }
         public Func<string, string, IVimData, string> RunCommandFunc { get; set; }
-        public Action<string, string> RunVisualStudioCommandFunc { get; set; }
+        public Action<ITextView, string, string> RunVisualStudioCommandFunc { get; set; }
         public Action<QuickFix, int, bool> RunQuickFixFunc { get; set; }
         public Func<string, string, bool> RunSaveTextAs { get; set; }
         public ITextBuffer LastSaved { get; set; }
         public ITextView LastClosed { get; set; }
         public bool ShouldCreateVimBufferImpl { get; set; }
+        public bool ShouldIncludeRcFile { get; set; }
         public VimRcState VimRcState { get; private set; }
         public int TabCount { get; set; }
         public IFontProperties FontProperties { get; set; }
         public int GoToTabData { get; set; }
         public int GetTabIndexData { get; set; }
+        public WordWrapStyles WordWrapStyle { get; set; }
 
         public MockVimHost()
         {
@@ -67,6 +71,8 @@ namespace Vim.UnitTest.Mock
         public void Clear()
         {
             AutoSynchronizeSettings = true;
+            IsAutoCommandEnabled = true;
+            DefaultSettings = DefaultSettings.GVim74;
             GoToDefinitionReturn = true;
             IsCompletionWindowActive = false;
             NavigateToReturn = false;
@@ -87,6 +93,8 @@ namespace Vim.UnitTest.Mock
             LastClosed = null;
             LastSaved = null;
             ShouldCreateVimBufferImpl = false;
+            ShouldIncludeRcFile = true;
+            WordWrapStyle = WordWrapStyles.WordWrap;
         }
 
         void IVimHost.Beep()
@@ -155,6 +163,11 @@ namespace Vim.UnitTest.Mock
             throw new NotImplementedException();
         }
 
+        FSharpOption<int> IVimHost.GetNewLineIndent(ITextView textView, ITextSnapshotLine contextLine, ITextSnapshotLine newLine)
+        {
+            return FSharpOption<int>.None;
+        }
+
         bool IVimHost.GoToGlobalDeclaration(ITextView value, string target)
         {
             return GoToGlobalDeclarationFunc(value, target);
@@ -210,9 +223,9 @@ namespace Vim.UnitTest.Mock
             return RunCommandFunc(command, arguments, vimData);
         }
 
-        void IVimHost.RunVisualStudioCommand(string command, string argument)
+        void IVimHost.RunVisualStudioCommand(ITextView textView, string command, string argument)
         {
-            RunVisualStudioCommandFunc(command, argument);
+            RunVisualStudioCommandFunc(textView, command, argument);
         }
 
         HostResult IVimHost.SplitViewVertically(ITextView value)
@@ -292,10 +305,20 @@ namespace Vim.UnitTest.Mock
             return ShouldCreateVimBufferImpl;
         }
 
+        bool IVimHost.ShouldIncludeRcFile(VimRcPath vimRcPath)
+        {
+            return ShouldIncludeRcFile;
+        }
+
         bool IVimHost.GoToQuickFix(QuickFix quickFix, int count, bool hasBang)
         {
             RunQuickFixFunc(quickFix, count, hasBang);
             return false;
+        }
+
+        void IVimHost.VimGlobalSettingsCreated(IVimGlobalSettings globalSettings)
+        {
+
         }
 
         void IVimHost.VimRcLoaded(VimRcState vimRcState, IVimLocalSettings localSettings, IVimWindowSettings windowSettings)
@@ -306,6 +329,11 @@ namespace Vim.UnitTest.Mock
         int IVimHost.GetTabIndex(ITextView textView)
         {
             return GetTabIndexData;            
+        }
+
+        WordWrapStyles IVimHost.GetWordWrapStyle(ITextView textView)
+        {
+            return WordWrapStyle;
         }
 
         int IVimHost.TabCount

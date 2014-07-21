@@ -170,9 +170,6 @@ type InsertSessionData = {
     /// The kind of insert we are currently performing
     InsertKind : InsertKind
 
-    /// The most recent TextChange for the insert session
-    InsertTextChange : TextChange option
-
     /// This is the current InsertCommand being built up
     CombinedEditCommand : InsertCommand option
 
@@ -206,7 +203,6 @@ type internal InsertMode
 
     static let _emptySessionData = {
         InsertKind = InsertKind.Normal
-        InsertTextChange = None
         Transaction = None
         CombinedEditCommand = None
         ActiveEditItem = ActiveEditItem.None
@@ -242,6 +238,10 @@ type internal InsertMode
             ("<C-v>", InsertCommand.Paste, CommandFlags.Repeatable ||| CommandFlags.InsertEdit)
             ("<C-Left>", InsertCommand.MoveCaretByWord Direction.Left, CommandFlags.Movement)
             ("<C-Right>", InsertCommand.MoveCaretByWord Direction.Right, CommandFlags.Movement)
+            ("<BS>", InsertCommand.Back, CommandFlags.Repeatable ||| CommandFlags.InsertEdit)
+            ("<C-h>", InsertCommand.Back, CommandFlags.Repeatable ||| CommandFlags.InsertEdit)
+            ("<C-w>", InsertCommand.DeleteWordBeforeCursor, CommandFlags.Repeatable ||| CommandFlags.InsertEdit)
+            ("<C-u>", InsertCommand.DeleteLineBeforeCursor, CommandFlags.Repeatable ||| CommandFlags.InsertEdit)
         ]
 
     do
@@ -277,10 +277,6 @@ type internal InsertMode
                 ("<C-o>", RawInsertCommand.CustomCommand this.ProcessNormalModeOneCommand)
                 ("<C-p>", RawInsertCommand.CustomCommand this.ProcessWordCompletionPrevious)
                 ("<C-r>", RawInsertCommand.CustomCommand this.ProcessPasteStart)
-                ("<BS>", RawInsertCommand.CustomCommand (this.RunBackspacingCommand InsertCommand.Back))
-                ("<C-h>", RawInsertCommand.CustomCommand (this.RunBackspacingCommand InsertCommand.Back))
-                ("<C-w>", RawInsertCommand.CustomCommand (this.RunBackspacingCommand InsertCommand.DeleteWordBeforeCursor))
-                ("<C-u>", RawInsertCommand.CustomCommand (this.RunBackspacingCommand InsertCommand.DeleteLineBeforeCursor))
             ]
 
         let noSelectionCommands : (string * InsertCommand * CommandFlags) list =
@@ -359,8 +355,6 @@ type internal InsertMode
 
     member x.CaretPoint = TextViewUtil.GetCaretPoint _textView
 
-    member x.CaretVirtualPoint = TextViewUtil.GetCaretVirtualPoint _textView
-
     member x.CaretLine = TextViewUtil.GetCaretLine _textView
 
     member x.CurrentSnapshot = _textView.TextSnapshot
@@ -419,9 +413,10 @@ type internal InsertMode
                 let getDirectInsert () =
                     let command = 
                         if _isReplace then
-                            InsertCommand.DirectReplace c
+                            InsertCommand.Replace c
                         else
-                            InsertCommand.DirectInsert c
+                            let text = StringUtil.ofChar c
+                            InsertCommand.Insert text
                     let commandFlags = CommandFlags.Repeatable ||| CommandFlags.InsertEdit
                     let keyInputSet = KeyInputSet.OneKeyInput keyInput
                     RawInsertCommand.InsertCommand (keyInputSet, command, commandFlags) |> Some
@@ -468,8 +463,8 @@ type internal InsertMode
             match rawInsertCommand with
             | RawInsertCommand.InsertCommand (_, insertCommand, _) ->
                 match insertCommand with
-                | InsertCommand.DirectInsert _ -> true
-                | InsertCommand.DirectReplace _ -> true
+                | InsertCommand.Insert _ -> true
+                | InsertCommand.Replace _ -> true
                 | _ -> false
             | RawInsertCommand.CustomCommand _ -> false
 
@@ -557,25 +552,12 @@ type internal InsertMode
 
         ProcessResult.OfModeKind ModeKind.Normal
 
-    // Convert any virtual spaces to real normalized spaces
-    member x.FillInVirtualSpace () =
-
-        if x.CaretVirtualPoint.IsInVirtualSpace then
-            let blanks = 
-                let blanks = StringUtil.repeatChar x.CaretVirtualPoint.VirtualSpaces ' '
-                _operations.NormalizeBlanks blanks
-
-            // Make sure to position the caret to the end of the newly inserted spaces
-            let position = x.CaretPoint.Position + blanks.Length
-            _textBuffer.Insert(x.CaretPoint.Position, blanks) |> ignore
-            TextViewUtil.MoveCaretToPosition _textView position
-
     /// Start a word completion session in the given direction at the current caret point
     member x.StartWordCompletionSession isForward = 
 
         // If the caret is currently in virtual space we need to fill in that space with
         // real spaces before starting a completion session.
-        x.FillInVirtualSpace()
+        _operations.FillInVirtualSpace()
 
         // Time to start a completion.  
         let wordSpan = 
@@ -600,6 +582,46 @@ type internal InsertMode
                 _sessionData <- { _sessionData with ActiveEditItem = ActiveEditItem.WordCompletion wordCompletionSession }
 
         ProcessResult.Handled ModeSwitch.NoSwitch
+
+    /// When calculating a combined edit command we reduce the simple text changes down
+    /// as far as possible.  No since in creating a set of 5 combined commands for inserting 
+    /// the text "watch" when a simple InsertCommand.Insert "watch" will do.  
+    ///
+    /// It is important to only combine direct text edit commands here.  We don't want to be 
+    /// combining any logic commands like Backspace.  Those use settings to do their work and
+    /// hence must be reprocessed on a repeat
+    static member CreateCombinedEditCommand left right =
+
+        // Certain commands are simply not combinable with others.  Once executed they stand 
+        // as the lone command
+        let isUncombinable command = 
+            match command with
+            | InsertCommand.DeleteLineBeforeCursor -> true
+            | InsertCommand.DeleteWordBeforeCursor -> true
+            | _ -> false
+
+        if isUncombinable left then
+            right
+        elif isUncombinable right then
+            right
+        else
+            // Is this a simple text change which can be combined
+            let convert command = 
+                match command with 
+                | InsertCommand.Insert text -> TextChange.Insert text |> Some
+                | InsertCommand.DeleteLeft count -> TextChange.DeleteLeft count |> Some
+                | InsertCommand.DeleteRight count -> TextChange.DeleteRight count |> Some
+                | _ -> None
+
+            match convert left, convert right with
+            | Some leftChange, Some rightChange ->
+                let textChange = TextChange.CreateReduced leftChange rightChange
+                match textChange with
+                | TextChange.Insert text -> InsertCommand.Insert text
+                | TextChange.DeleteLeft count -> InsertCommand.DeleteLeft count
+                | TextChange.DeleteRight count -> InsertCommand.DeleteRight count
+                | TextChange.Combination _ -> InsertCommand.Combined (left, right)
+            | _ -> InsertCommand.Combined (left, right)
 
     /// Run the insert command with the given information
     member x.RunInsertCommand (command : InsertCommand) (keyInputSet : KeyInputSet) commandFlags : ProcessResult =
@@ -633,7 +655,7 @@ type internal InsertMode
             let command = 
                 match _sessionData.CombinedEditCommand with
                 | None -> command
-                | Some previousCommand -> InsertCommand.Combined (previousCommand, command)
+                | Some previousCommand -> InsertMode.CreateCombinedEditCommand previousCommand command
             _sessionData <- { _sessionData with CombinedEditCommand = Some command }
 
         else
@@ -684,63 +706,8 @@ type internal InsertMode
                     EditUtil.NormalizeNewLines text newLine
 
                 let keyInputSet = KeyInputSet.OneKeyInput keyInput
-                let insertCommand = InsertCommand.InsertText text
+                let insertCommand = InsertCommand.Insert text
                 x.RunInsertCommand insertCommand keyInputSet CommandFlags.InsertEdit
-
-    /// Run an insert command that backspaces over recent input
-    ///
-    /// Here we enforce the 'backspace=start' setting and also ensure
-    /// that commands within the current edit don't interrupt it.
-    /// That means that a context-dependent command like DeleteWordBeforeCursor
-    /// will be converted into the corresponding context-independent DeleteLeft
-    /// command, which also makes the command repeat correctly
-    member x.RunBackspacingCommand command keyInput =
-
-        // We cannot be in virtual space because the insert utilities
-        // operate in terms of real points
-        x.FillInVirtualSpace()
-
-        // Get the point that 'backspace=start' allows backspacing over
-        let startPoint =
-            match _vimBuffer.VimTextBuffer.LastInsertEntryPoint with
-            | Some startPoint ->
-                startPoint
-            | None ->
-                x.CaretPoint
-
-        // Ask the insert utilties how far it would backspace to for this command
-        let point = _insertUtil.GetBackspacingPoint command
-
-        // The start position is always an intermediate point for any
-        // backspacing command.
-        let point =
-            if point.Position < startPoint.Position && startPoint.Position < x.CaretPoint.Position then
-                startPoint
-            else
-                point
-
-        // Enforce 'backspace=start'
-        let point =
-            if not _globalSettings.IsBackspaceStart && point.Position < startPoint.Position then
-                startPoint
-            else
-                point
-
-        // If there is nothing to backspace over, it's an error
-        // If the point is within the current edit, convert it to a DeleteLeft command
-        // Otherwise process the command as is
-        if point.Position = x.CaretPoint.Position then
-            _operations.Beep()
-            ProcessResult.Handled ModeSwitch.NoSwitch
-        else
-            let keyInputSet = KeyInputSet.OneKeyInput keyInput
-            let flags = CommandFlags.Repeatable ||| CommandFlags.InsertEdit
-            let command =
-                if point.Position >= startPoint.Position then
-                    InsertCommand.DeleteLeft (x.CaretPoint.Position - point.Position)
-                else
-                    command
-            x.RunInsertCommand command keyInputSet flags
 
     /// Try and process the KeyInput by considering the current text edit in Insert Mode
     member x.ProcessWithCurrentChange keyInput = 
@@ -770,15 +737,12 @@ type internal InsertMode
                 // Now run the command
                 x.RunInsertCommand command keyInputSet CommandFlags.Repeatable |> Some
 
-        match _sessionData.InsertTextChange with
-        | None ->
-            None
-        | Some textChange ->
-            match textChange.LastChange with
-            | TextChange.DeleteLeft _ -> None
-            | TextChange.DeleteRight _ -> None
-            | TextChange.Insert text -> func text
-            | TextChange.Combination _ -> None
+        match _sessionData.CombinedEditCommand with
+        | None -> None
+        | Some insertCommand ->
+            match insertCommand.RightMostCommand with
+            | InsertCommand.Insert text -> func text
+            | _ -> None
 
     /// Called when we need to process a key stroke and an IWordCompletionSession
     /// is active.
@@ -871,27 +835,22 @@ type internal InsertMode
     /// normal typing
     member x.OnCaretPositionChanged () = 
         _textChangeTracker.CompleteChange()
-        _sessionData <- { _sessionData with InsertTextChange = None }
-        _vimBuffer.VimTextBuffer.LastInsertEntryPoint <- Some x.CaretPoint
+        _sessionData <- { _sessionData with CombinedEditCommand = None }
+        _vimBuffer.VimTextBuffer.InsertStartPoint <- Some x.CaretPoint
+        _vimBuffer.VimTextBuffer.IsSoftTabStopValidForBackspace <- true
 
     member x.OnAfterRunInsertCommand (insertCommand : InsertCommand) =
 
-        let commandTextChange = insertCommand.TextChange _editorOptions
-
-        let insertTextChange = 
-            match _sessionData.InsertTextChange, commandTextChange with
-            | Some left, Some right -> TextChange.CreateReduced left right |> Some
-            | None, Some right -> Some right
-            | _ -> None
-        _sessionData <- { _sessionData with InsertTextChange = insertTextChange }
-
-        // If the command cannot be converted into a text change, reset the start point
-        if Option.isNone commandTextChange then
-            _vimBuffer.VimTextBuffer.LastInsertEntryPoint <- Some x.CaretPoint
+        // If the user typed a <Space> then 'sts' shouldn't be considered for <BS> operations
+        // until the start point is reset 
+        match insertCommand with
+        | InsertCommand.Insert " " -> _vimBuffer.VimTextBuffer.IsSoftTabStopValidForBackspace <- false
+        | _ -> ()
 
         let updateRepeat count addNewLines textChange =
 
             let insertKind = 
+                let commandTextChange = insertCommand.TextChange _editorOptions
                 match commandTextChange with
                 | None -> 
                     // Certain actions such as caret movement cause us to abandon the repeat session
@@ -939,7 +898,8 @@ type internal InsertMode
         x.EnsureCommandsBuilt()
 
         // Record start point upon initial entry to insert mode
-        _vimBuffer.VimTextBuffer.LastInsertEntryPoint <- Some x.CaretPoint
+        _vimBuffer.VimTextBuffer.InsertStartPoint <- Some x.CaretPoint
+        _vimBuffer.VimTextBuffer.IsSoftTabStopValidForBackspace <- true
 
         // When starting insert mode we want to track the edits to the IVimBuffer as a 
         // text change
@@ -987,7 +947,6 @@ type internal InsertMode
         _sessionData <- {
             Transaction = transaction
             InsertKind = insertKind
-            InsertTextChange = None
             CombinedEditCommand = None
             ActiveEditItem = ActiveEditItem.None
         }
@@ -1014,6 +973,10 @@ type internal InsertMode
 
         // Dismiss any active ICompletionSession 
         x.CancelWordCompletionSession()
+
+        // The 'start' point is not valid when we are not in insert mode 
+        _vimBuffer.VimTextBuffer.InsertStartPoint <- None
+        _vimBuffer.VimTextBuffer.IsSoftTabStopValidForBackspace <- true
 
         try
             match _sessionData.Transaction with

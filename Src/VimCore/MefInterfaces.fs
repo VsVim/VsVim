@@ -328,6 +328,8 @@ type ICommonOperations =
     /// Associated VimBufferData instance
     abstract VimBufferData : IVimBufferData
 
+    abstract AdjustCaretForScrollOffset : unit -> unit
+
     /// Create a possibly LineWise register value with the specified string value at the given 
     /// point.  This is factored out here because a LineWise value in vim should always
     /// end with a new line but we can't always guarantee the text we are working with 
@@ -394,6 +396,10 @@ type ICommonOperations =
     /// 0 and 1 can be used to access the first tab
     abstract GoToTab : int -> unit
 
+    /// Convert any virtual spaces into real spaces / tabs based on the current settings.  The caret 
+    /// will be positioned at the end of that change
+    abstract FillInVirtualSpace : unit -> unit
+
     /// Joins the lines in the range
     abstract Join : SnapshotLineRange -> JoinKind -> unit
 
@@ -415,7 +421,10 @@ type ICommonOperations =
     abstract NavigateToPoint : VirtualSnapshotPoint -> bool
 
     /// Normalize the spaces and tabs in the string
-    abstract NormalizeBlanks : string -> string
+    abstract NormalizeBlanks : text : string -> string
+
+    /// Normalize the spaces and tabs in the string at the given column in the buffer
+    abstract NormalizeBlanksAtColumn : text : string -> column : SnapshotColumn -> string
 
     /// Normalize the set of blanks into spaces
     abstract NormalizeBlanksToSpaces : string -> string
@@ -448,7 +457,7 @@ type ICommonOperations =
     abstract Substitute : pattern : string -> replace : string -> SnapshotLineRange -> flags : SubstituteFlags -> unit
 
     /// Undo the buffer changes "count" times
-    abstract Undo : count:int -> unit
+    abstract Undo : count : int -> unit
 
 /// Factory for getting ICommonOperations instances
 type ICommonOperationsFactory =
@@ -466,6 +475,13 @@ type IVisualModeSelectionOverride =
     /// Is insert mode preferred for the current state of the buffer
     abstract IsInsertModePreferred : textView : ITextView -> bool
 
+/// What source should the synchronizer use as the original settings?  The values
+/// in the selected source will be copied over the other settings
+[<RequireQualifiedAccess>]
+type SettingSyncSource =
+    | Editor
+    | Vim 
+
 /// This interface is used to synchronize settings between vim settings and the 
 /// editor settings
 ///
@@ -478,13 +494,5 @@ type IEditorToSettingsSynchronizer =
     ///
     /// This method can be called multiple times for the same IVimBuffer and it 
     /// will only synchronize once 
-    abstract StartSynchronizing : vimBuffer : IVimBuffer -> unit
-
-    /// Copy the settings which are synchronized from the editor to the 
-    /// corresponding vim settings
-    abstract CopyEditorToVimSettings : vimBuffer : IVimBuffer -> unit
-
-    /// Copy the settings which are synchronized from vim to the 
-    /// corresponding editor settings
-    abstract CopyVimToEditorSettings : vimBuffer : IVimBuffer -> unit
+    abstract StartSynchronizing : vimBuffer : IVimBuffer -> source : SettingSyncSource -> unit
 

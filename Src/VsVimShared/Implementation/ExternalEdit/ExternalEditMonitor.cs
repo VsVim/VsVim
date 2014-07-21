@@ -27,6 +27,7 @@ namespace VsVim.Implementation.ExternalEdit
             All = Tags | Markers
         }
 
+        private readonly IVimApplicationSettings _vimApplicationSettings;
         private readonly IVimBuffer _buffer;
         private readonly ITextView _textView;
         private readonly IProtectedOperations _protectedOperations;
@@ -56,12 +57,14 @@ namespace VsVim.Implementation.ExternalEdit
         }
 
         internal ExternalEditMonitor(
+            IVimApplicationSettings vimApplicationSettings,
             IVimBuffer buffer,
             IProtectedOperations protectedOperations,
             Result<IVsTextLines> vsTextLines,
             ReadOnlyCollection<ITagger<ITag>> taggerCollection,
             ReadOnlyCollection<IExternalEditAdapter> externalEditorAdapters)
         {
+            _vimApplicationSettings = vimApplicationSettings;
             _vsTextLines = vsTextLines;
             _protectedOperations = protectedOperations;
             _externalEditorAdapters = externalEditorAdapters;
@@ -139,6 +142,11 @@ namespace VsVim.Implementation.ExternalEdit
         /// </summary>
         internal void PerformCheck(CheckKind kind)
         {
+            if (!_vimApplicationSettings.EnableExternalEditMonitoring || _buffer.ModeKind == ModeKind.Disabled)
+            {
+                return;
+            }
+
             if (kind == CheckKind.None)
             {
                 return;
@@ -234,6 +242,11 @@ namespace VsVim.Implementation.ExternalEdit
         /// </summary>
         private void QueueCheck(CheckKind kind)
         {
+            if (!_vimApplicationSettings.EnableExternalEditMonitoring)
+            {
+                return;
+            }
+
             if (_queuedCheckKind.HasValue)
             {
                 _queuedCheckKind |= kind;

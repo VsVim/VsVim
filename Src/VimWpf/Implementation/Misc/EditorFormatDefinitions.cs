@@ -6,26 +6,28 @@ using Microsoft.VisualStudio.Utilities;
 namespace Vim.UI.Wpf.Implementation.Misc
 {
     [Export(typeof(EditorFormatDefinition))]
-    [Name(Constants.IncrementalSearchTagName)]
+    [Name(VimConstants.IncrementalSearchTagName)]
     [UserVisible(true)]
     internal sealed class IncrementalSearchMarkerDefinition : MarkerFormatDefinition
     {
         internal IncrementalSearchMarkerDefinition()
         {
-            this.DisplayName = "VsVim Incremental Search";
-            this.Fill = new SolidColorBrush(Colors.LightBlue);
+            DisplayName = "VsVim Incremental Search";
+            BackgroundColor = Colors.LightBlue;
+            ForegroundCustomizable = false;
         }
     }
 
     [Export(typeof(EditorFormatDefinition))]
-    [Name(Constants.HighlightIncrementalSearchTagName)]
+    [Name(VimConstants.HighlightIncrementalSearchTagName)]
     [UserVisible(true)]
     internal sealed class HighlightIncrementalSearchMarkerDefinition : MarkerFormatDefinition
     {
         internal HighlightIncrementalSearchMarkerDefinition()
         {
-            this.DisplayName = "VsVim Highlight Incremental Search";
-            this.Fill = new SolidColorBrush(Colors.LightBlue);
+            DisplayName = "VsVim Highlight Incremental Search";
+            BackgroundColor = Colors.LightBlue;
+            ForegroundCustomizable = false;
         }
     }
 }

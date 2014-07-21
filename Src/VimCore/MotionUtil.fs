@@ -36,6 +36,11 @@ type DirectiveBlock = {
     IsComplete : bool
 }
 
+type CachedDirectiveBlocks = { 
+    Version : int
+    DirectiveBlocks : List<DirectiveBlock>
+}
+
 [<RequireQualifiedAccess>]
 [<NoComparison>]
 type MatchingTokenKind =
@@ -196,12 +201,12 @@ type MatchingTokenUtil() =
 
         let parseAndSave () = 
             let blocks = x.ParseDirectiveBlocks snapshot
-            propertyCollection.[_directiveBlocksKey] <- (snapshot.Version, blocks)
+            propertyCollection.[_directiveBlocksKey] <- { Version = snapshot.Version.VersionNumber; DirectiveBlocks = blocks }
             blocks
 
-        match PropertyCollectionUtil.GetValue<int * List<DirectiveBlock>> _directiveBlocksKey propertyCollection with
-        | Some (version, list) ->
-            if version = snapshot.Version.VersionNumber then list
+        match PropertyCollectionUtil.GetValue<CachedDirectiveBlocks> _directiveBlocksKey propertyCollection with
+        | Some cachedDirectiveBlocks -> 
+            if cachedDirectiveBlocks.Version = snapshot.Version.VersionNumber then cachedDirectiveBlocks.DirectiveBlocks
             else parseAndSave ()
         | None -> parseAndSave ()
 
@@ -786,8 +791,11 @@ type internal MotionUtil
             inner
 
         let snapshot = SnapshotPointUtil.GetSnapshot contextPoint
+        let endPoint = if isChar endChar contextPoint then contextPoint 
+                       else SnapshotPointUtil.AddOneOrCurrent contextPoint
+
         let startPoint = 
-            SnapshotSpan(SnapshotPoint(snapshot, 0), SnapshotPointUtil.AddOneOrCurrent contextPoint)
+            SnapshotSpan(SnapshotPoint(snapshot, 0), endPoint)
             |> SnapshotSpanUtil.GetPoints Path.Backward
             |> SeqUtil.tryFind 1 (findMatched endChar startChar)
 
@@ -1414,6 +1422,26 @@ type internal MotionUtil
             |> SeqUtil.headOrDefault (SnapshotUtil.GetStartPoint x.CurrentSnapshot)
         let span = SnapshotSpan(startPoint, x.CaretPoint)
         MotionResult.CreateEx span false MotionKind.CharacterWiseExclusive MotionResultFlags.AnyWord
+
+    /// Implements the 'ge' and 'gE' motions
+    member x.BackwardEndOfWord kind count = 
+
+        // If the caret is currently at the end of the word then we start searching one character
+        // back from that point 
+        let searchPoint = 
+            match _wordUtil.GetWords kind Path.Forward x.CaretPoint |> SeqUtil.tryHeadOnly with
+            | None -> x.CaretPoint
+            | Some span -> span.Start
+
+        let words = _wordUtil.GetWords kind Path.Backward searchPoint 
+        let startPoint = 
+            match words |> Seq.skip (count - 1) |> SeqUtil.tryHeadOnly with
+            | None -> SnapshotPoint(x.CurrentSnapshot, 0)
+            | Some span -> SnapshotSpanUtil.GetLastIncludedPointOrStart span
+
+        let endPoint = SnapshotPointUtil.AddOneOrCurrent x.CaretPoint
+        let span = SnapshotSpan(startPoint, endPoint)
+        MotionResult.Create span false MotionKind.CharacterWiseInclusive |> Some
 
     /// Implements the 'e' and 'E' motions
     member x.EndOfWord kind count = 
@@ -2240,6 +2268,7 @@ type internal MotionUtil
             | Motion.AllParagraph -> x.AllParagraph motionArgument.Count
             | Motion.AllWord wordKind -> x.AllWord wordKind motionArgument.Count x.CaretPoint
             | Motion.AllSentence -> x.AllSentence motionArgument.Count |> Some
+            | Motion.BackwardEndOfWord wordKind -> x.BackwardEndOfWord wordKind motionArgument.Count
             | Motion.BeginingOfLine -> x.BeginingOfLine() |> Some
             | Motion.CharLeft -> x.CharLeft motionArgument.Count |> Some
             | Motion.CharRight -> x.CharRight motionArgument.Count |> Some

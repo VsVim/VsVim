@@ -121,7 +121,7 @@ namespace VsVim.UnitTest
             public void Simple()
             {
                 var textView = CreateTextView();
-                Assert.False(_adapterRaw.IsIncrementalSearchActive2012(textView));
+                Assert.False(_adapterRaw.IsIncrementalSearchActive(textView));
             }
         }
 

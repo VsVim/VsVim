@@ -23,9 +23,10 @@ type internal VimTextBuffer
     let _switchedModeEvent = StandardEvent<SwitchModeKindEventArgs>()
     let mutable _modeKind = ModeKind.Normal
     let mutable _lastVisualSelection : ITrackingVisualSelection option = None
-    let mutable _lastInsertEntryPoint : ITrackingLineColumn option = None
+    let mutable _insertStartPoint : ITrackingLineColumn option = None
     let mutable _lastInsertExitPoint : ITrackingLineColumn option = None
     let mutable _lastEditPoint : ITrackingLineColumn option = None
+    let mutable _isSoftTabStopValidForBackspace = true
 
     member x.LastVisualSelection 
         with get() =
@@ -44,19 +45,19 @@ type internal VimTextBuffer
                 | None -> None
                 | Some visualSelection -> Some (_bufferTrackingService.CreateVisualSelection visualSelection)
 
-    member x.LastInsertEntryPoint
+    member x.InsertStartPoint
         with get() = 
-            match _lastInsertEntryPoint with
+            match _insertStartPoint with
             | None -> None
-            | Some lastInsertEntryPoint -> lastInsertEntryPoint.Point
+            | Some insertStartPoint -> insertStartPoint.Point
         and set value = 
 
             // First clear out the previous information
-            match _lastInsertEntryPoint with
+            match _insertStartPoint with
             | None -> ()
-            | Some lastInsertEntryPoint -> lastInsertEntryPoint.Close()
+            | Some insertStartPoint -> insertStartPoint.Close()
 
-            _lastInsertEntryPoint <-
+            _insertStartPoint <-
                 match value with
                 | None -> None
                 | Some point -> 
@@ -104,6 +105,10 @@ type internal VimTextBuffer
                     let trackingLineColumn = _bufferTrackingService.CreateLineColumn _textBuffer line column LineColumnTrackingMode.LastEditPoint
                     Some trackingLineColumn
 
+    member x.IsSoftTabStopValidForBackspace 
+        with get() = _isSoftTabStopValidForBackspace
+        and set value = _isSoftTabStopValidForBackspace <- value
+
     /// Get all of the local marks in the IVimTextBuffer.
     member x.LocalMarks = 
         LocalMark.All
@@ -124,7 +129,8 @@ type internal VimTextBuffer
 
         // Clear out the other items
         x.LastEditPoint <- None
-        x.LastInsertEntryPoint <- None
+        x.InsertStartPoint <- None
+        x.IsSoftTabStopValidForBackspace <- true
         x.LastInsertExitPoint <- None
         x.LastVisualSelection <- None
 
@@ -194,9 +200,12 @@ type internal VimTextBuffer
         member x.LastVisualSelection 
             with get() = x.LastVisualSelection
             and set value = x.LastVisualSelection <- value
-        member x.LastInsertEntryPoint
-            with get() = x.LastInsertEntryPoint
-            and set value = x.LastInsertEntryPoint <- value
+        member x.InsertStartPoint
+            with get() = x.InsertStartPoint
+            and set value = x.InsertStartPoint <- value
+        member x.IsSoftTabStopValidForBackspace
+            with get() = x.IsSoftTabStopValidForBackspace
+            and set value = x.IsSoftTabStopValidForBackspace <- value
         member x.LastInsertExitPoint
             with get() = x.LastInsertExitPoint
             and set value = x.LastInsertExitPoint <- value

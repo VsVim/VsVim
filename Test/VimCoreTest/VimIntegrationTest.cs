@@ -4,6 +4,7 @@ using Microsoft.VisualStudio.Text.Editor;
 using Moq;
 using Xunit;
 using Vim.Extensions;
+using Xunit.Extensions;
 using Path = System.IO.Path;
 using Microsoft.FSharp.Core;
 using Vim.UnitTest.Mock;
@@ -48,6 +49,20 @@ namespace Vim.UnitTest
                 var view = CreateTextView("foo bar");
                 var vimBuffer = Vim.CreateVimBuffer(view);
                 Assert.Throws<ArgumentException>(() => Vim.CreateVimBuffer(view));
+            }
+
+            /// <summary>
+            /// If we are in the middle of an incremental search and the mode changes the search should be
+            /// cancelled 
+            /// </summary>
+            [Fact]
+            public void ModeSwitchResetIncrementalSearch()
+            {
+                var vimBuffer = CreateVimBuffer("hello world");
+                vimBuffer.ProcessNotation("/wo");
+                Assert.True(vimBuffer.IncrementalSearch.InSearch);
+                vimBuffer.SwitchMode(ModeKind.VisualCharacter, ModeArgument.None);
+                Assert.False(vimBuffer.IncrementalSearch.InSearch);
             }
         }
 
@@ -104,6 +119,7 @@ namespace Vim.UnitTest
                 _vim = (Vim)Vim;
                 _globalSettings = Vim.GlobalSettings;
                 _fileSystem = new Mock<IFileSystem>();
+                _fileSystem.Setup(x => x.GetVimRcDirectories()).Returns(new string[] { });
                 _originalFileSystem = _vim._fileSystem;
                 _vim._fileSystem = _fileSystem.Object;
                 VimHost.CreateHiddenTextViewFunc = () => TextEditorFactoryService.CreateTextView();
@@ -117,9 +133,44 @@ namespace Vim.UnitTest
 
             private void Run(string vimRcText)
             {
+                var vimRcPath = new VimRcPath(VimRcKind.VimRc, "_vimrc");
                 var lines = vimRcText.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries);
-                _fileSystem.Setup(x => x.LoadVimRcContents()).Returns(new FSharpOption<FileContents>(new FileContents("_vimrc", lines)));
+                _fileSystem
+                    .Setup(x => x.GetVimRcFilePaths())
+                    .Returns(new[] { vimRcPath });
+                _fileSystem
+                    .Setup(x => x.ReadAllLines(vimRcPath.FilePath))
+                    .Returns(FSharpOption.Create(lines));
                 Assert.True(Vim.LoadVimRc().IsLoadSucceeded);
+            }
+
+            private void RunNone()
+            {
+                _fileSystem
+                    .Setup(x => x.GetVimRcFilePaths())
+                    .Returns(new VimRcPath[] { });
+                Assert.True(Vim.LoadVimRc().IsLoadFailed);
+            }
+
+            [Theory,
+            InlineData(@"set shellcmdflag=-lic", @"-lic"),
+            InlineData(@"set shellcmdflag=sh", @"sh")]
+            public void ShellFlag(string command, string expected)
+            {
+                Run(command);
+                Assert.Equal(expected, _globalSettings.ShellFlag);
+            }
+
+            [Theory,
+             InlineData(@"set shell=sh.exe", @"sh.exe"),
+             InlineData(@"set shell=c:\1\sh.exe", @"c:\1\sh.exe"),
+             InlineData(@"set shell=c:\s\sh.exe", @"c:\s\sh.exe"),
+             InlineData(@"set shell=c:\sss\sh.exe", @"c:\sss\sh.exe"),
+             InlineData(@"set shell=c:\sh.exe", @"c:\sh.exe")]
+            public void Shell(string command, string expected)
+            {
+                Run(command);
+                Assert.Equal(expected, _globalSettings.Shell);
             }
 
             [Fact]
@@ -180,21 +231,23 @@ autocmd BufEnter *.html set ts=12
                 Assert.Equal(12, vimBuffer.LocalSettings.TabStop);
             }
 
-            /// <summary>
-            /// If the user has specified that visual studio settings should override vim settings then we don't
-            /// want autocmd running.  They exist only to override settings hence they would be overriding Visual 
-            /// Studio settings
-            /// </summary>
             [Fact]
-            public void AutoCommandRespectUseVisualStudioSettings()
+            public void DefaultSettings73()
             {
-                var text = @"
-set vsvim_useeditordefaults
-autocmd BufEnter *.html set ts=12
-";
-                Run(text);
-                var vimBuffer = CreateVimBufferWithName("test.html");
-                Assert.NotEqual(12, vimBuffer.LocalSettings.TabStop);
+                VimHost.DefaultSettings = DefaultSettings.GVim73;
+                RunNone();
+                Assert.True(_globalSettings.IsBackspaceEol && _globalSettings.IsBackspaceIndent && _globalSettings.IsBackspaceStart);
+                Assert.Equal("", _globalSettings.SelectMode);
+            }
+
+            [Fact]
+            public void DefaultSettings7g()
+            {
+                VimHost.DefaultSettings = DefaultSettings.GVim74;
+                RunNone();
+                Assert.True(_globalSettings.IsBackspaceEol && _globalSettings.IsBackspaceIndent && _globalSettings.IsBackspaceStart);
+                Assert.Equal("mouse,key", _globalSettings.SelectMode);
+                Assert.Equal("popup", _globalSettings.MouseModel);
             }
         }
 

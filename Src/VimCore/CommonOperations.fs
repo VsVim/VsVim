@@ -63,8 +63,7 @@ type internal CommonOperations
     (
         _vimBufferData : IVimBufferData,
         _editorOperations : IEditorOperations,
-        _outliningManager : IOutliningManager option,
-        _smartIndentationService : ISmartIndentationService
+        _outliningManager : IOutliningManager option
     ) =
 
     let _vimTextBuffer = _vimBufferData.VimTextBuffer
@@ -97,6 +96,8 @@ type internal CommonOperations
     member x.CurrentSnapshot = _textBuffer.CurrentSnapshot
 
     member x.CaretPoint = TextViewUtil.GetCaretPoint _textView
+
+    member x.CaretVirtualPoint = TextViewUtil.GetCaretVirtualPoint _textView
 
     member x.CaretLine = TextViewUtil.GetCaretLine _textView
 
@@ -163,6 +164,18 @@ type internal CommonOperations
                 line.GetLineBreakText()
             else
                 _editorOptions.GetNewLineCharacter()
+
+    // Convert any virtual spaces to real normalized spaces
+    member x.FillInVirtualSpace () =
+        if x.CaretVirtualPoint.IsInVirtualSpace then
+            let blanks : string = 
+                let blanks = StringUtil.repeatChar x.CaretVirtualPoint.VirtualSpaces ' '
+                x.NormalizeBlanks blanks
+
+            // Make sure to position the caret to the end of the newly inserted spaces
+            let position = x.CaretPoint.Position + blanks.Length
+            _textBuffer.Insert(x.CaretPoint.Position, blanks) |> ignore
+            TextViewUtil.MoveCaretToPosition _textView position
 
     /// The caret sometimes needs to be adjusted after an Up or Down movement.  Caret position
     /// and virtual space is actually quite a predicament for VsVim because of how Vim standard 
@@ -268,6 +281,54 @@ type internal CommonOperations
                 | _ -> ()
 
         with
+            // As always when using ITextViewLines an exception can be thrown due to layout.  Simply catch
+            // this exception and move on
+            | _ -> ()
+
+    /// This is the same function as AdjustTextViewForScrollOffsetAtPoint except that it moves the caret 
+    /// not the view port.  Make the caret consistent with the setting not the display 
+    ///
+    /// Once again we are dealing with visual lines, not buffer lines
+    member x.AdjustCaretForScrollOffset () =
+        try
+
+            // This function will do the actual caret positioning based on the top visual and bottom
+            // visual line.  The return will be the position within the visual buffer, not the edit
+            // buffer 
+            let getLinePosition caretLineNumber topLineNumber bottomLineNumber =
+                if _globalSettings.ScrollOffset <= 0 || _globalSettings.ScrollOffset * 2 >= (bottomLineNumber - topLineNumber) then
+                    None
+                elif caretLineNumber < (topLineNumber + _globalSettings.ScrollOffset) || caretLineNumber > (bottomLineNumber - _globalSettings.ScrollOffset) then
+                    let lineNumber = caretLineNumber
+                    let lineNumber = max lineNumber (topLineNumber + _globalSettings.ScrollOffset)
+                    let lineNumber = min lineNumber (bottomLineNumber - _globalSettings.ScrollOffset)
+                    Some lineNumber
+                else
+                    None
+
+            let textViewLines = _textView.TextViewLines
+            let visualSnapshot = _textView.VisualSnapshot
+            let editSnapshot = _textView.TextSnapshot
+            let bufferGraph = _textView.BufferGraph
+            let topVisualPoint = BufferGraphUtil.MapPointUpToSnapshotStandard bufferGraph textViewLines.FirstVisibleLine.Start visualSnapshot 
+            let bottomVisualPoint = BufferGraphUtil.MapPointUpToSnapshotStandard bufferGraph textViewLines.LastVisibleLine.Start visualSnapshot
+            let caretVisualPoint = BufferGraphUtil.MapPointUpToSnapshotStandard bufferGraph x.CaretPoint visualSnapshot
+
+            match topVisualPoint, bottomVisualPoint, caretVisualPoint with
+            | Some topVisualPoint, Some bottomVisualPoint, Some caretVisualPoint ->
+                let topLineNumber = SnapshotPointUtil.GetLineNumber topVisualPoint
+                let bottomLineNumber = SnapshotPointUtil.GetLineNumber bottomVisualPoint
+                let caretLineNumber = SnapshotPointUtil.GetLineNumber caretVisualPoint
+                match getLinePosition caretLineNumber topLineNumber bottomLineNumber with
+                | Some visualLineNumber -> 
+                    let visualLine = visualSnapshot.GetLineFromLineNumber visualLineNumber
+                    match BufferGraphUtil.MapPointDownToSnapshotStandard bufferGraph visualLine.Start editSnapshot with
+                    | Some editPoint -> x.MoveCaretToLine (editPoint.GetContainingLine())
+                    | None -> ()
+                | None -> ()
+            | _ -> ()
+
+        with 
             // As always when using ITextViewLines an exception can be thrown due to layout.  Simply catch
             // this exception and move on
             | _ -> ()
@@ -482,6 +543,14 @@ type internal CommonOperations
         TextViewUtil.MoveCaretToPoint _textView point
         x.EnsureAtPoint point viewFlags
 
+
+    /// Move the caret to the specified line maintaining it's current column
+    member x.MoveCaretToLine line = 
+        let spaces = SnapshotPointUtil.GetSpacesToPoint x.CaretPoint _localSettings.TabStop
+        let point = SnapshotLineUtil.GetSpaceOrEnd line spaces _localSettings.TabStop
+        TextViewUtil.MoveCaretToPoint _textView point
+        _maintainCaretColumn <- MaintainCaretColumn.Spaces spaces
+
     /// Move the caret to the position dictated by the given MotionResult value
     member x.MoveCaretToMotionResult (result : MotionResult) =
 
@@ -594,29 +663,13 @@ type internal CommonOperations
     /// Move the caret to the proper indentation on a newly created line.  The context line 
     /// is provided to calculate an indentation off of
     member x.GetNewLineIndent  (contextLine : ITextSnapshotLine) (newLine : ITextSnapshotLine) =
-        let doAutoIndent() = contextLine |> SnapshotLineUtil.GetIndentPoint |> SnapshotPointUtil.GetColumn |> Some
-
-        let doVimIndent() = 
+        match _vimHost.GetNewLineIndent _textView contextLine newLine with
+        | Some indent -> Some indent
+        | None ->
             if _localSettings.AutoIndent then
-                doAutoIndent()
+                EditUtil.GetAutoIndent contextLine |> Some
             else
                 None
-
-        if _localSettings.GlobalSettings.UseEditorIndent then
-            let indent = _smartIndentationService.GetDesiredIndentation(_textView, newLine)
-            if indent.HasValue then 
-                indent.Value |> Some
-            else
-                // If the user wanted editor indentation but the editor doesn't support indentation
-                // even though it proffers an indentation service then fall back to what auto
-                // indent would do if it were enabled (don't care if it actually is)
-                //
-                // Several editors like XAML offer the indentation service but don't actually 
-                // provide information.  User clearly wants indent there since the editor indent
-                // is enabled.  Do a best effort and us Vim style indenting
-                doAutoIndent()
-        else 
-            doVimIndent()
 
     /// Get the standard ReplaceData for the given SnapshotPoint in the ITextBuffer
     member x.GetReplaceData point = 
@@ -745,7 +798,7 @@ type internal CommonOperations
                 builder.AppendChar ' '
         builder.ToString()
 
-    /// Normalize spaces into tabs / spaces based on the ExpandTab, TabSize settings
+    /// Normalize spaces into tabs / spaces based on the ExpandTab, TabStop settings
     member x.NormalizeSpaces (text : string) = 
         Contract.Assert(Seq.forall (fun c -> c = ' ') text)
         if _localSettings.ExpandTab then
@@ -765,6 +818,47 @@ type internal CommonOperations
         text
         |> x.NormalizeBlanksToSpaces
         |> x.NormalizeSpaces
+
+    /// Given the specified blank 'text' at the specified column normalize it out to the
+    /// correct spaces / tab based on the 'expandtab' setting.  This has to consider the 
+    /// difficulty of mixed spaces and tabs filling up the remaining tab boundary 
+    member x.NormalizeBlanksAtColumn text (column : SnapshotColumn) = 
+        let spacesToColumn = SnapshotLineUtil.GetSpacesToColumn  column.Line column.Column _localSettings.TabStop
+        if spacesToColumn % _localSettings.TabStop = 0 then
+            // If the column is on a 'tabstop' boundary then there is no difficulty here
+            // with accounting for partial tabs.  Just normalize as we would for any other
+            // function 
+            x.NormalizeBlanks text
+        else
+            // First step is to trim away the start of the 'text' string which will fill up
+            // the gap to the next tab boundary.  
+            let gap = _localSettings.TabStop - spacesToColumn
+            let mutable index = 0
+            let mutable count = 0
+            while count < gap && index < text.Length do
+                let c = text.[index]
+                Contract.Assert (CharUtil.IsBlank c)
+                if c = '\t' then
+                    count <- gap
+                else
+                    count <- count + 1
+
+                index <- index + 1
+
+            if count < gap then
+                // There isn't enough text here to even fill up the gap.  This can only happen when
+                // it is comprised of spaces anyways and they can't be a tab since there isn't enough
+                // of them so this just returns the input text
+                text
+            else
+                let gapText = 
+                    if _localSettings.ExpandTab then 
+                        StringUtil.repeatChar gap ' '
+                    else 
+                        "\t"
+
+                let remainder = text.Substring(index)
+                gapText + x.NormalizeBlanks remainder
 
     member x.ScrollLines dir count =
         for i = 1 to count do
@@ -1071,9 +1165,10 @@ type internal CommonOperations
                 let newLine = EditUtil.NewLine _editorOptions
                 match opKind with
                 | OperationKind.LineWise -> 
-                    if SnapshotPointUtil.IsEndPoint point then
-                        // At the end of the file so we need to manipulate the new line character
-                        // a bit.  It's typically at the end of the line but at the end of the 
+                    if SnapshotPointUtil.IsEndPoint point && not (SnapshotPointUtil.IsStartOfLine point) then
+                        // At the end of the file without a trailing line break so we need to
+                        // manipulate the new line character a bit.
+                        // It's typically at the end of the line but at the end of the 
                         // ITextBuffer we need it to be at the beginning since there is no newline 
                         // to append after at the end of the buffer.  
                         let str = EditUtil.RemoveEndingNewLine str
@@ -1208,11 +1303,13 @@ type internal CommonOperations
         member x.EditorOperations = _editorOperations
         member x.EditorOptions = _editorOptions
 
-        member x.Beep () = x.Beep()
+        member x.AdjustCaretForScrollOffset() = x.AdjustCaretForScrollOffset()
+        member x.Beep() = x.Beep()
         member x.CreateRegisterValue point stringData operationKind = x.CreateRegisterValue point stringData operationKind
         member x.DeleteLines startLine count register = x.DeleteLines startLine count register
         member x.EnsureAtCaret viewFlags = x.EnsureAtPoint x.CaretPoint viewFlags
         member x.EnsureAtPoint point viewFlags = x.EnsureAtPoint point viewFlags
+        member x.FillInVirtualSpace() = x.FillInVirtualSpace()
         member x.FormatLines range = _vimHost.FormatLines _textView range
         member x.GetNewLineText point = x.GetNewLineText point
         member x.GetNewLineIndent contextLine newLine = x.GetNewLineIndent contextLine newLine
@@ -1233,6 +1330,7 @@ type internal CommonOperations
         member x.MoveCaretToMotionResult data = x.MoveCaretToMotionResult data
         member x.NavigateToPoint point = x.NavigateToPoint point
         member x.NormalizeBlanks text = x.NormalizeBlanks text
+        member x.NormalizeBlanksAtColumn text column = x.NormalizeBlanksAtColumn text column
         member x.NormalizeBlanksToSpaces text = x.NormalizeBlanksToSpaces text
         member x.Put point stringData opKind = x.Put point stringData opKind
         member x.RaiseSearchResultMessage searchResult = x.RaiseSearchResultMessage searchResult
@@ -1251,8 +1349,7 @@ type CommonOperationsFactory
     (
         _editorOperationsFactoryService : IEditorOperationsFactoryService,
         _outliningManagerService : IOutliningManagerService,
-        _undoManagerProvider : ITextBufferUndoManagerProvider,
-        _smartIndentationService : ISmartIndentationService
+        _undoManagerProvider : ITextBufferUndoManagerProvider
     ) = 
 
     /// Use an object instance as a key.  Makes it harder for components to ignore this
@@ -1270,7 +1367,7 @@ type CommonOperationsFactory
             let ret = _outliningManagerService.GetOutliningManager(textView)
             if ret = null then None else Some ret
 
-        CommonOperations(vimBufferData, editorOperations, outlining, _smartIndentationService) :> ICommonOperations
+        CommonOperations(vimBufferData, editorOperations, outlining) :> ICommonOperations
 
     /// Get or create the ICommonOperations for the given buffer
     member x.GetCommonOperations (bufferData : IVimBufferData) = 

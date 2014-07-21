@@ -2561,6 +2561,26 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
+            /// Make sure that we can process the nested block when the caret is at the end
+            /// </summary>
+            [Fact]
+            public void GetBlock_Nested_FromLastChar()
+            {
+                Create("cat (fo(a)od) dog");
+                var span = _motionUtil.GetBlock(BlockKind.Paren, _textBuffer.GetPoint(12)).Value;
+                Assert.Equal(_textBuffer.GetSpan(4, 9), span);
+            }
+            /// <summary>
+            /// Make sure that we can process the nested block when the caret is at the start
+            /// </summary>
+            [Fact]
+            public void GetBlock_Nested_FromFirstChar()
+            {
+                Create("cat (fo(a)od) dog");
+                var span = _motionUtil.GetBlock(BlockKind.Paren, _textBuffer.GetPoint(4)).Value;
+                Assert.Equal(_textBuffer.GetSpan(4, 9), span);
+            }
+            /// <summary>
             /// Bad match because of no start char
             /// </summary>
             [Fact]

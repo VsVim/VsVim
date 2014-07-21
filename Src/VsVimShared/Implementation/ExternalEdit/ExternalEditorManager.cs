@@ -11,6 +11,7 @@ namespace VsVim.Implementation.ExternalEdit
     [Export(typeof(IVimBufferCreationListener))]
     internal sealed class ExternalEditorManager : IVimBufferCreationListener
     {
+        private readonly IVimApplicationSettings _vimApplicationSettings;
         private readonly IVimProtectedOperations _protectedOperations;
         private readonly IVsAdapter _vsAdapter;
         private readonly List<IExternalEditAdapter> _adapterList = new List<IExternalEditAdapter>();
@@ -18,10 +19,12 @@ namespace VsVim.Implementation.ExternalEdit
 
         [ImportingConstructor]
         internal ExternalEditorManager(
+            IVimApplicationSettings vimApplicationSettings,
             IVsAdapter vsAdapter, 
             IVimProtectedOperations protectedOperations,
             [ImportMany] IEnumerable<IExternalEditAdapter> adapters)
         {
+            _vimApplicationSettings = vimApplicationSettings;
             _vsAdapter = vsAdapter;
             _protectedOperations = protectedOperations;
             _adapterList = adapters.ToList();
@@ -51,6 +54,7 @@ namespace VsVim.Implementation.ExternalEdit
             if (bufferAdapterList.Count > 0)
             {
                 var externalEditMonitor = new ExternalEditMonitor(
+                    _vimApplicationSettings,
                     vimBuffer,
                     _protectedOperations,
                     _vsAdapter.GetTextLines(vimBuffer.TextBuffer),

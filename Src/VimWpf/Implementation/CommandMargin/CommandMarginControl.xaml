@@ -18,7 +18,6 @@
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="Auto" />
             <ColumnDefinition Width="*" />
-            <ColumnDefinition Width="Auto" />
         </Grid.ColumnDefinitions>
 
         <TextBox
@@ -32,24 +31,21 @@
             Background="{Binding Path=TextBackground}"
             />
 
-        <TextBox 
-            x:Name="_commandLineInput"
-            Grid.Row="0"
+        <ScrollViewer 
+            Grid.Row="0" 
             Grid.Column="1"
-            VerticalAlignment="Center"
-            Text="{Binding Path=StatusLine}" 
-            IsReadOnly="{Binding Path=IsEditReadOnly}"
-            FontFamily="{Binding Path=TextFontFamily}"
-            FontSize="{Binding Path=TextFontSize}"
-            Foreground="{Binding Path=TextForeground}"
-            Background="{Binding Path=TextBackground}"
-            />
-
-        <Button
-            x:Name="_optionsButton"
-            Grid.Row="0"
-            Grid.Column="2"
-            Content="Options"
-            />
+            HorizontalScrollBarVisibility="Auto"
+            VerticalScrollBarVisibility="Disabled">
+            <TextBox 
+                x:Name="_commandLineInput"
+                MaxHeight="200"
+                VerticalAlignment="Center"
+                IsReadOnly="{Binding Path=IsEditReadOnly}"
+                FontFamily="{Binding Path=TextFontFamily}"
+                FontSize="{Binding Path=TextFontSize}"
+                Foreground="{Binding Path=TextForeground}"
+                Background="{Binding Path=TextBackground}"
+                />
+        </ScrollViewer>
     </Grid>
 </UserControl>

@@ -15,24 +15,21 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
     /// </summary>
     [Export(typeof(IWpfTextViewMarginProvider))]
     [MarginContainer(PredefinedMarginNames.Bottom)]
-    [ContentType(Vim.Constants.ContentType)]
+    [ContentType(VimConstants.ContentType)]
     [Name(CommandMargin.Name)]
     [TextViewRole(PredefinedTextViewRoles.Editable)]
     internal sealed class CommandMarginProvider : IWpfTextViewMarginProvider
     {
         private readonly IVim _vim;
-        private readonly ReadOnlyCollection<Lazy<IOptionsProviderFactory>> _optionsProviderFactories;
         private readonly IEditorFormatMapService _editorFormatMapService;
 
         [ImportingConstructor]
         internal CommandMarginProvider(
             IVim vim, 
-            IEditorFormatMapService editorFormatMapService, 
-            [ImportMany] IEnumerable<Lazy<IOptionsProviderFactory>> optionsProviderFactories)
+            IEditorFormatMapService editorFormatMapService)
         {
             _vim = vim;
             _editorFormatMapService = editorFormatMapService;
-            _optionsProviderFactories = optionsProviderFactories.ToList().AsReadOnly();
         }
 
         #region IWpfTextViewMarginProvider
@@ -47,7 +44,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
 
             var editorFormatMap = _editorFormatMapService.GetEditorFormatMap(wpfTextViewHost.TextView);
             var fontProperties = _vim.VimHost.FontProperties;
-            return new CommandMargin(wpfTextViewHost.TextView.VisualElement, vimBuffer, editorFormatMap, fontProperties, _optionsProviderFactories);
+			return new CommandMargin(wpfTextViewHost.TextView.VisualElement, vimBuffer, editorFormatMap, fontProperties);
         }
 
         #endregion

@@ -46,13 +46,26 @@ type TextViewEventArgs(_textView : ITextView) =
 
     member x.TextView = _textView
 
+type VimRcKind =
+    | VimRc     = 0
+    | VsVimRc   = 1
+
+type VimRcPath = { 
+
+    /// Which type of file was loaded 
+    VimRcKind : VimRcKind 
+
+    /// Full path to the file which the contents were loaded from
+    FilePath : string
+}
+
 [<RequireQualifiedAccess>]
 type VimRcState =
     /// The VimRc file has not been processed at this point
     | None
 
     /// The load succeeded and the specified file was used 
-    | LoadSucceeded of string
+    | LoadSucceeded of VimRcPath
 
     /// The load failed 
     | LoadFailed
@@ -111,33 +124,15 @@ type IStatusUtilFactory =
     /// Get the IStatusUtil instance for the given ITextBuffer
     abstract GetStatusUtil : textBuffer : ITextBuffer -> IStatusUtil
 
-type FileContents = {
-
-    /// Full path to the file which the contents were loaded from
-    FilePath : string
-
-    /// Actual lines in the file
-    Lines : string[]
-}
-
 /// Abstracts away VsVim's interaction with the file system to facilitate testing
 type IFileSystem =
 
-    /// Set of directories considered when looking for VimRC paths (may contain environment variables)
-    abstract VimRcDirectoryCandidates : list<string>
-
-    /// Set of file names considered (in preference order) when looking for vim rc files
-    abstract VimRcFileNames : list<string>
-    
     /// Get the directories to probe for RC files
-    abstract GetVimRcDirectories : unit -> seq<string>
+    abstract GetVimRcDirectories : unit -> string[]
 
-    /// Get the file paths in preference order for vim rc files
-    abstract GetVimRcFilePaths : unit -> seq<string>
-
-    /// Attempts to load the contents of the .VimRC and return both the path the file
-    /// was loaded from and it's contents a
-    abstract LoadVimRcContents : unit -> FileContents option
+    /// Get the possible paths for a vimrc file in the order they should be 
+    /// considered 
+    abstract GetVimRcFilePaths : unit -> VimRcPath[]
 
     /// Attempt to read all of the lines from the given file 
     abstract ReadAllLines : filePath : string -> string[] option
@@ -939,6 +934,9 @@ type Motion =
     /// can't be associated with a count.  Doing a command like 30 binds as count 30 vs. count 3 
     /// for command '0'
     | BeginingOfLine
+
+    /// Implement the 'ge' / 'gE' motion.  Goes backward to the end of the previous word 
+    | BackwardEndOfWord of WordKind
 
     /// The left motion for h
     | CharLeft 
@@ -2733,12 +2731,6 @@ type InsertCommand  =
     /// Delete the word before the cursor
     | DeleteWordBeforeCursor
 
-    /// Direct insert of the specified char
-    | DirectInsert of char
-
-    /// Direct replacement of the specified char
-    | DirectReplace of char
-
     /// Insert the character which is immediately above the caret
     | InsertCharacterAboveCaret
 
@@ -2751,8 +2743,8 @@ type InsertCommand  =
     /// Insert a tab into the ITextBuffer
     | InsertTab
 
-    /// Insert the specified text into the ITextBuffer
-    | InsertText of string
+    /// Insert of text into the ITextBuffer at the caret position 
+    | Insert of string
 
     /// Move the caret in the given direction
     | MoveCaret of Direction
@@ -2762,6 +2754,9 @@ type InsertCommand  =
 
     /// Move the caret in the given direction by a whole word
     | MoveCaretByWord of Direction
+
+    /// Replace the character under the caret with the specified value
+    | Replace of char
 
     /// Shift the current line one indent width to the left
     | ShiftLineLeft 
@@ -2777,10 +2772,15 @@ type InsertCommand  =
 
     with
 
+    member x.RightMostCommand =
+        match x with
+        | InsertCommand.Combined (_, right) -> right.RightMostCommand
+        | _ -> x
+
     /// Convert a TextChange value into the appropriate InsertCommand structure
     static member OfTextChange textChange = 
         match textChange with
-        | TextChange.Insert text -> InsertCommand.InsertText text
+        | TextChange.Insert text -> InsertCommand.Insert text
         | TextChange.DeleteLeft count -> InsertCommand.DeleteLeft count
         | TextChange.DeleteRight count -> InsertCommand.DeleteRight count
         | TextChange.Combination (left, right) ->
@@ -2803,16 +2803,15 @@ type InsertCommand  =
         | InsertCommand.DeleteRight count -> Some (TextChange.DeleteRight count)
         | InsertCommand.DeleteAllIndent -> None
         | InsertCommand.DeleteWordBeforeCursor -> None
-        | InsertCommand.DirectInsert c -> Some (TextChange.Insert (c.ToString()))
-        | InsertCommand.DirectReplace c -> Some (TextChange.Combination ((TextChange.DeleteRight 1), (TextChange.Insert (c.ToString()))))
+        | InsertCommand.Insert text -> Some (TextChange.Insert text)
         | InsertCommand.InsertCharacterAboveCaret -> None
         | InsertCommand.InsertCharacterBelowCaret -> None
         | InsertCommand.InsertNewLine -> Some (TextChange.Insert (EditUtil.NewLine editorOptions))
         | InsertCommand.InsertTab -> Some (TextChange.Insert "\t")
-        | InsertCommand.InsertText text -> Some (TextChange.Insert text)
         | InsertCommand.MoveCaret _ -> None
         | InsertCommand.MoveCaretWithArrow _ -> None
         | InsertCommand.MoveCaretByWord _ -> None
+        | InsertCommand.Replace c -> Some (TextChange.Combination ((TextChange.DeleteRight 1), (TextChange.Insert (c.ToString()))))
         | InsertCommand.ShiftLineLeft -> None
         | InsertCommand.ShiftLineRight -> None
         | InsertCommand.DeleteLineBeforeCursor -> None
@@ -3031,11 +3030,8 @@ and ICommandUtil =
 
 type internal IInsertUtil = 
 
-    /// Get the backspacing point for an insert command
-    abstract GetBackspacingPoint : InsertCommand -> SnapshotPoint
-
     /// Run a insert command
-    abstract RunInsertCommand : InsertCommand -> CommandResult
+    abstract RunInsertCommand : insertCommand : InsertCommand -> CommandResult
 
     /// Repeat the given edit series. 
     abstract RepeatEdit : textChange : TextChange -> addNewLines : bool -> count : int -> unit
@@ -3148,7 +3144,7 @@ type MotionFlags =
     | TextObjectWithAlwaysCharacter = 0x10
 
     /// Text objcet with always line.  Requires TextObject
-    | TextObjectWithAlwaysLine = 0x12
+    | TextObjectWithAlwaysLine = 0x20
 
 /// Represents the types of MotionCommands which exist
 [<RequireQualifiedAccess>]
@@ -3356,6 +3352,9 @@ type IIncrementalSearch =
     /// True when a search is occurring
     abstract InSearch : bool
 
+    /// True when the search is in a paste wait state
+    abstract InPasteWait : bool
+
     /// When in the middle of a search this will return the SearchData for 
     /// the search
     abstract CurrentSearchData : SearchData 
@@ -3371,8 +3370,11 @@ type IIncrementalSearch =
     /// The ITextStructureNavigator used for finding 'word' values in the ITextBuffer
     abstract WordNavigator : ITextStructureNavigator
 
-    /// Begin an incremental search in the ITextBuffer
+    /// Begin an incremental search in the ITextView
     abstract Begin : path : Path -> BindData<SearchResult>
+
+    /// Cancel an incremental search which is currently in progress
+    abstract Cancel : unit -> unit
 
     /// Reset the current search to be the given value 
     abstract ResetSearch : pattern : string -> unit
@@ -3550,7 +3552,7 @@ type KeyInputProcessedEventArgs(_keyInput : KeyInput, _processResult : ProcessRe
 type HistoryList () = 
 
     let mutable _list : string list = List.empty
-    let mutable _limit = Constants.DefaultHistoryLength
+    let mutable _limit = VimConstants.DefaultHistoryLength
     let mutable _totalCount = 0
 
     /// Limit of the items stored in the list
@@ -3586,7 +3588,7 @@ type HistoryList () =
     member x.Reset () = 
         _list <- List.empty
         _totalCount <- 0
-        _limit <- Constants.DefaultHistoryLength
+        _limit <- VimConstants.DefaultHistoryLength
 
     member private x.MaybeTruncateList () = 
         if _list.Length > _limit then
@@ -3611,6 +3613,9 @@ type internal IHistoryClient<'TData, 'TResult> =
     /// History list used by this client
     abstract HistoryList : HistoryList
 
+    /// Get the register map 
+    abstract RegisterMap : IRegisterMap
+
     /// What remapping mode if any should be used for key input
     abstract RemapMode : KeyRemapMode
 
@@ -3618,15 +3623,15 @@ type internal IHistoryClient<'TData, 'TResult> =
     abstract Beep : unit -> unit
 
     /// Process the new command with the previous TData value
-    abstract ProcessCommand : 'TData -> string -> 'TData
+    abstract ProcessCommand : data : 'TData -> command : string -> 'TData
 
     /// Called when the command is completed.  The last valid TData and command
     /// string will be provided
-    abstract Completed : 'TData -> string -> 'TResult
+    abstract Completed : data : 'TData -> command : string -> 'TResult
 
     /// Called when the command is cancelled.  The last valid TData value will
     /// be provided
-    abstract Cancelled : 'TData -> unit
+    abstract Cancelled : data : 'TData -> unit
 
 /// An active use of an IHistoryClient instance 
 type internal IHistorySession<'TData, 'TResult> =
@@ -3636,6 +3641,9 @@ type internal IHistorySession<'TData, 'TResult> =
 
     /// The current command that is being used 
     abstract Command : string 
+
+    /// Is the session currently waiting for a register paste operation to complete
+    abstract InPasteWait : bool
 
     /// The current client data 
     abstract ClientData : 'TData
@@ -3740,18 +3748,33 @@ type TextViewChangedEventArgs
 
     member x.NewTextView = _newTextView
 
+/// What settings default should VsVim use when there is not a _vimrc file present 
+/// on the users machine?  There is a significant difference between gVim 7.3 and 
+/// 7.4.  
+[<RequireQualifiedAccess>]
+type DefaultSettings =
+    | GVim73 = 0
+    | GVim74 = 1
+
 type IVimHost =
 
     /// Should vim automatically start synchronization of IVimBuffer instances when they are 
     /// created
     abstract AutoSynchronizeSettings : bool 
 
-    /// Get the count of tabs that are active in the host.  If tabs are not supported then
-    /// -1 should be returned
-    abstract TabCount : int
+    /// What settings defaults should be used when there is no vimrc file present
+    abstract DefaultSettings : DefaultSettings
 
     /// Get the font properties associated with the text editor
     abstract FontProperties : IFontProperties
+
+    /// Is auto-command enabled for this host
+    abstract IsAutoCommandEnabled : bool
+
+    /// Get the count of window tabs that are active in the host. This refers to tabs for actual 
+    /// edit windows, not anything to do with tabs in the text file.  If window tabs are not supported 
+    /// then -1 should be returned
+    abstract TabCount : int
 
     abstract Beep : unit -> unit
 
@@ -3782,6 +3805,14 @@ type IVimHost =
     /// Get the tab index of the tab containing the given ITextView.  A number less
     /// than 0 indicates the value couldn't be determined
     abstract GetTabIndex : textView : ITextView -> int
+
+    /// Get the indent for the new line.  This has precedence over the 'autoindent'
+    /// setting
+    abstract GetNewLineIndent : textView : ITextView -> contextLine : ITextSnapshotLine -> newLine : ITextSnapshotLine -> int option
+
+    /// Get the WordWrap style which should be used for the specified ITextView if word 
+    /// wrap is enabled
+    abstract GetWordWrapStyle : textView : ITextView -> WordWrapStyles
 
     /// Go to the definition of the value under the cursor
     abstract GoToDefinition : unit -> bool
@@ -3839,8 +3870,8 @@ type IVimHost =
     /// output
     abstract RunCommand : file : string -> arguments : string -> vimHost : IVimData -> string
 
-    /// Run the Visual studio command
-    abstract RunVisualStudioCommand : commandName : string -> argument : string -> unit
+    /// Run the Visual studio command in the context of the given ITextView
+    abstract RunVisualStudioCommand : textView : ITextView -> commandName : string -> argument : string -> unit
 
     /// Save the provided ITextBuffer instance
     abstract Save : textBuffer : ITextBuffer -> bool 
@@ -3852,11 +3883,20 @@ type IVimHost =
     /// create an IVimBuffer for it
     abstract ShouldCreateVimBuffer : textView : ITextView -> bool
 
+    /// Called by Vim when it is loading vimrc files.  This gives the host the chance to
+    /// filter out vimrc files it doesn't want to consider
+    abstract ShouldIncludeRcFile : vimRcPath : VimRcPath -> bool
+
     /// Split the views horizontally
     abstract SplitViewHorizontally : ITextView -> HostResult
 
     /// Split the views horizontally
     abstract SplitViewVertically : ITextView -> HostResult
+
+    /// Called when VsVim has created the IVimGlobalSettings instance.  This callback gives
+    /// the host the oppurtunity to customize the initial IVimGlobalSettings values from
+    /// their defaults
+    abstract VimGlobalSettingsCreated : globalSettings : IVimGlobalSettings -> unit
 
     /// Called when VsVim attempts to load the user _vimrc file.  If the load succeeded 
     /// then the resulting settings are passed into the method.  If the load failed it is 
@@ -3867,7 +3907,6 @@ type IVimHost =
     /// special non-vim semantics for certain types of edits (Enter for 
     /// example).  This override allows them to do this processing
     abstract TryCustomProcess : textView : ITextView -> command : InsertCommand -> bool
-
 
     /// Raised when the visibility of an ITextView changes
     [<CLIEvent>]
@@ -4075,15 +4114,20 @@ and IVimTextBuffer =
     /// The associated IVimGlobalSettings instance
     abstract GlobalSettings : IVimGlobalSettings
 
-    /// The last VisualSpan selection for the IVimTextBuffer.  This is a combination of a VisualSpan
-    /// and the SnapshotPoint within the span where the caret should be positioned
-    abstract LastVisualSelection : VisualSelection option with get, set
+    /// The 'start' point of the current insert session.  This is relevant for settings like 
+    /// 'backspace'
+    abstract InsertStartPoint : SnapshotPoint option with get, set
 
-    /// The point the caret occupied after Insert mode was entered 
-    abstract LastInsertEntryPoint : SnapshotPoint option with get, set
+    /// True when 'softtabstop' setting should be considered during backspace operations in insert
+    /// mode
+    abstract IsSoftTabStopValidForBackspace : bool with get, set
 
     /// The point the caret occupied when Insert mode was exited 
     abstract LastInsertExitPoint : SnapshotPoint option with get, set
+
+    /// The last VisualSpan selection for the IVimTextBuffer.  This is a combination of a VisualSpan
+    /// and the SnapshotPoint within the span where the caret should be positioned
+    abstract LastVisualSelection : VisualSelection option with get, set
 
     /// The point the caret occupied when the last edit occurred
     abstract LastEditPoint : SnapshotPoint option with get, set
@@ -4439,6 +4483,9 @@ and ICommandMode =
 
     /// Buffered input for the current command
     abstract Command : string with get, set
+
+    /// Is command mode currently waiting for a register paste operation to complete
+    abstract InPasteWait : bool
 
     /// Run the specified command
     abstract RunCommand : string -> RunResult

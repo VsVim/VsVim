@@ -315,7 +315,10 @@ type Parser
 
     member x.IsDone = _tokenizer.IsAtEndOfLine && _lineIndex  + 1 >= _lines.Length
 
-    member x.IsTokenSequence texts = 
+    /// Parse out the token stream so long as it matches the input.  If everything matches
+    /// the tokens will be consumed and 'true' will be returned.  Else 'false' will be 
+    /// returned and the token stream will be unchanged
+    member x.ParseTokenSequence texts = 
         let mark = _tokenizer.Mark
         let mutable all = true
         for text in texts do
@@ -328,6 +331,10 @@ type Parser
             _tokenizer.MoveToMark mark
 
         all
+
+    member x.ParseScriptLocalPrefix() = 
+        x.ParseTokenSequence [| "<"; "SID"; ">" |] ||
+        x.ParseTokenSequence [| "s"; ":" |]
 
     /// Reset the parser to the given set of input lines.  
     member x.Reset (lines : string[]) = 
@@ -831,6 +838,8 @@ type Parser
 
     member x.ParseCall lineRange = 
         x.SkipBlanks()
+
+        let isScriptLocal = x.ParseScriptLocalPrefix()
         match _tokenizer.CurrentTokenKind with
         | TokenKind.Word name ->
             _tokenizer.MoveNextToken()
@@ -839,6 +848,7 @@ type Parser
                 LineRange = lineRange
                 Name = name
                 Arguments = arguments
+                IsScriptLocal = isScriptLocal
             }
             LineCommand.Call callInfo 
         | _ -> LineCommand.ParseError Resources.Parser_Error
@@ -1044,10 +1054,7 @@ type Parser
 
         let lineCommand = _lineCommandBuilder { 
             // Lower case names are allowed when the name is prefixed with <SID> or s: 
-            let isScriptLocal = 
-                x.IsTokenSequence [| "<"; "SID"; ">" |] ||
-                x.IsTokenSequence [| "s"; ":" |]
-                
+            let isScriptLocal = x.ParseScriptLocalPrefix()
             let! name = parseFunctionName isScriptLocal
             let! args = parseFunctionArguments ()
             let isAbort, isDict, isRange, isError = parseModifiers ()
@@ -1780,7 +1787,7 @@ type Parser
                         match token.TokenKind with
                         | TokenKind.Word _ -> true
                         | TokenKind.Character c ->
-                            CharUtil.IsLetterOrDigit c || ",<>~[]".Contains(c.ToString())
+                            CharUtil.IsLetterOrDigit c || @"-:\.,<>~[]".Contains(c.ToString())
                         | TokenKind.Number number -> true
                         | _ -> false)
                     match value with 

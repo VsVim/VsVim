@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.ComponentModel.Composition;
 using EnvDTE;
 using Microsoft.VisualStudio.Shell;
@@ -12,15 +13,15 @@ using Vim.Extensions;
 
 namespace VsVim.Implementation.VisualAssist
 {
-    [ContentType(Vim.Constants.ContentType)]
+    [ContentType(VimConstants.ContentType)]
     [TextViewRole(PredefinedTextViewRoles.Editable)]
     [Order(Before = Constants.VisualStudioKeyProcessorName, After = Constants.VsKeyProcessorName)]
     [MarginContainer(PredefinedMarginNames.Top)]
     [Export(typeof(IKeyProcessorProvider))]
     [Export(typeof(IVisualAssistUtil))]
-    [Export(typeof(IWpfTextViewMarginProvider))]
+    [Export(typeof(IVimBufferCreationListener))]
     [Name("VisualAssistKeyProcessor")]
-    internal sealed class VisualAssistUtil : IKeyProcessorProvider, IVisualAssistUtil, IWpfTextViewMarginProvider
+    internal sealed class VisualAssistUtil : IKeyProcessorProvider, IVisualAssistUtil, IVimBufferCreationListener
     {
         private const string RegistryBaseKeyName = @"Software\Whole Tomato\Visual Assist X\";
         private const string RegistryValueName = @"TrackCaretVisibility";
@@ -29,19 +30,19 @@ namespace VsVim.Implementation.VisualAssist
 
         private readonly IVim _vim;
         private readonly bool _isVisualAssistInstalled;
-        private readonly IEditorFormatMapService _editorFormatMapService;
+        private readonly object _toastKey = new object();
+        private readonly IToastNotificationServiceProvider _toastNotificationServiceProvider;
         private readonly VisualStudioVersion _visualStudioVersion;
         private bool _isRegistryFixedNeeded;
-        private EventHandler _isRegistryFixNeededChanged;
 
         [ImportingConstructor]
         internal VisualAssistUtil(
             SVsServiceProvider serviceProvider,
             IVim vim,
-            IEditorFormatMapService editorFormatMapService)
+            IToastNotificationServiceProvider toastNotificationServiceProvider)
         {
             _vim = vim;
-            _editorFormatMapService = editorFormatMapService;
+            _toastNotificationServiceProvider = toastNotificationServiceProvider;
 
             var vsShell = serviceProvider.GetService<SVsShell, IVsShell>();
             _isVisualAssistInstalled = vsShell.IsPackageInstalled(VisualAssistPackageId);
@@ -98,12 +99,16 @@ namespace VsVim.Implementation.VisualAssist
             }
         }
 
-        private void RaiseIsRegistryFixNeededChanged()
+        /// <summary>
+        /// When any of the toast notifications are closed then close them all.  No reason to make
+        /// the developer dismiss it on every single display that is open 
+        /// </summary>
+        private void OnToastNotificationClosed()
         {
-            if (_isRegistryFixNeededChanged != null)
-            {
-                _isRegistryFixNeededChanged(this, EventArgs.Empty);
-            }
+            _vim.VimBuffers
+                .Select(x => x.TextView)
+                .OfType<IWpfTextView>()
+                .ForEach(x => _toastNotificationServiceProvider.GetToastNoficationService(x).Remove(_toastKey));
         }
 
         #region IVisualAssistUtil
@@ -111,26 +116,6 @@ namespace VsVim.Implementation.VisualAssist
         bool IVisualAssistUtil.IsInstalled
         {
             get { return _isVisualAssistInstalled; }
-        }
-
-        bool IVisualAssistUtil.IsRegistryFixNeeed
-        {
-            get { return _isRegistryFixedNeeded; }
-            set
-            {
-                var changed = _isRegistryFixedNeeded != value;
-                _isRegistryFixedNeeded = value;
-                if (changed)
-                {
-                    RaiseIsRegistryFixNeededChanged();
-                }
-            }
-        }
-
-        event EventHandler IVisualAssistUtil.IsRegistryFixNeededChanged
-        {
-            add { _isRegistryFixNeededChanged += value; }
-            remove { _isRegistryFixNeededChanged -= value; }
         }
 
         #endregion
@@ -155,17 +140,23 @@ namespace VsVim.Implementation.VisualAssist
 
         #endregion
 
-        #region IWpfTextViewMargineProvider
+        #region IVimBufferCreationListener
 
-        IWpfTextViewMargin IWpfTextViewMarginProvider.CreateMargin(IWpfTextViewHost wpfTextViewHost, IWpfTextViewMargin marginContainer)
+        void IVimBufferCreationListener.VimBufferCreated(IVimBuffer vimBuffer)
         {
             if (!_isVisualAssistInstalled || !_isRegistryFixedNeeded)
             {
-                return null;
+                return;
             }
 
-            var editorFormatMap = _editorFormatMapService.GetEditorFormatMap(wpfTextViewHost.TextView);
-            return new VisualAssistMargin(this, editorFormatMap);
+            var wpfTextView = vimBuffer.TextView as IWpfTextView;
+            if (wpfTextView == null)
+            {
+                return;
+            }
+
+            var toastNotificationService = _toastNotificationServiceProvider.GetToastNoficationService(wpfTextView);
+            toastNotificationService.Display(_toastKey, new VisualAssistMargin(), OnToastNotificationClosed);
         }
 
         #endregion

@@ -11,11 +11,6 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
     /// </summary>
     public partial class CommandMarginControl : UserControl
     {
-        public static readonly DependencyProperty StatusLineProperty = DependencyProperty.Register(
-            "StatusLine",
-            typeof(string),
-            typeof(CommandMarginControl));
-
         public static readonly DependencyProperty IsRecordingProperty = DependencyProperty.Register(
             "IsRecording",
             typeof(Visibility),
@@ -50,15 +45,6 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             typeof(double),
             typeof(CommandMarginControl),
             new PropertyMetadata(10.0));
-
-        /// <summary>
-        /// The primary status line for Vim
-        /// </summary>
-        public string StatusLine
-        {
-            get { return (string)GetValue(StatusLineProperty); }
-            set { SetValue(StatusLineProperty, value); }
-        }
 
         public bool IsEditReadOnly
         {
@@ -104,11 +90,6 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
         public TextBox CommandLineTextBox
         {
             get { return _commandLineInput; }
-        }
-
-        public Button OptionsButton
-        {
-            get { return _optionsButton; }
         }
 
         public CommandMarginControl()

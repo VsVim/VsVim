@@ -1,24 +1,5 @@
-- Need to implement parsing for print
-- Should combine the LineRange option with an int value that has the different
-  ways a count can be combined with a Line Range
-- Global count and range
-- Should ;global move the caret to the start of the line?  How do commands which 
-  don't take a range behave?
-- Global should work in an undo transaction
-- Maybe ? LineRange needs to be taken out of LineCommand.  It shoud be an indpendent 
-  which is passed down.
-
-  Maybe not.  How will this work with end counts?
-- I think every "Some lineRange" in Parser.fs should just remove the option from the node.  Maybe
-  the option should go await entirely and instead we add an Unspecified / Default member
-  to LineRange.  No loss of fidelity there
-
-  this would also solve the issue of conveying a default.  Some commands default an
-  empty range to the curret line and others the entire buffer
-- test :global / print moves the caret
-- :global should be passing an empty SnapshotLineRange down to each of the LineCommand 
-  values and not the current line.  The command itself must interpret the default case
-  and provide the appropriate value.   This can be proven by doing a :g with a command
-  of retab.  It will retab the entire file not the lines that match. 
-  
-  That's going to take some work.  
+For settings
+    - The 'backspace' toast warning needs to be updated
+    - All of the vsvim_ settings need a UI option 
+    - Remove IVimApplicationSettings from VsCommandTarget
+    - Don't hard code the defaults in both IVimGlobalSetttings and IVimApplicationSettings for the shared settings.  Need a common way of setting them

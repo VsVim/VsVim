@@ -19,12 +19,14 @@ namespace Vim.UI.Wpf.UnitTest
         private ITextBuffer _textBuffer;
         private CharDisplayTaggerSource _source;
         private IBasicTaggerSource<IntraTextAdornmentTag> _basicTaggerSource;
+        private IControlCharUtil _controlCharUtil;
 
         protected virtual void Create(params string[] lines)
         {
             _textView = CreateTextView(lines);
             _textBuffer = _textView.TextBuffer;
-            _source = new CharDisplayTaggerSource(_textView, new Mock<IEditorFormatMap>(MockBehavior.Loose).Object, Vim.GlobalSettings);
+            _controlCharUtil = new ControlCharUtil();
+            _source = new CharDisplayTaggerSource(_textView, new Mock<IEditorFormatMap>(MockBehavior.Loose).Object, _controlCharUtil);
             _basicTaggerSource = _source;
         }
 
@@ -149,11 +151,10 @@ namespace Vim.UI.Wpf.UnitTest
             public void SingleTagDisplayDisabled()
             {
                 Create("d" + (char)29 + "g");
-                Vim.GlobalSettings.ControlChars = false;
+                _controlCharUtil.DisplayControlChars = false;
                 var tags = _source.GetTags(_textBuffer.GetSpan(0, 3));
                 Assert.Equal(0, tags.Count);
             }
-
         }
 
         /// <summary>
@@ -217,7 +218,7 @@ namespace Vim.UI.Wpf.UnitTest
             public void OnControlCharsChanged()
             {
                 Create("hello world");
-                Vim.GlobalSettings.ControlChars = false;
+                _controlCharUtil.DisplayControlChars = false;
                 Assert.Equal(1, _changedCount);
             }
 
@@ -225,7 +226,7 @@ namespace Vim.UI.Wpf.UnitTest
             public void OnControlCharsNotChanged()
             {
                 Create("hello world");
-                Vim.GlobalSettings.ControlChars = Vim.GlobalSettings.ControlChars;
+                _controlCharUtil.DisplayControlChars = _controlCharUtil.DisplayControlChars;
                 Assert.Equal(0, _changedCount);
             }
         }

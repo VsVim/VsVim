@@ -570,7 +570,7 @@ namespace Vim.UnitTest
             {
                 Create("hello world");
                 SetupActiveWordCompletionSession();
-                SetupInsertCommand(InsertCommand.NewDirectInsert('c'));
+                SetupInsertCommand(InsertCommand.NewInsert("c"));
                 _textView.MoveCaretTo(0);
                 _activeWordCompletionSession.Setup(x => x.Dismiss()).Verifiable();
                 _mode.Process('c');
@@ -602,11 +602,11 @@ namespace Vim.UnitTest
             public void Process_DirectInsert()
             {
                 Create("");
-                SetupInsertCommand(InsertCommand.NewDirectInsert('c'));
+                SetupInsertCommand(InsertCommand.NewInsert("c"));
                 _mode.Process('c');
                 _insertUtil.Verify();
                 Assert.True(_modeRaw._sessionData.CombinedEditCommand.IsSome());
-                Assert.True(_modeRaw._sessionData.CombinedEditCommand.Value.IsDirectInsert);
+                Assert.True(_modeRaw._sessionData.CombinedEditCommand.Value.IsInsert);
             }
         }
     }

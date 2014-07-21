@@ -39,6 +39,7 @@ namespace VsVim
         private readonly IVsAdapter _vsAdapter;
         private readonly IDisplayWindowBroker _broker;
         private readonly IKeyUtil _keyUtil;
+        private readonly IVimApplicationSettings _vimApplicationSettings;
         private ReadOnlyCollection<ICommandTarget> _commandTargets;
         private IOleCommandTarget _nextCommandTarget;
 
@@ -47,7 +48,8 @@ namespace VsVim
             ITextManager textManager,
             IVsAdapter vsAdapter,
             IDisplayWindowBroker broker,
-            IKeyUtil keyUtil)
+            IKeyUtil keyUtil,
+            IVimApplicationSettings vimApplicationSettings)
         {
             _vimBuffer = vimBufferCoordinator.VimBuffer;
             _vim = _vimBuffer.Vim;
@@ -56,6 +58,7 @@ namespace VsVim
             _vsAdapter = vsAdapter;
             _broker = broker;
             _keyUtil = keyUtil;
+            _vimApplicationSettings = vimApplicationSettings;
         }
 
         internal VsCommandTarget(
@@ -64,9 +67,10 @@ namespace VsVim
             IVsAdapter vsAdapter,
             IDisplayWindowBroker broker,
             IKeyUtil keyUtil,
+            IVimApplicationSettings vimApplicationSettings,
             IOleCommandTarget nextTarget,
             ReadOnlyCollection<ICommandTarget> commandTargets)
-            : this(vimBufferCoordinator, textManager, vsAdapter, broker, keyUtil)
+            : this(vimBufferCoordinator, textManager, vsAdapter, broker, keyUtil, vimApplicationSettings)
         {
             CompleteInit(nextTarget, commandTargets);
         }
@@ -80,12 +84,6 @@ namespace VsVim
             var oleCommandData = OleCommandData.Empty;
             try
             {
-                if (!TryGetOleCommandData(command, out oleCommandData))
-                {
-                    // Not a command that we custom process
-                    return false;
-                }
-
                 if (_vim.InBulkOperation && !command.IsInsertNewLine)
                 {
                     // If we are in the middle of a bulk operation we don't want to forward any
@@ -97,6 +95,19 @@ namespace VsVim
                     // formats Enter in a special way that we absolutely want to preserve in a change
                     // or macro operation.  Go ahead and let it go through here and we'll dismiss 
                     // any intellisense which pops up as a result
+                    return false;
+                }
+
+                if (!_vimApplicationSettings.UseEditorTabAndBackspace && (command.IsBack || command.IsInsertTab))
+                {
+                    // When the user has opted into 'softtabstop' then Vim has a better understanding of
+                    // <BS> than Visual Studio.  Allow that processing to win
+                    return false;
+                }
+
+                if (!TryGetOleCommandData(command, out oleCommandData))
+                {
+                    // Not a command that we custom process
                     return false;
                 }
 
@@ -141,11 +152,14 @@ namespace VsVim
                 return true;
             }
 
-            if (command.IsDirectInsert)
+            if (command.IsInsert)
             {
-                var directInsert = (InsertCommand.DirectInsert)command;
-                commandData = OleCommandData.CreateTypeChar(directInsert.Item);
-                return true;
+                var insert = (InsertCommand.Insert)command;
+                if (insert.Item != null && insert.Item.Length == 1)
+                {
+                    commandData = OleCommandData.CreateTypeChar(insert.Item[0]);
+                    return true;
+                }
             }
 
             if (command.IsInsertTab)
@@ -283,9 +297,10 @@ namespace VsVim
             IVsAdapter adapter,
             IDisplayWindowBroker broker,
             IKeyUtil keyUtil,
+            IVimApplicationSettings vimApplicationSettings,
             ReadOnlyCollection<ICommandTargetFactory> commandTargetFactoryList)
         {
-            var vsCommandTarget = new VsCommandTarget(vimBufferCoordinator, textManager, adapter, broker, keyUtil);
+            var vsCommandTarget = new VsCommandTarget(vimBufferCoordinator, textManager, adapter, broker, keyUtil, vimApplicationSettings);
 
             IOleCommandTarget nextCommandTarget;
             var hresult = vsTextView.AddCommandFilter(vsCommandTarget, out nextCommandTarget);

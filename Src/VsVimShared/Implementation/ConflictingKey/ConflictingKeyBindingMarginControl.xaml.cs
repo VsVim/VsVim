@@ -24,11 +24,6 @@ namespace VsVim.Implementation.ConflictingKey
         /// </summary>
         public event EventHandler ConfigureClick;
 
-        /// <summary>
-        /// Raised when the Ignore button is clicked
-        /// </summary>
-        public event EventHandler IgnoreClick;
-
         public ConflictingKeyBindingMarginControl()
         {
             InitializeComponent();
@@ -42,15 +37,5 @@ namespace VsVim.Implementation.ConflictingKey
                 list(this, RoutedEventArgs.Empty);
             }
         }
-
-        private void OnIgnoreClick(object sender, RoutedEventArgs e)
-        {
-            var list = IgnoreClick;
-            if (list != null)
-            {
-                list(this, RoutedEventArgs.Empty);
-            }
-        }
-
     }
 }

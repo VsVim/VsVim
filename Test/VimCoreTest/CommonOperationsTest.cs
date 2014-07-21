@@ -9,6 +9,7 @@ using Moq;
 using Vim.Extensions;
 using Vim.UnitTest.Mock;
 using Xunit;
+using Microsoft.FSharp.Core;
 
 namespace Vim.UnitTest
 {
@@ -26,7 +27,6 @@ namespace Vim.UnitTest
         private Mock<IVimGlobalSettings> _globalSettings;
         private Mock<IOutliningManager> _outlining;
         private Mock<IStatusUtil> _statusUtil;
-        private Mock<ISmartIndentationService> _smartIndentationService;
         private Mock<IVimTextBuffer> _vimTextBuffer;
         private IUndoRedoOperations _undoRedoOperations;
         private ISearchService _searchService;
@@ -51,7 +51,6 @@ namespace Vim.UnitTest
             _globalSettings.SetupGet(x => x.IgnoreCase).Returns(true);
             _globalSettings.SetupGet(x => x.IsVirtualEditOneMore).Returns(false);
             _globalSettings.SetupGet(x => x.SelectionKind).Returns(SelectionKind.Inclusive);
-            _globalSettings.SetupGet(x => x.UseEditorIndent).Returns(false);
             _globalSettings.SetupGet(x => x.VirtualEdit).Returns(String.Empty);
             _globalSettings.SetupGet(x => x.WrapScan).Returns(true);
             _vimData = new VimData(_globalSettings.Object);
@@ -88,7 +87,6 @@ namespace Vim.UnitTest
                 statusUtil: _statusUtil.Object,
                 jumpList: _jumpList.Object);
 
-            _smartIndentationService = _factory.Create<ISmartIndentationService>();
             _outlining = _factory.Create<IOutliningManager>();
             _outlining
                 .Setup(x => x.ExpandAll(It.IsAny<SnapshotSpan>(), It.IsAny<Predicate<ICollapsed>>()))
@@ -97,8 +95,7 @@ namespace Vim.UnitTest
             _operationsRaw = new CommonOperations(
                 vimBufferData,
                 EditorOperationsFactoryService.GetEditorOperations(_textView),
-                FSharpOption.Create(_outlining.Object),
-                _smartIndentationService.Object);
+                FSharpOption.Create(_outlining.Object));
             _operations = _operationsRaw;
         }
 
@@ -513,10 +510,37 @@ namespace Vim.UnitTest
         public void Put_EndOfBufferLinewise()
         {
             Create("cat");
+            Assert.Equal(1, _textView.TextSnapshot.LineCount);
             _operations.Put(_textView.GetEndPoint(), StringData.NewSimple("dog\n"), OperationKind.LineWise);
             Assert.Equal("cat", _textView.GetLine(0).GetText());
             Assert.Equal("dog", _textView.GetLine(1).GetText());
             Assert.Equal(2, _textView.TextSnapshot.LineCount);
+        }
+
+        /// <summary>
+        /// Do a put at the end of the ITextBuffer linewise.  Same as previous
+        /// test but the buffer contains a trailing line break
+        /// </summary>
+        [Fact]
+        public void Put_EndOfBufferLinewiseWithTrailingLineBreak()
+        {
+            Create("cat", "");
+            Assert.Equal(2, _textView.TextSnapshot.LineCount);
+            _operations.Put(_textView.GetEndPoint(), StringData.NewSimple("dog\n"), OperationKind.LineWise);
+            Assert.Equal("cat", _textView.GetLine(0).GetText());
+            Assert.Equal("dog", _textView.GetLine(1).GetText());
+            Assert.Equal(3, _textView.TextSnapshot.LineCount);
+        }
+
+        /// <summary>
+        /// Put into empty buffer should create a buffer with the contents being put
+        /// </summary>
+        [Fact]
+        public void Put_IntoEmptyBuffer()
+        {
+            Create("");
+            _operations.Put(_textView.GetLine(0).Start, StringData.NewSimple("fish\n"), OperationKind.LineWise);
+            Assert.Equal("fish", _textView.GetLine(0).GetText());
         }
 
         /// <summary>
@@ -1465,14 +1489,13 @@ namespace Vim.UnitTest
         }
 
         /// <summary>
-        /// Make sure that editor indent trumps 'autoindent'
+        /// Make sure that host indent trumps 'autoindent'
         /// </summary>
         [Fact]
         public void GetNewLineIndent_EditorTrumpsAutoIndent()
         {
             Create("cat", "dog", "");
-            _globalSettings.SetupGet(x => x.UseEditorIndent).Returns(true);
-            _smartIndentationService.Setup(x => x.GetDesiredIndentation(_textView, It.IsAny<ITextSnapshotLine>())).Returns(8);
+            _vimHost.Setup(x => x.GetNewLineIndent(_textView, It.IsAny<ITextSnapshotLine>(), It.IsAny<ITextSnapshotLine>())).Returns(FSharpOption.Create(8));
             var indent = _operations.GetNewLineIndent(_textView.GetLine(1), _textView.GetLine(2));
             Assert.Equal(8, indent.Value);
         }
@@ -1484,9 +1507,8 @@ namespace Vim.UnitTest
         public void GetNewLineIndent_RevertToVimIndentIfEditorIndentFails()
         {
             Create("  cat", "  dog", "");
-            _globalSettings.SetupGet(x => x.UseEditorIndent).Returns(false);
             _localSettings.SetupGet(x => x.AutoIndent).Returns(true);
-            _smartIndentationService.Setup(x => x.GetDesiredIndentation(_textView, It.IsAny<ITextSnapshotLine>())).Returns((int?)null);
+            _vimHost.Setup(x => x.GetNewLineIndent(_textView, It.IsAny<ITextSnapshotLine>(), It.IsAny<ITextSnapshotLine>())).Returns(FSharpOption<int>.None);
             var indent = _operations.GetNewLineIndent(_textView.GetLine(1), _textView.GetLine(2));
             Assert.Equal(2, indent.Value);
         }

@@ -774,21 +774,24 @@ type VimInterpreter
     /// Run the map keys command
     member x.RunMapKeys leftKeyNotation rightKeyNotation keyRemapModes allowRemap mapArgumentList =
 
-        if not (List.isEmpty mapArgumentList) then
-            _statusUtil.OnError (Resources.Interpreter_OptionNotSupported "map special arguments")
-        else
-            // Get the appropriate mapping function based on whether or not remapping is 
-            // allowed
-            let mapFunc = if allowRemap then _keyMap.MapWithRemap else _keyMap.MapWithNoRemap
-    
-            // Perform the mapping for each mode and record if there is an error
-            let anyErrors = 
-                keyRemapModes
-                |> Seq.map (fun keyRemapMode -> mapFunc leftKeyNotation rightKeyNotation keyRemapMode)
-                |> Seq.exists (fun x -> not x)
-    
-            if anyErrors then
-                _statusUtil.OnError (Resources.Interpreter_UnableToMapKeys leftKeyNotation rightKeyNotation)
+        // At this point we can parse out all of the key mapping options, we just don't support
+        // any of them.  Warn the developer but continue processing 
+        for mapArgument in mapArgumentList do
+            let name = sprintf "%A" mapArgument
+            _statusUtil.OnWarning (Resources.Interpreter_KeyMappingOptionNotSupported name)
+
+        // Get the appropriate mapping function based on whether or not remapping is 
+        // allowed
+        let mapFunc = if allowRemap then _keyMap.MapWithRemap else _keyMap.MapWithNoRemap
+
+        // Perform the mapping for each mode and record if there is an error
+        let anyErrors = 
+            keyRemapModes
+            |> Seq.map (fun keyRemapMode -> mapFunc leftKeyNotation rightKeyNotation keyRemapMode)
+            |> Seq.exists (fun x -> not x)
+
+        if anyErrors then
+            _statusUtil.OnError (Resources.Interpreter_UnableToMapKeys leftKeyNotation rightKeyNotation)
 
         RunResult.Completed
 
@@ -1365,12 +1368,12 @@ type VimInterpreter
         RunResult.Completed
 
     member x.RunVersion() = 
-        let msg = sprintf "VsVim Version %s" Constants.VersionNumber
+        let msg = sprintf "VsVim Version %s" VimConstants.VersionNumber
         _statusUtil.OnStatus msg
         RunResult.Completed
 
     member x.RunVisualStudioCommand command argument =
-        _vimHost.RunVisualStudioCommand command argument
+        _vimHost.RunVisualStudioCommand _textView command argument
         RunResult.Completed
 
     member x.RunWrite lineRange hasBang fileOptionList filePath =

@@ -549,18 +549,6 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
-            /// Make sure that we can toggle the options that have an underscore in them
-            /// </summary>
-            [Fact]
-            public void Toggle_OptionWithUnderscore()
-            {
-                Create("");
-                Assert.True(_globalSettings.UseEditorIndent);
-                ParseAndRun(@"set novsvim_useeditorindent");
-                Assert.False(_globalSettings.UseEditorIndent);
-            }
-
-            /// <summary>
             /// Make sure we can deal with a trailing comment
             /// </summary>
             [Fact]
@@ -1790,7 +1778,7 @@ namespace Vim.UnitTest
                 Create("");
                 var didRun = false;
                 VimHost.RunVisualStudioCommandFunc =
-                    (command, argument) =>
+                    (textView, command, argument) =>
                     {
                         Assert.Equal("Build.BuildSelection", command);
                         Assert.Equal("", argument);
@@ -1809,7 +1797,7 @@ namespace Vim.UnitTest
                 Create("");
                 var didRun = false;
                 VimHost.RunVisualStudioCommandFunc =
-                    (command, argument) =>
+                    (textView, command, argument) =>
                     {
                         Assert.Equal("Build.BuildSelection", command);
                         Assert.Equal("Arg", argument);
@@ -1817,6 +1805,13 @@ namespace Vim.UnitTest
                     };
                 ParseAndRun("vsc Build.BuildSelection Arg");
                 Assert.True(didRun);
+            }
+
+            public void Issue1328()
+            {
+                Create("");
+                ParseAndRun(":set backspace=2");
+                Assert.True(_globalSettings.IsBackspaceEol && _globalSettings.IsBackspaceStart && _globalSettings.IsBackspaceIndent);
             }
         }
     }

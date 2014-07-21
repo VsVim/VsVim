@@ -3,6 +3,8 @@ using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Tagging;
 using Microsoft.VisualStudio.TextManager.Interop;
 using Moq;
+using System;
+using System.Collections.Generic;
 using Vim.UnitTest;
 using VsVim.Implementation.ExternalEdit;
 using VsVim.Implementation.ReSharper;
@@ -19,16 +21,16 @@ namespace VsVim.UnitTest
         }
 
         private ITextBuffer _textBuffer;
-        private ReSharperUtil _adapterRaw;
-        private IExternalEditAdapter _adapter;
+        private ReSharperUtil _reSharperUtilRaw;
+        private IExternalEditAdapter _reSharperUtil;
         private MockRepository _factory;
 
         public void Create(params string[] lines)
         {
             _textBuffer = CreateTextBuffer(lines);
             _factory = new MockRepository(MockBehavior.Strict);
-            _adapterRaw = new ReSharperUtil(true);
-            _adapter = _adapterRaw;
+            _reSharperUtilRaw = new ReSharperUtil(isResharperInstalled: true);
+            _reSharperUtil = _reSharperUtilRaw;
         }
 
         public sealed class IsExternalEditMarkerTest : ReSharperUtilTest
@@ -44,7 +46,7 @@ namespace VsVim.UnitTest
                 {
                     var span = _textBuffer.GetLineRange(0).Extent.ToTextSpan();
                     var marker = MockObjectFactory.CreateVsTextLineMarker(span, i, _factory);
-                    Assert.False(_adapter.IsExternalEditMarker(marker.Object));
+                    Assert.False(_reSharperUtil.IsExternalEditMarker(marker.Object));
                 }
             }
 
@@ -53,14 +55,14 @@ namespace VsVim.UnitTest
             {
                 Create("");
                 var tag = _factory.Create<ITag>();
-                Assert.False(_adapter.IsExternalEditTag(tag.Object));
+                Assert.False(_reSharperUtil.IsExternalEditTag(tag.Object));
             }
 
             [Fact]
             public void RightTagWithAttributes()
             {
                 Create("");
-                _adapterRaw.SetReSharperVersion(ReSharperVersion.Version7AndEarlier);
+                _reSharperUtilRaw.SetReSharperVersion(ReSharperVersion.Version7AndEarlier);
                 var array = new[]
                             {
                                 ReSharperEditTagDetectorBase.ExternalEditAttribute1,
@@ -70,7 +72,7 @@ namespace VsVim.UnitTest
                 foreach (var item in array)
                 {
                     var tag = new VsTextAdornmentTag { myAttributeId = item };
-                    Assert.True(_adapter.IsExternalEditTag(tag));
+                    Assert.True(_reSharperUtil.IsExternalEditTag(tag));
                 }
             }
 
@@ -82,8 +84,28 @@ namespace VsVim.UnitTest
                 foreach (var item in array)
                 {
                     var tag = new VsTextAdornmentTag { myAttributeId = item };
-                    Assert.False(_adapter.IsExternalEditTag(tag));
+                    Assert.False(_reSharperUtil.IsExternalEditTag(tag));
                 }
+            }
+        }
+
+        public sealed class MiscTest : ReSharperUtilTest
+        {
+            /// <summary>
+            /// The Laszy property in imported collections can throw an exception due to composition
+            /// failure.  Make sure this exception doesn't bring down the IsInterested check
+            /// </summary>
+            [Fact]
+            public void Issue1381()
+            {
+                Create();
+                var lazy = new Lazy<ITaggerProvider>(() => { throw new Exception(); });
+                var list = new List<Lazy<ITaggerProvider>>();
+                list.Add(lazy);
+                _reSharperUtilRaw.TaggerProviders = list;
+                var textView = CreateTextView();
+                ITagger<ITag> tagger;
+                Assert.False(_reSharperUtil.IsInterested(textView, out tagger));
             }
         }
     }

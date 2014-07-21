@@ -27,6 +27,7 @@ namespace VsVim.Implementation.Misc
         private readonly IVsEditorAdaptersFactoryService _editorAdaptersFactoryService;
         private readonly IEditorOptionsFactoryService _editorOptionsFactoryService;
         private readonly IIncrementalSearchFactoryService _incrementalSearchFactoryService;
+        private readonly IVsFindManager _vsFindManager;
         private readonly IVsTextManager _textManager;
         private readonly IVsUIShell _uiShell;
         private readonly RunningDocumentTable _table;
@@ -80,6 +81,7 @@ namespace VsVim.Implementation.Misc
             _table = new RunningDocumentTable(_serviceProvider);
             _uiShell = _serviceProvider.GetService<SVsUIShell, IVsUIShell>();
             _monitorSelection = _serviceProvider.GetService<SVsShellMonitorSelection, IVsMonitorSelection>();
+            _vsFindManager = _serviceProvider.GetService<SVsFindManager, IVsFindManager>();
             _powerToolsUtil = powerToolsUtil;
             _visualStudioVersion = vsServiceProvider.GetVisualStudioVersion();
         }
@@ -94,6 +96,14 @@ namespace VsVim.Implementation.Misc
 
         internal Result<IVsCodeWindow> GetCodeWindow(ITextView textView)
         {
+            // There is a bug in some of the implementations of ITextView, SimpleTextView in 
+            // particular, which cause it to throw an exception if we query COM interfaces 
+            // that it implements.  If it is closed there is no reason to go any further
+            if (textView.IsClosed)
+            {
+                return Result.Error;
+            }
+
             var result = GetContainingWindowFrame(textView);
             if (result.IsError)
             {
@@ -318,9 +328,12 @@ namespace VsVim.Implementation.Misc
                 return true;
             }
 
-            if (_visualStudioVersion != VisualStudioVersion.Vs2010 && IsIncrementalSearchActive2012(textView))
+            if (_visualStudioVersion != VisualStudioVersion.Vs2010)
             {
-                return true;
+                if (IsIncrementalSearchActiveScreenScrape(textView))
+                {
+                    return true;
+                }
             }
 
             return _powerToolsUtil.IsQuickFindActive;
@@ -335,7 +348,7 @@ namespace VsVim.Implementation.Misc
         /// it's descendant has focus.  Because Visual Studio is using WPF hosted in a HWND it doesn't
         /// actually have keyboard focus, just normal focus
         /// </summary>
-        internal bool IsIncrementalSearchActive2012(ITextView textView)
+        internal bool IsIncrementalSearchActiveScreenScrape(ITextView textView)
         {
             var wpfTextView = textView as IWpfTextView;
             if (wpfTextView == null)
@@ -353,13 +366,53 @@ namespace VsVim.Implementation.Misc
             {
                 // If the adornment is visible and has keyboard focus then consider it active.  
                 var adornment = element.Adornment;
-                if (adornment.Visibility == Visibility.Visible && adornment.GetType().Name == "FindUI" && adornment.IsKeyboardFocusWithin)
+                if (adornment.Visibility == Visibility.Visible && adornment.GetType().Name == "FindUI")
                 {
-                    return true;
+                    // The Ctrl+F or find replace UI will set the keyboard focus within
+                    if (adornment.IsKeyboardFocusWithin)
+                    {
+                        return true;
+                    }
+
+                    // The Ctrl+I value will not set keyboard focus.  Have to use reflection to look 
+                    // into the view to detect this case 
+                    if (IsFindManagerIncrementalSearchActive())
+                    {
+                        return true;
+                    }
                 }
             }
 
             return false;
+        }
+
+        /// <summary>
+        /// Starting in Vs2012 or Vs2013 (unclear) Visual Studio moved incremental search to the same
+        /// FindUI dialog but does not use the IsKeyboardFocusWithin property.  Instead they use an 
+        /// IOleCommandTarget to drive the UI.  Only reasonable way I've found to query whether this
+        /// is active or not is to use IVsFindManager as an IVsUIDataSource (once again thanks Ryan!)
+        /// </summary>
+        internal bool IsFindManagerIncrementalSearchActive()
+        {
+            try
+            {
+                var dataSource = (IVsUIDataSource)_vsFindManager;
+
+                IVsUIObject uiObj;
+                object obj;
+                if (ErrorHandler.Failed(dataSource.GetValue("IsIncrementalSearchActive", out uiObj)) ||
+                    ErrorHandler.Failed(uiObj.get_Data(out obj)) ||
+                    !(obj is bool))
+                {
+                    return false;
+                }
+
+                return (bool)obj;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
         }
 
         #region IVsAdapter

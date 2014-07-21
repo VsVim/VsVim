@@ -204,29 +204,6 @@ type internal VimBufferFactory
         let commonOperations = _commonOperationsFactory.GetCommonOperations vimBufferData
         let wordUtil = vimBufferData.WordUtil
 
-        /// Setup the initial mode for an IVimBuffer.  The mode should be the current mode of the
-        /// underlying IVimTextBuffer.  This should be as easy as switching the mode on startup 
-        /// but this is complicated by the initialization of ITextView instances.  They can, and 
-        /// often are, passed to CreateVimBuffer in an uninitialized state.  In that state certain
-        /// operations like Select can't be done.  Hence we have to delay the mode switch until 
-        /// the ITextView is fully initialized.  Put all of that logic here.
-        let rec setupInitialMode (vimBuffer : IVimBuffer) = 
-            if textView.TextViewLines = null then
-                // It's not initialized.  Need to wait for the ITextView to get initialized. Setup 
-                // the event listener so we can setup the true mode.  Make sure to unhook from the 
-                // event to avoid memory leaks
-                let bag = DisposableBag()
-
-                textView.LayoutChanged
-                |> Observable.subscribe (fun _ -> 
-                    setupInitialMode vimBuffer
-                    bag.DisposeAll())
-                |> bag.Add
-            elif vimBuffer.ModeKind = ModeKind.Uninitialized then
-                // The ITextView is uninitialized and no one has forced the IVimBuffer out of
-                // the uninitialized state.  Do the switch now to the correct mode
-                vimBuffer.SwitchMode vimBufferData.VimTextBuffer.ModeKind ModeArgument.None |> ignore
-
         let wordNav = _wordUtil.CreateTextStructureNavigator WordKind.NormalWord vimBufferData.TextBuffer.ContentType
         let incrementalSearch = IncrementalSearch(vimBufferData, commonOperations) :> IIncrementalSearch
         let capture = MotionCapture(vimBufferData, incrementalSearch) :> IMotionCapture
@@ -280,8 +257,47 @@ type internal VimBufferFactory
                 (ExternalEditMode(vimBufferData) :> IMode)
             ] @ visualModeList
         modeList |> List.iter (fun m -> bufferRaw.AddMode m)
-        setupInitialMode buffer
+        x.SetupInitialMode buffer
         bufferRaw
+
+    /// Setup the initial mode for an IVimBuffer.  The mode should be the current mode of the
+    /// underlying IVimTextBuffer.  This should be as easy as switching the mode on startup 
+    /// but this is complicated by the initialization of ITextView instances.  They can, and 
+    /// often are, passed to CreateVimBuffer in an uninitialized state.  In that state certain
+    /// operations like Select can't be done.  Hence we have to delay the mode switch until 
+    /// the ITextView is fully initialized.  Put all of that logic here.
+    member x.SetupInitialMode (vimBuffer : IVimBuffer) =
+
+        let textView = vimBuffer.TextView
+        let vimBufferData = vimBuffer.VimBufferData
+
+        // Check and see if the ITextView is ready to be used by VsVim.  This check is 
+        // run many times and it is possible that the ITextView is actually closed
+        // before we are ever able to switch to the initial mode.  Must take that into
+        // account
+        let isReady () = textView.IsClosed || (not textView.InLayout && textView.TextViewLines <> null) 
+
+        // The ITextView is initialized and no one has forced the IVimBuffer out of
+        // the uninitialized state.  Do the switch now to the correct mode
+        let runInit () =
+            Contract.Assert(isReady())
+            if not textView.IsClosed && vimBuffer.ModeKind = ModeKind.Uninitialized then
+                vimBuffer.SwitchMode vimBufferData.VimTextBuffer.ModeKind ModeArgument.None |> ignore
+
+        if isReady () then
+            runInit ()
+        else
+            // It's not initialized.  Need to wait for the ITextView to get initialized. Setup 
+            // the event listener so we can setup the true mode.  Make sure to unhook from the 
+            // event to avoid memory leaks
+            let bag = DisposableBag()
+
+            textView.LayoutChanged
+            |> Observable.subscribe (fun _ -> 
+                if isReady () then
+                    runInit ()
+                    bag.DisposeAll())
+            |> bag.Add
 
     interface IVimBufferFactory with
         member x.CreateVimTextBuffer textBuffer vim = x.CreateVimTextBuffer textBuffer vim :> IVimTextBuffer
@@ -361,6 +377,9 @@ type internal Vim
         |> Event.add (fun _ -> 
             _vimData.SearchHistory.Limit <- _globalSettings.History
             _vimData.CommandHistory.Limit <- _globalSettings.History)
+
+        // Allow the IVimHost to customize the IVimGlobalSettings instance
+        _vimHost.VimGlobalSettingsCreated _globalSettings
 
     [<ImportingConstructor>]
     new(
@@ -514,11 +533,7 @@ type internal Vim
         _vimBufferMap.Add(textView, (vimBuffer, vimInterpreter, eventBag))
 
         if _vimHost.AutoSynchronizeSettings then
-            _editorToSettingSynchronizer.StartSynchronizing vimBuffer
-            if _globalSettings.UseEditorDefaults then
-                _editorToSettingSynchronizer.CopyEditorToVimSettings vimBuffer
-            else
-                _editorToSettingSynchronizer.CopyVimToEditorSettings vimBuffer
+            _editorToSettingSynchronizer.StartSynchronizing vimBuffer SettingSyncSource.Vim
 
         vimBuffer
 
@@ -569,25 +584,15 @@ type internal Vim
                 _globalSettings.VimRc <- System.String.Empty
                 _globalSettings.VimRcPaths <- _fileSystem.GetVimRcDirectories() |> String.concat ";"
         
-                match _fileSystem.LoadVimRcContents() with
+                match x.LoadVimRcFileContents() with
                 | None -> 
                     _vimRcLocalSettings <- LocalSettings(_globalSettings) 
                     _vimRcWindowSettings <- WindowSettings(_globalSettings)
                     _vimRcState <- VimRcState.LoadFailed
+                    x.LoadDefaultSettings()
 
-                    // User-friendly overrides for users without an rc file.
-                    // Compare with Vim 7.4 "C:\Program Files (x86)\Vim\_vimrc"
-                    //
-                    // TODO: Should this be moved to an actual file?
-                    _globalSettings.SelectMode <- "mouse,key"
-                    _globalSettings.MouseModel <- "popup"
-                    _globalSettings.KeyModel <- "startsel,stopsel"
-                    _globalSettings.Selection <- "exclusive"
-                    _globalSettings.Backspace <- "indent,eol,start"
-                    _globalSettings.WhichWrap <- "<,>,[,]"
-
-                | Some fileContents ->
-                    _globalSettings.VimRc <- fileContents.FilePath
+                | Some (vimRcPath, lines) ->
+                    _globalSettings.VimRc <- vimRcPath.FilePath
                     let textView = _vimHost.CreateHiddenTextView()
         
                     try
@@ -600,11 +605,11 @@ type internal Vim
 
                         // Actually parse and run all of the commands
                         let vimInterpreter = x.GetVimInterpreter vimBuffer
-                        vimInterpreter.RunScript(fileContents.Lines)
+                        vimInterpreter.RunScript(lines)
 
                         _vimRcLocalSettings <- LocalSettings.Copy vimBuffer.LocalSettings
                         _vimRcWindowSettings <- WindowSettings.Copy vimBuffer.WindowSettings
-                        _vimRcState <- VimRcState.LoadSucceeded fileContents.FilePath
+                        _vimRcState <- VimRcState.LoadSucceeded vimRcPath
                     finally
                         // Be careful not to leak the ITextView in the case of an exception
                         textView.Close()
@@ -613,6 +618,38 @@ type internal Vim
 
             _vimHost.VimRcLoaded _vimRcState _vimRcLocalSettings _vimRcWindowSettings
             _vimRcState
+
+    /// This actually loads the lines of the vimrc that we should be using 
+    member x.LoadVimRcFileContents() = 
+        _fileSystem.GetVimRcFilePaths()
+        |> Seq.tryPick (fun vimRcPath -> 
+            if not (_vimHost.ShouldIncludeRcFile vimRcPath) then
+                None
+            else
+                _fileSystem.ReadAllLines vimRcPath.FilePath
+                |> Option.map (fun lines -> (vimRcPath, lines)))
+
+    /// Called when there is no vimrc file.  Update IVimGlobalSettings to be the appropriate
+    /// value for what the host requests
+    member x.LoadDefaultSettings() : unit = 
+        match _vimHost.DefaultSettings with
+        | DefaultSettings.GVim73 ->
+            // Strictly speaking this is not the default for 7.3.  However given this is running
+            // on windows there is little sense in disallowing backspace in insert mode as the
+            // out of the box experience.  If users truly want that they can put in a vimrc
+            // file that adds it in 
+            _globalSettings.Backspace <- "indent,eol,start"
+        | DefaultSettings.GVim74 ->
+            // User-friendly overrides for users without an rc file.
+            // Compare with Vim 7.4 "C:\Program Files (x86)\Vim\_vimrc"
+            _globalSettings.SelectMode <- "mouse,key"
+            _globalSettings.MouseModel <- "popup"
+            _globalSettings.KeyModel <- "startsel,stopsel"
+            _globalSettings.Selection <- "exclusive"
+            _globalSettings.Backspace <- "indent,eol,start"
+            _globalSettings.WhichWrap <- "<,>,[,]"
+        | _ -> 
+            _globalSettings.Backspace <- "indent,eol,start"
 
     member x.RemoveVimBuffer textView = 
         let found, tuple = _vimBufferMap.TryGetValue(textView)

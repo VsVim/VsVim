@@ -842,12 +842,22 @@ module SnapshotLineUtil =
         overlapPoint.Point
 
     /// Get the count of spaces to get to the specified absolute column offset.  This will count
-    /// tabs as counting for 'tabstop' spaces
-    let GetSpacesToColumn line column tabStop = 
-        GetSpanInLine line 0 column
-        |> SnapshotSpanUtil.GetPoints Path.Forward
-        |> Seq.map (fun point -> EditorCoreUtil.GetCharacterWidth point tabStop)
-        |> Seq.sum
+    /// tabs as counting for 'tabstop' spaces.  Note though that tabs which don't occur on a 'tabstop'
+    /// boundary only count for the number of spaces to get to the next tabstop boundary
+    let GetSpacesToColumn (line : ITextSnapshotLine) column tabStop = 
+        let mutable spaces = 0
+        let mutable current = SnapshotColumn(line.Start)
+        let maxColumn = min column line.Length
+        while current.Column < maxColumn do
+            let c = current.Point.GetChar()
+            if c = '\t' then
+                let remainder = spaces % tabStop 
+                spaces <- spaces + (tabStop - remainder)
+            else
+                spaces <- spaces + EditorCoreUtil.GetCharacterWidth current.Point tabStop
+            current <- current.Add 1
+        
+        spaces
 
 /// Contains operations to help fudge the Editor APIs to be more F# friendly.  Does not
 /// include any Vim specific logic
@@ -934,10 +944,14 @@ module SnapshotPointUtil =
     /// Subtract the count from the SnapshotPoint
     let SubtractOne (point:SnapshotPoint) =  point.Subtract(1)
 
+    let TrySubtract (point:SnapshotPoint) count =  
+        let position = point.Position - count
+        if position >= 0 then SnapshotPoint(point.Snapshot, position) |> Some
+        else None
+
     /// Maybe subtract the count from the SnapshotPoint
     let TrySubtractOne (point:SnapshotPoint) =  
-        if point.Position = 0 then None
-        else point |> SubtractOne |> Some
+        TrySubtract point 1
 
     /// Try and subtract 1 from the given point unless it's the start of the buffer in which
     /// case return the passed in value
@@ -1561,8 +1575,7 @@ module TextViewUtil =
         let editorOptions = textView.Options
         match EditorOptionsUtil.GetOptionValue editorOptions DefaultTextViewOptions.WordWrapStyleId with
         | None -> false
-        | Some WordWrapStyles.WordWrap -> true
-        | Some _ -> false
+        | Some wordWrapStyle -> Util.IsFlagSet wordWrapStyle WordWrapStyles.WordWrap
 
 module TextSelectionUtil = 
 
@@ -1709,6 +1722,13 @@ module EditUtil =
                     inner (index + 1) count
 
         inner 0 0
+
+    /// Get the indentation level given the context line (the line above the line which is 
+    /// being indented)
+    let GetAutoIndent (contextLine : ITextSnapshotLine) =
+        contextLine 
+        |> SnapshotLineUtil.GetIndentPoint 
+        |> SnapshotPointUtil.GetColumn 
 
     /// Does the specified string end with a valid newline string 
     let EndsWithNewLine value = 0 <> GetLineBreakLengthAtEnd value

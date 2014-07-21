@@ -2,7 +2,7 @@
 using System.Linq;
 using System.Windows;
 
-namespace VsVim.Implementation.ConflictingKey
+namespace VsVim.Implementation.OptionPages
 {
     public sealed class KeyBindingHandledByOption : DependencyObject
     {

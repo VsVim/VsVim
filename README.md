@@ -1,19 +1,17 @@
-Welcome to VsVim
-====
-
+### Welcome to VsVim
 All code in this project is covered under the Apache 2 license a copy of which is available in the same directory under the name License.txt.
 
-Building
-===
+AppVeyor Status: [![Build status](https://ci.appveyor.com/api/projects/status/gf5rlu19syrja9lr)](https://ci.appveyor.com/project/jaredpar/vsvim)
+
+### Building
 
 1. Install the Visual Studio SDK 
 2. Open the Solution VsVim.sln
 3. Build
 
-VsVim.sln will only work on machines with both Visual Studio 2010 and 2012 installed.  For machines with only one or the other installed use VsVim10 and VsVim11 respectively.
+VsVim.sln will work with any version of Visual Studio since 2010.  The SKU must be professional or higher due to the use of VSIX projects.  
 
-Branching Structure
-===
+### Branching Structure
 
  - master: Stable branch 
  - staging: Used for releasing new versions

@@ -362,7 +362,7 @@ namespace Vim.UnitTest
                 _insertUtilRaw.ShiftLineLeft();
 
                 Assert.Equal("    ", _textView.GetLine(0).GetText());
-                Assert.Equal(4, _insertUtilRaw.CaretColumn);
+                Assert.Equal(4, _insertUtilRaw.CaretColumn.Column);
                 Assert.False(_textView.Caret.InVirtualSpace);
                 // probably redundant, but we just want to be sure...
                 Assert.Equal(0, _textView.Caret.Position.VirtualSpaces);
@@ -382,7 +382,7 @@ namespace Vim.UnitTest
                 _insertUtilRaw.ShiftLineLeft();
 
                 Assert.Equal("  foo", _textView.GetLine(0).GetText());
-                Assert.Equal(2, _insertUtilRaw.CaretColumn);
+                Assert.Equal(2, _insertUtilRaw.CaretColumn.Column);
                 Assert.Equal(0, _textView.Caret.Position.VirtualSpaces);
             }
 
@@ -402,7 +402,7 @@ namespace Vim.UnitTest
                 _insertUtilRaw.ShiftLineRight();
 
                 Assert.Equal("            ", _textView.GetLine(0).GetText());
-                Assert.Equal(12, _insertUtilRaw.CaretColumn);
+                Assert.Equal(12, _insertUtilRaw.CaretColumn.Column);
                 Assert.False(_textView.Caret.InVirtualSpace);
                 // probably redundant, but we just want to be sure...
                 Assert.Equal(0, _textView.Caret.Position.VirtualSpaces);
@@ -423,7 +423,7 @@ namespace Vim.UnitTest
                 _insertUtilRaw.ShiftLineRight();
 
                 Assert.Equal("            ", _textView.GetLine(0).GetText());
-                Assert.Equal(12, _insertUtilRaw.CaretColumn);
+                Assert.Equal(12, _insertUtilRaw.CaretColumn.Column);
                 Assert.False(_textView.Caret.InVirtualSpace);
                 // probably redundant, but we just want to be sure...
                 Assert.Equal(0, _textView.Caret.Position.VirtualSpaces);
@@ -444,7 +444,7 @@ namespace Vim.UnitTest
                 _insertUtilRaw.ShiftLineRight();
 
                 Assert.Equal("\t    ", _textView.GetLine(0).GetText());
-                Assert.Equal(5, _insertUtilRaw.CaretColumn);
+                Assert.Equal(5, _insertUtilRaw.CaretColumn.Column);
                 Assert.False(_textView.Caret.InVirtualSpace);
                 // probably redundant, but we just want to be sure...
                 Assert.Equal(0, _textView.Caret.Position.VirtualSpaces);
@@ -461,7 +461,7 @@ namespace Vim.UnitTest
                 _insertUtilRaw.ShiftLineRight();
 
                 Assert.Equal("    ", _textView.GetLine(0).GetText());
-                Assert.Equal(4, _insertUtilRaw.CaretColumn);
+                Assert.Equal(4, _insertUtilRaw.CaretColumn.Column);
             }
 
             /// <summary>
@@ -477,7 +477,7 @@ namespace Vim.UnitTest
                 _insertUtilRaw.ShiftLineRight();
 
                 Assert.Equal("    abc", _textView.GetLine(0).GetText());
-                Assert.Equal(4, _insertUtilRaw.CaretColumn);
+                Assert.Equal(4, _insertUtilRaw.CaretColumn.Column);
             }
         }
 
@@ -491,7 +491,7 @@ namespace Vim.UnitTest
 
                 _insertUtilRaw.MoveCaretByWord(Direction.Left);
 
-                Assert.Equal(5, _insertUtilRaw.CaretColumn);
+                Assert.Equal(5, _insertUtilRaw.CaretColumn.Column);
             }
 
             [Fact]
@@ -503,7 +503,7 @@ namespace Vim.UnitTest
                 _insertUtilRaw.MoveCaretByWord(Direction.Left);
                 _insertUtilRaw.MoveCaretByWord(Direction.Left);
 
-                Assert.Equal(0, _insertUtilRaw.CaretColumn);
+                Assert.Equal(0, _insertUtilRaw.CaretColumn.Column);
             }
 
             [Fact]
@@ -514,7 +514,7 @@ namespace Vim.UnitTest
 
                 _insertUtilRaw.MoveCaretByWord(Direction.Right);
 
-                Assert.Equal(10, _insertUtilRaw.CaretColumn);
+                Assert.Equal(10, _insertUtilRaw.CaretColumn.Column);
             }
 
             [Fact]
@@ -526,7 +526,7 @@ namespace Vim.UnitTest
                 _insertUtilRaw.MoveCaretByWord(Direction.Right);
                 _insertUtilRaw.MoveCaretByWord(Direction.Right);
 
-                Assert.Equal(14, _insertUtilRaw.CaretColumn);
+                Assert.Equal(14, _insertUtilRaw.CaretColumn.Column);
             }
 
             [Fact]

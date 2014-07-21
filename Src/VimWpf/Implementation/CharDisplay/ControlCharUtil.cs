@@ -9,6 +9,22 @@ namespace Vim.UI.Wpf.Implementation.CharDisplay
     [Export(typeof(IControlCharUtil))]
     internal sealed class ControlCharUtil : IControlCharUtil
     {
+        private bool _displayControlChars = true;
+        private EventHandler _displayControlCharsChanged;
+
+        private bool DisplayControlChars
+        {
+            get { return _displayControlChars; }
+            set
+            {
+                if (value != _displayControlChars)
+                {
+                    _displayControlChars = value;
+                    RaiseDisplayControlCharsChanged();
+                }
+            }
+        }
+
         internal static bool IsDisplayControlChar(char c)
         {
             var i = (int)c;
@@ -82,7 +98,28 @@ namespace Vim.UI.Wpf.Implementation.CharDisplay
             return text != null;
         }
 
+        private void RaiseDisplayControlCharsChanged()
+        {
+            EventHandler e = _displayControlCharsChanged;
+            if (e != null)
+            {
+                e(this, EventArgs.Empty);
+            }
+        }
+
         #region IControlCharUtil
+
+        bool IControlCharUtil.DisplayControlChars
+        {
+            get { return DisplayControlChars; }
+            set { DisplayControlChars = value; }
+        }
+
+        event EventHandler IControlCharUtil.DisplayControlCharsChanged
+        {
+            add { _displayControlCharsChanged += value; }
+            remove { _displayControlCharsChanged -= value; }
+        }
 
         bool IControlCharUtil.IsDisplayControlChar(char c)
         {

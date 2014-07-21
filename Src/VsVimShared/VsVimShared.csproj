@@ -34,15 +34,16 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="EditorUtils, Version=1.3.0.0, Culture=neutral, PublicKeyToken=3d1514c4742e0252, processorArchitecture=MSIL">
+    <Reference Include="EditorUtils, Version=1.3.1.0, Culture=neutral, PublicKeyToken=3d1514c4742e0252, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\packages\EditorUtils.1.3.0.0\lib\net40\EditorUtils.dll</HintPath>
+      <HintPath>..\..\packages\EditorUtils.1.3.1.0\lib\net40\EditorUtils.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.VisualStudio.Text.Data, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
     <Reference Include="Microsoft.VisualStudio.Text.Logic, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
     <Reference Include="Microsoft.VisualStudio.Text.UI, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
     <Reference Include="Microsoft.VisualStudio.Text.UI.Wpf, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
     <Reference Include="Microsoft.VisualStudio.CoreUtility, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
+    <Reference Include="Microsoft.VisualStudio.ComponentModelHost, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
     <Reference Include="Microsoft.VisualStudio.Editor, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
     <Reference Include="Microsoft.VisualStudio.Language.Intellisense, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
     <Reference Include="Microsoft.VisualStudio.Language.NavigateTo.Interfaces, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
@@ -58,15 +59,18 @@
     <Reference Include="Microsoft.VisualStudio.Shell.Interop.9.0, Version=9.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
     <Reference Include="Microsoft.VisualStudio.TextManager.Interop, Version=7.1.40304.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
     <Reference Include="Microsoft.VisualStudio.TextManager.Interop.8.0, Version=8.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
+    <Reference Include="Microsoft.VisualStudio.TextManager.Interop.10.0, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
     <Reference Include="System" />
     <Reference Include="System.ComponentModel.Composition" />
     <Reference Include="System.Core" />
     <Reference Include="System.Data" />
+    <Reference Include="System.Drawing" />
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xaml" />
     <Reference Include="WindowsBase" />
+    <Reference Include="WindowsFormsIntegration" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CommandKeyBinding.cs" />
@@ -85,20 +89,30 @@
     <Compile Include="Implementation\Misc\ReportDesignerUtil.cs" />
     <Compile Include="Implementation\Misc\ScopeData.cs" />
     <Compile Include="Implementation\Misc\StandardCommandTarget.cs" />
+    <Compile Include="Implementation\OptionPages\ComboBoxTemplateSelector.cs" />
+    <Compile Include="Implementation\OptionPages\DefaultOptionPage.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Implementation\OptionPages\KeyBindingData.cs" />
+    <Compile Include="Implementation\OptionPages\KeyBindingHandledByOption.cs" />
+    <Compile Include="Implementation\OptionPages\KeyboardOptionPage.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Implementation\OptionPages\KeyboardSettingsControl.xaml.cs">
+      <DependentUpon>KeyboardSettingsControl.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Implementation\ReSharper\ReSharperKeyUtil.cs" />
     <Compile Include="Implementation\ReSharper\ReSharperUtil.cs" />
     <Compile Include="Implementation\ExternalEdit\SnippetExternalEditAdapter.cs" />
     <Compile Include="HostFactory.cs" />
     <Compile Include="IKeyBindingService.cs" />
-    <Compile Include="ILegacySettings.cs" />
     <Compile Include="Implementation\ConflictingKey\ConflictingKeyBindingMargin.cs" />
     <Compile Include="Implementation\ConflictingKey\ConflictingKeyBindingMarginProvider.cs" />
     <Compile Include="Implementation\Misc\CSharpAdapter.cs" />
     <Compile Include="Implementation\EditorFormatDefinitions.cs" />
     <Compile Include="Implementation\Misc\KeyBindingService.cs" />
     <Compile Include="Implementation\Misc\MindScape.cs" />
-    <Compile Include="Implementation\ConflictingKey\OptionsDialogService.cs" />
-    <Compile Include="Implementation\ConflictingKey\OptionsProvider.cs" />
+    <Compile Include="Implementation\OptionPages\KeyboardOptionsProvider.cs" />
     <Compile Include="Implementation\Misc\PowerToolsUtil.cs" />
     <Compile Include="Implementation\Misc\TextManager.cs" />
     <Compile Include="Implementation\Misc\VimBufferCoordinator.cs" />
@@ -109,14 +123,20 @@
     <Compile Include="Implementation\ReSharper\ReSharperVersion.cs" />
     <Compile Include="Implementation\ReSharper\ResharperVersionutility.cs" />
     <Compile Include="Implementation\Settings\SettingSerializer.cs" />
-    <Compile Include="Implementation\Settings\SettingsMigrator.cs" />
     <Compile Include="Implementation\Settings\VimApplicationSettings.cs" />
     <Compile Include="Implementation\SharedService\DefaultSharedServiceFactory.cs" />
     <Compile Include="Implementation\SharedService\SharedServiceFactory.cs" />
+    <Compile Include="IKeyboardOptionsProvider.cs" />
+    <Compile Include="Implementation\ToastNotification\ToastControl.xaml.cs">
+      <DependentUpon>ToastControl.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Implementation\ToastNotification\ToastNotificationService.cs" />
+    <Compile Include="Implementation\ToastNotification\ToastNotificationServiceProvider.cs" />
     <Compile Include="Implementation\UpgradeNotification\LinkBanner.xaml.cs">
       <DependentUpon>LinkBanner.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Implementation\UpgradeNotification\BackspaceNotificationMarginProvider.cs" />
+    <Compile Include="Implementation\UpgradeNotification\VimRcLoadNotificationMarginProvider.cs" />
+    <Compile Include="IToastNotifaction.cs" />
     <Compile Include="TextEditorFontProperties.cs" />
     <Compile Include="Implementation\VisualAssist\IVisualAssistUtil.cs" />
     <Compile Include="Implementation\VisualAssist\VisualAssistKeyProcessor.cs" />
@@ -127,7 +147,6 @@
     <Compile Include="Implementation\VisualAssist\VisualAssistSelectionAdapter.cs" />
     <Compile Include="Implementation\Misc\VsAdapter.cs" />
     <Compile Include="Implementation\Misc\VsKeyProcessorProvider.cs" />
-    <Compile Include="IOptionsDialogService.cs" />
     <Compile Include="IPowerToolsUtil.cs" />
     <Compile Include="IReportDesignerUtil.cs" />
     <Compile Include="Implementation\ReSharper\IResharperUtil.cs" />
@@ -142,15 +161,9 @@
     <Compile Include="IVsAdapter.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Result.cs" />
-    <Compile Include="Implementation\ConflictingKey\ComboBoxTemplateSelector.cs" />
-    <Compile Include="Implementation\ConflictingKey\ConflictingKeyBindingDialog.xaml.cs">
-      <DependentUpon>ConflictingKeyBindingDialog.xaml</DependentUpon>
-    </Compile>
     <Compile Include="Implementation\ConflictingKey\ConflictingKeyBindingMarginControl.xaml.cs">
       <DependentUpon>ConflictingKeyBindingMarginControl.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Implementation\ConflictingKey\KeyBindingData.cs" />
-    <Compile Include="Implementation\ConflictingKey\KeyBindingHandledByOption.cs" />
     <Compile Include="VsCommandTarget.cs" />
     <Compile Include="VsFilterKeysAdapter.cs" />
     <Compile Include="Implementation\Misc\VsKeyProcessor.cs" />
@@ -171,6 +184,14 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <Page Include="Implementation\OptionPages\KeyboardSettingsControl.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Implementation\ToastNotification\ToastControl.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="Implementation\UpgradeNotification\LinkBanner.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
@@ -178,10 +199,6 @@
     <Page Include="Implementation\VisualAssist\VisualAssistMargin.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
-    </Page>
-    <Page Include="Implementation\ConflictingKey\ConflictingKeyBindingDialog$(VsXamlSuffix).xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
     </Page>
     <Page Include="Implementation\ConflictingKey\ConflictingKeyBindingMarginControl.xaml">
       <Generator>MSBuild:Compile</Generator>

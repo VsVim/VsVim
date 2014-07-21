@@ -519,6 +519,30 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class PasteTest : CommandModeIntegrationTest
+        {
+            [Fact]
+            public void Simple()
+            {
+                Create("");
+                Vim.RegisterMap.GetRegister('c').UpdateValue("test");
+                _vimBuffer.ProcessNotation(":<C-r>c");
+                Assert.Equal("test", _commandMode.Command);
+            }
+
+            [Fact]
+            public void InPasteWait()
+            {
+                Create("");
+                Vim.RegisterMap.GetRegister('c').UpdateValue("test");
+                _vimBuffer.ProcessNotation(":h<C-r>");
+                Assert.True(_commandMode.InPasteWait);
+                _vimBuffer.ProcessNotation("c");
+                Assert.Equal("htest", _commandMode.Command);
+                Assert.False(_commandMode.InPasteWait);
+            }
+        }
+
         public abstract class SubstituteTest : CommandModeIntegrationTest
         {
             public sealed class GlobalDefaultTest : SubstituteTest
@@ -800,7 +824,7 @@ namespace Vim.UnitTest
             {
                 Create("");
                 var didRun = false;
-                _vimHost.RunVisualStudioCommandFunc = (commandName, argument) =>
+                _vimHost.RunVisualStudioCommandFunc = (textView, commandName, argument) =>
                     {
                         didRun = true;
                         Assert.Equal("Edit.Comment", commandName);
@@ -818,7 +842,7 @@ namespace Vim.UnitTest
             {
                 Create("");
                 var didRun = false;
-                _vimHost.RunVisualStudioCommandFunc = (commandName, argument) =>
+                _vimHost.RunVisualStudioCommandFunc = (textView, commandName, argument) =>
                     {
                         didRun = true;
                         Assert.Equal("Edit_Comment", commandName);
@@ -841,7 +865,7 @@ namespace Vim.UnitTest
                 _vimBuffer.VimTextBuffer.SetLocalMark(LocalMark.NewLetter(Letter.A), 0, 1);
                 _vimBuffer.VimTextBuffer.SetLocalMark(LocalMark.NewLetter(Letter.B), 0, 1);
                 var didRun = false;
-                _vimHost.RunVisualStudioCommandFunc = (commandName, argument) =>
+                _vimHost.RunVisualStudioCommandFunc = (textView, commandName, argument) =>
                     {
                         didRun = true;
                         Assert.Equal("Edit.Comment", commandName);

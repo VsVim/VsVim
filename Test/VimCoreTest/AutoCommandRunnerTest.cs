@@ -24,7 +24,7 @@ namespace Vim.UnitTest
             [Fact]
             public void IgnoreWhenDisabled()
             {
-                Vim.GlobalSettings.AutoCommand = false;
+                VimHost.IsAutoCommandEnabled = false;
                 VimData.AddAutoCommand(EventKind.FileType, "xml", "set ts=12");
                 var vimBuffer = CreateVimBufferWithName("foo.xml");
                 _autoCommandRunner.RunAutoCommands(vimBuffer, EventKind.FileType);

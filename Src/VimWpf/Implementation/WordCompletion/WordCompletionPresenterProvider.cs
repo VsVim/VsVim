@@ -36,7 +36,7 @@ namespace Vim.UI.Wpf.Implementation.WordCompletion
     [Name("Word Completion Presenter Provider")]
     [Order(Before = "Default Completion Presenter")]
     [Export(typeof(IIntellisensePresenterProvider))]
-    [ContentType(Constants.AnyContentType)]
+    [ContentType(VimConstants.AnyContentType)]
     internal sealed class WordCompletionPresenterProvider : IIntellisensePresenterProvider
     {
         #region WordCompletionPresenter
