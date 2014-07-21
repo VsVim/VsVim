@@ -173,31 +173,6 @@ namespace VsVim.UnitTest
 
         #endregion
 
-        #region FactDebugOnly
-
-        /// <summary>
-        /// The memory leak tests can be flaky because it revolves around the ability of the
-        /// GC to collect objects in a deterministic way.  We don't want this failure to interrupt
-        /// the release test scripts and hence only run certain tests on Debug
-        /// </summary>
-        public sealed class FactDebugOnlyAttribute : FactAttribute
-        {
-#if DEBUG
-            public FactDebugOnlyAttribute()
-            {
-
-            }
-
-#else
-            public FactDebugOnlyAttribute()
-            {
-                Skip = "Only run test in Debug";
-            }
-#endif
-        }
-
-        #endregion
-
         /// <summary>
         /// This is the CompositionContainer specifically for the memory leak test.  This
         /// has several custom types inserted which are intended to enhance the memory leak
@@ -317,7 +292,7 @@ namespace VsVim.UnitTest
         /// create an IVimBuffer for every ITextView created hence one is created here.  Need
         /// to fix this so we have a base case to judge the memory leak tests by
         /// </summary>
-        [FactDebugOnly]
+        [Fact]
         public void TextViewOnly()
         {
             var container = CompositionContainer;
@@ -336,7 +311,7 @@ namespace VsVim.UnitTest
         /// and closed without leaking memory that doesn't involve the creation of an
         /// IVimBuffer
         /// </summary>
-        [FactDebugOnly]
+        [Fact]
         public void TextViewHostOnly()
         {
             var container = CompositionContainer;
@@ -352,7 +327,7 @@ namespace VsVim.UnitTest
             Assert.Null(weakReference.Target);
         }
 
-        [FactDebugOnly]
+        [Fact]
         public void VimWpfDoesntHoldBuffer()
         {
             var container = CompositionContainer;
