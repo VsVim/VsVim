@@ -214,7 +214,7 @@ namespace VsVim.Implementation.OptionPages
         [Category(CategoryEditing)]
         public bool UseEditorIndent { get; set; }
 
-        [DisplayName("Use Visual Studio Tab Size / Spaces")]
+        [DisplayName("Use Visual Studio Settings")]
         [Description("Use Visual Studio values to initialize 'tabsize', 'expandtab', 'cursorline', etc ...  This will override values specified in a vsvimrc file")]
         [Category(CategoryEditing)]
         public bool UseEditorDefaults { get; set; }
