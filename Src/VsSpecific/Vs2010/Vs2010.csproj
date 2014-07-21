@@ -11,7 +11,7 @@
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>VsVim.Vs2010</RootNamespace>
-    <AssemblyName>VsVim.Vs2010</AssemblyName>
+    <AssemblyName>Vim.VisualStudio.Vs2010</AssemblyName>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <TargetFrameworkProfile>
     </TargetFrameworkProfile>

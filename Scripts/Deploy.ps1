@@ -48,12 +48,12 @@ function test-vsixcontents() {
         "EditorUtils.dll",
         "Vim.Core.dll", 
         "Vim.UI.Wpf.dll",
-        "VsVim.Vs2010.dll",
-        "VsVim.Vs2012.dll",
-        "VsVim.Vs2013.dll",
+        "Vim.VisualStudio.Vs2010.dll",
+        "Vim.VisualStudio.Vs2012.dll",
+        "Vim.VisualStudio.Vs2013.dll",
+        "Vim.VisualStudio.Interfaces.dll",
+        "Vim.VisualStudio.Shared.dll",
         "VsVim.dll",
-        "VsVim.Interfaces.dll",
-        "VsVim.Shared.dll",
         "Colors.pkgdef",
         "VsVim.pkgdef"
 
@@ -69,7 +69,7 @@ function test-unittests() {
     $all = 
         "Test\VimCoreTest\bin\Release\Vim.Core.UnitTest.dll",
         "Test\VimWpfTest\bin\Release\Vim.UI.Wpf.UnitTest.dll",
-        "Test\VsVimSharedTest\bin\Release\VsVim.Shared.UnitTest.dll"
+        "Test\VsVimSharedTest\bin\Release\Vim.VisualStudio.Shared.UnitTest.dll"
     $xunit = join-path $rootPath "Tools\xunit.console.clr4.x86.exe"
 
     write-host "Running Unit Tests"
