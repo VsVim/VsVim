@@ -19,10 +19,10 @@ using Vim.Extensions;
 using Vim.UI.Wpf;
 using Vim.UnitTest;
 using Vim.UnitTest.Exports;
-using VsVim.UnitTest.Mock;
+using Vim.VisualStudio.UnitTest.Mock;
 using Xunit;
 
-namespace VsVim.UnitTest
+namespace Vim.VisualStudio.UnitTest
 {
     /// <summary>
     /// At least a cursory attempt at getting memory leak detection into a unit test.  By 
@@ -228,11 +228,11 @@ namespace VsVim.UnitTest
         {
             composablePartCatalogList.Add(new AssemblyCatalog(typeof(Vim.IVim).Assembly));
             composablePartCatalogList.Add(new AssemblyCatalog(typeof(Vim.UI.Wpf.VimKeyProcessor).Assembly));
-            composablePartCatalogList.Add(new AssemblyCatalog(typeof(VsVim.VsCommandTarget).Assembly));
-            composablePartCatalogList.Add(new AssemblyCatalog(typeof(VsVim.ISharedService).Assembly));
+            composablePartCatalogList.Add(new AssemblyCatalog(typeof(VsCommandTarget).Assembly));
+            composablePartCatalogList.Add(new AssemblyCatalog(typeof(ISharedService).Assembly));
             composablePartCatalogList.Add(new TypeCatalog(
-                typeof(VsVim.UnitTest.MemoryLeakTest.ServiceProvider),
-                typeof(VsVim.UnitTest.MemoryLeakTest.VsEditorAdaptersFactoryService),
+                typeof(Vim.VisualStudio.UnitTest.MemoryLeakTest.ServiceProvider),
+                typeof(Vim.VisualStudio.UnitTest.MemoryLeakTest.VsEditorAdaptersFactoryService),
                 typeof(VimErrorDetector)));
         }
 

@@ -3,7 +3,7 @@ using System.Windows.Media;
 using Microsoft.VisualStudio.Text.Classification;
 using Microsoft.VisualStudio.Utilities;
 
-namespace VsVim.Implementation
+namespace Vim.VisualStudio.Implementation
 {
     internal static class EditorFormatDefinitionNames
     {

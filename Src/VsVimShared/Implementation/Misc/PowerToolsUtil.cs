@@ -5,7 +5,7 @@ using System.Reflection;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 
-namespace VsVim.Implementation.Misc
+namespace Vim.VisualStudio.Implementation.Misc
 {
     [Export(typeof(IPowerToolsUtil))]
     internal sealed class PowerToolsUtil : IPowerToolsUtil

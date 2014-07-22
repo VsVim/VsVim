@@ -2,10 +2,10 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using VsVim.Implementation.Misc;
+using Vim.VisualStudio.Implementation.Misc;
 using Xunit;
 
-namespace VsVim.UnitTest
+namespace Vim.VisualStudio.UnitTest
 {
     public abstract class ScopeDataTest
     {

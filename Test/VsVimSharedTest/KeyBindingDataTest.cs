@@ -3,11 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using Xunit;
-using VsVim;
-using VsVim.Implementation.OptionPages;
+using Vim.VisualStudio.Implementation.OptionPages;
 using System.Collections.ObjectModel;
 
-namespace VsVim.UnitTest
+namespace Vim.VisualStudio.UnitTest
 {
     public class KeyBindingDataTest
     {

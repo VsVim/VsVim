@@ -1,6 +1,6 @@
 ﻿using EnvDTE;
 
-namespace VsVim
+namespace Vim.VisualStudio
 {
     public static class Extension
     {

@@ -16,7 +16,7 @@ using Vim;
 using Vim.Extensions;
 using Vim.UI.Wpf;
 
-namespace VsVim
+namespace Vim.VisualStudio
 {
     /// <summary>
     /// Factory responsible for creating IVimBuffer instances as ITextView instances are created 

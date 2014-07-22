@@ -6,11 +6,12 @@ using Microsoft.VisualStudio.Editor;
 using Microsoft.VisualStudio.TextManager.Interop;
 using Moq;
 using Xunit;
-using VsVim.UnitTest.Mock;
+using Vim.VisualStudio.UnitTest.Mock;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Utilities;
+using DteCommand = EnvDTE.Command;
 
-namespace VsVim.UnitTest
+namespace Vim.VisualStudio.UnitTest
 {
     public abstract class ExtensionsTest
     {
@@ -81,7 +82,7 @@ namespace VsVim.UnitTest
             [Fact]
             public void GetBindingsThrows()
             {
-                var mock = _factory.Create<Command>();
+                var mock = _factory.Create<DteCommand>();
                 mock.SetupGet(x => x.Bindings).Throws(new OutOfMemoryException());
                 var all = mock.Object.GetBindings();
                 Assert.Equal(0, all.Count());
@@ -90,7 +91,7 @@ namespace VsVim.UnitTest
             [Fact]
             public void SafeResetKeyBindings()
             {
-                var mock = new Mock<Command>(MockBehavior.Strict);
+                var mock = new Mock<DteCommand>(MockBehavior.Strict);
                 mock.SetupSet(x => x.Bindings = It.IsAny<object>()).Verifiable();
                 mock.Object.SafeResetBindings();
                 mock.Verify();
@@ -102,7 +103,7 @@ namespace VsVim.UnitTest
             [Fact]
             public void SafeResetKeyBindings2()
             {
-                var mock = new Mock<Command>(MockBehavior.Strict);
+                var mock = new Mock<DteCommand>(MockBehavior.Strict);
                 mock.SetupSet(x => x.Bindings = It.IsAny<object>()).Throws(new COMException()).Verifiable();
                 mock.Object.SafeResetBindings();
                 mock.Verify();

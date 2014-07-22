@@ -14,13 +14,13 @@ using System.ComponentModel.Composition.Hosting;
 using Vim;
 using Vim.Extensions;
 
-namespace VsVim
+namespace Vim.VisualStudio
 {
     [PackageRegistration(UseManagedResourcesOnly = true)]
     [InstalledProductRegistration("#110", "#112", productId: VimConstants.VersionNumber, IconResourceID = 400)]
     [ProvideMenuResource("Menus.ctmenu", 1)]
-    [ProvideOptionPage(typeof(VsVim.Implementation.OptionPages.DefaultOptionPage), "VsVim", "Defaults", 0, 0, supportsAutomation: true)]
-    [ProvideOptionPage(typeof(VsVim.Implementation.OptionPages.KeyboardOptionPage), "VsVim", "Keyboard", 0, 0, supportsAutomation: true)]
+    [ProvideOptionPage(typeof(Vim.VisualStudio.Implementation.OptionPages.DefaultOptionPage), categoryName: "VsVim", pageName: "Defaults", categoryResourceID: 0, pageNameResourceID: 0, supportsAutomation: true)]
+    [ProvideOptionPage(typeof(Vim.VisualStudio.Implementation.OptionPages.KeyboardOptionPage), categoryName: "VsVim", pageName: "Keyboard", categoryResourceID: 0, pageNameResourceID: 0, supportsAutomation: true)]
     [Guid(GuidList.VsVimPackageString)]
     public sealed class VsVimPackage : Package, IOleCommandTarget
     {
@@ -51,7 +51,7 @@ namespace VsVim
                 switch (commandId)
                 {
                     case CommandIds.Options:
-                        ShowOptionPage(typeof(VsVim.Implementation.OptionPages.KeyboardOptionPage));
+                        ShowOptionPage(typeof(Vim.VisualStudio.Implementation.OptionPages.KeyboardOptionPage));
                         break;
                     default:
                         Debug.Assert(false);

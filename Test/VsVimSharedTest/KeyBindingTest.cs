@@ -4,7 +4,7 @@ using Vim;
 using Vim.UnitTest;
 using Xunit;
 
-namespace VsVim.UnitTest
+namespace Vim.VisualStudio.UnitTest
 {
     public sealed class KeyBindingTest
     {

@@ -1,4 +1,4 @@
-﻿<UserControl x:Class="VsVim.Implementation.UpgradeNotification.LinkBanner"
+﻿<UserControl x:Class="Vim.VisualStudio.Implementation.UpgradeNotification.LinkBanner"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 

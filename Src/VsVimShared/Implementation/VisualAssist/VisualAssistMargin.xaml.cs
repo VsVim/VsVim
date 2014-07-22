@@ -3,7 +3,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Diagnostics;
 
-namespace VsVim.Implementation.VisualAssist
+namespace Vim.VisualStudio.Implementation.VisualAssist
 {
     internal partial class VisualAssistMargin : UserControl
     {

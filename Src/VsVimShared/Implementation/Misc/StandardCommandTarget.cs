@@ -13,7 +13,7 @@ using Microsoft.VisualStudio.Utilities;
 using Vim;
 using Vim.Extensions;
 
-namespace VsVim.Implementation.Misc
+namespace Vim.VisualStudio.Implementation.Misc
 {
     internal sealed class StandardCommandTarget : ICommandTarget
     {

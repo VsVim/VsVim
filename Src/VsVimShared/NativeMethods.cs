@@ -2,7 +2,7 @@
 using System.Runtime.InteropServices;
 using Microsoft.VisualStudio;
 
-namespace VsVim
+namespace Vim.VisualStudio
 {
     internal static class NativeMethods
     {

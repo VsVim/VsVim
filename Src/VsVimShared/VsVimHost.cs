@@ -18,7 +18,7 @@ using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio;
 using Microsoft.FSharp.Core;
 
-namespace VsVim
+namespace Vim.VisualStudio
 {
     /// <summary>
     /// Implement the IVimHost interface for Visual Studio functionality.  It's not responsible for 

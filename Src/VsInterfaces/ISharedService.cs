@@ -1,6 +1,6 @@
 ﻿using Microsoft.VisualStudio.Shell.Interop;
 
-namespace VsVim
+namespace Vim.VisualStudio
 {
     /// <summary>
     /// State of the active tab group in Visual Studio

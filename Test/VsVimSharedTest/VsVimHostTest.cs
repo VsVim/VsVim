@@ -16,7 +16,7 @@ using Vim.UnitTest;
 using System.Collections.Generic;
 using Microsoft.VisualStudio;
 
-namespace VsVim.UnitTest
+namespace Vim.VisualStudio.UnitTest
 {
     public abstract class VsVimHostTest : VimTestBase
     {
@@ -130,7 +130,7 @@ namespace VsVim.UnitTest
                 {
                     Create();
 
-                    var contentType = GetOrCreateContentType(VsVim.Constants.CPlusPlusContentType, "code");
+                    var contentType = GetOrCreateContentType(Constants.CPlusPlusContentType, "code");
                     _textView = CreateTextView(contentType, lines);
                     _textManager.SetupGet(x => x.ActiveTextViewOptional).Returns(_textView);
                 }
@@ -296,7 +296,7 @@ namespace VsVim.UnitTest
                 var buffer = new Mock<ITextBuffer>(MockBehavior.Strict);
                 var vsTextBuffer = (new Mock<IVsTextLines>(MockBehavior.Strict));
                 var userData = vsTextBuffer.As<IVsUserData>();
-                var moniker = VsVim.Constants.VsUserDataFileNameMoniker;
+                var moniker = Constants.VsUserDataFileNameMoniker;
                 object ret = "foo";
                 userData.Setup(x => x.GetData(ref moniker, out ret)).Returns(0);
                 _editorAdaptersFactoryService.Setup(x => x.GetBufferAdapter(buffer.Object)).Returns(vsTextBuffer.Object);

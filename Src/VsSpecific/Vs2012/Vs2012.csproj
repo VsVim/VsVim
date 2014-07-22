@@ -10,8 +10,8 @@
     <ProjectGuid>{60316861-7561-4B07-8A16-212E00A2856E}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>VsVim.Vs2012</RootNamespace>
-    <AssemblyName>VsVim.Vs2012</AssemblyName>
+    <RootNamespace>Vim.VisualStudio.Vs2012</RootNamespace>
+    <AssemblyName>Vim.VisualStudio.Vs2012</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <TargetFrameworkProfile>
     </TargetFrameworkProfile>

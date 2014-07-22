@@ -6,7 +6,7 @@ using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.TextManager.Interop;
 using Vim;
 
-namespace VsVim
+namespace Vim.VisualStudio
 {
     /// <summary>
     /// In several modes where the native COM adapter layer is considered readonly, the

@@ -2,7 +2,7 @@
 using Microsoft.VisualStudio.Text.Editor;
 using Vim;
 
-namespace VsVim.Implementation.VisualAssist
+namespace Vim.VisualStudio.Implementation.VisualAssist
 {
     internal sealed class VisualAssistKeyProcessor : KeyProcessor
     {

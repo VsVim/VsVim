@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.Composition;
 
-namespace VsVim.Vs2010
+namespace Vim.VisualStudio.Vs2010
 {
     [Export(typeof(ISharedServiceVersionFactory))]
     internal sealed class SharedServiceVersionFactory : ISharedServiceVersionFactory

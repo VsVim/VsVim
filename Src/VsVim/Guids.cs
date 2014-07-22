@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace VsVim
+namespace Vim.VisualStudio
 {
     /// <summary>
     /// These values must match up with those defined in VsVim.vsct

@@ -8,11 +8,11 @@ using EnvDTE;
 using Microsoft.VisualStudio.Settings;
 using Moq;
 using Vim.UI.Wpf;
-using VsVim.Implementation.Settings;
-using VsVim.UnitTest.Mock;
+using Vim.VisualStudio.Implementation.Settings;
+using Vim.VisualStudio.UnitTest.Mock;
 using Xunit;
 
-namespace VsVim.UnitTest
+namespace Vim.VisualStudio.UnitTest
 {
     public abstract class VimApplicationSettingsTest
     {

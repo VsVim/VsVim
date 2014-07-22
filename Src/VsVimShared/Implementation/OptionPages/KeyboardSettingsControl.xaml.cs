@@ -15,8 +15,9 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 using Vim;
+using Vim.VisualStudio;
 
-namespace VsVim.Implementation.OptionPages
+namespace Vim.VisualStudio.Implementation.OptionPages
 {
     /// <summary>
     /// Interaction logic for KeyboardSettingsControl.xaml

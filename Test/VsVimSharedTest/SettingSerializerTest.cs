@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using VsVim.Implementation.Settings;
+using Vim.VisualStudio.Implementation.Settings;
 using Xunit;
 
-namespace VsVim.UnitTest
+namespace Vim.VisualStudio.UnitTest
 {
     public abstract class SettingSerializerTest
     {

@@ -2,10 +2,10 @@
 using Microsoft.VisualStudio;
 using Vim;
 using Vim.UnitTest;
-using VsVim.UnitTest.Utils;
+using Vim.VisualStudio.UnitTest.Utils;
 using Xunit;
 
-namespace VsVim.UnitTest
+namespace Vim.VisualStudio.UnitTest
 {
     public sealed class OleCommandUtilTest : VimTestBase
     {

@@ -6,12 +6,12 @@ using Moq;
 using System;
 using System.Collections.Generic;
 using Vim.UnitTest;
-using VsVim.Implementation.ExternalEdit;
-using VsVim.Implementation.ReSharper;
-using VsVim.UnitTest.Mock;
+using Vim.VisualStudio.Implementation.ExternalEdit;
+using Vim.VisualStudio.Implementation.ReSharper;
+using Vim.VisualStudio.UnitTest.Mock;
 using Xunit;
 
-namespace VsVim.UnitTest
+namespace Vim.VisualStudio.UnitTest
 {
     public abstract class ReSharperUtilTest : VimTestBase
     {

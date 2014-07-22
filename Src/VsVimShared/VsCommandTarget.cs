@@ -17,7 +17,7 @@ using Vim;
 using Vim.Extensions;
 using Vim.UI.Wpf;
 
-namespace VsVim
+namespace Vim.VisualStudio
 {
     /// <summary>
     /// This class needs to intercept commands which the core VIM engine wants to process and call into the VIM engine 

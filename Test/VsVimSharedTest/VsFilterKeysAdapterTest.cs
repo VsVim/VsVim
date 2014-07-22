@@ -5,7 +5,7 @@ using Moq;
 using Xunit;
 using Vim;
 
-namespace VsVim.UnitTest
+namespace Vim.VisualStudio.UnitTest
 {
     public class VsFilterKeysAdapterTest
     {

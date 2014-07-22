@@ -2,7 +2,7 @@
 using System.Runtime.InteropServices;
 using Microsoft.VisualStudio;
 
-namespace VsVim
+namespace Vim.VisualStudio
 {
     /// <summary>
     /// Container for the 4 common pieces of data which are needed for an OLE

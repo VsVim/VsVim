@@ -1,7 +1,7 @@
 ﻿using System;
 using Microsoft.VisualStudio.Language.NavigateTo.Interfaces;
 
-namespace VsVim.Implementation.NavigateTo
+namespace Vim.VisualStudio.Implementation.NavigateTo
 {
     /// <summary>
     /// WARNING!!!  This class executes entirely on a background thread.  

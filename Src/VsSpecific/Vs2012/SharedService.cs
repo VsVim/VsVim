@@ -4,7 +4,7 @@ using Microsoft.VisualStudio.Platform.WindowManagement;
 using Microsoft.VisualStudio.PlatformUI.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 
-namespace VsVim.Vs2012
+namespace Vim.VisualStudio.Vs2012
 {
     internal sealed class SharedService : ISharedService
     {

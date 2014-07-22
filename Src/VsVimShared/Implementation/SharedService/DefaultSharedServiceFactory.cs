@@ -1,6 +1,6 @@
 ﻿using Microsoft.VisualStudio.Shell.Interop;
 
-namespace VsVim.Implementation.SharedService
+namespace Vim.VisualStudio.Implementation.SharedService
 {
     internal sealed class DefaultSharedServiceFactory : ISharedServiceVersionFactory
     {

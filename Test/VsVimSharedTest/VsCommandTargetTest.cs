@@ -10,13 +10,13 @@ using Xunit;
 using Vim;
 using Vim.Extensions;
 using Vim.UnitTest;
-using VsVim.Implementation;
-using VsVim.Implementation.Misc;
+using Vim.VisualStudio.Implementation;
+using Vim.VisualStudio.Implementation.Misc;
 using Microsoft.VisualStudio.Text;
 using System.Collections.Generic;
-using VsVim.Implementation.ReSharper;
+using Vim.VisualStudio.Implementation.ReSharper;
 
-namespace VsVim.UnitTest
+namespace Vim.VisualStudio.UnitTest
 {
     public abstract class VsCommandTargetTest : VimTestBase
     {

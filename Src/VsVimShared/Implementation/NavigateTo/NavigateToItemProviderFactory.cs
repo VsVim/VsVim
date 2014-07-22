@@ -8,7 +8,7 @@ using Microsoft.VisualStudio.Text.Editor;
 using Vim;
 using System.Windows.Input;
 
-namespace VsVim.Implementation.NavigateTo
+namespace Vim.VisualStudio.Implementation.NavigateTo
 {
     /// <summary>
     /// Certain implementations of the NagivateTo / QuickSearch feature will select the

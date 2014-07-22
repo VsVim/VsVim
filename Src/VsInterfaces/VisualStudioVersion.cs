@@ -1,5 +1,5 @@
 ﻿
-namespace VsVim
+namespace Vim.VisualStudio
 {
     /// <summary>
     /// Known Visual Studio versions

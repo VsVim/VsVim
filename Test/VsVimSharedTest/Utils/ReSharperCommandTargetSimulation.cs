@@ -9,7 +9,7 @@ using EditorUtils;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.Text;
 
-namespace VsVim.UnitTest.Utils
+namespace Vim.VisualStudio.UnitTest.Utils
 {
     /// <summary>
     /// Simulation of the R# command target.  This is intended to implement the most basic of 

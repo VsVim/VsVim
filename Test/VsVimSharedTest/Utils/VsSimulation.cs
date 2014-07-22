@@ -15,10 +15,10 @@ using Vim.Extensions;
 using Vim.UI.Wpf;
 using Vim.UI.Wpf.UnitTest;
 using Vim.UnitTest;
-using VsVim.Implementation.Misc;
-using VsVim.Implementation.ReSharper;
+using Vim.VisualStudio.Implementation.Misc;
+using Vim.VisualStudio.Implementation.ReSharper;
 
-namespace VsVim.UnitTest.Utils
+namespace Vim.VisualStudio.UnitTest.Utils
 {
     /// <summary>
     /// This class attempts to simulate key input in Visual Studio.  The intent

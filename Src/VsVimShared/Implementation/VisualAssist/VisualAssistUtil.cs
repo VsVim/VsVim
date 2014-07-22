@@ -11,7 +11,7 @@ using Microsoft.Win32;
 using Vim;
 using Vim.Extensions;
 
-namespace VsVim.Implementation.VisualAssist
+namespace Vim.VisualStudio.Implementation.VisualAssist
 {
     [ContentType(VimConstants.ContentType)]
     [TextViewRole(PredefinedTextViewRoles.Editable)]

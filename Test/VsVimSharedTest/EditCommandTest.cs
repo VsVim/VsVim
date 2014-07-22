@@ -2,7 +2,7 @@
 using Xunit;
 using Vim;
 
-namespace VsVim.UnitTest
+namespace Vim.VisualStudio.UnitTest
 {
     /// <summary>
     ///This is a test class for EditCommandTest and is intended

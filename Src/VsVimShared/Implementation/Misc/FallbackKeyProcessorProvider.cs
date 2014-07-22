@@ -7,7 +7,7 @@ using Microsoft.VisualStudio.Shell;
 using Vim;
 using Microsoft.VisualStudio.Shell.Interop;
 
-namespace VsVim.Implementation.Misc
+namespace Vim.VisualStudio.Implementation.Misc
 {
     /// <summary>
     /// The fallback key processor provider inserts a processor inbetween

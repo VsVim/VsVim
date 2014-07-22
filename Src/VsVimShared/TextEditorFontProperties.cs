@@ -10,7 +10,7 @@ using System.Windows;
 using System.Windows.Media;
 using Vim;
 
-namespace VsVim
+namespace Vim.VisualStudio
 {
     /// <summary>
     /// Exposes the font family and font size of the Visual Studio text editor

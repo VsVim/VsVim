@@ -2,7 +2,7 @@
 using System.Runtime.InteropServices;
 using Microsoft.VisualStudio;
 
-namespace VsVim
+namespace Vim.VisualStudio
 {
     public struct Result<T>
     {

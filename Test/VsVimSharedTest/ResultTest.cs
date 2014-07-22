@@ -1,6 +1,6 @@
 ﻿using Xunit;
 
-namespace VsVim.UnitTest
+namespace Vim.VisualStudio.UnitTest
 {
     public sealed class ResultTest
     {

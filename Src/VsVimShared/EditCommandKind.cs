@@ -1,5 +1,5 @@
 ﻿
-namespace VsVim
+namespace Vim.VisualStudio
 {
     /// <summary>
     /// Kind of Command in Visual Studio.  It's an attempt to unify the different command groups which 

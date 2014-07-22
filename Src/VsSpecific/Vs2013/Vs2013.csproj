@@ -7,11 +7,11 @@
     <PlatformTarget>x86</PlatformTarget>
     <ProductVersion>8.0.30703</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{ca760951-31f6-40b1-bab5-68cb26816abe}</ProjectGuid>
+    <ProjectGuid>{CA760951-31F6-40B1-BAB5-68CB26816ABE}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>VsVim.Vs2013</RootNamespace>
-    <AssemblyName>VsVim.Vs2013</AssemblyName>
+    <RootNamespace>Vim.VisualStudio.Vs2013</RootNamespace>
+    <AssemblyName>Vim.VisualStudio.Vs2013</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <TargetFrameworkProfile>
     </TargetFrameworkProfile>

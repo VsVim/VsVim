@@ -41,12 +41,29 @@ namespace Vim.UnitTest
         public sealed class NamingTest : CodeHygieneTest
         {
             [Fact]
-            public void Namespace()
+            public void TestNamespace()
             {
                 const string prefix = "Vim.UnitTest.";
                 foreach (var type in _testAssembly.GetTypes().Where(x => x.IsPublic))
                 {
                     Assert.True(type.FullName.StartsWith(prefix, StringComparison.Ordinal));
+                }
+            }
+
+            [Fact]
+            public void CodeNamespace()
+            {
+                const string prefix = "Vim.";
+                foreach (var type in typeof(IVim).Assembly.GetTypes())
+                {
+                    if (type.FullName.StartsWith("<Startup", StringComparison.Ordinal) ||
+                        type.FullName.StartsWith("Microsoft.FSharp", StringComparison.Ordinal) ||
+                        type.FullName.StartsWith("Microsoft.BuildSettings", StringComparison.Ordinal))
+                    {
+                        continue;
+                    }
+
+                    Assert.True(type.FullName.StartsWith(prefix, StringComparison.Ordinal), string.Format("Type {0} has incorrect prefix", type.FullName));
                 }
             }
 

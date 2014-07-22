@@ -5,7 +5,7 @@ using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Utilities;
 using Vim;
 
-namespace VsVim.Implementation.ConflictingKey
+namespace Vim.VisualStudio.Implementation.ConflictingKey
 {
     [Export(typeof(IVimBufferCreationListener))]
     internal sealed class ConflictingKeyBindingMarginProvider : IVimBufferCreationListener

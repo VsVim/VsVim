@@ -7,7 +7,7 @@ using System.Windows;
 using Microsoft.VisualStudio.Text.Classification;
 using Microsoft.VisualStudio.Text.Editor;
 
-namespace VsVim.Implementation.ToastNotification
+namespace Vim.VisualStudio.Implementation.ToastNotification
 {
     internal sealed class ToastNotificationService : IToastNotificationService, IWpfTextViewMargin
     {

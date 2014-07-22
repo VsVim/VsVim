@@ -1,7 +1,7 @@
 ﻿using Microsoft.VisualStudio.Text.Editor;
 using Vim;
 
-namespace VsVim
+namespace Vim.VisualStudio
 {
     /// <summary>
     /// This represents an abstraction over the Report Expression Designer.  This is a custom hosting

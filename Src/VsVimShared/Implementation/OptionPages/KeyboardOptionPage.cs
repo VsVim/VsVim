@@ -10,7 +10,7 @@ using System.Windows.Forms.Integration;
 using Vim;
 using Vim.UI.Wpf;
 
-namespace VsVim.Implementation.OptionPages
+namespace Vim.VisualStudio.Implementation.OptionPages
 {
     public sealed class KeyboardOptionPage : DialogPage
     {

@@ -2,7 +2,7 @@
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 
-namespace VsVim
+namespace Vim.VisualStudio
 {
     public enum DocumentLoad
     {

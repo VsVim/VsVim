@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace VsVim
+namespace Vim.VisualStudio
 {
     /// <summary>
     /// The values in this class must match up with the IDSymbol values in VsVim.vsct

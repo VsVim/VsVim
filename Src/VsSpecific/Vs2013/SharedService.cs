@@ -6,7 +6,7 @@ using Microsoft.VisualStudio.PlatformUI.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio;
 
-namespace VsVim.Vs2013
+namespace Vim.VisualStudio.Vs2013
 {
     internal sealed class SharedService : ISharedService
     {

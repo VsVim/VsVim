@@ -12,10 +12,10 @@ using Xunit;
 using Vim;
 using Vim.UI.Wpf;
 using Vim.UnitTest;
-using VsVim.Implementation.ExternalEdit;
-using VsVim.UnitTest.Mock;
+using Vim.VisualStudio.Implementation.ExternalEdit;
+using Vim.VisualStudio.UnitTest.Mock;
 
-namespace VsVim.UnitTest
+namespace Vim.VisualStudio.UnitTest
 {
     /// <summary>
     /// Tests for the ExternalEditorMonitor implementation.  Need to really hammer the scenarios here

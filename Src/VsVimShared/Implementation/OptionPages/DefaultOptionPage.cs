@@ -15,7 +15,7 @@ using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Collections;
 
-namespace VsVim.Implementation.OptionPages
+namespace Vim.VisualStudio.Implementation.OptionPages
 {
     public sealed class DefaultOptionPage : DialogPage
     {

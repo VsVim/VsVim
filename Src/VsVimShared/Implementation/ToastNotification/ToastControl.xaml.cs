@@ -13,7 +13,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 
-namespace VsVim.Implementation.ToastNotification
+namespace Vim.VisualStudio.Implementation.ToastNotification
 {
     public partial class ToastControl : UserControl
     {

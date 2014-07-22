@@ -5,10 +5,10 @@ using Microsoft.VisualStudio.TextManager.Interop;
 using Moq;
 using Xunit;
 using Vim.UnitTest;
-using VsVim.Implementation.ExternalEdit;
-using VsVim.UnitTest.Mock;
+using Vim.VisualStudio.Implementation.ExternalEdit;
+using Vim.VisualStudio.UnitTest.Mock;
 
-namespace VsVim.UnitTest
+namespace Vim.VisualStudio.UnitTest
 {
     public class SnippetExternalEditAdapterTest : VimTestBase
     {

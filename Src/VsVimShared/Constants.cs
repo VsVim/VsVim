@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace VsVim
+namespace Vim.VisualStudio
 {
     // TODO: Rename to VsVimConstants to avoid ambiguity issues
     public static class Constants

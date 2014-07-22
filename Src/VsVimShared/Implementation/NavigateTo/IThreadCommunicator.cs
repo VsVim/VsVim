@@ -1,5 +1,5 @@
 ﻿
-namespace VsVim.Implementation.NavigateTo
+namespace Vim.VisualStudio.Implementation.NavigateTo
 {
     /// <summary>
     /// This interface is usable from multiple threads

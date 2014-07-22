@@ -1,6 +1,6 @@
 ﻿using Microsoft.FSharp.Core;
 using Vim;
-namespace VsVim
+namespace Vim.VisualStudio
 {
     /// <summary>
     /// Coordinates events / items specific to an IVimBuffer which are needed across multiple

@@ -8,10 +8,10 @@ using Microsoft.VisualStudio.Text.IncrementalSearch;
 using Microsoft.VisualStudio.TextManager.Interop;
 using Moq;
 using Vim.UnitTest;
-using VsVim.Implementation.Misc;
+using Vim.VisualStudio.Implementation.Misc;
 using Xunit;
 
-namespace VsVim.UnitTest
+namespace Vim.VisualStudio.UnitTest
 {
     public class VsAdapterTest : VimTestBase
     {

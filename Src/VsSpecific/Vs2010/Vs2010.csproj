@@ -10,8 +10,8 @@
     <ProjectGuid>{0DE4170C-224D-47CF-BE00-B88AA14EC804}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>VsVim.Vs2010</RootNamespace>
-    <AssemblyName>VsVim.Vs2010</AssemblyName>
+    <RootNamespace>Vim.VisualStudio.Vs2010</RootNamespace>
+    <AssemblyName>Vim.VisualStudio.Vs2010</AssemblyName>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <TargetFrameworkProfile>
     </TargetFrameworkProfile>

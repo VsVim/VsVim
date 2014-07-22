@@ -1,5 +1,5 @@
 ﻿
-namespace VsVim
+namespace Vim.VisualStudio
 {
     /// <summary>
     /// Interface for querying information about the Pro PowerTools extension

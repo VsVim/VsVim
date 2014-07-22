@@ -10,8 +10,8 @@
     <ProjectGuid>{E27DBBF1-6116-4E32-8FA5-07DCE5E62BB6}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>VsVim</RootNamespace>
-    <AssemblyName>VsVim.Interfaces</AssemblyName>
+    <RootNamespace>Vim.VisualStudio</RootNamespace>
+    <AssemblyName>Vim.VisualStudio.Interfaces</AssemblyName>
     <FileAlignment>512</FileAlignment>
     <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\</SolutionDir>
     <RestorePackages>true</RestorePackages>

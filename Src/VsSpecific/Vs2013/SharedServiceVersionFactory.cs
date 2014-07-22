@@ -2,7 +2,7 @@
 using Microsoft.VisualStudio.Shell.Interop;
 using System.ComponentModel.Composition;
 
-namespace VsVim.Vs2013
+namespace Vim.VisualStudio.Vs2013
 {
     [Export(typeof(ISharedServiceVersionFactory))]
     internal sealed class SharedServiceVersionFactory : ISharedServiceVersionFactory
