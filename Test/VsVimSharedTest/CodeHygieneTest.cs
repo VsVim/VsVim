@@ -17,7 +17,7 @@ namespace Vim.VisualStudio.UnitTest
         [Fact]
         public void TestNamespace()
         {
-            const string prefix = "Vim.VisualStudio.Shared.UnitTest.";
+            const string prefix = "Vim.VisualStudio.UnitTest.";
             foreach (var type in _assembly.GetTypes().Where(x => x.IsPublic))
             {
                 Assert.True(type.FullName.StartsWith(prefix, StringComparison.Ordinal), String.Format("Wrong namespace prefix on {0}", type.FullName));
