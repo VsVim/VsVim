@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace VsVim.Settings {
+namespace Vim.VisualStudio.Settings {
     
     
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]

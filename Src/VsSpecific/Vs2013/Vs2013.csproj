@@ -10,7 +10,7 @@
     <ProjectGuid>{CA760951-31F6-40B1-BAB5-68CB26816ABE}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>VsVim.Vs2013</RootNamespace>
+    <RootNamespace>Vim.VisualStudio.Vs2013</RootNamespace>
     <AssemblyName>Vim.VisualStudio.Vs2013</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <TargetFrameworkProfile>
