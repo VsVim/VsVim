@@ -7,7 +7,7 @@ using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.TextManager.Interop;
 using Vim;
 
-namespace VsVim.Implementation.Misc
+namespace Vim.VisualStudio.Implementation.Misc
 {
     [Export(typeof(IReportDesignerUtil))]
     internal sealed class ReportDesignerUtil : IReportDesignerUtil

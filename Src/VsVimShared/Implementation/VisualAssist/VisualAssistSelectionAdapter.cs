@@ -3,7 +3,7 @@ using System.ComponentModel.Composition;
 using Microsoft.VisualStudio.Text.Editor;
 using Vim;
 
-namespace VsVim.Implementation.VisualAssist
+namespace Vim.VisualStudio.Implementation.VisualAssist
 {
     [Export(typeof(IVisualModeSelectionOverride))]
     internal sealed class VisualAssistSelectionAdapter : IVisualModeSelectionOverride

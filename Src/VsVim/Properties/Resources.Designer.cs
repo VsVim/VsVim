@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace VsVim.Properties {
+namespace Vim.VisualStudio.Properties {
     using System;
     
     

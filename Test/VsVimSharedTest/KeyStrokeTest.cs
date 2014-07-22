@@ -2,7 +2,7 @@
 using Vim.UnitTest;
 using Xunit;
 
-namespace VsVim.UnitTest
+namespace Vim.VisualStudio.UnitTest
 {
     public abstract class KeyStrokeTest
     {

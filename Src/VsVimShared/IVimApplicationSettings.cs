@@ -3,7 +3,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using Vim;
 
-namespace VsVim
+namespace Vim.VisualStudio
 {
     /// <summary>
     /// Arguments passed to application settings changed event handlers

@@ -14,7 +14,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 
-namespace VsVim.Implementation.UpgradeNotification
+namespace Vim.VisualStudio.Implementation.UpgradeNotification
 {
     public partial class LinkBanner : UserControl
     {

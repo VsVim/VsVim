@@ -5,7 +5,7 @@ using System.Text;
 using Vim.UnitTest;
 using Xunit;
 
-namespace VsVim.UnitTest
+namespace Vim.VisualStudio.UnitTest
 {
     public abstract class CommandIdTest
     {

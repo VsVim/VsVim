@@ -3,7 +3,7 @@ using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Tagging;
 using Microsoft.VisualStudio.TextManager.Interop;
 
-namespace VsVim.Implementation.ExternalEdit
+namespace Vim.VisualStudio.Implementation.ExternalEdit
 {
     [Export(typeof(IExternalEditAdapter))]
     internal sealed class SnippetExternalEditAdapter : IExternalEditAdapter

@@ -5,7 +5,7 @@ using EnvDTE;
 using Vim;
 using EditorUtils;
 
-namespace VsVim
+namespace Vim.VisualStudio
 {
     /// <summary>
     /// Snapshot of the current key binding state

@@ -5,7 +5,7 @@ using Vim;
 using Vim.Extensions;
 using Vim.UI.Wpf;
 
-namespace VsVim.Implementation.Misc
+namespace Vim.VisualStudio.Implementation.Misc
 {
     [Export(typeof(IKeyProcessorProvider))]
     [Order(Before = Constants.FallbackKeyProcessorName)]

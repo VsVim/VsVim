@@ -7,7 +7,7 @@ using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.Win32;
 
-namespace VsVim.Implementation.Misc
+namespace Vim.VisualStudio.Implementation.Misc
 {
     internal enum ScopeKind
     {

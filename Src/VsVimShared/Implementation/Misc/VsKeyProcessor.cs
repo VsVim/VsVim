@@ -7,7 +7,7 @@ using Microsoft.VisualStudio.Text.Editor;
 using Vim;
 using Vim.UI.Wpf;
 
-namespace VsVim.Implementation.Misc
+namespace Vim.VisualStudio.Implementation.Misc
 {
     /// <summary>
     /// This is the Visual Studio specific implementation of the typical Vim key processor.  The

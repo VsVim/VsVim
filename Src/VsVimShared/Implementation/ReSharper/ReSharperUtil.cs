@@ -10,7 +10,7 @@ using Microsoft.VisualStudio.TextManager.Interop;
 using Microsoft.VisualStudio.Utilities;
 using Vim;
 
-namespace VsVim.Implementation.ReSharper
+namespace Vim.VisualStudio.Implementation.ReSharper
 {
     [ContentType(VimConstants.ContentType)]
     [TextViewRole(PredefinedTextViewRoles.Editable)]

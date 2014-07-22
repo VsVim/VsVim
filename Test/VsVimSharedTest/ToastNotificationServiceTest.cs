@@ -4,10 +4,10 @@ using System.Windows.Controls;
 using Microsoft.VisualStudio.Text.Classification;
 using Microsoft.VisualStudio.Text.Editor;
 using Vim.UnitTest;
-using VsVim.Implementation.ToastNotification;
+using Vim.VisualStudio.Implementation.ToastNotification;
 using Xunit;
 
-namespace VsVim.UnitTest
+namespace Vim.VisualStudio.UnitTest
 {
     public sealed class ToastNotificationServiceTest : VimTestBase
     {

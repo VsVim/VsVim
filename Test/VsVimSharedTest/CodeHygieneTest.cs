@@ -5,7 +5,7 @@ using System.Reflection;
 using System.Text;
 using Xunit;
 
-namespace VsVim.UnitTest
+namespace Vim.VisualStudio.UnitTest
 {
     /// <summary>
     /// Pedantic code hygiene tests for the code base
@@ -17,7 +17,7 @@ namespace VsVim.UnitTest
         [Fact]
         public void Namespace()
         {
-            const string prefix = "VsVim.UnitTest.";
+            const string prefix = "Vim.VisualStudio.Shared.UnitTest.";
             foreach (var type in _assembly.GetTypes().Where(x => x.IsPublic))
             {
                 Assert.True(type.FullName.StartsWith(prefix, StringComparison.Ordinal), String.Format("Wrong namespace prefix on {0}", type.FullName));

@@ -1,7 +1,7 @@
 ﻿using System;
 using Vim;
 
-namespace VsVim
+namespace Vim.VisualStudio
 {
     /// <summary>
     /// Represents a Command in Visual Studio 
@@ -48,7 +48,7 @@ namespace VsVim
 
         internal bool IsPaste
         {
-            get { return EditCommandKind == VsVim.EditCommandKind.Paste; }
+            get { return EditCommandKind == EditCommandKind.Paste; }
         }
 
         internal EditCommand(

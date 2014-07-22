@@ -10,11 +10,11 @@ using System.Text;
 using Vim;
 using Vim.UI.Wpf;
 using Vim.UnitTest;
-using VsVim.Implementation.Misc;
+using Vim.VisualStudio.Implementation.Misc;
 using Xunit;
 using Microsoft.VisualStudio.Utilities;
 
-namespace VsVim.UnitTest
+namespace Vim.VisualStudio.UnitTest
 {
     public abstract class HostFactoryTest : VimTestBase
     {

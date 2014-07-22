@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using Vim;
 
-namespace VsVim
+namespace Vim.VisualStudio
 {
     /// <summary>
     /// Represents a Visual Studio key stroke for the purpose of command binding.  Need

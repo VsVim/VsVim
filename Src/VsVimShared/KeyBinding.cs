@@ -6,7 +6,7 @@ using System.Text;
 using Vim;
 using EditorUtils;
 
-namespace VsVim
+namespace Vim.VisualStudio
 {
     /// <summary>
     /// KeyBinding in Visual Studio as set through the Key board part of the Environment options

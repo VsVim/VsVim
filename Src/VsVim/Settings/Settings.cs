@@ -1,5 +1,5 @@
 ﻿using System.Collections.Generic;
-namespace VsVim.Settings {
+namespace Vim.VisualStudio.Settings {
     
     
     // This class allows you to handle specific events on the settings class:
@@ -9,12 +9,6 @@ namespace VsVim.Settings {
     //  The SettingsSaving event is raised before the setting values are saved.
     internal sealed partial class Settings {
 
-        internal CommandBindingSetting[] RemovedBindings
-        {
-            get { return RemovedBindingsRaw ?? new CommandBindingSetting[]{}; }
-            set { RemovedBindingsRaw = value; }
-        }
-        
         public Settings() {
             // // To add event handlers for saving and changing settings, uncomment the lines below:
             //

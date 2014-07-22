@@ -4,8 +4,9 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using EnvDTE;
 using EditorUtils;
+using DteCommand = EnvDTE.Command;
 
-namespace VsVim
+namespace Vim.VisualStudio
 {
     /// <summary>
     /// Snapshot of the state of the DTE.Commands and their KeyBindings
@@ -14,7 +15,7 @@ namespace VsVim
     {
         struct CommandData
         {
-            internal Command Command;
+            internal DteCommand Command;
             internal ReadOnlyCollection<CommandKeyBinding> CommandKeyBindings;
         }
 
@@ -36,7 +37,7 @@ namespace VsVim
 
         }
 
-        public CommandListSnapshot(IEnumerable<Command> commands)
+        public CommandListSnapshot(IEnumerable<DteCommand> commands)
         {
             var list = new List<CommandKeyBinding>();
             foreach (var command in commands)
@@ -75,7 +76,7 @@ namespace VsVim
             return commandData.CommandKeyBindings.Contains(commandKeyBinding);
         }
 
-        public bool TryGetCommand(CommandId id, out Command command)
+        public bool TryGetCommand(CommandId id, out DteCommand command)
         {
             ReadOnlyCollection<CommandKeyBinding> bindings;
             return TryGetCommandData(id, out command, out bindings);
@@ -83,11 +84,11 @@ namespace VsVim
 
         public bool TryGetCommandKeyBindings(CommandId id, out ReadOnlyCollection<CommandKeyBinding> bindings)
         {
-            Command command;
+            DteCommand command;
             return TryGetCommandData(id, out command, out bindings);
         }
 
-        public bool TryGetCommandData(CommandId id, out Command command, out ReadOnlyCollection<CommandKeyBinding> bindings)
+        public bool TryGetCommandData(CommandId id, out DteCommand command, out ReadOnlyCollection<CommandKeyBinding> bindings)
         {
             CommandData commandData;
             if (!_commandMap.TryGetValue(id, out commandData))

@@ -5,7 +5,7 @@ using System.Text;
 using System.Windows;
 using Microsoft.VisualStudio.Text.Editor;
 
-namespace VsVim
+namespace Vim.VisualStudio
 {
     public interface IToastNotificationService
     {

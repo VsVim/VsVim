@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace VsVim.Implementation.Settings
+namespace Vim.VisualStudio.Implementation.Settings
 {
     internal static class SettingSerializer
     {

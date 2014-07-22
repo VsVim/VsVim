@@ -1,7 +1,7 @@
 ﻿using System.Windows;
 using System.Windows.Controls;
 
-namespace VsVim.Implementation.OptionPages
+namespace Vim.VisualStudio.Implementation.OptionPages
 {
     /// <summary>
     /// Selects the appropriate expanded/collapsed template when showing a KeyBindingOption

@@ -13,7 +13,7 @@ using Microsoft.VisualStudio.TextManager.Interop;
 using Vim;
 using IServiceProvider = System.IServiceProvider;
 
-namespace VsVim.Implementation.Misc
+namespace Vim.VisualStudio.Implementation.Misc
 {
     [Export(typeof(ITextManager))]
     internal sealed class TextManager : ITextManager

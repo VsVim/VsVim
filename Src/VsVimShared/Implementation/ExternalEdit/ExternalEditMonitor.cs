@@ -12,7 +12,7 @@ using Vim.Extensions;
 using Vim.UI.Wpf;
 using EditorUtils;
 
-namespace VsVim.Implementation.ExternalEdit
+namespace Vim.VisualStudio.Implementation.ExternalEdit
 {
     internal sealed class ExternalEditMonitor
     {

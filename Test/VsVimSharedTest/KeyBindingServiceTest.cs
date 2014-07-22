@@ -7,14 +7,14 @@ using Moq;
 using Xunit;
 using Vim;
 using Vim.UI.Wpf;
-using VsVim.Implementation;
-using VsVim.UnitTest.Mock;
+using Vim.VisualStudio.Implementation;
+using Vim.VisualStudio.UnitTest.Mock;
 using Vim.UnitTest;
-using VsVim.Implementation.Misc;
+using Vim.VisualStudio.Implementation.Misc;
 using EditorUtils;
 using Microsoft.VisualStudio;
 
-namespace VsVim.UnitTest
+namespace Vim.VisualStudio.UnitTest
 {
     public abstract class KeyBindingServiceTest : VimTestBase
     {
@@ -99,7 +99,7 @@ namespace VsVim.UnitTest
             private static CommandKeyBinding CreateCommandKeyBinding(KeyInput input, KeyModifiers modifiers = KeyModifiers.None, string name = "again", string scope = "Global")
             {
                 var stroke = new KeyStroke(input, modifiers);
-                var key = new VsVim.KeyBinding(scope, stroke);
+                var key = new KeyBinding(scope, stroke);
                 return new CommandKeyBinding(new CommandId(), name, key);
             }
 

@@ -5,10 +5,10 @@ using Moq;
 using Xunit;
 using Vim;
 using Vim.UnitTest;
-using VsVim.Implementation.Misc;
+using Vim.VisualStudio.Implementation.Misc;
 using EditorUtils;
 
-namespace VsVim.UnitTest
+namespace Vim.VisualStudio.UnitTest
 {
     public sealed class MindScapeTest : VimTestBase
     {

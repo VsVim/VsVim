@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using Vim;
 
-namespace VsVim
+namespace Vim.VisualStudio
 {
     public enum ConflictingKeyBindingState
     {

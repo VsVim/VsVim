@@ -8,7 +8,7 @@ using System.Windows.Input;
 using Vim;
 using Vim.UI.Wpf;
 
-namespace VsVim.Implementation.Misc
+namespace Vim.VisualStudio.Implementation.Misc
 {
     /// <summary>
     /// The fallback key processor handles all the keys VsVim had to unbind

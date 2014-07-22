@@ -10,7 +10,7 @@ using Microsoft.VisualStudio.TextManager.Interop;
 using Moq;
 using Moq.Language.Flow;
 
-namespace VsVim.UnitTest
+namespace Vim.VisualStudio.UnitTest
 {
     internal static class UnitTestExtensions
     {

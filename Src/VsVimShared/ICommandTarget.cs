@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using Microsoft.VisualStudio.OLE.Interop;
 
-namespace VsVim
+namespace Vim.VisualStudio
 {
     internal enum CommandStatus
     {

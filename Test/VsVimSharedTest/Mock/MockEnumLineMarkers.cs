@@ -2,7 +2,7 @@
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.TextManager.Interop;
 
-namespace VsVim.UnitTest.Mock
+namespace Vim.VisualStudio.UnitTest.Mock
 {
     public class MockEnumLineMarkers : IVsEnumLineMarkers
     {

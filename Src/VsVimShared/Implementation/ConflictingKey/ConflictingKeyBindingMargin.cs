@@ -4,7 +4,7 @@ using System.Windows.Media;
 using Microsoft.VisualStudio.Text.Classification;
 using Microsoft.VisualStudio.Text.Editor;
 
-namespace VsVim.Implementation.ConflictingKey
+namespace Vim.VisualStudio.Implementation.ConflictingKey
 {
     internal sealed class ConflictingKeyBindingMargin 
     {

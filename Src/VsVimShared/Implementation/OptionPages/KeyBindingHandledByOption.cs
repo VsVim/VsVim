@@ -2,7 +2,7 @@
 using System.Linq;
 using System.Windows;
 
-namespace VsVim.Implementation.OptionPages
+namespace Vim.VisualStudio.Implementation.OptionPages
 {
     public sealed class KeyBindingHandledByOption : DependencyObject
     {

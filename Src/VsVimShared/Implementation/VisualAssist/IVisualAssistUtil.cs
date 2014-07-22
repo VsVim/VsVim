@@ -1,6 +1,6 @@
 ﻿
 using System;
-namespace VsVim.Implementation.VisualAssist
+namespace Vim.VisualStudio.Implementation.VisualAssist
 {
     /// <summary>
     /// Interface for shared services related to Visual Assist

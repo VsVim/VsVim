@@ -9,7 +9,7 @@ using Vim.Extensions;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio;
 
-namespace VsVim.Implementation.OptionPages
+namespace Vim.VisualStudio.Implementation.OptionPages
 {
     [Export(typeof(IKeyboardOptionsProvider))]
     internal sealed class KeyboardOptionsProvider : IKeyboardOptionsProvider

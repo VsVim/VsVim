@@ -9,7 +9,7 @@ using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Utilities;
 using Vim;
 
-namespace VsVim.Implementation.ReSharper
+namespace Vim.VisualStudio.Implementation.ReSharper
 {
     internal sealed class ReSharperKeyUtil : KeyProcessor, ICommandTarget
     {

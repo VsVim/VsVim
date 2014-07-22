@@ -8,7 +8,7 @@ using Microsoft.VisualStudio.Shell;
 using Vim.UI.Wpf;
 using Vim;
 
-namespace VsVim.Implementation.Settings
+namespace Vim.VisualStudio.Implementation.Settings
 {
     [Export(typeof(IVimApplicationSettings))]
     internal sealed class VimApplicationSettings : IVimApplicationSettings

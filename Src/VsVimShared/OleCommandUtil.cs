@@ -4,7 +4,7 @@ using Microsoft.VisualStudio;
 using Vim;
 using Vim.Extensions;
 
-namespace VsVim
+namespace Vim.VisualStudio
 {
     internal static class OleCommandUtil
     {

@@ -7,9 +7,9 @@ using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Moq;
 using Xunit;
-using VsVim.Implementation.Misc;
+using Vim.VisualStudio.Implementation.Misc;
 
-namespace VsVim.UnitTest
+namespace Vim.VisualStudio.UnitTest
 {
     public class TextManagerTest
     {

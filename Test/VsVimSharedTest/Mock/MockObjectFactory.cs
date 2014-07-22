@@ -8,7 +8,7 @@ using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.TextManager.Interop;
 using Moq;
 
-namespace VsVim.UnitTest.Mock
+namespace Vim.VisualStudio.UnitTest.Mock
 {
     public static class MockObjectFactory
     {

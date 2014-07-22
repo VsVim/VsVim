@@ -9,7 +9,7 @@ using System.Text;
 using System.Windows;
 using Vim;
 
-namespace VsVim.Implementation.UpgradeNotification
+namespace Vim.VisualStudio.Implementation.UpgradeNotification
 {
     [Export(typeof(IVimBufferCreationListener))]
     [ContentType(VimConstants.ContentType)]

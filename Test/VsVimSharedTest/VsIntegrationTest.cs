@@ -4,11 +4,11 @@ using Microsoft.VisualStudio.Text.Editor;
 using Vim;
 using Vim.Extensions;
 using Vim.UnitTest;
-using VsVim.Implementation.Misc;
-using VsVim.UnitTest.Utils;
+using Vim.VisualStudio.Implementation.Misc;
+using Vim.VisualStudio.UnitTest.Utils;
 using Xunit;
 
-namespace VsVim.UnitTest
+namespace Vim.VisualStudio.UnitTest
 {
     /// <summary>
     /// Used to simulate integration scenarios with Visual Studio

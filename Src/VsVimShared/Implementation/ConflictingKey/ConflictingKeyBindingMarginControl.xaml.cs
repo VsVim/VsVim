@@ -12,7 +12,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 
-namespace VsVim.Implementation.ConflictingKey
+namespace Vim.VisualStudio.Implementation.ConflictingKey
 {
     /// <summary>
     /// Interaction logic for ConflictingKeyBindingsMargin.xaml

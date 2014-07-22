@@ -2,7 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-namespace VsVim
+namespace Vim.VisualStudio
 {
     /// <summary>
     /// Id of an EnvDTE.Command object.  The Name portion of a Command is optional and doesn't

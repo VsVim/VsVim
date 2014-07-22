@@ -9,10 +9,10 @@ using Microsoft.VisualStudio.TextManager.Interop;
 using Moq;
 using Vim;
 using Vim.UnitTest;
-using VsVim.Implementation.Misc;
+using Vim.VisualStudio.Implementation.Misc;
 using Xunit;
 
-namespace VsVim.UnitTest
+namespace Vim.VisualStudio.UnitTest
 {
     public abstract class ReportDesignerUtilTest : VimTestBase
     {

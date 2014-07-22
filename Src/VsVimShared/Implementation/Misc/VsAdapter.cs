@@ -17,7 +17,7 @@ using Microsoft.VisualStudio.Text.Projection;
 using Microsoft.VisualStudio.TextManager.Interop;
 using Vim;
 
-namespace VsVim.Implementation.Misc
+namespace Vim.VisualStudio.Implementation.Misc
 {
     [Export(typeof(IVsAdapter))]
     internal sealed class VsAdapter : IVsAdapter

@@ -4,7 +4,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using Microsoft.VisualStudio.Text.Tagging;
 
-namespace VsVim.Implementation.ReSharper
+namespace Vim.VisualStudio.Implementation.ReSharper
 {
     internal interface IReSharperEditTagDetector
     {

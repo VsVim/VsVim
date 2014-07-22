@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Runtime.InteropServices;
 
-namespace VsVim.UnitTest.Utils
+namespace Vim.VisualStudio.UnitTest.Utils
 {
     public sealed class CharPointer : IDisposable
     {

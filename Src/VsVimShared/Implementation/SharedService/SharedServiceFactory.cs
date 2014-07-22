@@ -5,7 +5,7 @@ using EnvDTE;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 
-namespace VsVim.Implementation.SharedService
+namespace Vim.VisualStudio.Implementation.SharedService
 {
     [Export(typeof(ISharedServiceFactory))]
     internal sealed class SharedServiceFactory : ISharedServiceFactory

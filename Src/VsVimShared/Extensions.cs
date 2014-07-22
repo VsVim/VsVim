@@ -23,15 +23,15 @@ using Microsoft.VisualStudio.TextManager.Interop;
 using Microsoft.VisualStudio.Utilities;
 using Vim;
 using Vim.Extensions;
-using Command = EnvDTE.Command;
+using DteCommand = EnvDTE.Command;
 
-namespace VsVim
+namespace Vim.VisualStudio
 {
     public static class Extensions
     {
         #region Command
 
-        public static bool TryGetCommandId(this Command command, out CommandId commandId)
+        public static bool TryGetCommandId(this DteCommand command, out CommandId commandId)
         {
             try
             {
@@ -47,7 +47,7 @@ namespace VsVim
             }
         }
 
-        public static bool TryGetName(this Command command, out string name)
+        public static bool TryGetName(this DteCommand command, out string name)
         {
             try
             {
@@ -65,7 +65,7 @@ namespace VsVim
         /// Get the binding strings for this Command.  Digs through the various ways a 
         /// binding string can be stored and returns a uniform result
         /// </summary>
-        public static IEnumerable<string> GetBindings(this Command command)
+        public static IEnumerable<string> GetBindings(this DteCommand command)
         {
             if (null == command)
             {
@@ -106,7 +106,7 @@ namespace VsVim
         /// <summary>
         /// Get the binding strings in the form of CommandKeyBinding instances
         /// </summary>
-        public static IEnumerable<CommandKeyBinding> GetCommandKeyBindings(this Command command)
+        public static IEnumerable<CommandKeyBinding> GetCommandKeyBindings(this DteCommand command)
         {
             if (null == command)
             {
@@ -117,7 +117,7 @@ namespace VsVim
             return GetCommandKeyBindingsHelper(command);
         }
 
-        private static IEnumerable<CommandKeyBinding> GetCommandKeyBindingsHelper(Command command)
+        private static IEnumerable<CommandKeyBinding> GetCommandKeyBindingsHelper(DteCommand command)
         {
             CommandId commandId;
             if (!command.TryGetCommandId(out commandId))
@@ -135,7 +135,7 @@ namespace VsVim
             }
         }
 
-        public static IEnumerable<KeyBinding> GetKeyBindings(this Command command)
+        public static IEnumerable<KeyBinding> GetKeyBindings(this DteCommand command)
         {
             return GetCommandKeyBindings(command).Select(x => x.KeyBinding);
         }
@@ -143,7 +143,7 @@ namespace VsVim
         /// <summary>
         /// Does the Command have the provided KeyBinding as a valid binding
         /// </summary>
-        public static bool HasKeyBinding(this Command command, KeyBinding binding)
+        public static bool HasKeyBinding(this DteCommand command, KeyBinding binding)
         {
             return GetCommandKeyBindings(command).Any(x => x.KeyBinding == binding);
         }
@@ -152,7 +152,7 @@ namespace VsVim
         /// Remove all bindings on the provided Command value
         /// </summary>
         /// <param name="command"></param>
-        public static void SafeResetBindings(this Command command)
+        public static void SafeResetBindings(this DteCommand command)
         {
             try
             {
@@ -168,7 +168,7 @@ namespace VsVim
         /// <summary>
         /// Safely reset the bindings on this Command to the provided KeyBinding value
         /// </summary>
-        public static void SafeSetBindings(this Command command, KeyBinding binding)
+        public static void SafeSetBindings(this DteCommand command, KeyBinding binding)
         {
             SafeSetBindings(command, new[] { binding.CommandString });
         }
@@ -176,7 +176,7 @@ namespace VsVim
         /// <summary>
         /// Safely reset the keyboard bindings on this Command to the provided values
         /// </summary>
-        public static void SafeSetBindings(this Command command, IEnumerable<string> commandBindings)
+        public static void SafeSetBindings(this DteCommand command, IEnumerable<string> commandBindings)
         {
             try
             {
@@ -207,9 +207,9 @@ namespace VsVim
 
         #region Commands
 
-        public static IEnumerable<Command> GetCommands(this Commands commands)
+        public static IEnumerable<DteCommand> GetCommands(this Commands commands)
         {
-            return commands.Cast<Command>();
+            return commands.Cast<DteCommand>();
         }
 
         #endregion

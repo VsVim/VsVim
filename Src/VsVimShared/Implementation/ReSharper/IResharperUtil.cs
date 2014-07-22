@@ -1,5 +1,5 @@
 ﻿
-namespace VsVim.Implementation.ReSharper
+namespace Vim.VisualStudio.Implementation.ReSharper
 {
     /// <summary>
     /// Interface for getting information about the R# install.  
