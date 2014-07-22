@@ -3,10 +3,11 @@ using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Xunit;
 using Vim.VisualStudio.Implementation.Misc;
+using Vim.UnitTest;
 
 namespace Vim.VisualStudio.UnitTest
 {
-    public abstract class CSharpAdapterTest : EditorHost
+    public abstract class CSharpAdapterTest : VimTestBase
     {
         private readonly CSharpAdapter _adapter;
 

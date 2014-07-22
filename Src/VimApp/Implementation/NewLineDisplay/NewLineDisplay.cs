@@ -29,8 +29,16 @@ namespace VimApp.Implementation.NewLineDisplay
             _adornmentLayer = adornmentLayer;
             _vimAppOptions = vimAppOptions;
 
+            _wpfTextView.Closed += OnClosed;
             _wpfTextView.LayoutChanged += OnLayoutChanged;
             _vimAppOptions.Changed += OnOptionsChanged;
+        }
+
+        private void OnClosed(object sender, EventArgs e)
+        {
+            _wpfTextView.Closed -= OnClosed;
+            _wpfTextView.LayoutChanged -= OnLayoutChanged;
+            _vimAppOptions.Changed -= OnOptionsChanged;
         }
 
         private void OnLayoutChanged(object sender, TextViewLayoutChangedEventArgs e)
