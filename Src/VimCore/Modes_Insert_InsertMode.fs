@@ -208,6 +208,38 @@ type internal InsertMode
         ActiveEditItem = ActiveEditItem.None
     }
 
+    /// The set of commands supported by insert mode
+    static let InsertCommandDataArray =
+        let rawCommands =
+            [
+                ("<Del>", InsertCommand.Delete, CommandFlags.Repeatable ||| CommandFlags.InsertEdit)
+                ("<Enter>", InsertCommand.InsertNewLine, CommandFlags.Repeatable ||| CommandFlags.InsertEdit)
+                ("<Left>", InsertCommand.MoveCaretWithArrow Direction.Left, CommandFlags.Movement)
+                ("<Down>", InsertCommand.MoveCaret Direction.Down, CommandFlags.Movement)
+                ("<Right>", InsertCommand.MoveCaretWithArrow Direction.Right, CommandFlags.Movement)
+                ("<Tab>", InsertCommand.InsertTab, CommandFlags.Repeatable ||| CommandFlags.InsertEdit)
+                ("<Up>", InsertCommand.MoveCaret Direction.Up, CommandFlags.Movement)
+                ("<C-i>", InsertCommand.InsertTab, CommandFlags.Repeatable ||| CommandFlags.InsertEdit)
+                ("<C-d>", InsertCommand.ShiftLineLeft, CommandFlags.Repeatable)
+                ("<C-e>", InsertCommand.InsertCharacterBelowCaret, CommandFlags.Repeatable)
+                ("<C-m>", InsertCommand.InsertNewLine, CommandFlags.Repeatable ||| CommandFlags.InsertEdit)
+                ("<C-t>", InsertCommand.ShiftLineRight, CommandFlags.Repeatable)
+                ("<C-y>", InsertCommand.InsertCharacterAboveCaret, CommandFlags.Repeatable)
+                ("<C-v>", InsertCommand.Paste, CommandFlags.Repeatable ||| CommandFlags.InsertEdit)
+                ("<C-Left>", InsertCommand.MoveCaretByWord Direction.Left, CommandFlags.Movement)
+                ("<C-Right>", InsertCommand.MoveCaretByWord Direction.Right, CommandFlags.Movement)
+                ("<BS>", InsertCommand.Back, CommandFlags.Repeatable ||| CommandFlags.InsertEdit)
+                ("<C-h>", InsertCommand.Back, CommandFlags.Repeatable ||| CommandFlags.InsertEdit)
+                ("<C-w>", InsertCommand.DeleteWordBeforeCursor, CommandFlags.Repeatable ||| CommandFlags.InsertEdit)
+                ("<C-u>", InsertCommand.DeleteLineBeforeCursor, CommandFlags.Repeatable ||| CommandFlags.InsertEdit)
+            ]
+
+        rawCommands 
+        |> Seq.map (fun (text, insertCommand, commandFlags) ->
+            let keyInput = KeyNotationUtil.StringToKeyInput text
+            (keyInput, insertCommand, commandFlags))
+        |> Seq.toArray
+
     let _bag = DisposableBag()
     let _textView = _vimBuffer.TextView
     let _textBuffer = _vimBuffer.TextBuffer
@@ -218,31 +250,6 @@ type internal InsertMode
     let mutable _commandMap : Map<KeyInput, RawInsertCommand> = Map.empty
     let mutable _sessionData = _emptySessionData
     let mutable _isInProcess = false
-
-    /// The set of commands supported by insert mode
-    static let s_commands : (string * InsertCommand * CommandFlags) list =
-        [
-            ("<Del>", InsertCommand.Delete, CommandFlags.Repeatable ||| CommandFlags.InsertEdit)
-            ("<Enter>", InsertCommand.InsertNewLine, CommandFlags.Repeatable ||| CommandFlags.InsertEdit)
-            ("<Left>", InsertCommand.MoveCaretWithArrow Direction.Left, CommandFlags.Movement)
-            ("<Down>", InsertCommand.MoveCaret Direction.Down, CommandFlags.Movement)
-            ("<Right>", InsertCommand.MoveCaretWithArrow Direction.Right, CommandFlags.Movement)
-            ("<Tab>", InsertCommand.InsertTab, CommandFlags.Repeatable ||| CommandFlags.InsertEdit)
-            ("<Up>", InsertCommand.MoveCaret Direction.Up, CommandFlags.Movement)
-            ("<C-i>", InsertCommand.InsertTab, CommandFlags.Repeatable ||| CommandFlags.InsertEdit)
-            ("<C-d>", InsertCommand.ShiftLineLeft, CommandFlags.Repeatable)
-            ("<C-e>", InsertCommand.InsertCharacterBelowCaret, CommandFlags.Repeatable)
-            ("<C-m>", InsertCommand.InsertNewLine, CommandFlags.Repeatable ||| CommandFlags.InsertEdit)
-            ("<C-t>", InsertCommand.ShiftLineRight, CommandFlags.Repeatable)
-            ("<C-y>", InsertCommand.InsertCharacterAboveCaret, CommandFlags.Repeatable)
-            ("<C-v>", InsertCommand.Paste, CommandFlags.Repeatable ||| CommandFlags.InsertEdit)
-            ("<C-Left>", InsertCommand.MoveCaretByWord Direction.Left, CommandFlags.Movement)
-            ("<C-Right>", InsertCommand.MoveCaretByWord Direction.Right, CommandFlags.Movement)
-            ("<BS>", InsertCommand.Back, CommandFlags.Repeatable ||| CommandFlags.InsertEdit)
-            ("<C-h>", InsertCommand.Back, CommandFlags.Repeatable ||| CommandFlags.InsertEdit)
-            ("<C-w>", InsertCommand.DeleteWordBeforeCursor, CommandFlags.Repeatable ||| CommandFlags.InsertEdit)
-            ("<C-u>", InsertCommand.DeleteLineBeforeCursor, CommandFlags.Repeatable ||| CommandFlags.InsertEdit)
-        ]
 
     do
         // Caret changes can end a text change operation.
@@ -268,8 +275,9 @@ type internal InsertMode
 
     member x.BuildCommands () =
 
-        let oldCommands : (string * RawInsertCommand) list = 
-            [
+        // These commands have nothing to do with selection settings
+        let regularCommands : (KeyInput * RawInsertCommand) seq =
+            [|
                 ("<Esc>", RawInsertCommand.CustomCommand this.ProcessEscape)
                 ("<Insert>", RawInsertCommand.CustomCommand this.ProcessInsert)
                 ("<C-c>", RawInsertCommand.CustomCommand this.ProcessEscape)
@@ -277,19 +285,25 @@ type internal InsertMode
                 ("<C-o>", RawInsertCommand.CustomCommand this.ProcessNormalModeOneCommand)
                 ("<C-p>", RawInsertCommand.CustomCommand this.ProcessWordCompletionPrevious)
                 ("<C-r>", RawInsertCommand.CustomCommand this.ProcessPasteStart)
-            ]
+            |]
+            |> Seq.map (fun (text, rawInsertCommand) ->
+                let keyInput = KeyNotationUtil.StringToKeyInput text
+                (keyInput, rawInsertCommand))
 
-        let noSelectionCommands : (string * InsertCommand * CommandFlags) list =
-            [
+        let noSelectionCommands : (KeyInput * InsertCommand * CommandFlags) seq =
+            [|
                 ("<S-Left>", InsertCommand.MoveCaretByWord Direction.Left, CommandFlags.Movement)
                 ("<S-Right>", InsertCommand.MoveCaretByWord Direction.Right, CommandFlags.Movement)
-            ]
+            |]
+            |> Seq.map (fun (text, insertCommand, commandFlags) ->
+                let keyInput = KeyNotationUtil.StringToKeyInput text
+                (keyInput, insertCommand, commandFlags))
 
         /// The list of commands that initiate select mode
         ///
         /// TODO: Because insert mode does not yet use a command runner, we have
         /// to simulate a little mini-runner here.  Should this be upgraded?
-        let selectionCommands : (KeyInput * RawInsertCommand) list =
+        let selectionCommands : (KeyInput * RawInsertCommand) seq =
 
             // Create a command factory so we can access the selection commands
             let factory = CommandFactory(_operations, _capture)
@@ -302,7 +316,7 @@ type internal InsertMode
 
             // Extract those bindings that are bound to normal commands and
             // create raw insert command that runs the normal command
-            [
+            seq {
                 for commandBinding in factory.CreateSelectionCommands() do
                     match commandBinding with
                     | CommandBinding.NormalBinding (_, _,  normalCommand) ->
@@ -315,30 +329,29 @@ type internal InsertMode
                             ()
                     | _ ->
                         ()
-            ]
+            }
 
         // Choose which commands are applicable for conflicting keys
         let (applicableNoSelectionCommands, applicableSelectionCommands) =
             if Util.IsFlagSet _globalSettings.KeyModelOptions KeyModelOptions.StartSelection then
-                (List.empty, selectionCommands)
+                (Seq.empty, selectionCommands)
             else
-                (noSelectionCommands, List.empty)
+                (noSelectionCommands, Seq.empty)
 
-        // Create a list of mapped commands
-        let mappedCommands : (string * RawInsertCommand) list = 
-            s_commands
+        // Map all of the InsertCommand values to their RawInsertCommand counterpart 
+        // Create a list of 
+        let mappedInsertCommands : (KeyInput * RawInsertCommand) seq = 
+            InsertCommandDataArray
             |> Seq.append applicableNoSelectionCommands
-            |> Seq.map (fun (name, command, commandFlags) ->
-                let keyInputSet = KeyNotationUtil.StringToKeyInputSet name
-                let rawInsertCommand = RawInsertCommand.InsertCommand (keyInputSet, command, commandFlags)
-                (name, rawInsertCommand))
-            |> List.ofSeq
+            |> Seq.map (fun (keyInput, insertCommand, commandFlags) ->
+                let keyInputSet = KeyInputSet.OneKeyInput keyInput
+                let rawInsertCommand = RawInsertCommand.InsertCommand (keyInputSet, insertCommand, commandFlags)
+                (keyInput, rawInsertCommand))
 
         // Build a list of all applicable commands
         _commandMap <-
-            oldCommands
-            |> Seq.append mappedCommands
-            |> Seq.map (fun (str, func) -> (KeyNotationUtil.StringToKeyInput str), func)
+            regularCommands
+            |> Seq.append mappedInsertCommands
             |> Seq.append applicableSelectionCommands
             |> Map.ofSeq
 
@@ -884,7 +897,10 @@ type internal InsertMode
 
     /// Raised when a global setting is changed
     member x.OnGlobalSettingsChanged (args : SettingEventArgs) =
-        if not _commandMap.IsEmpty then
+
+        // The constructed command map depends on the value of the 'keymodel' setting so rebuild
+        // if it ever changes 
+        if not _commandMap.IsEmpty && args.IsValueChanged && args.Setting.Name = GlobalSettingNames.KeyModelName then
             x.BuildCommands()
 
     /// Called when the IVimBuffer is closed.  We need to unsubscribe from several events
