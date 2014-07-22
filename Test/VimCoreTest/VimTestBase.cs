@@ -17,6 +17,9 @@ using Vim.UI.Wpf.Implementation.WordCompletion;
 using Vim.UnitTest.Exports;
 using Vim.UnitTest.Mock;
 using System.Windows;
+using Microsoft.VisualStudio.Text.Projection;
+using Microsoft.VisualStudio.Text.Outlining;
+using Microsoft.VisualStudio.Utilities;
 
 namespace Vim.UnitTest
 {
@@ -26,100 +29,146 @@ namespace Vim.UnitTest
     ///   - No silent swallowed MEF errors
     ///   - Remove any key mappings 
     /// </summary>
-    public abstract class VimTestBase : EditorHost, IDisposable
+    public abstract class VimTestBase : IDisposable
     {
-        private IVim _vim;
-        private IVimBufferFactory _vimBufferFactory;
-        private ICommonOperationsFactory _commonOperationsFactory;
-        private IVimErrorDetector _vimErrorDetector;
-        private IWordUtil _wordUtil;
-        private IFoldManagerFactory _foldManagerFactory;
-        private IBufferTrackingService _bufferTrackingService;
-        private IBulkOperations _bulkOperations;
-        private IKeyUtil _keyUtil;
-        private IKeyboardDevice _keyboardDevice;
-        private IMouseDevice _mouseDevice;
-        private IClipboardDevice _clipboardDevice;
-        private IVimProtectedOperations _vimProtectedOperations;
+        private readonly VimEditorHost _vimEditorHost;
 
-        [ThreadStatic]
-        private static CompositionContainer _compositionContainerCache;
+        private static VimEditorHost CachedVimEditorHost;
 
-        public override CompositionContainer CompositionContainerCache
+        public CompositionContainer CompositionContainer
         {
-            get { return _compositionContainerCache; }
-            set { _compositionContainerCache = value; }
+            get { return _vimEditorHost.CompositionContainer; }
+        }
+
+        public ISmartIndentationService SmartIndentationService
+        {
+            get { return _vimEditorHost.SmartIndentationService; }
+        }
+
+        public ITextBufferFactoryService TextBufferFactoryService
+        {
+            get { return _vimEditorHost.TextBufferFactoryService; }
+        }
+
+        public ITextEditorFactoryService TextEditorFactoryService
+        {
+            get { return _vimEditorHost.TextEditorFactoryService; }
+        }
+
+        public IProjectionBufferFactoryService ProjectionBufferFactoryService
+        {
+            get { return _vimEditorHost.ProjectionBufferFactoryService; }
+        }
+
+        public IEditorOperationsFactoryService EditorOperationsFactoryService
+        {
+            get { return _vimEditorHost.EditorOperationsFactoryService; }
+        }
+
+        public IEditorOptionsFactoryService EditorOptionsFactoryService
+        {
+            get { return _vimEditorHost.EditorOptionsFactoryService; }
+        }
+
+        public ITextSearchService TextSearchService
+        {
+            get { return _vimEditorHost.TextSearchService; }
+        }
+
+        public ITextBufferUndoManagerProvider TextBufferUndoManagerProvider
+        {
+            get { return _vimEditorHost.TextBufferUndoManagerProvider; }
+        }
+
+        public IOutliningManagerService OutliningManagerService
+        {
+            get { return _vimEditorHost.OutliningManagerService; }
+        }
+
+        public IContentTypeRegistryService ContentTypeRegistryService
+        {
+            get { return _vimEditorHost.ContentTypeRegistryService; }
+        }
+
+        public IProtectedOperations ProtectedOperations
+        {
+            get { return _vimEditorHost.ProtectedOperations; }
+        }
+
+        public IBasicUndoHistoryRegistry BasicUndoHistoryRegistry
+        {
+            get { return _vimEditorHost.BasicUndoHistoryRegistry; }
         }
 
         public IVim Vim
         {
-            get { return _vim; }
+            get { return _vimEditorHost.Vim; }
         }
 
         public VimRcState VimRcState
         {
-            get { return _vim.VimRcState; }
-            set { ((global::Vim.Vim)_vim).VimRcState = value; }
+            get { return Vim.VimRcState; }
+            set { ((global::Vim.Vim)Vim).VimRcState = value; }
         }
 
         public IVimData VimData
         {
-            get { return _vim.VimData; }
+            get { return _vimEditorHost.VimData; }
         }
 
         internal IVimBufferFactory VimBufferFactory
         {
-            get { return _vimBufferFactory; }
+            get { return _vimEditorHost.VimBufferFactory; }
         }
 
         public MockVimHost VimHost
         {
-            get { return (MockVimHost)_vim.VimHost; }
+            get { return (MockVimHost)Vim.VimHost; }
         }
 
         public ICommonOperationsFactory CommonOperationsFactory
         {
-            get { return _commonOperationsFactory; }
+            get { return _vimEditorHost.CommonOperationsFactory; }
         }
 
         public IWordUtil WordUtil
         {
-            get { return _wordUtil; }
+            get { return _vimEditorHost.WordUtil; }
         }
 
         public IFoldManagerFactory FoldManagerFactory
         {
-            get { return _foldManagerFactory; }
+            get { return _vimEditorHost.FoldManagerFactory; }
         }
 
         public IBufferTrackingService BufferTrackingService
         {
-            get { return _bufferTrackingService; }
+            get { return _vimEditorHost.BufferTrackingService; }
         }
 
         public IKeyMap KeyMap
         {
-            get { return _vim.KeyMap; }
+            get { return _vimEditorHost.KeyMap; }
         }
 
         public IKeyUtil KeyUtil
         {
-            get { return _keyUtil; }
+            get { return _vimEditorHost.KeyUtil; }
         }
 
         public IClipboardDevice ClipboardDevice
         {
-            get { return _clipboardDevice; }
+            get { return _vimEditorHost.ClipboardDevice; }
         }
 
         public IMouseDevice MouseDevice
         {
-            get { return _mouseDevice; }
+            get { return _vimEditorHost.MouseDevice; }
         }
 
         public IKeyboardDevice KeyboardDevice
         {
-            get { return _keyboardDevice; }
+            get { return _vimEditorHost.KeyboardDevice; }
         }
 
         public virtual bool TrackTextViewHistory
@@ -139,12 +188,17 @@ namespace Vim.UnitTest
 
         public Dictionary<string, VariableValue> VariableMap
         {
-            get { return _vim.VariableMap; }
+            get { return Vim.VariableMap; }
         }
 
         public IVimProtectedOperations VimProtectedOperations
         {
-            get { return _vimProtectedOperations; }
+            get { return _vimEditorHost.VimProtectedOperations; }
+        }
+
+        public IVimErrorDetector VimErrorDetector
+        {
+            get { return _vimEditorHost.VimErrorDetector; }
         }
 
         protected VimTestBase()
@@ -157,29 +211,16 @@ namespace Vim.UnitTest
                 new Application();
             }
 
-            _vim = CompositionContainer.GetExportedValue<IVim>();
-            _vimBufferFactory = CompositionContainer.GetExportedValue<IVimBufferFactory>();
-            _vimErrorDetector = CompositionContainer.GetExportedValue<IVimErrorDetector>();
-            _commonOperationsFactory = CompositionContainer.GetExportedValue<ICommonOperationsFactory>();
-            _wordUtil = CompositionContainer.GetExportedValue<IWordUtil>();
-            _bufferTrackingService = CompositionContainer.GetExportedValue<IBufferTrackingService>();
-            _foldManagerFactory = CompositionContainer.GetExportedValue<IFoldManagerFactory>();
-            _bulkOperations = CompositionContainer.GetExportedValue<IBulkOperations>();
-            _keyUtil = CompositionContainer.GetExportedValue<IKeyUtil>();
-            _vimProtectedOperations = CompositionContainer.GetExportedValue<IVimProtectedOperations>();
-
-            _keyboardDevice = CompositionContainer.GetExportedValue<IKeyboardDevice>();
-            _mouseDevice = CompositionContainer.GetExportedValue<IMouseDevice>();
-            _clipboardDevice = CompositionContainer.GetExportedValue<IClipboardDevice>();
-            _clipboardDevice.Text = String.Empty;
+            _vimEditorHost = GetOrCreateVimEditorHost();
+            ClipboardDevice.Text = String.Empty;
 
             // One setting we do differ on for a default is 'timeout'.  We don't want them interfering
             // with the reliability of tests.  The default is on but turn it off here to prevent any 
             // problems
-            _vim.GlobalSettings.Timeout = false;
+            Vim.GlobalSettings.Timeout = false;
 
             // Don't let the personal VimRc of the user interfere with the unit tests
-            _vim.AutoLoadVimRc = false;
+            Vim.AutoLoadVimRc = false;
 
             // Don't show trace information in the unit tests.  It really clutters the output in an
             // xUnit run
@@ -188,31 +229,31 @@ namespace Vim.UnitTest
 
         public virtual void Dispose()
         {
-            _vim.MarkMap.Clear();
+            Vim.MarkMap.Clear();
 
-            if (_vimErrorDetector.HasErrors())
+            if (VimErrorDetector.HasErrors())
             {
-                var msg = String.Format("Extension Exception: {0}", _vimErrorDetector.GetErrors().First().Message);
+                var msg = String.Format("Extension Exception: {0}", VimErrorDetector.GetErrors().First().Message);
 
                 // Need to clear before we throw or every subsequent test will fail with the same error
-                _vimErrorDetector.Clear();
+                VimErrorDetector.Clear();
 
                 throw new Exception(msg);
             }
-            _vimErrorDetector.Clear();
+            VimErrorDetector.Clear();
 
-            _vim.VimData.SearchHistory.Reset();
-            _vim.VimData.CommandHistory.Reset();
-            _vim.VimData.LastCommand = FSharpOption<StoredCommand>.None;
-            _vim.VimData.LastShellCommand = FSharpOption<string>.None;
-            _vim.VimData.AutoCommands = FSharpList<AutoCommand>.Empty;
-            _vim.VimData.AutoCommandGroups = FSharpList<AutoCommandGroup>.Empty;
+            Vim.VimData.SearchHistory.Reset();
+            Vim.VimData.CommandHistory.Reset();
+            Vim.VimData.LastCommand = FSharpOption<StoredCommand>.None;
+            Vim.VimData.LastShellCommand = FSharpOption<string>.None;
+            Vim.VimData.AutoCommands = FSharpList<AutoCommand>.Empty;
+            Vim.VimData.AutoCommandGroups = FSharpList<AutoCommandGroup>.Empty;
 
-            _vim.KeyMap.ClearAll();
-            _vim.KeyMap.IsZeroMappingEnabled = true;
+            Vim.KeyMap.ClearAll();
+            Vim.KeyMap.IsZeroMappingEnabled = true;
 
-            _vim.CloseAllVimBuffers();
-            _vim.IsDisabled = false;
+            Vim.CloseAllVimBuffers();
+            Vim.IsDisabled = false;
 
             // The majority of tests run without a VimRc file but a few do customize it for specific
             // test reasons.  Make sure it's consistent
@@ -220,24 +261,24 @@ namespace Vim.UnitTest
 
             // Reset all of the global settings back to their default values.   Adds quite
             // a bit of sanity to the test bed
-            foreach (var setting in _vim.GlobalSettings.AllSettings)
+            foreach (var setting in Vim.GlobalSettings.AllSettings)
             {
                 if (!setting.IsValueDefault && !setting.IsValueCalculated)
                 {
-                    _vim.GlobalSettings.TrySetValue(setting.Name, setting.DefaultValue);
+                    Vim.GlobalSettings.TrySetValue(setting.Name, setting.DefaultValue);
                 }
             }
 
             // Reset all of the register values to empty
-            foreach (var name in _vim.RegisterMap.RegisterNames)
+            foreach (var name in Vim.RegisterMap.RegisterNames)
             {
-                _vim.RegisterMap.GetRegister(name).UpdateValue("");
+                Vim.RegisterMap.GetRegister(name).UpdateValue("");
             }
 
             // Don't let recording persist across tests
-            if (_vim.MacroRecorder.IsRecording)
+            if (Vim.MacroRecorder.IsRecording)
             {
-                _vim.MacroRecorder.StopRecording();
+                Vim.MacroRecorder.StopRecording();
             }
 
             var vimHost = Vim.VimHost as MockVimHost;
@@ -250,13 +291,43 @@ namespace Vim.UnitTest
             VariableMap.Clear();
         }
 
+        public ITextBuffer CreateTextBuffer(params string[] lines)
+        {
+            return _vimEditorHost.CreateTextBuffer(lines);
+        }
+
+        public ITextBuffer CreateTextBuffer(IContentType contentType, params string[] lines)
+        {
+            return _vimEditorHost.CreateTextBuffer(contentType, lines);
+        }
+
+        public IProjectionBuffer CreateProjectionBuffer(params SnapshotSpan[] spans)
+        {
+            return _vimEditorHost.CreateProjectionBuffer(spans);
+        }
+
+        public IWpfTextView CreateTextView(params string[] lines)
+        {
+            return _vimEditorHost.CreateTextView(lines);
+        }
+
+        public IWpfTextView CreateTextView(IContentType contentType, params string[] lines)
+        {
+            return _vimEditorHost.CreateTextView(contentType, lines);
+        }
+
+        public IContentType GetOrCreateContentType(string type, string baseType)
+        {
+            return _vimEditorHost.GetOrCreateContentType(type, baseType);
+        }
+
         /// <summary>
         /// Create an IVimTextBuffer instance with the given lines
         /// </summary>
         protected IVimTextBuffer CreateVimTextBuffer(params string[] lines)
         {
             var textBuffer = CreateTextBuffer(lines);
-            return _vim.CreateVimTextBuffer(textBuffer);
+            return Vim.CreateVimTextBuffer(textBuffer);
         }
 
         /// <summary>
@@ -291,7 +362,7 @@ namespace Vim.UnitTest
             IVimWindowSettings windowSettings = null,
             IWordUtil wordUtil = null)
         {
-            jumpList = jumpList ?? new JumpList(textView, _bufferTrackingService);
+            jumpList = jumpList ?? new JumpList(textView, BufferTrackingService);
             statusUtil = statusUtil ?? new StatusUtil();
             windowSettings = windowSettings ?? new WindowSettings(vimTextBuffer.GlobalSettings);
             wordUtil = wordUtil ?? WordUtil;
@@ -320,7 +391,7 @@ namespace Vim.UnitTest
         protected IVimBuffer CreateVimBuffer(params string[] lines)
         {
             var textView = CreateTextView(lines);
-            return _vim.CreateVimBuffer(textView);
+            return Vim.CreateVimBuffer(textView);
         }
 
         /// <summary>
@@ -328,14 +399,14 @@ namespace Vim.UnitTest
         /// </summary>
         protected IVimBuffer CreateVimBuffer(IVimBufferData vimBufferData)
         {
-            return _vimBufferFactory.CreateVimBuffer(vimBufferData);
+            return VimBufferFactory.CreateVimBuffer(vimBufferData);
         }
 
         protected IVimBuffer CreateVimBufferWithName(string fileName, params string[] lines)
         {
             var textView = CreateTextView(lines);
             textView.TextBuffer.Properties[MockVimHost.FileNameKey] = fileName;
-            return _vim.CreateVimBuffer(textView);
+            return Vim.CreateVimBuffer(textView);
         }
 
         protected ITextStructureNavigator CreateTextStructureNavigator(ITextBuffer textBuffer, WordKind kind)
@@ -361,28 +432,36 @@ namespace Vim.UnitTest
                 operations,
                 foldManager,
                 insertUtil,
-                _bulkOperations,
+                _vimEditorHost.BulkOperations,
                 MouseDevice,
                 lineChangeTracker);
         }
 
-        protected override void GetEditorHostParts(List<ComposablePartCatalog> composablePartCatalogList, List<ExportProvider> exportProviderList)
+        private static VimEditorHost GetOrCreateVimEditorHost()
         {
-            base.GetEditorHostParts(composablePartCatalogList, exportProviderList);
-            composablePartCatalogList.Add(new AssemblyCatalog(typeof(IVim).Assembly));
+            if (CachedVimEditorHost == null)
+            {
+                var editorHostFactory = new EditorHostFactory();
+                editorHostFactory.Add(new AssemblyCatalog(typeof(IVim).Assembly));
 
-            // Other Exports needed to construct VsVim
-            composablePartCatalogList.Add(new TypeCatalog(
-                typeof(TestableClipboardDevice),
-                typeof(TestableKeyboardDevice),
-                typeof(TestableMouseDevice),
-                typeof(global::Vim.UnitTest.Exports.VimHost),
-                typeof(VimErrorDetector),
-                typeof(DisplayWindowBrokerFactoryService),
-                typeof(WordCompletionSessionFactoryService),
-                typeof(AlternateKeyUtil),
-                typeof(VimProtectedOperations),
-                typeof(OutlinerTaggerProvider)));
+                // Other Exports needed to construct VsVim
+                editorHostFactory.Add(new TypeCatalog(
+                    typeof(TestableClipboardDevice),
+                    typeof(TestableKeyboardDevice),
+                    typeof(TestableMouseDevice),
+                    typeof(global::Vim.UnitTest.Exports.VimHost),
+                    typeof(VimErrorDetector),
+                    typeof(DisplayWindowBrokerFactoryService),
+                    typeof(WordCompletionSessionFactoryService),
+                    typeof(AlternateKeyUtil),
+                    typeof(VimProtectedOperations),
+                    typeof(OutlinerTaggerProvider)));
+
+                var compositionContainer = editorHostFactory.CreateCompositionContainer();
+                CachedVimEditorHost = new VimEditorHost(compositionContainer);
+            }
+
+            return CachedVimEditorHost;
         }
 
         protected void UpdateTabStop(IVimBuffer vimBuffer, int tabStop)

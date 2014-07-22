@@ -80,14 +80,14 @@ namespace VimApp
 
         internal IWpfTextView CreateTextView(ITextBuffer textBuffer)
         {
-            var textViewRoleSet = _vimComponentHost.TextEditorFactoryService.CreateTextViewRoleSet(
+            var textViewRoleSet = _vimComponentHost.EditorHost.TextEditorFactoryService.CreateTextViewRoleSet(
                 PredefinedTextViewRoles.PrimaryDocument,
                 PredefinedTextViewRoles.Document,
                 PredefinedTextViewRoles.Editable,
                 PredefinedTextViewRoles.Interactive,
                 PredefinedTextViewRoles.Structured,
                 PredefinedTextViewRoles.Analyzable);
-            var textView =  _vimComponentHost.TextEditorFactoryService.CreateTextView(
+            var textView =  _vimComponentHost.EditorHost.TextEditorFactoryService.CreateTextView(
                 textBuffer,
                 textViewRoleSet);
 
@@ -105,7 +105,7 @@ namespace VimApp
         internal IWpfTextViewHost CreateTextViewHost(IWpfTextView textView)
         {
             textView.Options.SetOptionValue(DefaultTextViewOptions.UseVisibleWhitespaceId, true);
-            var textViewHost = _vimComponentHost.TextEditorFactoryService.CreateTextViewHost(textView, setFocus: true);
+            var textViewHost = _vimComponentHost.EditorHost.TextEditorFactoryService.CreateTextViewHost(textView, setFocus: true);
 
             var classificationFormatMap = _classificationFormatMapService.GetClassificationFormatMap(textViewHost.TextView);
             classificationFormatMap.DefaultTextProperties = TextFormattingRunProperties.CreateTextFormattingRunProperties(
@@ -118,7 +118,7 @@ namespace VimApp
 
         internal void AddNewTab(string name)
         {
-            var textBuffer = _vimComponentHost.TextBufferFactoryService.CreateTextBuffer();
+            var textBuffer = _vimComponentHost.EditorHost.TextBufferFactoryService.CreateTextBuffer();
             var textView = CreateTextView(textBuffer);
             AddNewTab(name, textView);
         }
