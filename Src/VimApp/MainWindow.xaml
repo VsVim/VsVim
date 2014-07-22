@@ -18,6 +18,7 @@
                     <MenuItem Header="type ö" Click="OnLeaderTypeClick" />
                 </MenuItem>
                 <MenuItem Header="Insert Control Characters" Click="OnInsertControlCharactersClick" />
+                <MenuItem Header="Run GC" Click="OnRunGarbageCollectorClick" />
             </MenuItem>
             <MenuItem Header="Options">
                 <MenuItem Name="_displayNewLinesMenuItem" Header="Display New Lines" IsCheckable="True" IsChecked="False" Checked="OnDisplayNewLinesChecked" Unchecked="OnDisplayNewLinesChecked" />

@@ -8,6 +8,7 @@ using Microsoft.VisualStudio.Text.Editor.OptionsExtensionMethods;
 using System.Diagnostics;
 using System.Linq;
 using Vim;
+using Vim.UI.Wpf;
 using Vim.Extensions;
 using System.Text;
 using System;
@@ -209,6 +210,18 @@ namespace VimApp
             }
 
             return BuildGrid(viewInfoList);
+        }
+
+        private void OnRunGarbageCollectorClick(object sender, EventArgs e)
+        {
+            for (var i = 0; i < 15; i++)
+            {
+                Dispatcher.DoEvents();
+                GC.Collect(2, GCCollectionMode.Forced);
+                GC.WaitForPendingFinalizers();
+                GC.Collect(2, GCCollectionMode.Forced);
+                GC.Collect();
+            }
         }
 
         private void OnVimWindowChanged(IVimWindow vimWindow)

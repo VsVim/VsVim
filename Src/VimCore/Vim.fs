@@ -594,6 +594,7 @@ type internal Vim
                 | Some (vimRcPath, lines) ->
                     _globalSettings.VimRc <- vimRcPath.FilePath
                     let textView = _vimHost.CreateHiddenTextView()
+                    let mutable createdVimBuffer : IVimBuffer option = None
         
                     try
                         // For the vimrc IVimBuffer we go straight to the factory methods.  We don't want
@@ -602,6 +603,7 @@ type internal Vim
                         let vimTextBuffer = _bufferFactoryService.CreateVimTextBuffer textView.TextBuffer x
                         let vimBufferData = _bufferFactoryService.CreateVimBufferData vimTextBuffer textView
                         let vimBuffer = _bufferFactoryService.CreateVimBuffer vimBufferData
+                        createdVimBuffer <- Some vimBuffer
 
                         // Actually parse and run all of the commands
                         let vimInterpreter = x.GetVimInterpreter vimBuffer
@@ -613,6 +615,15 @@ type internal Vim
                     finally
                         // Be careful not to leak the ITextView in the case of an exception
                         textView.Close()
+
+                        // In general it is the responsibility of the host to close IVimBuffer instances when
+                        // the corresponding ITextView is closed.  In this particular case though we don't actually 
+                        // inform the host it is created so make sure it gets closed here 
+                        match createdVimBuffer with
+                        | Some vimBuffer -> 
+                            if not vimBuffer.IsClosed then
+                                vimBuffer.Close()
+                        | None -> ()
             finally
                 _isLoadingVimRc <- false
 
