@@ -13,7 +13,7 @@ using Vim.UnitTest;
 
 namespace Vim.UI.Wpf.UnitTest
 {
-    public abstract class CommandMarginControllerTest 
+    public abstract class CommandMarginControllerTest : VimTestBase
     {
         private readonly MockRepository _factory;
         private readonly CommandMarginControl _marginControl;
@@ -34,6 +34,11 @@ namespace Vim.UI.Wpf.UnitTest
             _vimBuffer.IncrementalSearchImpl = _search.Object;
             _vimBuffer.VimImpl = MockObjectFactory.CreateVim(factory: _factory).Object;
             _vimBuffer.CommandModeImpl = _factory.Create<ICommandMode>(MockBehavior.Loose).Object;
+            var textBuffer = CreateTextBuffer(new []{""});
+            _vimBuffer.TextViewImpl = TextEditorFactoryService.CreateTextView(textBuffer);
+
+            Mock<IVimGlobalSettings> globalSettings = new Mock<IVimGlobalSettings>();
+            _vimBuffer.GlobalSettingsImpl = globalSettings.Object;
 
             var editorFormatMap = _factory.Create<IEditorFormatMap>(MockBehavior.Loose);
             editorFormatMap.Setup(x => x.GetProperties(It.IsAny<string>())).Returns(new ResourceDictionary());
