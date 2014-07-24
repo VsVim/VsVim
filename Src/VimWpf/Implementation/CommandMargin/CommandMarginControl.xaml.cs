@@ -57,15 +57,16 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             typeof (CommandMarginControl), 
             new PropertyMetadata(default(Visibility)));
 
-        }
 
         /// <summary>
         /// The user defined status in extra line
         /// </summary>
         public string StatusLine
         {
-            get { return (string)GetValue(StatusLineProperty); }
+            get { return (string) GetValue(StatusLineProperty); }
             set { SetValue(StatusLineProperty, value); }
+        }
+
         public bool IsEditReadOnly
         {
             get { return (bool)GetValue(IsEditReadOnlyProperty); }
