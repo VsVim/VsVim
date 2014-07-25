@@ -157,8 +157,8 @@ namespace Vim.VisualStudio.Implementation.OptionPages
             {
                 var map = new Dictionary<WordWrapDisplay, string>();
                 map.Add(WordWrapDisplay.AutoIndent, "AutoIndent");
-                map.Add(WordWrapDisplay.Glyph, "Glpyh");
-                map.Add(WordWrapDisplay.All, "AutoIndent + Glpyh");
+                map.Add(WordWrapDisplay.Glyph, "Glyph");
+                map.Add(WordWrapDisplay.All, "AutoIndent + Glyph");
                return map;
             }
         }
