@@ -1,4 +1,5 @@
-﻿using Microsoft.VisualStudio.Text.Editor;
+﻿using System;
+using Microsoft.VisualStudio.Text.Editor;
 using Moq;
 using Vim.Extensions;
 using Vim.UI.Wpf.Implementation.BlockCaret;
@@ -197,6 +198,30 @@ namespace Vim.UI.Wpf.UnitTest
                 true);
             _settings.SetupGet(x => x.CaretOpacity).Returns(1);
             _settings.Raise(x => x.SettingChanged += null, null, new SettingEventArgs(setting, false));
+            _caret.Verify();
+        }
+
+        /// <summary>
+        /// When a key mapping timeout event occurs all of the of the key input will be 
+        /// processed and only the Processing and Processed events will be raised.  Got to make sure
+        /// that when that happens the caret is adjusted 
+        /// </summary>
+        [Fact]
+        public void Issue1409()
+        {
+            var mode = new Mock<INormalMode>(MockBehavior.Loose);
+            _buffer.SetupGet(x => x.NormalMode).Returns(mode.Object);
+            _buffer.SetupGet(x => x.ModeKind).Returns(ModeKind.Normal);
+
+            mode.SetupGet(x => x.InReplace).Returns(false);
+            mode.SetupGet(x => x.KeyRemapMode).Returns(KeyRemapMode.Normal);
+            _caret.SetupSet(x => x.CaretDisplay = CaretDisplay.Block).Verifiable();
+            _controller.Update();
+            _caret.Verify();
+
+            mode.SetupGet(x => x.KeyRemapMode).Returns(KeyRemapMode.OperatorPending);
+            _caret.SetupSet(x => x.CaretDisplay = CaretDisplay.HalfBlock).Verifiable();
+            _buffer.Raise(x => x.KeyInputProcessed += null, new KeyInputProcessedEventArgs(KeyInputUtil.EnterKey, ProcessResult.NotHandled));
             _caret.Verify();
         }
     }

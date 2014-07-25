@@ -19,6 +19,7 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
             _vimBuffer.SwitchedMode += OnCaretRelatedEvent;
             _vimBuffer.KeyInputStart += OnCaretRelatedEvent;
             _vimBuffer.KeyInputEnd += OnCaretRelatedEvent;
+            _vimBuffer.KeyInputProcessed += OnCaretRelatedEvent;
             _vimBuffer.Closed += OnBufferClosed;
             _globalSettings.SettingChanged += OnSettingsChanged;
             UpdateCaretDisplay();
