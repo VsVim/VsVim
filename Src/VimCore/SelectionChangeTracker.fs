@@ -104,8 +104,8 @@ type internal SelectionChangeTracker
 
         let isLeftButtonPressed = _mouseDevice.IsLeftButtonPressed
 
-        // What should the mode be based on the current selection
-        let desiredMode () = 
+        // Do we want to change the mode of IVimBuffer based on the active selection?
+        let getDesiredNewMode () = 
             let isSelectModeMouse =
                 Util.IsFlagSet _globalSettings.SelectModeOptions SelectModeOptions.Mouse 
             let inner = 
@@ -162,16 +162,20 @@ type internal SelectionChangeTracker
         // in the mean time.  Make sure to guard against this possibility
         let doUpdate () = 
             if not _vimBuffer.IsClosed && not _selectionDirty then 
-                match desiredMode() with
+                match getDesiredNewMode() with
                 | None -> ()
                 | Some modeKind -> _vimBuffer.SwitchMode modeKind ModeArgument.None |> ignore
 
-        match desiredMode() with
+        match getDesiredNewMode() with
         | None ->
 
-            // No mode change is desired.  However the selection has changed and Visual Mode 
-            // caches information about the original selection.  Update that information now
-            let doSync () = 
+            try
+                _syncingSelection <- true
+
+                x.AdjustSelectionToCaret()
+
+                // No mode change is desired.  However the selection has changed and Visual Mode 
+                // caches information about the original selection.  Update that information now
                 if VisualKind.IsAnyVisual _vimBuffer.ModeKind then
                     let mode = _vimBuffer.Mode :?> IVisualMode
                     mode.SyncSelection()
@@ -179,9 +183,6 @@ type internal SelectionChangeTracker
                     let mode = _vimBuffer.Mode :?> ISelectMode
                     mode.SyncSelection()
 
-            try
-                _syncingSelection <- true
-                doSync()
             finally
                 _syncingSelection <- false
         | Some _ -> 
@@ -190,6 +191,31 @@ type internal SelectionChangeTracker
             let context = System.Threading.SynchronizationContext.Current
             if context <> null then context.Post( (fun _ -> doUpdate()), null)
             else doUpdate()
+
+    /// In a normal character style selection vim extends the selection to include the value
+    /// under the caret.  The editor by default does an exclusive selection.  Adjust the selection
+    /// here to be inclusive 
+    member x.AdjustSelectionToCaret() =
+        Contract.Assert _syncingSelection
+
+        if (_mouseDevice.IsLeftButtonPressed && 
+            _textView.Selection.IsActive && 
+            _textView.Selection.Mode = TextSelectionMode.Stream && 
+            not _textView.Selection.IsReversed && 
+            (_vimBuffer.ModeKind = ModeKind.VisualCharacter || _vimBuffer.ModeKind = ModeKind.SelectCharacter)) then
+
+            match TextViewUtil.GetTextViewLines _textView with
+            | Some textViewLines ->
+                let x = _textView.Caret.Left
+                let y = _textView.Caret.Top
+                let textViewLine = textViewLines.GetTextViewLineContainingYCoordinate y
+                if textViewLine <> null then
+                    let point = textViewLine.GetBufferPositionFromXCoordinate x 
+                    if point.HasValue && point.Value.Position >= _textView.Selection.ActivePoint.Position.Position && point.Value.Position < point.Value.Snapshot.Length then
+                        let activePoint = VirtualSnapshotPoint(point.Value.Add(1))
+                        let anchorPoint = _textView.Selection.AnchorPoint
+                        _textView.Selection.Select(anchorPoint, activePoint)
+            | _ -> ()
 
 [<Export(typeof<IVimBufferCreationListener>)>]
 type internal SelectionChangeTrackerFactory
