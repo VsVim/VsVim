@@ -637,7 +637,7 @@ type VimInterpreter
                 // All of the edits should behave as a single vim undo.  Can't do this as a single
                 // global undo as it executes as series of sub commands which create their own 
                 // global undo units
-                use transaction = _undoRedoOperations.CreateLinkedUndoTransaction "Global Command"
+                use transaction = _undoRedoOperations.CreateLinkedUndoTransaction "Global Command" 
                 try
     
                     // Each command we run can, and often will, change the underlying buffer whcih

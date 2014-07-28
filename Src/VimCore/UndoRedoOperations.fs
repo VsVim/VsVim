@@ -94,10 +94,13 @@ and TextViewUndoTransaction
 and LinkedUndoTransaction
     (
         _name : string,
+        _flags : LinkedUndoTransactionFlags,
         _undoRedoOperations : UndoRedoOperations
     ) = 
 
     let mutable _isComplete = false
+
+    member x.Flags = _flags
 
     member x.Complete () = 
         if not _isComplete then
@@ -248,7 +251,7 @@ and UndoRedoOperations
         textViewUndoTransaction :> ITextViewUndoTransaction
 
     /// Create a linked undo transaction.
-    member x.CreateLinkedUndoTransaction (name : string) =
+    member x.CreateLinkedUndoTransaction (name : string) flags =
         VimTrace.TraceInfo("Open Linked Undo Transaction: {0}", name)
 
         // A linked undo transaction works by simply counting all of the normal undo transactions
@@ -264,7 +267,7 @@ and UndoRedoOperations
         if _normalUndoTransactionStack.Count > 0 then
             _statusUtil.OnError Resources.Undo_LinkedOpenError
 
-        let linkedUndoTransaction = new LinkedUndoTransaction(name, x) 
+        let linkedUndoTransaction = new LinkedUndoTransaction(name, flags, x) 
         _linkedUndoTransactionStack.Push(linkedUndoTransaction)
         linkedUndoTransaction :> ILinkedUndoTransaction
 
@@ -351,21 +354,21 @@ and UndoRedoOperations
         match x.UndoTransactionClosedCore linkedUndoTransaction _linkedUndoTransactionStack with
         | TransactionCloseResult.Expected -> 
             if _linkedUndoTransactionStack.Count = 0 && Option.isSome _textUndoHistory then
-                let mutable isGood = false
+                let mutable hasData = false
 
                 // The linked undo transaction is now done, need to freeze the data on the undo
                 // stack 
                 match _undoStack with
                 | UndoRedoData.Linked (count, false) :: tail -> 
-                    if count > 0 then
-                        isGood <- true
-                        _undoStack <- UndoRedoData.Linked (count, true) :: tail
+                    Contract.Assert(count > 0)
+                    hasData <- true
+                    _undoStack <- UndoRedoData.Linked (count, true) :: tail
                 | _ -> ()
 
                 // If a linked undo operation completes that contains 0 undo / redo items that very likely 
                 // indicates a bug.  It can mean that VsVim has been unhooked from the undo / redo event
                 // queue as described in #1387.  Notify the user and reset our state 
-                if not isGood then
+                if not hasData && not (Util.IsFlagSet linkedUndoTransaction.Flags LinkedUndoTransactionFlags.CanBeEmpty) then
                     x.ResetState()
                     VimTrace.TraceInfo("!!! Empty linked undo chain")
                     _statusUtil.OnError Resources.Undo_LinkedChainBroken
@@ -440,7 +443,8 @@ and UndoRedoOperations
         member x.Close() = x.Close()
         member x.CreateUndoTransaction name = x.CreateUndoTransaction name
         member x.CreateTextViewUndoTransaction name textView = x.CreateTextViewUndoTransaction name textView
-        member x.CreateLinkedUndoTransaction name = x.CreateLinkedUndoTransaction name
+        member x.CreateLinkedUndoTransaction name = x.CreateLinkedUndoTransaction name LinkedUndoTransactionFlags.None
+        member x.CreateLinkedUndoTransactionWithFlags name flags = x.CreateLinkedUndoTransaction name flags
         member x.Redo count = x.Redo count
         member x.Undo count = x.Undo count
         member x.EditWithUndoTransaction name textView action = x.EditWithUndoTransaction name textView action

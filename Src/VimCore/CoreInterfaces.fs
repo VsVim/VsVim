@@ -205,6 +205,13 @@ type ITextViewUndoTransaction =
 
     inherit IUndoTransaction
 
+/// Flags controlling the linked undo transaction behavior
+[<System.Flags>]
+type LinkedUndoTransactionFlags = 
+    | None = 0x0
+
+    | CanBeEmpty = 0x1
+
 /// Wraps a set of IUndoTransaction items such that they undo and redo as a single
 /// entity.
 type ILinkedUndoTransaction =
@@ -235,6 +242,9 @@ type IUndoRedoOperations =
 
     /// Creates a linked undo transaction
     abstract CreateLinkedUndoTransaction : name : string -> ILinkedUndoTransaction
+
+    /// Creates a linked undo transaction with flags
+    abstract CreateLinkedUndoTransactionWithFlags : name : string -> flags : LinkedUndoTransactionFlags -> ILinkedUndoTransaction
 
     /// Wrap the passed in "action" inside an undo transaction.  This is needed
     /// when making edits such as paste so that the cursor will move properly 

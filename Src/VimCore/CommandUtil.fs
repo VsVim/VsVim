@@ -835,7 +835,7 @@ type internal CommandUtil
     /// Used for the several commands which make an edit here and need the edit to be linked
     /// with the next insert mode change.  
     member x.EditWithLinkedChange name action =
-        let transaction = _undoRedoOperations.CreateLinkedUndoTransaction name
+        let transaction = _undoRedoOperations.CreateLinkedUndoTransaction name 
 
         try
             x.EditWithUndoTransaciton name action

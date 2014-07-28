@@ -228,6 +228,20 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
+            /// If the flags permit the bad close then just let it happen.  The undo transaction is just 
+            /// removed on close
+            /// </summary>
+            [Fact]
+            public void BadCloseExpected()
+            {
+                Create(HistoryKind.Basic);
+                _undoRedoOperations.CreateUndoTransaction("test").Complete();
+                var linkedUndoTransaction = _undoRedoOperations.CreateLinkedUndoTransactionWithFlags("other", LinkedUndoTransactionFlags.CanBeEmpty);
+                linkedUndoTransaction.Complete();
+                Assert.Equal(1, _undoRedoOperationsRaw.UndoStack.Length);
+            }
+
+            /// <summary>
             /// Two linked undo transactions which happen back to back should create new linked undo
             /// transactions in the undo stack
             /// </summary>
