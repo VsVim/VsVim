@@ -7,6 +7,7 @@ using Xunit;
 using Vim.Extensions;
 using EditorUtils;
 using Microsoft.VisualStudio.Text;
+using Microsoft.VisualStudio.Text.Editor;
 
 namespace Vim.UnitTest
 {
@@ -21,6 +22,7 @@ namespace Vim.UnitTest
 
         private MockRepository _factory;
         private ITextBuffer _textBuffer;
+        private ITextView _textView;
         private Mock<IStatusUtil> _statusUtil;
         private Mock<ITextUndoHistory> _mockUndoHistory;
         private UndoRedoOperations _undoRedoOperationsRaw;
@@ -32,7 +34,8 @@ namespace Vim.UnitTest
         {
             _factory = new MockRepository(MockBehavior.Strict);
             _statusUtil = _factory.Create<IStatusUtil>();
-            _textBuffer = CreateTextBuffer();
+            _textView = CreateTextView();
+            _textBuffer = _textView.TextBuffer;
 
             var editorOperationsFactoryService = _factory.Create<IEditorOperationsFactoryService>();
 
@@ -132,7 +135,7 @@ namespace Vim.UnitTest
             [Fact]
             public void Count()
             {
-                Create(HistoryKind.None);
+                Create(HistoryKind.Basic);
 
                 int count = 10;
                 var stack = new Stack<ILinkedUndoTransaction>();
@@ -145,6 +148,7 @@ namespace Vim.UnitTest
 
                 while (stack.Count > 0)
                 {
+                    _undoRedoOperations.CreateUndoTransaction("temp").Complete();
                     stack.Pop().Complete();
                     Assert.Equal(stack.Count, _undoRedoOperationsRaw.LinkedUndoTransactionStack.Count);
                 }
@@ -204,6 +208,7 @@ namespace Vim.UnitTest
                 _statusUtil.Setup(x => x.OnError(Resources.Undo_LinkedOpenError)).Verifiable();
                 var linkedUndoTransaction = _undoRedoOperations.CreateLinkedUndoTransaction("other");
                 _statusUtil.Verify();
+                undoTransaction.Complete();
             }
 
             /// <summary>
@@ -220,19 +225,6 @@ namespace Vim.UnitTest
                 _statusUtil.Setup(x => x.OnError(Resources.Undo_LinkedChainBroken)).Verifiable();
                 linkedUndoTransaction.Complete();
                 _statusUtil.Verify();
-            }
-
-            /// <summary>
-            /// When there is no history we will never get events hence an empty linked undo transaction
-            /// is expected.  Really we should revisit this and just never have a linked undo transaction
-            /// with no history because it is a broken idea 
-            /// </summary>
-            [Fact]
-            public void BadCloseNoHistory()
-            {
-                Create(HistoryKind.None);
-                var linkedUndoTransaction = _undoRedoOperations.CreateLinkedUndoTransaction("other");
-                linkedUndoTransaction.Complete();
             }
 
             /// <summary>
@@ -474,7 +466,88 @@ namespace Vim.UnitTest
                 Assert.NotNull(transaction);
                 _factory.Verify();
             }
+        }
 
+        public sealed class NormalTest : UndoRedoOperationsTest
+        {
+            [Fact]
+            public void BadOrder()
+            {
+                Create(HistoryKind.Basic);
+
+                var transaction1 = _undoRedoOperations.CreateUndoTransaction("test1");
+                var transaction2 = _undoRedoOperations.CreateUndoTransaction("test2");
+                Assert.Equal(2, _undoRedoOperationsRaw.NormalUndoTransactionStack.Count);
+
+                _statusUtil.Setup(x => x.OnError(Resources.Undo_ChainOrderErrorNormal)).Verifiable();
+                transaction1.Complete();
+                Assert.Equal(0, _undoRedoOperationsRaw.NormalUndoTransactionStack.Count);
+                _statusUtil.Verify();
+
+                // We are closing transactions out of order.  This is absolutely an error and would normally be 
+                // picked up by the error detector and hence failing our test.  In this case the error is expected
+                VimErrorDetector.Clear();
+            }
+        }
+
+        public sealed class NoHistoryTest : UndoRedoOperationsTest
+        {
+            public NoHistoryTest()
+            {
+                Create(HistoryKind.None);
+            }
+
+            private void AssertEmpty()
+            {
+                Assert.Equal(0, _undoRedoOperationsRaw.UndoStack.Length);
+                Assert.Equal(0, _undoRedoOperationsRaw.RedoStack.Length);
+            }
+
+            /// <summary>
+            /// In general an empty linked undo transaction is an error.  In the case there is no history
+            /// though this is just fine.  We never get any transaction events in a history situation hence
+            /// it's actually expected to have an empty stack 
+            /// </summary>
+            [Fact]
+            public void EmptyLinkedUndoTransaction()
+            {
+                var linkedUndoTransaction = _undoRedoOperations.CreateLinkedUndoTransaction("other");
+                linkedUndoTransaction.Complete();
+            }
+
+            /// <summary>
+            /// There should be no undo / redo stack tracking when there is no history.  There is simply 
+            /// no point in doing it 
+            /// </summary>
+            [Fact]
+            public void Linked()
+            {
+                Create(HistoryKind.None);
+                var transaction = _undoRedoOperations.CreateLinkedUndoTransaction("test");
+                AssertEmpty();
+                transaction.Complete();
+                AssertEmpty();
+            }
+
+            [Fact]
+            public void Normal()
+            {
+                Create(HistoryKind.None);
+                var transaction = _undoRedoOperations.CreateUndoTransaction("test");
+                AssertEmpty();
+                transaction.Complete();
+                AssertEmpty();
+            }
+
+            [Fact]
+            public void View()
+            {
+                Create(HistoryKind.None);
+                var transaction = _undoRedoOperations.CreateTextViewUndoTransaction("test", _textView);
+                AssertEmpty();
+                transaction.Complete();
+                AssertEmpty();
+            }
         }
     }
 }

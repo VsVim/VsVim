@@ -123,6 +123,9 @@ and UndoRedoOperations
     let _linkedUndoTransactionStack = Stack<LinkedUndoTransaction>()
     let _normalUndoTransactionStack = Stack<NormalUndoTransaction>()
     let mutable _inUndoRedo = false
+
+    // Contains the active set of operations to undo from the perspective of Vim.  If 
+    // there is no history this should always be empty
     let mutable _undoStack : UndoRedoData list = List.empty
     let mutable _redoStack : UndoRedoData list = List.empty
     let _bag = DisposableBag()
@@ -151,13 +154,15 @@ and UndoRedoOperations
             |> Observable.subscribe (fun _ -> this.OnUndoRedoHappened())
             |> _bag.Add
 
-    /// Are we in the middle of a linked undo transaction
-    member x.InLinkedUndoTransaction = _linkedUndoTransactionStack.Count > 0
-
     /// Are we in the middle of a normal undo transaction
     member x.InNormalUndoTransaction = _normalUndoTransactionStack.Count > 0
 
+    /// Are we in the middle of a linked undo transaction
+    member x.InLinkedUndoTransaction = _linkedUndoTransactionStack.Count > 0
+
     member x.LinkedUndoTransactionStack = _linkedUndoTransactionStack
+
+    member x.NormalUndoTransactionStack = _normalUndoTransactionStack
 
     member x.UndoStack = _undoStack
 
@@ -181,14 +186,18 @@ and UndoRedoOperations
                 | UndoRedoData.Linked _ -> UndoRedoData.Normal count, list
             head :: tail 
 
+    member x.ResetUndoRedoStacks() = 
+        _undoStack <- List.empty
+        _redoStack <- List.empty
+
     /// This method is called when the undo / redo management detects we have gotten into
     /// a bad state.  Essentially we've lost our ability to sync with the editor undo
     /// stack.  Reset all state at this point so that undo / redo goes back to the normal
     /// editor functions.  Edits after this point will sync back up with us
     member x.ResetState() =
+        _normalUndoTransactionStack.Clear()
         _linkedUndoTransactionStack.Clear()
-        _undoStack <- List.empty
-        _redoStack <- List.empty
+        x.ResetUndoRedoStacks()
 
     /// If undo / redo is called when a linked undo transaction is open then we need to take
     /// action.  Tear down the vim undo / redo stacks and revert back to Visual Studio undo
@@ -209,13 +218,20 @@ and UndoRedoOperations
     /// indicates a bug.  It can mean that VsVim has been unhooked from the undo / redo event
     /// queue as described in #1387.  Notify the user and reset our state 
     member x.CheckForEmptyLinkedTransaction() = 
-        if _linkedUndoTransactionStack.Count = 0 && _undoStack.Length > 0 && Option.isSome _textUndoHistory then
-            match _undoStack.Head with
-            | UndoRedoData.Linked 0 -> 
+        if _linkedUndoTransactionStack.Count = 0 && Option.isSome _textUndoHistory then
+            let isBad = 
+                if _undoStack.Length = 0 then 
+                    true
+                else 
+                    match _undoStack.Head with 
+                    | UndoRedoData.Linked 0 -> true
+                    | UndoRedoData.Normal _ -> true
+                    | _ -> false
+
+            if isBad then
                 x.ResetState()
                 VimTrace.TraceInfo("!!! Empty linked undo chain")
                 _statusUtil.OnError Resources.Undo_LinkedChainBroken
-            | _ -> ()
 
     member x.CreateUndoTransaction (name : string) = 
         VimTrace.TraceInfo("Open Undo Transaction: {0}", name)
@@ -257,15 +273,12 @@ and UndoRedoOperations
         // is already open here a linked transaction is pointless.  It will never receive any 
         // events.  
         //
-        // Issue an error here and continue on.  This will get caught at close time and appropriately
-        // reset the state
+        // It's really tempting to think that instead of relying on editor events from ITextUndoHistory 
+        // we could just hook into the creation of normal transactions.  That doesn't work because Vim
+        // is not the only source of undo events.  The editor frequently creates them hence there is no
+        // real way to track the number of events properly.  This is just a broken scenario 
         if _normalUndoTransactionStack.Count > 0 then
             _statusUtil.OnError Resources.Undo_LinkedOpenError
-
-        // When there is a linked undo transaction active the top of the undo stack should always
-        // be a Linked item
-        if _linkedUndoTransactionStack.Count = 0 then
-            _undoStack <- UndoRedoData.Linked 0 :: _undoStack
 
         let linkedUndoTransaction = new LinkedUndoTransaction(name, x) 
         _linkedUndoTransactionStack.Push(linkedUndoTransaction)
@@ -392,12 +405,11 @@ and UndoRedoOperations
             // Just a normal undo transaction.
             _undoStack <- x.AddToStackNormal 1 _undoStack
         else
-            // Top of the stack should always be a Linked item.  If it's not don't throw as it will
-            // permanently trash undo in the ITextBuffer. 
+            // The first transaction which completes will create the linked item.  Otherwise it should 
+            // just be adding to the one which is already there 
             let count, tail =
                 match _undoStack with
-                | [] -> 
-                    1, []
+                | [] -> 1, []
                 | head :: tail ->
                     match head with
                     | UndoRedoData.Normal _ -> 1, tail
