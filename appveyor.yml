@@ -1,10 +1,6 @@
 
 configuration: Debug
 
-branches:
-    except:
-        - fixes-undo-stack
-
 build:
   project: VimAll.sln
   verbosity: minimal
