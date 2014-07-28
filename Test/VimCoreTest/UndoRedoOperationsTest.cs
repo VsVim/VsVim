@@ -93,7 +93,7 @@ namespace Vim.UnitTest
             [Fact]
             public void ClosedBrokenChainWithNewOpen()
             {
-                Create();
+                Create(haveHistory: false);
                 var linkedUndoTransaction1 = _undoRedoOperations.CreateLinkedUndoTransaction("test1");
                 _undoRedoOperationsRaw.ResetState();
                 var linkedUndoTransaction2 = _undoRedoOperations.CreateLinkedUndoTransaction("test2");
@@ -110,7 +110,7 @@ namespace Vim.UnitTest
             [Fact]
             public void Count()
             {
-                Create();
+                Create(haveHistory: false);
                 int count = 10;
                 var stack = new Stack<ILinkedUndoTransaction>();
                 for (int i = 0; i < count; i++)

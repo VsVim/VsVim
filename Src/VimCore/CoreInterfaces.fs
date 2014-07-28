@@ -229,7 +229,8 @@ type IUndoRedoOperations =
     /// Creates an Undo Transaction
     abstract CreateUndoTransaction : name : string -> IUndoTransaction
 
-    /// Creates an Undo Transaction specific to the given ITextView
+    /// Creates an Undo Transaction specific to the given ITextView.  Use when operations
+    /// like caret position need to be a part of the undo / redo stack
     abstract CreateTextViewUndoTransaction : name : string -> textView : ITextView -> ITextViewUndoTransaction
 
     /// Creates a linked undo transaction

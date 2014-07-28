@@ -7,46 +7,6 @@ open Microsoft.VisualStudio.Text.Editor
 open Microsoft.VisualStudio.Text.Operations
 open System.Collections.Generic
 
-type UndoTransaction 
-    (
-        _name : string,
-        _transaction : ITextUndoTransaction option
-    ) =
-
-    interface IUndoTransaction with
-        member x.Complete () = 
-            VimTrace.TraceInfo("Complete Undo Transaction: {0}", _name)
-            match _transaction with
-            | None -> ()
-            | Some transaction -> transaction.Complete()
-        member x.Cancel() = 
-            VimTrace.TraceInfo("Cancel Undo Transaction: {0}", _name)
-            match _transaction with
-            | None -> ()
-            | Some transaction -> transaction.Cancel()
-        member x.Dispose() = 
-            match _transaction with
-            | None -> ()
-            | Some transaction -> transaction.Dispose()
-
-type TextViewUndoTransaction 
-    (
-        _name : string,
-        _transaction : ITextUndoTransaction option,
-        _editorOperations : IEditorOperations option
-    ) =
-    inherit UndoTransaction(_name, _transaction)
-
-    interface ITextViewUndoTransaction with
-        member x.AddAfterTextBufferChangePrimitive() =
-            match _editorOperations with
-            | None -> ()
-            | Some editorOperations -> editorOperations.AddAfterTextBufferChangePrimitive()
-        member x.AddBeforeTextBufferChangePrimitive() = 
-            match _editorOperations with
-            | None -> ()
-            | Some editorOperations -> editorOperations.AddBeforeTextBufferChangePrimitive()
-
 /// Information about how many actual undo / redo operations need
 /// to be performed to do a single Vim undo 
 [<RequireQualifiedAccess>]
@@ -61,10 +21,74 @@ type UndoRedoData =
     /// with a single Vim undo / redo transaction
     | Linked of int 
 
+[<RequireQualifiedAccess>]
+type TransactionCloseResult =
+    /// The close was expected and has been removed from the stack
+    | Expected
+
+    /// The transaction was closed out of order 
+    | BadOrder
+    
+    /// This was a previously orphaned transaction.  Essentially one which was open when we
+    /// called ResetState.  
+    | Orphaned
+
+type NormalUndoTransaction 
+    (
+        _name : string,
+        _transaction : ITextUndoTransaction option,
+        _undoRedoOperations : UndoRedoOperations
+    ) =
+
+    let mutable _isComplete = false
+
+    member x.CompleteCore() = 
+        if not _isComplete then
+            _isComplete <- true
+            _undoRedoOperations.NormalUndoTransactionClosed x
+
+    interface IUndoTransaction with
+        member x.Complete () = 
+            x.CompleteCore()
+            VimTrace.TraceInfo("Complete Undo Transaction: {0}", _name)
+            match _transaction with
+            | None -> ()
+            | Some transaction -> transaction.Complete()
+        member x.Cancel() = 
+            x.CompleteCore()
+            VimTrace.TraceInfo("Cancel Undo Transaction: {0}", _name)
+            match _transaction with
+            | None -> ()
+            | Some transaction -> transaction.Cancel()
+        member x.Dispose() = 
+            match _transaction with
+            | None -> ()
+            | Some transaction -> transaction.Dispose()
+
+and TextViewUndoTransaction 
+    (
+        _name : string,
+        _transaction : ITextUndoTransaction option,
+        _editorOperations : IEditorOperations option,
+        _undoRedoOperations : UndoRedoOperations
+    ) =
+    inherit NormalUndoTransaction(_name, _transaction, _undoRedoOperations)
+
+    interface ITextViewUndoTransaction with
+        member x.AddAfterTextBufferChangePrimitive() =
+            match _editorOperations with
+            | None -> ()
+            | Some editorOperations -> editorOperations.AddAfterTextBufferChangePrimitive()
+        member x.AddBeforeTextBufferChangePrimitive() = 
+            match _editorOperations with
+            | None -> ()
+            | Some editorOperations -> editorOperations.AddBeforeTextBufferChangePrimitive()
+
+
 /// This is a method for linking together several simple undo transactions into a
 /// single undo unit.  Undo or Redo of this item will undo / redo every undo unit
 /// that it is linked to
-type LinkedUndoTransaction
+and LinkedUndoTransaction
     (
         _name : string,
         _undoRedoOperations : UndoRedoOperations
@@ -96,7 +120,8 @@ and UndoRedoOperations
         _editorOperationsFactoryService : IEditorOperationsFactoryService
     ) as this =
 
-    let mutable _linkedUndoTransactionStack = Stack<LinkedUndoTransaction>()
+    let _linkedUndoTransactionStack = Stack<LinkedUndoTransaction>()
+    let _normalUndoTransactionStack = Stack<NormalUndoTransaction>()
     let mutable _inUndoRedo = false
     let mutable _undoStack : UndoRedoData list = List.empty
     let mutable _redoStack : UndoRedoData list = List.empty
@@ -128,6 +153,9 @@ and UndoRedoOperations
 
     /// Are we in the middle of a linked undo transaction
     member x.InLinkedUndoTransaction = _linkedUndoTransactionStack.Count > 0
+
+    /// Are we in the middle of a normal undo transaction
+    member x.InNormalUndoTransaction = _normalUndoTransactionStack.Count > 0
 
     member x.LinkedUndoTransactionStack = _linkedUndoTransactionStack
 
@@ -177,31 +205,62 @@ and UndoRedoOperations
             VimTrace.TraceInfo("!!! Broken undo / redo chain")
             _statusUtil.OnError Resources.Common_UndoChainBroken
 
+    /// If a linked undo operation completes that contains 0 undo / redo items that very likely 
+    /// indicates a bug.  It can mean that VsVim has been unhooked from the undo / redo event
+    /// queue as described in #1387.  Notify the user and reset our state 
+    member x.CheckForEmptyLinkedTransaction() = 
+        if _linkedUndoTransactionStack.Count = 0 && _undoStack.Length > 0 && Option.isSome _textUndoHistory then
+            match _undoStack.Head with
+            | UndoRedoData.Linked 0 -> 
+                x.ResetState()
+                VimTrace.TraceInfo("!!! Empty linked undo chain")
+                _statusUtil.OnError Resources.Common_UndoLinkedChainBroken
+            | _ -> ()
+
     member x.CreateUndoTransaction (name : string) = 
         VimTrace.TraceInfo("Open Undo Transaction: {0}", name)
-        match _textUndoHistory with
-        | None -> 
-            new UndoTransaction(name, None) :> IUndoTransaction
-        | Some textUndoHistory ->
-            let transaction = textUndoHistory.CreateTransaction(name)
-            new UndoTransaction(name, Some transaction) :> IUndoTransaction
+        let undoTransaction = 
+            match _textUndoHistory with
+            | None -> 
+                new NormalUndoTransaction(name, None, x) 
+            | Some textUndoHistory ->
+                let transaction = textUndoHistory.CreateTransaction(name)
+                new NormalUndoTransaction(name, Some transaction, x) 
+
+        _normalUndoTransactionStack.Push(undoTransaction)
+        undoTransaction :> IUndoTransaction
 
     member x.CreateTextViewUndoTransaction (name : string) (textView : ITextView) = 
         VimTrace.TraceInfo("Open Text View Undo Transaction: {0}", name)
-        match _textUndoHistory with
-        | None -> 
-            // Don't support either if the textUndoHistory is not present.  While we have an instance
-            // of IEditorOperations it will still fail because internally it's trying to access
-            // the same ITextUndorHistory which is null
-            new TextViewUndoTransaction(name, None, None) :> ITextViewUndoTransaction
-        | Some textUndoHistory ->
-            let transaction = textUndoHistory.CreateTransaction(name)
-            let editorOperations = _editorOperationsFactoryService.GetEditorOperations textView
-            new TextViewUndoTransaction(name, Some transaction, Some editorOperations) :> ITextViewUndoTransaction
+        let textViewUndoTransaction = 
+            match _textUndoHistory with
+            | None -> 
+                // Don't support either if the textUndoHistory is not present.  While we have an instance
+                // of IEditorOperations it will still fail because internally it's trying to access
+                // the same ITextUndorHistory which is null
+                new TextViewUndoTransaction(name, None, None, x)
+            | Some textUndoHistory ->
+                let transaction = textUndoHistory.CreateTransaction(name)
+                let editorOperations = _editorOperationsFactoryService.GetEditorOperations textView
+                new TextViewUndoTransaction(name, Some transaction, Some editorOperations, x)
+
+        _normalUndoTransactionStack.Push(textViewUndoTransaction)
+        textViewUndoTransaction :> ITextViewUndoTransaction
 
     /// Create a linked undo transaction.
     member x.CreateLinkedUndoTransaction (name : string) =
         VimTrace.TraceInfo("Open Linked Undo Transaction: {0}", name)
+
+        // A linked undo transaction works by simply counting all of the normal undo transactions
+        // which are completed while it is open.  A normal *nested* editor undo transaction never
+        // actually raises any events.  Only an outer one ever does.  Hence if an outer transaction
+        // is already open here a linked transaction is pointless.  It will never receive any 
+        // events.  
+        //
+        // Issue an error here and continue on.  This will get caught at close time and appropriately
+        // reset the state
+        if _normalUndoTransactionStack.Count > 0 then
+            _statusUtil.OnError Resources.Common_UndoLinkedOpenError
 
         // When there is a linked undo transaction active the top of the undo stack should always
         // be a Linked item
@@ -271,26 +330,52 @@ and UndoRedoOperations
             _undoStack <- undoStack
             _redoStack <- redoStack
 
+    /// Called when a transaction is closed.  Need to determine the close state based on the current
+    /// expected undo stack 
+    member x.UndoTransactionClosedCore<'T> (undoTransaction : 'T) (stack : Stack<'T>) : TransactionCloseResult =
+        if stack.Count > 0 then
+            if obj.ReferenceEquals(stack.Peek(), undoTransaction) then
+                // This is the most recently open linked transaction which is what we are expecting
+                stack.Pop() |> ignore
+                TransactionCloseResult.Expected
+            elif stack.Contains(undoTransaction) then
+                TransactionCloseResult.BadOrder
+            else
+                TransactionCloseResult.Orphaned
+        else
+            TransactionCloseResult.Orphaned
+
     /// Called when a linked undo transaction is completed.  Must guard heavily against errors here in 
     /// particular
     ///
     ///     - transactions we orphaned in ResetState because of detected errors
     ///     - transactions closed out of order 
     member x.LinkedUndoTransactionClosed (linkedUndoTransaction : LinkedUndoTransaction) = 
-        if _linkedUndoTransactionStack.Count > 0 then
-            if obj.ReferenceEquals(_linkedUndoTransactionStack.Peek(), linkedUndoTransaction) then
-                // This is the most recently open linked transaction which is what we are expecting
-                _linkedUndoTransactionStack.Pop() |> ignore
-            elif _linkedUndoTransactionStack.Contains(linkedUndoTransaction) then
-                // This is a valid open transaction but it's not the top.  This means our state is corrupted
-                // in some way and we need to reset it
-                x.ResetState()
-                VimTrace.TraceInfo("!!! Bad linked undo close order")
-                _statusUtil.OnError Resources.Common_UndoChainOrderError
+        match x.UndoTransactionClosedCore linkedUndoTransaction _linkedUndoTransactionStack with
+        | TransactionCloseResult.Expected -> x.CheckForEmptyLinkedTransaction()
+        | TransactionCloseResult.Orphaned -> ()
+        | TransactionCloseResult.BadOrder -> 
+            // This is a valid open transaction but it's not the top.  This means our state is corrupted
+            // in some way and we need to reset it
+            x.ResetState()
+            VimTrace.TraceInfo("!!! Bad linked undo close order")
+            _statusUtil.OnError Resources.Common_UndoChainOrderErrorLinked
 
-        // The other important case to handle here is orphaned transactions.  Basically 
-        // instances which were alive when we called ResetState.  They are not a part of the 
-        // current stack hence will never be processed above
+    /// Called when a normal undo transaction is completed.  Must guard heavily against errors here in 
+    /// particular
+    ///
+    ///     - transactions we orphaned in ResetState because of detected errors
+    ///     - transactions closed out of order 
+    member x.NormalUndoTransactionClosed (normalUndoTransaction : NormalUndoTransaction) = 
+        match x.UndoTransactionClosedCore normalUndoTransaction _normalUndoTransactionStack with
+        | TransactionCloseResult.Expected -> ()
+        | TransactionCloseResult.Orphaned -> ()
+        | TransactionCloseResult.BadOrder -> 
+            // This is a valid open transaction but it's not the top.  This means our state is corrupted
+            // in some way and we need to reset it
+            x.ResetState()
+            VimTrace.TraceInfo("!!! Bad linked undo close order")
+            _statusUtil.OnError Resources.Common_UndoChainOrderErrorNormal
 
     member x.EditWithUndoTransaction name textView action = 
         use undoTransaction = x.CreateTextViewUndoTransaction name textView

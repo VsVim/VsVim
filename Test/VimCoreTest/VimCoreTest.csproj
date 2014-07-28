@@ -197,7 +197,7 @@
     <Compile Include="TextViewUtilTest.cs" />
     <Compile Include="BufferTrackingServiceTest.cs" />
     <Compile Include="UndoRedoOperationsTest.cs" />
-    <Compile Include="UndoTransactionTest.cs" />
+    <Compile Include="NormalUndoTransactionTest.cs" />
     <Compile Include="VimBufferFactoryIntegrationTest.cs" />
     <Compile Include="VimIntegrationTest.cs" />
     <Compile Include="VimTest.cs" />

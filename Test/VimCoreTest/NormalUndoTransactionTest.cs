@@ -6,24 +6,26 @@ using Vim.Extensions;
 
 namespace Vim.UnitTest
 {
-    public class UndoTransactionTest
+    public class NormalUndoTransactionTest
     {
         private MockRepository _factory;
         private Mock<ITextUndoTransaction> _realTransaction;
-        private UndoTransaction _transactionRaw;
+        private Mock<UndoRedoOperations> _undoRedoOperations;
+        private NormalUndoTransaction _transactionRaw;
         private IUndoTransaction _transaction;
 
         public void Create(bool haveRealTransaction = true)
         {
             _factory = new MockRepository(MockBehavior.Strict);
+            _undoRedoOperations = _factory.Create<UndoRedoOperations>(MockBehavior.Loose);
             if (haveRealTransaction)
             {
                 _realTransaction = _factory.Create<ITextUndoTransaction>();
-                _transactionRaw = new UndoTransaction("Undo", FSharpOption.Create(_realTransaction.Object));
+                _transactionRaw = new NormalUndoTransaction("Undo", FSharpOption.Create(_realTransaction.Object), _undoRedoOperations.Object);
             }
             else
             {
-                _transactionRaw = new UndoTransaction("Undo", FSharpOption<ITextUndoTransaction>.None);
+                _transactionRaw = new NormalUndoTransaction("Undo", FSharpOption<ITextUndoTransaction>.None, _undoRedoOperations.Object);
             }
             _transaction = _transactionRaw;
         }
