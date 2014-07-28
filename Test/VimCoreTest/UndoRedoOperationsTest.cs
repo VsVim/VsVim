@@ -5,43 +5,65 @@ using Microsoft.VisualStudio.Text.Operations;
 using Moq;
 using Xunit;
 using Vim.Extensions;
+using EditorUtils;
+using Microsoft.VisualStudio.Text;
 
 namespace Vim.UnitTest
 {
-    public abstract class UndoRedoOperationsTest
+    public abstract class UndoRedoOperationsTest : VimTestBase
     {
+        public enum HistoryKind
+        {
+            None,
+            Mock,
+            Basic
+        }
+
         private MockRepository _factory;
+        private ITextBuffer _textBuffer;
         private Mock<IStatusUtil> _statusUtil;
-        private Mock<ITextUndoHistory> _textUndoHistory;
+        private Mock<ITextUndoHistory> _mockUndoHistory;
         private UndoRedoOperations _undoRedoOperationsRaw;
         private IUndoRedoOperations _undoRedoOperations;
         private int _undoCount;
         private int _redoCount;
 
-        public void Create(bool haveHistory = true)
+        public void Create(HistoryKind historyKind = HistoryKind.Mock)
         {
             _factory = new MockRepository(MockBehavior.Strict);
             _statusUtil = _factory.Create<IStatusUtil>();
+            _textBuffer = CreateTextBuffer();
 
             var editorOperationsFactoryService = _factory.Create<IEditorOperationsFactoryService>();
-            if (haveHistory)
+
+            FSharpOption<ITextUndoHistory> textUndoHistory;
+            switch (historyKind)
             {
-                _textUndoHistory = _factory.Create<ITextUndoHistory>();
-                _textUndoHistory.Setup(x => x.Undo(It.IsAny<int>())).Callback<int>(count => { _undoCount += count; });
-                _textUndoHistory.Setup(x => x.Redo(It.IsAny<int>())).Callback<int>(count => { _redoCount += count; });
-                    
-                _undoRedoOperationsRaw = new UndoRedoOperations(
-                    _statusUtil.Object,
-                    FSharpOption.Create(_textUndoHistory.Object),
-                    editorOperationsFactoryService.Object);
+                case HistoryKind.Mock:
+                    _mockUndoHistory = _factory.Create<ITextUndoHistory>();
+                    _mockUndoHistory.Setup(x => x.Undo(It.IsAny<int>())).Callback<int>(count => { _undoCount += count; });
+                    _mockUndoHistory.Setup(x => x.Redo(It.IsAny<int>())).Callback<int>(count => { _redoCount += count; });
+                    textUndoHistory = FSharpOption.Create(_mockUndoHistory.Object);
+                    break;
+
+                case HistoryKind.Basic:
+                    textUndoHistory = FSharpOption.Create(BasicUndoHistoryRegistry.TextUndoHistoryRegistry.RegisterHistory(_textBuffer));
+                    break;
+
+                case HistoryKind.None:
+                    textUndoHistory = FSharpOption.CreateForReference<ITextUndoHistory>(null);
+                    break;
+
+                default:
+                    Assert.True(false);
+                    textUndoHistory = null;
+                    break;
             }
-            else
-            {
-                _undoRedoOperationsRaw = new UndoRedoOperations(
-                    _statusUtil.Object,
-                    FSharpOption<ITextUndoHistory>.None,
-                    editorOperationsFactoryService.Object);
-            }
+
+            _undoRedoOperationsRaw = new UndoRedoOperations(
+                _statusUtil.Object,
+                textUndoHistory,
+                editorOperationsFactoryService.Object);
             _undoRedoOperations = _undoRedoOperationsRaw;
         }
 
@@ -50,7 +72,7 @@ namespace Vim.UnitTest
             for (int i = 0; i < count; i++)
             {
                 var args = new TextUndoTransactionCompletedEventArgs(null, TextUndoTransactionCompletionResult.TransactionAdded);
-                _textUndoHistory.Raise(x => x.UndoTransactionCompleted += null, _textUndoHistory.Object, args);
+                _mockUndoHistory.Raise(x => x.UndoTransactionCompleted += null, _mockUndoHistory.Object, args);
             }
         }
 
@@ -62,7 +84,7 @@ namespace Vim.UnitTest
             }
 
             var args = new TextUndoRedoEventArgs(TextUndoHistoryState.Undoing, null);
-            _textUndoHistory.Raise(x => x.UndoRedoHappened += null, _textUndoHistory.Object, args);
+            _mockUndoHistory.Raise(x => x.UndoRedoHappened += null, _mockUndoHistory.Object, args);
 
             if (!expected)
             {
@@ -93,7 +115,7 @@ namespace Vim.UnitTest
             [Fact]
             public void ClosedBrokenChainWithNewOpen()
             {
-                Create(haveHistory: false);
+                Create(HistoryKind.None);
                 var linkedUndoTransaction1 = _undoRedoOperations.CreateLinkedUndoTransaction("test1");
                 _undoRedoOperationsRaw.ResetState();
                 var linkedUndoTransaction2 = _undoRedoOperations.CreateLinkedUndoTransaction("test2");
@@ -110,7 +132,8 @@ namespace Vim.UnitTest
             [Fact]
             public void Count()
             {
-                Create(haveHistory: false);
+                Create(HistoryKind.None);
+
                 int count = 10;
                 var stack = new Stack<ILinkedUndoTransaction>();
                 for (int i = 0; i < count; i++)
@@ -169,6 +192,21 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
+            /// A linked undo transaction essentially counts closes of editor undo transactions.  Those close
+            /// events only occur when they are outer transactions.  Hence opening a linked undo with an already
+            /// open outer transaction is pointless
+            /// </summary>
+            [Fact]
+            public void BadOpenError()
+            {
+                Create(HistoryKind.Basic);
+                var undoTransaction = _undoRedoOperations.CreateUndoTransaction("test");
+                _statusUtil.Setup(x => x.OnError(Resources.Common_UndoLinkedOpenError)).Verifiable();
+                var linkedUndoTransaction = _undoRedoOperations.CreateLinkedUndoTransaction("other");
+                _statusUtil.Verify();
+            }
+
+            /// <summary>
             /// Ensure that we properly protect against manual manipulation of the undo / redo stack
             /// by another component.  If another component directly calls Undo / Redo on the 
             /// ITextUndoHistory object then we have lost all context.  We need to completely reset our 
@@ -200,7 +238,7 @@ namespace Vim.UnitTest
             [Fact]
             public void WithoutHistory()
             {
-                Create(haveHistory: false);
+                Create(HistoryKind.None);
                 _statusUtil.Setup(x => x.OnError(Resources.Internal_UndoRedoNotSupported)).Verifiable();
                 _undoRedoOperationsRaw.Undo(1);
                 _factory.Verify();
@@ -214,7 +252,7 @@ namespace Vim.UnitTest
             {
                 Create();
                 _statusUtil.Setup(x => x.OnError(Resources.Internal_CannotUndo)).Verifiable();
-                _textUndoHistory.Setup(x => x.Undo(1)).Throws(new NotSupportedException()).Verifiable();
+                _mockUndoHistory.Setup(x => x.Undo(1)).Throws(new NotSupportedException()).Verifiable();
                 _undoRedoOperationsRaw.Undo(1);
                 _factory.Verify();
             }
@@ -299,7 +337,7 @@ namespace Vim.UnitTest
             [Fact]
             public void NoHistory()
             {
-                Create(haveHistory: false);
+                Create(HistoryKind.None);
                 _statusUtil.Setup(x => x.OnError(Resources.Internal_UndoRedoNotSupported)).Verifiable();
                 _undoRedoOperationsRaw.Redo(1);
                 _factory.Verify();
@@ -313,7 +351,7 @@ namespace Vim.UnitTest
             {
                 Create();
                 _statusUtil.Setup(x => x.OnError(Resources.Internal_CannotRedo)).Verifiable();
-                _textUndoHistory.Setup(x => x.Redo(1)).Throws(new NotSupportedException()).Verifiable();
+                _mockUndoHistory.Setup(x => x.Redo(1)).Throws(new NotSupportedException()).Verifiable();
                 _undoRedoOperationsRaw.Redo(1);
                 _factory.Verify();
             }
@@ -326,7 +364,7 @@ namespace Vim.UnitTest
             public void NoStack()
             {
                 Create();
-                _textUndoHistory.Setup(x => x.Redo(1)).Verifiable();
+                _mockUndoHistory.Setup(x => x.Redo(1)).Verifiable();
                 _undoRedoOperationsRaw.Redo(2);
                 _factory.Verify();
             }
@@ -391,7 +429,7 @@ namespace Vim.UnitTest
             [Fact]
             public void CreateUndoTransaction1()
             {
-                Create(haveHistory: false);
+                Create(HistoryKind.None);
                 var transaction = _undoRedoOperationsRaw.CreateUndoTransaction("foo");
                 Assert.NotNull(transaction);
                 _factory.Verify();
@@ -402,7 +440,7 @@ namespace Vim.UnitTest
             {
                 Create();
                 var mock = _factory.Create<ITextUndoTransaction>();
-                _textUndoHistory.Setup(x => x.CreateTransaction("foo")).Returns(mock.Object).Verifiable();
+                _mockUndoHistory.Setup(x => x.CreateTransaction("foo")).Returns(mock.Object).Verifiable();
                 var transaction = _undoRedoOperationsRaw.CreateUndoTransaction("foo");
                 Assert.NotNull(transaction);
                 _factory.Verify();
