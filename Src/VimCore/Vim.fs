@@ -466,7 +466,7 @@ type internal Vim
     /// Close all IVimBuffer instances
     member x.CloseAllVimBuffers() =
         x.VimBuffers
-        |> List.iter (fun vimBuffer -> vimBuffer.Close())
+        |> List.iter (fun vimBuffer -> if not vimBuffer.IsClosed then vimBuffer.Close())
 
     /// Create an IVimTextBuffer for the given ITextBuffer.  If an IVimLocalSettings instance is 
     /// provided then attempt to copy them into the created IVimTextBuffer copy of the 
