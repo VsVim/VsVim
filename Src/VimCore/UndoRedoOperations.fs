@@ -203,7 +203,7 @@ and UndoRedoOperations
         if _linkedUndoTransactionStack.Count > 0 then 
             x.ResetState()
             VimTrace.TraceInfo("!!! Broken undo / redo chain")
-            _statusUtil.OnError Resources.Common_UndoChainBroken
+            _statusUtil.OnError Resources.Undo_ChainBroken
 
     /// If a linked undo operation completes that contains 0 undo / redo items that very likely 
     /// indicates a bug.  It can mean that VsVim has been unhooked from the undo / redo event
@@ -214,7 +214,7 @@ and UndoRedoOperations
             | UndoRedoData.Linked 0 -> 
                 x.ResetState()
                 VimTrace.TraceInfo("!!! Empty linked undo chain")
-                _statusUtil.OnError Resources.Common_UndoLinkedChainBroken
+                _statusUtil.OnError Resources.Undo_LinkedChainBroken
             | _ -> ()
 
     member x.CreateUndoTransaction (name : string) = 
@@ -260,7 +260,7 @@ and UndoRedoOperations
         // Issue an error here and continue on.  This will get caught at close time and appropriately
         // reset the state
         if _normalUndoTransactionStack.Count > 0 then
-            _statusUtil.OnError Resources.Common_UndoLinkedOpenError
+            _statusUtil.OnError Resources.Undo_LinkedOpenError
 
         // When there is a linked undo transaction active the top of the undo stack should always
         // be a Linked item
@@ -359,7 +359,7 @@ and UndoRedoOperations
             // in some way and we need to reset it
             x.ResetState()
             VimTrace.TraceInfo("!!! Bad linked undo close order")
-            _statusUtil.OnError Resources.Common_UndoChainOrderErrorLinked
+            _statusUtil.OnError Resources.Undo_ChainOrderErrorLinked
 
     /// Called when a normal undo transaction is completed.  Must guard heavily against errors here in 
     /// particular
@@ -375,7 +375,7 @@ and UndoRedoOperations
             // in some way and we need to reset it
             x.ResetState()
             VimTrace.TraceInfo("!!! Bad linked undo close order")
-            _statusUtil.OnError Resources.Common_UndoChainOrderErrorNormal
+            _statusUtil.OnError Resources.Undo_ChainOrderErrorNormal
 
     member x.EditWithUndoTransaction name textView action = 
         use undoTransaction = x.CreateTextViewUndoTransaction name textView
@@ -415,7 +415,7 @@ and UndoRedoOperations
             // to do anything here.  Reset our state now to prevent undo errors
             x.ResetState()
             VimTrace.TraceInfo("!!! Unexpected undo / redo")
-            _statusUtil.OnError Resources.Common_UndoRedoUnexpected
+            _statusUtil.OnError Resources.Undo_RedoUnexpected
 
     interface IUndoRedoOperations with
         member x.InLinkedUndoTransaction = x.InLinkedUndoTransaction

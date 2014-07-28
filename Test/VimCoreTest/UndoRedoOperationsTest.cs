@@ -80,7 +80,7 @@ namespace Vim.UnitTest
         {
             if (!expected)
             {
-                _statusUtil.Setup(x => x.OnError(Resources.Common_UndoRedoUnexpected)).Verifiable();
+                _statusUtil.Setup(x => x.OnError(Resources.Undo_RedoUnexpected)).Verifiable();
             }
 
             var args = new TextUndoRedoEventArgs(TextUndoHistoryState.Undoing, null);
@@ -201,7 +201,7 @@ namespace Vim.UnitTest
             {
                 Create(HistoryKind.Basic);
                 var undoTransaction = _undoRedoOperations.CreateUndoTransaction("test");
-                _statusUtil.Setup(x => x.OnError(Resources.Common_UndoLinkedOpenError)).Verifiable();
+                _statusUtil.Setup(x => x.OnError(Resources.Undo_LinkedOpenError)).Verifiable();
                 var linkedUndoTransaction = _undoRedoOperations.CreateLinkedUndoTransaction("other");
                 _statusUtil.Verify();
             }
@@ -217,7 +217,7 @@ namespace Vim.UnitTest
             {
                 Create(HistoryKind.Basic);
                 var linkedUndoTransaction = _undoRedoOperations.CreateLinkedUndoTransaction("other");
-                _statusUtil.Setup(x => x.OnError(Resources.Common_UndoLinkedChainBroken)).Verifiable();
+                _statusUtil.Setup(x => x.OnError(Resources.Undo_LinkedChainBroken)).Verifiable();
                 linkedUndoTransaction.Complete();
                 _statusUtil.Verify();
             }
@@ -344,7 +344,7 @@ namespace Vim.UnitTest
                 using (var transaction = _undoRedoOperations.CreateLinkedUndoTransaction("Linked Undo"))
                 {
                     RaiseUndoTransactionCompleted(count: 10);
-                    _statusUtil.Setup(x => x.OnError(Resources.Common_UndoChainBroken)).Verifiable();
+                    _statusUtil.Setup(x => x.OnError(Resources.Undo_ChainBroken)).Verifiable();
                     _undoRedoOperations.Undo(1);
                     Assert.Equal(1, _undoCount);
                     Assert.Equal(0, _undoRedoOperationsRaw.UndoStack.Length);
