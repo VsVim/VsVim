@@ -207,6 +207,35 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
+            /// If a linked transaction has no inner transactions then one of two things happened
+            ///  1. eventing is broken which can happen as detailed in Issue 1387
+            ///  2. coding error
+            /// Either way it is a bug and needs to be mentioned to the suer 
+            /// </summary>
+            [Fact]
+            public void BadClose()
+            {
+                Create(HistoryKind.Basic);
+                var linkedUndoTransaction = _undoRedoOperations.CreateLinkedUndoTransaction("other");
+                _statusUtil.Setup(x => x.OnError(Resources.Common_UndoLinkedChainBroken)).Verifiable();
+                linkedUndoTransaction.Complete();
+                _statusUtil.Verify();
+            }
+
+            /// <summary>
+            /// When there is no history we will never get events hence an empty linked undo transaction
+            /// is expected.  Really we should revisit this and just never have a linked undo transaction
+            /// with no history because it is a broken idea 
+            /// </summary>
+            [Fact]
+            public void BadCloseNoHistory()
+            {
+                Create(HistoryKind.None);
+                var linkedUndoTransaction = _undoRedoOperations.CreateLinkedUndoTransaction("other");
+                linkedUndoTransaction.Complete();
+            }
+
+            /// <summary>
             /// Ensure that we properly protect against manual manipulation of the undo / redo stack
             /// by another component.  If another component directly calls Undo / Redo on the 
             /// ITextUndoHistory object then we have lost all context.  We need to completely reset our 
