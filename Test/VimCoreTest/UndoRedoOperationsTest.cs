@@ -272,6 +272,25 @@ namespace Vim.UnitTest
                 Assert.Equal(2, _undoRedoOperationsRaw.UndoStack.Length);
             }
 
+            [Fact]
+            public void LinkedEmptyNormal()
+            {
+                Create(HistoryKind.Basic);
+                using (var transaction = _undoRedoOperations.CreateLinkedUndoTransaction("test"))
+                {
+                    _undoRedoOperations.CreateUndoTransaction("test").Complete();
+                    transaction.Complete();
+                }
+
+                Assert.Equal(1, _undoRedoOperationsRaw.UndoStack.Length);
+
+                _undoRedoOperations.CreateLinkedUndoTransactionWithFlags("test", LinkedUndoTransactionFlags.CanBeEmpty).Complete();
+                Assert.Equal(1, _undoRedoOperationsRaw.UndoStack.Length);
+
+                _undoRedoOperations.CreateUndoTransaction("test").Complete();
+                Assert.Equal(2, _undoRedoOperationsRaw.UndoStack.Length);
+            }
+
             /// <summary>
             /// Ensure that we properly protect against manual manipulation of the undo / redo stack
             /// by another component.  If another component directly calls Undo / Redo on the 

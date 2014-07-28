@@ -86,6 +86,17 @@ namespace Vim.UnitTest
                 vimBuffer.ProcessNotation("a<Esc>");
                 vimBuffer.Close();
             }
+
+            /// <summary>
+            /// Make sure this doesn't leave a hanging empty linked undo transaction
+            /// </summary>
+            [Fact]
+            public void LeaveCountedInsert()
+            {
+                var vimBuffer = CreateVimBuffer("hello world");
+                vimBuffer.ProcessNotation("3i<Esc>");
+                vimBuffer.Close();
+            }
         }
 
         public sealed class DisableAllTest : VimIntegrationTest
