@@ -228,6 +228,37 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
+            /// Two linked undo transactions which happen back to back should create new linked undo
+            /// transactions in the undo stack
+            /// </summary>
+            [Fact]
+            public void BackToBack()
+            {
+                Create(HistoryKind.Basic);
+                for (int i = 0; i < 5; i++)
+                {
+                    var linkedTransaction = _undoRedoOperations.CreateLinkedUndoTransaction("outer");
+                    var transaction = _undoRedoOperations.CreateUndoTransaction("inner");
+                    transaction.Complete();
+                    linkedTransaction.Complete();
+                    Assert.Equal(i + 1, _undoRedoOperationsRaw.UndoStack.Length);
+                }
+            }
+
+            [Fact]
+            public void AfterNormal()
+            {
+                Create(HistoryKind.Basic);
+                _undoRedoOperations.CreateUndoTransaction("test").Complete();
+                Assert.Equal(1, _undoRedoOperationsRaw.UndoStack.Length);
+
+                var linkedTransaction = _undoRedoOperations.CreateLinkedUndoTransaction("outer");
+                _undoRedoOperations.CreateUndoTransaction("inner").Complete();
+                linkedTransaction.Complete();
+                Assert.Equal(2, _undoRedoOperationsRaw.UndoStack.Length);
+            }
+
+            /// <summary>
             /// Ensure that we properly protect against manual manipulation of the undo / redo stack
             /// by another component.  If another component directly calls Undo / Redo on the 
             /// ITextUndoHistory object then we have lost all context.  We need to completely reset our 

@@ -1950,14 +1950,13 @@ type internal CommandUtil
             // Run the commands in sequence.  Only continue onto the second if the first 
             // command succeeds.  We do want any actions performed in the linked commands
             // to remain linked so do this inside of an edit transaction
-            let commandResult = x.EditWithUndoTransaciton "LinkedCommand" (fun () ->
-                let rec func count commandResult = 
-                    if count = 0 then
-                        commandResult
-                    else
-                        chainCommand commandResult (fun () -> func (count - 1) (_insertUtil.RunInsertCommand command))
+            let rec func count commandResult = 
+                if count = 0 then
+                    commandResult
+                else
+                    chainCommand commandResult (fun () -> func (count - 1) (_insertUtil.RunInsertCommand command))
 
-                func (count - 1) (_insertUtil.RunInsertCommand command))
+            let commandResult = func (count - 1) (_insertUtil.RunInsertCommand command)
 
             if doMoveLeft then
                 chainCommand commandResult (fun () -> _insertUtil.RunInsertCommand (InsertCommand.MoveCaret Direction.Left))
@@ -2000,9 +1999,8 @@ type internal CommandUtil
                 // Run the commands in sequence.  Only continue onto the second if the first 
                 // command succeeds.  We do want any actions performed in the linked commands
                 // to remain linked so do this inside of an edit transaction
-                x.EditWithUndoTransaciton "LinkedCommand" (fun () ->
-                    let commandResult = repeat command1 repeatData
-                    chainCommand commandResult (fun () -> repeat command2 None))
+                let commandResult = repeat command1 repeatData
+                chainCommand commandResult (fun () -> repeat command2 None)
 
         if _inRepeatLastChange then
             _statusUtil.OnError Resources.NormalMode_RecursiveRepeatDetected
@@ -2016,7 +2014,11 @@ type internal CommandUtil
                     _commonOperations.Beep()
                     CommandResult.Completed ModeSwitch.NoSwitch
                 | Some command ->
-                    repeat command (Some repeatData)
+                    use transaction = _undoRedoOperations.CreateLinkedUndoTransaction "Repeat Command"
+                    let result = repeat command (Some repeatData)
+                    transaction.Complete()
+                    result
+
             finally
                 _inRepeatLastChange <- false
 

@@ -18,8 +18,11 @@ type UndoRedoData =
     | Normal of int
 
     /// The stack contains 'count' normal undo / redo transactions which line up 
-    /// with a single Vim undo / redo transaction
-    | Linked of int 
+    /// with a single Vim undo / redo transaction.  
+    ///
+    /// The bool is true when this is a closed linked transaction.  It has been fully completed
+    /// and is no longer being built by closing transactions
+    | Linked of int * bool
 
 [<RequireQualifiedAccess>]
 type TransactionCloseResult =
@@ -182,7 +185,7 @@ and UndoRedoOperations
             let head, tail = 
                 match head with
                 | UndoRedoData.Normal c -> UndoRedoData.Normal (count + c), tail
-                | UndoRedoData.Linked 0 -> UndoRedoData.Normal count, tail
+                | UndoRedoData.Linked (0, _) -> UndoRedoData.Normal count, tail
                 | UndoRedoData.Linked _ -> UndoRedoData.Normal count, list
             head :: tail 
 
@@ -213,25 +216,6 @@ and UndoRedoOperations
             x.ResetState()
             VimTrace.TraceInfo("!!! Broken undo / redo chain")
             _statusUtil.OnError Resources.Undo_ChainBroken
-
-    /// If a linked undo operation completes that contains 0 undo / redo items that very likely 
-    /// indicates a bug.  It can mean that VsVim has been unhooked from the undo / redo event
-    /// queue as described in #1387.  Notify the user and reset our state 
-    member x.CheckForEmptyLinkedTransaction() = 
-        if _linkedUndoTransactionStack.Count = 0 && Option.isSome _textUndoHistory then
-            let isBad = 
-                if _undoStack.Length = 0 then 
-                    true
-                else 
-                    match _undoStack.Head with 
-                    | UndoRedoData.Linked 0 -> true
-                    | UndoRedoData.Normal _ -> true
-                    | _ -> false
-
-            if isBad then
-                x.ResetState()
-                VimTrace.TraceInfo("!!! Empty linked undo chain")
-                _statusUtil.OnError Resources.Undo_LinkedChainBroken
 
     member x.CreateUndoTransaction (name : string) = 
         VimTrace.TraceInfo("Open Undo Transaction: {0}", name)
@@ -300,9 +284,9 @@ and UndoRedoOperations
                         // 'true'.  Fall back to Visual Studio undo here.
                         doUndoRedo 1
                         destStack <- x.AddToStackNormal 1 destStack
-                    | UndoRedoData.Linked count :: tail -> 
+                    | UndoRedoData.Linked (count, completed) :: tail -> 
                         doUndoRedo count 
-                        destStack <- UndoRedoData.Linked count :: destStack
+                        destStack <- UndoRedoData.Linked (count, completed) :: destStack
                         sourceStack <- tail 
                     | UndoRedoData.Normal count :: tail ->
                         doUndoRedo 1
@@ -365,7 +349,27 @@ and UndoRedoOperations
     ///     - transactions closed out of order 
     member x.LinkedUndoTransactionClosed (linkedUndoTransaction : LinkedUndoTransaction) = 
         match x.UndoTransactionClosedCore linkedUndoTransaction _linkedUndoTransactionStack with
-        | TransactionCloseResult.Expected -> x.CheckForEmptyLinkedTransaction()
+        | TransactionCloseResult.Expected -> 
+            if _linkedUndoTransactionStack.Count = 0 && Option.isSome _textUndoHistory then
+                let mutable isGood = false
+
+                // The linked undo transaction is now done, need to freeze the data on the undo
+                // stack 
+                match _undoStack with
+                | UndoRedoData.Linked (count, false) :: tail -> 
+                    if count > 0 then
+                        isGood <- true
+                        _undoStack <- UndoRedoData.Linked (count, true) :: tail
+                | _ -> ()
+
+                // If a linked undo operation completes that contains 0 undo / redo items that very likely 
+                // indicates a bug.  It can mean that VsVim has been unhooked from the undo / redo event
+                // queue as described in #1387.  Notify the user and reset our state 
+                if not isGood then
+                    x.ResetState()
+                    VimTrace.TraceInfo("!!! Empty linked undo chain")
+                    _statusUtil.OnError Resources.Undo_LinkedChainBroken
+        
         | TransactionCloseResult.Orphaned -> ()
         | TransactionCloseResult.BadOrder -> 
             // This is a valid open transaction but it's not the top.  This means our state is corrupted
@@ -412,9 +416,10 @@ and UndoRedoOperations
                 | [] -> 1, []
                 | head :: tail ->
                     match head with
-                    | UndoRedoData.Normal _ -> 1, tail
-                    | UndoRedoData.Linked count -> count + 1, tail
-            _undoStack <- UndoRedoData.Linked count :: tail
+                    | UndoRedoData.Normal _ -> 1, _undoStack
+                    | UndoRedoData.Linked (_, true) -> 1, _undoStack
+                    | UndoRedoData.Linked (count, false) -> count + 1, tail
+            _undoStack <- UndoRedoData.Linked (count, false) :: tail
 
         // Both types should empty the redo stack
         _redoStack <- List.Empty
