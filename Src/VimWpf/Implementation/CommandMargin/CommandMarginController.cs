@@ -131,6 +131,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             _vimBuffer.ErrorMessage += OnErrorMessage;
             _vimBuffer.WarningMessage += OnWarningMessage;
             _vimBuffer.CommandMode.CommandChanged += OnCommandModeCommandChanged;
+            _vimBuffer.TextView.GotAggregateFocus += OnGotAggregateFocus;
             _vimBuffer.Vim.MacroRecorder.RecordingStarted += OnRecordingStarted;
             _vimBuffer.Vim.MacroRecorder.RecordingStopped += OnRecordingStopped;
             _margin.Loaded += OnCommandMarginLoaded;
@@ -143,6 +144,11 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             _editorFormatMap.FormatMappingChanged += OnFormatMappingChanged;
             UpdateForRecordingChanged();
             UpdateTextColor();
+        }
+
+        void OnGotAggregateFocus(object sender, EventArgs e)
+        {
+            UpdateStatusLine();
         }
 
         private void ChangeEditKind(EditKind editKind)
@@ -202,6 +208,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
                 {
                     UpdateForNoEvent();
                 }
+                UpdateStatusLine();
             }
             finally
             {
@@ -296,7 +303,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
         }
 
         /// <summary>
-        /// Update the status line at the end of a key press event which didn't result in 
+        /// Update the status in command line at the end of a key press event which didn't result in 
         /// a mode change
         /// </summary>
         private void UpdateForNoEvent()
@@ -352,6 +359,24 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             _margin.IsRecording = _vimBuffer.Vim.MacroRecorder.IsRecording
                 ? Visibility.Visible
                 : Visibility.Collapsed;
+        }
+
+        /// <summary>
+        /// Update the status line.
+        /// </summary>
+        private void UpdateStatusLine()
+        {
+            var isStatusLineVisible = _vimBuffer.GlobalSettings.LastStatus != 0;
+
+            _margin.IsStatuslineVisible = isStatusLineVisible
+                ? Visibility.Visible
+                : Visibility.Collapsed;
+
+            if (isStatusLineVisible)
+            {
+                var statusLineFormat = _vimBuffer.GlobalSettings.StatusLine;
+                _margin.StatusLine = statusLineFormat;
+            }
         }
 
         private void UpdateSubstituteConfirmMode()

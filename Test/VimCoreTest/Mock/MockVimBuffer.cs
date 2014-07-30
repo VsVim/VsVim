@@ -38,6 +38,7 @@ namespace Vim.UnitTest.Mock
         public IVimData VimDataImpl;
         public IVim VimImpl;
         public FSharpOption<ModeKind> InOneTimeCommandImpl;
+        public IVimGlobalSettings GlobalSettingsImpl;
 
         public PropertyCollection Properties
         {
@@ -161,7 +162,7 @@ namespace Vim.UnitTest.Mock
 
         public IVimGlobalSettings GlobalSettings
         {
-            get { throw new NotImplementedException(); }
+            get { return GlobalSettingsImpl; }
         }
 
         public void RaiseSwitchedMode(IMode mode)

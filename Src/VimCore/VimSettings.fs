@@ -160,6 +160,7 @@ type internal GlobalSettings() =
             (IgnoreCaseName,"ic", SettingValue.Toggle false)
             (JoinSpacesName, "js", SettingValue.Toggle true)
             (KeyModelName, "km", SettingValue.String "")
+            (LastStatusName, "ls", SettingValue.Number 0)
             (MagicName, MagicName, SettingValue.Toggle true)
             (MaxMapDepth, "mmd", SettingValue.Number 1000)
             (MouseModelName, "mousem", SettingValue.String "popup")
@@ -173,6 +174,7 @@ type internal GlobalSettings() =
             (ShellFlagName, "shcf", SettingValue.String "/c")
             (SmartCaseName, "scs", SettingValue.Toggle false)
             (StartOfLineName, "sol", SettingValue.Toggle true)
+            (StatusLineName, "stl", SettingValue.String "")
             (TabStopName, "ts", SettingValue.Number 8)
             (TildeOpName, "top", SettingValue.Toggle false)
             (TimeoutName, "to", SettingValue.Toggle true)
@@ -359,6 +361,9 @@ type internal GlobalSettings() =
         member x.KeyModelOptions
             with get() = x.GetCommaOptions KeyModelName KeyModelOptionsMapping KeyModelOptions.None (fun x y -> x ||| y)
             and set value = x.SetCommaOptions KeyModelName KeyModelOptionsMapping value Util.IsFlagSet
+        member x.LastStatus
+            with get() = _map.GetNumberValue LastStatusName
+            and set value = _map.TrySetValue LastStatusName (SettingValue.Number value) |> ignore
         member x.Magic
             with get() = _map.GetBoolValue MagicName
             and set value = _map.TrySetValue MagicName (SettingValue.Toggle value) |> ignore
@@ -403,6 +408,9 @@ type internal GlobalSettings() =
         member x.StartOfLine 
             with get() = _map.GetBoolValue StartOfLineName
             and set value = _map.TrySetValue StartOfLineName (SettingValue.Toggle value) |> ignore
+        member x.StatusLine
+            with get() = _map.GetStringValue StatusLineName
+            and set value = _map.TrySetValue StatusLineName (SettingValue.String value) |> ignore
         member x.TildeOp
             with get() = _map.GetBoolValue TildeOpName
             and set value = _map.TrySetValue TildeOpName (SettingValue.Toggle value) |> ignore
