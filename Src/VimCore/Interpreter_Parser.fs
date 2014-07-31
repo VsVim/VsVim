@@ -6,6 +6,11 @@ open System.Collections.Generic
 open StringBuilderExtensions
 
 [<RequireQualifiedAccess>]
+type ParseRegisterName =
+    | All
+    | NoNumbered
+
+[<RequireQualifiedAccess>]
 type ParseResult<'T> = 
     | Succeeded of 'T
     | Failed of string
@@ -621,15 +626,20 @@ type Parser
         inner (fun x -> x)
 
     /// Parse out a register value from the text.  This will not parse out numbered register
-    member x.ParseRegisterName () = 
+    member x.ParseRegisterName kind = 
         let c = _tokenizer.CurrentChar 
-        if CharUtil.IsDigit c then
-            None
-        else
+        let isGood = 
+            match kind with 
+            | ParseRegisterName.All -> true
+            | ParseRegisterName.NoNumbered -> not (CharUtil.IsDigit c)
+        
+        if isGood then
             let name = RegisterName.OfChar c
             if Option.isSome name then
                 _tokenizer.MoveNextChar()
             name
+        else
+            None
 
     /// Used to parse out the flags for substitute commands.  Will not modify the 
     /// stream if there are no flags
@@ -908,7 +918,7 @@ type Parser
     /// Parse out the :delete command
     member x.ParseDelete lineRange = 
         x.SkipBlanks()
-        let name = x.ParseRegisterName()
+        let name = x.ParseRegisterName ParseRegisterName.NoNumbered
         x.SkipBlanks()
         let lineRange = LineRangeSpecifier.WithEndCount (lineRange, x.ParseNumber())
         LineCommand.Delete (lineRange, name)
@@ -1600,7 +1610,7 @@ type Parser
     /// Parse out the yank command
     member x.ParseYank lineRange =
         x.SkipBlanks()
-        let registerName = x.ParseRegisterName()
+        let registerName = x.ParseRegisterName ParseRegisterName.NoNumbered
 
         x.SkipBlanks()
         let count = x.ParseNumber()
@@ -1721,7 +1731,7 @@ type Parser
     member x.ParsePut lineRange =
         let hasBang = x.ParseBang()
         x.SkipBlanks()
-        let registerName = x.ParseRegisterName()
+        let registerName = x.ParseRegisterName ParseRegisterName.NoNumbered
 
         if hasBang then
             LineCommand.PutBefore (lineRange, registerName)
@@ -1889,9 +1899,18 @@ type Parser
     /// Parse out the :display and :registers command.  Just takes a single argument 
     /// which is the register name
     member x.ParseDisplayRegisters () = 
-        x.SkipBlanks()
-        let name = x.ParseRegisterName()
-        LineCommand.DisplayRegisters name
+        let mutable nameList : RegisterName list = List.Empty
+        let mutable more = true
+        while more do
+            x.SkipBlanks()
+            match x.ParseRegisterName ParseRegisterName.All with
+            | Some name -> 
+                nameList <- name :: nameList
+                more <- true
+            | None -> more <- false
+
+        nameList <- List.rev nameList
+        LineCommand.DisplayRegisters nameList
 
     /// Parse out the :marks command.  Handles both the no argument and argument
     /// case

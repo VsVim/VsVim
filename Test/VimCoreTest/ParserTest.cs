@@ -1734,6 +1734,20 @@ let x = 42
                 var command = ParseLineCommand("ve");
                 Assert.True(command.IsVersion);
             }
+
+            [Fact]
+            public void Registers()
+            {
+                Action<string> check = (text) =>
+                {
+                    var command = ParseLineCommand(text);
+                    Assert.True(command.IsDisplayRegisters);
+                };
+
+                check("reg b 1");
+                check("reg");
+                check("reg a");
+            }
         }
     }
 }

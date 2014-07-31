@@ -501,16 +501,15 @@ type VimInterpreter
         RunResult.Completed
 
     /// Display the registers.  If a particular name is specified only display that register
-    member x.RunDisplayRegisters registerName =
+    member x.RunDisplayRegisters nameList =
 
         // The value when display shouldn't contain any new lines.  They are expressed as instead
         // ^J which is the key-notation for <NL>
         let normalizeDisplayString (data : string) = data.Replace(System.Environment.NewLine, "^J")
 
-        let names = 
-            match registerName with
-            | None -> 
-
+        let displayNames = 
+            match nameList with
+            | [] -> 
                 // The documentation for this command says that it should display only the
                 // named and numbered registers.  Experimentation shows that it should also
                 // display last search, the quote star and a few others
@@ -522,14 +521,11 @@ type VimInterpreter
                     | RegisterName.SelectionAndDrop drop -> drop <> SelectionAndDropRegister.Star
                     | RegisterName.LastSearchPattern -> true
                     | _ -> false)
-            | Some registerName ->
-                // Convert the remaining items to registers.  Should work with any valid 
-                // name not just named and numbers
-                [registerName] |> Seq.ofList
+            | _ -> nameList |> Seq.ofList
 
         // Build up the status string messages
         let lines = 
-            names 
+            displayNames 
             |> Seq.map (fun name -> 
                 let register = _registerMap.GetRegister name
                 match register.Name.Char, StringUtil.isNullOrEmpty register.StringValue with
@@ -1457,7 +1453,7 @@ type VimInterpreter
         | LineCommand.FunctionStart _ -> cantRun ()
         | LineCommand.FunctionEnd _ -> cantRun ()
         | LineCommand.DisplayKeyMap (keyRemapModes, keyNotationOption) -> x.RunDisplayKeyMap keyRemapModes keyNotationOption
-        | LineCommand.DisplayRegisters registerName -> x.RunDisplayRegisters registerName
+        | LineCommand.DisplayRegisters nameList -> x.RunDisplayRegisters nameList
         | LineCommand.DisplayLet variables -> x.RunDisplayLets variables
         | LineCommand.DisplayMarks marks -> x.RunDisplayMarks marks
         | LineCommand.Fold lineRange -> x.RunFold lineRange
