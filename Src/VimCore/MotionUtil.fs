@@ -10,6 +10,188 @@ open Vim.Modes
 open Vim.StringBuilderExtensions
 open Vim.Interpreter
 
+type CachedParsedItem<'T> = { 
+    Version : int
+    Items : List<'T>
+} with
+
+    static member GetItems (snapshot : ITextSnapshot) key doParse = 
+        let textBuffer = snapshot.TextBuffer
+        let propertyCollection = textBuffer.Properties
+
+        let parseAndSave () = 
+            let items = doParse snapshot
+            let cachedParseItem = { Version = snapshot.Version.VersionNumber; Items = items }
+            propertyCollection.[key] <- cachedParseItem
+            items
+
+        match PropertyCollectionUtil.GetValue<CachedParsedItem<'T>> key propertyCollection with
+        | Some cachedParsedItem -> 
+            if cachedParsedItem.Version = snapshot.Version.VersionNumber then 
+                cachedParsedItem.Items
+            else 
+                parseAndSave ()
+        | None -> parseAndSave ()
+
+/// Used to represent xml / html tags within the file.  
+type TagBlock
+    (
+        text : string,
+        fullSpan : Span,
+        innerSpan : Span,
+        children : List<TagBlock>
+    ) =
+
+    let _text = text
+
+    // This is the full span of the tag block including the opening and closing tags
+    let _fullSpan = fullSpan
+
+    // This is the span within the tag block that does not include the tags
+    let _innerSpan = innerSpan
+
+    let _children = children
+
+    member x.Text = _text
+
+    member x.FullSpan = _fullSpan
+
+    member x.InnerSpan = _innerSpan
+
+    member x.Children = _children
+
+type TagBlockParser (snapshot : ITextSnapshot) = 
+
+    let _snapshot = snapshot
+
+    member x.TestPosition position func = 
+        if position >= snapshot.Length then
+            false
+        else
+            func (snapshot.[position])
+
+    member x.TestPositionChar position target = 
+        x.TestPosition position (fun c -> c = target)
+
+    /// Parse out the beginning of a tag name.  This will succeed if the point passed in is at a
+    /// '<' character and is followed by a non-zero length of letters
+    member x.ParseTagPrefix position = 
+        if x.TestPositionChar position '<' then
+            let textStartPosition = position + 1
+            let mutable position = textStartPosition
+            while x.TestPosition position CharUtil.IsLetter do
+                position <- position + 1
+
+            if position > textStartPosition then
+                Some (position - textStartPosition)
+            else
+                None
+        else
+            None
+
+    /// Parse out a legal start tag at the given position.  Succeeds when the point passed in 
+    /// is at a '<' character of an open tag 
+    ///
+    /// This will ignore tags br and meta as they are specifically ignored in the documentation
+    /// for :help tag-blocks
+    member x.ParseStartTag position = 
+        match x.ParseTagPrefix position with
+        | None -> None
+        | Some tagNameLength -> 
+            // Move past <tagname
+            let closeTagPosition = tagNameLength + 1 + position
+            if x.TestPositionChar closeTagPosition '>' then    
+                let span = Span(position + 1, tagNameLength)
+                let text = _snapshot.GetText(span)
+                if StringUtil.isEqualIgnoreCase text "br" || StringUtil.isEqualIgnoreCase text "meta" then
+                    None
+                else
+                    Some (text, closeTagPosition + 1)
+            else
+                None
+
+    member x.ParseEndTag position = 
+        if x.TestPositionChar position '<' && x.TestPositionChar (position + 1) '/' then
+            let textStartPosition = position + 2
+            let mutable position = textStartPosition
+            while x.TestPosition position CharUtil.IsLetter do
+                position <- position + 1
+
+            let length = position - textStartPosition
+            if length > 0 && x.TestPositionChar position '>' then
+                let span = Span(textStartPosition, length)
+                let text = _snapshot.GetText(span)
+                Some (text, position + 1)
+            else
+                None
+        else 
+            None
+
+    /// Parse out the contents of a tag with the specified name within the given Span.  This returns
+    /// a tuple of the tag contents and whether or not the ending tag was ever found.  
+    member x.ParseTagContents tagName position : TagBlock option = 
+        let children = List<TagBlock>()
+
+        let mutable endPosition : int option = None
+        let mutable position = position
+        while position < _snapshot.Length && Option.isNone endPosition do
+            match x.ParseStartTag position with
+            | Some (startTagName, nextPosition) ->
+                match x.ParseTagContents startTagName nextPosition with
+                | Some tagBlock -> 
+                    children.Add(tagBlock)
+                    position <- tagBlock.FullSpan.End
+                | None ->
+                    // Unmatched start tag, parsing is done
+                    position <- _snapshot.Length
+            | None ->
+                match x.ParseEndTag position with 
+                | Some (endTagName, nextPosition) ->
+                    if StringUtil.isEqualIgnoreCase tagName endTagName then
+                        endPosition <- Some nextPosition
+                    else
+                        position <- position + 1
+                | None -> 
+                    position <- position + 1
+
+        match endPosition with 
+        | None -> None
+        | Some endPosition ->
+            let fullSpan = Span.FromBounds(position, endPosition)
+
+            // TODO: fix this, it is wrong for now 
+            let innerSpan = fullSpan
+            let tagBlock = TagBlock(tagName, fullSpan, innerSpan, children)
+            Some tagBlock
+
+    member x.ParseTagBlocks() =
+        let collection = List<TagBlock>()
+        let mutable position = 0
+        while position < _snapshot.Length do
+            match x.ParseStartTag position with
+            | Some (tagName, nextPosition) ->
+                match x.ParseTagContents tagName nextPosition with
+                | Some tagBlock -> 
+                    collection.Add(tagBlock)
+                    position <- tagBlock.FullSpan.End
+                | None -> position <- position + 1
+            | None -> position <- position + 1
+
+        collection
+
+module TagBlockUtil = 
+
+    /// This is the key for accessing directive blocks within the ITextSnapshot.  This
+    /// lets us avoid multiple parses of #if for a single ITextSnapshot
+    let _tagBlockKey = obj()
+
+    let ParseTagBlocks snapshot = 
+        let parser = TagBlockParser(snapshot)
+        parser.ParseTagBlocks()
+
+    let GetTagBlocks snapshot = 
+        CachedParsedItem<TagBlock>.GetItems snapshot _tagBlockKey ParseTagBlocks
+
 [<RequireQualifiedAccess>]
 [<NoComparison>]
 type DirectiveKind = 
@@ -34,11 +216,6 @@ type Directive = {
 type DirectiveBlock = {
     Directives : List<Directive>
     IsComplete : bool
-}
-
-type CachedDirectiveBlocks = { 
-    Version : int
-    DirectiveBlocks : List<DirectiveBlock>
 }
 
 [<RequireQualifiedAccess>]
@@ -196,19 +373,7 @@ type MatchingTokenUtil() =
 
     /// Get the directive blocks for the specified ITextSnapshot
     member x.GetDirectiveBlocks (snapshot : ITextSnapshot) = 
-        let textBuffer = snapshot.TextBuffer
-        let propertyCollection = textBuffer.Properties
-
-        let parseAndSave () = 
-            let blocks = x.ParseDirectiveBlocks snapshot
-            propertyCollection.[_directiveBlocksKey] <- { Version = snapshot.Version.VersionNumber; DirectiveBlocks = blocks }
-            blocks
-
-        match PropertyCollectionUtil.GetValue<CachedDirectiveBlocks> _directiveBlocksKey propertyCollection with
-        | Some cachedDirectiveBlocks -> 
-            if cachedDirectiveBlocks.Version = snapshot.Version.VersionNumber then cachedDirectiveBlocks.DirectiveBlocks
-            else parseAndSave ()
-        | None -> parseAndSave ()
+        CachedParsedItem<DirectiveBlock>.GetItems snapshot _directiveBlocksKey x.ParseDirectiveBlocks
 
     /// Find the correct MatchingTokenKind for the given line and column position on that 
     /// line.  Needs to consider all possible matching tokens and see which one is closest
