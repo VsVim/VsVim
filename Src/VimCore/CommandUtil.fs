@@ -2434,6 +2434,15 @@ type internal CommandUtil
 
         let count = if count <= 0 then 1 else count
 
+        // In the case we are not using 'startofline' then this is a maintain caret column
+        // operation.  Save the current value now so that it can be processed later 
+        let maintainSpacesToCaret = 
+            let spacesToCaret = SnapshotPointUtil.GetSpacesToPoint x.CaretPoint _localSettings.TabStop
+            match _commonOperations.MaintainCaretColumn with
+            | MaintainCaretColumn.None -> spacesToCaret
+            | MaintainCaretColumn.Spaces spaces -> max spaces spacesToCaret
+            | MaintainCaretColumn.EndOfLine -> spacesToCaret
+
         try
             // Update the caret to the specified offset from the first visible line
             let updateCaretToOffset lineOffset = 
@@ -2481,6 +2490,16 @@ type internal CommandUtil
                     _textView.ViewScroller.ScrollViewportVerticallyByLines(scrollDirection, count)
                     updateCaretToOffset lineOffset
             | _ -> ()
+
+            // At this point the view has been scolled and the caret is on the proper line.  Need to
+            // adjust the caret within the line to the appropriate column
+            if _globalSettings.StartOfLine then
+                let point = SnapshotLineUtil.GetFirstNonBlankOrEnd x.CaretLine
+                TextViewUtil.MoveCaretToPoint _textView point
+            else
+                let point = SnapshotLineUtil.GetSpaceOrEnd x.CaretLine maintainSpacesToCaret _localSettings.TabStop
+                TextViewUtil.MoveCaretToPoint _textView point
+                _commonOperations.MaintainCaretColumn <- MaintainCaretColumn.Spaces maintainSpacesToCaret
 
         with 
         // Dealing with ITextViewLines can lead to an exception (particularly during layout).  Need

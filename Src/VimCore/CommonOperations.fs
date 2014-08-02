@@ -543,7 +543,6 @@ type internal CommonOperations
         TextViewUtil.MoveCaretToPoint _textView point
         x.EnsureAtPoint point viewFlags
 
-
     /// Move the caret to the specified line maintaining it's current column
     member x.MoveCaretToLine line = 
         let spaces = SnapshotPointUtil.GetSpacesToPoint x.CaretPoint _localSettings.TabStop
