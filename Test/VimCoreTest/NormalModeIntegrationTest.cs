@@ -4672,7 +4672,61 @@ namespace Vim.UnitTest
             }
         }
 
-        public sealed class AllSentenceTextObject : NormalModeIntegrationTest
+        public sealed class TagBlocksMotionTest : NormalModeIntegrationTest
+        {
+            [Fact(Skip = "Implementing")]
+            public void Simple()
+            {
+                Create("<a>   </a>");
+                _textView.MoveCaretTo(4);
+                _vimBuffer.Process("dit");
+                Assert.Equal("<a></a>", _textBuffer.GetLine(0).GetText());
+            }
+            
+            /// <summary>
+            /// The br element is not considered a tag  (help tag-blocks)
+            /// </summary>
+            [Fact(Skip = "Implementing")]
+            public void NotTag1()
+            {
+                Create("<a> <br>  </a>");
+                _textView.MoveCaretTo(4);
+                _vimBuffer.Process("dit");
+                Assert.Equal("<a></a>", _textBuffer.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// The meta element is not considered a tag  (help tag-blocks)
+            /// </summary>
+            [Fact(Skip = "Implementing")]
+            public void NotTag2()
+            {
+                Create("<a> <meta>  </a>");
+                _textView.MoveCaretTo(4);
+                _vimBuffer.Process("dit");
+                Assert.Equal("<a></a>", _textBuffer.GetLine(0).GetText());
+            }
+
+            [Fact(Skip = "Implementing")]
+            public void CaseDoesNotMatter()
+            {
+                Create("<a>   </A>");
+                _textView.MoveCaretTo(4);
+                _vimBuffer.Process("dit");
+                Assert.Equal("<a></A>", _textBuffer.GetLine(0).GetText());
+            }
+
+            [Fact(Skip = "Implementing")]
+            public void SingleItemTagsDoNotMatter()
+            {
+                Create("<a> <blah/>  </A>");
+                _textView.MoveCaretTo(6);
+                _vimBuffer.Process("dit");
+                Assert.Equal("<a></A>", _textBuffer.GetLine(0).GetText());
+            }
+        }
+
+        public sealed class AllSentenceTextObjectTest : NormalModeIntegrationTest
         {
             [Fact]
             public void Simple()
