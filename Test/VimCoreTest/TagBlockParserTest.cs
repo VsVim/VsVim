@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using Microsoft.VisualStudio.Text;
 using Xunit;
 
 namespace Vim.UnitTest
@@ -70,6 +71,57 @@ namespace Vim.UnitTest
                 var items = Parse("<a>cat</a><b>dog</b>");
                 Assert.Equal("a", items[0].Text);
                 Assert.Equal("b", items[1].Text);
+            }
+        }
+
+        public sealed class SpanTest : TagBlockParserTest
+        {
+            private List<TagBlock> Parse(params string[] lines)
+            {
+                var textBuffer = CreateTextBuffer(lines);
+                var parser = new TagBlockParser(textBuffer.CurrentSnapshot);
+                return parser.ParseTagBlocks();
+            }
+
+            [Fact]
+            public void Simple()
+            {
+                var text = @"<a> cat </a>";
+                var item = Parse(text).Single();
+                Assert.Equal(new Span(0, text.Length), item.FullSpan);
+                Assert.Equal(new Span(3, text.Length - 7), item.InnerSpan);
+            }
+
+            [Fact]
+            public void SimpleEmpty()
+            {
+                var text = @"<a></a>";
+                var item = Parse(text).Single();
+                Assert.Equal(new Span(0, text.Length), item.FullSpan);
+                Assert.Equal(new Span(3, 0), item.InnerSpan);
+            }
+
+            [Fact]
+            public void Nested()
+            {
+                var text = @"<a><b></b></a>";
+                var item = Parse(text).Single();
+                Assert.Equal(new Span(0, text.Length), item.FullSpan);
+                Assert.Equal(new Span(3, text.Length - 7), item.InnerSpan);
+
+                item = item.Children.Single();
+                Assert.Equal(new Span(3, 7), item.FullSpan);
+                Assert.Equal(new Span(6, 0), item.InnerSpan);
+            }
+
+            [Fact]
+            public void DoubleRoot()
+            {
+                var text = @"<a> </a><b> </b>";
+                var collection = Parse(text);
+
+                Assert.Equal(new Span(0, 8), collection[0].FullSpan);
+                Assert.Equal(new Span(8, 8), collection[1].FullSpan);
             }
         }
     }

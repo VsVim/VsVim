@@ -129,15 +129,17 @@ type TagBlockParser (snapshot : ITextSnapshot) =
 
     /// Parse out the contents of a tag with the specified name within the given Span.  This returns
     /// a tuple of the tag contents and whether or not the ending tag was ever found.  
-    member x.ParseTagContents tagName position : TagBlock option = 
+    member x.ParseTagContents tagName tagStartPosition contentStartPosition : TagBlock option = 
         let children = List<TagBlock>()
 
-        let mutable endPosition : int option = None
-        let mutable position = position
+        // This is a tuple of values.  The first value is the end of the content 
+        // portion of the text while the second is the end of the closing tag
+        let mutable endPosition : (int * int) option = None
+        let mutable position = contentStartPosition
         while position < _snapshot.Length && Option.isNone endPosition do
             match x.ParseStartTag position with
             | Some (startTagName, nextPosition) ->
-                match x.ParseTagContents startTagName nextPosition with
+                match x.ParseTagContents startTagName position nextPosition with
                 | Some tagBlock -> 
                     children.Add(tagBlock)
                     position <- tagBlock.FullSpan.End
@@ -148,7 +150,7 @@ type TagBlockParser (snapshot : ITextSnapshot) =
                 match x.ParseEndTag position with 
                 | Some (endTagName, nextPosition) ->
                     if StringUtil.isEqualIgnoreCase tagName endTagName then
-                        endPosition <- Some nextPosition
+                        endPosition <- Some (position, nextPosition)
                     else
                         position <- position + 1
                 | None -> 
@@ -156,11 +158,9 @@ type TagBlockParser (snapshot : ITextSnapshot) =
 
         match endPosition with 
         | None -> None
-        | Some endPosition ->
-            let fullSpan = Span.FromBounds(position, endPosition)
-
-            // TODO: fix this, it is wrong for now 
-            let innerSpan = fullSpan
+        | Some (contentEndPosition, tagEndPosition) ->
+            let fullSpan = Span.FromBounds(tagStartPosition, tagEndPosition)
+            let innerSpan = Span.FromBounds(contentStartPosition, contentEndPosition)
             let tagBlock = TagBlock(tagName, fullSpan, innerSpan, children)
             Some tagBlock
 
@@ -170,7 +170,7 @@ type TagBlockParser (snapshot : ITextSnapshot) =
         while position < _snapshot.Length do
             match x.ParseStartTag position with
             | Some (tagName, nextPosition) ->
-                match x.ParseTagContents tagName nextPosition with
+                match x.ParseTagContents tagName position nextPosition with
                 | Some tagBlock -> 
                     collection.Add(tagBlock)
                     position <- tagBlock.FullSpan.End
