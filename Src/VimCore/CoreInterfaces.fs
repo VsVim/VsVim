@@ -941,6 +941,9 @@ type Motion =
     /// not return a value
     | AllSentence
 
+    /// Gets the entire tag including the start / end elements
+    | AllTag
+
     /// Move to the beginning of the line.  Interestingly since this command is bound to the '0' it 
     /// can't be associated with a count.  Doing a command like 30 binds as count 30 vs. count 3 
     /// for command '0'
@@ -1009,6 +1012,9 @@ type Motion =
 
     /// Inner block motion
     | InnerBlock of BlockKind
+
+    /// Contents of the tag
+    | InnerTag 
 
     /// Find the last non-blank character on the line.  Count causes it to go "count" lines
     /// down and perform the search

@@ -179,6 +179,11 @@ type TagBlockParser (snapshot : ITextSnapshot) =
 
         collection
 
+[<RequireQualifiedAccess>]
+type TagBlockKind = 
+    | AllTag
+    | InnerTag
+
 module TagBlockUtil = 
 
     /// This is the key for accessing directive blocks within the ITextSnapshot.  This
@@ -191,6 +196,23 @@ module TagBlockUtil =
 
     let GetTagBlocks snapshot = 
         CachedParsedItem<TagBlock>.GetItems snapshot _tagBlockKey ParseTagBlocks
+
+    let GetTagBlockForPoint (point : SnapshotPoint) kind = 
+        let tagBlocks = GetTagBlocks point.Snapshot
+
+        let isMatch (tagBlock : TagBlock) = 
+            let span = 
+                match kind with 
+                | TagBlockKind.AllTag -> tagBlock.FullSpan
+                | TagBlockKind.InnerTag -> tagBlock.InnerSpan
+            span.Contains point.Position
+
+        let rec find current collection = 
+            match collection |> Seq.tryFind isMatch with
+            | None -> current
+            | Some tagBlock -> find (Some tagBlock) tagBlock.Children
+
+        find None tagBlocks
 
 [<RequireQualifiedAccess>]
 [<NoComparison>]
@@ -1674,6 +1696,16 @@ type internal MotionUtil
             let range = SnapshotLineRangeUtil.CreateForLineRange startLine endLine
             MotionResult.CreateExEx range.ExtentIncludingLineBreak true MotionKind.LineWise MotionResultFlags.None column)
 
+    /// Get the all tag motion
+    member x.AllTag count = 
+        match TagBlockUtil.GetTagBlockForPoint x.CaretPoint TagBlockKind.AllTag with
+        | None -> None
+        | Some tagBlock -> 
+            let span = SnapshotSpan(x.CurrentSnapshot, tagBlock.FullSpan)
+            MotionResult.Create span true MotionKind.CharacterWiseExclusive |> Some
+
+    member x.InnerTag count = None 
+
     /// An inner block motion is just the all block motion with the start and 
     /// end character removed 
     member x.InnerBlock contextPoint blockKind count =
@@ -2433,6 +2465,7 @@ type internal MotionUtil
             | Motion.AllParagraph -> x.AllParagraph motionArgument.Count
             | Motion.AllWord wordKind -> x.AllWord wordKind motionArgument.Count x.CaretPoint
             | Motion.AllSentence -> x.AllSentence motionArgument.Count |> Some
+            | Motion.AllTag -> x.AllTag motionArgument.Count
             | Motion.BackwardEndOfWord wordKind -> x.BackwardEndOfWord wordKind motionArgument.Count
             | Motion.BeginingOfLine -> x.BeginingOfLine() |> Some
             | Motion.CharLeft -> x.CharLeft motionArgument.Count |> Some
@@ -2453,6 +2486,7 @@ type internal MotionUtil
             | Motion.FirstNonBlankOnLine -> x.FirstNonBlankOnLine motionArgument.Count |> Some
             | Motion.InnerBlock blockKind -> x.InnerBlock x.CaretPoint blockKind motionArgument.Count
             | Motion.InnerWord wordKind -> x.InnerWord wordKind motionArgument.Count x.CaretPoint
+            | Motion.InnerTag -> x.InnerTag motionArgument.Count
             | Motion.LastNonBlankOnLine -> x.LastNonBlankOnLine motionArgument.Count |> Some
             | Motion.LastSearch isReverse -> x.LastSearch isReverse motionArgument.Count
             | Motion.LineDown -> x.LineDown motionArgument.Count
