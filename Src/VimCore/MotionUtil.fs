@@ -1697,14 +1697,14 @@ type internal MotionUtil
             MotionResult.CreateExEx range.ExtentIncludingLineBreak true MotionKind.LineWise MotionResultFlags.None column)
 
     /// Get the all tag motion
-    member x.AllTag count = 
-        match TagBlockUtil.GetTagBlockForPoint x.CaretPoint TagBlockKind.AllTag with
+    member x.AllTag count point = 
+        match TagBlockUtil.GetTagBlockForPoint point TagBlockKind.AllTag with
         | None -> None
         | Some tagBlock -> 
             let span = SnapshotSpan(x.CurrentSnapshot, tagBlock.FullSpan)
             MotionResult.Create span true MotionKind.CharacterWiseExclusive |> Some
 
-    member x.InnerTag count = None 
+    member x.InnerTag count point = None 
 
     /// An inner block motion is just the all block motion with the start and 
     /// end character removed 
@@ -2465,7 +2465,7 @@ type internal MotionUtil
             | Motion.AllParagraph -> x.AllParagraph motionArgument.Count
             | Motion.AllWord wordKind -> x.AllWord wordKind motionArgument.Count x.CaretPoint
             | Motion.AllSentence -> x.AllSentence motionArgument.Count |> Some
-            | Motion.AllTag -> x.AllTag motionArgument.Count
+            | Motion.AllTag -> x.AllTag motionArgument.Count x.CaretPoint
             | Motion.BackwardEndOfWord wordKind -> x.BackwardEndOfWord wordKind motionArgument.Count
             | Motion.BeginingOfLine -> x.BeginingOfLine() |> Some
             | Motion.CharLeft -> x.CharLeft motionArgument.Count |> Some
@@ -2486,7 +2486,7 @@ type internal MotionUtil
             | Motion.FirstNonBlankOnLine -> x.FirstNonBlankOnLine motionArgument.Count |> Some
             | Motion.InnerBlock blockKind -> x.InnerBlock x.CaretPoint blockKind motionArgument.Count
             | Motion.InnerWord wordKind -> x.InnerWord wordKind motionArgument.Count x.CaretPoint
-            | Motion.InnerTag -> x.InnerTag motionArgument.Count
+            | Motion.InnerTag -> x.InnerTag motionArgument.Count x.CaretPoint
             | Motion.LastNonBlankOnLine -> x.LastNonBlankOnLine motionArgument.Count |> Some
             | Motion.LastSearch isReverse -> x.LastSearch isReverse motionArgument.Count
             | Motion.LineDown -> x.LineDown motionArgument.Count
@@ -2535,8 +2535,10 @@ type internal MotionUtil
         match motion with 
         | Motion.AllBlock blockKind -> x.AllBlock point blockKind 1
         | Motion.AllWord wordKind -> x.AllWord wordKind 1 point
+        | Motion.AllTag -> x.AllTag 1 point
         | Motion.InnerWord wordKind -> x.InnerWord wordKind 1 point 
         | Motion.InnerBlock blockKind -> x.InnerBlock point blockKind 1
+        | Motion.InnerTag -> x.InnerTag 1 point
         | _ -> None
 
     interface IMotionUtil with
