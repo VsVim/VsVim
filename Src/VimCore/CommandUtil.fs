@@ -1483,7 +1483,7 @@ type internal CommandUtil
             let argument = ModeArgument.InitialVisualSelection (visualSelection, None)
             x.SwitchMode desiredVisualKind.VisualModeKind argument
 
-        let moveTag () = 
+        let moveTag kind = 
             match _motionUtil.GetTextObject motion x.CaretPoint with
             | None -> onError()
             | Some motionResult -> setSelection motionResult.Span
@@ -1554,8 +1554,7 @@ type internal CommandUtil
         match motion with
         | Motion.AllBlock blockKind -> moveBlock blockKind true
         | Motion.InnerBlock blockKind -> moveBlock blockKind false
-        | Motion.AllTag -> moveTag ()
-        | Motion.InnerTag -> moveTag ()
+        | Motion.TagBlock kind -> moveTag kind
         | _ -> moveNormal () 
 
     /// Open a fold in visual mode.  In Visual Mode a single fold level is opened for every

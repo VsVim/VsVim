@@ -179,11 +179,6 @@ type TagBlockParser (snapshot : ITextSnapshot) =
 
         collection
 
-[<RequireQualifiedAccess>]
-type TagBlockKind = 
-    | AllTag
-    | InnerTag
-
 module TagBlockUtil = 
 
     /// This is the key for accessing directive blocks within the ITextSnapshot.  This
@@ -203,8 +198,8 @@ module TagBlockUtil =
         let isMatch (tagBlock : TagBlock) = 
             let span = 
                 match kind with 
-                | TagBlockKind.AllTag -> tagBlock.FullSpan
-                | TagBlockKind.InnerTag -> tagBlock.InnerSpan
+                | TagBlockKind.All -> tagBlock.FullSpan
+                | TagBlockKind.Inner -> tagBlock.InnerSpan
             span.Contains point.Position
 
         let rec find current collection = 
@@ -1697,19 +1692,20 @@ type internal MotionUtil
             MotionResult.CreateExEx range.ExtentIncludingLineBreak true MotionKind.LineWise MotionResultFlags.None column)
 
     /// Get the all tag motion
-    member x.AllTag count point = 
-        match TagBlockUtil.GetTagBlockForPoint point TagBlockKind.AllTag with
+    member x.TagBlock count point kind = 
+        match TagBlockUtil.GetTagBlockForPoint point kind with
         | None -> None
         | Some tagBlock -> 
-            let span = SnapshotSpan(x.CurrentSnapshot, tagBlock.FullSpan)
+            let span = 
+                match kind with
+                | TagBlockKind.All -> tagBlock.FullSpan
+                | TagBlockKind.Inner -> tagBlock.InnerSpan
+            let span = SnapshotSpan(x.CurrentSnapshot, span)
             MotionResult.Create span true MotionKind.CharacterWiseExclusive |> Some
-
-    member x.InnerTag count point = None 
 
     /// An inner block motion is just the all block motion with the start and 
     /// end character removed 
     member x.InnerBlock contextPoint blockKind count =
-
         if count <> 1 then
             None
         else
@@ -2465,7 +2461,7 @@ type internal MotionUtil
             | Motion.AllParagraph -> x.AllParagraph motionArgument.Count
             | Motion.AllWord wordKind -> x.AllWord wordKind motionArgument.Count x.CaretPoint
             | Motion.AllSentence -> x.AllSentence motionArgument.Count |> Some
-            | Motion.AllTag -> x.AllTag motionArgument.Count x.CaretPoint
+            | Motion.TagBlock kind -> x.TagBlock motionArgument.Count x.CaretPoint kind
             | Motion.BackwardEndOfWord wordKind -> x.BackwardEndOfWord wordKind motionArgument.Count
             | Motion.BeginingOfLine -> x.BeginingOfLine() |> Some
             | Motion.CharLeft -> x.CharLeft motionArgument.Count |> Some
@@ -2486,7 +2482,6 @@ type internal MotionUtil
             | Motion.FirstNonBlankOnLine -> x.FirstNonBlankOnLine motionArgument.Count |> Some
             | Motion.InnerBlock blockKind -> x.InnerBlock x.CaretPoint blockKind motionArgument.Count
             | Motion.InnerWord wordKind -> x.InnerWord wordKind motionArgument.Count x.CaretPoint
-            | Motion.InnerTag -> x.InnerTag motionArgument.Count x.CaretPoint
             | Motion.LastNonBlankOnLine -> x.LastNonBlankOnLine motionArgument.Count |> Some
             | Motion.LastSearch isReverse -> x.LastSearch isReverse motionArgument.Count
             | Motion.LineDown -> x.LineDown motionArgument.Count
@@ -2535,10 +2530,9 @@ type internal MotionUtil
         match motion with 
         | Motion.AllBlock blockKind -> x.AllBlock point blockKind 1
         | Motion.AllWord wordKind -> x.AllWord wordKind 1 point
-        | Motion.AllTag -> x.AllTag 1 point
+        | Motion.TagBlock kind -> x.TagBlock 1 point kind
         | Motion.InnerWord wordKind -> x.InnerWord wordKind 1 point 
         | Motion.InnerBlock blockKind -> x.InnerBlock point blockKind 1
-        | Motion.InnerTag -> x.InnerTag 1 point
         | _ -> None
 
     interface IMotionUtil with

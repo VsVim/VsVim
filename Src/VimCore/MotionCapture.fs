@@ -19,7 +19,7 @@ type internal MotionCapture
             seq { 
                 yield ("ab", MotionFlags.TextObject ||| MotionFlags.TextObjectWithAlwaysCharacter, Motion.AllBlock BlockKind.Paren)
                 yield ("aB", MotionFlags.TextObject ||| MotionFlags.TextObjectWithAlwaysCharacter, Motion.AllBlock BlockKind.CurlyBracket)
-                yield ("at", MotionFlags.TextObject ||| MotionFlags.TextObjectWithAlwaysCharacter, Motion.AllTag)
+                yield ("at", MotionFlags.TextObject ||| MotionFlags.TextObjectWithAlwaysCharacter, Motion.TagBlock TagBlockKind.All)
                 yield ("ap", MotionFlags.CaretMovement, Motion.AllParagraph)
                 yield ("as", MotionFlags.CaretMovement, Motion.AllSentence)
                 yield ("aw", MotionFlags.TextObject ||| MotionFlags.TextObjectWithLineToCharacter, Motion.AllWord WordKind.NormalWord)
@@ -57,7 +57,7 @@ type internal MotionCapture
                 yield ("H", MotionFlags.CaretMovement, Motion.LineFromTopOfVisibleWindow)
                 yield ("ib", MotionFlags.TextObject ||| MotionFlags.TextObjectWithAlwaysCharacter, Motion.InnerBlock BlockKind.Paren)
                 yield ("iB", MotionFlags.TextObject ||| MotionFlags.TextObjectWithAlwaysCharacter, Motion.InnerBlock BlockKind.CurlyBracket)
-                yield ("it", MotionFlags.TextObject ||| MotionFlags.TextObjectWithAlwaysCharacter, Motion.InnerTag)
+                yield ("it", MotionFlags.TextObject ||| MotionFlags.TextObjectWithAlwaysCharacter, Motion.TagBlock TagBlockKind.Inner)
                 yield ("iw", MotionFlags.TextObject ||| MotionFlags.TextObjectWithLineToCharacter, Motion.InnerWord WordKind.NormalWord)
                 yield ("iW", MotionFlags.TextObject ||| MotionFlags.TextObjectWithLineToCharacter, Motion.InnerWord WordKind.BigWord)
                 yield ("i\"", MotionFlags.TextObject ||| MotionFlags.TextObjectWithAlwaysCharacter, Motion.QuotedStringContents '"')

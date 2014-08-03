@@ -958,6 +958,43 @@ namespace Vim.UnitTest
             }
         }
 
+        public abstract class TagBlockTest : VisualModeIntegrationTest
+        {
+            public sealed class CharacterWiseTest : TagBlockTest
+            {
+                [Fact]
+                public void InnerSimpleMultiLine()
+                {
+                    Create("<a>", "blah", "</a>");
+                    _textView.MoveCaretToLine(1);
+                    _vimBuffer.Process("vity");
+                    Assert.Equal(Environment.NewLine + "blah" + Environment.NewLine, UnnamedRegister.StringValue);
+                }
+
+                [Fact]
+                public void InnerSimpleSingleLine()
+                {
+                    Create("<a>blah</a>");
+                    _textView.MoveCaretTo(4);
+                    _vimBuffer.Process("vit");
+
+                    var span = new Span(_textBuffer.GetPointInLine(0, 3), 4);
+                    Assert.Equal(span, _textView.GetSelectionSpan());
+                }
+
+                [Fact]
+                public void AllSimpleSingleLine()
+                {
+                    Create("<a>blah</a>");
+                    _textView.MoveCaretTo(4);
+                    _vimBuffer.Process("vat");
+
+                    var span = new Span(_textBuffer.GetPoint(0), _textBuffer.CurrentSnapshot.Length);
+                    Assert.Equal(span, _textView.GetSelectionSpan());
+                }
+            }
+        }
+
         public abstract class InvertSelectionTest : VisualModeIntegrationTest
         {
             public sealed class CharacterWiseTest : InvertSelectionTest

@@ -921,6 +921,11 @@ type UnmatchedTokenKind =
     | Paren
     | CurlyBracket
 
+[<RequireQualifiedAccess>]
+type TagBlockKind =
+    | Inner
+    | All
+
 /// A discriminated union of the Motion types supported.  These are the primary
 /// repeat mechanisms for Motion arguments so it's very important that these 
 /// are ITextView / IVimBuffer agnostic.  It will be very common for a Motion 
@@ -940,9 +945,6 @@ type Motion =
     /// Gets count full sentences from the cursor.  If used on a blank line this will
     /// not return a value
     | AllSentence
-
-    /// Gets the entire tag including the start / end elements
-    | AllTag
 
     /// Move to the beginning of the line.  Interestingly since this command is bound to the '0' it 
     /// can't be associated with a count.  Doing a command like 30 binds as count 30 vs. count 3 
@@ -1012,9 +1014,6 @@ type Motion =
 
     /// Inner block motion
     | InnerBlock of BlockKind
-
-    /// Contents of the tag
-    | InnerTag 
 
     /// Find the last non-blank character on the line.  Count causes it to go "count" lines
     /// down and perform the search
@@ -1116,6 +1115,9 @@ type Motion =
 
     /// Move the the specific column of the current line. Typically in response to the | key. 
     | ScreenColumn
+
+    /// Matching xml / html tags
+    | TagBlock of TagBlockKind
 
     /// The [(, ]), ]}, [{ motions
     | UnmatchedToken of Path * UnmatchedTokenKind
