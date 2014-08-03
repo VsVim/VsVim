@@ -4672,57 +4672,119 @@ namespace Vim.UnitTest
             }
         }
 
-        public sealed class TagBlocksMotionTest : NormalModeIntegrationTest
+        public abstract class TagBlocksMotionTest : NormalModeIntegrationTest
         {
-            [Fact(Skip = "Implementing")]
-            public void Simple()
+            public sealed class DeleteTest : TagBlocksMotionTest
             {
-                Create("<a>   </a>");
-                _textView.MoveCaretTo(4);
-                _vimBuffer.Process("dit");
-                Assert.Equal("<a></a>", _textBuffer.GetLine(0).GetText());
-            }
-            
-            /// <summary>
-            /// The br element is not considered a tag  (help tag-blocks)
-            /// </summary>
-            [Fact(Skip = "Implementing")]
-            public void NotTag1()
-            {
-                Create("<a> <br>  </a>");
-                _textView.MoveCaretTo(4);
-                _vimBuffer.Process("dit");
-                Assert.Equal("<a></a>", _textBuffer.GetLine(0).GetText());
+                [Fact]
+                public void Simple()
+                {
+                    Create("<a>   </a>");
+                    _textView.MoveCaretTo(4);
+                    _vimBuffer.Process("dit");
+                    Assert.Equal("<a></a>", _textBuffer.GetLine(0).GetText());
+                }
+
+                /// <summary>
+                /// The br element is not considered a tag  (help tag-blocks)
+                /// </summary>
+                [Fact]
+                public void NotTag1()
+                {
+                    Create("<a> <br>  </a>");
+                    _textView.MoveCaretTo(4);
+                    _vimBuffer.Process("dit");
+                    Assert.Equal("<a></a>", _textBuffer.GetLine(0).GetText());
+                }
+
+                /// <summary>
+                /// The meta element is not considered a tag  (help tag-blocks)
+                /// </summary>
+                [Fact]
+                public void NotTag2()
+                {
+                    Create("<a> <meta>  </a>");
+                    _textView.MoveCaretTo(4);
+                    _vimBuffer.Process("dit");
+                    Assert.Equal("<a></a>", _textBuffer.GetLine(0).GetText());
+                }
+
+                [Fact]
+                public void CaseDoesNotMatter()
+                {
+                    Create("<a>   </A>");
+                    _textView.MoveCaretTo(4);
+                    _vimBuffer.Process("dit");
+                    Assert.Equal("<a></A>", _textBuffer.GetLine(0).GetText());
+                }
+
+                [Fact]
+                public void SingleItemTagsDoNotMatter()
+                {
+                    Create("<a> <blah/>  </A>");
+                    _textView.MoveCaretTo(6);
+                    _vimBuffer.Process("dit");
+                    Assert.Equal("<a></A>", _textBuffer.GetLine(0).GetText());
+                }
             }
 
-            /// <summary>
-            /// The meta element is not considered a tag  (help tag-blocks)
-            /// </summary>
-            [Fact(Skip = "Implementing")]
-            public void NotTag2()
+            public sealed class YankTagBlockTest : TagBlocksMotionTest
             {
-                Create("<a> <meta>  </a>");
-                _textView.MoveCaretTo(4);
-                _vimBuffer.Process("dit");
-                Assert.Equal("<a></a>", _textBuffer.GetLine(0).GetText());
-            }
+                [Fact]
+                public void InnerNoCount()
+                {
+                    Create("<a><b>cat</b><b>dog</b></a>");
+                    _textView.MoveCaretTo(7);
+                    _vimBuffer.Process("yit");
+                    Assert.Equal("cat", UnnamedRegister.StringValue);
+                }
 
-            [Fact(Skip = "Implementing")]
-            public void CaseDoesNotMatter()
-            {
-                Create("<a>   </A>");
-                _textView.MoveCaretTo(4);
-                _vimBuffer.Process("dit");
-                Assert.Equal("<a></A>", _textBuffer.GetLine(0).GetText());
-            }
+                [Fact]
+                public void InnerCount()
+                {
+                    Create("<a><b>cat</b><b>dog</b></a>");
+                    _textView.MoveCaretTo(7);
+                    _vimBuffer.Process("y2it");
+                    Assert.Equal("<b>cat</b><b>dog</b>", UnnamedRegister.StringValue);
+                }
 
-            [Fact(Skip = "Implementing")]
-            public void SingleItemTagsDoNotMatter()
-            {
-                Create("<a> <blah/>  </A>");
-                _textView.MoveCaretTo(6);
-                _vimBuffer.Process("dit");
-                Assert.Equal("<a></A>", _textBuffer.GetLine(0).GetText());
+                [Fact]
+                public void InnerOnTagStart()
+                {
+                    Create("<a><b>cat</b><b>dog</b></a>");
+                    _textView.MoveCaretTo(4);
+                    _vimBuffer.Process("yit");
+                    Assert.Equal("cat", UnnamedRegister.StringValue);
+                }
+
+                [Fact]
+                public void AllOnTagStart()
+                {
+                    Create("<a><b>cat</b><b>dog</b></a>");
+                    _textView.MoveCaretTo(4);
+                    _vimBuffer.Process("yat");
+                    Assert.Equal("<b>cat</b>", UnnamedRegister.StringValue);
+                }
+
+                [Fact]
+                public void AllCount()
+                {
+                    Create("<a><b>cat</b><b>dog</b></a>");
+                    _textView.MoveCaretTo(4);
+                    _vimBuffer.Process("y2at");
+                    Assert.Equal("<a><b>cat</b><b>dog</b></a>", UnnamedRegister.StringValue);
+                }
+
+                [Fact]
+                public void AllBadCount()
+                {
+                    Create("<a><b>cat</b><b>dog</b></a>");
+                    UnnamedRegister.UpdateValue("dog");
+                    _textView.MoveCaretTo(4);
+                    _vimBuffer.Process("y4at");
+                    Assert.Equal(1, VimHost.BeepCount);
+                    Assert.Equal("dog", UnnamedRegister.StringValue);
+                }
             }
         }
 

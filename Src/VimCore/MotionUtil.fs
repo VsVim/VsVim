@@ -50,6 +50,8 @@ type TagBlock
     // This is the span within the tag block that does not include the tags
     let _innerSpan = innerSpan
 
+    let mutable _parent : TagBlock option = None
+
     let _children = children
 
     member x.Text = _text
@@ -59,6 +61,10 @@ type TagBlock
     member x.InnerSpan = _innerSpan
 
     member x.Children = _children
+
+    member x.Parent 
+        with get () = _parent
+        and set value = _parent <- value
 
 type TagBlockParser (snapshot : ITextSnapshot) = 
 
@@ -162,6 +168,10 @@ type TagBlockParser (snapshot : ITextSnapshot) =
             let fullSpan = Span.FromBounds(tagStartPosition, tagEndPosition)
             let innerSpan = Span.FromBounds(contentStartPosition, contentEndPosition)
             let tagBlock = TagBlock(tagName, fullSpan, innerSpan, children)
+
+            // Make sure to set the parent pointer on all of the parsed children 
+            children |> Seq.iter (fun child -> child.Parent <- Some tagBlock)
+
             Some tagBlock
 
     member x.ParseTagBlocks() =
@@ -192,14 +202,11 @@ module TagBlockUtil =
     let GetTagBlocks snapshot = 
         CachedParsedItem<TagBlock>.GetItems snapshot _tagBlockKey ParseTagBlocks
 
-    let GetTagBlockForPoint (point : SnapshotPoint) kind = 
+    let GetTagBlockForPoint (point : SnapshotPoint) =
         let tagBlocks = GetTagBlocks point.Snapshot
 
         let isMatch (tagBlock : TagBlock) = 
-            let span = 
-                match kind with 
-                | TagBlockKind.All -> tagBlock.FullSpan
-                | TagBlockKind.Inner -> tagBlock.InnerSpan
+            let span = tagBlock.FullSpan
             span.Contains point.Position
 
         let rec find current collection = 
@@ -1693,9 +1700,19 @@ type internal MotionUtil
 
     /// Get the all tag motion
     member x.TagBlock count point kind = 
-        match TagBlockUtil.GetTagBlockForPoint point kind with
+
+        // Get the initial tag block
+        let mutable tagBlock = TagBlockUtil.GetTagBlockForPoint point 
+
+        // The 'count' operation is implemented by just walking the parent until 
+        // we hit (count - 1) parent values.  If we walk past the end of the parent
+        // chain then the motion must fail 
+        for i = 1 to (count - 1) do
+            tagBlock <- tagBlock |> OptionUtil.map2 (fun t -> t.Parent) 
+
+        match tagBlock with
         | None -> None
-        | Some tagBlock -> 
+        | Some tagBlock ->
             let span = 
                 match kind with
                 | TagBlockKind.All -> tagBlock.FullSpan
