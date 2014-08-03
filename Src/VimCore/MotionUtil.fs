@@ -1805,6 +1805,22 @@ type internal MotionUtil
             let span = SnapshotSpan(x.CurrentSnapshot, span)
             MotionResult.Create span true MotionKind.CharacterWiseExclusive |> Some
 
+    /// Get the expanded tag block based on the current kind and point
+    member x.GetExpandedTagBlock point kind = 
+        match TagBlockUtil.GetTagBlockForPoint point with
+        | None -> None
+        | Some tagBlock -> 
+            let span = 
+                match kind with
+                | TagBlockKind.All -> tagBlock.Parent |> Option.map (fun t -> t.FullSpan)
+                | TagBlockKind.Inner ->
+                    if tagBlock.InnerSpan.Contains point.Position then
+                        Some tagBlock.FullSpan
+                    else
+                        tagBlock.Parent |> Option.map (fun t -> if t.InnerSpan = tagBlock.FullSpan then t.FullSpan else t.InnerSpan)
+
+            span |> Option.map (fun s -> SnapshotSpan(point.Snapshot, s))
+
     /// An inner block motion is just the all block motion with the start and 
     /// end character removed 
     member x.InnerBlock contextPoint blockKind count =
@@ -2641,4 +2657,5 @@ type internal MotionUtil
         member x.TextView = _textView
         member x.GetMotion motion motionArgument = x.GetMotion motion motionArgument
         member x.GetTextObject motion point = x.GetTextObject motion point
+        member x.GetExpandedTagBlock point kind = x.GetExpandedTagBlock point kind
 
