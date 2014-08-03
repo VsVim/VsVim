@@ -99,6 +99,7 @@
     <Compile Include="SnapshotOverlapPointTest.cs" />
     <Compile Include="SnapshotOverlapSpanTest.cs" />
     <Compile Include="StringUtilTest.cs" />
+    <Compile Include="TagBlockParserTest.cs" />
     <Compile Include="TestableProtectedOperations.cs" />
     <Compile Include="TextObjectUtilTest.cs" />
     <Compile Include="TokenStreamTest.cs" />

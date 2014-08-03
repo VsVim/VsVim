@@ -1483,22 +1483,32 @@ type internal CommandUtil
             let argument = ModeArgument.InitialVisualSelection (visualSelection, None)
             x.SwitchMode desiredVisualKind.VisualModeKind argument
 
+        let isInitialSelection = 
+            match visualSpan with
+            | VisualSpan.Character characterSpan -> characterSpan.Length <= 1
+            | VisualSpan.Block blockSpan -> blockSpan.Spaces <= 1
+            | VisualSpan.Line lineRange -> lineRange.Count = 1
+
+        let moveTag kind = 
+            if isInitialSelection then
+                match _motionUtil.GetTextObject motion x.CaretPoint with
+                | None -> onError()
+                | Some motionResult -> setSelection motionResult.Span
+            else
+                match _motionUtil.GetExpandedTagBlock visualSpan.Start kind with
+                | None -> onError()
+                | Some span -> setSelection span
+
         // Handle the normal set of text objects (essentially non-block movements)
         let moveNormal () =
+
+            // TODO: Backwards motions
+            // TODO: The non-initial selection needs to ensure we're in the correct mode
 
             // The behavior of a text object depends highly on whether or not this is 
             // visual mode in it's initial state.  The docs define this as the start 
             // and end being the same but that's not true for line mode where stard and 
             // end are rarely the same.
-            let isInitialSelection = 
-                match visualSpan with
-                | VisualSpan.Character characterSpan -> characterSpan.Length <= 1
-                | VisualSpan.Block blockSpan -> blockSpan.Spaces <= 1
-                | VisualSpan.Line lineRange -> lineRange.Count = 1
-
-            // TODO: Backwards motions
-            // TODO: The non-initial selection needs to ensure we're in the correct mode
-
             if isInitialSelection then
                 // For an initial selection we just do a standard motion from the caret point
                 // and update the selection.
@@ -1549,6 +1559,7 @@ type internal CommandUtil
         match motion with
         | Motion.AllBlock blockKind -> moveBlock blockKind true
         | Motion.InnerBlock blockKind -> moveBlock blockKind false
+        | Motion.TagBlock kind -> moveTag kind
         | _ -> moveNormal () 
 
     /// Open a fold in visual mode.  In Visual Mode a single fold level is opened for every

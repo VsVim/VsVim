@@ -958,6 +958,100 @@ namespace Vim.UnitTest
             }
         }
 
+        public abstract class TagBlockTest : VisualModeIntegrationTest
+        {
+            public sealed class CharacterWiseTest : TagBlockTest
+            {
+                [Fact]
+                public void InnerSimpleMultiLine()
+                {
+                    Create("<a>", "blah", "</a>");
+                    _textView.MoveCaretToLine(1);
+                    _vimBuffer.Process("vity");
+                    Assert.Equal(Environment.NewLine + "blah" + Environment.NewLine, UnnamedRegister.StringValue);
+                }
+
+                [Fact]
+                public void InnerSimpleSingleLine()
+                {
+                    Create("<a>blah</a>");
+                    _textView.MoveCaretTo(4);
+                    _vimBuffer.Process("vit");
+
+                    var span = new Span(_textBuffer.GetPointInLine(0, 3), 4);
+                    Assert.Equal(span, _textView.GetSelectionSpan());
+                }
+
+                [Fact]
+                public void AllSimpleSingleLine()
+                {
+                    Create("<a>blah</a>");
+                    _textView.MoveCaretTo(4);
+                    _vimBuffer.Process("vat");
+
+                    var span = new Span(_textBuffer.GetPoint(0), _textBuffer.CurrentSnapshot.Length);
+                    Assert.Equal(span, _textView.GetSelectionSpan());
+                }
+            }
+
+            public sealed class ExpandSelectionTest : TagBlockTest
+            {
+                [Fact]
+                public void InnerSimple()
+                {
+                    var text = "<a>blah</a>";
+                    Create(text);
+                    _textView.MoveCaretTo(5);
+                    _vimBuffer.Process("vit");
+                    Assert.Equal("blah", _textView.GetSelectionSpan().GetText());
+                    _vimBuffer.Process("it");
+                    Assert.Equal(text, _textView.GetSelectionSpan().GetText());
+                }
+
+                [Fact]
+                public void InnerNestedNoPadding()
+                {
+                    var text = "<a><b>blah</b></a>";
+                    Create(text);
+                    _textView.MoveCaretTo(7);
+                    _vimBuffer.Process("vit");
+                    Assert.Equal("blah", _textView.GetSelectionSpan().GetText());
+                    _vimBuffer.Process("it");
+                    Assert.Equal("<b>blah</b>", _textView.GetSelectionSpan().GetText());
+                    _vimBuffer.Process("it");
+                    Assert.Equal(text, _textView.GetSelectionSpan().GetText());
+                }
+
+                [Fact]
+                public void InnerNestedPadding()
+                {
+                    var text = "<a>  <b>blah</b></a>";
+                    Create(text);
+                    _textView.MoveCaretTo(7);
+                    _vimBuffer.Process("vit");
+                    Assert.Equal("blah", _textView.GetSelectionSpan().GetText());
+                    _vimBuffer.Process("it");
+                    Assert.Equal("<b>blah</b>", _textView.GetSelectionSpan().GetText());
+                    _vimBuffer.Process("it");
+                    Assert.Equal("  <b>blah</b>", _textView.GetSelectionSpan().GetText());
+                    _vimBuffer.Process("it");
+                    Assert.Equal(text, _textView.GetSelectionSpan().GetText());
+                }
+
+                [Fact]
+                public void AllNested()
+                {
+                    var text = "<a><b>blah</b></a>";
+                    Create(text);
+                    _textView.MoveCaretTo(7);
+                    _vimBuffer.Process("vat");
+                    Assert.Equal("<b>blah</b>", _textView.GetSelectionSpan().GetText());
+                    _vimBuffer.Process("at");
+                    Assert.Equal(text, _textView.GetSelectionSpan().GetText());
+                }
+            }
+        }
+
         public abstract class InvertSelectionTest : VisualModeIntegrationTest
         {
             public sealed class CharacterWiseTest : InvertSelectionTest

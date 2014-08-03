@@ -921,6 +921,11 @@ type UnmatchedTokenKind =
     | Paren
     | CurlyBracket
 
+[<RequireQualifiedAccess>]
+type TagBlockKind =
+    | Inner
+    | All
+
 /// A discriminated union of the Motion types supported.  These are the primary
 /// repeat mechanisms for Motion arguments so it's very important that these 
 /// are ITextView / IVimBuffer agnostic.  It will be very common for a Motion 
@@ -1111,6 +1116,9 @@ type Motion =
     /// Move the the specific column of the current line. Typically in response to the | key. 
     | ScreenColumn
 
+    /// Matching xml / html tags
+    | TagBlock of TagBlockKind
+
     /// The [(, ]), ]}, [{ motions
     | UnmatchedToken of Path * UnmatchedTokenKind
 
@@ -1131,6 +1139,9 @@ and IMotionUtil =
 
     /// Get the specific text object motion from the given SnapshotPoint
     abstract GetTextObject : motion : Motion -> point : SnapshotPoint -> MotionResult option
+
+    /// Get the expanded tag point for the given tag block kind
+    abstract GetExpandedTagBlock : point : SnapshotPoint -> kind : TagBlockKind -> SnapshotSpan option
 
 type ModeKind = 
     | Normal = 1

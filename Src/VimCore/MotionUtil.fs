@@ -10,6 +10,297 @@ open Vim.Modes
 open Vim.StringBuilderExtensions
 open Vim.Interpreter
 
+type OptionBuilder() =
+    member x.Bind (value, cont) = 
+        match value with 
+        | None -> None
+        | Some value -> cont value
+
+    member x.Return value = Some value
+    member x.ReturnFrom o = o
+    member x.Zero () = None
+
+type CachedParsedItem<'T> = { 
+    Version : int
+    Items : List<'T>
+} with
+
+    static member GetItems (snapshot : ITextSnapshot) key doParse = 
+        let textBuffer = snapshot.TextBuffer
+        let propertyCollection = textBuffer.Properties
+
+        let parseAndSave () = 
+            let items = doParse snapshot
+            let cachedParseItem = { Version = snapshot.Version.VersionNumber; Items = items }
+            propertyCollection.[key] <- cachedParseItem
+            items
+
+        match PropertyCollectionUtil.GetValue<CachedParsedItem<'T>> key propertyCollection with
+        | Some cachedParsedItem -> 
+            if cachedParsedItem.Version = snapshot.Version.VersionNumber then 
+                cachedParsedItem.Items
+            else 
+                parseAndSave ()
+        | None -> parseAndSave ()
+
+/// Used to represent xml / html tags within the file.  
+type TagBlock
+    (
+        text : string,
+        fullSpan : Span,
+        innerSpan : Span,
+        children : List<TagBlock>
+    ) =
+
+    let _text = text
+
+    // This is the full span of the tag block including the opening and closing tags
+    let _fullSpan = fullSpan
+
+    // This is the span within the tag block that does not include the tags
+    let _innerSpan = innerSpan
+
+    let mutable _parent : TagBlock option = None
+
+    let _children = children
+
+    member x.Text = _text
+
+    member x.FullSpan = _fullSpan
+
+    member x.InnerSpan = _innerSpan
+
+    member x.Children = _children
+
+    member x.Parent 
+        with get () = _parent
+        and set value = _parent <- value
+
+type TagBlockParser (snapshot : ITextSnapshot) = 
+
+    let _snapshot = snapshot
+    let _builder = OptionBuilder()
+
+    member x.TestPosition position func = 
+        if position >= snapshot.Length then
+            false
+        else
+            func (snapshot.[position])
+
+    member x.TestPositionChar position target = 
+        x.TestPosition position (fun c -> c = target)
+
+    member x.SkipBlanks position = 
+        let mutable position = position
+        while x.TestPosition position CharUtil.IsBlank && position < _snapshot.Length do
+            position <- position + 1
+        position
+
+    member x.ParseName startPosition = 
+        let mutable position = startPosition
+        while x.TestPosition position (fun c -> CharUtil.IsLetterOrDigit c) do
+            position <- position + 1
+
+        let length = position - startPosition
+        if length = 0 then
+            None
+        else
+            Some (Span(startPosition, length))
+
+    /// Parse out the name of an attribute.  Returns the Span of the name if found an None if there is
+    /// not a valid name 
+    member x.ParseAttributeName startPosition = 
+        x.ParseName startPosition
+
+    /// Parse out the attribute value.  Return the Span of the attribute value excluding the border 
+    /// quotes.  If the closing quote is not found then None is returned 
+    member x.ParseAttributeValue startPosition quoteChar = 
+        let mutable position = startPosition
+        while not (x.TestPositionChar position quoteChar) && position <= _snapshot.Length do
+            position <- position + 1
+
+        if x.TestPositionChar position quoteChar then
+            let span = Span.FromBounds(startPosition, position)
+            Some span
+        else
+            None
+
+    member x.ParseQuoteChar position = 
+        if position < _snapshot.Length then
+            let c = _snapshot.[position]
+            if c = '"' || c = '\'' then 
+                Some c
+            else
+                None
+        else
+            None
+
+    member x.ParseChar position c = 
+        if x.TestPositionChar position c then
+            Some (position + 1)
+        else
+            None
+
+    /// Parse out a single attribute name value pair 
+    member x.ParseAttribute startPosition : Span option = 
+        let position = x.SkipBlanks startPosition
+        _builder { 
+            let! nameSpan = x.ParseAttributeName position
+            let! position = x.ParseChar (x.SkipBlanks nameSpan.End) '='
+            let quotePosition = x.SkipBlanks position
+            let! quoteChar = x.ParseQuoteChar quotePosition
+            let! valueSpan = x.ParseAttributeValue (quotePosition + 1) quoteChar
+            let! valueEnd = x.ParseChar valueSpan.End quoteChar
+            return Span.FromBounds(startPosition, valueEnd)
+        }
+
+    /// This will be called with the position pointing immediately after the end of the 
+    /// tag name.  It should return the position immediately following all of the attribute
+    /// values or None if there is an error in the attributes
+    member x.ParseAttributes startPosition = 
+        let mutable position = x.SkipBlanks startPosition
+        let mutable isError = false
+        let mutable isDone = false
+
+        while not isDone do
+            if x.TestPositionChar position '>' then
+                isDone <- true
+            elif position >= _snapshot.Length then
+                isError <- true
+                isDone <- true
+            else
+                match x.ParseAttribute position with
+                | None ->
+                    isError <- true
+                    isDone <- true
+                | Some span -> 
+                    position <- x.SkipBlanks span.End
+
+        if isError then
+            None
+        else
+            Some position
+
+    /// Parse out a legal start tag at the given position.  Succeeds when the point passed in 
+    /// is at a '<' character of an open tag 
+    ///
+    /// This will ignore tags br and meta as they are specifically ignored in the documentation
+    /// for :help tag-blocks
+    member x.ParseStartTag startPosition = 
+        if x.TestPositionChar startPosition '<' then
+            _builder {
+                let! nameSpan = x.ParseName (startPosition + 1) 
+                let text = _snapshot.GetText(nameSpan)
+                if StringUtil.isEqualIgnoreCase "br" text || StringUtil.isEqualIgnoreCase "meta" text then
+                    return! None
+                else
+                    let! position = x.ParseAttributes nameSpan.End
+                    let! position = x.ParseChar position '>'
+                    return (text, position)
+            }
+        else
+            None
+
+    member x.ParseEndTag position = 
+        if x.TestPositionChar position '<' && x.TestPositionChar (position + 1) '/' then
+            let textStartPosition = position + 2
+            let mutable position = textStartPosition
+            while x.TestPosition position CharUtil.IsLetter do
+                position <- position + 1
+
+            let length = position - textStartPosition
+            if length > 0 && x.TestPositionChar position '>' then
+                let span = Span(textStartPosition, length)
+                let text = _snapshot.GetText(span)
+                Some (text, position + 1)
+            else
+                None
+        else 
+            None
+
+    /// Parse out the contents of a tag with the specified name within the given Span.  This returns
+    /// a tuple of the tag contents and whether or not the ending tag was ever found.  
+    member x.ParseTagContents tagName tagStartPosition contentStartPosition : TagBlock option = 
+        let children = List<TagBlock>()
+
+        // This is a tuple of values.  The first value is the end of the content 
+        // portion of the text while the second is the end of the closing tag
+        let mutable endPosition : (int * int) option = None
+        let mutable position = contentStartPosition
+        while position < _snapshot.Length && Option.isNone endPosition do
+            match x.ParseStartTag position with
+            | Some (startTagName, nextPosition) ->
+                match x.ParseTagContents startTagName position nextPosition with
+                | Some tagBlock -> 
+                    children.Add(tagBlock)
+                    position <- tagBlock.FullSpan.End
+                | None ->
+                    // Unmatched start tag, parsing is done
+                    position <- _snapshot.Length
+            | None ->
+                match x.ParseEndTag position with 
+                | Some (endTagName, nextPosition) ->
+                    if StringUtil.isEqualIgnoreCase tagName endTagName then
+                        endPosition <- Some (position, nextPosition)
+                    else
+                        position <- position + 1
+                | None -> 
+                    position <- position + 1
+
+        match endPosition with 
+        | None -> None
+        | Some (contentEndPosition, tagEndPosition) ->
+            let fullSpan = Span.FromBounds(tagStartPosition, tagEndPosition)
+            let innerSpan = Span.FromBounds(contentStartPosition, contentEndPosition)
+            let tagBlock = TagBlock(tagName, fullSpan, innerSpan, children)
+
+            // Make sure to set the parent pointer on all of the parsed children 
+            children |> Seq.iter (fun child -> child.Parent <- Some tagBlock)
+
+            Some tagBlock
+
+    member x.ParseTagBlocks() =
+        let collection = List<TagBlock>()
+        let mutable position = 0
+        while position < _snapshot.Length do
+            match x.ParseStartTag position with
+            | Some (tagName, nextPosition) ->
+                match x.ParseTagContents tagName position nextPosition with
+                | Some tagBlock -> 
+                    collection.Add(tagBlock)
+                    position <- tagBlock.FullSpan.End
+                | None -> position <- position + 1
+            | None -> position <- position + 1
+
+        collection
+
+module TagBlockUtil = 
+
+    /// This is the key for accessing directive blocks within the ITextSnapshot.  This
+    /// lets us avoid multiple parses of #if for a single ITextSnapshot
+    let _tagBlockKey = obj()
+
+    let ParseTagBlocks snapshot = 
+        let parser = TagBlockParser(snapshot)
+        parser.ParseTagBlocks()
+
+    let GetTagBlocks snapshot = 
+        CachedParsedItem<TagBlock>.GetItems snapshot _tagBlockKey ParseTagBlocks
+
+    let GetTagBlockForPoint (point : SnapshotPoint) =
+        let tagBlocks = GetTagBlocks point.Snapshot
+
+        let isMatch (tagBlock : TagBlock) = 
+            let span = tagBlock.FullSpan
+            span.Contains point.Position
+
+        let rec find current collection = 
+            match collection |> Seq.tryFind isMatch with
+            | None -> current
+            | Some tagBlock -> find (Some tagBlock) tagBlock.Children
+
+        find None tagBlocks
+
 [<RequireQualifiedAccess>]
 [<NoComparison>]
 type DirectiveKind = 
@@ -34,11 +325,6 @@ type Directive = {
 type DirectiveBlock = {
     Directives : List<Directive>
     IsComplete : bool
-}
-
-type CachedDirectiveBlocks = { 
-    Version : int
-    DirectiveBlocks : List<DirectiveBlock>
 }
 
 [<RequireQualifiedAccess>]
@@ -196,19 +482,7 @@ type MatchingTokenUtil() =
 
     /// Get the directive blocks for the specified ITextSnapshot
     member x.GetDirectiveBlocks (snapshot : ITextSnapshot) = 
-        let textBuffer = snapshot.TextBuffer
-        let propertyCollection = textBuffer.Properties
-
-        let parseAndSave () = 
-            let blocks = x.ParseDirectiveBlocks snapshot
-            propertyCollection.[_directiveBlocksKey] <- { Version = snapshot.Version.VersionNumber; DirectiveBlocks = blocks }
-            blocks
-
-        match PropertyCollectionUtil.GetValue<CachedDirectiveBlocks> _directiveBlocksKey propertyCollection with
-        | Some cachedDirectiveBlocks -> 
-            if cachedDirectiveBlocks.Version = snapshot.Version.VersionNumber then cachedDirectiveBlocks.DirectiveBlocks
-            else parseAndSave ()
-        | None -> parseAndSave ()
+        CachedParsedItem<DirectiveBlock>.GetItems snapshot _directiveBlocksKey x.ParseDirectiveBlocks
 
     /// Find the correct MatchingTokenKind for the given line and column position on that 
     /// line.  Needs to consider all possible matching tokens and see which one is closest
@@ -1509,10 +1783,47 @@ type internal MotionUtil
             let range = SnapshotLineRangeUtil.CreateForLineRange startLine endLine
             MotionResult.CreateExEx range.ExtentIncludingLineBreak true MotionKind.LineWise MotionResultFlags.None column)
 
+    /// Get the all tag motion
+    member x.TagBlock count point kind = 
+
+        // Get the initial tag block
+        let mutable tagBlock = TagBlockUtil.GetTagBlockForPoint point 
+
+        // The 'count' operation is implemented by just walking the parent until 
+        // we hit (count - 1) parent values.  If we walk past the end of the parent
+        // chain then the motion must fail 
+        for i = 1 to (count - 1) do
+            tagBlock <- tagBlock |> OptionUtil.map2 (fun t -> t.Parent) 
+
+        match tagBlock with
+        | None -> None
+        | Some tagBlock ->
+            let span = 
+                match kind with
+                | TagBlockKind.All -> tagBlock.FullSpan
+                | TagBlockKind.Inner -> tagBlock.InnerSpan
+            let span = SnapshotSpan(x.CurrentSnapshot, span)
+            MotionResult.Create span true MotionKind.CharacterWiseExclusive |> Some
+
+    /// Get the expanded tag block based on the current kind and point
+    member x.GetExpandedTagBlock point kind = 
+        match TagBlockUtil.GetTagBlockForPoint point with
+        | None -> None
+        | Some tagBlock -> 
+            let span = 
+                match kind with
+                | TagBlockKind.All -> tagBlock.Parent |> Option.map (fun t -> t.FullSpan)
+                | TagBlockKind.Inner ->
+                    if tagBlock.InnerSpan.Contains point.Position then
+                        Some tagBlock.FullSpan
+                    else
+                        tagBlock.Parent |> Option.map (fun t -> if t.InnerSpan = tagBlock.FullSpan then t.FullSpan else t.InnerSpan)
+
+            span |> Option.map (fun s -> SnapshotSpan(point.Snapshot, s))
+
     /// An inner block motion is just the all block motion with the start and 
     /// end character removed 
     member x.InnerBlock contextPoint blockKind count =
-
         if count <> 1 then
             None
         else
@@ -2268,6 +2579,7 @@ type internal MotionUtil
             | Motion.AllParagraph -> x.AllParagraph motionArgument.Count
             | Motion.AllWord wordKind -> x.AllWord wordKind motionArgument.Count x.CaretPoint
             | Motion.AllSentence -> x.AllSentence motionArgument.Count |> Some
+            | Motion.TagBlock kind -> x.TagBlock motionArgument.Count x.CaretPoint kind
             | Motion.BackwardEndOfWord wordKind -> x.BackwardEndOfWord wordKind motionArgument.Count
             | Motion.BeginingOfLine -> x.BeginingOfLine() |> Some
             | Motion.CharLeft -> x.CharLeft motionArgument.Count |> Some
@@ -2336,6 +2648,7 @@ type internal MotionUtil
         match motion with 
         | Motion.AllBlock blockKind -> x.AllBlock point blockKind 1
         | Motion.AllWord wordKind -> x.AllWord wordKind 1 point
+        | Motion.TagBlock kind -> x.TagBlock 1 point kind
         | Motion.InnerWord wordKind -> x.InnerWord wordKind 1 point 
         | Motion.InnerBlock blockKind -> x.InnerBlock point blockKind 1
         | _ -> None
@@ -2344,4 +2657,5 @@ type internal MotionUtil
         member x.TextView = _textView
         member x.GetMotion motion motionArgument = x.GetMotion motion motionArgument
         member x.GetTextObject motion point = x.GetTextObject motion point
+        member x.GetExpandedTagBlock point kind = x.GetExpandedTagBlock point kind
 
