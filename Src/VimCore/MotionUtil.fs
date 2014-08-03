@@ -10,6 +10,16 @@ open Vim.Modes
 open Vim.StringBuilderExtensions
 open Vim.Interpreter
 
+type OptionBuilder() =
+    member x.Bind (value, cont) = 
+        match value with 
+        | None -> None
+        | Some value -> cont value
+
+    member x.Return value = Some value
+    member x.ReturnFrom o = o
+    member x.Zero () = None
+
 type CachedParsedItem<'T> = { 
     Version : int
     Items : List<'T>
@@ -69,6 +79,7 @@ type TagBlock
 type TagBlockParser (snapshot : ITextSnapshot) = 
 
     let _snapshot = snapshot
+    let _builder = OptionBuilder()
 
     member x.TestPosition position func = 
         if position >= snapshot.Length then
@@ -79,42 +90,116 @@ type TagBlockParser (snapshot : ITextSnapshot) =
     member x.TestPositionChar position target = 
         x.TestPosition position (fun c -> c = target)
 
-    /// Parse out the beginning of a tag name.  This will succeed if the point passed in is at a
-    /// '<' character and is followed by a non-zero length of letters
-    member x.ParseTagPrefix position = 
-        if x.TestPositionChar position '<' then
-            let textStartPosition = position + 1
-            let mutable position = textStartPosition
-            while x.TestPosition position CharUtil.IsLetter do
-                position <- position + 1
+    member x.SkipBlanks position = 
+        let mutable position = position
+        while x.TestPosition position CharUtil.IsBlank && position < _snapshot.Length do
+            position <- position + 1
+        position
 
-            if position > textStartPosition then
-                Some (position - textStartPosition)
+    member x.ParseName startPosition = 
+        let mutable position = startPosition
+        while x.TestPosition position (fun c -> CharUtil.IsLetterOrDigit c) do
+            position <- position + 1
+
+        let length = position - startPosition
+        if length = 0 then
+            None
+        else
+            Some (Span(startPosition, length))
+
+    /// Parse out the name of an attribute.  Returns the Span of the name if found an None if there is
+    /// not a valid name 
+    member x.ParseAttributeName startPosition = 
+        x.ParseName startPosition
+
+    /// Parse out the attribute value.  Return the Span of the attribute value excluding the border 
+    /// quotes.  If the closing quote is not found then None is returned 
+    member x.ParseAttributeValue startPosition quoteChar = 
+        let mutable position = startPosition
+        while not (x.TestPositionChar position quoteChar) && position <= _snapshot.Length do
+            position <- position + 1
+
+        if x.TestPositionChar position quoteChar then
+            let span = Span.FromBounds(startPosition, position)
+            Some span
+        else
+            None
+
+    member x.ParseQuoteChar position = 
+        if position < _snapshot.Length then
+            let c = _snapshot.[position]
+            if c = '"' || c = '\'' then 
+                Some c
             else
                 None
         else
             None
+
+    member x.ParseChar position c = 
+        if x.TestPositionChar position c then
+            Some (position + 1)
+        else
+            None
+
+    /// Parse out a single attribute name value pair 
+    member x.ParseAttribute startPosition : Span option = 
+        let position = x.SkipBlanks startPosition
+        _builder { 
+            let! nameSpan = x.ParseAttributeName position
+            let! position = x.ParseChar (x.SkipBlanks nameSpan.End) '='
+            let quotePosition = x.SkipBlanks position
+            let! quoteChar = x.ParseQuoteChar quotePosition
+            let! valueSpan = x.ParseAttributeValue (quotePosition + 1) quoteChar
+            let! valueEnd = x.ParseChar valueSpan.End quoteChar
+            return Span.FromBounds(startPosition, valueEnd)
+        }
+
+    /// This will be called with the position pointing immediately after the end of the 
+    /// tag name.  It should return the position immediately following all of the attribute
+    /// values or None if there is an error in the attributes
+    member x.ParseAttributes startPosition = 
+        let mutable position = x.SkipBlanks startPosition
+        let mutable isError = false
+        let mutable isDone = false
+
+        while not isDone do
+            if x.TestPositionChar position '>' then
+                isDone <- true
+            elif position >= _snapshot.Length then
+                isError <- true
+                isDone <- true
+            else
+                match x.ParseAttribute position with
+                | None ->
+                    isError <- true
+                    isDone <- true
+                | Some span -> 
+                    position <- x.SkipBlanks span.End
+
+        if isError then
+            None
+        else
+            Some position
 
     /// Parse out a legal start tag at the given position.  Succeeds when the point passed in 
     /// is at a '<' character of an open tag 
     ///
     /// This will ignore tags br and meta as they are specifically ignored in the documentation
     /// for :help tag-blocks
-    member x.ParseStartTag position = 
-        match x.ParseTagPrefix position with
-        | None -> None
-        | Some tagNameLength -> 
-            // Move past <tagname
-            let closeTagPosition = tagNameLength + 1 + position
-            if x.TestPositionChar closeTagPosition '>' then    
-                let span = Span(position + 1, tagNameLength)
-                let text = _snapshot.GetText(span)
-                if StringUtil.isEqualIgnoreCase text "br" || StringUtil.isEqualIgnoreCase text "meta" then
-                    None
+    member x.ParseStartTag startPosition = 
+        if x.TestPositionChar startPosition '<' then
+            _builder {
+                let! nameSpan = x.ParseName (startPosition + 1) 
+                let text = _snapshot.GetText(nameSpan)
+                if StringUtil.isEqualIgnoreCase "br" text || StringUtil.isEqualIgnoreCase "meta" text then
+                    return! None
                 else
-                    Some (text, closeTagPosition + 1)
-            else
-                None
+                    let! position = x.ParseAttributes nameSpan.End
+                    let! position = x.ParseChar position '>'
+                    return (text, position)
+            }
+        else
+            None
 
     member x.ParseEndTag position = 
         if x.TestPositionChar position '<' && x.TestPositionChar (position + 1) '/' then

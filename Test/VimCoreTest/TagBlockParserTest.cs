@@ -124,5 +124,53 @@ namespace Vim.UnitTest
                 Assert.Equal(new Span(8, 8), collection[1].FullSpan);
             }
         }
+
+        public sealed class AttributeTest : TagBlockParserTest
+        {
+            private List<TagBlock> Parse(params string[] lines)
+            {
+                var textBuffer = CreateTextBuffer(lines);
+                var parser = new TagBlockParser(textBuffer.CurrentSnapshot);
+                return parser.ParseTagBlocks();
+            }
+
+            [Fact]
+            public void SimpleMatching()
+            {
+                var tagBlock = Parse("<a name='foo'></a>").Single();
+                Assert.Equal("a", tagBlock.Text);
+                Assert.Equal(0, tagBlock.Children.Count);
+            }
+
+            [Fact]
+            public void SimpleMatching2()
+            {
+                var tagBlock = Parse("<a name=\"foo\"></a>").Single();
+                Assert.Equal("a", tagBlock.Text);
+                Assert.Equal(0, tagBlock.Children.Count);
+            }
+
+            [Fact]
+            public void MultipleAttributes()
+            {
+                var tagBlock = Parse("<a name1='foo' name2='bar'></a>").Single();
+                Assert.Equal("a", tagBlock.Text);
+                Assert.Equal(0, tagBlock.Children.Count);
+            }
+
+            [Fact]
+            public void BadAttributes()
+            {
+                Action<string> action = text =>
+                {
+                    var items = Parse(text);
+                    Assert.Equal(0, items.Count);
+                };
+
+                action("<a name1='f hello // bar");
+                action("<a name1=\"f hello // bar");
+                action("<a name1=> <gain");
+            }
+        }
     }
 }
