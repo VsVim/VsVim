@@ -22,14 +22,17 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
     {
         private readonly IVim _vim;
         private readonly IEditorFormatMapService _editorFormatMapService;
+        private readonly IClassificationFormatMapService _classificationFormatMapService;
 
         [ImportingConstructor]
         internal CommandMarginProvider(
             IVim vim, 
-            IEditorFormatMapService editorFormatMapService)
+            IEditorFormatMapService editorFormatMapService,
+            IClassificationFormatMapService classificationFormatMapService)
         {
             _vim = vim;
             _editorFormatMapService = editorFormatMapService;
+            _classificationFormatMapService = classificationFormatMapService;
         }
 
         #region IWpfTextViewMarginProvider
@@ -43,8 +46,8 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             }
 
             var editorFormatMap = _editorFormatMapService.GetEditorFormatMap(wpfTextViewHost.TextView);
-            var fontProperties = _vim.VimHost.FontProperties;
-			return new CommandMargin(wpfTextViewHost.TextView.VisualElement, vimBuffer, editorFormatMap, fontProperties);
+            var classificationFormatMap = _classificationFormatMapService.GetClassificationFormatMap(wpfTextViewHost.TextView);
+            return new CommandMargin(wpfTextViewHost.TextView.VisualElement, vimBuffer, editorFormatMap, classificationFormatMap);
         }
 
         #endregion

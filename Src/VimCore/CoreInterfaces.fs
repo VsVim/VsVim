@@ -3737,21 +3737,6 @@ type IVimData =
     [<CLIEvent>]
     abstract DisplayPatternChanged : IDelegateEvent<System.EventHandler>
 
-type FontPropertiesEventArgs () =
-
-    inherit System.EventArgs()
-
-type IFontProperties =
-
-    /// The font family
-    abstract FontFamily : System.Windows.Media.FontFamily
-
-    /// The font size in points
-    abstract FontSize : double
-
-    [<CLIEvent>]
-    abstract FontPropertiesChanged : IDelegateEvent<System.EventHandler<FontPropertiesEventArgs>>
-
 [<RequireQualifiedAccess>]
 [<NoComparison>]
 type QuickFix =
@@ -3786,9 +3771,6 @@ type IVimHost =
 
     /// What settings defaults should be used when there is no vimrc file present
     abstract DefaultSettings : DefaultSettings
-
-    /// Get the font properties associated with the text editor
-    abstract FontProperties : IFontProperties
 
     /// Is auto-command enabled for this host
     abstract IsAutoCommandEnabled : bool

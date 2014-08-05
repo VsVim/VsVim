@@ -46,7 +46,6 @@ namespace Vim.UnitTest.Mock
         public bool ShouldIncludeRcFile { get; set; }
         public VimRcState VimRcState { get; private set; }
         public int TabCount { get; set; }
-        public IFontProperties FontProperties { get; set; }
         public int GoToTabData { get; set; }
         public int GetTabIndexData { get; set; }
         public WordWrapStyles WordWrapStyle { get; set; }

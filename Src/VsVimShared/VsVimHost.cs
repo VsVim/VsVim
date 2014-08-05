@@ -122,7 +122,6 @@ namespace Vim.VisualStudio
         private readonly IVsExtensibility _vsExtensibility;
         private readonly ISharedService _sharedService;
         private readonly IVsMonitorSelection _vsMonitorSelection;
-        private readonly IFontProperties _fontProperties;
         private readonly IVimApplicationSettings _vimApplicationSettings;
         private readonly ISmartIndentationService _smartIndentationService;
 
@@ -159,11 +158,6 @@ namespace Vim.VisualStudio
             get { return _sharedService.GetWindowFrameState().WindowFrameCount; }
         }
 
-        public override IFontProperties FontProperties
-        {
-            get { return _fontProperties; }
-        }
-
         [ImportingConstructor]
         internal VsVimHost(
             IVsAdapter adapter,
@@ -187,7 +181,6 @@ namespace Vim.VisualStudio
             _textManager = textManager;
             _sharedService = sharedServiceFactory.Create();
             _vsMonitorSelection = serviceProvider.GetService<SVsShellMonitorSelection, IVsMonitorSelection>();
-            _fontProperties = new TextEditorFontProperties(serviceProvider);
             _vimApplicationSettings = vimApplicationSettings;
             _smartIndentationService = smartIndentationService;
 

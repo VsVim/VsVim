@@ -56,11 +56,6 @@ namespace Vim.UI.Wpf
             get { return true; }
         }
 
-        public abstract IFontProperties FontProperties
-        {
-            get;
-        }
-
         public virtual DefaultSettings DefaultSettings
         {
             get { return DefaultSettings.GVim73; }

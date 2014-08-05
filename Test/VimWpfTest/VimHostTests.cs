@@ -108,11 +108,6 @@ namespace Vim.UI.Wpf.UnitTest
                 get { throw new NotImplementedException(); }
             }
 
-            public override IFontProperties FontProperties
-            {
-                get { throw new NotImplementedException(); }
-            }
-
             public override int GetTabIndex(ITextView textView)
             {
                 throw new NotImplementedException();

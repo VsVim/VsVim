@@ -4,6 +4,7 @@ using System.ComponentModel.Composition.Hosting;
 using System.Linq;
 using System.Text;
 using EditorUtils;
+using Microsoft.VisualStudio.Text.Classification;
 using Vim.UI.Wpf;
 using Vim.UnitTest.Mock;
 
@@ -24,6 +25,8 @@ namespace Vim.UnitTest
         private readonly IMouseDevice _mouseDevice;
         private readonly IClipboardDevice _clipboardDevice;
         private readonly IVimProtectedOperations _vimProtectedOperations;
+        private readonly IEditorFormatMapService _editorFormatMapService;
+        private readonly IClassificationFormatMapService _classificationFormatMapService;
 
         public IVim Vim
         {
@@ -105,6 +108,16 @@ namespace Vim.UnitTest
             get { return _bulkOperations; }
         }
 
+        public IEditorFormatMapService EditorFormatMapService
+        {
+            get { return _editorFormatMapService; }
+        }
+
+        public IClassificationFormatMapService ClassificationFormatMapService
+        {
+            get { return _classificationFormatMapService; }
+        }
+
         public VimEditorHost(CompositionContainer compositionContainer) : base(compositionContainer)
         {
             _vim = CompositionContainer.GetExportedValue<IVim>();
@@ -121,6 +134,8 @@ namespace Vim.UnitTest
             _keyboardDevice = CompositionContainer.GetExportedValue<IKeyboardDevice>();
             _mouseDevice = CompositionContainer.GetExportedValue<IMouseDevice>();
             _clipboardDevice = CompositionContainer.GetExportedValue<IClipboardDevice>();
+            _editorFormatMapService = CompositionContainer.GetExportedValue<IEditorFormatMapService>();
+            _classificationFormatMapService = CompositionContainer.GetExportedValue<IClassificationFormatMapService>();
         }
     }
 }

@@ -40,6 +40,11 @@ namespace Vim.UnitTest
             get { return _vimEditorHost.CompositionContainer; }
         }
 
+        public VimEditorHost VimEditorHost
+        {
+            get { return _vimEditorHost; }
+        }
+
         public ISmartIndentationService SmartIndentationService
         {
             get { return _vimEditorHost.SmartIndentationService; }

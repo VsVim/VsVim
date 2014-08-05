@@ -64,7 +64,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
         private readonly IVimBuffer _vimBuffer;
         private readonly CommandMarginControl _margin;
         private readonly IEditorFormatMap _editorFormatMap;
-        private readonly IFontProperties _fontProperties;
+        private readonly IClassificationFormatMap _classificationFormatMap;
         private readonly FrameworkElement _parentVisualElement;
         private VimBufferKeyEventState _vimBufferKeyEventState;
         private bool _inUpdateVimBufferState;
@@ -116,13 +116,13 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             }
         }
 
-        internal CommandMarginController(IVimBuffer buffer, FrameworkElement parentVisualElement, CommandMarginControl control, IEditorFormatMap editorFormatMap, IFontProperties fontProperties)
+        internal CommandMarginController(IVimBuffer buffer, FrameworkElement parentVisualElement, CommandMarginControl control, IEditorFormatMap editorFormatMap, IClassificationFormatMap classificationFormatMap)
         {
             _vimBuffer = buffer;
             _margin = control;
             _parentVisualElement = parentVisualElement;
             _editorFormatMap = editorFormatMap;
-            _fontProperties = fontProperties;
+            _classificationFormatMap = classificationFormatMap;
 
             _vimBuffer.SwitchedMode += OnSwitchMode;
             _vimBuffer.KeyInputStart += OnKeyInputStart;
@@ -401,10 +401,8 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
         /// </summary>
         private void UpdateFontProperties()
         {
-            _margin.TextFontFamily = _fontProperties.FontFamily;
-
-            // Convert points (1 pt = 1/72") to pixels (1 WPF pixel = 1/96").
-            _margin.TextFontSize = _fontProperties.FontSize * 96 / 72;
+            _margin.TextFontFamily = _classificationFormatMap.DefaultTextProperties.Typeface.FontFamily;
+            _margin.TextFontSize = _classificationFormatMap.DefaultTextProperties.FontRenderingEmSize;
         }
 
         /// <summary>
@@ -620,13 +618,13 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
 
         private void OnCommandMarginLoaded(object sender, RoutedEventArgs e)
         {
-            _fontProperties.FontPropertiesChanged += OnFontPropertiesChanged;
+            _classificationFormatMap.ClassificationFormatMappingChanged += OnFontPropertiesChanged;
             UpdateFontProperties();
         }
 
         private void OnCommandMarginUnloaded(object sender, RoutedEventArgs e)
         {
-            _fontProperties.FontPropertiesChanged -= OnFontPropertiesChanged;
+            _classificationFormatMap.ClassificationFormatMappingChanged -= OnFontPropertiesChanged;
         }
 
         private void OnFormatMappingChanged(object sender, FormatItemsEventArgs e)
@@ -634,7 +632,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             UpdateTextColor();
         }
 
-        private void OnFontPropertiesChanged(object sender, FontPropertiesEventArgs e)
+        private void OnFontPropertiesChanged(object sender, EventArgs e)
         {
             UpdateFontProperties();
         }

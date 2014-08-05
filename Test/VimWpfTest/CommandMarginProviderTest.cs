@@ -25,7 +25,8 @@ namespace Vim.UI.Wpf.UnitTest
             _vim = _factory.Create<IVim>();
             _commandMarginProviderRaw = new CommandMarginProvider(
                 _vim.Object,
-                CompositionContainer.GetExportedValue<IEditorFormatMapService>());
+                VimEditorHost.EditorFormatMapService,
+                VimEditorHost.ClassificationFormatMapService);
             _commandMarginProvider = _commandMarginProviderRaw;
         }
 
