@@ -269,7 +269,6 @@ type VimInterpreter
         let newList = List.ofSeq builder
         let autoCommands = List.append _vimData.AutoCommands newList
         _vimData.AutoCommands <- autoCommands
-        RunResult.Completed
 
     /// Run the behave command
     member x.RunBehave model = 
@@ -286,11 +285,8 @@ type VimInterpreter
             _globalSettings.Selection <- "inclusive"
         | _ -> _statusUtil.OnError (Resources.Interpreter_InvalidArgument model)
 
-        RunResult.Completed
-
     member x.RunCall (callInfo : CallInfo) = 
         _statusUtil.OnError (Resources.Interpreter_CallNotSupported callInfo.Name)
-        RunResult.Completed
 
     /// Change the directory to the given value
     member x.RunChangeDirectory directoryPath = 
@@ -312,7 +308,6 @@ type VimInterpreter
                 // Setting the global directory will clear out the local directory for the window
                 _vimBuffer.CurrentDirectory <- None
                 _vimData.CurrentDirectory <- directoryPath
-        RunResult.Completed
 
     /// Change the local directory to the given value
     member x.RunChangeLocalDirectory directoryPath = 
@@ -333,7 +328,6 @@ type VimInterpreter
             else
                 // Setting the global directory will clear out the local directory for the window
                 _vimBuffer.CurrentDirectory <- Some directoryPath
-        RunResult.Completed
 
     member x.RunCopyOrMoveTo sourceLineRange destLineRange count transactionName editOperation = 
 
@@ -378,9 +372,7 @@ type VimInterpreter
 
                 // Use an undo transaction so that the caret move and insert is a single
                 // operation
-                _undoRedoOperations.EditWithUndoTransaction transactionName _textView (fun() -> editOperation sourceLineRange destLine text)
-
-            RunResult.Completed)
+                _undoRedoOperations.EditWithUndoTransaction transactionName _textView (fun() -> editOperation sourceLineRange destLine text))
 
     /// Copy the text from the source address to the destination address
     member x.RunCopyTo sourceLineRange destLineRange count =
@@ -407,7 +399,6 @@ type VimInterpreter
         else
             keyRemapModes
             |> Seq.iter _keyMap.Clear
-        RunResult.Completed
 
     /// Run the close command
     member x.RunClose hasBang = 
@@ -415,14 +406,12 @@ type VimInterpreter
             _statusUtil.OnError Resources.Common_NoWriteSinceLastChange
         else
             _vimHost.Close _textView
-        RunResult.Completed
 
     /// Run the delete command.  Delete the specified range of text and set it to 
     /// the given Register
     member x.RunDelete lineRange register = 
         x.RunWithLineRangeOrDefault lineRange DefaultLineRange.CurrentLine (fun lineRange ->
-            _commonOperations.DeleteLines lineRange.StartLine lineRange.Count register
-            RunResult.Completed)
+            _commonOperations.DeleteLines lineRange.StartLine lineRange.Count register)
 
     member x.RunDeleteMarkCore mark = 
         match mark with 
@@ -432,7 +421,6 @@ type VimInterpreter
 
     member x.RunDeleteMarks marks = 
         marks |> Seq.iter x.RunDeleteMarkCore
-        RunResult.Completed
 
     member x.RunDeleteAllMarks () = 
         LocalMark.All
@@ -442,11 +430,9 @@ type VimInterpreter
             | _ -> true)
         |> Seq.map (fun localMark -> Mark.LocalMark localMark)
         |> Seq.iter x.RunDeleteMarkCore
-        RunResult.Completed
 
     member x.RunFunction (func : Function) = 
         _statusUtil.OnError Resources.Interpreter_FunctionNotSupported
-        RunResult.Completed
 
     /// Display the given map modes
     member x.RunDisplayKeyMap keyRemapModes keyNotationOption = 
@@ -498,7 +484,6 @@ type VimInterpreter
                 getLine modes lhs rhs)
 
         _statusUtil.OnStatusLong lines
-        RunResult.Completed
 
     /// Display the registers.  If a particular name is specified only display that register
     member x.RunDisplayRegisters nameList =
@@ -536,7 +521,6 @@ type VimInterpreter
             |> Seq.map (fun (name, value) -> sprintf "\"%c   %s" name value)
         let lines = Seq.append (Seq.singleton Resources.CommandMode_RegisterBanner) lines
         _statusUtil.OnStatusLong lines
-        RunResult.Completed
 
     member x.RunDisplayLets (names : VariableName list) = 
         let list = List<string>()
@@ -550,7 +534,6 @@ type VimInterpreter
                 
             list.Add(msg)
         _statusUtil.OnStatusLong list
-        RunResult.Completed
 
     /// Display the specified marks
     member x.RunDisplayMarks (marks : Mark list) = 
@@ -577,7 +560,6 @@ type VimInterpreter
             |> Seq.map (fun (c,p) -> printMark c p )
             |> Seq.append ( "mark line  col file/text"  |> Seq.singleton)
             |> _statusUtil.OnStatusLong
-        RunResult.Completed
 
     /// Edit the specified file
     member x.RunEdit hasBang fileOptions commandOption filePath =
@@ -607,8 +589,6 @@ type VimInterpreter
             | HostResult.Success -> ()
             | HostResult.Error(msg) -> _statusUtil.OnError(msg)
 
-        RunResult.Completed
-
     /// Get the value of the specified expression 
     member x.RunExpression expr =
         let expressionInterpreter = ExpressionInterpreter(_statusUtil)
@@ -619,8 +599,7 @@ type VimInterpreter
 
         x.RunWithLineRangeOrDefault lineRange DefaultLineRange.CurrentLine (fun lineRange ->
             if lineRange.Count > 1 then
-                _foldManager.CreateFold lineRange
-            RunResult.Completed)
+                _foldManager.CreateFold lineRange)
 
     /// Run the global command.  
     member x.RunGlobal lineRange pattern matchPattern lineCommand =
@@ -671,31 +650,25 @@ type VimInterpreter
                     lineNumbers |> List.iter (fun trackingLineColumn -> trackingLineColumn.Close())
     
                 finally
-                    transaction.Complete()
-
-            RunResult.Completed)
+                    transaction.Complete())
 
     /// Go to the first tab
     member x.RunGoToFirstTab() =
         _commonOperations.GoToTab 0
-        RunResult.Completed
 
     /// Go to the first tab
     member x.RunGoToLastTab() =
         _commonOperations.GoToTab 0
-        RunResult.Completed
 
     /// Go to the next "count" tab 
     member x.RunGoToNextTab count = 
         let count = x.GetCountOrDefault count
         _commonOperations.GoToNextTab Path.Forward count
-        RunResult.Completed
 
     /// Go to the previous "count" tab 
     member x.RunGoToPreviousTab count = 
         let count = x.GetCountOrDefault count
         _commonOperations.GoToNextTab Path.Backward count
-        RunResult.Completed
 
     /// Print out the applicable history information
     member x.RunHistory () = 
@@ -710,7 +683,6 @@ type VimInterpreter
             output.Add(msg)
 
         _statusUtil.OnStatusLong(output)
-        RunResult.Completed
 
     /// Run the if command
     member x.RunIf (conditionalBlockList : ConditionalBlock list)  =
@@ -727,14 +699,11 @@ type VimInterpreter
         match List.tryFind shouldRun conditionalBlockList with
         | None -> ()
         | Some conditionalBlock -> conditionalBlock.LineCommands |> Seq.iter (fun lineCommand -> x.RunLineCommand lineCommand |> ignore)
-        
-        RunResult.Completed
 
     /// Join the lines in the specified range
     member x.RunJoin lineRange joinKind =
         x.RunWithLineRangeOrDefault lineRange DefaultLineRange.CurrentLine (fun lineRange ->
-            _commonOperations.Join lineRange joinKind
-            RunResult.Completed)
+            _commonOperations.Join lineRange joinKind)
 
     /// Jump to the last line
     member x.RunJumpToLastLine() =
@@ -751,21 +720,18 @@ type VimInterpreter
             |> SnapshotLineUtil.GetFirstNonBlankOrEnd
 
         _commonOperations.MoveCaretToPoint point (ViewFlags.Standard &&& (~~~ViewFlags.TextExpanded))
-        RunResult.Completed
 
     /// Run the let command
     member x.RunLet (name : VariableName) value =
         // TODO: At this point we are treating all variables as if they were global.  Need to 
         // take into account the NameScope at this level too
         _variableMap.[name.Name] <- value
-        RunResult.Completed
 
     /// Run the host make command 
     member x.RunMake hasBang arguments = 
         match _vimHost.Make (not hasBang) arguments with
         | HostResult.Error msg -> _statusUtil.OnError msg
         | HostResult.Success -> ()
-        RunResult.Completed
 
     /// Run the map keys command
     member x.RunMapKeys leftKeyNotation rightKeyNotation keyRemapModes allowRemap mapArgumentList =
@@ -789,16 +755,12 @@ type VimInterpreter
         if anyErrors then
             _statusUtil.OnError (Resources.Interpreter_UnableToMapKeys leftKeyNotation rightKeyNotation)
 
-        RunResult.Completed
-
     /// Run the 'nohlsearch' command.  Temporarily disables highlighitng in the buffer
     member x.RunNoHighlightSearch() = 
         _vimData.SuspendDisplayPattern()
-        RunResult.Completed
 
     member x.RunParseError msg =
         _statusUtil.OnError msg
-        RunResult.Completed 
 
     /// Print out the contents of the specified range
     member x.RunPrint lineRange lineCommandFlags = 
@@ -809,13 +771,11 @@ type VimInterpreter
             else
                 lineRange.Lines
                 |> Seq.map SnapshotLineUtil.GetText
-                |> _statusUtil.OnStatusLong
-            RunResult.Completed)
+                |> _statusUtil.OnStatusLong)
 
     /// Print out the current directory
     member x.RunPrintCurrentDirectory() =
         _statusUtil.OnStatus x.CurrentDirectory
-        RunResult.Completed
 
     /// Put the register after the last line in the given range
     member x.RunPut lineRange (register : Register) putAfter = 
@@ -844,19 +804,15 @@ type VimInterpreter
                     let number = number + (lineCount - 1)
                     SnapshotUtil.GetLine x.CurrentSnapshot number
                 let point = SnapshotLineUtil.GetFirstNonBlankOrEnd line
-                _commonOperations.MoveCaretToPoint point ViewFlags.VirtualEdit)
-    
-            RunResult.Completed)
+                _commonOperations.MoveCaretToPoint point ViewFlags.VirtualEdit))
 
     member x.RunQuickFixNext count hasBang =
         let count = OptionUtil.getOrDefault 1 count 
         _vimHost.GoToQuickFix QuickFix.Next count hasBang |> ignore
-        RunResult.Completed
 
     member x.RunQuickFixPrevious count hasBang =
         let count = OptionUtil.getOrDefault 1 count 
         _vimHost.GoToQuickFix QuickFix.Previous count hasBang |> ignore
-        RunResult.Completed
 
     /// Run the quit command
     member x.RunQuit hasBang =
@@ -875,7 +831,6 @@ type VimInterpreter
                 _vimHost.Quit()
         else
             _vimHost.Quit()
-        RunResult.Completed
 
     member x.RunQuitWithWrite lineRange hasBang fileOptions filePath = 
 
@@ -890,9 +845,7 @@ type VimInterpreter
                     let filePath = SystemUtil.ResolvePath filePath
                     _vimHost.SaveTextAs (lineRange.GetTextIncludingLineBreak()) filePath |> ignore
     
-                x.RunClose false |> ignore
-    
-            RunResult.Completed)
+                x.RunClose false |> ignore)
 
     /// Run the core parts of the read command
     member x.RunReadCore (lineRange : SnapshotLineRange) (lines : string[]) = 
@@ -913,8 +866,7 @@ type VimInterpreter
             | None ->
                 _statusUtil.OnError (Resources.Interpreter_CantRunCommand command)
             | Some lines ->
-                x.RunReadCore lineRange lines
-            RunResult.Completed)
+                x.RunReadCore lineRange lines)
 
     /// Run the read file command.
     member x.RunReadFile lineRange fileOptionList filePath =
@@ -927,13 +879,11 @@ type VimInterpreter
                 | None ->
                     _statusUtil.OnError (Resources.Interpreter_CantOpenFile filePath)
                 | Some lines ->
-                    x.RunReadCore lineRange lines
-            RunResult.Completed)
+                    x.RunReadCore lineRange lines)
 
     /// Run a single redo operation
     member x.RunRedo() = 
         _commonOperations.Redo 1
-        RunResult.Completed
 
     /// Remove the auto commands which match the specified definition
     member x.RemoveAutoCommands (autoCommandDefinition : AutoCommandDefinition) = 
@@ -956,7 +906,6 @@ type VimInterpreter
             |> Seq.filter (fun x -> not (isMatch x))
             |> List.ofSeq
         _vimData.AutoCommands <- rest
-        RunResult.Completed
 
     /// Process the :retab command.  Changes all sequences of spaces and tabs which contain
     /// at least a single tab into the normalized value based on the provided 'tabstop' or 
@@ -1018,9 +967,7 @@ type VimInterpreter
                 let newText = _commonOperations.NormalizeBlanks oldText
                 edit.Replace(span.Span, newText) |> ignore
     
-            edit.Apply() |> ignore
-    
-            RunResult.Completed)
+            edit.Apply() |> ignore)
 
     /// Run the search command in the given direction
     member x.RunSearch lineRange path pattern = 
@@ -1044,9 +991,7 @@ type VimInterpreter
                     |> SnapshotLineUtil.GetFirstNonBlankOrStart
                 _commonOperations.MoveCaretToPoint point ViewFlags.Standard
                 _vimData.LastSearchData <- searchData
-            | SearchResult.NotFound _ -> ()
-    
-            RunResult.Completed)
+            | SearchResult.NotFound _ -> ())
 
     /// Run the :set command.  Process each of the arguments 
     member x.RunSet setArguments =
@@ -1173,8 +1118,6 @@ type VimInterpreter
                 | SetArgument.ToggleOffSetting name -> toggleOffSetting name
                 | SetArgument.UseSetting name -> useSetting name)
 
-        RunResult.Completed
-
     /// Run the specified shell command
     member x.RunShellCommand (command : string) =
 
@@ -1220,19 +1163,15 @@ type VimInterpreter
 
         inner 0 false
 
-        RunResult.Completed
-
     /// Shift the given line range to the left
     member x.RunShiftLeft lineRange = 
         x.RunWithLineRangeOrDefault lineRange DefaultLineRange.CurrentLine (fun lineRange ->
-            _commonOperations.ShiftLineRangeLeft lineRange 1
-            RunResult.Completed)
+            _commonOperations.ShiftLineRangeLeft lineRange 1)
 
     /// Shift the given line range to the right
     member x.RunShiftRight lineRange = 
         x.RunWithLineRangeOrDefault lineRange DefaultLineRange.CurrentLine (fun lineRange ->
-            _commonOperations.ShiftLineRangeRight lineRange 1
-            RunResult.Completed)
+            _commonOperations.ShiftLineRangeRight lineRange 1)
 
     /// Run the :source command
     member x.RunSource hasBang filePath =
@@ -1243,8 +1182,6 @@ type VimInterpreter
             match _fileSystem.ReadAllLines filePath with
             | None -> _statusUtil.OnError (Resources.CommandMode_CouldNotOpenFile filePath)
             | Some lines -> x.RunScript lines
-
-        RunResult.Completed
 
     /// Split the window
     member x.RunSplit behavior fileOptions commandOption = 
@@ -1265,8 +1202,6 @@ type VimInterpreter
         else
             ()
 
-        RunResult.Completed
-
     /// Run the substitute command. 
     member x.RunSubstitute lineRange pattern replace flags =
 
@@ -1277,19 +1212,16 @@ type VimInterpreter
             match regex with
             | None -> 
                 _statusUtil.OnError (Resources.Common_PatternNotFound data.SearchPattern)
-                RunResult.Completed
             | Some regex -> 
-
                 let firstMatch = 
                     range.Lines
                     |> Seq.map (fun line -> line.ExtentIncludingLineBreak)
                     |> Seq.tryPick (fun span -> RegexUtil.MatchSpan span regex.Regex)
                 match firstMatch with
-                | None -> 
-                    _statusUtil.OnError (Resources.Common_PatternNotFound data.SearchPattern)
-                    RunResult.Completed
+                | None -> _statusUtil.OnError (Resources.Common_PatternNotFound data.SearchPattern)
                 | Some(span,_) ->
-                    RunResult.SubstituteConfirm (span, range, data)
+                    let arg = ModeArgument.Substitute (span, range, data)
+                    _vimBuffer.SwitchMode ModeKind.SubstituteConfirm arg |> ignore
 
         // Check for the UsePrevious flag and update the flags as appropriate.  Make sure
         // to bitwise or them against the new flags
@@ -1315,8 +1247,7 @@ type VimInterpreter
                 let data = { SearchPattern = pattern; Substitute = replace; Flags = flags}
                 setupConfirmSubstitute lineRange data
             else
-                _commonOperations.Substitute pattern replace lineRange flags 
-                RunResult.Completed)
+                _commonOperations.Substitute pattern replace lineRange flags)
 
     /// Run substitute using the pattern and replace values from the last substitute
     member x.RunSubstituteRepeatLast lineRange flags = 
@@ -1329,19 +1260,17 @@ type VimInterpreter
     /// Run the undo command
     member x.RunUndo() =
         _commonOperations.Undo 1
-        RunResult.Completed
 
     /// Run the unlet command
     member x.RunUnlet ignoreMissing nameList = 
         let rec func nameList = 
             match nameList with
-            | [] -> RunResult.Completed
+            | [] -> ()
             | name :: rest ->
                 let removed = _variableMap.Remove(name)
                 if not removed && not ignoreMissing then
                     let msg = Resources.Interpreter_NoSuchVariable name
                     _statusUtil.OnError msg
-                    RunResult.Completed
                 else
                     func rest
         func nameList
@@ -1361,16 +1290,12 @@ type VimInterpreter
             if not allSucceeded then 
                 _statusUtil.OnError Resources.CommandMode_NoSuchMapping
 
-        RunResult.Completed
-
     member x.RunVersion() = 
         let msg = sprintf "VsVim Version %s" VimConstants.VersionNumber
         _statusUtil.OnStatus msg
-        RunResult.Completed
 
     member x.RunVisualStudioCommand command argument =
         _vimHost.RunVisualStudioCommand _textView command argument
-        RunResult.Completed
 
     member x.RunWrite lineRange hasBang fileOptionList filePath =
         let filePath =
@@ -1391,7 +1316,6 @@ type VimInterpreter
                     _statusUtil.OnError Resources.Interpreter_ReadOnlyOptionIsSet
                 else
                     _vimHost.Save _textBuffer |> ignore
-        RunResult.Completed
 
     /// Run the 'wall' command
     member x.RunWriteAll hasBang = 
@@ -1400,7 +1324,6 @@ type VimInterpreter
                 _statusUtil.OnError Resources.Interpreter_ReadOnlyOptionIsSet
             elif _vimHost.IsDirty vimBuffer.TextBuffer then
                 _vimHost.Save vimBuffer.TextBuffer |> ignore
-        RunResult.Completed
 
     /// Yank the specified line range into the register.  This is done in a 
     /// linewise fashion
@@ -1416,9 +1339,7 @@ type VimInterpreter
 
             let stringData = StringData.OfSpan lineRange.ExtentIncludingLineBreak
             let value = RegisterValue(stringData, OperationKind.LineWise)
-            _registerMap.SetRegisterValue register RegisterOperation.Yank value
-    
-            RunResult.Completed)
+            _registerMap.SetRegisterValue register RegisterOperation.Yank value)
 
     /// Run the specified LineCommand
     member x.RunLineCommand lineCommand = 
@@ -1432,7 +1353,6 @@ type VimInterpreter
 
         let cantRun () =    
             _statusUtil.OnError Resources.Interpreter_Error
-            RunResult.Completed
 
         match lineCommand with
         | LineCommand.AddAutoCommand autoCommandDefinition -> x.RunAddAutoCommand autoCommandDefinition
@@ -1475,7 +1395,7 @@ type VimInterpreter
         | LineCommand.MapKeys (leftKeyNotation, rightKeyNotation, keyRemapModes, allowRemap, mapArgumentList) -> x.RunMapKeys leftKeyNotation rightKeyNotation keyRemapModes allowRemap mapArgumentList
         | LineCommand.MoveTo (sourceLineRange, destLineRange, count) -> x.RunMoveTo sourceLineRange destLineRange count
         | LineCommand.NoHighlightSearch -> x.RunNoHighlightSearch()
-        | LineCommand.Nop -> RunResult.Completed
+        | LineCommand.Nop -> ()
         | LineCommand.ParseError msg -> x.RunParseError msg
         | LineCommand.Print (lineRange, lineCommandFlags)-> x.RunPrint lineRange lineCommandFlags
         | LineCommand.PrintCurrentDirectory -> x.RunPrintCurrentDirectory()
@@ -1509,16 +1429,13 @@ type VimInterpreter
         | LineCommand.WriteAll hasBang -> x.RunWriteAll hasBang
         | LineCommand.Yank (lineRange, registerName, count) -> x.RunYank (getRegister registerName) lineRange count
 
-    member x.RunWithLineRange lineRangeSpecifier (func : SnapshotLineRange -> RunResult) = 
+    member x.RunWithLineRange lineRangeSpecifier (func : SnapshotLineRange -> unit) = 
         x.RunWithLineRangeOrDefault lineRangeSpecifier DefaultLineRange.None func
 
-    member x.RunWithLineRangeOrDefault (lineRangeSpecifier : LineRangeSpecifier) defaultLineRange (func : SnapshotLineRange -> RunResult) = 
+    member x.RunWithLineRangeOrDefault (lineRangeSpecifier : LineRangeSpecifier) defaultLineRange (func : SnapshotLineRange -> unit) = 
         match x.GetLineRangeOrDefault lineRangeSpecifier defaultLineRange with
-        | None -> 
-            _statusUtil.OnError Resources.Range_Invalid
-            RunResult.Completed
-        | Some lineRange ->
-            func lineRange
+        | None -> _statusUtil.OnError Resources.Range_Invalid
+        | Some lineRange -> func lineRange
 
     // Actually parse and run all of the commands which are included in the script
     member x.RunScript lines = 

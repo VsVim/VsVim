@@ -20,13 +20,13 @@ type internal CommandMode
     // Command to show when entering command from Visual Mode
     static let FromVisualModeString = "'<,'>"
 
-    static let BindDataError : BindData<RunResult> = {
+    static let BindDataError : BindData<int> = {
         KeyRemapMode = KeyRemapMode.None;
         BindFunction = fun _ -> BindResult.Error
     }
 
     let mutable _command = StringUtil.empty
-    let mutable _historySession : IHistorySession<int, RunResult> option = None
+    let mutable _historySession : IHistorySession<int, int> option = None
     let mutable _bindData = BindDataError
 
     /// Currently queued up command string
@@ -68,14 +68,14 @@ type internal CommandMode
     member x.Process (keyInput : KeyInput) =
 
         match _bindData.BindFunction keyInput with
-        | BindResult.Complete result ->
+        | BindResult.Complete _ ->
             _bindData <- BindDataError
-            match result with 
-            | RunResult.Completed -> 
+
+            // It is possible for the execution of the command to change the mode (say :s.../c) 
+            if _buffer.ModeKind = ModeKind.Command then
                 ProcessResult.Handled ModeSwitch.SwitchPreviousMode
-            | RunResult.SubstituteConfirm (span, range, data) -> 
-                let switch = ModeSwitch.SwitchModeWithArgument (ModeKind.SubstituteConfirm, ModeArgument.Substitute (span, range, data))
-                ProcessResult.Handled switch
+            else 
+                ProcessResult.Handled ModeSwitch.NoSwitch
         | BindResult.Cancelled ->
             _bindData <- BindDataError
             ProcessResult.OfModeKind ModeKind.Normal
@@ -97,9 +97,9 @@ type internal CommandMode
         /// Run the specified command
         let completed command =
             x.Command <- StringUtil.empty
-            let result = x.ParseAndRunInput command
+            x.ParseAndRunInput command
             x.MaybeClearSelection false
-            result
+            0
 
         /// User cancelled input.  Reset the selection
         let cancelled () = 
@@ -108,7 +108,7 @@ type internal CommandMode
 
         // First key stroke.  Create a history client and get going
         let historyClient = {
-            new IHistoryClient<int, RunResult> with
+            new IHistoryClient<int, int> with
                 member this.HistoryList = _vimData.CommandHistory
                 member this.RegisterMap = _buffer.RegisterMap
                 member this.RemapMode = KeyRemapMode.Command

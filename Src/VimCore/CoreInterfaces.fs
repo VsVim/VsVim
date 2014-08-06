@@ -4492,7 +4492,7 @@ and ICommandMode =
     abstract InPasteWait : bool
 
     /// Run the specified command
-    abstract RunCommand : string -> RunResult
+    abstract RunCommand : string -> unit
 
     /// Raised when the command string is changed
     [<CLIEvent>]

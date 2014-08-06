@@ -680,7 +680,7 @@ type IVimInterpreter =
     abstract GetLineRange : lineRange : LineRangeSpecifier -> SnapshotLineRange option
 
     /// Run the LineCommand
-    abstract RunLineCommand : lineCommand : LineCommand -> RunResult
+    abstract RunLineCommand : lineCommand : LineCommand -> unit
 
     /// Run the Expression
     abstract RunExpression : expression : Expression -> VariableValue
