@@ -619,9 +619,9 @@ namespace Vim.VisualStudio
             return GoToDefinitionCore(textView, target);
         }
 
-        public override void VimGlobalSettingsCreated(IVimGlobalSettings globalSettings)
+        public override void VimCreated(IVim vim)
         {
-            SettingsSource.Initialize(globalSettings, _vimApplicationSettings);
+            SettingsSource.Initialize(vim.GlobalSettings, _vimApplicationSettings);
         }
 
         public override void VimRcLoaded(VimRcState vimRcState, IVimLocalSettings localSettings, IVimWindowSettings windowSettings)

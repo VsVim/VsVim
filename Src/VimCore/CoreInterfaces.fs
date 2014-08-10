@@ -3897,14 +3897,9 @@ type IVimHost =
     /// Split the views horizontally
     abstract SplitViewVertically : ITextView -> HostResult
 
-    /// Called when Vim has created the IVimGlobalSettings instance.  This callback gives
-    /// the host the oppurtunity to customize the initial IVimGlobalSettings values from
-    /// their defaults
-    abstract VimGlobalSettingsCreated : globalSettings : IVimGlobalSettings -> unit
-
-    /// Called when Vim has created the IVimData instance.  This callback gives the host
-    /// the oppurtunity to customize the initial IVimData values from their defaults
-    abstract VimDataCreated : vimData : IVimData -> unit
+    /// Called when IVim is fully created.  This callback gives the host the oppurtunity
+    /// to customize various aspects of vim including IVimGlobalSettings, IVimData, etc ...
+    abstract VimCreated : vim : IVim -> unit
 
     /// Called when VsVim attempts to load the user _vimrc file.  If the load succeeded 
     /// then the resulting settings are passed into the method.  If the load failed it is 
@@ -3926,7 +3921,7 @@ type IVimHost =
 
 /// Core parts of an IVimBuffer.  Used for components which make up an IVimBuffer but
 /// need the same data provided by IVimBuffer.
-type IVimBufferData =
+and IVimBufferData =
 
     /// The current directory for this particular window
     abstract CurrentDirectory : string option with get, set

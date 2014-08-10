@@ -316,7 +316,7 @@ namespace Vim.UI.Wpf
 
         public abstract HostResult SplitViewVertically(ITextView value);
 
-        public virtual void VimGlobalSettingsCreated(IVimGlobalSettings globalSettings)
+        public virtual void VimCreated(IVim vim)
         {
 
         }
@@ -664,14 +664,9 @@ namespace Vim.UI.Wpf
             return IsFocused(textView);
         }
 
-        void IVimHost.VimGlobalSettingsCreated(IVimGlobalSettings globalSettings)
+        void IVimHost.VimCreated(IVim vim)
         {
-            VimGlobalSettingsCreated(globalSettings);
-        }
-
-        void IVimHost.VimDataCreated(IVimData vimData)
-        {
-            VimDataCreated(vimData);
+            VimCreated(vim);
         }
 
         void IVimHost.VimRcLoaded(VimRcState vimRcState, IVimLocalSettings localSettings, IVimWindowSettings windowSettings)

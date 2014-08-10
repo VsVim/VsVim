@@ -322,7 +322,7 @@ type internal Vim
         _bulkOperations : IBulkOperations,
         _variableMap : VariableMap,
         _editorToSettingSynchronizer : IEditorToSettingsSynchronizer
-    ) =
+    ) as this =
 
     /// Key for IVimTextBuffer instances inside of the ITextBuffer property bag
     let _vimTextBufferKey = System.Object()
@@ -378,11 +378,8 @@ type internal Vim
             _vimData.SearchHistory.Limit <- _globalSettings.History
             _vimData.CommandHistory.Limit <- _globalSettings.History)
 
-        // Allow the IVimHost to customize the IVimGlobalSettings instance
-        _vimHost.VimGlobalSettingsCreated _globalSettings
-
-        // Allow the IVimHost to customize the IVimData instance
-        _vimHost.VimDataCreated _vimData
+        // Notify the IVimHost that IVim is fully created.  
+        _vimHost.VimCreated this
 
     [<ImportingConstructor>]
     new(

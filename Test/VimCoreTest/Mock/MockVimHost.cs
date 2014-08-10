@@ -315,12 +315,7 @@ namespace Vim.UnitTest.Mock
             return false;
         }
 
-        void IVimHost.VimDataCreated(IVimData vimData)
-        {
-
-        }
-
-        void IVimHost.VimGlobalSettingsCreated(IVimGlobalSettings globalSettings)
+        void IVimHost.VimCreated(IVim vim)
         {
 
         }
