@@ -321,7 +321,8 @@ type internal Vim
         _vimData : IVimData,
         _bulkOperations : IBulkOperations,
         _variableMap : VariableMap,
-        _editorToSettingSynchronizer : IEditorToSettingsSynchronizer
+        _editorToSettingSynchronizer : IEditorToSettingsSynchronizer,
+        _statusUtilFactory : IStatusUtilFactory
     ) as this =
 
     /// Key for IVimTextBuffer instances inside of the ITextBuffer property bag
@@ -392,7 +393,8 @@ type internal Vim
         fileSystem : IFileSystem,
         clipboard : IClipboardDevice,
         bulkOperations : IBulkOperations,
-        editorToSettingSynchronizer : IEditorToSettingsSynchronizer) =
+        editorToSettingSynchronizer : IEditorToSettingsSynchronizer,
+        statusUtilFactory : IStatusUtilFactory) =
         let markMap = MarkMap(bufferTrackingService)
         let globalSettings = GlobalSettings() :> IVimGlobalSettings
         let vimData = VimData(globalSettings) :> IVimData
@@ -412,9 +414,15 @@ type internal Vim
             vimData,
             bulkOperations,
             variableMap,
-            editorToSettingSynchronizer)
+            editorToSettingSynchronizer,
+            statusUtilFactory)
 
     member x.ActiveBuffer = ListUtil.tryHeadOnly _activeBufferStack
+
+    member x.ActiveStatusUtil =
+        match x.ActiveBuffer with
+        | Some vimBuffer -> vimBuffer.VimBufferData.StatusUtil
+        | None -> _statusUtilFactory.EmptyStatusUtil
 
     member x.AutoLoadVimRc 
         with get () = _autoLoadVimRc
@@ -724,6 +732,7 @@ type internal Vim
 
     interface IVim with
         member x.ActiveBuffer = x.ActiveBuffer
+        member x.ActiveStatusUtil = x.ActiveStatusUtil
         member x.AutoLoadVimRc 
             with get() = x.AutoLoadVimRc
             and set value = x.AutoLoadVimRc <- value

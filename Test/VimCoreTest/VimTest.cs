@@ -79,7 +79,8 @@ namespace Vim.UnitTest
                 new VimData(_globalSettings),
                 _factory.Create<IBulkOperations>().Object,
                 _variableMap,
-                new EditorToSettingSynchronizer());
+                new EditorToSettingSynchronizer(),
+                new StatusUtilFactory());
             _vim = _vimRaw;
             _vim.AutoLoadVimRc = false;
         }

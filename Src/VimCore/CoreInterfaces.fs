@@ -121,6 +121,9 @@ type IStatusUtil =
 /// Factory for getting IStatusUtil instances.  This is an importable MEF component
 type IStatusUtilFactory =
 
+    /// Gets an empty instance which doesn't actually raise any messages
+    abstract EmptyStatusUtil : IStatusUtil
+
     /// Get the IStatusUtil instance for the given ITextBuffer
     abstract GetStatusUtil : textBuffer : ITextBuffer -> IStatusUtil
 
@@ -3971,6 +3974,10 @@ and IVim =
     /// Buffer actively processing input.  This has no relation to the IVimBuffer
     /// which has focus 
     abstract ActiveBuffer : IVimBuffer option
+
+    /// The IStatusUtil for the active IVimBuffer.  If there is currently no active IVimBuffer
+    /// then a silent one will be returned 
+    abstract ActiveStatusUtil : IStatusUtil
 
     /// Whether or not the vimrc file should be autoloaded before the first IVimBuffer
     /// is created

@@ -53,6 +53,7 @@ type StatusUtilFactory () =
             | :? System.InvalidCastException -> ()
 
     interface IStatusUtilFactory with
+        member x.EmptyStatusUtil = StatusUtil() :> IStatusUtil
         member x.GetStatusUtil textBuffer = x.GetOrCreateStatusUtil textBuffer :> IStatusUtil
 
     interface IVimBufferCreationListener with
