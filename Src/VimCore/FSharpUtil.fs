@@ -911,7 +911,7 @@ module internal SystemUtil =
             Some text
 
     let EnsureRooted currentDirectory text = 
-        if System.IO.Path.IsPathRooted text then
+        if System.IO.Path.IsPathRooted text || not (System.IO.Path.IsPathRooted currentDirectory) then
             text
         else
             System.IO.Path.Combine(currentDirectory, text)

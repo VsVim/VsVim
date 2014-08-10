@@ -291,7 +291,7 @@ namespace Vim.UnitTest
         public void Edit_FilePathShouldLoadIntoExisting()
         {
             Create("");
-            _vimHost.Setup(x => x.LoadFileIntoExistingWindow("cat.txt", _textView)).Returns(HostResult.Success).Verifiable();
+            _vimHost.Setup(x => x.LoadFileIntoExistingWindow("cat.txt", _textView)).Returns(true).Verifiable();
             _vimHost.Setup(x => x.IsDirty(_textBuffer)).Returns(false).Verifiable();
             RunCommand("e cat.txt");
             _factory.Verify();
@@ -414,7 +414,7 @@ namespace Vim.UnitTest
         public void Split1()
         {
             Create("");
-            _vimHost.Setup(x => x.SplitViewHorizontally(_textView)).Returns(HostResult.Success).Verifiable();
+            _vimHost.Setup(x => x.SplitViewHorizontally(_textView)).Verifiable();
             RunCommand("split");
             _factory.Verify();
         }
@@ -423,7 +423,7 @@ namespace Vim.UnitTest
         public void Split2()
         {
             Create("");
-            _vimHost.Setup(x => x.SplitViewHorizontally(_textView)).Returns(HostResult.Success).Verifiable();
+            _vimHost.Setup(x => x.SplitViewHorizontally(_textView)).Verifiable();
             RunCommand("sp");
             _factory.Verify();
         }

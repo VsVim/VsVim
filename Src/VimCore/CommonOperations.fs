@@ -707,17 +707,15 @@ type internal CommonOperations
     member x.GoToFile () = 
         x.CheckDirty (fun () ->
             let text = x.WordUnderCursorOrEmpty 
-            match _vimHost.LoadFileIntoExistingWindow text _textView with
-            | HostResult.Success -> ()
-            | HostResult.Error(_) -> _statusUtil.OnError (Resources.NormalMode_CantFindFile text))
+            if not (_vimHost.LoadFileIntoExistingWindow text _textView) then
+                _statusUtil.OnError (Resources.NormalMode_CantFindFile text))
 
     /// Look for a word under the cursor and go to the specified file in a new window.  No need to 
     /// check for dirty since we are opening a new window
     member x.GoToFileInNewWindow () =
         let text = x.WordUnderCursorOrEmpty 
-        match _vimHost.LoadFileIntoNewWindow text with
-        | HostResult.Success -> ()
-        | HostResult.Error(_) -> _statusUtil.OnError (Resources.NormalMode_CantFindFile text)
+        if not (_vimHost.LoadFileIntoNewWindow text) then
+            _statusUtil.OnError (Resources.NormalMode_CantFindFile text)
 
     member x.GoToNextTab path count = 
 

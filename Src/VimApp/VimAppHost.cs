@@ -19,6 +19,7 @@ namespace VimApp
         private const string ErrorInvalidDirection = "Invalid direction";
 
         private IVimWindowManager _vimWindowManager;
+        private IVim _vim;
 
         internal IVimWindowManager VimWindowManager
         {
@@ -51,9 +52,10 @@ namespace VimApp
 
         }
 
-        public override void VimDataCreated(IVimData vimData)
+        public override void VimCreated(IVim vim)
         {
-            vimData.CurrentDirectory = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+            _vim = vim;
+            _vim.VimData.CurrentDirectory = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
         }
 
         public override void FormatLines(ITextView textView, SnapshotLineRange range)
@@ -99,12 +101,13 @@ namespace VimApp
 
         // TODO: The ITextView parameter isn't necessary.  This command should always load into
         // the active window, not existing
-        public override HostResult LoadFileIntoExistingWindow(string filePath, ITextView textView)
+        public override bool LoadFileIntoExistingWindow(string filePath, ITextView textView)
         {
             var vimWindow = MainWindow.ActiveVimWindowOpt;
             if (vimWindow == null)
             {
-                return HostResult.NewError("No active vim window");
+                _vim.ActiveStatusUtil.OnError("No active vim window");
+                return false;
             }
 
             try
@@ -113,35 +116,37 @@ namespace VimApp
                 var wpfTextViewHost = MainWindow.CreateTextViewHost(MainWindow.CreateTextView(textDocument.TextBuffer));
                 vimWindow.Clear();
                 vimWindow.AddVimViewInfo(wpfTextViewHost);
-                return HostResult.Success;
+                return true;
             }
             catch (Exception ex)
             {
-                return HostResult.NewError(ex.Message);
+                _vim.ActiveStatusUtil.OnError(ex.Message);
+                return false;
             }
         }
 
-        public override HostResult LoadFileIntoNewWindow(string filePath)
+        public override bool LoadFileIntoNewWindow(string filePath)
         {
             try
             {
                 var textDocument = TextDocumentFactoryService.CreateAndLoadTextDocument(filePath, TextBufferFactoryService.TextContentType);
                 var wpfTextView = MainWindow.CreateTextView(textDocument.TextBuffer);
                 MainWindow.AddNewTab(System.IO.Path.GetFileName(filePath), wpfTextView);
-                return HostResult.Success;
+                return true;
             }
             catch (Exception ex)
             {
-                return HostResult.NewError(ex.Message);
+                _vim.ActiveStatusUtil.OnError(ex.Message);
+                return false;
             }
         }
 
-        public override HostResult Make(bool jumpToFirstError, string arguments)
+        public override void Make(bool jumpToFirstError, string arguments)
         {
-            return HostResult.NewError(ErrorUnsupported);
+            _vim.ActiveStatusUtil.OnError(ErrorUnsupported);
         }
 
-        public override HostResult MoveFocus(ITextView textView, Direction direction)
+        public override void MoveFocus(ITextView textView, Direction direction)
         {
             foreach (var vimWindow in _vimWindowManager.VimWindowList)
             {
@@ -177,15 +182,14 @@ namespace VimApp
                 {
                     var targetTextView = list[target].TextViewHost.TextView;
                     Keyboard.Focus(targetTextView.VisualElement);
-                    return HostResult.Success;
                 }
                 else
                 {
-                    return HostResult.NewError(ErrorInvalidDirection);
+                    _vim.ActiveStatusUtil.OnError(ErrorInvalidDirection);
                 }
             }
 
-            return HostResult.NewError(ErrorCouldNotFindVimViewInfo);
+            _vim.ActiveStatusUtil.OnError(ErrorCouldNotFindVimViewInfo);
         }
 
         public override bool NavigateTo(VirtualSnapshotPoint point)
@@ -198,24 +202,24 @@ namespace VimApp
 
         }
 
-        public override HostResult SplitViewHorizontally(ITextView textView)
+        public override void SplitViewHorizontally(ITextView textView)
         {
             // First find the IVimViewInfo that contains this ITextView
             IVimViewInfo vimViewInfo;
             if (!TryGetVimViewInfo(textView, out vimViewInfo))
             {
-                return HostResult.NewError(ErrorCouldNotFindVimViewInfo);
+                _vim.ActiveStatusUtil.OnError(ErrorCouldNotFindVimViewInfo);
+                return;
             }
 
             var newTextView = MainWindow.CreateTextView(textView.TextBuffer);
             var newTextViewHost = MainWindow.CreateTextViewHost(newTextView);
             vimViewInfo.VimWindow.AddVimViewInfo(newTextViewHost);
-            return HostResult.Success;
         }
 
-        public override HostResult SplitViewVertically(ITextView value)
+        public override void SplitViewVertically(ITextView value)
         {
-            return HostResult.NewError(ErrorUnsupported);
+            _vim.ActiveStatusUtil.OnError(ErrorUnsupported);
         }
 
         public override bool GoToQuickFix(QuickFix quickFix, int count, bool hasBang)

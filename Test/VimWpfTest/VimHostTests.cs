@@ -63,22 +63,22 @@ namespace Vim.UI.Wpf.UnitTest
                 return false;
             }
 
-            public override HostResult LoadFileIntoExistingWindow(string filePath, ITextView textView)
+            public override bool LoadFileIntoExistingWindow(string filePath, ITextView textView)
             {
                 throw new NotImplementedException();
             }
 
-            public override HostResult LoadFileIntoNewWindow(string filePath)
+            public override bool LoadFileIntoNewWindow(string filePath)
             {
                 throw new NotImplementedException();
             }
 
-            public override HostResult Make(bool jumpToFirstError, string arguments)
+            public override void Make(bool jumpToFirstError, string arguments)
             {
                 throw new NotImplementedException();
             }
 
-            public override HostResult MoveFocus(ITextView textView, Direction direction)
+            public override void MoveFocus(ITextView textView, Direction direction)
             {
                 throw new NotImplementedException();
             }
@@ -93,12 +93,12 @@ namespace Vim.UI.Wpf.UnitTest
                 throw new NotImplementedException();
             }
 
-            public override HostResult SplitViewHorizontally(ITextView value)
+            public override void SplitViewHorizontally(ITextView value)
             {
                 throw new NotImplementedException();
             }
 
-            public override HostResult SplitViewVertically(ITextView value)
+            public override void SplitViewVertically(ITextView value)
             {
                 throw new NotImplementedException();
             }

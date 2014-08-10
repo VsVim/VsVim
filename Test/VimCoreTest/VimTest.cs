@@ -488,7 +488,7 @@ namespace Vim.UnitTest
             {
                 Assert.False(_globalSettings.HighlightSearch);
                 _vimHost
-                    .Setup(x => x.VimCreated(_vim))
+                    .Setup(x => x.VimCreated(It.IsAny<IVim>()))
                     .Callback((IVim vim) => { vim.GlobalSettings.HighlightSearch = true; });
                 CreateVim();
                 Assert.True(_globalSettings.HighlightSearch);

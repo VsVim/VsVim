@@ -147,17 +147,17 @@ namespace Vim.UnitTest.Mock
             return RunSaveTextAs(text, filePath);
         }
 
-        HostResult IVimHost.SplitViewHorizontally(ITextView textView)
+        void IVimHost.SplitViewHorizontally(ITextView textView)
         {
             throw new NotImplementedException();
         }
 
-        HostResult IVimHost.Make(bool jumpToFirstError, string arguments)
+        void IVimHost.Make(bool jumpToFirstError, string arguments)
         {
             throw new NotImplementedException();
         }
 
-        HostResult IVimHost.MoveFocus(ITextView textView, Direction direction)
+        void IVimHost.MoveFocus(ITextView textView, Direction direction)
         {
             throw new NotImplementedException();
         }
@@ -202,9 +202,9 @@ namespace Vim.UnitTest.Mock
             return false;
         }
 
-        HostResult IVimHost.LoadFileIntoExistingWindow(string filePath, ITextView textView)
+        bool IVimHost.LoadFileIntoExistingWindow(string filePath, ITextView textView)
         {
-            return HostResult.Success;
+            return true;
         }
 
         bool IVimHost.Reload(ITextBuffer value)
@@ -227,12 +227,12 @@ namespace Vim.UnitTest.Mock
             RunVisualStudioCommandFunc(textView, command, argument);
         }
 
-        HostResult IVimHost.SplitViewVertically(ITextView value)
+        void IVimHost.SplitViewVertically(ITextView value)
         {
             throw new NotImplementedException();
         }
 
-        HostResult IVimHost.LoadFileIntoNewWindow(string filePath)
+        bool IVimHost.LoadFileIntoNewWindow(string filePath)
         {
             throw new NotImplementedException();
         }

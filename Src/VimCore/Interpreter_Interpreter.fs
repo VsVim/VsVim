@@ -585,9 +585,7 @@ type VimInterpreter
         elif not hasBang && _vimHost.IsDirty _textBuffer then
             _statusUtil.OnError Resources.Common_NoWriteSinceLastChange
         else
-            match _vimHost.LoadFileIntoExistingWindow filePath _textView with
-            | HostResult.Success -> ()
-            | HostResult.Error(msg) -> _statusUtil.OnError(msg)
+            _vimHost.LoadFileIntoExistingWindow filePath _textView |> ignore
 
     /// Get the value of the specified expression 
     member x.RunExpression expr =
@@ -729,9 +727,7 @@ type VimInterpreter
 
     /// Run the host make command 
     member x.RunMake hasBang arguments = 
-        match _vimHost.Make (not hasBang) arguments with
-        | HostResult.Error msg -> _statusUtil.OnError msg
-        | HostResult.Success -> ()
+        _vimHost.Make (not hasBang) arguments 
 
     /// Run the map keys command
     member x.RunMapKeys leftKeyNotation rightKeyNotation keyRemapModes allowRemap mapArgumentList =
@@ -1196,9 +1192,7 @@ type VimInterpreter
                 true
 
         if SplitArgumentsAreValid fileOptions commandOption then
-            match behavior _textView with
-            | HostResult.Success -> ()
-            | HostResult.Error msg -> _statusUtil.OnError msg
+            behavior _textView 
         else
             ()
 

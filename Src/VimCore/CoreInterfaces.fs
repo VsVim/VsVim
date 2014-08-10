@@ -72,13 +72,6 @@ type VimRcState =
 
 [<RequireQualifiedAccess>]
 [<NoComparison>]
-[<NoEquality>]
-type HostResult =
-    | Success
-    | Error of string
-
-[<RequireQualifiedAccess>]
-[<NoComparison>]
 type ChangeCharacterKind =
     /// Switch the characters to upper case
     | ToUpperCase
@@ -3854,16 +3847,16 @@ type IVimHost =
     abstract IsFocused : textView : ITextView -> bool
 
     /// Loads the new file into the existing window
-    abstract LoadFileIntoExistingWindow : filePath : string -> textView : ITextView -> HostResult
+    abstract LoadFileIntoExistingWindow : filePath : string -> textView : ITextView -> bool
 
     /// Loads the new file into a new existing window
-    abstract LoadFileIntoNewWindow : filePath : string -> HostResult
+    abstract LoadFileIntoNewWindow : filePath : string -> bool
 
     /// Run the host specific make operation
-    abstract Make : jumpToFirstError : bool -> arguments : string -> HostResult
+    abstract Make : jumpToFirstError : bool -> arguments : string -> unit
 
     /// Move the focus to the ITextView in the open document in the specified direction
-    abstract MoveFocus : textView : ITextView -> direction : Direction -> HostResult
+    abstract MoveFocus : textView : ITextView -> direction : Direction -> unit
 
     abstract NavigateTo : point : VirtualSnapshotPoint -> bool
 
@@ -3895,10 +3888,10 @@ type IVimHost =
     abstract ShouldIncludeRcFile : vimRcPath : VimRcPath -> bool
 
     /// Split the views horizontally
-    abstract SplitViewHorizontally : ITextView -> HostResult
+    abstract SplitViewHorizontally : ITextView -> unit
 
     /// Split the views horizontally
-    abstract SplitViewVertically : ITextView -> HostResult
+    abstract SplitViewVertically : ITextView -> unit
 
     /// Called when IVim is fully created.  This callback gives the host the oppurtunity
     /// to customize various aspects of vim including IVimGlobalSettings, IVimData, etc ...
