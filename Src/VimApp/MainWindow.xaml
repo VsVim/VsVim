@@ -10,6 +10,7 @@
 
         <Menu IsMainMenu="True" Grid.Row="0">
             <MenuItem Header="File">
+                <MenuItem Header="Open" Click="OnOpenClick" />
                 <MenuItem Header="New Tab" Click="OnNewTabClick" />
             </MenuItem>
             <MenuItem Header="Custom">
