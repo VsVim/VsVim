@@ -321,6 +321,11 @@ namespace Vim.UI.Wpf
 
         }
 
+        public virtual void VimDataCreated(IVimData vimData)
+        {
+
+        }
+
         public virtual void VimRcLoaded(VimRcState vimRcState, IVimLocalSettings localSettings, IVimWindowSettings windowSettings)
         {
 
@@ -662,6 +667,11 @@ namespace Vim.UI.Wpf
         void IVimHost.VimGlobalSettingsCreated(IVimGlobalSettings globalSettings)
         {
             VimGlobalSettingsCreated(globalSettings);
+        }
+
+        void IVimHost.VimDataCreated(IVimData vimData)
+        {
+            VimDataCreated(vimData);
         }
 
         void IVimHost.VimRcLoaded(VimRcState vimRcState, IVimLocalSettings localSettings, IVimWindowSettings windowSettings)

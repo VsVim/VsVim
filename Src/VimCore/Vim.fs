@@ -381,6 +381,9 @@ type internal Vim
         // Allow the IVimHost to customize the IVimGlobalSettings instance
         _vimHost.VimGlobalSettingsCreated _globalSettings
 
+        // Allow the IVimHost to customize the IVimData instance
+        _vimHost.VimDataCreated _vimData
+
     [<ImportingConstructor>]
     new(
         host : IVimHost,

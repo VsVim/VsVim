@@ -563,7 +563,7 @@ type VimInterpreter
 
     /// Edit the specified file
     member x.RunEdit hasBang fileOptions commandOption filePath =
-        let filePath = SystemUtil.ResolvePath filePath
+        let filePath = SystemUtil.ResolveVimPath _vimData.CurrentDirectory filePath
         if not (List.isEmpty fileOptions) then
             _statusUtil.OnError (Resources.Interpreter_OptionNotSupported "[++opt]")
         elif Option.isSome commandOption then
@@ -842,7 +842,7 @@ type VimInterpreter
                 match filePath with
                 | None -> _vimHost.Save _textView.TextBuffer |> ignore  
                 | Some filePath ->
-                    let filePath = SystemUtil.ResolvePath filePath
+                    let filePath = SystemUtil.ResolveVimPath _vimData.CurrentDirectory filePath
                     _vimHost.SaveTextAs (lineRange.GetTextIncludingLineBreak()) filePath |> ignore
     
                 x.RunClose false |> ignore)
@@ -870,7 +870,7 @@ type VimInterpreter
 
     /// Run the read file command.
     member x.RunReadFile lineRange fileOptionList filePath =
-        let filePath = SystemUtil.ResolvePath filePath
+        let filePath = SystemUtil.ResolveVimPath _vimData.CurrentDirectory filePath
         x.RunWithLineRangeOrDefault lineRange DefaultLineRange.CurrentLine (fun lineRange ->
             if not (List.isEmpty fileOptionList) then
                 _statusUtil.OnError (Resources.Interpreter_OptionNotSupported "[++opt]")
@@ -1178,7 +1178,7 @@ type VimInterpreter
         if hasBang then
             _statusUtil.OnError (Resources.Interpreter_OptionNotSupported "!")
         else
-            let filePath = SystemUtil.ResolvePath filePath
+            let filePath = SystemUtil.ResolveVimPath _vimData.CurrentDirectory filePath
             match _fileSystem.ReadAllLines filePath with
             | None -> _statusUtil.OnError (Resources.CommandMode_CouldNotOpenFile filePath)
             | Some lines -> x.RunScript lines
@@ -1301,7 +1301,7 @@ type VimInterpreter
         let filePath =
             match filePath with
             | Some filePath ->
-                Some (SystemUtil.ResolvePath filePath)
+                Some (SystemUtil.ResolveVimPath _vimData.CurrentDirectory filePath)
             | None ->
                 None
         if not (List.isEmpty fileOptionList) then

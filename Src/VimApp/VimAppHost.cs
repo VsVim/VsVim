@@ -51,6 +51,11 @@ namespace VimApp
 
         }
 
+        public override void VimDataCreated(IVimData vimData)
+        {
+            vimData.CurrentDirectory = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        }
+
         public override void FormatLines(ITextView textView, SnapshotLineRange range)
         {
 

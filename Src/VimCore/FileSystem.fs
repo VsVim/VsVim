@@ -89,10 +89,8 @@ type internal FileSystem() =
     /// will be returned
     member x.ReadAllLines path =
         match SystemUtil.TryResolvePath path with
-        | Some expanded ->
-            x.ReadAllLinesExpanded expanded
-        | None ->
-            None
+        | Some expanded -> x.ReadAllLinesExpanded expanded
+        | None -> None
 
     member x.ReadAllLinesExpanded path =
 
@@ -119,7 +117,7 @@ type internal FileSystem() =
 
     member x.GetVimRcDirectories() = 
         VimRcDirectoryCandidates
-        |> Seq.choose SystemUtil.TryResolvePath
+        |> Seq.choose SystemUtil.TryResolvePath 
         |> Seq.toArray
 
     member x.GetVimRcFilePaths() =
