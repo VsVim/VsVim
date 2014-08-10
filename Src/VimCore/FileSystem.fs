@@ -97,7 +97,24 @@ type internal FileSystem() =
         | None -> None
         | Some path ->
             try
-                Directory.GetFiles(path) |> Some
+                // This test just exists to avoid first chance exceptions when debugging.  Stepping through
+                // them is distracting
+                if not (Directory.Exists path) then
+                    None
+                else
+                    let list = List<string>()
+                    list.Add("../")
+                    list.Add("./")
+
+                    Directory.GetDirectories(path)
+                    |> Seq.map (fun dir -> Path.GetFileName(dir) + "/")
+                    |> list.AddRange
+
+                    Directory.GetFiles(path)
+                    |> Seq.map Path.GetFileName
+                    |> list.AddRange
+
+                    list.ToArray() |> Some
             with
                 | _ -> None
 

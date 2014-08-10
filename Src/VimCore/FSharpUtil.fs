@@ -914,13 +914,17 @@ module internal SystemUtil =
         if System.IO.Path.IsPathRooted text || not (System.IO.Path.IsPathRooted currentDirectory) then
             text
         else
-            System.IO.Path.Combine(currentDirectory, text)
+            CombinePath currentDirectory text
 
     /// Like ResolvePath except it will always return a rooted path.  If the provided path
     /// isn't rooted it will be rooted inside of 'currentDirectory'
     let ResolveVimPath currentDirectory text = 
-        let text = ResolvePath text
-        EnsureRooted currentDirectory text
+        match text with
+        | "." -> currentDirectory
+        | ".." -> System.IO.Path.GetPathRoot currentDirectory
+        | _ -> 
+            let text = ResolvePath text
+            EnsureRooted currentDirectory text
 
     let TryResolveVimPath currentDirectory text =
         TryResolvePath text |> Option.map (fun text -> EnsureRooted currentDirectory text)
