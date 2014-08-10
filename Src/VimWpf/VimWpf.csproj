@@ -62,6 +62,8 @@
     <Compile Include="Implementation\CharDisplay\CharDisplayTaggerSource.cs" />
     <Compile Include="Implementation\CharDisplay\CharDisplayTaggerSourceFactory.cs" />
     <Compile Include="Implementation\CharDisplay\ControlCharUtil.cs" />
+    <Compile Include="Implementation\Directory\ContentType.cs" />
+    <Compile Include="Implementation\Directory\DirectoryKeyProcessorProvider.cs" />
     <Compile Include="Implementation\Misc\AlternateKeyUtil.cs" />
     <Compile Include="Implementation\BlockCaret\BlockCaretController.cs" />
     <Compile Include="Implementation\BlockCaret\BlockCaretFormatDefinition.cs" />

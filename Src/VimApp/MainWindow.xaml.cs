@@ -87,13 +87,19 @@ namespace VimApp
 
         internal IWpfTextView CreateTextView(ITextBuffer textBuffer)
         {
-            var textViewRoleSet = _vimComponentHost.EditorHost.TextEditorFactoryService.CreateTextViewRoleSet(
+            return CreateTextView(
+                textBuffer,
                 PredefinedTextViewRoles.PrimaryDocument,
                 PredefinedTextViewRoles.Document,
                 PredefinedTextViewRoles.Editable,
                 PredefinedTextViewRoles.Interactive,
                 PredefinedTextViewRoles.Structured,
                 PredefinedTextViewRoles.Analyzable);
+        }
+
+        internal IWpfTextView CreateTextView(ITextBuffer textBuffer, params string[] roles)
+        {
+            var textViewRoleSet = _vimComponentHost.EditorHost.TextEditorFactoryService.CreateTextViewRoleSet(roles);
             var textView =  _vimComponentHost.EditorHost.TextEditorFactoryService.CreateTextView(
                 textBuffer,
                 textViewRoleSet);

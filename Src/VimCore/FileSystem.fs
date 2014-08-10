@@ -92,6 +92,15 @@ type internal FileSystem() =
         | Some expanded -> x.ReadAllLinesExpanded expanded
         | None -> None
 
+    member x.ReadDirectoryContents path = 
+        match SystemUtil.TryResolvePath path with
+        | None -> None
+        | Some path ->
+            try
+                Directory.GetFiles(path) |> Some
+            with
+                | _ -> None
+
     member x.ReadAllLinesExpanded path =
 
         // Yes I realize I wrote an entire blog post on why File.Exists is an evil
@@ -138,4 +147,5 @@ type internal FileSystem() =
         member x.GetVimRcDirectories() = x.GetVimRcDirectories()
         member x.GetVimRcFilePaths() = x.GetVimRcFilePaths()
         member x.ReadAllLines path = x.ReadAllLines path
+        member x.ReadDirectoryContents directoryPath = x.ReadDirectoryContents directoryPath
 

@@ -133,6 +133,9 @@ type IFileSystem =
     /// Attempt to read all of the lines from the given file 
     abstract ReadAllLines : filePath : string -> string[] option
 
+    /// Read the contents of the directory 
+    abstract ReadDirectoryContents : directoryPath : string -> string[] option
+
 /// Utility function for searching for Word values.  This is a MEF importable
 /// component
 [<UsedInBackgroundThread>]

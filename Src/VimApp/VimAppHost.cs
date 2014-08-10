@@ -4,9 +4,12 @@ using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Operations;
 using Vim;
+using Vim.Extensions;
 using EditorUtils;
 using System;
 using System.Windows.Input;
+using Microsoft.VisualStudio.Utilities;
+using Vim.UI.Wpf;
 
 namespace VimApp
 {
@@ -18,6 +21,8 @@ namespace VimApp
         private const string ErrorUnsupported = "Could not find the associated IVimViewInfo";
         private const string ErrorInvalidDirection = "Invalid direction";
 
+        private readonly IFileSystem _fileSystem;
+        private readonly IContentTypeRegistryService _contentTypeRegistryService;
         private IVimWindowManager _vimWindowManager;
         private IVim _vim;
 
@@ -43,13 +48,16 @@ namespace VimApp
             ITextBufferFactoryService textBufferFactoryService,
             ITextEditorFactoryService textEditorFactoryService,
             ITextDocumentFactoryService textDocumentFactoryService,
-            IEditorOperationsFactoryService editorOperationsFactoryService) : base(
+            IEditorOperationsFactoryService editorOperationsFactoryService,
+            IContentTypeRegistryService contentTypeRegistryService,
+            IFileSystem fileSystem) : base(
             textBufferFactoryService,
             textEditorFactoryService,
             textDocumentFactoryService,
             editorOperationsFactoryService)
         {
-
+            _contentTypeRegistryService = contentTypeRegistryService;
+            _fileSystem = fileSystem;
         }
 
         public override void VimCreated(IVim vim)
@@ -110,17 +118,17 @@ namespace VimApp
                 return false;
             }
 
-            try
+            IWpfTextView createdTextView;
+            if (TryLoadPath(filePath, out createdTextView))
             {
-                var textDocument = TextDocumentFactoryService.CreateAndLoadTextDocument(filePath, TextBufferFactoryService.TextContentType);
-                var wpfTextViewHost = MainWindow.CreateTextViewHost(MainWindow.CreateTextView(textDocument.TextBuffer));
+                var wpfTextViewHost = MainWindow.CreateTextViewHost(createdTextView);
                 vimWindow.Clear();
                 vimWindow.AddVimViewInfo(wpfTextViewHost);
                 return true;
             }
-            catch (Exception ex)
+            else
             {
-                _vim.ActiveStatusUtil.OnError(ex.Message);
+                _vim.ActiveStatusUtil.OnError("Could not load file");
                 return false;
             }
         }
@@ -234,6 +242,43 @@ namespace VimApp
                 .Where(x => x.TextViewHost.TextView == textView)
                 .FirstOrDefault();
             return vimViewInfo != null;
+        }
+
+        private bool TryLoadPath(string filePath, out IWpfTextView textView)
+        {
+            return 
+                TryLoadPathAsFile(filePath, out textView) ||
+                TryLoadPathAsDirectory(filePath, out textView);
+        }
+
+        private bool TryLoadPathAsFile(string filePath, out IWpfTextView textView)
+        {
+            try
+            {
+                var textDocument = TextDocumentFactoryService.CreateAndLoadTextDocument(filePath, TextBufferFactoryService.TextContentType);
+                textView = MainWindow.CreateTextView(textDocument.TextBuffer);
+                return true;
+            }
+            catch (Exception)
+            {
+                textView = null;
+                return false;
+            }
+        }
+
+        private bool TryLoadPathAsDirectory(string filePath, out IWpfTextView textView)
+        {
+            var contents = _fileSystem.ReadDirectoryContents(filePath);
+            if (contents.IsNone())
+            {
+                textView = null;
+                return false;
+            }
+
+            var contentType = _contentTypeRegistryService.GetContentType(VimWpfConstants.DirectoryContentType);
+            var textBuffer = TextBufferFactoryService.CreateTextBuffer(contentType, contents.Value);
+            textView = MainWindow.CreateTextView(textBuffer, PredefinedTextViewRoles.Interactive);
+            return true;
         }
     }
 }
