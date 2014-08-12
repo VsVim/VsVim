@@ -7,7 +7,7 @@ using System.Text;
 
 namespace Vim.UI.Wpf.Implementation.Directory
 {
-    internal sealed class ContentType
+    internal sealed class DirectoryContentType
     {
         [Export]
         [Name(VimWpfConstants.DirectoryContentType)]

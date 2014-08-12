@@ -6,25 +6,27 @@ using System.Linq;
 using System.Text;
 using Microsoft.VisualStudio.Text;
 using System.Collections.ObjectModel;
+using Microsoft.VisualStudio.Text.Classification;
 
 namespace Vim.UI.Wpf.Implementation.Directory
 {
-    internal sealed class DirectoryTagger : IBasicTaggerSource<TextMarkerTag>
+    internal sealed class DirectoryTagger : IBasicTaggerSource<IClassificationTag>
     {
         private readonly ITextBuffer _textBuffer;
-        private readonly TextMarkerTag _textMarkerTag = new TextMarkerTag(VimWpfConstants.DirectoryFormatDefinitionName);
+        private readonly IClassificationTag _classificationTag;
         private EventHandler _changed;
 
-        internal DirectoryTagger(ITextBuffer textBuffer)
+        internal DirectoryTagger(ITextBuffer textBuffer, IClassificationType classificationType)
         {
             _textBuffer = textBuffer;
+            _classificationTag = new ClassificationTag(classificationType);
         }
 
-        private ReadOnlyCollection<ITagSpan<TextMarkerTag>> GetTags(SnapshotSpan span)
+        private ReadOnlyCollection<ITagSpan<IClassificationTag>> GetTags(SnapshotSpan span)
         {
             var lineSpan = SnapshotLineRangeUtil.CreateForSpan(span);
             var snapshot = span.Snapshot;
-            var list = new List<ITagSpan<TextMarkerTag>>();
+            var list = new List<ITagSpan<IClassificationTag>>();
             foreach (var line in lineSpan.Lines)
             {
                 if (line.Length == 0)
@@ -35,7 +37,7 @@ namespace Vim.UI.Wpf.Implementation.Directory
                 if (snapshot[line.End.Position - 1] == '/')
                 {
                     var directorySpan = new SnapshotSpan(line.Start, line.Length - 1);
-                    list.Add(new TagSpan<TextMarkerTag>(directorySpan, _textMarkerTag));
+                    list.Add(new TagSpan<IClassificationTag>(directorySpan, _classificationTag));
                 }
             }
 
@@ -44,18 +46,18 @@ namespace Vim.UI.Wpf.Implementation.Directory
 
         #region IBasicTaggerSource<TextMarkerTag>
 
-        ITextSnapshot IBasicTaggerSource<TextMarkerTag>.TextSnapshot
+        ITextSnapshot IBasicTaggerSource<IClassificationTag>.TextSnapshot
         {
             get { return _textBuffer.CurrentSnapshot; }
         }
 
-        event EventHandler IBasicTaggerSource<TextMarkerTag>.Changed
+        event EventHandler IBasicTaggerSource<IClassificationTag>.Changed
         {
             add { _changed += value; }
             remove { _changed -= value; }
         }
 
-        ReadOnlyCollection<ITagSpan<TextMarkerTag>> IBasicTaggerSource<TextMarkerTag>.GetTags(SnapshotSpan span)
+        ReadOnlyCollection<ITagSpan<IClassificationTag>> IBasicTaggerSource<IClassificationTag>.GetTags(SnapshotSpan span)
         {
             return GetTags(span);
         }

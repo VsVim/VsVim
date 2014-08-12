@@ -8,6 +8,7 @@ using Microsoft.VisualStudio.Utilities;
 using Microsoft.VisualStudio.Text.Editor;
 using EditorUtils;
 using System.ComponentModel.Composition;
+using Microsoft.VisualStudio.Text.Classification;
 
 namespace Vim.UI.Wpf.Implementation.Directory
 {
@@ -18,13 +19,21 @@ namespace Vim.UI.Wpf.Implementation.Directory
     internal sealed class DirectoryTaggerSourceFactory : ITaggerProvider
     {
         private static object Key = new object();
+        private readonly IClassificationTypeRegistryService _classificationTypeRegistryService;
+
+        [ImportingConstructor]
+        internal DirectoryTaggerSourceFactory(IClassificationTypeRegistryService classificationTypeRegistryService)
+        {
+            _classificationTypeRegistryService = classificationTypeRegistryService;
+        }
 
         ITagger<T> ITaggerProvider.CreateTagger<T>(ITextBuffer textBuffer)
         {
+            var classificationType = _classificationTypeRegistryService.GetClassificationType(DirectoryFormatDefinition.Name);
             return EditorUtilsFactory.CreateBasicTagger(
                 textBuffer.Properties,
                 Key,
-                () => new DirectoryTagger(textBuffer)) as ITagger<T>;
+                () => new DirectoryTagger(textBuffer, classificationType)) as ITagger<T>;
         }
     }
 }
