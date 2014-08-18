@@ -2185,7 +2185,7 @@ type internal CommandUtil
             //
             // Using .Net dictionary because we have to map by ITextBuffer which doesn't have
             // the comparison constraint
-            let map = System.Collections.Generic.Dictionary<ITextBuffer, ITextViewUndoTransaction>();
+            let map = System.Collections.Generic.Dictionary<ITextBuffer, ILinkedUndoTransaction>();
 
             use bulkOperation = _bulkOperations.BeginBulkOperation()
             try 
@@ -2216,9 +2216,8 @@ type internal CommandUtil
                             | Some buffer -> 
                                 // Make sure we have an IUndoTransaction open in the ITextBuffer
                                 if not (map.ContainsKey(buffer.TextBuffer)) then
-                                    let transaction = _undoRedoOperations.CreateTextViewUndoTransaction "Macro Run" buffer.TextView
+                                    let transaction = _undoRedoOperations.CreateLinkedUndoTransactionWithFlags "Macro Run" LinkedUndoTransactionFlags.CanBeEmpty
                                     map.Add(buffer.TextBuffer, transaction)
-                                    transaction.AddBeforeTextBufferChangePrimitive()
 
                                 // Actually run the KeyInput.  If processing the KeyInput value results
                                 // in an error then we should stop processing the macro
@@ -2238,7 +2237,6 @@ type internal CommandUtil
 
                 // Close out all of the transactions
                 for transaction in map.Values do
-                    transaction.AddAfterTextBufferChangePrimitive()
                     transaction.Complete()
 
             finally

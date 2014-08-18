@@ -382,6 +382,16 @@ namespace Vim.UnitTest
                 Assert.Equal("cat", _textView.GetLine(0).GetText());
                 Assert.Equal("dog", _textView.GetLine(1).GetText());
             }
+
+            [Fact]
+            public void RepeatLinked()
+            {
+                Create("cat", "dog", "bear");
+                _vimBuffer.ProcessNotation(@"qccwbat<Esc>q");
+                _textView.MoveCaretToLine(1);
+                _vimBuffer.ProcessNotation(@"@c");
+                Assert.Equal("bat", _textBuffer.GetLine(1).GetText());
+            }
         }
     }
 }
