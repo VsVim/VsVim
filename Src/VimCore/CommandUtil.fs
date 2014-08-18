@@ -2025,7 +2025,7 @@ type internal CommandUtil
                     _commonOperations.Beep()
                     CommandResult.Completed ModeSwitch.NoSwitch
                 | Some command ->
-                    use transaction = _undoRedoOperations.CreateLinkedUndoTransaction "Repeat Command"
+                    use transaction = _undoRedoOperations.CreateLinkedUndoTransactionWithFlags "Repeat Command" LinkedUndoTransactionFlags.CanBeEmpty
                     let result = repeat command (Some repeatData)
                     transaction.Complete()
                     result
