@@ -141,7 +141,7 @@ namespace Vim.VisualStudio
 
         /// <summary>
         /// Don't automatically synchronize settings.  The settings can't be synchronized until after Visual Studio 
-        /// applies settings which happens at an uncertain time.  HostFactor handles this timing 
+        /// applies settings which happens at an uncertain time.  HostFactory handles this timing 
         /// </summary>
         public override bool AutoSynchronizeSettings
         {

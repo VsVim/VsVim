@@ -13,8 +13,6 @@ using Microsoft.FSharp.Core;
 
 namespace Vim.UnitTest
 {
-    // TODO: Need to remove several of the mock's here.  No reason to mock IVimLocalSettings and 
-    // a couple others.
     public sealed class CommonOperationsTest : VimTestBase
     {
         private ITextView _textView;
