@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace VsVim.Implementation.Roslyn
+namespace Vim.VisualStudio.Implementation.Roslyn
 {
     internal interface IRoslynRenameUtil
     {

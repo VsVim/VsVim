@@ -9,7 +9,7 @@ using System.Linq;
 using System.Text;
 using Vim;
 
-namespace VsVim.Implementation.Roslyn
+namespace Vim.VisualStudio.Implementation.Roslyn
 {
     [Export(typeof(IVimBufferCreationListener))]
     [ContentType(VimConstants.ContentType)]

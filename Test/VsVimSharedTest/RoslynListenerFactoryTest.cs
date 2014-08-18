@@ -5,11 +5,12 @@ using System.Text;
 using Microsoft.VisualStudio.Shell;
 using Moq;
 using Vim;
+using Vim.VisualStudio;
 using Vim.UnitTest;
-using VsVim.Implementation.Roslyn;
 using Xunit;
+using Vim.VisualStudio.Implementation.Roslyn;
 
-namespace VsVim.Shared.UnitTest
+namespace Vim.VisualStudio.UnitTest
 {
     public abstract class RoslynListenerFactoryTest : VimTestBase
     {

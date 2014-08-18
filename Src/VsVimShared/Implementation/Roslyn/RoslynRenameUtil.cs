@@ -7,7 +7,7 @@ using System.Reflection;
 using System.Text;
 using Microsoft.VisualStudio.Shell;
 
-namespace VsVim.Implementation.Roslyn
+namespace Vim.VisualStudio.Implementation.Roslyn
 {
     internal sealed class RoslynRenameUtil : IRoslynRenameUtil
     {
