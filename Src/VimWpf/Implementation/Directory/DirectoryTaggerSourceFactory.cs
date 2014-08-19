@@ -12,11 +12,10 @@ using Microsoft.VisualStudio.Text.Classification;
 
 namespace Vim.UI.Wpf.Implementation.Directory
 {
-    [Export(typeof(ITaggerProvider))]
+    [Export(typeof(IClassifierProvider))]
     [ContentType(VimWpfConstants.DirectoryContentType)]
     [TextViewRole(PredefinedTextViewRoles.Interactive)]
-    [TagType(typeof(TextMarkerTag))]
-    internal sealed class DirectoryTaggerSourceFactory : ITaggerProvider
+    internal sealed class DirectoryTaggerSourceFactory : IClassifierProvider
     {
         private static object Key = new object();
         private readonly IClassificationTypeRegistryService _classificationTypeRegistryService;
@@ -27,13 +26,13 @@ namespace Vim.UI.Wpf.Implementation.Directory
             _classificationTypeRegistryService = classificationTypeRegistryService;
         }
 
-        ITagger<T> ITaggerProvider.CreateTagger<T>(ITextBuffer textBuffer)
+        IClassifier IClassifierProvider.GetClassifier(ITextBuffer textBuffer)
         {
             var classificationType = _classificationTypeRegistryService.GetClassificationType(DirectoryFormatDefinition.Name);
-            return EditorUtilsFactory.CreateTagger(
+            return EditorUtilsFactory.CreateClassifier(
                 textBuffer.Properties,
                 Key,
-                () => new DirectoryTagger(textBuffer, classificationType)) as ITagger<T>;
+                () => new DirectoryTaggerSource(textBuffer, classificationType));
         }
     }
 }

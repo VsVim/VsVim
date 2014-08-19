@@ -10,13 +10,13 @@ using Microsoft.VisualStudio.Text.Classification;
 
 namespace Vim.UI.Wpf.Implementation.Directory
 {
-    internal sealed class DirectoryTagger : IBasicTaggerSource<IClassificationTag>
+    internal sealed class DirectoryTaggerSource : IBasicTaggerSource<IClassificationTag>
     {
         private readonly ITextBuffer _textBuffer;
         private readonly IClassificationTag _classificationTag;
         private EventHandler _changed;
 
-        internal DirectoryTagger(ITextBuffer textBuffer, IClassificationType classificationType)
+        internal DirectoryTaggerSource(ITextBuffer textBuffer, IClassificationType classificationType)
         {
             _textBuffer = textBuffer;
             _classificationTag = new ClassificationTag(classificationType);

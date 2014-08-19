@@ -65,7 +65,7 @@
     <Compile Include="Implementation\Directory\DirectoryContentType.cs" />
     <Compile Include="Implementation\Directory\DirectoryFormatDefinition.cs" />
     <Compile Include="Implementation\Directory\DirectoryKeyProcessorProvider.cs" />
-    <Compile Include="Implementation\Directory\DirectoryTagger.cs" />
+    <Compile Include="Implementation\Directory\DirectoryTaggerSource.cs" />
     <Compile Include="Implementation\Directory\DirectoryTaggerSourceFactory.cs" />
     <Compile Include="Implementation\Misc\AlternateKeyUtil.cs" />
     <Compile Include="Implementation\BlockCaret\BlockCaretController.cs" />
