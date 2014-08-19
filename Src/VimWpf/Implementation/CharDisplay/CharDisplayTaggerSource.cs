@@ -250,11 +250,6 @@ namespace Vim.UI.Wpf.Implementation.CharDisplay
             return GetTags(span);
         }
 
-        ITextSnapshot IBasicTaggerSource<IntraTextAdornmentTag>.TextSnapshot
-        {
-            get { return _textView.TextSnapshot; }
-        }
-
         #endregion
 
         #region IDisposable

@@ -159,8 +159,8 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="EditorUtils">
-      <HintPath>..\..\packages\EditorUtils.1.4.0.0\lib\net40\EditorUtils.dll</HintPath>
+    <Reference Include="EditorUtils2010">
+      <HintPath>..\..\packages\EditorUtils2010.1.4.1.0\lib\net40\EditorUtils2010.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="FSharp.Core, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />

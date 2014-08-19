@@ -42,7 +42,7 @@ namespace Vim.UI.Wpf.Implementation.CharDisplay
                 return null;
             }
 
-            return EditorUtilsFactory.CreateBasicTagger(
+            return EditorUtilsFactory.CreateTagger(
                 textView.Properties,
                 _key,
                 () => CreateCharDisplayTaggerSource(textView)) as ITagger<T>;

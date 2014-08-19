@@ -30,7 +30,7 @@ namespace Vim.UI.Wpf.Implementation.Directory
         ITagger<T> ITaggerProvider.CreateTagger<T>(ITextBuffer textBuffer)
         {
             var classificationType = _classificationTypeRegistryService.GetClassificationType(DirectoryFormatDefinition.Name);
-            return EditorUtilsFactory.CreateBasicTagger(
+            return EditorUtilsFactory.CreateTagger(
                 textBuffer.Properties,
                 Key,
                 () => new DirectoryTagger(textBuffer, classificationType)) as ITagger<T>;

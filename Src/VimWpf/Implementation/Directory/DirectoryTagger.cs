@@ -46,11 +46,6 @@ namespace Vim.UI.Wpf.Implementation.Directory
 
         #region IBasicTaggerSource<TextMarkerTag>
 
-        ITextSnapshot IBasicTaggerSource<IClassificationTag>.TextSnapshot
-        {
-            get { return _textBuffer.CurrentSnapshot; }
-        }
-
         event EventHandler IBasicTaggerSource<IClassificationTag>.Changed
         {
             add { _changed += value; }
