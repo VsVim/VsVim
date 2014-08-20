@@ -13,7 +13,7 @@ using Microsoft.VisualStudio.Text.Classification;
 namespace Vim.UI.Wpf.Implementation.Directory
 {
     [Export(typeof(IClassifierProvider))]
-    [ContentType(VimWpfConstants.DirectoryContentType)]
+    [ContentType(DirectoryContentType.Name)]
     [TextViewRole(PredefinedTextViewRoles.Interactive)]
     internal sealed class DirectoryTaggerSourceFactory : IClassifierProvider
     {

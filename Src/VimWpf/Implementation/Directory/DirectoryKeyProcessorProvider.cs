@@ -5,15 +5,26 @@ using System.ComponentModel.Composition;
 namespace Vim.UI.Wpf.Implementation.Directory
 {
     [Export(typeof(IKeyProcessorProvider))]
-    [ContentType(VimWpfConstants.DirectoryContentType)]
-    [TextViewRole(PredefinedTextViewRoles.Editable)]
+    [ContentType(DirectoryContentType.Name)]
+    [TextViewRole(PredefinedTextViewRoles.Interactive)]
     [Name("Directory Key Processor")]
     [Order(Before = VimConstants.MainKeyProcessorName)]
     internal sealed class DirectoryKeyProcessorProvider : IKeyProcessorProvider
     {
+        private readonly IDirectoryUtil _directoryUtil;
+        private readonly IVimHost _vimHost;
+
+        [ImportingConstructor]
+        internal DirectoryKeyProcessorProvider(IDirectoryUtil directoryUtil, IVimHost vimHost)
+        {
+            _directoryUtil = directoryUtil;
+            _vimHost = vimHost;
+        }
+
         KeyProcessor IKeyProcessorProvider.GetAssociatedProcessor(IWpfTextView wpfTextView)
         {
-            return null;
+            var directoryPath = _directoryUtil.GetDirectoryPath(wpfTextView.TextBuffer);
+            return new DirectoryKeyProcessor(directoryPath, _vimHost, wpfTextView);
         }
     }
 }

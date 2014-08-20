@@ -22,6 +22,7 @@ namespace VimApp
         private const string ErrorInvalidDirection = "Invalid direction";
 
         private readonly IFileSystem _fileSystem;
+        private readonly IDirectoryUtil _directoryUtil;
         private readonly IContentTypeRegistryService _contentTypeRegistryService;
         private IVimWindowManager _vimWindowManager;
         private IVim _vim;
@@ -50,7 +51,8 @@ namespace VimApp
             ITextDocumentFactoryService textDocumentFactoryService,
             IEditorOperationsFactoryService editorOperationsFactoryService,
             IContentTypeRegistryService contentTypeRegistryService,
-            IFileSystem fileSystem) : base(
+            IFileSystem fileSystem,
+            IDirectoryUtil directoryUtil) : base(
             textBufferFactoryService,
             textEditorFactoryService,
             textDocumentFactoryService,
@@ -58,6 +60,7 @@ namespace VimApp
         {
             _contentTypeRegistryService = contentTypeRegistryService;
             _fileSystem = fileSystem;
+            _directoryUtil = directoryUtil;
         }
 
         public override void VimCreated(IVim vim)
@@ -268,15 +271,13 @@ namespace VimApp
 
         private bool TryLoadPathAsDirectory(string filePath, out IWpfTextView textView)
         {
-            var contents = _fileSystem.ReadDirectoryContents(filePath);
-            if (contents.IsNone())
+            ITextBuffer textBuffer;
+            if (!_directoryUtil.TryCreateDirectoryTextBuffer(filePath, out textBuffer))
             {
                 textView = null;
                 return false;
             }
 
-            var contentType = _contentTypeRegistryService.GetContentType(VimWpfConstants.DirectoryContentType);
-            var textBuffer = TextBufferFactoryService.CreateTextBuffer(contentType, contents.Value);
             textView = MainWindow.CreateTextView(textBuffer, PredefinedTextViewRoles.Interactive);
             return true;
         }

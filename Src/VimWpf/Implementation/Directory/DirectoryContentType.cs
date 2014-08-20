@@ -9,8 +9,10 @@ namespace Vim.UI.Wpf.Implementation.Directory
 {
     internal sealed class DirectoryContentType
     {
+        internal const string Name = "vsvim_directory";
+
         [Export]
-        [Name(VimWpfConstants.DirectoryContentType)]
+        [Name(Name)]
         [BaseDefinition("text")]
         internal ContentTypeDefinition DirectoryContentTypeDefinition;
     }

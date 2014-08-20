@@ -29,14 +29,9 @@ namespace Vim.UI.Wpf.Implementation.Directory
             var list = new List<ITagSpan<IClassificationTag>>();
             foreach (var line in lineSpan.Lines)
             {
-                if (line.Length == 0)
+                SnapshotSpan directorySpan;
+                if (DirectoryUtil.TryGetDirectorySpan(line, out directorySpan))
                 {
-                    continue;
-                }
-
-                if (snapshot[line.End.Position - 1] == '/')
-                {
-                    var directorySpan = new SnapshotSpan(line.Start, line.Length - 1);
                     list.Add(new TagSpan<IClassificationTag>(directorySpan, _classificationTag));
                 }
             }

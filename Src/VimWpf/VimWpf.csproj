@@ -57,6 +57,7 @@
   <ItemGroup>
     <Compile Include="Constants.cs" />
     <Compile Include="IControlCharUtil.cs" />
+    <Compile Include="IDirectoryUtil.cs" />
     <Compile Include="IKeyUtil.cs" />
     <Compile Include="Implementation\CharDisplay\ControlCharFormatDefinition.cs" />
     <Compile Include="Implementation\CharDisplay\CharDisplayTaggerSource.cs" />
@@ -64,9 +65,11 @@
     <Compile Include="Implementation\CharDisplay\ControlCharUtil.cs" />
     <Compile Include="Implementation\Directory\DirectoryContentType.cs" />
     <Compile Include="Implementation\Directory\DirectoryFormatDefinition.cs" />
+    <Compile Include="Implementation\Directory\DirectoryKeyProcessor.cs" />
     <Compile Include="Implementation\Directory\DirectoryKeyProcessorProvider.cs" />
     <Compile Include="Implementation\Directory\DirectoryTaggerSource.cs" />
     <Compile Include="Implementation\Directory\DirectoryTaggerSourceFactory.cs" />
+    <Compile Include="Implementation\Directory\DirectoryUtil.cs" />
     <Compile Include="Implementation\Misc\AlternateKeyUtil.cs" />
     <Compile Include="Implementation\BlockCaret\BlockCaretController.cs" />
     <Compile Include="Implementation\BlockCaret\BlockCaretFormatDefinition.cs" />
