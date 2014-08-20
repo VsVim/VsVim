@@ -10,6 +10,7 @@ using System;
 using System.Windows.Input;
 using Microsoft.VisualStudio.Utilities;
 using Vim.UI.Wpf;
+using System.Windows.Threading;
 
 namespace VimApp
 {
@@ -127,6 +128,16 @@ namespace VimApp
                 var wpfTextViewHost = MainWindow.CreateTextViewHost(createdTextView);
                 vimWindow.Clear();
                 vimWindow.AddVimViewInfo(wpfTextViewHost);
+                Dispatcher.CurrentDispatcher.BeginInvoke(
+                    (Action)(() =>
+                    {
+                        var control = wpfTextViewHost.TextView.VisualElement;
+                        control.IsEnabled = true;
+                        control.Focusable = true;
+                        control.Focus();
+                    }),
+                    DispatcherPriority.ApplicationIdle);
+
                 return true;
             }
             else
