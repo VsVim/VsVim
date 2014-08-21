@@ -1251,6 +1251,10 @@ type VimInterpreter
             | Some substituteData -> substituteData.SearchPattern, substituteData.Substitute
         x.RunSubstitute lineRange pattern replace flags 
 
+    member x.RunTabNew filePath = 
+        let filePath = filePath |> OptionUtil.getOrDefault ""
+        _vimHost.LoadFileIntoNewWindow filePath |> ignore
+
     /// Run the undo command
     member x.RunUndo() =
         _commonOperations.Undo 1
@@ -1413,6 +1417,7 @@ type VimInterpreter
         | LineCommand.Source (hasBang, filePath) -> x.RunSource hasBang filePath
         | LineCommand.Substitute (lineRange, pattern, replace, flags) -> x.RunSubstitute lineRange pattern replace flags
         | LineCommand.SubstituteRepeat (lineRange, substituteFlags) -> x.RunSubstituteRepeatLast lineRange substituteFlags
+        | LineCommand.TabNew filePath -> x.RunTabNew filePath
         | LineCommand.Undo -> x.RunUndo()
         | LineCommand.Unlet (ignoreMissing, nameList) -> x.RunUnlet ignoreMissing nameList
         | LineCommand.UnmapKeys (keyNotation, keyRemapModes, mapArgumentList) -> x.RunUnmapKeys keyNotation keyRemapModes mapArgumentList
