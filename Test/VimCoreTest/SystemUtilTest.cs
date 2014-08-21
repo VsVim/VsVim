@@ -76,7 +76,7 @@ namespace Vim.UnitTest
         public void ResolveVimPath_Directory()
         {
             Assert.Equal(@"c:\foo", SystemUtil.ResolveVimPath(@"c:\foo", "."));
-            Assert.Equal(@"c:\foo", SystemUtil.ResolveVimPath(@"c:\foo", ".."));
+            Assert.Equal(@"c:\", SystemUtil.ResolveVimPath(@"c:\foo", ".."));
         }
     }
 }
