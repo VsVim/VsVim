@@ -131,6 +131,7 @@ type Parser
         ("delete","d")
         ("delmarks", "delm")
         ("display","di")
+        ("echo", "ec")
         ("edit", "e")
         ("else", "el")
         ("elseif", "elsei")
@@ -1684,6 +1685,10 @@ type Parser
         let joinKind = if hasBang then JoinKind.KeepEmptySpaces else JoinKind.RemoveEmptySpaces
         LineCommand.Join (lineRange, joinKind)
 
+    /// Parse out the :echo command
+    member x.ParseEcho () = 
+        LineCommand.Echo
+
     /// Parse out the :let command
     member x.ParseLet () = 
         use flags = _tokenizer.SetTokenizerFlagsScoped TokenizerFlags.SkipBlanks
@@ -1993,6 +1998,7 @@ type Parser
                 | "delete" -> x.ParseDelete lineRange
                 | "delmarks" -> noRange (fun () -> x.ParseDeleteMarks())
                 | "display" -> noRange x.ParseDisplayRegisters 
+                | "echo" -> noRange x.ParseEcho
                 | "edit" -> noRange x.ParseEdit
                 | "else" -> noRange x.ParseElse
                 | "elseif" -> noRange x.ParseElseIf

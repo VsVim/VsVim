@@ -715,6 +715,17 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class EchoTest : InterpreterTest
+        {
+            [Fact]
+            public void WhenCalledWithNoArgsDoesNothing()
+            {
+                Create("");
+                ParseAndRun(@"echo");
+                Assert.Equal(null, _statusUtil.LastStatus);
+            }
+        }
+
         public sealed class LetTest : InterpreterTest
         {
             Dictionary<string, VariableValue> _variableMap;
