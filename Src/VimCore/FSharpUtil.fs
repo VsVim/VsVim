@@ -891,8 +891,14 @@ module internal SystemUtil =
             else
                 token
 
+        // According to Shell and Utilities volume of IEEE Std 1003.1-2001
+        // standard environment variable names should consist solely of
+        // uppercase letters, digits, and the '_'. However variables with
+        // lowercasesee lowercase letters are also popular, thus the regex
+        // below supports them as well.
+        // http://pubs.opengroup.org/onlinepubs/009695399/basedefs/xbd_chap08.html
         let text =
-            Regex.Matches(text, "(\$[A-Z]+)|([^$]+)")
+            Regex.Matches(text, "(\$[\w_][\w\d_]*)|([^$]+)")
             |> Seq.cast
             |> Seq.map processMatch
             |> String.concat ""
