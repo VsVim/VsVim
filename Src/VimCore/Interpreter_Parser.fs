@@ -1687,7 +1687,13 @@ type Parser
 
     /// Parse out the :echo command
     member x.ParseEcho () = 
-        LineCommand.Echo
+        x.SkipBlanks()
+        if _tokenizer.IsAtEndOfLine then
+            LineCommand.Nop
+        else
+            match x.ParseExpressionCore() with
+            | ParseResult.Failed msg -> LineCommand.ParseError msg
+            | ParseResult.Succeeded expr -> LineCommand.Echo expr
 
     /// Parse out the :let command
     member x.ParseLet () = 

@@ -724,6 +724,14 @@ namespace Vim.UnitTest
                 ParseAndRun(@"echo");
                 Assert.Equal(null, _statusUtil.LastStatus);
             }
+
+            [Fact]
+            public void WhenPassedAnIntegerEchosItOnStatusLine()
+            {
+                Create("");
+                ParseAndRun(@"echo 2");
+                Assert.Equal("2", _statusUtil.LastStatus);
+            }
         }
 
         public sealed class LetTest : InterpreterTest

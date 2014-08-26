@@ -463,7 +463,7 @@ and [<RequireQualifiedAccess>] LineCommand =
     | DisplayLet of VariableName list
 
     // The :echo command
-    | Echo //of Expression
+    | Echo of Expression
 
     /// The :edit command.  The values range as follows
     ///  - ! option present

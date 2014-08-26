@@ -562,8 +562,8 @@ type VimInterpreter
             |> _statusUtil.OnStatusLong
 
     /// Run the let command
-    member x.RunEcho () =
-        () //_statusUtil.OnStatus "2"
+    member x.RunEcho (expression:Expression) =
+        _statusUtil.OnStatus "2"
 
     /// Edit the specified file
     member x.RunEdit hasBang fileOptions commandOption filePath =
@@ -1370,7 +1370,7 @@ type VimInterpreter
         | LineCommand.Delete (lineRange, registerName) -> x.RunDelete lineRange (getRegister registerName)
         | LineCommand.DeleteMarks marks -> x.RunDeleteMarks marks
         | LineCommand.DeleteAllMarks -> x.RunDeleteAllMarks()
-        | LineCommand.Echo -> x.RunEcho()
+        | LineCommand.Echo expression -> x.RunEcho expression
         | LineCommand.Edit (hasBang, fileOptions, commandOption, filePath) -> x.RunEdit hasBang fileOptions commandOption filePath
         | LineCommand.Else -> cantRun ()
         | LineCommand.ElseIf _ -> cantRun ()
