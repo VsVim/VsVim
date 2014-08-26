@@ -726,11 +726,19 @@ namespace Vim.UnitTest
             }
 
             [Fact]
-            public void WhenPassedAnIntegerEchosItOnStatusLine()
+            public void WhenPassedIntegerEchosItOnStatusLine()
             {
                 Create("");
                 ParseAndRun(@"echo 2");
                 Assert.Equal("2", _statusUtil.LastStatus);
+            }
+
+            [Fact]
+            public void WhenPassedStringEchosItOnStatusLine()
+            {
+                Create("");
+                ParseAndRun(@"echo 'foo'");
+                Assert.Equal("foo", _statusUtil.LastStatus);
             }
         }
 

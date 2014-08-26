@@ -563,7 +563,13 @@ type VimInterpreter
 
     /// Run the let command
     member x.RunEcho (expression:Expression) =
-        _statusUtil.OnStatus "2"
+        let value = x.RunExpression expression 
+        let valueAsString =
+            match value with
+            | VariableValue.Number number -> number.ToString()
+            | VariableValue.String str -> str
+            | _ -> "<error>"
+        _statusUtil.OnStatus valueAsString
 
     /// Edit the specified file
     member x.RunEdit hasBang fileOptions commandOption filePath =
