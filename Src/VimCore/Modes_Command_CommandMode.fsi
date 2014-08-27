@@ -6,5 +6,6 @@ open Vim.Interpreter
 
 type internal CommandMode =
     interface ICommandMode
+    interface IProvisionalTextMode
     new : IVimBuffer * ICommonOperations -> CommandMode
     

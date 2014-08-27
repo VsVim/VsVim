@@ -56,6 +56,22 @@ namespace Vim.UI.Wpf
             return _vimBuffer.CanProcess(keyInput) && _vimBuffer.Process(keyInput).IsAnyHandled;
         }
 
+        protected virtual bool TryProcessProvisional(KeyInput keyInput)
+        {
+            // HACK: This is a hack.  The logic should actually exist in IVimBuffer.  It doesn't consider items
+            // like buffered key inputs.  Just want to get the pipeline working.
+            //
+            // Also it needs to be overriden by VsKeyProcessor to take into account other items like disabled mode
+            var provisionalTextMode = _vimBuffer.Mode as IProvisionalTextMode;
+            if (provisionalTextMode != null)
+            {
+                provisionalTextMode.ProcessProvisional(keyInput);
+                return true;
+            }
+
+            return false;
+        }
+
         /// <summary>
         /// Last chance at custom handling of user input.  At this point we have the 
         /// advantage that WPF has properly converted the user input into a char which 
@@ -106,6 +122,16 @@ namespace Vim.UI.Wpf
             VimTrace.TraceInfo("VimKeyProcessor::TextInput Handled={0}", handled);
             args.Handled = handled;
             base.TextInput(args);
+        }
+
+        public override void TextInputStart(TextCompositionEventArgs args)
+        {
+            TextInputProvisional(args);
+        }
+
+        public override void TextInputUpdate(TextCompositionEventArgs args)
+        {
+            TextInputProvisional(args);
         }
 
         /// <summary>
@@ -171,6 +197,18 @@ namespace Vim.UI.Wpf
             VimTrace.TraceInfo("VimKeyProcessor::KeyUp {0} {1}", args.Key, args.KeyboardDevice.Modifiers);
             VimTrace.TraceInfo("VimKeyProcessor::KeyUp Handled = {0}", args.Handled);
             base.KeyUp(args);
+        }
+
+        private void TextInputProvisional(TextCompositionEventArgs args)
+        {
+            var text = args.Text;
+            if (string.IsNullOrEmpty(text) || text.Length != 1)
+            {
+                return;
+            }
+
+            var keyInput = KeyInputUtil.CharToKeyInput(text[0]);
+            args.Handled = TryProcessProvisional(keyInput);
         }
     }
 }

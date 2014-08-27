@@ -4443,6 +4443,12 @@ and IMode =
     /// any resources including event handlers
     abstract OnClose : unit -> unit
 
+/// Modes which support provisional input
+and IProvisionalTextMode = 
+    
+    /// Process the provisional KeyInput value
+    abstract ProcessProvisional : KeyInput -> unit
+
 and INormalMode =
 
     /// Buffered input for the current command
@@ -4499,6 +4505,8 @@ and ICommandMode =
     abstract CommandChanged : IDelegateEvent<System.EventHandler>
 
     inherit IMode
+
+    inherit IProvisionalTextMode
 
 and IVisualMode = 
 

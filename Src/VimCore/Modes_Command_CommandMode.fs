@@ -25,6 +25,9 @@ type internal CommandMode
         BindFunction = fun _ -> BindResult.Error
     }
 
+    /// The value of _command when provisional input began 
+    let mutable _provisionalCommand : string option = None
+
     let mutable _command = StringUtil.empty
     let mutable _historySession : IHistorySession<int, int> option = None
     let mutable _bindData = BindDataError
@@ -36,6 +39,9 @@ type internal CommandMode
             if value <> _command then
                 _command <- value
                 _commandChangedEvent.Trigger x
+
+    member x.ProvisionalCommand = 
+        _provisionalCommand |> OptionUtil.getOrDefault ""
 
     member x.InPasteWait = 
         match _historySession with
@@ -65,7 +71,27 @@ type internal CommandMode
             else 
                 selection.Clear()
 
+    member x.ProcessProvisional keyInput = 
+        match _provisionalCommand, _historySession with
+        | None, _ -> _provisionalCommand <- Some _command
+        | Some provisionalCommand, Some historySession -> historySession.ResetCommand provisionalCommand
+        | _ -> ()
+
+        x.ProcessCore keyInput |> ignore
+
     member x.Process (keyInput : KeyInput) =
+
+        // First step is to finishing processing the provisional input.  
+        match _provisionalCommand, _historySession with
+        | Some provisionalCommand, Some historySession -> historySession.ResetCommand provisionalCommand
+        | _ -> ()
+
+        _provisionalCommand <- None
+
+        // Now actually process the command
+        x.ProcessCore keyInput
+
+    member x.ProcessCore (keyInput : KeyInput) = 
 
         match _bindData.BindFunction keyInput with
         | BindResult.Complete _ ->
@@ -172,5 +198,8 @@ type internal CommandMode
 
         [<CLIEvent>]
         member x.CommandChanged = _commandChangedEvent.Publish
+
+    interface IProvisionalTextMode with 
+        member x.ProcessProvisional keyInput = x.ProcessProvisional keyInput
 
 

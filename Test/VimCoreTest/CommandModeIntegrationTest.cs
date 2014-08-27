@@ -4,6 +4,7 @@ using EditorUtils;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Vim.Extensions;
+using Vim.Modes.Command;
 using Vim.UnitTest.Mock;
 using Xunit;
 
@@ -11,12 +12,13 @@ namespace Vim.UnitTest
 {
     public abstract class CommandModeIntegrationTest : VimTestBase
     {
-        protected IVimBuffer _vimBuffer;
-        protected ITextView _textView;
-        protected ITextBuffer _textBuffer;
-        protected ICommandMode _commandMode;
-        protected MockVimHost _vimHost;
-        protected string _lastStatus;
+        private IVimBuffer _vimBuffer;
+        private ITextView _textView;
+        private ITextBuffer _textBuffer;
+        private ICommandMode _commandMode;
+        private CommandMode _commandModeRaw;
+        private MockVimHost _vimHost;
+        private string _lastStatus;
 
         public virtual void Create(params string[] lines)
         {
@@ -26,6 +28,7 @@ namespace Vim.UnitTest
             _textBuffer = _textView.TextBuffer;
             _vimHost = VimHost;
             _commandMode = _vimBuffer.CommandMode;
+            _commandModeRaw = (CommandMode)_commandMode;
         }
 
         /// <summary>
@@ -516,6 +519,48 @@ namespace Vim.UnitTest
                 Assert.Equal(_textBuffer.GetLine(0).GetText(), "dog");
                 Assert.Equal(_textBuffer.GetLine(1).GetText(), "bear");
                 Assert.Equal(_textBuffer.GetLine(2).GetText(), "cat");
+            }
+        }
+
+        public sealed class ProvisionalInputTest : CommandModeIntegrationTest
+        {
+            [Fact]
+            public void NotProvisional()
+            {
+                Create("");
+                _vimBuffer.Process(":a");
+                Assert.Equal("", _commandModeRaw.ProvisionalCommand);
+            }
+
+            [Fact]
+            public void Simple()
+            {
+                Create("");
+                _vimBuffer.Process(":a");
+                _commandMode.ProcessProvisional(KeyInputUtil.CharToKeyInput('b'));
+                Assert.Equal("a", _commandModeRaw.ProvisionalCommand);
+                Assert.Equal("ab", _commandModeRaw.Command);
+            }
+
+            [Fact]
+            public void MultiKey()
+            {
+                Create("");
+                _vimBuffer.Process(":a");
+                _commandMode.ProcessProvisional(KeyInputUtil.CharToKeyInput('b'));
+                _commandMode.ProcessProvisional(KeyInputUtil.CharToKeyInput('c'));
+                Assert.Equal("ac", _commandModeRaw.Command);
+            }
+
+            [Fact]
+            public void Full()
+            {
+                Create("");
+                _vimBuffer.Process(":a");
+                _commandMode.ProcessProvisional(KeyInputUtil.CharToKeyInput('b'));
+                _commandMode.Process(KeyInputUtil.CharToKeyInput('c'));
+                Assert.Equal("ac", _commandModeRaw.Command);
+                Assert.Equal("", _commandModeRaw.ProvisionalCommand);
             }
         }
 
