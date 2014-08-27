@@ -182,7 +182,7 @@ type Parser
         ("vglobal", "v")
         ("version", "ve")
         ("vscmd", "vsc")
-        ("vsplit", "vsp")
+        ("vsplit", "vs")
         ("write","w")
         ("wq", "")
         ("wall", "wa")
