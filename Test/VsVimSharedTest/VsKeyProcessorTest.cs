@@ -224,9 +224,9 @@ namespace Vim.VisualStudio.UnitTest
         internal IVimBufferCoordinator _bufferCoordinator;
         private MockKeyboardDevice _device;
 
-        internal VsKeyProcessor VsKeyProcessor
+        internal VsVimKeyProcessor VsKeyProcessor
         {
-            get { return (VsKeyProcessor)_processor; }
+            get { return (VsVimKeyProcessor)_processor; }
         }
 
         protected override VimKeyProcessor CreateKeyProcessor()
@@ -249,7 +249,7 @@ namespace Vim.VisualStudio.UnitTest
             _mockVimBuffer.SetupGet(x => x.ModeKind).Returns(ModeKind.Normal);
             _bufferCoordinator = new VimBufferCoordinator(_mockVimBuffer.Object);
             _device = new MockKeyboardDevice();
-            return new VsKeyProcessor(_vsAdapter.Object, _bufferCoordinator, KeyUtil, _reportDesignerUtil.Object);
+            return new VsVimKeyProcessor(_vsAdapter.Object, _bufferCoordinator, KeyUtil, _reportDesignerUtil.Object);
         }
 
         public sealed class VsKeyDownTest : VsKeyProcessorTest

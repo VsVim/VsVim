@@ -384,7 +384,7 @@ namespace Vim.VisualStudio.UnitTest.Utils
             {
                 _vsKeyboardInputSimulation.KeyProcessors.Add(ReSharperKeyUtil.GetOrCreate(bufferCoordinator));
             }
-            _vsKeyboardInputSimulation.KeyProcessors.Add(new VsKeyProcessor(_vsAdapter.Object, bufferCoordinator, _keyUtil, _reportDesignerUtil.Object));
+            _vsKeyboardInputSimulation.KeyProcessors.Add(new VsVimKeyProcessor(_vsAdapter.Object, bufferCoordinator, _keyUtil, _reportDesignerUtil.Object));
             _vsKeyboardInputSimulation.KeyProcessors.Add((KeyProcessor)bufferCoordinator);
             _vsKeyboardInputSimulation.KeyProcessors.Add(new SimulationKeyProcessor(bufferCoordinator.VimBuffer.TextView));
         }
