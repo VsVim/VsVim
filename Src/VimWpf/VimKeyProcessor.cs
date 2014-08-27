@@ -78,12 +78,12 @@ namespace Vim.UI.Wpf
             bool handled = false;
 
             var text = args.Text;
-            if (String.IsNullOrEmpty(text))
+            if (string.IsNullOrEmpty(text))
             {
                 text = args.ControlText;
             }
 
-            if (!String.IsNullOrEmpty(text))
+            if (!string.IsNullOrEmpty(text))
             {
                 // In the case of a failed dead key mapping (pressing the accent key twice for
                 // example) we will recieve a multi-length string here.  One character for every
@@ -94,7 +94,7 @@ namespace Vim.UI.Wpf
                     handled = TryProcess(keyInput);
                 }
             }
-            else if (!String.IsNullOrEmpty(args.SystemText))
+            else if (!string.IsNullOrEmpty(args.SystemText))
             {
                 // The system text needs to be processed differently than normal text.  When 'a'
                 // is pressed with control it will come in as control text as the proper control

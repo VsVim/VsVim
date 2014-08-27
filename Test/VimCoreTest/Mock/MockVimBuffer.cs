@@ -514,12 +514,10 @@ namespace Vim.UnitTest.Mock
             get { throw new NotImplementedException(); }
         }
 
-
         public IVimBufferData VimBufferData
         {
             get { throw new NotImplementedException(); }
         }
-
 
         public KeyMappingResult GetKeyInputMapping(KeyInput value)
         {
@@ -530,7 +528,6 @@ namespace Vim.UnitTest.Mock
         {
             throw new NotImplementedException();
         }
-
 
         public bool CanProcessAsCommand(KeyInput value)
         {
