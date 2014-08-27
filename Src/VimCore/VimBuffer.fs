@@ -298,6 +298,25 @@ type internal VimBuffer
     /// 'b' when handled by insert / replace mode
     member x.CanProcessAsCommand keyInput = x.CanProcessCore keyInput false
 
+    /// This method intentionally does not raise any of the key processing events because
+    /// it's not actually processing the key.  It's essentially just here to show hints about
+    /// the current state of the input while the final input is being calculated 
+    member x.CanProcessProvisional keyInput = 
+
+        // HACK: this code needs to consider items like buffered key inputs, disabled mode, etc ... 
+        // Right now it just gets the pipeline going 
+        match _modeMap.Mode with
+        | :? IProvisionalTextMode -> true
+        | _ -> false
+
+    member x.ProcessProvisional keyInput =
+
+        // HACK: this code needs to consider items like buffered key inputs, disabled mode, etc ... 
+        // Right now it just gets the pipeline going 
+        match _modeMap.Mode with
+        | :? IProvisionalTextMode as mode -> mode.ProcessProvisional keyInput
+        | _ -> ()
+
     member x.Close () = 
 
         if _isClosed then 
@@ -634,12 +653,14 @@ type internal VimBuffer
 
         member x.CanProcess keyInput = x.CanProcess keyInput
         member x.CanProcessAsCommand keyInput = x.CanProcessAsCommand keyInput
+        member x.CanProcessProvisional keyInput = x.CanProcessProvisional keyInput
         member x.Close () = x.Close()
         member x.GetKeyInputMapping keyInput = x.GetKeyInputMapping keyInput
         member x.GetMode kind = _modeMap.GetMode kind
         member x.GetRegister name = _vim.RegisterMap.GetRegister name
         member x.Process keyInput = x.Process keyInput
         member x.ProcessBufferedKeyInputs() = x.ProcessBufferedKeyInputs()
+        member x.ProcessProvisional keyInput = x.ProcessProvisional keyInput
         member x.SwitchMode kind arg = x.SwitchMode kind arg
         member x.SwitchPreviousMode() = x.SwitchPreviousMode()
         member x.SimulateProcessed keyInput = x.SimulateProcessed keyInput

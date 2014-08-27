@@ -58,14 +58,9 @@ namespace Vim.UI.Wpf
 
         protected virtual bool TryProcessProvisional(KeyInput keyInput)
         {
-            // HACK: This is a hack.  The logic should actually exist in IVimBuffer.  It doesn't consider items
-            // like buffered key inputs.  Just want to get the pipeline working.
-            //
-            // Also it needs to be overriden by VsKeyProcessor to take into account other items like disabled mode
-            var provisionalTextMode = _vimBuffer.Mode as IProvisionalTextMode;
-            if (provisionalTextMode != null)
+            if (_vimBuffer.CanProcessProvisional(keyInput))
             {
-                provisionalTextMode.ProcessProvisional(keyInput);
+                _vimBuffer.ProcessProvisional(keyInput);
                 return true;
             }
 

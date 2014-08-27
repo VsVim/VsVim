@@ -4324,6 +4324,9 @@ and IVimBuffer =
     /// Process all of the buffered KeyInput values.
     abstract ProcessBufferedKeyInputs : unit -> unit
 
+    /// Process the KeyInput as a provisional key stroke
+    abstract ProcessProvisional : KeyInput -> unit 
+
     /// Can the passed in KeyInput be processed by the current state of IVimBuffer.  The
     /// provided KeyInput will participate in remapping based on the current mode
     abstract CanProcess: KeyInput -> bool
@@ -4336,6 +4339,9 @@ and IVimBuffer =
     /// which would be processed as a direct insert.  In other words commands like 'a',
     /// 'b' when handled by insert / replace mode
     abstract CanProcessAsCommand : KeyInput -> bool
+
+    /// Can this KeyInput value be processed as provisional input 
+    abstract CanProcessProvisional : KeyInput -> bool
 
     /// Switch the current mode to the provided value
     abstract SwitchMode : ModeKind -> ModeArgument -> IMode

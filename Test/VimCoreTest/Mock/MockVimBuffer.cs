@@ -4,6 +4,7 @@ using Microsoft.FSharp.Collections;
 using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
+using Microsoft.VisualStudio.Text.Operations;
 using Microsoft.VisualStudio.Utilities;
 
 namespace Vim.UnitTest.Mock
@@ -53,6 +54,149 @@ namespace Vim.UnitTest.Mock
         public FSharpList<KeyInput> BufferedKeyInputs
         {
             get { throw new NotImplementedException(); }
+        }
+
+        event EventHandler<SwitchModeEventArgs> IVimBuffer.SwitchedMode
+        {
+            add
+            {
+                throw new NotImplementedException();
+            }
+
+            remove
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        event EventHandler<KeyInputStartEventArgs> IVimBuffer.KeyInputStart
+        {
+            add
+            {
+                throw new NotImplementedException();
+            }
+
+            remove
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        event EventHandler<KeyInputStartEventArgs> IVimBuffer.KeyInputProcessing
+        {
+            add
+            {
+                throw new NotImplementedException();
+            }
+
+            remove
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        event EventHandler<KeyInputProcessedEventArgs> IVimBuffer.KeyInputProcessed
+        {
+            add
+            {
+                throw new NotImplementedException();
+            }
+
+            remove
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        event EventHandler<KeyInputSetEventArgs> IVimBuffer.KeyInputBuffered
+        {
+            add
+            {
+                throw new NotImplementedException();
+            }
+
+            remove
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        event EventHandler<KeyInputEventArgs> IVimBuffer.KeyInputEnd
+        {
+            add
+            {
+                throw new NotImplementedException();
+            }
+
+            remove
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        event EventHandler<StringEventArgs> IVimBuffer.WarningMessage
+        {
+            add
+            {
+                throw new NotImplementedException();
+            }
+
+            remove
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        event EventHandler<StringEventArgs> IVimBuffer.ErrorMessage
+        {
+            add
+            {
+                throw new NotImplementedException();
+            }
+
+            remove
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        event EventHandler<StringEventArgs> IVimBuffer.StatusMessage
+        {
+            add
+            {
+                throw new NotImplementedException();
+            }
+
+            remove
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        event EventHandler IVimBuffer.Closing
+        {
+            add
+            {
+                throw new NotImplementedException();
+            }
+
+            remove
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        event EventHandler IVimBuffer.Closed
+        {
+            add
+            {
+                throw new NotImplementedException();
+            }
+
+            remove
+            {
+                throw new NotImplementedException();
+            }
         }
 
         public bool CanProcess(KeyInput value)
@@ -382,7 +526,6 @@ namespace Vim.UnitTest.Mock
             throw new NotImplementedException();
         }
 
-
         public bool CanProcessNotDirectInsert(KeyInput value)
         {
             throw new NotImplementedException();
@@ -394,6 +537,70 @@ namespace Vim.UnitTest.Mock
             throw new NotImplementedException();
         }
 
+        Register IVimBuffer.GetRegister(RegisterName value)
+        {
+            throw new NotImplementedException();
+        }
+
+        IMode IVimBuffer.GetMode(ModeKind value)
+        {
+            throw new NotImplementedException();
+        }
+
+        KeyMappingResult IVimBuffer.GetKeyInputMapping(KeyInput value)
+        {
+            throw new NotImplementedException();
+        }
+
+        ProcessResult IVimBuffer.Process(KeyInput value)
+        {
+            throw new NotImplementedException();
+        }
+
+        void IVimBuffer.ProcessBufferedKeyInputs()
+        {
+            throw new NotImplementedException();
+        }
+
+        void IVimBuffer.ProcessProvisional(KeyInput value)
+        {
+            throw new NotImplementedException();
+        }
+
+        bool IVimBuffer.CanProcess(KeyInput value)
+        {
+            throw new NotImplementedException();
+        }
+
+        bool IVimBuffer.CanProcessAsCommand(KeyInput value)
+        {
+            throw new NotImplementedException();
+        }
+
+        bool IVimBuffer.CanProcessProvisional(KeyInput value)
+        {
+            throw new NotImplementedException();
+        }
+
+        IMode IVimBuffer.SwitchMode(ModeKind value1, ModeArgument value2)
+        {
+            throw new NotImplementedException();
+        }
+
+        IMode IVimBuffer.SwitchPreviousMode()
+        {
+            throw new NotImplementedException();
+        }
+
+        void IVimBuffer.SimulateProcessed(KeyInput value)
+        {
+            throw new NotImplementedException();
+        }
+
+        void IVimBuffer.Close()
+        {
+            throw new NotImplementedException();
+        }
 
         public IVimTextBuffer VimTextBuffer
         {
@@ -425,6 +632,339 @@ namespace Vim.UnitTest.Mock
         public ICommandUtil CommandUtil
         {
             get { return CommandUtilImpl; }
+        }
+
+        IEnumerable<IMode> IVimBuffer.AllModes
+        {
+            get
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        FSharpList<KeyInput> IVimBuffer.BufferedKeyInputs
+        {
+            get
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        FSharpOption<string> IVimBuffer.CurrentDirectory
+        {
+            get
+            {
+                throw new NotImplementedException();
+            }
+
+            set
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        ICommandUtil IVimBuffer.CommandUtil
+        {
+            get
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        IVimGlobalSettings IVimBuffer.GlobalSettings
+        {
+            get
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        IIncrementalSearch IVimBuffer.IncrementalSearch
+        {
+            get
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        bool IVimBuffer.IsProcessingInput
+        {
+            get
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        bool IVimBuffer.IsClosed
+        {
+            get
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        IJumpList IVimBuffer.JumpList
+        {
+            get
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        IVimLocalSettings IVimBuffer.LocalSettings
+        {
+            get
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        IMarkMap IVimBuffer.MarkMap
+        {
+            get
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        IMode IVimBuffer.Mode
+        {
+            get
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        ModeKind IVimBuffer.ModeKind
+        {
+            get
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        string IVimBuffer.Name
+        {
+            get
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        FSharpOption<ModeKind> IVimBuffer.InOneTimeCommand
+        {
+            get
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        IRegisterMap IVimBuffer.RegisterMap
+        {
+            get
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        ITextBuffer IVimBuffer.TextBuffer
+        {
+            get
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        ITextSnapshot IVimBuffer.TextSnapshot
+        {
+            get
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        ITextView IVimBuffer.TextView
+        {
+            get
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        IMotionUtil IVimBuffer.MotionUtil
+        {
+            get
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        IUndoRedoOperations IVimBuffer.UndoRedoOperations
+        {
+            get
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        IVim IVimBuffer.Vim
+        {
+            get
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        IVimTextBuffer IVimBuffer.VimTextBuffer
+        {
+            get
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        IVimBufferData IVimBuffer.VimBufferData
+        {
+            get
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        ITextStructureNavigator IVimBuffer.WordNavigator
+        {
+            get
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        IVimWindowSettings IVimBuffer.WindowSettings
+        {
+            get
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        IVimData IVimBuffer.VimData
+        {
+            get
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        INormalMode IVimBuffer.NormalMode
+        {
+            get
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        ICommandMode IVimBuffer.CommandMode
+        {
+            get
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        IDisabledMode IVimBuffer.DisabledMode
+        {
+            get
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        IVisualMode IVimBuffer.VisualCharacterMode
+        {
+            get
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        IVisualMode IVimBuffer.VisualLineMode
+        {
+            get
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        IVisualMode IVimBuffer.VisualBlockMode
+        {
+            get
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        IInsertMode IVimBuffer.InsertMode
+        {
+            get
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        IInsertMode IVimBuffer.ReplaceMode
+        {
+            get
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        ISelectMode IVimBuffer.SelectCharacterMode
+        {
+            get
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        ISelectMode IVimBuffer.SelectLineMode
+        {
+            get
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        ISelectMode IVimBuffer.SelectBlockMode
+        {
+            get
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        ISubstituteConfirmMode IVimBuffer.SubstituteConfirmMode
+        {
+            get
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        IMode IVimBuffer.ExternalEditMode
+        {
+            get
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        PropertyCollection IPropertyOwner.Properties
+        {
+            get
+            {
+                throw new NotImplementedException();
+            }
         }
     }
 }

@@ -96,6 +96,18 @@ namespace Vim.VisualStudio.Implementation.Misc
             return base.TryProcess(keyInput);
         }
 
+        protected override bool TryProcessProvisional(KeyInput keyInput)
+        {
+            // Don't handle input when incremental search is active.  Let Visual Studio handle it
+            if (_adapter.IsIncrementalSearchActive(TextView))
+            {
+                VimTrace.TraceInfo("VsKeyProcessor::TryProcess Incremental search active");
+                return false;
+            }
+
+            return base.TryProcessProvisional(keyInput);
+        }
+
         /// <summary>
         /// Once the key goes up the KeyStroke is complete and we should clear out the 
         /// DiscardedKeyInput flag as it's only relevant for a single key stroke
