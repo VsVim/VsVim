@@ -489,6 +489,9 @@ and [<RequireQualifiedAccess>] LineCommand =
     /// Go to the previous tab
     | GoToPreviousTab of int option
 
+    /// Get help on VsVim
+    | Help
+
     /// Print out the default history 
     | History
 

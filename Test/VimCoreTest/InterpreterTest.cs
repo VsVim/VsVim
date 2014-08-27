@@ -649,6 +649,26 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class HelpTest : InterpreterTest
+        {
+            [Fact]
+            public void LinksToWikiWhenNoTopicSpecified()
+            {
+                Create("");
+                ParseAndRun(@"help");
+                Assert.Contains("https://github.com/jaredpar/VsVim/wiki", _statusUtil.LastStatus);
+            }
+
+            [Fact]
+            public void LinksToWikiWhenTopicIsSpecified()
+            {
+                Create("");
+                ParseAndRun(@"help :vsc");
+                Assert.Contains("https://github.com/jaredpar/VsVim/wiki", _statusUtil.LastStatus);
+            }
+        }
+
+
         public sealed class HistoryTest : InterpreterTest
         {
             /// <summary>
