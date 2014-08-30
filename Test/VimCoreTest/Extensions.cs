@@ -781,6 +781,18 @@ namespace Vim.UnitTest
             return buffer.CanProcess(keyInput);
         }
 
+        public static bool CanProcessProvisional(this IVimBuffer buffer, char c)
+        {
+            var keyInput = KeyInputUtil.CharToKeyInput(c);
+            return buffer.CanProcessProvisional(keyInput);
+        }
+
+        public static bool CanProcessProvisional(this IVimBuffer buffer, VimKey key)
+        {
+            var keyInput = KeyInputUtil.VimKeyToKeyInput(key);
+            return buffer.CanProcessProvisional(keyInput);
+        }
+
         /// <summary>
         /// Helper for the CanProcessAsCommand function which maps the char to a KeyInput value
         /// </summary>
@@ -846,6 +858,12 @@ namespace Vim.UnitTest
             {
                 vimBuffer.Process(KeyInputUtil.EnterKey);
             }
+        }
+
+        public static void ProcessProvisional(this IVimBuffer vimBuffer, char c)
+        {
+            var keyInput = KeyInputUtil.CharToKeyInput(c);
+            vimBuffer.ProcessProvisional(keyInput);
         }
 
         public static Register GetRegister(this IVimBuffer buffer, char c)

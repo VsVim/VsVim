@@ -92,6 +92,7 @@
     <Compile Include="HistorySessionTest.cs" />
     <Compile Include="MatchingTokenUtilTest.cs" />
     <Compile Include="ModeMapTest.cs" />
+    <Compile Include="ProvisionalInputTest.cs" />
     <Compile Include="RegisterValueTest.cs" />
     <Compile Include="SearchOffsetDataTest.cs" />
     <Compile Include="SearchDataTest.cs" />

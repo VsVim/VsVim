@@ -323,7 +323,6 @@ namespace Vim.UnitTest.Mock
             get { return SelectLineModeImpl; }
         }
 
-
         public IVimData VimData
         {
             get { return VimDataImpl; }
