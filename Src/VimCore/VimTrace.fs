@@ -19,7 +19,7 @@ type VimTrace() =
 
     [<Conditional("TRACE")>]
     static member TraceInfo(format : string, [<ParamArrayAttribute>] args : obj []) = 
-        let msg = String.Format(format, args)
+        let msg = String.Format(Globalization.CultureInfo.CurrentUICulture, format, args)
         let msg = _prefixInfo + msg
         Trace.WriteLineIf(VimTrace.TraceSwitch.TraceInfo, msg)
 
@@ -35,7 +35,7 @@ type VimTrace() =
 
     [<Conditional("TRACE")>]
     static member TraceError(format : string, [<ParamArrayAttribute>] args : obj []) = 
-        let msg = String.Format(format, args)
+        let msg = String.Format(Globalization.CultureInfo.CurrentUICulture, format, args)
         let msg = _prefixError + msg
         Trace.WriteLineIf(VimTrace.TraceSwitch.TraceError, msg)
 

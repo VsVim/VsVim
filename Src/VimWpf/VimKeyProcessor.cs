@@ -123,6 +123,7 @@ namespace Vim.UI.Wpf
         {
             if (args.TextComposition is ImeTextComposition)
             {
+                VimTrace.TraceInfo("VimKeyProcessor::TextInputStart IME");
                 TextInputProvisional(args);
             }
         }
@@ -131,6 +132,7 @@ namespace Vim.UI.Wpf
         {
             if (args.TextComposition is ImeTextComposition)
             {
+                VimTrace.TraceInfo("VimKeyProcessor::TextInputUpdate IME");
                 TextInputProvisional(args);
             }
         }
