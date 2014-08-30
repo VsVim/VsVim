@@ -70,7 +70,7 @@ namespace Vim.UI.Wpf
         /// <summary>
         /// Last chance at custom handling of user input.  At this point we have the 
         /// advantage that WPF has properly converted the user input into a char which 
-        /// can be effeciently mapped to a KeyInput value.  
+        /// can be efficiently mapped to a KeyInput value.  
         /// </summary>
         public override void TextInput(TextCompositionEventArgs args)
         {
@@ -121,12 +121,18 @@ namespace Vim.UI.Wpf
 
         public override void TextInputStart(TextCompositionEventArgs args)
         {
-            TextInputProvisional(args);
+            if (args.TextComposition is ImeTextComposition)
+            {
+                TextInputProvisional(args);
+            }
         }
 
         public override void TextInputUpdate(TextCompositionEventArgs args)
         {
-            TextInputProvisional(args);
+            if (args.TextComposition is ImeTextComposition)
+            {
+                TextInputProvisional(args);
+            }
         }
 
         /// <summary>
