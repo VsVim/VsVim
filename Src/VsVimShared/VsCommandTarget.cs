@@ -162,16 +162,6 @@ namespace Vim.VisualStudio
                 }
             }
 
-            if (command.IsInsertProvisional)
-            {
-                var insert = (InsertCommand.InsertProvisional)command;
-                if (insert.Item != null && insert.Item.Length == 1)
-                {
-                    commandData = OleCommandData.CreateTypeChar(insert.Item[0]);
-                    return true;
-                }
-            }
-
             if (command.IsInsertTab)
             {
                 commandData = new OleCommandData(VSConstants.VSStd2KCmdID.TAB);
