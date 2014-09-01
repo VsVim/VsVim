@@ -18,7 +18,6 @@ namespace Vim.VisualStudio.Implementation.Misc
     internal sealed class StandardCommandTarget : ICommandTarget
     {
         private readonly IVimBuffer _vimBuffer;
-        private readonly IVimBufferCoordinator _vimBufferCoordinator;
         private readonly ITextBuffer _textBuffer;
         private readonly ITextView _textView;
         private readonly ITextManager _textManager;
@@ -26,13 +25,12 @@ namespace Vim.VisualStudio.Implementation.Misc
         private readonly IOleCommandTarget _nextOleCommandTarget;
 
         internal StandardCommandTarget(
-            IVimBufferCoordinator vimBufferCoordinator,
+            IVimBuffer vimBuffer,
             ITextManager textManager,
             IDisplayWindowBroker broker,
             IOleCommandTarget nextOleCommandTarget)
         {
-            _vimBuffer = vimBufferCoordinator.VimBuffer;
-            _vimBufferCoordinator = vimBufferCoordinator;
+            _vimBuffer = vimBuffer;
             _textBuffer = _vimBuffer.TextBuffer;
             _textView = _vimBuffer.TextView;
             _textManager = textManager;
@@ -219,12 +217,6 @@ namespace Vim.VisualStudio.Implementation.Misc
         {
             action = null;
 
-            // If the KeyInput was already handled then pretend we handled it here 
-            if (editCommand.HasKeyInput && _vimBufferCoordinator.IsDiscarded(editCommand.KeyInput))
-            {
-                return true;
-            }
-
             switch (editCommand.EditCommandKind)
             {
                 case EditCommandKind.Undo:
@@ -271,15 +263,8 @@ namespace Vim.VisualStudio.Implementation.Misc
                 case EditCommandKind.VisualStudioCommand:
                     if (editCommand.HasKeyInput)
                     {
-                        var keyInput = editCommand.KeyInput;
-
-                        // Discard the input if it's been flagged by a previous QueryStatus
-                        if (_vimBufferCoordinator.IsDiscarded(keyInput))
-                        {
-                            return true;
-                        }
-
                         // Try and process the command with the IVimBuffer
+                        var keyInput = editCommand.KeyInput;
                         if (TryProcessWithBuffer(keyInput))
                         {
                             return true;
@@ -350,7 +335,7 @@ namespace Vim.VisualStudio.Implementation.Misc
         ICommandTarget ICommandTargetFactory.CreateCommandTarget(IOleCommandTarget nextCommandTarget, IVimBufferCoordinator vimBufferCoordinator)
         {
             var displayWindowBroker = _displayWindowBrokerFactory.GetDisplayWindowBroker(vimBufferCoordinator.VimBuffer.TextView);
-            return new StandardCommandTarget(vimBufferCoordinator, _textManager, displayWindowBroker, nextCommandTarget);
+            return new StandardCommandTarget(vimBufferCoordinator.VimBuffer, _textManager, displayWindowBroker, nextCommandTarget);
         }
     }
 }

@@ -59,7 +59,7 @@ namespace Vim.VisualStudio.UnitTest
             {
                 commandTargets.Add(ReSharperKeyUtil.GetOrCreate(_bufferCoordinator));
             }
-            commandTargets.Add(new StandardCommandTarget(_bufferCoordinator, _textManager.Object, _broker.Object, _nextTarget.Object));
+            commandTargets.Add(new StandardCommandTarget(_bufferCoordinator.VimBuffer, _textManager.Object, _broker.Object, _nextTarget.Object));
 
             var oldCommandFilter = _nextTarget.Object;
             _targetRaw = new VsCommandTarget(

@@ -369,7 +369,7 @@ namespace Vim.VisualStudio.UnitTest.Utils
             {
                 commandTargets.Add(ReSharperKeyUtil.GetOrCreate(bufferCoordinator));
             }
-            commandTargets.Add(new StandardCommandTarget(bufferCoordinator, textManager.Object, _displayWindowBroker.Object, _vsSimulationCommandTarget));
+            commandTargets.Add(new StandardCommandTarget(bufferCoordinator.VimBuffer, textManager.Object, _displayWindowBroker.Object, _vsSimulationCommandTarget));
 
             // Create the VsCommandTarget.  It's next is the final and default Visual Studio 
             // command target
