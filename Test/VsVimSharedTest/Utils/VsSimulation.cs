@@ -145,6 +145,7 @@ namespace Vim.VisualStudio.UnitTest.Utils
             private readonly IEditorOperations _editorOperatins;
             private EditCommand _lastExecEditCommand;
             private EditCommand _lastQueryStatusEditCommand;
+            private bool _inProvisionalInput;
 
             internal EditCommand LastExecEditCommand
             {
@@ -154,6 +155,12 @@ namespace Vim.VisualStudio.UnitTest.Utils
             internal EditCommand LastQueryStatusEditCommand
             {
                 get { return _lastQueryStatusEditCommand; }
+            }
+
+            internal bool InProvisionalInput
+            {
+                get { return _inProvisionalInput; }
+                set { _inProvisionalInput = value; }
             }
 
             internal SimulationCommandTarget(ITextView textView, IEditorOperations editorOperations)
@@ -198,7 +205,14 @@ namespace Vim.VisualStudio.UnitTest.Utils
 
                 if (Char.IsLetterOrDigit(keyInput.Char))
                 {
-                    _editorOperatins.InsertText(keyInput.Char.ToString());
+                    if (_inProvisionalInput)
+                    {
+                        _editorOperatins.InsertProvisionalText(keyInput.Char.ToString());
+                    }
+                    else
+                    {
+                        _editorOperatins.InsertText(keyInput.Char.ToString());
+                    }
                     return true;
                 }
 
@@ -403,35 +417,37 @@ namespace Vim.VisualStudio.UnitTest.Utils
         /// <summary>
         /// Run the specified set of characters against the buffer
         /// </summary>
-        internal void Run(string text)
+        internal void Run(string text, bool isProvisionalText = false)
         {
             foreach (var cur in text)
             {
-                this.Run(cur);
+                this.Run(cur, isProvisionalText);
             }
         }
 
         /// <summary>
         /// Run the specified character against the buffer
         /// </summary>
-        internal void Run(char c)
+        internal void Run(char c, bool isProvisionalText = false)
         {
-            Run(KeyInputUtil.CharToKeyInput(c));
+            Run(KeyInputUtil.CharToKeyInput(c), isProvisionalText);
         }
 
         /// <summary>
         /// Run the given KeyInput against the Visual Studio simulation
         /// </summary>
-        internal void Run(KeyInput keyInput)
+        internal void Run(KeyInput keyInput, bool isProvisionalText = false)
         {
             _testableSynchronizationContext.Install();
+            _vsSimulationCommandTarget.InProvisionalInput = isProvisionalText;
             try
             {
-                _vsKeyboardInputSimulation.Run(keyInput);
+                _vsKeyboardInputSimulation.Run(keyInput, isProvisionalText);
                 _testableSynchronizationContext.RunAll();
             }
             finally
             {
+                _vsSimulationCommandTarget.InProvisionalInput = false;
                 _testableSynchronizationContext.Uninstall();
             }
         }

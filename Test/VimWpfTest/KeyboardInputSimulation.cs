@@ -124,6 +124,22 @@ namespace Vim.UI.Wpf.UnitTest
                     keyProcessor.TextInput(e);
                 }
             }
+
+            /// <summary>
+            /// Pass the event onto the various KeyProcessor values
+            /// </summary>
+            internal void HandleTextInputStart(object sender, TextCompositionEventArgs e)
+            {
+                foreach (var keyProcessor in _keyProcessors)
+                {
+                    if (e.Handled && !keyProcessor.IsInterestedInHandledEvents)
+                    {
+                        continue;
+                    }
+
+                    keyProcessor.TextInputStart(e);
+                }
+            }
         }
 
         #endregion
@@ -266,7 +282,7 @@ namespace Vim.UI.Wpf.UnitTest
         /// This method will simulate a key sequence where the provided keyInput value is pressed
         /// down and released 
         /// </summary>
-        public void Run(KeyInput keyInput)
+        public void Run(KeyInput keyInput, bool isProvisionalText = false)
         {
             Key key;
             ModifierKeys modifierKeys;
@@ -282,7 +298,7 @@ namespace Vim.UI.Wpf.UnitTest
                 var text = keyInput.RawChar.IsSome()
                     ? keyInput.Char.ToString()
                     : String.Empty;
-                Run(text, keyInput, key, modifierKeys);
+                Run(text, keyInput, key, modifierKeys, isProvisionalText);
             }
             finally
             {
@@ -293,7 +309,7 @@ namespace Vim.UI.Wpf.UnitTest
         /// <summary>
         /// Run the KeyInput directly in the Wpf control
         /// </summary>
-        private void Run(string text, KeyInput keyInput, Key key, ModifierKeys modifierKeys)
+        private void Run(string text, KeyInput keyInput, Key key, ModifierKeys modifierKeys, bool isProvisionalText)
         {
             if (!RunDown(keyInput, key, modifierKeys))
             {
@@ -301,9 +317,17 @@ namespace Vim.UI.Wpf.UnitTest
                 // textual composition 
                 var textInputEventArgs = new TextCompositionEventArgs(
                     _defaultKeyboardDevice,
-                    CreateTextComposition(text));
+                    CreateTextComposition(text, isProvisionalText));
                 textInputEventArgs.RoutedEvent = UIElement.TextInputEvent;
-                _defaultInputController.HandleTextInput(this, textInputEventArgs);
+
+                if (isProvisionalText)
+                {
+                    _defaultInputController.HandleTextInputStart(this, textInputEventArgs);
+                }
+                else
+                {
+                    _defaultInputController.HandleTextInput(this, textInputEventArgs);
+                }
             }
 
             // The key up code is processed even if the down or text composition is handled by 
@@ -356,8 +380,13 @@ namespace Vim.UI.Wpf.UnitTest
             return keyUpEventArgs.Handled;
         }
 
-        private TextComposition CreateTextComposition(string text)
+        private TextComposition CreateTextComposition(string text, bool isProvisionalText)
         {
+            if (isProvisionalText)
+            {
+                return new ImeTextComposition(InputManager.Current, _wpfTextView.VisualElement, text);
+            }
+
             return _wpfTextView.VisualElement.CreateTextComposition(text);
         }
 

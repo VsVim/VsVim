@@ -320,6 +320,20 @@ namespace Vim.VisualStudio.UnitTest
             }
         }
 
+        public sealed class ProvisionalInputTest : VsIntegrationTest
+        {
+            [Fact]
+            public void Complete()
+            {
+                Create("");
+                _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
+                _vsSimulation.Run("h", isProvisionalText: true);
+                Assert.Equal("h", _textBuffer.GetLine(0).GetText());
+                _vsSimulation.Run("i", isProvisionalText: true);
+                Assert.Equal("i", _textBuffer.GetLine(0).GetText());
+            }
+        }
+
         public sealed class EscapeTest : VsIntegrationTest
         {
             [Fact]
