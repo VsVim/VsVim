@@ -2768,6 +2768,9 @@ type InsertCommand  =
     /// Insert of text into the ITextBuffer at the caret position 
     | Insert of string
 
+    /// Insert of provisional text 
+    | InsertProvisional of string
+
     /// Move the caret in the given direction
     | MoveCaret of Direction
 
@@ -2830,6 +2833,7 @@ type InsertCommand  =
         | InsertCommand.InsertCharacterBelowCaret -> None
         | InsertCommand.InsertNewLine -> Some (TextChange.Insert (EditUtil.NewLine editorOptions))
         | InsertCommand.InsertTab -> Some (TextChange.Insert "\t")
+        | InsertCommand.InsertProvisional _ -> None
         | InsertCommand.MoveCaret _ -> None
         | InsertCommand.MoveCaretWithArrow _ -> None
         | InsertCommand.MoveCaretByWord _ -> None
@@ -4207,6 +4211,13 @@ and IVimBuffer =
     /// Whether or not the IVimBuffer is currently processing a KeyInput value
     abstract IsProcessingInput : bool
 
+    /// Is the IVimBuffer in the middle of provisional input (IME)?
+    abstract InProvisionalInput : bool
+
+    /// The most recent provisional KeyInput value.  Returns KeyInput.DefaultValue if not in the 
+    /// middle of provisional input
+    abstract ProvisionalKeyInput : KeyInput 
+
     /// Is this IVimBuffer instance closed
     abstract IsClosed : bool
 
@@ -4325,7 +4336,7 @@ and IVimBuffer =
     abstract ProcessBufferedKeyInputs : unit -> unit
 
     /// Process the KeyInput as a provisional key stroke
-    abstract ProcessProvisional : KeyInput -> unit 
+    abstract ProcessProvisional : KeyInput -> bool 
 
     /// Can the passed in KeyInput be processed by the current state of IVimBuffer.  The
     /// provided KeyInput will participate in remapping based on the current mode
@@ -4451,9 +4462,12 @@ and IMode =
 
 /// Modes which support provisional input
 and IProvisionalTextMode = 
+
+    /// Whether or not the mode is setup to process this particular KeyInput value
+    abstract CanProcessProvisional : KeyInput -> bool
     
     /// Process the provisional KeyInput value
-    abstract ProcessProvisional : KeyInput -> unit
+    abstract ProcessProvisional : KeyInput -> bool
 
 and INormalMode =
 

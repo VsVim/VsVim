@@ -289,6 +289,12 @@ type internal InsertUtil
         else
             CommandResult.Error
 
+    member x.InsertProvisional text = 
+        if _editorOperations.InsertProvisionalText(text) then
+            CommandResult.Completed ModeSwitch.NoSwitch
+        else
+            CommandResult.Error
+
     /// Do a replacement under the caret of the specified char
     member x.Replace (c : char) =
         // Typically we have the overwrite option set for all of replace mode so this
@@ -530,6 +536,7 @@ type internal InsertUtil
             | InsertCommand.InsertCharacterBelowCaret -> x.InsertCharacterBelowCaret()
             | InsertCommand.InsertNewLine -> x.InsertNewLine()
             | InsertCommand.InsertTab -> x.InsertTab()
+            | InsertCommand.InsertProvisional text -> x.InsertProvisional text
             | InsertCommand.MoveCaret direction -> x.MoveCaret direction
             | InsertCommand.MoveCaretWithArrow direction -> x.MoveCaretWithArrow direction
             | InsertCommand.MoveCaretByWord direction -> x.MoveCaretByWord direction

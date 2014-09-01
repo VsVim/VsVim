@@ -5,6 +5,7 @@ using System.Text;
 using Xunit;
 using EditorUtils;
 using Microsoft.VisualStudio.Text;
+using Vim.Modes.Insert;
 
 namespace Vim.UnitTest
 {
@@ -28,19 +29,20 @@ namespace Vim.UnitTest
         /// </summary>
         public sealed class DisabledModeTest : ProvisionalInputTest
         {
-            [Fact(Skip = "IME")]
+            [Fact]
             public void CanProcessProvisional()
             {
                 _vimBuffer.SwitchMode(ModeKind.Disabled, ModeArgument.None);
                 Assert.False(_vimBuffer.CanProcessProvisional('a'));
             }
 
-            [Fact(Skip = "IME")]
+            [Fact]
             public void ProcessProvisional()
             {
                 _textBuffer.SetText("cat");
                 _vimBuffer.SwitchMode(ModeKind.Disabled, ModeArgument.None);
-                _vimBuffer.ProcessProvisional('a');
+                Assert.False(_vimBuffer.ProcessProvisional('a'));
+                Assert.False(_vimBuffer.InProvisionalInput);
                 Assert.Equal("cat", _textBuffer.CurrentSnapshot.GetText());
             }
         }
@@ -57,7 +59,7 @@ namespace Vim.UnitTest
                 _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
             }
 
-            [Fact(Skip = "IME")]
+            [Fact]
             public void Simple()
             {
                 const string text = "cat";
@@ -75,14 +77,37 @@ namespace Vim.UnitTest
             /// When the mode is exited then just commit the IME input as is.  Not a whole lot of options
             /// besides that.  
             /// </summary>
-            [Fact(Skip = "IME")]
+            [Fact]
             public void LeaveMode()
             {
                 _vimBuffer.ProcessProvisional('h');
                 _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
-                _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
-                _vimBuffer.Process("i");
-                Assert.Equal("hi", _textBuffer.CurrentSnapshot.GetText());
+                Assert.False(((InsertMode)_vimBuffer.InsertMode).IsInProvisionalInput);
+            }
+        }
+
+        public sealed class VimBufferPropertiesTest : ProvisionalInputTest
+        {
+            public VimBufferPropertiesTest()
+            {
+                _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
+            }
+
+            [Fact]
+            public void InProvisionalInput1()
+            {
+                _vimBuffer.ProcessProvisional('a');
+                Assert.True(_vimBuffer.InProvisionalInput);
+                Assert.Equal(KeyInputUtil.CharToKeyInput('a'), _vimBuffer.ProvisionalKeyInput);
+            }
+
+            [Fact]
+            public void InProvisionalInput2()
+            {
+                _vimBuffer.ProcessProvisional('c');
+                _vimBuffer.Process('a');
+                Assert.False(_vimBuffer.InProvisionalInput);
+                Assert.Equal(KeyInput.DefaultValue, _vimBuffer.ProvisionalKeyInput);
             }
         }
     }

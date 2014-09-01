@@ -860,10 +860,10 @@ namespace Vim.UnitTest
             }
         }
 
-        public static void ProcessProvisional(this IVimBuffer vimBuffer, char c)
+        public static bool ProcessProvisional(this IVimBuffer vimBuffer, char c)
         {
             var keyInput = KeyInputUtil.CharToKeyInput(c);
-            vimBuffer.ProcessProvisional(keyInput);
+            return vimBuffer.ProcessProvisional(keyInput);
         }
 
         public static Register GetRegister(this IVimBuffer buffer, char c)

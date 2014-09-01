@@ -250,6 +250,7 @@ type internal InsertMode
     let mutable _commandMap : Map<KeyInput, RawInsertCommand> = Map.empty
     let mutable _sessionData = _emptySessionData
     let mutable _isInProcess = false
+    let mutable _isInProvisionalInput = false
 
     do
         // Caret changes can end a text change operation.
@@ -381,6 +382,9 @@ type internal InsertMode
 
     /// Is this mode processing key input?
     member x.IsInProcess = _isInProcess
+
+    /// Is this mode in the middle of processing provisional input
+    member x.IsInProvisionalInput = _isInProvisionalInput
 
     /// Cancel the active IWordCompletionSession if there is such a session 
     /// active
@@ -814,9 +818,17 @@ type internal InsertMode
     member x.Process keyInput = 
         _isInProcess <- true
         try
-            x.ProcessCore keyInput
+            if _isInProvisionalInput then
+                x.ProcessFinishProvisional keyInput
+            else
+                x.ProcessCore keyInput
         finally
             _isInProcess <- false
+
+    member x.ProcessFinishProvisional keyInput = 
+        _isInProvisionalInput <- false
+        let text = keyInput.Char.ToString()
+        x.RunInsertCommand (InsertCommand.Insert text) (KeyInputSet.OneKeyInput keyInput) CommandFlags.Repeatable 
 
     member x.ProcessCore keyInput =
         match _sessionData.ActiveEditItem with
@@ -840,6 +852,13 @@ type internal InsertMode
                     | RawInsertCommand.InsertCommand (keyInputSet, insertCommand, commandFlags) -> x.RunInsertCommand insertCommand keyInputSet commandFlags
                 | None -> 
                     ProcessResult.NotHandled
+
+    member x.ProcessProvisional (keyInput : KeyInput) = 
+        _isInProvisionalInput <- true
+        let text = keyInput.Char.ToString()
+        let insertCommand = InsertCommand.InsertProvisional text
+        x.RunInsertCommand insertCommand (KeyInputSet.OneKeyInput keyInput) CommandFlags.None |> ignore
+        true
 
     /// This is raised when caret changes.  If this is the result of a user click then 
     /// we need to complete the change.
@@ -1005,6 +1024,8 @@ type internal InsertMode
         if _isReplace then
             _editorOptions.SetOptionValue(DefaultTextViewOptions.OverwriteModeId, false)
 
+        _isInProvisionalInput <- false
+
     interface IInsertMode with 
         member x.ActiveWordCompletionSession = x.ActiveWordCompletionSession
         member x.IsInPaste = x.IsInPaste
@@ -1020,4 +1041,8 @@ type internal InsertMode
 
         [<CLIEvent>]
         member x.CommandRan = _commandRanEvent.Publish
+
+    interface IProvisionalTextMode with 
+        member x.CanProcessProvisional _ = true
+        member x.ProcessProvisional keyInput = x.ProcessProvisional keyInput
 

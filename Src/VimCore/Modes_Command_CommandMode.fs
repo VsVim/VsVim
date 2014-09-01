@@ -78,6 +78,7 @@ type internal CommandMode
         | _ -> ()
 
         x.ProcessCore keyInput |> ignore
+        true
 
     member x.Process (keyInput : KeyInput) =
 
@@ -200,6 +201,7 @@ type internal CommandMode
         member x.CommandChanged = _commandChangedEvent.Publish
 
     interface IProvisionalTextMode with 
+        member x.CanProcessProvisional _ = true
         member x.ProcessProvisional keyInput = x.ProcessProvisional keyInput
 
 

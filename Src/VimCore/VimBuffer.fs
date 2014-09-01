@@ -150,6 +150,9 @@ type internal VimBuffer
     /// element
     let mutable _bufferedKeyInput : KeyInputSet option = None
 
+    /// During IME processing this will hold the most recent IME KeyInput value
+    let mutable _provisionalKeyInput : KeyInput option = None
+
     let _keyInputStartEvent = StandardEvent<KeyInputStartEventArgs>()
     let _keyInputProcessingEvent = StandardEvent<KeyInputStartEventArgs>()
     let _keyInputProcessedEvent = StandardEvent<KeyInputProcessedEventArgs>()
@@ -192,6 +195,14 @@ type internal VimBuffer
     member x.SubstituteConfirmMode = _modeMap.GetMode ModeKind.SubstituteConfirm :?> ISubstituteConfirmMode
     member x.DisabledMode = _modeMap.GetMode ModeKind.Disabled :?> IDisabledMode
     member x.ExternalEditMode = _modeMap.GetMode ModeKind.ExternalEdit 
+
+    member x.InProvisionalInput = 
+        Option.isSome _provisionalKeyInput
+
+    member x.ProvisionalKeyInput =
+        match _provisionalKeyInput with
+        | None -> KeyInput.DefaultValue
+        | Some keyInput -> keyInput
 
     /// Current KeyRemapMode which should be used when calculating keyboard mappings
     member x.KeyRemapMode = 
@@ -306,16 +317,25 @@ type internal VimBuffer
         // HACK: this code needs to consider items like buffered key inputs, disabled mode, etc ... 
         // Right now it just gets the pipeline going 
         match _modeMap.Mode with
-        | :? IProvisionalTextMode -> true
-        | _ -> false
+        | :? IProvisionalTextMode as mode -> mode.CanProcessProvisional keyInput
+        | _ -> true
 
     member x.ProcessProvisional keyInput =
 
         // HACK: this code needs to consider items like buffered key inputs, disabled mode, etc ... 
         // Right now it just gets the pipeline going 
+
         match _modeMap.Mode with
-        | :? IProvisionalTextMode as mode -> mode.ProcessProvisional keyInput
-        | _ -> ()
+        | :? IProvisionalTextMode as mode -> 
+            if mode.ProcessProvisional keyInput then
+                _provisionalKeyInput <- Some keyInput
+                true
+            else
+                _provisionalKeyInput <- None
+                false
+        | _ -> 
+            _provisionalKeyInput <- Some keyInput
+            true
 
     member x.Close () = 
 
@@ -367,6 +387,9 @@ type internal VimBuffer
     member x.OnVimTextBufferSwitchedMode modeKind modeArgument =
         if x.Mode.ModeKind <> modeKind then
             _modeMap.SwitchMode modeKind modeArgument |> ignore
+
+        // Can't really track provisional input across modes.  
+        _provisionalKeyInput <- None
 
     /// Process the single KeyInput value.  No mappings are considered here.  The KeyInput is 
     /// simply processed directly
@@ -510,6 +533,10 @@ type internal VimBuffer
     /// Actually process the input key.  Raise the change event on an actual change
     member x.Process (keyInput : KeyInput) =
 
+        // Once we are processing normal KeyInput values then we are no longer in provisional 
+        // mode 
+        _provisionalKeyInput <- None
+
         // Raise the event that we received the key
         let args = KeyInputStartEventArgs(keyInput)
         _keyInputStartEvent.Trigger x args
@@ -650,6 +677,8 @@ type internal VimBuffer
         member x.LocalSettings = _localSettings
         member x.WindowSettings = _windowSettings
         member x.RegisterMap = _vim.RegisterMap
+        member x.InProvisionalInput = x.InProvisionalInput
+        member x.ProvisionalKeyInput = x.ProvisionalKeyInput
 
         member x.CanProcess keyInput = x.CanProcess keyInput
         member x.CanProcessAsCommand keyInput = x.CanProcessAsCommand keyInput

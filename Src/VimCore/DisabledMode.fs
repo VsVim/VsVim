@@ -30,5 +30,9 @@ type internal DisabledMode(_vimBufferData : IVimBufferData) =
         member x.OnEnter _  = ()
         member x.OnLeave() = ()
         member x.OnClose() = ()
+
+    interface IProvisionalTextMode with
+        member x.CanProcessProvisional _ = false
+        member x.ProcessProvisional _ = false
     
 

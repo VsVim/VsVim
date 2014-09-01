@@ -395,9 +395,9 @@ namespace Vim.UnitTest.Mock
             throw new NotImplementedException();
         }
 
-        public void ProcessProvisional(KeyInput value)
+        public bool ProcessProvisional(KeyInput value)
         {
-            throw new NotImplementedException();
+            return true;
         }
 
         public bool CanProcessProvisional(KeyInput value)
@@ -437,5 +437,14 @@ namespace Vim.UnitTest.Mock
             get { return CommandUtilImpl; }
         }
 
+        public bool InProvisionalInput
+        {
+            get { return false; }
+        }
+
+        public KeyInput ProvisionalKeyInput
+        {
+            get { return KeyInput.DefaultValue; }
+        }
     }
 }
