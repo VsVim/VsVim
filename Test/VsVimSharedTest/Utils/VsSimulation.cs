@@ -104,6 +104,20 @@ namespace Vim.VisualStudio.UnitTest.Utils
                 get { return _textView.Properties.GetProperty<IOleCommandTarget>(typeof(IOleCommandTarget)); }
             }
 
+            public override void TextInputStart(TextCompositionEventArgs args)
+            {
+                var simulationCommandTarget = OleCommandTarget as SimulationCommandTarget;
+                if (args.TextComposition is ImeTextComposition && simulationCommandTarget != null)
+                {
+                    simulationCommandTarget.InProvisionalInput = true;
+                    foreach (var cur in args.Text)
+                    {
+                        SendTypeChar(cur);
+                    }
+                    simulationCommandTarget.InProvisionalInput = false;
+                }
+            }
+
             public override void TextInput(TextCompositionEventArgs args)
             {
                 var text = args.Text;
@@ -439,7 +453,6 @@ namespace Vim.VisualStudio.UnitTest.Utils
         internal void Run(KeyInput keyInput, bool isProvisionalText = false)
         {
             _testableSynchronizationContext.Install();
-            _vsSimulationCommandTarget.InProvisionalInput = isProvisionalText;
             try
             {
                 _vsKeyboardInputSimulation.Run(keyInput, isProvisionalText);
@@ -447,7 +460,6 @@ namespace Vim.VisualStudio.UnitTest.Utils
             }
             finally
             {
-                _vsSimulationCommandTarget.InProvisionalInput = false;
                 _testableSynchronizationContext.Uninstall();
             }
         }
