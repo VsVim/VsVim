@@ -10,7 +10,7 @@ namespace Vim.VisualStudio.Implementation.Misc
     [Export(typeof(IKeyProcessorProvider))]
     [Order(Before = Constants.FallbackKeyProcessorName)]
     [Order(Before = Constants.VisualStudioKeyProcessorName)]
-    [Name(Constants.VsKeyProcessorName)]
+    [Name(VimConstants.MainKeyProcessorName)]
     [TextViewRole(PredefinedTextViewRoles.Editable)]
     [ContentType(VimConstants.ContentType)]
     internal sealed class VsVimKeyProcessorProvider : IKeyProcessorProvider

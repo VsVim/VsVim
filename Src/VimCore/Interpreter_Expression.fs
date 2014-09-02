@@ -622,6 +622,9 @@ and [<RequireQualifiedAccess>] LineCommand =
     /// Process the 'source' command.  
     | Source of bool * string
 
+    /// Process the 'tabnew' / 'tabedit' commands.  The optional string represents the file path 
+    | TabNew of string option
+
     /// The version command
     | Version
 

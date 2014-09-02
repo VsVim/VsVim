@@ -21,7 +21,7 @@ namespace Vim.VisualStudio.Implementation.Misc
     /// temporarily.
     /// </summary>
     [Export(typeof(IKeyProcessorProvider))]
-    [Order(After = Constants.VsKeyProcessorName)]
+    [Order(After = VimConstants.MainKeyProcessorName)]
     [Order(Before = Constants.VisualStudioKeyProcessorName)]
     [Name(Constants.FallbackKeyProcessorName)]
     [TextViewRole(PredefinedTextViewRoles.Interactive)]

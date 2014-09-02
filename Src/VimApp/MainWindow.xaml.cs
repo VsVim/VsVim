@@ -15,6 +15,10 @@ using System;
 using Microsoft.VisualStudio.Text.Classification;
 using Microsoft.VisualStudio.Text.Formatting;
 using System.Collections.ObjectModel;
+using Microsoft.Win32;
+using Microsoft.VisualStudio.Utilities;
+using IOPath = System.IO.Path;
+using EditorUtils;
 
 namespace VimApp
 {
@@ -27,6 +31,7 @@ namespace VimApp
         private readonly IClassificationFormatMapService _classificationFormatMapService;
         private readonly IVimAppOptions _vimAppOptions;
         private readonly IVimWindowManager _vimWindowManager;
+        private readonly EditorHost _editorHost;
 
         internal IVimWindow ActiveVimWindowOpt
         {
@@ -66,6 +71,7 @@ namespace VimApp
 #endif
 
             _vimComponentHost = new VimComponentHost();
+            _editorHost = _vimComponentHost.EditorHost;
             _classificationFormatMapService = _vimComponentHost.CompositionContainer.GetExportedValue<IClassificationFormatMapService>();
             _vimAppOptions = _vimComponentHost.CompositionContainer.GetExportedValue<IVimAppOptions>();
             _vimWindowManager = _vimComponentHost.CompositionContainer.GetExportedValue<IVimWindowManager>();
@@ -81,13 +87,19 @@ namespace VimApp
 
         internal IWpfTextView CreateTextView(ITextBuffer textBuffer)
         {
-            var textViewRoleSet = _vimComponentHost.EditorHost.TextEditorFactoryService.CreateTextViewRoleSet(
+            return CreateTextView(
+                textBuffer,
                 PredefinedTextViewRoles.PrimaryDocument,
                 PredefinedTextViewRoles.Document,
                 PredefinedTextViewRoles.Editable,
                 PredefinedTextViewRoles.Interactive,
                 PredefinedTextViewRoles.Structured,
                 PredefinedTextViewRoles.Analyzable);
+        }
+
+        internal IWpfTextView CreateTextView(ITextBuffer textBuffer, params string[] roles)
+        {
+            var textViewRoleSet = _vimComponentHost.EditorHost.TextEditorFactoryService.CreateTextViewRoleSet(roles);
             var textView =  _vimComponentHost.EditorHost.TextEditorFactoryService.CreateTextView(
                 textBuffer,
                 textViewRoleSet);
@@ -285,6 +297,22 @@ namespace VimApp
         private void OnDisplayNewLinesChecked(object sender, RoutedEventArgs e)
         {
             _vimAppOptions.DisplayNewLines = _displayNewLinesMenuItem.IsChecked;
+        }
+
+        private void OnOpenClick(object sender, EventArgs e)
+        {
+            var openFileDialog = new OpenFileDialog();
+            openFileDialog.CheckFileExists = true;
+            if ((bool)openFileDialog.ShowDialog(this))
+            {
+                // TODO: Get a real content type
+                var filePath = openFileDialog.FileName;
+                var fileName = IOPath.GetFileName(filePath);
+                var textDocumentFactoryService = _editorHost.CompositionContainer.GetExportedValue<ITextDocumentFactoryService>();
+                var textDocument = textDocumentFactoryService.CreateAndLoadTextDocument(filePath, _editorHost.ContentTypeRegistryService.GetContentType("text"));
+                var wpfTextView = CreateTextView(textDocument.TextBuffer);
+                AddNewTab(fileName, wpfTextView);
+            }
         }
 
         private void OnNewTabClick(object sender, RoutedEventArgs e)

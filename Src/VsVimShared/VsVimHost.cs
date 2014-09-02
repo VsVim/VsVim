@@ -124,6 +124,7 @@ namespace Vim.VisualStudio
         private readonly IVsMonitorSelection _vsMonitorSelection;
         private readonly IVimApplicationSettings _vimApplicationSettings;
         private readonly ISmartIndentationService _smartIndentationService;
+        private IVim _vim;
 
         internal _DTE DTE
         {
@@ -353,7 +354,7 @@ namespace Vim.VisualStudio
         /// mimic the behavior by opening the document in a new window and closing the
         /// existing one
         /// </summary>
-        public override HostResult LoadFileIntoExistingWindow(string filePath, ITextView textView)
+        public override bool LoadFileIntoExistingWindow(string filePath, ITextView textView)
         {
             try
             {
@@ -362,27 +363,29 @@ namespace Vim.VisualStudio
                 // message
                 VsShellUtilities.OpenDocument(_vsAdapter.ServiceProvider, filePath);
                 _textManager.CloseView(textView);
-                return HostResult.Success;
+                return true;
             }
             catch (Exception e)
             {
-                return HostResult.NewError(e.Message);
+                _vim.ActiveStatusUtil.OnError(e.Message);
+                return false;
             }
         }
 
         /// <summary>
         /// Open up a new document window with the specified file
         /// </summary>
-        public override HostResult LoadFileIntoNewWindow(string filePath)
+        public override bool LoadFileIntoNewWindow(string filePath)
         {
             try
             {
                 VsShellUtilities.OpenDocument(_vsAdapter.ServiceProvider, filePath);
-                return HostResult.Success;
+                return true;
             }
             catch (Exception e)
             {
-                return HostResult.NewError(e.Message);
+                _vim.ActiveStatusUtil.OnError(e.Message);
+                return false;
             }
         }
 
@@ -471,10 +474,9 @@ namespace Vim.VisualStudio
             return true;
         }
 
-        public override HostResult Make(bool jumpToFirstError, string arguments)
+        public override void Make(bool jumpToFirstError, string arguments)
         {
             SafeExecuteCommand(null, "Build.BuildSolution");
-            return HostResult.Success;
         }
 
         public override bool TryGetFocusedTextView(out ITextView textView)
@@ -520,32 +522,30 @@ namespace Vim.VisualStudio
         /// <summary>
         /// Perform a horizontal window split 
         /// </summary>
-        public override HostResult SplitViewHorizontally(ITextView textView)
+        public override void SplitViewHorizontally(ITextView textView)
         {
             _textManager.SplitView(textView);
-            return HostResult.Success;
         }
 
         /// <summary>
         /// Perform a vertical buffer split, which is essentially just another window in a different tab group.
         /// </summary>
-        public override HostResult SplitViewVertically(ITextView value)
+        public override void SplitViewVertically(ITextView value)
         {
             try
             {
                 _dte.ExecuteCommand("Window.NewWindow");
                 _dte.ExecuteCommand("Window.NewVerticalTabGroup");
-                return HostResult.Success;
             }
             catch (Exception e)
             {
-                return HostResult.NewError(e.Message);
+                _vim.ActiveStatusUtil.OnError(e.Message);
             }
         }
 
-        public override HostResult MoveFocus(ITextView textView, Direction direction)
+        public override void MoveFocus(ITextView textView, Direction direction)
         {
-            bool result = false;
+            bool result;
             switch (direction)
             {
                 case Direction.Up:
@@ -554,9 +554,19 @@ namespace Vim.VisualStudio
                 case Direction.Down:
                     result = _textManager.MoveViewDown(textView);
                     break;
+                case Direction.Left:
+                case Direction.Right:
+                    _vim.ActiveStatusUtil.OnError("Not Implemented");
+                    result = true;
+                    break;
+                default:
+                    throw Contract.GetInvalidEnumException(direction);
             }
 
-            return result ? HostResult.Success : HostResult.NewError("Not Implemented");
+            if (!result)
+            {
+                _vim.ActiveStatusUtil.OnError("Can't move focus");
+            }
         }
 
         public override WordWrapStyles GetWordWrapStyle(ITextView textView)
@@ -619,9 +629,10 @@ namespace Vim.VisualStudio
             return GoToDefinitionCore(textView, target);
         }
 
-        public override void VimGlobalSettingsCreated(IVimGlobalSettings globalSettings)
+        public override void VimCreated(IVim vim)
         {
-            SettingsSource.Initialize(globalSettings, _vimApplicationSettings);
+            _vim = vim;
+            SettingsSource.Initialize(vim.GlobalSettings, _vimApplicationSettings);
         }
 
         public override void VimRcLoaded(VimRcState vimRcState, IVimLocalSettings localSettings, IVimWindowSettings windowSettings)

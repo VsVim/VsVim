@@ -35,9 +35,9 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="EditorUtils, Version=1.4.0.0, Culture=neutral, PublicKeyToken=3d1514c4742e0252, processorArchitecture=MSIL">
+    <Reference Include="EditorUtils2010, Version=1.4.0.0, Culture=neutral, PublicKeyToken=3d1514c4742e0252, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\packages\EditorUtils.1.4.0.0\lib\net40\EditorUtils.dll</HintPath>
+      <HintPath>..\..\packages\EditorUtils2010.1.4.1.0\lib\net40\EditorUtils2010.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.VisualStudio.CoreUtility, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
     <Reference Include="Microsoft.VisualStudio.Language.Intellisense, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
@@ -57,11 +57,19 @@
   <ItemGroup>
     <Compile Include="Constants.cs" />
     <Compile Include="IControlCharUtil.cs" />
+    <Compile Include="IDirectoryUtil.cs" />
     <Compile Include="IKeyUtil.cs" />
     <Compile Include="Implementation\CharDisplay\ControlCharFormatDefinition.cs" />
     <Compile Include="Implementation\CharDisplay\CharDisplayTaggerSource.cs" />
     <Compile Include="Implementation\CharDisplay\CharDisplayTaggerSourceFactory.cs" />
     <Compile Include="Implementation\CharDisplay\ControlCharUtil.cs" />
+    <Compile Include="Implementation\Directory\DirectoryContentType.cs" />
+    <Compile Include="Implementation\Directory\DirectoryFormatDefinition.cs" />
+    <Compile Include="Implementation\Directory\DirectoryKeyProcessor.cs" />
+    <Compile Include="Implementation\Directory\DirectoryKeyProcessorProvider.cs" />
+    <Compile Include="Implementation\Directory\DirectoryTaggerSource.cs" />
+    <Compile Include="Implementation\Directory\DirectoryTaggerSourceFactory.cs" />
+    <Compile Include="Implementation\Directory\DirectoryUtil.cs" />
     <Compile Include="Implementation\Misc\AlternateKeyUtil.cs" />
     <Compile Include="Implementation\BlockCaret\BlockCaretController.cs" />
     <Compile Include="Implementation\BlockCaret\BlockCaretFormatDefinition.cs" />

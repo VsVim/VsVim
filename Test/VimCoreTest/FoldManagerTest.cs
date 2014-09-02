@@ -79,7 +79,7 @@ namespace Vim.UnitTest
         public void OpenFold_AdhocPartialLine()
         {
             Create("cat dog", "fish tree");
-            _adhocOutliner.CreateOutliningRegion(_textBuffer.GetLineSpan(0, 3, 4), "", "");
+            _adhocOutliner.CreateOutliningRegion(_textBuffer.GetLineSpan(0, 3, 4), SpanTrackingMode.EdgeInclusive, "", "");
             _outliningeManager.CollapseAll(_textBuffer.GetLine(0).ExtentIncludingLineBreak, _ => true);
             Assert.Equal("cat", _visualBuffer.GetLine(0).GetText());
             _foldManager.OpenFold(_textView.GetPoint(0), 1);
@@ -161,7 +161,7 @@ namespace Vim.UnitTest
         public void CloseFold_AdhocPartialLine()
         {
             Create("cat dog", "fish tree");
-            _adhocOutliner.CreateOutliningRegion(_textBuffer.GetLineSpan(0, 3, 4), "", "");
+            _adhocOutliner.CreateOutliningRegion(_textBuffer.GetLineSpan(0, 3, 4), SpanTrackingMode.EdgeInclusive, "", "");
             _foldManager.CloseFold(_textView.GetPoint(0), 1);
             Assert.Equal("cat", _visualBuffer.GetLine(0).GetText());
         }

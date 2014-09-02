@@ -25,6 +25,12 @@ module VimConstants =
     [<Literal>]
     let HighlightIncrementalSearchTagName = "vsvim_highlightsearch"
 
+    /// <summary>
+    /// Name of the main Key Processor
+    /// </summary>
+    [<Literal>]
+    let MainKeyProcessorName = "VsVim";
+
 #if DEBUG
     [<Literal>]
     let VersionNumber = "1.7.0.99 Debug"

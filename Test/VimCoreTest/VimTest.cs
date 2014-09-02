@@ -54,7 +54,7 @@ namespace Vim.UnitTest
             _vimHost.Setup(x => x.ShouldIncludeRcFile(It.IsAny<VimRcPath>())).Returns(true);
             _vimHost.Setup(x => x.CreateHiddenTextView()).Returns(CreateTextView());
             _vimHost.Setup(x => x.AutoSynchronizeSettings).Returns(true);
-            _vimHost.Setup(x => x.VimGlobalSettingsCreated(It.IsAny<IVimGlobalSettings>()));
+            _vimHost.Setup(x => x.VimCreated(It.IsAny<IVim>()));
             _vimHost.SetupGet(x => x.DefaultSettings).Returns(DefaultSettings.GVim73);
             if (createVim)
             {
@@ -79,7 +79,8 @@ namespace Vim.UnitTest
                 new VimData(_globalSettings),
                 _factory.Create<IBulkOperations>().Object,
                 _variableMap,
-                new EditorToSettingSynchronizer());
+                new EditorToSettingSynchronizer(),
+                new StatusUtilFactory());
             _vim = _vimRaw;
             _vim.AutoLoadVimRc = false;
         }
@@ -487,8 +488,8 @@ namespace Vim.UnitTest
             {
                 Assert.False(_globalSettings.HighlightSearch);
                 _vimHost
-                    .Setup(x => x.VimGlobalSettingsCreated(_globalSettings))
-                    .Callback((IVimGlobalSettings globalSettings) => { globalSettings.HighlightSearch = true; });
+                    .Setup(x => x.VimCreated(It.IsAny<IVim>()))
+                    .Callback((IVim vim) => { vim.GlobalSettings.HighlightSearch = true; });
                 CreateVim();
                 Assert.True(_globalSettings.HighlightSearch);
             }

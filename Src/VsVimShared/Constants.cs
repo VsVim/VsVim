@@ -16,11 +16,6 @@ namespace Vim.VisualStudio
         public const string CSharpContentType = "CSharp";
 
         /// <summary>
-        /// Name of the main Key Processor
-        /// </summary>
-        public const string VsKeyProcessorName = "VsVim";
-
-        /// <summary>
         /// Name of the fallback Key Processor
         /// </summary>
         public const string FallbackKeyProcessorName = "VsVimFallback";

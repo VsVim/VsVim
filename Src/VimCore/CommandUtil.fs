@@ -1066,10 +1066,7 @@ type internal CommandUtil
 
     /// GoTo the ITextView in the specified direction
     member x.GoToView direction = 
-        match _vimHost.MoveFocus _textView direction with
-        | HostResult.Success -> ()
-        | HostResult.Error msg -> _statusUtil.OnError msg
-
+        _vimHost.MoveFocus _textView direction 
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Join 'count' lines in the buffer
@@ -2726,18 +2723,12 @@ type internal CommandUtil
 
     /// Split the view horizontally
     member x.SplitViewHorizontally () = 
-        match _vimHost.SplitViewHorizontally _textView with
-        | HostResult.Success -> ()
-        | HostResult.Error _ -> _commonOperations.Beep()
-
+        _vimHost.SplitViewHorizontally _textView 
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Split the view vertically
     member x.SplitViewVertically () =
-        match _vimHost.SplitViewVertically _textView with
-        | HostResult.Success -> ()
-        | HostResult.Error _ -> _commonOperations.Beep()
-
+        _vimHost.SplitViewVertically _textView
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Substitute 'count' characters at the cursor on the current line.  Very similar to

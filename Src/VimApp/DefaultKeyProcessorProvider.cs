@@ -12,8 +12,8 @@ namespace VimHost
 {
     [Export(typeof(IKeyProcessorProvider))]
     [ContentType("text")]
-    [TextViewRole(PredefinedTextViewRoles.Editable)]
-    [Name("Default Key Processor")]
+    [TextViewRole(PredefinedTextViewRoles.Interactive)]
+    [Name(VimConstants.MainKeyProcessorName)]
     internal sealed class DefaultKeyProcessorProvider : IKeyProcessorProvider
     {
         private readonly IVim _vim;

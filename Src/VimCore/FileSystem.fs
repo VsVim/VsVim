@@ -89,10 +89,34 @@ type internal FileSystem() =
     /// will be returned
     member x.ReadAllLines path =
         match SystemUtil.TryResolvePath path with
-        | Some expanded ->
-            x.ReadAllLinesExpanded expanded
-        | None ->
-            None
+        | Some expanded -> x.ReadAllLinesExpanded expanded
+        | None -> None
+
+    member x.ReadDirectoryContents path = 
+        match SystemUtil.TryResolvePath path with
+        | None -> None
+        | Some path ->
+            try
+                // This test just exists to avoid first chance exceptions when debugging.  Stepping through
+                // them is distracting
+                if not (Directory.Exists path) then
+                    None
+                else
+                    let list = List<string>()
+                    list.Add("../")
+                    list.Add("./")
+
+                    Directory.GetDirectories(path)
+                    |> Seq.map (fun dir -> Path.GetFileName(dir) + "/")
+                    |> list.AddRange
+
+                    Directory.GetFiles(path)
+                    |> Seq.map Path.GetFileName
+                    |> list.AddRange
+
+                    list.ToArray() |> Some
+            with
+                | _ -> None
 
     member x.ReadAllLinesExpanded path =
 
@@ -119,7 +143,7 @@ type internal FileSystem() =
 
     member x.GetVimRcDirectories() = 
         VimRcDirectoryCandidates
-        |> Seq.choose SystemUtil.TryResolvePath
+        |> Seq.choose SystemUtil.TryResolvePath 
         |> Seq.toArray
 
     member x.GetVimRcFilePaths() =
@@ -140,4 +164,5 @@ type internal FileSystem() =
         member x.GetVimRcDirectories() = x.GetVimRcDirectories()
         member x.GetVimRcFilePaths() = x.GetVimRcFilePaths()
         member x.ReadAllLines path = x.ReadAllLines path
+        member x.ReadDirectoryContents directoryPath = x.ReadDirectoryContents directoryPath
 

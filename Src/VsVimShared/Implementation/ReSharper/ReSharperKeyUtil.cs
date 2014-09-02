@@ -179,7 +179,7 @@ namespace Vim.VisualStudio.Implementation.ReSharper
 
     [ContentType(VimConstants.ContentType)]
     [TextViewRole(PredefinedTextViewRoles.Editable)]
-    [Order(Before = Constants.VisualStudioKeyProcessorName, After = Constants.VsKeyProcessorName)]
+    [Order(Before = Constants.VisualStudioKeyProcessorName, After = VimConstants.MainKeyProcessorName)]
     [Export(typeof(IKeyProcessorProvider))]
     [Name("ReSharper Key Processor")]
     internal sealed class ReSharperKeyProcessorProvider : IKeyProcessorProvider

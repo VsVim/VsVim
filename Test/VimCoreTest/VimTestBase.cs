@@ -227,6 +227,9 @@ namespace Vim.UnitTest
             // Don't let the personal VimRc of the user interfere with the unit tests
             Vim.AutoLoadVimRc = false;
 
+            // Don't let the current directory leak into the tests
+            Vim.VimData.CurrentDirectory = "";
+
             // Don't show trace information in the unit tests.  It really clutters the output in an
             // xUnit run
             VimTrace.TraceSwitch.Level = TraceLevel.Off;
