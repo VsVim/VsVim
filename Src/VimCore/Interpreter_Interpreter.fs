@@ -563,7 +563,6 @@ type VimInterpreter
 
     /// Edit the specified file
     member x.RunEdit hasBang fileOptions commandOption filePath =
-        let filePath = SystemUtil.ResolveVimPath _vimData.CurrentDirectory filePath
         if not (List.isEmpty fileOptions) then
             _statusUtil.OnError (Resources.Interpreter_OptionNotSupported "[++opt]")
         elif Option.isSome commandOption then
@@ -575,7 +574,7 @@ type VimInterpreter
                 let caret = 
                     let point = TextViewUtil.GetCaretPoint _textView
                     point.Snapshot.CreateTrackingPoint(point.Position, PointTrackingMode.Negative)
-                if not (_vimHost.Reload _textBuffer) then
+                if not (_vimHost.Reload _textView) then
                     _commonOperations.Beep()
                 else
                     match TrackingPointUtil.GetPoint _textView.TextSnapshot caret with
@@ -585,6 +584,7 @@ type VimInterpreter
         elif not hasBang && _vimHost.IsDirty _textBuffer then
             _statusUtil.OnError Resources.Common_NoWriteSinceLastChange
         else
+            let filePath = SystemUtil.ResolveVimPath _vimData.CurrentDirectory filePath
             _vimHost.LoadFileIntoExistingWindow filePath _textView |> ignore
 
     /// Get the value of the specified expression 

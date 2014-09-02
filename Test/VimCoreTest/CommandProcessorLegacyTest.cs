@@ -244,7 +244,7 @@ namespace Vim.UnitTest
         public void Edit_NoArgumentsShouldReload()
         {
             Create("foo");
-            _vimHost.Setup(x => x.Reload(_textBuffer)).Returns(true).Verifiable();
+            _vimHost.Setup(x => x.Reload(_textView)).Returns(true).Verifiable();
             _vimHost.Setup(x => x.IsDirty(_textBuffer)).Returns(false).Verifiable();
             _operations.Setup(x => x.MoveCaretToPoint(It.IsAny<SnapshotPoint>(), ViewFlags.Standard));
             RunCommand("e");
@@ -280,7 +280,7 @@ namespace Vim.UnitTest
         public void Edit_NoArgumentsReloadFailsShouldBeep()
         {
             Create("foo");
-            _vimHost.Setup(x => x.Reload(_textBuffer)).Returns(false).Verifiable();
+            _vimHost.Setup(x => x.Reload(_textView)).Returns(false).Verifiable();
             _vimHost.Setup(x => x.IsDirty(_textBuffer)).Returns(false).Verifiable();
             _operations.Setup(x => x.Beep()).Verifiable();
             RunCommand("e");

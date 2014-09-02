@@ -26,6 +26,7 @@ namespace Vim.UnitTest.Mock
         public bool GoToDefinitionReturn { get; set; }
         public Func<ITextView, string, bool> GoToLocalDeclarationFunc { get; set; }
         public Func<ITextView, string, bool> GoToGlobalDeclarationFunc { get; set; }
+        public Func<ITextView, bool> ReloadFunc { get; set; }
         public bool IsCompletionWindowActive { get; set; }
         public int DismissCompletionWindowCount { get; set; }
         public VirtualSnapshotPoint NavigateToData { get; set; }
@@ -88,6 +89,7 @@ namespace Vim.UnitTest.Mock
             RunVisualStudioCommandFunc = delegate { throw new NotImplementedException(); };
             RunQuickFixFunc = delegate { throw new NotImplementedException(); };
             RunSaveTextAs = delegate { throw new NotImplementedException(); };
+            ReloadFunc = delegate { return true; };
             IsDirtyFunc = null;
             LastClosed = null;
             LastSaved = null;
@@ -207,9 +209,9 @@ namespace Vim.UnitTest.Mock
             return true;
         }
 
-        bool IVimHost.Reload(ITextBuffer value)
+        bool IVimHost.Reload(ITextView textView)
         {
-            return true;
+            return ReloadFunc(textView);
         }
 
         void IVimHost.GoToTab(int index)

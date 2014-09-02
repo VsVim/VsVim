@@ -3840,7 +3840,7 @@ type IVimHost =
     /// Is the ITextBuffer in a dirty state?
     abstract IsDirty : textBuffer : ITextBuffer -> bool
 
-    /// Is the ITextBuffer readonly
+    /// Is the ITextBuffer read only
     abstract IsReadOnly : textBuffer : ITextBuffer -> bool
 
     /// Is the ITextView visible to the user
@@ -3866,8 +3866,8 @@ type IVimHost =
     /// Quit the application
     abstract Quit : unit -> unit
 
-    /// Reload the contents of the ITextBuffer discarding any changes
-    abstract Reload : ITextBuffer -> bool
+    /// Reload the contents of the ITextView discarding any changes
+    abstract Reload : textView : ITextView -> bool
 
     /// Run the specified command with the given arguments and return the textual
     /// output

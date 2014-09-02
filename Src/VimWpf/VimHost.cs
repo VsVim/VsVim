@@ -226,16 +226,16 @@ namespace Vim.UI.Wpf
             Application.Current.Shutdown();
         }
 
-        public virtual bool Reload(ITextBuffer textBuffer)
+        public virtual bool Reload(ITextView textView)
         {
             ITextDocument document;
-            if (!_textDocumentFactoryService.TryGetTextDocument(textBuffer, out document))
+            if (!_textDocumentFactoryService.TryGetTextDocument(textView.TextDataModel.DocumentBuffer, out document))
             {
                 return false;
             }
 
-            document.Reload(EditOptions.DefaultMinimalChange);
-            return true;
+            var result = document.Reload(EditOptions.DefaultMinimalChange);
+            return result == ReloadResult.Succeeded || result == ReloadResult.SucceededWithCharacterSubstitutions;
         }
 
         /// <summary>
@@ -604,9 +604,9 @@ namespace Vim.UI.Wpf
             Quit();
         }
 
-        bool IVimHost.Reload(ITextBuffer value)
+        bool IVimHost.Reload(ITextView textView)
         {
-            return Reload(value);
+            return Reload(textView);
         }
 
         string IVimHost.RunCommand(string command, string arguments, IVimData vimData)

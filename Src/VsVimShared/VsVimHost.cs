@@ -333,7 +333,7 @@ namespace Vim.VisualStudio
                 return false;
             }
 
-            // Certian language services, VB.Net for example, will select the word after
+            // Certain language services, VB.Net for example, will select the word after
             // the go to definition is implemented.  Need to clear that out to prevent the
             // go to definition from switching us to Visual Mode
             // 
