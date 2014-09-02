@@ -41,7 +41,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
         /// </summary>
         private struct VimBufferKeyEventState
         {
-            internal bool InEvent;
+            internal int KeyInputEventCount;
 
             /// <summary>
             /// Stores any messages that occurred in the buffer (warnings, errors, etc ...) 
@@ -53,9 +53,13 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             /// </summary>
             internal SwitchModeEventArgs SwitchModeEventArgs;
 
+            internal bool InEvent
+            {
+                get { return KeyInputEventCount > 0; }
+            }
+
             internal void Clear()
             {
-                InEvent = false;
                 Message = null;
                 SwitchModeEventArgs = null;
             }
@@ -192,7 +196,6 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
         private void KeyInputEventComplete()
         {
             Debug.Assert(_vimBufferKeyEventState.InEvent);
-
             try
             {
                 if (!String.IsNullOrEmpty(_vimBufferKeyEventState.Message))
@@ -212,6 +215,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             }
             finally
             {
+                _vimBufferKeyEventState.KeyInputEventCount--;
                 _vimBufferKeyEventState.Clear();
             }
         }
@@ -592,7 +596,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
 
         private void OnKeyInputStart(object sender, KeyInputStartEventArgs args)
         {
-            _vimBufferKeyEventState.InEvent = true;
+            _vimBufferKeyEventState.KeyInputEventCount++;
             CheckEnableCommandLineEdit(args);
         }
 

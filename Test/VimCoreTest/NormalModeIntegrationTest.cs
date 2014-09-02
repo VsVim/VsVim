@@ -4277,6 +4277,19 @@ namespace Vim.UnitTest
                 _vimBuffer.Process(KeyInputUtil.CharToKeyInput('.'));
                 Assert.Equal("hey hehey chased the bird", _textView.TextSnapshot.GetText());
             }
+
+            /// <summary>
+            /// Make sure the undo layer doesn't flag an empty repeat as an error.  It is always
+            /// possible for a repeat to fail 
+            /// </summary>
+            [Fact]
+            public void EmptyCommand()
+            {
+                Create("cat", "dog");
+                _vimBuffer.ProcessNotation("ctablah<Esc>");
+                _textView.MoveCaretToLine(1);
+                _vimBuffer.ProcessNotation(".");
+            }
         }
 
         public sealed class ReplaceCharTest : NormalModeIntegrationTest

@@ -140,6 +140,7 @@ type Parser
         ("fold", "fo")
         ("function", "fu")
         ("global", "g")
+        ("help", "h")
         ("history", "his")
         ("if", "if")
         ("join", "j")
@@ -1637,6 +1638,11 @@ type Parser
         let hasBang = x.ParseBang()
         x.ParseGlobalCore lineRange (not hasBang)
 
+    /// Parse out the :help command
+    member x.ParseHelp() =
+        _tokenizer.MoveToEndOfLine()
+        LineCommand.Help
+
     /// Parse out the :history command
     member x.ParseHistory() =
         LineCommand.History
@@ -2013,6 +2019,7 @@ type Parser
                 | "fold" -> x.ParseFold lineRange
                 | "function" -> noRange x.ParseFunctionStart
                 | "global" -> x.ParseGlobal lineRange
+                | "help" -> noRange x.ParseHelp
                 | "history" -> noRange (fun () -> x.ParseHistory())
                 | "if" -> noRange x.ParseIfStart
                 | "iunmap" -> noRange (fun () -> x.ParseMapUnmap false [KeyRemapMode.Insert])

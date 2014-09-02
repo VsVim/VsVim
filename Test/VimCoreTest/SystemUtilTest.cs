@@ -61,6 +61,20 @@ namespace Vim.UnitTest
             Assert.Equal(@"c:\foo\bar", SystemUtil.ResolvePath(@"~\bar"));
         }
 
+        [Fact]
+        public void ResolvePath_Lowercase()
+        {
+            Environment.SetEnvironmentVariable("lowercase", @"c:\foo");
+            Assert.Equal(@"c:\foo\bar", SystemUtil.ResolvePath(@"$lowercase\bar"));
+        }
+
+        [Fact]
+        public void ResolvePath_Underscore()
+        {
+            Environment.SetEnvironmentVariable("var_with_underscore", @"c:\foo");
+            Assert.Equal(@"c:\foo\bar", SystemUtil.ResolvePath(@"$var_with_underscore\bar"));
+        }
+
         /// <summary>
         /// Test the cases we expect to work for CombinePath
         /// </summary>

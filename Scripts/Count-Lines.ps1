@@ -3,7 +3,7 @@
 $sourceDirs = "VimCore","VimWpf","VsVim"
 $testDirs = "VimUnitTestUtils","VimCoreTest","VimWpfTest","VsVimTest"
 
-function countFSharp() {
+function count-fsharp() {
     param ([string]$fileName = $(throw "Need a file name"))
 
     $lines = gc $fileName |
@@ -12,7 +12,7 @@ function countFSharp() {
     $lines.Count
 }
 
-function countCSharp() {
+function count-csharp() {
     param ([string]$fileName = $(throw "Need a file name"))
 
     $lines = gc $fileName |
@@ -21,66 +21,46 @@ function countCSharp() {
     $lines.Count
 }
 
-pushd $rootPath
-
-$fsSourceFileCount = 0
-$fsTestFileCount = 0
-$fsSourceLines = 0
-$fsTestLines = 0
-$csSourceFileCount = 0
-$csTestFileCount = 0
-$csSourceLines = 0
-$csTestLines = 0
-
-function countFile() {
+function count-file() {
     param ( [string]$fileName = $(throw "Need a file name"),
-            [bool]$isTest )
+            $data) 
 
     $ext = [IO.Path]::GetExtension($fileName)
     if ( ".cs" -eq $ext ) {
-        $lines = countCSharp $fileName 
-        if ( $isTest ) {
-            $script:csTestFileCount++ 
-            $script:csTestLines += $lines
-        } else {
-            $script:csSourceFileCount++
-            $script:csSourceLines += $lines
+        $data.Lines += count-csharp $fileName 
+        $data.Language = "C#"
+    }
+    else { 
+        $data.Lines += count-fsharp $fileName
+        $data.Language = "F#"
+    }
+    $data.Files++
+}
+
+function count-dirs() {
+    param( [string]$path = $(throw "Need a path"),
+           [bool]$isTest)
+
+    foreach ($dirName in gci $path | ?{ $_.PSIsContainer }) { 
+        $dirPath = join-path $path $dirName
+        $data = @{ Name = $dirName; Language = ""; Lines = 0; Files = 0 };
+        write-host "$dir"
+        foreach ($file in gci $dirPath -re -in *.cs,*.fs,*.fsi) { 
+            count-file $file $data
         }
-    } else {
-        $lines = countFSharp $fileName 
-        if ( $isTest ) {
-            $script:fsTestFileCount++ 
-            $script:fsTestLines += $lines
-        } else {
-            $script:fsSourceFileCount++
-            $script:fsSourceLines += $lines
-        }
+
+        write-output $data
     }
 }
 
-foreach ( $dir in $sourceDirs ) {
-    foreach ( $file in gci $dir -re -in  *.cs,*.fs,*.fsi ) {
-        countFile $file $false
-    }
+$all = @()
+$all += count-dirs (join-path . "Src") $false
+$all += count-dirs (join-path . "Test") $true
+
+foreach ($data in $all) { 
+    write-host $data.Name
+    write-host "  Source Files: $($data.Files)"
+    write-host "  Source Lines: $($data.Lines)"
 }
-
-foreach ( $dir in $testDirs ) {
-    foreach ( $file in gci $dir -re -in  *.cs,*.fs,*.fsi ) {
-        countFile $file $true
-    }
-}
-
-write-host "F# Stats"
-write-host "  Source Files $fsSourceFileCount"
-write-host "  Source Lines $fsSourceLines"
-write-host "  Test Files $fsTestFileCount"
-write-host "  Test Lines $fsTestLines"
-write-host ""
-
-write-host "C# Stats"
-write-host "  Source Files $csSourceFileCount"
-write-host "  Source Lines $csSourceLines"
-write-host "  Test Files $csTestFileCount"
-write-host "  Test Lines $csTestLines"
 
 popd

@@ -484,9 +484,6 @@ type SettingSyncSource =
 
 /// This interface is used to synchronize settings between vim settings and the 
 /// editor settings
-///
-/// TODO: This process should be automatic.  The IVimHost should have to specifically
-/// opt out of synchronization
 type IEditorToSettingsSynchronizer = 
     
     /// Begin the synchronization between the editor and vim settings.  This will 
