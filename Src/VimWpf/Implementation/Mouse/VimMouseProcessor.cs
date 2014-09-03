@@ -19,6 +19,19 @@ namespace Vim.UI.Wpf.Implementation.Mouse
         internal bool TryProcess(VimKey vimKey)
         {
             var keyInput = KeyInputUtil.VimKeyToKeyInput(vimKey);
+
+            // If the user has explicitly set the mouse to be <nop> then we don't want to report this as 
+            // handled.  Otherwise it will swallow the mouse event and as a consequence disable other
+            // features that begin with a mouse click.  
+            //
+            // There is really no other way for the user to opt out of mouse behavior besides mapping the 
+            // key to <nop> otherwise that would be done here.  
+            var keyInputSet = _vimBuffer.GetKeyInputMapping(keyInput).KeyInputSet;
+            if (keyInputSet.Length > 0 && keyInputSet.KeyInputs[0].Key == VimKey.Nop)
+            {
+                return false;
+            }
+
             if (_vimBuffer.CanProcess(keyInput))
             {
                 return _vimBuffer.Process(keyInput).IsAnyHandled;

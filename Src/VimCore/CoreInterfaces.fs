@@ -1403,6 +1403,17 @@ type KeyMappingResult =
     /// More input is needed to resolve this mapping.
     | NeedsMoreInput of KeyInputSet
 
+    with 
+
+    /// This will returned the mapped KeyInputSet or KeyInputSet.Empty if no mapping
+    /// was possible 
+    member x.KeyInputSet = 
+        match x with
+        | Mapped keyInputSet -> keyInputSet
+        | PartiallyMapped (keyInputSet, _) -> keyInputSet
+        | Recursive -> KeyInputSet.Empty
+        | NeedsMoreInput _ -> KeyInputSet.Empty
+
 /// Represents the span for a Visual Character mode selection.  If it weren't for the
 /// complications of tracking a visual character selection across edits to the buffer
 /// there would really be no need for this and we could instead just represent it as 
@@ -4318,7 +4329,7 @@ and IVimBuffer =
 
     /// Get the KeyInput value produced by this KeyInput in the current state of the
     /// IVimBuffer.  This will consider any buffered KeyInput values.
-    abstract GetKeyInputMapping : KeyInput -> KeyMappingResult
+    abstract GetKeyInputMapping : keyInput : KeyInput -> KeyMappingResult
 
     /// Process the KeyInput and return whether or not the input was completely handled
     abstract Process : KeyInput -> ProcessResult
