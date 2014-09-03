@@ -10,5 +10,7 @@ namespace Vim.VisualStudio.Implementation.Roslyn
         bool IsRenameActive { get; }
 
         event EventHandler IsRenameActiveChanged;
+
+        void Cancel();
     }
 }

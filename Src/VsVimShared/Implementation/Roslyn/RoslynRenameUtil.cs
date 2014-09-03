@@ -46,6 +46,22 @@ namespace Vim.VisualStudio.Implementation.Roslyn
             }
         }
 
+        private void Cancel()
+        {
+            try
+            {
+                var activeSessionPropertyInfo = _inlineRenameService.GetType().GetProperty("ActiveSession", BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance);
+                var activeSession = activeSessionPropertyInfo.GetValue(_inlineRenameService, null);
+
+                var cancelMethodInfo = activeSession.GetType().GetMethod("Cancel", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                cancelMethodInfo.Invoke(activeSession, null);
+            }
+            catch (Exception)
+            {
+                // Cancel failed
+            }
+        }
+
         internal static bool TryCreate(SVsServiceProvider vsServiceProvider, out IRoslynRenameUtil roslynRenameUtil)
         {
             RoslynRenameUtil util;
@@ -67,8 +83,12 @@ namespace Vim.VisualStudio.Implementation.Roslyn
                 roslynRenameUtil = new RoslynRenameUtil(inlineRenameService, activeSessionPropertyInfo);
 
                 // Subscribe to the event
+                var version = GetRoslynVersionNumber(inlineRenameService.GetType().Assembly);
                 var activeSessionChangedEventInfo = inlineRenameServiceType.GetEvent("ActiveSessionChanged", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
-                var eventArgsTypeArgument = Type.GetType("Microsoft.CodeAnalysis.Editor.Implementation.InlineRename.InlineRenameService+ActiveSessionChangedEventArgs, Microsoft.CodeAnalysis.EditorFeatures, Version=0.7.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35");
+                var eventArgsTypeArgument = Type.GetType(
+                    string.Format(
+                        "Microsoft.CodeAnalysis.Editor.Implementation.InlineRename.InlineRenameService+ActiveSessionChangedEventArgs, Microsoft.CodeAnalysis.EditorFeatures, Version={0}, Culture=neutral, PublicKeyToken=31bf3856ad364e35",
+                        version));
                 var openType = typeof(EventHandler<>);
                 var delegateType = openType.MakeGenericType(eventArgsTypeArgument);
                 var methodInfo = roslynRenameUtil.GetType().GetMethod("OnActiveSessionChanged", BindingFlags.Instance | BindingFlags.NonPublic);
@@ -88,6 +108,11 @@ namespace Vim.VisualStudio.Implementation.Roslyn
             }
         }
 
+        internal static string GetRoslynVersionNumber(Assembly assembly)
+        {
+            return assembly.GetName().Version.ToString();
+        }
+
         #region IRoslynRenameUtil
 
         bool IRoslynRenameUtil.IsRenameActive
@@ -99,6 +124,11 @@ namespace Vim.VisualStudio.Implementation.Roslyn
         {
             add { IsRenameActiveChanged += value; }
             remove { IsRenameActiveChanged -= value; }
+        }
+
+        void IRoslynRenameUtil.Cancel()
+        {
+            Cancel();
         }
 
         #endregion

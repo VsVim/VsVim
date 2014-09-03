@@ -55,6 +55,7 @@ namespace Vim.VisualStudio.Implementation.Roslyn
                 _inRename = false;
                 foreach (var vimBuffer in _vimBufferList)
                 {
+                    vimBuffer.SwitchedMode -= OnModeChange;
                     if (vimBuffer.ModeKind == ModeKind.ExternalEdit)
                     {
                         vimBuffer.SwitchPreviousMode();
@@ -67,7 +68,16 @@ namespace Vim.VisualStudio.Implementation.Roslyn
                 foreach (var vimBuffer in _vimBufferList)
                 {
                     vimBuffer.SwitchMode(ModeKind.ExternalEdit, ModeArgument.None);
+                    vimBuffer.SwitchedMode += OnModeChange;
                 }
+            }
+        }
+
+        private void OnModeChange(object sender, EventArgs e)
+        {
+            if (_inRename && _roslynRenameUtil.IsRenameActive)
+            {
+                _roslynRenameUtil.Cancel();
             }
         }
 
