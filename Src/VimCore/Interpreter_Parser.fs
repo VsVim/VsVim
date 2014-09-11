@@ -1720,8 +1720,11 @@ type Parser
             | ParseResult.Succeeded name ->
                 if _tokenizer.CurrentChar = '=' then
                     _tokenizer.MoveNextToken()
-                    match x.ParseSingleValue() with
-                    | ParseResult.Succeeded value -> LineCommand.Let (name, value)
+                    match x.ParseSingleExpression() with
+                    | ParseResult.Succeeded expr ->
+                        match expr with
+                        | Expression.ConstantValue value -> LineCommand.Let (name, value)
+                        | _ -> LineCommand.ParseError "Not implemented: let only works with constant values"
                     | ParseResult.Failed msg -> LineCommand.ParseError msg
                 else
                     parseDisplayLet name
@@ -2125,25 +2128,36 @@ type Parser
         | LineCommand.IfStart expr -> x.ParseIf expr
         | lineCommand -> lineCommand
 
-    /// Parse out a single expression
-    member x.ParseSingleExpression() =
-        match x.ParseSingleValue() with
-        | ParseResult.Failed msg -> ParseResult.Failed msg
-        | ParseResult.Succeeded value -> Expression.ConstantValue value |> ParseResult.Succeeded
+    member x.ParseOptionName() =
+        _tokenizer.MoveNextToken()
+        let result = match _tokenizer.CurrentTokenKind with
+        | TokenKind.Word word ->
+            Expression.OptionName word |> ParseResult.Succeeded
+        | _ -> ParseResult.Failed "Option name missing"
+        _tokenizer.MoveNextToken()
+        result
 
     /// Parse out a single expression
-    member x.ParseSingleValue() =
+    member x.ParseSingleExpression() =
         // Re-examine the current token based on the knowledge that double quotes are
         // legal in this context as a real token
         use reset = _tokenizer.SetTokenizerFlagsScoped TokenizerFlags.AllowDoubleQuote
         match _tokenizer.CurrentTokenKind with
         | TokenKind.Character '\"' ->
-            x.ParseStringConstant()
+            match x.ParseStringConstant() with
+            | ParseResult.Succeeded value ->
+                Expression.ConstantValue value |> ParseResult.Succeeded
+            | ParseResult.Failed msg -> ParseResult.Failed msg
         | TokenKind.Character '\'' -> 
-            x.ParseStringLiteral()
+            match x.ParseStringLiteral() with
+            | ParseResult.Succeeded value ->
+                Expression.ConstantValue value |> ParseResult.Succeeded
+            | ParseResult.Failed msg -> ParseResult.Failed msg
+        | TokenKind.Character '&' ->
+            x.ParseOptionName()
         | TokenKind.Number number -> 
             _tokenizer.MoveNextToken()
-            VariableValue.Number number |> ParseResult.Succeeded
+            VariableValue.Number number |> Expression.ConstantValue |> ParseResult.Succeeded
         | _ -> ParseResult.Failed "Invalid expression"
 
     /// Parse out a complete expression from the text.  

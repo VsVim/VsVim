@@ -395,6 +395,9 @@ and [<RequireQualifiedAccess>] Expression =
     /// A constant value
     | ConstantValue of VariableValue 
 
+    /// The value of an option/setting
+    | OptionName of string
+
 and [<RequireQualifiedAccess>] LineCommand =
 
     /// Add a new AutoCommand to the set of existing AutoCommand values

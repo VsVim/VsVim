@@ -46,6 +46,7 @@ type ExpressionInterpreter
         match expr with
         | Expression.ConstantValue value -> value
         | Expression.Binary (binaryKind, leftExpr, rightExpr) -> x.RunBinaryExpression binaryKind leftExpr rightExpr
+        | Expression.OptionName name -> VariableValue.String "1"
 
     /// Run the binary expression
     member x.RunBinaryExpression binaryKind (leftExpr : Expression) (rightExpr : Expression) = 
@@ -562,7 +563,7 @@ type VimInterpreter
             |> _statusUtil.OnStatusLong
 
     /// Run the let command
-    member x.RunEcho (expression:Expression) =
+    member x.RunEcho expression =
         let value = x.RunExpression expression 
         let valueAsString =
             match value with

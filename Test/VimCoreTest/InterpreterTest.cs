@@ -726,7 +726,7 @@ namespace Vim.UnitTest
             }
 
             [Fact]
-            public void WhenPassedIntegerEchosItOnStatusLine()
+            public void WhenPassedIntegerEchoesItOnStatusLine()
             {
                 Create("");
                 ParseAndRun(@"echo 2");
@@ -734,11 +734,20 @@ namespace Vim.UnitTest
             }
 
             [Fact]
-            public void WhenPassedStringEchosItOnStatusLine()
+            public void WhenPassedStringEchoesItOnStatusLine()
             {
                 Create("");
                 ParseAndRun(@"echo 'foo'");
                 Assert.Equal("foo", _statusUtil.LastStatus);
+            }
+
+            [Fact]
+            public void WhenPassedBooleanSettingEchoesItsNumericValueOnStatusLine()
+            {
+                Create("");
+                _localSettings.ExpandTab = true;
+                ParseAndRun(@"echo &expandtab");
+                Assert.Equal("1", _statusUtil.LastStatus);
             }
         }
 
