@@ -72,6 +72,14 @@ namespace Vim.UnitTest
                 Assert.Equal("a", items[0].Text);
                 Assert.Equal("b", items[1].Text);
             }
+
+            [Fact]
+            public void Issue1439()
+            {
+                var tagBlock = Parse("<h2>cat</h2>").Single();
+                Assert.Equal("h2", tagBlock.Text);
+                Assert.Equal(0, tagBlock.Children.Count);
+            }
         }
 
         public sealed class SpanTest : TagBlockParserTest
