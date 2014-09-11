@@ -435,19 +435,23 @@ type internal VimBuffer
         let remainingSet = ref keyInputSet
         let processResult = ref (ProcessResult.Handled ModeSwitch.NoSwitch)
 
+        // Whenever processing a key results in an error, the rest of the key mapping 
+        // should not be processed (:help key-mapping, search for error)
+        let isError () = 
+            match processResult.Value with
+            | ProcessResult.Error -> true
+            | _ -> false
+
         // Process the KeyInput values in the given set to completion without considering
         // any further key mappings
         let processSet (keyInputSet : KeyInputSet) = 
+            let mutable error = false
             for keyInput in keyInputSet.KeyInputs do
-                let keyInput = x.GetNonKeypadEquivalent keyInput
-                processResult := x.ProcessOneKeyInput keyInput
+                if not (isError ()) then 
+                    let keyInput = x.GetNonKeypadEquivalent keyInput
+                    processResult := x.ProcessOneKeyInput keyInput
 
-        let processRecursive () = 
-            x.RaiseErrorMessage Resources.Vim_RecursiveMapping
-            processResult := ProcessResult.Error
-            remainingSet := KeyInputSet.Empty
-
-        while remainingSet.Value.Length > 0 do
+        while remainingSet.Value.Length > 0 && not (isError ()) do
             match x.KeyRemapMode with
             | KeyRemapMode.None -> 
                 // There is no mode for the current key stroke but may be for the subsequent

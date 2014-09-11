@@ -1969,6 +1969,18 @@ namespace Vim.UnitTest
                     Assert.Equal("cat", _textBuffer.GetLine(0).GetText());
                     Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
                 }
+
+                [Fact]
+                public void Issue1435()
+                {
+                    Create("cat", "dog");
+                    _localSettings.ShiftWidth = 2;
+                    _assertOnErrorMessage = false;
+                    _vimBuffer.Process(":nmap > >> \" better indentation", enter: true);
+                    _vimBuffer.Process(">");
+                    Assert.Equal("  cat", _textBuffer.GetLine(0).GetText());
+                    Assert.Equal("dog", _textBuffer.GetLine(1).GetText());
+                }
             }
         }
 
