@@ -17,7 +17,9 @@ type DefaultLineRange =
 [<Class>]
 type ExpressionInterpreter
     (
-        _statusUtil : IStatusUtil
+        _statusUtil : IStatusUtil,
+        _localSettings : IVimSettings,
+        _windowSettings : IVimSettings
     ) =
 
     /// Get the value as a number
@@ -46,7 +48,13 @@ type ExpressionInterpreter
         match expr with
         | Expression.ConstantValue value -> value
         | Expression.Binary (binaryKind, leftExpr, rightExpr) -> x.RunBinaryExpression binaryKind leftExpr rightExpr
-        | Expression.OptionName name -> VariableValue.String "1"
+        | Expression.OptionName name ->
+            match _localSettings.GetSetting name with
+            | None -> VariableValue.Error // TODO this does not account for window settings. Does it account for global settings?
+            | Some setting ->
+                match setting.LiveSettingValue.Value with
+                | SettingValue.Toggle value -> VariableValue.Number (System.Convert.ToInt32 value)
+                | _ -> VariableValue.Error
 
     /// Run the binary expression
     member x.RunBinaryExpression binaryKind (leftExpr : Expression) (rightExpr : Expression) = 
@@ -602,7 +610,7 @@ type VimInterpreter
 
     /// Get the value of the specified expression 
     member x.RunExpression expr =
-        let expressionInterpreter = ExpressionInterpreter(_statusUtil)
+        let expressionInterpreter = ExpressionInterpreter(_statusUtil, _localSettings, _windowSettings)
         expressionInterpreter.RunExpression expr
 
     /// Fold the specified line range
@@ -697,7 +705,7 @@ type VimInterpreter
 
     /// Run the if command
     member x.RunIf (conditionalBlockList : ConditionalBlock list)  =
-        let expressionInterpreter = ExpressionInterpreter(_statusUtil)
+        let expressionInterpreter = ExpressionInterpreter(_statusUtil, _localSettings, _windowSettings)
 
         let shouldRun (conditionalBlock : ConditionalBlock) =
             match conditionalBlock.Conditional with

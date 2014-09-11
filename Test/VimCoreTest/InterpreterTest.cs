@@ -742,7 +742,16 @@ namespace Vim.UnitTest
             }
 
             [Fact]
-            public void WhenPassedBooleanSettingEchoesItsNumericValueOnStatusLine()
+            public void WhenPassedBooleanSettingWhichIsOffEchoes0OnStatusLine()
+            {
+                Create("");
+                _localSettings.ExpandTab = false;
+                ParseAndRun(@"echo &expandtab");
+                Assert.Equal("0", _statusUtil.LastStatus);
+            }
+
+            [Fact]
+            public void WhenPassedBooleanSettingWhichIsOnEchoes1OnStatusLine()
             {
                 Create("");
                 _localSettings.ExpandTab = true;
