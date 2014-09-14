@@ -42,10 +42,10 @@ function test-vsixcontents() {
     # The set of important files that are easy to miss 
     #   - FSharp.Core.dll: We bind to the 4.0 version but 2012+ only installs
     #     the 4.5 version that we can't bind to
-    #   - EditorUtils.dll: Not a part of the build but necessary.  Make sure 
-    #     that it's found        
+    #   - EditorUtils2010.dll: Not a part of the build but necessary.  Make
+    #     sure that it's found        
     $expected = 
-        "EditorUtils.dll",
+        "EditorUtils2010.dll",
         "Vim.Core.dll", 
         "Vim.UI.Wpf.dll",
         "Vim.VisualStudio.Vs2010.dll",
