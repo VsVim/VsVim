@@ -222,7 +222,27 @@
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">
   </Target>
-  <Target Name="AfterBuild">
+        -->
+  <Target Name="BeforeBuild">
+    <PropertyGroup>
+      <Vim2012FilePath>..\VsSpecific\Vs2012\obj\$(Configuration)\Vim.VisualStudio.Vs2012</Vim2012FilePath>
+      <Vim2013FilePath>..\VsSpecific\Vs2013\obj\$(Configuration)\Vim.VisualStudio.Vs2013</Vim2013FilePath>
+    </PropertyGroup>
+    <WriteLinesToFile 
+      File="$(Vim2012FilePath).dll" 
+      Condition="!Exists('$(Vim2012FilePath).dll')"
+      Lines="Dummy file contents" />
+    <WriteLinesToFile 
+      File="$(Vim2012FilePath).pdb" 
+      Condition="!Exists('$(Vim2012FilePath).pdb')"
+      Lines="Dummy file contents" />
+    <WriteLinesToFile 
+      File="$(Vim2013FilePath).dll" 
+      Condition="!Exists('$(Vim2013FilePath).dll')"
+      Lines="Dummy file contents" />
+    <WriteLinesToFile 
+      File="$(Vim2013FilePath).pdb" 
+      Condition="!Exists('$(Vim2013FilePath).pdb')"
+      Lines="Dummy file contents" />
   </Target>
-  -->
 </Project>
