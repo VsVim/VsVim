@@ -224,6 +224,14 @@
   </Target>
         -->
   <Target Name="BeforeBuild">
+
+    <!-- 
+        When building on a machin ewithout the 4.5 framework installed the 2012 and 2013 components
+        won't build.  This in turn causes the MsBuild task to create the VSIX to fail.  Work around 
+        this by just creating dummy files.  This only happens on a machine with 2010 installed.  The
+        work around is to allow for smooth development there 
+
+       -->
     <PropertyGroup>
       <Vim2012FilePath>..\VsSpecific\Vs2012\obj\$(Configuration)\Vim.VisualStudio.Vs2012</Vim2012FilePath>
       <Vim2013FilePath>..\VsSpecific\Vs2013\obj\$(Configuration)\Vim.VisualStudio.Vs2013</Vim2013FilePath>
