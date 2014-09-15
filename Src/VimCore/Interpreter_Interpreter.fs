@@ -19,7 +19,7 @@ type ExpressionInterpreter
     (
         _statusUtil : IStatusUtil,
         _localSettings : IVimSettings,
-        _windowSettings : IVimSettings, // TODO window settings don't work as expressions yet
+        _windowSettings : IVimSettings,
         _variableMap : Dictionary<string, VariableValue>
     ) =
 
@@ -50,7 +50,11 @@ type ExpressionInterpreter
         | Expression.ConstantValue value -> value
         | Expression.Binary (binaryKind, leftExpr, rightExpr) -> x.RunBinaryExpression binaryKind leftExpr rightExpr
         | Expression.OptionName name ->
-            match _localSettings.GetSetting name with
+            let maybeSetting =
+                match _localSettings.GetSetting name with
+                | None -> _windowSettings.GetSetting name
+                | Some setting -> Some setting
+            match maybeSetting with
             | None -> VariableValue.Error // TODO this does not account for window settings. Does it account for global settings?
             | Some setting ->
                 match setting.LiveSettingValue.Value with

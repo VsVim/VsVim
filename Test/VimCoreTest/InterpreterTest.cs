@@ -778,6 +778,15 @@ namespace Vim.UnitTest
             }
 
             [Fact]
+            public void WhenPassedWindowSettingsEchoesItOnStatusLine()
+            {
+                Create("");
+                _windowSettings.Scroll = 12;
+                ParseAndRun(@"echo &scroll");
+                Assert.Equal("12", _statusUtil.LastStatus);
+            }
+
+            [Fact]
             public void WhenPassedVariableEchoesItOnStatusLine()
             {
                 Create("");
