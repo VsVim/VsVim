@@ -758,6 +758,15 @@ namespace Vim.UnitTest
                 ParseAndRun(@"echo &expandtab");
                 Assert.Equal("1", _statusUtil.LastStatus);
             }
+
+            [Fact]
+            public void WhenPassedIntegerSettingsEchoesIntegerOnStatusLine()
+            {
+                Create("");
+                _localSettings.TabStop = 4;
+                ParseAndRun(@"echo &tabstop");
+                Assert.Equal("4", _statusUtil.LastStatus);
+            }
         }
 
         public sealed class LetTest : InterpreterTest

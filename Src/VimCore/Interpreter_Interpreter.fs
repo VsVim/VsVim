@@ -54,6 +54,7 @@ type ExpressionInterpreter
             | Some setting ->
                 match setting.LiveSettingValue.Value with
                 | SettingValue.Toggle value -> VariableValue.Number (System.Convert.ToInt32 value)
+                | SettingValue.Number value -> VariableValue.Number value
                 | _ -> VariableValue.Error
 
     /// Run the binary expression
