@@ -767,6 +767,15 @@ namespace Vim.UnitTest
                 ParseAndRun(@"echo &tabstop");
                 Assert.Equal("4", _statusUtil.LastStatus);
             }
+
+            [Fact]
+            public void WhenPassedStringSettingsEchoesIntegerOnStatusLine()
+            {
+                Create("");
+                _globalSettings.Backspace = "eol";
+                ParseAndRun(@"echo &backspace");
+                Assert.Equal("eol", _statusUtil.LastStatus);
+            }
         }
 
         public sealed class LetTest : InterpreterTest

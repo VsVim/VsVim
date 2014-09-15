@@ -53,8 +53,9 @@ type ExpressionInterpreter
             | None -> VariableValue.Error // TODO this does not account for window settings. Does it account for global settings?
             | Some setting ->
                 match setting.LiveSettingValue.Value with
-                | SettingValue.Toggle value -> VariableValue.Number (System.Convert.ToInt32 value)
-                | SettingValue.Number value -> VariableValue.Number value
+                | SettingValue.Toggle x -> VariableValue.Number (System.Convert.ToInt32 x)
+                | SettingValue.Number x -> VariableValue.Number x
+                | SettingValue.String x -> VariableValue.String x
                 | _ -> VariableValue.Error
 
     /// Run the binary expression
