@@ -19,7 +19,8 @@ type ExpressionInterpreter
     (
         _statusUtil : IStatusUtil,
         _localSettings : IVimSettings,
-        _windowSettings : IVimSettings
+        _windowSettings : IVimSettings, // TODO window settings don't work as expressions yet
+        _variableMap : Dictionary<string, VariableValue>
     ) =
 
     /// Get the value as a number
@@ -57,6 +58,12 @@ type ExpressionInterpreter
                 | SettingValue.Number x -> VariableValue.Number x
                 | SettingValue.String x -> VariableValue.String x
                 | _ -> VariableValue.Error
+        | Expression.VariableName name ->
+            let found, value = _variableMap.TryGetValue name.Name
+            if found then
+                value
+            else
+                VariableValue.Error
 
     /// Run the binary expression
     member x.RunBinaryExpression binaryKind (leftExpr : Expression) (rightExpr : Expression) = 
@@ -612,7 +619,7 @@ type VimInterpreter
 
     /// Get the value of the specified expression 
     member x.RunExpression expr =
-        let expressionInterpreter = ExpressionInterpreter(_statusUtil, _localSettings, _windowSettings)
+        let expressionInterpreter = ExpressionInterpreter(_statusUtil, _localSettings, _windowSettings, _variableMap)
         expressionInterpreter.RunExpression expr
 
     /// Fold the specified line range
@@ -707,7 +714,7 @@ type VimInterpreter
 
     /// Run the if command
     member x.RunIf (conditionalBlockList : ConditionalBlock list)  =
-        let expressionInterpreter = ExpressionInterpreter(_statusUtil, _localSettings, _windowSettings)
+        let expressionInterpreter = ExpressionInterpreter(_statusUtil, _localSettings, _windowSettings, _variableMap)
 
         let shouldRun (conditionalBlock : ConditionalBlock) =
             match conditionalBlock.Conditional with

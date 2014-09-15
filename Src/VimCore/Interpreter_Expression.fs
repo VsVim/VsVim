@@ -395,8 +395,11 @@ and [<RequireQualifiedAccess>] Expression =
     /// A constant value
     | ConstantValue of VariableValue 
 
-    /// The value of an option/setting
+    /// The name of an option/setting
     | OptionName of string
+
+    /// The name of a variable
+    | VariableName of VariableName
 
 and [<RequireQualifiedAccess>] LineCommand =
 

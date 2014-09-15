@@ -2156,7 +2156,10 @@ type Parser
         | TokenKind.Number number -> 
             _tokenizer.MoveNextToken()
             VariableValue.Number number |> Expression.ConstantValue |> ParseResult.Succeeded
-        | _ -> ParseResult.Failed "Invalid expression"
+        | _ ->
+            match x.ParseVariableName() with
+            | ParseResult.Failed msg -> ParseResult.Failed msg
+            | ParseResult.Succeeded variable -> Expression.VariableName variable |> ParseResult.Succeeded
 
     /// Parse out a complete expression from the text.  
     member x.ParseExpressionCore() =

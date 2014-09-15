@@ -769,12 +769,21 @@ namespace Vim.UnitTest
             }
 
             [Fact]
-            public void WhenPassedStringSettingsEchoesIntegerOnStatusLine()
+            public void WhenPassedStringSettingsEchoesStringOnStatusLine()
             {
                 Create("");
                 _globalSettings.Backspace = "eol";
                 ParseAndRun(@"echo &backspace");
                 Assert.Equal("eol", _statusUtil.LastStatus);
+            }
+
+            [Fact]
+            public void WhenPassedVariableEchoesItOnStatusLine()
+            {
+                Create("");
+                VariableMap["foo"] = VariableValue.NewString("bar");
+                ParseAndRun(@"echo foo");
+                Assert.Equal("bar", _statusUtil.LastStatus);
             }
         }
 
