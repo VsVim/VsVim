@@ -75,7 +75,3 @@ VsVim.Vs2013.pdb
 # Profiling Output
 *.vsp
 
-# Vim - in case you are crazy enough to work on VsVim from vanilla Vim...
-Session.vim
-*.swo
-*.swp

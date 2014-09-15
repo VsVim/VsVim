@@ -1445,6 +1445,7 @@ type Parser
                 elif c = '"' then
                     builder.ToString()
                     |> VariableValue.String
+                    |> Expression.ConstantValue
                     |> ParseResult.Succeeded
                 else
                     builder.AppendChar c
@@ -1478,7 +1479,10 @@ type Parser
             | '\'' ->
                 // Found the terminating character
                 _tokenizer.MoveNextChar()
-                result <- builder.ToString() |> VariableValue.String |> ParseResult.Succeeded
+                result <- builder.ToString()
+                |> VariableValue.String
+                |> Expression.ConstantValue
+                |> ParseResult.Succeeded
                 isDone <- true
             | c ->
                 builder.AppendChar c
@@ -2144,15 +2148,9 @@ type Parser
         use reset = _tokenizer.SetTokenizerFlagsScoped TokenizerFlags.AllowDoubleQuote
         match _tokenizer.CurrentTokenKind with
         | TokenKind.Character '\"' ->
-            match x.ParseStringConstant() with
-            | ParseResult.Succeeded value ->
-                Expression.ConstantValue value |> ParseResult.Succeeded
-            | ParseResult.Failed msg -> ParseResult.Failed msg
+            x.ParseStringConstant()
         | TokenKind.Character '\'' -> 
-            match x.ParseStringLiteral() with
-            | ParseResult.Succeeded value ->
-                Expression.ConstantValue value |> ParseResult.Succeeded
-            | ParseResult.Failed msg -> ParseResult.Failed msg
+            x.ParseStringLiteral()
         | TokenKind.Character '&' ->
             x.ParseOptionName()
         | TokenKind.Number number -> 
