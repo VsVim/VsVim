@@ -44,30 +44,35 @@ type ExpressionInterpreter
     member x.GetExpressionAsNumber expr =
         x.RunExpression expr |> x.GetValueAsNumber
 
+    member x.GetSetting name = 
+        match _localSettings.GetSetting name with
+        | None -> _windowSettings.GetSetting name
+        | Some setting -> Some setting
+
+    member x.GetValueOfSetting setting =
+        match setting.LiveSettingValue.Value with
+        | SettingValue.Toggle x -> VariableValue.Number (System.Convert.ToInt32 x)
+        | SettingValue.Number x -> VariableValue.Number x
+        | SettingValue.String x -> VariableValue.String x
+        | _ -> VariableValue.Error
+
+    member x.GetValueOfVariable name = 
+        let found, value = _variableMap.TryGetValue name
+        if found then
+            value
+        else
+            VariableValue.Error
+
     /// Get the value of the specified expression 
     member x.RunExpression (expr : Expression) : VariableValue =
         match expr with
         | Expression.ConstantValue value -> value
         | Expression.Binary (binaryKind, leftExpr, rightExpr) -> x.RunBinaryExpression binaryKind leftExpr rightExpr
         | Expression.OptionName name ->
-            let maybeSetting =
-                match _localSettings.GetSetting name with
-                | None -> _windowSettings.GetSetting name
-                | Some setting -> Some setting
-            match maybeSetting with
-            | None -> VariableValue.Error // TODO this does not account for window settings. Does it account for global settings?
-            | Some setting ->
-                match setting.LiveSettingValue.Value with
-                | SettingValue.Toggle x -> VariableValue.Number (System.Convert.ToInt32 x)
-                | SettingValue.Number x -> VariableValue.Number x
-                | SettingValue.String x -> VariableValue.String x
-                | _ -> VariableValue.Error
-        | Expression.VariableName name ->
-            let found, value = _variableMap.TryGetValue name.Name
-            if found then
-                value
-            else
-                VariableValue.Error
+            match x.GetSetting name with
+            | None -> VariableValue.Error
+            | Some setting -> x.GetValueOfSetting setting
+        | Expression.VariableName name -> x.GetValueOfVariable name.Name
 
     /// Run the binary expression
     member x.RunBinaryExpression binaryKind (leftExpr : Expression) (rightExpr : Expression) = 
