@@ -347,13 +347,13 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
                     UpdateCommandLine(_vimBuffer.DisabledMode.HelpMessage);
                     break;
                 case ModeKind.VisualBlock:
-                    UpdateCommandLine(Resources.VisualBlockBanner);
+                    UpdateCommandLineWithRegister(Resources.VisualBlockBanner, _vimBuffer.VisualBlockMode.CommandRunner);
                     break;
                 case ModeKind.VisualCharacter:
-                    UpdateCommandLine(Resources.VisualCharacterBanner);
+                    UpdateCommandLineWithRegister(Resources.VisualCharacterBanner, _vimBuffer.VisualCharacterMode.CommandRunner);
                     break;
                 case ModeKind.VisualLine:
-                    UpdateCommandLine(Resources.VisualLineBanner);
+                    UpdateCommandLineWithRegister(Resources.VisualLineBanner, _vimBuffer.VisualLineMode.CommandRunner);
                     break;
             }
         }
@@ -407,6 +407,16 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
         {
             _margin.TextFontFamily = _classificationFormatMap.DefaultTextProperties.Typeface.FontFamily;
             _margin.TextFontSize = _classificationFormatMap.DefaultTextProperties.FontRenderingEmSize;
+        }
+
+        private void UpdateCommandLineWithRegister(string commandLine, ICommandRunner commandRunner)
+        {
+            if (commandRunner.HasRegisterName && commandRunner.RegisterName.Char.IsSome())
+            {
+                commandLine = string.Format("{0} \"{1}", commandLine, commandRunner.RegisterName.Char.Value);
+            }
+
+            UpdateCommandLine(commandLine);
         }
 
         /// <summary>

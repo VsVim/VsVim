@@ -55,6 +55,24 @@ type internal CommandRunner
     /// True during the binding of the count
     let mutable _inCount = false
 
+    let mutable _registerName : RegisterName option = None 
+
+    let mutable _count : int option = None 
+
+    member x.HasRegisterName = Option.isSome _registerName
+
+    member x.HasCount = Option.isSome _count
+
+    member x.RegisterName = 
+        match _registerName with
+        | Some name -> name
+        | None -> RegisterName.Unnamed
+
+    member x.Count = 
+        match _count with
+        | Some count -> count
+        | None -> 1
+
     /// Try and get the VisualSpan for the provided kind
     member x.GetVisualSpan kind = VisualSpan.CreateForSelection _textView kind _localSettings.TabStop
 
@@ -65,7 +83,9 @@ type internal CommandRunner
         let inner (keyInput : KeyInput) = 
             match RegisterNameUtil.CharToRegister keyInput.Char with
             | None -> BindResult.Error
-            | Some name -> completeFunc name
+            | Some name -> 
+                _registerName <- Some name 
+                completeFunc name
 
         BindResult.NeedMoreInput { KeyRemapMode = KeyRemapMode.None; BindFunction = inner }
 
@@ -81,6 +101,7 @@ type internal CommandRunner
             else
                 _inCount <- false
                 let count = System.Int32.Parse(num)
+                _count <- Some count 
                 completeFunc count ki
 
         inner StringUtil.empty initialDigit 
@@ -344,6 +365,8 @@ type internal CommandRunner
         _data <- _emptyData
         _runBindData <- None
         _inCount <- false
+        _registerName <- None
+        _count <- None 
 
     interface ICommandRunner with
         member x.Commands = _commandMap |> Seq.map (fun pair -> pair.Value)
@@ -353,6 +376,10 @@ type internal CommandRunner
             | Some flags -> Util.IsFlagSet flags CommandFlags.HandlesEscape
         member x.IsWaitingForMoreInput = Option.isSome _runBindData
         member x.InCount = _inCount
+        member x.HasRegisterName = x.HasRegisterName
+        member x.HasCount = x.HasCount
+        member x.RegisterName = x.RegisterName
+        member x.Count = x.Count
         member x.KeyRemapMode = 
             match _runBindData with
             | None -> KeyRemapMode.None

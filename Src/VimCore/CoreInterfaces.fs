@@ -3260,6 +3260,18 @@ type ICommandRunner =
     /// True if waiting on more input
     abstract IsWaitingForMoreInput : bool
 
+    /// True if the current command has a register associated with it 
+    abstract HasRegisterName : bool 
+
+    /// True if the current command has a count associated with it 
+    abstract HasCount : bool
+
+    /// When HasRegister is true this has the associated RegisterName 
+    abstract RegisterName : RegisterName
+
+    /// When HasCount is true this has the associated count
+    abstract Count : int 
+
     /// Add a Command.  If there is already a Command with the same name an exception will
     /// be raised
     abstract Add : CommandBinding -> unit

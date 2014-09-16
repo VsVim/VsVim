@@ -177,6 +177,22 @@ namespace Vim.UnitTest
                 _runner.ResetState();
                 Assert.False(_runner.InCount);
             }
+
+            [Fact]
+            public void ResetState2()
+            {
+                _runner.Run("3d");
+                _runner.ResetState();
+                Assert.False(_runner.HasCount);
+            }
+
+            [Fact]
+            public void Count()
+            {
+                _runner.Run("3d");
+                Assert.True(_runner.HasCount);
+                Assert.Equal(3, _runner.Count);
+            }
         }
 
         public sealed class RegisterTest : CommandRunnerTest
@@ -186,7 +202,6 @@ namespace Vim.UnitTest
                 Create("");
                 _runner.Add(VimUtil.CreateNormalBinding("dd"));
             }
-
 
             [Fact]
             public void AfterRegister()
@@ -202,6 +217,22 @@ namespace Vim.UnitTest
                 _runner.Run("\"");
                 Assert.True(_runner.IsWaitingForMoreInput);
                 Assert.Equal(KeyRemapMode.None, _runner.KeyRemapMode);
+            }
+
+            [Fact]
+            public void Register()
+            {
+                _runner.Run(@"""a");
+                Assert.True(_runner.HasRegisterName);
+                Assert.Equal(RegisterName.OfChar('a').Value, _runner.RegisterName);
+            }
+
+            [Fact]
+            public void ResetState()
+            {
+                _runner.Run(@"""a");
+                _runner.ResetState();
+                Assert.False(_runner.HasRegisterName);
             }
         }
 
