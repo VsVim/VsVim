@@ -794,6 +794,15 @@ namespace Vim.UnitTest
                 ParseAndRun(@"echo foo");
                 Assert.Equal("bar", _statusUtil.LastStatus);
             }
+
+            [Fact]
+            public void WhenPassedRegisterEchoesItOnStatusLine()
+            {
+                Create("");
+                UnnamedRegister.UpdateValue("Hello, world!");
+                ParseAndRun("echo @\"");
+                Assert.Equal("Hello, world!", _statusUtil.LastStatus);
+            }
         }
 
         public sealed class LetTest : InterpreterTest

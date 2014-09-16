@@ -2132,14 +2132,15 @@ type Parser
         | LineCommand.IfStart expr -> x.ParseIf expr
         | lineCommand -> lineCommand
 
+    // Parse out the name of a setting/option
     member x.ParseOptionName() =
         _tokenizer.MoveNextToken()
-        let result = match _tokenizer.CurrentTokenKind with
+        let tokenKind = _tokenizer.CurrentTokenKind
+        _tokenizer.MoveNextToken()
+        match tokenKind with
         | TokenKind.Word word ->
             Expression.OptionName word |> ParseResult.Succeeded
         | _ -> ParseResult.Failed "Option name missing"
-        _tokenizer.MoveNextToken()
-        result
 
     /// Parse out a single expression
     member x.ParseSingleExpression() =
@@ -2153,6 +2154,11 @@ type Parser
             x.ParseStringLiteral()
         | TokenKind.Character '&' ->
             x.ParseOptionName()
+        | TokenKind.Character '@' ->
+            _tokenizer.MoveNextToken()
+            match x.ParseRegisterName ParseRegisterName.All with
+            | Some name -> Expression.RegisterName name |>  ParseResult.Succeeded
+            | None -> ParseResult.Failed "Unrecognized register name"
         | TokenKind.Number number -> 
             _tokenizer.MoveNextToken()
             VariableValue.Number number |> Expression.ConstantValue |> ParseResult.Succeeded

@@ -20,7 +20,8 @@ type ExpressionInterpreter
         _statusUtil : IStatusUtil,
         _localSettings : IVimSettings,
         _windowSettings : IVimSettings,
-        _variableMap : Dictionary<string, VariableValue>
+        _variableMap : Dictionary<string, VariableValue>,
+        _registerMap : IRegisterMap
     ) =
 
     /// Get the value as a number
@@ -63,6 +64,9 @@ type ExpressionInterpreter
         else
             VariableValue.Error
 
+    member x.GetValueOfRegister name =
+        (_registerMap.GetRegister name).StringValue |> VariableValue.String
+
     /// Get the value of the specified expression 
     member x.RunExpression (expr : Expression) : VariableValue =
         match expr with
@@ -73,6 +77,7 @@ type ExpressionInterpreter
             | None -> VariableValue.Error
             | Some setting -> x.GetValueOfSetting setting
         | Expression.VariableName name -> x.GetValueOfVariable name.Name
+        | Expression.RegisterName name -> x.GetValueOfRegister name
 
     /// Run the binary expression
     member x.RunBinaryExpression binaryKind (leftExpr : Expression) (rightExpr : Expression) = 
@@ -628,7 +633,7 @@ type VimInterpreter
 
     /// Get the value of the specified expression 
     member x.RunExpression expr =
-        let expressionInterpreter = ExpressionInterpreter(_statusUtil, _localSettings, _windowSettings, _variableMap)
+        let expressionInterpreter = ExpressionInterpreter(_statusUtil, _localSettings, _windowSettings, _variableMap, _registerMap)
         expressionInterpreter.RunExpression expr
 
     /// Fold the specified line range
@@ -723,7 +728,7 @@ type VimInterpreter
 
     /// Run the if command
     member x.RunIf (conditionalBlockList : ConditionalBlock list)  =
-        let expressionInterpreter = ExpressionInterpreter(_statusUtil, _localSettings, _windowSettings, _variableMap)
+        let expressionInterpreter = ExpressionInterpreter(_statusUtil, _localSettings, _windowSettings, _variableMap, _registerMap)
 
         let shouldRun (conditionalBlock : ConditionalBlock) =
             match conditionalBlock.Conditional with

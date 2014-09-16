@@ -398,6 +398,9 @@ and [<RequireQualifiedAccess>] Expression =
     /// The name of an option/setting
     | OptionName of string
 
+    /// The name of a register
+    | RegisterName of RegisterName
+
     /// The name of a variable
     | VariableName of VariableName
 
