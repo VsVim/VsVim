@@ -17,7 +17,11 @@ type DefaultLineRange =
 [<Class>]
 type ExpressionInterpreter
     (
-        _statusUtil : IStatusUtil
+        _statusUtil : IStatusUtil,
+        _localSettings : IVimSettings,
+        _windowSettings : IVimSettings,
+        _variableMap : Dictionary<string, VariableValue>,
+        _registerMap : IRegisterMap
     ) =
 
     /// Get the value as a number
@@ -41,11 +45,39 @@ type ExpressionInterpreter
     member x.GetExpressionAsNumber expr =
         x.RunExpression expr |> x.GetValueAsNumber
 
+    member x.GetSetting name = 
+        match _localSettings.GetSetting name with
+        | None -> _windowSettings.GetSetting name
+        | Some setting -> Some setting
+
+    member x.GetValueOfSetting setting =
+        match setting.LiveSettingValue.Value with
+        | SettingValue.Toggle x -> VariableValue.Number (System.Convert.ToInt32 x)
+        | SettingValue.Number x -> VariableValue.Number x
+        | SettingValue.String x -> VariableValue.String x
+        | _ -> VariableValue.Error
+
+    member x.GetValueOfVariable name = 
+        let found, value = _variableMap.TryGetValue name
+        if found then
+            value
+        else
+            VariableValue.Error
+
+    member x.GetValueOfRegister name =
+        (_registerMap.GetRegister name).StringValue |> VariableValue.String
+
     /// Get the value of the specified expression 
     member x.RunExpression (expr : Expression) : VariableValue =
         match expr with
         | Expression.ConstantValue value -> value
         | Expression.Binary (binaryKind, leftExpr, rightExpr) -> x.RunBinaryExpression binaryKind leftExpr rightExpr
+        | Expression.OptionName name ->
+            match x.GetSetting name with
+            | None -> VariableValue.Error
+            | Some setting -> x.GetValueOfSetting setting
+        | Expression.VariableName name -> x.GetValueOfVariable name.Name
+        | Expression.RegisterName name -> x.GetValueOfRegister name
 
     /// Run the binary expression
     member x.RunBinaryExpression binaryKind (leftExpr : Expression) (rightExpr : Expression) = 
@@ -561,6 +593,16 @@ type VimInterpreter
             |> Seq.append ( "mark line  col file/text"  |> Seq.singleton)
             |> _statusUtil.OnStatusLong
 
+    /// Run the let command
+    member x.RunEcho expression =
+        let value = x.RunExpression expression 
+        let valueAsString =
+            match value with
+            | VariableValue.Number number -> number.ToString()
+            | VariableValue.String str -> str
+            | _ -> "<error>"
+        _statusUtil.OnStatus valueAsString
+
     /// Edit the specified file
     member x.RunEdit hasBang fileOptions commandOption filePath =
         if not (List.isEmpty fileOptions) then
@@ -589,7 +631,7 @@ type VimInterpreter
 
     /// Get the value of the specified expression 
     member x.RunExpression expr =
-        let expressionInterpreter = ExpressionInterpreter(_statusUtil)
+        let expressionInterpreter = ExpressionInterpreter(_statusUtil, _localSettings, _windowSettings, _variableMap, _registerMap)
         expressionInterpreter.RunExpression expr
 
     /// Fold the specified line range
@@ -687,7 +729,7 @@ type VimInterpreter
 
     /// Run the if command
     member x.RunIf (conditionalBlockList : ConditionalBlock list)  =
-        let expressionInterpreter = ExpressionInterpreter(_statusUtil)
+        let expressionInterpreter = ExpressionInterpreter(_statusUtil, _localSettings, _windowSettings, _variableMap, _registerMap)
 
         let shouldRun (conditionalBlock : ConditionalBlock) =
             match conditionalBlock.Conditional with
@@ -1367,6 +1409,7 @@ type VimInterpreter
         | LineCommand.Delete (lineRange, registerName) -> x.RunDelete lineRange (getRegister registerName)
         | LineCommand.DeleteMarks marks -> x.RunDeleteMarks marks
         | LineCommand.DeleteAllMarks -> x.RunDeleteAllMarks()
+        | LineCommand.Echo expression -> x.RunEcho expression
         | LineCommand.Edit (hasBang, fileOptions, commandOption, filePath) -> x.RunEdit hasBang fileOptions commandOption filePath
         | LineCommand.Else -> cantRun ()
         | LineCommand.ElseIf _ -> cantRun ()

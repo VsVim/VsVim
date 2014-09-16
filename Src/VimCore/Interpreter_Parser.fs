@@ -131,6 +131,7 @@ type Parser
         ("delete","d")
         ("delmarks", "delm")
         ("display","di")
+        ("echo", "ec")
         ("edit", "e")
         ("else", "el")
         ("elseif", "elsei")
@@ -1451,6 +1452,7 @@ type Parser
                 elif c = '"' then
                     builder.ToString()
                     |> VariableValue.String
+                    |> Expression.ConstantValue
                     |> ParseResult.Succeeded
                 else
                     builder.AppendChar c
@@ -1484,7 +1486,10 @@ type Parser
             | '\'' ->
                 // Found the terminating character
                 _tokenizer.MoveNextChar()
-                result <- builder.ToString() |> VariableValue.String |> ParseResult.Succeeded
+                result <- builder.ToString()
+                |> VariableValue.String
+                |> Expression.ConstantValue
+                |> ParseResult.Succeeded
                 isDone <- true
             | c ->
                 builder.AppendChar c
@@ -1701,6 +1706,16 @@ type Parser
         let joinKind = if hasBang then JoinKind.KeepEmptySpaces else JoinKind.RemoveEmptySpaces
         LineCommand.Join (lineRange, joinKind)
 
+    /// Parse out the :echo command
+    member x.ParseEcho () = 
+        x.SkipBlanks()
+        if _tokenizer.IsAtEndOfLine then
+            LineCommand.Nop
+        else
+            match x.ParseExpressionCore() with
+            | ParseResult.Failed msg -> LineCommand.ParseError msg
+            | ParseResult.Succeeded expr -> LineCommand.Echo expr
+
     /// Parse out the :let command
     member x.ParseLet () = 
         use flags = _tokenizer.SetTokenizerFlagsScoped TokenizerFlags.SkipBlanks
@@ -1726,8 +1741,11 @@ type Parser
             | ParseResult.Succeeded name ->
                 if _tokenizer.CurrentChar = '=' then
                     _tokenizer.MoveNextToken()
-                    match x.ParseSingleValue() with
-                    | ParseResult.Succeeded value -> LineCommand.Let (name, value)
+                    match x.ParseSingleExpression() with
+                    | ParseResult.Succeeded expr ->
+                        match expr with
+                        | Expression.ConstantValue value -> LineCommand.Let (name, value)
+                        | _ -> LineCommand.ParseError "Not implemented: let only works with constant values"
                     | ParseResult.Failed msg -> LineCommand.ParseError msg
                 else
                     parseDisplayLet name
@@ -2010,6 +2028,7 @@ type Parser
                 | "delete" -> x.ParseDelete lineRange
                 | "delmarks" -> noRange (fun () -> x.ParseDeleteMarks())
                 | "display" -> noRange x.ParseDisplayRegisters 
+                | "echo" -> noRange x.ParseEcho
                 | "edit" -> noRange x.ParseEdit
                 | "else" -> noRange x.ParseElse
                 | "elseif" -> noRange x.ParseElseIf
@@ -2133,14 +2152,18 @@ type Parser
         | LineCommand.IfStart expr -> x.ParseIf expr
         | lineCommand -> lineCommand
 
-    /// Parse out a single expression
-    member x.ParseSingleExpression() =
-        match x.ParseSingleValue() with
-        | ParseResult.Failed msg -> ParseResult.Failed msg
-        | ParseResult.Succeeded value -> Expression.ConstantValue value |> ParseResult.Succeeded
+    // Parse out the name of a setting/option
+    member x.ParseOptionName() =
+        _tokenizer.MoveNextToken()
+        let tokenKind = _tokenizer.CurrentTokenKind
+        _tokenizer.MoveNextToken()
+        match tokenKind with
+        | TokenKind.Word word ->
+            Expression.OptionName word |> ParseResult.Succeeded
+        | _ -> ParseResult.Failed "Option name missing"
 
     /// Parse out a single expression
-    member x.ParseSingleValue() =
+    member x.ParseSingleExpression() =
         // Re-examine the current token based on the knowledge that double quotes are
         // legal in this context as a real token
         use reset = _tokenizer.SetTokenizerFlagsScoped TokenizerFlags.AllowDoubleQuote
@@ -2149,10 +2172,20 @@ type Parser
             x.ParseStringConstant()
         | TokenKind.Character '\'' -> 
             x.ParseStringLiteral()
+        | TokenKind.Character '&' ->
+            x.ParseOptionName()
+        | TokenKind.Character '@' ->
+            _tokenizer.MoveNextToken()
+            match x.ParseRegisterName ParseRegisterName.All with
+            | Some name -> Expression.RegisterName name |>  ParseResult.Succeeded
+            | None -> ParseResult.Failed "Unrecognized register name"
         | TokenKind.Number number -> 
             _tokenizer.MoveNextToken()
-            VariableValue.Number number |> ParseResult.Succeeded
-        | _ -> ParseResult.Failed "Invalid expression"
+            VariableValue.Number number |> Expression.ConstantValue |> ParseResult.Succeeded
+        | _ ->
+            match x.ParseVariableName() with
+            | ParseResult.Failed msg -> ParseResult.Failed msg
+            | ParseResult.Succeeded variable -> Expression.VariableName variable |> ParseResult.Succeeded
 
     /// Parse out a complete expression from the text.  
     member x.ParseExpressionCore() =
