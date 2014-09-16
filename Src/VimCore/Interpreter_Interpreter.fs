@@ -55,7 +55,6 @@ type ExpressionInterpreter
         | SettingValue.Toggle x -> VariableValue.Number (System.Convert.ToInt32 x)
         | SettingValue.Number x -> VariableValue.Number x
         | SettingValue.String x -> VariableValue.String x
-        | _ -> VariableValue.Error
 
     member x.GetValueOfVariable name = 
         let found, value = _variableMap.TryGetValue name
