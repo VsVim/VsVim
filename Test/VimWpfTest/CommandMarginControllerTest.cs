@@ -498,6 +498,7 @@ namespace Vim.UI.Wpf.UnitTest
             public void Search_Visual_Complete()
             {
                 var mode = _factory.Create<IVisualMode>();
+                mode.Setup(x => x.CommandRunner).Returns(_factory.Create<ICommandRunner>(MockBehavior.Loose).Object);
                 _vimBuffer.VisualCharacterModeImpl = mode.Object;
                 _vimBuffer.ModeKindImpl = ModeKind.VisualCharacter;
                 SimulateSearch("cat", SearchKind.Backward);
