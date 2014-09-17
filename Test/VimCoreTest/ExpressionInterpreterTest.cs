@@ -22,6 +22,12 @@ namespace Vim.UnitTest
             return _interpreter.RunExpression(parseResult.AsSucceeded().Item);
         }
 
+        private void Run(string expr, string expected)
+        {
+            var value = Run(expr);
+            Assert.Equal(expected, value.AsString().Item);
+        }
+
         private void Run(string expr, int number)
         {
             var value = Run(expr);
@@ -35,6 +41,18 @@ namespace Vim.UnitTest
         public void Add_SimpleNumber()
         {
             Run("1 + 2", 3);
+        }
+
+        [Fact]
+        public void Concat_two_strings()
+        {
+            Run("'vs' . 'vim'", "vsvim");
+        }
+
+        [Fact]
+        public void Concat_two_integers()
+        {
+            Run("2 . 3", "23");
         }
     }
 }
