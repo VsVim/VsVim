@@ -395,6 +395,15 @@ and [<RequireQualifiedAccess>] Expression =
     /// A constant value
     | ConstantValue of VariableValue 
 
+    /// The name of an option/setting
+    | OptionName of string
+
+    /// The name of a register
+    | RegisterName of RegisterName
+
+    /// The name of a variable
+    | VariableName of VariableName
+
 and [<RequireQualifiedAccess>] LineCommand =
 
     /// Add a new AutoCommand to the set of existing AutoCommand values
@@ -461,6 +470,9 @@ and [<RequireQualifiedAccess>] LineCommand =
 
     /// Display the specified let value
     | DisplayLet of VariableName list
+
+    // The :echo command
+    | Echo of Expression
 
     /// The :edit command.  The values range as follows
     ///  - ! option present

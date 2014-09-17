@@ -778,6 +778,96 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class EchoTest : InterpreterTest
+        {
+            [Fact]
+            public void WhenCalledWithNoArgsDoesNothing()
+            {
+                Create("");
+                ParseAndRun(@"echo");
+                Assert.Equal(null, _statusUtil.LastStatus);
+            }
+
+            [Fact]
+            public void WhenPassedIntegerEchoesItOnStatusLine()
+            {
+                Create("");
+                ParseAndRun(@"echo 2");
+                Assert.Equal("2", _statusUtil.LastStatus);
+            }
+
+            [Fact]
+            public void WhenPassedStringEchoesItOnStatusLine()
+            {
+                Create("");
+                ParseAndRun(@"echo 'foo'");
+                Assert.Equal("foo", _statusUtil.LastStatus);
+            }
+
+            [Fact]
+            public void WhenPassedBooleanSettingWhichIsOffEchoes0OnStatusLine()
+            {
+                Create("");
+                _localSettings.ExpandTab = false;
+                ParseAndRun(@"echo &expandtab");
+                Assert.Equal("0", _statusUtil.LastStatus);
+            }
+
+            [Fact]
+            public void WhenPassedBooleanSettingWhichIsOnEchoes1OnStatusLine()
+            {
+                Create("");
+                _localSettings.ExpandTab = true;
+                ParseAndRun(@"echo &expandtab");
+                Assert.Equal("1", _statusUtil.LastStatus);
+            }
+
+            [Fact]
+            public void WhenPassedIntegerSettingsEchoesIntegerOnStatusLine()
+            {
+                Create("");
+                _localSettings.TabStop = 4;
+                ParseAndRun(@"echo &tabstop");
+                Assert.Equal("4", _statusUtil.LastStatus);
+            }
+
+            [Fact]
+            public void WhenPassedStringSettingsEchoesStringOnStatusLine()
+            {
+                Create("");
+                _globalSettings.Backspace = "eol";
+                ParseAndRun(@"echo &backspace");
+                Assert.Equal("eol", _statusUtil.LastStatus);
+            }
+
+            [Fact]
+            public void WhenPassedWindowSettingsEchoesItOnStatusLine()
+            {
+                Create("");
+                _windowSettings.Scroll = 12;
+                ParseAndRun(@"echo &scroll");
+                Assert.Equal("12", _statusUtil.LastStatus);
+            }
+
+            [Fact]
+            public void WhenPassedVariableEchoesItOnStatusLine()
+            {
+                Create("");
+                VariableMap["foo"] = VariableValue.NewString("bar");
+                ParseAndRun(@"echo foo");
+                Assert.Equal("bar", _statusUtil.LastStatus);
+            }
+
+            [Fact]
+            public void WhenPassedRegisterEchoesItOnStatusLine()
+            {
+                Create("");
+                UnnamedRegister.UpdateValue("Hello, world!");
+                ParseAndRun("echo @\"");
+                Assert.Equal("Hello, world!", _statusUtil.LastStatus);
+            }
+        }
+
         public sealed class LetTest : InterpreterTest
         {
             Dictionary<string, VariableValue> _variableMap;
