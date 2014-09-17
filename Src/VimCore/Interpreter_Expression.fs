@@ -540,7 +540,7 @@ and [<RequireQualifiedAccess>] LineCommand =
     | JumpToLastLine
 
     // Let command.  The first item is the name and the second is the value
-    | Let of VariableName * VariableValue
+    | Let of VariableName * Expression
 
     /// Make command.  The options are as follows
     ///   - The ! option

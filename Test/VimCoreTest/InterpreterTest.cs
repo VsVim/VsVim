@@ -882,6 +882,11 @@ namespace Vim.UnitTest
                 AssertValue(name, VariableValue.NewNumber(value));
             }
 
+            private void AssertValue(string name, string value)
+            {
+                AssertValue(name, VariableValue.NewString(value));
+            }
+
             private void AssertValue(string name, VariableValue value)
             {
                 Assert.Equal(value, _variableMap[name]);
@@ -908,7 +913,7 @@ namespace Vim.UnitTest
             {
                 Create("");
                 ParseAndRun(@"let x= 'oo'");
-                AssertValue("x", VariableValue.NewString("oo"));
+                AssertValue("x", "oo");
             }
 
             [Fact]
@@ -925,6 +930,23 @@ namespace Vim.UnitTest
                 Create("");
                 ParseAndRun(@"let x = 42");
                 AssertValue("x", 42);
+            }
+
+            [Fact]
+            public void RHSCanBeArbitraryExpression()
+            {
+                Create("");
+                UnnamedRegister.UpdateValue("Hello, world!");
+                ParseAndRun("let x=@\"");
+                AssertValue("x", "Hello, world!");
+            }
+
+            [Fact]
+            public void RHSCanBeBinaryExpression()
+            {
+                Create("");
+                ParseAndRun("let x=1+2");
+                AssertValue("x", 3);
             }
         }
 

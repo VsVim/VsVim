@@ -1741,11 +1741,8 @@ type Parser
             | ParseResult.Succeeded name ->
                 if _tokenizer.CurrentChar = '=' then
                     _tokenizer.MoveNextToken()
-                    match x.ParseSingleExpression() with
-                    | ParseResult.Succeeded expr ->
-                        match expr with
-                        | Expression.ConstantValue value -> LineCommand.Let (name, value)
-                        | _ -> LineCommand.ParseError "Not implemented: let only works with constant values"
+                    match x.ParseExpressionCore() with
+                    | ParseResult.Succeeded expr -> LineCommand.Let (name, expr)
                     | ParseResult.Failed msg -> LineCommand.ParseError msg
                 else
                     parseDisplayLet name
