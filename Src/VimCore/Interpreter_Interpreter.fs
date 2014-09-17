@@ -764,10 +764,10 @@ type VimInterpreter
         _commonOperations.MoveCaretToPoint point (ViewFlags.Standard &&& (~~~ViewFlags.TextExpanded))
 
     /// Run the let command
-    member x.RunLet (name : VariableName) value =
+    member x.RunLet (name : VariableName) expr =
         // TODO: At this point we are treating all variables as if they were global.  Need to 
         // take into account the NameScope at this level too
-        _variableMap.[name.Name] <- value
+        _variableMap.[name.Name] <- x.RunExpression expr
 
     /// Run the host make command 
     member x.RunMake hasBang arguments = 
