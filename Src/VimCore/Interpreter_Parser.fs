@@ -1708,6 +1708,7 @@ type Parser
 
     /// Parse out the :echo command
     member x.ParseEcho () = 
+        use reset = _tokenizer.SetTokenizerFlagsScoped TokenizerFlags.AllowDoubleQuote
         x.SkipBlanks()
         if _tokenizer.IsAtEndOfLine then
             LineCommand.Nop
