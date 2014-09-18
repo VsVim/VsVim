@@ -96,11 +96,24 @@ type ExpressionInterpreter
                 | Some left, Some right -> left + right |> VariableValue.Number
                 | _ -> VariableValue.Error
 
+        let runConcat (lvalue : string) (rightValue : VariableValue) =
+            match rightValue with
+            | VariableValue.String rvalue -> VariableValue.String (lvalue + rvalue)
+            | VariableValue.Number rvalue -> VariableValue.String (lvalue + (string rvalue))
+            | _ -> VariableValue.Error
+
+        let runConcat (leftValue : VariableValue) (rightValue : VariableValue) =
+            match leftValue with
+            | VariableValue.String lvalue -> runConcat lvalue rightValue
+            | VariableValue.Number lvalue -> runConcat (string lvalue) rightValue
+            | _ -> VariableValue.Error
+            
+
         let leftValue = x.RunExpression leftExpr
         let rightValue = x.RunExpression rightExpr
         match binaryKind with
         | BinaryKind.Add -> runAdd leftValue rightValue
-        | BinaryKind.Concatenate -> notSupported()
+        | BinaryKind.Concatenate -> runConcat leftValue rightValue
         | BinaryKind.Divide -> notSupported()
         | BinaryKind.Modulo -> notSupported()
         | BinaryKind.Multiply -> notSupported()
