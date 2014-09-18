@@ -797,10 +797,18 @@ namespace Vim.UnitTest
             }
 
             [Fact]
-            public void WhenPassedStringEchoesItOnStatusLine()
+            public void WhenPassedStringLiteralEchoesItOnStatusLine()
             {
                 Create("");
                 ParseAndRun(@"echo 'foo'");
+                Assert.Equal("foo", _statusUtil.LastStatus);
+            }
+
+            [Fact]
+            public void WhenPassedStringConstantEchoesItOnStatusLine()
+            {
+                Create("");
+                ParseAndRun("echo \"foo\"");
                 Assert.Equal("foo", _statusUtil.LastStatus);
             }
 
