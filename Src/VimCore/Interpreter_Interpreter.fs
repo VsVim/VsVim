@@ -605,7 +605,7 @@ type VimInterpreter
             |> Seq.append ( "mark line  col file/text"  |> Seq.singleton)
             |> _statusUtil.OnStatusLong
 
-    /// Run the let command
+    /// Run the echo command
     member x.RunEcho expression =
         let value = x.RunExpression expression 
         let valueAsString =
@@ -614,6 +614,16 @@ type VimInterpreter
             | VariableValue.String str -> str
             | _ -> "<error>"
         _statusUtil.OnStatus valueAsString
+    
+    /// Run the execute command
+    member x.RunExecute expression =
+        let parser = Parser(_globalSettings, _vimData)
+        let execute str =
+            parser.ParseLineCommand str |> x.RunLineCommand
+        match x.RunExpression expression  with
+        | VariableValue.Number number -> execute (string number)
+        | VariableValue.String str -> execute str
+        | _ -> _statusUtil.OnStatus "Error executing expression"
 
     /// Edit the specified file
     member x.RunEdit hasBang fileOptions commandOption filePath =
@@ -1425,6 +1435,7 @@ type VimInterpreter
         | LineCommand.Edit (hasBang, fileOptions, commandOption, filePath) -> x.RunEdit hasBang fileOptions commandOption filePath
         | LineCommand.Else -> cantRun ()
         | LineCommand.ElseIf _ -> cantRun ()
+        | LineCommand.Execute expression -> x.RunExecute expression
         | LineCommand.Function func -> x.RunFunction func
         | LineCommand.FunctionStart _ -> cantRun ()
         | LineCommand.FunctionEnd _ -> cantRun ()

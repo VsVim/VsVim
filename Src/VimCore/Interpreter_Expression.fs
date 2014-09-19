@@ -474,6 +474,9 @@ and [<RequireQualifiedAccess>] LineCommand =
     // The :echo command
     | Echo of Expression
 
+    // The :execute command
+    | Execute of Expression
+
     /// The :edit command.  The values range as follows
     ///  - ! option present
     ///  - The provided ++opt
