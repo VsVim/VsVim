@@ -876,6 +876,24 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class ExecuteTest : InterpreterTest
+        {
+            [Fact]
+            public void ExecuteWithNoArgumentsDoesNothing()
+            {
+                Create("");
+                ParseAndRun("execute");
+                Assert.Equal(null, _statusUtil.LastStatus);
+            }
+            [Fact]
+            public void ExecuteString()
+            {
+                Create("");
+                ParseAndRun("execute \"echo 'asdf'\"");
+                Assert.Equal("asdf", _statusUtil.LastStatus);
+            }
+        }
+
         public sealed class LetTest : InterpreterTest
         {
             Dictionary<string, VariableValue> _variableMap;

@@ -134,6 +134,7 @@ type Parser
         ("echo", "ec")
         ("edit", "e")
         ("else", "el")
+        ("execute", "exe")
         ("elseif", "elsei")
         ("endfunction", "endf")
         ("endif", "en")
@@ -1717,6 +1718,17 @@ type Parser
             | ParseResult.Failed msg -> LineCommand.ParseError msg
             | ParseResult.Succeeded expr -> LineCommand.Echo expr
 
+    /// Parse out the :execute command
+    member x.ParseExecute () = 
+        use flags = _tokenizer.SetTokenizerFlagsScoped TokenizerFlags.AllowDoubleQuote
+        x.SkipBlanks()
+        if _tokenizer.IsAtEndOfLine then
+            LineCommand.Nop
+        else
+            match x.ParseExpressionCore() with
+            | ParseResult.Failed msg -> LineCommand.ParseError msg
+            | ParseResult.Succeeded expr -> LineCommand.Execute expr
+
     /// Parse out the :let command
     member x.ParseLet () = 
         use flags = _tokenizer.SetTokenizerFlagsScoped TokenizerFlags.SkipBlanks
@@ -2029,6 +2041,7 @@ type Parser
                 | "echo" -> noRange x.ParseEcho
                 | "edit" -> noRange x.ParseEdit
                 | "else" -> noRange x.ParseElse
+                | "execute" -> noRange x.ParseExecute
                 | "elseif" -> noRange x.ParseElseIf
                 | "endfunction" -> noRange x.ParseFunctionEnd
                 | "endif" -> noRange x.ParseIfEnd
