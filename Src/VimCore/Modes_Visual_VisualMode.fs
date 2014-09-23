@@ -47,6 +47,7 @@ type internal VisualMode
                 yield ("C", CommandFlags.Repeatable ||| CommandFlags.LinkedWithNextCommand, VisualCommand.ChangeLineSelection true)
                 yield ("d", CommandFlags.Repeatable, VisualCommand.DeleteSelection)
                 yield ("D", CommandFlags.Repeatable, VisualCommand.DeleteLineSelection)
+                yield ("gf", CommandFlags.None, VisualCommand.GoToFileInSelection false)
                 yield ("gJ", CommandFlags.Repeatable, VisualCommand.JoinSelection JoinKind.KeepEmptySpaces)
                 yield ("gp", CommandFlags.Repeatable, VisualCommand.PutOverSelection true)
                 yield ("gP", CommandFlags.Repeatable, VisualCommand.PutOverSelection true)

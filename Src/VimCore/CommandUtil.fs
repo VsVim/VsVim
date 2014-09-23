@@ -1041,6 +1041,13 @@ type internal CommandUtil
 
         CommandResult.Completed ModeSwitch.NoSwitch
 
+    /// GoTo the file name under the cursor and possibly use a new window
+    member x.GoToFileInSelection useNewWindow visualSpan =
+        if useNewWindow then _commonOperations.GoToFileInNewWindow()
+        else _commonOperations.GoToFile()
+
+        CommandResult.Completed ModeSwitch.NoSwitch
+
     /// Go to the global declaration of the word under the caret
     member x.GoToGlobalDeclaration () =
         _commonOperations.GoToGlobalDeclaration()
@@ -2365,6 +2372,7 @@ type internal CommandUtil
         | VisualCommand.DeleteLineSelection -> x.DeleteLineSelection register visualSpan
         | VisualCommand.FormatLines -> x.FormatLinesVisual visualSpan
         | VisualCommand.FoldSelection -> x.FoldSelection visualSpan
+        | VisualCommand.GoToFileInSelection useNewWindow -> x.GoToFileInSelection useNewWindow visualSpan
         | VisualCommand.JoinSelection kind -> x.JoinSelection kind visualSpan
         | VisualCommand.InvertSelection columnOnlyInBlock -> x.InvertSelection visualSpan streamSelectionSpan columnOnlyInBlock
         | VisualCommand.MoveCaretToTextObject (motion, textObjectKind)-> x.MoveCaretToTextObject motion textObjectKind visualSpan
