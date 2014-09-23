@@ -705,8 +705,11 @@ type internal CommonOperations
             _vimHost.Beep()
 
     member x.GoToFile () = 
+        x.GoToFile x.WordUnderCursorOrEmpty 
+
+    member x.GoToFile name =
         x.CheckDirty (fun () ->
-            let text = x.WordUnderCursorOrEmpty 
+            let text = name
             if not (_vimHost.LoadFileIntoExistingWindow text _textView) then
                 _statusUtil.OnError (Resources.NormalMode_CantFindFile text))
 
@@ -1316,6 +1319,7 @@ type internal CommonOperations
         member x.GoToLocalDeclaration() = x.GoToLocalDeclaration()
         member x.GoToGlobalDeclaration() = x.GoToGlobalDeclaration()
         member x.GoToFile() = x.GoToFile()
+        member x.GoToFile name = x.GoToFile name
         member x.GoToFileInNewWindow() = x.GoToFileInNewWindow()
         member x.GoToDefinition() = x.GoToDefinition()
         member x.GoToNextTab direction count = x.GoToNextTab direction count

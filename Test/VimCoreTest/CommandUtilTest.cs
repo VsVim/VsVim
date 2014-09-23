@@ -456,6 +456,25 @@ namespace Vim.UnitTest
             }
 
             [Fact]
+            public void GoToFileInSelection_LinewiseSpan_SameWindow()
+            {
+                Create("relative/file/path.js", "foo");
+                _commonOperations.Setup(x => x.GoToFile("relative/file/path.js")).Verifiable();
+                _commandUtil.GoToFileInSelection(false, VisualSpan.NewLine(new SnapshotLineRange(_textView.GetLine(1).Snapshot, 0, 1)));
+                _commonOperations.Verify();
+            }
+
+            [Fact]
+            public void GoToFileInSelection_CharacterWiseSpan_SameWindow()
+            {
+                Create("relative/file/path.js");
+                _commonOperations.Setup(x => x.GoToFile("file/path.js")).Verifiable();
+                var visualSpan = VimUtil.CreateVisualSpanCharacter(_textView.GetLineSpan(0, 9, 12));
+                _commandUtil.GoToFileInSelection(false, visualSpan);
+                _commonOperations.Verify();
+            }
+
+            [Fact]
             public void GoToNextTab_ForwardNoCount()
             {
                 Create("");

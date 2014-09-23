@@ -1042,11 +1042,16 @@ type internal CommandUtil
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// GoTo the file name under the cursor and possibly use a new window
-    member x.GoToFileInSelection useNewWindow visualSpan =
-        if useNewWindow then _commonOperations.GoToFileInNewWindow()
-        else _commonOperations.GoToFile()
+    member x.GoToFileInSelection useNewWindow (visualSpan : VisualSpan) =
+        match visualSpan with
+        | VisualSpan.Character span -> 
+            span.Span.GetText() |> _commonOperations.GoToFile 
+            CommandResult.Completed (ModeSwitch.SwitchMode ModeKind.Normal)
+        | VisualSpan.Line span ->
+            span.GetText() |> _commonOperations.GoToFile 
+            CommandResult.Completed (ModeSwitch.SwitchMode ModeKind.Normal)
+        | VisualSpan.Block _ -> CommandResult.Completed ModeSwitch.NoSwitch
 
-        CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Go to the global declaration of the word under the caret
     member x.GoToGlobalDeclaration () =
