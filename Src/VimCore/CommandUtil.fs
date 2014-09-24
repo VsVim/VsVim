@@ -1043,15 +1043,15 @@ type internal CommandUtil
 
     /// GoTo the file name under the cursor and possibly use a new window
     member x.GoToFileInSelection useNewWindow (visualSpan : VisualSpan) =
+        let goToFile name = 
+            if useNewWindow
+            then _commonOperations.GoToFileInNewWindow name
+            else _commonOperations.GoToFile name
+            CommandResult.Completed (ModeSwitch.SwitchMode ModeKind.Normal)
         match visualSpan with
-        | VisualSpan.Character span -> 
-            span.Span.GetText() |> _commonOperations.GoToFile 
-            CommandResult.Completed (ModeSwitch.SwitchMode ModeKind.Normal)
-        | VisualSpan.Line span ->
-            span.GetText() |> _commonOperations.GoToFile 
-            CommandResult.Completed (ModeSwitch.SwitchMode ModeKind.Normal)
+        | VisualSpan.Character span -> span.Span.GetText() |> goToFile
+        | VisualSpan.Line span -> span.GetText() |> goToFile
         | VisualSpan.Block _ -> CommandResult.Completed ModeSwitch.NoSwitch
-
 
     /// Go to the global declaration of the word under the caret
     member x.GoToGlobalDeclaration () =
