@@ -460,7 +460,7 @@ namespace Vim.UnitTest
             {
                 Create("relative/file/path.js", "foo");
                 _commonOperations.Setup(x => x.GoToFileInNewWindow("relative/file/path.js")).Verifiable();
-                _commandUtil.GoToFileInSelection(true, VisualSpan.NewLine(new SnapshotLineRange(_textView.GetLine(1).Snapshot, 0, 1)));
+                _commandUtil.GoToFileInSelectionInNewWindow(VisualSpan.NewLine(new SnapshotLineRange(_textView.GetLine(1).Snapshot, 0, 1)));
                 _commonOperations.Verify();
             }
 
@@ -470,7 +470,7 @@ namespace Vim.UnitTest
                 Create("relative/file/path.js");
                 _commonOperations.Setup(x => x.GoToFileInNewWindow("file/path.js")).Verifiable();
                 var visualSpan = VimUtil.CreateVisualSpanCharacter(_textView.GetLineSpan(0, 9, 12));
-                _commandUtil.GoToFileInSelection(true, visualSpan);
+                _commandUtil.GoToFileInSelectionInNewWindow(visualSpan);
                 _commonOperations.Verify();
             }
 
@@ -479,7 +479,8 @@ namespace Vim.UnitTest
             {
                 Create("relative/file/path.js", "foo");
                 _commonOperations.Setup(x => x.GoToFile("relative/file/path.js")).Verifiable();
-                _commandUtil.GoToFileInSelection(false, VisualSpan.NewLine(new SnapshotLineRange(_textView.GetLine(1).Snapshot, 0, 1)));
+                var visualSpan = VisualSpan.NewLine(new SnapshotLineRange(_textView.GetLine(1).Snapshot, 0, 1));
+                _commandUtil.GoToFileInSelection(visualSpan);
                 _commonOperations.Verify();
             }
 
@@ -489,7 +490,7 @@ namespace Vim.UnitTest
                 Create("relative/file/path.js");
                 _commonOperations.Setup(x => x.GoToFile("file/path.js")).Verifiable();
                 var visualSpan = VimUtil.CreateVisualSpanCharacter(_textView.GetLineSpan(0, 9, 12));
-                _commandUtil.GoToFileInSelection(false, visualSpan);
+                _commandUtil.GoToFileInSelection(visualSpan);
                 _commonOperations.Verify();
             }
 

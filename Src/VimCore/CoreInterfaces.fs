@@ -2659,9 +2659,11 @@ type VisualCommand =
     /// Format the selected text
     | FormatLines
 
-    /// GoTo the file under the cursor.  The bool represents whether or not this should occur in
-    /// a different window
-    | GoToFileInSelection of bool
+    /// GoTo the file under the cursor in a new window
+    | GoToFileInSelectionInNewWindow
+
+    /// GoTo the file under the cursor in this window
+    | GoToFileInSelection
 
     /// Join the selected lines
     | JoinSelection of JoinKind

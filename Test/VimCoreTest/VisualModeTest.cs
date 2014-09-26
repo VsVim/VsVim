@@ -307,7 +307,7 @@ namespace Vim.UnitTest
         public void Bind_GoToFileUnderCaret()
         {
             Create("");
-            _commandUtil.SetupCommandVisual(VisualCommand.NewGoToFileInSelection(false));
+            _commandUtil.SetupCommandVisual(VisualCommand.GoToFileInSelection);
             _mode.Process("gf");
             _commandUtil.Verify();
         }
