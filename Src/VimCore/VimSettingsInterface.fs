@@ -481,7 +481,7 @@ and IVimLocalSettings =
     /// Whether or not to put the numbers on the left column of the display
     abstract Number : bool with get, set
 
-    /// Fromats that vim considers a number for CTRL-A and CTRL-X
+    /// Formats that vim considers a number for CTRL-A and CTRL-X
     abstract NumberFormats : string with get, set
 
     /// The number of spaces a << or >> command will shift by 

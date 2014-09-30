@@ -373,6 +373,66 @@ namespace Vim.UnitTest
                 Assert.True(data.IsSome());
                 AssertData(data.Value, new SnapshotSpan(_snapshot, start - 2, 6), MotionKind.CharacterWiseInclusive);
             }
+
+            [Fact]
+            public void UnmatchedQuotesFirst()
+            {
+                Create(@"x 'cat'dog'");
+                _textView.MoveCaretTo(3);
+                var data = _motionUtil.QuotedStringContents('\'');
+                Assert.True(data.IsSome());
+                Assert.Equal("cat", data.value.Span.GetText());
+            }
+
+            [Fact]
+            public void UnmatchedQuotesSecond()
+            {
+                Create(@"x 'cat'dog'");
+                _textView.MoveCaretTo(8);
+                var data = _motionUtil.QuotedStringContents('\'');
+                Assert.True(data.IsSome());
+                Assert.Equal("dog", data.value.Span.GetText());
+            }
+
+            /// <summary>
+            /// When landing directly on a quote that has a preceding quote it is always considered the 
+            /// second quote in a string
+            /// </summary>
+            [Fact]
+            public void UnmatchedQuotesMiddleQuote()
+            {
+                Create(@"x 'cat'dog'");
+                _textView.MoveCaretTo(6);
+                Assert.Equal('\'', _textView.GetCaretPoint().GetChar());
+                var data = _motionUtil.QuotedStringContents('\'');
+                Assert.True(data.IsSome());
+                Assert.Equal("cat", data.value.Span.GetText());
+            }
+
+            /// <summary>
+            /// Border between valid string pairs
+            /// </summary>
+            [Fact]
+            public void Border()
+            {
+                Create(@"x 'cat'dog'fish'");
+                _textView.MoveCaretTo(10);
+                Assert.Equal('\'', _textView.GetCaretPoint().GetChar());
+                var data = _motionUtil.QuotedStringContents('\'');
+                Assert.True(data.IsSome());
+                Assert.Equal("fish", data.value.Span.GetText());
+
+            }
+
+            [Fact]
+            public void Issue1454()
+            {
+                Create(@"let x = '\\'");
+                _textView.MoveCaretTo(9);
+                var data = _motionUtil.QuotedStringContents('\'');
+                Assert.True(data.IsSome());
+                Assert.Equal(@"\\", data.Value.Span.GetText());
+            }
         }
 
         public sealed class Word : MotionUtilTest
