@@ -705,17 +705,21 @@ type internal CommonOperations
             _vimHost.Beep()
 
     member x.GoToFile () = 
-        x.CheckDirty (fun () ->
-            let text = x.WordUnderCursorOrEmpty 
-            if not (_vimHost.LoadFileIntoExistingWindow text _textView) then
-                _statusUtil.OnError (Resources.NormalMode_CantFindFile text))
+        x.GoToFile x.WordUnderCursorOrEmpty 
 
-    /// Look for a word under the cursor and go to the specified file in a new window.  No need to 
-    /// check for dirty since we are opening a new window
+    member x.GoToFile name =
+        x.CheckDirty (fun () ->
+            if not (_vimHost.LoadFileIntoExistingWindow name _textView) then
+                _statusUtil.OnError (Resources.NormalMode_CantFindFile name))
+
+    /// Look for a word under the cursor and go to the specified file in a new window.
     member x.GoToFileInNewWindow () =
-        let text = x.WordUnderCursorOrEmpty 
-        if not (_vimHost.LoadFileIntoNewWindow text) then
-            _statusUtil.OnError (Resources.NormalMode_CantFindFile text)
+        x.GoToFileInNewWindow x.WordUnderCursorOrEmpty 
+
+    /// No need to check for dirty since we are opening a new window
+    member x.GoToFileInNewWindow name =
+        if not (_vimHost.LoadFileIntoNewWindow name) then
+            _statusUtil.OnError (Resources.NormalMode_CantFindFile name)
 
     member x.GoToNextTab path count = 
 
@@ -1316,7 +1320,9 @@ type internal CommonOperations
         member x.GoToLocalDeclaration() = x.GoToLocalDeclaration()
         member x.GoToGlobalDeclaration() = x.GoToGlobalDeclaration()
         member x.GoToFile() = x.GoToFile()
+        member x.GoToFile name = x.GoToFile name
         member x.GoToFileInNewWindow() = x.GoToFileInNewWindow()
+        member x.GoToFileInNewWindow name = x.GoToFileInNewWindow name
         member x.GoToDefinition() = x.GoToDefinition()
         member x.GoToNextTab direction count = x.GoToNextTab direction count
         member x.GoToTab index = x.GoToTab index

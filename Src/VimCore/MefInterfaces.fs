@@ -379,8 +379,14 @@ type ICommonOperations =
     /// Go to the file named in the word under the cursor
     abstract GoToFile : unit -> unit
 
+    /// Go to the file name specified as a paramter
+    abstract GoToFile : string -> unit
+
     /// Go to the file named in the word under the cursor in a new window
     abstract GoToFileInNewWindow : unit -> unit
+
+    /// Go to the file name specified as a paramter in a new window
+    abstract GoToFileInNewWindow : string -> unit
 
     /// Go to the local declaration of the word under the cursor
     abstract GoToLocalDeclaration : unit -> unit

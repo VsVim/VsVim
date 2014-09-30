@@ -295,11 +295,20 @@ namespace Vim.UnitTest
         }
 
         [Fact]
-        public void Bind_PutOverSelectio_ViaP()
+        public void Bind_PutOverSelection_ViaP()
         {
             Create("");
             _commandUtil.SetupCommandVisual(VisualCommand.NewPutOverSelection(false));
             _mode.Process('P');
+            _commandUtil.Verify();
+        }
+
+        [Fact]
+        public void Bind_GoToFileUnderCaret()
+        {
+            Create("");
+            _commandUtil.SetupCommandVisual(VisualCommand.GoToFileInSelection);
+            _mode.Process("gf");
             _commandUtil.Verify();
         }
 

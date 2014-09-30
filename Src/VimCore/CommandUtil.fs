@@ -1041,6 +1041,26 @@ type internal CommandUtil
 
         CommandResult.Completed ModeSwitch.NoSwitch
 
+    /// GoTo the file name under the cursor using a new window (tab)
+    member x.GoToFileInSelectionInNewWindow (visualSpan : VisualSpan) =
+        let goToFile name = 
+            _commonOperations.GoToFileInNewWindow name
+            CommandResult.Completed (ModeSwitch.SwitchMode ModeKind.Normal)
+        match visualSpan with
+        | VisualSpan.Character span -> span.Span.GetText() |> goToFile
+        | VisualSpan.Line span -> span.GetText() |> goToFile
+        | VisualSpan.Block _ -> CommandResult.Completed ModeSwitch.NoSwitch
+
+    /// GoTo the file name under the cursor in the same window
+    member x.GoToFileInSelection (visualSpan : VisualSpan) =
+        let goToFile name = 
+            _commonOperations.GoToFile name
+            CommandResult.Completed (ModeSwitch.SwitchMode ModeKind.Normal)
+        match visualSpan with
+        | VisualSpan.Character span -> span.Span.GetText() |> goToFile
+        | VisualSpan.Line span -> span.GetText() |> goToFile
+        | VisualSpan.Block _ -> CommandResult.Completed ModeSwitch.NoSwitch
+
     /// Go to the global declaration of the word under the caret
     member x.GoToGlobalDeclaration () =
         _commonOperations.GoToGlobalDeclaration()
@@ -2365,6 +2385,8 @@ type internal CommandUtil
         | VisualCommand.DeleteLineSelection -> x.DeleteLineSelection register visualSpan
         | VisualCommand.FormatLines -> x.FormatLinesVisual visualSpan
         | VisualCommand.FoldSelection -> x.FoldSelection visualSpan
+        | VisualCommand.GoToFileInSelectionInNewWindow -> x.GoToFileInSelectionInNewWindow visualSpan
+        | VisualCommand.GoToFileInSelection -> x.GoToFileInSelection visualSpan
         | VisualCommand.JoinSelection kind -> x.JoinSelection kind visualSpan
         | VisualCommand.InvertSelection columnOnlyInBlock -> x.InvertSelection visualSpan streamSelectionSpan columnOnlyInBlock
         | VisualCommand.MoveCaretToTextObject (motion, textObjectKind)-> x.MoveCaretToTextObject motion textObjectKind visualSpan
