@@ -135,7 +135,7 @@ namespace Vim.UnitTest.Mock
             textView.Close();
         }
 
-        void IVimHost.CloseOtherWindows(ITextView textView)
+        void IVimHost.CloseAllOtherTabs(ITextView textView)
         {
             ClosedOtherWindows = true;
         }

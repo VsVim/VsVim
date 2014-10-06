@@ -3817,8 +3817,8 @@ type IVimHost =
     /// Close the provided view
     abstract Close : ITextView -> unit
 
-    /// Close all windows but this one
-    abstract CloseOtherWindows : ITextView -> unit
+    /// Close all tabs but this one
+    abstract CloseAllOtherTabs : ITextView -> unit
 
     /// Create a hidden ITextView instance.  This is primarily used to load the contents
     /// of the vimrc
