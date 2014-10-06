@@ -955,6 +955,23 @@ let x = 42
             }
         }
 
+        public sealed class OnlyTest : ParserTest
+        {
+            [Fact]
+            public void ParsesShortFormOfOnlyCommand()
+            {
+                var command = ParseLineCommand("on");
+                Assert.True(command.IsOnly);
+            }
+
+            [Fact]
+            public void ParsesLongFormOfOnlyCommand()
+            {
+                var command = ParseLineCommand("only");
+                Assert.True(command.IsOnly);
+            }
+        }
+
         public sealed class TabOnlyTest : ParserTest
         {
             [Fact]
@@ -971,7 +988,6 @@ let x = 42
                 Assert.True(command.IsTabOnly);
             }
         }
-
 
         public sealed class SetTest : ParserTest
         {

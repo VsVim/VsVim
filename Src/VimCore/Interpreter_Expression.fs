@@ -560,6 +560,9 @@ and [<RequireQualifiedAccess>] LineCommand =
     /// This is a line command that does nothing on execution
     | Nop
 
+    // Close all windows but this one in the current tab
+    | Only
+
     /// There was a parse error on the specified line
     | ParseError of string
 
