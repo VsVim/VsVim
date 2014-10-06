@@ -22,6 +22,7 @@ namespace Vim.UnitTest.Mock
         public DefaultSettings DefaultSettings { get; set; }
         public int BeepCount { get; set; }
         public bool ClosedOtherWindows { get; private set; }
+        public bool ClosedOtherTabs { get; private set; }
         public int GoToDefinitionCount { get; set; }
         public bool GoToFileReturn { get; set; }
         public bool GoToDefinitionReturn { get; set; }
@@ -80,6 +81,7 @@ namespace Vim.UnitTest.Mock
             Buffers = FSharpList<IVimBuffer>.Empty;
             BeepCount = 0;
             ClosedOtherWindows = false;
+            ClosedOtherTabs = false;
             GoToDefinitionCount = 0;
             IsTextViewVisible = null;
             _isVisibleChanged = null;
@@ -135,9 +137,14 @@ namespace Vim.UnitTest.Mock
             textView.Close();
         }
 
-        void IVimHost.CloseAllOtherTabs(ITextView textView)
+        void IVimHost.CloseAllOtherWindows(ITextView textView)
         {
             ClosedOtherWindows = true;
+        }
+
+        void IVimHost.CloseAllOtherTabs(ITextView textView)
+        {
+            ClosedOtherTabs = true;
         }
 
         ITextView IVimHost.CreateHiddenTextView()

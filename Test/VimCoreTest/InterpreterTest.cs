@@ -2022,7 +2022,18 @@ namespace Vim.UnitTest
             public void TabonlyClosesOtherWindows()
             {
                 Create();
-                ParseAndRun("tabo");
+                ParseAndRun("tabonly");
+                Assert.True(VimHost.ClosedOtherTabs);
+            }
+        }
+
+        public sealed class RunOnlyTest : InterpreterTest
+        {
+            [Fact]
+            public void TabonlyClosesOtherWindows()
+            {
+                Create();
+                ParseAndRun("only");
                 Assert.True(VimHost.ClosedOtherWindows);
             }
         }
