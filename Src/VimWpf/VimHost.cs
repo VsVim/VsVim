@@ -88,6 +88,11 @@ namespace Vim.UI.Wpf
             textView.Close();
         }
 
+        public virtual void CloseOtherWindows(ITextView textView)
+        {
+            RunVisualStudioCommand(textView, "File.CloseAllButThis", string.Empty);
+        }
+
         /// <summary>
         /// Create a hidden ITextView.  It will have no roles in order to keep it out of 
         /// most plugins

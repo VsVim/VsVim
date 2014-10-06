@@ -21,6 +21,7 @@ namespace Vim.UnitTest.Mock
         public bool IsAutoCommandEnabled { get; set; }
         public DefaultSettings DefaultSettings { get; set; }
         public int BeepCount { get; set; }
+        public bool ClosedOtherWindows { get; private set; }
         public int GoToDefinitionCount { get; set; }
         public bool GoToFileReturn { get; set; }
         public bool GoToDefinitionReturn { get; set; }
@@ -78,6 +79,7 @@ namespace Vim.UnitTest.Mock
             NavigateToReturn = false;
             Buffers = FSharpList<IVimBuffer>.Empty;
             BeepCount = 0;
+            ClosedOtherWindows = false;
             GoToDefinitionCount = 0;
             IsTextViewVisible = null;
             _isVisibleChanged = null;
@@ -131,6 +133,11 @@ namespace Vim.UnitTest.Mock
         {
             LastClosed = textView;
             textView.Close();
+        }
+
+        void IVimHost.CloseOtherWindows(ITextView textView)
+        {
+            ClosedOtherWindows = true;
         }
 
         ITextView IVimHost.CreateHiddenTextView()

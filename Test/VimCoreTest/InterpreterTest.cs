@@ -2015,5 +2015,16 @@ namespace Vim.UnitTest
                 Assert.True(_globalSettings.IsBackspaceEol && _globalSettings.IsBackspaceStart && _globalSettings.IsBackspaceIndent);
             }
         }
+
+        public sealed class RunTabOnlyTest : InterpreterTest
+        {
+            [Fact]
+            public void TabonlyClosesOtherWindows()
+            {
+                Create();
+                ParseAndRun("tabo");
+                Assert.True(VimHost.ClosedOtherWindows);
+            }
+        }
     }
 }

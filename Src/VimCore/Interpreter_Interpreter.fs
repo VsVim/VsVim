@@ -1323,7 +1323,7 @@ type VimInterpreter
         _vimHost.LoadFileIntoNewWindow filePath |> ignore
 
     member x.RunTabOnly =
-        _vimHost.RunVisualStudioCommand _textView "File.CloseAllButThis" ""
+        _vimHost.CloseOtherWindows _textView
 
     /// Run the undo command
     member x.RunUndo() =
