@@ -958,14 +958,14 @@ let x = 42
         public sealed class TabOnlyTest : ParserTest
         {
             [Fact]
-            public void Parses_short_form_of_tabonly_command()
+            public void ParsesShortFormOfTabonlyCommand()
             {
                 var command = ParseLineCommand("tabo");
                 Assert.True(command.IsTabOnly);
             }
 
             [Fact]
-            public void Parses_long_form_of_tabonly_command()
+            public void ParsesLongFormOfTabonlyCommand()
             {
                 var command = ParseLineCommand("tabonly");
                 Assert.True(command.IsTabOnly);
