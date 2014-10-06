@@ -504,6 +504,9 @@ and [<RequireQualifiedAccess>] LineCommand =
     /// Go to the previous tab
     | GoToPreviousTab of int option
 
+    // Close all tabs but this one
+    | TabOnly
+
     /// Get help on VsVim
     | Help
 
