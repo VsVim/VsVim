@@ -637,6 +637,9 @@ and [<RequireQualifiedAccess>] LineCommand =
     /// Process the 'source' command.  
     | Source of bool * string
 
+    // Close all tabs but this one
+    | TabOnly
+
     /// Process the 'tabnew' / 'tabedit' commands.  The optional string represents the file path 
     | TabNew of string option
 

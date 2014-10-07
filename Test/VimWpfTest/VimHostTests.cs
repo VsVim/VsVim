@@ -28,6 +28,11 @@ namespace Vim.UI.Wpf.UnitTest
 
             }
 
+            public override void CloseAllOtherTabs(ITextView textView)
+            {
+                throw new NotImplementedException();
+            }
+
             public override void FormatLines(ITextView textView, EditorUtils.SnapshotLineRange range)
             {
                 throw new NotImplementedException();

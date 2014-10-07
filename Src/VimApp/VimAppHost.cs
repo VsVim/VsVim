@@ -70,6 +70,11 @@ namespace VimApp
             _vim.VimData.CurrentDirectory = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
         }
 
+        public override void CloseAllOtherTabs(ITextView textView)
+        {
+            throw new NotImplementedException();
+        }
+
         public override void FormatLines(ITextView textView, SnapshotLineRange range)
         {
 

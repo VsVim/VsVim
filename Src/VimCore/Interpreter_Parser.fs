@@ -177,6 +177,7 @@ type Parser
         ("tabnew", "tabnew")
         ("tabnext", "tabn")
         ("tabNext", "tabN")
+        ("tabonly", "tabo")
         ("tabprevious", "tabp")
         ("tabrewind", "tabr")
         ("undo", "u")
@@ -2106,6 +2107,7 @@ type Parser
                 | "tabnew" -> noRange x.ParseTabNew
                 | "tabnext" -> noRange x.ParseTabNext 
                 | "tabNext" -> noRange x.ParseTabPrevious
+                | "tabonly" -> noRange (fun () -> LineCommand.TabOnly)
                 | "tabprevious" -> noRange x.ParseTabPrevious
                 | "undo" -> noRange (fun () -> LineCommand.Undo)
                 | "unlet" -> noRange x.ParseUnlet

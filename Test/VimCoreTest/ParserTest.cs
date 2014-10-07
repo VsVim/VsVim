@@ -955,6 +955,24 @@ let x = 42
             }
         }
 
+        public sealed class TabOnlyTest : ParserTest
+        {
+            [Fact]
+            public void ParsesShortFormOfTabonlyCommand()
+            {
+                var command = ParseLineCommand("tabo");
+                Assert.True(command.IsTabOnly);
+            }
+
+            [Fact]
+            public void ParsesLongFormOfTabonlyCommand()
+            {
+                var command = ParseLineCommand("tabonly");
+                Assert.True(command.IsTabOnly);
+            }
+        }
+
+
         public sealed class SetTest : ParserTest
         {
             /// <summary>

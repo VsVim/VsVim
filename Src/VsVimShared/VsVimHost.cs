@@ -189,6 +189,11 @@ namespace Vim.VisualStudio
             _vsMonitorSelection.AdviseSelectionEvents(this, out cookie);
         }
 
+        public override void CloseAllOtherTabs(ITextView textView)
+        {
+            RunVisualStudioCommand(textView, "File.CloseAllButThis", string.Empty);
+        }
+
         private bool SafeExecuteCommand(ITextView contextTextView, string command, string args = "")
         {
             try

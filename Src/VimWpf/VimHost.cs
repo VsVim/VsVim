@@ -88,6 +88,8 @@ namespace Vim.UI.Wpf
             textView.Close();
         }
 
+        public abstract void CloseAllOtherTabs(ITextView textView);
+
         /// <summary>
         /// Create a hidden ITextView.  It will have no roles in order to keep it out of 
         /// most plugins
