@@ -673,6 +673,16 @@ namespace Vim.UI.Wpf
             VimCreated(vim);
         }
 
+        void IVimHost.CloseAllOtherTabs(ITextView textView)
+        {
+            CloseAllOtherTabs(textView);
+        }
+
+        void IVimHost.CloseAllOtherWindows(ITextView textView)
+        {
+            CloseAllOtherWindows(textView);
+        }
+
         void IVimHost.VimRcLoaded(VimRcState vimRcState, IVimLocalSettings localSettings, IVimWindowSettings windowSettings)
         {
             VimRcLoaded(vimRcState, localSettings, windowSettings);
