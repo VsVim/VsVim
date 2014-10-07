@@ -194,6 +194,11 @@ namespace Vim.VisualStudio
             RunVisualStudioCommand(textView, "File.CloseAllButThis", string.Empty);
         }
 
+        public override void CloseAllOtherWindows(ITextView textView)
+        {
+            CloseAllOtherTabs(textView); // At least for now, :only == :tabonly
+        }
+
         private bool SafeExecuteCommand(ITextView contextTextView, string command, string args = "")
         {
             try

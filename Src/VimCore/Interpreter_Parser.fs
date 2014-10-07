@@ -153,6 +153,7 @@ type Parser
         ("make", "mak")
         ("marks", "")
         ("nohlsearch", "noh")
+        ("only", "on")
         ("pwd", "pw")
         ("print", "p")
         ("Print", "P")
@@ -2077,6 +2078,7 @@ type Parser
                 | "noremap"-> noRange (fun () -> x.ParseMapKeysNoRemap true [KeyRemapMode.Normal;KeyRemapMode.Visual; KeyRemapMode.Select;KeyRemapMode.OperatorPending])
                 | "omap"-> noRange (fun () -> x.ParseMapKeys false [KeyRemapMode.OperatorPending])
                 | "omapclear" -> noRange (fun () -> x.ParseMapClear false [KeyRemapMode.OperatorPending])
+                | "only" -> noRange (fun () -> LineCommand.Only)
                 | "onoremap"-> noRange (fun () -> x.ParseMapKeysNoRemap false [KeyRemapMode.OperatorPending])
                 | "ounmap" -> noRange (fun () -> x.ParseMapUnmap false [KeyRemapMode.OperatorPending])
                 | "put" -> x.ParsePut lineRange

@@ -1322,7 +1322,10 @@ type VimInterpreter
         let filePath = filePath |> OptionUtil.getOrDefault ""
         _vimHost.LoadFileIntoNewWindow filePath |> ignore
 
-    member x.RunTabOnly =
+    member x.RunOnly() =
+        _vimHost.CloseAllOtherWindows _textView
+
+    member x.RunTabOnly() =
         _vimHost.CloseAllOtherTabs _textView
 
     /// Run the undo command
@@ -1467,6 +1470,7 @@ type VimInterpreter
         | LineCommand.MoveTo (sourceLineRange, destLineRange, count) -> x.RunMoveTo sourceLineRange destLineRange count
         | LineCommand.NoHighlightSearch -> x.RunNoHighlightSearch()
         | LineCommand.Nop -> ()
+        | LineCommand.Only -> x.RunOnly()
         | LineCommand.ParseError msg -> x.RunParseError msg
         | LineCommand.Print (lineRange, lineCommandFlags)-> x.RunPrint lineRange lineCommandFlags
         | LineCommand.PrintCurrentDirectory -> x.RunPrintCurrentDirectory()
@@ -1491,7 +1495,7 @@ type VimInterpreter
         | LineCommand.Substitute (lineRange, pattern, replace, flags) -> x.RunSubstitute lineRange pattern replace flags
         | LineCommand.SubstituteRepeat (lineRange, substituteFlags) -> x.RunSubstituteRepeatLast lineRange substituteFlags
         | LineCommand.TabNew filePath -> x.RunTabNew filePath
-        | LineCommand.TabOnly -> x.RunTabOnly
+        | LineCommand.TabOnly -> x.RunTabOnly()
         | LineCommand.Undo -> x.RunUndo()
         | LineCommand.Unlet (ignoreMissing, nameList) -> x.RunUnlet ignoreMissing nameList
         | LineCommand.UnmapKeys (keyNotation, keyRemapModes, mapArgumentList) -> x.RunUnmapKeys keyNotation keyRemapModes mapArgumentList

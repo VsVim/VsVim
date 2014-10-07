@@ -4,7 +4,6 @@ using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Operations;
 using Vim;
-using Vim.Extensions;
 using EditorUtils;
 using System;
 using System.Windows.Input;
@@ -71,6 +70,11 @@ namespace VimApp
         }
 
         public override void CloseAllOtherTabs(ITextView textView)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override void CloseAllOtherWindows(ITextView textView)
         {
             throw new NotImplementedException();
         }
