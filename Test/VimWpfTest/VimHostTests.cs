@@ -1,7 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using Microsoft.VisualStudio.Text.Operations;
 using Xunit;
 using Moq;
@@ -29,6 +26,11 @@ namespace Vim.UI.Wpf.UnitTest
             }
 
             public override void CloseAllOtherTabs(ITextView textView)
+            {
+                throw new NotImplementedException();
+            }
+
+            public override void CloseAllOtherWindows(ITextView textView)
             {
                 throw new NotImplementedException();
             }
