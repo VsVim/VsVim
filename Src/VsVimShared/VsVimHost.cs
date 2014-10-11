@@ -191,7 +191,7 @@ namespace Vim.VisualStudio
 
         public override void CloseAllOtherTabs(ITextView textView)
         {
-            RunVisualStudioCommand(textView, "File.CloseAllButThis", string.Empty);
+            RunHostCommand(textView, "File.CloseAllButThis", string.Empty);
         }
 
         public override void CloseAllOtherWindows(ITextView textView)
@@ -524,7 +524,7 @@ namespace Vim.VisualStudio
             _dte.Quit();
         }
 
-        public override void RunVisualStudioCommand(ITextView textView, string command, string argument)
+        public override void RunHostCommand(ITextView textView, string command, string argument)
         {
             SafeExecuteCommand(textView, command, argument);
         }

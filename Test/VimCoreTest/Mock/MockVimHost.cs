@@ -40,7 +40,7 @@ namespace Vim.UnitTest.Mock
         public Func<ITextView> CreateHiddenTextViewFunc { get; set; }
         public Func<ITextBuffer, bool> IsDirtyFunc { get; set; }
         public Func<string, string, IVimData, string> RunCommandFunc { get; set; }
-        public Action<ITextView, string, string> RunVisualStudioCommandFunc { get; set; }
+        public Action<ITextView, string, string> RunHostCommandFunc { get; set; }
         public Action<QuickFix, int, bool> RunQuickFixFunc { get; set; }
         public Func<string, string, bool> RunSaveTextAs { get; set; }
         public ITextBuffer LastSaved { get; set; }
@@ -90,7 +90,7 @@ namespace Vim.UnitTest.Mock
             GoToGlobalDeclarationFunc = delegate { throw new NotImplementedException(); };
             CreateHiddenTextViewFunc = delegate { throw new NotImplementedException(); };
             RunCommandFunc = delegate { throw new NotImplementedException(); };
-            RunVisualStudioCommandFunc = delegate { throw new NotImplementedException(); };
+            RunHostCommandFunc = delegate { throw new NotImplementedException(); };
             RunQuickFixFunc = delegate { throw new NotImplementedException(); };
             RunSaveTextAs = delegate { throw new NotImplementedException(); };
             ReloadFunc = delegate { return true; };
@@ -238,9 +238,9 @@ namespace Vim.UnitTest.Mock
             return RunCommandFunc(command, arguments, vimData);
         }
 
-        void IVimHost.RunVisualStudioCommand(ITextView textView, string command, string argument)
+        void IVimHost.RunHostCommand(ITextView textView, string command, string argument)
         {
-            RunVisualStudioCommandFunc(textView, command, argument);
+            RunHostCommandFunc(textView, command, argument);
         }
 
         void IVimHost.SplitViewVertically(ITextView value)

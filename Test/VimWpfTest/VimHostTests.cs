@@ -95,7 +95,7 @@ namespace Vim.UI.Wpf.UnitTest
                 throw new NotImplementedException();
             }
 
-            public override void RunVisualStudioCommand(ITextView textView, string command, string argument)
+            public override void RunHostCommand(ITextView textView, string command, string argument)
             {
                 throw new NotImplementedException();
             }

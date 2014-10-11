@@ -267,7 +267,7 @@ namespace Vim.UI.Wpf
             }
         }
 
-        public abstract void RunVisualStudioCommand(ITextView textView, string command, string argument);
+        public abstract void RunHostCommand(ITextView textView, string command, string argument);
 
         public virtual bool Save(ITextBuffer textBuffer)
         {
@@ -618,9 +618,9 @@ namespace Vim.UI.Wpf
             return RunCommand(command, arguments, vimData);
         }
 
-        void IVimHost.RunVisualStudioCommand(ITextView textView, string command, string argument)
+        void IVimHost.RunHostCommand(ITextView textView, string command, string argument)
         {
-            RunVisualStudioCommand(textView, command, argument);
+            RunHostCommand(textView, command, argument);
         }
 
         bool IVimHost.Save(ITextBuffer value)

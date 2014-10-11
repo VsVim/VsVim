@@ -1593,7 +1593,7 @@ type Parser
     /// Parse out a visual studio command.  The format is "commandName argument".  The command
     /// name can use letters, numbers and a period.  The rest of the line after will be taken
     /// as the argument
-    member x.ParseVisualStudioCommand() = 
+    member x.ParseHostCommand() = 
         x.SkipBlanks()
         let command = x.ParseWhile (fun token -> 
             match token.TokenKind with 
@@ -1606,7 +1606,7 @@ type Parser
         | Some command ->
             x.SkipBlanks()
             let argument = x.ParseRestOfLine()
-            LineCommand.VisualStudioCommand (command, argument)
+            LineCommand.HostCommand (command, argument)
 
     member x.ParseWrite lineRange = 
         let hasBang = x.ParseBang()
@@ -2118,7 +2118,7 @@ type Parser
                 | "vglobal" -> x.ParseGlobalCore lineRange false
                 | "vmap"-> noRange (fun () -> x.ParseMapKeys false [KeyRemapMode.Visual;KeyRemapMode.Select])
                 | "vmapclear" -> noRange (fun () -> x.ParseMapClear false [KeyRemapMode.Visual; KeyRemapMode.Select])
-                | "vscmd" -> x.ParseVisualStudioCommand()
+                | "vscmd" -> x.ParseHostCommand()
                 | "vsplit" -> x.ParseSplit LineCommand.VerticalSplit lineRange
                 | "vnoremap"-> noRange (fun () -> x.ParseMapKeysNoRemap false [KeyRemapMode.Visual;KeyRemapMode.Select])
                 | "vunmap" -> noRange (fun () -> x.ParseMapUnmap false [KeyRemapMode.Visual;KeyRemapMode.Select])

@@ -3909,7 +3909,7 @@ type IVimHost =
     abstract RunCommand : file : string -> arguments : string -> vimHost : IVimData -> string
 
     /// Run the Visual studio command in the context of the given ITextView
-    abstract RunVisualStudioCommand : textView : ITextView -> commandName : string -> argument : string -> unit
+    abstract RunHostCommand : textView : ITextView -> commandName : string -> argument : string -> unit
 
     /// Save the provided ITextBuffer instance
     abstract Save : textBuffer : ITextBuffer -> bool 

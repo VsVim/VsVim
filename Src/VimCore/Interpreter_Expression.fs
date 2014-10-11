@@ -510,6 +510,9 @@ and [<RequireQualifiedAccess>] LineCommand =
     /// Print out the default history 
     | History
 
+    /// Run a host command.  The first string is the command and the second string is the argument
+    | HostCommand of string * string
+
     /// Process the 'split' command.  The values range as follows
     ///  - Height of the window if specified.  Expressed as a range.  The actual documentation
     ///    doesn't specify a range can be used here but usage indicates it can
@@ -668,10 +671,6 @@ and [<RequireQualifiedAccess>] LineCommand =
 
     /// Unmap the key notation in the given modes
     | UnmapKeys of string * KeyRemapMode list * KeyMapArgument list
-
-    /// Run a visual studio command (or really any custom host command).  The first string is the
-    /// command and the second string in the argument
-    | VisualStudioCommand of string * string
 
     /// Write the 
     ///  - The line range to write out

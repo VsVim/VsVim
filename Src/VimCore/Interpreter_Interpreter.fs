@@ -1365,8 +1365,8 @@ type VimInterpreter
         let msg = sprintf "VsVim Version %s" VimConstants.VersionNumber
         _statusUtil.OnStatus msg
 
-    member x.RunVisualStudioCommand command argument =
-        _vimHost.RunVisualStudioCommand _textView command argument
+    member x.RunHostCommand command argument =
+        _vimHost.RunHostCommand _textView command argument
 
     member x.RunWrite lineRange hasBang fileOptionList filePath =
         let filePath =
@@ -1461,6 +1461,7 @@ type VimInterpreter
         | LineCommand.GoToNextTab count -> x.RunGoToNextTab count
         | LineCommand.GoToPreviousTab count -> x.RunGoToPreviousTab count
         | LineCommand.HorizontalSplit (lineRange, fileOptions, commandOptions) -> x.RunSplit _vimHost.SplitViewHorizontally fileOptions commandOptions
+        | LineCommand.HostCommand (command, argument) -> x.RunHostCommand command argument
         | LineCommand.Join (lineRange, joinKind) -> x.RunJoin lineRange joinKind
         | LineCommand.JumpToLastLine -> x.RunJumpToLastLine()
         | LineCommand.JumpToLine number -> x.RunJumpToLine number
@@ -1501,7 +1502,6 @@ type VimInterpreter
         | LineCommand.UnmapKeys (keyNotation, keyRemapModes, mapArgumentList) -> x.RunUnmapKeys keyNotation keyRemapModes mapArgumentList
         | LineCommand.Version -> x.RunVersion()
         | LineCommand.VerticalSplit (lineRange, fileOptions, commandOptions) -> x.RunSplit _vimHost.SplitViewVertically fileOptions commandOptions
-        | LineCommand.VisualStudioCommand (command, argument) -> x.RunVisualStudioCommand command argument
         | LineCommand.Write (lineRange, hasBang, fileOptionList, filePath) -> x.RunWrite lineRange hasBang fileOptionList filePath
         | LineCommand.WriteAll hasBang -> x.RunWriteAll hasBang
         | LineCommand.Yank (lineRange, registerName, count) -> x.RunYank (getRegister registerName) lineRange count

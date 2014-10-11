@@ -1974,11 +1974,11 @@ namespace Vim.UnitTest
             /// Simple visual studio command
             /// </summary>
             [Fact]
-            public void VisualStudioCommand_Simple()
+            public void HostCommand_Simple()
             {
                 Create("");
                 var didRun = false;
-                VimHost.RunVisualStudioCommandFunc =
+                VimHost.RunHostCommandFunc =
                     (textView, command, argument) =>
                     {
                         Assert.Equal("Build.BuildSelection", command);
@@ -1993,11 +1993,11 @@ namespace Vim.UnitTest
             /// Simple visual studio command with an argument
             /// </summary>
             [Fact]
-            public void VisualStudioCommand_WithArgument()
+            public void HostCommand_WithArgument()
             {
                 Create("");
                 var didRun = false;
-                VimHost.RunVisualStudioCommandFunc =
+                VimHost.RunHostCommandFunc =
                     (textView, command, argument) =>
                     {
                         Assert.Equal("Build.BuildSelection", command);
