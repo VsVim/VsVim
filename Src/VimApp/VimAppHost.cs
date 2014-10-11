@@ -228,7 +228,7 @@ namespace VimApp
             return false;
         }
 
-        public override void RunVisualStudioCommand(ITextView textView, string command, string argument)
+        public override void RunHostCommand(ITextView textView, string command, string argument)
         {
 
         }
