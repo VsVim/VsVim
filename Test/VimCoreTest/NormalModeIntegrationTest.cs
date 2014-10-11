@@ -804,6 +804,15 @@ namespace Vim.UnitTest
                 Create("#if 0", "#if 1", "#else // !1", "#endif // !1", "#endif // 0");
                 AssertPattern(4, 0);
             }
+
+            [Fact]
+            public void Issue1362()
+            {
+                Create("/*", "abc", "*/", "/*", "def", "*/");
+                _textView.MoveCaretToLine(5);
+                _vimBuffer.Process("%");
+                Assert.Equal(_textView.GetPointInLine(3, 0), _textView.GetCaretPoint());
+            }
         }
 
         public sealed class UnmatchedTokenTest : NormalModeIntegrationTest

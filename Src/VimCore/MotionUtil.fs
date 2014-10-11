@@ -657,6 +657,7 @@ type MatchingTokenUtil() =
 
                         index <- length
                     else
+                        commentStart <- None
                         index <- index + 2
                 else
                     index <- index + 1
