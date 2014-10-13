@@ -2,6 +2,7 @@
 [string]$script:rootPath = resolve-path (join-path $rootPath "..")
 
 $msbuild = join-path ${env:SystemRoot} "microsoft.net\framework\v4.0.30319\msbuild.exe"
+$nuget = join-path $rootPath ".nuget\NuGet.exe"
 
 function build-project()
 {
@@ -17,14 +18,17 @@ function test-return() {
     }
 }
 
-build-project (join-path $rootPath "Src\VsixUtil\VsixUtil.csproj")
 build-project (join-path $rootPath "Src\VsVim\VsVim.csproj")
 
 pushd $rootPath
 mkdir "Dogfood" -ErrorAction SilentlyContinue | out-null
-rm "Dogfood\*"
+rm -re -fo "Dogfood\*"
 copy Src\VsVim\bin\Debug\* "Dogfood"
-copy Src\VsixUtil\bin\Debug\* "Dogfood"
 
-& ".\Dogfood\VsixUtil.exe" "Dogfood\VsVim.vsix"
+write-host "Installing VsixUtil"
+& $nuget install VsixUtil -OutputDirectory "Dogfood" -ExcludeVersion
+
+write-host "Installing VsVim"
+& ".\Dogfood\VsixUtil\tools\VsixUtil.exe" /install "Dogfood\VsVim.vsix"
+
 popd
