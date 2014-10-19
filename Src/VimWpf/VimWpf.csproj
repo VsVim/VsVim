@@ -56,6 +56,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Constants.cs" />
+    <Compile Include="ICommandMarginUtil.cs" />
     <Compile Include="IControlCharUtil.cs" />
     <Compile Include="IDirectoryUtil.cs" />
     <Compile Include="IKeyUtil.cs" />
@@ -63,6 +64,7 @@
     <Compile Include="Implementation\CharDisplay\CharDisplayTaggerSource.cs" />
     <Compile Include="Implementation\CharDisplay\CharDisplayTaggerSourceFactory.cs" />
     <Compile Include="Implementation\CharDisplay\ControlCharUtil.cs" />
+    <Compile Include="Implementation\CommandMargin\CommandMarginUtil.cs" />
     <Compile Include="Implementation\Directory\DirectoryContentType.cs" />
     <Compile Include="Implementation\Directory\DirectoryFormatDefinition.cs" />
     <Compile Include="Implementation\Directory\DirectoryKeyProcessor.cs" />
