@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.Linq;
 using System.Text;
+using System.Windows;
 using Vim.Extensions;
 using Vim.UI.Wpf.Properties;
 
@@ -11,10 +12,23 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
     [Export(typeof(ICommandMarginUtil))]
     internal sealed class CommandMarginUtil : ICommandMarginUtil
     {
+        CommandMarginProvider _provider;
+
+        [ImportingConstructor]
+        internal CommandMarginUtil(CommandMarginProvider provider)
+        {
+            _provider = provider;
+        }
 
         private void SetMarginVisibility(IVimBuffer vimBuffer, bool commandMarginVisible)
         {
-            // TODO: implement
+            if (vimBuffer.TextView.IsClosed)
+            {
+                return;
+            }
+
+            var commandMargin = _provider.GetOrCreateCommandMargin(vimBuffer);
+            commandMargin.VisualElement.Visibility = commandMarginVisible ? Visibility.Visible : Visibility.Collapsed;
         }
 
         internal static bool InPasteWait(IVimBuffer vimBuffer)
