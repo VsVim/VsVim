@@ -17,7 +17,76 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             // TODO: implement
         }
 
-        internal static string GetStatus(IVimBuffer vimBuffer, IMode currentMode)
+        internal static bool InPasteWait(IVimBuffer vimBuffer)
+        {
+            if (vimBuffer.ModeKind == ModeKind.Command)
+            {
+                return vimBuffer.CommandMode.InPasteWait;
+            }
+
+            var search = vimBuffer.IncrementalSearch;
+            if (search.InSearch && search.InPasteWait)
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        internal static string GetStatus(IVimBuffer vimBuffer, IMode currentMode, bool forModeSwitch)
+        {
+            if (forModeSwitch)
+            {
+                return GetStatusCore(vimBuffer, currentMode);
+            }
+
+            return GetStatusOther(vimBuffer, currentMode);
+        }
+
+        private static string GetStatusOther(IVimBuffer vimBuffer, IMode currentMode)
+        {
+            var search = vimBuffer.IncrementalSearch;
+            if (search.InSearch)
+            {
+                var searchText = search.CurrentSearchText;
+                var prefix = search.CurrentSearchData.Path.IsForward ? "/" : "?";
+                if (InPasteWait(vimBuffer))
+                {
+                    searchText += "\"";
+                }
+                return prefix + searchText;
+            }
+
+            string status;
+            switch (vimBuffer.ModeKind)
+            {
+                case ModeKind.Command:
+                    status = ":" + vimBuffer.CommandMode.Command + (InPasteWait(vimBuffer) ? "\"" : "");
+                    break;
+                case ModeKind.Normal:
+                    status = vimBuffer.NormalMode.Command;
+                    break;
+                case ModeKind.SubstituteConfirm:
+                    status = GetStatusSubstituteConfirm(vimBuffer.SubstituteConfirmMode);
+                    break;
+                case ModeKind.VisualBlock:
+                    status = GetStatusWithRegister(Resources.VisualBlockBanner, vimBuffer.VisualBlockMode.CommandRunner);
+                    break;
+                case ModeKind.VisualCharacter:
+                    status = GetStatusWithRegister(Resources.VisualCharacterBanner, vimBuffer.VisualCharacterMode.CommandRunner);
+                    break;
+                case ModeKind.VisualLine:
+                    status = GetStatusWithRegister(Resources.VisualLineBanner, vimBuffer.VisualLineMode.CommandRunner);
+                    break;
+                default:
+                    status = GetStatusCore(vimBuffer, currentMode);
+                    break;
+            }
+
+            return status;
+        }
+
+        private static string GetStatusCore(IVimBuffer vimBuffer, IMode currentMode)
         {
             // Calculate the argument string if we are in one time command mode
             string oneTimeArgument = null;
@@ -83,7 +152,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
                     status = vimBuffer.DisabledMode.HelpMessage;
                     break;
                 case ModeKind.SubstituteConfirm:
-                    status = GetStatus(vimBuffer.SubstituteConfirmMode);
+                    status = GetStatusSubstituteConfirm(vimBuffer.SubstituteConfirmMode);
                     break;
                 default:
                     status = String.Empty;
@@ -93,10 +162,20 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             return status;
         }
 
-        internal static string GetStatus(ISubstituteConfirmMode mode)
+        private static string GetStatusSubstituteConfirm(ISubstituteConfirmMode mode)
         {
             var replace = mode.CurrentSubstitute.SomeOrDefault("");
             return String.Format(Resources.SubstituteConfirmBannerFormat, replace);
+        }
+
+        private static string GetStatusWithRegister(string commandLine, ICommandRunner commandRunner)
+        {
+            if (commandRunner.HasRegisterName && commandRunner.RegisterName.Char.IsSome())
+            {
+                commandLine = string.Format("{0} \"{1}", commandLine, commandRunner.RegisterName.Char.Value);
+            }
+
+            return commandLine;
         }
 
         #region ICommandMarginUtil
@@ -108,7 +187,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
 
         string ICommandMarginUtil.GetStatus(IVimBuffer vimBuffer)
         {
-            return GetStatus(vimBuffer, vimBuffer.Mode);
+            return GetStatus(vimBuffer, vimBuffer.Mode, forModeSwitch: false);
         }
 
         #endregion

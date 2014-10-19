@@ -234,7 +234,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
 
         private void UpdateForSwitchMode(IMode currentMode)
         {
-            var status = CommandMarginUtil.GetStatus(_vimBuffer, currentMode);
+            var status = CommandMarginUtil.GetStatus(_vimBuffer, currentMode, forModeSwitch: true);
             UpdateCommandLine(status);
         }
 
@@ -251,43 +251,8 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
                 return;
             }
 
-            var search = _vimBuffer.IncrementalSearch;
-            if (search.InSearch)
-            {
-                var searchText = search.CurrentSearchText;
-                var prefix = search.CurrentSearchData.Path.IsForward ? "/" : "?";
-                if (InPasteWait)
-                {
-                    searchText += "\"";
-                }
-                UpdateCommandLine(prefix + searchText);
-                return;
-            }
-
-            switch (_vimBuffer.ModeKind)
-            {
-                case ModeKind.Command:
-                    UpdateCommandLine(":" + _vimBuffer.CommandMode.Command + (InPasteWait ? "\"" : ""));
-                    break;
-                case ModeKind.Normal:
-                    UpdateCommandLine(_vimBuffer.NormalMode.Command);
-                    break;
-                case ModeKind.SubstituteConfirm:
-                    UpdateCommandLine(CommandMarginUtil.GetStatus(_vimBuffer.SubstituteConfirmMode));
-                    break;
-                case ModeKind.Disabled:
-                    UpdateCommandLine(_vimBuffer.DisabledMode.HelpMessage);
-                    break;
-                case ModeKind.VisualBlock:
-                    UpdateCommandLineWithRegister(Resources.VisualBlockBanner, _vimBuffer.VisualBlockMode.CommandRunner);
-                    break;
-                case ModeKind.VisualCharacter:
-                    UpdateCommandLineWithRegister(Resources.VisualCharacterBanner, _vimBuffer.VisualCharacterMode.CommandRunner);
-                    break;
-                case ModeKind.VisualLine:
-                    UpdateCommandLineWithRegister(Resources.VisualLineBanner, _vimBuffer.VisualLineMode.CommandRunner);
-                    break;
-            }
+            var status = CommandMarginUtil.GetStatus(_vimBuffer, _vimBuffer.Mode, forModeSwitch: false);
+            UpdateCommandLine(status);
         }
 
         private void UpdateForRecordingChanged()
@@ -333,16 +298,6 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
         {
             _margin.TextFontFamily = _classificationFormatMap.DefaultTextProperties.Typeface.FontFamily;
             _margin.TextFontSize = _classificationFormatMap.DefaultTextProperties.FontRenderingEmSize;
-        }
-
-        private void UpdateCommandLineWithRegister(string commandLine, ICommandRunner commandRunner)
-        {
-            if (commandRunner.HasRegisterName && commandRunner.RegisterName.Char.IsSome())
-            {
-                commandLine = string.Format("{0} \"{1}", commandLine, commandRunner.RegisterName.Char.Value);
-            }
-
-            UpdateCommandLine(commandLine);
         }
 
         /// <summary>

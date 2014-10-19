@@ -28,7 +28,7 @@ namespace Vim.VisualStudio.Implementation.Misc
             _commandMarginUtil = commandMarginUtil;
             _vsStatusbar = vsServiceProvider.GetService<SVsStatusbar, IVsStatusbar>();
             _timer = new DispatcherTimer(
-                TimeSpan.FromSeconds(.5),
+                TimeSpan.FromSeconds(.2),
                 DispatcherPriority.ApplicationIdle,
                 OnTimer,
                 Dispatcher.CurrentDispatcher);
