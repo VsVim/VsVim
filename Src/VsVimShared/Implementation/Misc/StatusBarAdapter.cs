@@ -74,10 +74,10 @@ namespace Vim.VisualStudio.Implementation.Misc
 
         void IVimBufferCreationListener.VimBufferCreated(IVimBuffer vimBuffer)
         {
+            // Let the command margin get into a known state before we disable it.  
             _vimProtectedOperations.BeginInvoke(
                 () => _commandMarginUtil.SetMarginVisibility(vimBuffer, _vimApplicationSettings.UseEditorCommandMargin),
                 DispatcherPriority.ApplicationIdle);
-
         }
     }
 }
