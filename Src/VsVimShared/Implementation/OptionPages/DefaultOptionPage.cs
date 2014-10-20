@@ -194,6 +194,11 @@ namespace Vim.VisualStudio.Implementation.OptionPages
         [Category(CategoryGeneral)]
         public DefaultSettings DefaultSettings { get; set; }
 
+        [DisplayName("Use Editor Command Margin")]
+        [Description("Use editor command margin for mode line instead of the status bar")]
+        [Category(CategoryGeneral)]
+        public bool UseEditorCommandMargin { get; set; }
+
         [DisplayName("Display Control Characters")]
         [Description("Whether or not control characters will display as they do in gVim.  For example should (char)29 display as an invisible character or ^]")]
         [Category(CategoryGeneral)]
@@ -283,6 +288,7 @@ namespace Vim.VisualStudio.Implementation.OptionPages
                 UseEditorDefaults = vimApplicationSettings.UseEditorDefaults;
                 UseEditorIndent = vimApplicationSettings.UseEditorIndent;
                 UseEditorTabAndBackspace = vimApplicationSettings.UseEditorTabAndBackspace;
+                UseEditorCommandMargin = vimApplicationSettings.UseEditorCommandMargin;
                 VimRcLoadSetting = vimApplicationSettings.VimRcLoadSetting;
                 DisplayControlCharacters = vimApplicationSettings.DisplayControlChars;
                 WordWrapDisplay = vimApplicationSettings.WordWrapDisplay;
@@ -303,6 +309,7 @@ namespace Vim.VisualStudio.Implementation.OptionPages
                 vimApplicationSettings.UseEditorDefaults = UseEditorDefaults;
                 vimApplicationSettings.UseEditorIndent = UseEditorIndent;
                 vimApplicationSettings.UseEditorTabAndBackspace = UseEditorTabAndBackspace;
+                vimApplicationSettings.UseEditorCommandMargin = UseEditorCommandMargin;
                 vimApplicationSettings.VimRcLoadSetting = VimRcLoadSetting;
                 vimApplicationSettings.DisplayControlChars = DisplayControlCharacters;
                 vimApplicationSettings.WordWrapDisplay = WordWrapDisplay;

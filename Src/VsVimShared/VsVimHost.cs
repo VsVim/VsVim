@@ -42,6 +42,7 @@ namespace Vim.VisualStudio
             private const string UseEditorIndentName = "vsvim_useeditorindent";
             private const string UseEditorDefaultsName = "vsvim_useeditordefaults";
             private const string UseEditorTabAndBackspaceName = "vsvim_useeditortab";
+            private const string UseEditorCommandMarginName = "vsvim_useeditorcommandmargin";
 
             private readonly IVimApplicationSettings _vimApplicationSettings;
 
@@ -56,6 +57,7 @@ namespace Vim.VisualStudio
                 globalSettings.AddCustomSetting(UseEditorIndentName, UseEditorIndentName, settingsSource);
                 globalSettings.AddCustomSetting(UseEditorDefaultsName, UseEditorDefaultsName, settingsSource);
                 globalSettings.AddCustomSetting(UseEditorTabAndBackspaceName, UseEditorTabAndBackspaceName, settingsSource);
+                globalSettings.AddCustomSetting(UseEditorCommandMarginName, UseEditorCommandMarginName, settingsSource);
             }
 
             SettingValue IVimCustomSettingSource.GetDefaultSettingValue(string name)
@@ -76,6 +78,9 @@ namespace Vim.VisualStudio
                         break;
                     case UseEditorTabAndBackspaceName:
                         value = _vimApplicationSettings.UseEditorTabAndBackspace;
+                        break;
+                    case UseEditorCommandMarginName:
+                        value = _vimApplicationSettings.UseEditorCommandMargin;
                         break;
                     default:
                         value = false;
@@ -103,6 +108,9 @@ namespace Vim.VisualStudio
                         break;
                     case UseEditorTabAndBackspaceName:
                         _vimApplicationSettings.UseEditorTabAndBackspace = value;
+                        break;
+                    case UseEditorCommandMarginName:
+                        _vimApplicationSettings.UseEditorCommandMargin = value;
                         break;
                     default:
                         value = false;

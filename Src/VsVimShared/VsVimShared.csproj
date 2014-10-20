@@ -89,6 +89,7 @@
     <Compile Include="Implementation\Misc\ReportDesignerUtil.cs" />
     <Compile Include="Implementation\Misc\ScopeData.cs" />
     <Compile Include="Implementation\Misc\StandardCommandTarget.cs" />
+    <Compile Include="Implementation\Misc\StatusBarAdapter.cs" />
     <Compile Include="Implementation\OptionPages\ComboBoxTemplateSelector.cs" />
     <Compile Include="Implementation\OptionPages\DefaultOptionPage.cs">
       <SubType>Component</SubType>

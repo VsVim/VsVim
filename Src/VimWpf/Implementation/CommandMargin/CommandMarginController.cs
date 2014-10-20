@@ -128,24 +128,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             _editorFormatMap = editorFormatMap;
             _classificationFormatMap = classificationFormatMap;
 
-            _vimBuffer.SwitchedMode += OnSwitchMode;
-            _vimBuffer.KeyInputStart += OnKeyInputStart;
-            _vimBuffer.KeyInputEnd += OnKeyInputEnd;
-            _vimBuffer.StatusMessage += OnStatusMessage;
-            _vimBuffer.ErrorMessage += OnErrorMessage;
-            _vimBuffer.WarningMessage += OnWarningMessage;
-            _vimBuffer.CommandMode.CommandChanged += OnCommandModeCommandChanged;
-            _vimBuffer.TextView.GotAggregateFocus += OnGotAggregateFocus;
-            _vimBuffer.Vim.MacroRecorder.RecordingStarted += OnRecordingStarted;
-            _vimBuffer.Vim.MacroRecorder.RecordingStopped += OnRecordingStopped;
-            _margin.Loaded += OnCommandMarginLoaded;
-            _margin.Unloaded += OnCommandMarginUnloaded;
-            _margin.CommandLineTextBox.PreviewKeyDown += OnCommandLineTextBoxPreviewKeyDown;
-            _margin.CommandLineTextBox.TextChanged += OnCommandLineTextBoxTextChanged;
-            _margin.CommandLineTextBox.SelectionChanged += OnCommandLineTextBoxSelectionChanged;
-            _margin.CommandLineTextBox.LostKeyboardFocus += OnCommandLineTextBoxLostKeyboardFocus;
-            _margin.CommandLineTextBox.PreviewMouseDown += OnCommandLineTextBoxPreviewMouseDown;
-            _editorFormatMap.FormatMappingChanged += OnFormatMappingChanged;
+            Connect();
             UpdateForRecordingChanged();
             UpdateTextColor();
         }
@@ -186,11 +169,53 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             }
         }
 
+        internal void Connect()
+        {
+            _vimBuffer.SwitchedMode += OnSwitchMode;
+            _vimBuffer.KeyInputStart += OnKeyInputStart;
+            _vimBuffer.KeyInputEnd += OnKeyInputEnd;
+            _vimBuffer.StatusMessage += OnStatusMessage;
+            _vimBuffer.ErrorMessage += OnErrorMessage;
+            _vimBuffer.WarningMessage += OnWarningMessage;
+            _vimBuffer.CommandMode.CommandChanged += OnCommandModeCommandChanged;
+            _vimBuffer.TextView.GotAggregateFocus += OnGotAggregateFocus;
+            _vimBuffer.Vim.MacroRecorder.RecordingStarted += OnRecordingStarted;
+            _vimBuffer.Vim.MacroRecorder.RecordingStopped += OnRecordingStopped;
+            _margin.Loaded += OnCommandMarginLoaded;
+            _margin.Unloaded += OnCommandMarginUnloaded;
+            _margin.CommandLineTextBox.PreviewKeyDown += OnCommandLineTextBoxPreviewKeyDown;
+            _margin.CommandLineTextBox.TextChanged += OnCommandLineTextBoxTextChanged;
+            _margin.CommandLineTextBox.SelectionChanged += OnCommandLineTextBoxSelectionChanged;
+            _margin.CommandLineTextBox.LostKeyboardFocus += OnCommandLineTextBoxLostKeyboardFocus;
+            _margin.CommandLineTextBox.PreviewMouseDown += OnCommandLineTextBoxPreviewMouseDown;
+            _editorFormatMap.FormatMappingChanged += OnFormatMappingChanged;
+        }
+
         internal void Disconnect()
         {
+            _vimBuffer.SwitchedMode -= OnSwitchMode;
+            _vimBuffer.KeyInputStart -= OnKeyInputStart;
+            _vimBuffer.KeyInputEnd -= OnKeyInputEnd;
+            _vimBuffer.StatusMessage -= OnStatusMessage;
+            _vimBuffer.ErrorMessage -= OnErrorMessage;
+            _vimBuffer.WarningMessage -= OnWarningMessage;
             _vimBuffer.CommandMode.CommandChanged -= OnCommandModeCommandChanged;
+            _vimBuffer.TextView.GotAggregateFocus -= OnGotAggregateFocus;
             _vimBuffer.Vim.MacroRecorder.RecordingStarted -= OnRecordingStarted;
             _vimBuffer.Vim.MacroRecorder.RecordingStopped -= OnRecordingStopped;
+            _margin.Loaded -= OnCommandMarginLoaded;
+            _margin.Unloaded -= OnCommandMarginUnloaded;
+            _margin.CommandLineTextBox.PreviewKeyDown -= OnCommandLineTextBoxPreviewKeyDown;
+            _margin.CommandLineTextBox.TextChanged -= OnCommandLineTextBoxTextChanged;
+            _margin.CommandLineTextBox.SelectionChanged -= OnCommandLineTextBoxSelectionChanged;
+            _margin.CommandLineTextBox.LostKeyboardFocus -= OnCommandLineTextBoxLostKeyboardFocus;
+            _margin.CommandLineTextBox.PreviewMouseDown -= OnCommandLineTextBoxPreviewMouseDown;
+            _editorFormatMap.FormatMappingChanged -= OnFormatMappingChanged;
+        }
+
+        internal void Reset()
+        {
+            UpdateForNoEvent();
         }
 
         private void KeyInputEventComplete()
@@ -205,7 +230,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
                 else if (_vimBufferKeyEventState.SwitchModeEventArgs != null)
                 {
                     var args = _vimBufferKeyEventState.SwitchModeEventArgs;
-                    UpdateForSwitchMode(args.PreviousMode, args.CurrentMode);
+                    UpdateForSwitchMode(args.CurrentMode);
                 }
                 else
                 {
@@ -232,78 +257,10 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             }
         }
 
-        private void UpdateForSwitchMode(IMode previousMode, IMode currentMode)
+        private void UpdateForSwitchMode(IMode currentMode)
         {
-            // Calculate the argument string if we are in one time command mode
-            string oneTimeArgument = null;
-            if (_vimBuffer.InOneTimeCommand.IsSome())
-            {
-                if (_vimBuffer.InOneTimeCommand.Is(ModeKind.Insert))
-                {
-                    oneTimeArgument = "insert";
-                }
-                else if (_vimBuffer.InOneTimeCommand.Is(ModeKind.Replace))
-                {
-                    oneTimeArgument = "replace";
-                }
-            }
-
-            // Check if we can enable the command line to accept user input
-            var search = _vimBuffer.IncrementalSearch;
-
-            switch (currentMode.ModeKind)
-            {
-                case ModeKind.Normal:
-                    UpdateCommandLine(String.IsNullOrEmpty(oneTimeArgument)
-                        ? String.Empty
-                        : String.Format(Resources.NormalOneTimeCommandBanner, oneTimeArgument));
-                    break;
-                case ModeKind.Command:
-                    UpdateCommandLine(":" + _vimBuffer.CommandMode.Command);
-                    break;
-                case ModeKind.Insert:
-                    UpdateCommandLine(Resources.InsertBanner);
-                    break;
-                case ModeKind.Replace:
-                    UpdateCommandLine(Resources.ReplaceBanner);
-                    break;
-                case ModeKind.VisualBlock:
-                    UpdateCommandLine(String.IsNullOrEmpty(oneTimeArgument)
-                        ? Resources.VisualBlockBanner
-                        : String.Format(Resources.VisualBlockOneTimeCommandBanner, oneTimeArgument));
-                    break;
-                case ModeKind.VisualCharacter:
-                    UpdateCommandLine(String.IsNullOrEmpty(oneTimeArgument)
-                        ? Resources.VisualCharacterBanner
-                        : String.Format(Resources.VisualCharacterOneTimeCommandBanner, oneTimeArgument));
-                    break;
-                case ModeKind.VisualLine:
-                    UpdateCommandLine(String.IsNullOrEmpty(oneTimeArgument)
-                        ? Resources.VisualLineBanner
-                        : String.Format(Resources.VisualLineOneTimeCommandBanner, oneTimeArgument));
-                    break;
-                case ModeKind.SelectBlock:
-                    UpdateCommandLine(Resources.SelectBlockBanner);
-                    break;
-                case ModeKind.SelectCharacter:
-                    UpdateCommandLine(Resources.SelectCharacterBanner);
-                    break;
-                case ModeKind.SelectLine:
-                    UpdateCommandLine(Resources.SelectLineBanner);
-                    break;
-                case ModeKind.ExternalEdit:
-                    UpdateCommandLine(Resources.ExternalEditBanner);
-                    break;
-                case ModeKind.Disabled:
-                    UpdateCommandLine(_vimBuffer.DisabledMode.HelpMessage);
-                    break;
-                case ModeKind.SubstituteConfirm:
-                    UpdateSubstituteConfirmMode();
-                    break;
-                default:
-                    UpdateCommandLine(String.Empty);
-                    break;
-            }
+            var status = CommandMarginUtil.GetStatus(_vimBuffer, currentMode, forModeSwitch: true);
+            UpdateCommandLine(status);
         }
 
         /// <summary>
@@ -319,43 +276,8 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
                 return;
             }
 
-            var search = _vimBuffer.IncrementalSearch;
-            if (search.InSearch)
-            {
-                var searchText = search.CurrentSearchText;
-                var prefix = search.CurrentSearchData.Path.IsForward ? "/" : "?";
-                if (InPasteWait)
-                {
-                    searchText += "\"";
-                }
-                UpdateCommandLine(prefix + searchText);
-                return;
-            }
-
-            switch (_vimBuffer.ModeKind)
-            {
-                case ModeKind.Command:
-                    UpdateCommandLine(":" + _vimBuffer.CommandMode.Command + (InPasteWait ? "\"" : ""));
-                    break;
-                case ModeKind.Normal:
-                    UpdateCommandLine(_vimBuffer.NormalMode.Command);
-                    break;
-                case ModeKind.SubstituteConfirm:
-                    UpdateSubstituteConfirmMode();
-                    break;
-                case ModeKind.Disabled:
-                    UpdateCommandLine(_vimBuffer.DisabledMode.HelpMessage);
-                    break;
-                case ModeKind.VisualBlock:
-                    UpdateCommandLineWithRegister(Resources.VisualBlockBanner, _vimBuffer.VisualBlockMode.CommandRunner);
-                    break;
-                case ModeKind.VisualCharacter:
-                    UpdateCommandLineWithRegister(Resources.VisualCharacterBanner, _vimBuffer.VisualCharacterMode.CommandRunner);
-                    break;
-                case ModeKind.VisualLine:
-                    UpdateCommandLineWithRegister(Resources.VisualLineBanner, _vimBuffer.VisualLineMode.CommandRunner);
-                    break;
-            }
+            var status = CommandMarginUtil.GetStatus(_vimBuffer, _vimBuffer.Mode, forModeSwitch: false);
+            UpdateCommandLine(status);
         }
 
         private void UpdateForRecordingChanged()
@@ -383,12 +305,6 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             }
         }
 
-        private void UpdateSubstituteConfirmMode()
-        {
-            var replace = _vimBuffer.SubstituteConfirmMode.CurrentSubstitute.SomeOrDefault("");
-            UpdateCommandLine(String.Format(Resources.SubstituteConfirmBannerFormat, replace));
-        }
-
         /// <summary>
         /// Update the color of the editor portion of the command window to be the user
         /// defined values
@@ -407,16 +323,6 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
         {
             _margin.TextFontFamily = _classificationFormatMap.DefaultTextProperties.Typeface.FontFamily;
             _margin.TextFontSize = _classificationFormatMap.DefaultTextProperties.FontRenderingEmSize;
-        }
-
-        private void UpdateCommandLineWithRegister(string commandLine, ICommandRunner commandRunner)
-        {
-            if (commandRunner.HasRegisterName && commandRunner.RegisterName.Char.IsSome())
-            {
-                commandLine = string.Format("{0} \"{1}", commandLine, commandRunner.RegisterName.Char.Value);
-            }
-
-            UpdateCommandLine(commandLine);
         }
 
         /// <summary>
@@ -600,7 +506,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             }
             else
             {
-                UpdateForSwitchMode(args.PreviousMode, args.CurrentMode);
+                UpdateForSwitchMode(args.CurrentMode);
             }
         }
 
