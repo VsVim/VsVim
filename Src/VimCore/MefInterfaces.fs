@@ -200,6 +200,9 @@ type IMouseDevice =
     /// Get the position of the mouse positine within the ITextView
     abstract GetPosition : textView : ITextView -> Nullable<System.Windows.Point>
 
+    /// Is the given ITextView in the middle fo a drag operation?
+    abstract InDragOperation : textView : ITextView -> bool
+
 /// Abstract representation of the keyboard 
 type IKeyboardDevice = 
 

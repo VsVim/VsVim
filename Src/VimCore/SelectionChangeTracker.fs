@@ -198,7 +198,7 @@ type internal SelectionChangeTracker
     member x.AdjustSelectionToCaret() =
         Contract.Assert _syncingSelection
 
-        if (_mouseDevice.IsLeftButtonPressed && 
+        if (_mouseDevice.InDragOperation(_textView) && 
             _textView.Selection.IsActive && 
             _textView.Selection.Mode = TextSelectionMode.Stream && 
             not _textView.Selection.IsReversed && 
