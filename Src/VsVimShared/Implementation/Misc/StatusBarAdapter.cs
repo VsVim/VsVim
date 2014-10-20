@@ -30,8 +30,8 @@ namespace Vim.VisualStudio.Implementation.Misc
             _vimApplicationSettings = vimApplicationSettings;
             _vsStatusbar = vsServiceProvider.GetService<SVsStatusbar, IVsStatusbar>();
             _timer = new DispatcherTimer(
-                TimeSpan.FromSeconds(.2),
-                DispatcherPriority.ApplicationIdle,
+                TimeSpan.FromSeconds(.1),
+                DispatcherPriority.Normal,
                 OnTimer,
                 Dispatcher.CurrentDispatcher);
 
