@@ -1598,6 +1598,7 @@ type Parser
         let command = x.ParseWhile (fun token -> 
             match token.TokenKind with 
             | TokenKind.Word _ -> true
+            | TokenKind.Number _ -> true
             | TokenKind.Character '.' -> true
             | TokenKind.Character '_' -> true
             | _ -> false)

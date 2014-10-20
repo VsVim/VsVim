@@ -230,7 +230,8 @@ namespace VimApp
 
         public override void RunHostCommand(ITextView textView, string command, string argument)
         {
-
+            string msg = string.Format("Host Command Name='{0}' Argument='{1}'", command, argument);
+            _vim.ActiveStatusUtil.OnStatus(msg);
         }
 
         public override void SplitViewHorizontally(ITextView textView)

@@ -2008,6 +2008,26 @@ namespace Vim.UnitTest
                 Assert.True(didRun);
             }
 
+            /// <summary>
+            /// This came up as a part of Issue 1038.  Numbers should be considered as part of the host 
+            /// command name
+            /// </summary>
+            [Fact]
+            public void HostCommand_WithNumber()
+            {
+                Create("");
+                var didRun = false;
+                VimHost.RunHostCommandFunc =
+                    (textView, command, argument) =>
+                    {
+                        Assert.Equal("Command1", command);
+                        Assert.Equal("Arg2", argument);
+                        didRun = true;
+                    };
+                ParseAndRun("vsc Command1 Arg2");
+                Assert.True(didRun);
+            }
+
             public void Issue1328()
             {
                 Create("");
