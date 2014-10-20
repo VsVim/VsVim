@@ -28,7 +28,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             }
 
             var commandMargin = _provider.GetOrCreateCommandMargin(vimBuffer);
-            commandMargin.VisualElement.Visibility = commandMarginVisible ? Visibility.Visible : Visibility.Collapsed;
+            commandMargin.Enabled = commandMarginVisible;
         }
 
         internal static bool InPasteWait(IVimBuffer vimBuffer)

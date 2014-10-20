@@ -128,24 +128,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             _editorFormatMap = editorFormatMap;
             _classificationFormatMap = classificationFormatMap;
 
-            _vimBuffer.SwitchedMode += OnSwitchMode;
-            _vimBuffer.KeyInputStart += OnKeyInputStart;
-            _vimBuffer.KeyInputEnd += OnKeyInputEnd;
-            _vimBuffer.StatusMessage += OnStatusMessage;
-            _vimBuffer.ErrorMessage += OnErrorMessage;
-            _vimBuffer.WarningMessage += OnWarningMessage;
-            _vimBuffer.CommandMode.CommandChanged += OnCommandModeCommandChanged;
-            _vimBuffer.TextView.GotAggregateFocus += OnGotAggregateFocus;
-            _vimBuffer.Vim.MacroRecorder.RecordingStarted += OnRecordingStarted;
-            _vimBuffer.Vim.MacroRecorder.RecordingStopped += OnRecordingStopped;
-            _margin.Loaded += OnCommandMarginLoaded;
-            _margin.Unloaded += OnCommandMarginUnloaded;
-            _margin.CommandLineTextBox.PreviewKeyDown += OnCommandLineTextBoxPreviewKeyDown;
-            _margin.CommandLineTextBox.TextChanged += OnCommandLineTextBoxTextChanged;
-            _margin.CommandLineTextBox.SelectionChanged += OnCommandLineTextBoxSelectionChanged;
-            _margin.CommandLineTextBox.LostKeyboardFocus += OnCommandLineTextBoxLostKeyboardFocus;
-            _margin.CommandLineTextBox.PreviewMouseDown += OnCommandLineTextBoxPreviewMouseDown;
-            _editorFormatMap.FormatMappingChanged += OnFormatMappingChanged;
+            Connect();
             UpdateForRecordingChanged();
             UpdateTextColor();
         }
@@ -186,11 +169,53 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             }
         }
 
+        internal void Connect()
+        {
+            _vimBuffer.SwitchedMode += OnSwitchMode;
+            _vimBuffer.KeyInputStart += OnKeyInputStart;
+            _vimBuffer.KeyInputEnd += OnKeyInputEnd;
+            _vimBuffer.StatusMessage += OnStatusMessage;
+            _vimBuffer.ErrorMessage += OnErrorMessage;
+            _vimBuffer.WarningMessage += OnWarningMessage;
+            _vimBuffer.CommandMode.CommandChanged += OnCommandModeCommandChanged;
+            _vimBuffer.TextView.GotAggregateFocus += OnGotAggregateFocus;
+            _vimBuffer.Vim.MacroRecorder.RecordingStarted += OnRecordingStarted;
+            _vimBuffer.Vim.MacroRecorder.RecordingStopped += OnRecordingStopped;
+            _margin.Loaded += OnCommandMarginLoaded;
+            _margin.Unloaded += OnCommandMarginUnloaded;
+            _margin.CommandLineTextBox.PreviewKeyDown += OnCommandLineTextBoxPreviewKeyDown;
+            _margin.CommandLineTextBox.TextChanged += OnCommandLineTextBoxTextChanged;
+            _margin.CommandLineTextBox.SelectionChanged += OnCommandLineTextBoxSelectionChanged;
+            _margin.CommandLineTextBox.LostKeyboardFocus += OnCommandLineTextBoxLostKeyboardFocus;
+            _margin.CommandLineTextBox.PreviewMouseDown += OnCommandLineTextBoxPreviewMouseDown;
+            _editorFormatMap.FormatMappingChanged += OnFormatMappingChanged;
+        }
+
         internal void Disconnect()
         {
+            _vimBuffer.SwitchedMode -= OnSwitchMode;
+            _vimBuffer.KeyInputStart -= OnKeyInputStart;
+            _vimBuffer.KeyInputEnd -= OnKeyInputEnd;
+            _vimBuffer.StatusMessage -= OnStatusMessage;
+            _vimBuffer.ErrorMessage -= OnErrorMessage;
+            _vimBuffer.WarningMessage -= OnWarningMessage;
             _vimBuffer.CommandMode.CommandChanged -= OnCommandModeCommandChanged;
+            _vimBuffer.TextView.GotAggregateFocus -= OnGotAggregateFocus;
             _vimBuffer.Vim.MacroRecorder.RecordingStarted -= OnRecordingStarted;
             _vimBuffer.Vim.MacroRecorder.RecordingStopped -= OnRecordingStopped;
+            _margin.Loaded -= OnCommandMarginLoaded;
+            _margin.Unloaded -= OnCommandMarginUnloaded;
+            _margin.CommandLineTextBox.PreviewKeyDown -= OnCommandLineTextBoxPreviewKeyDown;
+            _margin.CommandLineTextBox.TextChanged -= OnCommandLineTextBoxTextChanged;
+            _margin.CommandLineTextBox.SelectionChanged -= OnCommandLineTextBoxSelectionChanged;
+            _margin.CommandLineTextBox.LostKeyboardFocus -= OnCommandLineTextBoxLostKeyboardFocus;
+            _margin.CommandLineTextBox.PreviewMouseDown -= OnCommandLineTextBoxPreviewMouseDown;
+            _editorFormatMap.FormatMappingChanged -= OnFormatMappingChanged;
+        }
+
+        internal void Reset()
+        {
+            UpdateForNoEvent();
         }
 
         private void KeyInputEventComplete()

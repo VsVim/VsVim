@@ -45,6 +45,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             if (!vimBuffer.Properties.TryGetPropertySafe(Key, out commandMargin))
             {
                 commandMargin = CreateCommandMargin(vimBuffer);
+                vimBuffer.Properties.AddProperty(Key, commandMargin);
                 vimBuffer.Closed += delegate { vimBuffer.Properties.RemoveProperty(Key); };
             }
 

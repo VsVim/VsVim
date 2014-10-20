@@ -12,11 +12,33 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
 
         private readonly CommandMarginControl _margin = new CommandMarginControl();
         private readonly CommandMarginController _controller;
+        private bool _enabled;
 
         public CommandMargin(FrameworkElement parentVisualElement, IVimBuffer buffer, IEditorFormatMap editorFormatMap, IClassificationFormatMap classificationFormatMap)
         {
             _margin.CommandLineTextBox.Text = "Welcome to Vim";
             _controller = new CommandMarginController(buffer, parentVisualElement, _margin, editorFormatMap, classificationFormatMap);
+            _enabled = true;
+        }
+
+        private void UpdateEnabled(bool enabled)
+        {
+            if (_enabled == enabled)
+            {
+                return;
+            }
+
+            if (enabled)
+            {
+                _margin.Visibility = Visibility.Visible;
+                _controller.Connect();
+                _controller.Reset();
+            }
+            else
+            {
+                _margin.Visibility = Visibility.Collapsed;
+                _controller.Disconnect();
+            }
         }
 
         public FrameworkElement VisualElement
@@ -26,7 +48,8 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
 
         public bool Enabled
         {
-            get { return true; }
+            get { return _enabled; }
+            set { UpdateEnabled(value); }
         }
 
         public ITextViewMargin GetTextViewMargin(string marginName)

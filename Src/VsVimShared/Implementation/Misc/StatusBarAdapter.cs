@@ -18,20 +18,25 @@ namespace Vim.VisualStudio.Implementation.Misc
         private readonly IVsStatusbar _vsStatusbar;
         private readonly IVimProtectedOperations _vimProtectedOperations;
         private readonly IVim _vim;
+        private readonly IVimApplicationSettings _vimApplicationSettings;
         private readonly DispatcherTimer _timer;
 
         [ImportingConstructor]
-        internal StatusBarAdapter(IVim vim, IVimProtectedOperations vimProtectedOperations, ICommandMarginUtil commandMarginUtil, SVsServiceProvider vsServiceProvider)
+        internal StatusBarAdapter(IVim vim, IVimProtectedOperations vimProtectedOperations, ICommandMarginUtil commandMarginUtil, IVimApplicationSettings vimApplicationSettings, SVsServiceProvider vsServiceProvider)
         {
             _vim = vim;
             _vimProtectedOperations = vimProtectedOperations;
             _commandMarginUtil = commandMarginUtil;
+            _vimApplicationSettings = vimApplicationSettings;
             _vsStatusbar = vsServiceProvider.GetService<SVsStatusbar, IVsStatusbar>();
             _timer = new DispatcherTimer(
                 TimeSpan.FromSeconds(.2),
                 DispatcherPriority.ApplicationIdle,
                 OnTimer,
                 Dispatcher.CurrentDispatcher);
+
+            _timer.IsEnabled = !_vimApplicationSettings.UseEditorCommandMargin;
+            _vimApplicationSettings.SettingsChanged += OnSettingsChanged;
         }
 
         private void OnTimer(object sender, EventArgs e)
@@ -56,10 +61,23 @@ namespace Vim.VisualStudio.Implementation.Misc
             }
         }
 
+        private void OnSettingsChanged(object sender, ApplicationSettingsEventArgs e)
+        {
+            var useCommandMargin = _vimApplicationSettings.UseEditorCommandMargin;
+            foreach (var vimBuffer in _vim.VimBuffers)
+            {
+                _commandMarginUtil.SetMarginVisibility(vimBuffer, useCommandMargin);
+            }
+
+            _timer.IsEnabled = !useCommandMargin;
+        }
+
         void IVimBufferCreationListener.VimBufferCreated(IVimBuffer vimBuffer)
         {
-            // Intentionally doing nothing here.  This interface is [Export] simply to ensure it is created
-            // when at least a single IVimBuffer is around.  
+            _vimProtectedOperations.BeginInvoke(
+                () => _commandMarginUtil.SetMarginVisibility(vimBuffer, _vimApplicationSettings.UseEditorCommandMargin),
+                DispatcherPriority.ApplicationIdle);
+
         }
     }
 }

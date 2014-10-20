@@ -65,6 +65,12 @@ namespace Vim.VisualStudio
         bool UseEditorDefaults { get; set; }
 
         /// <summary>
+        /// Do we use the editor command margin for status?  If false the status bar at the bottom
+        /// of VS will be used 
+        /// </summary>
+        bool UseEditorCommandMargin { get; set; }
+
+        /// <summary>
         /// Controls how vimrc files are loaded
         /// </summary>
         VimRcLoadSetting VimRcLoadSetting { get; set; }
