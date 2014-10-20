@@ -69,6 +69,7 @@ namespace Vim.VisualStudio.UnitTest
                 _serviceMap[typeof(IVsExtensibility)] = _factory.Create<IVsExtensibility>().Object;
                 var dte = MockObjectFactory.CreateDteWithCommands();
                 _serviceMap[typeof(_DTE)] = dte.Object;
+                _serviceMap[typeof(SVsStatusbar)] = _factory.Create<IVsStatusbar>().Object;
                 _serviceMap[typeof(SDTE)] = dte.Object;
                 _serviceMap[typeof(SVsSettingsManager)] = CreateSettingsManager().Object;
                 _serviceMap[typeof(SVsFindManager)] = _factory.Create<IVsFindManager>().Object;

@@ -84,6 +84,7 @@ namespace Vim.UI.Wpf.UnitTest
             {
                 var keyInput = GetKeyInput('c');
                 _vimBuffer.RaiseKeyInputStart(keyInput);
+                _vimBuffer.ModeImpl = _vimBuffer.CommandModeImpl;
                 Assert.True(_controller.InVimBufferKeyEvent);
                 _vimBuffer.RaiseKeyInputEnd(keyInput);
                 Assert.False(_controller.InVimBufferKeyEvent);
@@ -401,7 +402,9 @@ namespace Vim.UI.Wpf.UnitTest
                 var mode = new Mock<INormalMode>();
                 _search.SetupGet(x => x.InSearch).Returns(false).Verifiable();
                 mode.SetupGet(x => x.Command).Returns("foo");
+                mode.SetupGet(x => x.ModeKind).Returns(ModeKind.Normal);
                 _vimBuffer.ModeKindImpl = ModeKind.Normal;
+                _vimBuffer.ModeImpl = mode.Object;
                 _vimBuffer.NormalModeImpl = mode.Object;
 
                 SimulateKeystroke();
@@ -415,7 +418,9 @@ namespace Vim.UI.Wpf.UnitTest
             {
                 var mode = new Mock<ICommandMode>();
                 mode.SetupGet(x => x.Command).Returns("foo");
+                mode.SetupGet(x => x.ModeKind).Returns(ModeKind.Command);
                 _vimBuffer.ModeKindImpl = ModeKind.Command;
+                _vimBuffer.ModeImpl = mode.Object;
                 _vimBuffer.CommandModeImpl = mode.Object;
 
                 SimulateKeystroke();
@@ -428,6 +433,8 @@ namespace Vim.UI.Wpf.UnitTest
             {
                 var mode = new Mock<IDisabledMode>();
                 mode.SetupGet(x => x.HelpMessage).Returns("foo").Verifiable();
+                mode.SetupGet(x => x.ModeKind).Returns(ModeKind.Disabled);
+                _vimBuffer.ModeImpl = mode.Object;
                 _vimBuffer.ModeKindImpl = ModeKind.Disabled;
                 _vimBuffer.DisabledModeImpl = mode.Object;
 
@@ -499,8 +506,10 @@ namespace Vim.UI.Wpf.UnitTest
             {
                 var mode = _factory.Create<IVisualMode>();
                 mode.Setup(x => x.CommandRunner).Returns(_factory.Create<ICommandRunner>(MockBehavior.Loose).Object);
+                mode.Setup(x => x.ModeKind).Returns(ModeKind.VisualCharacter);
                 _vimBuffer.VisualCharacterModeImpl = mode.Object;
                 _vimBuffer.ModeKindImpl = ModeKind.VisualCharacter;
+                _vimBuffer.ModeImpl = mode.Object;
                 SimulateSearch("cat", SearchKind.Backward);
                 SimulateKeystroke();
                 _search.SetupGet(x => x.InSearch).Returns(false);

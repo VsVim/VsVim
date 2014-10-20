@@ -39,17 +39,9 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             _classificationFormatMapService = classificationFormatMapService;
         }
 
-        internal CommandMargin GetOrCreateCommandMargin(IVimBuffer vimBuffer)
+        internal bool TryGetCommandMargin(IVimBuffer vimBuffer, out CommandMargin commandMargin)
         {
-            CommandMargin commandMargin;
-            if (!vimBuffer.Properties.TryGetPropertySafe(Key, out commandMargin))
-            {
-                commandMargin = CreateCommandMargin(vimBuffer);
-                vimBuffer.Properties.AddProperty(Key, commandMargin);
-                vimBuffer.Closed += delegate { vimBuffer.Properties.RemoveProperty(Key); };
-            }
-
-            return commandMargin;
+            return vimBuffer.Properties.TryGetPropertySafe(Key, out commandMargin);
         }
 
         private CommandMargin CreateCommandMargin(IVimBuffer vimBuffer)
@@ -59,7 +51,12 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             var wpfTextView = (IWpfTextView)vimBuffer.TextView;
             var editorFormatMap = _editorFormatMapService.GetEditorFormatMap(wpfTextView);
             var classificationFormatMap = _classificationFormatMapService.GetClassificationFormatMap(wpfTextView);
-            return new CommandMargin(wpfTextView.VisualElement, vimBuffer, editorFormatMap, classificationFormatMap);
+            var commandMargin = new CommandMargin(wpfTextView.VisualElement, vimBuffer, editorFormatMap, classificationFormatMap);
+
+            vimBuffer.Properties.AddProperty(Key, commandMargin);
+            vimBuffer.Closed += delegate { vimBuffer.Properties.RemoveProperty(Key); };
+
+            return commandMargin;
         }
 
         #region IWpfTextViewMarginProvider
@@ -72,7 +69,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
                 return null;
             }
 
-            return GetOrCreateCommandMargin(vimBuffer);
+            return CreateCommandMargin(vimBuffer);
         }
 
         #endregion

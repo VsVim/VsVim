@@ -27,8 +27,15 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
                 return;
             }
 
-            var commandMargin = _provider.GetOrCreateCommandMargin(vimBuffer);
-            commandMargin.Enabled = commandMarginVisible;
+            // It's important that we not force create the CommandMargin here.  It is a margin and depends on 
+            // the margin implementation being disposed to avoid memory leaks.  The editor framework though will
+            // only call Dispose if it attempted to create the margin.  If we create the margin and the editor does 
+            // not then Dispose won't be called and a memory leak will occur 
+            CommandMargin commandMargin;
+            if (_provider.TryGetCommandMargin(vimBuffer, out commandMargin))
+            {
+                commandMargin.Enabled = commandMarginVisible;
+            }
         }
 
         internal static bool InPasteWait(IVimBuffer vimBuffer)
@@ -51,7 +58,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
         {
             if (forModeSwitch)
             {
-                return GetStatusCore(vimBuffer, currentMode);
+                return GetStatusCommon(vimBuffer, currentMode);
             }
 
             return GetStatusOther(vimBuffer, currentMode);
@@ -72,7 +79,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             }
 
             string status;
-            switch (vimBuffer.ModeKind)
+            switch (currentMode.ModeKind)
             {
                 case ModeKind.Command:
                     status = ":" + vimBuffer.CommandMode.Command + (InPasteWait(vimBuffer) ? "\"" : "");
@@ -93,14 +100,14 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
                     status = GetStatusWithRegister(Resources.VisualLineBanner, vimBuffer.VisualLineMode.CommandRunner);
                     break;
                 default:
-                    status = GetStatusCore(vimBuffer, currentMode);
+                    status = GetStatusCommon(vimBuffer, currentMode);
                     break;
             }
 
             return status;
         }
 
-        private static string GetStatusCore(IVimBuffer vimBuffer, IMode currentMode)
+        private static string GetStatusCommon(IVimBuffer vimBuffer, IMode currentMode)
         {
             // Calculate the argument string if we are in one time command mode
             string oneTimeArgument = null;

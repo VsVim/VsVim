@@ -8,9 +8,13 @@ using System.Text;
 using System.Windows.Threading;
 using Vim.UI.Wpf;
 using Vim.Extensions;
+using System.Diagnostics;
 
 namespace Vim.VisualStudio.Implementation.Misc
 {
+    /// <summary>
+    /// This class controls the display of the mode line on the VS status bar.  
+    /// </summary>
     [Export(typeof(IVimBufferCreationListener))]
     internal sealed class StatusBarAdapter : IVimBufferCreationListener
     {
@@ -43,6 +47,8 @@ namespace Vim.VisualStudio.Implementation.Misc
         {
             try
             {
+                Debug.Assert(!_vimApplicationSettings.UseEditorCommandMargin);
+
                 var vimBuffer = _vim.FocusedBuffer.SomeOrDefault(null);
                 var status = vimBuffer != null
                     ? _commandMarginUtil.GetStatus(vimBuffer)
