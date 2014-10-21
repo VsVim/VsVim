@@ -1819,6 +1819,7 @@ type internal MotionUtil
 
             span |> Option.map (fun s -> SnapshotSpan(point.Snapshot, s))
 
+
     /// An inner block motion is just the all block motion with the start and 
     /// end character removed 
     member x.InnerBlock contextPoint blockKind count =
@@ -1827,7 +1828,7 @@ type internal MotionUtil
         else
             match x.GetBlock blockKind contextPoint with
             | None -> None
-            | Some span ->
+            | Some span when span.Snapshot.LineCount = 1 ->
                 if span.Length < 3 then
                     None
                 else
@@ -1836,6 +1837,22 @@ type internal MotionUtil
                     let span = SnapshotSpan(startPoint, endPoint)
                     MotionResult.Create span true MotionKind.CharacterWiseInclusive |> Some
 
+            | Some span ->
+                let startPoint = 
+                    if SnapshotPointUtil.IsLastPointOnLine span.Start = false then
+                        span.Start.Add 1
+                    else
+                        span.Start.GetContainingLine().End.Add 2
+
+                let endPoint =
+                    if SnapshotLineUtil.GetFirstNonBlank(span.End.GetContainingLine()) <> Some ( span.End.Subtract 1) then
+                        span.End.Subtract 1
+                    else
+                        span.End.GetContainingLine().Start.Subtract 2
+
+                let span = SnapshotSpanUtil.Create startPoint endPoint
+                MotionResult.Create span true MotionKind.CharacterWiseInclusive |> Some
+                
     /// Implement the 'iw' motion.  Unlike the 'aw' motion it is not limited to a specific line
     /// and can exceed it
     ///

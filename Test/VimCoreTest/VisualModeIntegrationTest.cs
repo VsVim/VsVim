@@ -538,12 +538,12 @@ namespace Vim.UnitTest
                     // and replace with the "completed" text
                     _textBuffer.Replace(new Span(0, 0), "protected");
                     _vimBuffer.ProcessNotation("<Esc>");
-                    Assert.Equal(new [] 
+                    Assert.Equal(new[] 
                         {
                             "protected string Prop1",
                             "protected string Prop2",
                             "protected string Prop3"
-                        }, 
+                        },
                         _textBuffer.GetLines());
                 }
 
@@ -560,12 +560,12 @@ namespace Vim.UnitTest
                     // and replace with the "completed" text
                     _textBuffer.Replace(new Span(0, 2), "protected");
                     _vimBuffer.ProcessNotation("<Esc>");
-                    Assert.Equal(new [] 
+                    Assert.Equal(new[] 
                         {
                             "protected string Prop1",
                             "protected string Prop2",
                             "protected string Prop3"
-                        }, 
+                        },
                         _textBuffer.GetLines());
                 }
             }
@@ -755,7 +755,7 @@ namespace Vim.UnitTest
                 {
                     Create("cat", "dog", "fish", "store");
                     _vimBuffer.ProcessNotation("<C-q>j<S-i>xy<BS><Esc>jj.");
-                    Assert.Equal(new[] { "xcat", "xdog", "xfish" , "xstore" }, _textBuffer.GetLines());
+                    Assert.Equal(new[] { "xcat", "xdog", "xfish", "xstore" }, _textBuffer.GetLines());
                 }
 
                 /// <summary>
@@ -767,7 +767,7 @@ namespace Vim.UnitTest
                 {
                     Create("cat", "dog", "fish", "store");
                     _vimBuffer.ProcessNotation("<C-q>j<S-i>xy<BS><BS><Esc>jj.");
-                    Assert.Equal(new[] { "cat", "dog", "fish" , "store" }, _textBuffer.GetLines());
+                    Assert.Equal(new[] { "cat", "dog", "fish", "store" }, _textBuffer.GetLines());
                 }
 
                 [Fact]
@@ -928,7 +928,7 @@ namespace Vim.UnitTest
                 /// though total because the 'd' occupies part of the tab width.  Need to resolve
                 /// this 
                 /// </summary>
-                [Fact(Skip="Need to actually fix this test once and for all")]
+                [Fact(Skip = "Need to actually fix this test once and for all")]
                 public void Overlap()
                 {
                     Create("cat", "d\tog");
@@ -2360,6 +2360,20 @@ namespace Vim.UnitTest
                 _vimBuffer.Process("vib");
                 Assert.Equal("dog", _textView.GetSelectionSpan().GetText());
                 Assert.Equal(7, _textView.GetCaretPoint().Position);
+            }
+
+            /// <summary>
+            /// Ensure the iB motion excludes the brackets and puts the caret on the last 
+            /// character
+            /// </summary>
+            [Fact]
+            public void TextObject_InnerBlock()
+            {
+                Create("int foo (bar b)", "{", "if (true)", "{", "int a;", "int b;", "}", "}");
+                _textView.MoveCaretToLine(4);
+                _vimBuffer.Process("viB");
+                Assert.Equal(_textBuffer.GetLineRange(4, 5).GetText(), _textView.GetSelectionSpan().GetText());
+                Assert.Equal(48, _textView.GetCaretPoint().Position);
             }
 
             /// <summary>
