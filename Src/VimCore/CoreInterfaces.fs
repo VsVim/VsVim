@@ -2527,6 +2527,9 @@ type NormalCommand =
     /// the indent of the current line
     | PutBeforeCaretWithIndent
 
+    /// Print out the current file information
+    | PrintFileInformation
+
     /// Start the recording of a macro to the specified Register
     | RecordMacroStart of char
 

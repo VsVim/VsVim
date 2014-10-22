@@ -1893,6 +1893,16 @@ type internal CommandUtil
 
         CommandResult.Completed ModeSwitch.SwitchPreviousMode
 
+    member x.PrintFileInformation() =
+        let filePath = _vimHost.GetName _textBuffer
+        let lineCount = _textBuffer.CurrentSnapshot.LineCount
+        let percent = 
+            let caretLine = x.CaretLineNumber
+            int ((single caretLine) / (single lineCount))
+        let msg = sprintf "%s %d lines --%d%%--" filePath lineCount percent
+        _statusUtil.OnStatus msg
+        CommandResult.Completed ModeSwitch.NoSwitch
+
     /// Start a macro recording
     member x.RecordMacroStart c = 
         let isAppend, c = 
@@ -2326,6 +2336,7 @@ type internal CommandUtil
         | NormalCommand.PutAfterCaretMouse -> x.PutAfterCaretMouse()
         | NormalCommand.PutBeforeCaret moveCaretBeforeText -> x.PutBeforeCaret register count moveCaretBeforeText
         | NormalCommand.PutBeforeCaretWithIndent -> x.PutBeforeCaretWithIndent register count
+        | NormalCommand.PrintFileInformation -> x.PrintFileInformation()
         | NormalCommand.RecordMacroStart c -> x.RecordMacroStart c
         | NormalCommand.RecordMacroStop -> x.RecordMacroStop()
         | NormalCommand.Redo -> x.Redo count
