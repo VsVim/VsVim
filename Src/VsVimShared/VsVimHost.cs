@@ -562,7 +562,7 @@ namespace Vim.VisualStudio
             }
         }
 
-        private void MoveFocusHorizontally(Func<int,int> changeIndex)
+        private void MoveFocusHorizontally(int indexDelta)
         {
             // Thanks to https://github.com/mrdooz/TabGroupJumper/blob/master/TabGroupJumper/Connect.cs
             var topLevelWindows = _dte.Windows.Cast<Window>()
@@ -570,7 +570,7 @@ namespace Vim.VisualStudio
                 .ToList();
             topLevelWindows.Sort((a, b) => a.Left < b.Left ? -1 : 1);
             var indexOfActiveDoc = topLevelWindows.FindIndex(win => win.Document == _dte.ActiveDocument);
-            var movedIndex = changeIndex(indexOfActiveDoc);
+            var movedIndex = indexOfActiveDoc - indexDelta;
             var newIndex = (movedIndex < 0 ? movedIndex + topLevelWindows.Count : movedIndex % topLevelWindows.Count);
             topLevelWindows[newIndex].Activate();
         }
@@ -587,11 +587,11 @@ namespace Vim.VisualStudio
                     result = _textManager.MoveViewDown(textView);
                     break;
                 case Direction.Left:
-                    MoveFocusHorizontally(index => index - 1);
+                    MoveFocusHorizontally(-1);
                     result = true;
                     break;
                 case Direction.Right:
-                    MoveFocusHorizontally(index => index + 1);
+                    MoveFocusHorizontally(1);
                     result = true;
                     break;
                 default:
