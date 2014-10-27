@@ -204,13 +204,14 @@ type internal SelectionChangeTracker
             not _textView.Selection.IsReversed && 
             (_vimBuffer.ModeKind = ModeKind.VisualCharacter || _vimBuffer.ModeKind = ModeKind.SelectCharacter)) then
 
-            match TextViewUtil.GetTextViewLines _textView with
-            | Some textViewLines ->
-                let x = _textView.Caret.Left
-                let y = _textView.Caret.Top
+            match TextViewUtil.GetTextViewLines _textView, _mouseDevice.GetPosition _textView |> NullableUtil.ToOption with
+            | Some textViewLines, Some wpfPoint ->
+                let x = wpfPoint.X
+                let y = wpfPoint.Y
                 let textViewLine = textViewLines.GetTextViewLineContainingYCoordinate y
                 if textViewLine <> null then
                     let point = textViewLine.GetBufferPositionFromXCoordinate x 
+                    VimTrace.TraceInfo("Caret {0} Point = {1}", x, if point.HasValue then point.Value.GetChar() else ' ')
                     if point.HasValue && point.Value.Position >= _textView.Selection.ActivePoint.Position.Position && point.Value.Position < point.Value.Snapshot.Length then
                         let activePoint = VirtualSnapshotPoint(point.Value.Add(1))
                         let anchorPoint = _textView.Selection.AnchorPoint
