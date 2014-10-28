@@ -718,9 +718,9 @@ type VimInterpreter
     member x.RunGoToFirstTab() =
         _commonOperations.GoToTab 0
 
-    /// Go to the first tab
+    /// Go to the last tab
     member x.RunGoToLastTab() =
-        _commonOperations.GoToTab 0
+        _commonOperations.GoToTab _vimHost.TabCount
 
     /// Go to the next "count" tab 
     member x.RunGoToNextTab count = 

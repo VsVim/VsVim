@@ -2057,5 +2057,25 @@ namespace Vim.UnitTest
                 Assert.True(VimHost.ClosedOtherWindows);
             }
         }
+
+        public sealed class GoToTabTest : InterpreterTest
+        {
+            [Fact]
+            public void TabFirstGoesToFirstTab()
+            {
+                Create();
+                ParseAndRun("tabfirst");
+                Assert.Equal(0, VimHost.GoToTabData);
+            }
+
+            [Fact]
+            public void TabLastGoesToLastTab()
+            {
+                Create();
+                VimHost.TabCount = 3;
+                ParseAndRun("tablast");
+                Assert.Equal(2, VimHost.GoToTabData);
+            }
+        }
     }
 }
