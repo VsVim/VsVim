@@ -705,8 +705,8 @@ with
 
 [<RequireQualifiedAccess>]
 type BuiltinFunctionCall =
-    | Exists of Expression
-    | Expand of Expression * Expression option * Expression option
+    | Exists of VariableValue
+    | Expand of VariableValue * VariableValue option * VariableValue option
 
 /// Engine which interprets Vim commands and expressions
 type IVimInterpreter =
