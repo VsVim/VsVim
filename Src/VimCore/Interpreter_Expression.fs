@@ -23,6 +23,11 @@ type VariableName = {
 }
 
 [<RequireQualifiedAccess>]
+type FunctionName = // TODO there's a lot that can go into function names than what is represented here
+    | Builtin of string
+    | UserDefined of string
+
+[<RequireQualifiedAccess>]
 type VariableType =
     | Number
     | Float
@@ -335,7 +340,7 @@ type FunctionDefinition = {
     Name : string
 
     /// Arguments to the function
-    Arguments : string list
+    Arguments : string list // TODO do we mean "parameters" here rather than "arguments"?
 
     /// Is the function responsible for its ranges
     IsRange : bool
@@ -403,6 +408,9 @@ and [<RequireQualifiedAccess>] Expression =
 
     /// The name of a variable
     | VariableName of VariableName
+
+    /// Invocation of a function
+    | FunctionCall of FunctionName * Expression list
 
 and [<RequireQualifiedAccess>] LineCommand =
 
@@ -694,6 +702,11 @@ with
 
     member x.Failed = 
         not x.Succeeded
+
+[<RequireQualifiedAccess>]
+type BuiltinFunctionCall =
+    | Exists of Expression
+    | Expand of Expression * Expression option * Expression option
 
 /// Engine which interprets Vim commands and expressions
 type IVimInterpreter =

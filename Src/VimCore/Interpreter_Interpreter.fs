@@ -121,6 +121,17 @@ type ExpressionInterpreter
 
 [<Sealed>]
 [<Class>]
+type BuiltinFunctionCaller
+    (
+        _variableMap : Dictionary<string, VariableValue>
+    ) =
+    member x.Call (func : BuiltinFunctionCall) =
+        match func with
+        | BuiltinFunctionCall.Exists name -> VariableValue.Number 0 |> Expression.ConstantValue |> Some
+        | _ -> None
+
+[<Sealed>]
+[<Class>]
 type VimInterpreter
     (
         _vimBuffer : IVimBuffer,
