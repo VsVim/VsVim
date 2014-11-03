@@ -5,34 +5,6 @@ open System.Text
 open System.Text.RegularExpressions
 open StringBuilderExtensions
 
-[<System.Flags>]
-type VimRegexOptions = 
-    | Default = 0
-    | NotCompiled = 0x1
-    | IgnoreCase = 0x2
-    | SmartCase = 0x4
-    | NoMagic = 0x8
-
-[<RequireQualifiedAccess>]
-type CaseSpecifier =
-    | None
-    | IgnoreCase
-    | OrdinalCase 
-
-/// Data for a replace operation
-type ReplaceData = {
-
-    /// When the '\r' replace sequence is used what should the replace string be.  This
-    /// is usually contextual to the point in the IVimBuffer
-    NewLine : string
-
-    /// Whether or not magic should apply
-    Magic : bool
-
-    /// The 'count' times it should be replaced.  Not considered in a replace all
-    Count : int
-}
-
 module VimRegexUtils = 
 
     /// Profiling reveals that one of the biggest expenses of fast editing with :hlsearch
