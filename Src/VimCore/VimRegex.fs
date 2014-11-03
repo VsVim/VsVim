@@ -69,6 +69,9 @@ type VimRegexReplaceUtil
         _matchCollection : MatchCollection
     ) =
 
+    /// From :help key-notation the constant for <CR>
+    static let CharCarriageReturn = char 13
+
     let mutable _replaceCount = 0
     let mutable _replacement = ""
     let mutable _index = 0
@@ -115,7 +118,7 @@ type VimRegexReplaceUtil
             match _replacement.[_index + 1] with
             | '\\' -> _builder.AppendChar '\\'
             | 't' -> _builder.AppendChar '\t'
-            | 'r' -> _builder.AppendString _replaceData.NewLine
+            | 'n' -> _builder.AppendChar (char 0)
             | '0' -> x.AppendReplaceString m.Value
             | '&' -> 
                 if _replaceData.Magic then
@@ -128,15 +131,22 @@ type VimRegexReplaceUtil
             | 'L' -> _caseState <- VimReplaceCaseState.LowerUtil
             | 'e' -> _caseState <- VimReplaceCaseState.None
             | 'E' -> _caseState <- VimReplaceCaseState.None
+            | 'r' -> _builder.AppendString _replaceData.NewLine
             | c -> 
-                match CharUtil.GetDigitValue c with 
-                | Some d-> x.AppendGroup m d
-                | None ->
-                    _builder.AppendChar '\\'
-                    _builder.AppendChar c
+                if c = CharCarriageReturn then
+                    _builder.AppendString _replaceData.NewLine
+                else
+                    match CharUtil.GetDigitValue c with 
+                    | Some d-> x.AppendGroup m d
+                    | None ->
+                        _builder.AppendChar '\\'
+                        _builder.AppendChar c
             _index <- _index + 2
         | c -> 
-            x.AppendReplaceChar c
+            if c = CharCarriageReturn then
+                _builder.AppendString _replaceData.NewLine
+            else
+                x.AppendReplaceChar c
             _index <- _index + 1
 
     member private x.AppendReplacementCore (m : Match) =

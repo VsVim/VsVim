@@ -318,6 +318,24 @@ namespace Vim.UnitTest
             {
                 VerifyReplace("fishy", "fish tree", @"let\3", "fish tree");
             }
+
+            [Fact]
+            public void InsertNewLine()
+            {
+                VerifyReplace(@"o", "dog", @"\r", "d" + Environment.NewLine + "g");
+                VerifyReplace(@"o", "dog", @"\" + VimRegexReplaceUtil.CharCarriageReturn, "d" + Environment.NewLine + "g");
+                VerifyReplace(@"o", "dog", @"" + VimRegexReplaceUtil.CharCarriageReturn, "d" + Environment.NewLine + "g");
+            }
+
+            /// <summary>
+            /// The \n replace actually inserts the null character and not a new line 
+            /// into the file
+            /// </summary>
+            [Fact]
+            public void InsertNullCharacter()
+            {
+                VerifyReplace(@"o", "dog", @"\n", "d" + (char)0 + "g");
+            }
         }
 
         public sealed class MiscTest : VimRegexTest
