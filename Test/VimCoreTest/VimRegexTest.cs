@@ -274,11 +274,37 @@ namespace Vim.UnitTest
                 VerifyReplace(@"\n", "hello\rworld", " ", "hello world");
             }
 
-            [Fact(Skip = "Not implemented yet")]
-            public void UpperCaseLetter()
+            [Fact]
+            public void UpperCaseChar()
             {
                 VerifyReplace("cat", "cat dog", @"\u&", "Cat dog");
                 VerifyReplace("cat", "cat dog", @"\ubat", "Bat dog");
+                VerifyReplace(@"\(cat\)", "cat dog", @"\u\1", "Cat dog");
+                VerifyReplace("cat", "cat dog", @"\u\0", "Cat dog");
+            }
+
+            [Fact]
+            public void UpperCaseUntil()
+            {
+                VerifyReplace("cat", "cat dog", @"\U&", "CAT dog");
+                VerifyReplace("cat", "cat dog", @"\U&&", "CATCAT dog");
+                VerifyReplace("cat", "cat dog", @"\U&\e&", "CATcat dog");
+            }
+
+            [Fact]
+            public void LowerCaseChar()
+            {
+                VerifyReplace("CAT", "CAT dog", @"\l&", "cAT dog");
+                VerifyReplace("CAT", "CAT dog", @"\l&s", "cATs dog");
+                VerifyReplace("CAT", "CAT dog", @"\l\0s", "cATs dog");
+            }
+
+            [Fact]
+            public void LowerCaseUntil()
+            {
+                VerifyReplace("CAT", "CAT dog", @"\L&", "cat dog");
+                VerifyReplace("CAT", "CAT dog", @"\L&s", "cats dog");
+                VerifyReplace("CAT", "CAT dog", @"\L\0s", "cats dog");
             }
         }
 

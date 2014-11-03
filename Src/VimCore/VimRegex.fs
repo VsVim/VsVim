@@ -123,11 +123,29 @@ type VimRegexReplaceUtil
     let mutable _caseState = VimReplaceCaseState.None
     let mutable _builder = StringBuilder()
 
+    member private x.AppendReplaceChar c = 
+        match _caseState with
+        | VimReplaceCaseState.None -> 
+            _builder.AppendChar c
+        | VimReplaceCaseState.LowerChar -> 
+            _builder.AppendChar (CharUtil.ToLower c)
+            _caseState <- VimReplaceCaseState.None
+        | VimReplaceCaseState.LowerUtil -> 
+            _builder.AppendChar (CharUtil.ToLower c)
+        | VimReplaceCaseState.UpperChar ->
+            _builder.AppendChar (CharUtil.ToUpper c)
+            _caseState <- VimReplaceCaseState.None
+        | VimReplaceCaseState.UpperUntil ->
+            _builder.AppendChar (CharUtil.ToUpper c)
+    
+    member private x.AppendReplaceString str = 
+        str |> Seq.iter x.AppendReplaceChar
+
     member private x.AppendGroup (m : Match) digit = 
         Contract.Requires (digit <> 0)
         if digit < m.Groups.Count then
             let group = m.Groups.[digit]
-            _builder.AppendString group.Value
+            x.AppendReplaceString group.Value
 
     /// Append the next element from the replace string.  This is typically a character but can 
     /// be more if the character is an escape sequence.  
@@ -138,19 +156,25 @@ type VimRegexReplaceUtil
 
         match _replacement.[_index] with
         | '&' when _isMagic ->
-            _builder.AppendString m.Value
+            x.AppendReplaceString m.Value
             _index <- _index + 1
         | '\\' when (_index + 1) < _replacement.Length ->
             match _replacement.[_index + 1] with
             | '\\' -> _builder.AppendChar '\\'
             | 't' -> _builder.AppendChar '\t'
             | 'r' -> _builder.AppendString Environment.NewLine
-            | '0' -> _builder.AppendString m.Value
+            | '0' -> x.AppendReplaceString m.Value
             | '&' -> 
                 if _isMagic then
                     _builder.AppendChar '&'
                 else
-                    _builder.AppendString m.Value
+                    x.AppendReplaceString m.Value
+            | 'u' -> _caseState <- VimReplaceCaseState.UpperChar
+            | 'U' -> _caseState <- VimReplaceCaseState.UpperUntil
+            | 'l' -> _caseState <- VimReplaceCaseState.LowerChar
+            | 'L' -> _caseState <- VimReplaceCaseState.LowerUtil
+            | 'e' -> _caseState <- VimReplaceCaseState.None
+            | 'E' -> _caseState <- VimReplaceCaseState.None
             | c -> 
                 match CharUtil.GetDigitValue c with 
                 | Some d-> x.AppendGroup m d
@@ -159,8 +183,14 @@ type VimRegexReplaceUtil
                     _builder.AppendChar c
             _index <- _index + 2
         | c -> 
-            _builder.AppendChar c
+            x.AppendReplaceChar c
             _index <- _index + 1
+
+    member private x.AppendReplacement (m : Match) =
+        _caseState <- VimReplaceCaseState.None
+        _index <- 0
+        while _index < _replacement.Length do
+            x.AppendNextElement m
 
     /// Append the text which occurred before the match specified by this index.
     member private x.AppendInputBefore (matchIndex : int) =
@@ -188,11 +218,7 @@ type VimRegexReplaceUtil
         while matchIndex < _matchCollection.Count do
             let m = _matchCollection.[matchIndex]
             x.AppendInputBefore matchIndex
-
-            _index <- 0
-            while _index < _replacement.Length do
-                x.AppendNextElement m
-
+            x.AppendReplacement m 
             matchIndex <- matchIndex + 1
 
         x.AppendInputEnd()
