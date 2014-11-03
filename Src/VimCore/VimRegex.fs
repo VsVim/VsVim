@@ -124,7 +124,7 @@ type VimRegexReplaceUtil
                 if _replaceData.Magic then
                     _builder.AppendChar '&'
                 else
-                    x.AppendReplaceString m.Value
+                    _builder.AppendChar '&'
             | 'u' -> _caseState <- VimReplaceCaseState.UpperChar
             | 'U' -> _caseState <- VimReplaceCaseState.UpperUntil
             | 'l' -> _caseState <- VimReplaceCaseState.LowerChar
@@ -241,6 +241,8 @@ type MagicKind =
 
     member x.IsAnyMagic = not x.IsAnyNoMagic
 
+/// This type is responsible for converting a vim style regex into a .Net based
+/// one.  
 type VimRegexBuilder 
     (
         _pattern : string,
@@ -255,9 +257,9 @@ type VimRegexBuilder
     let mutable _builder = StringBuilder()
     let mutable _isBroken = false
     let mutable _isStartOfPattern = true
-    let mutable _isStartOfGroup = false
+    let mutable _isStartOfCollection = false
     let mutable _isRangeOpen = false
-    let mutable _isGroupOpen = false
+    let mutable _isCollectionOpen = false
     let mutable _includesNewLine = false
     let mutable _caseSpecifier = CaseSpecifier.None
 
@@ -291,16 +293,16 @@ type VimRegexBuilder
         with get() = _isStartOfPattern
         and set value = _isStartOfPattern <- value
 
-    /// Is this the first character inside of a grouping [] construct
-    member x.IsStartOfGroup 
-        with get() = _isStartOfGroup
-        and set value = _isStartOfGroup <- value
+    /// Is this the first character inside of a collection [] construct
+    member x.IsStartOfCollection 
+        with get() = _isStartOfCollection
+        and set value = _isStartOfCollection <- value
 
     /// Is this in the middle of a range? 
     member x.IsRangeOpen = _isRangeOpen
 
-    /// Is this in the middle of a group?
-    member x.IsGroupOpen = _isGroupOpen
+    /// Is this in the middle of a collection?
+    member x.IsCollectionOpen = _isCollectionOpen
 
     /// Includes a \n reference
     member x.IncludesNewLine
@@ -326,14 +328,14 @@ type VimRegexBuilder
     member x.AppendEscapedChar c = 
         c |> StringUtil.ofChar |> Regex.Escape |> x.AppendString
 
-    member x.BeginGroup() = 
+    member x.BeginCollection() = 
         x.AppendChar '['
-        _isGroupOpen <- true
-        _isStartOfGroup <- true
+        _isCollectionOpen <- true
+        _isStartOfCollection <- true
 
-    member x.EndGroup() = 
+    member x.EndCollection() = 
         x.AppendChar ']'
-        _isGroupOpen <- false
+        _isCollectionOpen <- false
 
     member x.BeginRange() =
         x.AppendChar '{'
@@ -348,10 +350,10 @@ type VimRegexBuilder
 
 module VimRegexFactory =
 
-    /// In Vim if a grouping is unmatched then it is appended literally into the match 
+    /// In Vim if a collection is unmatched then it is appended literally into the match 
     /// stream.  Can't determine if it's unmatched though until the string is fully 
     /// processed.  At this point we just go backwards and esacpe it
-    let FixOpenGroup (data : VimRegexBuilder) = 
+    let FixOpenCollection (data : VimRegexBuilder) = 
         let builder = data.Builder
         let mutable i = builder.Length - 1
         while i >= 0 do
@@ -382,8 +384,8 @@ module VimRegexFactory =
             else
                 regexOptions ||| RegexOptions.IgnoreCase
 
-        if data.IsGroupOpen then
-            FixOpenGroup data
+        if data.IsCollectionOpen then
+            FixOpenCollection data
 
         if data.IsBroken || data.IsRangeOpen then 
             None
@@ -408,7 +410,7 @@ module VimRegexFactory =
         | '{' -> if data.IsRangeOpen then data.Break() else data.BeginRange()
         | '}' -> if data.IsRangeOpen then data.EndRange() else data.AppendChar '}'
         | '|' -> data.AppendChar '|'
-        | '^' -> if data.IsStartOfPattern || data.IsStartOfGroup then data.AppendChar '^' else data.AppendEscapedChar '^'
+        | '^' -> if data.IsStartOfPattern || data.IsStartOfCollection then data.AppendChar '^' else data.AppendEscapedChar '^'
         | '$' -> 
             if data.IsEndOfPattern then 
                 data.AppendString @"\r?$" 
@@ -422,8 +424,8 @@ module VimRegexFactory =
                 data.AppendEscapedChar ']'
                 data.IncrementIndex 1
             | _ -> 
-                data.BeginGroup()
-        | ']' -> if data.IsGroupOpen then data.EndGroup() else data.AppendEscapedChar(']')
+                data.BeginCollection()
+        | ']' -> if data.IsCollectionOpen then data.EndCollection() else data.AppendEscapedChar(']')
         | 'd' -> data.AppendString @"\d"
         | 'D' -> data.AppendString @"\D"
         | 's' -> data.AppendString @"\s"
@@ -517,7 +519,6 @@ module VimRegexFactory =
     /// Process an escaped character.  Look first for global options such as ignore 
     /// case or magic and then go for magic specific characters
     let ProcessEscapedChar (data : VimRegexBuilder) c =
-        let escape = VimRegexUtils.Escape
         match c with 
         | 'm' -> data.MagicKind <- MagicKind.Magic
         | 'M' -> data.MagicKind <- MagicKind.NoMagic
@@ -571,7 +572,7 @@ module VimRegexFactory =
                 match data.CharAtIndex with
                 | None -> CreateVimRegex data 
                 | Some '\\' -> 
-                    let wasStartOfGroup = data.IsStartOfGroup
+                    let wasStartOfCollection = data.IsStartOfCollection
                     data.IncrementIndex 1
                     match data.CharAtIndex with 
                     | None -> ProcessNormalChar data '\\'
@@ -579,10 +580,10 @@ module VimRegexFactory =
                         data.IncrementIndex 1
                         ProcessEscapedChar data c
 
-                    // If we were at the start of a grouping before processing this 
+                    // If we were at the start of a collection before processing this 
                     // char then we no longer are afterwards
-                    if wasStartOfGroup then 
-                        data.IsStartOfGroup <- false
+                    if wasStartOfCollection then 
+                        data.IsStartOfCollection <- false
 
                     inner ()
                 | Some c -> 
