@@ -98,6 +98,89 @@ module VimRegexUtils =
 
         inner 0
 
+[<RequireQualifiedAccess>]
+[<NoComparison>]
+type VimReplaceCaseState = 
+    | None
+    | UpperChar
+    | UpperUntil
+    | LowerChar
+    | LowerUtil
+
+
+/// Type responsible for generating replace strings.
+[<Sealed>]
+type VimRegexReplaceUtil
+    (
+        _isMagic : bool,
+        _input : string,
+        _matchCollection : MatchCollection
+    ) =
+
+    let mutable _replacement = ""
+    let mutable _index = 0
+    let mutable _caseState = VimReplaceCaseState.None
+    let mutable _builder = StringBuilder()
+
+    /// Append the next element from the replace string.  This is typically a character but can 
+    /// be more if the character is an escape sequence.  
+    ///
+    /// This method is responsible for updating _index based on the value consumed
+    member private x.AppendNextElement (m : Match) =  
+        Contract.Requires (_index < _replacement.Length)
+
+        match _replacement.[_index] with
+        | '&' when _isMagic ->
+            _builder.AppendString m.Value
+            _index <- _index + 1
+        | '\\' when (_index + 1) < _replacement.Length ->
+            match _replacement.[_index + 1] with
+            | '\\' -> _builder.AppendChar '\\'
+            | '0' -> _builder.AppendString m.Value
+            | '&' when _isMagic -> _builder.AppendString m.Value
+            | c -> 
+                _builder.AppendChar '\\'
+                _builder.AppendChar c
+            _index <- _index + 2
+        | c -> 
+            _builder.AppendChar c
+            _index <- _index + 1
+
+    /// Append the text which occurred before the match specified by this index.
+    member private x.AppendInputBefore (matchIndex : int) =
+        if matchIndex = 0 then
+            let m = _matchCollection.[matchIndex]
+            _builder.AppendSubstring _input 0 m.Index
+        else
+            let current = _matchCollection.[matchIndex]
+            let before = _matchCollection.[matchIndex - 1]
+            let charSpan = CharSpan.FromBounds _input (before.Index + before.Length) current.Index CharComparer.Exact
+            _builder.AppendCharSpan charSpan
+
+    member private x.AppendInputEnd() = 
+        let last = _matchCollection.[_matchCollection.Count - 1]
+        let charSpan = CharSpan.FromBounds _input (last.Index + last.Length) _input.Length CharComparer.Exact
+        _builder.AppendCharSpan charSpan
+
+    member x.Replace (replacement : string) = 
+        _replacement <- replacement
+        _builder.Length <- 0
+        _caseState <- VimReplaceCaseState.None
+        _index <- 0
+
+        let mutable matchIndex = 0 
+        while matchIndex < _matchCollection.Count do
+            let m = _matchCollection.[matchIndex]
+            x.AppendInputBefore matchIndex
+
+            _index <- 0
+            while _index < _replacement.Length do
+                x.AppendNextElement m
+
+            matchIndex <- matchIndex + 1
+
+        x.AppendInputEnd()
+        _builder.ToString()
 
 /// Represents a Vim style regular expression 
 [<Sealed>]
@@ -117,8 +200,17 @@ type VimRegex
     member x.IncludesNewLine = _includesNewLine
     member x.IsMatch input = _regex.IsMatch(input)
     member x.ReplaceAll (input : string) (replacement : string) (replaceData : VimRegexReplaceData) = 
+        (*
         let replacement = VimRegexUtils.ConvertReplacementString replacement replaceData
         _regex.Replace(input, replacement)
+        *)
+
+        let collection = _regex.Matches(input)
+        if collection.Count > 0 then
+            let util = VimRegexReplaceUtil(replaceData.Magic, input, collection)
+            util.Replace(replacement)
+        else
+            input
     member x.Replace (input : string) (replacement : string) (replaceData : VimRegexReplaceData) =
         let replacement = VimRegexUtils.ConvertReplacementString replacement replaceData
         _regex.Replace(input, replacement, replaceData.Count) 
