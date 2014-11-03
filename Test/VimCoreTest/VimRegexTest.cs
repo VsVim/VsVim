@@ -1228,7 +1228,7 @@ namespace Vim.UnitTest
         public sealed class SearchTest : VimRegexTest
         {
             [Fact]
-            public void Digits()
+            public void NormalDigits()
             {
                 VerifyMatches(@"\d", "1");
                 VerifyMatches(@"\d\+", "100");
@@ -1257,7 +1257,7 @@ namespace Vim.UnitTest
                 VerifyMatches(@"\O", "a", "!@", "8");
             }
 
-            [Fact(Skip = "Disabling until I can debug the failure on a different machine")] 
+            [Fact]
             public void NamedCollection()
             {
                 VerifyMatches(@"[[:alpha:]]", "a", "d");

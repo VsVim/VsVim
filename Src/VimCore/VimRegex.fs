@@ -361,6 +361,18 @@ type VimRegexBuilder
 
 module VimRegexFactory =
 
+    /// Generates strings based on a char filter func.  Easier than hand writing out
+    /// the values
+    let GenerateCharString filterFunc = 
+        [0 .. 255]
+        |> Seq.map (fun x -> char x)
+        |> Seq.filter filterFunc
+        |> StringUtil.ofCharSeq
+
+    let ControlCharString = GenerateCharString CharUtil.IsControl
+    let PunctuationCharString = GenerateCharString Char.IsPunctuation
+    let SpaceCharString = GenerateCharString Char.IsWhiteSpace
+
     /// These are the named collections specified out inside of :help E769.  These are always
     /// appended inside a .Net [] collection and hence need to be valid in that context
     let NamedCollectionMap = 
@@ -368,6 +380,17 @@ module VimRegexFactory =
             ("alnum", "A-Za-z0-9") 
             ("alpha", "A-Za-z") 
             ("blank", " \t")
+            ("cntrl", ControlCharString)
+            ("digit", "0-9")
+            ("lower", "a-z")
+            ("punct", PunctuationCharString)
+            ("space", SpaceCharString)
+            ("upper", "A-Z")
+            ("xdigit", "A-Fa-f0-9")
+            ("return", StringUtil.ofChar (char 13))
+            ("tab", "`t")
+            ("escape", StringUtil.ofChar (char 27))
+            ("backspace", StringUtil.ofChar (char 8))
         |] |> Map.ofArray
 
     /// In Vim if a collection is unmatched then it is appended literally into the match 
@@ -577,7 +600,7 @@ module VimRegexFactory =
         let index = data.Index
         if data.CharAtOrDefault index = ':' then
             let mutable endIndex = index + 1
-            while endIndex < data.Pattern.Length && data.CharAtOrDefault index <> ':' do
+            while endIndex < data.Pattern.Length && data.CharAtOrDefault endIndex <> ':' do
                 endIndex <- endIndex + 1
 
             if data.CharAtOrDefault (endIndex + 1) = ']' then
@@ -599,7 +622,7 @@ module VimRegexFactory =
                 match Map.tryFind name NamedCollectionMap with
                 | Some value -> 
                     // Length of the name + characters in the named "::]"
-                    data.Index <- name.Length + 3
+                    data.Index <- data.Index + (name.Length + 3)
                     data.AppendString value
                     true
                 | None -> false
