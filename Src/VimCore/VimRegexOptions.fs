@@ -40,6 +40,12 @@ type CaseSpecifier =
     /// Pattern contained the \C modifier
     | OrdinalCase 
 
+[<RequireQualifiedAccess>]
+[<NoComparison>]
+type VimRegexReplaceCount = 
+    | One
+    | All
+
 /// Data for a replace operation
 type VimRegexReplaceData = {
 
@@ -51,8 +57,8 @@ type VimRegexReplaceData = {
     Magic : bool
 
     /// The 'count' times it should be replaced.  Not considered in a replace all
-    Count : int
+    Count : VimRegexReplaceCount
 } with
 
-    static member Default = { NewLine = Environment.NewLine; Magic = false; Count = 1 }
+    static member Default = { NewLine = Environment.NewLine; Magic = false; Count = VimRegexReplaceCount.One }
 

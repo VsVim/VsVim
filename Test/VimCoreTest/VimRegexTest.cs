@@ -124,8 +124,8 @@ namespace Vim.UnitTest
                 Assert.True(regex.IsSome());
 
                 var noMagic = VimRegexOptions.NoMagic == (options & VimRegexOptions.NoMagic);
-                var replaceData = new VimRegexReplaceData(Environment.NewLine, !noMagic, 1);
-                Assert.Equal(result, regex.Value.ReplaceAll(input, replace, replaceData));
+                var replaceData = new VimRegexReplaceData(Environment.NewLine, !noMagic, VimRegexReplaceCount.All);
+                Assert.Equal(result, regex.Value.Replace(input, replace, replaceData));
             }
 
             /// <summary>

@@ -676,7 +676,7 @@ type internal CommonOperations
         {
             NewLine = newLineText
             Magic = _globalSettings.Magic
-            Count = 1 }
+            Count = VimRegexReplaceCount.One }
 
     member x.GoToDefinition() =
         let before = TextViewUtil.GetCaretPoint _textView

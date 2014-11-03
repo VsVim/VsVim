@@ -26,12 +26,8 @@ type VimRegex =
     member IsMatch : pattern : string -> bool
 
     /// Matches the regex against the specified input and does the replacement 
-    /// as specified "count" times
-    member Replace : input : string -> replacement : string -> replaceData : VimRegexReplaceData -> string 
-
-    /// Matches the regex against the specified input and does the replacement 
     /// as specified.  If there is currently no regex then None will be returned
-    member ReplaceAll : input : string -> replacement : string -> replaceData : VimRegexReplaceData -> string 
+    member Replace : input : string -> replacement : string -> replaceData : VimRegexReplaceData -> string 
 
 module VimRegexFactory = 
 
