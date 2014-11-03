@@ -1,37 +1,10 @@
 ﻿#light
 
 namespace Vim
+open System
 open System.Text
 open System.Text.RegularExpressions
 open StringBuilderExtensions
-
-[<System.Flags>]
-type VimRegexOptions = 
-    | Default = 0
-    | NotCompiled = 0x1
-    | IgnoreCase = 0x2
-    | SmartCase = 0x4
-    | NoMagic = 0x8
-
-[<RequireQualifiedAccess>]
-type CaseSpecifier =
-    | None
-    | IgnoreCase
-    | OrdinalCase 
-
-/// Data for a replace operation
-type ReplaceData = {
-
-    /// When the '\r' replace sequence is used what should the replace string be.  This
-    /// is usually contextual to the point in the IVimBuffer
-    NewLine : string
-
-    /// Whether or not magic should apply
-    Magic : bool
-
-    /// The 'count' times it should be replaced.  Not considered in a replace all
-    Count : int
-}
 
 module VimRegexUtils = 
 
@@ -78,54 +51,141 @@ module VimRegexUtils =
 
     let Escape c = c |> StringUtil.ofChar |> Regex.Escape 
 
-    let ConvertReplacementString (replacement : string) (replaceData : ReplaceData) = 
-        let builder = StringBuilder()
-        let appendChar c = builder.AppendChar c
-        let appendString str = builder.AppendString str
-        let rec inner index = 
+[<RequireQualifiedAccess>]
+[<NoComparison>]
+type VimReplaceCaseState = 
+    | None
+    | UpperChar
+    | UpperUntil
+    | LowerChar
+    | LowerUtil
 
-            // Process a character which follows an '\' in the string
-            let handleEscapeChar c = 
-                if CharUtil.IsDigit c then 
-                    appendChar '$'
-                    appendChar c
-                elif c = '&' && not replaceData.Magic then
-                    appendString "$0"
-                elif c = '\\' then
-                    appendChar '\\'
-                elif c = 'r' then
-                    appendString replaceData.NewLine
-                elif c = 't' then
-                    appendChar '\t'
-                else 
-                    Escape c |> appendString
-                inner (index + 2)
 
-            match StringUtil.charAtOption index replacement with
-            | None -> 
-                builder.ToString()
-            | Some '&' -> 
-                if replaceData.Magic then
-                    // This is a special character in the replacement string and should 
-                    // match the entire matched string
-                    appendString "$0"
+/// Type responsible for generating replace strings.
+[<Sealed>]
+type VimRegexReplaceUtil
+    (
+        _input : string,
+        _matchCollection : MatchCollection
+    ) =
+
+    let mutable _replaceCount = 0
+    let mutable _replacement = ""
+    let mutable _index = 0
+    let mutable _caseState = VimReplaceCaseState.None
+    let mutable _builder = StringBuilder()
+    let mutable _replaceData = VimRegexReplaceData.Default
+
+    member private x.AppendReplaceChar c = 
+        match _caseState with
+        | VimReplaceCaseState.None -> 
+            _builder.AppendChar c
+        | VimReplaceCaseState.LowerChar -> 
+            _builder.AppendChar (CharUtil.ToLower c)
+            _caseState <- VimReplaceCaseState.None
+        | VimReplaceCaseState.LowerUtil -> 
+            _builder.AppendChar (CharUtil.ToLower c)
+        | VimReplaceCaseState.UpperChar ->
+            _builder.AppendChar (CharUtil.ToUpper c)
+            _caseState <- VimReplaceCaseState.None
+        | VimReplaceCaseState.UpperUntil ->
+            _builder.AppendChar (CharUtil.ToUpper c)
+    
+    member private x.AppendReplaceString str = 
+        str |> Seq.iter x.AppendReplaceChar
+
+    member private x.AppendGroup (m : Match) digit = 
+        Contract.Requires (digit <> 0)
+        if digit < m.Groups.Count then
+            let group = m.Groups.[digit]
+            x.AppendReplaceString group.Value
+
+    /// Append the next element from the replace string.  This is typically a character but can 
+    /// be more if the character is an escape sequence.  
+    ///
+    /// This method is responsible for updating _index based on the value consumed
+    member private x.AppendNextElement (m : Match) =  
+        Contract.Requires (_index < _replacement.Length)
+
+        match _replacement.[_index] with
+        | '&' when _replaceData.Magic ->
+            x.AppendReplaceString m.Value
+            _index <- _index + 1
+        | '\\' when (_index + 1) < _replacement.Length ->
+            match _replacement.[_index + 1] with
+            | '\\' -> _builder.AppendChar '\\'
+            | 't' -> _builder.AppendChar '\t'
+            | 'r' -> _builder.AppendString _replaceData.NewLine
+            | '0' -> x.AppendReplaceString m.Value
+            | '&' -> 
+                if _replaceData.Magic then
+                    _builder.AppendChar '&'
                 else
-                    // In no magic this is simply a normal character
-                    appendChar '&'
-                inner (index + 1)
-            | Some '\\' -> 
-                match StringUtil.charAtOption (index + 1) replacement with 
-                | None -> 
-                    Escape '\\' |> appendString
-                    builder.ToString()
-                | Some c -> 
-                    handleEscapeChar c 
-            | Some c -> 
-                appendChar c
-                inner (index + 1)
+                    x.AppendReplaceString m.Value
+            | 'u' -> _caseState <- VimReplaceCaseState.UpperChar
+            | 'U' -> _caseState <- VimReplaceCaseState.UpperUntil
+            | 'l' -> _caseState <- VimReplaceCaseState.LowerChar
+            | 'L' -> _caseState <- VimReplaceCaseState.LowerUtil
+            | 'e' -> _caseState <- VimReplaceCaseState.None
+            | 'E' -> _caseState <- VimReplaceCaseState.None
+            | c -> 
+                match CharUtil.GetDigitValue c with 
+                | Some d-> x.AppendGroup m d
+                | None ->
+                    _builder.AppendChar '\\'
+                    _builder.AppendChar c
+            _index <- _index + 2
+        | c -> 
+            x.AppendReplaceChar c
+            _index <- _index + 1
 
-        inner 0
+    member private x.AppendReplacementCore (m : Match) =
+        _caseState <- VimReplaceCaseState.None
+        _index <- 0
+        while _index < _replacement.Length do
+            x.AppendNextElement m
 
+    member private x.AppendReplacement (m : Match) =
+        match _replaceData.Count with
+        | VimRegexReplaceCount.All -> x.AppendReplacementCore m
+        | VimRegexReplaceCount.One when _replaceCount = 0 -> x.AppendReplacementCore m
+        | _ -> _builder.AppendString m.Value
+
+        _replaceCount <- _replaceCount + 1
+
+    /// Append the text which occurred before the match specified by this index.
+    member private x.AppendInputBefore (matchIndex : int) =
+        if matchIndex = 0 then
+            let m = _matchCollection.[matchIndex]
+            _builder.AppendSubstring _input 0 m.Index
+        else
+            let current = _matchCollection.[matchIndex]
+            let before = _matchCollection.[matchIndex - 1]
+            let charSpan = CharSpan.FromBounds _input (before.Index + before.Length) current.Index CharComparer.Exact
+            _builder.AppendCharSpan charSpan
+
+    member private x.AppendInputEnd() = 
+        let last = _matchCollection.[_matchCollection.Count - 1]
+        let charSpan = CharSpan.FromBounds _input (last.Index + last.Length) _input.Length CharComparer.Exact
+        _builder.AppendCharSpan charSpan
+
+    member x.Replace (replacement : string) (replaceData : VimRegexReplaceData) = 
+        _replaceCount <- 0
+        _replacement <- replacement
+        _replaceData <- replaceData
+        _builder.Length <- 0
+        _caseState <- VimReplaceCaseState.None
+        _index <- 0
+
+        let mutable matchIndex = 0 
+        while matchIndex < _matchCollection.Count do
+            let m = _matchCollection.[matchIndex]
+            x.AppendInputBefore matchIndex
+            x.AppendReplacement m 
+            matchIndex <- matchIndex + 1
+
+        x.AppendInputEnd()
+        _builder.ToString()
 
 /// Represents a Vim style regular expression 
 [<Sealed>]
@@ -144,12 +204,13 @@ type VimRegex
     member x.Regex = _regex
     member x.IncludesNewLine = _includesNewLine
     member x.IsMatch input = _regex.IsMatch(input)
-    member x.ReplaceAll (input : string) (replacement : string) (replaceData : ReplaceData) = 
-        let replacement = VimRegexUtils.ConvertReplacementString replacement replaceData
-        _regex.Replace(input, replacement)
-    member x.Replace (input : string) (replacement : string) (replaceData : ReplaceData) =
-        let replacement = VimRegexUtils.ConvertReplacementString replacement replaceData
-        _regex.Replace(input, replacement, replaceData.Count) 
+    member x.Replace (input : string) (replacement : string) (replaceData : VimRegexReplaceData) = 
+        let collection = _regex.Matches(input)
+        if collection.Count > 0 then
+            let util = VimRegexReplaceUtil(input, collection)
+            util.Replace replacement replaceData
+        else
+            input
 
 [<RequireQualifiedAccess>]
 [<NoComparison>]

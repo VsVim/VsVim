@@ -363,7 +363,7 @@ type ICommonOperations =
     abstract GetNewLineIndent : contextLine : ITextSnapshotLine -> newLine : ITextSnapshotLine -> int option
 
     /// Get the standard ReplaceData for the given SnapshotPoint
-    abstract GetReplaceData : point : SnapshotPoint -> ReplaceData
+    abstract GetReplaceData : point : SnapshotPoint -> VimRegexReplaceData
 
     /// Get the number of spaces (when tabs are expanded) that is necessary to get to the 
     /// specified point on it's line

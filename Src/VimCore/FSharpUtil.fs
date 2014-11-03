@@ -435,6 +435,10 @@ type internal CharSpan
     interface System.IEquatable<CharSpan> with
         member x.Equals other = 0 = x.CompareTo other
 
+    static member FromBounds (str : string) (startIndex : int) (endIndex : int) charComparer =
+        let length = endIndex - startIndex
+        CharSpan(str, startIndex, length, charComparer)
+
 module internal CharUtil =
 
     let MinValue = System.Char.MinValue
@@ -609,12 +613,16 @@ module internal StringBuilderExtensions =
         member x.AppendNumber (number : int) =
             x.Append(number) |> ignore
 
-        member x.AppendSubstring (str : string) (start : int) (length : int) =
+        member x.AppendCharSpan (charSpan : CharSpan) =
             let mutable i = 0
-            while i < length do 
-                let c = str.[start + i]
+            while i < charSpan.Length do 
+                let c = charSpan.CharAt i
                 x.AppendChar c
                 i <- i + 1
+
+        member x.AppendSubstring (str : string) (start : int) (length : int) =
+            let charSpan = CharSpan(str, start, length, CharComparer.Exact)
+            x.AppendCharSpan charSpan
 
 module internal CollectionExtensions = 
 

@@ -166,15 +166,17 @@ type internal SubstituteConfirmMode
             let first = SnapshotSpan(data.CurrentMatch.Start, line.EndIncludingLineBreak)
             Seq.append (Seq.singleton first) rest
 
-        let replaceData = _operations.GetReplaceData x.CaretPoint
-        let doReplace = 
-            if data.IsReplaceAll then data.Regex.ReplaceAll
-            else data.Regex.Replace
+        let replaceData = 
+            let replaceData = _operations.GetReplaceData x.CaretPoint
+            if data.IsReplaceAll then
+                { replaceData with Count = VimRegexReplaceCount.All }
+            else
+                replaceData
 
         let edit = _textBuffer.CreateEdit()
         lineSpans 
         |> Seq.iter (fun span ->
-            let text = doReplace (span.GetText()) data.SubstituteText replaceData
+            let text = data.Regex.Replace (span.GetText()) data.SubstituteText replaceData
             edit.Replace(span.Span, text) |> ignore)
         if edit.HasEffectiveChanges then edit.Apply() |> ignore else edit.Cancel()
 

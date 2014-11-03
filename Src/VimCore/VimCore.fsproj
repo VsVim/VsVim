@@ -66,6 +66,7 @@
     <Compile Include="TextUtil.fsi" />
     <Compile Include="TextUtil.fs" />
     <Compile Include="CountCapture.fs" />
+    <Compile Include="VimRegexOptions.fs" />
     <Compile Include="VimRegex.fsi" />
     <Compile Include="VimRegex.fs" />
     <Compile Include="MefInterfaces.fs" />
