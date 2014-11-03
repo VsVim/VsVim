@@ -1224,5 +1224,37 @@ namespace Vim.UnitTest
                 VerifyMatches(@"foo$", "foo");
             }
         }
+
+        public sealed class SearchTest : VimRegexTest
+        {
+            [Fact]
+            public void Digits()
+            {
+                VerifyMatches(@"\d", "1");
+                VerifyMatches(@"\d\+", "100");
+                VerifyMatches(VimRegexOptions.NoMagic, @"\d", "1");
+                VerifyNotMatches(@"\D", "1");
+                VerifyMatches(@"\D", "a", "!@");
+            }
+
+            [Fact]
+            public void HexDigits()
+            {
+                VerifyMatches(@"\x", "1", "a", "f", "A", "D");
+                VerifyMatches(@"\x\+", "1a");
+                VerifyMatches(VimRegexOptions.NoMagic, @"\x", "1");
+                VerifyNotMatches(@"\X", "a", "1");
+                VerifyMatches(@"\X", "g", "!");
+            }
+
+            public void OctalDigits()
+            {
+                VerifyMatches(@"\o", "1");
+                VerifyMatches(@"\o\+", "100");
+                VerifyMatches(VimRegexOptions.NoMagic, @"\O", "1");
+                VerifyNotMatches(@"\O", "1");
+                VerifyMatches(@"\O", "a", "!@", "8");
+            }
+        }
     }
 }
