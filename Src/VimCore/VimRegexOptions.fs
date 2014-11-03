@@ -1,4 +1,5 @@
 ﻿namespace Vim
+open System
 open System.Text.RegularExpressions
 
 /// Options which can be passed to a vim regex.  These can be overriden by
@@ -25,7 +26,7 @@ type VimRegexOptions =
     /// the regex with a \m specifier
     | NoMagic = 0x8
 
-/// Case specifier found in the rege (\c, \C or nothing)
+/// Case specifier found in the regex (\c, \C or nothing)
 [<RequireQualifiedAccess>]
 [<NoComparison>]
 type CaseSpecifier =
@@ -40,7 +41,7 @@ type CaseSpecifier =
     | OrdinalCase 
 
 /// Data for a replace operation
-type ReplaceData = {
+type VimRegexReplaceData = {
 
     /// When the '\r' replace sequence is used what should the replace string be.  This
     /// is usually contextual to the point in the IVimBuffer
@@ -51,5 +52,7 @@ type ReplaceData = {
 
     /// The 'count' times it should be replaced.  Not considered in a replace all
     Count : int
-}
+} with
+
+    static member Default = { NewLine = Environment.NewLine; Magic = false; Count = 1 }
 

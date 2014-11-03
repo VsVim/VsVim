@@ -50,7 +50,7 @@ module VimRegexUtils =
 
     let Escape c = c |> StringUtil.ofChar |> Regex.Escape 
 
-    let ConvertReplacementString (replacement : string) (replaceData : ReplaceData) = 
+    let ConvertReplacementString (replacement : string) (replaceData : VimRegexReplaceData) = 
         let builder = StringBuilder()
         let appendChar c = builder.AppendChar c
         let appendString str = builder.AppendString str
@@ -116,10 +116,10 @@ type VimRegex
     member x.Regex = _regex
     member x.IncludesNewLine = _includesNewLine
     member x.IsMatch input = _regex.IsMatch(input)
-    member x.ReplaceAll (input : string) (replacement : string) (replaceData : ReplaceData) = 
+    member x.ReplaceAll (input : string) (replacement : string) (replaceData : VimRegexReplaceData) = 
         let replacement = VimRegexUtils.ConvertReplacementString replacement replaceData
         _regex.Replace(input, replacement)
-    member x.Replace (input : string) (replacement : string) (replaceData : ReplaceData) =
+    member x.Replace (input : string) (replacement : string) (replaceData : VimRegexReplaceData) =
         let replacement = VimRegexUtils.ConvertReplacementString replacement replaceData
         _regex.Replace(input, replacement, replaceData.Count) 
 
