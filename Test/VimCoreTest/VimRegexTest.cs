@@ -1228,7 +1228,7 @@ namespace Vim.UnitTest
         public sealed class SearchTest : VimRegexTest
         {
             [Fact]
-            public void Digits()
+            public void NormalDigits()
             {
                 VerifyMatches(@"\d", "1");
                 VerifyMatches(@"\d\+", "100");
@@ -1247,6 +1247,7 @@ namespace Vim.UnitTest
                 VerifyMatches(@"\X", "g", "!");
             }
 
+            [Fact]
             public void OctalDigits()
             {
                 VerifyMatches(@"\o", "1");
@@ -1254,6 +1255,14 @@ namespace Vim.UnitTest
                 VerifyMatches(VimRegexOptions.NoMagic, @"\O", "1");
                 VerifyNotMatches(@"\O", "1");
                 VerifyMatches(@"\O", "a", "!@", "8");
+            }
+
+            [Fact]
+            public void NamedCollection()
+            {
+                VerifyMatches(@"[[:alpha:]]", "a", "d");
+                VerifyNotMatches(@"[[:alpha:]]", "1", "@");
+                VerifyMatches(@"[[:alpha:]]\+", "cat", "dog");
             }
         }
     }

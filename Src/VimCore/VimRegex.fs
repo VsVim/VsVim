@@ -265,7 +265,9 @@ type VimRegexBuilder
 
     member x.Pattern = _pattern
 
-    member x.Index = _index
+    member x.Index 
+        with get () =  _index
+        and set value = _index <- value
 
     member x.Builder = _builder
 
@@ -317,7 +319,16 @@ type VimRegexBuilder
     member x.DecrementIndex count = 
         _index <- _index - count
 
-    member x.CharAtIndex = StringUtil.charAtOption x.Index x.Pattern
+    member x.CharAtIndex = 
+        StringUtil.charAtOption x.Index x.Pattern
+
+    member x.CharAt index = 
+        StringUtil.charAtOption index x.Pattern
+
+    member x.CharAtOrDefault index = 
+        match StringUtil.charAtOption index x.Pattern with
+        | None -> char 0
+        | Some c -> c
 
     member x.AppendString str = 
         _builder.AppendString str
@@ -349,6 +360,38 @@ type VimRegexBuilder
         _isBroken <- true
 
 module VimRegexFactory =
+
+    /// Generates strings based on a char filter func.  Easier than hand writing out
+    /// the values
+    let GenerateCharString filterFunc = 
+        [0 .. 255]
+        |> Seq.map (fun x -> char x)
+        |> Seq.filter filterFunc
+        |> StringUtil.ofCharSeq
+
+    let ControlCharString = GenerateCharString CharUtil.IsControl
+    let PunctuationCharString = GenerateCharString Char.IsPunctuation
+    let SpaceCharString = GenerateCharString Char.IsWhiteSpace
+
+    /// These are the named collections specified out inside of :help E769.  These are always
+    /// appended inside a .Net [] collection and hence need to be valid in that context
+    let NamedCollectionMap = 
+        [|
+            ("alnum", "A-Za-z0-9") 
+            ("alpha", "A-Za-z") 
+            ("blank", " \t")
+            ("cntrl", ControlCharString)
+            ("digit", "0-9")
+            ("lower", "a-z")
+            ("punct", PunctuationCharString)
+            ("space", SpaceCharString)
+            ("upper", "A-Z")
+            ("xdigit", "A-Fa-f0-9")
+            ("return", StringUtil.ofChar (char 13))
+            ("tab", "`t")
+            ("escape", StringUtil.ofChar (char 27))
+            ("backspace", StringUtil.ofChar (char 8))
+        |] |> Map.ofArray
 
     /// In Vim if a collection is unmatched then it is appended literally into the match 
     /// stream.  Can't determine if it's unmatched though until the string is fully 
@@ -551,18 +594,56 @@ module VimRegexFactory =
 
                 data.IsStartOfPattern <- false
 
-    /// Convert a normal unescaped char based on the magic kind
-    let ProcessNormalChar (data : VimRegexBuilder) c = 
-        match data.MagicKind with
-        | MagicKind.Magic -> ConvertCharAsMagic data c
-        | MagicKind.NoMagic -> ConvertCharAsNoMagic data c
-        | MagicKind.VeryMagic -> 
-            if CharUtil.IsLetter c || CharUtil.IsDigit c || c = '_' then 
-                data.AppendChar c
+    /// Try and parse out the name of a named collection.  This is called when the 
+    /// index points to ':' assuming this is a valid named collection
+    let TryParseNamedCollectionName (data : VimRegexBuilder) = 
+        let index = data.Index
+        if data.CharAtOrDefault index = ':' then
+            let mutable endIndex = index + 1
+            while endIndex < data.Pattern.Length && data.CharAtOrDefault endIndex <> ':' do
+                endIndex <- endIndex + 1
+
+            if data.CharAtOrDefault (endIndex + 1) = ']' then
+                // It's a named collection
+                let startIndex = index + 1
+                let name = data.Pattern.Substring(startIndex, endIndex - startIndex)
+                Some name
             else
-                ConvertCharAsSpecial data c
-        | MagicKind.VeryNoMagic -> data.AppendEscapedChar c
-        data.IsStartOfPattern <- false
+                None
+        else
+            None
+
+    /// Try and append one of the named collections.  These are covered in :help E769.  
+    let TryAppendNamedCollection (data : VimRegexBuilder) c = 
+        if data.IsCollectionOpen && c = '[' then
+            match TryParseNamedCollectionName data with
+            | None -> false
+            | Some name -> 
+                match Map.tryFind name NamedCollectionMap with
+                | Some value -> 
+                    // Length of the name + characters in the named "::]"
+                    data.Index <- data.Index + (name.Length + 3)
+                    data.AppendString value
+                    true
+                | None -> false
+        else
+            false
+
+    /// Convert a normal unescaped char 
+    let ProcessNormalChar (data : VimRegexBuilder) c = 
+        if not (TryAppendNamedCollection data c) then
+
+            // Process the normal character based on our current magic kind
+            match data.MagicKind with
+            | MagicKind.Magic -> ConvertCharAsMagic data c
+            | MagicKind.NoMagic -> ConvertCharAsNoMagic data c
+            | MagicKind.VeryMagic -> 
+                if CharUtil.IsLetter c || CharUtil.IsDigit c || c = '_' then 
+                    data.AppendChar c
+                else
+                    ConvertCharAsSpecial data c
+            | MagicKind.VeryNoMagic -> data.AppendEscapedChar c
+            data.IsStartOfPattern <- false
 
     let Convert (data : VimRegexBuilder) = 
         let rec inner () : VimRegex option =
