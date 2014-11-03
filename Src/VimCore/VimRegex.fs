@@ -1,6 +1,7 @@
 ﻿#light
 
 namespace Vim
+open System
 open System.Text
 open System.Text.RegularExpressions
 open StringBuilderExtensions
@@ -122,6 +123,12 @@ type VimRegexReplaceUtil
     let mutable _caseState = VimReplaceCaseState.None
     let mutable _builder = StringBuilder()
 
+    member private x.AppendGroup (m : Match) digit = 
+        Contract.Requires (digit <> 0)
+        if digit < m.Groups.Count then
+            let group = m.Groups.[digit]
+            _builder.AppendString group.Value
+
     /// Append the next element from the replace string.  This is typically a character but can 
     /// be more if the character is an escape sequence.  
     ///
@@ -136,11 +143,20 @@ type VimRegexReplaceUtil
         | '\\' when (_index + 1) < _replacement.Length ->
             match _replacement.[_index + 1] with
             | '\\' -> _builder.AppendChar '\\'
+            | 't' -> _builder.AppendChar '\t'
+            | 'r' -> _builder.AppendString Environment.NewLine
             | '0' -> _builder.AppendString m.Value
-            | '&' when _isMagic -> _builder.AppendString m.Value
+            | '&' -> 
+                if _isMagic then
+                    _builder.AppendChar '&'
+                else
+                    _builder.AppendString m.Value
             | c -> 
-                _builder.AppendChar '\\'
-                _builder.AppendChar c
+                match CharUtil.GetDigitValue c with 
+                | Some d-> x.AppendGroup m d
+                | None ->
+                    _builder.AppendChar '\\'
+                    _builder.AppendChar c
             _index <- _index + 2
         | c -> 
             _builder.AppendChar c
