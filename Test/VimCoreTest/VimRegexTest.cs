@@ -306,6 +306,18 @@ namespace Vim.UnitTest
                 VerifyReplace("CAT", "CAT dog", @"\L&s", "cats dog");
                 VerifyReplace("CAT", "CAT dog", @"\L\0s", "cats dog");
             }
+
+            [Fact]
+            public void BadGroupSpecifier()
+            {
+                VerifyReplace("fish", "fish tree", @"let\3", "let tree");
+            }
+
+            [Fact]
+            public void BadPattern()
+            {
+                VerifyReplace("fishy", "fish tree", @"let\3", "fish tree");
+            }
         }
 
         public sealed class MiscTest : VimRegexTest
