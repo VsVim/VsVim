@@ -92,10 +92,10 @@ module KeyInputUtil =
 
     /// Mapping of all VimKey instances with their associated char if one exists.  
     let VimKeyRawData = [
-        (VimKey.Back, Some '\b')
-        (VimKey.FormFeed, Some '\f')
-        (VimKey.Enter, Some (CharUtil.OfAsciiValue 13uy))
-        (VimKey.Escape, Some (CharUtil.OfAsciiValue 27uy))
+        (VimKey.Back, Some CharCodes.Backspace)
+        (VimKey.FormFeed, Some CharCodes.FormFeed)
+        (VimKey.Enter, Some CharCodes.Enter)
+        (VimKey.Escape, Some CharCodes.Escape)
         (VimKey.Left, None)
         (VimKey.Up, None)
         (VimKey.Right, None)

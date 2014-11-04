@@ -323,8 +323,8 @@ namespace Vim.UnitTest
             public void InsertNewLine()
             {
                 VerifyReplace(@"o", "dog", @"\r", "d" + Environment.NewLine + "g");
-                VerifyReplace(@"o", "dog", @"\" + VimRegexReplaceUtil.CharCarriageReturn, "d" + Environment.NewLine + "g");
-                VerifyReplace(@"o", "dog", @"" + VimRegexReplaceUtil.CharCarriageReturn, "d" + Environment.NewLine + "g");
+                VerifyReplace(@"o", "dog", @"\" + CharCodes.Enter, "d" + Environment.NewLine + "g");
+                VerifyReplace(@"o", "dog", @"" + CharCodes.Enter, "d" + Environment.NewLine + "g");
             }
 
             /// <summary>
@@ -1252,7 +1252,7 @@ namespace Vim.UnitTest
             {
                 VerifyMatches(@"\o", "1");
                 VerifyMatches(@"\o\+", "100");
-                VerifyMatches(VimRegexOptions.NoMagic, @"\O", "1");
+                VerifyMatches(VimRegexOptions.NoMagic, @"\o", "1");
                 VerifyNotMatches(@"\O", "1");
                 VerifyMatches(@"\O", "a", "!@", "8");
             }

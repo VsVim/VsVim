@@ -69,9 +69,6 @@ type VimRegexReplaceUtil
         _matchCollection : MatchCollection
     ) =
 
-    /// From :help key-notation the constant for <CR>
-    static let CharCarriageReturn = char 13
-
     let mutable _replaceCount = 0
     let mutable _replacement = ""
     let mutable _index = 0
@@ -133,7 +130,7 @@ type VimRegexReplaceUtil
             | 'E' -> _caseState <- VimReplaceCaseState.None
             | 'r' -> _builder.AppendString _replaceData.NewLine
             | c -> 
-                if c = CharCarriageReturn then
+                if c = CharCodes.Enter then
                     _builder.AppendString _replaceData.NewLine
                 else
                     match CharUtil.GetDigitValue c with 
@@ -143,7 +140,7 @@ type VimRegexReplaceUtil
                         _builder.AppendChar c
             _index <- _index + 2
         | c -> 
-            if c = CharCarriageReturn then
+            if c = CharCodes.Enter then
                 _builder.AppendString _replaceData.NewLine
             else
                 x.AppendReplaceChar c
@@ -387,10 +384,10 @@ module VimRegexFactory =
             ("space", SpaceCharString)
             ("upper", "A-Z")
             ("xdigit", "A-Fa-f0-9")
-            ("return", StringUtil.ofChar (char 13))
+            ("return", StringUtil.ofChar CharCodes.Enter)
             ("tab", "`t")
-            ("escape", StringUtil.ofChar (char 27))
-            ("backspace", StringUtil.ofChar (char 8))
+            ("escape", StringUtil.ofChar CharCodes.Escape)
+            ("backspace", StringUtil.ofChar CharCodes.Backspace)
         |] |> Map.ofArray
 
     /// In Vim if a collection is unmatched then it is appended literally into the match 

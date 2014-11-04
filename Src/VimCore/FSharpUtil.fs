@@ -594,6 +594,31 @@ module internal CharUtil =
         | '9' -> Some 9
         | _ -> None
 
+/// The .Net mapping for the keys defined in :help key-notation
+module internal CharCodes =
+
+    /// <Nul> 
+    let Zero = char 0
+
+    /// <CR> / <Return> / <Enter>
+    let Enter = CharUtil.OfAsciiValue 13uy
+
+    /// <ESC>
+    let Escape = CharUtil.OfAsciiValue 27uy
+
+    /// <BS> 
+    let Backspace = '\b'
+
+    /// <FF>
+    let FormFeed = '\f'
+
+
+
+
+
+
+
+
 module internal StringBuilderExtensions =
 
     type StringBuilder with
