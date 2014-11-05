@@ -2157,11 +2157,14 @@ type VisualSelection =
 
     /// Create the initial Visual Selection information for the specified Kind started at 
     /// the specified point
-    static member CreateInitial visualKind caretPoint tabStop =
+    static member CreateInitial visualKind caretPoint tabStop selectionKind =
         match visualKind with
         | VisualKind.Character ->
             let characterSpan = 
-                let endPoint = SnapshotPointUtil.AddOneOrCurrent caretPoint
+                let endPoint = 
+                    match selectionKind with
+                    | SelectionKind.Inclusive -> SnapshotPointUtil.AddOneOrCurrent caretPoint
+                    | SelectionKind.Exclusive -> caretPoint
                 CharacterSpan(caretPoint, endPoint)
             VisualSelection.Character (characterSpan, Path.Forward)
         | VisualKind.Line ->

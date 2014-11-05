@@ -465,6 +465,28 @@ namespace Vim.UnitTest
             }
         }
 
+        public abstract class CreateInitialTest : VisualSelectionTest
+        {
+            public sealed class CharacterTest : CreateInitialTest
+            {
+                [Fact]
+                public void SelectionExclusive()
+                {
+                    Create("hello world");
+                    var visualSelection = VisualSelection.CreateInitial(VisualKind.Character, _textBuffer.GetPoint(0), 4, SelectionKind.Exclusive);
+                    Assert.Equal(0, visualSelection.AsCharacter().Item1.Length);
+                }
+
+                [Fact]
+                public void SelectionInclusive()
+                {
+                    Create("hello world");
+                    var visualSelection = VisualSelection.CreateInitial(VisualKind.Character, _textBuffer.GetPoint(0), 4, SelectionKind.Inclusive);
+                    Assert.Equal(1, visualSelection.AsCharacter().Item1.Length);
+                }
+            }
+        }
+
         public sealed class AdjustForSelectionKindTest : VisualSelectionTest
         {
             /// <summary>

@@ -58,7 +58,7 @@ type internal SelectionTracker
             // Set the selection.  If this is line mode we need to select the entire line 
             // here
             let caretPoint = TextViewUtil.GetCaretPoint _textView
-            let visualSelection = VisualSelection.CreateInitial _visualKind caretPoint _localSettings.TabStop
+            let visualSelection = VisualSelection.CreateInitial _visualKind caretPoint _localSettings.TabStop _globalSettings.SelectionKind
             visualSelection.VisualSpan.Select _textView Path.Forward
 
             _anchorPoint <- Some caretPoint

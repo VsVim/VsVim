@@ -500,6 +500,17 @@ namespace Vim.UnitTest
                 Assert.Equal("cat   ", _textView.GetSelectionSpan().GetText());
                 Assert.Equal(6, _textView.GetCaretPoint().Position);
             }
+
+            /// <summary>
+            /// The initial character selection in exclusive selection should be empty 
+            /// </summary>
+            [Fact]
+            public void Issue1483()
+            {
+                Create("cat dog");
+                _vimBuffer.Process("v");
+                Assert.Equal(0, _textView.GetSelectionSpan().Length);
+            }
         }
 
         public abstract class BlockInsertTest : VisualModeIntegrationTest
