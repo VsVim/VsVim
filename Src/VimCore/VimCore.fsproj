@@ -38,7 +38,7 @@
   <Import Condition=" '$(VisualStudioVersion)' == '10.0' " Project="$(ProgramFiles)\Microsoft F#\v4.0\Microsoft.FSharp.Targets" />
   <Import Condition=" '$(VisualStudioVersion)' == '11.0' " Project="$(MSBuildExtensionsPath32)\..\Microsoft SDKs\F#\3.0\Framework\v4.0\Microsoft.FSharp.Targets" />
   <!-- 
-    The text of the import statement must be exactyl FSharpTargetsPath else it will 
+    The text of the import statement must be exactly FSharpTargetsPath else it will 
     trigger the update wizard in VS2013
   -->
   <PropertyGroup>
