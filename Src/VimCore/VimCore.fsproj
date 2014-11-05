@@ -34,17 +34,24 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>3</WarningLevel>
   </PropertyGroup>
-  <Import Condition=" '$(VisualStudioVersion)' == '' " Project="$(ProgramFiles)\Microsoft F#\v4.0\Microsoft.FSharp.Targets" />
-  <Import Condition=" '$(VisualStudioVersion)' == '10.0' " Project="$(ProgramFiles)\Microsoft F#\v4.0\Microsoft.FSharp.Targets" />
-  <Import Condition=" '$(VisualStudioVersion)' == '11.0' " Project="$(MSBuildExtensionsPath32)\..\Microsoft SDKs\F#\3.0\Framework\v4.0\Microsoft.FSharp.Targets" />
-  <!-- 
-    The text of the import statement must be exactly FSharpTargetsPath else it will 
-    trigger the update wizard in VS2013
-  -->
-  <PropertyGroup>
-    <FSharpTargetsPath>$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\FSharp\Microsoft.FSharp.Targets</FSharpTargetsPath>
-  </PropertyGroup>
-  <Import Condition=" '$(VisualStudioVersion)' == '12.0' " Project="$(FSharpTargetsPath)" />
+  <Choose>
+    <When Condition="'$(VisualStudioVersion)' == '' or '$(VisualStudioVersion)' == '9.0'">
+      <PropertyGroup>
+        <FSharpTargetsPath>$(ProgramFiles)\Microsoft F#\v4.0\Microsoft.FSharp.Targets</FSharpTargetsPath>
+      </PropertyGroup>
+    </When>
+    <When Condition="'$(VisualStudioVersion)' == '11.0' or '$(VisualStudioVersion)' == '10.0'">
+      <PropertyGroup Condition="Exists('$(MSBuildExtensionsPath32)\..\Microsoft SDKs\F#\3.0\Framework\v4.0\Microsoft.FSharp.Targets')">
+        <FSharpTargetsPath>$(MSBuildExtensionsPath32)\..\Microsoft SDKs\F#\3.0\Framework\v4.0\Microsoft.FSharp.Targets</FSharpTargetsPath>
+      </PropertyGroup>
+    </When>
+    <Otherwise>
+      <PropertyGroup Condition="Exists('$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\FSharp\Microsoft.FSharp.Targets')">
+        <FSharpTargetsPath>$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\FSharp\Microsoft.FSharp.Targets</FSharpTargetsPath>
+      </PropertyGroup>
+    </Otherwise>
+  </Choose>
+  <Import Project="$(FSharpTargetsPath)" />
   <Import Project="$(SolutionDir)\.nuget\nuget.targets" />
   <ItemGroup>
     <Compile Include="Resources.fs" />
