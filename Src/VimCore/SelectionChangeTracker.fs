@@ -199,6 +199,7 @@ type internal SelectionChangeTracker
         Contract.Assert _syncingSelection
 
         if (_mouseDevice.IsLeftButtonPressed && 
+            _globalSettings.SelectionKind = SelectionKind.Inclusive &&
             _textView.Selection.IsActive && 
             _textView.Selection.Mode = TextSelectionMode.Stream && 
             not _textView.Selection.IsReversed && 
