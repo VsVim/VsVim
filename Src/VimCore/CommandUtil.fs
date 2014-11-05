@@ -31,6 +31,29 @@ type internal NumberValue =
         | Hex _ -> NumberFormat.Hex
         | Alpha _ -> NumberFormat.Alpha
 
+/// There are some commands which if began in normal mode must end in normal 
+/// mode (undo and redo).  In general this is easy, don't switch modes.  But often
+/// the code needs to call out to 3rd party code which can change the mode by 
+/// altering the selection.  
+///
+/// This is a simple IDisposable type which will put us back into normal mode
+/// if this happens. 
+type internal NormalModeSelectionGuard
+    (
+        _vimBufferData : IVimBufferData
+    ) =
+
+    let _beganInNormalMode = _vimBufferData.VimTextBuffer.ModeKind = ModeKind.Normal
+
+    member x.Dispose() = 
+        let selection = _vimBufferData.TextView.Selection
+        if _beganInNormalMode && not selection.IsEmpty then
+            selection.Clear()
+            _vimBufferData.VimTextBuffer.SwitchMode ModeKind.Normal ModeArgument.None |> ignore
+
+    interface System.IDisposable with
+        member x.Dispose() = x.Dispose()
+
 /// This type houses the functionality behind a large set of the available
 /// Vim commands.
 ///
@@ -1939,6 +1962,7 @@ type internal CommandUtil
 
     /// Redo count operations in the ITextBuffer
     member x.Redo count = 
+        use guard = new NormalModeSelectionGuard(_vimBufferData)
         _commonOperations.Redo count
         CommandResult.Completed ModeSwitch.NoSwitch
 
@@ -2909,6 +2933,7 @@ type internal CommandUtil
 
     /// Undo count operations in the ITextBuffer
     member x.Undo count = 
+        use guard = new NormalModeSelectionGuard(_vimBufferData)
         _commonOperations.Undo count
         CommandResult.Completed ModeSwitch.NoSwitch
 

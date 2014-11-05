@@ -19,6 +19,7 @@ using Microsoft.Win32;
 using Microsoft.VisualStudio.Utilities;
 using IOPath = System.IO.Path;
 using EditorUtils;
+using Microsoft.VisualStudio.Text.Operations;
 
 namespace VimApp
 {
@@ -27,11 +28,70 @@ namespace VimApp
     /// </summary>
     public partial class MainWindow : Window
     {
+        #region SelectAllOnUndoPrimitive 
+
+        private sealed class SelectAllOnUndoRedoPrimitive : ITextUndoPrimitive
+        {
+            private readonly ITextView _textView;
+
+            internal SelectAllOnUndoRedoPrimitive(ITextView textView)
+            {
+                _textView = textView;
+            }
+
+            private void SelectAll()
+            {
+                var textSnapshot = _textView.TextBuffer.CurrentSnapshot;
+                var span = new SnapshotSpan(textSnapshot, 0, textSnapshot.Length);
+                _textView.Selection.Select(span, isReversed: false);
+            }
+
+            public bool CanRedo
+            {
+                get { return true; }
+            }
+
+            public bool CanUndo
+            {
+                get { return true; }
+            }
+
+            public ITextUndoTransaction Parent
+            {
+                get;
+                set;
+            }
+
+            public bool CanMerge(ITextUndoPrimitive older)
+            {
+                return false;
+            }
+
+            public ITextUndoPrimitive Merge(ITextUndoPrimitive older)
+            {
+                throw new NotImplementedException();
+            }
+
+            public void Do()
+            {
+                SelectAll();
+            }
+
+            public void Undo()
+            {
+                SelectAll();
+            }
+        }
+
+        #endregion
+
         private readonly VimComponentHost _vimComponentHost;
         private readonly IClassificationFormatMapService _classificationFormatMapService;
         private readonly IVimAppOptions _vimAppOptions;
         private readonly IVimWindowManager _vimWindowManager;
         private readonly EditorHost _editorHost;
+        private readonly IEditorOperationsFactoryService _editorOperationsFactoryService;
+        private readonly ITextUndoHistoryRegistry _textUndoHistoryRegistry;
 
         internal IVimWindow ActiveVimWindowOpt
         {
@@ -52,7 +112,7 @@ namespace VimApp
             get
             {
                 var tabInfo = ActiveVimWindowOpt;
-                var found = tabInfo.VimViewInfoList.First(x => x.TextViewHost.TextView.HasAggregateFocus);
+                var found = tabInfo.VimViewInfoList.FirstOrDefault(x => x.TextViewHost.TextView.HasAggregateFocus);
                 return found != null ? found.VimBuffer : null;
             }
         }
@@ -75,6 +135,8 @@ namespace VimApp
             _classificationFormatMapService = _vimComponentHost.CompositionContainer.GetExportedValue<IClassificationFormatMapService>();
             _vimAppOptions = _vimComponentHost.CompositionContainer.GetExportedValue<IVimAppOptions>();
             _vimWindowManager = _vimComponentHost.CompositionContainer.GetExportedValue<IVimWindowManager>();
+            _editorOperationsFactoryService = _vimComponentHost.CompositionContainer.GetExportedValue<IEditorOperationsFactoryService>();
+            _textUndoHistoryRegistry = _vimComponentHost.CompositionContainer.GetExportedValue<ITextUndoHistoryRegistry>();
             var vimAppHost = _vimComponentHost.CompositionContainer.GetExportedValue<VimAppHost>();
             vimAppHost.MainWindow = this;
             vimAppHost.VimWindowManager = _vimWindowManager;
@@ -320,6 +382,32 @@ namespace VimApp
             // TODO: Move the title to IVimWindow
             var name = String.Format("Empty Doc {0}", _vimWindowManager.VimWindowList.Count + 1);
             AddNewTab(name);
+        }
+
+        /// <summary>
+        /// Add the repro for Issue 1479.  Essentially create a undo where the primitive will change 
+        /// selection on undo
+        /// </summary>
+        private void OnAddUndoSelectionChangeClick(object sender, RoutedEventArgs e)
+        {
+            var vimBuffer = ActiveVimBufferOpt;
+            if (vimBuffer == null)
+            {
+                return;
+            }
+
+            ITextUndoHistory textUndoHistory;
+            if (!_textUndoHistoryRegistry.TryGetHistory(vimBuffer.TextBuffer, out textUndoHistory))
+            {
+                return;
+            }
+
+            using (var transaction = textUndoHistory.CreateTransaction("Issue 1479"))
+            {
+                transaction.AddUndo(new SelectAllOnUndoRedoPrimitive(vimBuffer.TextView));
+                vimBuffer.TextBuffer.Insert(0, "Added selection primitive for issue 1479" + Environment.NewLine);
+                transaction.Complete();
+            }
         }
     }
 }

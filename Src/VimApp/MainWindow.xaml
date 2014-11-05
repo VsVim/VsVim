@@ -18,6 +18,10 @@
                     <MenuItem Header="Set Scenario" Click="OnLeaderSetClick" />
                     <MenuItem Header="type ö" Click="OnLeaderTypeClick" />
                 </MenuItem>
+                <MenuItem Header="Issue 1479" Click="OnAddUndoSelectionChangeClick" />
+                <MenuItem Header="Set Scenario" Click="OnLeaderSetClick" />
+                <MenuItem Header="type ö" Click="OnLeaderTypeClick" />
+
                 <MenuItem Header="Insert Control Characters" Click="OnInsertControlCharactersClick" />
                 <MenuItem Header="Run GC" Click="OnRunGarbageCollectorClick" />
             </MenuItem>
