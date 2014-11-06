@@ -895,10 +895,10 @@ namespace Vim.UnitTest
                 _globalSettings.Selection = "exclusive";
                 _vimBuffer.ProcessNotation("wgh");
                 Assert.Equal(ModeKind.SelectCharacter, _vimBuffer.ModeKind);
-                Assert.Equal("d", _textView.GetSelectionSpan().GetText());
+                Assert.Equal("", _textView.GetSelectionSpan().GetText());
                 _vimBuffer.ProcessNotation("<C-o>");
                 Assert.Equal(ModeKind.VisualCharacter, _vimBuffer.ModeKind);
-                Assert.Equal("d", _textView.GetSelectionSpan().GetText());
+                Assert.Equal("", _textView.GetSelectionSpan().GetText());
                 _vimBuffer.ProcessNotation("w");
                 Assert.Equal("dog ", _textView.GetSelectionSpan().GetText());
                 Assert.Equal(ModeKind.SelectCharacter, _vimBuffer.ModeKind);
