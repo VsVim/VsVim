@@ -173,6 +173,8 @@ namespace Vim.VisualStudio.Implementation.OptionPages
         private static readonly ColorKey HighlightIncrementalSearchColorKey = ColorKey.Background(VimConstants.HighlightIncrementalSearchTagName);
         private static readonly ColorKey BlockCaretColorKey = ColorKey.Foreground(VimWpfConstants.BlockCaretFormatDefinitionName);
         private static readonly ColorKey ControlCharacterColorKey = ColorKey.Foreground(VimWpfConstants.ControlCharactersFormatDefinitionName);
+        private static readonly ColorKey CommandMarginForegroundColorKey = ColorKey.Foreground(VimWpfConstants.CommandMarginFormatDefinitionName);
+        private static readonly ColorKey CommandMarginBackgroundColorKey = ColorKey.Background(VimWpfConstants.CommandMarginFormatDefinitionName);
 
         private static readonly ReadOnlyCollection<ColorKey> ColorKeyList;
 
@@ -184,6 +186,8 @@ namespace Vim.VisualStudio.Implementation.OptionPages
                 HighlightIncrementalSearchColorKey,
                 BlockCaretColorKey,
                 ControlCharacterColorKey,
+                CommandMarginForegroundColorKey,
+                CommandMarginBackgroundColorKey,
             });
         }
 
@@ -266,6 +270,20 @@ namespace Vim.VisualStudio.Implementation.OptionPages
         {
             get { return GetColor(ControlCharacterColorKey); }
             set { SetColor(ControlCharacterColorKey, value); }
+        }
+        [DisplayName("Command Margin Foreground Color")]
+        [Category(CategoryColors)]
+        public Color CommandMarginForegroundColor
+        {
+            get { return GetColor(CommandMarginForegroundColorKey); }
+            set { SetColor(CommandMarginForegroundColorKey, value); }
+        }
+        [DisplayName("Command Margin Background Color")]
+        [Category(CategoryColors)]
+        public Color CommandMarginBackgroundColor
+        {
+            get { return GetColor(CommandMarginBackgroundColorKey); }
+            set { SetColor(CommandMarginBackgroundColorKey, value); }
         }
 
         public DefaultOptionPage()
