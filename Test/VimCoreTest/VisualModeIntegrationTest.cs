@@ -2373,7 +2373,7 @@ namespace Vim.UnitTest
                 _textView.MoveCaretToLine(4);
                 _vimBuffer.Process("viB");
                 Assert.Equal(_textBuffer.GetLineRange(4, 5).GetText(), _textView.GetSelectionSpan().GetText());
-                Assert.Equal(48, _textView.GetCaretPoint().Position);
+                Assert.Equal(47, _textView.GetCaretPoint().Position);
             }
 
             /// <summary>
