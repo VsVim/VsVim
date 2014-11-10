@@ -8,6 +8,8 @@ using Moq;
 using Vim.Extensions;
 using Vim.UnitTest.Mock;
 using Xunit;
+using Xunit.Extensions;
+using Xunit.Sdk;
 
 namespace Vim.UnitTest
 {
@@ -2574,6 +2576,61 @@ namespace Vim.UnitTest
                 _motionUtil.LastSearch(true, 1);
                 Assert.Equal(data, _vimData.LastSearchData);
                 _statusUtil.Verify();
+            }
+
+            /// <summary>
+            /// Single line inner block test should use inner block beahaviour
+            /// </summary>
+            [Fact]
+            public void GetInnerBlock_Simple()
+            {
+                Create("[cat]");
+                var lines = _motionUtil.InnerBlock(_textBuffer.GetPoint(2), BlockKind.Bracket, 1).Value.Span.GetText();
+                Assert.Equal("cat", lines);
+            }
+
+            /// <summary>
+            /// Multiline inner block test should use inner block beahavior
+            /// </summary>
+            [Fact]
+            public void GetInnerBlock_Lines()
+            {
+                Create("[", "cat", "]");
+                var lines = _motionUtil.InnerBlock(_textBuffer.GetPointInLine(1, 1), BlockKind.Bracket, 1).Value.Span.GetText();
+                Assert.Equal(_textBuffer.GetLine(1).GetText(), lines);
+            }
+
+            /// <summary>
+            /// Lines with whitespace inner block test
+            /// </summary>
+            [Fact]
+            public void GetInnerBlock_LinesAndWhitespace()
+            {
+                Create("", "    [", "      cat", "     ] ", "");
+                var lines = _motionUtil.InnerBlock(_textBuffer.GetPointInLine(2, 1), BlockKind.Bracket, 1).Value.Span.GetText();
+                Assert.Equal(_textBuffer.GetLine(2).GetText(), lines);
+            }
+
+            /// <summary>
+            /// Inner block with content on line with start bracket
+            /// </summary>
+            [Fact]
+            public void GetInnerBlock_ContentOnLineWithOpeningBracket()
+            {
+                Create("[ dog", "  cat", "  ] ");    
+                var lines = _motionUtil.InnerBlock(_textBuffer.GetPointInLine(1, 1), BlockKind.Bracket, 1).Value.Span.GetText();
+                Assert.Equal(" dog" + Environment.NewLine + "  cat", lines);
+            }
+
+            /// <summary>
+            /// Inner block with content on line with start bracket
+            /// </summary>
+            [Fact]
+            public void GetInnerBlock_ContentOnLineWithClosingBracket()
+            {
+                Create("[ ", "  cat", "  dog ] ");    
+                var lines = _motionUtil.InnerBlock(_textBuffer.GetPointInLine(1, 1), BlockKind.Bracket, 1).Value.Span.GetText();
+                Assert.Equal(" " + Environment.NewLine + "  cat" + Environment.NewLine + "  dog ", lines);
             }
 
             /// <summary>

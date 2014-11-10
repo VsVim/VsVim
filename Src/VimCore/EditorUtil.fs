@@ -941,8 +941,11 @@ module SnapshotPointUtil =
     let AddOneOrCurrent point =
         EditorCoreUtil.AddOneOrCurrent point
 
-    /// Subtract the count from the SnapshotPoint
+    /// Subtract 1 from the SnapshotPoint
     let SubtractOne (point:SnapshotPoint) =  point.Subtract(1)
+
+    /// Subtract the count from the SnapshotPoint
+    let Subtract count (point:SnapshotPoint) =  point.Subtract(count)
 
     let TrySubtract (point:SnapshotPoint) count =  
         let position = point.Position - count
