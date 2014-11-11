@@ -6,7 +6,7 @@ namespace Vim.UnitTest
 {
     public sealed class BuiltinFunctionsTest
     {
-        private BuiltinFunctionCaller _callerUnderTest;
+        private readonly BuiltinFunctionCaller _callerUnderTest;
         private Dictionary<string, VariableValue> _variableMap;
 
         public BuiltinFunctionsTest()
@@ -21,6 +21,16 @@ namespace Vim.UnitTest
             var maybeValue = _callerUnderTest.Call(BuiltinFunctionCall.NewExists(VariableValue.NewString("x")));
 
             Assert.True(maybeValue.IsSome(VariableValue.NewNumber(0)));
+        }
+
+        [Fact]
+        public void Exists_should_return_1_for_variable_that_does_exist()
+        {
+            _variableMap["foo"] = VariableValue.NewString("bar");
+
+            var maybeValue = _callerUnderTest.Call(BuiltinFunctionCall.NewExists(VariableValue.NewString("foo")));
+
+            Assert.True(maybeValue.IsSome(VariableValue.NewNumber(1)));
         }
     }
 }

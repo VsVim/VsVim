@@ -127,7 +127,14 @@ type BuiltinFunctionCaller
     ) =
     member x.Call (func : BuiltinFunctionCall) =
         match func with
-        | BuiltinFunctionCall.Exists name -> VariableValue.Number 0 |> Some
+        | BuiltinFunctionCall.Exists name ->
+            match name with
+            | VariableValue.String variableName ->
+                _variableMap.ContainsKey variableName
+                |> System.Convert.ToInt32
+                |> VariableValue.Number
+                |> Some
+            | _ -> None
         | _ -> None
 
 [<Sealed>]
