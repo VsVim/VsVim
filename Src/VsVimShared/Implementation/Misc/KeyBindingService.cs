@@ -10,6 +10,7 @@ using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.Win32;
 using Vim;
 using Vim.UI.Wpf;
+using System.IO;
 
 namespace Vim.VisualStudio.Implementation.Misc
 {
@@ -286,6 +287,49 @@ namespace Vim.VisualStudio.Implementation.Misc
             }
         }
 
+        private void DumpKeyboard(StreamWriter streamWriter)
+        { 
+            try
+            {
+                foreach (var dteCommand in _dte.Commands.GetCommands())
+                {
+                    streamWriter.WriteLine("Command: {0}", dteCommand.Name);
+
+                    CommandId commandId;
+                    if (!dteCommand.TryGetCommandId(out commandId))
+                    {
+                        streamWriter.WriteLine("Cannot get CommandId: + ", dteCommand.Name);
+                        continue;
+                    }
+
+                    streamWriter.WriteLine("\tId: {0} {1}", commandId.Group, commandId.Id);
+
+                    Exception bindingEx;
+                    var bindings = dteCommand.GetBindings(out bindingEx);
+                    if (bindingEx != null)
+                    {
+                        streamWriter.WriteLine("!!!Exception!!! " + bindingEx.Message + Environment.NewLine + bindingEx.StackTrace);
+                        continue;
+                    }
+
+                    foreach (var binding in bindings)
+                    {
+                        streamWriter.WriteLine("\tBinding: {0} ", binding);
+
+                        KeyBinding keyBinding;
+                        if (KeyBinding.TryParse(binding, out keyBinding))
+                        {
+                            streamWriter.WriteLine("\tKey Binding: {0} {1}", keyBinding.Scope, keyBinding.CommandString);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                streamWriter.WriteLine("!!!Exception!!! " + ex.Message + Environment.NewLine + ex.StackTrace);
+            }
+        }
+
         #region IKeyBindingService
 
         ConflictingKeyBindingState IKeyBindingService.ConflictingKeyBindingState
@@ -322,6 +366,11 @@ namespace Vim.VisualStudio.Implementation.Misc
         void IKeyBindingService.IgnoreAnyConflicts()
         {
             IgnoreAnyConflicts();
+        }
+
+        void IKeyBindingService.DumpKeyboard(StreamWriter streamWriter)
+        {
+            DumpKeyboard(streamWriter);
         }
 
         #endregion

@@ -65,23 +65,25 @@ namespace Vim.VisualStudio
         /// Get the binding strings for this Command.  Digs through the various ways a 
         /// binding string can be stored and returns a uniform result
         /// </summary>
-        public static IEnumerable<string> GetBindings(this DteCommand command)
+        public static IEnumerable<string> GetBindings(this DteCommand command, out Exception ex)
         {
             if (null == command)
             {
                 throw new ArgumentException("command");
             }
 
+            ex = null;
             object bindings;
             try
             {
                 bindings = command.Bindings;
             }
-            catch (Exception)
+            catch (Exception ex2)
             {
                 // Several user reports indicate the above call can throw.  Most commonly
                 // this throws an OutOfMemoryException.  Either way we don't care what the
                 // error is.  We just can't get bindings for this element
+                ex = ex2;
                 return Enumerable.Empty<string>();
             }
 
@@ -101,6 +103,16 @@ namespace Vim.VisualStudio
             }
 
             return Enumerable.Empty<string>();
+        }
+
+        /// <summary>
+        /// Get the binding strings for this Command.  Digs through the various ways a 
+        /// binding string can be stored and returns a uniform result
+        /// </summary>
+        public static IEnumerable<string> GetBindings(this DteCommand command)
+        {
+            Exception unused;
+            return GetBindings(command, out unused);
         }
 
         /// <summary>

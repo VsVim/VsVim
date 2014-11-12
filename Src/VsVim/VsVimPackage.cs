@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Globalization;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.ComponentModel.Design;
 using Microsoft.Win32;
@@ -13,6 +14,8 @@ using Vim.UI.Wpf;
 using System.ComponentModel.Composition.Hosting;
 using Vim;
 using Vim.Extensions;
+using System.Text;
+using IOPath = System.IO.Path;
 
 namespace Vim.VisualStudio
 {
@@ -42,6 +45,26 @@ namespace Vim.VisualStudio
             _vim = _exportProvider.GetExportedValue<IVim>();
         }
 
+        private void DumpKeyboard()
+        {
+            var keyBindingService = _exportProvider.GetExportedValue<IKeyBindingService>();
+            var folder = IOPath.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), @"VsVim");
+            try
+            {
+                Directory.CreateDirectory(folder);
+            }
+            catch
+            {
+                // Don't care if it throws, just want to make sure the folder exists
+            }
+
+            var filePath = IOPath.Combine(folder, "keyboard.txt");
+            using (var streamWriter = new StreamWriter(filePath, append:false, encoding: Encoding.Unicode))
+            {
+                keyBindingService.DumpKeyboard(streamWriter);
+            }
+        }
+
         #region IOleCommandTarget
 
         int IOleCommandTarget.Exec(ref Guid commandGroup, uint commandId, uint commandExecOpt, IntPtr variantIn, IntPtr variantOut)
@@ -52,6 +75,9 @@ namespace Vim.VisualStudio
                 {
                     case CommandIds.Options:
                         ShowOptionPage(typeof(Vim.VisualStudio.Implementation.OptionPages.KeyboardOptionPage));
+                        break;
+                    case CommandIds.DumpKeyboard:
+                        DumpKeyboard();
                         break;
                     default:
                         Debug.Assert(false);
@@ -71,6 +97,7 @@ namespace Vim.VisualStudio
                 switch (commands[0].cmdID)
                 {
                     case CommandIds.Options:
+                    case CommandIds.DumpKeyboard:
                         commands[0].cmdf = (uint)(OLECMDF.OLECMDF_ENABLED | OLECMDF.OLECMDF_SUPPORTED);
                         break;
                     default:

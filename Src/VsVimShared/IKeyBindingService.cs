@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using Vim;
 
 namespace Vim.VisualStudio
@@ -45,5 +46,10 @@ namespace Vim.VisualStudio
         /// Ignore the conflicts
         /// </summary>
         void IgnoreAnyConflicts(); 
+
+        /// <summary>
+        /// Dump the contents of the Visual Studio keyboard layout to the given StreamWriter
+        /// </summary>
+        void DumpKeyboard(StreamWriter streamWriter);
     }
 }
