@@ -325,8 +325,12 @@ type internal Vim
         _statusUtilFactory : IStatusUtilFactory
     ) as this =
 
+    /// This key is placed in the ITextView property bag to note that vim buffer creation has
+    /// been suppressed for that specific instance 
+    static let ShouldCreateVimBufferKey = obj()
+
     /// Key for IVimTextBuffer instances inside of the ITextBuffer property bag
-    let _vimTextBufferKey = System.Object()
+    let _vimTextBufferKey = obj()
 
     /// Holds an IVimBuffer and the DisposableBag for event handlers on the IVimBuffer.  This
     /// needs to be removed when we're done with the IVimBuffer to avoid leaks
@@ -686,10 +690,28 @@ type internal Vim
         | (false, _) -> 
             false
 
+    /// Determine if an IVimBuffer instance should be created for a given ITextView.  If the
+    /// decision to not create an IVimBuffer then this decision is persisted for the lifetime
+    /// of the ITextView.  
+    ///
+    /// Allowing it to change in the middle would mean only a portion of the services around
+    /// and IVimBuffer were created and hence it would just appear buggy to the user.  
+    ///
+    /// Also we want to reduce the number of times we ask the host this question.  The determination
+    /// could be expensive and there is no need to do it over and over again.  Scenarios like
+    /// the command window end up forcing this code path a large number of times.  
+    member x.ShouldCreateVimBuffer (textView : ITextView) = 
+        match PropertyCollectionUtil.GetValue<bool> ShouldCreateVimBufferKey textView.Properties with 
+        | Some value -> value
+        | None -> 
+            let value =  _vimHost.ShouldCreateVimBuffer textView 
+            textView.Properties.AddProperty(ShouldCreateVimBufferKey, (box value))
+            value
+
     member x.TryGetOrCreateVimBufferForHost(textView : ITextView, [<Out>] vimBuffer : IVimBuffer byref) =
         if x.TryGetVimBuffer(textView, &vimBuffer) then
             true
-        elif _vimHost.ShouldCreateVimBuffer textView then
+        elif x.ShouldCreateVimBuffer textView then
             let settings = x.GetWindowSettingsForNewBuffer()
             vimBuffer <- x.CreateVimBuffer textView (Some settings) 
             true
@@ -760,6 +782,7 @@ type internal Vim
         member x.GetOrCreateVimTextBuffer textBuffer = x.GetOrCreateVimTextBuffer textBuffer
         member x.LoadVimRc() = x.LoadVimRc()
         member x.RemoveVimBuffer textView = x.RemoveVimBuffer textView
+        member x.ShouldCreateVimBuffer textView = x.ShouldCreateVimBuffer textView
         member x.TryGetOrCreateVimBufferForHost(textView, vimBuffer) = x.TryGetOrCreateVimBufferForHost(textView, &vimBuffer)
         member x.TryGetVimBuffer(textView, vimBuffer) = x.TryGetVimBuffer(textView, &vimBuffer)
         member x.TryGetVimTextBuffer(textBuffer, vimBuffer) = x.TryGetVimTextBuffer(textBuffer, &vimBuffer)

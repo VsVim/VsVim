@@ -4092,6 +4092,10 @@ and IVim =
     /// Get the IVimTextBuffer associated with the given ITextBuffer
     abstract TryGetVimTextBuffer : textBuffer : ITextBuffer * [<Out>] vimTextBuffer : IVimTextBuffer byref -> bool
 
+    /// This implements a cached version of IVimHost::ShouldCreateVimBuffer.  Code should prefer 
+    /// this method wherever possible 
+    abstract ShouldCreateVimBuffer : textView : ITextView -> bool
+
     /// Get or create an IVimBuffer for the given ITextView.  The creation of the IVimBuffer will
     /// only occur if the host returns true from IVimHost::ShouldCreateVimBuffer.  
     ///

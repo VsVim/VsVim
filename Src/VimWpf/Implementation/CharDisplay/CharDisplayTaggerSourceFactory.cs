@@ -37,7 +37,7 @@ namespace Vim.UI.Wpf.Implementation.CharDisplay
 
         ITagger<T> IViewTaggerProvider.CreateTagger<T>(ITextView textView, ITextBuffer textBuffer)
         {
-            if (textView.TextBuffer != textBuffer || !_vim.VimHost.ShouldCreateVimBuffer(textView))
+            if (textView.TextBuffer != textBuffer || !_vim.ShouldCreateVimBuffer(textView))
             {
                 return null;
             }
