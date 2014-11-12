@@ -66,6 +66,11 @@ namespace Vim.VisualStudio
         bool IsVenusView(IVsTextView textView);
 
         /// <summary>
+        /// Is this a Parallel Watch Window ITextView instance
+        /// </summary>
+        bool IsParallelWatchWindowView(ITextView textView);
+
+        /// <summary>
         /// Determine if this ITextView is readonly.  This needs to mimic the behavior of 
         /// the VsCodeWindowAdapter::IsReadOnly method
         /// </summary>

@@ -687,6 +687,11 @@ namespace Vim.VisualStudio
                 return true;
             }
 
+            if (_vsAdapter.IsParallelWatchWindowView(textView))
+            {
+                return false;
+            }
+
             if (!base.ShouldCreateVimBuffer(textView))
             {
                 return false;

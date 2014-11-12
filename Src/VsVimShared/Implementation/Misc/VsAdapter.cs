@@ -24,6 +24,12 @@ namespace Vim.VisualStudio.Implementation.Misc
     {
         private static readonly object s_findUIAdornmentLayerKey = new object();
 
+        /// <summary>
+        /// The parallel watch window will stash this GUID inside the IVsUserData (off IVsTextBuffer). It 
+        /// allows us to identify this window
+        /// </summary>
+        private static readonly Guid s_parallelWatchWindowGuid = new Guid(0x944E3FE0, 0xCD33, 0x44A2, 0x93, 0x1C, 0x1D, 0x7F, 0x84, 0x2C, 0x9D, 0x5);
+
         private readonly IVsEditorAdaptersFactoryService _editorAdaptersFactoryService;
         private readonly IEditorOptionsFactoryService _editorOptionsFactoryService;
         private readonly IIncrementalSearchFactoryService _incrementalSearchFactoryService;
@@ -290,6 +296,27 @@ namespace Vim.VisualStudio.Implementation.Misc
                 && id == VSConstants.CLSID_HtmlLanguageService;
         }
 
+        internal bool IsParallelWatchWindowView(ITextView textView)
+        {
+            var vsTextBuffer = _editorAdaptersFactoryService.GetBufferAdapter(textView.TextDataModel.DocumentBuffer);
+            if (vsTextBuffer == null)
+            {
+                return false;
+            }
+
+            var vsUserData = vsTextBuffer as IVsUserData;
+            if (vsUserData == null)
+            {
+                return false;
+            }
+
+            var key = s_parallelWatchWindowGuid;
+            object value;
+            return ErrorHandler.Succeeded(vsUserData.GetData(ref key, out value)) &&
+                value is bool &&
+                (bool)value;
+        }
+
         internal bool IsReadOnly(ITextView textView)
         {
             var editorOptions = textView.Options;
@@ -460,6 +487,11 @@ namespace Vim.VisualStudio.Implementation.Misc
         bool IVsAdapter.IsVenusView(IVsTextView textView)
         {
             return IsVenusView(textView);
+        }
+
+        bool IVsAdapter.IsParallelWatchWindowView(ITextView textView)
+        {
+            return IsParallelWatchWindowView(textView);
         }
 
         bool IVsAdapter.IsReadOnly(ITextView textView)
