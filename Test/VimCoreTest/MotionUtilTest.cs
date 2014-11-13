@@ -2430,7 +2430,7 @@ namespace Vim.UnitTest
                 Create("a", "b", "", "c");
                 _textView.MoveCaretToLine(1);
                 var span = _motionUtil.AllParagraph(1).Value.Span;
-                Assert.Equal(_snapshot.GetLineRange(0, 2).ExtentIncludingLineBreak, span);
+                Assert.Equal(_snapshot.GetLineRange(0, 1).ExtentIncludingLineBreak, span);
             }
 
             /// <summary>
@@ -2441,7 +2441,7 @@ namespace Vim.UnitTest
             {
                 Create("a", "b", "", "c");
                 var span = _motionUtil.AllParagraph(1).Value.Span;
-                Assert.Equal(_snapshot.GetLineRange(0, 2).ExtentIncludingLineBreak, span);
+                Assert.Equal(_snapshot.GetLineRange(0, 1).ExtentIncludingLineBreak, span);
             }
 
             /// <summary>
