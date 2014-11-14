@@ -53,23 +53,8 @@ namespace Vim.VisualStudio.Implementation.OptionPages
             var exportProvider = componentModel.DefaultExportProvider;
             var vim = exportProvider.GetExportedValue<IVim>();
             var keyBindingService = exportProvider.GetExportedValue<IKeyBindingService>();
-            var snapshot = GetCommandKeyBindingSnapshot(vim, keyBindingService);
 
-            return new KeyboardSettingsControl(snapshot, exportProvider.GetExportedValue<IVimApplicationSettings>(), exportProvider.GetExportedValue<IVimProtectedOperations>());
-        }
-
-        private CommandKeyBindingSnapshot GetCommandKeyBindingSnapshot(IVim vim, IKeyBindingService keyBindingService)
-        {
-            var textView = vim.VimHost.CreateHiddenTextView();
-            try
-            {
-                var vimBuffer = vim.CreateVimBuffer(textView);
-                return keyBindingService.CreateCommandKeyBindingSnapshot(vimBuffer);
-            }
-            finally
-            {
-                textView.Close();
-            }
+            return new KeyboardSettingsControl(vim, keyBindingService, exportProvider.GetExportedValue<IVimApplicationSettings>(), exportProvider.GetExportedValue<IVimProtectedOperations>());
         }
     }
 }

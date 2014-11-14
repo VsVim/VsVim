@@ -24,19 +24,35 @@ namespace Vim.VisualStudio.Implementation.OptionPages
     /// </summary>
     public partial class KeyboardSettingsControl : UserControl
     {
+        public static readonly DependencyProperty IncludeAllScopesProperty = DependencyProperty.Register(
+            "IncludeAllScopes",
+            typeof(bool),
+            typeof(KeyboardSettingsControl));
+
         private readonly ObservableCollection<KeyBindingData> _keyBindingList = new ObservableCollection<KeyBindingData>();
         private readonly CommandKeyBindingSnapshot _snapshot;
         private readonly HashSet<KeyBindingData> _advancedSet = new HashSet<KeyBindingData>();
+        private readonly IVim _vim;
+        private readonly IKeyBindingService _keyBindingService;
         private readonly IVimApplicationSettings _vimApplicationSettings;
         private readonly IProtectedOperations _protectedOperations;
 
-        public KeyboardSettingsControl(CommandKeyBindingSnapshot snapshot, IVimApplicationSettings vimApplicationSettings, IProtectedOperations protectedOperations)
+        public bool IncludeAllScopes
+        {
+            get { return (bool)GetValue(IncludeAllScopesProperty); }
+            set { SetValue(IncludeAllScopesProperty, value); }
+        }
+
+        public KeyboardSettingsControl(IVim vim, IKeyBindingService keyBindingService, IVimApplicationSettings vimApplicationSettings, IProtectedOperations protectedOperations)
         {
             InitializeComponent();
 
-            _snapshot = snapshot;
+            _vim = vim;
+            _keyBindingService = keyBindingService;
             _vimApplicationSettings = vimApplicationSettings;
             _protectedOperations = protectedOperations;
+            _snapshot = GetCommandKeyBindingSnapshot();
+            IncludeAllScopes = keyBindingService.IncludeAllScopes;
             ComputeKeyBindings();
 
             BindingsListBox.ItemsSource = _keyBindingList;
@@ -184,6 +200,20 @@ namespace Vim.VisualStudio.Implementation.OptionPages
                 _keyBindingList.Where(binding => binding.HandledByVsVim).SelectMany(data => data.Bindings)
                 .ToReadOnlyCollection();
             _vimApplicationSettings.HaveUpdatedKeyBindings = true;
+        }
+
+        private CommandKeyBindingSnapshot GetCommandKeyBindingSnapshot()
+        {
+            var textView = _vim.VimHost.CreateHiddenTextView();
+            try
+            {
+                var vimBuffer = _vim.CreateVimBuffer(textView);
+                return _keyBindingService.CreateCommandKeyBindingSnapshot(vimBuffer);
+            }
+            finally
+            {
+                textView.Close();
+            }
         }
     }
 }

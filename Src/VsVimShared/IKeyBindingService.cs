@@ -19,6 +19,12 @@ namespace Vim.VisualStudio
     {
         ConflictingKeyBindingState ConflictingKeyBindingState { get; }
 
+        /// <summary>
+        /// Be default only important edit key binding scopes will be considered.  When this is true all 
+        /// scopes (edit or not) will be considered 
+        /// </summary>
+        bool IncludeAllScopes { get; set; }
+
         event EventHandler ConflictingKeyBindingStateChanged;
 
         /// <summary>
