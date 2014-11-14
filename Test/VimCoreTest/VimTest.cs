@@ -197,8 +197,8 @@ namespace Vim.UnitTest
             [Fact]
             public void GetOrCreateVimBufferForHost_Simple()
             {
+                VimHost.ShouldCreateVimBufferImpl = true;
                 var textView = CreateTextView("");
-                _vimHost.Setup(x => x.ShouldCreateVimBuffer(textView)).Returns(true);
 
                 IVimBuffer vimBuffer;
                 Assert.True(_vim.TryGetOrCreateVimBufferForHost(textView, out vimBuffer));
@@ -211,8 +211,8 @@ namespace Vim.UnitTest
             [Fact]
             public void GetOrCreateVimBufferForHost_Disallow()
             {
+                VimHost.ShouldCreateVimBufferImpl = false;
                 var textView = CreateTextView("");
-                _vimHost.Setup(x => x.ShouldCreateVimBuffer(textView)).Returns(false);
 
                 IVimBuffer vimBuffer;
                 Assert.False(_vim.TryGetOrCreateVimBufferForHost(textView, out vimBuffer));
@@ -225,9 +225,9 @@ namespace Vim.UnitTest
             [Fact]
             public void GetOrCreateVimBufferForHost_AlreadyCreated()
             {
+                VimHost.ShouldCreateVimBufferImpl = false;
                 var textView = CreateTextView("");
                 _vim.CreateVimBuffer(textView);
-                _vimHost.Setup(x => x.ShouldCreateVimBuffer(textView)).Returns(false);
 
                 IVimBuffer vimBuffer;
                 Assert.True(_vim.TryGetOrCreateVimBufferForHost(textView, out vimBuffer));
@@ -242,9 +242,10 @@ namespace Vim.UnitTest
             [Fact]
             public void GetOrCreateVimBufferForHost_VimTextBufferAlreadyCreated()
             {
+                VimHost.ShouldCreateVimBufferImpl = true;
+                        
                 var textView = CreateTextView("");
                 var vimTextBuffer = _vim.CreateVimTextBuffer(textView.TextBuffer);
-                _vimHost.Setup(x => x.ShouldCreateVimBuffer(textView)).Returns(true);
 
                 IVimBuffer vimBuffer;
                 Assert.True(_vim.TryGetOrCreateVimBufferForHost(textView, out vimBuffer));
