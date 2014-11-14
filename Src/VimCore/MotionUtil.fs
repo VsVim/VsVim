@@ -1320,10 +1320,13 @@ type internal MotionUtil
                 if isWhiteSpace span.End then
                     let endPoint = 
                         span.End
-                        |> SnapshotPointUtil.GetPointsIncludingLineBreak Path.Forward 
+                        |> SnapshotPointUtil.GetPoints Path.Forward 
                         |> Seq.skipWhile isWhiteSpace
-                        |> SeqUtil.headOrDefault (SnapshotUtil.GetEndPoint x.CurrentSnapshot)
-                    SnapshotSpan(span.Start, endPoint) |> Some
+                        |> SeqUtil.headOrDefault (SnapshotUtil.GetEndPoint x.CurrentSnapshot) 
+
+                    let line = SnapshotUtil.GetLineOrFirst span.Snapshot (endPoint.GetContainingLine().LineNumber - 1)
+                    
+                    SnapshotSpan(span.Start, line.End) |> Some
                 else
                     None
 
