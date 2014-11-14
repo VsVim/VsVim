@@ -47,20 +47,6 @@ namespace Vim.VisualStudio
             }
         }
 
-        public static bool TryGetName(this DteCommand command, out string name)
-        {
-            try
-            {
-                name = command.Name;
-                return true;
-            }
-            catch
-            {
-                name = null;
-                return false;
-            }
-        }
-
         /// <summary>
         /// Get the binding strings for this Command.  Digs through the various ways a 
         /// binding string can be stored and returns a uniform result
@@ -142,7 +128,13 @@ namespace Vim.VisualStudio
                 KeyBinding binding;
                 if (KeyBinding.TryParse(cur, out binding))
                 {
-                    yield return new CommandKeyBinding(commandId, command.Name, binding);
+                    var name = command.Name;
+                    if (String.IsNullOrEmpty(name))
+                    {
+                        name = string.Format("<Unnamed> {0}", commandId.Id);
+                    }
+
+                    yield return new CommandKeyBinding(commandId, name, binding);
                 }
             }
         }

@@ -26,6 +26,7 @@ namespace Vim.VisualStudio.Implementation.Misc
         private readonly IVimProtectedOperations _protectedOperations;
         private readonly IVimApplicationSettings _vimApplicationSettings;
         private readonly ScopeData _scopeData;
+        private bool _includeAllScopes;
         private ConflictingKeyBindingState _state;
         private HashSet<KeyInput> _vimFirstKeyInputSet;
 
@@ -33,6 +34,19 @@ namespace Vim.VisualStudio.Implementation.Misc
         {
             get { return _vimFirstKeyInputSet; }
             set { _vimFirstKeyInputSet = value; }
+        }
+
+        internal bool IncludeAllScopes
+        {
+            get { return _includeAllScopes; }
+            set
+            {
+                if (value != _includeAllScopes)
+                {
+                    _includeAllScopes = value;
+                    ConflictingKeyBindingState = ConflictingKeyBindingState.HasNotChecked;
+                }
+            }
         }
 
         internal ConflictingKeyBindingState ConflictingKeyBindingState
@@ -196,7 +210,7 @@ namespace Vim.VisualStudio.Implementation.Misc
         internal bool ShouldSkip(CommandKeyBinding binding)
         {
             var scope = binding.KeyBinding.Scope;
-            if (_scopeData.GetScopeKind(scope) == ScopeKind.Unknown)
+            if (!_includeAllScopes &&  _scopeData.GetScopeKind(scope) == ScopeKind.Unknown)
             {
                 return true;
             }
@@ -335,6 +349,12 @@ namespace Vim.VisualStudio.Implementation.Misc
         ConflictingKeyBindingState IKeyBindingService.ConflictingKeyBindingState
         {
             get { return ConflictingKeyBindingState; }
+        }
+
+        bool IKeyBindingService.IncludeAllScopes
+        {
+            get { return IncludeAllScopes; }
+            set { IncludeAllScopes = value; }
         }
 
         event EventHandler IKeyBindingService.ConflictingKeyBindingStateChanged

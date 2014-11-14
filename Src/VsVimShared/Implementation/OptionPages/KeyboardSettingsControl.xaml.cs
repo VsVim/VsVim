@@ -24,23 +24,41 @@ namespace Vim.VisualStudio.Implementation.OptionPages
     /// </summary>
     public partial class KeyboardSettingsControl : UserControl
     {
+        public static readonly DependencyProperty IncludeAllScopesProperty = DependencyProperty.Register(
+            "IncludeAllScopes",
+            typeof(bool),
+            typeof(KeyboardSettingsControl));
+
         private readonly ObservableCollection<KeyBindingData> _keyBindingList = new ObservableCollection<KeyBindingData>();
-        private readonly CommandKeyBindingSnapshot _snapshot;
         private readonly HashSet<KeyBindingData> _advancedSet = new HashSet<KeyBindingData>();
+        private readonly IVim _vim;
+        private readonly IKeyBindingService _keyBindingService;
         private readonly IVimApplicationSettings _vimApplicationSettings;
         private readonly IProtectedOperations _protectedOperations;
+        private CommandKeyBindingSnapshot _snapshot;
 
-        public KeyboardSettingsControl(CommandKeyBindingSnapshot snapshot, IVimApplicationSettings vimApplicationSettings, IProtectedOperations protectedOperations)
+        public bool IncludeAllScopes
+        {
+            get { return (bool)GetValue(IncludeAllScopesProperty); }
+            set { SetValue(IncludeAllScopesProperty, value); }
+        }
+
+        public ObservableCollection<KeyBindingData> KeyBindingList
+        {
+            get { return _keyBindingList; }
+        }
+
+        public KeyboardSettingsControl(IVim vim, IKeyBindingService keyBindingService, IVimApplicationSettings vimApplicationSettings, IProtectedOperations protectedOperations)
         {
             InitializeComponent();
 
-            _snapshot = snapshot;
+            _vim = vim;
+            _keyBindingService = keyBindingService;
             _vimApplicationSettings = vimApplicationSettings;
             _protectedOperations = protectedOperations;
-            ComputeKeyBindings();
-
-            BindingsListBox.ItemsSource = _keyBindingList;
+            IncludeAllScopes = keyBindingService.IncludeAllScopes;
             BindingsListBox.Items.SortDescriptions.Add(new SortDescription("KeyName", ListSortDirection.Ascending));
+            ComputeKeyBindings();
         }
 
         public void Apply()
@@ -58,11 +76,24 @@ namespace Vim.VisualStudio.Implementation.OptionPages
             }
         }
 
+        protected override void OnPropertyChanged(DependencyPropertyChangedEventArgs e)
+        {
+            base.OnPropertyChanged(e);
+            if (e.Property == IncludeAllScopesProperty && IncludeAllScopes != _keyBindingService.IncludeAllScopes)
+            {
+                _keyBindingService.IncludeAllScopes = IncludeAllScopes;
+                ComputeKeyBindings();
+            }
+        }
+
         private void ComputeKeyBindings()
         {
             // This snapshot contains a list of active keys, and keys which are still conflicting. We will group all
             // bindings by the initial character, and will consider the entire group as being handled by VsVim as long
             // as one is being handled.
+            _snapshot = GetCommandKeyBindingSnapshot();
+            _keyBindingList.Clear();
+            _advancedSet.Clear();
 
             var handledByVsVim = _snapshot.Removed.ToLookup(binding => binding.KeyBinding.FirstKeyStroke);
             var handledByVs = _snapshot.Conflicting.ToLookup(binding => binding.KeyBinding.FirstKeyStroke);
@@ -184,6 +215,20 @@ namespace Vim.VisualStudio.Implementation.OptionPages
                 _keyBindingList.Where(binding => binding.HandledByVsVim).SelectMany(data => data.Bindings)
                 .ToReadOnlyCollection();
             _vimApplicationSettings.HaveUpdatedKeyBindings = true;
+        }
+
+        private CommandKeyBindingSnapshot GetCommandKeyBindingSnapshot()
+        {
+            var textView = _vim.VimHost.CreateHiddenTextView();
+            try
+            {
+                var vimBuffer = _vim.CreateVimBuffer(textView);
+                return _keyBindingService.CreateCommandKeyBindingSnapshot(vimBuffer);
+            }
+            finally
+            {
+                textView.Close();
+            }
         }
     }
 }

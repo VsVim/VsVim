@@ -6,7 +6,9 @@
              xmlns:local="clr-namespace:Vim.VisualStudio.Implementation.OptionPages;assembly="
              xmlns:scm="clr-namespace:System.ComponentModel;assembly=WindowsBase"
              mc:Ignorable="d" 
-             d:DesignHeight="300" d:DesignWidth="300">
+             d:DesignHeight="300" 
+             d:DesignWidth="300"
+             DataContext="{Binding RelativeSource={RelativeSource Self}}">
     <UserControl.Resources>
         <local:ComboBoxTemplateSelector x:Key="ComboBoxTemplateSelector" />
 
@@ -42,6 +44,7 @@
         </Grid.Resources>
 
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
@@ -50,11 +53,19 @@
             <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
 
-        <ListBox x:Name="BindingsListBox"
-                 ItemTemplate="{StaticResource BindingListBoxItemTemplate}"
-                 Margin="0, 0, 0, 10"/>
+        <CheckBox 
+            Grid.Row="0"
+            Content="Include All Scopes"
+            IsChecked="{Binding IncludeAllScopes}" />
 
-        <WrapPanel Grid.Row="1">
+        <ListBox
+            Grid.Row="1"
+            x:Name="BindingsListBox"
+            ItemTemplate="{StaticResource BindingListBoxItemTemplate}"
+            ItemsSource="{Binding KeyBindingList}"
+            Margin="0, 0, 0, 10"/>
+
+        <WrapPanel Grid.Row="2">
             <Button Content="Handle all with _VsVim" Click="OnEnableAllVimKeysClick" Margin="0, 0, 5, 0" />
             <Button Content="Handle all with Visual _Studio" Click="OnDisableAllVimKeysClick" />
         </WrapPanel>

@@ -13,7 +13,7 @@ namespace Vim.VisualStudio
     /// </summary>
     public sealed class CommandListSnapshot
     {
-        struct CommandData
+        private struct CommandData
         {
             internal DteCommand Command;
             internal ReadOnlyCollection<CommandKeyBinding> CommandKeyBindings;
@@ -21,10 +21,16 @@ namespace Vim.VisualStudio
 
         private readonly Dictionary<CommandId, CommandData> _commandMap = new Dictionary<CommandId, CommandData>();
         private readonly ReadOnlyCollection<CommandKeyBinding> _commandKeyBindings;
+        private readonly ReadOnlyCollection<string> _scopes;
 
         public ReadOnlyCollection<CommandKeyBinding> CommandKeyBindings
         {
             get { return _commandKeyBindings; }
+        }
+
+        public ReadOnlyCollection<string> Scopes
+        {
+            get { return _scopes; }
         }
 
         public IEnumerable<KeyBinding> KeyBindings
@@ -40,6 +46,7 @@ namespace Vim.VisualStudio
         public CommandListSnapshot(IEnumerable<DteCommand> commands)
         {
             var list = new List<CommandKeyBinding>();
+            var scopes = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             foreach (var command in commands)
             {
                 CommandId commandId;
@@ -56,10 +63,16 @@ namespace Vim.VisualStudio
                 };
 
                 _commandMap[commandId] = commandData;
-                list.AddRange(commandData.CommandKeyBindings);
+
+                foreach (var commandKeyBinding in commandData.CommandKeyBindings)
+                {
+                    list.Add(commandKeyBinding);
+                    scopes.Add(commandKeyBinding.KeyBinding.Scope);
+                }
             }
 
             _commandKeyBindings = list.ToReadOnlyCollectionShallow();
+            _scopes = scopes.ToReadOnlyCollection();
         }
 
         /// <summary>
