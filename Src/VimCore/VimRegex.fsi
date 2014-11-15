@@ -27,7 +27,7 @@ type VimRegex =
 
     /// Matches the regex against the specified input and does the replacement 
     /// as specified.  If there is currently no regex then None will be returned
-    member Replace : input : string -> replacement : string -> replaceData : VimRegexReplaceData -> string 
+    member Replace : input : string -> replacement : string -> replaceData : VimRegexReplaceData -> registerMap : IRegisterMap -> string 
 
 module VimRegexFactory = 
 

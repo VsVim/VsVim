@@ -66,7 +66,8 @@ type VimReplaceCaseState =
 type VimRegexReplaceUtil
     (
         _input : string,
-        _matchCollection : MatchCollection
+        _matchCollection : MatchCollection,
+        _registerMap : IRegisterMap
     ) =
 
     let mutable _replaceCount = 0
@@ -100,6 +101,15 @@ type VimRegexReplaceUtil
             let group = m.Groups.[digit]
             x.AppendReplaceString group.Value
 
+    member private x.AppendRegister (c : char) = 
+        match RegisterName.OfChar c with
+        | None -> ()
+        | Some name ->
+            let register = _registerMap.GetRegister name
+            x.AppendReplaceString register.StringValue
+
+        _index <- _index + 2
+
     /// Append the next element from the replace string.  This is typically a character but can 
     /// be more if the character is an escape sequence.  
     ///
@@ -132,6 +142,8 @@ type VimRegexReplaceUtil
             | c -> 
                 if c = CharCodes.Enter then
                     _builder.AppendString _replaceData.NewLine
+                elif c = '=' && _index + 3 < _replacement.Length && _replacement.[_index + 2] = '@' then
+                    x.AppendRegister _replacement.[_index + 3]
                 else
                     match CharUtil.GetDigitValue c with 
                     | Some d-> x.AppendGroup m d
@@ -211,10 +223,10 @@ type VimRegex
     member x.Regex = _regex
     member x.IncludesNewLine = _includesNewLine
     member x.IsMatch input = _regex.IsMatch(input)
-    member x.Replace (input : string) (replacement : string) (replaceData : VimRegexReplaceData) = 
+    member x.Replace (input : string) (replacement : string) (replaceData : VimRegexReplaceData) (registerMap : IRegisterMap) = 
         let collection = _regex.Matches(input)
         if collection.Count > 0 then
-            let util = VimRegexReplaceUtil(input, collection)
+            let util = VimRegexReplaceUtil(input, collection, registerMap)
             util.Replace replacement replaceData
         else
             input

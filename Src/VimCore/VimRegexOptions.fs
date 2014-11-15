@@ -58,6 +58,7 @@ type VimRegexReplaceData = {
 
     /// The 'count' times it should be replaced.  Not considered in a replace all
     Count : VimRegexReplaceCount
+
 } with
 
     static member Default = { NewLine = Environment.NewLine; Magic = false; Count = VimRegexReplaceCount.One }

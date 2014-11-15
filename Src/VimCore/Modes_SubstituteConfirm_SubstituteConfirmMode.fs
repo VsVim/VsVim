@@ -38,6 +38,7 @@ type internal SubstituteConfirmMode
     let _textView = _vimBufferData.TextView
     let _globalSettings = _vimTextBuffer.GlobalSettings
     let _editorOperations = _operations.EditorOperations
+    let _registerMap = _vimBufferData.Vim.RegisterMap
     let _currentMatchChanged = Event<_>()
     let mutable _commandMap : Map<KeyInput, ConfirmAction> = Map.empty
     let mutable _confirmData : ConfirmData option = None
@@ -95,7 +96,7 @@ type internal SubstituteConfirmMode
         | None -> None
         | Some data -> 
             let replaceData = _operations.GetReplaceData x.CaretPoint
-            data.Regex.Replace (data.CurrentMatch.GetText()) (data.SubstituteText) replaceData |> Some
+            data.Regex.Replace (data.CurrentMatch.GetText()) (data.SubstituteText) replaceData _registerMap |> Some
 
     member x.EndOperation () = 
         x.ConfirmData <- None
@@ -139,7 +140,7 @@ type internal SubstituteConfirmMode
 
     member x.ReplaceCurrent (data:ConfirmData) =
         let replaceData = _operations.GetReplaceData x.CaretPoint
-        let text = data.Regex.Replace (data.CurrentMatch.GetText()) data.SubstituteText replaceData
+        let text = data.Regex.Replace (data.CurrentMatch.GetText()) data.SubstituteText replaceData _registerMap
         _textBuffer.Replace(data.CurrentMatch.Span, text) |> ignore
 
     /// Substitute the current match and move to the next
@@ -176,7 +177,7 @@ type internal SubstituteConfirmMode
         let edit = _textBuffer.CreateEdit()
         lineSpans 
         |> Seq.iter (fun span ->
-            let text = data.Regex.Replace (span.GetText()) data.SubstituteText replaceData
+            let text = data.Regex.Replace (span.GetText()) data.SubstituteText replaceData _registerMap
             edit.Replace(span.Span, text) |> ignore)
         if edit.HasEffectiveChanges then edit.Apply() |> ignore else edit.Cancel()
 

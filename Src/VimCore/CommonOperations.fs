@@ -954,7 +954,7 @@ type internal CommonOperations
 
             let replaceOne line (c : Capture) = 
                 let replaceData = x.GetReplaceData x.CaretPoint
-                let newText =  regex.Replace c.Value replace replaceData
+                let newText =  regex.Replace c.Value replace replaceData _registerMap
                 let offset = 
                     line
                     |> SnapshotLineUtil.GetStart

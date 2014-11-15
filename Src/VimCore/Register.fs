@@ -556,3 +556,16 @@ type Register
         with get () =  _valueBacking.RegisterValue
         and set value = _valueBacking.RegisterValue <- value
 
+/// Map containing the various VIM registers
+type IRegisterMap = 
+
+    /// Gets all of the available register name values
+    abstract RegisterNames : seq<RegisterName>
+
+    /// Get the register with the specified name
+    abstract GetRegister : registerName : RegisterName -> Register
+
+    /// Update the register with the specified value
+    abstract SetRegisterValue : register : Register -> operation : RegisterOperation -> value : RegisterValue -> unit
+
+

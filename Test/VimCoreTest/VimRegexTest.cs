@@ -3,6 +3,7 @@ using System.Linq;
 using Microsoft.FSharp.Core;
 using Xunit;
 using Vim.Extensions;
+using Moq;
 
 namespace Vim.UnitTest
 {
@@ -113,6 +114,19 @@ namespace Vim.UnitTest
 
         public sealed class ReplaceTest : VimRegexTest
         {
+            private readonly IRegisterMap _registerMap;
+            private readonly Mock<IClipboardDevice> _clipboardDevice;
+
+            public ReplaceTest()
+            {
+                _clipboardDevice = new Mock<IClipboardDevice>(MockBehavior.Loose);
+                Func<FSharpOption<string>> func = () => FSharpOption<string>.None;
+                _registerMap = new RegisterMap(
+                    new VimData(_globalSettings),
+                    _clipboardDevice.Object,
+                    func.ToFSharpFunc());
+            }
+
             private void VerifyReplace(string pattern, string input, string replace, string result)
             {
                 VerifyReplace(VimRegexOptions.Default, pattern, input, replace, result);
@@ -125,7 +139,7 @@ namespace Vim.UnitTest
 
                 var noMagic = VimRegexOptions.NoMagic == (options & VimRegexOptions.NoMagic);
                 var replaceData = new VimRegexReplaceData(Environment.NewLine, !noMagic, VimRegexReplaceCount.All);
-                Assert.Equal(result, regex.Value.Replace(input, replace, replaceData));
+                Assert.Equal(result, regex.Value.Replace(input, replace, replaceData, _registerMap));
             }
 
             /// <summary>
@@ -335,6 +349,14 @@ namespace Vim.UnitTest
             public void InsertNullCharacter()
             {
                 VerifyReplace(@"o", "dog", @"\n", "d" + (char)0 + "g");
+            }
+
+            [Fact]
+            public void InsertRegisterValue()
+            {
+                _registerMap.SetRegisterValue('c', "fish");
+                VerifyReplace("o", "dog", @"\=@c", "dfishg");
+                VerifyReplace("o", "doog", @"\=@c", "dfishfishg");
             }
         }
 

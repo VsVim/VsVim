@@ -85,18 +85,6 @@ type ChangeCharacterKind =
     /// Rot13 encode the letters
     | Rot13
 
-/// Map containing the various VIM registers
-type IRegisterMap = 
-
-    /// Gets all of the available register name values
-    abstract RegisterNames : seq<RegisterName>
-
-    /// Get the register with the specified name
-    abstract GetRegister : RegisterName -> Register
-
-    /// Update the register with the specified value
-    abstract SetRegisterValue : Register -> RegisterOperation -> RegisterValue -> unit
-
 type IStatusUtil =
 
     /// Raised when there is a special status message that needs to be reported
