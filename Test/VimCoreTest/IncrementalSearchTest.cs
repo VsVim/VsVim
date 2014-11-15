@@ -111,7 +111,6 @@ namespace Vim.UnitTest
 
         public sealed class MiscTest : IncrementalSearchTest
         {
-
             [Fact]
             public void LastSearch2()
             {

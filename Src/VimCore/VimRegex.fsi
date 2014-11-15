@@ -33,6 +33,8 @@ module VimRegexFactory =
 
     val Create : pattern : string -> options : VimRegexOptions -> VimRegex option
 
+    val CreateEx : pattern : string -> options : VimRegexOptions -> VimResult<VimRegex>
+
     val CreateForSettings : pattern : string -> globalSettings : IVimGlobalSettings -> VimRegex option
 
     val CreateForSubstituteFlags : pattern : string -> globalSettings : IVimGlobalSettings -> flags : SubstituteFlags -> VimRegex option

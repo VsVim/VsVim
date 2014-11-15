@@ -58,6 +58,7 @@ module internal CommonUtil =
                     Resources.Common_PatternNotFound
 
             statusUtil.OnError (format searchData.Pattern)
+        | SearchResult.Error (_, msg) -> statusUtil.OnError msg
 
 type internal CommonOperations
     (

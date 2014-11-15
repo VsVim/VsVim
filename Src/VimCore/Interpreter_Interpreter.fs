@@ -1054,7 +1054,8 @@ type VimInterpreter
                     |> SnapshotLineUtil.GetFirstNonBlankOrStart
                 _commonOperations.MoveCaretToPoint point ViewFlags.Standard
                 _vimData.LastSearchData <- searchData
-            | SearchResult.NotFound _ -> ())
+            | SearchResult.NotFound _ -> ()
+            | SearchResult.Error _ -> ())
 
     /// Run the :set command.  Process each of the arguments 
     member x.RunSet setArguments =

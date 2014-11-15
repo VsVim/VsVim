@@ -176,6 +176,7 @@ type internal IncrementalSearch
             match searchResult with
             | SearchResult.Found (_, span, _, _) -> _operations.EnsureAtPoint span.Start ViewFlags.Standard
             | SearchResult.NotFound _ -> x.ResetView ()
+            | SearchResult.Error _ -> x.ResetView ()
 
         // Update all of our internal state before we start raising events 
         { SearchResult = searchResult; SearchText = rawPattern }

@@ -2869,6 +2869,38 @@ namespace Vim.UnitTest
                     _vimBuffer.ProcessNotation("/cat?", enter: true);
                     Assert.Equal(_textBuffer.GetLine(2).Start, _textView.GetCaretPoint());
                 }
+
+                [Fact]
+                public void ErrorUnmatchedOpenParen()
+                {
+                    Create("");
+                    _assertOnErrorMessage = false;
+                    var fired = false;
+                    _vimBuffer.ErrorMessage += (_, e) =>
+                        {
+                            Assert.Equal(e.Message, Resources.Regex_UnmatchedParen);
+                            fired = true;
+                        };
+
+                    _vimBuffer.Process(@"/\v(9", enter: true);
+                    Assert.True(fired);
+                }
+
+                [Fact]
+                public void ErrorUnmatchedOpenBrace()
+                {
+                    Create("");
+                    _assertOnErrorMessage = false;
+                    var fired = false;
+                    _vimBuffer.ErrorMessage += (_, e) =>
+                        {
+                            Assert.Equal(e.Message, Resources.Regex_UnmatchedBrace);
+                            fired = true;
+                        };
+
+                    _vimBuffer.Process(@"/\v{9", enter: true);
+                    Assert.True(fired);
+                }
             }
 
             public sealed class OffsetTest : IncrementalSearchTest

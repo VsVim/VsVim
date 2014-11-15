@@ -30,6 +30,7 @@ type IncrementalSearchTaggerSource (_vimBuffer : IVimBuffer) as this =
                 match result with
                 | SearchResult.Found (_, _, patternSpan, _) -> patternSpan.Snapshot.CreateTrackingSpan(patternSpan.Span, SpanTrackingMode.EdgeExclusive) |> Some
                 | SearchResult.NotFound _ -> None
+                | SearchResult.Error _ -> None
 
         // When the search is updated we need to update the result.  Make sure to do so before raising 
         // the event.  The editor can and will call back into us synchronously and access a stale value

@@ -223,6 +223,20 @@ namespace Vim.UnitTest
 
         #endregion
 
+        #region VimResult<T>
+
+        public static T AsResult<T>(this VimResult<T> vimResult)
+        {
+            return ((VimResult<T>.Result)vimResult).Item;
+        }
+
+        public static string AsError<T>(this VimResult<T> vimResult)
+        {
+            return ((VimResult<T>.Error)vimResult).Item;
+        }
+
+        #endregion
+
         #region SetArgument
 
         /// <summary>

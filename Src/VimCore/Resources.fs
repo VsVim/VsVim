@@ -112,4 +112,8 @@ module internal Resources =
     let Interpreter_CallNotSupported name = sprintf ":call to function %s not supported" name
     let Interpreter_KeyMappingOptionNotSupported x = sprintf "Key mapping option is not supported: '%s'" x
 
+    let Regex_Unknown = "Unknown error building regex"
+    let Regex_UnmatchedParen = "Unmatched ("
+    let Regex_UnmatchedBrace = "Unmatched {"
+
 

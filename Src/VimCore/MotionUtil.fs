@@ -2412,9 +2412,8 @@ type internal MotionUtil
 
         let motionResult = 
             match searchResult with
-            | SearchResult.NotFound _ ->
-                // Nothing to return here. 
-                None
+            | SearchResult.Error _ -> None
+            | SearchResult.NotFound _ -> None
             | SearchResult.Found (_, span, _, _) ->
                 // Create the MotionResult for the provided MotionArgument and the 
                 // start and end points of the search.  Need to be careful because

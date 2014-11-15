@@ -265,6 +265,7 @@ type VimRegexBuilder
     let mutable _matchCase = _matchCase
     let mutable _builder = StringBuilder()
     let mutable _isBroken = false
+    let mutable _groupCount = 0
     let mutable _isStartOfPattern = true
     let mutable _isStartOfCollection = false
     let mutable _isRangeOpen = false
@@ -315,12 +316,21 @@ type VimRegexBuilder
     /// Is this in the middle of a collection?
     member x.IsCollectionOpen = _isCollectionOpen
 
+    /// Is this in the middle of a group?
+    member x.IsGroupOpen = _groupCount > 0
+
     /// Includes a \n reference
     member x.IncludesNewLine
         with get() = _includesNewLine
         and set value = _includesNewLine <- value
 
     member x.IsEndOfPattern = x.Index >= x.Pattern.Length
+
+    member x.IncrementGroupCount() = 
+        _groupCount <- _groupCount + 1
+
+    member x.DecrementGroupCount() = 
+        _groupCount <- _groupCount - 1
 
     member x.IncrementIndex count =
         _index <- _index + count
@@ -447,14 +457,18 @@ module VimRegexFactory =
         if data.IsCollectionOpen then
             FixOpenCollection data
 
-        if data.IsBroken || data.IsRangeOpen then 
-            None
+        if data.IsBroken then
+            VimResult.Error Resources.Regex_Unknown
+        elif data.IsRangeOpen then
+            VimResult.Error Resources.Regex_UnmatchedBrace
+        elif data.IsGroupOpen then
+            VimResult.Error Resources.Regex_UnmatchedParen
         else 
             let bclPattern = data.Builder.ToString()
             let regex = VimRegexUtils.TryCreateRegex bclPattern regexOptions
             match regex with
-            | None -> None
-            | Some regex -> VimRegex(data.Pattern, data.CaseSpecifier, bclPattern, regex, data.IncludesNewLine) |> Some
+            | None -> VimResult.Error Resources.Regex_Unknown
+            | Some regex -> VimRegex(data.Pattern, data.CaseSpecifier, bclPattern, regex, data.IncludesNewLine) |> VimResult.Result
 
     /// Convert the given character as a special character.  Interpretation
     /// may depend on the type of magic that is currently being employed
@@ -465,8 +479,12 @@ module VimRegexFactory =
         | '=' -> data.AppendChar '?'
         | '?' -> data.AppendChar '?'
         | '*' -> data.AppendChar '*'
-        | '(' -> data.AppendChar '('
-        | ')' -> data.AppendChar ')'
+        | '(' -> 
+            data.IncrementGroupCount()
+            data.AppendChar '('
+        | ')' -> 
+            data.DecrementGroupCount()
+            data.AppendChar ')'
         | '{' -> if data.IsRangeOpen then data.Break() else data.BeginRange()
         | '}' -> if data.IsRangeOpen then data.EndRange() else data.AppendChar '}'
         | '|' -> data.AppendChar '|'
@@ -679,9 +697,9 @@ module VimRegexFactory =
             data.IsStartOfPattern <- false
 
     let Convert (data : VimRegexBuilder) = 
-        let rec inner () : VimRegex option =
+        let rec inner () : VimResult<VimRegex> =
             if data.IsBroken then 
-                None
+                VimResult.Error Resources.Regex_Unknown 
             else
                 match data.CharAtIndex with
                 | None -> CreateVimRegex data 
@@ -705,7 +723,7 @@ module VimRegexFactory =
                     ProcessNormalChar data c |> inner
         inner ()
 
-    let Create pattern options = 
+    let CreateEx pattern options = 
 
         // Calculate the initial value for whether or not we display case
         let matchCase = 
@@ -729,6 +747,11 @@ module VimRegexFactory =
         let data = VimRegexBuilder(pattern, magicKind, matchCase, options)
 
         Convert data
+
+    let Create pattern options = 
+        match CreateEx pattern options with
+        | VimResult.Result vimRegex -> Some vimRegex
+        | VimResult.Error _ -> None
 
     let CreateCaseOptions (globalSettings : IVimGlobalSettings) =
         let options = VimRegexOptions.Default

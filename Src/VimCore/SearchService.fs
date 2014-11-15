@@ -108,6 +108,7 @@ type internal SearchService
         match x.FindNextMultipleCore serviceSearchData point 1 with
         | SearchResult.Found (_, span, _, _) -> Some span
         | SearchResult.NotFound _ -> None
+        | SearchResult.Error _ -> None
 
     member x.ApplySearchOffsetData (serviceSearchData : ServiceSearchData) (span : SnapshotSpan) : SnapshotSpan option =
         let snapshot = span.Snapshot
@@ -118,7 +119,7 @@ type internal SearchService
         | SearchOffsetData.Start count -> x.ApplySearchOffsetDataStartEnd span.Start count |> Some
         | SearchOffsetData.Search patternData -> x.ApplySearchOffsetDataSearch serviceSearchData span.End patternData
 
-    /// This method is callabla from multiple threads.  Made static to help promote safety
+    /// This method is called from multiple threads.  Made static to help promote safety
     member x.ConvertToFindDataCore (serviceSearchData : ServiceSearchData) snapshot = 
 
         // First get the text and possible text based options for the pattern.  We special
@@ -126,19 +127,19 @@ type internal SearchService
         let options = serviceSearchData.VimRegexOptions
         let searchData = serviceSearchData.SearchData
         let pattern = searchData.Pattern
-        let text, textOptions, hadCaseSpecifier = 
+        let textResult, textOptions, hadCaseSpecifier = 
             let useRegex () =
-                match VimRegexFactory.Create pattern options with
-                | None -> 
-                    None, FindOptions.None, false
-                | Some regex ->
+                match VimRegexFactory.CreateEx pattern options with
+                | VimResult.Error msg -> 
+                    VimResult.Error msg, FindOptions.None, false
+                | VimResult.Result regex ->
                     let options = FindOptions.UseRegularExpressions
                     let options, hadCaseSpecifier = 
                         match regex.CaseSpecifier with
                         | CaseSpecifier.None -> options, false
                         | CaseSpecifier.IgnoreCase -> options, true
                         | CaseSpecifier.OrdinalCase -> options ||| FindOptions.MatchCase, true
-                    Some regex.RegexPattern, options, hadCaseSpecifier
+                    VimResult.Result regex.RegexPattern, options, hadCaseSpecifier
             match PatternUtil.GetUnderlyingWholeWord pattern with
             | None -> 
                 useRegex ()
@@ -166,7 +167,7 @@ type internal SearchService
                 if isBugPattern || not isSimplePattern then
                     useRegex()
                 else
-                    Some word, FindOptions.WholeWord, false
+                    VimResult.Result word, FindOptions.WholeWord, false
 
         // Get the options related to case
         let caseOptions = 
@@ -187,16 +188,16 @@ type internal SearchService
         let options = textOptions ||| caseOptions ||| revOptions
 
         try
-            match text with 
-            | None ->
+            match textResult with 
+            | VimResult.Error msg -> 
                 // Happens with a bad regular expression
-                None
-            | Some text ->
+                VimResult.Error msg
+            | VimResult.Result text ->
                 // Can throw in cases like having an invalidly formed regex.  Occurs
                 // a lot via incremental searching while the user is typing
-                FindData(text, snapshot, options, serviceSearchData.Navigator) |> Some
+                FindData(text, snapshot, options, serviceSearchData.Navigator) |> VimResult.Result
         with 
-        | :? System.ArgumentException -> None
+        | :? System.ArgumentException as ex -> VimResult.Error ex.Message
 
     member x.DoFindNext (findData : FindData) (position : int) =
         match x.DoFindNextInCache findData position with
@@ -237,10 +238,8 @@ type internal SearchService
         let snapshot = SnapshotPointUtil.GetSnapshot startPoint 
         let searchData = serviceSearchData.SearchData
         match x.ConvertToFindDataCore serviceSearchData snapshot with
-        | None ->
-            // Can't convert to a FindData so no way to search
-            SearchResult.NotFound (searchData, false)
-        | Some findData -> 
+        | VimResult.Error msg -> SearchResult.Error (searchData, msg)
+        | VimResult.Result findData -> 
 
             // Recursive loop to perform the search "count" times
             let rec doFind findData count position didWrap = 
@@ -317,9 +316,8 @@ type internal SearchService
                     // Wrapping is not enabled so change the result but it would've been present
                     // if wrapping was enabled
                     SearchResult.NotFound (searchData, true)
-            | SearchResult.NotFound _ ->
-                // No change
-                result
+            | SearchResult.NotFound _ -> result
+            | SearchResult.Error _ -> result
         else
             // Nothing to fudge if the start didn't wrap 
             result

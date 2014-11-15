@@ -40,8 +40,8 @@ namespace Vim.UnitTest
             var searchData = new SearchData(pattern, SearchOffsetData.None, kind, options);
             var serviceSearchData = _searchRaw.GetServiceSearchData(searchData, _wordNavigator);
             var findData = _searchRaw.ConvertToFindDataCore(serviceSearchData, _textBuffer.CurrentSnapshot);
-            Assert.True(findData.IsSome());
-            return findData.Value.FindOptions;
+            Assert.True(findData.IsResult);
+            return findData.AsResult().FindOptions;
         }
 
         private SearchResult FindNextPattern(string pattern, Path path, SnapshotPoint point, int count)
@@ -227,7 +227,7 @@ namespace Vim.UnitTest
             public void BadRegex_NoMagicSpecifierShouldBeHandled()
             {
                 Create("");
-                var searchData = new SearchData(@"\V", SearchOffsetData.None, SearchKind.ForwardWithWrap, SearchOptions.None);
+                var searchData = new SearchData(@"\Va", SearchOffsetData.None, SearchKind.ForwardWithWrap, SearchOptions.None);
                 var result = _search.FindNext(_textBuffer.GetPoint(0), searchData, _wordNavigator);
                 Assert.True(result.IsNotFound);
             }

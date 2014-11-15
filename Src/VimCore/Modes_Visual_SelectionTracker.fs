@@ -99,6 +99,7 @@ type internal SelectionTracker
                     | Some searchResult ->
                         match searchResult with
                         | SearchResult.NotFound _ -> caretPoint
+                        | SearchResult.Error _ -> caretPoint
                         | SearchResult.Found (_, span, _, _) -> span.Start
                 else
                     caretPoint

@@ -641,6 +641,10 @@ type SearchResult =
     /// but wasn't found do to the lack of a wrap in the SearchData value
     | NotFound of SearchData * bool
 
+    /// There was an error converting the pattern to a searchable value.  The string value is the
+    /// error message
+    | Error of SearchData * string
+
     with
 
     /// Returns the SearchData which was searched for
@@ -648,6 +652,7 @@ type SearchResult =
         match x with 
         | SearchResult.Found (searchData, _, _, _) -> searchData
         | SearchResult.NotFound (searchData, _) -> searchData
+        | SearchResult.Error (searchData, _) -> searchData
 
 type SearchResultEventArgs(_searchResult : SearchResult) = 
     inherit System.EventArgs()
@@ -2232,6 +2237,13 @@ type CommandResult =
     /// An error was encountered and the command was unable to run.  If this is encountered
     /// during a macro run it will cause the macro to stop executing
     | Error
+
+[<RequireQualifiedAccess>]
+[<NoComparison>]
+[<NoEquality>]
+type VimResult<'T> =
+    | Result of 'T
+    | Error of string
 
 /// Information about the attributes of Command
 [<System.Flags>]
