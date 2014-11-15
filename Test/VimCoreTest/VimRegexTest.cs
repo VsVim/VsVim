@@ -1286,6 +1286,14 @@ namespace Vim.UnitTest
                 VerifyNotMatches(@"[[:alpha:]]", "1", "@");
                 VerifyMatches(@"[[:alpha:]]\+", "cat", "dog");
             }
+
+            [Fact]
+            public void Identifier()
+            {
+                VerifyMatches(@"\i", "a", "b", "C", "0");
+                VerifyMatches(@"\I", "a", "b", "C");
+                VerifyNotMatches(@"\I", "0");
+            }
         }
     }
 }

@@ -382,6 +382,14 @@ module VimRegexFactory =
     let PunctuationCharString = GenerateCharString Char.IsPunctuation
     let SpaceCharString = GenerateCharString Char.IsWhiteSpace
 
+    let PrintableGroupPattern = 
+        let str = [0 .. 255] |> Seq.map (fun i -> char i) |> Seq.filter (fun c -> not (Char.IsControl c)) |> StringUtil.ofCharSeq
+        "[" + str + "]"
+
+    let PrintableGroupNoDigitsPattern = 
+        let str = [0 .. 255] |> Seq.map (fun i -> char i) |> Seq.filter (fun c -> not (Char.IsControl c) && not (Char.IsDigit c)) |> StringUtil.ofCharSeq
+        "[" + str + "]"
+
     /// These are the named collections specified out inside of :help E769.  These are always
     /// appended inside a .Net [] collection and hence need to be valid in that context
     let NamedCollectionMap = 
@@ -496,6 +504,14 @@ module VimRegexFactory =
         | 'L' -> data.AppendString @"[^a-z]"
         | 'u' -> data.AppendString @"[A-Z]"
         | 'U' -> data.AppendString @"[^A-Z]"
+        | 'i' -> data.AppendString @"[0-9_a-zA-Zàáâãäåæçèéêë@]"
+        | 'I' -> data.AppendString @"[_a-zA-Zàáâãäåæçèéêë@]"
+        | 'k' -> data.AppendString @"[0-9_a-zA-Zàáâãäåæçèéêë@]"
+        | 'K' -> data.AppendString @"[_a-zA-Zàáâãäåæçèéêë@]"
+        | 'f' -> data.AppendString @"[0-9a-zA-Z@/\.-_+,#$%{}[\]:!~=]"
+        | 'F' -> data.AppendString @"[a-zA-Z@/\.-_+,#$%{}[\]:!~=]"
+        | 'p' -> data.AppendString PrintableGroupPattern
+        | 'P' -> data.AppendString PrintableGroupNoDigitsPattern
         | _ -> data.AppendEscapedChar c
 
     /// Convert the given char in the magic setting 
@@ -556,6 +572,14 @@ module VimRegexFactory =
         | 'W' -> ConvertCharAsSpecial data c
         | 'x' -> ConvertCharAsSpecial data c
         | 'X' -> ConvertCharAsSpecial data c
+        | 'i' -> ConvertCharAsSpecial data c
+        | 'I' -> ConvertCharAsSpecial data c
+        | 'k' -> ConvertCharAsSpecial data c
+        | 'K' -> ConvertCharAsSpecial data c
+        | 'f' -> ConvertCharAsSpecial data c
+        | 'F' -> ConvertCharAsSpecial data c
+        | 'p' -> ConvertCharAsSpecial data c
+        | 'P' -> ConvertCharAsSpecial data c
         | '_' -> 
             match data.CharAtIndex with
             | None -> data.Break()
