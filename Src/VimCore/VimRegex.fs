@@ -269,6 +269,7 @@ type VimRegexBuilder
     let mutable _isStartOfPattern = true
     let mutable _isStartOfCollection = false
     let mutable _isRangeOpen = false
+    let mutable _isRangeGreedy = false
     let mutable _isCollectionOpen = false
     let mutable _includesNewLine = false
     let mutable _caseSpecifier = CaseSpecifier.None
@@ -341,6 +342,11 @@ type VimRegexBuilder
     member x.CharAtIndex = 
         StringUtil.charAtOption x.Index x.Pattern
 
+    member x.CharAtIndexOrDefault = 
+        match StringUtil.charAtOption x.Index x.Pattern with
+        | Some c -> c
+        | None -> char 0
+
     member x.CharAt index = 
         StringUtil.charAtOption index x.Pattern
 
@@ -367,12 +373,15 @@ type VimRegexBuilder
         x.AppendChar ']'
         _isCollectionOpen <- false
 
-    member x.BeginRange() =
+    member x.BeginRange isGreedy = 
         x.AppendChar '{'
         _isRangeOpen <- true
+        _isRangeGreedy <- isGreedy
 
     member x.EndRange() =
         x.AppendChar '}'
+        if not _isRangeGreedy then
+            x.AppendChar '?'
         _isRangeOpen <- false
 
     member x.Break() =
@@ -485,7 +494,17 @@ module VimRegexFactory =
         | ')' -> 
             data.DecrementGroupCount()
             data.AppendChar ')'
-        | '{' -> if data.IsRangeOpen then data.Break() else data.BeginRange()
+        | '{' -> 
+            if data.IsRangeOpen then
+                data.Break()
+            elif data.CharAtIndexOrDefault = '-' && data.CharAtOrDefault (data.Index + 1) = '}' then
+                data.AppendString "*?"
+                data.IncrementIndex 2
+            elif data.CharAtIndexOrDefault = '-' then
+                data.BeginRange false
+                data.IncrementIndex 1
+            else
+                data.BeginRange true
         | '}' -> if data.IsRangeOpen then data.EndRange() else data.AppendChar '}'
         | '|' -> data.AppendChar '|'
         | '^' -> if data.IsStartOfPattern || data.IsStartOfCollection then data.AppendChar '^' else data.AppendEscapedChar '^'

@@ -127,18 +127,20 @@ namespace Vim.UnitTest
                     func.ToFSharpFunc());
             }
 
-            private void VerifyReplace(string pattern, string input, string replace, string result)
+            private void VerifyReplace(string pattern, string input, string replace, string result, VimRegexReplaceCount count = null)
             {
-                VerifyReplace(VimRegexOptions.Default, pattern, input, replace, result);
+                count = count ?? VimRegexReplaceCount.All;
+                VerifyReplace(VimRegexOptions.Default, pattern, input, replace, result, count);
             }
 
-            private void VerifyReplace(VimRegexOptions options, string pattern, string input, string replace, string result)
+            private void VerifyReplace(VimRegexOptions options, string pattern, string input, string replace, string result, VimRegexReplaceCount count = null)
             {
+                count = count ?? VimRegexReplaceCount.All;
                 var regex = VimRegexFactory.Create(pattern, options);
                 Assert.True(regex.IsSome());
 
                 var noMagic = VimRegexOptions.NoMagic == (options & VimRegexOptions.NoMagic);
-                var replaceData = new VimRegexReplaceData(Environment.NewLine, !noMagic, VimRegexReplaceCount.All);
+                var replaceData = new VimRegexReplaceData(Environment.NewLine, !noMagic, count);
                 Assert.Equal(result, regex.Value.Replace(input, replace, replaceData, _registerMap));
             }
 
@@ -357,6 +359,13 @@ namespace Vim.UnitTest
                 _registerMap.SetRegisterValue('c', "fish");
                 VerifyReplace("o", "dog", @"\=@c", "dfishg");
                 VerifyReplace("o", "doog", @"\=@c", "dfishfishg");
+            }
+
+            [Fact]
+            public void NonGreedyRegexReplace()
+            {
+                VerifyReplace(@"Task<\(.\{-}\)>", "public Task<string> M()", @"\1", "public string M()");
+                VerifyReplace(@"a\{-1,2}", "aaaaa", "b", "baaaa", VimRegexReplaceCount.One);
             }
         }
 
@@ -1293,6 +1302,12 @@ namespace Vim.UnitTest
                 VerifyMatches(@"\i", "a", "b", "C", "0");
                 VerifyMatches(@"\I", "a", "b", "C");
                 VerifyNotMatches(@"\I", "0");
+            }
+
+            [Fact]
+            public void Issue1248()
+            {
+                VerifyMatches(@"Task<\(.\{-}\)>", "public void Task<string>");
             }
         }
     }
