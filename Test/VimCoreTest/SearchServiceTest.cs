@@ -39,7 +39,7 @@ namespace Vim.UnitTest
         {
             var searchData = new SearchData(pattern, SearchOffsetData.None, kind, options);
             var serviceSearchData = _searchRaw.GetServiceSearchData(searchData, _wordNavigator);
-            var findData = _searchRaw.ConvertToFindDataCore(serviceSearchData, _textBuffer.CurrentSnapshot);
+            var findData = SearchService.ConvertToFindDataCore(serviceSearchData, _textBuffer.CurrentSnapshot);
             Assert.True(findData.IsResult);
             return findData.AsResult().FindOptions;
         }
@@ -236,11 +236,11 @@ namespace Vim.UnitTest
             /// Make sure we find the count occurrence of the item
             /// </summary>
             [Fact]
-            public void FindNextMulitple_Count()
+            public void FindNextPattern_Count()
             {
                 Create(" cat dog cat");
                 var data = VimUtil.CreateSearchData("cat");
-                var result = _search.FindNextMultiple(_textBuffer.GetPoint(0), data, _wordNavigator, 2);
+                var result = _search.FindNextPattern(_textBuffer.GetPoint(0), data, _wordNavigator, 2);
                 Assert.Equal(9, result.AsFound().Item2.Start.Position);
             }
         }
@@ -511,7 +511,7 @@ namespace Vim.UnitTest
             [Fact]
             public void DifferentTextSameSnapshot()
             {
-                Create("cat dog");
+                Create("big cat dog");
                 FindNext("dog");
                 Assert.Equal(1, _searchCount);
                 FindNext("cat");

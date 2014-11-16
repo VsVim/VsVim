@@ -17,7 +17,7 @@ type ServiceSearchData = {
 /// An entry in our cache.  This type must be *very* careful to not hold the ITextBuffer in
 /// question in memory.  This is why a WeakReference is used.  We don't want a cached search
 /// entry creating a memory leak 
-type ServiceCacheEntry = { 
+type EditorServiceCacheEntry = { 
     SearchString : string
     Options : FindOptions
     EditorData : WeakReference<ITextSnapshot * ITextStructureNavigator>
@@ -43,28 +43,27 @@ type ServiceCacheEntry = {
             FoundSpan = foundSpan.Span
         }
 
-/// This class is used from multiple threads.  In general this is fine because searching 
-/// an ITextSnapshot is an operation which is mostly readonly.  The lack of mutatino eliminates
-/// many race condition possibilities.  There are 2 cases we need to be on the watch for
-/// within this type
-///
-///  1. The caching solution does mutate shared state.  All use of this data must occur
-///     within a lock(_cacheArray) guard
-///  2. The use of _vimRegexOptions.  This is a value which is updated via the UI thread 
-///     via a user action that changes any value it depends on.  A single API initiated 
-///     search may involve several actual searches of the data.  To be consistent we need
-///     to use the same _vimRegexOptions throughout the same search
-///
-///     This is achieved by wrapping all uses of SearchData with ServiceSearchData at 
-///     the API entry points.  
-[<UsedInBackgroundThread()>]
-type internal SearchService 
-    (
-        _textSearchService : ITextSearchService,
-        _globalSettings : IVimGlobalSettings
-    ) =
+// This classes is used for searching are accessed from multiple threads.  In general this 
+// is fine because searching an ITextSnapshot is an operation which is mostly readonly.  The 
+// lack of mutation eliminates many race condition possibilities.  There are 2 cases we 
+// need to be on the watch for within this type
+//
+//  1. The caching solution does mutate shared state.  All use of this data must occur
+//     within a lock(_cacheArray) guard
+//  2. The use of _vimRegexOptions.  This is a value which is updated via the UI thread 
+//     via a user action that changes any value it depends on.  A single API initiated 
+//     search may involve several actual searches of the data.  To be consistent we need
+//     to use the same _vimRegexOptions throughout the same search
+//
+//     This is achieved by wrapping all uses of SearchData with ServiceSearchData at 
+//     the API entry points.  
 
-    let mutable _vimRegexOptions = VimRegexOptions.Default
+/// Wrapper around the core editor search service that has caching 
+[<UsedInBackgroundThread()>]
+type internal EditorSearchService 
+    (
+        _textSearchService : ITextSearchService
+    ) =
 
     /// Vim semantics make repeated searches for the exact same string a very common 
     /// operation.  Incremental search is followed by taggers, next, etc ...  Caching
@@ -73,13 +72,62 @@ type internal SearchService
     ///
     /// This is used from multiple threads and all access must be inside a 
     /// lock(_cacheArray) guard
-    let _cacheArray : ServiceCacheEntry option [] = Array.init 10 (fun _ -> None)
+    let _cacheArray : EditorServiceCacheEntry option [] = Array.init 10 (fun _ -> None)
     let mutable _cacheArrayIndex = 0
+
+    /// Look for the find information in the cache
+    member private x.FindNextInCache (findData : FindData) (position : int) =
+        lock (_cacheArray) (fun () -> 
+            _cacheArray
+            |> SeqUtil.filterToSome
+            |> Seq.tryFind (fun cacheEntry -> cacheEntry.Matches findData position)
+            |> Option.map (fun cacheEntry -> SnapshotSpan(findData.TextSnapshotToSearch, cacheEntry.FoundSpan)))
+
+    member private x.AddIntoCache (findData : FindData) (position : int) (foundSpan : SnapshotSpan) = 
+        lock (_cacheArray) (fun () -> 
+            let cacheEntry = EditorServiceCacheEntry.Create findData position foundSpan
+            _cacheArray.[_cacheArrayIndex] <- Some cacheEntry
+            _cacheArrayIndex <- 
+                let index = _cacheArrayIndex + 1
+                if index >= _cacheArray.Length then 0 
+                else index)
+
+    /// Find the next occurrence of FindData in the snapshot at the given position.  This
+    /// will always do a search (never consults the cache)
+    member private x.FindNextCore (findData : FindData) (position : int) =
+        try
+            _textSearchService.FindNext(position, true, findData) |> NullableUtil.ToOption
+        with 
+        | :? System.InvalidOperationException ->
+            // Happens when we provide an invalid regular expression.  Just return None
+            None
+
+    /// Find the next occurrence of FindData at the given position.  This will use the cache 
+    /// if possible
+    member x.FindNext (findData : FindData) (position : int) =
+        match x.FindNextInCache findData position with
+        | Some foundSpan -> Some foundSpan
+        | None -> 
+            match x.FindNextCore findData position with
+            | Some foundSpan -> 
+                x.AddIntoCache findData position foundSpan
+                Some foundSpan
+            | None -> None
+
+[<UsedInBackgroundThread()>]
+type internal SearchService 
+    (
+        _textSearchService : ITextSearchService,
+        _globalSettings : IVimGlobalSettings
+    ) =
+
+    let _editorSearchService = EditorSearchService(_textSearchService)
+    let mutable _vimRegexOptions = VimRegexOptions.Default
 
     do
         // It's not safe to use IVimGlobalSettings from multiple threads.  It will
         // only raise it's changed event from the main thread.  Use that call back
-        // to calcualet our new SearhServiceData and store it.  That can be safely
+        // to calculate our new SearhServiceData and store it.  That can be safely
         // used from a background thread since it's a container of appropriate types
         (_globalSettings :> IVimSettings).SettingChanged 
         |> Event.add (fun _ -> _vimRegexOptions <- VimRegexFactory.CreateRegexOptions _globalSettings)
@@ -105,13 +153,12 @@ type internal SearchService
     member x.ApplySearchOffsetDataSearch (serviceSearchData : ServiceSearchData) point (patternData : PatternData) = 
         let searchData = SearchData(patternData.Pattern, patternData.Path, true)
         let serviceSearchData = { serviceSearchData with SearchData = searchData }
-        match x.FindNextMultipleCore serviceSearchData point 1 with
+        match x.FindNextCore serviceSearchData point 1 with
         | SearchResult.Found (_, span, _, _) -> Some span
         | SearchResult.NotFound _ -> None
         | SearchResult.Error _ -> None
 
     member x.ApplySearchOffsetData (serviceSearchData : ServiceSearchData) (span : SnapshotSpan) : SnapshotSpan option =
-        let snapshot = span.Snapshot
         match serviceSearchData.SearchData.Offset with
         | SearchOffsetData.None -> Some span
         | SearchOffsetData.Line count -> x.ApplySearchOffsetDataLine span count |> Some
@@ -120,7 +167,7 @@ type internal SearchService
         | SearchOffsetData.Search patternData -> x.ApplySearchOffsetDataSearch serviceSearchData span.End patternData
 
     /// This method is called from multiple threads.  Made static to help promote safety
-    member x.ConvertToFindDataCore (serviceSearchData : ServiceSearchData) snapshot = 
+    static member ConvertToFindDataCore (serviceSearchData : ServiceSearchData) snapshot = 
 
         // First get the text and possible text based options for the pattern.  We special
         // case a search of whole words that is not a regex for efficiency reasons
@@ -199,144 +246,108 @@ type internal SearchService
         with 
         | :? System.ArgumentException as ex -> VimResult.Error ex.Message
 
-    member x.DoFindNext (findData : FindData) (position : int) =
-        match x.DoFindNextInCache findData position with
-        | Some foundSpan -> Some foundSpan
-        | None -> 
-            match x.DoFindNextCore findData position with
-            | Some foundSpan -> 
-                x.AddIntoCache findData position foundSpan
-                Some foundSpan
-            | None -> None
+    /// This is the core find function.  It will repeat the FindData search 'count' times.  
+    member x.FindCore (serviceSearchData : ServiceSearchData) (findData : FindData) (startPoint : SnapshotPoint) count : SearchResult =
 
-    member x.DoFindNextCore (findData : FindData) (position : int) =
-        try
-            _textSearchService.FindNext(position, true, findData) |> NullableUtil.ToOption
-        with 
-        | :? System.InvalidOperationException ->
-            // Happens when we provide an invalid regular expression.  Just return None
-            None
-
-    member x.DoFindNextInCache (findData : FindData) (position : int) =
-        lock (_cacheArray) (fun () -> 
-            _cacheArray
-            |> SeqUtil.filterToSome
-            |> Seq.tryFind (fun cacheEntry -> cacheEntry.Matches findData position)
-            |> Option.map (fun cacheEntry -> SnapshotSpan(findData.TextSnapshotToSearch, cacheEntry.FoundSpan)))
-
-    member x.AddIntoCache (findData : FindData) (position : int) (foundSpan : SnapshotSpan) = 
-        lock (_cacheArray) (fun () -> 
-            let cacheEntry = ServiceCacheEntry.Create findData position foundSpan
-            _cacheArray.[_cacheArrayIndex] <- Some cacheEntry
-            _cacheArrayIndex <- 
-                let index = _cacheArrayIndex + 1
-                if index >= _cacheArray.Length then 0 
-                else index)
-
-    member x.FindNextMultipleCore (serviceSearchData : ServiceSearchData) (startPoint : SnapshotPoint) count : SearchResult =
-
-        let snapshot = SnapshotPointUtil.GetSnapshot startPoint 
         let searchData = serviceSearchData.SearchData
-        match x.ConvertToFindDataCore serviceSearchData snapshot with
-        | VimResult.Error msg -> SearchResult.Error (searchData, msg)
-        | VimResult.Result findData -> 
+        let isForward = searchData.Kind.IsAnyForward 
+        let mutable isFirstSearch = true
+        let mutable count = max 1 count
+        let mutable position = startPoint.Position
+        let mutable wrapPosition = position
+        let mutable searchResult = SearchResult.NotFound (searchData, false)
+        let mutable didWrap = false
 
-            // Recursive loop to perform the search "count" times
-            let rec doFind findData count position didWrap = 
-                let result = x.DoFindNext findData position
+        // Need to adjust the start point if we are searching backwards.  The first search occurs before the 
+        // start point.  
+        if isForward then
+            wrapPosition <- position + 1
+        else
+            if position = 0 then
+                position <- (SnapshotUtil.GetEndPoint startPoint.Snapshot).Position
+                didWrap <- true
+            else
+                position <- position - 1
+            wrapPosition <- position
+
+        // Get the next search position given the search result SnapshotSpan
+        let getNextSearchPosition (span : SnapshotSpan) = 
+            if isForward then
+                span.End.Position
+            elif span.Start.Position = 0 then 
+                (SnapshotUtil.GetEndPoint span.Snapshot).Position
+            else
+                (span.Start.Subtract 1).Position
+
+        while count > 0 do
+            match _editorSearchService.FindNext findData position with
+            | None -> 
+                // The pattern wasn't found so we are done searching 
+                searchResult <- SearchResult.NotFound (searchData, false)
+                count <- 0
+            | Some patternSpan -> 
 
                 // Calculate whether this search is wrapping or not
-                let didWrap = 
-                    match result with 
-                    | Some span ->
-                        if didWrap then
-                            // Once wrapped, always wrapped
-                            true
-                        elif searchData.Kind.IsAnyForward && span.Start.Position < startPoint.Position then
-                            true
-                        elif searchData.Kind.IsAnyBackward && span.Start.Position > startPoint.Position then 
-                            true
-                        else
-                            false
-                    | None -> 
-                        didWrap
+                didWrap <- 
+                    if didWrap then
+                        // Once wrapped, always wrapped
+                        true
+                    elif searchData.Kind.IsAnyForward && patternSpan.Start.Position < wrapPosition then
+                        not (isFirstSearch && patternSpan.Start.Position = startPoint.Position)
+                    elif searchData.Kind.IsAnyBackward && patternSpan.Start.Position > wrapPosition then 
+                        true
+                    else
+                        false
 
                 if didWrap && not searchData.Kind.IsWrap then
                     // If the search was started without wrapping and a wrap occurred then we are done.  Just
                     // return the bad data
-                    SearchResult.NotFound (searchData, true)
+                    searchResult <- SearchResult.NotFound (searchData, true)
+                    count <- 0
+                elif isForward && isFirstSearch && patternSpan.Start = startPoint then
+                    // If the first match is on the search point going forward then it is not counted as a 
+                    // match.  Otherwise searches like 'N' would go nowhere.  We just ignore this result and 
+                    // continue forward from the end
+                    position <- getNextSearchPosition patternSpan
+                elif count > 1 then
+                    // Need to keep searching.  Just increment the position and count and keep going 
+                    position <- getNextSearchPosition patternSpan
+                    count <- count - 1
                 else
-                    match result, count > 1 with
-                    | Some patternSpan, false ->
+                    count <- count - 1
+                    searchResult <-  
                         match x.ApplySearchOffsetData serviceSearchData patternSpan with
                         | Some span -> SearchResult.Found (searchData, span, patternSpan, didWrap)
                         | None -> SearchResult.NotFound (searchData, true)
-                    | Some span, true -> 
-                        // Need to keep searching.  Get the next point to search for.  We always wrap 
-                        // when searching so that we can give back accurate NotFound data.  
-                        let point = 
-                            if searchData.Kind.IsAnyForward then
-                                span.End
-                            elif span.Start.Position = 0 then 
-                                SnapshotUtil.GetEndPoint snapshot
-                            else
-                                span.Start.Subtract 1
-                        doFind findData (count-1) point.Position didWrap
-                    | _ -> 
-                        SearchResult.NotFound (searchData, false)
 
-            let count = max 1 count
-            let pos = startPoint.Position
-            doFind findData count pos false
+                isFirstSearch <- false 
 
-    member x.FindNextPatternCore (serviceSearchData : ServiceSearchData) startPoint count =
+        searchResult
+
+    member x.FindNextCore (serviceSearchData : ServiceSearchData) (startPoint : SnapshotPoint) count =
 
         // Find the real place to search.  When going forward we should start after
         // the caret and before should start before. This prevents the text 
         // under the caret from being the first match
-        let snapshot = SnapshotPointUtil.GetSnapshot startPoint
         let searchData = serviceSearchData.SearchData
-        let startPoint, didStartWrap = CommonUtil.GetSearchPointAndWrap searchData.Path startPoint
 
         // Go ahead and run the search
-        let wrapScan = searchData.Kind.IsWrap
-        let result = x.FindNextMultipleCore serviceSearchData startPoint count 
+        let snapshot = startPoint.Snapshot
+        match SearchService.ConvertToFindDataCore serviceSearchData snapshot with
+        | VimResult.Error msg -> SearchResult.Error (searchData, msg)
+        | VimResult.Result findData -> x.FindCore serviceSearchData findData startPoint count 
 
-        // Need to fudge the SearchResult here to account for the possible wrap the 
-        // search start incurred when calculating the actual 'startPoint' value.  If it 
-        // wrapped we need to get the SearchResult to account for that so we can 
-        // process the messages properly and give back the appropriate value
-        if didStartWrap then 
-            match result with
-            | SearchResult.Found (searchData, span, patternSpan, didWrap) ->
-                if wrapScan then
-                    // If wrapping is enabled then we just need to update the 'didWrap' state
-                    SearchResult.Found (searchData, span, patternSpan, true)
-                else
-                    // Wrapping is not enabled so change the result but it would've been present
-                    // if wrapping was enabled
-                    SearchResult.NotFound (searchData, true)
-            | SearchResult.NotFound _ -> result
-            | SearchResult.Error _ -> result
-        else
-            // Nothing to fudge if the start didn't wrap 
-            result
-
-    member x.FindNextMultiple searchData startPoint navigator count =
-        let serviceSearchData = x.GetServiceSearchData searchData navigator
-        x.FindNextMultipleCore serviceSearchData startPoint count 
-
-    member x.FindNext searchData point navigator = 
-        x.FindNextMultiple searchData point navigator 1
+    member x.FindNext searchData startPoint navigator = 
+        let searchServiceData = x.GetServiceSearchData searchData navigator
+        x.FindNextCore searchServiceData startPoint 1
 
     /// Search for the given pattern from the specified point. 
     member x.FindNextPattern searchData startPoint navigator count = 
         let searchServiceData = x.GetServiceSearchData searchData navigator
-        x.FindNextPatternCore searchServiceData startPoint count
+        x.FindNextCore searchServiceData startPoint count
 
     interface ISearchService with
         member x.FindNext point searchData navigator = x.FindNext searchData point navigator
-        member x.FindNextMultiple point searchData navigator count = x.FindNextMultiple searchData point navigator count
         member x.FindNextPattern point searchData navigator count = x.FindNextPattern searchData point navigator count
 
 

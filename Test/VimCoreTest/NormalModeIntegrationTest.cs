@@ -2901,6 +2901,18 @@ namespace Vim.UnitTest
                     _vimBuffer.Process(@"/\v{9", enter: true);
                     Assert.True(fired);
                 }
+
+                [Fact]
+                public void Issue1392()
+                {
+                    Create(" MyOwnData MyOwnData MyOwnData");
+                    _vimBuffer.ProcessNotation(@"/\w\+Data", enter: true);
+                    Assert.Equal(1, _textView.GetCaretPoint().Position);
+                    _vimBuffer.ProcessNotation(@"/\w\+Data", enter: true);
+                    Assert.Equal(11, _textView.GetCaretPoint().Position);
+                    _vimBuffer.ProcessNotation(@"/\w\+Data", enter: true);
+                    Assert.Equal(21, _textView.GetCaretPoint().Position);
+                }
             }
 
             public sealed class OffsetTest : IncrementalSearchTest

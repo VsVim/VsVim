@@ -8,8 +8,4 @@ open Microsoft.VisualStudio.Text.Outlining
 
 module internal CommonUtil =
 
-    val GetSearchPointAndWrap : Path -> SnapshotPoint -> SnapshotPoint * bool
-
-    val GetSearchPoint : Path -> SnapshotPoint -> SnapshotPoint
-
     val RaiseSearchResultMessage : IStatusUtil -> SearchResult -> unit
