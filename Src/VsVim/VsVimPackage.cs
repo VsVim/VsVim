@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.ComponentModel.Design;
 using Microsoft.Win32;
@@ -16,6 +17,7 @@ using Vim;
 using Vim.Extensions;
 using System.Text;
 using IOPath = System.IO.Path;
+using EnvDTE;
 
 namespace Vim.VisualStudio
 {
@@ -65,6 +67,69 @@ namespace Vim.VisualStudio
             }
         }
 
+        /// <summary>
+        /// There are a set of TSQL command entries which a) have no name and b) use keystrokes 
+        /// Vim users would like to use.  In general this isn't a problem becuase VsVim is 
+        /// capable of removing conflicting key bindings via the options page
+        /// 
+        /// The problem here is the commands are unnamed.  Any attempt to change a key binding
+        /// on an unnamed command (via Command::put_Bindings) will fail.  There is no good reason
+        /// for this that I was able to track down, it's just the behavior.  
+        /// 
+        /// There is some hope this can be changed in 2015 or the next release but in the 
+        /// short term I need to use a different hammer for changing the key bindings.  This method
+        /// method removes the binding by doing the following
+        /// 
+        ///   1. Add a key binding to a VsVim command where the key binding has the same scope as the 
+        ///      TSQL key bindings 
+        ///   2. Remove the key bindings on the VsVim command
+        ///
+        /// As a consequence of adding the key binding in #1 Visual Studio will delete the key 
+        /// binding on the TSQL command.  This type of deletion doesn't check for a name and hence 
+        /// succeeds.  The subsequent removal of the key binding to the fake VsVim command effectively 
+        /// fully clears the key binding which is what we want
+        /// </summary>
+        private void ClearTSQLBindings()
+        {
+            try
+            {
+                var vsServiceProvider = _exportProvider.GetExportedValue<SVsServiceProvider>();
+                var dte = vsServiceProvider.GetService<SDTE, _DTE>();
+
+                var vsvimGuidGroup = GuidList.VsVimCommandSet;
+                var vimCommand = dte.Commands.GetCommands()
+                    .Where(c => new Guid(c.Guid) == vsvimGuidGroup && c.ID == CommandIds.ClearTSQLBindings)
+                    .FirstOrDefault();
+                if (vimCommand == null)
+                {
+                    return;
+                }
+
+                var targetKeyStroke = new KeyStroke(KeyInputUtil.CharToKeyInput('d'), KeyModifiers.Control);
+                var tsqlGuidGroup = new Guid("{b371c497-6d81-4b13-9db8-8e3e6abad0c3}");
+                var tsqlCommands = dte.Commands.GetCommands().Where(c => new Guid(c.Guid) == tsqlGuidGroup);
+                foreach (var tsqlCommand in tsqlCommands)
+                {
+                    foreach (var commandKeyBinding in tsqlCommand.GetCommandKeyBindings().ToList())
+                    {
+                        if (commandKeyBinding.KeyBinding.FirstKeyStroke == targetKeyStroke)
+                        {
+                            // Set the binding to the existing command in the existing scope, this will delete it from
+                            // the TSQL command
+                            vimCommand.SafeSetBindings(commandKeyBinding.KeyBinding);
+
+                            // Clear the bindings here which will effectively clear the binding completely
+                            vimCommand.SafeResetBindings();
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.Fail(ex.Message);
+            }
+        }
+
         #region IOleCommandTarget
 
         int IOleCommandTarget.Exec(ref Guid commandGroup, uint commandId, uint commandExecOpt, IntPtr variantIn, IntPtr variantOut)
@@ -78,6 +143,9 @@ namespace Vim.VisualStudio
                         break;
                     case CommandIds.DumpKeyboard:
                         DumpKeyboard();
+                        break;
+                    case CommandIds.ClearTSQLBindings:
+                        ClearTSQLBindings();
                         break;
                     default:
                         Debug.Assert(false);
