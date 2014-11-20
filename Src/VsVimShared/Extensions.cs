@@ -526,7 +526,12 @@ namespace Vim.VisualStudio
             var ptr = IntPtr.Zero;
             try
             {
-                ErrorHandler.ThrowOnFailure(vsWindowFrame.QueryViewInterface(ref iid, out ptr));
+                var hr = vsWindowFrame.QueryViewInterface(ref iid, out ptr);
+                if (ErrorHandler.Failed(hr))
+                {
+                    return Result.CreateError(hr);
+                }
+
                 return Result.CreateSuccess((IVsCodeWindow)Marshal.GetObjectForIUnknown(ptr));
             }
             catch (Exception e)
