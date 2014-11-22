@@ -25,7 +25,7 @@ namespace Vim.VisualStudio.Implementation.ReSharper
         {
             if (assembly.FullName.StartsWith(ResharperAssemblyNameV8))
             {
-                FileVersionInfo fvi = FileVersionInfo.GetVersionInfo(assembly.Location);
+                var fvi = FileVersionInfo.GetVersionInfo(assembly.Location);
                 var version = new Version(fvi.FileVersion);
 
                 if (version.Major == 8)
@@ -36,8 +36,10 @@ namespace Vim.VisualStudio.Implementation.ReSharper
                             return ReSharperVersion.Version8;
                         case 1:
                             return ReSharperVersion.Version81;
+                        case 2:
+                            return ReSharperVersion.Version82;
                         default:
-                            return ReSharperVersion.Version81;
+                            return ReSharperVersion.Version82;
                     }
                 }
                 return ReSharperVersion.Unknown;

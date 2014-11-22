@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using Microsoft.VisualStudio.Text.Tagging;
@@ -143,13 +144,21 @@ namespace Vim.VisualStudio.Implementation.ReSharper
         }
     }
 
-    internal sealed class ReSharperV81EditTagDetector : ReSharperEditTagDetectorBase
+    internal sealed class ReSharperV81Or2EditTagDetector : ReSharperEditTagDetectorBase
     {
+        private readonly ReSharperVersion _version;
+
         internal FieldInfo AttributeIdFieldInfo { get; private set; }
 
         public override ReSharperVersion Version
         {
-            get { return ReSharperVersion.Version81; }
+            get { return _version; }
+        }
+
+        internal ReSharperV81Or2EditTagDetector(ReSharperVersion version)
+        {
+            Debug.Assert(version == ReSharperVersion.Version81 || version == ReSharperVersion.Version82);
+            _version = version;
         }
 
         public override bool IsEditTag(ITag tag)
@@ -162,7 +171,7 @@ namespace Vim.VisualStudio.Implementation.ReSharper
             // Cache the FieldInfo/PropertyInfo since we will be using it a lot
             if (AttributeIdFieldInfo == null)
             {
-                Type type = tag.GetType();
+                var type = tag.GetType();
                 AttributeIdFieldInfo = type.GetField("myHighlighterAttributeId", BindingFlags.Instance | BindingFlags.NonPublic);
             }
 
