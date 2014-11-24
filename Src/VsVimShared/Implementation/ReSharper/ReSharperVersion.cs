@@ -6,6 +6,7 @@
         Version7AndEarlier,
         Version8,
         Version81,
-        Version82
+        Version82,
+        Version9
     }
 }

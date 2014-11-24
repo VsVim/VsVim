@@ -21,6 +21,11 @@ namespace Vim.VisualStudio.Implementation.ReSharper
         /// </summary>
         internal const string ResharperAssemblyNameV8 = "JetBrains.Platform.ReSharper.VisualStudio.SinceVs10";
 
+        /// <summary>
+        /// ReSharper Platform 6 (used by ReSharper 9)
+        /// </summary>
+        internal const string ResharperPlatform6AssemblyName = "JetBrains.Platform.VisualStudio.SinceVs10";
+
         internal static ReSharperVersion DetectFromAssembly(Assembly assembly)
         {
             if (assembly.FullName.StartsWith(ResharperAssemblyNameV8))
@@ -40,6 +45,25 @@ namespace Vim.VisualStudio.Implementation.ReSharper
                             return ReSharperVersion.Version82;
                         default:
                             return ReSharperVersion.Version82;
+                    }
+                }
+                return ReSharperVersion.Unknown;
+            }
+            if (assembly.FullName.StartsWith(ResharperPlatform6AssemblyName))
+            {
+                FileVersionInfo fvi = FileVersionInfo.GetVersionInfo(assembly.Location);
+                var version = new Version(fvi.FileVersion);
+
+                // Starting with ReSharper 9, the assembly we detect is part of the "ReSharper Platform"
+                // Which for ReSharper 9 is of version 6.0
+                if (version.Major == 6)
+                {
+                    switch (version.Minor)
+                    {
+                        case 0:
+                            return ReSharperVersion.Version9;
+                        default:
+                            return ReSharperVersion.Version9;
                     }
                 }
                 return ReSharperVersion.Unknown;
