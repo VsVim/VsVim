@@ -57,15 +57,21 @@ namespace Vim.UnitTest
         }
 
         [Fact]
+        public void Run_builtin_function_of_no_arguments()
+        {
+            Assert.NotEqual(0, Run("localtime()").AsNumber().Item);
+        }
+
+        [Fact]
         public void Run_builtin_function_of_one_argument()
         {
             Run("exists('foo')", 0);
         }
 
         [Fact]
-        public void Run_builtin_function_of_no_arguments()
+        public void Run_builtin_function_of_multiple_arguments()
         {
-            Assert.NotEqual(0, Run("localtime()").AsNumber().Item);
+            Run(@"escape('C:/Program Files', ' ')", @"C:/Program\ Files");
         }
     }
 }

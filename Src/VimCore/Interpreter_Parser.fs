@@ -2202,28 +2202,37 @@ type Parser
             match x.ParseVariableName() with
             | ParseResult.Failed msg -> ParseResult.Failed msg
             | ParseResult.Succeeded variable -> // TODO the nesting is getting deep here; refactor
-                x.SkipBlanks();
+                x.SkipBlanks()
                 match _tokenizer.CurrentTokenKind with
                 | TokenKind.Character '(' ->
-                    _tokenizer.MoveNextToken()
-                    match x.ParseFunctionArguments() with
+                    match x.ParseFunctionArguments true with
                     | ParseResult.Succeeded args ->
                         Expression.FunctionCall(variable, args) |> ParseResult.Succeeded
                     | ParseResult.Failed msg -> ParseResult.Failed msg
                 | _ -> Expression.VariableName variable |> ParseResult.Succeeded
 
-    member x.ParseFunctionArguments() =
-        match _tokenizer.CurrentTokenKind with
-        | TokenKind.Character ')' ->
-            _tokenizer.MoveNextToken()
-            ParseResult.Succeeded []
-        | _ ->
+    member x.ParseFunctionArguments atBeginning =
+        let recursivelyParseArguments() =
             match x.ParseSingleExpression() with
             | ParseResult.Succeeded arg ->
-                match x.ParseFunctionArguments() with
+                match x.ParseFunctionArguments false with
                 | ParseResult.Succeeded otherArgs -> arg :: otherArgs |> ParseResult.Succeeded
                 | ParseResult.Failed msg -> ParseResult.Failed msg
             | ParseResult.Failed msg -> ParseResult.Failed msg
+        match _tokenizer.CurrentTokenKind with
+        | TokenKind.Character '(' ->
+            _tokenizer.MoveNextToken()
+            x.ParseFunctionArguments true
+        | TokenKind.Character ')' ->
+            _tokenizer.MoveNextToken()
+            ParseResult.Succeeded []
+        | TokenKind.Character ',' ->
+            _tokenizer.MoveNextToken()
+            x.SkipBlanks()
+            recursivelyParseArguments()
+        | _ ->
+            if atBeginning then recursivelyParseArguments()
+            else ParseResult.Failed "invalid arguments for function"
 
     /// Parse out a complete expression from the text.  
     member x.ParseExpressionCore() =

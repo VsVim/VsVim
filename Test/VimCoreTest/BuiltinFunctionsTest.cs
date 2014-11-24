@@ -40,5 +40,15 @@ namespace Vim.UnitTest
 
             Assert.NotEqual(VariableValue.NewNumber(0), value);
         }
+
+        [Fact]
+        public void Escape_should_escape_the_specified_characters_in_a_string_with_backslash()
+        {
+            var escapeIn = VariableValue.NewString(@"C:\Program Files");
+            var escapeWhat = VariableValue.NewString(@" \");
+            var value = _callerUnderTest.Call(BuiltinFunctionCall.NewEscape(escapeIn, escapeWhat));
+
+            Assert.Equal(VariableValue.NewString(@"C:\\Program\ Files"), value);
+        }
     }
 }

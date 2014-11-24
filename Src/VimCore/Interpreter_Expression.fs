@@ -700,6 +700,7 @@ with
 
 [<RequireQualifiedAccess>]
 type BuiltinFunctionCall =
+    | Escape of VariableValue * VariableValue
     | Exists of VariableValue
     | Expand of VariableValue * VariableValue option * VariableValue option
     | Localtime

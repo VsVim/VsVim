@@ -21,6 +21,16 @@ type BuiltinFunctionCaller
     ) =
     member x.Call (func : BuiltinFunctionCall) =
         match func with
+        | BuiltinFunctionCall.Escape(str, chars) ->
+            match str, chars with
+            | VariableValue.String escapeIn, VariableValue.String escapeWhat ->
+                let escapeChar (c:char) =
+                    let character = c.ToString()
+                    if escapeWhat.Contains character then sprintf @"\%s" character else character
+                Seq.map escapeChar escapeIn
+                |> String.concat ""
+                |> VariableValue.String
+            | _, _ -> VariableValue.Error
         | BuiltinFunctionCall.Exists name ->
             match name with
             | VariableValue.String variableName ->
@@ -53,6 +63,11 @@ type VimScriptFunctionCaller
             VariableValue.Error
             
         match name.Name with
+        | "escape" ->
+            match args.Length with
+            | 0 | 1 -> notEnoughArgs()
+            | 2 -> BuiltinFunctionCall.Escape(args.[0], args.[1]) |> _builtinCaller.Call
+            | _ -> tooManyArgs()
         | "exists" ->
             match args.Length with
             | 0 -> notEnoughArgs()
