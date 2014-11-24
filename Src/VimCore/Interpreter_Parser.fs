@@ -2206,11 +2206,24 @@ type Parser
                 match _tokenizer.CurrentTokenKind with
                 | TokenKind.Character '(' ->
                     _tokenizer.MoveNextToken()
-                    match x.ParseSingleExpression() with
-                    | ParseResult.Succeeded arg ->
-                        Expression.FunctionCall(variable, [arg]) |> ParseResult.Succeeded
+                    match x.ParseFunctionArguments() with
+                    | ParseResult.Succeeded args ->
+                        Expression.FunctionCall(variable, args) |> ParseResult.Succeeded
                     | ParseResult.Failed msg -> ParseResult.Failed msg
                 | _ -> Expression.VariableName variable |> ParseResult.Succeeded
+
+    member x.ParseFunctionArguments() =
+        match _tokenizer.CurrentTokenKind with
+        | TokenKind.Character ')' ->
+            _tokenizer.MoveNextToken()
+            ParseResult.Succeeded []
+        | _ ->
+            match x.ParseSingleExpression() with
+            | ParseResult.Succeeded arg ->
+                match x.ParseFunctionArguments() with
+                | ParseResult.Succeeded otherArgs -> arg :: otherArgs |> ParseResult.Succeeded
+                | ParseResult.Failed msg -> ParseResult.Failed msg
+            | ParseResult.Failed msg -> ParseResult.Failed msg
 
     /// Parse out a complete expression from the text.  
     member x.ParseExpressionCore() =

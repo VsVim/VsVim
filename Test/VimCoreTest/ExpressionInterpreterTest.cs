@@ -29,10 +29,10 @@ namespace Vim.UnitTest
             Assert.Equal(expected, value.AsString().Item);
         }
 
-        private void Run(string expr, int number)
+        private void Run(string expr, int expected)
         {
             var value = Run(expr);
-            Assert.Equal(number, value.AsNumber().Item);
+            Assert.Equal(expected, value.AsNumber().Item);
         }
 
         /// <summary>
@@ -57,9 +57,15 @@ namespace Vim.UnitTest
         }
 
         [Fact]
-        public void Run_builtin_function()
+        public void Run_builtin_function_of_one_argument()
         {
             Run("exists('foo')", 0);
+        }
+
+        [Fact]
+        public void Run_builtin_function_of_no_arguments()
+        {
+            Assert.NotEqual(0, Run("localtime()").AsNumber().Item);
         }
     }
 }

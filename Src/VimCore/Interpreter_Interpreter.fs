@@ -28,6 +28,13 @@ type BuiltinFunctionCaller
                 |> System.Convert.ToInt32
                 |> VariableValue.Number
             | _ -> VariableValue.Error
+        | BuiltinFunctionCall.Localtime ->
+            // TODO: .NET 4.6 will have builtin support for this
+            let epoch = System.DateTime(1970, 1, 1, 0, 0, 0, System.DateTimeKind.Utc)
+            let now = System.DateTime.Now.ToUniversalTime()
+            (now - epoch).TotalSeconds
+            |> System.Convert.ToInt32
+            |> VariableValue.Number
         | _ -> VariableValue.Error
 
 [<Sealed>]
@@ -51,6 +58,9 @@ type VimScriptFunctionCaller
             | 0 -> notEnoughArgs()
             | 1 -> BuiltinFunctionCall.Exists(args.[0]) |> _builtinCaller.Call
             | _ -> tooManyArgs()
+        | "localtime" ->
+            if args.Length = 0 then _builtinCaller.Call BuiltinFunctionCall.Localtime
+            else tooManyArgs()
         | fname ->
             sprintf "Unknown function: %s" fname |> _statusUtil.OnError
             VariableValue.Error

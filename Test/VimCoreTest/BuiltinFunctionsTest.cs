@@ -7,7 +7,7 @@ namespace Vim.UnitTest
     public sealed class BuiltinFunctionsTest
     {
         private readonly BuiltinFunctionCaller _callerUnderTest;
-        private Dictionary<string, VariableValue> _variableMap;
+        private readonly Dictionary<string, VariableValue> _variableMap;
 
         public BuiltinFunctionsTest()
         {
@@ -31,6 +31,14 @@ namespace Vim.UnitTest
             var value = _callerUnderTest.Call(BuiltinFunctionCall.NewExists(VariableValue.NewString("foo")));
 
             Assert.Equal(VariableValue.NewNumber(1), value);
+        }
+
+        [Fact]
+        public void Localtime_should_return_current_Unix_time()
+        {
+            var value = _callerUnderTest.Call(BuiltinFunctionCall.Localtime);
+
+            Assert.NotEqual(VariableValue.NewNumber(0), value);
         }
     }
 }

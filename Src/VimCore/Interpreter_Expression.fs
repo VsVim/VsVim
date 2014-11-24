@@ -702,6 +702,7 @@ with
 type BuiltinFunctionCall =
     | Exists of VariableValue
     | Expand of VariableValue * VariableValue option * VariableValue option
+    | Localtime
 
 /// Engine which interprets Vim commands and expressions
 type IVimInterpreter =
