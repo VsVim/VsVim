@@ -16,7 +16,7 @@ namespace Vim.VisualStudio.Implementation.ReSharper
     [TextViewRole(PredefinedTextViewRoles.Editable)]
     [Export(typeof(IReSharperUtil))]
     [Export(typeof(IExternalEditAdapter))]
-    internal sealed class ReSharperUtil : IExternalEditAdapter, IReSharperUtil
+    internal sealed class ReSharperUtil : IExternalEditAdapter, IReSharperUtil, IExtensionAdapter
     {
         internal const string ResharperTaggerProviderName = "VsDocumentMarkupTaggerProvider";
         private static readonly Guid Resharper5Guid = new Guid("0C6E6407-13FC-4878-869A-C8B4016C57FE");
@@ -75,7 +75,8 @@ namespace Vim.VisualStudio.Implementation.ReSharper
                     _reSharperEditTagDetector = new ReSharperV8EditTagDetector();
                     break;
                 case ReSharperVersion.Version81:
-                    _reSharperEditTagDetector = new ReSharperV81EditTagDetector();
+                case ReSharperVersion.Version82:
+                    _reSharperEditTagDetector = new ReSharperV81Or2EditTagDetector(reSharperVersion);
                     break;
                 case ReSharperVersion.Unknown:
                     _reSharperEditTagDetector = new ReSharperUnknownEditTagDetector();
@@ -272,6 +273,21 @@ namespace Vim.VisualStudio.Implementation.ReSharper
         bool IExternalEditAdapter.IsExternalEditTag(ITag tag)
         {
             return IsExternalEditTag(tag);
+        }
+
+        #endregion
+
+        #region IExtensionAdapter
+
+        bool IExtensionAdapter.ShouldKeepSelectionAfterHostCommand(string command, string argument)
+        {
+            if (!_isResharperInstalled)
+            {
+                return false;
+            }
+
+            var comparer = StringComparer.OrdinalIgnoreCase;
+            return comparer.Equals(command, "ReSharper.ReSharper_ExtendSelection");
         }
 
         #endregion

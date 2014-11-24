@@ -303,6 +303,11 @@ namespace Vim.UI.Wpf
             return vimRcPath.VimRcKind == VimRcKind.VsVimRc;
         }
 
+        public virtual bool ShouldKeepSelectionAfterHostCommand(string command, string argument)
+        {
+            return false;
+        }
+
         public virtual bool SaveTextAs(string text, string filePath)
         {
             try
@@ -631,6 +636,11 @@ namespace Vim.UI.Wpf
         bool IVimHost.SaveTextAs(string text, string filePath)
         {
             return SaveTextAs(text, filePath);
+        }
+
+        bool IVimHost.ShouldKeepSelectionAfterHostCommand(string command, string argument)
+        {
+            return ShouldKeepSelectionAfterHostCommand(command, argument);
         }
 
         bool IVimHost.ShouldCreateVimBuffer(ITextView textView)

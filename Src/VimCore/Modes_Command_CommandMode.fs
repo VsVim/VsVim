@@ -16,6 +16,7 @@ type internal CommandMode
     let _vimData = _buffer.VimData
     let _statusUtil = _buffer.VimBufferData.StatusUtil
     let _parser = Parser(_buffer.Vim.GlobalSettings, _vimData)
+    let _vimHost = _buffer.Vim.VimHost
 
     // Command to show when entering command from Visual Mode
     static let FromVisualModeString = "'<,'>"
@@ -28,6 +29,7 @@ type internal CommandMode
     let mutable _command = StringUtil.empty
     let mutable _historySession : IHistorySession<int, int> option = None
     let mutable _bindData = BindDataError
+    let mutable _keepSelection = false
 
     /// Currently queued up command string
     member x.Command 
@@ -50,6 +52,9 @@ type internal CommandMode
                 command
 
         let lineCommand = _parser.ParseLineCommand command 
+        match lineCommand with
+        | LineCommand.HostCommand (command, argument) -> _keepSelection <- _vimHost.ShouldKeepSelectionAfterHostCommand command argument
+        | _ -> ()
         let vimInterpreter = _buffer.Vim.GetVimInterpreter _buffer
         vimInterpreter.RunLineCommand lineCommand
 
@@ -57,7 +62,7 @@ type internal CommandMode
     // hitting ':' in Visual Mode.  The selection should be cleared when leaving
     member x.MaybeClearSelection moveCaretToStart = 
         let selection = _buffer.TextView.Selection
-        if not selection.IsEmpty && not _buffer.TextView.IsClosed then 
+        if not selection.IsEmpty && not _buffer.TextView.IsClosed && not _keepSelection then 
             if moveCaretToStart then
                 let point = selection.StreamSelectionSpan.SnapshotSpan.Start
                 selection.Clear()
@@ -125,6 +130,7 @@ type internal CommandMode
         _command <- ""
         _historySession <- Some historySession
         _bindData <- historySession.CreateBindDataStorage().CreateBindData()
+        _keepSelection <- false
 
         let commandText = 
             match arg with
@@ -145,6 +151,7 @@ type internal CommandMode
         _command <- StringUtil.empty
         _historySession <- None
         _bindData <- BindDataError
+        _keepSelection <- false
 
     /// Called externally to update the command.  Do this by modifying the history 
     /// session.  If we aren't in command mode currently then this is a no-op 
