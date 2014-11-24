@@ -23,11 +23,6 @@ type VariableName = {
 }
 
 [<RequireQualifiedAccess>]
-type FunctionName = // TODO there's a lot that can go into function names than what is represented here
-    | Builtin of string
-    | UserDefined of string
-
-[<RequireQualifiedAccess>]
 type VariableType =
     | Number
     | Float
@@ -410,7 +405,7 @@ and [<RequireQualifiedAccess>] Expression =
     | VariableName of VariableName
 
     /// Invocation of a function
-    | FunctionCall of FunctionName * Expression list
+    | FunctionCall of VariableName * Expression list
 
 and [<RequireQualifiedAccess>] LineCommand =
 

@@ -1,4 +1,5 @@
-﻿using Moq;
+﻿using System.Collections.Generic;
+using Moq;
 using Vim.Interpreter;
 using Xunit;
 
@@ -12,13 +13,13 @@ namespace Vim.UnitTest
         public ExpressionInterpreterTest()
         {
             _statusUtil = new Mock<IStatusUtil>(MockBehavior.Strict);
-            _interpreter = new ExpressionInterpreter(_statusUtil.Object, null, null, null, null);
+            _interpreter = new ExpressionInterpreter(_statusUtil.Object, null, null, new Dictionary<string, VariableValue>(), null);
         }
 
         private VariableValue Run(string expr)
         {
             var parseResult = VimUtil.ParseExpression(expr);
-            Assert.True(parseResult.IsSucceeded);
+            Assert.True(parseResult.IsSucceeded, "Expression failed to parse");
             return _interpreter.RunExpression(parseResult.AsSucceeded().Item);
         }
 
@@ -53,6 +54,12 @@ namespace Vim.UnitTest
         public void Concat_two_integers()
         {
             Run("2 . 3", "23");
+        }
+
+        [Fact]
+        public void Run_builtin_function()
+        {
+            Run("exists('foo')", 0);
         }
     }
 }

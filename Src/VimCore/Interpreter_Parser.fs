@@ -2201,7 +2201,16 @@ type Parser
         | _ ->
             match x.ParseVariableName() with
             | ParseResult.Failed msg -> ParseResult.Failed msg
-            | ParseResult.Succeeded variable -> Expression.VariableName variable |> ParseResult.Succeeded
+            | ParseResult.Succeeded variable -> // TODO the nesting is getting deep here; refactor
+                x.SkipBlanks();
+                match _tokenizer.CurrentTokenKind with
+                | TokenKind.Character '(' ->
+                    _tokenizer.MoveNextToken()
+                    match x.ParseSingleExpression() with
+                    | ParseResult.Succeeded arg ->
+                        Expression.FunctionCall(variable, [arg]) |> ParseResult.Succeeded
+                    | ParseResult.Failed msg -> ParseResult.Failed msg
+                | _ -> Expression.VariableName variable |> ParseResult.Succeeded
 
     /// Parse out a complete expression from the text.  
     member x.ParseExpressionCore() =

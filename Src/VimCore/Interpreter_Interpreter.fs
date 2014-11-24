@@ -15,6 +15,48 @@ type DefaultLineRange =
 
 [<Sealed>]
 [<Class>]
+type BuiltinFunctionCaller
+    (
+        _variableMap : Dictionary<string, VariableValue>
+    ) =
+    member x.Call (func : BuiltinFunctionCall) =
+        match func with
+        | BuiltinFunctionCall.Exists name ->
+            match name with
+            | VariableValue.String variableName ->
+                _variableMap.ContainsKey variableName
+                |> System.Convert.ToInt32
+                |> VariableValue.Number
+            | _ -> VariableValue.Error
+        | _ -> VariableValue.Error
+
+[<Sealed>]
+[<Class>]
+type VimScriptFunctionCaller
+    (
+        _builtinCaller : BuiltinFunctionCaller,
+        _statusUtil : IStatusUtil
+    ) =
+    member x.Call (name : VariableName) (args : VariableValue list) =
+        let tooManyArgs() =
+            sprintf "Too many arguments for function: %s" name.Name |> _statusUtil.OnError
+            VariableValue.Error
+        let notEnoughArgs() =
+            sprintf "Not enough arguments for function: %s" name.Name |> _statusUtil.OnError
+            VariableValue.Error
+            
+        match name.Name with
+        | "exists" ->
+            match args.Length with
+            | 0 -> notEnoughArgs()
+            | 1 -> BuiltinFunctionCall.Exists(args.[0]) |> _builtinCaller.Call
+            | _ -> tooManyArgs()
+        | fname ->
+            sprintf "Unknown function: %s" fname |> _statusUtil.OnError
+            VariableValue.Error
+
+[<Sealed>]
+[<Class>]
 type ExpressionInterpreter
     (
         _statusUtil : IStatusUtil,
@@ -23,6 +65,8 @@ type ExpressionInterpreter
         _variableMap : Dictionary<string, VariableValue>,
         _registerMap : IRegisterMap
     ) =
+    let _builtinCaller = BuiltinFunctionCaller(_variableMap)
+    let _functionCaller = VimScriptFunctionCaller(_builtinCaller, _statusUtil)
 
     /// Get the value as a number
     member x.GetValueAsNumber value = 
@@ -77,6 +121,7 @@ type ExpressionInterpreter
             | Some setting -> x.GetValueOfSetting setting
         | Expression.VariableName name -> x.GetValueOfVariable name.Name
         | Expression.RegisterName name -> x.GetValueOfRegister name
+        | Expression.FunctionCall(name, args) -> _functionCaller.Call name [for arg in args -> x.RunExpression arg]
 
     /// Run the binary expression
     member x.RunBinaryExpression binaryKind (leftExpr : Expression) (rightExpr : Expression) = 
@@ -118,24 +163,6 @@ type ExpressionInterpreter
         | BinaryKind.Modulo -> notSupported()
         | BinaryKind.Multiply -> notSupported()
         | BinaryKind.Subtract -> notSupported()
-
-[<Sealed>]
-[<Class>]
-type BuiltinFunctionCaller
-    (
-        _variableMap : Dictionary<string, VariableValue>
-    ) =
-    member x.Call (func : BuiltinFunctionCall) =
-        match func with
-        | BuiltinFunctionCall.Exists name ->
-            match name with
-            | VariableValue.String variableName ->
-                _variableMap.ContainsKey variableName
-                |> System.Convert.ToInt32
-                |> VariableValue.Number
-                |> Some
-            | _ -> None
-        | _ -> None
 
 [<Sealed>]
 [<Class>]

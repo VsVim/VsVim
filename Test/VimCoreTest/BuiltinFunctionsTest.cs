@@ -18,9 +18,9 @@ namespace Vim.UnitTest
         [Fact]
         public void Exists_should_return_0_for_variable_that_does_not_exist()
         {
-            var maybeValue = _callerUnderTest.Call(BuiltinFunctionCall.NewExists(VariableValue.NewString("x")));
+            var value = _callerUnderTest.Call(BuiltinFunctionCall.NewExists(VariableValue.NewString("x")));
 
-            Assert.True(maybeValue.IsSome(VariableValue.NewNumber(0)));
+            Assert.Equal(VariableValue.NewNumber(0), value);
         }
 
         [Fact]
@@ -28,9 +28,9 @@ namespace Vim.UnitTest
         {
             _variableMap["foo"] = VariableValue.NewString("bar");
 
-            var maybeValue = _callerUnderTest.Call(BuiltinFunctionCall.NewExists(VariableValue.NewString("foo")));
+            var value = _callerUnderTest.Call(BuiltinFunctionCall.NewExists(VariableValue.NewString("foo")));
 
-            Assert.True(maybeValue.IsSome(VariableValue.NewNumber(1)));
+            Assert.Equal(VariableValue.NewNumber(1), value);
         }
     }
 }
