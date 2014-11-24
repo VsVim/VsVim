@@ -70,6 +70,7 @@ namespace Vim.VisualStudio.UnitTest
                 _textManager.Object,
                 _factory.Create<ISharedServiceFactory>(MockBehavior.Loose).Object,
                 _vimApplicationSettings.Object,
+                _factory.Create<IExtensionAdapterBroker>(MockBehavior.Loose).Object,
                 sp.Object);
             _host = _hostRaw;
         }

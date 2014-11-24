@@ -133,6 +133,7 @@ namespace Vim.VisualStudio
         private readonly IVsMonitorSelection _vsMonitorSelection;
         private readonly IVimApplicationSettings _vimApplicationSettings;
         private readonly ISmartIndentationService _smartIndentationService;
+        private readonly IExtensionAdapterBroker _extensionAdapterBroker;
         private IVim _vim;
 
         internal _DTE DTE
@@ -181,6 +182,7 @@ namespace Vim.VisualStudio
             ITextManager textManager,
             ISharedServiceFactory sharedServiceFactory,
             IVimApplicationSettings vimApplicationSettings,
+            IExtensionAdapterBroker extensionAdapterBroker,
             SVsServiceProvider serviceProvider)
             : base(textBufferFactoryService, textEditorFactoryService, textDocumentFactoryService, editorOperationsFactoryService)
         {
@@ -193,6 +195,7 @@ namespace Vim.VisualStudio
             _vsMonitorSelection = serviceProvider.GetService<SVsShellMonitorSelection, IVsMonitorSelection>();
             _vimApplicationSettings = vimApplicationSettings;
             _smartIndentationService = smartIndentationService;
+            _extensionAdapterBroker = extensionAdapterBroker;
 
             uint cookie;
             _vsMonitorSelection.AdviseSelectionEvents(this, out cookie);
@@ -716,6 +719,16 @@ namespace Vim.VisualStudio
                     Contract.Assert(false);
                     return base.ShouldIncludeRcFile(vimRcPath);
             }
+        }
+
+        public override bool ShouldKeepSelectionAfterHostCommand(string command, string argument)
+        {
+            if (_extensionAdapterBroker.ShouldKeepSelectionAfterHostCommand(command, argument))
+            {
+                return true;
+            }
+
+            return base.ShouldKeepSelectionAfterHostCommand(command, argument);
         }
 
         #region IVsSelectionEvents
