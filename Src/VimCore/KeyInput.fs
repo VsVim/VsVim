@@ -382,6 +382,15 @@ module KeyInputUtil =
                     // Nothing special to do here
                     keyInput
 
+        let normalizeAltGr (keyInput : KeyInput) = 
+            match keyInput.RawChar with
+            | None -> keyInput
+            | Some c ->
+                let unsetflag (a : KeyModifiers) (b : KeyModifiers) : KeyModifiers = Util.UnsetFlag a b
+                let unsetflags a b c = unsetflag (unsetflag a b) c
+                let modifiers = unsetflags keyInput.KeyModifiers KeyModifiers.Alt KeyModifiers.Shift
+                KeyInput(VimKey.RawCharacter, modifiers, Some c)
+
         let keyInput = ChangeKeyModifiersDangerous keyInput (targetModifiers ||| keyInput.KeyModifiers)
 
         // First normalize the shift case
@@ -399,9 +408,15 @@ module KeyInputUtil =
                 keyInput
 
         let keyInput =
-            if Util.IsFlagSet targetModifiers KeyModifiers.Alt && not (Util.IsFlagSet targetModifiers KeyModifiers.Alt) then
+            if Util.IsFlagSet targetModifiers KeyModifiers.Alt && not (Util.IsFlagSet targetModifiers KeyModifiers.Shift) then
                 normalizeAlt keyInput
             else 
+                keyInput
+
+        let keyInput = 
+            if Util.IsFlagSet targetModifiers KeyModifiers.Alt && Util.IsFlagSet targetModifiers KeyModifiers.Shift then
+                normalizeAltGr keyInput
+            else
                 keyInput
 
         keyInput
