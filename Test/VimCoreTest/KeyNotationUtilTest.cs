@@ -473,6 +473,16 @@ namespace Vim.UnitTest
             }
 
             [Fact]
+            public void AlphaLowerAndAltGr()
+            {
+                foreach (var c in KeyInputUtilTest.CharLettersLower)
+                {
+                    var keyInput = KeyInputUtil.ApplyModifiersToChar(c, KeyModifiers.Alt | KeyModifiers.Shift);
+                    Assert.Equal(c.ToString(), KeyNotationUtil.GetDisplayName(keyInput));
+                }
+            }
+
+            [Fact]
             public void NonAlphaWithControl()
             {
                 foreach (var c in "()#")

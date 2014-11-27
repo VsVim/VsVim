@@ -386,7 +386,7 @@ module KeyInputUtil =
 
         // First normalize the shift case
         let keyInput = 
-            if Util.IsFlagSet targetModifiers KeyModifiers.Shift then
+            if Util.IsFlagSet targetModifiers KeyModifiers.Shift && not (Util.IsFlagSet targetModifiers KeyModifiers.Alt) then
                 normalizeShift keyInput
             else 
                 keyInput
@@ -399,7 +399,7 @@ module KeyInputUtil =
                 keyInput
 
         let keyInput =
-            if Util.IsFlagSet targetModifiers KeyModifiers.Alt then
+            if Util.IsFlagSet targetModifiers KeyModifiers.Alt && not (Util.IsFlagSet targetModifiers KeyModifiers.Alt) then
                 normalizeAlt keyInput
             else 
                 keyInput
