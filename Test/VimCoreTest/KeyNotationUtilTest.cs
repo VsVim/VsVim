@@ -477,7 +477,7 @@ namespace Vim.UnitTest
             {
                 foreach (var c in KeyInputUtilTest.CharLettersLower)
                 {
-                    var keyInput = KeyInputUtil.ApplyModifiersToChar(c, KeyModifiers.Alt | KeyModifiers.Shift);
+                    var keyInput = KeyInputUtil.ApplyModifiersToChar(c, KeyModifiers.Alt | KeyModifiers.Control);
                     Assert.Equal(c.ToString(), KeyNotationUtil.GetDisplayName(keyInput));
                 }
             }
