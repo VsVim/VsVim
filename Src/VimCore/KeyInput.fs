@@ -388,33 +388,33 @@ module KeyInputUtil =
             | Some c ->
                 let unsetflag (a : KeyModifiers) (b : KeyModifiers) : KeyModifiers = Util.UnsetFlag a b
                 let unsetflags a b c = unsetflag (unsetflag a b) c
-                let modifiers = unsetflags keyInput.KeyModifiers KeyModifiers.Alt KeyModifiers.Shift
+                let modifiers = unsetflags keyInput.KeyModifiers KeyModifiers.Alt KeyModifiers.Control
                 KeyInput(VimKey.RawCharacter, modifiers, Some c)
 
         let keyInput = ChangeKeyModifiersDangerous keyInput (targetModifiers ||| keyInput.KeyModifiers)
 
         // First normalize the shift case
         let keyInput = 
-            if Util.IsFlagSet targetModifiers KeyModifiers.Shift && not (Util.IsFlagSet targetModifiers KeyModifiers.Alt) then
+            if Util.IsFlagSet targetModifiers KeyModifiers.Shift then
                 normalizeShift keyInput
             else 
                 keyInput
 
         // Next normalize the control case
         let keyInput = 
-            if Util.IsFlagSet targetModifiers KeyModifiers.Control then
+            if Util.IsFlagSet targetModifiers KeyModifiers.Control && not (Util.IsFlagSet targetModifiers KeyModifiers.Alt) then
                 normalizeControl keyInput
             else
                 keyInput
 
         let keyInput =
-            if Util.IsFlagSet targetModifiers KeyModifiers.Alt && not (Util.IsFlagSet targetModifiers KeyModifiers.Shift) then
+            if Util.IsFlagSet targetModifiers KeyModifiers.Alt && not (Util.IsFlagSet targetModifiers KeyModifiers.Control) then
                 normalizeAlt keyInput
             else 
                 keyInput
 
         let keyInput = 
-            if Util.IsFlagSet targetModifiers KeyModifiers.Alt && Util.IsFlagSet targetModifiers KeyModifiers.Shift then
+            if Util.IsFlagSet targetModifiers KeyModifiers.Alt && Util.IsFlagSet targetModifiers KeyModifiers.Control then
                 normalizeAltGr keyInput
             else
                 keyInput
