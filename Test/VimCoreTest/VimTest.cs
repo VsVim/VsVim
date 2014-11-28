@@ -245,7 +245,7 @@ namespace Vim.UnitTest
                 VimHost.ShouldCreateVimBufferImpl = true;
                         
                 var textView = CreateTextView("");
-                var vimTextBuffer = Vim.CreateVimTextBuffer(textView.TextBuffer);
+                var vimTextBuffer = Vim.GetOrCreateVimTextBuffer(textView.TextBuffer);
 
                 IVimBuffer vimBuffer;
                 Assert.True(Vim.TryGetOrCreateVimBufferForHost(textView, out vimBuffer));
