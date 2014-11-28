@@ -39,7 +39,7 @@ namespace Vim.VisualStudio.Implementation.Misc
         private readonly RunningDocumentTable _table;
         private readonly IServiceProvider _serviceProvider;
         private readonly IVsMonitorSelection _monitorSelection;
-        private readonly IPowerToolsUtil _powerToolsUtil;
+        private readonly IExtensionAdapterBroker _extensionAdapterBroker;
         private readonly VisualStudioVersion _visualStudioVersion;
 
         internal bool InDebugMode
@@ -76,7 +76,7 @@ namespace Vim.VisualStudio.Implementation.Misc
             IVsEditorAdaptersFactoryService editorAdaptersFactoryService,
             IEditorOptionsFactoryService editorOptionsFactoryService,
             IIncrementalSearchFactoryService incrementalSearchFactoryService,
-            IPowerToolsUtil powerToolsUtil,
+            IExtensionAdapterBroker extensionAdapterBroker,
             SVsServiceProvider vsServiceProvider)
         {
             _incrementalSearchFactoryService = incrementalSearchFactoryService;
@@ -88,7 +88,7 @@ namespace Vim.VisualStudio.Implementation.Misc
             _uiShell = _serviceProvider.GetService<SVsUIShell, IVsUIShell>();
             _monitorSelection = _serviceProvider.GetService<SVsShellMonitorSelection, IVsMonitorSelection>();
             _vsFindManager = _serviceProvider.GetService<SVsFindManager, IVsFindManager>();
-            _powerToolsUtil = powerToolsUtil;
+            _extensionAdapterBroker = extensionAdapterBroker;
             _visualStudioVersion = vsServiceProvider.GetVisualStudioVersion();
         }
 
@@ -363,7 +363,7 @@ namespace Vim.VisualStudio.Implementation.Misc
                 }
             }
 
-            return _powerToolsUtil.IsQuickFindActive;
+            return _extensionAdapterBroker.IsIncrementalSearchActive(textView);
         }
 
         /// <summary>

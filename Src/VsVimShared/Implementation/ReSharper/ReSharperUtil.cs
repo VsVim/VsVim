@@ -293,6 +293,11 @@ namespace Vim.VisualStudio.Implementation.ReSharper
             return comparer.Equals(command, "ReSharper.ReSharper_ExtendSelection");
         }
 
+        bool IExtensionAdapter.IsIncrementalSearchActive(ITextView textView)
+        {
+            return false;
+        }
+
         #endregion
     }
 }

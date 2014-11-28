@@ -5,6 +5,7 @@ using System.ComponentModel.Composition;
 using System.Linq;
 using System.Text;
 using EditorUtils;
+using Microsoft.VisualStudio.Text.Editor;
 
 namespace Vim.VisualStudio.Implementation.Misc
 {
@@ -29,6 +30,19 @@ namespace Vim.VisualStudio.Implementation.Misc
             foreach (var extensionAdapter in _extensionAdapters)
             {
                 if (extensionAdapter.ShouldKeepSelectionAfterHostCommand(command, argument))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        bool IExtensionAdapter.IsIncrementalSearchActive(ITextView textView)
+        {
+            foreach (var extensionAdapter in _extensionAdapters)
+            {
+                if (extensionAdapter.IsIncrementalSearchActive(textView))
                 {
                     return true;
                 }
