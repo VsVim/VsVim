@@ -1077,12 +1077,12 @@ type Parser
             // Lower case names are allowed when the name is prefixed with <SID> or s: 
             let isScriptLocal = x.ParseScriptLocalPrefix()
             let! name = parseFunctionName isScriptLocal
-            let! params = parseFunctionArguments ()
+            let! parameters = parseFunctionArguments ()
             let isAbort, isDict, isRange, isError = parseModifiers ()
 
             let func = { 
                 Name = name
-                Parameters = params
+                Parameters = parameters
                 IsRange = isRange
                 IsAbort = isAbort
                 IsDictionary = isDict
