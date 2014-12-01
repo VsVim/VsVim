@@ -24,7 +24,7 @@ type BuiltinFunctionCaller
         | BuiltinFunctionCall.Escape(str, chars) ->
             match str, chars with
             | VariableValue.String escapeIn, VariableValue.String escapeWhat ->
-                let escapeChar (c:char) =
+                let escapeChar (c : char) =
                     let character = c.ToString()
                     if escapeWhat.Contains character then sprintf @"\%s" character else character
                 Seq.map escapeChar escapeIn
@@ -39,7 +39,7 @@ type BuiltinFunctionCaller
                 |> VariableValue.Number
             | _ -> VariableValue.Error
         | BuiltinFunctionCall.Localtime ->
-            // TODO: .NET 4.6 will have builtin support for this
+            // TODO: .NET 4.6 will have builtin support for converting to Unix time http://stackoverflow.com/a/26225744/834176
             let epoch = System.DateTime(1970, 1, 1, 0, 0, 0, System.DateTimeKind.Utc)
             let now = System.DateTime.Now.ToUniversalTime()
             (now - epoch).TotalSeconds

@@ -335,7 +335,7 @@ type FunctionDefinition = {
     Name : string
 
     /// Arguments to the function
-    Arguments : string list // TODO do we mean "parameters" here rather than "arguments"?
+    Parameters : string list
 
     /// Is the function responsible for its ranges
     IsRange : bool
@@ -698,6 +698,8 @@ with
     member x.Failed = 
         not x.Succeeded
 
+[<NoComparison>]
+[<NoEquality>]
 [<RequireQualifiedAccess>]
 type BuiltinFunctionCall =
     | Escape of VariableValue * VariableValue
