@@ -1579,6 +1579,7 @@ type Parser
         | TokenKind.Word word ->
             _tokenizer.MoveNextToken()
             if _tokenizer.CurrentChar = ':' then
+                _tokenizer.MoveNextToken()
                 match _tokenizer.CurrentTokenKind, parseNameScope word with
                 | TokenKind.Word name, Some nameScope -> 
                     _tokenizer.MoveNextToken()
