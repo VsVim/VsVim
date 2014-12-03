@@ -2518,7 +2518,8 @@ type internal MotionUtil
                 isWholeWord && isWord
 
             let pattern = if isWholeWord then PatternUtil.CreateWholeWord word else word
-            let searchData = SearchData(pattern, path, _globalSettings.WrapScan)
+            let searchKind = SearchKind.OfPathAndWrap path _globalSettings.WrapScan
+            let searchData = SearchData(pattern, SearchOffsetData.None, searchKind, SearchOptions.ConsiderIgnoreCase)
 
             // Make sure to update the LastSearchData here.  It needs to be done 
             // whether or not the search actually succeeds

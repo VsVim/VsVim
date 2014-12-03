@@ -531,6 +531,24 @@ namespace Vim.UnitTest
                 _vimBuffer.ProcessNotation("<S-Space>");
                 Assert.Equal(8, _textView.GetCaretPoint().Position);
             }
+
+            /// <summary>
+            /// Don't consider 'smartcase' when doing a * operation 
+            /// </summary>
+            [Fact]
+            public void Issue1511()
+            {
+                Create("foo", "FOO", "foo");
+                _assertOnWarningMessage = false;
+                _globalSettings.IgnoreCase = true;
+                _globalSettings.SmartCase = true;
+                _vimBuffer.Process('*');
+                Assert.Equal(_textBuffer.GetLine(1).Start, _textView.GetCaretPoint());
+                _vimBuffer.Process('*');
+                Assert.Equal(_textBuffer.GetLine(2).Start, _textView.GetCaretPoint());
+                _vimBuffer.Process('*');
+                Assert.Equal(_textBuffer.GetLine(0).Start, _textView.GetCaretPoint());
+            }
         }
 
         public sealed class MatchingTokenTest : NormalModeIntegrationTest
