@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using Microsoft.FSharp.Collections;
 using Vim.Extensions;
 using Vim.Interpreter;
 using Xunit;
@@ -1743,7 +1742,7 @@ let x = 42
             /// Make sure the abbreviation can be expanded
             /// </summary>
             [Fact]
-            public void TryExpand_Abbrevation()
+            public void TryExpand_Abbreviation()
             {
                 var parser = CreateParser("");
                 foreach (var tuple in Parser.s_LineCommandNamePair)

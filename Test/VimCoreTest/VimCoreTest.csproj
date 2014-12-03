@@ -72,6 +72,7 @@
     <Compile Include="AutoCommandRunnerIntegrationTest.cs" />
     <Compile Include="AutoCommandRunnerTest.cs" />
     <Compile Include="BlockSpanTest.cs" />
+    <Compile Include="BuiltinFunctionsTest.cs" />
     <Compile Include="BulkOperationsTest.cs" />
     <Compile Include="ChangeTrackerTest.cs" />
     <Compile Include="CharacterSpanTest.cs" />

@@ -335,7 +335,7 @@ type FunctionDefinition = {
     Name : string
 
     /// Arguments to the function
-    Arguments : string list
+    Parameters : string list
 
     /// Is the function responsible for its ranges
     IsRange : bool
@@ -403,6 +403,9 @@ and [<RequireQualifiedAccess>] Expression =
 
     /// The name of a variable
     | VariableName of VariableName
+
+    /// Invocation of a function
+    | FunctionCall of VariableName * Expression list
 
 and [<RequireQualifiedAccess>] LineCommand =
 
@@ -694,6 +697,15 @@ with
 
     member x.Failed = 
         not x.Succeeded
+
+[<NoComparison>]
+[<NoEquality>]
+[<RequireQualifiedAccess>]
+type BuiltinFunctionCall =
+    | Escape of VariableValue * VariableValue
+    | Exists of VariableValue
+    | Expand of VariableValue * VariableValue option * VariableValue option
+    | Localtime
 
 /// Engine which interprets Vim commands and expressions
 type IVimInterpreter =
