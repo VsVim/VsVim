@@ -137,7 +137,7 @@ type internal TokenStream() =
         let isCurrentLetter () = 
             match x.CurrentChar with
             | None -> false
-            | Some c -> CharUtil.IsLetter c
+            | Some c -> CharUtil.IsWordChar c
 
         while isCurrentLetter() do
             x.IncrementIndex()

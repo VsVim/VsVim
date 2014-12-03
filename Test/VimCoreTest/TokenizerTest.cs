@@ -1,5 +1,4 @@
-﻿using Vim.Extensions;
-using Vim.Interpreter;
+﻿using Vim.Interpreter;
 using Xunit;
 
 namespace Vim.UnitTest
@@ -130,6 +129,20 @@ namespace Vim.UnitTest
                 }
                 Assert.Equal(before, _tokenizer.TokenizerFlags);
             }
+        }
+
+        public sealed class WordTest : TokenizerTest
+        {
+            [Fact]
+            public void WordsCanContainUnderscores()
+            {
+                Create("loaded_surround");
+                AssertWord("loaded_surround");
+            }
+
+            // TODO I don't care about these right now, but it's worth pointing out that:
+            // Words in VimL can also begin with underscores
+            // Words in VimL can contain (but not begin with) digits
         }
 
         public sealed class MiscTest : TokenizerTest
