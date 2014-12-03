@@ -974,6 +974,15 @@ namespace Vim.UnitTest
                 ParseAndRun("let x=1+2");
                 AssertValue("x", 3);
             }
+
+            [Fact]
+            public void LHSCanBeRegisterName()
+            {
+                Create("");
+                ParseAndRun("let @a='copy by assign'");
+                var register = RegisterMap.GetRegister(RegisterName.NewNamed(NamedRegister.NameA));
+                Assert.Equal("copy by assign", register.StringValue);
+            }
         }
 
         public sealed class UnletTest : InterpreterTest

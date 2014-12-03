@@ -862,6 +862,17 @@ type VimInterpreter
         // take into account the NameScope at this level too
         _variableMap.[name.Name] <- x.RunExpression expr
 
+    /// Run the let command for registers
+    member x.RunLetRegister (name : RegisterName) expr =
+        let setRegister (value : string) =
+            let register = _registerMap.GetRegister name
+            let registerValue = RegisterValue(value, OperationKind.CharacterWise)
+            _registerMap.SetRegisterValue register RegisterOperation.Yank registerValue
+        match x.RunExpression expr with
+        | VariableValue.String value -> setRegister value
+        | VariableValue.Number value -> setRegister (value.ToString())
+        | _ -> _statusUtil.OnError "Error"
+
     /// Run the host make command 
     member x.RunMake hasBang arguments = 
         _vimHost.Make (not hasBang) arguments 
@@ -1537,6 +1548,7 @@ type VimInterpreter
         | LineCommand.JumpToLastLine -> x.RunJumpToLastLine()
         | LineCommand.JumpToLine number -> x.RunJumpToLine number
         | LineCommand.Let (name, value) -> x.RunLet name value
+        | LineCommand.LetRegister (name, value) -> x.RunLetRegister name value
         | LineCommand.Make (hasBang, arguments) -> x.RunMake hasBang arguments
         | LineCommand.MapKeys (leftKeyNotation, rightKeyNotation, keyRemapModes, allowRemap, mapArgumentList) -> x.RunMapKeys leftKeyNotation rightKeyNotation keyRemapModes allowRemap mapArgumentList
         | LineCommand.MoveTo (sourceLineRange, destLineRange, count) -> x.RunMoveTo sourceLineRange destLineRange count

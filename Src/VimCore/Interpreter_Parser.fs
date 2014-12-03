@@ -1752,6 +1752,18 @@ type Parser
                 LineCommand.DisplayLet names)
 
         match _tokenizer.CurrentTokenKind with
+        | TokenKind.Character '@' ->
+            _tokenizer.MoveNextToken()
+            match x.ParseRegisterName ParseRegisterName.All with
+            | Some registerName ->
+                if _tokenizer.CurrentChar = '=' then
+                    _tokenizer.MoveNextToken()
+                    match x.ParseExpressionCore() with
+                    | ParseResult.Succeeded expr -> LineCommand.LetRegister (registerName, expr)
+                    | ParseResult.Failed msg -> LineCommand.ParseError msg
+                else
+                    LineCommand.ParseError "Invalid expression"
+            | None -> LineCommand.ParseError "Invalid register name"
         | TokenKind.Word name ->
             match x.ParseVariableName() with
             | ParseResult.Succeeded name ->
