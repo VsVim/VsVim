@@ -182,6 +182,13 @@ namespace Vim.UnitTest
                 var list = Parse("let x y");
                 Assert.Equal(new[] { "x", "y" }, list.Select(x => x.Name));
             }
+
+            [Fact]
+            public void ScopedVariable()
+            {
+                var list = Parse("let g:x");
+                Assert.Equal(new[] { "x" }, list.Select(x => x.Name));
+            }
         }
 
         /// <summary>
