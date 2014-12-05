@@ -695,8 +695,10 @@ type VimInterpreter
         let value = x.RunExpression expression 
         let valueAsString =
             match value with
-            | VariableValue.Number number -> number.ToString()
+            | VariableValue.Number number -> string number
             | VariableValue.String str -> str
+            | VariableValue.List _ -> "[]"
+            | VariableValue.Dictionary _ -> "{}"
             | _ -> "<error>"
         _statusUtil.OnStatus valueAsString
     

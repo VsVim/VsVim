@@ -2190,6 +2190,22 @@ type Parser
             Expression.OptionName word |> ParseResult.Succeeded
         | _ -> ParseResult.Failed "Option name missing"
 
+    member x.ParseList() =
+        _tokenizer.MoveNextToken()
+        match _tokenizer.CurrentTokenKind with
+        | TokenKind.Character ']' ->
+            _tokenizer.MoveNextToken()
+            VariableValue.List List.empty |> Expression.ConstantValue |> ParseResult.Succeeded
+        | _ -> ParseResult.Failed Resources.Parser_Error
+
+    member x.ParseDictionary() =
+        _tokenizer.MoveNextToken()
+        match _tokenizer.CurrentTokenKind with
+        | TokenKind.Character '}' ->
+            _tokenizer.MoveNextToken()
+            VariableValue.Dictionary Map.empty |> Expression.ConstantValue |> ParseResult.Succeeded
+        | _ -> ParseResult.Failed Resources.Parser_Error
+
     /// Parse out a single expression
     member x.ParseSingleExpression() =
         // Re-examine the current token based on the knowledge that double quotes are
@@ -2202,6 +2218,10 @@ type Parser
             x.ParseStringLiteral()
         | TokenKind.Character '&' ->
             x.ParseOptionName()
+        | TokenKind.Character '[' ->
+            x.ParseList()
+        | TokenKind.Character '{' ->
+            x.ParseDictionary()
         | TokenKind.Character '@' ->
             _tokenizer.MoveNextToken()
             match x.ParseRegisterName ParseRegisterName.All with

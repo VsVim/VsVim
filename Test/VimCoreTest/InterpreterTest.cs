@@ -813,6 +813,22 @@ namespace Vim.UnitTest
             }
 
             [Fact]
+            public void WhenPassedEmptyListEchoesItOnStatusLine()
+            {
+                Create("");
+                ParseAndRun(@"echo []");
+                Assert.Equal("[]", _statusUtil.LastStatus);
+            }
+
+            [Fact]
+            public void WhenPassedEmptyDictionaryEchoesItOnStatusLine()
+            {
+                Create("");
+                ParseAndRun(@"echo {}");
+                Assert.Equal("{}", _statusUtil.LastStatus);
+            }
+
+            [Fact]
             public void WhenPassedBooleanSettingWhichIsOffEchoes0OnStatusLine()
             {
                 Create("");
