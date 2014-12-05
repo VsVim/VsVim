@@ -110,9 +110,28 @@ type ExpressionInterpreter
         | VariableValue.String _ -> invalid ""
         | VariableValue.Error -> None
 
+    member x.GetValueAsString value = 
+        let invalid typeName = 
+            _statusUtil.OnError (Resources.Interpreter_InvalidConversionToString typeName)
+            None
+        match value with 
+        | VariableValue.Dictionary _ -> invalid "Dictionary"
+        | VariableValue.Float _ -> invalid "Float"
+        | VariableValue.FunctionRef _ -> invalid "Funcref"
+        | VariableValue.List _ -> invalid "List"
+        | VariableValue.Number number -> Some (string number)
+        | VariableValue.String str -> Some str
+        | VariableValue.Error ->
+            _statusUtil.OnError Resources.Interpreter_Error
+            None
+
     /// Get the specified expression as a number
     member x.GetExpressionAsNumber expr =
         x.RunExpression expr |> x.GetValueAsNumber
+
+    /// Get the specified expression as a number
+    member x.GetExpressionAsString expr =
+        x.RunExpression expr |> x.GetValueAsString
 
     member x.GetSetting name = 
         match _localSettings.GetSetting name with
@@ -166,16 +185,11 @@ type ExpressionInterpreter
                 | Some left, Some right -> left + right |> VariableValue.Number
                 | _ -> VariableValue.Error
 
-        let runConcat (lvalue : string) (rightValue : VariableValue) =
-            match rightValue with
-            | VariableValue.String rvalue -> VariableValue.String (lvalue + rvalue)
-            | VariableValue.Number rvalue -> VariableValue.String (lvalue + (string rvalue))
-            | _ -> VariableValue.Error
-
         let runConcat (leftValue : VariableValue) (rightValue : VariableValue) =
-            match leftValue with
-            | VariableValue.String lvalue -> runConcat lvalue rightValue
-            | VariableValue.Number lvalue -> runConcat (string lvalue) rightValue
+            let leftString = x.GetValueAsString leftValue
+            let rightString = x.GetValueAsString rightValue
+            match leftString, rightString with
+            | Some left, Some right -> left + right |> VariableValue.String 
             | _ -> VariableValue.Error
             
 
@@ -217,6 +231,7 @@ type VimInterpreter
     let _globalSettings = _localSettings.GlobalSettings
     let _searchService = _vim.SearchService
     let _variableMap = _vim.VariableMap
+    let _exprInterpreter = ExpressionInterpreter(_statusUtil, _localSettings, _windowSettings, _variableMap, _registerMap)
 
     /// The column of the caret
     member x.CaretColumn = SnapshotPointUtil.GetColumn x.CaretPoint
@@ -723,8 +738,7 @@ type VimInterpreter
 
     /// Get the value of the specified expression 
     member x.RunExpression expr =
-        let expressionInterpreter = ExpressionInterpreter(_statusUtil, _localSettings, _windowSettings, _variableMap, _registerMap)
-        expressionInterpreter.RunExpression expr
+        _exprInterpreter.RunExpression expr
 
     /// Fold the specified line range
     member x.RunFold lineRange = 
@@ -821,13 +835,11 @@ type VimInterpreter
 
     /// Run the if command
     member x.RunIf (conditionalBlockList : ConditionalBlock list)  =
-        let expressionInterpreter = ExpressionInterpreter(_statusUtil, _localSettings, _windowSettings, _variableMap, _registerMap)
-
         let shouldRun (conditionalBlock : ConditionalBlock) =
             match conditionalBlock.Conditional with
             | None -> true
             | Some expr -> 
-                match expressionInterpreter.GetExpressionAsNumber expr with
+                match _exprInterpreter.GetExpressionAsNumber expr with
                 | None -> false
                 | Some value -> value <> 0
 
@@ -868,10 +880,9 @@ type VimInterpreter
             let register = _registerMap.GetRegister name
             let registerValue = RegisterValue(value, OperationKind.CharacterWise)
             _registerMap.SetRegisterValue register RegisterOperation.Yank registerValue
-        match x.RunExpression expr with
-        | VariableValue.String value -> setRegister value
-        | VariableValue.Number value -> setRegister (value.ToString())
-        | _ -> _statusUtil.OnError "Error"
+        match _exprInterpreter.GetExpressionAsString expr with
+        | Some value -> setRegister value
+        | None -> ()
 
     /// Run the host make command 
     member x.RunMake hasBang arguments = 

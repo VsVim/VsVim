@@ -111,6 +111,7 @@ module internal Resources =
     let Interpreter_FunctionNotSupported = "function definitions are not supported"
     let Interpreter_CallNotSupported name = sprintf ":call to function %s not supported" name
     let Interpreter_KeyMappingOptionNotSupported x = sprintf "Key mapping option is not supported: '%s'" x
+    let Interpreter_InvalidConversionToString t = sprintf "Using %s as a String" t
 
     let Regex_Unknown = "Unknown error building regex"
     let Regex_UnmatchedParen = "Unmatched ("
