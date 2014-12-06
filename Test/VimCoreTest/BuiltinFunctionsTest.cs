@@ -18,7 +18,7 @@ namespace Vim.UnitTest
         [Fact]
         public void Exists_should_return_0_for_variable_that_does_not_exist()
         {
-            var value = _callerUnderTest.Call(BuiltinFunctionCall.NewExists(VariableValue.NewString("x")));
+            var value = _callerUnderTest.Call(BuiltinFunctionCall.NewExists("x"));
 
             Assert.Equal(VariableValue.NewNumber(0), value);
         }
@@ -28,7 +28,7 @@ namespace Vim.UnitTest
         {
             _variableMap["foo"] = VariableValue.NewString("bar");
 
-            var value = _callerUnderTest.Call(BuiltinFunctionCall.NewExists(VariableValue.NewString("foo")));
+            var value = _callerUnderTest.Call(BuiltinFunctionCall.NewExists("foo"));
 
             Assert.Equal(VariableValue.NewNumber(1), value);
         }
@@ -44,9 +44,7 @@ namespace Vim.UnitTest
         [Fact]
         public void Escape_should_escape_the_specified_characters_in_a_string_with_backslash()
         {
-            var escapeIn = VariableValue.NewString(@"C:\Program Files");
-            var escapeWhat = VariableValue.NewString(@" \");
-            var value = _callerUnderTest.Call(BuiltinFunctionCall.NewEscape(escapeIn, escapeWhat));
+            var value = _callerUnderTest.Call(BuiltinFunctionCall.NewEscape(@"C:\Program Files", @" \"));
 
             Assert.Equal(VariableValue.NewString(@"C:\\Program\ Files"), value);
         }

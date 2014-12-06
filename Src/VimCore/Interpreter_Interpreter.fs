@@ -59,23 +59,17 @@ type BuiltinFunctionCaller
     ) =
     member x.Call (func : BuiltinFunctionCall) =
         match func with
-        | BuiltinFunctionCall.Escape(str, chars) ->
-            match str, chars with
-            | VariableValue.String escapeIn, VariableValue.String escapeWhat ->
-                let escapeChar (c : char) =
-                    let character = c.ToString()
-                    if escapeWhat.Contains character then sprintf @"\%s" character else character
-                Seq.map escapeChar escapeIn
-                |> String.concat ""
-                |> VariableValue.String
-            | _, _ -> VariableValue.Error
+        | BuiltinFunctionCall.Escape(escapeIn, escapeWhat) ->
+            let escapeChar (c : char) =
+                let character = c.ToString()
+                if escapeWhat.Contains character then sprintf @"\%s" character else character
+            Seq.map escapeChar escapeIn
+            |> String.concat ""
+            |> VariableValue.String
         | BuiltinFunctionCall.Exists name ->
-            match name with
-            | VariableValue.String variableName ->
-                _variableMap.ContainsKey variableName
-                |> System.Convert.ToInt32
-                |> VariableValue.Number
-            | _ -> VariableValue.Error
+            _variableMap.ContainsKey name
+            |> System.Convert.ToInt32
+            |> VariableValue.Number
         | BuiltinFunctionCall.Localtime ->
             // TODO: .NET 4.6 will have builtin support for converting to Unix time http://stackoverflow.com/a/26225744/834176
             let epoch = System.DateTime(1970, 1, 1, 0, 0, 0, System.DateTimeKind.Utc)
@@ -92,6 +86,7 @@ type VimScriptFunctionCaller
         _builtinCaller : BuiltinFunctionCaller,
         _statusUtil : IStatusUtil
     ) =
+    let _getValue = GetVariableValue(_statusUtil)
     member x.Call (name : VariableName) (args : VariableValue list) =
         let tooManyArgs() =
             sprintf "Too many arguments for function: %s" name.Name |> _statusUtil.OnError
@@ -104,12 +99,18 @@ type VimScriptFunctionCaller
         | "escape" ->
             match args.Length with
             | 0 | 1 -> notEnoughArgs()
-            | 2 -> BuiltinFunctionCall.Escape(args.[0], args.[1]) |> _builtinCaller.Call
+            | 2 ->
+                match _getValue.AsString args.[0], _getValue.AsString args.[1] with
+                | Some str, Some chars -> BuiltinFunctionCall.Escape(str, chars) |> _builtinCaller.Call
+                | _, _ -> VariableValue.Error
             | _ -> tooManyArgs()
         | "exists" ->
             match args.Length with
             | 0 -> notEnoughArgs()
-            | 1 -> BuiltinFunctionCall.Exists(args.[0]) |> _builtinCaller.Call
+            | 1 ->
+                match _getValue.AsString args.[0] with
+                | Some arg -> BuiltinFunctionCall.Exists(arg) |> _builtinCaller.Call
+                | None -> VariableValue.Error
             | _ -> tooManyArgs()
         | "localtime" ->
             if args.Length = 0 then _builtinCaller.Call BuiltinFunctionCall.Localtime

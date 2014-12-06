@@ -705,8 +705,8 @@ with
 [<NoEquality>]
 [<RequireQualifiedAccess>]
 type BuiltinFunctionCall =
-    | Escape of VariableValue * VariableValue
-    | Exists of VariableValue
+    | Escape of string * string
+    | Exists of string
     | Expand of VariableValue * VariableValue option * VariableValue option
     | Localtime
 
