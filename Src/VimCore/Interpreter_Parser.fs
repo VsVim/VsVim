@@ -1762,7 +1762,7 @@ type Parser
                     | ParseResult.Succeeded expr -> LineCommand.LetRegister (registerName, expr)
                     | ParseResult.Failed msg -> LineCommand.ParseError msg
                 else
-                    LineCommand.ParseError "Invalid expression"
+                    LineCommand.ParseError Resources.Parser_Error
             | None -> LineCommand.ParseError "Invalid register name"
         | TokenKind.Word name ->
             match x.ParseVariableName() with
