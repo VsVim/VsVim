@@ -516,10 +516,10 @@ type VimInterpreter
 
     /// Run the close command
     member x.RunClose hasBang = 
-        if not hasBang && _vimHost.IsDirty _textView.TextBuffer then
-            _statusUtil.OnError Resources.Common_NoWriteSinceLastChange
-        else
+        if hasBang then
             _vimHost.Close _textView
+        else
+            _commonOperations.CloseWindowUnlessDirty()
 
     /// Run the delete command.  Delete the specified range of text and set it to 
     /// the given Register
@@ -978,7 +978,7 @@ type VimInterpreter
                     let filePath = SystemUtil.ResolveVimPath _vimData.CurrentDirectory filePath
                     _vimHost.SaveTextAs (lineRange.GetTextIncludingLineBreak()) filePath |> ignore
     
-                x.RunClose false |> ignore)
+                _commonOperations.CloseWindowUnlessDirty())
 
     /// Run the core parts of the read command
     member x.RunReadCore (lineRange : SnapshotLineRange) (lines : string[]) = 

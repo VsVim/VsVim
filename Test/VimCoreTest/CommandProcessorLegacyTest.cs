@@ -302,7 +302,7 @@ namespace Vim.UnitTest
         {
             Create("");
             _vimHost.Setup(x => x.Save(_textView.TextBuffer)).Returns(true).Verifiable();
-            _vimHost.Setup(x => x.Close(_textView)).Verifiable();
+            _operations.Setup(x => x.CloseWindowUnlessDirty()).Verifiable();
             RunCommand("wq");
             _factory.Verify();
         }
@@ -312,7 +312,7 @@ namespace Vim.UnitTest
         {
             Create("");
             _vimHost.Setup(x => x.Save(_textView.TextBuffer)).Returns(true).Verifiable();
-            _vimHost.Setup(x => x.Close(_textView)).Verifiable();
+            _operations.Setup(x => x.CloseWindowUnlessDirty()).Verifiable();
             RunCommand("wq!");
             _factory.Verify();
         }
@@ -322,7 +322,7 @@ namespace Vim.UnitTest
         {
             Create("bar");
             _vimHost.Setup(x => x.SaveTextAs("bar", "foo.txt")).Returns(true).Verifiable();
-            _vimHost.Setup(x => x.Close(_textView)).Verifiable();
+            _operations.Setup(x => x.CloseWindowUnlessDirty()).Verifiable();
             RunCommand("wq foo.txt");
             _factory.Verify();
         }
@@ -332,7 +332,7 @@ namespace Vim.UnitTest
         {
             Create("dog", "cat", "bear");
             _vimHost.Setup(x => x.SaveTextAs(It.IsAny<string>(), "foo.txt")).Returns(true).Verifiable();
-            _vimHost.Setup(x => x.Close(_textView)).Verifiable();
+            _operations.Setup(x => x.CloseWindowUnlessDirty()).Verifiable();
             RunCommand("1,2wq foo.txt");
             _factory.Verify();
         }
@@ -341,7 +341,7 @@ namespace Vim.UnitTest
         public void Quit1()
         {
             Create("");
-            _vimHost.Setup(x => x.Close(_textView)).Verifiable();
+            _operations.Setup(x => x.CloseWindowUnlessDirty()).Verifiable();
             RunCommand("quit");
             _factory.Verify();
         }
@@ -350,7 +350,7 @@ namespace Vim.UnitTest
         public void Quit2()
         {
             Create("");
-            _vimHost.Setup(x => x.Close(_textView)).Verifiable();
+            _operations.Setup(x => x.CloseWindowUnlessDirty()).Verifiable();
             RunCommand("q");
             _factory.Verify();
         }
@@ -432,7 +432,7 @@ namespace Vim.UnitTest
         public void Close1()
         {
             Create("");
-            _vimHost.Setup(x => x.Close(_textView)).Verifiable();
+            _operations.Setup(x => x.CloseWindowUnlessDirty()).Verifiable();
             RunCommand(":close");
             _factory.Verify();
         }
