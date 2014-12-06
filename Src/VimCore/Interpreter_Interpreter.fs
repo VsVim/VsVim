@@ -15,6 +15,44 @@ type DefaultLineRange =
 
 [<Sealed>]
 [<Class>]
+type GetVariableValue
+    (
+        _statusUtil : IStatusUtil
+    ) =
+    /// Get the value as a number
+    member x.AsNumber value = 
+
+        // TODO: Need to actually support these cases
+        let invalid msg = 
+            _statusUtil.OnError msg
+            None
+
+        match value with 
+        | VariableValue.Dictionary _ -> invalid ""
+        | VariableValue.Float _ -> invalid ""
+        | VariableValue.FunctionRef _ -> invalid ""
+        | VariableValue.List _ -> invalid ""
+        | VariableValue.Number number -> Some number
+        | VariableValue.String _ -> invalid ""
+        | VariableValue.Error -> None
+
+    member x.AsString value = 
+        let invalid typeName = 
+            _statusUtil.OnError (Resources.Interpreter_InvalidConversionToString typeName)
+            None
+        match value with 
+        | VariableValue.Dictionary _ -> invalid "Dictionary"
+        | VariableValue.Float _ -> invalid "Float"
+        | VariableValue.FunctionRef _ -> invalid "Funcref"
+        | VariableValue.List _ -> invalid "List"
+        | VariableValue.Number number -> Some (string number)
+        | VariableValue.String str -> Some str
+        | VariableValue.Error ->
+            _statusUtil.OnError Resources.Interpreter_Error
+            None
+
+[<Sealed>]
+[<Class>]
 type BuiltinFunctionCaller
     (
         _variableMap : Dictionary<string, VariableValue>
@@ -92,46 +130,15 @@ type ExpressionInterpreter
     ) =
     let _builtinCaller = BuiltinFunctionCaller(_variableMap)
     let _functionCaller = VimScriptFunctionCaller(_builtinCaller, _statusUtil)
-
-    /// Get the value as a number
-    member x.GetValueAsNumber value = 
-
-        // TODO: Need to actually support these cases
-        let invalid msg = 
-            _statusUtil.OnError msg
-            None
-
-        match value with 
-        | VariableValue.Dictionary _ -> invalid ""
-        | VariableValue.Float _ -> invalid ""
-        | VariableValue.FunctionRef _ -> invalid ""
-        | VariableValue.List _ -> invalid ""
-        | VariableValue.Number number -> Some number
-        | VariableValue.String _ -> invalid ""
-        | VariableValue.Error -> None
-
-    member x.GetValueAsString value = 
-        let invalid typeName = 
-            _statusUtil.OnError (Resources.Interpreter_InvalidConversionToString typeName)
-            None
-        match value with 
-        | VariableValue.Dictionary _ -> invalid "Dictionary"
-        | VariableValue.Float _ -> invalid "Float"
-        | VariableValue.FunctionRef _ -> invalid "Funcref"
-        | VariableValue.List _ -> invalid "List"
-        | VariableValue.Number number -> Some (string number)
-        | VariableValue.String str -> Some str
-        | VariableValue.Error ->
-            _statusUtil.OnError Resources.Interpreter_Error
-            None
+    let _getValue = GetVariableValue(_statusUtil)
 
     /// Get the specified expression as a number
     member x.GetExpressionAsNumber expr =
-        x.RunExpression expr |> x.GetValueAsNumber
+        x.RunExpression expr |> _getValue.AsNumber
 
     /// Get the specified expression as a number
     member x.GetExpressionAsString expr =
-        x.RunExpression expr |> x.GetValueAsString
+        x.RunExpression expr |> _getValue.AsString
 
     member x.GetSetting name = 
         match _localSettings.GetSetting name with
@@ -179,15 +186,15 @@ type ExpressionInterpreter
                 // it's a list concatenation
                 notSupported()
             else
-                let leftNumber = x.GetValueAsNumber leftValue
-                let rightNumber = x.GetValueAsNumber rightValue
+                let leftNumber = _getValue.AsNumber leftValue
+                let rightNumber = _getValue.AsNumber rightValue
                 match leftNumber, rightNumber with
                 | Some left, Some right -> left + right |> VariableValue.Number
                 | _ -> VariableValue.Error
 
         let runConcat (leftValue : VariableValue) (rightValue : VariableValue) =
-            let leftString = x.GetValueAsString leftValue
-            let rightString = x.GetValueAsString rightValue
+            let leftString = _getValue.AsString leftValue
+            let rightString = _getValue.AsString rightValue
             match leftString, rightString with
             | Some left, Some right -> left + right |> VariableValue.String 
             | _ -> VariableValue.Error
