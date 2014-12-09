@@ -520,6 +520,15 @@ namespace Vim.UnitTest
                 _commandUtil.GoToNextTab(Path.Forward, FSharpOption.Create(2));
                 _commonOperations.Verify();
             }
+
+            [Fact]
+            public void CloseWindow()
+            {
+                Create("");
+                _commonOperations.Setup(x => x.CloseWindowUnlessDirty()).Verifiable();
+                RunNormalCommand(NormalCommand.CloseWindow);
+                _commonOperations.Verify();
+            }
         }
 
         public sealed class UndoOperationsTest : CommandUtilTest

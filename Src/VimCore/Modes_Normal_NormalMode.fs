@@ -116,6 +116,7 @@ type internal NormalMode
                 yield ("<C-q>", CommandFlags.Special, NormalCommand.SwitchModeVisualCommand VisualKind.Block)
                 yield ("<C-r>", CommandFlags.Special, NormalCommand.Redo)
                 yield ("<C-v>", CommandFlags.Special, NormalCommand.SwitchModeVisualCommand VisualKind.Block)
+                yield ("<C-w>c", CommandFlags.None, NormalCommand.CloseWindow)
                 yield ("<C-w><C-j>", CommandFlags.None, NormalCommand.GoToView Direction.Down)
                 yield ("<C-w>j", CommandFlags.None, NormalCommand.GoToView Direction.Down)
                 yield ("<C-w><C-k>", CommandFlags.None, NormalCommand.GoToView Direction.Up)

@@ -1694,5 +1694,19 @@ namespace Vim.UnitTest
         }
 
         #endregion
+
+        #region Other Window Commands
+
+        [Fact]
+        public void Bind_CloseWindow()
+        {
+            Create(string.Empty);
+            _commandUtil.SetupCommandNormal(NormalCommand.CloseWindow);
+            _mode.Process(KeyNotationUtil.StringToKeyInput("<C-w>"));
+            _mode.Process(KeyNotationUtil.StringToKeyInput("c"));
+            _commandUtil.Verify();
+        }
+
+        #endregion
     }
 }

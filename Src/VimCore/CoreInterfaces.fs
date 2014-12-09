@@ -2385,6 +2385,9 @@ type NormalCommand =
     /// Close the IVimBuffer and don't bother to save
     | CloseBuffer
 
+    /// Close the window unless the buffer is dirty
+    | CloseWindow
+
     /// Close 'count' folds under the caret
     | CloseFoldUnderCaret
 
