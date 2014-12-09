@@ -1753,6 +1753,18 @@ type Parser
                 LineCommand.DisplayLet names)
 
         match _tokenizer.CurrentTokenKind with
+        | TokenKind.Character '@' ->
+            _tokenizer.MoveNextToken()
+            match x.ParseRegisterName ParseRegisterName.All with
+            | Some registerName ->
+                if _tokenizer.CurrentChar = '=' then
+                    _tokenizer.MoveNextToken()
+                    match x.ParseExpressionCore() with
+                    | ParseResult.Succeeded expr -> LineCommand.LetRegister (registerName, expr)
+                    | ParseResult.Failed msg -> LineCommand.ParseError msg
+                else
+                    LineCommand.ParseError Resources.Parser_Error
+            | None -> LineCommand.ParseError "Invalid register name"
         | TokenKind.Word name ->
             match x.ParseVariableName() with
             | ParseResult.Succeeded name ->
@@ -2179,6 +2191,22 @@ type Parser
             Expression.OptionName word |> ParseResult.Succeeded
         | _ -> ParseResult.Failed "Option name missing"
 
+    member x.ParseList() =
+        _tokenizer.MoveNextToken()
+        match _tokenizer.CurrentTokenKind with
+        | TokenKind.Character ']' ->
+            _tokenizer.MoveNextToken()
+            VariableValue.List List.empty |> Expression.ConstantValue |> ParseResult.Succeeded
+        | _ -> ParseResult.Failed Resources.Parser_Error
+
+    member x.ParseDictionary() =
+        _tokenizer.MoveNextToken()
+        match _tokenizer.CurrentTokenKind with
+        | TokenKind.Character '}' ->
+            _tokenizer.MoveNextToken()
+            VariableValue.Dictionary Map.empty |> Expression.ConstantValue |> ParseResult.Succeeded
+        | _ -> ParseResult.Failed Resources.Parser_Error
+
     /// Parse out a single expression
     member x.ParseSingleExpression() =
         // Re-examine the current token based on the knowledge that double quotes are
@@ -2191,6 +2219,10 @@ type Parser
             x.ParseStringLiteral()
         | TokenKind.Character '&' ->
             x.ParseOptionName()
+        | TokenKind.Character '[' ->
+            x.ParseList()
+        | TokenKind.Character '{' ->
+            x.ParseDictionary()
         | TokenKind.Character '@' ->
             _tokenizer.MoveNextToken()
             match x.ParseRegisterName ParseRegisterName.All with

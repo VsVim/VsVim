@@ -551,6 +551,9 @@ and [<RequireQualifiedAccess>] LineCommand =
     // Let command.  The first item is the name and the second is the value
     | Let of VariableName * Expression
 
+    // Let command applied to a register. The first item is the name and the second is the value
+    | LetRegister of RegisterName * Expression
+
     /// Make command.  The options are as follows
     ///   - The ! option
     ///   - All of the text after the !

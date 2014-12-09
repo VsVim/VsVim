@@ -813,6 +813,22 @@ namespace Vim.UnitTest
             }
 
             [Fact]
+            public void WhenPassedEmptyListEchoesItOnStatusLine()
+            {
+                Create("");
+                ParseAndRun(@"echo []");
+                Assert.Equal("[]", _statusUtil.LastStatus);
+            }
+
+            [Fact]
+            public void WhenPassedEmptyDictionaryEchoesItOnStatusLine()
+            {
+                Create("");
+                ParseAndRun(@"echo {}");
+                Assert.Equal("{}", _statusUtil.LastStatus);
+            }
+
+            [Fact]
             public void WhenPassedBooleanSettingWhichIsOffEchoes0OnStatusLine()
             {
                 Create("");
@@ -973,6 +989,15 @@ namespace Vim.UnitTest
                 Create("");
                 ParseAndRun("let x=1+2");
                 AssertValue("x", 3);
+            }
+
+            [Fact]
+            public void LHSCanBeRegisterName()
+            {
+                Create("");
+                ParseAndRun("let @a='copy by assign'");
+                var register = RegisterMap.GetRegister(RegisterName.NewNamed(NamedRegister.NameA));
+                Assert.Equal("copy by assign", register.StringValue);
             }
         }
 
