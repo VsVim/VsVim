@@ -25,30 +25,28 @@ namespace Vim.VisualStudio.Implementation.Misc
             get { return _extensionAdapters; }
         }
 
-        bool IExtensionAdapter.ShouldKeepSelectionAfterHostCommand(string command, string argument)
+        private bool? RunOnAll(Func<IExtensionAdapter, bool?> func)
         {
             foreach (var extensionAdapter in _extensionAdapters)
             {
-                if (extensionAdapter.ShouldKeepSelectionAfterHostCommand(command, argument))
+                var result = func(extensionAdapter);
+                if (result.HasValue)
                 {
-                    return true;
+                    return result;
                 }
             }
 
-            return false;
+            return null;
         }
 
-        bool IExtensionAdapter.IsIncrementalSearchActive(ITextView textView)
+        bool? IExtensionAdapter.ShouldKeepSelectionAfterHostCommand(string command, string argument)
         {
-            foreach (var extensionAdapter in _extensionAdapters)
-            {
-                if (extensionAdapter.IsIncrementalSearchActive(textView))
-                {
-                    return true;
-                }
-            }
+            return RunOnAll(e => e.ShouldKeepSelectionAfterHostCommand(command, argument));
+        }
 
-            return false;
+        bool? IExtensionAdapter.IsIncrementalSearchActive(ITextView textView)
+        {
+            return RunOnAll(e => e.IsIncrementalSearchActive(textView));
         }
     }
 }

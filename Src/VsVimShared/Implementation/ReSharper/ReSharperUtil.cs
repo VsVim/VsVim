@@ -282,20 +282,20 @@ namespace Vim.VisualStudio.Implementation.ReSharper
 
         #region IExtensionAdapter
 
-        bool IExtensionAdapter.ShouldKeepSelectionAfterHostCommand(string command, string argument)
+        bool? IExtensionAdapter.ShouldKeepSelectionAfterHostCommand(string command, string argument)
         {
             if (!_isResharperInstalled)
             {
-                return false;
+                return null;
             }
 
             var comparer = StringComparer.OrdinalIgnoreCase;
             return comparer.Equals(command, "ReSharper.ReSharper_ExtendSelection");
         }
 
-        bool IExtensionAdapter.IsIncrementalSearchActive(ITextView textView)
+        bool? IExtensionAdapter.IsIncrementalSearchActive(ITextView textView)
         {
-            return false;
+            return null;
         }
 
         #endregion

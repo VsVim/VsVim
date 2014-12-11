@@ -102,13 +102,12 @@ namespace Vim.VisualStudio.Implementation.Misc
 
         #region IExtensionAdapter
 
-
-        bool IExtensionAdapter.ShouldKeepSelectionAfterHostCommand(string command, string argument)
+        bool? IExtensionAdapter.ShouldKeepSelectionAfterHostCommand(string command, string argument)
         {
-            return false;
+            return null;
         }
 
-        bool IExtensionAdapter.IsIncrementalSearchActive(ITextView textView)
+        bool? IExtensionAdapter.IsIncrementalSearchActive(ITextView textView)
         {
             return IsQuickFindActive();
         }

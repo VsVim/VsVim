@@ -14,9 +14,9 @@ namespace Vim.VisualStudio
     /// </summary>
     internal interface IExtensionAdapter
     {
-        bool ShouldKeepSelectionAfterHostCommand(string command, string argument);
+        bool? ShouldKeepSelectionAfterHostCommand(string command, string argument);
 
-        bool IsIncrementalSearchActive(ITextView textView);
+        bool? IsIncrementalSearchActive(ITextView textView);
     }
 
     /// <summary>

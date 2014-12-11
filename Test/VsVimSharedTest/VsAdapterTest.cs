@@ -111,7 +111,7 @@ namespace Vim.VisualStudio.UnitTest
             }
         }
 
-        public sealed class IsIncrementalSearchActive2012 : VsAdapterTest
+        public sealed class IsIncrementalSearchActive : VsAdapterTest
         {
             /// <summary>
             /// Test the case where the ITextView doesn't have the FindUILayer adornment layer and hence
@@ -121,6 +121,22 @@ namespace Vim.VisualStudio.UnitTest
             public void Simple()
             {
                 var textView = CreateTextView();
+                Assert.False(_adapterRaw.IsIncrementalSearchActive(textView));
+            }
+
+            [Fact]
+            public void ExtensionBroker()
+            {
+                var textView = CreateTextView();
+                _extensionAdapterBroker.Setup(x => x.IsIncrementalSearchActive(textView)).Returns(true);
+                Assert.True(_adapterRaw.IsIncrementalSearchActive(textView));
+            }
+
+            [Fact]
+            public void ExtensionBrokerFalse()
+            {
+                var textView = CreateTextView();
+                _extensionAdapterBroker.Setup(x => x.IsIncrementalSearchActive(textView)).Returns(false);
                 Assert.False(_adapterRaw.IsIncrementalSearchActive(textView));
             }
         }

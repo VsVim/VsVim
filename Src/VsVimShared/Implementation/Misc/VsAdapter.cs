@@ -363,7 +363,7 @@ namespace Vim.VisualStudio.Implementation.Misc
                 }
             }
 
-            return _extensionAdapterBroker.IsIncrementalSearchActive(textView);
+            return _extensionAdapterBroker.IsIncrementalSearchActive(textView) ?? false;
         }
 
         /// <summary>

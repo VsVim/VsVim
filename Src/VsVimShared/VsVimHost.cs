@@ -723,7 +723,7 @@ namespace Vim.VisualStudio
 
         public override bool ShouldKeepSelectionAfterHostCommand(string command, string argument)
         {
-            if (_extensionAdapterBroker.ShouldKeepSelectionAfterHostCommand(command, argument))
+            if (_extensionAdapterBroker.ShouldKeepSelectionAfterHostCommand(command, argument) ?? false)
             {
                 return true;
             }
