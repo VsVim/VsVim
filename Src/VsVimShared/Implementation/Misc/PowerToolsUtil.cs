@@ -107,6 +107,11 @@ namespace Vim.VisualStudio.Implementation.Misc
             return null;
         }
 
+        bool? IExtensionAdapter.ShouldCreateVimBuffer(ITextView textView)
+        {
+            return null;
+        }
+
         bool? IExtensionAdapter.IsIncrementalSearchActive(ITextView textView)
         {
             return IsQuickFindActive();

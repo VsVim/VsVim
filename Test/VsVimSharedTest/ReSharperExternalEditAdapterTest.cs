@@ -13,7 +13,7 @@ using Xunit;
 
 namespace Vim.VisualStudio.UnitTest
 {
-    public abstract class ReSharperUtilTest : VimTestBase
+    public abstract class ReSharperExternalEditAdapterTest : VimTestBase
     {
         sealed class VsTextAdornmentTag : ITag
         {
@@ -21,19 +21,19 @@ namespace Vim.VisualStudio.UnitTest
         }
 
         private ITextBuffer _textBuffer;
-        private ReSharperUtil _reSharperUtilRaw;
-        private IExternalEditAdapter _reSharperUtil;
+        private ReSharperExternalEditAdapter _editAdapterRaw;
+        private IExternalEditAdapter _editAdapter;
         private MockRepository _factory;
 
         public void Create(params string[] lines)
         {
             _textBuffer = CreateTextBuffer(lines);
             _factory = new MockRepository(MockBehavior.Strict);
-            _reSharperUtilRaw = new ReSharperUtil(isResharperInstalled: true);
-            _reSharperUtil = _reSharperUtilRaw;
+            _editAdapterRaw = new ReSharperExternalEditAdapter(new ReSharperUtil(true), null);
+            _editAdapter = _editAdapterRaw;
         }
 
-        public sealed class IsExternalEditMarkerTest : ReSharperUtilTest
+        public sealed class IsExternalEditMarkerTest : ReSharperExternalEditAdapterTest
         {
             /// <summary>
             /// Ensure that the R# adapter doesn't pick up on IVsTextMarker instances
@@ -46,7 +46,7 @@ namespace Vim.VisualStudio.UnitTest
                 {
                     var span = _textBuffer.GetLineRange(0).Extent.ToTextSpan();
                     var marker = MockObjectFactory.CreateVsTextLineMarker(span, i, _factory);
-                    Assert.False(_reSharperUtil.IsExternalEditMarker(marker.Object));
+                    Assert.False(_editAdapter.IsExternalEditMarker(marker.Object));
                 }
             }
 
@@ -55,14 +55,14 @@ namespace Vim.VisualStudio.UnitTest
             {
                 Create("");
                 var tag = _factory.Create<ITag>();
-                Assert.False(_reSharperUtil.IsExternalEditTag(tag.Object));
+                Assert.False(_editAdapter.IsExternalEditTag(tag.Object));
             }
 
             [Fact]
             public void RightTagWithAttributes()
             {
                 Create("");
-                _reSharperUtilRaw.SetReSharperVersion(ReSharperVersion.Version7AndEarlier);
+                _editAdapterRaw.SetReSharperVersion(ReSharperVersion.Version7AndEarlier);
                 var array = new[]
                             {
                                 ReSharperEditTagDetectorBase.ExternalEditAttribute1,
@@ -72,7 +72,7 @@ namespace Vim.VisualStudio.UnitTest
                 foreach (var item in array)
                 {
                     var tag = new VsTextAdornmentTag { myAttributeId = item };
-                    Assert.True(_reSharperUtil.IsExternalEditTag(tag));
+                    Assert.True(_editAdapter.IsExternalEditTag(tag));
                 }
             }
 
@@ -84,12 +84,12 @@ namespace Vim.VisualStudio.UnitTest
                 foreach (var item in array)
                 {
                     var tag = new VsTextAdornmentTag { myAttributeId = item };
-                    Assert.False(_reSharperUtil.IsExternalEditTag(tag));
+                    Assert.False(_editAdapter.IsExternalEditTag(tag));
                 }
             }
         }
 
-        public sealed class MiscTest : ReSharperUtilTest
+        public sealed class MiscTest : ReSharperExternalEditAdapterTest
         {
             /// <summary>
             /// The Laszy property in imported collections can throw an exception due to composition
@@ -102,10 +102,10 @@ namespace Vim.VisualStudio.UnitTest
                 var lazy = new Lazy<ITaggerProvider>(() => { throw new Exception(); });
                 var list = new List<Lazy<ITaggerProvider>>();
                 list.Add(lazy);
-                _reSharperUtilRaw.TaggerProviders = list;
+                _editAdapterRaw.TaggerProviders = list;
                 var textView = CreateTextView();
                 ITagger<ITag> tagger;
-                Assert.False(_reSharperUtil.IsInterested(textView, out tagger));
+                Assert.False(_editAdapter.IsInterested(textView, out tagger));
             }
         }
     }

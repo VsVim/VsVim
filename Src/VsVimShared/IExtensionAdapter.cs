@@ -16,6 +16,8 @@ namespace Vim.VisualStudio
     {
         bool? ShouldKeepSelectionAfterHostCommand(string command, string argument);
 
+        bool? ShouldCreateVimBuffer(ITextView textView);
+
         bool? IsIncrementalSearchActive(ITextView textView);
     }
 

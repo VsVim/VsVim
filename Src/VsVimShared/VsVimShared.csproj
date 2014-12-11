@@ -104,6 +104,8 @@
     <Compile Include="Implementation\OptionPages\KeyboardSettingsControl.xaml.cs">
       <DependentUpon>KeyboardSettingsControl.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Implementation\ReSharper\ReSharperExternalEditAdapter.cs" />
+    <Compile Include="Implementation\ReSharper\ReSharperExtensionAdapter.cs" />
     <Compile Include="Implementation\ReSharper\ReSharperKeyUtil.cs" />
     <Compile Include="Implementation\ReSharper\ReSharperUtil.cs" />
     <Compile Include="Implementation\ExternalEdit\SnippetExternalEditAdapter.cs" />

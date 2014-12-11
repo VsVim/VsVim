@@ -44,6 +44,11 @@ namespace Vim.VisualStudio.Implementation.Misc
             return RunOnAll(e => e.ShouldKeepSelectionAfterHostCommand(command, argument));
         }
 
+        bool? IExtensionAdapter.ShouldCreateVimBuffer(ITextView textView)
+        {
+            return RunOnAll(e => e.ShouldCreateVimBuffer(textView));
+        }
+
         bool? IExtensionAdapter.IsIncrementalSearchActive(ITextView textView)
         {
             return RunOnAll(e => e.IsIncrementalSearchActive(textView));
