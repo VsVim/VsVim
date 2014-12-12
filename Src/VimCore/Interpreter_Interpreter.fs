@@ -118,6 +118,14 @@ type VimScriptFunctionCaller
         | "localtime" ->
             if args.Length = 0 then _builtinCaller.Call BuiltinFunctionCall.Localtime
             else tooManyArgs()
+        | "nr2char" ->
+            match args.Length with
+            | 0 -> notEnoughArgs()
+            | 1 ->
+                match _getValue.AsNumber args.[0] with
+                | Some arg -> BuiltinFunctionCall.Nr2char(arg) |> _builtinCaller.Call
+                | None -> VariableValue.Error
+            | _ -> tooManyArgs()
         | fname ->
             sprintf "Unknown function: %s" fname |> _statusUtil.OnError
             VariableValue.Error

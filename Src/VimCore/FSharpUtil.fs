@@ -455,7 +455,7 @@ module internal CharUtil =
     let IsNotBlank x = not (IsBlank x)
     let IsAlpha x = (x >= 'a' && x <= 'z') || (x >= 'A' && x <= 'Z')
     let IsLetter x = System.Char.IsLetter(x)
-    let IsWordChar x = IsLetter x || x = '_'
+    let IsWordChar x = IsLetter x || x = '_' || IsDigit x
     let IsUpper x = System.Char.IsUpper(x)
     let IsUpperLetter x = IsUpper x && IsLetter x
     let IsLower x = System.Char.IsLower(x)
