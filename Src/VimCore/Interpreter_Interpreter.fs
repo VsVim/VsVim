@@ -874,7 +874,9 @@ type VimInterpreter
     member x.RunLet (name : VariableName) expr =
         // TODO: At this point we are treating all variables as if they were global.  Need to 
         // take into account the NameScope at this level too
-        _variableMap.[name.Name] <- x.RunExpression expr
+        match x.RunExpression expr with
+        | VariableValue.Error -> _statusUtil.OnError Resources.Interpreter_Error
+        | value -> _variableMap.[name.Name] <- value
 
     /// Run the let command for registers
     member x.RunLetRegister (name : RegisterName) expr =

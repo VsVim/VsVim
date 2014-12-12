@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using EditorUtils;
 using Microsoft.FSharp.Collections;
 using Microsoft.VisualStudio.Text;
@@ -998,6 +999,15 @@ namespace Vim.UnitTest
                 ParseAndRun("let @a='copy by assign'");
                 var register = RegisterMap.GetRegister(RegisterName.NewNamed(NamedRegister.NameA));
                 Assert.Equal("copy by assign", register.StringValue);
+            }
+
+            [Fact]
+            public void CannotSetVariableToErrorValue()
+            {
+                Create("");
+                _variableMap["x"] = VariableValue.NewNumber(2);
+                ParseAndRun("let x = &fakeoption");
+                AssertValue("x", _variableMap["x"]);
             }
         }
 
