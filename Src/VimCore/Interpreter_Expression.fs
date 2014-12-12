@@ -707,8 +707,8 @@ with
 type BuiltinFunctionCall =
     | Escape of string * string
     | Exists of string
-    | Expand of VariableValue * VariableValue option * VariableValue option
     | Localtime
+    | Nr2char of int
 
 /// Engine which interprets Vim commands and expressions
 type IVimInterpreter =

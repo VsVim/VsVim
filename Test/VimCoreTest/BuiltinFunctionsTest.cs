@@ -48,5 +48,14 @@ namespace Vim.UnitTest
 
             Assert.Equal(VariableValue.NewString(@"C:\\Program\ Files"), value);
         }
+
+        [Fact]
+        public void Nr2char_should_return_the_ASCII_codepoint_for_the_integer()
+        {
+            var value1 = _callerUnderTest.Call(BuiltinFunctionCall.NewNr2char(32));
+            var value2 = _callerUnderTest.Call(BuiltinFunctionCall.NewNr2char(64));
+            Assert.Equal(VariableValue.NewString(" "), value1);
+            Assert.Equal(VariableValue.NewString("@"), value2);
+        }
     }
 }

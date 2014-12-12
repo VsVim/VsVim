@@ -77,7 +77,10 @@ type BuiltinFunctionCaller
             (now - epoch).TotalSeconds
             |> System.Convert.ToInt32
             |> VariableValue.Number
-        | _ -> VariableValue.Error
+        | BuiltinFunctionCall.Nr2char nr ->
+            char nr
+            |> string
+            |> VariableValue.String
 
 [<Sealed>]
 [<Class>]
