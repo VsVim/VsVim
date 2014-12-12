@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Linq.Expressions;
 using EditorUtils;
 using Microsoft.FSharp.Collections;
 using Microsoft.VisualStudio.Text;
@@ -1007,7 +1006,7 @@ namespace Vim.UnitTest
                 Create("");
                 _variableMap["x"] = VariableValue.NewNumber(2);
                 ParseAndRun("let x = &fakeoption");
-                AssertValue("x", _variableMap["x"]);
+                AssertValue("x", 2);
             }
         }
 
