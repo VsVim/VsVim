@@ -999,6 +999,15 @@ namespace Vim.UnitTest
                 var register = RegisterMap.GetRegister(RegisterName.NewNamed(NamedRegister.NameA));
                 Assert.Equal("copy by assign", register.StringValue);
             }
+
+            [Fact]
+            public void CannotSetVariableToErrorValue()
+            {
+                Create("");
+                _variableMap["x"] = VariableValue.NewNumber(2);
+                ParseAndRun("let x = &fakeoption");
+                AssertValue("x", 2);
+            }
         }
 
         public sealed class UnletTest : InterpreterTest
