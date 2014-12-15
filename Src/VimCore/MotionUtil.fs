@@ -872,15 +872,16 @@ type internal MotionUtil
             | None ->
                 VisualMotionResult.FailedNoMotionResult
             | Some motionResult ->  
-                // Now migrate the SnapshotSpan down to the EditBuffer.  If we cannot map this span into
-                // the EditBuffer then we must fail. 
+                // Now migrate the SnapshotSpan values down to the edit buffer.  If this mapping can't 
+                // be done then the motion fails.
                 let span = BufferGraphUtil.MapSpanDownToSingle _bufferGraph motionResult.Span x.CurrentSnapshot
-                match span with
-                | None ->
+                let originalSpan = BufferGraphUtil.MapSpanDownToSingle _bufferGraph motionResult.OriginalSpan x.CurrentSnapshot
+                match span, originalSpan with
+                | Some span, Some originalSpan ->
+                    { motionResult with Span = span; OriginalSpan = span } |> VisualMotionResult.Succeeded
+                | _ ->
                     _statusUtil.OnError Resources.Internal_ErrorMappingBackToEdit
                     VisualMotionResult.FailedNoMapToEditSnapshot
-                | Some span ->
-                    { motionResult with Span = span } |> VisualMotionResult.Succeeded
 
     /// Run the motion function against the Visual Snapshot
     member x.MotionWithVisualSnapshot (action : SnapshotData -> MotionResult) = 
