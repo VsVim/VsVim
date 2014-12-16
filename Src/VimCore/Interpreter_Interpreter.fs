@@ -15,13 +15,12 @@ type DefaultLineRange =
 
 [<Sealed>]
 [<Class>]
-type GetVariableValue
+type VariableValueUtil
     (
         _statusUtil : IStatusUtil
     ) =
-    /// Get the value as a number
-    member x.AsNumber value = 
 
+    member x.ConvertToNumber value = 
         // TODO: Need to actually support these cases
         let invalid msg = 
             _statusUtil.OnError msg
@@ -36,7 +35,7 @@ type GetVariableValue
         | VariableValue.String _ -> invalid ""
         | VariableValue.Error -> None
 
-    member x.AsString value = 
+    member x.ConvertToString value = 
         let invalid typeName = 
             _statusUtil.OnError (Resources.Interpreter_InvalidConversionToString typeName)
             None
@@ -89,7 +88,7 @@ type VimScriptFunctionCaller
         _builtinCaller : BuiltinFunctionCaller,
         _statusUtil : IStatusUtil
     ) =
-    let _getValue = GetVariableValue(_statusUtil)
+    let _getValue = VariableValueUtil(_statusUtil)
     member x.Call (name : VariableName) (args : VariableValue list) =
         let tooManyArgs() =
             sprintf "Too many arguments for function: %s" name.Name |> _statusUtil.OnError
@@ -103,7 +102,7 @@ type VimScriptFunctionCaller
             match args.Length with
             | 0 | 1 -> notEnoughArgs()
             | 2 ->
-                match _getValue.AsString args.[0], _getValue.AsString args.[1] with
+                match _getValue.ConvertToString args.[0], _getValue.ConvertToString args.[1] with
                 | Some str, Some chars -> BuiltinFunctionCall.Escape(str, chars) |> _builtinCaller.Call
                 | _, _ -> VariableValue.Error
             | _ -> tooManyArgs()
@@ -111,7 +110,7 @@ type VimScriptFunctionCaller
             match args.Length with
             | 0 -> notEnoughArgs()
             | 1 ->
-                match _getValue.AsString args.[0] with
+                match _getValue.ConvertToString args.[0] with
                 | Some arg -> BuiltinFunctionCall.Exists(arg) |> _builtinCaller.Call
                 | None -> VariableValue.Error
             | _ -> tooManyArgs()
@@ -122,7 +121,7 @@ type VimScriptFunctionCaller
             match args.Length with
             | 0 -> notEnoughArgs()
             | 1 ->
-                match _getValue.AsNumber args.[0] with
+                match _getValue.ConvertToNumber args.[0] with
                 | Some arg -> BuiltinFunctionCall.Nr2char(arg) |> _builtinCaller.Call
                 | None -> VariableValue.Error
             | _ -> tooManyArgs()
@@ -142,15 +141,15 @@ type ExpressionInterpreter
     ) =
     let _builtinCaller = BuiltinFunctionCaller(_variableMap)
     let _functionCaller = VimScriptFunctionCaller(_builtinCaller, _statusUtil)
-    let _getValue = GetVariableValue(_statusUtil)
+    let _getValue = VariableValueUtil(_statusUtil)
 
     /// Get the specified expression as a number
     member x.GetExpressionAsNumber expr =
-        x.RunExpression expr |> _getValue.AsNumber
+        x.RunExpression expr |> _getValue.ConvertToNumber
 
     /// Get the specified expression as a number
     member x.GetExpressionAsString expr =
-        x.RunExpression expr |> _getValue.AsString
+        x.RunExpression expr |> _getValue.ConvertToString
 
     member x.GetSetting name = 
         match _localSettings.GetSetting name with
@@ -198,15 +197,15 @@ type ExpressionInterpreter
                 // it's a list concatenation
                 notSupported()
             else
-                let leftNumber = _getValue.AsNumber leftValue
-                let rightNumber = _getValue.AsNumber rightValue
+                let leftNumber = _getValue.ConvertToNumber leftValue
+                let rightNumber = _getValue.ConvertToNumber rightValue
                 match leftNumber, rightNumber with
                 | Some left, Some right -> left + right |> VariableValue.Number
                 | _ -> VariableValue.Error
 
         let runConcat (leftValue : VariableValue) (rightValue : VariableValue) =
-            let leftString = _getValue.AsString leftValue
-            let rightString = _getValue.AsString rightValue
+            let leftString = _getValue.ConvertToString leftValue
+            let rightString = _getValue.ConvertToString rightValue
             match leftString, rightString with
             | Some left, Some right -> left + right |> VariableValue.String 
             | _ -> VariableValue.Error
