@@ -55,6 +55,7 @@ type internal CommandMode
         match lineCommand with
         | LineCommand.HostCommand (command, argument) -> _keepSelection <- _vimHost.ShouldKeepSelectionAfterHostCommand command argument
         | _ -> ()
+
         let vimInterpreter = _buffer.Vim.GetVimInterpreter _buffer
         vimInterpreter.RunLineCommand lineCommand
 

@@ -734,6 +734,14 @@ namespace Vim.VisualStudio
                 return true;
             }
 
+            var comparer = StringComparer.OrdinalIgnoreCase;
+            if (comparer.Equals(command, "Edit.SurroundWith"))
+            {
+                // Need to keep the selection here so the surround with command knows the selection
+                // to surround.
+                return true;
+            }
+
             return base.ShouldKeepSelectionAfterHostCommand(command, argument);
         }
 
