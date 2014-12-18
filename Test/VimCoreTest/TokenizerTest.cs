@@ -141,9 +141,17 @@ namespace Vim.UnitTest
             }
 
             [Fact]
-            public void WordsCanContainDigits()
+            public void WordsCannotContainDigitsIfFlagIsNotSet()
+            {
+                Create("y2");
+                AssertWord("y");
+            }
+
+            [Fact]
+            public void WordsCanContainDigitsIfFlagIsSet()
             {
                 Create("nr2char");
+                _tokenizer.TokenizerFlags = TokenizerFlags.AllowDigitsInWord;
                 AssertWord("nr2char");
             }
 
