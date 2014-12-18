@@ -824,8 +824,8 @@ namespace Vim.UnitTest
             public void WhenPassedNonEmptyListEchoesItOnStatusLine()
             {
                 Create("");
-                ParseAndRun(@"echo [1,2,3]");
-                Assert.Equal("[1, 2, 3]", _statusUtil.LastStatus);
+                ParseAndRun("echo [1,\"two\",3]");
+                Assert.Equal("[1, 'two', 3]", _statusUtil.LastStatus);
             }
 
             [Fact]

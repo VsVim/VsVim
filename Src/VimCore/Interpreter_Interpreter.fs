@@ -700,7 +700,12 @@ type VimInterpreter
             | VariableValue.Number number -> string number
             | VariableValue.String str -> str
             | VariableValue.List values ->
-                List.map valueAsString values
+                let listItemAsString value =
+                    let stringified = valueAsString value
+                    match value with
+                    | VariableValue.String str -> sprintf "'%s'" stringified
+                    | _ -> stringified
+                List.map listItemAsString values
                 |> String.concat ", "
                 |> sprintf "[%s]"
             | VariableValue.Dictionary _ -> "{}"
