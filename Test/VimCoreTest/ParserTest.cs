@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Microsoft.FSharp.Collections;
 using Vim.Extensions;
 using Vim.Interpreter;
 using Xunit;
@@ -662,6 +663,28 @@ let x = 42
             public void HexWithAllLetters()
             {
                 Assert.Equal(0xfa, ParseNumber("0xfa"));
+            }
+        }
+
+        public sealed class ListTest : ParserTest
+        {
+            private VariableValue ParseListValue(string text)
+            {
+                var parser = CreateParser(text);
+                var parseResult = parser.ParseList();
+                Assert.True(parseResult.IsSucceeded);
+                return parseResult.AsSucceeded().Item.AsConstantValue().Item;
+            }
+
+            private FSharpList<VariableValue> ParseList(string text)
+            {
+                return ParseListValue(text).AsList().Item;
+            }
+
+            [Fact]
+            public void Empty_list()
+            {
+                Assert.True(ParseList("[]").IsEmpty);
             }
         }
 

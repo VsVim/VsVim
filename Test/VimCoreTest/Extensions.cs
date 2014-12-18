@@ -425,6 +425,14 @@ namespace Vim.UnitTest
         }
 
         /// <summary>
+        /// List version of a value
+        /// </summary>
+        public static VariableValue.List AsList(this VariableValue value)
+        {
+            return (VariableValue.List)value;
+        }
+
+        /// <summary>
         /// String version of a value
         /// </summary>
         public static VariableValue.String AsString(this VariableValue value)
