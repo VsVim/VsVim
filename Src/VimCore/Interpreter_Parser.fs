@@ -2192,12 +2192,31 @@ type Parser
         | _ -> ParseResult.Failed "Option name missing"
 
     member x.ParseList() =
-        _tokenizer.MoveNextToken()
-        match _tokenizer.CurrentTokenKind with
-        | TokenKind.Character ']' ->
-            _tokenizer.MoveNextToken()
-            VariableValue.List List.empty |> Expression.ConstantValue |> ParseResult.Succeeded
-        | _ -> ParseResult.Failed Resources.Parser_Error
+        let rec parseList atBeginning =
+            let recursivelyParseItems() =
+                match x.ParseSingleExpression() with
+                | ParseResult.Succeeded item ->
+                    match parseList false with
+                    | ParseResult.Succeeded otherItems -> item :: otherItems |> ParseResult.Succeeded
+                    | ParseResult.Failed msg -> ParseResult.Failed msg
+                | ParseResult.Failed msg -> ParseResult.Failed msg
+            match _tokenizer.CurrentTokenKind with
+            | TokenKind.Character '[' ->
+                _tokenizer.MoveNextToken()
+                parseList true
+            | TokenKind.Character ']' ->
+                _tokenizer.MoveNextToken()
+                ParseResult.Succeeded []
+            | TokenKind.Character ',' ->
+                _tokenizer.MoveNextToken()
+                x.SkipBlanks()
+                recursivelyParseItems()
+            | _ ->
+                if atBeginning then recursivelyParseItems()
+                else ParseResult.Failed Resources.Parser_Error
+        match parseList true with
+        | ParseResult.Succeeded expressionList -> Expression.List expressionList |> ParseResult.Succeeded
+        | ParseResult.Failed msg -> ParseResult.Failed msg
 
     member x.ParseDictionary() =
         _tokenizer.MoveNextToken()

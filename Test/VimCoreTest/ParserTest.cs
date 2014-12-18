@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.FSharp.Collections;
+using Microsoft.FSharp.Text.StructuredPrintfImpl;
 using Vim.Extensions;
 using Vim.Interpreter;
 using Xunit;
@@ -668,23 +669,30 @@ let x = 42
 
         public sealed class ListTest : ParserTest
         {
-            private VariableValue ParseListValue(string text)
+            private FSharpList<Expression> ParseList(string text)
             {
                 var parser = CreateParser(text);
                 var parseResult = parser.ParseList();
                 Assert.True(parseResult.IsSucceeded);
-                return parseResult.AsSucceeded().Item.AsConstantValue().Item;
-            }
-
-            private FSharpList<VariableValue> ParseList(string text)
-            {
-                return ParseListValue(text).AsList().Item;
+                return parseResult.AsSucceeded().Item.AsList().Item;
             }
 
             [Fact]
             public void Empty_list()
             {
                 Assert.True(ParseList("[]").IsEmpty);
+            }
+
+            [Fact]
+            public void Unary_list()
+            {
+                Assert.Equal(1, ParseList("[2]").Length);
+            }
+
+            [Fact]
+            public void Ternary_list()
+            {
+                Assert.Equal(3, ParseList("['foo', 'bar', 'baz']").Length);
             }
         }
 
