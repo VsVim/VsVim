@@ -821,6 +821,14 @@ namespace Vim.UnitTest
             }
 
             [Fact]
+            public void WhenPassedNonEmptyListEchoesItOnStatusLine()
+            {
+                Create("");
+                ParseAndRun(@"echo [1,2,3]");
+                Assert.Equal("[1, 2, 3]", _statusUtil.LastStatus);
+            }
+
+            [Fact]
             public void WhenPassedEmptyDictionaryEchoesItOnStatusLine()
             {
                 Create("");

@@ -695,14 +695,17 @@ type VimInterpreter
     /// Run the echo command
     member x.RunEcho expression =
         let value = x.RunExpression expression 
-        let valueAsString =
+        let rec valueAsString value =
             match value with
             | VariableValue.Number number -> string number
             | VariableValue.String str -> str
-            | VariableValue.List _ -> "[]"
+            | VariableValue.List values ->
+                List.map valueAsString values
+                |> String.concat ", "
+                |> sprintf "[%s]"
             | VariableValue.Dictionary _ -> "{}"
             | _ -> "<error>"
-        _statusUtil.OnStatus valueAsString
+        _statusUtil.OnStatus <| valueAsString value
     
     /// Run the execute command
     member x.RunExecute expression =
