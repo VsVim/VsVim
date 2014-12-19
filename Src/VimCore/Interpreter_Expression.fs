@@ -705,10 +705,10 @@ with
 [<NoEquality>]
 [<RequireQualifiedAccess>]
 type BuiltinFunctionCall =
-    | Escape of VariableValue * VariableValue
-    | Exists of VariableValue
-    | Expand of VariableValue * VariableValue option * VariableValue option
+    | Escape of string * string
+    | Exists of string
     | Localtime
+    | Nr2char of int
 
 /// Engine which interprets Vim commands and expressions
 type IVimInterpreter =

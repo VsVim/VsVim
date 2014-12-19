@@ -1575,6 +1575,7 @@ type Parser
             | _ -> None
 
         use flags = _tokenizer.SetTokenizerFlagsScoped TokenizerFlags.SkipBlanks
+        _tokenizer.SetTokenizerFlagsScoped TokenizerFlags.AllowDigitsInWord |> ignore
         match _tokenizer.CurrentTokenKind with
         | TokenKind.Word word ->
             _tokenizer.MoveNextToken()

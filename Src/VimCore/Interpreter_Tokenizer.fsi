@@ -13,6 +13,11 @@ type internal TokenizerFlags =
     /// Skip blank tokens 
     | SkipBlanks = 0x2
 
+    /// When parsing something like :y2, we want to parse that as a word and a number.
+    /// However, when parsing something like :call nr2char(64), we want nr2char to parse
+    /// as a single word.
+    | AllowDigitsInWord = 0x4
+
 [<Sealed>]
 [<Class>]
 type internal ResetTokenizerFlags = 

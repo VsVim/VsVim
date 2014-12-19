@@ -140,9 +140,23 @@ namespace Vim.UnitTest
                 AssertWord("loaded_surround");
             }
 
-            // TODO I don't care about these right now, but it's worth pointing out that:
+            [Fact]
+            public void WordsCannotContainDigitsIfFlagIsNotSet()
+            {
+                Create("y2");
+                AssertWord("y");
+            }
+
+            [Fact]
+            public void WordsCanContainDigitsIfFlagIsSet()
+            {
+                Create("nr2char");
+                _tokenizer.TokenizerFlags = TokenizerFlags.AllowDigitsInWord;
+                AssertWord("nr2char");
+            }
+
+            // TODO I don't care about this right now, but it's worth pointing out that:
             // Words in VimL can also begin with underscores
-            // Words in VimL can contain (but not begin with) digits
         }
 
         public sealed class MiscTest : TokenizerTest

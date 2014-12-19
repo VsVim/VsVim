@@ -15,29 +15,60 @@ type DefaultLineRange =
 
 [<Sealed>]
 [<Class>]
+type VariableValueUtil
+    (
+        _statusUtil : IStatusUtil
+    ) =
+
+    member x.ConvertToNumber value = 
+        // TODO: Need to actually support these cases
+        let invalid msg = 
+            _statusUtil.OnError msg
+            None
+
+        match value with 
+        | VariableValue.Dictionary _ -> invalid ""
+        | VariableValue.Float _ -> invalid ""
+        | VariableValue.FunctionRef _ -> invalid ""
+        | VariableValue.List _ -> invalid ""
+        | VariableValue.Number number -> Some number
+        | VariableValue.String _ -> invalid ""
+        | VariableValue.Error -> None
+
+    member x.ConvertToString value = 
+        let invalid typeName = 
+            _statusUtil.OnError (Resources.Interpreter_InvalidConversionToString typeName)
+            None
+        match value with 
+        | VariableValue.Dictionary _ -> invalid "Dictionary"
+        | VariableValue.Float _ -> invalid "Float"
+        | VariableValue.FunctionRef _ -> invalid "Funcref"
+        | VariableValue.List _ -> invalid "List"
+        | VariableValue.Number number -> Some (string number)
+        | VariableValue.String str -> Some str
+        | VariableValue.Error ->
+            _statusUtil.OnError Resources.Interpreter_Error
+            None
+
+[<Sealed>]
+[<Class>]
 type BuiltinFunctionCaller
     (
         _variableMap : Dictionary<string, VariableValue>
     ) =
     member x.Call (func : BuiltinFunctionCall) =
         match func with
-        | BuiltinFunctionCall.Escape(str, chars) ->
-            match str, chars with
-            | VariableValue.String escapeIn, VariableValue.String escapeWhat ->
-                let escapeChar (c : char) =
-                    let character = c.ToString()
-                    if escapeWhat.Contains character then sprintf @"\%s" character else character
-                Seq.map escapeChar escapeIn
-                |> String.concat ""
-                |> VariableValue.String
-            | _, _ -> VariableValue.Error
+        | BuiltinFunctionCall.Escape(escapeIn, escapeWhat) ->
+            let escapeChar (c : char) =
+                let character = c.ToString()
+                if escapeWhat.Contains character then sprintf @"\%s" character else character
+            Seq.map escapeChar escapeIn
+            |> String.concat ""
+            |> VariableValue.String
         | BuiltinFunctionCall.Exists name ->
-            match name with
-            | VariableValue.String variableName ->
-                _variableMap.ContainsKey variableName
-                |> System.Convert.ToInt32
-                |> VariableValue.Number
-            | _ -> VariableValue.Error
+            _variableMap.ContainsKey name
+            |> System.Convert.ToInt32
+            |> VariableValue.Number
         | BuiltinFunctionCall.Localtime ->
             // TODO: .NET 4.6 will have builtin support for converting to Unix time http://stackoverflow.com/a/26225744/834176
             let epoch = System.DateTime(1970, 1, 1, 0, 0, 0, System.DateTimeKind.Utc)
@@ -45,7 +76,10 @@ type BuiltinFunctionCaller
             (now - epoch).TotalSeconds
             |> System.Convert.ToInt32
             |> VariableValue.Number
-        | _ -> VariableValue.Error
+        | BuiltinFunctionCall.Nr2char nr ->
+            char nr
+            |> string
+            |> VariableValue.String
 
 [<Sealed>]
 [<Class>]
@@ -54,6 +88,7 @@ type VimScriptFunctionCaller
         _builtinCaller : BuiltinFunctionCaller,
         _statusUtil : IStatusUtil
     ) =
+    let _getValue = VariableValueUtil(_statusUtil)
     member x.Call (name : VariableName) (args : VariableValue list) =
         let tooManyArgs() =
             sprintf "Too many arguments for function: %s" name.Name |> _statusUtil.OnError
@@ -66,16 +101,30 @@ type VimScriptFunctionCaller
         | "escape" ->
             match args.Length with
             | 0 | 1 -> notEnoughArgs()
-            | 2 -> BuiltinFunctionCall.Escape(args.[0], args.[1]) |> _builtinCaller.Call
+            | 2 ->
+                match _getValue.ConvertToString args.[0], _getValue.ConvertToString args.[1] with
+                | Some str, Some chars -> BuiltinFunctionCall.Escape(str, chars) |> _builtinCaller.Call
+                | _, _ -> VariableValue.Error
             | _ -> tooManyArgs()
         | "exists" ->
             match args.Length with
             | 0 -> notEnoughArgs()
-            | 1 -> BuiltinFunctionCall.Exists(args.[0]) |> _builtinCaller.Call
+            | 1 ->
+                match _getValue.ConvertToString args.[0] with
+                | Some arg -> BuiltinFunctionCall.Exists(arg) |> _builtinCaller.Call
+                | None -> VariableValue.Error
             | _ -> tooManyArgs()
         | "localtime" ->
             if args.Length = 0 then _builtinCaller.Call BuiltinFunctionCall.Localtime
             else tooManyArgs()
+        | "nr2char" ->
+            match args.Length with
+            | 0 -> notEnoughArgs()
+            | 1 ->
+                match _getValue.ConvertToNumber args.[0] with
+                | Some arg -> BuiltinFunctionCall.Nr2char(arg) |> _builtinCaller.Call
+                | None -> VariableValue.Error
+            | _ -> tooManyArgs()
         | fname ->
             sprintf "Unknown function: %s" fname |> _statusUtil.OnError
             VariableValue.Error
@@ -92,46 +141,15 @@ type ExpressionInterpreter
     ) =
     let _builtinCaller = BuiltinFunctionCaller(_variableMap)
     let _functionCaller = VimScriptFunctionCaller(_builtinCaller, _statusUtil)
-
-    /// Get the value as a number
-    member x.GetValueAsNumber value = 
-
-        // TODO: Need to actually support these cases
-        let invalid msg = 
-            _statusUtil.OnError msg
-            None
-
-        match value with 
-        | VariableValue.Dictionary _ -> invalid ""
-        | VariableValue.Float _ -> invalid ""
-        | VariableValue.FunctionRef _ -> invalid ""
-        | VariableValue.List _ -> invalid ""
-        | VariableValue.Number number -> Some number
-        | VariableValue.String _ -> invalid ""
-        | VariableValue.Error -> None
-
-    member x.GetValueAsString value = 
-        let invalid typeName = 
-            _statusUtil.OnError (Resources.Interpreter_InvalidConversionToString typeName)
-            None
-        match value with 
-        | VariableValue.Dictionary _ -> invalid "Dictionary"
-        | VariableValue.Float _ -> invalid "Float"
-        | VariableValue.FunctionRef _ -> invalid "Funcref"
-        | VariableValue.List _ -> invalid "List"
-        | VariableValue.Number number -> Some (string number)
-        | VariableValue.String str -> Some str
-        | VariableValue.Error ->
-            _statusUtil.OnError Resources.Interpreter_Error
-            None
+    let _getValue = VariableValueUtil(_statusUtil)
 
     /// Get the specified expression as a number
     member x.GetExpressionAsNumber expr =
-        x.RunExpression expr |> x.GetValueAsNumber
+        x.RunExpression expr |> _getValue.ConvertToNumber
 
     /// Get the specified expression as a number
     member x.GetExpressionAsString expr =
-        x.RunExpression expr |> x.GetValueAsString
+        x.RunExpression expr |> _getValue.ConvertToString
 
     member x.GetSetting name = 
         match _localSettings.GetSetting name with
@@ -179,15 +197,15 @@ type ExpressionInterpreter
                 // it's a list concatenation
                 notSupported()
             else
-                let leftNumber = x.GetValueAsNumber leftValue
-                let rightNumber = x.GetValueAsNumber rightValue
+                let leftNumber = _getValue.ConvertToNumber leftValue
+                let rightNumber = _getValue.ConvertToNumber rightValue
                 match leftNumber, rightNumber with
                 | Some left, Some right -> left + right |> VariableValue.Number
                 | _ -> VariableValue.Error
 
         let runConcat (leftValue : VariableValue) (rightValue : VariableValue) =
-            let leftString = x.GetValueAsString leftValue
-            let rightString = x.GetValueAsString rightValue
+            let leftString = _getValue.ConvertToString leftValue
+            let rightString = _getValue.ConvertToString rightValue
             match leftString, rightString with
             | Some left, Some right -> left + right |> VariableValue.String 
             | _ -> VariableValue.Error

@@ -63,9 +63,15 @@ namespace Vim.UnitTest
         }
 
         [Fact]
-        public void Run_builtin_function_of_one_argument()
+        public void Run_builtin_function_of_one_string_argument()
         {
             Run("exists('foo')", 0);
+        }
+
+        [Fact]
+        public void Run_builtin_function_of_one_integer_argument()
+        {
+            Run("nr2char(64)", "@");
         }
 
         [Fact]
