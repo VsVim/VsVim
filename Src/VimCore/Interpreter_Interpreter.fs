@@ -1524,7 +1524,7 @@ type VimInterpreter
                 | Some count -> SnapshotLineRangeUtil.CreateForLineAndMaxCount lineRange.LastLine count
 
             let stringData = StringData.OfSpan lineRange.ExtentIncludingLineBreak
-            let value = RegisterValue(stringData, OperationKind.LineWise)
+            let value = _commonOperations.CreateRegisterValue x.CaretPoint stringData OperationKind.LineWise
             _registerMap.SetRegisterValue register RegisterOperation.Yank value)
 
     /// Run the specified LineCommand

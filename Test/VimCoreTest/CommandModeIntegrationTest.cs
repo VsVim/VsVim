@@ -948,6 +948,22 @@ namespace Vim.UnitTest
                 RunCommand("2,3y2");
                 AssertLines("tree", "fish");
             }
+
+            /// <summary>
+            /// A line wise value in a register should always be normalized to end with a new 
+            /// line.  In this particular case the last line doesn't have a new line so the code
+            /// must add it in advance
+            ///
+            /// Issue 1526
+            /// </summary>
+            [Fact]
+            public void YankIncludesLastLine()
+            {
+                Create("foo", "bar", "baz");
+                _textView.MoveCaretToLine(1);
+                RunCommand("y2");
+                Assert.True(UnnamedRegister.StringValue.EndsWith(Environment.NewLine));
+            }
         }
 
         public sealed class MiscTest : CommandModeIntegrationTest
