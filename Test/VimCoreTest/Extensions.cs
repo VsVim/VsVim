@@ -400,11 +400,19 @@ namespace Vim.UnitTest
         #region Expression
 
         /// <summary>
-        /// Get the suceeded version of the Expression
+        /// Get the succeeded version of the Expression as a constant value
         /// </summary>
         public static Expression.ConstantValue AsConstantValue(this Expression expr)
         {
             return (Expression.ConstantValue)expr;
+        }
+
+        /// <summary>
+        /// Get the succeeded version of the Expression as a list of expressions
+        /// </summary>
+        public static Expression.List AsList(this Expression expr)
+        {
+            return (Expression.List)expr;
         }
 
         public static bool IsParseError(this LineCommand lineCommand, string message)
@@ -422,6 +430,14 @@ namespace Vim.UnitTest
         public static VariableValue.Number AsNumber(this VariableValue value)
         {
             return (VariableValue.Number)value;
+        }
+
+        /// <summary>
+        /// List version of a value
+        /// </summary>
+        public static VariableValue.List AsList(this VariableValue value)
+        {
+            return (VariableValue.List)value;
         }
 
         /// <summary>

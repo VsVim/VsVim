@@ -57,6 +57,12 @@ namespace Vim.UnitTest
         }
 
         [Fact]
+        public void Empty_list()
+        {
+            Assert.True(Run("[]").AsList().Item.IsEmpty);
+        }
+
+        [Fact]
         public void Run_builtin_function_of_no_arguments()
         {
             Assert.NotEqual(0, Run("localtime()").AsNumber().Item);

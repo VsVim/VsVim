@@ -407,6 +407,9 @@ and [<RequireQualifiedAccess>] Expression =
     /// Invocation of a function
     | FunctionCall of VariableName * Expression list
 
+    /// List of expressions
+    | List of Expression list
+
 and [<RequireQualifiedAccess>] LineCommand =
 
     /// Add a new AutoCommand to the set of existing AutoCommand values

@@ -174,6 +174,7 @@ type ExpressionInterpreter
 
     /// Get the value of the specified expression 
     member x.RunExpression (expr : Expression) : VariableValue =
+        let runExpression expressions = [for expr in expressions -> x.RunExpression expr]
         match expr with
         | Expression.ConstantValue value -> value
         | Expression.Binary (binaryKind, leftExpr, rightExpr) -> x.RunBinaryExpression binaryKind leftExpr rightExpr
@@ -183,7 +184,8 @@ type ExpressionInterpreter
             | Some setting -> x.GetValueOfSetting setting
         | Expression.VariableName name -> x.GetValueOfVariable name.Name
         | Expression.RegisterName name -> x.GetValueOfRegister name
-        | Expression.FunctionCall(name, args) -> _functionCaller.Call name [for arg in args -> x.RunExpression arg]
+        | Expression.FunctionCall(name, args) -> runExpression args |> _functionCaller.Call name
+        | Expression.List expressions -> runExpression expressions |> VariableValue.List 
 
     /// Run the binary expression
     member x.RunBinaryExpression binaryKind (leftExpr : Expression) (rightExpr : Expression) = 
@@ -711,14 +713,22 @@ type VimInterpreter
     /// Run the echo command
     member x.RunEcho expression =
         let value = x.RunExpression expression 
-        let valueAsString =
+        let rec valueAsString value =
             match value with
             | VariableValue.Number number -> string number
             | VariableValue.String str -> str
-            | VariableValue.List _ -> "[]"
+            | VariableValue.List values ->
+                let listItemAsString value =
+                    let stringified = valueAsString value
+                    match value with
+                    | VariableValue.String str -> sprintf "'%s'" stringified
+                    | _ -> stringified
+                List.map listItemAsString values
+                |> String.concat ", "
+                |> sprintf "[%s]"
             | VariableValue.Dictionary _ -> "{}"
             | _ -> "<error>"
-        _statusUtil.OnStatus valueAsString
+        _statusUtil.OnStatus <| valueAsString value
     
     /// Run the execute command
     member x.RunExecute expression =
