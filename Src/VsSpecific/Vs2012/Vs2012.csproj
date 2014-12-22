@@ -51,7 +51,7 @@
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SharedService.cs" />
-    <Compile Include="SharedServiceVersionFactory.cs" />
+    <Compile Include="SharedService.NoLazy.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\VsInterfaces\VsInterfaces.csproj">

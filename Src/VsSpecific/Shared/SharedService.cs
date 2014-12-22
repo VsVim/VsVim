@@ -1,11 +1,10 @@
-// !!! Generated file. Do not edit directly !!!
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.VisualStudio.Platform.WindowManagement;
 using Microsoft.VisualStudio.PlatformUI.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 
-namespace Vim.VisualStudio.Vs2010
+namespace Vim.VisualStudio.$version$
 {
     internal sealed partial class SharedService : ISharedService
     {
