@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+// !!! Generated file. Do not edit directly !!!
+using System.Collections.Generic;
 using System.Linq;
 using Microsoft.VisualStudio.Platform.WindowManagement;
 using Microsoft.VisualStudio.PlatformUI.Shell;
@@ -6,13 +7,8 @@ using Microsoft.VisualStudio.Shell.Interop;
 
 namespace Vim.VisualStudio.Vs2010
 {
-    internal sealed class SharedService : ISharedService
+    internal partial sealed class SharedService : ISharedService
     {
-        internal SharedService()
-        {
-
-        }
-
         internal void GoToTab(int index)
         {
             GetActiveViews()[index].ShowInFront();
@@ -81,7 +77,7 @@ namespace Vim.VisualStudio.Vs2010
 
         bool ISharedService.IsLazyLoaded(uint documentCookie)
         {
-            return false;
+            return IsLazyLoaded(documentCookie);
         }
 
         #endregion
