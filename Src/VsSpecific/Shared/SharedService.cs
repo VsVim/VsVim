@@ -6,7 +6,7 @@ using Microsoft.VisualStudio.Shell.Interop;
 
 namespace Vim.VisualStudio.$version$
 {
-    internal partial sealed class SharedService : ISharedService
+    internal sealed partial class SharedService : ISharedService
     {
         internal void GoToTab(int index)
         {
