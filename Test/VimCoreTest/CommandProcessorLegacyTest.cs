@@ -42,6 +42,9 @@ namespace Vim.UnitTest
             _vimHost.Setup(x => x.IsDirty(It.IsAny<ITextBuffer>())).Returns(false);
             _operations = _factory.Create<ICommonOperations>();
             _operations.SetupGet(x => x.EditorOperations).Returns(_editOpts.Object);
+            _operations
+                .Setup(x => x.CreateRegisterValue(It.IsAny<SnapshotPoint>(), It.IsAny<StringData>(), It.IsAny<OperationKind>()))
+                .Returns<SnapshotPoint, StringData, OperationKind>((point, stringData, operationKind) => new RegisterValue(stringData, operationKind));
             _statusUtil = _factory.Create<IStatusUtil>();
             _fileSystem = _factory.Create<IFileSystem>(MockBehavior.Strict);
             _foldManager = _factory.Create<IFoldManager>(MockBehavior.Strict);
