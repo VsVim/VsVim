@@ -532,6 +532,17 @@ namespace Vim.UnitTest
                 Assert.Equal(8, _textView.GetCaretPoint().Position);
             }
 
+            [Fact]
+            public void MoveOverFold()
+            {
+                Create("cat", "dog", "fish", "tree");
+                _foldManager.CreateFold(_textBuffer.GetLineRange(1, endLine: 2));
+                _vimBuffer.ProcessNotation("j");
+                Assert.Equal(_textBuffer.GetPointInLine(1, 0), _textView.GetCaretPoint());
+                _vimBuffer.ProcessNotation("j");
+                Assert.Equal(_textBuffer.GetPointInLine(3, 0), _textView.GetCaretPoint());
+            }
+
             /// <summary>
             /// Don't consider 'smartcase' when doing a * operation 
             /// </summary>

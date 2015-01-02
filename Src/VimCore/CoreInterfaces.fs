@@ -793,7 +793,8 @@ type MotionResult = {
     /// The Span as a SnapshotLineRange value 
     member x.LineRange = SnapshotLineRangeUtil.CreateForSpan x.Span
 
-    /// The Start or Last line depending on whether tho motion is forward or not
+    /// The Start or Last line depending on whether tho motion is forward or not.  The returned
+    /// line will be in the document <see cref="ITextSnapshot">.  
     member x.DirectionLastLine = 
         if x.IsForward then
             // Need to handle the empty last line case here.  If the flag to include

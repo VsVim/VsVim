@@ -51,7 +51,7 @@ type internal FoldData
             _foldsUpdated.Trigger x
 
     /// Delete the fold which corresponds to the given SnapshotPoint
-    member x.DeleteFold (point:SnapshotPoint) = 
+    member x.DeleteFold (point : SnapshotPoint) = 
         let snapshot = _textBuffer.CurrentSnapshot
         let data = 
             _folds
