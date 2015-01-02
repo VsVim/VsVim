@@ -1365,6 +1365,15 @@ module BufferGraphUtil =
     let MapPointDownToSnapshotStandard (bufferGraph : IBufferGraph) point snapshot =
         MapPointDownToSnapshot bufferGraph point snapshot PointTrackingMode.Negative PositionAffinity.Predecessor
 
+    /// Map the SnapshotSpan up to the given ITextSnapshot.  Returns None if the mapping is
+    /// not possible
+    let MapSpanUpToSnapshot (bufferGraph : IBufferGraph) span trackingMode snapshot =
+        try
+            bufferGraph.MapUpToSnapshot(span, trackingMode, snapshot) |> Some
+        with
+            | :? System.ArgumentException-> None
+            | :? System.InvalidOperationException -> None
+
     /// Map the SnapshotSpan down to the given ITextSnapshot.  Returns None if the mapping is
     /// not possible
     let MapSpanDownToSnapshot (bufferGraph : IBufferGraph) span trackingMode snapshot =

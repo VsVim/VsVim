@@ -540,6 +540,9 @@ type internal CommonOperations
         let shouldMaintainCaretColumn = Util.IsFlagSet result.MotionResultFlags MotionResultFlags.MaintainCaretColumn
         match shouldMaintainCaretColumn, result.CaretColumn with
         | true, CaretColumn.InLastLine column ->
+            
+            // Mappings should occur visually 
+            let visualLastLine = x.GetDirectionLastLineInVisualSnapshot result
 
             // First calculate the column in terms of spaces for the maintained caret.
             let caretColumnSpaces = 
@@ -547,20 +550,19 @@ type internal CommonOperations
                 match _maintainCaretColumn with
                 | MaintainCaretColumn.None -> motionCaretColumnSpaces
                 | MaintainCaretColumn.Spaces maintainCaretColumnSpaces -> max maintainCaretColumnSpaces motionCaretColumnSpaces
-                | MaintainCaretColumn.EndOfLine -> max 0 (result.DirectionLastLine.Length - 1)
+                | MaintainCaretColumn.EndOfLine -> max 0 (visualLastLine.Length - 1)
 
             // The CaretColumn union is expressed in a position offset not a space offset 
             // which can differ with tabs.  Recalculate as appropriate.  
             let caretColumn = 
-                let lastLine = result.DirectionLastLine
-                let column = x.GetPointForSpaces lastLine caretColumnSpaces |> SnapshotPointUtil.GetColumn
+                let column = x.GetPointForSpaces visualLastLine caretColumnSpaces |> SnapshotPointUtil.GetColumn
                 CaretColumn.InLastLine column
             let result = 
                 { result with DesiredColumn = caretColumn }
 
             // Complete the motion with the updated value then reset the maintain caret.  Need
             // to do the save after the caret move since the move will clear out the saved value
-            x.MoveCaretToMotionResultCore result
+            x.MoveCaretToMotionResultCore result 
             _maintainCaretColumn <-
                 if Util.IsFlagSet result.MotionResultFlags MotionResultFlags.EndOfLine then
                     MaintainCaretColumn.EndOfLine
@@ -582,27 +584,42 @@ type internal CommonOperations
                     | CaretColumn.ScreenColumn column -> MaintainCaretColumn.Spaces column
                     | _ -> MaintainCaretColumn.None
 
+    /// Many operations for moving a motion result need to be calculated in the
+    /// visual snapshot.  This method will return the DirectionLastLine value
+    /// in that snapshot or the original value if no mapping is possible. 
+    member x.GetDirectionLastLineInVisualSnapshot (result : MotionResult) : ITextSnapshotLine =
+        let line = result.DirectionLastLine
+        let bufferGraph = _textView.BufferGraph
+        let visualSnapshot = _textView.TextViewModel.VisualBuffer.CurrentSnapshot
+        match BufferGraphUtil.MapSpanUpToSnapshot bufferGraph line.ExtentIncludingLineBreak SpanTrackingMode.EdgeInclusive visualSnapshot with
+        | None -> line
+        | Some col ->
+            if col.Count = 0 then
+                line
+            else
+                let span = NormalizedSnapshotSpanCollectionUtil.GetOverarchingSpan col
+                span.Start.GetContainingLine()
+
     /// Move the caret to the position dictated by the given MotionResult value
+    ///
+    /// Note: This method mixes points from the edit and visual snapshot.  Take care
+    /// when changing this function to account for both. 
     member x.MoveCaretToMotionResultCore (result : MotionResult) =
 
         let point = 
 
-            let line = result.DirectionLastLine
+            // All issues around caret column position should be calculated on the visual 
+            // snapshot 
+            let visualLine = x.GetDirectionLastLineInVisualSnapshot result
             if not result.IsForward then
                 match result.MotionKind, result.CaretColumn with
                 | MotionKind.LineWise, CaretColumn.InLastLine column -> 
                     // If we are moving linewise, but to a specific column, use
                     // that column as the target of the motion
-                    SnapshotLineUtil.GetColumnOrEnd column line
+                    SnapshotLineUtil.GetColumnOrEnd column visualLine
                 | _, _ -> 
                     result.Span.Start
             else
-
-                // Get the point when moving the caret after the last line in the SnapshotSpan
-                let getAfterLastLine() = 
-                    match SnapshotUtil.TryGetLine x.CurrentSnapshot (line.LineNumber + 1) with
-                    | None -> line.End
-                    | Some line -> line.Start
 
                 match result.MotionKind with 
                 | MotionKind.CharacterWiseExclusive ->
@@ -624,13 +641,22 @@ type internal CommonOperations
                 | MotionKind.LineWise -> 
                     match result.CaretColumn with
                     | CaretColumn.None -> 
-                        line.End
+                        visualLine.End
                     | CaretColumn.InLastLine column ->
-                        SnapshotLineUtil.GetColumnOrEnd column line
+                        SnapshotLineUtil.GetColumnOrEnd column visualLine
                     | CaretColumn.ScreenColumn column ->
-                        SnapshotLineUtil.GetColumnOrEnd (SnapshotPointUtil.GetColumn (x.GetPointForSpaces line column)) line
+                        SnapshotLineUtil.GetColumnOrEnd (SnapshotPointUtil.GetColumn (x.GetPointForSpaces visualLine column)) visualLine
                     | CaretColumn.AfterLastLine ->
-                        getAfterLastLine()
+                        match SnapshotUtil.TryGetLine visualLine.Snapshot (visualLine.LineNumber + 1) with
+                        | None -> visualLine.End
+                        | Some visualLine -> visualLine.Start
+
+        // The value 'point' may be in either the visual or edit snapshot at this point.  Map to 
+        // ensure it's in the edit.
+        let point = 
+            match BufferGraphUtil.MapPointDownToSnapshot _textView.BufferGraph point x.CurrentSnapshot PointTrackingMode.Negative PositionAffinity.Predecessor with
+            | None -> point
+            | Some point -> point
 
         let viewFlags = 
             if result.OperationKind = OperationKind.LineWise && not (Util.IsFlagSet result.MotionResultFlags MotionResultFlags.ExclusiveLineWise) then
@@ -640,6 +666,7 @@ type internal CommonOperations
             else
                 // Character wise motions should expand regions
                 ViewFlags.All
+
         x.MoveCaretToPoint point viewFlags
         _editorOperations.ResetSelection()
 

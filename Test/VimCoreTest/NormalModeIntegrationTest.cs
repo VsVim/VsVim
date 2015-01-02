@@ -570,7 +570,7 @@ namespace Vim.UnitTest
             /// lines (first and new line of last) in the same visual line.  This makes mapping
             /// considerably more difficult.  
             /// </summary>
-            [Fact(Skip= "Disabled while fixing 1522")]
+            [Fact]
             public void Issue1522()
             {
                 Create("cat", "dog", "bear", "tree");
