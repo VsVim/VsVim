@@ -96,7 +96,7 @@ namespace Vim.VisualStudio.UnitTest
 
         public sealed class MiscTest : KeyBindingServiceTest
         {
-            private static CommandKeyBinding CreateCommandKeyBinding(KeyInput input, KeyModifiers modifiers = KeyModifiers.None, string name = "again", string scope = "Global")
+            private static CommandKeyBinding CreateCommandKeyBinding(KeyInput input, VimKeyModifiers modifiers = VimKeyModifiers.None, string name = "again", string scope = "Global")
             {
                 var stroke = new KeyStroke(input, modifiers);
                 var key = new KeyBinding(scope, stroke);

@@ -32,7 +32,7 @@ namespace Vim.UI.Wpf.UnitTest
 
             private void AssertMap(Key key, VimKey vimKey)
             {
-                AssertMap(key, ModifierKeys.Control, KeyInputUtil.ApplyModifiersToVimKey(vimKey, KeyModifiers.Control));
+                AssertMap(key, ModifierKeys.Control, KeyInputUtil.ApplyKeyModifiersToKey(vimKey, VimKeyModifiers.Control));
             }
 
             [Fact]

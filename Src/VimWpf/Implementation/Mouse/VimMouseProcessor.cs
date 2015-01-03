@@ -20,7 +20,7 @@ namespace Vim.UI.Wpf.Implementation.Mouse
 
         internal bool TryProcess(VimKey vimKey)
         {
-            var keyInput = KeyInputUtil.ApplyModifiersToVimKey(vimKey, _keyboardDevice.KeyModifiers);
+            var keyInput = KeyInputUtil.ApplyKeyModifiersToKey(vimKey, _keyboardDevice.KeyModifiers);
 
             // If the user has explicitly set the mouse to be <nop> then we don't want to report this as 
             // handled.  Otherwise it will swallow the mouse event and as a consequence disable other

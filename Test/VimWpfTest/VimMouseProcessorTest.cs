@@ -19,7 +19,7 @@ namespace Vim.UI.Wpf.UnitTest
         {
             _vimBuffer = CreateVimBuffer("");
             _keyboardDevice = new Mock<IKeyboardDevice>(MockBehavior.Loose);
-            _keyboardDevice.SetupGet(x => x.KeyModifiers).Returns(KeyModifiers.None);
+            _keyboardDevice.SetupGet(x => x.KeyModifiers).Returns(VimKeyModifiers.None);
             _vimMouseProcessor = new VimMouseProcessor(_vimBuffer, _keyboardDevice.Object);
         }
 
@@ -45,7 +45,7 @@ namespace Vim.UI.Wpf.UnitTest
             [Fact]
             public void GoToDefinition()
             {
-                _keyboardDevice.SetupGet(x => x.KeyModifiers).Returns(KeyModifiers.Control);
+                _keyboardDevice.SetupGet(x => x.KeyModifiers).Returns(VimKeyModifiers.Control);
                 VimHost.GoToDefinitionReturn = false;
                 _vimMouseProcessor.TryProcess(VimKey.LeftMouse);
                 Assert.Equal(1, VimHost.GoToDefinitionCount);

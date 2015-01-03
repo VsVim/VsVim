@@ -180,9 +180,9 @@ and internal HistoryUtil ()  =
                 // key mappings.  At the history level though these commands are treated equally so we just add
                 // the variations into the map
                 let keyInput1 = KeyNotationUtil.StringToKeyInput name
-                let keyInput2 = KeyInputUtil.ApplyModifiers keyInput1 KeyModifiers.Shift
-                let keyInput3 = KeyInputUtil.ApplyModifiers keyInput1 KeyModifiers.Control
-                let keyInput4 = KeyInputUtil.ApplyModifiers keyInput1 (KeyModifiers.Shift ||| KeyModifiers.Control)
+                let keyInput2 = KeyInputUtil.ApplyKeyModifiers keyInput1 VimKeyModifiers.Shift
+                let keyInput3 = KeyInputUtil.ApplyKeyModifiers keyInput1 VimKeyModifiers.Control
+                let keyInput4 = KeyInputUtil.ApplyKeyModifiers keyInput1 (VimKeyModifiers.Shift ||| VimKeyModifiers.Control)
                 seq { 
                     yield (keyInput1, command)    
                     yield (keyInput2, command)    

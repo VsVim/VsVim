@@ -163,7 +163,7 @@ namespace Vim.UnitTest
                 Map("<S-#>", "pound");
                 AssertNoMapping("#");
                 var keyInput = KeyInputUtil.CharToKeyInput('#');
-                keyInput = KeyInputUtil.ChangeKeyModifiersDangerous(keyInput, KeyModifiers.Shift);
+                keyInput = KeyInputUtil.ChangeKeyModifiersDangerous(keyInput, VimKeyModifiers.Shift);
                 Assert.True(_map.GetKeyMappingResult(keyInput, KeyRemapMode.Normal).IsMapped);
             }
 
@@ -364,7 +364,7 @@ namespace Vim.UnitTest
             public void HandleCommandKey()
             {
                 Map("<D-k>", "gk");
-                var ki = new KeyInput(VimKey.RawCharacter, KeyModifiers.Command, FSharpOption.Create('k'));
+                var ki = new KeyInput(VimKey.RawCharacter, VimKeyModifiers.Command, FSharpOption.Create('k'));
                 var kiSet = KeyInputSet.NewOneKeyInput(ki);
                 AssertPartialMapping(kiSet, "g", "k");
             }
@@ -710,7 +710,7 @@ namespace Vim.UnitTest
             public void Issue328()
             {
                 Assert.True(_map.MapWithNoRemap("<S-SPACE>", "<ESC>", KeyRemapMode.Insert));
-                var res = _map.GetKeyMapping(KeyInputUtil.ApplyModifiersToChar(' ', KeyModifiers.Shift), KeyRemapMode.Insert);
+                var res = _map.GetKeyMapping(KeyInputUtil.ApplyKeyModifiersToChar(' ', VimKeyModifiers.Shift), KeyRemapMode.Insert);
                 Assert.Equal(KeyInputUtil.EscapeKey, res.Single());
             }
 

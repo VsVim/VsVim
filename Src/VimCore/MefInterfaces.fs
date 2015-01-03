@@ -207,7 +207,7 @@ type IKeyboardDevice =
     abstract IsArrowKeyDown : bool
 
     /// The modifiers currently pressed on the keyboard
-    abstract KeyModifiers : KeyModifiers
+    abstract KeyModifiers : VimKeyModifiers
 
 /// Tracks changes to the associated ITextView
 type ITextChangeTracker =

@@ -20,7 +20,7 @@ type KeyInput =
     member Key : VimKey
 
     /// The extra modifier keys applied to the VimKey value
-    member KeyModifiers : KeyModifiers
+    member KeyModifiers : VimKeyModifiers
 
     /// Is the character for this KeyInput a digit
     member IsDigit : bool
@@ -74,35 +74,35 @@ module KeyInputUtil =
     /// Apply the modifiers to the given KeyInput and determine the result.  This will
     /// not necessarily return a KeyInput with the modifier set.  It attempts to unify 
     /// certain ambiguous combinations.
-    val ApplyModifiers : keyInput : KeyInput -> modifiers : KeyModifiers -> KeyInput
+    val ApplyKeyModifiers : keyInput : KeyInput -> modifiers : VimKeyModifiers -> KeyInput
 
     /// Apply the modifiers to the given character
-    val ApplyModifiersToChar : c : char  -> modifiers : KeyModifiers -> KeyInput
+    val ApplyKeyModifiersToChar : c : char  -> modifiers : VimKeyModifiers -> KeyInput
 
     /// Apply the modifiers to the given VimKey
-    val ApplyModifiersToVimKey : VimKey -> modifiers : KeyModifiers -> KeyInput
+    val ApplyKeyModifiersToKey : vimKey : VimKey -> modifiers : VimKeyModifiers -> KeyInput
 
     /// Try and convert the given char to a KeyInput value
-    val CharToKeyInput : char -> KeyInput
+    val CharToKeyInput : c : char -> KeyInput
 
     /// Convert the passed in char to a KeyInput with Control
-    val CharWithControlToKeyInput : char -> KeyInput
+    val CharWithControlToKeyInput : c : char -> KeyInput
 
     /// Convert the passed in char to a KeyInput with Alt
-    val CharWithAltToKeyInput : char -> KeyInput
+    val CharWithAltToKeyInput : c : char -> KeyInput
 
     /// Convert the specified VimKey code to a KeyInput 
-    val VimKeyToKeyInput : VimKey -> KeyInput
+    val VimKeyToKeyInput : vimKey : VimKey -> KeyInput
 
     /// Change the KeyModifiers associated with this KeyInput.  Will not change the value
     /// of the underlying char.  Although it may produce a KeyInput that makes no 
-    /// sense.  For example it's very possible to have KeyInput('a', KeyModifiers.Shift) but
+    /// sense.  For example it's very possible to have KeyInput('a', VimKeyModifiers.Shift) but
     /// it will be extremely hard to produce that in a keyboard (if possible at all).  
     ///
     /// This method should be avoided.  If you need to apply modifiers then use
     /// ApplyModifiers which uses Vim semantics when deciding how to apply the modifiers
-    val ChangeKeyModifiersDangerous : KeyInput -> KeyModifiers -> KeyInput
+    val ChangeKeyModifiersDangerous : keyInput : KeyInput -> modifiers : VimKeyModifiers -> KeyInput
 
     /// Get the alternate key for the given KeyInput if it's a key from the keypad 
-    val GetNonKeypadEquivalent : KeyInput -> KeyInput option 
+    val GetNonKeypadEquivalent : keyInput : KeyInput -> KeyInput option 
 

@@ -102,7 +102,7 @@ namespace Vim.UnitTest.Mock
             modKeys = ModifierKeys.None;
 
             // At this time we don't support any use of modifier keys here 
-            if (keyInput.KeyModifiers != KeyModifiers.None)
+            if (keyInput.KeyModifiers != VimKeyModifiers.None)
             {
                 return false;
             }

@@ -170,22 +170,22 @@ namespace Vim.VisualStudio.UnitTest.Utils
                 switch (keyInput.Key)
                 {
                     case VimKey.Left:
-                        _editorOperatins.MoveToPreviousCharacter(extendSelection: keyInput.KeyModifiers == KeyModifiers.Shift);
+                        _editorOperatins.MoveToPreviousCharacter(extendSelection: keyInput.KeyModifiers == VimKeyModifiers.Shift);
                         return true;
                     case VimKey.Right:
-                        _editorOperatins.MoveToNextCharacter(extendSelection: keyInput.KeyModifiers == KeyModifiers.Shift);
+                        _editorOperatins.MoveToNextCharacter(extendSelection: keyInput.KeyModifiers == VimKeyModifiers.Shift);
                         return true;
                     case VimKey.Up:
-                        _editorOperatins.MoveLineUp(extendSelection: keyInput.KeyModifiers == KeyModifiers.Shift);
+                        _editorOperatins.MoveLineUp(extendSelection: keyInput.KeyModifiers == VimKeyModifiers.Shift);
                         return true;
                     case VimKey.Down:
-                        _editorOperatins.MoveLineDown(extendSelection: keyInput.KeyModifiers == KeyModifiers.Shift);
+                        _editorOperatins.MoveLineDown(extendSelection: keyInput.KeyModifiers == VimKeyModifiers.Shift);
                         return true;
                     case VimKey.Back:
                         _editorOperatins.Backspace();
                         return true;
                     case VimKey.Tab:
-                        if (keyInput.KeyModifiers == KeyModifiers.Shift)
+                        if (keyInput.KeyModifiers == VimKeyModifiers.Shift)
                         {
                             _editorOperatins.Unindent();
                         }
@@ -208,7 +208,7 @@ namespace Vim.VisualStudio.UnitTest.Utils
             int IOleCommandTarget.Exec(ref Guid commandGroup, uint cmdId, uint cmdExecOpt, IntPtr variantIn, IntPtr variantOut)
             {
                 EditCommand editCommand;
-                if (!OleCommandUtil.TryConvert(commandGroup, cmdId, variantIn, KeyModifiers.None, out editCommand))
+                if (!OleCommandUtil.TryConvert(commandGroup, cmdId, variantIn, VimKeyModifiers.None, out editCommand))
                 {
                     _lastExecEditCommand = null;
                     return VSConstants.E_FAIL;
@@ -221,7 +221,7 @@ namespace Vim.VisualStudio.UnitTest.Utils
             int IOleCommandTarget.QueryStatus(ref Guid commandGroup, uint commandCount, OLECMD[] commands, IntPtr commandText)
             {
                 EditCommand editCommand;
-                if (1 != commandCount || !OleCommandUtil.TryConvert(commandGroup, commands[0].cmdID, commandText, KeyModifiers.None, out editCommand))
+                if (1 != commandCount || !OleCommandUtil.TryConvert(commandGroup, commands[0].cmdID, commandText, VimKeyModifiers.None, out editCommand))
                 {
                     _lastQueryStatusEditCommand = null;
                     commands[0].cmdf = 0;

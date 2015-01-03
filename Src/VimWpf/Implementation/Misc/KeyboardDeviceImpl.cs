@@ -48,7 +48,7 @@ namespace Vim.UI.Wpf.Implementation.Misc
             get { return IsArrowKeyDown; }
         }
 
-        KeyModifiers IKeyboardDevice.KeyModifiers
+        VimKeyModifiers IKeyboardDevice.KeyModifiers
         {
             get { return _keyUtil.GetKeyModifiers(_keyboardDevice.Modifiers); }
         }

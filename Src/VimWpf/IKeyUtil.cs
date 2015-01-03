@@ -16,7 +16,7 @@ namespace Vim.UI.Wpf
         /// <summary>
         /// Convert the given ModifierKeys into the corresponding KeyModifiers (WPF -> Vim)
         /// </summary>
-        KeyModifiers GetKeyModifiers(ModifierKeys modifierKeys);
+        VimKeyModifiers GetKeyModifiers(ModifierKeys modifierKeys);
 
         /// <summary>
         /// This method handles the cases where a Vim key is mapped directly by virtual key 

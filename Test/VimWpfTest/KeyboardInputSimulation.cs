@@ -206,7 +206,7 @@ namespace Vim.UI.Wpf.UnitTest
                 foreach (var mod in combos)
                 {
                     var keyMod = AlternateKeyUtil.ConvertToKeyModifiers(mod);
-                    var keyInput = KeyInputUtil.ApplyModifiersToChar(c, keyMod);
+                    var keyInput = KeyInputUtil.ApplyKeyModifiersToChar(c, keyMod);
                     var key = (Key)((c - 'a') + (int)Key.A);
                     map[keyInput] = new KeyData(key, mod);
                 }
@@ -379,17 +379,17 @@ namespace Vim.UI.Wpf.UnitTest
                 var keyModifiers = keyInput.KeyModifiers;
 
                 modifierKeys = ModifierKeys.None;
-                if (KeyModifiers.Control == (keyModifiers & KeyModifiers.Control))
+                if (VimKeyModifiers.Control == (keyModifiers & VimKeyModifiers.Control))
                 {
                     modifierKeys |= ModifierKeys.Control;
                 }
 
-                if (KeyModifiers.Shift == (keyModifiers & KeyModifiers.Shift))
+                if (VimKeyModifiers.Shift == (keyModifiers & VimKeyModifiers.Shift))
                 {
                     modifierKeys |= ModifierKeys.Shift;
                 }
                 
-                if (KeyModifiers.Alt == (keyModifiers & KeyModifiers.Alt))
+                if (VimKeyModifiers.Alt == (keyModifiers & VimKeyModifiers.Alt))
                 {
                     modifierKeys |= ModifierKeys.Alt;
                 }

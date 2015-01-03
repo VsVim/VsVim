@@ -199,7 +199,7 @@ namespace Vim.UnitTest
 
         internal static KeyInput CreateKeyInput(
             VimKey key = VimKey.None,
-            KeyModifiers mod = KeyModifiers.None,
+            VimKeyModifiers mod = VimKeyModifiers.None,
             char? c = null)
         {
             return new KeyInput(

@@ -65,8 +65,8 @@ namespace Vim.UnitTest
             var i1 = VimUtil.CreateKeyInput(c: 'c');
             Assert.Equal(i1, VimUtil.CreateKeyInput(c: 'c'));
             Assert.NotEqual(i1, VimUtil.CreateKeyInput(c: 'd'));
-            Assert.NotEqual(i1, VimUtil.CreateKeyInput(c: 'c', mod: KeyModifiers.Shift));
-            Assert.NotEqual(i1, VimUtil.CreateKeyInput(c: 'c', mod: KeyModifiers.Alt));
+            Assert.NotEqual(i1, VimUtil.CreateKeyInput(c: 'c', mod: VimKeyModifiers.Shift));
+            Assert.NotEqual(i1, VimUtil.CreateKeyInput(c: 'c', mod: VimKeyModifiers.Alt));
         }
 
         /// <summary>
@@ -136,9 +136,9 @@ namespace Vim.UnitTest
             var allKeyInputs = KeyInputUtil.VimKeyInputList;
             var all = allKeyInputs.SelectMany(x => new[] {
                 x,
-                KeyInputUtil.ChangeKeyModifiersDangerous(x, KeyModifiers.Control),
-                KeyInputUtil.ChangeKeyModifiersDangerous(x, KeyModifiers.Shift),
-                KeyInputUtil.ChangeKeyModifiersDangerous(x, KeyModifiers.Alt)
+                KeyInputUtil.ChangeKeyModifiersDangerous(x, VimKeyModifiers.Control),
+                KeyInputUtil.ChangeKeyModifiersDangerous(x, VimKeyModifiers.Shift),
+                KeyInputUtil.ChangeKeyModifiersDangerous(x, VimKeyModifiers.Alt)
             });
 
             foreach (var left in all)

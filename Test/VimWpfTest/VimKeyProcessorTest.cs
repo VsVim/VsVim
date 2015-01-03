@@ -175,7 +175,7 @@ namespace Vim.UI.Wpf.UnitTest
             [Fact]
             public void NonCharWithModifierShouldCarryModifier()
             {
-                var ki = KeyInputUtil.ApplyModifiersToVimKey(VimKey.Left, KeyModifiers.Shift);
+                var ki = KeyInputUtil.ApplyKeyModifiersToKey(VimKey.Left, VimKeyModifiers.Shift);
                 _mockVimBuffer.Setup(x => x.CanProcess(ki)).Returns(true).Verifiable();
                 _mockVimBuffer.Setup(x => x.Process(ki)).Returns(ProcessResult.NewHandled(ModeSwitch.NoSwitch)).Verifiable();
 

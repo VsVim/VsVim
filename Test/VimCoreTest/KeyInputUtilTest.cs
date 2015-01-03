@@ -37,10 +37,10 @@ namespace Vim.UnitTest
 
         public sealed class ApplyModifiersTest : KeyInputUtilTest
         {
-            private static KeyInput ApplyModifiers(char c, KeyModifiers keyModifiers)
+            private static KeyInput ApplyModifiers(char c, VimKeyModifiers keyModifiers)
             {
                 var keyInput = KeyInputUtil.CharToKeyInput(c);
-                return KeyInputUtil.ApplyModifiers(keyInput, keyModifiers);
+                return KeyInputUtil.ApplyKeyModifiers(keyInput, keyModifiers);
             }
 
             /// <summary>
@@ -50,8 +50,8 @@ namespace Vim.UnitTest
             public void UpperCase()
             {
                 var keyInput = KeyInputUtil.CharToKeyInput('A');
-                Assert.Equal(keyInput, KeyInputUtil.ApplyModifiers(KeyInputUtil.CharToKeyInput('a'), KeyModifiers.Shift));
-                Assert.Equal(keyInput, KeyInputUtil.ApplyModifiers(KeyInputUtil.CharToKeyInput('A'), KeyModifiers.Shift));
+                Assert.Equal(keyInput, KeyInputUtil.ApplyKeyModifiers(KeyInputUtil.CharToKeyInput('a'), VimKeyModifiers.Shift));
+                Assert.Equal(keyInput, KeyInputUtil.ApplyKeyModifiers(KeyInputUtil.CharToKeyInput('A'), VimKeyModifiers.Shift));
             }
 
             /// <summary>
@@ -60,8 +60,8 @@ namespace Vim.UnitTest
             [Fact]
             public void ShiftToTab()
             {
-                var keyInput = KeyInputUtil.ApplyModifiers(KeyInputUtil.TabKey, KeyModifiers.Shift);
-                Assert.Equal(KeyModifiers.Shift, keyInput.KeyModifiers);
+                var keyInput = KeyInputUtil.ApplyKeyModifiers(KeyInputUtil.TabKey, VimKeyModifiers.Shift);
+                Assert.Equal(VimKeyModifiers.Shift, keyInput.KeyModifiers);
                 Assert.Equal(VimKey.Tab, keyInput.Key);
                 Assert.Equal('\t', keyInput.Char);
             }
@@ -76,8 +76,8 @@ namespace Vim.UnitTest
                 foreach (var cur in list)
                 {
                     var keyInput = KeyInputUtil.CharToKeyInput(cur);
-                    keyInput = KeyInputUtil.ApplyModifiers(keyInput, KeyModifiers.Shift);
-                    Assert.Equal(KeyModifiers.None, keyInput.KeyModifiers);
+                    keyInput = KeyInputUtil.ApplyKeyModifiers(keyInput, VimKeyModifiers.Shift);
+                    Assert.Equal(VimKeyModifiers.None, keyInput.KeyModifiers);
                 }
             }
 
@@ -96,8 +96,8 @@ namespace Vim.UnitTest
 
                 foreach (var current in list)
                 {
-                    var keyInput = KeyInputUtil.ApplyModifiers(current, KeyModifiers.Shift);
-                    Assert.Equal(KeyModifiers.Shift, keyInput.KeyModifiers);
+                    var keyInput = KeyInputUtil.ApplyKeyModifiers(current, VimKeyModifiers.Shift);
+                    Assert.Equal(VimKeyModifiers.Shift, keyInput.KeyModifiers);
                 }
             }
 
@@ -112,10 +112,10 @@ namespace Vim.UnitTest
                 {
                     var target = (char)(baseCharCode + i);
                     var keyInput = KeyInputUtil.CharToKeyInput(CharLettersLower[i]);
-                    var found = KeyInputUtil.ApplyModifiers(keyInput, KeyModifiers.Control);
+                    var found = KeyInputUtil.ApplyKeyModifiers(keyInput, VimKeyModifiers.Control);
 
                     Assert.Equal(target, found.Char);
-                    Assert.Equal(KeyModifiers.None, found.KeyModifiers);
+                    Assert.Equal(VimKeyModifiers.None, found.KeyModifiers);
                 }
             }
 
@@ -129,8 +129,8 @@ namespace Vim.UnitTest
                 for (var i = 0; i < CharLettersUpper.Length; i++)
                 {
                     var target = (char)(baseCharCode + i);
-                    var keyInputUpper = KeyInputUtil.ApplyModifiersToChar(CharLettersUpper[i], KeyModifiers.Control);
-                    var keyInputLower = KeyInputUtil.ApplyModifiersToChar(CharLettersLower[i], KeyModifiers.Control);
+                    var keyInputUpper = KeyInputUtil.ApplyKeyModifiersToChar(CharLettersUpper[i], VimKeyModifiers.Control);
+                    var keyInputLower = KeyInputUtil.ApplyKeyModifiersToChar(CharLettersLower[i], VimKeyModifiers.Control);
                     Assert.Equal(keyInputUpper, keyInputLower);
                 }
             }
@@ -143,7 +143,7 @@ namespace Vim.UnitTest
             public void Less()
             {
                 var left = KeyInputUtil.CharWithControlToKeyInput('c');
-                var right = KeyInputUtil.ApplyModifiers(left, KeyModifiers.None);
+                var right = KeyInputUtil.ApplyKeyModifiers(left, VimKeyModifiers.None);
                 Assert.Equal(left, right);
             }
 
@@ -153,18 +153,18 @@ namespace Vim.UnitTest
             [Fact]
             public void AltToA()
             {
-                var keyInput = ApplyModifiers('a', KeyModifiers.Alt);
+                var keyInput = ApplyModifiers('a', VimKeyModifiers.Alt);
                 Assert.Equal('á', keyInput.Char);
-                Assert.Equal(KeyModifiers.None, keyInput.KeyModifiers);
+                Assert.Equal(VimKeyModifiers.None, keyInput.KeyModifiers);
                 Assert.Equal(VimKey.RawCharacter, keyInput.Key);
             }
 
             [Fact]
             public void AltToUpperA()
             {
-                var keyInput = ApplyModifiers('a', KeyModifiers.Alt | KeyModifiers.Shift);
+                var keyInput = ApplyModifiers('a', VimKeyModifiers.Alt | VimKeyModifiers.Shift);
                 Assert.Equal('Á', keyInput.Char);
-                Assert.Equal(KeyModifiers.None, keyInput.KeyModifiers);
+                Assert.Equal(VimKeyModifiers.None, keyInput.KeyModifiers);
                 Assert.Equal(VimKey.RawCharacter, keyInput.Key);
             }
 
@@ -175,9 +175,9 @@ namespace Vim.UnitTest
                 for (var i = 0; i < expected.Length; i++)
                 {
                     var c = Char.Parse(i.ToString());
-                    var keyInput = ApplyModifiers(c, KeyModifiers.Alt);
+                    var keyInput = ApplyModifiers(c, VimKeyModifiers.Alt);
                     Assert.Equal(expected[i], keyInput.Char);
-                    Assert.Equal(KeyModifiers.None, keyInput.KeyModifiers);
+                    Assert.Equal(VimKeyModifiers.None, keyInput.KeyModifiers);
                     Assert.Equal(VimKey.RawCharacter, keyInput.Key);
                 }
             }
@@ -194,7 +194,7 @@ namespace Vim.UnitTest
                 for (var i = 0; i < source.Length; i++)
                 {
                     var left = KeyInputUtil.CharToKeyInput(expected[i]);
-                    var right = KeyInputUtil.ApplyModifiers(KeyInputUtil.CharToKeyInput(source[i]), KeyModifiers.Alt);
+                    var right = KeyInputUtil.ApplyKeyModifiers(KeyInputUtil.CharToKeyInput(source[i]), VimKeyModifiers.Alt);
                     Assert.Equal(left, right);
                 }
             }
@@ -282,7 +282,7 @@ namespace Vim.UnitTest
             public void GetKeyInput_PoundWithShift()
             {
                 var keyInput = KeyInputUtil.CharToKeyInput('#');
-                Assert.Equal(keyInput, KeyInputUtil.ApplyModifiers(keyInput, KeyModifiers.Shift));
+                Assert.Equal(keyInput, KeyInputUtil.ApplyKeyModifiers(keyInput, VimKeyModifiers.Shift));
             }
 
             /// <summary>
@@ -332,7 +332,7 @@ namespace Vim.UnitTest
             [Fact]
             public void DontPreserveModifiers()
             {
-                var keyInput = KeyInputUtil.ApplyModifiersToVimKey(VimKey.KeypadDivide, KeyModifiers.Control);
+                var keyInput = KeyInputUtil.ApplyKeyModifiersToKey(VimKey.KeypadDivide, VimKeyModifiers.Control);
                 var equivalent = KeyInputUtil.GetNonKeypadEquivalent(keyInput);
                 Assert.Equal(KeyInputUtil.CharToKeyInput('/'), equivalent.Value);
             }
@@ -363,7 +363,7 @@ namespace Vim.UnitTest
                 {
                     var ki = KeyInputUtil.CharToKeyInput(cur);
                     Assert.Equal(cur, ki.Char);
-                    Assert.Equal(KeyModifiers.None, ki.KeyModifiers);
+                    Assert.Equal(VimKeyModifiers.None, ki.KeyModifiers);
                     Assert.Equal(VimKey.RawCharacter, ki.Key);
                 }
             }
@@ -375,7 +375,7 @@ namespace Vim.UnitTest
                 {
                     var ki = KeyInputUtil.CharToKeyInput(cur);
                     Assert.Equal(cur, ki.Char);
-                    Assert.Equal(KeyModifiers.None, ki.KeyModifiers);
+                    Assert.Equal(VimKeyModifiers.None, ki.KeyModifiers);
                     Assert.Equal(VimKey.RawCharacter, ki.Key);
                 }
             }
@@ -391,7 +391,7 @@ namespace Vim.UnitTest
 
                     if (CharAll.Contains(cur))
                     {
-                        Assert.Equal(KeyModifiers.None, ki.KeyModifiers);
+                        Assert.Equal(VimKeyModifiers.None, ki.KeyModifiers);
                     }
                 }
             }
@@ -429,7 +429,7 @@ namespace Vim.UnitTest
             {
                 var ki = KeyInputUtil.CharToKeyInput('_');
                 Assert.Equal('_', ki.Char);
-                Assert.Equal(KeyModifiers.None, ki.KeyModifiers);
+                Assert.Equal(VimKeyModifiers.None, ki.KeyModifiers);
             }
 
             [Fact]
@@ -437,7 +437,7 @@ namespace Vim.UnitTest
             {
                 var ki = KeyInputUtil.CharToKeyInput('-');
                 Assert.Equal('-', ki.Char);
-                Assert.Equal(KeyModifiers.None, ki.KeyModifiers);
+                Assert.Equal(VimKeyModifiers.None, ki.KeyModifiers);
             }
 
             [Fact]
@@ -445,7 +445,7 @@ namespace Vim.UnitTest
             {
                 var ki = KeyInputUtil.CharToKeyInput('%');
                 Assert.Equal('%', ki.Char);
-                Assert.Equal(KeyModifiers.None, ki.KeyModifiers);
+                Assert.Equal(VimKeyModifiers.None, ki.KeyModifiers);
             }
 
             [Fact]
@@ -512,9 +512,9 @@ namespace Vim.UnitTest
                         continue;
                     }
 
-                    var keyInput = KeyInputUtil.ApplyModifiersToVimKey(cur, KeyModifiers.Control);
+                    var keyInput = KeyInputUtil.ApplyKeyModifiersToKey(cur, VimKeyModifiers.Control);
                     Assert.Equal(cur, keyInput.Key);
-                    Assert.Equal(KeyModifiers.Control, keyInput.KeyModifiers & KeyModifiers.Control);
+                    Assert.Equal(VimKeyModifiers.Control, keyInput.KeyModifiers & VimKeyModifiers.Control);
                 }
             }
 
@@ -541,7 +541,7 @@ namespace Vim.UnitTest
                 {
                     var lower = KeyInputUtil.CharToKeyInput(letter);
                     var upper = KeyInputUtil.CharToKeyInput(Char.ToUpper(letter));
-                    var lowerWithShift = KeyInputUtil.ChangeKeyModifiersDangerous(lower, KeyModifiers.Shift);
+                    var lowerWithShift = KeyInputUtil.ChangeKeyModifiersDangerous(lower, VimKeyModifiers.Shift);
                     Assert.NotEqual(lowerWithShift, upper);
                 }
             }
@@ -553,7 +553,7 @@ namespace Vim.UnitTest
                 {
                     var lower = KeyInputUtil.CharToKeyInput(letter);
                     var upper = KeyInputUtil.CharToKeyInput(Char.ToUpper(letter));
-                    var upperNoShift = KeyInputUtil.ChangeKeyModifiersDangerous(upper, KeyModifiers.None);
+                    var upperNoShift = KeyInputUtil.ChangeKeyModifiersDangerous(upper, VimKeyModifiers.None);
                     Assert.NotEqual(lower, upperNoShift);
                 }
             }
@@ -565,7 +565,7 @@ namespace Vim.UnitTest
             public void ChangeKeyModifiers_WontChangeChar()
             {
                 var ki = KeyInputUtil.CharToKeyInput('[');
-                var ki2 = KeyInputUtil.ChangeKeyModifiersDangerous(ki, KeyModifiers.Shift);
+                var ki2 = KeyInputUtil.ChangeKeyModifiersDangerous(ki, VimKeyModifiers.Shift);
                 Assert.Equal(ki.Char, ki2.Char);
             }
 
@@ -579,7 +579,7 @@ namespace Vim.UnitTest
                 foreach (var cur in CharLettersLower)
                 {
                     var left = KeyInputUtil.CharWithControlToKeyInput(cur);
-                    var right = KeyInputUtil.ApplyModifiers(KeyInputUtil.CharToKeyInput(cur), KeyModifiers.Control);
+                    var right = KeyInputUtil.ApplyKeyModifiers(KeyInputUtil.CharToKeyInput(cur), VimKeyModifiers.Control);
                     Assert.Equal(right, left);
                 }
             }
@@ -593,7 +593,7 @@ namespace Vim.UnitTest
             {
                 var keyInput = KeyInputUtil.CharWithControlToKeyInput('#');
                 Assert.Equal(VimKey.RawCharacter, keyInput.Key);
-                Assert.Equal(KeyModifiers.Control, keyInput.KeyModifiers);
+                Assert.Equal(VimKeyModifiers.Control, keyInput.KeyModifiers);
                 Assert.Equal('#', keyInput.Char);
             }
 
@@ -625,7 +625,7 @@ namespace Vim.UnitTest
                 var all = KeyInputUtil.VimKeyInputList;
                 foreach (var keyInput in all)
                 {
-                    Assert.Equal(KeyModifiers.None, keyInput.KeyModifiers);
+                    Assert.Equal(VimKeyModifiers.None, keyInput.KeyModifiers);
                 }
             }
 
@@ -636,7 +636,7 @@ namespace Vim.UnitTest
                     keyInput =>
                     {
                         Assert.Equal(VimKey.Tab, keyInput.Key);
-                        Assert.Equal(KeyModifiers.None, keyInput.KeyModifiers);
+                        Assert.Equal(VimKeyModifiers.None, keyInput.KeyModifiers);
                         Assert.Equal('\t', keyInput.Char);
                     };
 
@@ -681,7 +681,7 @@ namespace Vim.UnitTest
             public void DoubleApplyControl()
             {
                 var keyInput1 = KeyInputUtil.CharWithControlToKeyInput(';');
-                var keyInput2 = KeyInputUtil.ApplyModifiers(keyInput1, KeyModifiers.Control);
+                var keyInput2 = KeyInputUtil.ApplyKeyModifiers(keyInput1, VimKeyModifiers.Control);
                 Assert.Equal(keyInput1, keyInput2);
             }
         }

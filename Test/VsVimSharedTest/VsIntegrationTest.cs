@@ -131,7 +131,7 @@ namespace Vim.VisualStudio.UnitTest
             {
                 Create("cat", "dog");
                 _vimBuffer.Process(":map <S-RETURN> o<Esc>", enter: true);
-                _vsSimulation.Run(KeyInputUtil.ApplyModifiersToVimKey(VimKey.Enter, KeyModifiers.Shift));
+                _vsSimulation.Run(KeyInputUtil.ApplyKeyModifiersToKey(VimKey.Enter, VimKeyModifiers.Shift));
                 Assert.Equal(3, _textBuffer.CurrentSnapshot.LineCount);
                 Assert.Equal("cat", _textBuffer.GetLine(0).GetText());
                 Assert.Equal("", _textBuffer.GetLine(1).GetText());
@@ -146,7 +146,7 @@ namespace Vim.VisualStudio.UnitTest
             {
                 Create("cat", "dog");
                 _vimBuffer.Process(":map <S-TAB> o<Esc>", enter: true);
-                _vsSimulation.Run(KeyInputUtil.ApplyModifiersToChar('\t', KeyModifiers.Shift));
+                _vsSimulation.Run(KeyInputUtil.ApplyKeyModifiersToChar('\t', VimKeyModifiers.Shift));
                 Assert.Equal(3, _textBuffer.CurrentSnapshot.LineCount);
                 Assert.Equal("cat", _textBuffer.GetLine(0).GetText());
                 Assert.Equal("", _textBuffer.GetLine(1).GetText());
@@ -159,7 +159,7 @@ namespace Vim.VisualStudio.UnitTest
                 Create("cat", "dog");
                 _vimBuffer.Process(":inoremap <S-CR> <Esc>", enter: true);
                 _vimBuffer.Process("i");
-                _vsSimulation.Run(KeyInputUtil.ApplyModifiersToVimKey(VimKey.Enter, KeyModifiers.Shift));
+                _vsSimulation.Run(KeyInputUtil.ApplyKeyModifiersToKey(VimKey.Enter, VimKeyModifiers.Shift));
                 Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
             }
 
@@ -258,7 +258,7 @@ namespace Vim.VisualStudio.UnitTest
             {
                 Create("dog", "cat", "tree");
                 _vsSimulation.SimulateStandardKeyMappings = true;
-                _vsSimulation.Run(KeyInputUtil.ApplyModifiersToVimKey(VimKey.Down, KeyModifiers.Shift));
+                _vsSimulation.Run(KeyInputUtil.ApplyKeyModifiersToKey(VimKey.Down, VimKeyModifiers.Shift));
                 Assert.Equal(ModeKind.VisualCharacter, _vimBuffer.ModeKind);
             }
 
@@ -271,7 +271,7 @@ namespace Vim.VisualStudio.UnitTest
             {
                 Create("dog", "cat", "tree");
                 _vsSimulation.SimulateStandardKeyMappings = true;
-                _vsSimulation.Run(KeyInputUtil.ApplyModifiersToVimKey(VimKey.Right, KeyModifiers.Shift));
+                _vsSimulation.Run(KeyInputUtil.ApplyKeyModifiersToKey(VimKey.Right, VimKeyModifiers.Shift));
                 Assert.Equal(ModeKind.VisualCharacter, _vimBuffer.ModeKind);
             }
 

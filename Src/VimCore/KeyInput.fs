@@ -7,7 +7,7 @@ open System.Runtime.InteropServices
 type KeyInput
     (
         _key : VimKey,
-        _modKey : KeyModifiers, 
+        _modKey : VimKeyModifiers, 
         _literal : char option 
     ) =
 
@@ -15,7 +15,7 @@ type KeyInput
     member x.RawChar = _literal
     member x.Key = _key
     member x.KeyModifiers = _modKey
-    member x.HasShiftModifier = _modKey = KeyModifiers.Shift
+    member x.HasShiftModifier = _modKey = VimKeyModifiers.Shift
     member x.IsDigit = 
         match _literal with
         | Some c -> CharUtil.IsDigit c
@@ -61,7 +61,7 @@ type KeyInput
 
     override x.ToString() = System.String.Format("{0}:{1}:{2}", x.Char, x.Key, x.KeyModifiers);
 
-    static member DefaultValue = KeyInput(VimKey.None, KeyModifiers.None, None)
+    static member DefaultValue = KeyInput(VimKey.None, VimKeyModifiers.None, None)
     static member op_Equality(this,other) = System.Collections.Generic.EqualityComparer<KeyInput>.Default.Equals(this,other)
     static member op_Inequality(this,other) = not (System.Collections.Generic.EqualityComparer<KeyInput>.Default.Equals(this,other))
 
@@ -184,7 +184,7 @@ module KeyInputUtil =
                         let code = baseCode + i
                         char code
 
-                    yield (letter, KeyInput(vimKey, KeyModifiers.None, Some c))
+                    yield (letter, KeyInput(vimKey, VimKeyModifiers.None, Some c))
             }
 
         let other = 
@@ -198,7 +198,7 @@ module KeyInputUtil =
             ]
             |> Seq.map (fun (c, key, code) -> 
                 let controlChar = CharUtil.OfAsciiValue (byte code)
-                let keyInput = KeyInput(key, KeyModifiers.None, Some controlChar)
+                let keyInput = KeyInput(key, VimKeyModifiers.None, Some controlChar)
                 (c, keyInput))
 
         Seq.append alpha other
@@ -209,11 +209,11 @@ module KeyInputUtil =
 
         let rawSeq = 
             RawCharData
-            |> Seq.map (fun c -> KeyInput(VimKey.RawCharacter, KeyModifiers.None, Some c))
+            |> Seq.map (fun c -> KeyInput(VimKey.RawCharacter, VimKeyModifiers.None, Some c))
 
         let standardSeq = 
             VimKeyRawData 
-            |> Seq.map (fun (key,charOpt) -> KeyInput(key, KeyModifiers.None, charOpt)) 
+            |> Seq.map (fun (key,charOpt) -> KeyInput(key, VimKeyModifiers.None, charOpt)) 
 
         // When mapping the control keys only take the primary keys.  Don't take any alternates because their
         // character is owned by a combination in the standard sequence. 
@@ -274,13 +274,13 @@ module KeyInputUtil =
 
     let CharToKeyInput c = 
         match Map.tryFind c CharToKeyInputMap with
-        | None -> KeyInput(VimKey.RawCharacter, KeyModifiers.None, Some c)
+        | None -> KeyInput(VimKey.RawCharacter, VimKeyModifiers.None, Some c)
         | Some(ki) -> ki
 
     /// Map of the VimKey to KeyInput values.  
     let VimKeyToKeyInputMap =
         VimKeyInputList
-        |> Seq.filter (fun keyInput -> keyInput.KeyModifiers = KeyModifiers.None)
+        |> Seq.filter (fun keyInput -> keyInput.KeyModifiers = VimKeyModifiers.None)
         |> Seq.map (fun keyInput -> keyInput.Key, keyInput)
         |> Map.ofSeq
 
@@ -302,7 +302,7 @@ module KeyInputUtil =
     /// Apply the modifiers to the given KeyInput and determine the result.  This will
     /// not necessarily return a KeyInput with the modifier set.  It attempts to unify 
     /// certain ambiguous combinations.
-    let ApplyModifiers (keyInput : KeyInput) (targetModifiers : KeyModifiers) =
+    let ApplyKeyModifiers (keyInput : KeyInput) (targetModifiers : VimKeyModifiers) =
 
         let normalizeShift (keyInput : KeyInput) =
             match keyInput.RawChar with
@@ -319,7 +319,7 @@ module KeyInputUtil =
                     // demonstrated by playing with key mapping combinations (<S-A> and A).  It's 
                     // convenient to have upper 'A' as a stand alone VimKey hence we choose to represent
                     // that way and remove the shift modifier here
-                    let modifiers = Util.UnsetFlag keyInput.KeyModifiers KeyModifiers.Shift
+                    let modifiers = Util.UnsetFlag keyInput.KeyModifiers VimKeyModifiers.Shift
                     let keyInput = 
                         if CharUtil.IsLower keyInput.Char then
 
@@ -336,14 +336,14 @@ module KeyInputUtil =
                 elif (int c) < 0x100 && not (CharUtil.IsControl c) && c <> ' ' then
                     // There is a set of chars for which the Shift modifier has no effect.  If this is one of them then
                     // don't apply the shift modifier to the final KeyInput
-                    let modifiers = Util.UnsetFlag keyInput.KeyModifiers KeyModifiers.Shift
+                    let modifiers = Util.UnsetFlag keyInput.KeyModifiers VimKeyModifiers.Shift
                     ChangeKeyModifiersDangerous keyInput modifiers
                 else
                     // Nothing special to do here
                     keyInput
 
         let normalizeControl (keyInput : KeyInput) = 
-            if Util.IsFlagSet keyInput.KeyModifiers KeyModifiers.Alt then
+            if Util.IsFlagSet keyInput.KeyModifiers VimKeyModifiers.Alt then
                 keyInput
             else
                 match keyInput.RawChar with
@@ -362,7 +362,7 @@ module KeyInputUtil =
                     match Map.tryFind c ControlCharToKeyInputMap with
                     | None -> keyInput
                     | Some keyInput -> 
-                        let modifiers = Util.UnsetFlag keyInput.KeyModifiers KeyModifiers.Control
+                        let modifiers = Util.UnsetFlag keyInput.KeyModifiers VimKeyModifiers.Control
                         ChangeKeyModifiersDangerous keyInput modifiers
 
         let normalizeAlt (keyInput : KeyInput) =
@@ -376,7 +376,7 @@ module KeyInputUtil =
                     // the RawCharacter instead
                     let number = number ||| 0x80
                     let c = char number
-                    let modifiers = Util.UnsetFlag keyInput.KeyModifiers KeyModifiers.Alt
+                    let modifiers = Util.UnsetFlag keyInput.KeyModifiers VimKeyModifiers.Alt
                     KeyInput(VimKey.RawCharacter, modifiers, Some c)
                 else
                     // Nothing special to do here
@@ -386,47 +386,47 @@ module KeyInputUtil =
 
         // First normalize the shift case
         let keyInput = 
-            if Util.IsFlagSet targetModifiers KeyModifiers.Shift then
+            if Util.IsFlagSet targetModifiers VimKeyModifiers.Shift then
                 normalizeShift keyInput
             else 
                 keyInput
 
         // Next normalize the control case
         let keyInput = 
-            if Util.IsFlagSet targetModifiers KeyModifiers.Control then
+            if Util.IsFlagSet targetModifiers VimKeyModifiers.Control then
                 normalizeControl keyInput
             else
                 keyInput
 
         let keyInput =
-            if Util.IsFlagSet targetModifiers KeyModifiers.Alt then
+            if Util.IsFlagSet targetModifiers VimKeyModifiers.Alt then
                 normalizeAlt keyInput
             else 
                 keyInput
 
         keyInput
 
-    let ApplyModifiersToVimKey vimKey modifiers = 
+    let ApplyKeyModifiersToKey vimKey modifiers = 
         let keyInput = VimKeyToKeyInput vimKey
-        ApplyModifiers keyInput modifiers
+        ApplyKeyModifiers keyInput modifiers
 
-    let ApplyModifiersToChar c modifiers = 
+    let ApplyKeyModifiersToChar c modifiers = 
         let keyInput = CharToKeyInput c
-        ApplyModifiers keyInput modifiers
+        ApplyKeyModifiers keyInput modifiers
 
     let CharWithControlToKeyInput ch = 
         let keyInput = ch |> CharToKeyInput  
-        ApplyModifiers keyInput KeyModifiers.Control
+        ApplyKeyModifiers keyInput VimKeyModifiers.Control
 
     let CharWithAltToKeyInput ch = 
         let keyInput = ch |> CharToKeyInput 
-        ApplyModifiers keyInput KeyModifiers.Alt
+        ApplyKeyModifiers keyInput VimKeyModifiers.Alt
 
     let GetNonKeypadEquivalent (keyInput : KeyInput) = 
 
         let apply c = 
             let keyInput = CharToKeyInput c
-            ApplyModifiers keyInput keyInput.KeyModifiers |> Some
+            ApplyKeyModifiers keyInput keyInput.KeyModifiers |> Some
 
         match keyInput.Key with
         | VimKey.Keypad0 -> apply '0'
@@ -444,6 +444,6 @@ module KeyInputUtil =
         | VimKey.KeypadMinus -> apply '-'
         | VimKey.KeypadMultiply -> apply '*'
         | VimKey.KeypadPlus -> apply '+'
-        | VimKey.KeypadEnter -> ApplyModifiers EnterKey keyInput.KeyModifiers |> Some
+        | VimKey.KeypadEnter -> ApplyKeyModifiers EnterKey keyInput.KeyModifiers |> Some
         | _ -> None
 

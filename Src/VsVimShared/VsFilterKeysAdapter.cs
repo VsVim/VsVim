@@ -71,7 +71,7 @@ namespace Vim.VisualStudio
         {
             EditCommand command;
             return 
-                OleCommandUtil.TryConvert(commandGroup, commandId, IntPtr.Zero, KeyModifiers.None, out command) && 
+                OleCommandUtil.TryConvert(commandGroup, commandId, IntPtr.Zero, VimKeyModifiers.None, out command) && 
                 command.HasKeyInput;
         }
 

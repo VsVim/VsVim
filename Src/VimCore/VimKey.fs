@@ -146,7 +146,7 @@ module VimKeyUtil =
         | _ -> false
 
 [<System.Flags>]
-type KeyModifiers = 
+type VimKeyModifiers = 
     | None = 0x0
 
     /// The Alt or Meta Key 
