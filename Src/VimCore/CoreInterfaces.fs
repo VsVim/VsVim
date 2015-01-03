@@ -979,6 +979,9 @@ type Motion =
     /// End of the display line 
     | DisplayLineEnd
 
+    /// First non blank character on the display line
+    | DisplayLineFirstNonBlank
+
     /// Get the point in the middle of the screen.  This looks at the entire screen not just 
     /// the width of the current line
     | DisplayLineMiddleOfScreen

@@ -973,6 +973,13 @@ type internal MotionUtil
 
         | _ -> x.LineUp count
 
+    member x.DisplayLineFirstNonBlank() = 
+        match TextViewUtil.IsWordWrapEnabled _textView, TextViewUtil.GetTextViewLines _textView with
+        | true, Some textViewLines -> 
+            let line = textViewLines.GetTextViewLineContainingBufferPosition x.CaretPoint
+            x.FirstNonBlankCore line.Extent
+        | _ -> x.FirstNonBlankOnCurrentLine()
+
     member x.DisplayLineStart() =
         match TextViewUtil.GetTextViewLines _textView with
         | None -> None
@@ -1761,15 +1768,18 @@ type internal MotionUtil
 
     /// Find the first non-whitespace character on the current line.  
     member x.FirstNonBlankOnCurrentLine () =
+        x.FirstNonBlankCore x.CaretLine.Extent
+
+    member x.FirstNonBlankCore span = 
         let start = x.CaretPoint
-        let line = start.GetContainingLine()
         let target = 
-            SnapshotLineUtil.GetPoints Path.Forward line
-            |> Seq.tryFind (fun x -> not (CharUtil.IsWhiteSpace (x.GetChar())) )
-            |> OptionUtil.getOrDefault line.End
-        let startPoint,endPoint,isForward = 
-            if start.Position <= target.Position then start,target,true
-            else target,start,false
+            span 
+            |> SnapshotSpanUtil.GetPoints Path.Forward
+            |> Seq.tryFind (fun x -> not (CharUtil.IsBlank (x.GetChar())) )
+            |> OptionUtil.getOrDefault span.End
+        let startPoint, endPoint, isForward = 
+            if start.Position <= target.Position then start, target, true
+            else target, start, false
         let span = SnapshotSpan(startPoint, endPoint)
         MotionResult.Create span isForward MotionKind.CharacterWiseExclusive 
 
@@ -2613,6 +2623,7 @@ type internal MotionUtil
             | Motion.DisplayLineUp -> x.DisplayLineUp motionArgument.Count
             | Motion.DisplayLineStart -> x.DisplayLineStart()
             | Motion.DisplayLineEnd -> x.DisplayLineEnd()
+            | Motion.DisplayLineFirstNonBlank -> x.DisplayLineFirstNonBlank() |> Some
             | Motion.DisplayLineMiddleOfScreen -> x.DisplayLineMiddleOfScreen () 
             | Motion.EndOfLine -> x.EndOfLine motionArgument.Count |> Some
             | Motion.EndOfWord wordKind -> x.EndOfWord wordKind motionArgument.Count |> Some

@@ -47,6 +47,7 @@ type internal MotionCapture
                 yield ("gm", MotionFlags.CaretMovement, Motion.DisplayLineMiddleOfScreen)
                 yield ("g0", MotionFlags.CaretMovement, Motion.DisplayLineStart)
                 yield ("g$", MotionFlags.CaretMovement, Motion.DisplayLineEnd)
+                yield ("g^", MotionFlags.CaretMovement, Motion.DisplayLineFirstNonBlank)
                 yield ("g_", MotionFlags.CaretMovement, Motion.LastNonBlankOnLine)
                 yield ("g*", MotionFlags.CaretMovement, Motion.NextPartialWord Path.Forward)
                 yield ("g#", MotionFlags.CaretMovement, Motion.NextPartialWord Path.Backward)
