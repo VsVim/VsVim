@@ -317,6 +317,25 @@ type internal CommonOperations
             // this exception and move on
             | _ -> ()
 
+    /// This method is used to essentially find a line in the edit buffer which represents 
+    /// the start of a visual line.  The context provided is a line in the edit buffer 
+    /// which maps to some point on that visual line.  
+    ///
+    /// This is needed in outlining cases where a visual line has a different edit line 
+    /// at the start and line break of the visual line.  The function will map the line at the
+    /// line break back to the line of the start. 
+    member x.AdjustEditLineForVisualSnapshotLine (line : ITextSnapshotLine) = 
+        let bufferGraph = _textView.BufferGraph
+        let visualSnapshot = _textView.TextViewModel.VisualBuffer.CurrentSnapshot
+        match BufferGraphUtil.MapSpanUpToSnapshot bufferGraph line.ExtentIncludingLineBreak SpanTrackingMode.EdgeInclusive visualSnapshot with
+        | None -> line
+        | Some col ->
+            if col.Count = 0 then
+                line
+            else
+                let span = NormalizedSnapshotSpanCollectionUtil.GetOverarchingSpan col
+                span.Start.GetContainingLine()
+
     /// Delete count lines from the cursor.  The caret should be positioned at the start
     /// of the first line for both undo / redo
     member x.DeleteLines (startLine : ITextSnapshotLine) count register = 
@@ -358,6 +377,11 @@ type internal CommonOperations
             | _ ->
                 // If we couldn't map back down raise an error
                 _statusUtil.OnError Resources.Internal_ErrorMappingToVisual
+
+        // First we need to remap the 'startLine' value.  To do the delete we need to know the 
+        // correct start line in the edit buffer.  What we are provided is a value in the edit
+        // buffer but it may be a line further down in the buffer do to folding.  
+        let startLine = x.AdjustEditLineForVisualSnapshotLine startLine
 
         // The span should be calculated using the visual snapshot if available.  Binding 
         // it as 'x' here will help prevent us from accidentally mixing the visual and text
@@ -589,16 +613,7 @@ type internal CommonOperations
     /// in that snapshot or the original value if no mapping is possible. 
     member x.GetDirectionLastLineInVisualSnapshot (result : MotionResult) : ITextSnapshotLine =
         let line = result.DirectionLastLine
-        let bufferGraph = _textView.BufferGraph
-        let visualSnapshot = _textView.TextViewModel.VisualBuffer.CurrentSnapshot
-        match BufferGraphUtil.MapSpanUpToSnapshot bufferGraph line.ExtentIncludingLineBreak SpanTrackingMode.EdgeInclusive visualSnapshot with
-        | None -> line
-        | Some col ->
-            if col.Count = 0 then
-                line
-            else
-                let span = NormalizedSnapshotSpanCollectionUtil.GetOverarchingSpan col
-                span.Start.GetContainingLine()
+        x.AdjustEditLineForVisualSnapshotLine line
 
     /// Move the caret to the position dictated by the given MotionResult value
     ///

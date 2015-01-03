@@ -339,7 +339,11 @@ type ICommonOperations =
     /// while respecting the settings of the ITextBuffer
     abstract CreateRegisterValue : point : SnapshotPoint -> stringData : StringData -> operationKind : OperationKind -> RegisterValue
 
-    /// Delete at least count lines from the visual snapshot
+    /// Delete at least count lines from the buffer starting from the provided line.  The 
+    /// operation will fail if there aren't at least 'maxCount' lines in the buffer from
+    /// the start point.
+    ///
+    /// This operation is performed against the visual buffer.  
     abstract DeleteLines : startLine : ITextSnapshotLine -> maxCount : int -> register : Register -> unit
 
     /// Ensure the view properties are met at the caret

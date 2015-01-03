@@ -4807,6 +4807,23 @@ namespace Vim.UnitTest
                 _vimBuffer.Process(@"""cx""-p");
                 Assert.Equal("otg", _textBuffer.GetLine(0).GetText());
             }
+
+            [Fact]
+            public void Issue1436()
+            {
+                Create("cat", "dog", "fish", "tree");
+
+                var span = new SnapshotSpan(
+                    _textBuffer.GetLine(1).Start.Add(2),
+                    _textBuffer.GetLine(2).End);
+                var adhocOutliner = EditorUtilsFactory.GetOrCreateOutliner(_textBuffer);
+                adhocOutliner.CreateOutliningRegion(span, SpanTrackingMode.EdgeInclusive, "test", "test");
+                OutliningManagerService.GetOutliningManager(_textView).CollapseAll(span, _ => true);
+
+                _textView.MoveCaretTo(_textBuffer.GetLine(2).End);
+                _vimBuffer.ProcessNotation("dd");
+                Assert.Equal( new[] { "cat", "tree" }, _textBuffer.GetLines());
+            }
         }
 
         public abstract class TagBlocksMotionTest : NormalModeIntegrationTest
