@@ -265,6 +265,16 @@ autocmd BufEnter *.html set ts=12
             }
 
             [Fact]
+            public void SpacesBeforeCommands()
+            {
+                var text = @"
+    set hlsearch
+";
+                Run(text);
+                Assert.True(_globalSettings.HighlightSearch);
+            }
+
+            [Fact]
             public void DefaultSettings73()
             {
                 VimHost.DefaultSettings = DefaultSettings.GVim73;
