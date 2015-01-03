@@ -98,7 +98,7 @@ namespace Vim.UI.Wpf
                 text = args.SystemText;
                 for (var i = 0; i < text.Length; i++)
                 {
-                    var keyInput = KeyInputUtil.ApplyModifiers(KeyInputUtil.CharToKeyInput(text[i]), keyModifiers);
+                    var keyInput = KeyInputUtil.ApplyKeyModifiers(KeyInputUtil.CharToKeyInput(text[i]), keyModifiers);
                     handled = TryProcess(keyInput);
                 }
             }

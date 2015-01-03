@@ -163,7 +163,7 @@ namespace Vim.UnitTest
                 Map("<S-#>", "pound");
                 AssertNoMapping("#");
                 var keyInput = KeyInputUtil.CharToKeyInput('#');
-                keyInput = KeyInputUtil.ChangeVimKeyModifiersDangerous(keyInput, VimKeyModifiers.Shift);
+                keyInput = KeyInputUtil.ChangeKeyModifiersDangerous(keyInput, VimKeyModifiers.Shift);
                 Assert.True(_map.GetKeyMappingResult(keyInput, KeyRemapMode.Normal).IsMapped);
             }
 
@@ -710,7 +710,7 @@ namespace Vim.UnitTest
             public void Issue328()
             {
                 Assert.True(_map.MapWithNoRemap("<S-SPACE>", "<ESC>", KeyRemapMode.Insert));
-                var res = _map.GetKeyMapping(KeyInputUtil.ApplyModifiersToChar(' ', VimKeyModifiers.Shift), KeyRemapMode.Insert);
+                var res = _map.GetKeyMapping(KeyInputUtil.ApplyKeyModifiersToChar(' ', VimKeyModifiers.Shift), KeyRemapMode.Insert);
                 Assert.Equal(KeyInputUtil.EscapeKey, res.Single());
             }
 

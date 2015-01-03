@@ -158,7 +158,7 @@ namespace Vim.VisualStudio.Implementation.Misc
             }
 
             var c = (char)('a' + (key - Key.A));
-            keyInput = KeyInputUtil.ApplyModifiersToChar(c, keyModifiers);
+            keyInput = KeyInputUtil.ApplyKeyModifiersToChar(c, keyModifiers);
             return true;
         }
 

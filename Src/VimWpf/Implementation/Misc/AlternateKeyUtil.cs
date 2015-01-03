@@ -146,7 +146,7 @@ namespace Vim.UI.Wpf.Implementation.Misc
             if (WpfKeyToKeyInputMap.TryGetValue(key, out keyInput))
             {
                 var keyModifiers = ConvertToKeyModifiers(modifierKeys);
-                keyInput = KeyInputUtil.ApplyModifiers(keyInput, keyModifiers);
+                keyInput = KeyInputUtil.ApplyKeyModifiers(keyInput, keyModifiers);
                 return true;
             }
 

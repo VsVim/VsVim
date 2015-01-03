@@ -289,7 +289,7 @@ module KeyInputUtil =
         | None -> invalidArg "vimKey" Resources.KeyInput_InvalidVimKey
         | Some(ki) -> ki
 
-    let ChangeVimKeyModifiersDangerous (ki:KeyInput) keyModifiers = 
+    let ChangeKeyModifiersDangerous (ki:KeyInput) keyModifiers = 
         KeyInput(ki.Key, keyModifiers, ki.RawChar)
 
     let NullKey = VimKeyToKeyInput VimKey.Null
@@ -302,7 +302,7 @@ module KeyInputUtil =
     /// Apply the modifiers to the given KeyInput and determine the result.  This will
     /// not necessarily return a KeyInput with the modifier set.  It attempts to unify 
     /// certain ambiguous combinations.
-    let ApplyModifiers (keyInput : KeyInput) (targetModifiers : VimKeyModifiers) =
+    let ApplyKeyModifiers (keyInput : KeyInput) (targetModifiers : VimKeyModifiers) =
 
         let normalizeShift (keyInput : KeyInput) =
             match keyInput.RawChar with
@@ -326,18 +326,18 @@ module KeyInputUtil =
                             // The shift modifier should promote a letter into the upper form 
                             let c = CharUtil.ToUpper keyInput.Char
                             let upperKeyInput = CharToKeyInput c 
-                            ChangeVimKeyModifiersDangerous upperKeyInput keyInput.KeyModifiers
+                            ChangeKeyModifiersDangerous upperKeyInput keyInput.KeyModifiers
                         else
                             // Ignore the shift modifier on anything which is not considered lower
                             keyInput
 
                     // Apply the remaining modifiers
-                    ChangeVimKeyModifiersDangerous keyInput modifiers
+                    ChangeKeyModifiersDangerous keyInput modifiers
                 elif (int c) < 0x100 && not (CharUtil.IsControl c) && c <> ' ' then
                     // There is a set of chars for which the Shift modifier has no effect.  If this is one of them then
                     // don't apply the shift modifier to the final KeyInput
                     let modifiers = Util.UnsetFlag keyInput.KeyModifiers VimKeyModifiers.Shift
-                    ChangeVimKeyModifiersDangerous keyInput modifiers
+                    ChangeKeyModifiersDangerous keyInput modifiers
                 else
                     // Nothing special to do here
                     keyInput
@@ -363,7 +363,7 @@ module KeyInputUtil =
                     | None -> keyInput
                     | Some keyInput -> 
                         let modifiers = Util.UnsetFlag keyInput.KeyModifiers VimKeyModifiers.Control
-                        ChangeVimKeyModifiersDangerous keyInput modifiers
+                        ChangeKeyModifiersDangerous keyInput modifiers
 
         let normalizeAlt (keyInput : KeyInput) =
             match keyInput.RawChar with
@@ -382,7 +382,7 @@ module KeyInputUtil =
                     // Nothing special to do here
                     keyInput
 
-        let keyInput = ChangeVimKeyModifiersDangerous keyInput (targetModifiers ||| keyInput.KeyModifiers)
+        let keyInput = ChangeKeyModifiersDangerous keyInput (targetModifiers ||| keyInput.KeyModifiers)
 
         // First normalize the shift case
         let keyInput = 
@@ -406,27 +406,27 @@ module KeyInputUtil =
 
         keyInput
 
-    let ApplyModifiersToVimKey vimKey modifiers = 
+    let ApplyKeyModifiersToKey vimKey modifiers = 
         let keyInput = VimKeyToKeyInput vimKey
-        ApplyModifiers keyInput modifiers
+        ApplyKeyModifiers keyInput modifiers
 
-    let ApplyModifiersToChar c modifiers = 
+    let ApplyKeyModifiersToChar c modifiers = 
         let keyInput = CharToKeyInput c
-        ApplyModifiers keyInput modifiers
+        ApplyKeyModifiers keyInput modifiers
 
     let CharWithControlToKeyInput ch = 
         let keyInput = ch |> CharToKeyInput  
-        ApplyModifiers keyInput VimKeyModifiers.Control
+        ApplyKeyModifiers keyInput VimKeyModifiers.Control
 
     let CharWithAltToKeyInput ch = 
         let keyInput = ch |> CharToKeyInput 
-        ApplyModifiers keyInput VimKeyModifiers.Alt
+        ApplyKeyModifiers keyInput VimKeyModifiers.Alt
 
     let GetNonKeypadEquivalent (keyInput : KeyInput) = 
 
         let apply c = 
             let keyInput = CharToKeyInput c
-            ApplyModifiers keyInput keyInput.KeyModifiers |> Some
+            ApplyKeyModifiers keyInput keyInput.KeyModifiers |> Some
 
         match keyInput.Key with
         | VimKey.Keypad0 -> apply '0'
@@ -444,6 +444,6 @@ module KeyInputUtil =
         | VimKey.KeypadMinus -> apply '-'
         | VimKey.KeypadMultiply -> apply '*'
         | VimKey.KeypadPlus -> apply '+'
-        | VimKey.KeypadEnter -> ApplyModifiers EnterKey keyInput.KeyModifiers |> Some
+        | VimKey.KeypadEnter -> ApplyKeyModifiers EnterKey keyInput.KeyModifiers |> Some
         | _ -> None
 

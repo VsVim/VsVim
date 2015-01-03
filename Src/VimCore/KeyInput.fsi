@@ -74,13 +74,13 @@ module KeyInputUtil =
     /// Apply the modifiers to the given KeyInput and determine the result.  This will
     /// not necessarily return a KeyInput with the modifier set.  It attempts to unify 
     /// certain ambiguous combinations.
-    val ApplyModifiers : keyInput : KeyInput -> modifiers : VimKeyModifiers -> KeyInput
+    val ApplyKeyModifiers : keyInput : KeyInput -> modifiers : VimKeyModifiers -> KeyInput
 
     /// Apply the modifiers to the given character
-    val ApplyModifiersToChar : c : char  -> modifiers : VimKeyModifiers -> KeyInput
+    val ApplyKeyModifiersToChar : c : char  -> modifiers : VimKeyModifiers -> KeyInput
 
     /// Apply the modifiers to the given VimKey
-    val ApplyModifiersToVimKey : vimKey : VimKey -> modifiers : VimKeyModifiers -> KeyInput
+    val ApplyKeyModifiersToKey : vimKey : VimKey -> modifiers : VimKeyModifiers -> KeyInput
 
     /// Try and convert the given char to a KeyInput value
     val CharToKeyInput : c : char -> KeyInput
@@ -101,7 +101,7 @@ module KeyInputUtil =
     ///
     /// This method should be avoided.  If you need to apply modifiers then use
     /// ApplyModifiers which uses Vim semantics when deciding how to apply the modifiers
-    val ChangeVimKeyModifiersDangerous : keyInput : KeyInput -> modifiers : VimKeyModifiers -> KeyInput
+    val ChangeKeyModifiersDangerous : keyInput : KeyInput -> modifiers : VimKeyModifiers -> KeyInput
 
     /// Get the alternate key for the given KeyInput if it's a key from the keypad 
     val GetNonKeypadEquivalent : keyInput : KeyInput -> KeyInput option 

@@ -177,7 +177,7 @@ namespace Vim.UnitTest
         public void CanProcess_DontHandleControlTab()
         {
             Create("");
-            Assert.False(_mode.CanProcess(KeyInputUtil.ChangeVimKeyModifiersDangerous(KeyInputUtil.TabKey, VimKeyModifiers.Control)));
+            Assert.False(_mode.CanProcess(KeyInputUtil.ChangeKeyModifiersDangerous(KeyInputUtil.TabKey, VimKeyModifiers.Control)));
         }
 
         #endregion
@@ -418,7 +418,7 @@ namespace Vim.UnitTest
         {
             Create("foo bar");
             _commandUtil.SetupCommandNormal(NormalCommand.NewScrollPages(ScrollDirection.Down));
-            _mode.Process(KeyInputUtil.ApplyModifiersToVimKey(VimKey.Down, VimKeyModifiers.Shift));
+            _mode.Process(KeyInputUtil.ApplyKeyModifiersToKey(VimKey.Down, VimKeyModifiers.Shift));
             _commandUtil.Verify();
         }
 
@@ -454,7 +454,7 @@ namespace Vim.UnitTest
         {
             Create("foo bar");
             _commandUtil.SetupCommandNormal(NormalCommand.NewScrollPages(ScrollDirection.Up));
-            _mode.Process(KeyInputUtil.ApplyModifiersToVimKey(VimKey.Up, VimKeyModifiers.Shift));
+            _mode.Process(KeyInputUtil.ApplyKeyModifiersToKey(VimKey.Up, VimKeyModifiers.Shift));
             _commandUtil.Verify();
         }
 
@@ -1496,7 +1496,7 @@ namespace Vim.UnitTest
         {
             Create("");
             _commandUtil.SetupCommandNormal(NormalCommand.NewGoToNextTab(Path.Forward));
-            _mode.Process(KeyInputUtil.ApplyModifiersToVimKey(VimKey.PageDown, VimKeyModifiers.Control));
+            _mode.Process(KeyInputUtil.ApplyKeyModifiersToKey(VimKey.PageDown, VimKeyModifiers.Control));
             _commandUtil.Verify();
         }
 
@@ -1514,7 +1514,7 @@ namespace Vim.UnitTest
         {
             Create("");
             _commandUtil.SetupCommandNormal(NormalCommand.NewGoToNextTab(Path.Backward));
-            _mode.Process(KeyInputUtil.ApplyModifiersToVimKey(VimKey.PageUp, VimKeyModifiers.Control));
+            _mode.Process(KeyInputUtil.ApplyKeyModifiersToKey(VimKey.PageUp, VimKeyModifiers.Control));
             _commandUtil.Verify();
         }
 

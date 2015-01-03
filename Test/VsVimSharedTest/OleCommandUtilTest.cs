@@ -20,7 +20,7 @@ namespace Vim.VisualStudio.UnitTest
         }
         private void VerifyConvertWithShift(VSConstants.VSStd2KCmdID cmd, VimKey vimKey, EditCommandKind kind)
         {
-            var keyInput = KeyInputUtil.ApplyModifiers(KeyInputUtil.VimKeyToKeyInput(vimKey), VimKeyModifiers.Shift);
+            var keyInput = KeyInputUtil.ApplyKeyModifiers(KeyInputUtil.VimKeyToKeyInput(vimKey), VimKeyModifiers.Shift);
             VerifyConvert(cmd, keyInput, kind);
         }
 
@@ -159,7 +159,7 @@ namespace Vim.VisualStudio.UnitTest
         [Fact]
         public void BackTab()
         {
-            VerifyConvert(VSConstants.VSStd2KCmdID.BACKTAB, KeyInputUtil.ApplyModifiers(KeyInputUtil.TabKey, VimKeyModifiers.Shift), EditCommandKind.UserInput);
+            VerifyConvert(VSConstants.VSStd2KCmdID.BACKTAB, KeyInputUtil.ApplyKeyModifiers(KeyInputUtil.TabKey, VimKeyModifiers.Shift), EditCommandKind.UserInput);
         }
 
         /// <summary>
@@ -168,7 +168,7 @@ namespace Vim.VisualStudio.UnitTest
         [Fact]
         public void Tab_WithShift()
         {
-            var keyInput = KeyInputUtil.ApplyModifiers(KeyInputUtil.TabKey, VimKeyModifiers.Shift);
+            var keyInput = KeyInputUtil.ApplyKeyModifiers(KeyInputUtil.TabKey, VimKeyModifiers.Shift);
             Assert.Equal(keyInput.KeyModifiers, VimKeyModifiers.Shift);
             VerifyConvert(VSConstants.VSStd2KCmdID.TAB, VimKeyModifiers.Shift, keyInput, EditCommandKind.UserInput);
         }

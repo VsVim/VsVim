@@ -136,9 +136,9 @@ namespace Vim.UnitTest
             var allKeyInputs = KeyInputUtil.VimKeyInputList;
             var all = allKeyInputs.SelectMany(x => new[] {
                 x,
-                KeyInputUtil.ChangeVimKeyModifiersDangerous(x, VimKeyModifiers.Control),
-                KeyInputUtil.ChangeVimKeyModifiersDangerous(x, VimKeyModifiers.Shift),
-                KeyInputUtil.ChangeVimKeyModifiersDangerous(x, VimKeyModifiers.Alt)
+                KeyInputUtil.ChangeKeyModifiersDangerous(x, VimKeyModifiers.Control),
+                KeyInputUtil.ChangeKeyModifiersDangerous(x, VimKeyModifiers.Shift),
+                KeyInputUtil.ChangeKeyModifiersDangerous(x, VimKeyModifiers.Alt)
             });
 
             foreach (var left in all)

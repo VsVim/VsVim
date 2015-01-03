@@ -206,7 +206,7 @@ namespace Vim.UI.Wpf.UnitTest
                 foreach (var mod in combos)
                 {
                     var keyMod = AlternateKeyUtil.ConvertToKeyModifiers(mod);
-                    var keyInput = KeyInputUtil.ApplyModifiersToChar(c, keyMod);
+                    var keyInput = KeyInputUtil.ApplyKeyModifiersToChar(c, keyMod);
                     var key = (Key)((c - 'a') + (int)Key.A);
                     map[keyInput] = new KeyData(key, mod);
                 }

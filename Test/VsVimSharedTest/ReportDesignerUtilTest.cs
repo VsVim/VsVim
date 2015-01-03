@@ -62,7 +62,7 @@ namespace Vim.VisualStudio.UnitTest
         {
             private void VerifySpecial(VimKey vimKey, VimKeyModifiers keyModifiers = VimKeyModifiers.None)
             {
-                var keyInput = KeyInputUtil.ApplyModifiersToVimKey(vimKey, keyModifiers);
+                var keyInput = KeyInputUtil.ApplyKeyModifiersToKey(vimKey, keyModifiers);
                 Assert.True(_reportDesignerUtil.IsSpecialHandled(keyInput));
             }
 

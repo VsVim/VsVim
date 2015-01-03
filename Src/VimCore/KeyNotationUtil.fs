@@ -121,11 +121,11 @@ module KeyNotationUtil =
             // The exception to this rule is letters.  They are still smoothed out and this can
             // be verified experimentally
             if Option.isSome keyInput.RawChar && CharUtil.IsLetterOrDigit keyInput.Char then
-                KeyInputUtil.ApplyModifiers keyInput modifier |> Some
+                KeyInputUtil.ApplyKeyModifiers keyInput modifier |> Some
             elif Util.IsFlagSet modifier VimKeyModifiers.Shift then
-                KeyInputUtil.ChangeVimKeyModifiersDangerous keyInput modifier |> Some
+                KeyInputUtil.ChangeKeyModifiersDangerous keyInput modifier |> Some
             else
-                KeyInputUtil.ApplyModifiers keyInput modifier |> Some
+                KeyInputUtil.ApplyKeyModifiers keyInput modifier |> Some
 
     /// Try and convert a <char-...> notation into a KeyInput value 
     let TryCharNotationToKeyInput (dataCharSpan : CharSpan) = 

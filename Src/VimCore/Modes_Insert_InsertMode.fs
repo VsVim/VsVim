@@ -438,7 +438,7 @@ type internal InsertMode
                     // Certain keys such as Delete, Esc, etc ... have the same behavior when invoked
                     // with or without any modifiers.  The modifiers must be considered because they
                     // do participate in key mapping.  Once we get here though we must discard them
-                    let alternateKeyInput = KeyInputUtil.ChangeVimKeyModifiersDangerous keyInput VimKeyModifiers.None
+                    let alternateKeyInput = KeyInputUtil.ChangeKeyModifiersDangerous keyInput VimKeyModifiers.None
                     match Map.tryFind alternateKeyInput _commandMap with
                     | Some rawInsertCommand -> Some rawInsertCommand
                     | None -> getDirectInsert()
