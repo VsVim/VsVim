@@ -206,6 +206,9 @@ type IKeyboardDevice =
     /// Is the given key pressed
     abstract IsArrowKeyDown : bool
 
+    /// The modifiers currently pressed on the keyboard
+    abstract KeyModifiers : KeyModifiers
+
 /// Tracks changes to the associated ITextView
 type ITextChangeTracker =
 

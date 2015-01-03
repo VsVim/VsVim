@@ -10,7 +10,7 @@ namespace Vim.UI.Wpf.UnitTest
 
         public KeyboardDeviceImplTest()
         {
-            _deviceImpl = new KeyboardDeviceImpl();
+            _deviceImpl = new KeyboardDeviceImpl(new AlternateKeyUtil());
         }
 
         /// <summary>

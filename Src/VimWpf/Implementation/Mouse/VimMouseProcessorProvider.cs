@@ -15,11 +15,13 @@ namespace Vim.UI.Wpf.Implementation.Mouse
     internal sealed class VimMouseProcessorProvider : IMouseProcessorProvider
     {
         private readonly IVim _vim;
+        private readonly IKeyboardDevice _keyboardDevice;
 
         [ImportingConstructor]
-        internal VimMouseProcessorProvider(IVim vim)
+        internal VimMouseProcessorProvider(IVim vim, IKeyboardDevice keyboardDevice)
         {
             _vim = vim;
+            _keyboardDevice = keyboardDevice;
         }
 
         #region IMouseProcessorProvider
@@ -29,7 +31,7 @@ namespace Vim.UI.Wpf.Implementation.Mouse
             IVimBuffer vimBuffer;
             if (_vim.TryGetOrCreateVimBufferForHost(wpfTextView, out vimBuffer))
             {
-                return new VimMouseProcessor(vimBuffer);
+                return new VimMouseProcessor(vimBuffer, _keyboardDevice);
             }
 
             return null;
