@@ -23,7 +23,7 @@ module KeyNotationUtil =
 
     /// Try and convert the passed in KeyInput into a special key name the extra set of 
     /// KeyModifiers on the original KeyInput
-    val TryGetSpecialKeyName : KeyInput -> (string * KeyModifiers) option
+    val TryGetSpecialKeyName : KeyInput -> (string * VimKeyModifiers) option
 
     /// Get the display name for the specified KeyInput value
     val GetDisplayName : keyInput : KeyInput -> string

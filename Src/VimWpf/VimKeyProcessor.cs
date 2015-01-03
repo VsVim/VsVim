@@ -93,7 +93,7 @@ namespace Vim.UI.Wpf
                 var keyboardDevice = args.Device as KeyboardDevice;
                 var keyModifiers = keyboardDevice != null
                     ? _keyUtil.GetKeyModifiers(keyboardDevice.Modifiers)
-                    : KeyModifiers.Alt;
+                    : VimKeyModifiers.Alt;
 
                 text = args.SystemText;
                 for (var i = 0; i < text.Length; i++)

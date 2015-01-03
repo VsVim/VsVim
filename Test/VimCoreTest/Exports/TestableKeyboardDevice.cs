@@ -10,9 +10,9 @@ namespace Vim.UnitTest.Exports
             get { return false; }
         }
 
-        public KeyModifiers KeyModifiers
+        public VimKeyModifiers KeyModifiers
         {
-            get { return KeyModifiers.None; }
+            get { return VimKeyModifiers.None; }
         }
     }
 }

@@ -145,8 +145,8 @@ namespace Vim.VisualStudio.Implementation.Misc
             var keyboardDevice = keyEventArgs.Device as KeyboardDevice;
             var keyModifiers = keyboardDevice != null
                 ? _keyUtil.GetKeyModifiers(keyboardDevice.Modifiers)
-                : KeyModifiers.Alt;
-            if (keyModifiers == KeyModifiers.None)
+                : VimKeyModifiers.Alt;
+            if (keyModifiers == VimKeyModifiers.None)
             {
                 return false;
             }

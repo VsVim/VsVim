@@ -100,15 +100,15 @@ namespace Vim.VisualStudio
 
         private static void AppendCommandForSingle(KeyStroke stroke, StringBuilder builder)
         {
-            if (0 != (stroke.KeyModifiers & KeyModifiers.Control))
+            if (0 != (stroke.KeyModifiers & VimKeyModifiers.Control))
             {
                 builder.Append("Ctrl+");
             }
-            if (0 != (stroke.KeyModifiers & KeyModifiers.Shift))
+            if (0 != (stroke.KeyModifiers & VimKeyModifiers.Shift))
             {
                 builder.Append("Shift+");
             }
-            if (0 != (stroke.KeyModifiers & KeyModifiers.Alt))
+            if (0 != (stroke.KeyModifiers & VimKeyModifiers.Alt))
             {
                 builder.Append("Alt+");
             }
@@ -198,24 +198,24 @@ namespace Vim.VisualStudio
             }
         }
 
-        private static bool TryConvertToModifierKeys(string mod, out KeyModifiers modKeys)
+        private static bool TryConvertToModifierKeys(string mod, out VimKeyModifiers modKeys)
         {
             var comp = StringComparer.OrdinalIgnoreCase;
             if (comp.Equals(mod, "shift"))
             {
-                modKeys = KeyModifiers.Shift;
+                modKeys = VimKeyModifiers.Shift;
             }
             else if (comp.Equals(mod, "ctrl"))
             {
-                modKeys = KeyModifiers.Control;
+                modKeys = VimKeyModifiers.Control;
             }
             else if (comp.Equals(mod, "alt"))
             {
-                modKeys = KeyModifiers.Alt;
+                modKeys = VimKeyModifiers.Alt;
             }
             else
             {
-                modKeys = KeyModifiers.None;
+                modKeys = VimKeyModifiers.None;
                 return false;
             }
 
@@ -290,11 +290,11 @@ namespace Vim.VisualStudio
             // If it's of length 1 it can only be a single keystroke entry
             if (entry.Length == 1)
             {
-                return new KeyStroke(ConvertToKeyInput(entry), KeyModifiers.None);
+                return new KeyStroke(ConvertToKeyInput(entry), VimKeyModifiers.None);
             }
 
             // First get rid of the Modifiers
-            var mod = KeyModifiers.None;
+            var mod = VimKeyModifiers.None;
             while (ModifierPrefix.Any(x => entry.StartsWith(x, StringComparison.OrdinalIgnoreCase)))
             {
                 var index = entry.IndexOf('+');
@@ -304,7 +304,7 @@ namespace Vim.VisualStudio
                 }
 
                 var value = entry.Substring(0, index);
-                var modKeys = KeyModifiers.None;
+                var modKeys = VimKeyModifiers.None;
                 if (!TryConvertToModifierKeys(value, out modKeys))
                 {
                     return null;

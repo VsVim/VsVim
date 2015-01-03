@@ -139,7 +139,7 @@ namespace Vim.VisualStudio.Implementation.OptionPages
         private bool IsAdvanced(KeyStroke keyStroke)
         {
             // Look for paste
-            if (keyStroke.KeyModifiers != KeyModifiers.Control || keyStroke.KeyInput.KeyModifiers != KeyModifiers.None)
+            if (keyStroke.KeyModifiers != VimKeyModifiers.Control || keyStroke.KeyInput.KeyModifiers != VimKeyModifiers.None)
             {
                 return false;
             }

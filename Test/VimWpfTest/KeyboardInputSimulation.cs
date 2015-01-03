@@ -379,17 +379,17 @@ namespace Vim.UI.Wpf.UnitTest
                 var keyModifiers = keyInput.KeyModifiers;
 
                 modifierKeys = ModifierKeys.None;
-                if (KeyModifiers.Control == (keyModifiers & KeyModifiers.Control))
+                if (VimKeyModifiers.Control == (keyModifiers & VimKeyModifiers.Control))
                 {
                     modifierKeys |= ModifierKeys.Control;
                 }
 
-                if (KeyModifiers.Shift == (keyModifiers & KeyModifiers.Shift))
+                if (VimKeyModifiers.Shift == (keyModifiers & VimKeyModifiers.Shift))
                 {
                     modifierKeys |= ModifierKeys.Shift;
                 }
                 
-                if (KeyModifiers.Alt == (keyModifiers & KeyModifiers.Alt))
+                if (VimKeyModifiers.Alt == (keyModifiers & VimKeyModifiers.Alt))
                 {
                     modifierKeys |= ModifierKeys.Alt;
                 }
