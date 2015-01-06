@@ -7,7 +7,7 @@
     <PlatformTarget>x86</PlatformTarget>
     <ProductVersion>8.0.30703</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{CA760951-31F6-40B1-BAB5-68CB26816ABE}</ProjectGuid>
+    <ProjectGuid>{D8EB4054-F9EB-45DE-B07F-254E253028E7}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>Vim.VisualStudio.Vs2015</RootNamespace>

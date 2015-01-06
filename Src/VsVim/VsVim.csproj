@@ -208,6 +208,13 @@
       <IncludeOutputGroupsInVSIX>BuiltProjectOutputGroup%3bBuiltProjectOutputGroupDependencies%3bGetCopyToOutputDirectoryItems%3b</IncludeOutputGroupsInVSIX>
       <IncludeOutputGroupsInVSIXLocalOnly>DebugSymbolsProjectOutputGroup%3b</IncludeOutputGroupsInVSIXLocalOnly>
     </ProjectReference>
+    <ProjectReference Include="..\VsSpecific\Vs2015\Vs2015.csproj">
+      <Project>{d8eb4054-f9eb-45de-b07f-254e253028e7}</Project>
+      <Name>Vs2015</Name>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <IncludeOutputGroupsInVSIX>BuiltProjectOutputGroup%3bBuiltProjectOutputGroupDependencies%3bGetCopyToOutputDirectoryItems%3b</IncludeOutputGroupsInVSIX>
+      <IncludeOutputGroupsInVSIXLocalOnly>DebugSymbolsProjectOutputGroup%3b</IncludeOutputGroupsInVSIXLocalOnly>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Properties\Resources.resx">
@@ -228,7 +235,6 @@
   </Target>
         -->
   <Target Name="BeforeBuild">
-
     <!-- 
         When building on a machin ewithout the 4.5 framework installed the 2012 and 2013 components
         won't build.  This in turn causes the MsBuild task to create the VSIX to fail.  Work around 
@@ -239,22 +245,13 @@
     <PropertyGroup>
       <Vim2012FilePath>..\VsSpecific\Vs2012\obj\$(Configuration)\Vim.VisualStudio.Vs2012</Vim2012FilePath>
       <Vim2013FilePath>..\VsSpecific\Vs2013\obj\$(Configuration)\Vim.VisualStudio.Vs2013</Vim2013FilePath>
+      <Vim2015FilePath>..\VsSpecific\Vs2015\obj\$(Configuration)\Vim.VisualStudio.Vs2015</Vim2015FilePath>
     </PropertyGroup>
-    <WriteLinesToFile 
-      File="$(Vim2012FilePath).dll" 
-      Condition="!Exists('$(Vim2012FilePath).dll') And Exists('..\VsSpecific\2012\obj\$(Configuration)')"
-      Lines="Dummy file contents" />
-    <WriteLinesToFile 
-      File="$(Vim2012FilePath).pdb" 
-      Condition="!Exists('$(Vim2012FilePath).pdb') And Exists('..\VsSpecific\2012\obj\$(Configuration)')"
-      Lines="Dummy file contents" />
-    <WriteLinesToFile 
-      File="$(Vim2013FilePath).dll" 
-      Condition="!Exists('$(Vim2013FilePath).dll') And Exists('..\VsSpecific\2013\obj\$(Configuration)')"
-      Lines="Dummy file contents" />
-    <WriteLinesToFile 
-      File="$(Vim2013FilePath).pdb" 
-      Condition="!Exists('$(Vim2013FilePath).pdb') And Exists('..\VsSpecific\2013\obj\$(Configuration)')"
-      Lines="Dummy file contents" />
+    <WriteLinesToFile File="$(Vim2012FilePath).dll" Condition="!Exists('$(Vim2012FilePath).dll') And Exists('..\VsSpecific\2012\obj\$(Configuration)')" Lines="Dummy file contents" />
+    <WriteLinesToFile File="$(Vim2012FilePath).pdb" Condition="!Exists('$(Vim2012FilePath).pdb') And Exists('..\VsSpecific\2012\obj\$(Configuration)')" Lines="Dummy file contents" />
+    <WriteLinesToFile File="$(Vim2013FilePath).dll" Condition="!Exists('$(Vim2013FilePath).dll') And Exists('..\VsSpecific\2013\obj\$(Configuration)')" Lines="Dummy file contents" />
+    <WriteLinesToFile File="$(Vim2013FilePath).pdb" Condition="!Exists('$(Vim2013FilePath).pdb') And Exists('..\VsSpecific\2013\obj\$(Configuration)')" Lines="Dummy file contents" />
+    <WriteLinesToFile File="$(Vim2015FilePath).dll" Condition="!Exists('$(Vim2015FilePath).dll') And Exists('..\VsSpecific\2015\obj\$(Configuration)')" Lines="Dummy file contents" />
+    <WriteLinesToFile File="$(Vim2015FilePath).pdb" Condition="!Exists('$(Vim2015FilePath).pdb') And Exists('..\VsSpecific\2015\obj\$(Configuration)')" Lines="Dummy file contents" />
   </Target>
 </Project>

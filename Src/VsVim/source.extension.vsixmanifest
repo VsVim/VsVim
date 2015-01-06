@@ -50,6 +50,7 @@
     <MefComponent>|Vs2010|</MefComponent>
     <MefComponent>|Vs2012|</MefComponent>
     <MefComponent>|Vs2013|</MefComponent>
+    <MefComponent>|Vs2015|</MefComponent>
     <VsPackage>Colors.pkgdef</VsPackage>
     <VsPackage>|%CurrentProject%;PkgdefProjectOutputGroup|</VsPackage>
   </Content>
