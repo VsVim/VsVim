@@ -1,11 +1,12 @@
+param ([string]$rootSuffix)
+
 [string]$script:rootPath = split-path -parent $MyInvocation.MyCommand.Definition 
 [string]$script:rootPath = resolve-path (join-path $rootPath "..")
 
 $msbuild = join-path ${env:SystemRoot} "microsoft.net\framework\v4.0.30319\msbuild.exe"
 $nuget = join-path $rootPath ".nuget\NuGet.exe"
 
-function build-project()
-{
+function build-project() {
     param ([string]$fileName = $(throw "Need a project file name"))
     $name = split-path -leaf $fileName
     write-host "Building $name"
@@ -20,6 +21,7 @@ function test-return() {
 
 build-project (join-path $rootPath "Src\VsVim\VsVim.csproj")
 
+
 pushd $rootPath
 mkdir "Dogfood" -ErrorAction SilentlyContinue | out-null
 rm -re -fo "Dogfood\*"
@@ -29,6 +31,10 @@ write-host "Installing VsixUtil"
 & $nuget install VsixUtil -OutputDirectory "Dogfood" -ExcludeVersion
 
 write-host "Installing VsVim"
-& ".\Dogfood\VsixUtil\tools\VsixUtil.exe" /install "Dogfood\VsVim.vsix"
+if ($rootSuffix -eq "") {
+    & ".\Dogfood\VsixUtil\tools\VsixUtil.exe" /install "Dogfood\VsVim.vsix" 
+} else {
+    & ".\Dogfood\VsixUtil\tools\VsixUtil.exe" /rootSuffix $rootSuffix /install "Dogfood\VsVim.vsix" 
+}
 
 popd
