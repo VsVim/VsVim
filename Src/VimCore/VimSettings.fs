@@ -221,7 +221,7 @@ type internal GlobalSettings() =
             ("stopsel", KeyModelOptions.StopSelection)
         ]
 
-    static member DisableAllCommand = KeyInputUtil.ApplyModifiersToVimKey VimKey.F12 (KeyModifiers.Control ||| KeyModifiers.Shift)
+    static member DisableAllCommand = KeyInputUtil.ApplyKeyModifiersToKey VimKey.F12 (VimKeyModifiers.Control ||| VimKeyModifiers.Shift)
 
     member x.AddCustomSetting name abbrevation customSettingSource = 
         let liveSettingValue = LiveSettingValue.Custom (name, customSettingSource)

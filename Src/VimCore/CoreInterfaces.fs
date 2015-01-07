@@ -793,7 +793,8 @@ type MotionResult = {
     /// The Span as a SnapshotLineRange value 
     member x.LineRange = SnapshotLineRangeUtil.CreateForSpan x.Span
 
-    /// The Start or Last line depending on whether tho motion is forward or not
+    /// The Start or Last line depending on whether tho motion is forward or not.  The returned
+    /// line will be in the document <see cref="ITextSnapshot">.  
     member x.DirectionLastLine = 
         if x.IsForward then
             // Need to handle the empty last line case here.  If the flag to include
@@ -977,6 +978,9 @@ type Motion =
 
     /// End of the display line 
     | DisplayLineEnd
+
+    /// First non blank character on the display line
+    | DisplayLineFirstNonBlank
 
     /// Get the point in the middle of the screen.  This looks at the entire screen not just 
     /// the width of the current line
@@ -2384,6 +2388,9 @@ type NormalCommand =
 
     /// Close the IVimBuffer and don't bother to save
     | CloseBuffer
+
+    /// Close the window unless the buffer is dirty
+    | CloseWindow
 
     /// Close 'count' folds under the caret
     | CloseFoldUnderCaret

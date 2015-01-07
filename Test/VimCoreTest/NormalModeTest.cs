@@ -177,7 +177,7 @@ namespace Vim.UnitTest
         public void CanProcess_DontHandleControlTab()
         {
             Create("");
-            Assert.False(_mode.CanProcess(KeyInputUtil.ChangeKeyModifiersDangerous(KeyInputUtil.TabKey, KeyModifiers.Control)));
+            Assert.False(_mode.CanProcess(KeyInputUtil.ChangeKeyModifiersDangerous(KeyInputUtil.TabKey, VimKeyModifiers.Control)));
         }
 
         #endregion
@@ -418,7 +418,7 @@ namespace Vim.UnitTest
         {
             Create("foo bar");
             _commandUtil.SetupCommandNormal(NormalCommand.NewScrollPages(ScrollDirection.Down));
-            _mode.Process(KeyInputUtil.ApplyModifiersToVimKey(VimKey.Down, KeyModifiers.Shift));
+            _mode.Process(KeyInputUtil.ApplyKeyModifiersToKey(VimKey.Down, VimKeyModifiers.Shift));
             _commandUtil.Verify();
         }
 
@@ -454,7 +454,7 @@ namespace Vim.UnitTest
         {
             Create("foo bar");
             _commandUtil.SetupCommandNormal(NormalCommand.NewScrollPages(ScrollDirection.Up));
-            _mode.Process(KeyInputUtil.ApplyModifiersToVimKey(VimKey.Up, KeyModifiers.Shift));
+            _mode.Process(KeyInputUtil.ApplyKeyModifiersToKey(VimKey.Up, VimKeyModifiers.Shift));
             _commandUtil.Verify();
         }
 
@@ -1496,7 +1496,7 @@ namespace Vim.UnitTest
         {
             Create("");
             _commandUtil.SetupCommandNormal(NormalCommand.NewGoToNextTab(Path.Forward));
-            _mode.Process(KeyInputUtil.ApplyModifiersToVimKey(VimKey.PageDown, KeyModifiers.Control));
+            _mode.Process(KeyInputUtil.ApplyKeyModifiersToKey(VimKey.PageDown, VimKeyModifiers.Control));
             _commandUtil.Verify();
         }
 
@@ -1514,7 +1514,7 @@ namespace Vim.UnitTest
         {
             Create("");
             _commandUtil.SetupCommandNormal(NormalCommand.NewGoToNextTab(Path.Backward));
-            _mode.Process(KeyInputUtil.ApplyModifiersToVimKey(VimKey.PageUp, KeyModifiers.Control));
+            _mode.Process(KeyInputUtil.ApplyKeyModifiersToKey(VimKey.PageUp, VimKeyModifiers.Control));
             _commandUtil.Verify();
         }
 
@@ -1690,6 +1690,20 @@ namespace Vim.UnitTest
             _commandUtil.SetupCommandNormal(NormalCommand.NewGoToView(Direction.Up));
             _mode.Process(KeyNotationUtil.StringToKeyInput("<C-w>"));
             _mode.Process(KeyNotationUtil.StringToKeyInput("k"));
+            _commandUtil.Verify();
+        }
+
+        #endregion
+
+        #region Other Window Commands
+
+        [Fact]
+        public void Bind_CloseWindow()
+        {
+            Create(string.Empty);
+            _commandUtil.SetupCommandNormal(NormalCommand.CloseWindow);
+            _mode.Process(KeyNotationUtil.StringToKeyInput("<C-w>"));
+            _mode.Process(KeyNotationUtil.StringToKeyInput("c"));
             _commandUtil.Verify();
         }
 

@@ -15,18 +15,12 @@ type DefaultLineRange =
 
 [<Sealed>]
 [<Class>]
-type ExpressionInterpreter
+type VariableValueUtil
     (
-        _statusUtil : IStatusUtil,
-        _localSettings : IVimSettings,
-        _windowSettings : IVimSettings,
-        _variableMap : Dictionary<string, VariableValue>,
-        _registerMap : IRegisterMap
+        _statusUtil : IStatusUtil
     ) =
 
-    /// Get the value as a number
-    member x.GetValueAsNumber value = 
-
+    member x.ConvertToNumber value = 
         // TODO: Need to actually support these cases
         let invalid msg = 
             _statusUtil.OnError msg
@@ -41,9 +35,121 @@ type ExpressionInterpreter
         | VariableValue.String _ -> invalid ""
         | VariableValue.Error -> None
 
+    member x.ConvertToString value = 
+        let invalid typeName = 
+            _statusUtil.OnError (Resources.Interpreter_InvalidConversionToString typeName)
+            None
+        match value with 
+        | VariableValue.Dictionary _ -> invalid "Dictionary"
+        | VariableValue.Float _ -> invalid "Float"
+        | VariableValue.FunctionRef _ -> invalid "Funcref"
+        | VariableValue.List _ -> invalid "List"
+        | VariableValue.Number number -> Some (string number)
+        | VariableValue.String str -> Some str
+        | VariableValue.Error ->
+            _statusUtil.OnError Resources.Interpreter_Error
+            None
+
+[<Sealed>]
+[<Class>]
+type BuiltinFunctionCaller
+    (
+        _variableMap : Dictionary<string, VariableValue>
+    ) =
+    member x.Call (func : BuiltinFunctionCall) =
+        match func with
+        | BuiltinFunctionCall.Escape(escapeIn, escapeWhat) ->
+            let escapeChar (c : char) =
+                let character = c.ToString()
+                if escapeWhat.Contains character then sprintf @"\%s" character else character
+            Seq.map escapeChar escapeIn
+            |> String.concat ""
+            |> VariableValue.String
+        | BuiltinFunctionCall.Exists name ->
+            _variableMap.ContainsKey name
+            |> System.Convert.ToInt32
+            |> VariableValue.Number
+        | BuiltinFunctionCall.Localtime ->
+            // TODO: .NET 4.6 will have builtin support for converting to Unix time http://stackoverflow.com/a/26225744/834176
+            let epoch = System.DateTime(1970, 1, 1, 0, 0, 0, System.DateTimeKind.Utc)
+            let now = System.DateTime.Now.ToUniversalTime()
+            (now - epoch).TotalSeconds
+            |> System.Convert.ToInt32
+            |> VariableValue.Number
+        | BuiltinFunctionCall.Nr2char nr ->
+            char nr
+            |> string
+            |> VariableValue.String
+
+[<Sealed>]
+[<Class>]
+type VimScriptFunctionCaller
+    (
+        _builtinCaller : BuiltinFunctionCaller,
+        _statusUtil : IStatusUtil
+    ) =
+    let _getValue = VariableValueUtil(_statusUtil)
+    member x.Call (name : VariableName) (args : VariableValue list) =
+        let tooManyArgs() =
+            sprintf "Too many arguments for function: %s" name.Name |> _statusUtil.OnError
+            VariableValue.Error
+        let notEnoughArgs() =
+            sprintf "Not enough arguments for function: %s" name.Name |> _statusUtil.OnError
+            VariableValue.Error
+            
+        match name.Name with
+        | "escape" ->
+            match args.Length with
+            | 0 | 1 -> notEnoughArgs()
+            | 2 ->
+                match _getValue.ConvertToString args.[0], _getValue.ConvertToString args.[1] with
+                | Some str, Some chars -> BuiltinFunctionCall.Escape(str, chars) |> _builtinCaller.Call
+                | _, _ -> VariableValue.Error
+            | _ -> tooManyArgs()
+        | "exists" ->
+            match args.Length with
+            | 0 -> notEnoughArgs()
+            | 1 ->
+                match _getValue.ConvertToString args.[0] with
+                | Some arg -> BuiltinFunctionCall.Exists(arg) |> _builtinCaller.Call
+                | None -> VariableValue.Error
+            | _ -> tooManyArgs()
+        | "localtime" ->
+            if args.Length = 0 then _builtinCaller.Call BuiltinFunctionCall.Localtime
+            else tooManyArgs()
+        | "nr2char" ->
+            match args.Length with
+            | 0 -> notEnoughArgs()
+            | 1 ->
+                match _getValue.ConvertToNumber args.[0] with
+                | Some arg -> BuiltinFunctionCall.Nr2char(arg) |> _builtinCaller.Call
+                | None -> VariableValue.Error
+            | _ -> tooManyArgs()
+        | fname ->
+            sprintf "Unknown function: %s" fname |> _statusUtil.OnError
+            VariableValue.Error
+
+[<Sealed>]
+[<Class>]
+type ExpressionInterpreter
+    (
+        _statusUtil : IStatusUtil,
+        _localSettings : IVimSettings,
+        _windowSettings : IVimSettings,
+        _variableMap : Dictionary<string, VariableValue>,
+        _registerMap : IRegisterMap
+    ) =
+    let _builtinCaller = BuiltinFunctionCaller(_variableMap)
+    let _functionCaller = VimScriptFunctionCaller(_builtinCaller, _statusUtil)
+    let _getValue = VariableValueUtil(_statusUtil)
+
     /// Get the specified expression as a number
     member x.GetExpressionAsNumber expr =
-        x.RunExpression expr |> x.GetValueAsNumber
+        x.RunExpression expr |> _getValue.ConvertToNumber
+
+    /// Get the specified expression as a number
+    member x.GetExpressionAsString expr =
+        x.RunExpression expr |> _getValue.ConvertToString
 
     member x.GetSetting name = 
         match _localSettings.GetSetting name with
@@ -68,6 +174,7 @@ type ExpressionInterpreter
 
     /// Get the value of the specified expression 
     member x.RunExpression (expr : Expression) : VariableValue =
+        let runExpression expressions = [for expr in expressions -> x.RunExpression expr]
         match expr with
         | Expression.ConstantValue value -> value
         | Expression.Binary (binaryKind, leftExpr, rightExpr) -> x.RunBinaryExpression binaryKind leftExpr rightExpr
@@ -77,6 +184,8 @@ type ExpressionInterpreter
             | Some setting -> x.GetValueOfSetting setting
         | Expression.VariableName name -> x.GetValueOfVariable name.Name
         | Expression.RegisterName name -> x.GetValueOfRegister name
+        | Expression.FunctionCall(name, args) -> runExpression args |> _functionCaller.Call name
+        | Expression.List expressions -> runExpression expressions |> VariableValue.List 
 
     /// Run the binary expression
     member x.RunBinaryExpression binaryKind (leftExpr : Expression) (rightExpr : Expression) = 
@@ -90,22 +199,17 @@ type ExpressionInterpreter
                 // it's a list concatenation
                 notSupported()
             else
-                let leftNumber = x.GetValueAsNumber leftValue
-                let rightNumber = x.GetValueAsNumber rightValue
+                let leftNumber = _getValue.ConvertToNumber leftValue
+                let rightNumber = _getValue.ConvertToNumber rightValue
                 match leftNumber, rightNumber with
                 | Some left, Some right -> left + right |> VariableValue.Number
                 | _ -> VariableValue.Error
 
-        let runConcat (lvalue : string) (rightValue : VariableValue) =
-            match rightValue with
-            | VariableValue.String rvalue -> VariableValue.String (lvalue + rvalue)
-            | VariableValue.Number rvalue -> VariableValue.String (lvalue + (string rvalue))
-            | _ -> VariableValue.Error
-
         let runConcat (leftValue : VariableValue) (rightValue : VariableValue) =
-            match leftValue with
-            | VariableValue.String lvalue -> runConcat lvalue rightValue
-            | VariableValue.Number lvalue -> runConcat (string lvalue) rightValue
+            let leftString = _getValue.ConvertToString leftValue
+            let rightString = _getValue.ConvertToString rightValue
+            match leftString, rightString with
+            | Some left, Some right -> left + right |> VariableValue.String 
             | _ -> VariableValue.Error
             
 
@@ -147,6 +251,7 @@ type VimInterpreter
     let _globalSettings = _localSettings.GlobalSettings
     let _searchService = _vim.SearchService
     let _variableMap = _vim.VariableMap
+    let _exprInterpreter = ExpressionInterpreter(_statusUtil, _localSettings, _windowSettings, _variableMap, _registerMap)
 
     /// The column of the caret
     member x.CaretColumn = SnapshotPointUtil.GetColumn x.CaretPoint
@@ -446,10 +551,10 @@ type VimInterpreter
 
     /// Run the close command
     member x.RunClose hasBang = 
-        if not hasBang && _vimHost.IsDirty _textView.TextBuffer then
-            _statusUtil.OnError Resources.Common_NoWriteSinceLastChange
-        else
+        if hasBang then
             _vimHost.Close _textView
+        else
+            _commonOperations.CloseWindowUnlessDirty()
 
     /// Run the delete command.  Delete the specified range of text and set it to 
     /// the given Register
@@ -608,12 +713,22 @@ type VimInterpreter
     /// Run the echo command
     member x.RunEcho expression =
         let value = x.RunExpression expression 
-        let valueAsString =
+        let rec valueAsString value =
             match value with
-            | VariableValue.Number number -> number.ToString()
+            | VariableValue.Number number -> string number
             | VariableValue.String str -> str
+            | VariableValue.List values ->
+                let listItemAsString value =
+                    let stringified = valueAsString value
+                    match value with
+                    | VariableValue.String str -> sprintf "'%s'" stringified
+                    | _ -> stringified
+                List.map listItemAsString values
+                |> String.concat ", "
+                |> sprintf "[%s]"
+            | VariableValue.Dictionary _ -> "{}"
             | _ -> "<error>"
-        _statusUtil.OnStatus valueAsString
+        _statusUtil.OnStatus <| valueAsString value
     
     /// Run the execute command
     member x.RunExecute expression =
@@ -653,8 +768,7 @@ type VimInterpreter
 
     /// Get the value of the specified expression 
     member x.RunExpression expr =
-        let expressionInterpreter = ExpressionInterpreter(_statusUtil, _localSettings, _windowSettings, _variableMap, _registerMap)
-        expressionInterpreter.RunExpression expr
+        _exprInterpreter.RunExpression expr
 
     /// Fold the specified line range
     member x.RunFold lineRange = 
@@ -751,13 +865,11 @@ type VimInterpreter
 
     /// Run the if command
     member x.RunIf (conditionalBlockList : ConditionalBlock list)  =
-        let expressionInterpreter = ExpressionInterpreter(_statusUtil, _localSettings, _windowSettings, _variableMap, _registerMap)
-
         let shouldRun (conditionalBlock : ConditionalBlock) =
             match conditionalBlock.Conditional with
             | None -> true
             | Some expr -> 
-                match expressionInterpreter.GetExpressionAsNumber expr with
+                match _exprInterpreter.GetExpressionAsNumber expr with
                 | None -> false
                 | Some value -> value <> 0
 
@@ -790,7 +902,19 @@ type VimInterpreter
     member x.RunLet (name : VariableName) expr =
         // TODO: At this point we are treating all variables as if they were global.  Need to 
         // take into account the NameScope at this level too
-        _variableMap.[name.Name] <- x.RunExpression expr
+        match x.RunExpression expr with
+        | VariableValue.Error -> _statusUtil.OnError Resources.Interpreter_Error
+        | value -> _variableMap.[name.Name] <- value
+
+    /// Run the let command for registers
+    member x.RunLetRegister (name : RegisterName) expr =
+        let setRegister (value : string) =
+            let register = _registerMap.GetRegister name
+            let registerValue = RegisterValue(value, OperationKind.CharacterWise)
+            _registerMap.SetRegisterValue register RegisterOperation.Yank registerValue
+        match _exprInterpreter.GetExpressionAsString expr with
+        | Some value -> setRegister value
+        | None -> ()
 
     /// Run the host make command 
     member x.RunMake hasBang arguments = 
@@ -908,7 +1032,7 @@ type VimInterpreter
                     let filePath = SystemUtil.ResolveVimPath _vimData.CurrentDirectory filePath
                     _vimHost.SaveTextAs (lineRange.GetTextIncludingLineBreak()) filePath |> ignore
     
-                x.RunClose false |> ignore)
+                _commonOperations.CloseWindowUnlessDirty())
 
     /// Run the core parts of the read command
     member x.RunReadCore (lineRange : SnapshotLineRange) (lines : string[]) = 
@@ -1410,7 +1534,7 @@ type VimInterpreter
                 | Some count -> SnapshotLineRangeUtil.CreateForLineAndMaxCount lineRange.LastLine count
 
             let stringData = StringData.OfSpan lineRange.ExtentIncludingLineBreak
-            let value = RegisterValue(stringData, OperationKind.LineWise)
+            let value = _commonOperations.CreateRegisterValue x.CaretPoint stringData OperationKind.LineWise
             _registerMap.SetRegisterValue register RegisterOperation.Yank value)
 
     /// Run the specified LineCommand
@@ -1467,6 +1591,7 @@ type VimInterpreter
         | LineCommand.JumpToLastLine -> x.RunJumpToLastLine()
         | LineCommand.JumpToLine number -> x.RunJumpToLine number
         | LineCommand.Let (name, value) -> x.RunLet name value
+        | LineCommand.LetRegister (name, value) -> x.RunLetRegister name value
         | LineCommand.Make (hasBang, arguments) -> x.RunMake hasBang arguments
         | LineCommand.MapKeys (leftKeyNotation, rightKeyNotation, keyRemapModes, allowRemap, mapArgumentList) -> x.RunMapKeys leftKeyNotation rightKeyNotation keyRemapModes allowRemap mapArgumentList
         | LineCommand.MoveTo (sourceLineRange, destLineRange, count) -> x.RunMoveTo sourceLineRange destLineRange count

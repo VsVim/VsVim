@@ -569,6 +569,10 @@ type internal CommandUtil
         _vimHost.Close _textView 
         CommandResult.Completed ModeSwitch.NoSwitch
 
+    member x.CloseWindow() =
+        _commonOperations.CloseWindowUnlessDirty()
+        CommandResult.Completed ModeSwitch.NoSwitch
+
     /// Create a possibly LineWise register value with the specified string value at the given 
     /// point.  This is factored out here because a LineWise value in vim should always
     /// end with a new line but we can't always guarantee the text we are working with 
@@ -2319,6 +2323,7 @@ type internal CommandUtil
         | NormalCommand.CloseAllFolds -> x.CloseAllFolds()
         | NormalCommand.CloseAllFoldsUnderCaret -> x.CloseAllFoldsUnderCaret()
         | NormalCommand.CloseBuffer -> x.CloseBuffer()
+        | NormalCommand.CloseWindow -> x.CloseWindow()
         | NormalCommand.CloseFoldUnderCaret -> x.CloseFoldUnderCaret count
         | NormalCommand.DeleteAllFoldsInBuffer -> x.DeleteAllFoldsInBuffer()
         | NormalCommand.DeleteAllFoldsUnderCaret -> x.DeleteAllFoldsUnderCaret()

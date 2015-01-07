@@ -4,11 +4,12 @@ using System.Linq;
 using System.Reflection;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
+using Microsoft.VisualStudio.Text.Editor;
 
 namespace Vim.VisualStudio.Implementation.Misc
 {
-    [Export(typeof(IPowerToolsUtil))]
-    internal sealed class PowerToolsUtil : IPowerToolsUtil
+    [Export(typeof(IExtensionAdapter))]
+    internal sealed class PowerToolsUtil : IExtensionAdapter
     {
         internal static readonly Guid QuickFindGuid = new Guid("4848f190-8e66-4af0-a898-454a568e8f65");
 
@@ -99,11 +100,21 @@ namespace Vim.VisualStudio.Implementation.Misc
                 .FirstOrDefault();
         }
 
-        #region IPowerToolsUtil
+        #region IExtensionAdapter
 
-        bool IPowerToolsUtil.IsQuickFindActive
+        bool? IExtensionAdapter.ShouldKeepSelectionAfterHostCommand(string command, string argument)
         {
-            get { return IsQuickFindActive(); }
+            return null;
+        }
+
+        bool? IExtensionAdapter.ShouldCreateVimBuffer(ITextView textView)
+        {
+            return null;
+        }
+
+        bool? IExtensionAdapter.IsIncrementalSearchActive(ITextView textView)
+        {
+            return IsQuickFindActive();
         }
 
         #endregion

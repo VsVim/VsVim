@@ -44,7 +44,7 @@ type internal SelectMode
     /// A 'special key' is defined in :help keymodel as any of the following keys.  Depending
     /// on the value of the keymodel setting they can affect the selection
     static let GetCaretMovement (keyInput : KeyInput) =
-        if not (Util.IsFlagSet keyInput.KeyModifiers KeyModifiers.Control) then
+        if not (Util.IsFlagSet keyInput.KeyModifiers VimKeyModifiers.Control) then
             match keyInput.Key with
             | VimKey.Up -> Some CaretMovement.Up
             | VimKey.Right -> Some CaretMovement.Right
@@ -110,7 +110,7 @@ type internal SelectMode
     member x.CurrentSnapshot = _textView.TextSnapshot
 
     member x.ShouldStopSelection (keyInput : KeyInput) =
-        let hasShift = Util.IsFlagSet keyInput.KeyModifiers KeyModifiers.Shift
+        let hasShift = Util.IsFlagSet keyInput.KeyModifiers VimKeyModifiers.Shift
         let hasStopSelection = Util.IsFlagSet _globalSettings.KeyModelOptions KeyModelOptions.StopSelection
         not hasShift && hasStopSelection
 

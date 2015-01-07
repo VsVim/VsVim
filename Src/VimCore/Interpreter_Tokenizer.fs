@@ -17,6 +17,11 @@ type TokenizerFlags =
     /// Skip blank tokens 
     | SkipBlanks = 0x2
 
+    /// When parsing something like :y2, we want to parse that as a word and a number.
+    /// However, when parsing something like :call nr2char(64), we want nr2char to parse
+    /// as a single word.
+    | AllowDigitsInWord = 0x4
+
 type internal TokenStream() = 
 
     let mutable _index = 0
@@ -62,7 +67,7 @@ type internal TokenStream() =
             if CharUtil.IsDigit c then
                 x.GetNumber c
             elif CharUtil.IsLetter c then
-                x.GetWord()
+                x.GetWord flags
             elif CharUtil.IsBlank c then
                 x.GetBlanks()
             elif c = '\"' then
@@ -132,12 +137,14 @@ type internal TokenStream() =
             parseDecimal ()
 
     /// Move past the set of coniguous letter characters
-    member x.GetWord() = 
+    member x.GetWord flags = 
         let startIndex = _index
+        let isWordChar c =
+            CharUtil.IsWordChar c || (Util.IsFlagSet flags TokenizerFlags.AllowDigitsInWord && CharUtil.IsDigit c)
         let isCurrentLetter () = 
             match x.CurrentChar with
             | None -> false
-            | Some c -> CharUtil.IsLetter c
+            | Some c -> isWordChar c
 
         while isCurrentLetter() do
             x.IncrementIndex()

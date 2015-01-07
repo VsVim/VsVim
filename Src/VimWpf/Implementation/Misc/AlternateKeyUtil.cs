@@ -93,36 +93,36 @@ namespace Vim.UI.Wpf.Implementation.Misc
 
         }
 
-        internal static KeyModifiers ConvertToKeyModifiers(ModifierKeys keys)
+        internal static VimKeyModifiers ConvertToKeyModifiers(ModifierKeys keys)
         {
-            var res = KeyModifiers.None;
+            var res = VimKeyModifiers.None;
             if (0 != (keys & ModifierKeys.Shift))
             {
-                res = res | KeyModifiers.Shift;
+                res = res | VimKeyModifiers.Shift;
             }
             if (0 != (keys & ModifierKeys.Alt))
             {
-                res = res | KeyModifiers.Alt;
+                res = res | VimKeyModifiers.Alt;
             }
             if (0 != (keys & ModifierKeys.Control))
             {
-                res = res | KeyModifiers.Control;
+                res = res | VimKeyModifiers.Control;
             }
             return res;
         }
 
-        internal static ModifierKeys ConvertToModifierKeys(KeyModifiers keys)
+        internal static ModifierKeys ConvertToModifierKeys(VimKeyModifiers keys)
         {
             var res = ModifierKeys.None;
-            if (0 != (keys & KeyModifiers.Shift))
+            if (0 != (keys & VimKeyModifiers.Shift))
             {
                 res = res | ModifierKeys.Shift;
             }
-            if (0 != (keys & KeyModifiers.Alt))
+            if (0 != (keys & VimKeyModifiers.Alt))
             {
                 res = res | ModifierKeys.Alt;
             }
-            if (0 != (keys & KeyModifiers.Control))
+            if (0 != (keys & VimKeyModifiers.Control))
             {
                 res = res | ModifierKeys.Control;
             }
@@ -136,7 +136,7 @@ namespace Vim.UI.Wpf.Implementation.Misc
             return modifierKeys == (ModifierKeys.Alt | ModifierKeys.Control);
         }
 
-        KeyModifiers IKeyUtil.GetKeyModifiers(ModifierKeys modifierKeys)
+        VimKeyModifiers IKeyUtil.GetKeyModifiers(ModifierKeys modifierKeys)
         {
             return ConvertToKeyModifiers(modifierKeys);
         }
@@ -146,7 +146,7 @@ namespace Vim.UI.Wpf.Implementation.Misc
             if (WpfKeyToKeyInputMap.TryGetValue(key, out keyInput))
             {
                 var keyModifiers = ConvertToKeyModifiers(modifierKeys);
-                keyInput = KeyInputUtil.ApplyModifiers(keyInput, keyModifiers);
+                keyInput = KeyInputUtil.ApplyKeyModifiers(keyInput, keyModifiers);
                 return true;
             }
 

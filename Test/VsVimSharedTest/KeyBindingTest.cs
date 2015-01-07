@@ -690,7 +690,7 @@ Transact-SQL Editor::Ctrl+J
         {
             var b = KeyBinding.Parse("::,");
             Assert.Equal(',', b.FirstKeyStroke.Char);
-            Assert.Equal(KeyModifiers.None, b.FirstKeyStroke.KeyModifiers);
+            Assert.Equal(VimKeyModifiers.None, b.FirstKeyStroke.KeyModifiers);
         }
 
         /// <summary>
@@ -701,8 +701,8 @@ Transact-SQL Editor::Ctrl+J
         {
             var b = KeyBinding.Parse("::ctrl+shift+f");
             Assert.Equal('f', b.FirstKeyStroke.Char);
-            Assert.True(0 != (KeyModifiers.Shift & b.FirstKeyStroke.KeyModifiers));
-            Assert.True(0 != (KeyModifiers.Control & b.FirstKeyStroke.KeyModifiers));
+            Assert.True(0 != (VimKeyModifiers.Shift & b.FirstKeyStroke.KeyModifiers));
+            Assert.True(0 != (VimKeyModifiers.Control & b.FirstKeyStroke.KeyModifiers));
         }
 
         /// <summary>
@@ -713,7 +713,7 @@ Transact-SQL Editor::Ctrl+J
         {
             var b = KeyBinding.Parse("::ctrl+D");
             Assert.Equal('d', b.FirstKeyStroke.Char);
-            Assert.Equal(KeyModifiers.Control, b.FirstKeyStroke.KeyModifiers);
+            Assert.Equal(VimKeyModifiers.Control, b.FirstKeyStroke.KeyModifiers);
         }
 
         [Fact]

@@ -230,7 +230,7 @@ namespace Vim.VisualStudio.Implementation.Misc
             // One exception is function keys.  They are only bound in Vim to key 
             // mappings and should win over VS commands since users explicitly 
             // want them to occur
-            if (first.KeyModifiers == KeyModifiers.None && !first.KeyInput.IsFunctionKey)
+            if (first.KeyModifiers == VimKeyModifiers.None && !first.KeyInput.IsFunctionKey)
             {
                 return true;
             }
@@ -240,7 +240,7 @@ namespace Vim.VisualStudio.Implementation.Misc
             // though does differentiate.  Ctrl+f is different than Ctrl+Shift+F.  So don't 
             // process any alpha commands which have both Ctrl and Shift as Vim wouldn't 
             // ever hit them
-            if (Char.IsLetter(first.Char) && first.KeyModifiers == (KeyModifiers.Shift | KeyModifiers.Control))
+            if (Char.IsLetter(first.Char) && first.KeyModifiers == (VimKeyModifiers.Shift | VimKeyModifiers.Control))
             {
                 return true;
             }

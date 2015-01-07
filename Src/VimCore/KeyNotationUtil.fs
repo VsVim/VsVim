@@ -121,11 +121,11 @@ module KeyNotationUtil =
             // The exception to this rule is letters.  They are still smoothed out and this can
             // be verified experimentally
             if Option.isSome keyInput.RawChar && CharUtil.IsLetterOrDigit keyInput.Char then
-                KeyInputUtil.ApplyModifiers keyInput modifier |> Some
-            elif Util.IsFlagSet modifier KeyModifiers.Shift then
+                KeyInputUtil.ApplyKeyModifiers keyInput modifier |> Some
+            elif Util.IsFlagSet modifier VimKeyModifiers.Shift then
                 KeyInputUtil.ChangeKeyModifiersDangerous keyInput modifier |> Some
             else
-                KeyInputUtil.ApplyModifiers keyInput modifier |> Some
+                KeyInputUtil.ApplyKeyModifiers keyInput modifier |> Some
 
     /// Try and convert a <char-...> notation into a KeyInput value 
     let TryCharNotationToKeyInput (dataCharSpan : CharSpan) = 
@@ -178,11 +178,11 @@ module KeyNotationUtil =
                 else if lastDashIndex >= 0 && index <= lastDashIndex then
                     let modifier = 
                         match dataCharSpan.CharAt index |> CharUtil.ToLower with
-                        | 'c' -> KeyModifiers.Control ||| modifier |> Some
-                        | 's' -> KeyModifiers.Shift ||| modifier |> Some
-                        | 'a' -> KeyModifiers.Alt ||| modifier |> Some
-                        | 'm' -> KeyModifiers.Alt ||| modifier |> Some
-                        | 'd' -> KeyModifiers.Command ||| modifier |> Some
+                        | 'c' -> VimKeyModifiers.Control ||| modifier |> Some
+                        | 's' -> VimKeyModifiers.Shift ||| modifier |> Some
+                        | 'a' -> VimKeyModifiers.Alt ||| modifier |> Some
+                        | 'm' -> VimKeyModifiers.Alt ||| modifier |> Some
+                        | 'd' -> VimKeyModifiers.Command ||| modifier |> Some
                         | '-' -> Some modifier
                         | _ -> None
                     match modifier with
@@ -193,7 +193,7 @@ module KeyNotationUtil =
                     let length = (dataCharSpan.Length - index) - 1 
                     let tagCharSpan = dataCharSpan.GetSubSpan index length
                     ConvertSpecialKeyName tagCharSpan modifier
-            inner 1 KeyModifiers.None
+            inner 1 VimKeyModifiers.None
 
     /// Try and convert the given string value into a KeyInput.  If the value is wrapped in 
     /// < and > then it will be interpreted as a special key modifier as defined by 
@@ -265,7 +265,7 @@ module KeyNotationUtil =
         match found with 
         | None -> None
         | Some pair ->
-            let extra : KeyModifiers = Util.UnsetFlag keyInput.KeyModifiers pair.Value.KeyModifiers
+            let extra : VimKeyModifiers = Util.UnsetFlag keyInput.KeyModifiers pair.Value.KeyModifiers
             Some (pair.Key.ToString(), extra)
 
     /// Get the display name for the specified KeyInput value.
@@ -273,21 +273,21 @@ module KeyNotationUtil =
 
         let inner name keyModifiers forceBookend = 
             let rec getPrefix current keyModifiers = 
-                if Util.IsFlagSet keyModifiers KeyModifiers.Control then
+                if Util.IsFlagSet keyModifiers VimKeyModifiers.Control then
                     let current = current + "C-"
-                    let keyModifiers = Util.UnsetFlag keyModifiers KeyModifiers.Control
+                    let keyModifiers = Util.UnsetFlag keyModifiers VimKeyModifiers.Control
                     getPrefix current keyModifiers
-                elif Util.IsFlagSet keyModifiers KeyModifiers.Alt then
+                elif Util.IsFlagSet keyModifiers VimKeyModifiers.Alt then
                     let current = current + "A-"
-                    let keyModifiers = Util.UnsetFlag keyModifiers KeyModifiers.Alt
+                    let keyModifiers = Util.UnsetFlag keyModifiers VimKeyModifiers.Alt
                     getPrefix current keyModifiers
-                elif Util.IsFlagSet keyModifiers KeyModifiers.Shift then
+                elif Util.IsFlagSet keyModifiers VimKeyModifiers.Shift then
                     let current = current + "S-"
-                    let keyModifiers = Util.UnsetFlag keyModifiers KeyModifiers.Shift
+                    let keyModifiers = Util.UnsetFlag keyModifiers VimKeyModifiers.Shift
                     getPrefix current keyModifiers
-                elif Util.IsFlagSet keyModifiers KeyModifiers.Command then
+                elif Util.IsFlagSet keyModifiers VimKeyModifiers.Command then
                     let current = current + "D-"
-                    let keyModifiers = Util.UnsetFlag keyModifiers KeyModifiers.Command
+                    let keyModifiers = Util.UnsetFlag keyModifiers VimKeyModifiers.Command
                     getPrefix current keyModifiers
                 else 
                     current
@@ -311,7 +311,7 @@ module KeyNotationUtil =
                 if value >= 1 && value <= 26 then
                     let baseCode = value - 1 
                     let name = char ((int 'A') + baseCode) |> StringUtil.ofChar
-                    let keyModifiers = keyInput.KeyModifiers ||| KeyModifiers.Control
+                    let keyModifiers = keyInput.KeyModifiers ||| VimKeyModifiers.Control
                     inner name keyModifiers false
                 else
                     inner (c |> StringUtil.ofChar) keyInput.KeyModifiers false

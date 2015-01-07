@@ -60,9 +60,9 @@ namespace Vim.VisualStudio.UnitTest
 
         public sealed class IsSpecialHandledTest : ReportDesignerUtilTest
         {
-            private void VerifySpecial(VimKey vimKey, KeyModifiers keyModifiers = KeyModifiers.None)
+            private void VerifySpecial(VimKey vimKey, VimKeyModifiers keyModifiers = VimKeyModifiers.None)
             {
-                var keyInput = KeyInputUtil.ApplyModifiersToVimKey(vimKey, keyModifiers);
+                var keyInput = KeyInputUtil.ApplyKeyModifiersToKey(vimKey, keyModifiers);
                 Assert.True(_reportDesignerUtil.IsSpecialHandled(keyInput));
             }
 
@@ -102,15 +102,15 @@ namespace Vim.VisualStudio.UnitTest
             public void ArrowKeys()
             {
                 VerifySpecial(VimKey.Left);
-                VerifySpecial(VimKey.Left, KeyModifiers.Control);
-                VerifySpecial(VimKey.Left, KeyModifiers.Shift);
+                VerifySpecial(VimKey.Left, VimKeyModifiers.Control);
+                VerifySpecial(VimKey.Left, VimKeyModifiers.Shift);
                 VerifySpecial(VimKey.Right);
-                VerifySpecial(VimKey.Right, KeyModifiers.Control);
-                VerifySpecial(VimKey.Right, KeyModifiers.Shift);
+                VerifySpecial(VimKey.Right, VimKeyModifiers.Control);
+                VerifySpecial(VimKey.Right, VimKeyModifiers.Shift);
                 VerifySpecial(VimKey.Up);
-                VerifySpecial(VimKey.Up, KeyModifiers.Shift);
+                VerifySpecial(VimKey.Up, VimKeyModifiers.Shift);
                 VerifySpecial(VimKey.Down);
-                VerifySpecial(VimKey.Down, KeyModifiers.Shift);
+                VerifySpecial(VimKey.Down, VimKeyModifiers.Shift);
             }
         }
     }

@@ -695,6 +695,12 @@ namespace Vim.VisualStudio
                 return false;
             }
 
+            var result = _extensionAdapterBroker.ShouldCreateVimBuffer(textView);
+            if (result.HasValue)
+            {
+                return result.Value;
+            }
+
             if (!base.ShouldCreateVimBuffer(textView))
             {
                 return false;
@@ -723,8 +729,16 @@ namespace Vim.VisualStudio
 
         public override bool ShouldKeepSelectionAfterHostCommand(string command, string argument)
         {
-            if (_extensionAdapterBroker.ShouldKeepSelectionAfterHostCommand(command, argument))
+            if (_extensionAdapterBroker.ShouldKeepSelectionAfterHostCommand(command, argument) ?? false)
             {
+                return true;
+            }
+
+            var comparer = StringComparer.OrdinalIgnoreCase;
+            if (comparer.Equals(command, "Edit.SurroundWith"))
+            {
+                // Need to keep the selection here so the surround with command knows the selection
+                // to surround.
                 return true;
             }
 

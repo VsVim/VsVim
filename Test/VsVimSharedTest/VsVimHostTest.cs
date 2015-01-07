@@ -32,6 +32,7 @@ namespace Vim.VisualStudio.UnitTest
         private Mock<_DTE> _dte;
         private Mock<IVsUIShell4> _shell;
         private Mock<StatusBar> _statusBar;
+        private Mock<IExtensionAdapterBroker> _extensionAdapterBroker;
 
         private void Create()
         {
@@ -48,6 +49,7 @@ namespace Vim.VisualStudio.UnitTest
             _textManager = _factory.Create<ITextManager>();
             _textManager.Setup(x => x.GetDocumentTextViews(DocumentLoad.RespectLazy)).Returns(new List<ITextView>());
             _vimApplicationSettings = _factory.Create<IVimApplicationSettings>(MockBehavior.Loose);
+            _extensionAdapterBroker = _factory.Create<IExtensionAdapterBroker>(MockBehavior.Loose);
 
             var vsMonitorSelection = _factory.Create<IVsMonitorSelection>();
             uint cookie = 42;
@@ -70,7 +72,7 @@ namespace Vim.VisualStudio.UnitTest
                 _textManager.Object,
                 _factory.Create<ISharedServiceFactory>(MockBehavior.Loose).Object,
                 _vimApplicationSettings.Object,
-                _factory.Create<IExtensionAdapterBroker>(MockBehavior.Loose).Object,
+                _extensionAdapterBroker.Object,
                 sp.Object);
             _host = _hostRaw;
         }
@@ -209,6 +211,19 @@ namespace Vim.VisualStudio.UnitTest
                     TextEditorFactoryService.CreateTextViewRoleSet(textViewRoles));
             }
 
+            private ITextView CreateWithMajorRoles()
+            {
+                return CreateWithRoles(
+                    PredefinedTextViewRoles.Analyzable,
+                    PredefinedTextViewRoles.Document,
+                    PredefinedTextViewRoles.Editable,
+                    PredefinedTextViewRoles.Interactive,
+                    PredefinedTextViewRoles.Structured,
+                    PredefinedTextViewRoles.Zoomable,
+                    PredefinedTextViewRoles.Debuggable,
+                    PredefinedTextViewRoles.PrimaryDocument);
+            }
+
             /// <summary>
             /// Don't create IVimBuffer instances for interactive windows.  This would cause the NuGet
             /// window to have instances of vim created inside of it 
@@ -244,15 +259,7 @@ namespace Vim.VisualStudio.UnitTest
             [Fact]
             public void StandardCSharpDocument()
             {
-                var textView = CreateWithRoles(
-                    PredefinedTextViewRoles.Analyzable,
-                    PredefinedTextViewRoles.Document,
-                    PredefinedTextViewRoles.Editable,
-                    PredefinedTextViewRoles.Interactive,
-                    PredefinedTextViewRoles.Structured,
-                    PredefinedTextViewRoles.Zoomable,
-                    PredefinedTextViewRoles.Debuggable,
-                    PredefinedTextViewRoles.PrimaryDocument);
+                var textView = CreateWithMajorRoles();
                 Assert.True(_host.ShouldCreateVimBuffer(textView));
             }
 
@@ -277,6 +284,37 @@ namespace Vim.VisualStudio.UnitTest
                     PredefinedTextViewRoles.Analyzable,
                     PredefinedTextViewRoles.Zoomable);
                 Assert.False(_host.ShouldCreateVimBuffer(textView));
+            }
+
+            /// <summary>
+            /// Allow hosts like R# to opt out of creating the <see cref="IVimBuffer>"/>
+            /// Issue 1498
+            /// </summary>
+            [Fact]
+            public void ExtensionReject()
+            {
+                var textView = CreateWithMajorRoles();
+                _extensionAdapterBroker.Setup(x => x.ShouldCreateVimBuffer(textView)).Returns(false);
+                Assert.False(_host.ShouldCreateVimBuffer(textView));
+            }
+
+            [Fact]
+            public void ExtensionAccept()
+            {
+                var textView = CreateWithMajorRoles();
+                _extensionAdapterBroker.Setup(x => x.ShouldCreateVimBuffer(textView)).Returns(true);
+                Assert.True(_host.ShouldCreateVimBuffer(textView));
+            }
+
+            /// <summary>
+            /// Default behavior should occur when the extension ignores the <see cref="ITextView"/>
+            /// </summary>
+            [Fact]
+            public void ExtensionIgnore()
+            {
+                var textView = CreateWithMajorRoles();
+                _extensionAdapterBroker.Setup(x => x.ShouldCreateVimBuffer(textView)).Returns((bool?)null);
+                Assert.True(_host.ShouldCreateVimBuffer(textView));
             }
         }
 

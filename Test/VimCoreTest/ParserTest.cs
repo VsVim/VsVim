@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.FSharp.Collections;
+using Microsoft.FSharp.Text.StructuredPrintfImpl;
 using Vim.Extensions;
 using Vim.Interpreter;
 using Xunit;
@@ -182,6 +183,13 @@ namespace Vim.UnitTest
             {
                 var list = Parse("let x y");
                 Assert.Equal(new[] { "x", "y" }, list.Select(x => x.Name));
+            }
+
+            [Fact]
+            public void ScopedVariable()
+            {
+                var list = Parse("let g:x");
+                Assert.Equal(new[] { "x" }, list.Select(x => x.Name));
             }
         }
 
@@ -656,6 +664,35 @@ let x = 42
             public void HexWithAllLetters()
             {
                 Assert.Equal(0xfa, ParseNumber("0xfa"));
+            }
+        }
+
+        public sealed class ListTest : ParserTest
+        {
+            private FSharpList<Expression> ParseList(string text)
+            {
+                var parser = CreateParser(text);
+                var parseResult = parser.ParseList();
+                Assert.True(parseResult.IsSucceeded);
+                return parseResult.AsSucceeded().Item.AsList().Item;
+            }
+
+            [Fact]
+            public void Empty_list()
+            {
+                Assert.True(ParseList("[]").IsEmpty);
+            }
+
+            [Fact]
+            public void Unary_list()
+            {
+                Assert.Equal(1, ParseList("[2]").Length);
+            }
+
+            [Fact]
+            public void Ternary_list()
+            {
+                Assert.Equal(3, ParseList("['foo', 'bar', 'baz']").Length);
             }
         }
 
@@ -1743,7 +1780,7 @@ let x = 42
             /// Make sure the abbreviation can be expanded
             /// </summary>
             [Fact]
-            public void TryExpand_Abbrevation()
+            public void TryExpand_Abbreviation()
             {
                 var parser = CreateParser("");
                 foreach (var tuple in Parser.s_LineCommandNamePair)

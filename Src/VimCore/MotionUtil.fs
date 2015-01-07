@@ -872,15 +872,16 @@ type internal MotionUtil
             | None ->
                 VisualMotionResult.FailedNoMotionResult
             | Some motionResult ->  
-                // Now migrate the SnapshotSpan down to the EditBuffer.  If we cannot map this span into
-                // the EditBuffer then we must fail. 
+                // Now migrate the SnapshotSpan values down to the edit buffer.  If this mapping can't 
+                // be done then the motion fails.
                 let span = BufferGraphUtil.MapSpanDownToSingle _bufferGraph motionResult.Span x.CurrentSnapshot
-                match span with
-                | None ->
+                let originalSpan = BufferGraphUtil.MapSpanDownToSingle _bufferGraph motionResult.OriginalSpan x.CurrentSnapshot
+                match span, originalSpan with
+                | Some span, Some originalSpan ->
+                    { motionResult with Span = span; OriginalSpan = span } |> VisualMotionResult.Succeeded
+                | _ ->
                     _statusUtil.OnError Resources.Internal_ErrorMappingBackToEdit
                     VisualMotionResult.FailedNoMapToEditSnapshot
-                | Some span ->
-                    { motionResult with Span = span } |> VisualMotionResult.Succeeded
 
     /// Run the motion function against the Visual Snapshot
     member x.MotionWithVisualSnapshot (action : SnapshotData -> MotionResult) = 
@@ -971,6 +972,13 @@ type internal MotionUtil
             MotionResult.Create span false MotionKind.CharacterWiseExclusive |> Some
 
         | _ -> x.LineUp count
+
+    member x.DisplayLineFirstNonBlank() = 
+        match TextViewUtil.IsWordWrapEnabled _textView, TextViewUtil.GetTextViewLines _textView with
+        | true, Some textViewLines -> 
+            let line = textViewLines.GetTextViewLineContainingBufferPosition x.CaretPoint
+            x.FirstNonBlankCore line.Extent
+        | _ -> x.FirstNonBlankOnCurrentLine()
 
     member x.DisplayLineStart() =
         match TextViewUtil.GetTextViewLines _textView with
@@ -1760,15 +1768,18 @@ type internal MotionUtil
 
     /// Find the first non-whitespace character on the current line.  
     member x.FirstNonBlankOnCurrentLine () =
+        x.FirstNonBlankCore x.CaretLine.Extent
+
+    member x.FirstNonBlankCore span = 
         let start = x.CaretPoint
-        let line = start.GetContainingLine()
         let target = 
-            SnapshotLineUtil.GetPoints Path.Forward line
-            |> Seq.tryFind (fun x -> not (CharUtil.IsWhiteSpace (x.GetChar())) )
-            |> OptionUtil.getOrDefault line.End
-        let startPoint,endPoint,isForward = 
-            if start.Position <= target.Position then start,target,true
-            else target,start,false
+            span 
+            |> SnapshotSpanUtil.GetPoints Path.Forward
+            |> Seq.tryFind (fun x -> not (CharUtil.IsBlank (x.GetChar())) )
+            |> OptionUtil.getOrDefault span.End
+        let startPoint, endPoint, isForward = 
+            if start.Position <= target.Position then start, target, true
+            else target, start, false
         let span = SnapshotSpan(startPoint, endPoint)
         MotionResult.Create span isForward MotionKind.CharacterWiseExclusive 
 
@@ -2518,7 +2529,8 @@ type internal MotionUtil
                 isWholeWord && isWord
 
             let pattern = if isWholeWord then PatternUtil.CreateWholeWord word else word
-            let searchData = SearchData(pattern, path, _globalSettings.WrapScan)
+            let searchKind = SearchKind.OfPathAndWrap path _globalSettings.WrapScan
+            let searchData = SearchData(pattern, SearchOffsetData.None, searchKind, SearchOptions.ConsiderIgnoreCase)
 
             // Make sure to update the LastSearchData here.  It needs to be done 
             // whether or not the search actually succeeds
@@ -2611,6 +2623,7 @@ type internal MotionUtil
             | Motion.DisplayLineUp -> x.DisplayLineUp motionArgument.Count
             | Motion.DisplayLineStart -> x.DisplayLineStart()
             | Motion.DisplayLineEnd -> x.DisplayLineEnd()
+            | Motion.DisplayLineFirstNonBlank -> x.DisplayLineFirstNonBlank() |> Some
             | Motion.DisplayLineMiddleOfScreen -> x.DisplayLineMiddleOfScreen () 
             | Motion.EndOfLine -> x.EndOfLine motionArgument.Count |> Some
             | Motion.EndOfWord wordKind -> x.EndOfWord wordKind motionArgument.Count |> Some

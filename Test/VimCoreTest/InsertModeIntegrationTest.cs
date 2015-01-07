@@ -756,6 +756,28 @@ namespace Vim.UnitTest
                     Assert.Equal(1, VimHost.BeepCount);
                 }
 
+
+                /// <summary>
+                /// Ensure the check of `backspace` in a repeat operation correctly considers the edits
+                /// in progress. 
+                ///
+                /// Issue #1532
+                /// </summary>
+                [Fact]
+                public void RepeatRechecksBackspaceOptionWithExtraInsert()
+                {
+                    Create("cat", "cat");
+                    _globalSettings.Backspace = "";
+                    _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
+                    _textView.MoveCaretTo(_textBuffer.GetPointInLine(0, 1));
+                    _vimBuffer.ProcessNotation("ceolf<BS>d<Esc>");
+                    Assert.Equal("cold", _textBuffer.GetLine(0).GetText());
+                    _textView.MoveCaretTo(_textBuffer.GetPointInLine(1, 1));
+                    _vimBuffer.ProcessNotation(".");
+                    Assert.Equal("cold", _textBuffer.GetLine(1).GetText());
+                    Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
+                }
+
                 /// <summary>
                 /// If the caret moves from anything other than an edit operation in insert mode it resets the 
                 /// start point to the new position of the caret 

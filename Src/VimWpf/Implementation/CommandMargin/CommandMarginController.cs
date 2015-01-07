@@ -386,7 +386,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
                         textBox.Select(offset, 0);
 
                         // Now move the buffer into paste wait 
-                        _vimBuffer.Process(KeyInputUtil.ApplyModifiersToChar('r', KeyModifiers.Control));
+                        _vimBuffer.Process(KeyInputUtil.ApplyKeyModifiersToChar('r', VimKeyModifiers.Control));
                     }
                     break;
                 case Key.U:

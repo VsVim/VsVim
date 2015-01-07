@@ -14,13 +14,13 @@ namespace Vim.VisualStudio.UnitTest
             using (var ptr = CharPointer.Create(data))
             {
                 EditCommand command;
-                Assert.True(OleCommandUtil.TryConvert(VSConstants.VSStd2K, (uint)VSConstants.VSStd2KCmdID.TYPECHAR, ptr.IntPtr, KeyModifiers.None, out command));
+                Assert.True(OleCommandUtil.TryConvert(VSConstants.VSStd2K, (uint)VSConstants.VSStd2KCmdID.TYPECHAR, ptr.IntPtr, VimKeyModifiers.None, out command));
                 return command;
             }
         }
         private void VerifyConvertWithShift(VSConstants.VSStd2KCmdID cmd, VimKey vimKey, EditCommandKind kind)
         {
-            var keyInput = KeyInputUtil.ApplyModifiers(KeyInputUtil.VimKeyToKeyInput(vimKey), KeyModifiers.Shift);
+            var keyInput = KeyInputUtil.ApplyKeyModifiers(KeyInputUtil.VimKeyToKeyInput(vimKey), VimKeyModifiers.Shift);
             VerifyConvert(cmd, keyInput, kind);
         }
 
@@ -31,10 +31,10 @@ namespace Vim.VisualStudio.UnitTest
 
         private void VerifyConvert(VSConstants.VSStd2KCmdID cmd, KeyInput ki, EditCommandKind kind)
         {
-            VerifyConvert(cmd, KeyModifiers.None, ki, kind);
+            VerifyConvert(cmd, VimKeyModifiers.None, ki, kind);
         }
 
-        private void VerifyConvert(VSConstants.VSStd2KCmdID cmd, KeyModifiers modifiers, KeyInput ki, EditCommandKind kind)
+        private void VerifyConvert(VSConstants.VSStd2KCmdID cmd, VimKeyModifiers modifiers, KeyInput ki, EditCommandKind kind)
         {
             EditCommand command;
             Assert.True(OleCommandUtil.TryConvert(VSConstants.VSStd2K, (uint)cmd, IntPtr.Zero, modifiers, out command));
@@ -50,7 +50,7 @@ namespace Vim.VisualStudio.UnitTest
         private void VerifyConvert(VSConstants.VSStd97CmdID cmd, KeyInput ki, EditCommandKind kind)
         {
             EditCommand command;
-            Assert.True(OleCommandUtil.TryConvert(VSConstants.GUID_VSStandardCommandSet97, (uint)cmd, IntPtr.Zero, KeyModifiers.None, out command));
+            Assert.True(OleCommandUtil.TryConvert(VSConstants.GUID_VSStandardCommandSet97, (uint)cmd, IntPtr.Zero, VimKeyModifiers.None, out command));
             Assert.Equal(ki, command.KeyInput);
             Assert.Equal(kind, command.EditCommandKind);
         }
@@ -79,7 +79,7 @@ namespace Vim.VisualStudio.UnitTest
         public void TypeCharNoData()
         {
             EditCommand command;
-            Assert.False(OleCommandUtil.TryConvert(VSConstants.GUID_VSStandardCommandSet97, (uint)VSConstants.VSStd2KCmdID.TYPECHAR, IntPtr.Zero, KeyModifiers.None, out command));
+            Assert.False(OleCommandUtil.TryConvert(VSConstants.GUID_VSStandardCommandSet97, (uint)VSConstants.VSStd2KCmdID.TYPECHAR, IntPtr.Zero, VimKeyModifiers.None, out command));
         }
 
         /// <summary>
@@ -92,7 +92,7 @@ namespace Vim.VisualStudio.UnitTest
         public void TypeChar_WithModifiers()
         {
             var source = @"@£$€{[]}\";
-            var modifiers = KeyModifiers.Alt | KeyModifiers.Control;
+            var modifiers = VimKeyModifiers.Alt | VimKeyModifiers.Control;
             foreach (var c in source)
             {
                 using (var ptr = CharPointer.Create(c))
@@ -116,7 +116,7 @@ namespace Vim.VisualStudio.UnitTest
         [Fact]
         public void ArrowKey_WithModifiers()
         {
-            var modifiers = KeyModifiers.Alt | KeyModifiers.Control;
+            var modifiers = VimKeyModifiers.Alt | VimKeyModifiers.Control;
             EditCommand command;
             Assert.True(OleCommandUtil.TryConvert(VSConstants.VSStd2K, (uint)VSConstants.VSStd2KCmdID.LEFT, IntPtr.Zero, modifiers, out command));
             Assert.Equal(modifiers, command.KeyInput.KeyModifiers);
@@ -159,7 +159,7 @@ namespace Vim.VisualStudio.UnitTest
         [Fact]
         public void BackTab()
         {
-            VerifyConvert(VSConstants.VSStd2KCmdID.BACKTAB, KeyInputUtil.ApplyModifiers(KeyInputUtil.TabKey, KeyModifiers.Shift), EditCommandKind.UserInput);
+            VerifyConvert(VSConstants.VSStd2KCmdID.BACKTAB, KeyInputUtil.ApplyKeyModifiers(KeyInputUtil.TabKey, VimKeyModifiers.Shift), EditCommandKind.UserInput);
         }
 
         /// <summary>
@@ -168,9 +168,9 @@ namespace Vim.VisualStudio.UnitTest
         [Fact]
         public void Tab_WithShift()
         {
-            var keyInput = KeyInputUtil.ApplyModifiers(KeyInputUtil.TabKey, KeyModifiers.Shift);
-            Assert.Equal(keyInput.KeyModifiers, KeyModifiers.Shift);
-            VerifyConvert(VSConstants.VSStd2KCmdID.TAB, KeyModifiers.Shift, keyInput, EditCommandKind.UserInput);
+            var keyInput = KeyInputUtil.ApplyKeyModifiers(KeyInputUtil.TabKey, VimKeyModifiers.Shift);
+            Assert.Equal(keyInput.KeyModifiers, VimKeyModifiers.Shift);
+            VerifyConvert(VSConstants.VSStd2KCmdID.TAB, VimKeyModifiers.Shift, keyInput, EditCommandKind.UserInput);
         }
 
         [Fact]

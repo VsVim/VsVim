@@ -74,6 +74,7 @@ type internal NormalMode
                 yield ("g?g?", CommandFlags.Repeatable, NormalCommand.ChangeCaseCaretLine ChangeCharacterKind.Rot13)
                 yield ("g??", CommandFlags.Repeatable, NormalCommand.ChangeCaseCaretLine ChangeCharacterKind.Rot13)
                 yield ("g&", CommandFlags.Special, NormalCommand.RepeatLastSubstitute true)
+                yield ("g<LeftMouse>", CommandFlags.Special, NormalCommand.GoToDefinition)
                 yield ("i", CommandFlags.None, NormalCommand.InsertBeforeCaret)
                 yield ("I", CommandFlags.LinkedWithNextCommand ||| CommandFlags.Repeatable, NormalCommand.InsertAtFirstNonBlank)
                 yield ("J", CommandFlags.Repeatable, NormalCommand.JoinLines JoinKind.RemoveEmptySpaces)
@@ -116,6 +117,7 @@ type internal NormalMode
                 yield ("<C-q>", CommandFlags.Special, NormalCommand.SwitchModeVisualCommand VisualKind.Block)
                 yield ("<C-r>", CommandFlags.Special, NormalCommand.Redo)
                 yield ("<C-v>", CommandFlags.Special, NormalCommand.SwitchModeVisualCommand VisualKind.Block)
+                yield ("<C-w>c", CommandFlags.None, NormalCommand.CloseWindow)
                 yield ("<C-w><C-j>", CommandFlags.None, NormalCommand.GoToView Direction.Down)
                 yield ("<C-w>j", CommandFlags.None, NormalCommand.GoToView Direction.Down)
                 yield ("<C-w><C-k>", CommandFlags.None, NormalCommand.GoToView Direction.Up)
@@ -133,6 +135,7 @@ type internal NormalMode
                 yield ("<C-x>", CommandFlags.Repeatable, NormalCommand.SubtractFromWord)
                 yield ("<C-]>", CommandFlags.Special, NormalCommand.GoToDefinition)
                 yield ("<Del>", CommandFlags.Repeatable, NormalCommand.DeleteCharacterAtCaret)
+                yield ("<C-LeftMouse>", CommandFlags.Special, NormalCommand.GoToDefinition)
                 yield ("<MiddleMouse>", CommandFlags.Repeatable, NormalCommand.PutAfterCaretMouse)
                 yield ("[p", CommandFlags.Repeatable, NormalCommand.PutBeforeCaretWithIndent)
                 yield ("[P", CommandFlags.Repeatable, NormalCommand.PutBeforeCaretWithIndent)
@@ -322,7 +325,7 @@ type internal NormalMode
             true
         elif doesCommandStartWith keyInput then 
             true
-        elif Option.isSome keyInput.RawChar && KeyModifiers.None = keyInput.KeyModifiers then
+        elif Option.isSome keyInput.RawChar && VimKeyModifiers.None = keyInput.KeyModifiers then
             // We can process any letter (think international input) or any character
             // which is part of the standard Vim input set
             CharUtil.IsLetter keyInput.Char || Set.contains keyInput.Char _coreCharSet

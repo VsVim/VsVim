@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Moq;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -11,12 +12,15 @@ namespace Vim.UI.Wpf.UnitTest
     public abstract class VimMouseProcessorTest : VimTestBase
     {
         private readonly IVimBuffer _vimBuffer;
+        private readonly Mock<IKeyboardDevice> _keyboardDevice;
         private readonly VimMouseProcessor _vimMouseProcessor;
 
         protected VimMouseProcessorTest()
         {
             _vimBuffer = CreateVimBuffer("");
-            _vimMouseProcessor = new VimMouseProcessor(_vimBuffer);
+            _keyboardDevice = new Mock<IKeyboardDevice>(MockBehavior.Loose);
+            _keyboardDevice.SetupGet(x => x.KeyModifiers).Returns(VimKeyModifiers.None);
+            _vimMouseProcessor = new VimMouseProcessor(_vimBuffer, _keyboardDevice.Object);
         }
 
         public sealed class TryProcessTest : VimMouseProcessorTest
@@ -36,6 +40,15 @@ namespace Vim.UI.Wpf.UnitTest
                     Assert.False(_vimMouseProcessor.TryProcess(keyInput.Key));
                     Assert.Equal(0, VimHost.BeepCount);
                 }
+            }
+
+            [Fact]
+            public void GoToDefinition()
+            {
+                _keyboardDevice.SetupGet(x => x.KeyModifiers).Returns(VimKeyModifiers.Control);
+                VimHost.GoToDefinitionReturn = false;
+                _vimMouseProcessor.TryProcess(VimKey.LeftMouse);
+                Assert.Equal(1, VimHost.GoToDefinitionCount);
             }
 
             [Fact]

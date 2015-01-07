@@ -40,6 +40,7 @@ type internal InsertUtil
     let _wordUtil = _vimBufferData.WordUtil
     let _vimHost = _vimBufferData.Vim.VimHost
     let _vimTextBuffer = _vimBufferData.VimTextBuffer
+    let mutable _combinedEditStartPoint : ITrackingPoint option = None
 
     /// The SnapshotPoint for the caret
     member x.CaretPoint = TextViewUtil.GetCaretPoint _textView
@@ -224,8 +225,18 @@ type internal InsertUtil
         CommandResult.Completed ModeSwitch.NoSwitch
 
     member x.Combined left right =
-        x.RunInsertCommand left |> ignore
-        x.RunInsertCommand right
+        let clear = 
+            if Option.isNone _combinedEditStartPoint then
+                _combinedEditStartPoint <- x.CurrentSnapshot.CreateTrackingPoint(x.CaretPoint.Position, PointTrackingMode.Negative) |> Some
+                true
+            else
+                false
+        try
+            x.RunInsertCommand left |> ignore
+            x.RunInsertCommand right
+        finally
+            if clear then
+                _combinedEditStartPoint <- None
 
     /// Complete the insert mode session.
     member x.CompleteMode moveCaretLeft = 
@@ -668,12 +679,14 @@ type internal InsertUtil
 
         // It is possible for InsertUtil to be used when vim is not currently in insert 
         // mode.  This happens during a repeat operation (.).  For operations such as that
-        // the caret point is considered to be the start point 
+        // the caret point is considered to be the start point.  It must be adjusted 
+        // for edits which is tracked by _combinedEditStartPoint
         let insertStartPoint = 
-            match _vimBufferData.VimTextBuffer.ModeKind with
-            | ModeKind.Insert -> _vimTextBuffer.InsertStartPoint
-            | ModeKind.Replace -> _vimTextBuffer.InsertStartPoint
-            | _ -> Some x.CaretPoint
+            match _combinedEditStartPoint, _vimBufferData.VimTextBuffer.ModeKind with
+            | Some editStartPoint, _ -> TrackingPointUtil.GetPoint x.CurrentSnapshot editStartPoint
+            | None, ModeKind.Insert -> _vimTextBuffer.InsertStartPoint
+            | None, ModeKind.Replace -> _vimTextBuffer.InsertStartPoint
+            | None, _ -> Some x.CaretPoint
 
         match _globalSettings.IsBackspaceStart, insertStartPoint, backspaceCommand with
         | true, _, _ -> backspaceCommand

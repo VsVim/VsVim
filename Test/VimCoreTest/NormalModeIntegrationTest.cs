@@ -531,6 +531,65 @@ namespace Vim.UnitTest
                 _vimBuffer.ProcessNotation("<S-Space>");
                 Assert.Equal(8, _textView.GetCaretPoint().Position);
             }
+
+            [Fact]
+            public void MoveOverFold()
+            {
+                Create("cat", "dog", "fish", "tree");
+                _foldManager.CreateFold(_textBuffer.GetLineRange(1, endLine: 2));
+                _vimBuffer.ProcessNotation("j");
+                Assert.Equal(_textBuffer.GetPointInLine(1, 0), _textView.GetCaretPoint());
+                _vimBuffer.ProcessNotation("j");
+                Assert.Equal(_textBuffer.GetPointInLine(3, 0), _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// Don't consider 'smartcase' when doing a * operation 
+            /// </summary>
+            [Fact]
+            public void Issue1511()
+            {
+                Create("foo", "FOO", "foo");
+                _assertOnWarningMessage = false;
+                _globalSettings.IgnoreCase = true;
+                _globalSettings.SmartCase = true;
+                _vimBuffer.Process('*');
+                Assert.Equal(_textBuffer.GetLine(1).Start, _textView.GetCaretPoint());
+                _vimBuffer.Process('*');
+                Assert.Equal(_textBuffer.GetLine(2).Start, _textView.GetCaretPoint());
+                _vimBuffer.Process('*');
+                Assert.Equal(_textBuffer.GetLine(0).Start, _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// Have to make sure that 'j' correctly maintains caret column when stepping 
+            /// over collapsed regions.  
+            ///
+            /// In general this is straight forward because vim regions include the trailing
+            /// new line.  A C# region though does not and we end up with the text of 2 
+            /// lines (first and new line of last) in the same visual line.  This makes mapping
+            /// considerably more difficult.  
+            /// </summary>
+            [Fact]
+            public void Issue1522()
+            {
+                Create("cat", "dog", "bear", "tree");
+
+                // The span should *not* include the line break of the last line.  
+                var span = new SnapshotSpan(
+                    _textBuffer.GetLine(1).Start.Add(2),
+                    _textBuffer.GetLine(2).End);
+
+                // Collapse the region specified above
+                var adhocOutliner = EditorUtilsFactory.GetOrCreateOutliner(_textBuffer);
+                adhocOutliner.CreateOutliningRegion(span, SpanTrackingMode.EdgeInclusive, "test", "test");
+                OutliningManagerService.GetOutliningManager(_textView).CollapseAll(span, _ => true);
+
+                _vimBuffer.ProcessNotation("j");
+                Assert.Equal(_textBuffer.GetLine(1).Start, _textView.GetCaretPoint());
+                _vimBuffer.ProcessNotation("j");
+                Assert.Equal(_textBuffer.GetLine(3).Start, _textView.GetCaretPoint());
+            }
         }
 
         public sealed class MatchingTokenTest : NormalModeIntegrationTest
@@ -4747,6 +4806,23 @@ namespace Vim.UnitTest
                 RegisterMap.GetRegister(RegisterName.SmallDelete).UpdateValue("t");
                 _vimBuffer.Process(@"""cx""-p");
                 Assert.Equal("otg", _textBuffer.GetLine(0).GetText());
+            }
+
+            [Fact]
+            public void Issue1436()
+            {
+                Create("cat", "dog", "fish", "tree");
+
+                var span = new SnapshotSpan(
+                    _textBuffer.GetLine(1).Start.Add(2),
+                    _textBuffer.GetLine(2).End);
+                var adhocOutliner = EditorUtilsFactory.GetOrCreateOutliner(_textBuffer);
+                adhocOutliner.CreateOutliningRegion(span, SpanTrackingMode.EdgeInclusive, "test", "test");
+                OutliningManagerService.GetOutliningManager(_textView).CollapseAll(span, _ => true);
+
+                _textView.MoveCaretTo(_textBuffer.GetLine(2).End);
+                _vimBuffer.ProcessNotation("dd");
+                Assert.Equal( new[] { "cat", "tree" }, _textBuffer.GetLines());
             }
         }
 

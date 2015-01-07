@@ -104,6 +104,8 @@
     <Compile Include="Implementation\OptionPages\KeyboardSettingsControl.xaml.cs">
       <DependentUpon>KeyboardSettingsControl.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Implementation\ReSharper\ReSharperExternalEditAdapter.cs" />
+    <Compile Include="Implementation\ReSharper\ReSharperExtensionAdapter.cs" />
     <Compile Include="Implementation\ReSharper\ReSharperKeyUtil.cs" />
     <Compile Include="Implementation\ReSharper\ReSharperUtil.cs" />
     <Compile Include="Implementation\ExternalEdit\SnippetExternalEditAdapter.cs" />
@@ -149,7 +151,6 @@
     <Compile Include="Implementation\VisualAssist\VisualAssistSelectionAdapter.cs" />
     <Compile Include="Implementation\Misc\VsAdapter.cs" />
     <Compile Include="Implementation\Misc\VsVimKeyProcessorProvider.cs" />
-    <Compile Include="IPowerToolsUtil.cs" />
     <Compile Include="IReportDesignerUtil.cs" />
     <Compile Include="Implementation\ReSharper\IResharperUtil.cs" />
     <Compile Include="ITextManager.cs" />

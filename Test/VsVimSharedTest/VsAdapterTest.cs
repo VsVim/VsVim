@@ -20,7 +20,7 @@ namespace Vim.VisualStudio.UnitTest
         private readonly Mock<IEditorOptionsFactoryService> _editorOptionsFactory;
         private readonly Mock<IIncrementalSearchFactoryService> _incrementalSearchFactoryService;
         private readonly Mock<_DTE> _dte;
-        internal readonly Mock<IPowerToolsUtil> _powerToolsUtil;
+        private readonly Mock<IExtensionAdapterBroker> _extensionAdapterBroker;
         private readonly Mock<SVsServiceProvider> _serviceProvider;
         internal readonly VsAdapter _adapterRaw;
         private readonly IVsAdapter _adapter;
@@ -31,7 +31,7 @@ namespace Vim.VisualStudio.UnitTest
             _editorAdapterFactory = _factory.Create<IVsEditorAdaptersFactoryService>();
             _editorOptionsFactory = _factory.Create<IEditorOptionsFactoryService>();
             _incrementalSearchFactoryService = _factory.Create<IIncrementalSearchFactoryService>();
-            _powerToolsUtil = _factory.Create<IPowerToolsUtil>();
+            _extensionAdapterBroker = _factory.Create<IExtensionAdapterBroker>();
             _serviceProvider = _factory.Create<SVsServiceProvider>();
             _serviceProvider.MakeService<SVsTextManager, IVsTextManager>(_factory);
             _serviceProvider.MakeService<SVsUIShell, IVsUIShell>(_factory);
@@ -42,7 +42,7 @@ namespace Vim.VisualStudio.UnitTest
                 _editorAdapterFactory.Object,
                 _editorOptionsFactory.Object,
                 _incrementalSearchFactoryService.Object,
-                _powerToolsUtil.Object,
+                _extensionAdapterBroker.Object,
                 _serviceProvider.Object);
             _adapter = _adapterRaw;
         }
@@ -111,7 +111,7 @@ namespace Vim.VisualStudio.UnitTest
             }
         }
 
-        public sealed class IsIncrementalSearchActive2012 : VsAdapterTest
+        public sealed class IsIncrementalSearchActive : VsAdapterTest
         {
             /// <summary>
             /// Test the case where the ITextView doesn't have the FindUILayer adornment layer and hence
@@ -123,6 +123,22 @@ namespace Vim.VisualStudio.UnitTest
                 var textView = CreateTextView();
                 Assert.False(_adapterRaw.IsIncrementalSearchActive(textView));
             }
+
+            [Fact]
+            public void ExtensionBroker()
+            {
+                var textView = CreateTextView();
+                _extensionAdapterBroker.Setup(x => x.IsIncrementalSearchActive(textView)).Returns(true);
+                Assert.True(_adapterRaw.IsIncrementalSearchActive(textView));
+            }
+
+            [Fact]
+            public void ExtensionBrokerFalse()
+            {
+                var textView = CreateTextView();
+                _extensionAdapterBroker.Setup(x => x.IsIncrementalSearchActive(textView)).Returns(false);
+                Assert.False(_adapterRaw.IsIncrementalSearchActive(textView));
+            }
         }
 
         public sealed class MiscTest : VsAdapterTest
@@ -131,10 +147,10 @@ namespace Vim.VisualStudio.UnitTest
             /// The power tools quick find is considered an incremental search 
             /// </summary>
             [Fact]
-            public void IsIncrementalSearchActive_PowerTools()
+            public void IsIncrementalSearchActive_Extension()
             {
-                _powerToolsUtil.SetupGet(x => x.IsQuickFindActive).Returns(true);
                 var textView = _factory.Create<ITextView>().Object;
+                _extensionAdapterBroker.Setup(x => x.IsIncrementalSearchActive(textView)).Returns(true);
                 Assert.True(_adapter.IsIncrementalSearchActive(textView));
             }
         }

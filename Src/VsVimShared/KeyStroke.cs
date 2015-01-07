@@ -19,7 +19,7 @@ namespace Vim.VisualStudio
     public sealed class KeyStroke : IEquatable<KeyStroke>
     {
         private readonly KeyInput _keyInput;
-        private readonly KeyModifiers _keyModifiers;
+        private readonly VimKeyModifiers _keyModifiers;
 
         /// <summary>
         /// Actual Key being entered
@@ -32,7 +32,7 @@ namespace Vim.VisualStudio
         /// <summary>
         /// Modifiers being applied to that key
         /// </summary>
-        public KeyModifiers KeyModifiers
+        public VimKeyModifiers KeyModifiers
         {
             get { return _keyModifiers; }
         }
@@ -59,10 +59,10 @@ namespace Vim.VisualStudio
         /// </summary>
         public KeyInput AggregateKeyInput
         {
-            get { return KeyInputUtil.ApplyModifiers(_keyInput, _keyModifiers | _keyInput.KeyModifiers); }
+            get { return KeyInputUtil.ApplyKeyModifiers(_keyInput, _keyModifiers | _keyInput.KeyModifiers); }
         }
 
-        public KeyStroke(KeyInput keyInput, KeyModifiers modifiers)
+        public KeyStroke(KeyInput keyInput, VimKeyModifiers modifiers)
         {
             _keyInput = keyInput;
             _keyModifiers = modifiers;

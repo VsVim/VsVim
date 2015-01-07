@@ -1077,12 +1077,12 @@ type Parser
             // Lower case names are allowed when the name is prefixed with <SID> or s: 
             let isScriptLocal = x.ParseScriptLocalPrefix()
             let! name = parseFunctionName isScriptLocal
-            let! args = parseFunctionArguments ()
+            let! parameters = parseFunctionArguments ()
             let isAbort, isDict, isRange, isError = parseModifiers ()
 
             let func = { 
                 Name = name
-                Arguments = args
+                Parameters = parameters
                 IsRange = isRange
                 IsAbort = isAbort
                 IsDictionary = isDict
@@ -1575,10 +1575,12 @@ type Parser
             | _ -> None
 
         use flags = _tokenizer.SetTokenizerFlagsScoped TokenizerFlags.SkipBlanks
+        _tokenizer.SetTokenizerFlagsScoped TokenizerFlags.AllowDigitsInWord |> ignore
         match _tokenizer.CurrentTokenKind with
         | TokenKind.Word word ->
             _tokenizer.MoveNextToken()
             if _tokenizer.CurrentChar = ':' then
+                _tokenizer.MoveNextToken()
                 match _tokenizer.CurrentTokenKind, parseNameScope word with
                 | TokenKind.Word name, Some nameScope -> 
                     _tokenizer.MoveNextToken()
@@ -1752,6 +1754,18 @@ type Parser
                 LineCommand.DisplayLet names)
 
         match _tokenizer.CurrentTokenKind with
+        | TokenKind.Character '@' ->
+            _tokenizer.MoveNextToken()
+            match x.ParseRegisterName ParseRegisterName.All with
+            | Some registerName ->
+                if _tokenizer.CurrentChar = '=' then
+                    _tokenizer.MoveNextToken()
+                    match x.ParseExpressionCore() with
+                    | ParseResult.Succeeded expr -> LineCommand.LetRegister (registerName, expr)
+                    | ParseResult.Failed msg -> LineCommand.ParseError msg
+                else
+                    LineCommand.ParseError Resources.Parser_Error
+            | None -> LineCommand.ParseError "Invalid register name"
         | TokenKind.Word name ->
             match x.ParseVariableName() with
             | ParseResult.Succeeded name ->
@@ -2178,6 +2192,41 @@ type Parser
             Expression.OptionName word |> ParseResult.Succeeded
         | _ -> ParseResult.Failed "Option name missing"
 
+    member x.ParseList() =
+        let rec parseList atBeginning =
+            let recursivelyParseItems() =
+                match x.ParseSingleExpression() with
+                | ParseResult.Succeeded item ->
+                    match parseList false with
+                    | ParseResult.Succeeded otherItems -> item :: otherItems |> ParseResult.Succeeded
+                    | ParseResult.Failed msg -> ParseResult.Failed msg
+                | ParseResult.Failed msg -> ParseResult.Failed msg
+            match _tokenizer.CurrentTokenKind with
+            | TokenKind.Character '[' ->
+                _tokenizer.MoveNextToken()
+                parseList true
+            | TokenKind.Character ']' ->
+                _tokenizer.MoveNextToken()
+                ParseResult.Succeeded []
+            | TokenKind.Character ',' ->
+                _tokenizer.MoveNextToken()
+                x.SkipBlanks()
+                recursivelyParseItems()
+            | _ ->
+                if atBeginning then recursivelyParseItems()
+                else ParseResult.Failed Resources.Parser_Error
+        match parseList true with
+        | ParseResult.Succeeded expressionList -> Expression.List expressionList |> ParseResult.Succeeded
+        | ParseResult.Failed msg -> ParseResult.Failed msg
+
+    member x.ParseDictionary() =
+        _tokenizer.MoveNextToken()
+        match _tokenizer.CurrentTokenKind with
+        | TokenKind.Character '}' ->
+            _tokenizer.MoveNextToken()
+            VariableValue.Dictionary Map.empty |> Expression.ConstantValue |> ParseResult.Succeeded
+        | _ -> ParseResult.Failed Resources.Parser_Error
+
     /// Parse out a single expression
     member x.ParseSingleExpression() =
         // Re-examine the current token based on the knowledge that double quotes are
@@ -2190,6 +2239,10 @@ type Parser
             x.ParseStringLiteral()
         | TokenKind.Character '&' ->
             x.ParseOptionName()
+        | TokenKind.Character '[' ->
+            x.ParseList()
+        | TokenKind.Character '{' ->
+            x.ParseDictionary()
         | TokenKind.Character '@' ->
             _tokenizer.MoveNextToken()
             match x.ParseRegisterName ParseRegisterName.All with
@@ -2201,7 +2254,38 @@ type Parser
         | _ ->
             match x.ParseVariableName() with
             | ParseResult.Failed msg -> ParseResult.Failed msg
-            | ParseResult.Succeeded variable -> Expression.VariableName variable |> ParseResult.Succeeded
+            | ParseResult.Succeeded variable -> // TODO the nesting is getting deep here; refactor
+                x.SkipBlanks()
+                match _tokenizer.CurrentTokenKind with
+                | TokenKind.Character '(' ->
+                    match x.ParseFunctionArguments true with
+                    | ParseResult.Succeeded args ->
+                        Expression.FunctionCall(variable, args) |> ParseResult.Succeeded
+                    | ParseResult.Failed msg -> ParseResult.Failed msg
+                | _ -> Expression.VariableName variable |> ParseResult.Succeeded
+
+    member x.ParseFunctionArguments atBeginning =
+        let recursivelyParseArguments() =
+            match x.ParseSingleExpression() with
+            | ParseResult.Succeeded arg ->
+                match x.ParseFunctionArguments false with
+                | ParseResult.Succeeded otherArgs -> arg :: otherArgs |> ParseResult.Succeeded
+                | ParseResult.Failed msg -> ParseResult.Failed msg
+            | ParseResult.Failed msg -> ParseResult.Failed msg
+        match _tokenizer.CurrentTokenKind with
+        | TokenKind.Character '(' ->
+            _tokenizer.MoveNextToken()
+            x.ParseFunctionArguments true
+        | TokenKind.Character ')' ->
+            _tokenizer.MoveNextToken()
+            ParseResult.Succeeded []
+        | TokenKind.Character ',' ->
+            _tokenizer.MoveNextToken()
+            x.SkipBlanks()
+            recursivelyParseArguments()
+        | _ ->
+            if atBeginning then recursivelyParseArguments()
+            else ParseResult.Failed "invalid arguments for function"
 
     /// Parse out a complete expression from the text.  
     member x.ParseExpressionCore() =

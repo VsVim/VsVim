@@ -5,6 +5,7 @@ using System.ComponentModel.Composition;
 using System.Linq;
 using System.Text;
 using EditorUtils;
+using Microsoft.VisualStudio.Text.Editor;
 
 namespace Vim.VisualStudio.Implementation.Misc
 {
@@ -24,17 +25,33 @@ namespace Vim.VisualStudio.Implementation.Misc
             get { return _extensionAdapters; }
         }
 
-        bool IExtensionAdapter.ShouldKeepSelectionAfterHostCommand(string command, string argument)
+        private bool? RunOnAll(Func<IExtensionAdapter, bool?> func)
         {
             foreach (var extensionAdapter in _extensionAdapters)
             {
-                if (extensionAdapter.ShouldKeepSelectionAfterHostCommand(command, argument))
+                var result = func(extensionAdapter);
+                if (result.HasValue)
                 {
-                    return true;
+                    return result;
                 }
             }
 
-            return false;
+            return null;
+        }
+
+        bool? IExtensionAdapter.ShouldKeepSelectionAfterHostCommand(string command, string argument)
+        {
+            return RunOnAll(e => e.ShouldKeepSelectionAfterHostCommand(command, argument));
+        }
+
+        bool? IExtensionAdapter.ShouldCreateVimBuffer(ITextView textView)
+        {
+            return RunOnAll(e => e.ShouldCreateVimBuffer(textView));
+        }
+
+        bool? IExtensionAdapter.IsIncrementalSearchActive(ITextView textView)
+        {
+            return RunOnAll(e => e.IsIncrementalSearchActive(textView));
         }
     }
 }

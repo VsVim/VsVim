@@ -335,7 +335,7 @@ type FunctionDefinition = {
     Name : string
 
     /// Arguments to the function
-    Arguments : string list
+    Parameters : string list
 
     /// Is the function responsible for its ranges
     IsRange : bool
@@ -403,6 +403,12 @@ and [<RequireQualifiedAccess>] Expression =
 
     /// The name of a variable
     | VariableName of VariableName
+
+    /// Invocation of a function
+    | FunctionCall of VariableName * Expression list
+
+    /// List of expressions
+    | List of Expression list
 
 and [<RequireQualifiedAccess>] LineCommand =
 
@@ -547,6 +553,9 @@ and [<RequireQualifiedAccess>] LineCommand =
 
     // Let command.  The first item is the name and the second is the value
     | Let of VariableName * Expression
+
+    // Let command applied to a register. The first item is the name and the second is the value
+    | LetRegister of RegisterName * Expression
 
     /// Make command.  The options are as follows
     ///   - The ! option
@@ -694,6 +703,15 @@ with
 
     member x.Failed = 
         not x.Succeeded
+
+[<NoComparison>]
+[<NoEquality>]
+[<RequireQualifiedAccess>]
+type BuiltinFunctionCall =
+    | Escape of string * string
+    | Exists of string
+    | Localtime
+    | Nr2char of int
 
 /// Engine which interprets Vim commands and expressions
 type IVimInterpreter =

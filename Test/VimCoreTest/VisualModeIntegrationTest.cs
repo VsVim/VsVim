@@ -320,6 +320,15 @@ namespace Vim.UnitTest
                     _vimBuffer.Process("x");
                     Assert.Equal("dog", _textView.GetLine(0).GetText());
                 }
+
+                [Fact]
+                public void Issue1507()
+                {
+                    Create("cat", "dog", "fish");
+                    _textView.MoveCaretTo(1);
+                    _vimBuffer.Process("vjllx");
+                    Assert.Equal(new[] { "cfish" }, _textBuffer.GetLines());
+                }
             }
 
             public sealed class BlockTest : DeleteSelectionTest
@@ -966,6 +975,29 @@ namespace Vim.UnitTest
                 Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
                 Assert.Equal("cat", _textBuffer.GetLine(0).GetText());
                 Assert.Equal(0, _textView.GetCaretPoint().Position);
+            }
+        }
+
+        public sealed class SelectionTest : VisualModeIntegrationTest
+        {
+            /// <summary>
+            /// In Visual Mode it is possible to move the caret past the end of the line even if
+            /// 'virtualedit='.  
+            /// </summary>
+            [Fact]
+            public void MoveToEndOfLineCharacter()
+            {
+                Create("cat", "dog");
+                _vimBuffer.Process("vlll");
+                Assert.Equal(3, _textView.GetCaretPoint().Position);
+            }
+
+            [Fact]
+            public void MoveToEndOfLineLine()
+            {
+                Create("cat", "dog");
+                _vimBuffer.Process("Vlll");
+                Assert.Equal(3, _textView.GetCaretPoint().Position);
             }
         }
 

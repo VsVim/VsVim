@@ -13,7 +13,7 @@ namespace Vim.VisualStudio.UnitTest
             {
                 var stroke = new KeyStroke(
                     KeyInputUtil.CharToKeyInput('c'),
-                    KeyModifiers.None);
+                    VimKeyModifiers.None);
                 Assert.Equal(KeyInputUtil.CharToKeyInput('c'), stroke.KeyInput);
                 Assert.Equal(KeyInputUtil.CharToKeyInput('c'), stroke.AggregateKeyInput);
                 Assert.Equal('c', stroke.Char);
@@ -24,9 +24,9 @@ namespace Vim.VisualStudio.UnitTest
             {
                 var stroke = new KeyStroke(
                     KeyInputUtil.CharToKeyInput('#'),
-                    KeyModifiers.Shift);
+                    VimKeyModifiers.Shift);
                 Assert.Equal(KeyInputUtil.CharToKeyInput('#'), stroke.KeyInput);
-                Assert.Equal(KeyInputUtil.ApplyModifiersToChar('#', KeyModifiers.Shift), stroke.AggregateKeyInput);
+                Assert.Equal(KeyInputUtil.ApplyKeyModifiersToChar('#', VimKeyModifiers.Shift), stroke.AggregateKeyInput);
                 Assert.Equal('#', stroke.Char);
             }
         }
@@ -38,9 +38,9 @@ namespace Vim.VisualStudio.UnitTest
             {
                 var stroke = new KeyStroke(
                     KeyInputUtil.CharToKeyInput('#'),
-                    KeyModifiers.Shift | KeyModifiers.Control);
+                    VimKeyModifiers.Shift | VimKeyModifiers.Control);
                 Assert.Equal(KeyInputUtil.CharToKeyInput('#'), stroke.KeyInput);
-                Assert.Equal(KeyInputUtil.ApplyModifiersToChar('#', KeyModifiers.Shift | KeyModifiers.Control),
+                Assert.Equal(KeyInputUtil.ApplyKeyModifiersToChar('#', VimKeyModifiers.Shift | VimKeyModifiers.Control),
                              stroke.AggregateKeyInput);
                 Assert.Equal('#', stroke.Char);
             }
@@ -50,10 +50,10 @@ namespace Vim.VisualStudio.UnitTest
             {
                 var stroke1 = new KeyStroke(
                     KeyInputUtil.CharToKeyInput('c'),
-                    KeyModifiers.Shift | KeyModifiers.Control);
+                    VimKeyModifiers.Shift | VimKeyModifiers.Control);
                 var stroke2 = new KeyStroke(
                     KeyInputUtil.CharToKeyInput('c'),
-                    KeyModifiers.Shift | KeyModifiers.Control);
+                    VimKeyModifiers.Shift | VimKeyModifiers.Control);
                 Assert.Equal(stroke1, stroke2);
                 Assert.True(stroke1 == stroke2);
                 Assert.False(stroke1 != stroke2);
@@ -64,10 +64,10 @@ namespace Vim.VisualStudio.UnitTest
             {
                 var stroke1 = new KeyStroke(
                     KeyInputUtil.CharToKeyInput('d'),
-                    KeyModifiers.Shift | KeyModifiers.Control);
+                    VimKeyModifiers.Shift | VimKeyModifiers.Control);
                 var stroke2 = new KeyStroke(
                     KeyInputUtil.CharToKeyInput('c'),
-                    KeyModifiers.Shift | KeyModifiers.Control);
+                    VimKeyModifiers.Shift | VimKeyModifiers.Control);
                 Assert.NotEqual(stroke1, stroke2);
                 Assert.False(stroke1 == stroke2);
                 Assert.True(stroke1 != stroke2);
@@ -77,10 +77,10 @@ namespace Vim.VisualStudio.UnitTest
             public void Equals3()
             {
                 var value = EqualityUnit
-                    .Create(new KeyStroke(KeyInputUtil.CharToKeyInput('c'), KeyModifiers.None))
-                    .WithEqualValues(new KeyStroke(KeyInputUtil.CharToKeyInput('c'), KeyModifiers.None))
-                    .WithNotEqualValues(new KeyStroke(KeyInputUtil.CharToKeyInput('d'), KeyModifiers.None))
-                    .WithNotEqualValues(new KeyStroke(KeyInputUtil.CharToKeyInput('c'), KeyModifiers.Shift));
+                    .Create(new KeyStroke(KeyInputUtil.CharToKeyInput('c'), VimKeyModifiers.None))
+                    .WithEqualValues(new KeyStroke(KeyInputUtil.CharToKeyInput('c'), VimKeyModifiers.None))
+                    .WithNotEqualValues(new KeyStroke(KeyInputUtil.CharToKeyInput('d'), VimKeyModifiers.None))
+                    .WithNotEqualValues(new KeyStroke(KeyInputUtil.CharToKeyInput('c'), VimKeyModifiers.Shift));
                 EqualityUtil.RunAll(
                     (x, y) => x == y,
                     (x, y) => x != y,

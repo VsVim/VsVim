@@ -10,15 +10,17 @@ namespace Vim.UI.Wpf.Implementation.Mouse
     internal sealed class VimMouseProcessor : MouseProcessorBase
     {
         private readonly IVimBuffer _vimBuffer;
+        private readonly IKeyboardDevice _keyboardDevice;
 
-        internal VimMouseProcessor(IVimBuffer vimBuffer)
+        internal VimMouseProcessor(IVimBuffer vimBuffer, IKeyboardDevice keyboardDevice)
         {
             _vimBuffer = vimBuffer;
+            _keyboardDevice = keyboardDevice;
         }
 
         internal bool TryProcess(VimKey vimKey)
         {
-            var keyInput = KeyInputUtil.VimKeyToKeyInput(vimKey);
+            var keyInput = KeyInputUtil.ApplyKeyModifiersToKey(vimKey, _keyboardDevice.KeyModifiers);
 
             // If the user has explicitly set the mouse to be <nop> then we don't want to report this as 
             // handled.  Otherwise it will swallow the mouse event and as a consequence disable other
