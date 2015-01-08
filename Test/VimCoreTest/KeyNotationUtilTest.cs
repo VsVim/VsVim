@@ -475,6 +475,8 @@ namespace Vim.UnitTest
             [Fact]
             public void AlphaLowerAndAltGr()
             {
+                // Vim don't let you map Alt-Gr combinations (Ctrl + Alt), intead it should see just the plain character
+                // The #1008 and #1390 issues were caused by VsVim not handling those combinations properly.
                 foreach (var c in KeyInputUtilTest.CharLettersLower)
                 {
                     var keyInput = KeyInputUtil.ApplyKeyModifiersToChar(c, VimKeyModifiers.Alt | VimKeyModifiers.Control);
@@ -500,6 +502,15 @@ namespace Vim.UnitTest
                 var right = KeyNotationUtil.StringToKeyInput("<BS>");
                 Assert.Equal("<C-H>", KeyNotationUtil.GetDisplayName(left));
                 Assert.Equal("<BS>", KeyNotationUtil.GetDisplayName(right));
+            }
+
+            [Fact]
+            public void AltGrAndEnter()
+            {
+                // Alt-Gr should not add any modifiers in combination with Enter, so the display name should remain <CR>
+                // The #1008 and #1390 issues were caused by VsVim not handling this combination properly.
+                var keyInput = KeyInputUtil.ApplyKeyModifiersToKey(VimKey.Enter, VimKeyModifiers.Alt | VimKeyModifiers.Control);
+                Assert.Equal("<CR>", KeyNotationUtil.GetDisplayName(keyInput));
             }
 
             /// <summary>

@@ -386,10 +386,14 @@ module KeyInputUtil =
             match keyInput.RawChar with
             | None -> keyInput
             | Some c ->
+                // Vim doesn't let you map Alt-Gr combinations, instead it sees the the character that is is output by the system 
+                // key mapping. So in order to let VsVim behave the same way, the modifiers should be removed. Furthermore there's 
+                // no special Alt-Gr modifier, it's rerpresented by Ctrl+Alt, so remove both of them. 
+                // This fixes the #1008 and #1390 issues.
                 let unsetflag (a : VimKeyModifiers) (b : VimKeyModifiers) : VimKeyModifiers = Util.UnsetFlag a b
                 let unsetflags a b c = unsetflag (unsetflag a b) c
                 let modifiers = unsetflags keyInput.KeyModifiers VimKeyModifiers.Alt VimKeyModifiers.Control
-                KeyInput(VimKey.RawCharacter, modifiers, Some c)
+                KeyInput(keyInput.Key, modifiers, Some c)
 
         let keyInput = ChangeKeyModifiersDangerous keyInput (targetModifiers ||| keyInput.KeyModifiers)
 
