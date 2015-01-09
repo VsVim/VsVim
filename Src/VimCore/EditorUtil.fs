@@ -755,6 +755,11 @@ module SnapshotLineUtil =
         |> Seq.skipWhile (fun point -> CharUtil.IsBlank (point.GetChar()))
         |> SeqUtil.tryHeadOnly
 
+    // Checks if the point is the first non blank character of the line
+    let IsFirstNonBlank (point : SnapshotPoint) =
+        point.GetContainingLine()
+        |> GetFirstNonBlank = Some(point)
+
     /// Get the first non-blank character on the line or the Start point if all 
     /// characters are blank
     let GetFirstNonBlankOrStart line = 
