@@ -2288,6 +2288,16 @@ namespace Vim.UnitTest
             }
 
             [Fact]
+            public void YankMotionSetsMark()
+            {
+                Create("the brown dog");
+                _textView.MoveCaretTo(1);
+                _vimBuffer.Process("y2w");
+                _vimBuffer.Process("`[");
+                Assert.Equal(1, _textView.GetCaretPoint().Position);
+            }
+
+            [Fact]
             public void NamedMarkIsExclusive()
             {
                 Create("the brown dog");
