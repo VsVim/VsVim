@@ -2980,6 +2980,7 @@ type internal CommandUtil
 
             let data = StringData.OfSpan span
             let value = x.CreateRegisterValue data OperationKind.LineWise
+            _vimTextBuffer.LastChangedOrYankedSpan <- Some(span)
             _registerMap.SetRegisterValue register RegisterOperation.Yank value
 
         CommandResult.Completed ModeSwitch.NoSwitch
@@ -3008,6 +3009,7 @@ type internal CommandUtil
 
         let data = StringData.OfEditSpan editSpan
         let value = x.CreateRegisterValue data operationKind
+        _vimTextBuffer.LastChangedOrYankedSpan <- Some(SnapshotSpanUtil.Create visualSpan.Start visualSpan.End)
         _registerMap.SetRegisterValue register RegisterOperation.Yank value
         CommandResult.Completed ModeSwitch.SwitchPreviousMode
 
@@ -3015,6 +3017,7 @@ type internal CommandUtil
     member x.YankSelection register (visualSpan : VisualSpan) = 
         let data = StringData.OfEditSpan visualSpan.EditSpan
         let value = x.CreateRegisterValue data visualSpan.OperationKind
+        _vimTextBuffer.LastChangedOrYankedSpan <- Some(SnapshotSpanUtil.Create visualSpan.Start visualSpan.End)
         _registerMap.SetRegisterValue register RegisterOperation.Yank value
         CommandResult.Completed ModeSwitch.SwitchPreviousMode
 
@@ -3040,6 +3043,9 @@ type internal CommandUtil
     member x.SelectAll () =
         _textView.Selection.Select(_textBuffer.CurrentSnapshot.GetExtent(), false)
         CommandResult.Completed ModeSwitch.NoSwitch
+
+    member x.UpdateLastChangedOrYankedSpan snapshotSpan =
+        _vimTextBuffer.LastChangedOrYankedSpan <- Some(snapshotSpan)
 
     interface ICommandUtil with
         member x.RunNormalCommand command data = x.RunNormalCommand command data
