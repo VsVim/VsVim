@@ -4190,6 +4190,9 @@ and IVimTextBuffer =
     /// and the SnapshotPoint within the span where the caret should be positioned
     abstract LastVisualSelection : VisualSelection option with get, set
 
+    /// The last changed or yanked span for the IVimTextBuffer.  
+    abstract LastChangedOrYankedSpan : SnapshotSpan option with get, set
+
     /// The point the caret occupied when the last edit occurred
     abstract LastEditPoint : SnapshotPoint option with get, set
 

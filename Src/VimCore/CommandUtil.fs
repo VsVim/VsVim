@@ -2987,6 +2987,7 @@ type internal CommandUtil
     /// Yank the contents of the motion into the specified register
     member x.YankMotion register (result: MotionResult) = 
         let value = x.CreateRegisterValue (StringData.OfSpan result.Span) result.OperationKind
+        _vimTextBuffer.LastChangedOrYankedSpan <- Some(result.Span)
         _registerMap.SetRegisterValue register RegisterOperation.Yank value
         CommandResult.Completed ModeSwitch.NoSwitch
 

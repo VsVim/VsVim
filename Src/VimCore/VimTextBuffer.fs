@@ -23,6 +23,8 @@ type internal VimTextBuffer
     let _switchedModeEvent = StandardEvent<SwitchModeKindEventArgs>()
     let mutable _modeKind = ModeKind.Normal
     let mutable _lastVisualSelection : ITrackingVisualSelection option = None
+    let mutable _lastModifiedSpan : ITrackingVisualSelection option = None
+    let mutable _lastChangedOrYankedSpan : SnapshotSpan option = None
     let mutable _insertStartPoint : ITrackingLineColumn option = None
     let mutable _lastInsertExitPoint : ITrackingLineColumn option = None
     let mutable _lastEditPoint : ITrackingLineColumn option = None
@@ -44,6 +46,15 @@ type internal VimTextBuffer
                 match value with
                 | None -> None
                 | Some visualSelection -> Some (_bufferTrackingService.CreateVisualSelection visualSelection)
+
+    member x.LastChangedOrYankedSpan
+        with get() =
+            match _lastChangedOrYankedSpan with
+            | None -> None
+            | Some snapshotSpan -> _lastChangedOrYankedSpan
+        and set value =
+            // Necessary? Unfamiliar with F# praxis. Feels like it should be the default.
+            _lastChangedOrYankedSpan <- value
 
     member x.InsertStartPoint
         with get() = 
@@ -133,6 +144,7 @@ type internal VimTextBuffer
         x.IsSoftTabStopValidForBackspace <- true
         x.LastInsertExitPoint <- None
         x.LastVisualSelection <- None
+        x.LastChangedOrYankedSpan <- None
 
     /// Get the specified local mark value
     member x.GetLocalMark localMark =
@@ -148,6 +160,12 @@ type internal VimTextBuffer
             x.LastInsertExitPoint |> Option.map VirtualSnapshotPointUtil.OfPoint
         | LocalMark.LastEdit ->
             x.LastEditPoint |> Option.map VirtualSnapshotPointUtil.OfPoint
+        | LocalMark.LastChangedOrYankedStart ->
+            x.LastChangedOrYankedSpan
+            |> Option.map (fun snapshotSpan -> snapshotSpan.Start |> VirtualSnapshotPointUtil.OfPoint)
+        | LocalMark.LastChangedOrYankedEnd ->
+            x.LastChangedOrYankedSpan
+            |> Option.map (fun snapshotSpan -> snapshotSpan.End |> VirtualSnapshotPointUtil.OfPoint)
         | LocalMark.LastSelectionStart ->
             x.LastVisualSelection 
             |> Option.map (fun visualSelection -> visualSelection.VisualSpan.Start |> VirtualSnapshotPointUtil.OfPoint) 
@@ -167,6 +185,8 @@ type internal VimTextBuffer
             _textBuffer.Properties.[letter] <- trackingLineColumn
             true
         | LocalMark.Number _ -> false
+        | LocalMark.LastChangedOrYankedEnd -> false
+        | LocalMark.LastChangedOrYankedStart -> false
         | LocalMark.LastSelectionEnd -> false
         | LocalMark.LastSelectionStart -> false
         | LocalMark.LastInsertExit -> false
@@ -182,6 +202,8 @@ type internal VimTextBuffer
                 trackingLineColumn.Close()
                 _textBuffer.Properties.RemoveProperty letter
         | LocalMark.Number _ -> false
+        | LocalMark.LastChangedOrYankedEnd -> false
+        | LocalMark.LastChangedOrYankedStart -> false
         | LocalMark.LastSelectionEnd -> false
         | LocalMark.LastSelectionStart -> false
         | LocalMark.LastInsertExit -> false
@@ -200,6 +222,9 @@ type internal VimTextBuffer
         member x.LastVisualSelection 
             with get() = x.LastVisualSelection
             and set value = x.LastVisualSelection <- value
+        member x.LastChangedOrYankedSpan
+            with get() = x.LastChangedOrYankedSpan
+            and set value = x.LastChangedOrYankedSpan <- value
         member x.InsertStartPoint
             with get() = x.InsertStartPoint
             and set value = x.InsertStartPoint <- value
