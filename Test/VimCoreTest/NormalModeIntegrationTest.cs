@@ -133,6 +133,17 @@ namespace Vim.UnitTest
                 Assert.Equal(_textView.GetLine(1).Start, _textView.GetCaretPoint());
             }
 
+            /// <summary>
+            /// Make sure the paragraph move goes to the appropriate location
+            /// </summary>
+            [Fact]
+            public void ParagraphForward_DontMovePastBlankLine()
+            {
+                Create("dog", " ", "cat", "", "bear");
+                _vimBuffer.Process("}");
+                Assert.Equal(_textView.GetLine(1).Start, _textView.GetCaretPoint());
+            }
+
             [Fact]
             public void FirstNonBlankOnLine()
             {
@@ -148,6 +159,18 @@ namespace Vim.UnitTest
             public void ParagraphBackward()
             {
                 Create("dog", "", "cat", "pig", "");
+                _textView.MoveCaretToLine(3);
+                _vimBuffer.Process("{");
+                Assert.Equal(_textView.GetLine(1).Start, _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// Make sure the paragraph move backward goes to the appropriate location
+            /// </summary>
+            [Fact]
+            public void ParagraphBackward_DontMovePastBlankLine()
+            {
+                Create("dog", " ", "cat", "pig", "");
                 _textView.MoveCaretToLine(3);
                 _vimBuffer.Process("{");
                 Assert.Equal(_textView.GetLine(1).Start, _textView.GetCaretPoint());

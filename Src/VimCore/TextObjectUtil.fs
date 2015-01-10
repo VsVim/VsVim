@@ -64,6 +64,13 @@ type internal TextObjectUtil
         | None -> true
         | Some line -> SnapshotLineUtil.IsEmpty line
 
+    /// Is the line above the specified line blank or empty
+    member x.IsLineAboveBlankOrEmpty (line : ITextSnapshotLine) = 
+        let number = line.LineNumber - 1
+        match SnapshotUtil.TryGetLine line.Snapshot number with
+        | None -> true
+        | Some line -> SnapshotLineUtil.IsBlankOrEmpty line
+
     /// Is this line an empty line with no empty lines above it 
     member x.IsEmptyLineWithNoEmptyAbove line = 
         if SnapshotLineUtil.IsEmpty line then
@@ -71,6 +78,16 @@ type internal TextObjectUtil
                 true
             else
                 not (x.IsLineAboveEmpty line)
+        else
+            false
+
+    /// Is this line a blank or empty line with no blank or empty lines above it 
+    member x.IsBlankOrEmptyLineWithNoBlankOrEmptyAbove line = 
+        if SnapshotLineUtil.IsBlankOrEmpty line then
+            if line.LineNumber = 0 then
+                true
+            else
+                not (x.IsLineAboveBlankOrEmpty line)
         else
             false
 
@@ -91,7 +108,7 @@ type internal TextObjectUtil
 
         SnapshotPointUtil.IsStartPoint startPoint ||
         x.IsTextMacroMatchLine line _globalSettings.Paragraphs ||
-        x.IsEmptyLineWithNoEmptyAbove line
+        x.IsBlankOrEmptyLineWithNoBlankOrEmptyAbove line
 
     /// Is this line the start of a section.  Section boundaries can only occur at the
     /// start of a line or in a couple of scenarios around braces
