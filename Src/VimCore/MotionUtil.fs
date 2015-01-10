@@ -1853,17 +1853,17 @@ type internal MotionUtil
 
             | Some span ->
                 let startPoint = 
-                    if SnapshotPointUtil.IsLastPointOnLine span.Start = false then
-                        span.Start.Add 1
-                    else
+                    if SnapshotPointUtil.IsLastPointOnLine span.Start then
                         span.Start.GetContainingLine().EndIncludingLineBreak
+                    else
+                        span.Start.Add 1
 
                 let endPoint =
-                    if SnapshotLineUtil.GetFirstNonBlank(span.End.GetContainingLine()) <> Some ( span.End.Subtract 1) then
-                        span.End.Subtract 1
-                    else
+                    if SnapshotLineUtil.IsFirstNonBlank(span.End.Subtract 1) then
                         let line = SnapshotUtil.GetLineOrFirst span.Snapshot (span.End.GetContainingLine().LineNumber - 1)
                         line.End
+                    else
+                        span.End.Subtract 1
 
                 let span = SnapshotSpanUtil.Create startPoint endPoint
                 MotionResult.Create span true MotionKind.CharacterWiseInclusive |> Some
