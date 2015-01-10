@@ -2421,6 +2421,30 @@ namespace Vim.UnitTest
                 Assert.Equal(7, _textView.GetCaretPoint().Position);
             }
 
+            /// <summary>
+            /// When standing in middle of word the following whitespace after . should be selected
+            /// </summary>
+            [Fact]
+            public void TextObject_AllSentence_MiddleWord()
+            {
+                Create("cat. dog. fish.");
+                _textView.MoveCaretTo(6);
+                _vimBuffer.Process("vas");
+                Assert.Equal("dog. ", _textView.GetSelectionSpan().GetText());
+                Assert.Equal(9, _textView.GetCaretPoint().Position);
+            }
+
+            [Fact]
+            public void Issue1456()
+            {
+                Create("foo", "bar", "baz");
+
+                _textView.MoveCaretTo(5);
+                _vimBuffer.Process("vap");
+                
+                Assert.Equal(_textView.GetLineRange(0, 2).GetText(), _textView.GetSelectionSpan().GetText());
+            }
+
             [Fact]
             public void Issue679()
             {
