@@ -47,12 +47,9 @@ type internal VimTextBuffer
                 | Some visualSelection -> Some (_bufferTrackingService.CreateVisualSelection visualSelection)
 
     member x.LastChangedOrYankedSpan
-        with get() =
-            match _lastChangedOrYankedSpan with
-            | None -> None
-            | Some snapshotSpan -> _lastChangedOrYankedSpan
+        with get() = 
+            _lastChangedOrYankedSpan 
         and set value =
-            // Necessary? Unfamiliar with F# praxis. Feels like it should be the default.
             _lastChangedOrYankedSpan <- value
 
     member x.InsertStartPoint
@@ -161,10 +158,16 @@ type internal VimTextBuffer
             x.LastEditPoint |> Option.map VirtualSnapshotPointUtil.OfPoint
         | LocalMark.LastChangedOrYankedStart ->
             x.LastChangedOrYankedSpan
-            |> Option.map (fun snapshotSpan -> snapshotSpan.Start |> VirtualSnapshotPointUtil.OfPoint)
+            |> Option.map (fun trackingSpan -> 
+                _textBuffer.CurrentSnapshot  // Is this the correct Snapshot to use?
+                |> trackingSpan.GetStartPoint 
+                |> VirtualSnapshotPointUtil.OfPoint )
         | LocalMark.LastChangedOrYankedEnd ->
             x.LastChangedOrYankedSpan
-            |> Option.map (fun snapshotSpan -> snapshotSpan.End |> VirtualSnapshotPointUtil.OfPoint)
+            |> Option.map (fun trackingSpan -> 
+                _textBuffer.CurrentSnapshot
+                |> trackingSpan.GetEndPoint 
+                |> VirtualSnapshotPointUtil.OfPoint )
         | LocalMark.LastSelectionStart ->
             x.LastVisualSelection 
             |> Option.map (fun visualSelection -> visualSelection.VisualSpan.Start |> VirtualSnapshotPointUtil.OfPoint) 
