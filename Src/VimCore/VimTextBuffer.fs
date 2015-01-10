@@ -23,8 +23,7 @@ type internal VimTextBuffer
     let _switchedModeEvent = StandardEvent<SwitchModeKindEventArgs>()
     let mutable _modeKind = ModeKind.Normal
     let mutable _lastVisualSelection : ITrackingVisualSelection option = None
-    let mutable _lastModifiedSpan : ITrackingVisualSelection option = None
-    let mutable _lastChangedOrYankedSpan : SnapshotSpan option = None
+    let mutable _lastChangedOrYankedSpan : ITrackingSpan option = None
     let mutable _insertStartPoint : ITrackingLineColumn option = None
     let mutable _lastInsertExitPoint : ITrackingLineColumn option = None
     let mutable _lastEditPoint : ITrackingLineColumn option = None
