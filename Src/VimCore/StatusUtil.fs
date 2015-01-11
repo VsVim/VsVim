@@ -10,7 +10,7 @@ open System.Collections.Generic
 open System.ComponentModel.Composition
 
 type internal StatusUtil() = 
-    let mutable _vimBuffer : VimBuffer option = None
+    let mutable _vimBuffer : IVimBufferInternal option = None
 
     member x.VimBuffer 
         with get () = _vimBuffer
@@ -39,7 +39,6 @@ type internal PropagatingStatusUtil() =
         member x.OnStatusLong msg = _statusUtilList |> Seq.iter (fun x -> x.OnStatusLong msg)
 
 [<Export(typeof<IStatusUtilFactory>)>]
-[<Export(typeof<IVimBufferCreationListener>)>]
 type StatusUtilFactory () = 
 
     /// Use an object instance as a key.  Makes it harder for components to ignore this
@@ -56,20 +55,18 @@ type StatusUtilFactory () =
 
     /// When an IVimBuffer is created go ahead and update the backing VimBuffer value for
     /// the status util
-    member x.VimBufferCreated (vimBuffer : IVimBuffer) = 
+    member x.InitializeVimBuffer (vimBuffer : IVimBufferInternal) = 
         try
-            let vimBufferRaw = vimBuffer :?> VimBuffer
-
             let statusUtil = x.GetStatusUtilForView vimBuffer.TextView
-            statusUtil.VimBuffer <- Some vimBufferRaw
+            statusUtil.VimBuffer <- Some vimBuffer
 
-            let propagatingStatusUtil = x.GetStatusUtilForBuffer vimBuffer.TextBuffer
+            let propagatingStatusUtil = x.GetStatusUtilForBuffer vimBuffer.TextView.TextBuffer
             propagatingStatusUtil.StatusUtilList.Add(statusUtil)
 
             // The code above has created a link between both ITextBuffer -> ITextView 
             // and ITextView -> IVimBuffer.  Need to break all of these links when
             // IVimBuffer is closed to prevet a memory leak
-            vimBuffer.Closed |> Observable.add (fun _ ->
+            vimBuffer.TextView.Closed |> Observable.add (fun _ ->
                 propagatingStatusUtil.StatusUtilList.Remove(statusUtil) |> ignore
                 statusUtil.VimBuffer <- None)
         with
@@ -79,9 +76,7 @@ type StatusUtilFactory () =
         member x.EmptyStatusUtil = StatusUtil() :> IStatusUtil
         member x.GetStatusUtilForBuffer textBuffer = x.GetStatusUtilForBuffer textBuffer :> IStatusUtil
         member x.GetStatusUtilForView textView = x.GetStatusUtilForView textView :> IStatusUtil
-
-    interface IVimBufferCreationListener with
-        member x.VimBufferCreated buffer = x.VimBufferCreated buffer
+        member x.InitializeVimBuffer vimBuffer = x.InitializeVimBuffer vimBuffer
 
 
 

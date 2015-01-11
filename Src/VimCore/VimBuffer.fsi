@@ -18,11 +18,7 @@ type internal VimBuffer =
 
     member AddMode : IMode -> unit
 
-    member RaiseErrorMessage : string -> unit
-
-    member RaiseWarningMessage : string -> unit
-
-    member RaiseStatusMessage : string -> unit
-
     interface IVimBuffer
+
+    interface IVimBufferInternal
 

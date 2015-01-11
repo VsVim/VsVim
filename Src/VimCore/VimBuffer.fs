@@ -671,5 +671,11 @@ type internal VimBuffer
         [<CLIEvent>]
         member x.Closed = _closedEvent.Publish
 
+    interface IVimBufferInternal with
+        member x.TextView = _textView
+        member x.RaiseStatusMessage msg = x.RaiseStatusMessage msg
+        member x.RaiseWarningMessage msg = x.RaiseWarningMessage msg
+        member x.RaiseErrorMessage msg = x.RaiseErrorMessage msg
+
     interface IPropertyOwner with
         member x.Properties = _properties

@@ -258,6 +258,7 @@ type internal VimBufferFactory
             ] @ visualModeList
         modeList |> List.iter (fun m -> bufferRaw.AddMode m)
         x.SetupInitialMode buffer
+        _statusUtilFactory.InitializeVimBuffer (bufferRaw :> IVimBufferInternal)
         bufferRaw
 
     /// Setup the initial mode for an IVimBuffer.  The mode should be the current mode of the

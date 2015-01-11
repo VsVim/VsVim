@@ -284,7 +284,7 @@ autocmd BufEnter *.html set ts=12
 
                 var errorArray = ((VimRcState.LoadSucceeded)_vim.VimRcState).Item2;
                 Assert.Equal(1, errorArray.Length);
-                Assert.Equal(Resources.Interpreter_InvalidArgument("foo"), errorArray[0]);
+                Assert.Equal(Resources.Interpreter_UnknownOption("foo"), errorArray[0]);
             }
 
             [Fact]

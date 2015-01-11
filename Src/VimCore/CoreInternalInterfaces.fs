@@ -6,6 +6,16 @@ open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Editor
 open Vim.Interpreter
 
+type internal IVimBufferInternal =
+
+    abstract TextView : ITextView
+
+    abstract RaiseErrorMessage : string -> unit
+
+    abstract RaiseWarningMessage : string -> unit
+
+    abstract RaiseStatusMessage : string -> unit
+
 /// Factory for getting IStatusUtil instances.  This is an importable MEF component
 type internal IStatusUtilFactory =
 
@@ -18,6 +28,10 @@ type internal IStatusUtilFactory =
 
     /// Get the IStatusUtil instance for the given ITextView.  
     abstract GetStatusUtilForView : textView : ITextView -> IStatusUtil
+
+    /// Complete the initialization for the IStatusUtil associated with the given 
+    /// ITextView.
+    abstract InitializeVimBuffer : vimBuffer : IVimBufferInternal -> unit
 
 /// Bulk operations include repeat and macro commands.  This inteface is used to notify the 
 /// system that a bulk operation is begining / ending
