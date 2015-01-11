@@ -64,8 +64,10 @@ type VimRcState =
     /// The VimRc file has not been processed at this point
     | None
 
+    /// The load succeeded of the specified file.  If there were any errors actually
+    /// processing the load they will be captured in the string[] parameter.
     /// The load succeeded and the specified file was used 
-    | LoadSucceeded of VimRcPath
+    | LoadSucceeded of VimRcPath * string[]
 
     /// The load failed 
     | LoadFailed

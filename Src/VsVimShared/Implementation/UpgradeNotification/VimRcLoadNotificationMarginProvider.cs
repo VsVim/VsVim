@@ -50,7 +50,7 @@ namespace Vim.VisualStudio.Implementation.UpgradeNotification
                 return;
             }
 
-            var vimRcPath = ((VimRcState.LoadSucceeded)_vim.VimRcState).Item;
+            var vimRcPath = ((VimRcState.LoadSucceeded)_vim.VimRcState).Item1;
             if (vimRcPath.VimRcKind != VimRcKind.VimRc)
             {
                 return;
