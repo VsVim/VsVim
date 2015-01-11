@@ -16,6 +16,7 @@ using Microsoft.VisualStudio.Text.IncrementalSearch;
 using Microsoft.VisualStudio.Text.Projection;
 using Microsoft.VisualStudio.TextManager.Interop;
 using Vim;
+using System.Diagnostics;
 
 namespace Vim.VisualStudio.Implementation.Misc
 {
@@ -442,6 +443,19 @@ namespace Vim.VisualStudio.Implementation.Misc
             }
         }
 
+        private void OpenFile(string filePath)
+        {
+            try
+            {
+                var dte = _serviceProvider.GetService<SDTE, _DTE>();
+                dte.ItemOperations.OpenFile(filePath, EnvDTE.Constants.vsViewKindTextView);
+            }
+            catch (Exception ex)
+            {
+                Debug.Fail(ex.Message);
+            }
+        }
+
         #region IVsAdapter
 
         bool IVsAdapter.InAutomationFunction
@@ -537,6 +551,11 @@ namespace Vim.VisualStudio.Implementation.Misc
         Result<ITextBuffer> IVsAdapter.GetTextBufferForDocCookie(uint cookie)
         {
             return GetTextBufferForDocCookie(cookie);
+        }
+
+        void IVsAdapter.OpenFile(string filePath)
+        {
+            OpenFile(filePath);
         }
 
         #endregion
