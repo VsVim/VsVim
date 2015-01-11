@@ -175,7 +175,7 @@ type internal VimBufferFactory
     member x.CreateVimTextBuffer (textBuffer : ITextBuffer) (vim : IVim) = 
         let localSettings = LocalSettings(vim.GlobalSettings) :> IVimLocalSettings
         let wordNavigator = _wordUtil.CreateTextStructureNavigator WordKind.NormalWord textBuffer.ContentType
-        let statusUtil = _statusUtilFactory.GetStatusUtil textBuffer
+        let statusUtil = _statusUtilFactory.GetStatusUtilForBuffer textBuffer
         let undoRedoOperations = 
             let history = 
                 let manager = _undoManagerProvider.GetTextBufferUndoManager textBuffer
@@ -192,7 +192,7 @@ type internal VimBufferFactory
 
         let vim = vimTextBuffer.Vim
         let textBuffer = textView.TextBuffer
-        let statusUtil = _statusUtilFactory.GetStatusUtil textView.TextBuffer
+        let statusUtil = _statusUtilFactory.GetStatusUtilForView textView
         let localSettings = vimTextBuffer.LocalSettings
         let jumpList = JumpList(textView, _bufferTrackingService) :> IJumpList
         let windowSettings = WindowSettings(vim.GlobalSettings, textView)

@@ -251,7 +251,7 @@ type FoldManagerFactory
                     None
                 else
                     Some outliningManager
-            let statusUtil = _statusUtilFactory.GetStatusUtil textView.TextBuffer
+            let statusUtil = _statusUtilFactory.GetStatusUtilForView textView
             let foldData = x.GetFoldData(textView.TextBuffer)
             FoldManager(textView, foldData :> IFoldData, statusUtil, outliningManager) :> IFoldManager))
 

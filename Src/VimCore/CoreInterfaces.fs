@@ -101,15 +101,6 @@ type IStatusUtil =
     /// Raised when there is a warning message that needs to be reported
     abstract OnWarning : string -> unit 
 
-/// Factory for getting IStatusUtil instances.  This is an importable MEF component
-type IStatusUtilFactory =
-
-    /// Gets an empty instance which doesn't actually raise any messages
-    abstract EmptyStatusUtil : IStatusUtil
-
-    /// Get the IStatusUtil instance for the given ITextBuffer
-    abstract GetStatusUtil : textBuffer : ITextBuffer -> IStatusUtil
-
 /// Abstracts away VsVim's interaction with the file system to facilitate testing
 type IFileSystem =
 

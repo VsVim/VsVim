@@ -6,6 +6,19 @@ open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Editor
 open Vim.Interpreter
 
+/// Factory for getting IStatusUtil instances.  This is an importable MEF component
+type internal IStatusUtilFactory =
+
+    /// Gets an empty instance which doesn't actually raise any messages
+    abstract EmptyStatusUtil : IStatusUtil
+
+    /// Get the IStatusUtil instance for the given ITextBuffer.  This will propagate 
+    /// to IStatusUtil in connected ITextView values.
+    abstract GetStatusUtilForBuffer : textBuffer : ITextBuffer -> IStatusUtil
+
+    /// Get the IStatusUtil instance for the given ITextView.  
+    abstract GetStatusUtilForView : textView : ITextView -> IStatusUtil
+
 /// Bulk operations include repeat and macro commands.  This inteface is used to notify the 
 /// system that a bulk operation is begining / ending
 type internal IBulkOperations =
