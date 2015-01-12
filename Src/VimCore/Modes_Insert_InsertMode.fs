@@ -990,6 +990,10 @@ type internal InsertMode
         // Dismiss any active ICompletionSession 
         x.CancelWordCompletionSession()
 
+        // Update special marks
+        let trackingSpan = TrackingSpanUtil.Create (SnapshotSpanUtil.Create _vimBuffer.VimTextBuffer.InsertStartPoint.Value x.CaretPoint) SpanTrackingMode.EdgeInclusive
+        _vimBuffer.VimTextBuffer.LastChangedOrYankedSpan <- Some(trackingSpan)
+
         // The 'start' point is not valid when we are not in insert mode 
         _vimBuffer.VimTextBuffer.InsertStartPoint <- None
         _vimBuffer.VimTextBuffer.IsSoftTabStopValidForBackspace <- true
