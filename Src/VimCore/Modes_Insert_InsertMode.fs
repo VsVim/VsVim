@@ -991,8 +991,7 @@ type internal InsertMode
         x.CancelWordCompletionSession()
 
         // Update special marks
-        let trackingSpan = TrackingSpanUtil.Create (SnapshotSpanUtil.Create _vimBuffer.VimTextBuffer.InsertStartPoint.Value x.CaretPoint) SpanTrackingMode.EdgeInclusive
-        _vimBuffer.VimTextBuffer.LastChangedOrYankedSpan <- Some(trackingSpan)
+        _vimBuffer.VimTextBuffer.LastChangedOrYankedEnd <- Some(x.CaretPoint)
 
         // The 'start' point is not valid when we are not in insert mode 
         _vimBuffer.VimTextBuffer.InsertStartPoint <- None
