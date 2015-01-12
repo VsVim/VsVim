@@ -3046,8 +3046,8 @@ type internal CommandUtil
 
     member x.UpdateLastChangedOrYankedSpan snapshotSpan =
         // It seems the last mark is always set to the end of the span minus 1 position.
-        let modifiedSpan = SnapshotSpanUtil.Create snapshotSpan.Start (snapshotSpan.End - 1)
-        _vimTextBuffer.LastChangedOrYankedSpan <- Some(TrackingSpanUtil.Create modifiedSpan SpanTrackingMode.EdgeInclusive)
+        _vimTextBuffer.LastChangedOrYankedStart <- Some(snapshotSpan.Start)
+        _vimTextBuffer.LastChangedOrYankedEnd <- Some(snapshotSpan.End - 1)
 
     interface ICommandUtil with
         member x.RunNormalCommand command data = x.RunNormalCommand command data
