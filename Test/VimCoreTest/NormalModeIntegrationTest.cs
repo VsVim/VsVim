@@ -2288,13 +2288,63 @@ namespace Vim.UnitTest
             }
 
             [Fact]
-            public void YankMotionSetsMark()
+            public void YankMotionSetsSpecialMarks()
             {
                 Create("the brown dog");
                 _textView.MoveCaretTo(1);
-                _vimBuffer.Process("y2w");
+                _vimBuffer.Process("y2e");
                 _vimBuffer.Process("`[");
                 Assert.Equal(1, _textView.GetCaretPoint().Position);
+                _vimBuffer.Process("`]");
+                Assert.Equal(8, _textView.GetCaretPoint().Position);
+            }
+
+            [Fact]
+            public void YankSelectionSetsSpecialMarks()
+            {
+                Create("the brown dog");
+                _textView.MoveCaretTo(1);
+                _vimBuffer.Process("v2wy");
+                _vimBuffer.Process("`[");
+                Assert.Equal(1, _textView.GetCaretPoint().Position);
+                _vimBuffer.Process("`]");
+                Assert.Equal(9, _textView.GetCaretPoint().Position);
+            }
+
+            [Fact]
+            public void DeleteMotionSetsSpecialMarks()
+            {
+                Create("the brown dog");
+                _textView.MoveCaretTo(3);
+                _vimBuffer.Process("d3l");
+                _vimBuffer.Process("`[");
+                Assert.Equal(3, _textView.GetCaretPoint().Position);
+                _vimBuffer.Process("`]");
+                Assert.Equal(3, _textView.GetCaretPoint().Position);
+            }
+
+            [Fact]
+            public void DeleteSelectionSetsSpecialMarks()
+            {
+                Create("the brown dog");
+                _textView.MoveCaretTo(3);
+                _vimBuffer.Process("v3ld");
+                _vimBuffer.Process("`[");
+                Assert.Equal(3, _textView.GetCaretPoint().Position);
+                _vimBuffer.Process("`]");
+                Assert.Equal(3, _textView.GetCaretPoint().Position);
+            }
+
+            [Fact]
+            public void InsertSetsSpecialMarks()
+            {
+                Create("the brown dog");
+                _textView.MoveCaretTo(3);
+                _vimBuffer.ProcessNotation("ihello<Esc>");
+                _vimBuffer.Process("`[");
+                Assert.Equal(3, _textView.GetCaretPoint().Position);
+                _vimBuffer.Process("`]");
+                Assert.Equal(8, _textView.GetCaretPoint().Position);
             }
 
             [Fact]

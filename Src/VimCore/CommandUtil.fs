@@ -2980,7 +2980,7 @@ type internal CommandUtil
 
             let data = StringData.OfSpan span
             let value = x.CreateRegisterValue data OperationKind.LineWise
-            _vimTextBuffer.LastChangedOrYankedSpan <- Some(TrackingSpanUtil.Create span SpanTrackingMode.EdgeInclusive)
+            x.UpdateLastChangedOrYankedSpan span            
             _registerMap.SetRegisterValue register RegisterOperation.Yank value
 
         CommandResult.Completed ModeSwitch.NoSwitch
@@ -2988,7 +2988,7 @@ type internal CommandUtil
     /// Yank the contents of the motion into the specified register
     member x.YankMotion register (result: MotionResult) = 
         let value = x.CreateRegisterValue (StringData.OfSpan result.Span) result.OperationKind
-        _vimTextBuffer.LastChangedOrYankedSpan <- Some(TrackingSpanUtil.Create result.Span SpanTrackingMode.EdgeInclusive)
+        x.UpdateLastChangedOrYankedSpan result.Span        
         _registerMap.SetRegisterValue register RegisterOperation.Yank value
         CommandResult.Completed ModeSwitch.NoSwitch
 
@@ -3009,8 +3009,7 @@ type internal CommandUtil
 
         let data = StringData.OfEditSpan editSpan
         let value = x.CreateRegisterValue data operationKind
-        let trackingSpan = TrackingSpanUtil.Create (SnapshotSpanUtil.Create visualSpan.Start visualSpan.End) SpanTrackingMode.EdgeInclusive
-        _vimTextBuffer.LastChangedOrYankedSpan <- Some(trackingSpan)
+        x.UpdateLastChangedOrYankedSpan (SnapshotSpanUtil.Create visualSpan.Start visualSpan.End)
         _registerMap.SetRegisterValue register RegisterOperation.Yank value
         CommandResult.Completed ModeSwitch.SwitchPreviousMode
 
@@ -3018,8 +3017,7 @@ type internal CommandUtil
     member x.YankSelection register (visualSpan : VisualSpan) = 
         let data = StringData.OfEditSpan visualSpan.EditSpan
         let value = x.CreateRegisterValue data visualSpan.OperationKind
-        let trackingSpan = TrackingSpanUtil.Create (SnapshotSpanUtil.Create visualSpan.Start visualSpan.End) SpanTrackingMode.EdgeInclusive
-        _vimTextBuffer.LastChangedOrYankedSpan <- Some(trackingSpan)
+        x.UpdateLastChangedOrYankedSpan (SnapshotSpanUtil.Create visualSpan.Start visualSpan.End)
         _registerMap.SetRegisterValue register RegisterOperation.Yank value
         CommandResult.Completed ModeSwitch.SwitchPreviousMode
 
@@ -3047,7 +3045,9 @@ type internal CommandUtil
         CommandResult.Completed ModeSwitch.NoSwitch
 
     member x.UpdateLastChangedOrYankedSpan snapshotSpan =
-        _vimTextBuffer.LastChangedOrYankedSpan <- Some(snapshotSpan)
+        // It seems the last mark is always set to the end of the span minus 1 position.
+        let modifiedSpan = SnapshotSpanUtil.Create snapshotSpan.Start (snapshotSpan.End - 1)
+        _vimTextBuffer.LastChangedOrYankedSpan <- Some(TrackingSpanUtil.Create modifiedSpan SpanTrackingMode.EdgeInclusive)
 
     interface ICommandUtil with
         member x.RunNormalCommand command data = x.RunNormalCommand command data
