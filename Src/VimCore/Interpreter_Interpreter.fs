@@ -1189,7 +1189,7 @@ type VimInterpreter
             match _localSettings.GetSetting name with
             | None -> 
                 match _windowSettings.GetSetting name with
-                | None -> _statusUtil.OnError (Resources.Interpreter_UnknownOption msg)
+                | None -> _statusUtil.OnError (Resources.Interpreter_UnknownOption name)
                 | Some setting -> func setting _windowSettings
             | Some setting -> func setting _localSettings
 

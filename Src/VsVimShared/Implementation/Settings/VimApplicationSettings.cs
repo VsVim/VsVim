@@ -20,6 +20,7 @@ namespace Vim.VisualStudio.Implementation.Settings
         internal const string VimRcLoadSettingName = "VimRcLoadSetting";
         internal const string HaveUpdatedKeyBindingsName = "HaveUpdatedKeyBindings";
         internal const string HaveNotifiedVimRcLoadName = "HaveNotifiedVimRcLoad";
+        internal const string HaveNotifiedVimRcErrorsName = "HaveNotifiedVimRcErrors";
         internal const string IgnoredConflictingKeyBindingName = "IgnoredConflictingKeyBinding";
         internal const string RemovedBindingsName = "RemovedBindings";
         internal const string KeyMappingIssueFixedName = "EnterDeletekeyMappingIssue";
@@ -243,6 +244,12 @@ namespace Vim.VisualStudio.Implementation.Settings
         {
             get { return GetBoolean(HaveNotifiedVimRcLoadName, defaultValue: false); }
             set { SetBoolean(HaveNotifiedVimRcLoadName, value); }
+        }
+
+        bool IVimApplicationSettings.HaveNotifiedVimRcErrors
+        {
+            get { return GetBoolean(HaveNotifiedVimRcErrorsName, defaultValue: false); }
+            set { SetBoolean(HaveNotifiedVimRcErrorsName, value); }
         }
 
         bool IVimApplicationSettings.IgnoredConflictingKeyBinding

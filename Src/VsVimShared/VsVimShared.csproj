@@ -137,6 +137,9 @@
     </Compile>
     <Compile Include="Implementation\ToastNotification\ToastNotificationService.cs" />
     <Compile Include="Implementation\ToastNotification\ToastNotificationServiceProvider.cs" />
+    <Compile Include="Implementation\UpgradeNotification\ErrorBanner.xaml.cs">
+      <DependentUpon>ErrorBanner.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Implementation\UpgradeNotification\LinkBanner.xaml.cs">
       <DependentUpon>LinkBanner.xaml</DependentUpon>
     </Compile>
@@ -192,6 +195,10 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="Implementation\ToastNotification\ToastControl.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Implementation\UpgradeNotification\ErrorBanner.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

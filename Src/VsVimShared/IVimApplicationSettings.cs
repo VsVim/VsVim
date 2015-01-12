@@ -91,6 +91,11 @@ namespace Vim.VisualStudio
         bool HaveNotifiedVimRcLoad { get; set; }
 
         /// <summary>
+        /// Have we notified the user about errors loading their vimrc file?
+        /// </summary>
+        bool HaveNotifiedVimRcErrors { get; set; }
+
+        /// <summary>
         /// The conflicting key binding margin was ignored
         /// </summary>
         bool IgnoredConflictingKeyBinding { get; set; }

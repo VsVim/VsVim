@@ -275,6 +275,19 @@ autocmd BufEnter *.html set ts=12
             }
 
             [Fact]
+            public void Errors()
+            {
+                var text = @"
+    set foo=1
+";
+                Run(text);
+
+                var errorArray = ((VimRcState.LoadSucceeded)_vim.VimRcState).Item2;
+                Assert.Equal(1, errorArray.Length);
+                Assert.Equal(Resources.Interpreter_UnknownOption("foo"), errorArray[0]);
+            }
+
+            [Fact]
             public void DefaultSettings73()
             {
                 VimHost.DefaultSettings = DefaultSettings.GVim73;

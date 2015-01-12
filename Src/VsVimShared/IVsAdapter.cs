@@ -116,5 +116,10 @@ namespace Vim.VisualStudio
         Result<uint> GetDocCookie(ITextDocument textDocument);
 
         Result<ITextBuffer> GetTextBufferForDocCookie(uint cookie);
+
+        /// <summary>
+        /// Open a file with the specified name in Visual Studio
+        /// </summary>
+        void OpenFile(string filePath);
     }
 }

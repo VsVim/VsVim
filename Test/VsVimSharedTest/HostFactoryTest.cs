@@ -125,7 +125,7 @@ namespace Vim.VisualStudio.UnitTest
             public void TextViewOnlyUseVim()
             {
                 _vimApplicationSettings.SetupGet(x => x.UseEditorDefaults).Returns(false);
-                VimRcState = VimRcState.NewLoadSucceeded(new VimRcPath(VimRcKind.VimRc, "test"));
+                VimRcState = VimRcState.NewLoadSucceeded(new VimRcPath(VimRcKind.VimRc, "test"), new string[] { });
                 RaiseTextViewCreated(_textView);
 
                 _synchronizer.Setup(x => x.StartSynchronizing(_vimBuffer, SettingSyncSource.Vim)).Verifiable();
@@ -136,7 +136,7 @@ namespace Vim.VisualStudio.UnitTest
             [Fact]
             public void TextViewOnlyWithVimRcAndEditorDefaults()
             {
-                VimRcState = VimRcState.NewLoadSucceeded(new VimRcPath(VimRcKind.VimRc, "test"));
+                VimRcState = VimRcState.NewLoadSucceeded(new VimRcPath(VimRcKind.VimRc, "test"), new string[] { });
                 _vimApplicationSettings.SetupGet(x => x.UseEditorDefaults).Returns(true);
                 RaiseTextViewCreated(_textView);
 
@@ -181,7 +181,7 @@ namespace Vim.VisualStudio.UnitTest
             public void BothViewsUseVim()
             {
                 _vimApplicationSettings.SetupGet(x => x.UseEditorDefaults).Returns(false);
-                VimRcState = VimRcState.NewLoadSucceeded(new VimRcPath(VimRcKind.VimRc, "test"));
+                VimRcState = VimRcState.NewLoadSucceeded(new VimRcPath(VimRcKind.VimRc, "test"), new string[] { });
                 SetupVsTextView();
                 RaiseTextViewCreated(_textView);
                 RaiseVimBufferCreated(_vimBuffer);
@@ -196,7 +196,7 @@ namespace Vim.VisualStudio.UnitTest
             [Fact]
             public void BothViewsWithVimRcAndEditorDefaults()
             {
-                VimRcState = VimRcState.NewLoadSucceeded(new VimRcPath(VimRcKind.VimRc, "test"));
+                VimRcState = VimRcState.NewLoadSucceeded(new VimRcPath(VimRcKind.VimRc, "test"), new string[] { });
                 _vimApplicationSettings.SetupGet(x => x.UseEditorDefaults).Returns(true);
                 SetupVsTextView();
                 RaiseTextViewCreated(_textView);
