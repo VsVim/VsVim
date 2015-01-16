@@ -2303,10 +2303,13 @@ namespace Vim.UnitTest
             public void YankSelectionSetsSpecialMarks()
             {
                 Create("the brown dog");
-                _textView.MoveCaretTo(1);
-                _vimBuffer.Process("v2wy");
+                var firstLine = _textView.GetLine(0);
+                var span = new CharacterSpan(firstLine.Start.Add(2), firstLine.Start.Add(10));
+                var visualSelection = VisualSelection.NewCharacter(span, Path.Forward);
+                visualSelection.Select(_textView);
+                _vimBuffer.Process("y");
                 _vimBuffer.Process("`[");
-                Assert.Equal(1, _textView.GetCaretPoint().Position);
+                Assert.Equal(2, _textView.GetCaretPoint().Position);
                 _vimBuffer.Process("`]");
                 Assert.Equal(9, _textView.GetCaretPoint().Position);
             }
