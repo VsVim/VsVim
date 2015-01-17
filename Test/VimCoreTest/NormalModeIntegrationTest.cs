@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Linq;
+using System.Threading;
 using EditorUtils;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Projection;
 using Vim.Extensions;
+using Vim.Interpreter;
 using Vim.UnitTest.Exports;
 using Vim.UnitTest.Mock;
 using Xunit;
@@ -2300,6 +2302,18 @@ namespace Vim.UnitTest
             }
 
             [Fact]
+            public void YankMotionSetsSpecialMarks_2()
+            {
+                Create("the brown dog");
+                _textView.MoveCaretTo(1);
+                _vimBuffer.Process("y$");
+                _vimBuffer.Process("`[");
+                Assert.Equal(1, _textView.GetCaretPoint().Position);
+                _vimBuffer.Process("`]");
+                Assert.Equal(12, _textView.GetCaretPoint().Position);
+            }
+
+            [Fact]
             public void YankSelectionSetsSpecialMarks()
             {
                 Create("the brown dog");
@@ -2307,11 +2321,14 @@ namespace Vim.UnitTest
                 var span = new CharacterSpan(firstLine.Start.Add(2), firstLine.Start.Add(10));
                 var visualSelection = VisualSelection.NewCharacter(span, Path.Forward);
                 visualSelection.Select(_textView);
+                // Race conditions here for some reason. Why? How should it be handled?
+                Thread.SpinWait(1000000);
                 _vimBuffer.Process("y");
+                Thread.SpinWait(1000000);
                 _vimBuffer.Process("`[");
                 Assert.Equal(2, _textView.GetCaretPoint().Position);
                 _vimBuffer.Process("`]");
-                Assert.Equal(9, _textView.GetCaretPoint().Position);
+                Assert.Equal(10, _textView.GetCaretPoint().Position);
             }
 
             [Fact]
@@ -2348,6 +2365,17 @@ namespace Vim.UnitTest
                 Assert.Equal(3, _textView.GetCaretPoint().Position);
                 _vimBuffer.Process("`]");
                 Assert.Equal(8, _textView.GetCaretPoint().Position);
+            }
+
+            [Fact]
+            public void EndOfLineSpecialMark()
+            {
+                Create("the brown dog");
+                _vimBuffer.ProcessNotation("A<Esc>");
+                _vimBuffer.Process("`[");
+                Assert.Equal(13, _textView.GetCaretPoint().Position);
+                _vimBuffer.Process("`]");
+                Assert.Equal(13, _textView.GetCaretPoint().Position);
             }
 
             [Fact]
@@ -4908,7 +4936,7 @@ namespace Vim.UnitTest
 
                 _textView.MoveCaretTo(_textBuffer.GetLine(2).End);
                 _vimBuffer.ProcessNotation("dd");
-                Assert.Equal( new[] { "cat", "tree" }, _textBuffer.GetLines());
+                Assert.Equal(new[] { "cat", "tree" }, _textBuffer.GetLines());
             }
         }
 
