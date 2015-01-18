@@ -661,7 +661,8 @@ type internal InsertMode
         // Now we need to decided how the external world sees this edit.  If it links with an
         // existing edit then we save it and send it out as a batch later.
         let isEdit = Util.IsFlagSet commandFlags CommandFlags.InsertEdit
-        if isEdit then
+        let isMovement = Util.IsFlagSet commandFlags CommandFlags.Movement
+        if isEdit || (isMovement && _globalSettings.AtomicInsert) then
 
             // If it's an edit then combine it with the existing command and batch them 
             // together.  Don't raise the event yet
