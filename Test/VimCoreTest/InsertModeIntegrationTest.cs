@@ -1778,6 +1778,25 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
+            /// When moving the cursor using the mouse, it behaves the same way as stopping the insert mode, 
+            /// move the cursor, and then enter the insert mode again. Therefore only the text written after
+            /// the move will be repeated.
+            /// </summary>
+            [Fact]
+            public void Repeat_With_Mouse_Move()
+            {
+                Create("cat dog");
+                _vimBuffer.Process("dog");
+                _textView.MoveCaretTo(6);
+                _vimBuffer.Process("cat");
+                _vimBuffer.Process(VimKey.Escape);
+                Assert.Equal("dogcatcat dog", _textView.GetLine(0).GetText());
+                _textView.MoveCaretTo(0);
+                _vimBuffer.Process(".");
+                Assert.Equal("catdogcatcat dog", _textView.GetLine(0).GetText());
+            }
+
+            /// <summary>
             /// This test is mainly a regression test against the selection change logic
             /// </summary>
             [Fact]
