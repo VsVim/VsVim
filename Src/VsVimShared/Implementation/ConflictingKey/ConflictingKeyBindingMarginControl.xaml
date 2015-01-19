@@ -16,6 +16,7 @@
 
         <Button 
             Grid.Column="1"
+            Margin="2"
             Click="OnConfigureClick">
             Configure
         </Button>

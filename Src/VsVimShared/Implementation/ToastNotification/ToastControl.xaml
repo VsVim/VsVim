@@ -29,6 +29,7 @@
                                 <Button
                                     Grid.Row="0"
                                     Grid.Column="1"
+                                    Margin="2"
                                     Tag="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=Content}"
                                     Click="OnCloseClick" >
                                     Close

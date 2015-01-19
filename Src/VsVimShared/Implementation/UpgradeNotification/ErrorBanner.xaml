@@ -19,6 +19,7 @@
         
         <Button
             Grid.Column="1"
+            Margin="2"
             Content="View" 
             Click="OnViewClick" />
     </Grid>
