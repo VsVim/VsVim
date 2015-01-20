@@ -2714,6 +2714,45 @@ namespace Vim.UnitTest
                 _vimBuffer.Process(".");
                 Assert.Equal("cat horse horse dog", _textBuffer.GetLine(0).GetText());
             }
+
+            /// <summary>
+            /// Move the cursor forward on the same line and then edit some more
+            /// The movements should be converted to relative ones
+            /// </summary>
+            [Fact]
+            public void MoveCursorForwardSameLine()
+            {
+                Create("cat dog mouse");
+                _vimBuffer.Process("horse ");
+                _textView.MoveCaretTo(10);
+                _vimBuffer.Process("cow ");
+                _vimBuffer.Process(VimKey.Escape);
+                Assert.Equal("horse cat cow dog mouse", _textBuffer.GetLine(0).GetText());
+                _vimBuffer.Process("l");
+                _vimBuffer.Process(".");
+                Assert.Equal("horse cat cow horse dog cow mouse", _textBuffer.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// Move the cursor backwards on the same line and then edit some more
+            /// The movements should be converted to relative ones
+            /// </summary>
+            [Fact]
+            public void MoveCursorBackwardSameLine()
+            {
+                Create("cat dog mouse");
+                _vimBuffer.Process(VimKey.Escape);
+                _vimBuffer.Process("ww");
+                _vimBuffer.Process("i");
+                _vimBuffer.Process("horse ");
+                _textView.MoveCaretTo(4);
+                _vimBuffer.Process("cow ");
+                _vimBuffer.Process(VimKey.Escape);
+                Assert.Equal("cat cow dog horse mouse", _textBuffer.GetLine(0).GetText());
+                _vimBuffer.Process("l");
+                _vimBuffer.Process(".");
+                Assert.Equal("cat cow cow horse dog horse mouse", _textBuffer.GetLine(0).GetText());
+            }
         }
     }
 }

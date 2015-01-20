@@ -255,7 +255,7 @@ type internal InsertMode
         // Caret changes can end a text change operation.
         _textView.Caret.PositionChanged
         |> Observable.filter (fun _ -> this.IsActive && not this.IsInProcess)
-        |> Observable.subscribe (fun _ -> this.OnCaretPositionChanged() )
+        |> Observable.subscribe (fun args -> this.OnCaretPositionChanged args)
         |> _bag.Add
 
         // Listen for text changes
@@ -847,9 +847,30 @@ type internal InsertMode
     ///
     /// Need to be careful to not end the edit due to the caret moving as a result of 
     /// normal typing
-    member x.OnCaretPositionChanged () = 
+    member x.OnCaretPositionChanged args = 
         _textChangeTracker.CompleteChange()
-        _sessionData <- { _sessionData with CombinedEditCommand = None }
+        if _globalSettings.AtomicInsert then
+            // Create a combined movement command that goes from the old position to the new position
+            // And combine it with the input command
+            let rec movement command current prev = 
+                let combine left right = 
+                    match left with
+                    | None -> Some right
+                    | Some left -> Some (InsertMode.CreateCombinedEditCommand left right)
+                if current > prev then
+                    let command = combine command (InsertCommand.MoveCaret Direction.Right)
+                    movement command (current - 1) prev
+                elif current < prev then
+                    let command = combine command (InsertCommand.MoveCaret Direction.Left)
+                    movement command (current + 1) prev
+                else
+                    command
+            let oldPosition = args.OldPosition.BufferPosition.Position
+            let newPosition = args.NewPosition.BufferPosition.Position 
+            let command = movement _sessionData.CombinedEditCommand newPosition oldPosition
+            _sessionData <- { _sessionData with CombinedEditCommand = command }
+        else
+            _sessionData <- { _sessionData with CombinedEditCommand = None }
         _vimBuffer.VimTextBuffer.InsertStartPoint <- Some x.CaretPoint
         _vimBuffer.VimTextBuffer.IsSoftTabStopValidForBackspace <- true
 
