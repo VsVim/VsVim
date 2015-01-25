@@ -2798,6 +2798,56 @@ namespace Vim.UnitTest
                 Assert.Equal("cat dog", _textBuffer.GetLine(1).GetText());
                 Assert.Equal("cat dog horse horse mouse", _textBuffer.GetLine(2).GetText());
             }
+
+            /// <summary>
+            /// Move the cursor forward to a new longer line
+            /// Let there be one short line between the two lines
+            /// The movements should be converted to relative ones
+            /// </summary>
+            [Fact]
+            public void MoveCursorForwardNextLineLonger()
+            {
+                Create("cat", "cat dog rat mouse");
+                _vimBuffer.Process(VimKey.Escape);
+                _vimBuffer.Process("O");
+                _vimBuffer.Process("cat dog");
+                _textView.MoveCaretTo(26);
+                _vimBuffer.Process("horse ");
+                _vimBuffer.Process(VimKey.Escape);
+                Assert.Equal("cat dog", _textBuffer.GetLine(0).GetText());
+                Assert.Equal("cat", _textBuffer.GetLine(1).GetText());
+                Assert.Equal("cat dog rat horse mouse", _textBuffer.GetLine(2).GetText());
+                _vimBuffer.Process(".");
+                Assert.Equal("cat dog", _textBuffer.GetLine(0).GetText());
+                Assert.Equal("cat", _textBuffer.GetLine(1).GetText());
+                Assert.Equal("cat dog", _textBuffer.GetLine(2).GetText());
+                Assert.Equal("cat dog rat horse horse mouse", _textBuffer.GetLine(3).GetText());
+            }
+
+            /// <summary>
+            /// Move the cursor forward to a new shorter line
+            /// Let there be one short line between the two lines
+            /// The movements should be converted to relative ones
+            /// </summary>
+            [Fact]
+            public void MoveCursorForwardNextLineShorter()
+            {
+                Create("cat", "cat dog");
+                _vimBuffer.Process(VimKey.Escape);
+                _vimBuffer.Process("O");
+                _vimBuffer.Process("cat dog rat mouse");
+                _textView.MoveCaretTo(28);
+                _vimBuffer.Process("horse ");
+                _vimBuffer.Process(VimKey.Escape);
+                Assert.Equal("cat dog rat mouse", _textBuffer.GetLine(0).GetText());
+                Assert.Equal("cat", _textBuffer.GetLine(1).GetText());
+                Assert.Equal("cat horse dog", _textBuffer.GetLine(2).GetText());
+                _vimBuffer.Process(".");
+                Assert.Equal("cat dog rat mouse", _textBuffer.GetLine(0).GetText());
+                Assert.Equal("cat", _textBuffer.GetLine(1).GetText());
+                Assert.Equal("cat dog rat mouse", _textBuffer.GetLine(2).GetText());
+                Assert.Equal("cat horse horse dog", _textBuffer.GetLine(3).GetText());
+            }
         }
     }
 }

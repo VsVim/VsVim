@@ -859,7 +859,10 @@ type internal InsertMode
                     | Some left -> Some (InsertMode.CreateCombinedEditCommand left right)
                 let currentY, currentX = current
                 let nextY, nextX = next
-                if currentY < nextY  then
+                if currentX > nextX then
+                    let command = combine command (InsertCommand.MoveCaret Direction.Left)
+                    movement command (currentY, currentX - 1) next
+                elif currentY < nextY  then
                     let command = combine command (InsertCommand.MoveCaret Direction.Down)
                     movement command (currentY + 1, currentX) next
                 elif currentY > nextY then
@@ -868,9 +871,6 @@ type internal InsertMode
                 elif currentX < nextX then
                     let command = combine command (InsertCommand.MoveCaret Direction.Right)
                     movement command (currentY, currentX + 1) next
-                elif currentX > nextX then
-                    let command = combine command (InsertCommand.MoveCaret Direction.Left)
-                    movement command (currentY, currentX - 1) next
                 else
                     command
             let oldPosition = SnapshotPointUtil.GetLineColumn args.OldPosition.BufferPosition
