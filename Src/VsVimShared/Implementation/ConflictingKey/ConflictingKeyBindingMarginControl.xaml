@@ -5,13 +5,21 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              mc:Ignorable="d" 
              d:DesignHeight="25" d:DesignWidth="453">
-    <StackPanel Orientation="Horizontal">
 
-        <Label Margin="0,0,5,0">VsVim detected conflicting key bindings</Label>
+    <Grid Margin="0,0,5,0">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="Auto" />
+        </Grid.ColumnDefinitions>
+
+        <Label Grid.Column="0">VsVim detected conflicting key bindings </Label>
 
         <Button 
-            Click="OnConfigureClick"
-            Margin="0,0,5,0">Configure</Button>
+            Grid.Column="1"
+            Margin="2"
+            Click="OnConfigureClick">
+            Configure
+        </Button>
 
-    </StackPanel>
+    </Grid>
 </UserControl>

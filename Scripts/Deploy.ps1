@@ -1,4 +1,7 @@
-param ([switch]$fast = $false)
+param (
+    [switch]$fast = $false, 
+    [string]$vsVersion = "")
+
 [string]$script:rootPath = split-path -parent $MyInvocation.MyCommand.Definition 
 [string]$script:rootPath = resolve-path (join-path $rootPath "..")
 cd $rootPath
@@ -9,6 +12,15 @@ if (-not (test-path $msbuild)) {
 }
 
 $zip = join-path $rootPath "Tools\7za920\7za.exe"
+
+# Check to see if the given version of Visual Studio is installed
+function test-vsinstall() { 
+    param ([string]$version = $(throw "Need a version"))
+
+    $path = "hklm:\Software\Microsoft\VisualStudio\{0}" -f $version
+    $i = get-itemproperty $path InstallDir -ea SilentlyContinue | %{ $_.InstallDir }
+    return $i -ne $null
+}
 
 function test-return() {
     if ($LASTEXITCODE -ne 0) {
@@ -126,9 +138,9 @@ function build-clean() {
     param ([string]$fileName = $(throw "Need a project file name"))
     $name = split-path -leaf $fileName
     write-host "`t$name"
-    & $msbuild /nologo /verbosity:m /t:Clean /p:Configuration=Release $fileName
+    & $msbuild /nologo /verbosity:m /t:Clean /p:Configuration=Release /p:VisualStudioVersion=$vsVersion $fileName
     Test-Return
-    & $msbuild /nologo /verbosity:m /t:Clean /p:Configuration=Debug $fileName
+    & $msbuild /nologo /verbosity:m /t:Clean /p:Configuration=Debug /p:VisualStudioVersion=$vsVersion $fileName
     Test-Return
 }
 
@@ -136,7 +148,7 @@ function build-release() {
     param ([string]$fileName = $(throw "Need a project file name"))
     $name = split-path -leaf $fileName
     write-host "`t$name"
-    & $msbuild /nologo /verbosity:q /p:Configuration=Release $fileName
+    & $msbuild /nologo /verbosity:q /p:Configuration=Release /p:VisualStudioVersion=$vsVersion $fileName
     Test-Return
 }
 
@@ -163,7 +175,27 @@ function build-vsix() {
     copy "Deploy\VsVim.vsix" "Deploy\VsVim.zip"
 } 
 
-# First step is to clean out all of the projects 
+# First step is to calculate the version of Visual Studio we will be 
+# using to build VsVim.  The default used by MsBuild may be referring
+# to a version not installed on the machine.   
+if ($vsVersion -eq "") { 
+    for ($i = 9; $i -lt 30; $i++) { 
+        $str = "{0}.0" -f $i
+        if (test-vsinstall $str) { 
+            $vsVersion = $str
+            break
+        }
+    }
+}
+
+write-host "Using Visual Studio $vsVersion to build"
+
+if (($vsVersion -eq $null) -or -not (test-vsinstall $vsVersion)) { 
+    write-host "Could not detect a version of Visual Studio"
+    return
+}
+
+# Next step is to clean out all of the projects 
 if (-not $fast) { 
     write-host "Cleaning Projects"
     build-clean Src\VsSpecific\Vs2010\Vs2010.csproj

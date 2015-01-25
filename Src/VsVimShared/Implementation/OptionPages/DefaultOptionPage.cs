@@ -229,10 +229,15 @@ namespace Vim.VisualStudio.Implementation.OptionPages
         public bool UseEditorDefaults { get; set; }
 
         [DisplayName("VimRc File Loading")]
-        [Description("Controls how VsVim probes for vsvim / vimrc files")]
+        [Description("Controls how VsVim probes for vsvimrc / vimrc files")]
         [Category(CategoryGeneral)]
         [TypeConverter(typeof(VimRcLoadSettingConverter))]
         public VimRcLoadSetting VimRcLoadSetting { get; set; }
+
+        [DisplayName("VimRc Error Reporting")]
+        [Description("Display errors when loading a vsvimrc / vimrc file")]
+        [Category(CategoryGeneral)]
+        public bool DisplayVimRcLoadErrors { get; set; }
 
         [DisplayName("Word Wrap Display")]
         [Description("Controls how word wrap is displayed")]
@@ -309,6 +314,7 @@ namespace Vim.VisualStudio.Implementation.OptionPages
                 UseEditorCommandMargin = vimApplicationSettings.UseEditorCommandMargin;
                 VimRcLoadSetting = vimApplicationSettings.VimRcLoadSetting;
                 DisplayControlCharacters = vimApplicationSettings.DisplayControlChars;
+                DisplayVimRcLoadErrors = !vimApplicationSettings.HaveNotifiedVimRcErrors;
                 WordWrapDisplay = vimApplicationSettings.WordWrapDisplay;
             }
 
@@ -330,6 +336,7 @@ namespace Vim.VisualStudio.Implementation.OptionPages
                 vimApplicationSettings.UseEditorCommandMargin = UseEditorCommandMargin;
                 vimApplicationSettings.VimRcLoadSetting = VimRcLoadSetting;
                 vimApplicationSettings.DisplayControlChars = DisplayControlCharacters;
+                vimApplicationSettings.HaveNotifiedVimRcErrors = !DisplayVimRcLoadErrors;
                 vimApplicationSettings.WordWrapDisplay = WordWrapDisplay;
             }
 
