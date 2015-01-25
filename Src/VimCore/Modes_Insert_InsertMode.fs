@@ -859,7 +859,9 @@ type internal InsertMode
                     | Some left -> Some (InsertMode.CreateCombinedEditCommand left right)
                 let currentY, currentX = current
                 let nextY, nextX = next
-                if currentX > nextX then
+                // First move to the beginning of the line, since the source and target lines might contain
+                // different amount of characters and/or tabs
+                if currentX > 0 && currentY <> nextY then
                     let command = combine command (InsertCommand.MoveCaret Direction.Left)
                     movement command (currentY, currentX - 1) next
                 elif currentY < nextY  then
@@ -868,6 +870,9 @@ type internal InsertMode
                 elif currentY > nextY then
                     let command = combine command (InsertCommand.MoveCaret Direction.Up)
                     movement command (currentY - 1, currentX) next
+                elif currentX > nextX && currentY = nextY then
+                    let command = combine command (InsertCommand.MoveCaret Direction.Left)
+                    movement command (currentY, currentX - 1) next
                 elif currentX < nextX then
                     let command = combine command (InsertCommand.MoveCaret Direction.Right)
                     movement command (currentY, currentX + 1) next

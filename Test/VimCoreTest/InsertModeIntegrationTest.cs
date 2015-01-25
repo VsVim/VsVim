@@ -2848,6 +2848,28 @@ namespace Vim.UnitTest
                 Assert.Equal("cat dog rat mouse", _textBuffer.GetLine(2).GetText());
                 Assert.Equal("cat horse horse dog", _textBuffer.GetLine(3).GetText());
             }
+            
+            /// <summary>
+            /// Move the cursor forward to a new shorter line containing a tab
+            /// The movements should be converted to relative ones
+            /// </summary>
+            [Fact]
+            public void MoveCursorForwardNextLineShorterContainingTab()
+            {
+                Create("\tcat dog");
+                _vimBuffer.Process(VimKey.Escape);
+                _vimBuffer.Process("O");
+                _vimBuffer.Process("cat dog mouse");
+                _textView.MoveCaretTo(16);
+                _vimBuffer.Process("horse ");
+                _vimBuffer.Process(VimKey.Escape);
+                Assert.Equal("cat dog mouse", _textBuffer.GetLine(0).GetText());
+                Assert.Equal("\thorse cat dog", _textBuffer.GetLine(1).GetText());
+                _vimBuffer.Process(".");
+                Assert.Equal("cat dog mouse", _textBuffer.GetLine(0).GetText());
+                Assert.Equal("cat dog mouse", _textBuffer.GetLine(1).GetText());
+                Assert.Equal("\thorse horse cat dog", _textBuffer.GetLine(2).GetText());
+            }
         }
     }
 }
