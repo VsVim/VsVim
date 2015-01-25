@@ -852,22 +852,30 @@ type internal InsertMode
         if _globalSettings.AtomicInsert then
             // Create a combined movement command that goes from the old position to the new position
             // And combine it with the input command
-            let rec movement command current prev = 
+            let rec movement command current next = 
                 let combine left right = 
                     match left with
                     | None -> Some right
                     | Some left -> Some (InsertMode.CreateCombinedEditCommand left right)
-                if current > prev then
+                let currentY, currentX = current
+                let nextY, nextX = next
+                if currentY < nextY  then
+                    let command = combine command (InsertCommand.MoveCaret Direction.Down)
+                    movement command (currentY + 1, currentX) next
+                elif currentY > nextY then
+                    let command = combine command (InsertCommand.MoveCaret Direction.Up)
+                    movement command (currentY - 1, currentX) next
+                elif currentX < nextX then
                     let command = combine command (InsertCommand.MoveCaret Direction.Right)
-                    movement command (current - 1) prev
-                elif current < prev then
+                    movement command (currentY, currentX + 1) next
+                elif currentX > nextX then
                     let command = combine command (InsertCommand.MoveCaret Direction.Left)
-                    movement command (current + 1) prev
+                    movement command (currentY, currentX - 1) next
                 else
                     command
-            let oldPosition = args.OldPosition.BufferPosition.Position
-            let newPosition = args.NewPosition.BufferPosition.Position 
-            let command = movement _sessionData.CombinedEditCommand newPosition oldPosition
+            let oldPosition = SnapshotPointUtil.GetLineColumn args.OldPosition.BufferPosition
+            let newPosition = SnapshotPointUtil.GetLineColumn args.NewPosition.BufferPosition
+            let command = movement _sessionData.CombinedEditCommand oldPosition newPosition 
             _sessionData <- { _sessionData with CombinedEditCommand = command }
         else
             _sessionData <- { _sessionData with CombinedEditCommand = None }
