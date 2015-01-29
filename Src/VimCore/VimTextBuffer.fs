@@ -34,7 +34,6 @@ type internal VimTextBuffer
         let line, column = SnapshotPointUtil.GetLineColumn point
         let trackingLineColumn = _bufferTrackingService.CreateLineColumn _textBuffer line column LineColumnTrackingMode.Default
         Some(trackingLineColumn)
-        
 
     member x.LastVisualSelection 
         with get() =
