@@ -9,6 +9,7 @@ namespace Vim.UnitTest.Exports
     public sealed class TestableMouseDevice : IMouseDevice
     {
         public bool IsLeftButtonPressed { get; set; }
+        public bool InDragOperationImpl { get; set; }
 
         bool IMouseDevice.IsLeftButtonPressed
         {
@@ -18,6 +19,11 @@ namespace Vim.UnitTest.Exports
         public Point? GetPosition(ITextView textView)
         {
             return null;
+        }
+
+        public bool InDragOperation(ITextView textView)
+        {
+            return InDragOperationImpl;
         }
     }
 }
