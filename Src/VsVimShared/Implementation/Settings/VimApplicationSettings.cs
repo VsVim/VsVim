@@ -248,7 +248,7 @@ namespace Vim.VisualStudio.Implementation.Settings
 
         bool IVimApplicationSettings.HaveNotifiedVimRcErrors
         {
-            get { return GetBoolean(HaveNotifiedVimRcErrorsName, defaultValue: false); }
+            get { return GetBoolean(HaveNotifiedVimRcErrorsName, defaultValue: true); }
             set { SetBoolean(HaveNotifiedVimRcErrorsName, value); }
         }
 
