@@ -595,7 +595,7 @@ type internal CommandUtil
             // position on undo / redo
             x.EditWithUndoTransaciton "DeleteChar" (fun () -> 
                 let position = x.CaretPoint.Position
-                let snapshot = _textBuffer.Delete(span.Span)
+                let snapshot = TextBufferUtil.DeleteAndGetLatest _textBuffer span.Span
 
                 // Need to respect the virtual edit setting here as we could have 
                 // deleted the last character on the line
@@ -622,7 +622,7 @@ type internal CommandUtil
         // ensure it appears there during an undo
         TextViewUtil.MoveCaretToPoint _textView startPoint
         x.EditWithUndoTransaciton "DeleteChar" (fun () ->
-            let snapshot = _textBuffer.Delete(span.Span)
+            let snapshot = TextBufferUtil.DeleteAndGetLatest _textBuffer span.Span
             TextViewUtil.MoveCaretToPosition _textView startPoint.Position)
 
         // Put the deleted text into the specified register once the delete completes
@@ -744,7 +744,7 @@ type internal CommandUtil
 
                 edit.Delete(overlapSpan) |> ignore)
 
-            let snapshot = edit.Apply()
+            let snapshot = TextEditUtil.ApplyAndGetLatest edit
             TextViewUtil.MoveCaretToPosition _textView startPoint.Position)
 
         // BTODO: The wrong text is being put into the register here.  It should include the overlap data
@@ -2193,7 +2193,7 @@ type internal CommandUtil
                 |> Seq.filter (fun point -> not (SnapshotPointUtil.IsInsideLineBreak point))
                 |> Seq.iter (fun point -> edit.Replace(Span(point.Position, 1), replaceText) |> ignore)
 
-            let snapshot = edit.Apply()
+            let snapshot = TextEditUtil.ApplyAndGetLatest edit
 
             // Reposition the caret at the start of the edit
             let editPoint = SnapshotPoint(snapshot, visualSpan.Start.Position)
@@ -2812,7 +2812,7 @@ type internal CommandUtil
                 // position on undo / redo
                 x.EditWithUndoTransaciton "DeleteChar" (fun () -> 
                     let position = x.CaretPoint.Position
-                    let snapshot = _textBuffer.Delete(span.Span)
+                    let snapshot = TextBufferUtil.DeleteAndGetLatest _textBuffer span.Span
                     TextViewUtil.MoveCaretToPoint _textView (SnapshotPoint(snapshot, position)))
     
                 // Put the deleted text into the specified register

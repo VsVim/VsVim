@@ -1441,17 +1441,35 @@ module EditorOptionsUtil =
     let SetOptionValue (opts : IEditorOptions) (key : EditorOptionKey<'a>) value =
         opts.SetOptionValue(key, value)
 
+module TextBufferUtil =
+    
+    /// Delete the specified span and return the latest ITextSnapshot after the
+    /// entire delete operation completes vs. the one which is returned for 
+    /// the specific delete operation
+    let DeleteAndGetLatest (textBuffer : ITextBuffer) (deleteSpan : Span) = 
+        textBuffer.Delete(deleteSpan) |> ignore
+        textBuffer.CurrentSnapshot
+
+module TextEditUtil = 
+
+    /// Apply the change and return the latest ITextSnapshot after the edit
+    /// operation completes vs. the one which is returned for this specific
+    /// edit operation.
+    let ApplyAndGetLatest (textEdit : ITextEdit) = 
+        textEdit.Apply() |> ignore
+        textEdit.Snapshot.TextBuffer.CurrentSnapshot
+
 /// Contains operations to help fudge the Editor APIs to be more F# friendly.  Does not
 /// include any Vim specific logic
 module TextViewUtil =
 
-    let GetSnapshot (textView:ITextView) = textView.TextSnapshot
+    let GetSnapshot (textView : ITextView) = textView.TextSnapshot
 
-    let GetCaret (textView:ITextView) = textView.Caret
+    let GetCaret (textView : ITextView) = textView.Caret
 
-    let GetCaretPoint (textView:ITextView) = textView.Caret.Position.BufferPosition
+    let GetCaretPoint (textView : ITextView) = textView.Caret.Position.BufferPosition
 
-    let GetCaretVirtualPoint (textView:ITextView) = textView.Caret.Position.VirtualBufferPosition
+    let GetCaretVirtualPoint (textView : ITextView) = textView.Caret.Position.VirtualBufferPosition
 
     let GetCaretLine textView = GetCaretPoint textView |> SnapshotPointUtil.GetContainingLine
 
