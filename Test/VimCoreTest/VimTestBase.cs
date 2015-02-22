@@ -33,7 +33,7 @@ namespace Vim.UnitTest
     {
         private readonly VimEditorHost _vimEditorHost;
 
-        private static VimEditorHost CachedVimEditorHost;
+        private static VimEditorHost s_cachedVimEditorHost;
 
         public CompositionContainer CompositionContainer
         {
@@ -211,7 +211,7 @@ namespace Vim.UnitTest
             // Parts of the core editor in Vs2012 depend on there being an Application.Current value else
             // they will throw a NullReferenceException.  Create one here to ensure the unit tests successfully
             // pass
-            if (Application.Current == null) 
+            if (Application.Current == null)
             {
                 new Application();
             }
@@ -447,7 +447,7 @@ namespace Vim.UnitTest
 
         private static VimEditorHost GetOrCreateVimEditorHost()
         {
-            if (CachedVimEditorHost == null)
+            if (s_cachedVimEditorHost == null)
             {
                 var editorHostFactory = new EditorHostFactory();
                 editorHostFactory.Add(new AssemblyCatalog(typeof(IVim).Assembly));
@@ -466,10 +466,10 @@ namespace Vim.UnitTest
                     typeof(OutlinerTaggerProvider)));
 
                 var compositionContainer = editorHostFactory.CreateCompositionContainer();
-                CachedVimEditorHost = new VimEditorHost(compositionContainer);
+                s_cachedVimEditorHost = new VimEditorHost(compositionContainer);
             }
 
-            return CachedVimEditorHost;
+            return s_cachedVimEditorHost;
         }
 
         protected void UpdateTabStop(IVimBuffer vimBuffer, int tabStop)

@@ -1,5 +1,6 @@
 ﻿using Microsoft.FSharp.Core;
 using Vim;
+
 namespace Vim.VisualStudio
 {
     /// <summary>

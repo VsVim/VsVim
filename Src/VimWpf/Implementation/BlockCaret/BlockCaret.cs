@@ -146,7 +146,6 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
         internal BlockCaret(IWpfTextView textView, string adornmentLayerName, IClassificationFormatMap classificationFormatMap, IEditorFormatMap formatMap, IControlCharUtil controlCharUtil, IProtectedOperations protectedOperations) :
             this(textView, classificationFormatMap, formatMap, textView.GetAdornmentLayer(adornmentLayerName), controlCharUtil, protectedOperations)
         {
-
         }
 
         /// <summary>
@@ -373,7 +372,7 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
             // Size is represented in floating point so strict equality comparison will almost 
             // always return false.  Use a simple epsilon to test the difference
 
-            if ( caretData.Color != TryCalculateCaretColor() ||
+            if (caretData.Color != TryCalculateCaretColor() ||
                 caretData.CaretDisplay != _caretDisplay ||
                 caretData.CaretOpacity != _caretOpacity)
             {
@@ -490,5 +489,4 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
             MaybeDestroy();
         }
     }
-
 }

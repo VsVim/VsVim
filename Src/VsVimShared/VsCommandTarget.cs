@@ -30,7 +30,7 @@ namespace Vim.VisualStudio
         /// This is the key which is used to store VsCommandTarget instances in the ITextView
         /// property bag
         /// </summary>
-        private static readonly object Key = new object();
+        private static readonly object s_key = new object();
 
         private readonly IVimBuffer _vimBuffer;
         private readonly IVim _vim;
@@ -287,7 +287,7 @@ namespace Vim.VisualStudio
             _commandTargets = commandTargets;
 
             // Register the VsCommandTarget with the ITextView so that it can be retrieved later
-            _vimBufferCoordinator.VimBuffer.TextView.Properties[Key] = this;
+            _vimBufferCoordinator.VimBuffer.TextView.Properties[s_key] = this;
         }
 
         internal static Result<VsCommandTarget> Create(
@@ -319,7 +319,7 @@ namespace Vim.VisualStudio
 
         internal static bool TryGet(ITextView textView, out VsCommandTarget vsCommandTarget)
         {
-            return textView.Properties.TryGetPropertySafe(Key, out vsCommandTarget);
+            return textView.Properties.TryGetPropertySafe(s_key, out vsCommandTarget);
         }
 
         #region IOleCommandTarget

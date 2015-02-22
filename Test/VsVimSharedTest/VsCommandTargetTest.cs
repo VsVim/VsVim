@@ -166,7 +166,7 @@ namespace Vim.VisualStudio.UnitTest
         public sealed class TryCustomProcessTest : VsCommandTargetTest
         {
             public TryCustomProcessTest()
-                :base(isReSharperInstalled: false)
+                : base(isReSharperInstalled: false)
             {
                 _vimBuffer.LocalSettings.SoftTabStop = 4;
             }
@@ -216,7 +216,6 @@ namespace Vim.VisualStudio.UnitTest
             public TryConvertTest()
                 : base(isReSharperInstalled: false)
             {
-
             }
 
             private void AssertCannotConvert2K(VSConstants.VSStd2KCmdID id)
@@ -258,7 +257,6 @@ namespace Vim.VisualStudio.UnitTest
             public QueryStatusTest()
                 : base(isReSharperInstalled: false)
             {
-
             }
 
             [Fact]
@@ -411,7 +409,6 @@ namespace Vim.VisualStudio.UnitTest
             [Fact]
             public void CommentShouldClearSelection()
             {
-
             }
         }
 
@@ -420,7 +417,6 @@ namespace Vim.VisualStudio.UnitTest
             public ExecCoreTest()
                 : base(isReSharperInstalled: false)
             {
-
             }
 
             /// <summary>
@@ -443,7 +439,6 @@ namespace Vim.VisualStudio.UnitTest
             public ReSharperQueryStatusTest()
                 : base(isReSharperInstalled: true)
             {
-
             }
 
             /// Don't actually run the Escape in the QueryStatus command if we're in visual mode

@@ -5,7 +5,7 @@ using System.Collections.Generic;
 
 namespace Vim.UnitTest
 {
-    public abstract class GlobalSettingsTest 
+    public abstract class GlobalSettingsTest
     {
         private readonly GlobalSettings _globalSettingsRaw;
         private readonly IVimGlobalSettings _globalSettings;

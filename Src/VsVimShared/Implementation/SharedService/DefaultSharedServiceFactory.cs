@@ -13,7 +13,6 @@ namespace Vim.VisualStudio.Implementation.SharedService
 
             void ISharedService.GoToTab(int index)
             {
-
             }
 
             bool ISharedService.IsActiveWindowFrame(IVsWindowFrame vsWindowFrame)

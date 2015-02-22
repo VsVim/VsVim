@@ -161,7 +161,6 @@ namespace Vim.UnitTest
 
         public sealed class MiscTest : TokenizerTest
         {
-
             /// <summary>
             /// The specified index should be length of text when the tokenizer is at the end of the line
             /// </summary>

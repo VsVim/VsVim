@@ -16,7 +16,7 @@ namespace Vim.VisualStudio.Implementation.ReSharper
     [Export(typeof(IReSharperUtil))]
     internal sealed class ReSharperUtil : IReSharperUtil
     {
-        private static readonly Guid Resharper5Guid = new Guid("0C6E6407-13FC-4878-869A-C8B4016C57FE");
+        private static readonly Guid s_resharper5Guid = new Guid("0C6E6407-13FC-4878-869A-C8B4016C57FE");
 
         private readonly bool _isResharperInstalled;
 
@@ -24,7 +24,7 @@ namespace Vim.VisualStudio.Implementation.ReSharper
         internal ReSharperUtil(SVsServiceProvider serviceProvider)
         {
             var vsShell = serviceProvider.GetService<SVsShell, IVsShell>();
-            _isResharperInstalled = vsShell.IsPackageInstalled(Resharper5Guid);
+            _isResharperInstalled = vsShell.IsPackageInstalled(s_resharper5Guid);
         }
 
         internal ReSharperUtil(bool isResharperInstalled)

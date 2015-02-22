@@ -100,5 +100,4 @@ namespace Vim.VisualStudio.UnitTest.Utils
             return _nextCommandTarget.QueryStatus(ref pguidCmdGroup, cCmds, prgCmds, pCmdText);
         }
     }
-
 }

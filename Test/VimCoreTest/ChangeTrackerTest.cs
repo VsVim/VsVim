@@ -26,7 +26,7 @@ namespace Vim.UnitTest
 
             // Setup normal mode so that we can provide an ICommandRunner to 
             // recieve commands from
-            _factory = new MockRepository(MockBehavior.Loose) {DefaultValue = DefaultValue.Mock};
+            _factory = new MockRepository(MockBehavior.Loose) { DefaultValue = DefaultValue.Mock };
             _runner = _factory.Create<ICommandRunner>(MockBehavior.Loose);
             _normalMode = _factory.Create<INormalMode>(MockBehavior.Strict);
             _normalMode.SetupGet(x => x.CommandRunner).Returns(_runner.Object);
@@ -51,8 +51,8 @@ namespace Vim.UnitTest
             Create("hello");
             var runData1 = VimUtil.CreateCommandRunData(flags: CommandFlags.LinkedWithNextCommand | CommandFlags.Repeatable);
             var runData2 = VimUtil.CreateCommandRunData(flags: CommandFlags.Repeatable, command: Command.NewInsertCommand(InsertCommand.NewInsert("foo")));
-            _runner.Raise(x => x.CommandRan += null, (object) null, new CommandRunDataEventArgs(runData1));
-            _runner.Raise(x => x.CommandRan += null, (object) null, new CommandRunDataEventArgs(runData2));
+            _runner.Raise(x => x.CommandRan += null, (object)null, new CommandRunDataEventArgs(runData1));
+            _runner.Raise(x => x.CommandRan += null, (object)null, new CommandRunDataEventArgs(runData2));
             var lastCommnad = _vimData.LastCommand;
             Assert.True(lastCommnad.IsSome(x => x.IsLinkedCommand));
         }
@@ -65,7 +65,7 @@ namespace Vim.UnitTest
         {
             Create("hello");
             var data = VimUtil.CreateCommandRunData(flags: CommandFlags.None);
-            _runner.Raise(x => x.CommandRan += null, (object) null, new CommandRunDataEventArgs(data));
+            _runner.Raise(x => x.CommandRan += null, (object)null, new CommandRunDataEventArgs(data));
             Assert.True(_vimData.LastCommand.IsNone());
         }
 
@@ -77,7 +77,7 @@ namespace Vim.UnitTest
         {
             Create("hello");
             var data = VimUtil.CreateCommandRunData(flags: CommandFlags.Repeatable);
-            _runner.Raise(x => x.CommandRan += null, (object) null, new CommandRunDataEventArgs(data));
+            _runner.Raise(x => x.CommandRan += null, (object)null, new CommandRunDataEventArgs(data));
             Assert.True(_vimData.LastCommand.IsSome(x => x.IsNormalCommand));
         }
 
@@ -89,7 +89,7 @@ namespace Vim.UnitTest
         {
             Create("hello");
             var data = VimUtil.CreateCommandRunData(flags: CommandFlags.Movement);
-            _runner.Raise(x => x.CommandRan += null, (object) null, new CommandRunDataEventArgs(data));
+            _runner.Raise(x => x.CommandRan += null, (object)null, new CommandRunDataEventArgs(data));
             Assert.True(_vimData.LastCommand.IsNone());
         }
 
@@ -101,7 +101,7 @@ namespace Vim.UnitTest
         {
             Create("hello");
             var data = VimUtil.CreateCommandRunData(flags: CommandFlags.Special);
-            _runner.Raise(x => x.CommandRan += null, (object) null, new CommandRunDataEventArgs(data));
+            _runner.Raise(x => x.CommandRan += null, (object)null, new CommandRunDataEventArgs(data));
             Assert.True(_vimData.LastCommand.IsNone());
         }
     }

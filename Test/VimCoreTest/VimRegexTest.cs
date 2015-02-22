@@ -9,9 +9,9 @@ namespace Vim.UnitTest
 {
     public abstract class VimRegexTest
     {
-        private static readonly string[] LowerCaseLetters = TestConstants.LowerCaseLetters.Select(x => x.ToString()).ToArray();
-        private static readonly string[] UpperCaseLetters = TestConstants.UpperCaseLetters.Select(x => x.ToString()).ToArray();
-        private static readonly string[] Digits = TestConstants.Digits.Select(x => x.ToString()).ToArray();
+        private static readonly string[] s_lowerCaseLetters = TestConstants.LowerCaseLetters.Select(x => x.ToString()).ToArray();
+        private static readonly string[] s_upperCaseLetters = TestConstants.UpperCaseLetters.Select(x => x.ToString()).ToArray();
+        private static readonly string[] s_digits = TestConstants.Digits.Select(x => x.ToString()).ToArray();
         private readonly IVimGlobalSettings _globalSettings;
 
         protected VimRegexTest()
@@ -996,74 +996,74 @@ namespace Vim.UnitTest
             [Fact]
             public void AtomHeadOfWord()
             {
-                VerifyMatches(@"\h", LowerCaseLetters);
-                VerifyMatches(@"\h", UpperCaseLetters);
+                VerifyMatches(@"\h", s_lowerCaseLetters);
+                VerifyMatches(@"\h", s_upperCaseLetters);
                 VerifyMatches(@"\h", "_");
-                VerifyNotMatches(@"\h", Digits);
+                VerifyNotMatches(@"\h", s_digits);
             }
 
             [Fact]
             public void AtomNonHeadOfWord()
             {
-                VerifyNotMatches(@"\H", LowerCaseLetters);
-                VerifyNotMatches(@"\H", UpperCaseLetters);
+                VerifyNotMatches(@"\H", s_lowerCaseLetters);
+                VerifyNotMatches(@"\H", s_upperCaseLetters);
                 VerifyNotMatches(@"\H", "_");
-                VerifyMatches(@"\H", Digits);
+                VerifyMatches(@"\H", s_digits);
             }
 
             [Fact]
             public void AtomAlphabeticChar()
             {
-                VerifyMatches(@"\a", LowerCaseLetters);
-                VerifyMatches(@"\a", UpperCaseLetters);
-                VerifyNotMatches(@"\a", Digits);
+                VerifyMatches(@"\a", s_lowerCaseLetters);
+                VerifyMatches(@"\a", s_upperCaseLetters);
+                VerifyNotMatches(@"\a", s_digits);
             }
 
             [Fact]
             public void AtomNonAlphabeticChar()
             {
-                VerifyNotMatches(@"\A", LowerCaseLetters);
-                VerifyNotMatches(@"\A", UpperCaseLetters);
+                VerifyNotMatches(@"\A", s_lowerCaseLetters);
+                VerifyNotMatches(@"\A", s_upperCaseLetters);
                 VerifyMatches(@"\A", "_");
-                VerifyMatches(@"\A", Digits);
+                VerifyMatches(@"\A", s_digits);
             }
 
             [Fact]
             public void AtomLowerLetters()
             {
                 _globalSettings.IgnoreCase = false;
-                VerifyMatches(@"\l", LowerCaseLetters);
-                VerifyNotMatches(@"\l", UpperCaseLetters);
-                VerifyNotMatches(@"\l", Digits);
+                VerifyMatches(@"\l", s_lowerCaseLetters);
+                VerifyNotMatches(@"\l", s_upperCaseLetters);
+                VerifyNotMatches(@"\l", s_digits);
             }
 
             [Fact]
             public void AtomNonLowerLetters()
             {
                 _globalSettings.IgnoreCase = false;
-                VerifyNotMatches(@"\L", LowerCaseLetters);
-                VerifyMatches(@"\L", UpperCaseLetters);
+                VerifyNotMatches(@"\L", s_lowerCaseLetters);
+                VerifyMatches(@"\L", s_upperCaseLetters);
                 VerifyMatches(@"\L", "_");
-                VerifyMatches(@"\L", Digits);
+                VerifyMatches(@"\L", s_digits);
             }
 
             [Fact]
             public void AtomUpperLetters()
             {
                 _globalSettings.IgnoreCase = false;
-                VerifyMatches(@"\u", UpperCaseLetters);
-                VerifyNotMatches(@"\u", LowerCaseLetters);
-                VerifyNotMatches(@"\u", Digits);
+                VerifyMatches(@"\u", s_upperCaseLetters);
+                VerifyNotMatches(@"\u", s_lowerCaseLetters);
+                VerifyNotMatches(@"\u", s_digits);
             }
 
             [Fact]
             public void AtomNonUpperLetters()
             {
                 _globalSettings.IgnoreCase = false;
-                VerifyNotMatches(@"\U", UpperCaseLetters);
-                VerifyMatches(@"\U", LowerCaseLetters);
+                VerifyNotMatches(@"\U", s_upperCaseLetters);
+                VerifyMatches(@"\U", s_lowerCaseLetters);
                 VerifyMatches(@"\U", "_");
-                VerifyMatches(@"\U", Digits);
+                VerifyMatches(@"\U", s_digits);
             }
 
             [Fact]

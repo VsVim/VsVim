@@ -5,7 +5,7 @@ using System.Text;
 
 namespace Vim.UnitTest.Mock
 {
-    class ITagSpan
+    internal class ITagSpan
     {
     }
 }

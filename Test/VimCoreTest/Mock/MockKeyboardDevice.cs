@@ -9,7 +9,7 @@ namespace Vim.UnitTest.Mock
     {
         private sealed class MockPresentationSource : PresentationSource
         {
-            Visual _rootVisual;
+            private Visual _rootVisual;
 
             protected override CompositionTarget GetCompositionTargetCore()
             {
@@ -39,13 +39,11 @@ namespace Vim.UnitTest.Mock
         public MockKeyboardDevice()
             : this(InputManager.Current)
         {
-
         }
 
         public MockKeyboardDevice(InputManager manager)
             : base(manager)
         {
-
         }
 
         protected override KeyStates GetKeyStatesFromSystem(Key key)
@@ -224,6 +222,5 @@ namespace Vim.UnitTest.Mock
         {
             return 0 != (ModifierKeysImpl & modKey);
         }
-
     }
 }

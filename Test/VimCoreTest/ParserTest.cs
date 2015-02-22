@@ -605,7 +605,7 @@ let x = 42
                 [Fact]
                 public void BangMustBeAfterFunction()
                 {
-                    AssertBadFunctionDefinition(@"function ! Test()"); 
+                    AssertBadFunctionDefinition(@"function ! Test()");
                 }
 
                 /// <summary>

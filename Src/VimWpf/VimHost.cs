@@ -248,13 +248,13 @@ namespace Vim.UI.Wpf
         public virtual string RunCommand(string command, string arguments, IVimData vimdata)
         {
             var startInfo = new ProcessStartInfo
-                                {
-                                    FileName = command,
-                                    Arguments = arguments,
-                                    RedirectStandardOutput = true,
-                                    UseShellExecute = false,
-                                    WorkingDirectory = vimdata.CurrentDirectory
-                                };
+            {
+                FileName = command,
+                Arguments = arguments,
+                RedirectStandardOutput = true,
+                UseShellExecute = false,
+                WorkingDirectory = vimdata.CurrentDirectory
+            };
             try
             {
                 var process = Process.Start(startInfo);
@@ -327,17 +327,14 @@ namespace Vim.UI.Wpf
 
         public virtual void VimCreated(IVim vim)
         {
-
         }
 
         public virtual void VimDataCreated(IVimData vimData)
         {
-
         }
 
         public virtual void VimRcLoaded(VimRcState vimRcState, IVimLocalSettings localSettings, IVimWindowSettings windowSettings)
         {
-
         }
 
         /// <summary>

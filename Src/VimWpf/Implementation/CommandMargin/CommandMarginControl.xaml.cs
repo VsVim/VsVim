@@ -52,9 +52,9 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             new PropertyMetadata(10.0));
 
         public static readonly DependencyProperty IsStatuslineVisibleProperty = DependencyProperty.Register(
-            "IsStatuslineVisible", 
-            typeof (Visibility), 
-            typeof (CommandMarginControl), 
+            "IsStatuslineVisible",
+            typeof(Visibility),
+            typeof(CommandMarginControl),
             new PropertyMetadata(default(Visibility)));
 
 
@@ -63,7 +63,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
         /// </summary>
         public string StatusLine
         {
-            get { return (string) GetValue(StatusLineProperty); }
+            get { return (string)GetValue(StatusLineProperty); }
             set { SetValue(StatusLineProperty, value); }
         }
 
@@ -116,7 +116,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
 
         public Visibility IsStatuslineVisible
         {
-            get { return (Visibility) GetValue(IsStatuslineVisibleProperty); }
+            get { return (Visibility)GetValue(IsStatuslineVisibleProperty); }
             set { SetValue(IsStatuslineVisibleProperty, value); }
         }
 
@@ -142,7 +142,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
                 index = 0;
             }
             else
-            { 
+            {
                 switch (editPosition)
                 {
                     case EditPosition.Start:

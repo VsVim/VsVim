@@ -28,7 +28,7 @@ namespace Vim.UnitTest
             SynchronizationContext.SetSynchronizationContext(_context);
         }
 
-        public override void  Dispose()
+        public override void Dispose()
         {
             base.Dispose();
             SynchronizationContext.SetSynchronizationContext(_before);

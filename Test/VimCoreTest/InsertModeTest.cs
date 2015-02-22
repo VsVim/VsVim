@@ -62,7 +62,7 @@ namespace Vim.UnitTest
             _editorOptions = _factory.Create<IEditorOptions>(MockBehavior.Loose);
             _textChangeTracker = _factory.Create<ITextChangeTracker>(MockBehavior.Loose);
             _textChangeTracker.SetupGet(x => x.CurrentChange).Returns(FSharpOption<TextChange>.None);
-            _undoRedoOperations = new UndoRedoOperations(new StatusUtil(), FSharpOption<ITextUndoHistory>.None, null); 
+            _undoRedoOperations = new UndoRedoOperations(new StatusUtil(), FSharpOption<ITextUndoHistory>.None, null);
             _wordCompletionSessionFactoryService = _factory.Create<IWordCompletionSessionFactoryService>();
 
             var localSettings = new LocalSettings(Vim.GlobalSettings);

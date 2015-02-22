@@ -78,7 +78,7 @@ namespace Vim.VisualStudio.Implementation.ReSharper
         /// This is for a specific type and is thus safe in terms of leaks etc.
         /// </summary>
         internal FieldInfo HighlighterFieldInfo { get; private set; }
-        
+
         /// <summary>
         /// Cache reflection info for AttributeId string property
         /// This is for a specific type and is thus safe in terms of leaks etc.
@@ -120,7 +120,7 @@ namespace Vim.VisualStudio.Implementation.ReSharper
                         BindingFlags.Instance | BindingFlags.Public);
                 }
             }
-            
+
             if (AttributeIdPropertyInfo == null)
             {
                 return false;

@@ -1,4 +1,5 @@
 // !!! Generated file. Do not edit directly !!!
+
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.VisualStudio.Platform.WindowManagement;

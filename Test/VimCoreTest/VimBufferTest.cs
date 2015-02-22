@@ -287,26 +287,26 @@ namespace Vim.UnitTest
             {
                 var seen = 0;
                 _vimBuffer.ProcessNotation(":map a b", enter: true);
-                _vimBuffer.KeyInputStart += 
-                    (sender, e) => 
+                _vimBuffer.KeyInputStart +=
+                    (sender, e) =>
                     {
                         Assert.Equal('a', e.KeyInput.Char);
                         seen++;
                     };
-                _vimBuffer.KeyInputEnd += 
-                    (sender, e) => 
+                _vimBuffer.KeyInputEnd +=
+                    (sender, e) =>
                     {
                         Assert.Equal('a', e.KeyInput.Char);
                         seen++;
                     };
-                _vimBuffer.KeyInputProcessing += 
-                    (sender, e) => 
+                _vimBuffer.KeyInputProcessing +=
+                    (sender, e) =>
                     {
                         Assert.Equal('b', e.KeyInput.Char);
                         seen++;
                     };
-                _vimBuffer.KeyInputProcessed += 
-                    (sender, e) => 
+                _vimBuffer.KeyInputProcessed +=
+                    (sender, e) =>
                     {
                         Assert.Equal('b', e.KeyInput.Char);
                         seen++;
@@ -411,13 +411,11 @@ namespace Vim.UnitTest
                     };
                 _vimBuffer.Close();
                 Assert.Equal(2, count);
-
             }
         }
 
         public sealed class MiscTest : VimBufferTest
         {
-
             /// <summary>
             /// Make sure the SwitchdMode event fires when switching modes.
             /// </summary>
@@ -961,6 +959,5 @@ namespace Vim.UnitTest
                 Assert.True(_vimBuffer.BufferedKeyInputs.IsEmpty);
             }
         }
-
     }
 }

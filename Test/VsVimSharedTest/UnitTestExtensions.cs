@@ -187,6 +187,5 @@ namespace Vim.VisualStudio.UnitTest
                 It.IsAny<IntPtr>(),
                 It.IsAny<IntPtr>())).Returns(hresult);
         }
-
     }
 }

@@ -134,7 +134,7 @@ namespace Vim.VisualStudio.Implementation.Misc
             // If we are in a peek definition window and normal mode we need to let the Escape key 
             // pass on to the next command target.  This is necessary to close the peek definition
             // window
-            if (_vimBuffer.ModeKind == ModeKind.Normal && 
+            if (_vimBuffer.ModeKind == ModeKind.Normal &&
                 _textView.Roles.Contains(Constants.TextViewRoleEmbeddedPeekTextView) &&
                 keyInput == KeyInputUtil.EscapeKey)
             {

@@ -271,5 +271,4 @@ namespace Vim.UnitTest
             Assert.True(change.AsCombination().Item2.IsCombination);
         }
     }
-
 }

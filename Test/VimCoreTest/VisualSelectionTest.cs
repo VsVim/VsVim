@@ -382,7 +382,7 @@ namespace Vim.UnitTest
                     UpdateLayout(_textView, tabStop: tabStop);
                     _textView.SetText(lines);
                 }
-                
+
                 /// <summary>
                 /// Ensure that a backwards block span includes the entire line
                 /// </summary>
@@ -391,9 +391,9 @@ namespace Vim.UnitTest
                 {
                     Create("cats dogs");
                     var visualSelection = VisualSelection.CreateForPoints(
-                        VisualKind.Block, 
-                        _textBuffer.GetPoint(3), 
-                        _textBuffer.GetPoint(1), 
+                        VisualKind.Block,
+                        _textBuffer.GetPoint(3),
+                        _textBuffer.GetPoint(1),
                         tabStop: 4);
                     Assert.Equal(_textBuffer.GetSpan(1, 3), visualSelection.AsBlock().Item1.BlockSpans.Head);
                 }
@@ -408,9 +408,9 @@ namespace Vim.UnitTest
                 {
                     Create("big cat", "big dog");
                     var visualSelection = VisualSelection.CreateForPoints(
-                        VisualKind.Block, 
-                        _textBuffer.GetPoint(2), 
-                        _textBuffer.GetPointInLine(1, 1), 
+                        VisualKind.Block,
+                        _textBuffer.GetPoint(2),
+                        _textBuffer.GetPointInLine(1, 1),
                         tabStop: 4);
                     Assert.Equal(_textBuffer.GetBlockSpan(1, 2, 0, 2), visualSelection.AsBlock().Item1);
                 }

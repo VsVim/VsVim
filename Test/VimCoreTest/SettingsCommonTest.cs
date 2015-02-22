@@ -298,6 +298,5 @@ namespace Vim.UnitTest
                 Assert.True(setting.IsValueDefault);
             }
         }
-
     }
 }

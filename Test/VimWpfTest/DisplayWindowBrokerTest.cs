@@ -92,6 +92,5 @@ namespace Vim.UI.Wpf.UnitTest
             _broker.DismissDisplayWindows();
             _quickInfoBroker.Verify();
         }
-
     }
 }

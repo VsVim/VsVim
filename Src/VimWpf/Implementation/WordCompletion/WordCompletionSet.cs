@@ -13,13 +13,11 @@ namespace Vim.UI.Wpf.Implementation.WordCompletion
 
         internal WordCompletionSet()
         {
-
         }
 
         internal WordCompletionSet(ITrackingSpan wordTrackingSpan, IEnumerable<Completion> completions)
             : base(Name, Name, wordTrackingSpan, completions, null)
         {
-
         }
 
         /// <summary>
@@ -30,7 +28,6 @@ namespace Vim.UI.Wpf.Implementation.WordCompletion
         /// </summary>
         public override void SelectBestMatch()
         {
-
         }
     }
 }

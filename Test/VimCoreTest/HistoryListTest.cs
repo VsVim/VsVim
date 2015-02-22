@@ -6,7 +6,7 @@ using Xunit;
 
 namespace Vim.UnitTest
 {
-    public abstract class HistoryListTest 
+    public abstract class HistoryListTest
     {
         private readonly HistoryList _historyList = new HistoryList();
 
@@ -73,7 +73,7 @@ namespace Vim.UnitTest
                 _historyList.AddRange("cat", "dog");
                 _historyList.Add("cat");
                 Assert.Equal(2, _historyList.Count);
-                Assert.Equal(new [] { "cat", "dog" }, _historyList);
+                Assert.Equal(new[] { "cat", "dog" }, _historyList);
             }
         }
     }

@@ -117,6 +117,5 @@ namespace Vim.UnitTest
                 new[] { "cat", Environment.NewLine, "dog" },
                 ret.Select(x => x.GetText()).ToList());
         }
-
     }
 }

@@ -13,7 +13,7 @@ namespace Vim.VisualStudio.Implementation.ReSharper
 {
     internal sealed class ReSharperKeyUtil : KeyProcessor, ICommandTarget
     {
-        private static object PropertyBagKey = new object();
+        private static object s_propertyBagKey = new object();
 
         private readonly IVimBuffer _vimBuffer;
         private readonly IVimBufferCoordinator _vimBufferCoordinator;
@@ -26,7 +26,7 @@ namespace Vim.VisualStudio.Implementation.ReSharper
 
         internal static ReSharperKeyUtil GetOrCreate(IVimBufferCoordinator vimBufferCoordinator)
         {
-            return vimBufferCoordinator.VimBuffer.Properties.GetOrCreateSingletonProperty(PropertyBagKey, () => new ReSharperKeyUtil(vimBufferCoordinator));
+            return vimBufferCoordinator.VimBuffer.Properties.GetOrCreateSingletonProperty(s_propertyBagKey, () => new ReSharperKeyUtil(vimBufferCoordinator));
         }
 
         public override bool IsInterestedInHandledEvents
@@ -155,7 +155,7 @@ namespace Vim.VisualStudio.Implementation.ReSharper
 
     [Export(typeof(ICommandTargetFactory))]
     [Name("ReSharper Command Target")]
-    [Order(Before=Constants.StandardCommandTargetName)]
+    [Order(Before = Constants.StandardCommandTargetName)]
     internal sealed class ReSharperCommandTargetFactory : ICommandTargetFactory
     {
         private readonly IReSharperUtil _reSharperUtil;

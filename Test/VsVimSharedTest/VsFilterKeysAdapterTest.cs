@@ -39,7 +39,5 @@ namespace Vim.VisualStudio.UnitTest
             Assert.True(_adapter.IsEditCommand(VSConstants.VSStd2K, (uint)VSConstants.VSStd2KCmdID.RETURN));
             Assert.True(_adapter.IsEditCommand(VSConstants.VSStd2K, (uint)VSConstants.VSStd2KCmdID.BACKSPACE));
         }
-
-
     }
 }

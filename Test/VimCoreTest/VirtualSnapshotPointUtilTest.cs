@@ -6,8 +6,8 @@ namespace Vim.UnitTest
 {
     public class VirtualSnapshotPointUtilTest : VimTestBase
     {
-        ITextBuffer _buffer;
-        ITextSnapshot _snapshot;
+        private ITextBuffer _buffer;
+        private ITextSnapshot _snapshot;
 
         public void Create(params string[] lines)
         {

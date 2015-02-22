@@ -188,7 +188,6 @@ namespace Vim.VisualStudio.UnitTest
 
         public sealed class SwitchModeTest : ExternalEditMonitorTest
         {
-
             /// <summary>
             /// Verify we don't do anything special like saving external edit tags when switching
             /// out of a mode other than external edit

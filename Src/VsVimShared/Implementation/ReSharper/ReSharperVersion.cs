@@ -1,4 +1,5 @@
-﻿namespace Vim.VisualStudio.Implementation.ReSharper
+﻿
+namespace Vim.VisualStudio.Implementation.ReSharper
 {
     internal enum ReSharperVersion
     {

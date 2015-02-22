@@ -541,5 +541,4 @@ namespace Vim.UnitTest
             }
         }
     }
-
 }

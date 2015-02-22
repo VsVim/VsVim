@@ -8,15 +8,15 @@ namespace Vim.UnitTest
 {
     public class SnapshotLineUtilTest : VimTestBase
     {
-        static string[] s_lines = new string[]
+        private static string[] s_lines = new string[]
             {
                 "summary description for this line",
                 "some other line",
                 "running out of things to make up"
             };
 
-        ITextBuffer _buffer = null;
-        ITextSnapshot _snapshot = null;
+        private ITextBuffer _buffer = null;
+        private ITextSnapshot _snapshot = null;
 
         public void Create(params string[] lines)
         {
@@ -30,7 +30,7 @@ namespace Vim.UnitTest
             Create("foo");
             var points = SnapshotLineUtil.GetPoints(Path.Forward, _buffer.CurrentSnapshot.GetLineFromLineNumber(0));
             var text = points.Select(x => x.GetChar().ToString()).Aggregate((x, y) => x + y);
-            Assert.Equal("foo",text);
+            Assert.Equal("foo", text);
         }
 
         [Fact]
@@ -48,7 +48,5 @@ namespace Vim.UnitTest
             var span = SnapshotLineUtil.GetExtentIncludingLineBreak(_buffer.GetLine(0));
             Assert.Equal("foo" + Environment.NewLine, span.GetText());
         }
-
-
     }
 }

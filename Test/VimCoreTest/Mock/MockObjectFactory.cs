@@ -388,7 +388,7 @@ namespace Vim.UnitTest.Mock
             textView.SetupGet(x => x.BufferGraph).Returns(bufferGraph.Object);
             textView.SetupGet(x => x.TextViewModel).Returns(textViewModel.Object);
             textView.SetupGet(x => x.VisualSnapshot).Returns(visualBuffer.Object.CurrentSnapshot);
-            textView.SetupGet(x => x.Roles).Returns(roles.Object); 
+            textView.SetupGet(x => x.Roles).Returns(roles.Object);
             textView.SetupGet(x => x.Options).Returns(options.Object);
             textView.SetupGet(x => x.TextDataModel).Returns(textDataModel.Object);
             return Tuple.Create(textView, factory);
@@ -417,7 +417,6 @@ namespace Vim.UnitTest.Mock
             ITextBuffer buffer = null,
             int? versionNumber = null)
         {
-
             buffer = buffer ?? CreateTextBuffer().Object;
             var mock = new Mock<ITextSnapshot>(MockBehavior.Strict);
             mock.SetupGet(x => x.Length).Returns(length);
