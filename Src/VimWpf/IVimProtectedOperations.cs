@@ -14,6 +14,5 @@ namespace Vim.UI.Wpf
     /// </summary>
     public interface IVimProtectedOperations : IProtectedOperations
     {
-
     }
 }

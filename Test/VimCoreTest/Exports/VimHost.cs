@@ -13,7 +13,6 @@ namespace Vim.UnitTest.Exports
         [ImportingConstructor]
         public VimHost()
         {
-
         }
     }
 }

@@ -64,7 +64,7 @@ namespace Vim.UnitTest
 
         private void CreateVim()
         {
-            var creationListeners = new [] { new Lazy<IVimBufferCreationListener>(() => _simpleListener) };
+            var creationListeners = new[] { new Lazy<IVimBufferCreationListener>(() => _simpleListener) };
             _vimRaw = new Vim(
                 _vimHost.Object,
                 _bufferFactory,
@@ -102,10 +102,10 @@ namespace Vim.UnitTest
 
             private void SetRcContents(params string[] lines)
             {
-                var vimRcPath= new VimRcPath(VimRcKind.VimRc, "foo");
+                var vimRcPath = new VimRcPath(VimRcKind.VimRc, "foo");
                 _fileSystem
                     .Setup(x => x.GetVimRcFilePaths())
-                    .Returns(new [] { vimRcPath })
+                    .Returns(new[] { vimRcPath })
                     .Verifiable();
                 _fileSystem
                     .Setup(x => x.ReadAllLines(vimRcPath.FilePath))
@@ -140,7 +140,7 @@ namespace Vim.UnitTest
             public void LoadUpdateSettings()
             {
                 // Setup the VimRc contents
-                SetRcContents(new [] {"set ai" });
+                SetRcContents(new[] { "set ai" });
                 _vimHost.Setup(x => x.CreateHiddenTextView()).Returns(CreateTextView());
                 Assert.True(_vim.LoadVimRc().IsLoadSucceeded);
                 Assert.True(_vimRaw._vimRcLocalSettings.AutoIndent);
@@ -204,7 +204,7 @@ namespace Vim.UnitTest
                 Assert.True(Vim.TryGetOrCreateVimBufferForHost(textView, out vimBuffer));
                 Assert.NotNull(vimBuffer);
             }
-    
+
             /// <summary>
             /// If the host doesn't allows it then the IVimBuffer shouldn't be created 
             /// </summary>
@@ -217,7 +217,7 @@ namespace Vim.UnitTest
                 IVimBuffer vimBuffer;
                 Assert.False(Vim.TryGetOrCreateVimBufferForHost(textView, out vimBuffer));
             }
-    
+
             /// <summary>
             /// If it's already created then what the host says this time is irrelevant.  It's
             /// already created so the Get portion takes precedence
@@ -233,7 +233,7 @@ namespace Vim.UnitTest
                 Assert.True(Vim.TryGetOrCreateVimBufferForHost(textView, out vimBuffer));
                 Assert.NotNull(vimBuffer);
             }
-    
+
             /// <summary>
             /// Explicitly test the case where the IVimTextBuffer is already created and 
             /// make sure we don't run into a conflict trying to create the IVimBuffer
@@ -243,7 +243,7 @@ namespace Vim.UnitTest
             public void GetOrCreateVimBufferForHost_VimTextBufferAlreadyCreated()
             {
                 VimHost.ShouldCreateVimBufferImpl = true;
-                        
+
                 var textView = CreateTextView("");
                 var vimTextBuffer = Vim.GetOrCreateVimTextBuffer(textView.TextBuffer);
 
@@ -479,9 +479,8 @@ namespace Vim.UnitTest
         public sealed class GlobalSettingsCustomizationTest : VimTest
         {
             public GlobalSettingsCustomizationTest()
-                :base(createVim: false)
+                : base(createVim: false)
             {
-
             }
 
             [Fact]

@@ -35,7 +35,6 @@ namespace Vim.VisualStudio
 
         public VsVimPackage()
         {
-
         }
 
         protected override void Initialize()
@@ -61,7 +60,7 @@ namespace Vim.VisualStudio
             }
 
             var filePath = IOPath.Combine(folder, "keyboard.txt");
-            using (var streamWriter = new StreamWriter(filePath, append:false, encoding: Encoding.Unicode))
+            using (var streamWriter = new StreamWriter(filePath, append: false, encoding: Encoding.Unicode))
             {
                 keyBindingService.DumpKeyboard(streamWriter);
             }
@@ -171,7 +170,6 @@ namespace Vim.VisualStudio
                     default:
                         commands[0].cmdf = 0;
                         break;
-
                 }
 
                 return VSConstants.S_OK;

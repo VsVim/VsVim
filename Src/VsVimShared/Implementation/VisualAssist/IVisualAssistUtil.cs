@@ -1,5 +1,5 @@
-﻿
-using System;
+﻿using System;
+
 namespace Vim.VisualStudio.Implementation.VisualAssist
 {
     /// <summary>

@@ -106,7 +106,7 @@ namespace Vim.UnitTest.Exports
                 vimBuffer.VimTextBuffer.Clear();
                 vimBuffer.JumpList.Clear();
             }
-                
+
             foreach (var vimBuffer in _activeVimBufferList)
             {
                 if (_bufferTrackingService.HasTrackingItems(vimBuffer.TextBuffer))

@@ -200,7 +200,6 @@ namespace Vim.UnitTest.Mock
 
         void IVimHost.EnsureVisible(ITextView textView, SnapshotPoint value)
         {
-
         }
 
         bool IVimHost.IsDirty(ITextBuffer value)
@@ -307,12 +306,10 @@ namespace Vim.UnitTest.Mock
 
         void IVimHost.BeginBulkOperation()
         {
-
         }
 
         void IVimHost.EndBulkOperation()
         {
-
         }
 
         bool IVimHost.ShouldCreateVimBuffer(ITextView textView)
@@ -333,7 +330,6 @@ namespace Vim.UnitTest.Mock
 
         void IVimHost.VimCreated(IVim vim)
         {
-
         }
 
         void IVimHost.VimRcLoaded(VimRcState vimRcState, IVimLocalSettings localSettings, IVimWindowSettings windowSettings)
@@ -343,7 +339,7 @@ namespace Vim.UnitTest.Mock
 
         int IVimHost.GetTabIndex(ITextView textView)
         {
-            return GetTabIndexData;            
+            return GetTabIndexData;
         }
 
         WordWrapStyles IVimHost.GetWordWrapStyle(ITextView textView)

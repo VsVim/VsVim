@@ -70,7 +70,6 @@ namespace Vim.VisualStudio.Implementation.Misc
         internal KeyBindingService(SVsServiceProvider serviceProvider, IKeyboardOptionsProvider keyboardOptionsProvider, IVimProtectedOperations protectedOperations, IVimApplicationSettings vimApplicationSettings)
             : this(serviceProvider.GetService<SDTE, _DTE>(), keyboardOptionsProvider, protectedOperations, vimApplicationSettings, new ScopeData(serviceProvider.GetService<SVsShell, IVsShell>()))
         {
-
         }
 
         internal KeyBindingService(_DTE dte, IKeyboardOptionsProvider keyboardOptionsProvider, IVimProtectedOperations protectedOperations, IVimApplicationSettings vimApplicationSettings, ScopeData scopeData)
@@ -210,7 +209,7 @@ namespace Vim.VisualStudio.Implementation.Misc
         internal bool ShouldSkip(CommandKeyBinding binding)
         {
             var scope = binding.KeyBinding.Scope;
-            if (!_includeAllScopes &&  _scopeData.GetScopeKind(scope) == ScopeKind.Unknown)
+            if (!_includeAllScopes && _scopeData.GetScopeKind(scope) == ScopeKind.Unknown)
             {
                 return true;
             }
@@ -293,7 +292,6 @@ namespace Vim.VisualStudio.Implementation.Misc
                         }
                     }
                 }
-
             }
             finally
             {
@@ -302,7 +300,7 @@ namespace Vim.VisualStudio.Implementation.Misc
         }
 
         private void DumpKeyboard(StreamWriter streamWriter)
-        { 
+        {
             try
             {
                 foreach (var dteCommand in _dte.Commands.GetCommands())

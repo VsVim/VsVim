@@ -87,7 +87,7 @@ namespace Vim.VisualStudio.Implementation.Misc
 
             var eventSpan = new SnapshotSpan(plusPoint.Value, span.End);
             var eventText = eventSpan.GetText();
-            return 
+            return
                 s_fullEventSyntaxRegex.IsMatch(eventText) ||
                 s_shortEventSyntaxRegex.IsMatch(eventText);
         }

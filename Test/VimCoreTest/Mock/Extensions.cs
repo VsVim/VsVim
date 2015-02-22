@@ -140,7 +140,6 @@ namespace Vim.UnitTest.Mock
                     .Returns(CommandResult.NewCompleted(ModeSwitch.SwitchPreviousMode))
                     .Verifiable();
             }
-
         }
 
         public static void SetupPut(this Mock<ICommonOperations> operations, ITextBuffer textBuffer, params string[] newText)
@@ -171,7 +170,6 @@ namespace Vim.UnitTest.Mock
                         })
                     .Returns(ProcessResult.NewHandled(ModeSwitch.NoSwitch));
             }
-
         }
     }
 }

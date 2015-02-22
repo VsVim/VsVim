@@ -120,7 +120,7 @@ namespace Vim.VisualStudio
             }
         }
 
-#endregion
+        #endregion
 
         internal const string CommandNameGoToDefinition = "Edit.GoToDefinition";
 

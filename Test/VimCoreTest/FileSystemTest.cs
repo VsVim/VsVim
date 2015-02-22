@@ -72,7 +72,7 @@ namespace Vim.UnitTest
             [Fact]
             public void UmlautNoBom()
             {
-                var line = "let map = ö";
+                var line = "let map = \u00F6";
                 var encoding = Encoding.GetEncoding("Latin1");
                 var bytes = encoding.GetBytes(line);
                 File.WriteAllBytes(_tempFilePath, bytes);
@@ -83,7 +83,7 @@ namespace Vim.UnitTest
             [Fact]
             public void UmlautWithBom()
             {
-                var line = "let map = ö";
+                var line = "let map = \u00F6";
                 var encoding = Encoding.GetEncoding("Latin1");
                 File.WriteAllLines(_tempFilePath, new[] { line }, encoding);
                 var lines = _fileSystem.ReadAllLines(_tempFilePath).Value;

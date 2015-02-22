@@ -75,7 +75,7 @@ namespace Vim.VisualStudio.Implementation.Misc
             //
             // The Visual Studio KeyProcessor won't pass along control characters that are less than
             // or equal to 0x1f so we have to handle them here 
-            if (VimBuffer.ModeKind.IsAnyInsert() && 
+            if (VimBuffer.ModeKind.IsAnyInsert() &&
                 !VimBuffer.CanProcessAsCommand(keyInput) &&
                 (int)keyInput.Char > 0x1f)
             {
@@ -147,7 +147,7 @@ namespace Vim.VisualStudio.Implementation.Misc
             {
                 _keyDownCount++;
             }
-            else 
+            else
             {
                 _keyDownCount--;
                 if (_keyDownCount == 0)

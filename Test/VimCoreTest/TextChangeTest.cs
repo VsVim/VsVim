@@ -109,7 +109,6 @@ namespace Vim.UnitTest
 
             public sealed class MiscTest : ReduceTest
             {
-
                 [Fact]
                 public void DoubleInsert()
                 {

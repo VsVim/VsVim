@@ -13,7 +13,7 @@ namespace Vim.UI.Wpf.Implementation.Directory
     [Export(typeof(IDirectoryUtil))]
     internal sealed class DirectoryUtil : IDirectoryUtil
     {
-        private static readonly object NameKey = new object();
+        private static readonly object s_nameKey = new object();
 
         private readonly IFileSystem _fileSystem;
         private readonly IContentTypeRegistryService _contentTypeRegistryService;
@@ -52,14 +52,14 @@ namespace Vim.UI.Wpf.Implementation.Directory
             var contentType = _contentTypeRegistryService.GetContentType(DirectoryContentType.Name);
             var text = string.Join(Environment.NewLine, contents.Value);
             textBuffer = _textBufferFactoryService.CreateTextBuffer(text, contentType);
-            textBuffer.Properties.AddProperty(NameKey, directoryPath);
+            textBuffer.Properties.AddProperty(s_nameKey, directoryPath);
             return true;
         }
 
         private string GetDirectoryPath(ITextBuffer textBuffer)
         {
             string name = "";
-            if (!textBuffer.Properties.TryGetPropertySafe(NameKey, out name))
+            if (!textBuffer.Properties.TryGetPropertySafe(s_nameKey, out name))
             {
                 name = null;
             }

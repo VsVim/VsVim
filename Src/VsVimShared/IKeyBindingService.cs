@@ -51,7 +51,7 @@ namespace Vim.VisualStudio
         /// <summary>
         /// Ignore the conflicts
         /// </summary>
-        void IgnoreAnyConflicts(); 
+        void IgnoreAnyConflicts();
 
         /// <summary>
         /// Dump the contents of the Visual Studio keyboard layout to the given StreamWriter

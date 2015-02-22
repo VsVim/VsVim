@@ -22,7 +22,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
     [TextViewRole(PredefinedTextViewRoles.Editable)]
     internal sealed class CommandMarginProvider : IWpfTextViewMarginProvider
     {
-        private static readonly object Key = new object();
+        private static readonly object s_key = new object();
 
         private readonly IVim _vim;
         private readonly IEditorFormatMapService _editorFormatMapService;
@@ -30,7 +30,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
 
         [ImportingConstructor]
         internal CommandMarginProvider(
-            IVim vim, 
+            IVim vim,
             IEditorFormatMapService editorFormatMapService,
             IClassificationFormatMapService classificationFormatMapService)
         {
@@ -41,7 +41,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
 
         internal bool TryGetCommandMargin(IVimBuffer vimBuffer, out CommandMargin commandMargin)
         {
-            return vimBuffer.Properties.TryGetPropertySafe(Key, out commandMargin);
+            return vimBuffer.Properties.TryGetPropertySafe(s_key, out commandMargin);
         }
 
         private CommandMargin CreateCommandMargin(IVimBuffer vimBuffer)
@@ -53,8 +53,8 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             var classificationFormatMap = _classificationFormatMapService.GetClassificationFormatMap(wpfTextView);
             var commandMargin = new CommandMargin(wpfTextView.VisualElement, vimBuffer, editorFormatMap, classificationFormatMap);
 
-            vimBuffer.Properties.AddProperty(Key, commandMargin);
-            vimBuffer.Closed += delegate { vimBuffer.Properties.RemoveProperty(Key); };
+            vimBuffer.Properties.AddProperty(s_key, commandMargin);
+            vimBuffer.Closed += delegate { vimBuffer.Properties.RemoveProperty(s_key); };
 
             return commandMargin;
         }

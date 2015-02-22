@@ -503,6 +503,5 @@ namespace Vim.UnitTest
             result.AsNeedMoreInput().Item.BindFunction.Invoke(KeyInputUtil.VimKeyToKeyInput(VimKey.Escape));
             Assert.False(_incrementalSearch.InSearch);
         }
-
     }
 }

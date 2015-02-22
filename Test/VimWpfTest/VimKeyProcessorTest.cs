@@ -227,11 +227,11 @@ namespace Vim.UI.Wpf.UnitTest
             [Fact]
             public void SimpleSystemText()
             {
-                var keyInput = KeyInputUtil.CharToKeyInput('Á');
+                var keyInput = KeyInputUtil.CharToKeyInput('\u00C1');
                 _mockVimBuffer.Setup(x => x.CanProcess(keyInput)).Returns(false);
 
-                var args = CreateTextComposition("Á");
-                Assert.Equal("Á", args.SystemText);
+                var args = CreateTextComposition("\u00C1");
+                Assert.Equal("\u00C1", args.SystemText);
                 _processor.TextInput(args);
                 Assert.False(args.Handled);
                 _mockVimBuffer.Verify();

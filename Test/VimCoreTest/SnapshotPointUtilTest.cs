@@ -9,15 +9,15 @@ namespace Vim.UnitTest
 {
     public class SnapshotPointUtilTest : VimTestBase
     {
-        static string[] s_lines = new string[]
+        private static string[] s_lines = new string[]
             {
                 "summary description for this line",
                 "some other line",
                 "running out of things to make up"
             };
 
-        ITextBuffer _textBuffer = null;
-        ITextSnapshot _snapshot = null;
+        private ITextBuffer _textBuffer = null;
+        private ITextSnapshot _snapshot = null;
 
         public void Create(params string[] lines)
         {

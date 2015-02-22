@@ -19,7 +19,7 @@ namespace Vim.UnitTest
             CharLettersUpper +
             CharRest;
 
-        public static readonly string[] AlternateArray = new []
+        public static readonly string[] AlternateArray = new[]
             {
                 @"<Nul>&<C-@>&0",
                 @"<Tab>&<C-I>&9",
@@ -87,7 +87,7 @@ namespace Vim.UnitTest
             [Fact]
             public void ShiftToNonSpecialChar()
             {
-                var list = new[] 
+                var list = new[]
                 {
                     KeyInputUtil.VimKeyToKeyInput(VimKey.Back),
                     KeyInputUtil.VimKeyToKeyInput(VimKey.Escape),
@@ -154,7 +154,7 @@ namespace Vim.UnitTest
             public void AltToA()
             {
                 var keyInput = ApplyModifiers('a', VimKeyModifiers.Alt);
-                Assert.Equal('á', keyInput.Char);
+                Assert.Equal('\u00E1', keyInput.Char);
                 Assert.Equal(VimKeyModifiers.None, keyInput.KeyModifiers);
                 Assert.Equal(VimKey.RawCharacter, keyInput.Key);
             }
@@ -163,7 +163,7 @@ namespace Vim.UnitTest
             public void AltToUpperA()
             {
                 var keyInput = ApplyModifiers('a', VimKeyModifiers.Alt | VimKeyModifiers.Shift);
-                Assert.Equal('Á', keyInput.Char);
+                Assert.Equal('\u00C1', keyInput.Char);
                 Assert.Equal(VimKeyModifiers.None, keyInput.KeyModifiers);
                 Assert.Equal(VimKey.RawCharacter, keyInput.Key);
             }
@@ -171,7 +171,7 @@ namespace Vim.UnitTest
             [Fact]
             public void AltToDigit()
             {
-                const string expected = "°±²³´µ¶·¸¹";
+                const string expected = "\u00B0\u00B1\u00B2\u00B3\u00B4\u00B5\u00B6\u00B7\u00B8\u00B9";
                 for (var i = 0; i < expected.Length; i++)
                 {
                     var c = Char.Parse(i.ToString());
@@ -189,7 +189,7 @@ namespace Vim.UnitTest
             [Fact]
             public void AltMirror()
             {
-                const string expected = "Á°±²³´µ¶·¸¹";
+                const string expected = "\u00C1\u00B0\u00B1\u00B2\u00B3\u00B4\u00B5\u00B6\u00B7\u00B8\u00B9";
                 const string source = "A0123456789";
                 for (var i = 0; i < source.Length; i++)
                 {
@@ -227,8 +227,8 @@ namespace Vim.UnitTest
             [Fact]
             public void EquivalentKeysToDecimal()
             {
-                var list = new[] 
-                { 
+                var list = new[]
+                {
                     "Nul-0",
                     "Tab-9",
                     "NL-10",
@@ -240,7 +240,7 @@ namespace Vim.UnitTest
                     "Space-32",
                     "lt-60",
                     "Bslash-92",
-                    "Bar-124" 
+                    "Bar-124"
                 };
 
                 foreach (var entry in list)

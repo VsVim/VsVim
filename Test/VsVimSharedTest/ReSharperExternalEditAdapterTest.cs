@@ -15,7 +15,7 @@ namespace Vim.VisualStudio.UnitTest
 {
     public abstract class ReSharperExternalEditAdapterTest : VimTestBase
     {
-        sealed class VsTextAdornmentTag : ITag
+        private sealed class VsTextAdornmentTag : ITag
         {
             internal string myAttributeId;
         }

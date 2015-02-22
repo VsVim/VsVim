@@ -126,8 +126,8 @@ namespace Vim.VisualStudio.UnitTest
 
         public sealed class GetAdornmentLayerNoThrowTest : ExtensionsTest
         {
-            private static readonly object LayerKey = new object();
-            private static readonly string LayerName = "MyAdornmentLayer";
+            private static readonly object s_layerKey = new object();
+            private static readonly string s_layerName = "MyAdornmentLayer";
             private readonly Mock<IWpfTextView> _wpfTextView;
             private readonly PropertyCollection _propertyCollection;
 
@@ -141,8 +141,8 @@ namespace Vim.VisualStudio.UnitTest
             [Fact]
             public void FirstTimeLayerNotPresent()
             {
-                _wpfTextView.Setup(x => x.GetAdornmentLayer(LayerName)).Throws(new Exception());
-                Assert.Null(_wpfTextView.Object.GetAdornmentLayerNoThrow(LayerName, LayerKey));
+                _wpfTextView.Setup(x => x.GetAdornmentLayer(s_layerName)).Throws(new Exception());
+                Assert.Null(_wpfTextView.Object.GetAdornmentLayerNoThrow(s_layerName, s_layerKey));
             }
 
             /// <summary>
@@ -153,11 +153,11 @@ namespace Vim.VisualStudio.UnitTest
             [Fact]
             public void SecondTimeLayerNotPresent()
             {
-                _wpfTextView.Setup(x => x.GetAdornmentLayer(LayerName)).Throws(new Exception());
-                Assert.Null(_wpfTextView.Object.GetAdornmentLayerNoThrow(LayerName, LayerKey));
+                _wpfTextView.Setup(x => x.GetAdornmentLayer(s_layerName)).Throws(new Exception());
+                Assert.Null(_wpfTextView.Object.GetAdornmentLayerNoThrow(s_layerName, s_layerKey));
                 var calledAgain = false;
-                _wpfTextView.Setup(x => x.GetAdornmentLayer(LayerName)).Callback(() => { calledAgain = true; }).Throws(new Exception());
-                Assert.Null(_wpfTextView.Object.GetAdornmentLayerNoThrow(LayerName, LayerKey));
+                _wpfTextView.Setup(x => x.GetAdornmentLayer(s_layerName)).Callback(() => { calledAgain = true; }).Throws(new Exception());
+                Assert.Null(_wpfTextView.Object.GetAdornmentLayerNoThrow(s_layerName, s_layerKey));
                 Assert.False(calledAgain);
             }
 
@@ -165,8 +165,8 @@ namespace Vim.VisualStudio.UnitTest
             public void HasTheLayer()
             {
                 var layer = _factory.Create<IAdornmentLayer>().Object;
-                _wpfTextView.Setup(x => x.GetAdornmentLayer(LayerName)).Returns(layer);
-                Assert.Same(layer, _wpfTextView.Object.GetAdornmentLayerNoThrow(LayerName, LayerKey));
+                _wpfTextView.Setup(x => x.GetAdornmentLayer(s_layerName)).Returns(layer);
+                Assert.Same(layer, _wpfTextView.Object.GetAdornmentLayerNoThrow(s_layerName, s_layerKey));
             }
         }
     }

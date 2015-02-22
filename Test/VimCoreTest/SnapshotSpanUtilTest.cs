@@ -8,15 +8,15 @@ namespace Vim.UnitTest
 {
     public sealed class SnapshotSpanUtilTest : VimTestBase
     {
-        static string[] s_lines = new string[]
+        private static string[] s_lines = new string[]
             {
                 "summary description for this line",
                 "some other line",
                 "running out of things to make up"
             };
 
-        ITextBuffer _buffer = null;
-        ITextSnapshot _snapshot = null;
+        private ITextBuffer _buffer = null;
+        private ITextSnapshot _snapshot = null;
 
         public void Create(params string[] lines)
         {
@@ -358,6 +358,5 @@ namespace Vim.UnitTest
                 SnapshotSpanUtil.GetLinesAndEdges(span);
             }
         }
-
     }
 }

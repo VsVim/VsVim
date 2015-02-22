@@ -30,13 +30,13 @@ namespace Vim.UnitTest
 
         public abstract class ScrollOffsetTest : CommonOperationsIntegrationTest
         {
-            private static readonly string[] Lines = KeyInputUtilTest.CharLettersLower.Select(x => x.ToString()).ToArray();
+            private static readonly string[] s_lines = KeyInputUtilTest.CharLettersLower.Select(x => x.ToString()).ToArray();
             private readonly IFoldManager _foldManager;
             private readonly int _lastLineNumber = 0;
 
             protected ScrollOffsetTest()
             {
-                Create(Lines);
+                Create(s_lines);
                 _lastLineNumber = _textBuffer.CurrentSnapshot.LineCount - 1;
                 _textView.SetVisibleLineCount(5);
                 _foldManager = FoldManagerFactory.GetFoldManager(_textView);
@@ -374,7 +374,6 @@ namespace Vim.UnitTest
                     Assert.Equal(new string(' ', 4), text);
                 }
             }
-
         }
 
         public sealed class GetSpacesToPointTest : CommonOperationsIntegrationTest

@@ -543,7 +543,6 @@ namespace Vim.UnitTest
 
         public sealed class MiscTest : CommandRunnerTest
         {
-
             [Fact]
             public void Add1()
             {
@@ -689,7 +688,6 @@ namespace Vim.UnitTest
                     Assert.True(_runner.Run(cur).IsNeedMoreInput);
                     _runner.ResetState();
                 }
-
             }
 
             [Fact]
@@ -814,7 +812,6 @@ namespace Vim.UnitTest
                 _runner.Run(KeyInputUtil.EscapeKey);
                 Assert.False(didSee);
             }
-
         }
     }
 }

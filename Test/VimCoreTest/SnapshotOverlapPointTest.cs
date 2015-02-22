@@ -117,15 +117,15 @@ namespace Vim.UnitTest
                 [Fact]
                 public void Wide()
                 {
-                    Create("\tあcat");
+                    Create("\t\u3042cat");
                     var point = new SnapshotOverlapPoint(_textBuffer.GetPoint(1));
-                    AssertPoint(point, 'あ');
+                    AssertPoint(point, '\u3042');
                 }
 
                 [Fact]
                 public void EndOfBuffer()
                 {
-                    Create("\tあcat");
+                    Create("\t\u3042cat");
                     var point = new SnapshotOverlapPoint(_textBuffer.GetEndPoint());
                     Assert.Equal(0, point.Width);
                     Assert.Equal(0, point.SpacesAfter);

@@ -10,7 +10,6 @@ namespace Vim.VisualStudio
     /// </summary>
     public class ApplicationSettingsEventArgs : EventArgs
     {
-
     }
 
     public enum VimRcLoadSetting

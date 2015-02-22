@@ -101,7 +101,7 @@ namespace Vim.VisualStudio.Implementation.Misc
             _vim = vim;
         }
 
-        VimBufferCoordinator GetOrCreate(IVimBuffer vimBuffer)
+        private VimBufferCoordinator GetOrCreate(IVimBuffer vimBuffer)
         {
             return vimBuffer.Properties.GetOrCreateSingletonProperty(
                 _key,
@@ -124,5 +124,4 @@ namespace Vim.VisualStudio.Implementation.Misc
             return null;
         }
     }
-
 }

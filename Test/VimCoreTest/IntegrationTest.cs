@@ -11,7 +11,7 @@ namespace Vim.UnitTest
         private IVimBuffer _buffer;
         private IWpfTextView _textView;
 
-        static readonly string[] DefaultLines = new string[]
+        private static readonly string[] s_defaultLines = new string[]
             {
                 "summary description for this line",
                 "some other line",
@@ -26,7 +26,7 @@ namespace Vim.UnitTest
 
         public IntegrationTest()
         {
-            CreateBuffer(DefaultLines);
+            CreateBuffer(s_defaultLines);
         }
 
         #region Misc
@@ -182,7 +182,7 @@ namespace Vim.UnitTest
         [Fact]
         public void TestChar_dd_1()
         {
-            CreateBuffer(DefaultLines);
+            CreateBuffer(s_defaultLines);
             _textView.Caret.MoveTo(new SnapshotPoint(_textView.TextSnapshot, 0));
             var text = _textView.TextSnapshot.GetLineFromLineNumber(0).GetTextIncludingLineBreak();
             _buffer.Process("dd");
@@ -196,7 +196,7 @@ namespace Vim.UnitTest
         [Fact]
         public void TestChar_dw_1()
         {
-            CreateBuffer(DefaultLines);
+            CreateBuffer(s_defaultLines);
             _textView.Caret.MoveTo(new SnapshotPoint(_textView.TextSnapshot, 8));
             _buffer.Process("dw");
             var reg = _buffer.GetRegister(RegisterName.Unnamed);
@@ -209,7 +209,7 @@ namespace Vim.UnitTest
         [Fact]
         public void TestChar_dw_2()
         {
-            CreateBuffer(DefaultLines);
+            CreateBuffer(s_defaultLines);
             _textView.Caret.MoveTo(new SnapshotPoint(_textView.TextSnapshot, 8));
             _buffer.Process("\"cdw");
             var reg = _buffer.GetRegister('c');
@@ -334,7 +334,7 @@ namespace Vim.UnitTest
 
         #region # and *
 
-        static string[] s_lines2 = new string[]
+        private static string[] s_lines2 = new string[]
             {
                 "summary description for this line",
                 "some other line",

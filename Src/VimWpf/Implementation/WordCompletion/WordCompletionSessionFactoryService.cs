@@ -123,7 +123,6 @@ namespace Vim.UI.Wpf.Implementation.WordCompletion
 
             void IWordCompletionSession.Dismiss()
             {
-
             }
 
             event EventHandler IWordCompletionSession.Dismissed
@@ -253,6 +252,5 @@ namespace Vim.UI.Wpf.Implementation.WordCompletion
         }
 
         #endregion
-
     }
 }

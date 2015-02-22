@@ -36,7 +36,7 @@ namespace Vim.UnitTest
             {
                 Assert.True(result.IsMapped);
             }
-            else 
+            else
             {
                 Assert.True(result.IsPartiallyMapped);
                 Assert.Equal(lhs.FirstKeyInput.Value, result.AsPartiallyMapped().Item1.FirstKeyInput.Value);

@@ -36,7 +36,7 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
         {
             var classificationFormaptMap = _classificationFormatMapService.GetClassificationFormatMap(textView);
             var formatMap = _formatMapService.GetEditorFormatMap(textView);
-            return new BlockCaret(textView, BlockCaretAdornmentLayerName,  classificationFormaptMap, formatMap, _controlCharUtil, _protectedOperations);
+            return new BlockCaret(textView, BlockCaretAdornmentLayerName, classificationFormaptMap, formatMap, _controlCharUtil, _protectedOperations);
         }
 
         #region IVimBufferCreationListener

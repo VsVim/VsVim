@@ -48,13 +48,13 @@ namespace Vim.UI.Wpf.Implementation.Misc
             }
         }
 
-        private static readonly object Key = new object();
+        private static readonly object s_key = new object();
 
         private readonly MouseDevice _mouseDevice = InputManager.Current.PrimaryMouseDevice;
 
         private bool TryGetHandler(ITextView textView, out Handler handler)
         {
-            return textView.Properties.TryGetPropertySafe(Key, out handler);
+            return textView.Properties.TryGetPropertySafe(s_key, out handler);
         }
 
         public bool IsLeftButtonPressed
@@ -90,7 +90,7 @@ namespace Vim.UI.Wpf.Implementation.Misc
             if (!TryGetHandler(wpfTextView, out handler))
             {
                 handler = new Handler();
-                wpfTextView.Properties.AddProperty(Key, handler);
+                wpfTextView.Properties.AddProperty(s_key, handler);
             }
 
             return handler;

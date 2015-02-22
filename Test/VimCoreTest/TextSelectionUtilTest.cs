@@ -62,6 +62,5 @@ namespace Vim.UnitTest
             Assert.Equal(buffer.GetLineRange(0, 1).Extent, TextSelectionUtil.GetOverarchingSelectedSpan(_selection.Object).Value);
             _selection.Verify();
         }
-
     }
 }

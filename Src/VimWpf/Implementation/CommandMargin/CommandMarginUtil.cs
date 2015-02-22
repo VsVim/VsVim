@@ -12,7 +12,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
     [Export(typeof(ICommandMarginUtil))]
     internal sealed class CommandMarginUtil : ICommandMarginUtil
     {
-        CommandMarginProvider _provider;
+        private CommandMarginProvider _provider;
 
         [ImportingConstructor]
         internal CommandMarginUtil(CommandMarginProvider provider)

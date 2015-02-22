@@ -22,7 +22,6 @@ namespace Vim.UI.Wpf.UnitTest
                 IEditorOperationsFactoryService editorOperationsFactoryService) :
                 base(textBufferFactoryService, textEditorFactoryService, textDocumentFactoryService, editorOperationsFactoryService)
             {
-
             }
 
             public override void CloseAllOtherTabs(ITextView textView)
@@ -142,10 +141,11 @@ namespace Vim.UI.Wpf.UnitTest
             public void ItUsesWorkingDirectoryFromVimData()
             {
                 const string cwd = @"C:\Windows";
-                var vimHost = new Mock<VimHost>(Mock.Of<ITextBufferFactoryService>(), 
+                var vimHost = new Mock<VimHost>(Mock.Of<ITextBufferFactoryService>(),
                                           Mock.Of<ITextEditorFactoryService>(),
                                           Mock.Of<ITextDocumentFactoryService>(),
-                                          Mock.Of<IEditorOperationsFactoryService>()){CallBase = true}.Object;
+                                          Mock.Of<IEditorOperationsFactoryService>())
+                { CallBase = true }.Object;
                 var vimData = Mock.Of<IVimData>(x => x.CurrentDirectory == cwd);
 
                 vimHost.RunCommand("pwd", "", vimData);

@@ -4546,12 +4546,12 @@ namespace Vim.UnitTest
 
         public abstract class ScrollWindowTest : NormalModeIntegrationTest
         {
-            private static readonly string[] Lines = KeyInputUtilTest.CharLettersLower.Select(x => x.ToString()).ToArray();
+            private static readonly string[] s_lines = KeyInputUtilTest.CharLettersLower.Select(x => x.ToString()).ToArray();
             private readonly int _lastLineNumber = 0;
 
             protected ScrollWindowTest()
             {
-                Create(Lines);
+                Create(s_lines);
                 _lastLineNumber = _textBuffer.CurrentSnapshot.LineCount - 1;
                 _textView.SetVisibleLineCount(5);
                 _globalSettings.ScrollOffset = 1;
@@ -4659,12 +4659,12 @@ namespace Vim.UnitTest
 
         public sealed class ScrollOffsetTest : NormalModeIntegrationTest
         {
-            private static readonly string[] Lines = KeyInputUtilTest.CharLettersLower.Select(x => x.ToString()).ToArray();
+            private static readonly string[] s_lines = KeyInputUtilTest.CharLettersLower.Select(x => x.ToString()).ToArray();
             private readonly int _lastLineNumber = 0;
 
             public ScrollOffsetTest()
             {
-                Create(Lines);
+                Create(s_lines);
                 _lastLineNumber = _textBuffer.CurrentSnapshot.LineCount - 1;
                 _textView.SetVisibleLineCount(5);
                 _globalSettings.ScrollOffset = 2;
@@ -4845,7 +4845,7 @@ namespace Vim.UnitTest
 
                 _textView.MoveCaretTo(_textBuffer.GetLine(2).End);
                 _vimBuffer.ProcessNotation("dd");
-                Assert.Equal( new[] { "cat", "tree" }, _textBuffer.GetLines());
+                Assert.Equal(new[] { "cat", "tree" }, _textBuffer.GetLines());
             }
         }
 

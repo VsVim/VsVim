@@ -104,7 +104,7 @@ namespace Vim.VisualStudio.Implementation.OptionPages
 
             public override bool CanConvertFrom(ITypeDescriptorContext context, Type sourceType)
             {
-               return sourceType == typeof(string);
+                return sourceType == typeof(string);
             }
 
             public override object ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, object value)
@@ -140,9 +140,9 @@ namespace Vim.VisualStudio.Implementation.OptionPages
             {
                 var map = new Dictionary<VimRcLoadSetting, string>();
                 map.Add(VimRcLoadSetting.None, "No vsvimrc or vimrc files");
-                map.Add(VimRcLoadSetting.VsVimRc,"vsvimrc files only");
+                map.Add(VimRcLoadSetting.VsVimRc, "vsvimrc files only");
                 map.Add(VimRcLoadSetting.VimRc, "vimrc files only");
-                map.Add(VimRcLoadSetting.Both,"vsvimrc or vimrc files");
+                map.Add(VimRcLoadSetting.Both, "vsvimrc or vimrc files");
                 return map;
             }
         }
@@ -159,7 +159,7 @@ namespace Vim.VisualStudio.Implementation.OptionPages
                 map.Add(WordWrapDisplay.AutoIndent, "AutoIndent");
                 map.Add(WordWrapDisplay.Glyph, "Glyph");
                 map.Add(WordWrapDisplay.All, "AutoIndent + Glyph");
-               return map;
+                return map;
             }
         }
 
@@ -169,25 +169,25 @@ namespace Vim.VisualStudio.Implementation.OptionPages
         private const string CategoryColors = "Item Colors";
         private const string CategoryEditing = "Vim Edit Behavior";
 
-        private static readonly ColorKey IncrementalSearchColorKey = ColorKey.Background(VimConstants.IncrementalSearchTagName);
-        private static readonly ColorKey HighlightIncrementalSearchColorKey = ColorKey.Background(VimConstants.HighlightIncrementalSearchTagName);
-        private static readonly ColorKey BlockCaretColorKey = ColorKey.Foreground(VimWpfConstants.BlockCaretFormatDefinitionName);
-        private static readonly ColorKey ControlCharacterColorKey = ColorKey.Foreground(VimWpfConstants.ControlCharactersFormatDefinitionName);
-        private static readonly ColorKey CommandMarginForegroundColorKey = ColorKey.Foreground(VimWpfConstants.CommandMarginFormatDefinitionName);
-        private static readonly ColorKey CommandMarginBackgroundColorKey = ColorKey.Background(VimWpfConstants.CommandMarginFormatDefinitionName);
+        private static readonly ColorKey s_incrementalSearchColorKey = ColorKey.Background(VimConstants.IncrementalSearchTagName);
+        private static readonly ColorKey s_highlightIncrementalSearchColorKey = ColorKey.Background(VimConstants.HighlightIncrementalSearchTagName);
+        private static readonly ColorKey s_blockCaretColorKey = ColorKey.Foreground(VimWpfConstants.BlockCaretFormatDefinitionName);
+        private static readonly ColorKey s_controlCharacterColorKey = ColorKey.Foreground(VimWpfConstants.ControlCharactersFormatDefinitionName);
+        private static readonly ColorKey s_commandMarginForegroundColorKey = ColorKey.Foreground(VimWpfConstants.CommandMarginFormatDefinitionName);
+        private static readonly ColorKey s_commandMarginBackgroundColorKey = ColorKey.Background(VimWpfConstants.CommandMarginFormatDefinitionName);
 
-        private static readonly ReadOnlyCollection<ColorKey> ColorKeyList;
+        private static readonly ReadOnlyCollection<ColorKey> s_colorKeyList;
 
         static DefaultOptionPage()
         {
-            ColorKeyList = new ReadOnlyCollection<ColorKey>(new[]
+            s_colorKeyList = new ReadOnlyCollection<ColorKey>(new[]
             {
-                IncrementalSearchColorKey,
-                HighlightIncrementalSearchColorKey,
-                BlockCaretColorKey,
-                ControlCharacterColorKey,
-                CommandMarginForegroundColorKey,
-                CommandMarginBackgroundColorKey,
+                s_incrementalSearchColorKey,
+                s_highlightIncrementalSearchColorKey,
+                s_blockCaretColorKey,
+                s_controlCharacterColorKey,
+                s_commandMarginForegroundColorKey,
+                s_commandMarginBackgroundColorKey,
             });
         }
 
@@ -243,57 +243,57 @@ namespace Vim.VisualStudio.Implementation.OptionPages
         [Description("Controls how word wrap is displayed")]
         [Category(CategoryGeneral)]
         [TypeConverter(typeof(WordWrapDisplaySettingConverter))]
-        public WordWrapDisplay WordWrapDisplay { get; set; } 
+        public WordWrapDisplay WordWrapDisplay { get; set; }
 
         [DisplayName("Block Caret")]
         [Category(CategoryColors)]
         public Color BlockCaretColor
         {
-            get { return GetColor(BlockCaretColorKey); }
-            set { SetColor(BlockCaretColorKey, value); }
+            get { return GetColor(s_blockCaretColorKey); }
+            set { SetColor(s_blockCaretColorKey, value); }
         }
 
         [DisplayName("Incremental Search")]
         [Category(CategoryColors)]
         public Color IncrementalSearchColor
         {
-            get { return GetColor(IncrementalSearchColorKey); }
-            set { SetColor(IncrementalSearchColorKey, value); }
+            get { return GetColor(s_incrementalSearchColorKey); }
+            set { SetColor(s_incrementalSearchColorKey, value); }
         }
 
         [DisplayName("Highlight Incremental Search")]
         [Category(CategoryColors)]
-        public Color HilightIncrementalSearchColor 
+        public Color HilightIncrementalSearchColor
         {
-            get { return GetColor(HighlightIncrementalSearchColorKey); }
-            set { SetColor(HighlightIncrementalSearchColorKey, value); }
+            get { return GetColor(s_highlightIncrementalSearchColorKey); }
+            set { SetColor(s_highlightIncrementalSearchColorKey, value); }
         }
 
         [DisplayName("Control Characters")]
         [Category(CategoryColors)]
         public Color ControlCharacterColor
         {
-            get { return GetColor(ControlCharacterColorKey); }
-            set { SetColor(ControlCharacterColorKey, value); }
+            get { return GetColor(s_controlCharacterColorKey); }
+            set { SetColor(s_controlCharacterColorKey, value); }
         }
         [DisplayName("Command Margin Foreground Color")]
         [Category(CategoryColors)]
         public Color CommandMarginForegroundColor
         {
-            get { return GetColor(CommandMarginForegroundColorKey); }
-            set { SetColor(CommandMarginForegroundColorKey, value); }
+            get { return GetColor(s_commandMarginForegroundColorKey); }
+            set { SetColor(s_commandMarginForegroundColorKey, value); }
         }
         [DisplayName("Command Margin Background Color")]
         [Category(CategoryColors)]
         public Color CommandMarginBackgroundColor
         {
-            get { return GetColor(CommandMarginBackgroundColorKey); }
-            set { SetColor(CommandMarginBackgroundColorKey, value); }
+            get { return GetColor(s_commandMarginBackgroundColorKey); }
+            set { SetColor(s_commandMarginBackgroundColorKey, value); }
         }
 
         public DefaultOptionPage()
         {
-            foreach (var colorKey in ColorKeyList)
+            foreach (var colorKey in s_colorKeyList)
             {
                 _colorMap[colorKey] = new ColorInfo(colorKey, Color.Black);
             }
@@ -401,7 +401,7 @@ namespace Vim.VisualStudio.Implementation.OptionPages
 
         private void LoadColorsCore(IVsFontAndColorStorage vsStorage)
         {
-            foreach (var colorKey in ColorKeyList)
+            foreach (var colorKey in s_colorKeyList)
             {
                 ColorInfo colorInfo;
                 try

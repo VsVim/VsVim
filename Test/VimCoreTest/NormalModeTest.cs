@@ -22,7 +22,7 @@ namespace Vim.UnitTest
         private Mock<ICommandUtil> _commandUtil;
         private Register _unnamedRegister;
 
-        static readonly string[] DefaultLines = new[]
+        private static readonly string[] s_defaultLines = new[]
             {
                 "summary description for this line",
                 "some other line",
@@ -79,7 +79,7 @@ namespace Vim.UnitTest
         [Fact]
         public void ModeKindTest()
         {
-            Create(DefaultLines);
+            Create(s_defaultLines);
             Assert.Equal(ModeKind.Normal, _mode.ModeKind);
         }
 
@@ -89,7 +89,7 @@ namespace Vim.UnitTest
         [Fact]
         public void EnterProcessing()
         {
-            Create(DefaultLines);
+            Create(s_defaultLines);
             var can = _mode.CanProcess(KeyInputUtil.EnterKey);
             Assert.True(can);
         }
@@ -102,7 +102,7 @@ namespace Vim.UnitTest
         [Fact]
         public void CanProcess1()
         {
-            Create(DefaultLines);
+            Create(s_defaultLines);
             Assert.True(_mode.CanProcess(KeyInputUtil.CharToKeyInput('u')));
             Assert.True(_mode.CanProcess(KeyInputUtil.CharToKeyInput('h')));
             Assert.True(_mode.CanProcess(KeyInputUtil.CharToKeyInput('j')));
@@ -115,7 +115,7 @@ namespace Vim.UnitTest
         [Fact]
         public void CanProcess2()
         {
-            Create(DefaultLines);
+            Create(s_defaultLines);
             Assert.True(_mode.CanProcess(KeyInputUtil.CharToKeyInput('U')));
             Assert.True(_mode.CanProcess(KeyInputUtil.CharToKeyInput('Z')));
         }
@@ -126,7 +126,7 @@ namespace Vim.UnitTest
         [Fact]
         public void CanProcess3()
         {
-            Create(DefaultLines);
+            Create(s_defaultLines);
             foreach (var cur in Enumerable.Range(1, 8))
             {
                 var c = char.Parse(cur.ToString());
@@ -141,7 +141,7 @@ namespace Vim.UnitTest
         [Fact]
         public void CanProcess4()
         {
-            Create(DefaultLines);
+            Create(s_defaultLines);
             _incrementalSearch
                 .Setup(x => x.Begin(Path.Forward))
                 .Returns(VimUtil.CreateBindData<SearchResult>());
@@ -157,7 +157,7 @@ namespace Vim.UnitTest
         [Fact]
         public void CanProcess_AllCoreCharacters()
         {
-            Create(DefaultLines);
+            Create(s_defaultLines);
             foreach (var cur in KeyInputUtilTest.CharAll)
             {
                 var keyInput = KeyInputUtil.CharToKeyInput(cur);
@@ -168,7 +168,7 @@ namespace Vim.UnitTest
         [Fact]
         public void CanProcess_MovementKeys()
         {
-            Create(DefaultLines);
+            Create(s_defaultLines);
             Assert.True(_mode.CanProcess(KeyInputUtil.EnterKey));
             Assert.True(_mode.CanProcess(KeyInputUtil.TabKey));
         }
@@ -304,7 +304,7 @@ namespace Vim.UnitTest
         [Fact]
         public void Bind_Motion_Word()
         {
-            Create(DefaultLines);
+            Create(s_defaultLines);
             _commandUtil.SetupCommandNormal(NormalCommand.NewMoveCaretToMotion(Motion.NewWordForward(WordKind.NormalWord)));
             _mode.Process('w');
             _commandUtil.Verify();
@@ -313,7 +313,7 @@ namespace Vim.UnitTest
         [Fact]
         public void Bind_Motion_BigWord()
         {
-            Create(DefaultLines);
+            Create(s_defaultLines);
             _commandUtil.SetupCommandNormal(NormalCommand.NewMoveCaretToMotion(Motion.NewWordForward(WordKind.BigWord)));
             _mode.Process('W');
             _commandUtil.Verify();
@@ -322,7 +322,7 @@ namespace Vim.UnitTest
         [Fact]
         public void Bind_Motion_WordBackward()
         {
-            Create(DefaultLines);
+            Create(s_defaultLines);
             _commandUtil.SetupCommandNormal(NormalCommand.NewMoveCaretToMotion(Motion.NewWordBackward(WordKind.NormalWord)));
             _mode.Process('b');
             _commandUtil.Verify();
@@ -358,7 +358,7 @@ namespace Vim.UnitTest
         [Fact]
         public void Bind_Motion_LineOrFirst()
         {
-            Create(DefaultLines);
+            Create(s_defaultLines);
             _commandUtil.SetupCommandNormal(NormalCommand.NewMoveCaretToMotion(Motion.LineOrFirstToFirstNonBlank));
             _mode.Process(KeyNotationUtil.StringToKeyInput("<C-Home>"));
             _commandUtil.Verify();
@@ -880,7 +880,7 @@ namespace Vim.UnitTest
         [Fact]
         public void Process_EscapeShouldExitMotion()
         {
-            Create(DefaultLines);
+            Create(s_defaultLines);
             _mode.Process('d');
             Assert.True(_mode.CommandRunner.IsWaitingForMoreInput);
             _mode.Process(KeyInputUtil.EscapeKey);
@@ -1093,7 +1093,7 @@ namespace Vim.UnitTest
         [Fact]
         public void GoToDefinition2()
         {
-            Create(DefaultLines);
+            Create(s_defaultLines);
             var def = KeyInputUtil.CharWithControlToKeyInput(']');
             var name = KeyInputSet.NewOneKeyInput(def);
             Assert.True(_mode.CanProcess(def));
@@ -1308,7 +1308,7 @@ namespace Vim.UnitTest
         [Fact]
         public void Command4()
         {
-            Create(DefaultLines);
+            Create(s_defaultLines);
             _mode.Process('2');
             Assert.Equal("2", _mode.Command);
         }
@@ -1316,7 +1316,7 @@ namespace Vim.UnitTest
         [Fact]
         public void Command5()
         {
-            Create(DefaultLines);
+            Create(s_defaultLines);
             _mode.Process("2d");
             Assert.Equal("2d", _mode.Command);
         }
@@ -1476,7 +1476,7 @@ namespace Vim.UnitTest
         [Fact]
         public void Bind_I()
         {
-            Create(DefaultLines);
+            Create(s_defaultLines);
             _commandUtil.SetupCommandNormal(NormalCommand.InsertAtFirstNonBlank);
             _mode.Process('I');
             _commandUtil.Verify();
@@ -1543,7 +1543,7 @@ namespace Vim.UnitTest
         [Fact]
         public void Bind_OpenFoldUnderCaret()
         {
-            Create(DefaultLines);
+            Create(s_defaultLines);
             _commandUtil.SetupCommandNormal(NormalCommand.OpenFoldUnderCaret);
             _mode.Process("zo");
             _commandUtil.Verify();
@@ -1552,7 +1552,7 @@ namespace Vim.UnitTest
         [Fact]
         public void Bind_CloseFoldUnderCaret()
         {
-            Create(DefaultLines);
+            Create(s_defaultLines);
             _commandUtil.SetupCommandNormal(NormalCommand.CloseFoldUnderCaret);
             _mode.Process("zc");
             _commandUtil.Verify();

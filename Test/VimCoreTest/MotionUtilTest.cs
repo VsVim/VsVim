@@ -423,7 +423,6 @@ namespace Vim.UnitTest
                 var data = _motionUtil.QuotedStringContents('\'');
                 Assert.True(data.IsSome());
                 Assert.Equal("fish", data.value.Span.GetText());
-
             }
 
             [Fact]
@@ -2617,7 +2616,7 @@ namespace Vim.UnitTest
             [Fact]
             public void GetInnerBlock_ContentOnLineWithOpeningBracket()
             {
-                Create("[ dog", "  cat", "  ] ");    
+                Create("[ dog", "  cat", "  ] ");
                 var lines = _motionUtil.InnerBlock(_textBuffer.GetPointInLine(1, 1), BlockKind.Bracket, 1).Value.Span.GetText();
                 Assert.Equal(" dog" + Environment.NewLine + "  cat", lines);
             }
@@ -2628,7 +2627,7 @@ namespace Vim.UnitTest
             [Fact]
             public void GetInnerBlock_ContentOnLineWithClosingBracket()
             {
-                Create("[ ", "  cat", "  dog ] ");    
+                Create("[ ", "  cat", "  dog ] ");
                 var lines = _motionUtil.InnerBlock(_textBuffer.GetPointInLine(1, 1), BlockKind.Bracket, 1).Value.Span.GetText();
                 Assert.Equal(" " + Environment.NewLine + "  cat" + Environment.NewLine + "  dog ", lines);
             }

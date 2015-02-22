@@ -55,7 +55,6 @@ namespace Vim.VisualStudio.Implementation.Misc
             ISharedServiceFactory sharedServiceFactory,
             SVsServiceProvider serviceProvider) : this(adapter, textDocumentFactoryService, textBufferFactoryService, sharedServiceFactory.Create(), serviceProvider)
         {
-
         }
 
         internal TextManager(

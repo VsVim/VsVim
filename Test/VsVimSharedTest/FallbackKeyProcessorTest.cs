@@ -77,7 +77,6 @@ namespace Vim.VisualStudio.UnitTest
         {
             public VimBufferTest() : base(useVimBuffer: true)
             {
-
             }
 
             [Fact]
@@ -103,7 +102,6 @@ namespace Vim.VisualStudio.UnitTest
         {
             public TextViewOnlyTest() : base(useVimBuffer: false)
             {
-
             }
 
             [Fact]

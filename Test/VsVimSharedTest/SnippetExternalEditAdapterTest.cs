@@ -48,7 +48,7 @@ namespace Vim.VisualStudio.UnitTest
         public void IsExternalEditMarker_SnippetTypesAreExternalEdits()
         {
             Create("cat", "dog", "tree");
-            var array = new[] {15, 16, 26};
+            var array = new[] { 15, 16, 26 };
             foreach (var item in array)
             {
                 var span = _textBuffer.GetLineRange(0).Extent.ToTextSpan();
@@ -61,7 +61,7 @@ namespace Vim.VisualStudio.UnitTest
         public void IsExternalEditMarker_OtherTypesAreNotExternalEdits()
         {
             Create("cat", "dog", "tree");
-            var array = new[] {150, 160, 260, 25};
+            var array = new[] { 150, 160, 260, 25 };
             foreach (var item in array)
             {
                 var span = _textBuffer.GetLineRange(0).Extent.ToTextSpan();

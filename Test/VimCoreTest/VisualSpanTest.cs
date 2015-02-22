@@ -399,7 +399,7 @@ namespace Vim.UnitTest
                 [Fact]
                 public void Full()
                 {
-                    Create("big dog", "bあ cat", "bい tree", "bう fish");
+                    Create("big dog", "b\u3042 cat", "b\u3044 tree", "b\u3046 fish");
                     var blockSpan = _textBuffer.GetBlockSpan(column: 1, length: 2, startLine: 0, lineCount: 2, tabStop: _vimBuffer.LocalSettings.TabStop);
                     var spans = blockSpan.BlockOverlapSpans;
 
@@ -411,7 +411,7 @@ namespace Vim.UnitTest
 
                     var col = spans.ToReadOnlyCollection();
                     Assert.Equal("ig", col[0].GetText());
-                    Assert.Equal("あ", col[1].GetText());
+                    Assert.Equal("\u3042", col[1].GetText());
                 }
 
                 /// <summary>
@@ -420,7 +420,7 @@ namespace Vim.UnitTest
                 [Fact]
                 public void Partial()
                 {
-                    Create("aiueo", "あいうえお");
+                    Create("aiueo", "\u3042\u3044\u3046\u3048\u304A");
                     var blockSpan = _textBuffer.GetBlockSpan(column: 1, length: 2, startLine: 0, lineCount: 2, tabStop: _vimBuffer.LocalSettings.TabStop);
                     var col = blockSpan.BlockOverlapSpans.ToReadOnlyCollection();
 
@@ -431,7 +431,7 @@ namespace Vim.UnitTest
                     Assert.Equal(1, col[1].Start.SpacesBefore);
                     Assert.Equal(0, col[1].End.SpacesAfter);
                     Assert.Equal(1, col[1].End.SpacesBefore);
-                    Assert.Equal("あい", col[1].OverarchingSpan.GetText());
+                    Assert.Equal("\u3042\u3044", col[1].OverarchingSpan.GetText());
                 }
 
                 /// <summary>
