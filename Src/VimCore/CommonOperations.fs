@@ -562,6 +562,7 @@ type internal CommonOperations
     member x.MoveCaretToMotionResult (result : MotionResult) =
 
         let shouldMaintainCaretColumn = Util.IsFlagSet result.MotionResultFlags MotionResultFlags.MaintainCaretColumn
+        let wasEndOfLine = _maintainCaretColumn = MaintainCaretColumn.EndOfLine
         match shouldMaintainCaretColumn, result.CaretColumn with
         | true, CaretColumn.InLastLine column ->
             
@@ -581,14 +582,15 @@ type internal CommonOperations
             let caretColumn = 
                 let column = x.GetPointForSpaces visualLastLine caretColumnSpaces |> SnapshotPointUtil.GetColumn
                 CaretColumn.InLastLine column
-            let result = 
-                { result with DesiredColumn = caretColumn }
+            let result = { result with DesiredColumn = caretColumn }
 
             // Complete the motion with the updated value then reset the maintain caret.  Need
             // to do the save after the caret move since the move will clear out the saved value
             x.MoveCaretToMotionResultCore result 
             _maintainCaretColumn <-
                 if Util.IsFlagSet result.MotionResultFlags MotionResultFlags.EndOfLine then
+                    MaintainCaretColumn.EndOfLine
+                elif wasEndOfLine then
                     MaintainCaretColumn.EndOfLine
                 else
                     MaintainCaretColumn.Spaces caretColumnSpaces

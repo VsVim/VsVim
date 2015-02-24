@@ -666,7 +666,7 @@ type ISearchService =
     /// match anything at the provided start point.  That will be adjusted appropriately
     abstract FindNextPattern : searchPoint : SnapshotPoint -> searchPoint : SearchData -> navigator : ITextStructureNavigator -> count : int -> SearchResult
 
-/// Column information about the caret in relation to this Motion Result
+/// Column information about the caret in relation to this MotionResult
 [<RequireQualifiedAccess>]
 [<NoComparison>]
 type CaretColumn = 
