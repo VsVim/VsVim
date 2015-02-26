@@ -140,7 +140,7 @@ type internal CommandUtil
 
             // Need a transaction here in order to properly position the caret.  After the
             // add the caret needs to be positioned on the last character in the number
-            x.EditWithUndoTransaciton "Add" (fun () -> 
+            x.EditWithUndoTransaction "Add" (fun () -> 
 
                 _textBuffer.Replace(span.Span, text) |> ignore
 
@@ -259,7 +259,7 @@ type internal CommandUtil
             | None -> ()
 
         maybeMoveCaret()
-        x.EditWithUndoTransaciton "Change" (fun () ->
+        x.EditWithUndoTransaction "Change" (fun () ->
             x.ChangeCaseSpanCore kind (EditSpan.Single x.CaretLine.Extent)
             maybeMoveCaret())
 
@@ -271,7 +271,7 @@ type internal CommandUtil
         // The caret should be placed at the start of the motion for both
         // undo / redo so move before and inside the transaction
         TextViewUtil.MoveCaretToPoint _textView result.Span.Start
-        x.EditWithUndoTransaciton "Change" (fun () ->
+        x.EditWithUndoTransaction "Change" (fun () ->
             x.ChangeCaseSpanCore kind result.EditSpan
             TextViewUtil.MoveCaretToPosition _textView result.Span.Start.Position)
 
@@ -283,7 +283,7 @@ type internal CommandUtil
         // The caret should be placed after the caret point but only 
         // for redo.  Undo should move back to the current position so 
         // don't move until inside the transaction
-        x.EditWithUndoTransaciton "Change" (fun () ->
+        x.EditWithUndoTransaction "Change" (fun () ->
 
             let span = 
                 let endPoint = SnapshotLineUtil.GetColumnOrEnd (x.CaretColumn + count) x.CaretLine
@@ -306,7 +306,7 @@ type internal CommandUtil
         let point = visualSpan.Start
         let moveCaret () = TextViewUtil.MoveCaretToPosition _textView point.Position
         moveCaret()
-        x.EditWithUndoTransaciton "Change" (fun () ->
+        x.EditWithUndoTransaction "Change" (fun () ->
             x.ChangeCaseSpanCore kind visualSpan.EditSpan
             moveCaret())
 
@@ -593,7 +593,7 @@ type internal CommandUtil
 
             // Use a transaction so we can guarantee the caret is in the correct
             // position on undo / redo
-            x.EditWithUndoTransaciton "DeleteChar" (fun () -> 
+            x.EditWithUndoTransaction "DeleteChar" (fun () -> 
                 let position = x.CaretPoint.Position
                 let snapshot = TextBufferUtil.DeleteAndGetLatest _textBuffer span.Span
 
@@ -621,7 +621,7 @@ type internal CommandUtil
         // need to position the caret to the start of the span before the transaction to 
         // ensure it appears there during an undo
         TextViewUtil.MoveCaretToPoint _textView startPoint
-        x.EditWithUndoTransaciton "DeleteChar" (fun () ->
+        x.EditWithUndoTransaction "DeleteChar" (fun () ->
             let snapshot = TextBufferUtil.DeleteAndGetLatest _textBuffer span.Span
             TextViewUtil.MoveCaretToPosition _textView startPoint.Position)
 
@@ -665,7 +665,7 @@ type internal CommandUtil
         // Start a transaction so we can manipulate the caret position during 
         // an undo / redo
         let editSpan = 
-            x.EditWithUndoTransaciton "Delete" (fun () -> 
+            x.EditWithUndoTransaction "Delete" (fun () -> 
     
                 use edit = _textBuffer.CreateEdit()
                 let editSpan = 
@@ -721,7 +721,7 @@ type internal CommandUtil
         // Use a transaction to guarantee caret position.  Caret should be at the start
         // during undo and redo so move it before the edit
         TextViewUtil.MoveCaretToPoint _textView startPoint
-        x.EditWithUndoTransaciton "DeleteSelection" (fun () ->
+        x.EditWithUndoTransaction "DeleteSelection" (fun () ->
             use edit = _textBuffer.CreateEdit()
             visualSpan.OverlapSpans |> Seq.iter (fun overlapSpan ->
                 let span = overlapSpan.OverarchingSpan
@@ -803,7 +803,7 @@ type internal CommandUtil
         // Caret should be placed at the start of the motion for both undo / redo so place it 
         // before starting the transaction
         TextViewUtil.MoveCaretToPoint _textView span.Start
-        x.EditWithUndoTransaciton "Delete" (fun () ->
+        x.EditWithUndoTransaction "Delete" (fun () ->
             _textBuffer.Delete(span.Span) |> ignore
 
             // Get the point on the current ITextSnapshot
@@ -826,7 +826,7 @@ type internal CommandUtil
 
         // The caret is already at the start of the Span and it needs to be after the 
         // delete so wrap it in an undo transaction
-        x.EditWithUndoTransaciton "Delete" (fun () -> 
+        x.EditWithUndoTransaction "Delete" (fun () -> 
             x.DeleteTillEndOfLineCore count register
 
             // Move the caret back to the original position in the ITextBuffer.
@@ -856,7 +856,7 @@ type internal CommandUtil
 
     /// Run the specified action with a wrapped undo transaction.  This is often necessary when
     /// an edit command manipulates the caret
-    member x.EditWithUndoTransaciton<'T> (name : string) (action : unit -> 'T) : 'T = 
+    member x.EditWithUndoTransaction<'T> (name : string) (action : unit -> 'T) : 'T = 
         _undoRedoOperations.EditWithUndoTransaction name _textView action
 
     /// Used for the several commands which make an edit here and need the edit to be linked
@@ -865,7 +865,7 @@ type internal CommandUtil
         let transaction = _undoRedoOperations.CreateLinkedUndoTransaction name 
 
         try
-            x.EditWithUndoTransaciton name action
+            x.EditWithUndoTransaction name action
         with
             | _ ->
                 // If the above throws we can't leave the transaction open else it will
@@ -883,7 +883,7 @@ type internal CommandUtil
         let transaction = _undoRedoOperations.CreateLinkedUndoTransaction name
 
         try
-            x.EditWithUndoTransaciton name action
+            x.EditWithUndoTransaction name action
         with
             | _ ->
                 // If the above throws we can't leave the transaction open else it will
@@ -930,7 +930,7 @@ type internal CommandUtil
     member x.FormatLinesVisual (visualSpan: VisualSpan) =
 
         // Use a transaction so the formats occur as a single operation
-        x.EditWithUndoTransaciton "Format" (fun () ->
+        x.EditWithUndoTransaction "Format" (fun () ->
             visualSpan.Spans
             |> Seq.map SnapshotLineRangeUtil.CreateForSpan
             |> Seq.iter _commonOperations.FormatLines)
@@ -1132,7 +1132,7 @@ type internal CommandUtil
             // The caret should be positioned one after the second to last line in the 
             // join.  It should have it's original position during an undo so don't
             // move the caret until we're inside the transaction
-            x.EditWithUndoTransaciton "Join" (fun () -> 
+            x.EditWithUndoTransaction "Join" (fun () -> 
                 _commonOperations.Join range kind
                 x.MoveCaretFollowingJoin range)
 
@@ -1162,7 +1162,7 @@ type internal CommandUtil
         else 
             // The caret before the join should be positioned at the start of the VisualSpan
             TextViewUtil.MoveCaretToPoint _textView visualSpan.Start
-            x.EditWithUndoTransaciton "Join" (fun () -> 
+            x.EditWithUndoTransaction "Join" (fun () -> 
                 _commonOperations.Join range kind
                 x.MoveCaretFollowingJoin range)
 
@@ -1760,7 +1760,7 @@ type internal CommandUtil
 
         // The caret should be positioned at the current position in undo so don't move
         // it before the transaction.
-        x.EditWithUndoTransaciton "Put" (fun () -> 
+        x.EditWithUndoTransaction "Put" (fun () -> 
 
             _commonOperations.Put point stringData operationKind
 
@@ -1840,7 +1840,7 @@ type internal CommandUtil
                 // Cursor needs to be at the start of the span during undo and at the end
                 // of the pasted span after redo so move to the start before the undo transaction
                 TextViewUtil.MoveCaretToPoint _textView characterSpan.Start
-                x.EditWithUndoTransaciton "Put" (fun () ->
+                x.EditWithUndoTransaction "Put" (fun () ->
     
                     // Delete the span and move the caret back to the start of the 
                     // span in the new ITextSnapshot
@@ -1858,7 +1858,7 @@ type internal CommandUtil
                 // Cursor needs to be positioned at the start of the range for both undo so
                 // move the caret now 
                 TextViewUtil.MoveCaretToPoint _textView range.Start
-                x.EditWithUndoTransaciton "Put" (fun () ->
+                x.EditWithUndoTransaction "Put" (fun () ->
 
                     // When putting over a linewise selection the put needs to be done
                     // in a linewise fashion.  This means in certain cases we have to adjust
@@ -1890,7 +1890,7 @@ type internal CommandUtil
                 let col = blockSpan.BlockOverlapSpans
                 let span = col.Head
                 TextViewUtil.MoveCaretToPoint _textView span.Start.Point
-                x.EditWithUndoTransaciton "Put" (fun () ->
+                x.EditWithUndoTransaction "Put" (fun () ->
 
                     // Delete all of the items in the collection
                     use edit = _textBuffer.CreateEdit()
@@ -2158,7 +2158,7 @@ type internal CommandUtil
         else
             // Do the replace in an undo transaction since we are explicitly positioning
             // the caret
-            x.EditWithUndoTransaciton "ReplaceChar" (fun () -> replaceChar())
+            x.EditWithUndoTransaction "ReplaceChar" (fun () -> replaceChar())
             CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Replace the char under the cursor in visual mode.
@@ -2177,7 +2177,7 @@ type internal CommandUtil
         _textView.Selection.Clear()
         TextViewUtil.MoveCaretToPoint _textView visualSpan.Start
 
-        x.EditWithUndoTransaciton "ReplaceChar" (fun () -> 
+        x.EditWithUndoTransaction "ReplaceChar" (fun () -> 
             use edit = _textBuffer.CreateEdit()
             let builder = System.Text.StringBuilder()
 
@@ -2679,7 +2679,7 @@ type internal CommandUtil
     member x.ShiftLinesLeftCore range multiplier =
 
         // Use a transaction so the caret will be properly moved for undo / redo
-        x.EditWithUndoTransaciton "ShiftLeft" (fun () ->
+        x.EditWithUndoTransaction "ShiftLeft" (fun () ->
             _commonOperations.ShiftLineRangeLeft range multiplier
 
             // Now move the caret to the first non-whitespace character on the first
@@ -2696,7 +2696,7 @@ type internal CommandUtil
     member x.ShiftLinesRightCore range multiplier =
 
         // Use a transaction so the caret will be properly moved for undo / redo
-        x.EditWithUndoTransaciton "ShiftRight" (fun () ->
+        x.EditWithUndoTransaction "ShiftRight" (fun () ->
             _commonOperations.ShiftLineRangeRight range multiplier
 
             // Now move the caret to the first non-whitespace character on the first
@@ -2734,7 +2734,7 @@ type internal CommandUtil
             // Use a transaction to preserve the caret.  But move the caret first since
             // it needs to be undone to this location
             TextViewUtil.MoveCaretToPosition _textView targetCaretPosition
-            x.EditWithUndoTransaciton "ShiftLeft" (fun () -> 
+            x.EditWithUndoTransaction "ShiftLeft" (fun () -> 
                 _commonOperations.ShiftLineBlockRight blockSpan.BlockSpans count
                 TextViewUtil.MoveCaretToPosition _textView targetCaretPosition)
 
@@ -2766,7 +2766,7 @@ type internal CommandUtil
             // Use a transaction to preserve the caret.  But move the caret first since
             // it needs to be undone to this location
             TextViewUtil.MoveCaretToPosition _textView targetCaretPosition
-            x.EditWithUndoTransaciton "ShiftLeft" (fun () -> 
+            x.EditWithUndoTransaction "ShiftLeft" (fun () -> 
                 _commonOperations.ShiftLineBlockRight blockSpan.BlockSpans count
 
                 TextViewUtil.MoveCaretToPosition _textView targetCaretPosition)
@@ -2810,7 +2810,7 @@ type internal CommandUtil
     
                 // Use a transaction so we can guarantee the caret is in the correct
                 // position on undo / redo
-                x.EditWithUndoTransaciton "DeleteChar" (fun () -> 
+                x.EditWithUndoTransaction "DeleteChar" (fun () -> 
                     let position = x.CaretPoint.Position
                     let snapshot = TextBufferUtil.DeleteAndGetLatest _textBuffer span.Span
                     TextViewUtil.MoveCaretToPoint _textView (SnapshotPoint(snapshot, position)))
@@ -2886,7 +2886,7 @@ type internal CommandUtil
             |> SnapshotPointUtil.GetContainingLine
             |> SnapshotLineUtil.GetStart
             |> TextViewUtil.MoveCaretToPoint _textView
-            x.EditWithUndoTransaciton "Visual Insert" (fun _ -> ())
+            x.EditWithUndoTransaction "Visual Insert" (fun _ -> ())
             x.SwitchMode ModeKind.Insert ModeArgument.None
 
     /// Switch to the previous mode
