@@ -98,7 +98,7 @@ type TagBlockParser (snapshot : ITextSnapshot) =
 
     member x.ParseName startPosition = 
         let mutable position = startPosition
-        while x.TestPosition position (fun c -> CharUtil.IsLetterOrDigit c) do
+        while x.TestPosition position (fun c -> CharUtil.IsTagNameChar c) do
             position <- position + 1
 
         let length = position - startPosition
@@ -205,7 +205,7 @@ type TagBlockParser (snapshot : ITextSnapshot) =
         if x.TestPositionChar position '<' && x.TestPositionChar (position + 1) '/' then
             let textStartPosition = position + 2
             let mutable position = textStartPosition
-            while x.TestPosition position CharUtil.IsLetterOrDigit do
+            while x.TestPosition position CharUtil.IsTagNameChar do
                 position <- position + 1
 
             let length = position - textStartPosition
