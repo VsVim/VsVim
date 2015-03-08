@@ -80,6 +80,13 @@ namespace Vim.UnitTest
                 Assert.Equal("h2", tagBlock.Text);
                 Assert.Equal(0, tagBlock.Children.Count);
             }
+            [Fact]
+            public void OtherNameCharacters()
+            {
+                var tagBlock = Parse("<ns:some.tag_name>cat</ns:some.tag_name>").Single();
+                Assert.Equal("ns:some.tag_name", tagBlock.Text);
+                Assert.Equal(0, tagBlock.Children.Count);
+            }
         }
 
         public sealed class SpanTest : TagBlockParserTest
@@ -162,6 +169,14 @@ namespace Vim.UnitTest
             public void MultipleAttributes()
             {
                 var tagBlock = Parse("<a name1='foo' name2='bar'></a>").Single();
+                Assert.Equal("a", tagBlock.Text);
+                Assert.Equal(0, tagBlock.Children.Count);
+            }
+
+            [Fact]
+            public void OtherAttributeNameCharacters()
+            {
+                var tagBlock = Parse("<a ns:some.attr_name=\"1\">cat</a>").Single();
                 Assert.Equal("a", tagBlock.Text);
                 Assert.Equal(0, tagBlock.Children.Count);
             }
