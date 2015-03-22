@@ -593,6 +593,138 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class VisibleWindow : MotionUtilTest
+        {
+            [Fact]
+            public void LineFromTopOfVisibleWindow1()
+            {
+                var textView = CreateTextView("foo", "bar", "baz");
+                textView.SetVisibleLineRange(start: 0, length: 1);
+                Create(textView);
+                var data = _motionUtil.LineFromTopOfVisibleWindow(FSharpOption<int>.None).Value;
+                Assert.Equal(textView.TextBuffer.GetLineRange(0).Extent, data.Span);
+                Assert.True(data.MotionKind.IsLineWise);
+                Assert.True(data.IsForward);
+            }
+
+            [Fact]
+            public void LineFromTopOfVisibleWindow2()
+            {
+                var buffer = CreateTextBuffer("foo", "bar", "baz", "jazz");
+                var tuple = MockObjectFactory.CreateTextViewWithVisibleLines(buffer, 0, 2);
+                Create(tuple.Item1.Object);
+                var data = _motionUtil.LineFromTopOfVisibleWindow(FSharpOption.Create(2)).Value;
+                Assert.Equal(buffer.GetLineRange(0, 1).Extent, data.Span);
+                Assert.True(data.MotionKind.IsLineWise);
+                Assert.True(data.IsForward);
+            }
+
+            /// <summary>
+            /// From visible line not caret point
+            /// </summary>
+            [Fact]
+            public void LineFromTopOfVisibleWindow3()
+            {
+                var buffer = CreateTextBuffer("foo", "bar", "baz", "jazz");
+                var tuple = MockObjectFactory.CreateTextViewWithVisibleLines(buffer, 0, 2, caretPosition: buffer.GetLine(2).Start.Position);
+                Create(tuple.Item1.Object);
+                var data = _motionUtil.LineFromTopOfVisibleWindow(FSharpOption.Create(2)).Value;
+                Assert.Equal(buffer.GetLineRange(0, 1).Extent, data.Span);
+                Assert.True(data.MotionKind.IsLineWise);
+                Assert.False(data.IsForward);
+            }
+
+            [Fact]
+            public void LineFromTopOfVisibleWindow4()
+            {
+                var buffer = CreateTextBuffer("  foo", "bar");
+                var tuple = MockObjectFactory.CreateTextViewWithVisibleLines(buffer, 0, 1, caretPosition: buffer.GetLine(1).End);
+                Create(tuple.Item1.Object);
+                var data = _motionUtil.LineFromTopOfVisibleWindow(FSharpOption<int>.None).Value;
+                Assert.Equal(2, data.CaretColumn.AsInLastLine().Item);
+            }
+
+            [Fact]
+            public void LineFromTopOfVisibleWindow5()
+            {
+                var buffer = CreateTextBuffer("  foo", "bar");
+                var tuple = MockObjectFactory.CreateTextViewWithVisibleLines(buffer, 0, 1, caretPosition: buffer.GetLine(1).End);
+                Create(tuple.Item1.Object);
+                _globalSettings.StartOfLine = false;
+                var data = _motionUtil.LineFromTopOfVisibleWindow(FSharpOption<int>.None).Value;
+                Assert.True(data.CaretColumn.IsNone);
+            }
+
+            [Fact]
+            public void LineFromBottomOfVisibleWindow1()
+            {
+                var buffer = CreateTextBuffer("a", "b", "c", "d");
+                var tuple = MockObjectFactory.CreateTextViewWithVisibleLines(buffer, 0, 2);
+                Create(tuple.Item1.Object);
+                var data = _motionUtil.LineFromBottomOfVisibleWindow(FSharpOption<int>.None).Value;
+                Assert.Equal(new SnapshotSpan(_textBuffer.GetPoint(0), _textBuffer.GetLine(2).End), data.Span);
+                Assert.True(data.IsForward);
+                Assert.Equal(OperationKind.LineWise, data.OperationKind);
+            }
+
+            [Fact]
+            public void LineFromBottomOfVisibleWindow2()
+            {
+                var buffer = CreateTextBuffer("a", "b", "c", "d");
+                var tuple = MockObjectFactory.CreateTextViewWithVisibleLines(buffer, 0, 2);
+                Create(tuple.Item1.Object);
+                var data = _motionUtil.LineFromBottomOfVisibleWindow(FSharpOption.Create(2)).Value;
+                Assert.Equal(new SnapshotSpan(_textBuffer.GetPoint(0), _textBuffer.GetLine(1).End), data.Span);
+                Assert.True(data.IsForward);
+                Assert.Equal(OperationKind.LineWise, data.OperationKind);
+            }
+
+            [Fact]
+            public void LineFromBottomOfVisibleWindow3()
+            {
+                var buffer = CreateTextBuffer("a", "b", "c", "d");
+                var tuple = MockObjectFactory.CreateTextViewWithVisibleLines(buffer, 0, 2, caretPosition: buffer.GetLine(2).End);
+                Create(tuple.Item1.Object);
+                var data = _motionUtil.LineFromBottomOfVisibleWindow(FSharpOption.Create(2)).Value;
+                Assert.Equal(new SnapshotSpan(_textBuffer.GetLine(1).Start, _textBuffer.GetLine(2).End), data.Span);
+                Assert.False(data.IsForward);
+                Assert.Equal(OperationKind.LineWise, data.OperationKind);
+            }
+
+            [Fact]
+            public void LineFromBottomOfVisibleWindow4()
+            {
+                var buffer = CreateTextBuffer("a", "b", "  c", "d");
+                var tuple = MockObjectFactory.CreateTextViewWithVisibleLines(buffer, 0, 2);
+                Create(tuple.Item1.Object);
+                var data = _motionUtil.LineFromBottomOfVisibleWindow(FSharpOption<int>.None).Value;
+                Assert.Equal(2, data.CaretColumn.AsInLastLine().Item);
+            }
+
+            [Fact]
+            public void LineFromBottomOfVisibleWindow5()
+            {
+                var buffer = CreateTextBuffer("a", "b", "  c", "d");
+                var tuple = MockObjectFactory.CreateTextViewWithVisibleLines(buffer, 0, 2);
+                Create(tuple.Item1.Object);
+                _globalSettings.StartOfLine = false;
+                var data = _motionUtil.LineFromBottomOfVisibleWindow(FSharpOption<int>.None).Value;
+                Assert.True(data.CaretColumn.IsNone);
+            }
+
+            [Fact]
+            public void LineFromMiddleOfWindow1()
+            {
+                var buffer = CreateTextBuffer("a", "b", "c", "d");
+                var tuple = MockObjectFactory.CreateTextViewWithVisibleLines(buffer, 0, 2);
+                Create(tuple.Item1.Object);
+                var data = _motionUtil.LineInMiddleOfVisibleWindow();
+                Assert.Equal(new SnapshotSpan(_textBuffer.GetPoint(0), _textBuffer.GetLine(1).End), data.Value.Span);
+                Assert.Equal(OperationKind.LineWise, data.Value.OperationKind);
+            }
+
+        }
+
         public sealed class Misc : MotionUtilTest
         {
             [Fact]
@@ -1655,134 +1787,6 @@ namespace Vim.UnitTest
                 Assert.True(data.IsForward);
                 Assert.Equal(OperationKind.CharacterWise, data.OperationKind);
                 Assert.Equal(MotionKind.CharacterWiseInclusive, data.MotionKind);
-            }
-
-            [Fact]
-            public void LineFromTopOfVisibleWindow1()
-            {
-                var buffer = CreateTextBuffer("foo", "bar", "baz");
-                var tuple = MockObjectFactory.CreateTextViewWithVisibleLines(buffer, 0, 1);
-                Create(tuple.Item1.Object);
-                var data = _motionUtil.LineFromTopOfVisibleWindow(FSharpOption<int>.None).Value;
-                Assert.Equal(buffer.GetLineRange(0).Extent, data.Span);
-                Assert.True(data.MotionKind.IsLineWise);
-                Assert.True(data.IsForward);
-            }
-
-            [Fact]
-            public void LineFromTopOfVisibleWindow2()
-            {
-                var buffer = CreateTextBuffer("foo", "bar", "baz", "jazz");
-                var tuple = MockObjectFactory.CreateTextViewWithVisibleLines(buffer, 0, 2);
-                Create(tuple.Item1.Object);
-                var data = _motionUtil.LineFromTopOfVisibleWindow(FSharpOption.Create(2)).Value;
-                Assert.Equal(buffer.GetLineRange(0, 1).Extent, data.Span);
-                Assert.True(data.MotionKind.IsLineWise);
-                Assert.True(data.IsForward);
-            }
-
-            /// <summary>
-            /// From visible line not caret point
-            /// </summary>
-            [Fact]
-            public void LineFromTopOfVisibleWindow3()
-            {
-                var buffer = CreateTextBuffer("foo", "bar", "baz", "jazz");
-                var tuple = MockObjectFactory.CreateTextViewWithVisibleLines(buffer, 0, 2, caretPosition: buffer.GetLine(2).Start.Position);
-                Create(tuple.Item1.Object);
-                var data = _motionUtil.LineFromTopOfVisibleWindow(FSharpOption.Create(2)).Value;
-                Assert.Equal(buffer.GetLineRange(0, 1).Extent, data.Span);
-                Assert.True(data.MotionKind.IsLineWise);
-                Assert.False(data.IsForward);
-            }
-
-            [Fact]
-            public void LineFromTopOfVisibleWindow4()
-            {
-                var buffer = CreateTextBuffer("  foo", "bar");
-                var tuple = MockObjectFactory.CreateTextViewWithVisibleLines(buffer, 0, 1, caretPosition: buffer.GetLine(1).End);
-                Create(tuple.Item1.Object);
-                var data = _motionUtil.LineFromTopOfVisibleWindow(FSharpOption<int>.None).Value;
-                Assert.Equal(2, data.CaretColumn.AsInLastLine().Item);
-            }
-
-            [Fact]
-            public void LineFromTopOfVisibleWindow5()
-            {
-                var buffer = CreateTextBuffer("  foo", "bar");
-                var tuple = MockObjectFactory.CreateTextViewWithVisibleLines(buffer, 0, 1, caretPosition: buffer.GetLine(1).End);
-                Create(tuple.Item1.Object);
-                _globalSettings.StartOfLine = false;
-                var data = _motionUtil.LineFromTopOfVisibleWindow(FSharpOption<int>.None).Value;
-                Assert.True(data.CaretColumn.IsNone);
-            }
-
-            [Fact]
-            public void LineFromBottomOfVisibleWindow1()
-            {
-                var buffer = CreateTextBuffer("a", "b", "c", "d");
-                var tuple = MockObjectFactory.CreateTextViewWithVisibleLines(buffer, 0, 2);
-                Create(tuple.Item1.Object);
-                var data = _motionUtil.LineFromBottomOfVisibleWindow(FSharpOption<int>.None).Value;
-                Assert.Equal(new SnapshotSpan(_textBuffer.GetPoint(0), _textBuffer.GetLine(2).End), data.Span);
-                Assert.True(data.IsForward);
-                Assert.Equal(OperationKind.LineWise, data.OperationKind);
-            }
-
-            [Fact]
-            public void LineFromBottomOfVisibleWindow2()
-            {
-                var buffer = CreateTextBuffer("a", "b", "c", "d");
-                var tuple = MockObjectFactory.CreateTextViewWithVisibleLines(buffer, 0, 2);
-                Create(tuple.Item1.Object);
-                var data = _motionUtil.LineFromBottomOfVisibleWindow(FSharpOption.Create(2)).Value;
-                Assert.Equal(new SnapshotSpan(_textBuffer.GetPoint(0), _textBuffer.GetLine(1).End), data.Span);
-                Assert.True(data.IsForward);
-                Assert.Equal(OperationKind.LineWise, data.OperationKind);
-            }
-
-            [Fact]
-            public void LineFromBottomOfVisibleWindow3()
-            {
-                var buffer = CreateTextBuffer("a", "b", "c", "d");
-                var tuple = MockObjectFactory.CreateTextViewWithVisibleLines(buffer, 0, 2, caretPosition: buffer.GetLine(2).End);
-                Create(tuple.Item1.Object);
-                var data = _motionUtil.LineFromBottomOfVisibleWindow(FSharpOption.Create(2)).Value;
-                Assert.Equal(new SnapshotSpan(_textBuffer.GetLine(1).Start, _textBuffer.GetLine(2).End), data.Span);
-                Assert.False(data.IsForward);
-                Assert.Equal(OperationKind.LineWise, data.OperationKind);
-            }
-
-            [Fact]
-            public void LineFromBottomOfVisibleWindow4()
-            {
-                var buffer = CreateTextBuffer("a", "b", "  c", "d");
-                var tuple = MockObjectFactory.CreateTextViewWithVisibleLines(buffer, 0, 2);
-                Create(tuple.Item1.Object);
-                var data = _motionUtil.LineFromBottomOfVisibleWindow(FSharpOption<int>.None).Value;
-                Assert.Equal(2, data.CaretColumn.AsInLastLine().Item);
-            }
-
-            [Fact]
-            public void LineFromBottomOfVisibleWindow5()
-            {
-                var buffer = CreateTextBuffer("a", "b", "  c", "d");
-                var tuple = MockObjectFactory.CreateTextViewWithVisibleLines(buffer, 0, 2);
-                Create(tuple.Item1.Object);
-                _globalSettings.StartOfLine = false;
-                var data = _motionUtil.LineFromBottomOfVisibleWindow(FSharpOption<int>.None).Value;
-                Assert.True(data.CaretColumn.IsNone);
-            }
-
-            [Fact]
-            public void LineFromMiddleOfWindow1()
-            {
-                var buffer = CreateTextBuffer("a", "b", "c", "d");
-                var tuple = MockObjectFactory.CreateTextViewWithVisibleLines(buffer, 0, 2);
-                Create(tuple.Item1.Object);
-                var data = _motionUtil.LineInMiddleOfVisibleWindow();
-                Assert.Equal(new SnapshotSpan(_textBuffer.GetPoint(0), _textBuffer.GetLine(1).End), data.Value.Span);
-                Assert.Equal(OperationKind.LineWise, data.Value.OperationKind);
             }
 
             [Fact]
