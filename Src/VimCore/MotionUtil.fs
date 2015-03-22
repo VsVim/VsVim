@@ -823,9 +823,9 @@ type internal MotionUtil
     member x.GetSections sectionKind path point = 
         _textObjectUtil.GetSections sectionKind path point
 
-    member x.SpanAndForwardFromLines (line1:ITextSnapshotLine) (line2:ITextSnapshotLine) = 
-        if line1.LineNumber <= line2.LineNumber then SnapshotSpan(line1.Start, line2.End),true
-        else SnapshotSpan(line2.Start, line1.End),false
+    member x.SpanAndForwardFromLines (line1: ITextSnapshotLine) (line2: ITextSnapshotLine) = 
+        if line1.LineNumber <= line2.LineNumber then SnapshotSpan(line1.Start, line2.EndIncludingLineBreak), true
+        else SnapshotSpan(line2.Start, line1.EndIncludingLineBreak), false
 
     /// Apply the 'startofline' option to the given MotionResult.  This function must be 
     /// called with the MotionData mapped back to the edit snapshot
@@ -2221,15 +2221,14 @@ type internal MotionUtil
             if range.Count = 0 then
                 None
             else
-                let count = Util.CountOrDefault countOpt 
+                let count = (Util.CountOrDefault countOpt) - 1
                 let count = min count range.Count
                 let visualLine = SnapshotUtil.GetLine range.Snapshot (count + range.StartLineNumber)
                 match BufferGraphUtil.MapPointDownToSnapshotStandard _textView.BufferGraph visualLine.Start x.CurrentSnapshot with
                 | None -> None
                 | Some point -> 
-                    let startPoint, endPoint = SnapshotPointUtil.OrderAscending x.CaretPoint point
-                    let isForward = startPoint.Position = x.CaretPoint.Position
-                    let span = SnapshotSpan(startPoint, endPoint)
+                    let line = SnapshotPointUtil.GetContainingLine point
+                    let span, isForward = x.SpanAndForwardFromLines x.CaretLine line
                     MotionResult.Create span isForward MotionKind.LineWise
                     |> x.ApplyStartOfLineOption
                     |> Some
@@ -2244,17 +2243,15 @@ type internal MotionUtil
             if range.Count = 0 then 
                 None
             else
-                let number = 
-                    match countOpt with 
-                    | None -> range.LastLineNumber
-                    | Some count -> range.LastLineNumber - count
+                let count = (Util.CountOrDefault countOpt) - 1
+                let count = min count (range.Count - 1)
+                let number = range.LastLineNumber - count
                 let visualLine = SnapshotUtil.GetLine range.Snapshot number
                 match BufferGraphUtil.MapPointDownToSnapshotStandard _textView.BufferGraph visualLine.Start x.CurrentSnapshot with
                 | None -> None
                 | Some point -> 
-                    let startPoint, endPoint = SnapshotPointUtil.OrderAscending x.CaretPoint point
-                    let isForward = startPoint.Position = x.CaretPoint.Position
-                    let span = SnapshotSpan(startPoint, endPoint)
+                    let line = SnapshotPointUtil.GetContainingLine point
+                    let span, isForward = x.SpanAndForwardFromLines x.CaretLine line
                     MotionResult.Create span isForward MotionKind.LineWise
                     |> x.ApplyStartOfLineOption
                     |> Some

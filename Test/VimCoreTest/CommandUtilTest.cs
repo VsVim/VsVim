@@ -910,7 +910,7 @@ namespace Vim.UnitTest
             public ScrollPagesTest()
             {
                 Create("a", "b", "c", "d", "e");
-                _textView.SetVisibleLineCount(count: 1);
+                _textView.SetTextViewLineCount(count: 2);
             }
 
             [Fact]

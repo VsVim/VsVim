@@ -1099,15 +1099,90 @@ namespace Vim.UnitTest
         #region IWpfTextView
 
         /// <summary>
-        /// Make only a single line visible in the IWpfTextView.  This is really useful when testing
-        /// actions like scrolling
+        /// Set the number of visible lines to the specified count.  This will control the 
+        /// range between <see cref="ITextViewLineCollection.FirstVisibleLine"/> and 
+        /// <see cref="ITextViewLineCollection.LastVisibleLine"/>.  The <see cref="ITextViewLineCollection.Count"/>
+        /// value can potentially be greater than the specified <param name="count"/>.
         /// </summary>
         public static void SetVisibleLineCount(this IWpfTextView wpfTextView, int count)
         {
             var oldSize = wpfTextView.VisualElement.RenderSize;
             var height = wpfTextView.TextViewLines.FirstVisibleLine.Height * (double)count;
-            var size = new Size(oldSize.Width, height);
-            wpfTextView.VisualElement.RenderSize = size;
+
+            do
+            {
+                var size = new Size(oldSize.Width, height);
+                wpfTextView.VisualElement.RenderSize = size;
+                ForceLayout(wpfTextView);
+                
+                var startLine = wpfTextView.TextViewLines.FirstVisibleLine.Start.GetContainingLine();
+                var lastLine = wpfTextView.TextViewLines.LastVisibleLine.Start.GetContainingLine();
+                var visibleCount = (lastLine.LineNumber - startLine.LineNumber) + 1;
+
+                if (visibleCount == count)
+                {
+                    break;
+                }
+                else if (visibleCount < count)
+                {
+                    height += 5;
+                }
+                else
+                {
+                    height -= 5;
+                }
+            }
+            while (true);
+        }
+
+        /// <summary>
+        /// Set the <see cref="ITextViewLineCollection.Count"/> value.
+        /// </summary>
+        public static void SetTextViewLineCount(this IWpfTextView wpfTextView, int count)
+        {
+            var oldSize = wpfTextView.VisualElement.RenderSize;
+            var height = wpfTextView.TextViewLines.FirstVisibleLine.Height * (double)count;
+
+            do
+            {
+                var size = new Size(oldSize.Width, height);
+                wpfTextView.VisualElement.RenderSize = size;
+                ForceLayout(wpfTextView);
+
+                var visibleCount = wpfTextView.TextViewLines.Count;
+                if (visibleCount == count)
+                {
+                    break;
+                }
+                else if (visibleCount < count)
+                {
+                    height += 5;
+                }
+                else
+                {
+                    height -= 5;
+                }
+            }
+            while (true);
+        }
+
+        /// <summary>
+        /// Make only the specified line range visible.
+        /// </summary>
+        public static void SetVisibleLineRange(this IWpfTextView wpfTextView, int start, int length)
+        {
+            var startLine = wpfTextView.TextSnapshot.GetLineFromLineNumber(start);
+            wpfTextView.DisplayTextLineContainingBufferPosition(startLine.Start, 0, ViewRelativePosition.Top);
+            SetVisibleLineCount(wpfTextView, length);
+        }
+
+        public static void ForceLayout(this IWpfTextView wpfTextView)
+        {
+            var method = wpfTextView
+                .GetType()
+                .GetMethods(BindingFlags.NonPublic | BindingFlags.Instance)
+                .Single(x => x.Name == "PerformLayout" && x.GetParameters().Length == 2);
+            method.Invoke(wpfTextView, new[] { wpfTextView.TextSnapshot, wpfTextView.VisualSnapshot });
         }
 
         #endregion
