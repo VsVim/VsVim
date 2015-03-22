@@ -1,5 +1,6 @@
 ﻿using System;
 using System.ComponentModel.Composition;
+using System.Threading;
 using System.Windows;
 
 namespace Vim.UI.Wpf.Implementation.Misc
@@ -24,40 +25,72 @@ namespace Vim.UI.Wpf.Implementation.Misc
 
         private string GetText()
         {
-            try
-            {
-                var text = _useTextMethods
-                    ? Clipboard.GetText()
-                    : (string)Clipboard.GetData(DataFormats.UnicodeText);
+            string text = null;
+            Action action = () =>
+                {
+                    text = _useTextMethods
+                        ? Clipboard.GetText()
+                        : (string)Clipboard.GetData(DataFormats.UnicodeText);
+                };
 
-                return text ?? string.Empty;
-            }
-            catch (Exception ex)
+            if (!TryAccessClipboard(action))
             {
-                _protectedOperations.Report(ex);
-                _useTextMethods = false;
-                return string.Empty;
+                text = string.Empty;
             }
+
+            return text;
         }
 
         private void SetText(string text)
         {
-            try
-            {
-                if (_useTextMethods)
+            Action action = () =>
                 {
-                    Clipboard.SetText(text);
-                }
-                else
-                {
-                    Clipboard.SetDataObject(text);
-                }
-            }
-            catch (Exception ex)
+                    if (_useTextMethods)
+                    {
+                        Clipboard.SetText(text);
+                    }
+                    else
+                    {
+                        Clipboard.SetDataObject(text);
+                    }
+                };
+
+            TryAccessClipboard(action);
+        }
+
+        /// <summary>
+        /// The clipboard is a shared resource across all applications.  It can only be used 
+        /// by one application at a time and has no mechanism for synchronizing access.  
+        ///
+        /// Use of the clipboard should be short lived though so most applications guard 
+        /// against races by simply retrying the access a number of times.  This is how 
+        /// WinForms handles the race.  WPF does not do this hence we have to implement it 
+        /// manually here. 
+        /// </summary>
+        private bool TryAccessClipboard(Action action, int retryCount = 5, int pauseMilliseconds = 100)
+        {
+            var i = retryCount;
+            do
             {
-                _protectedOperations.Report(ex);
-                _useTextMethods = false;
-            }
+                try
+                {
+                    action();
+                    return true;
+                }
+                catch (Exception ex)
+                {
+                    i--;
+                    if (i == 0)
+                    {
+                        _protectedOperations.Report(ex);
+                        _useTextMethods = true;
+                        return false;
+                    }
+                }
+
+                Thread.Sleep(TimeSpan.FromMilliseconds(pauseMilliseconds));
+                i--;
+            } while (true);
         }
 
         #region IClipboardDevice
