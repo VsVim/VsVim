@@ -680,6 +680,9 @@ module internal NullableUtil =
     let Create (x : 'T) =
         System.Nullable<'T>(x)
 
+    let CreateNull<'T when 'T : (new : unit -> 'T) and 'T : struct and 'T :> System.ValueType> () =
+        System.Nullable<'T>()
+
     let ToOption (x : System.Nullable<_>) =
         if x.HasValue then
             Some x.Value

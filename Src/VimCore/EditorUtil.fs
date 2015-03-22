@@ -1496,13 +1496,34 @@ module TextViewUtil =
         | None -> 50
         | Some textViewLines -> textViewLines.Count
 
-    /// Return the overaching SnapshotLineRange for the visible lines in the ITextView
+    /// Return the overarching SnapshotLineRange for the visible lines in the ITextView
     let GetVisibleSnapshotLineRange (textView : ITextView) =
         Extensions.GetVisibleSnapshotLineRange(textView)
 
     /// Returns a sequence of ITextSnapshotLine values representing the visible lines in the buffer
     let GetVisibleSnapshotLines (textView : ITextView) =
         match GetVisibleSnapshotLineRange textView with
+        | NullableUtil.HasValue lineRange -> lineRange.Lines
+        | NullableUtil.Null -> Seq.empty
+
+    /// Returns the overarching SnapshotLineRange for the visible lines in the ITextView on the
+    /// Visual snapshot.
+    let GetVisibleVisualSnapshotLineRange (textView : ITextView) = 
+        match GetVisibleSnapshotLineRange textView with
+        | NullableUtil.Null -> NullableUtil.CreateNull<SnapshotLineRange>()
+        | NullableUtil.HasValue range ->
+            match BufferGraphUtil.MapSpanUpToSnapshot textView.BufferGraph range.ExtentIncludingLineBreak SpanTrackingMode.EdgeInclusive textView.TextViewModel.VisualBuffer.CurrentSnapshot with
+            | Some collection -> 
+                collection 
+                |> NormalizedSnapshotSpanCollectionUtil.GetOverarchingSpan 
+                |> SnapshotLineRange.CreateForSpan
+                |> NullableUtil.Create
+            | None -> NullableUtil.CreateNull<SnapshotLineRange>()
+
+    /// Returns a sequence of ITextSnapshotLine values representing the visible lines in the buffer
+    /// on the Visual snapshot
+    let GetVisibleVisualSnapshotLines (textView : ITextView) =
+        match GetVisibleVisualSnapshotLineRange textView with
         | NullableUtil.HasValue lineRange -> lineRange.Lines
         | NullableUtil.Null -> Seq.empty
 
