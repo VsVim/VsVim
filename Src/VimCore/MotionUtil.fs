@@ -2248,20 +2248,27 @@ type internal MotionUtil
         MotionResult.Create span isForward MotionKind.LineWise
         |> x.ApplyStartOfLineOption
 
-    // TODO: Need to convert this to use the visual snapshot
+    /// Motion to put the caret in the middle of the visible window.  
     member x.LineInMiddleOfVisibleWindow () =
         _jumpList.Add x.CaretPoint 
 
-        let caretLine = TextViewUtil.GetCaretLine _textView
-        let lines = TextViewUtil.GetVisibleSnapshotLines _textView |> List.ofSeq
-        let middleLine =
-            if lines.Length = 0 then caretLine
-            else 
-                let index = lines.Length / 2
-                List.nth lines index
-        let span, isForward = x.SpanAndForwardFromLines caretLine middleLine
-        MotionResult.Create span isForward MotionKind.LineWise
-        |> x.ApplyStartOfLineOption
+        match TextViewUtil.GetVisibleVisualSnapshotLineRange _textView with
+        | NullableUtil.Null -> None
+        | NullableUtil.HasValue range -> 
+            if range.Count = 0 then
+                None
+            else
+                let number = (range.Count / 2) + range.StartLineNumber
+                let middleVisualLine = SnapshotUtil.GetLine range.Snapshot number
+                let middleLine = 
+                    match BufferGraphUtil.MapPointDownToSnapshotStandard _textView.BufferGraph middleVisualLine.Start x.CurrentSnapshot with
+                    | None -> x.CaretLine
+                    | Some point -> SnapshotPointUtil.GetContainingLine point
+
+                let span, isForward = x.SpanAndForwardFromLines x.CaretLine middleLine
+                MotionResult.Create span isForward MotionKind.LineWise
+                |> x.ApplyStartOfLineOption
+                |> Some
 
     /// Implements the core portion of section backward motions
     member x.SectionBackwardCore sectionKind count = 
@@ -2637,7 +2644,7 @@ type internal MotionUtil
             | Motion.LineDownToFirstNonBlank -> x.LineDownToFirstNonBlank motionArgument.Count |> Some
             | Motion.LineFromBottomOfVisibleWindow -> x.LineFromBottomOfVisibleWindow motionArgument.RawCount |> Some
             | Motion.LineFromTopOfVisibleWindow -> x.LineFromTopOfVisibleWindow motionArgument.RawCount |> Some
-            | Motion.LineInMiddleOfVisibleWindow -> x.LineInMiddleOfVisibleWindow() |> Some
+            | Motion.LineInMiddleOfVisibleWindow -> x.LineInMiddleOfVisibleWindow() 
             | Motion.LineOrFirstToFirstNonBlank -> x.LineOrFirstToFirstNonBlank motionArgument.RawCount |> Some
             | Motion.LineOrLastToFirstNonBlank -> x.LineOrLastToFirstNonBlank motionArgument.RawCount |> Some
             | Motion.LineUp -> x.LineUp motionArgument.Count

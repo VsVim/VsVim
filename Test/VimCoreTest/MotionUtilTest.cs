@@ -1781,8 +1781,8 @@ namespace Vim.UnitTest
                 var tuple = MockObjectFactory.CreateTextViewWithVisibleLines(buffer, 0, 2);
                 Create(tuple.Item1.Object);
                 var data = _motionUtil.LineInMiddleOfVisibleWindow();
-                Assert.Equal(new SnapshotSpan(_textBuffer.GetPoint(0), _textBuffer.GetLine(1).End), data.Span);
-                Assert.Equal(OperationKind.LineWise, data.OperationKind);
+                Assert.Equal(new SnapshotSpan(_textBuffer.GetPoint(0), _textBuffer.GetLine(1).End), data.Value.Span);
+                Assert.Equal(OperationKind.LineWise, data.Value.OperationKind);
             }
 
             [Fact]
