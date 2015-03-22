@@ -1663,7 +1663,7 @@ namespace Vim.UnitTest
                 var buffer = CreateTextBuffer("foo", "bar", "baz");
                 var tuple = MockObjectFactory.CreateTextViewWithVisibleLines(buffer, 0, 1);
                 Create(tuple.Item1.Object);
-                var data = _motionUtil.LineFromTopOfVisibleWindow(FSharpOption<int>.None);
+                var data = _motionUtil.LineFromTopOfVisibleWindow(FSharpOption<int>.None).Value;
                 Assert.Equal(buffer.GetLineRange(0).Extent, data.Span);
                 Assert.True(data.MotionKind.IsLineWise);
                 Assert.True(data.IsForward);
@@ -1675,7 +1675,7 @@ namespace Vim.UnitTest
                 var buffer = CreateTextBuffer("foo", "bar", "baz", "jazz");
                 var tuple = MockObjectFactory.CreateTextViewWithVisibleLines(buffer, 0, 2);
                 Create(tuple.Item1.Object);
-                var data = _motionUtil.LineFromTopOfVisibleWindow(FSharpOption.Create(2));
+                var data = _motionUtil.LineFromTopOfVisibleWindow(FSharpOption.Create(2)).Value;
                 Assert.Equal(buffer.GetLineRange(0, 1).Extent, data.Span);
                 Assert.True(data.MotionKind.IsLineWise);
                 Assert.True(data.IsForward);
@@ -1690,7 +1690,7 @@ namespace Vim.UnitTest
                 var buffer = CreateTextBuffer("foo", "bar", "baz", "jazz");
                 var tuple = MockObjectFactory.CreateTextViewWithVisibleLines(buffer, 0, 2, caretPosition: buffer.GetLine(2).Start.Position);
                 Create(tuple.Item1.Object);
-                var data = _motionUtil.LineFromTopOfVisibleWindow(FSharpOption.Create(2));
+                var data = _motionUtil.LineFromTopOfVisibleWindow(FSharpOption.Create(2)).Value;
                 Assert.Equal(buffer.GetLineRange(0, 1).Extent, data.Span);
                 Assert.True(data.MotionKind.IsLineWise);
                 Assert.False(data.IsForward);
@@ -1702,7 +1702,7 @@ namespace Vim.UnitTest
                 var buffer = CreateTextBuffer("  foo", "bar");
                 var tuple = MockObjectFactory.CreateTextViewWithVisibleLines(buffer, 0, 1, caretPosition: buffer.GetLine(1).End);
                 Create(tuple.Item1.Object);
-                var data = _motionUtil.LineFromTopOfVisibleWindow(FSharpOption<int>.None);
+                var data = _motionUtil.LineFromTopOfVisibleWindow(FSharpOption<int>.None).Value;
                 Assert.Equal(2, data.CaretColumn.AsInLastLine().Item);
             }
 
@@ -1713,7 +1713,7 @@ namespace Vim.UnitTest
                 var tuple = MockObjectFactory.CreateTextViewWithVisibleLines(buffer, 0, 1, caretPosition: buffer.GetLine(1).End);
                 Create(tuple.Item1.Object);
                 _globalSettings.StartOfLine = false;
-                var data = _motionUtil.LineFromTopOfVisibleWindow(FSharpOption<int>.None);
+                var data = _motionUtil.LineFromTopOfVisibleWindow(FSharpOption<int>.None).Value;
                 Assert.True(data.CaretColumn.IsNone);
             }
 
@@ -1723,7 +1723,7 @@ namespace Vim.UnitTest
                 var buffer = CreateTextBuffer("a", "b", "c", "d");
                 var tuple = MockObjectFactory.CreateTextViewWithVisibleLines(buffer, 0, 2);
                 Create(tuple.Item1.Object);
-                var data = _motionUtil.LineFromBottomOfVisibleWindow(FSharpOption<int>.None);
+                var data = _motionUtil.LineFromBottomOfVisibleWindow(FSharpOption<int>.None).Value;
                 Assert.Equal(new SnapshotSpan(_textBuffer.GetPoint(0), _textBuffer.GetLine(2).End), data.Span);
                 Assert.True(data.IsForward);
                 Assert.Equal(OperationKind.LineWise, data.OperationKind);
@@ -1735,7 +1735,7 @@ namespace Vim.UnitTest
                 var buffer = CreateTextBuffer("a", "b", "c", "d");
                 var tuple = MockObjectFactory.CreateTextViewWithVisibleLines(buffer, 0, 2);
                 Create(tuple.Item1.Object);
-                var data = _motionUtil.LineFromBottomOfVisibleWindow(FSharpOption.Create(2));
+                var data = _motionUtil.LineFromBottomOfVisibleWindow(FSharpOption.Create(2)).Value;
                 Assert.Equal(new SnapshotSpan(_textBuffer.GetPoint(0), _textBuffer.GetLine(1).End), data.Span);
                 Assert.True(data.IsForward);
                 Assert.Equal(OperationKind.LineWise, data.OperationKind);
@@ -1747,7 +1747,7 @@ namespace Vim.UnitTest
                 var buffer = CreateTextBuffer("a", "b", "c", "d");
                 var tuple = MockObjectFactory.CreateTextViewWithVisibleLines(buffer, 0, 2, caretPosition: buffer.GetLine(2).End);
                 Create(tuple.Item1.Object);
-                var data = _motionUtil.LineFromBottomOfVisibleWindow(FSharpOption.Create(2));
+                var data = _motionUtil.LineFromBottomOfVisibleWindow(FSharpOption.Create(2)).Value;
                 Assert.Equal(new SnapshotSpan(_textBuffer.GetLine(1).Start, _textBuffer.GetLine(2).End), data.Span);
                 Assert.False(data.IsForward);
                 Assert.Equal(OperationKind.LineWise, data.OperationKind);
@@ -1759,7 +1759,7 @@ namespace Vim.UnitTest
                 var buffer = CreateTextBuffer("a", "b", "  c", "d");
                 var tuple = MockObjectFactory.CreateTextViewWithVisibleLines(buffer, 0, 2);
                 Create(tuple.Item1.Object);
-                var data = _motionUtil.LineFromBottomOfVisibleWindow(FSharpOption<int>.None);
+                var data = _motionUtil.LineFromBottomOfVisibleWindow(FSharpOption<int>.None).Value;
                 Assert.Equal(2, data.CaretColumn.AsInLastLine().Item);
             }
 
@@ -1770,7 +1770,7 @@ namespace Vim.UnitTest
                 var tuple = MockObjectFactory.CreateTextViewWithVisibleLines(buffer, 0, 2);
                 Create(tuple.Item1.Object);
                 _globalSettings.StartOfLine = false;
-                var data = _motionUtil.LineFromBottomOfVisibleWindow(FSharpOption<int>.None);
+                var data = _motionUtil.LineFromBottomOfVisibleWindow(FSharpOption<int>.None).Value;
                 Assert.True(data.CaretColumn.IsNone);
             }
 

@@ -2211,42 +2211,53 @@ type internal MotionUtil
             let span = SnapshotSpan(startPoint, endPoint)
             MotionResult.Create span isForward MotionKind.CharacterWiseInclusive)
 
-    // TODO: Need to convert this to use the visual snapshot
+    // Line from the top of the visual buffer
     member x.LineFromTopOfVisibleWindow countOpt = 
         _jumpList.Add x.CaretPoint 
 
-        let caretPoint, caretLine = TextViewUtil.GetCaretPointAndLine _textView
-        let lines = TextViewUtil.GetVisibleSnapshotLines _textView |> List.ofSeq
-        let span = 
-            if lines.Length = 0 then
-                caretLine.Extent
+        match TextViewUtil.GetVisibleVisualSnapshotLineRange _textView with 
+        | NullableUtil.Null -> None
+        | NullableUtil.HasValue range -> 
+            if range.Count = 0 then
+                None
             else
                 let count = Util.CountOrDefault countOpt 
-                let count = min count lines.Length
-                let startLine = lines.Head
-                SnapshotPointUtil.GetLineRangeSpan startLine.Start count
-        let isForward = caretPoint.Position <= span.End.Position
-        MotionResult.Create span isForward MotionKind.LineWise
-        |> x.ApplyStartOfLineOption
+                let count = min count range.Count
+                let visualLine = SnapshotUtil.GetLine range.Snapshot (count + range.StartLineNumber)
+                match BufferGraphUtil.MapPointDownToSnapshotStandard _textView.BufferGraph visualLine.Start x.CurrentSnapshot with
+                | None -> None
+                | Some point -> 
+                    let startPoint, endPoint = SnapshotPointUtil.OrderAscending x.CaretPoint point
+                    let isForward = startPoint.Position = x.CaretPoint.Position
+                    let span = SnapshotSpan(startPoint, endPoint)
+                    MotionResult.Create span isForward MotionKind.LineWise
+                    |> x.ApplyStartOfLineOption
+                    |> Some
 
-    // TODO: Need to convert this to use the visual snapshot
+    // Line from the top of the visual buffer
     member x.LineFromBottomOfVisibleWindow countOpt =
         _jumpList.Add x.CaretPoint 
 
-        let caretPoint,caretLine = TextViewUtil.GetCaretPointAndLine _textView
-        let lines = TextViewUtil.GetVisibleSnapshotLines _textView |> List.ofSeq
-        let span,isForward = 
-            if lines.Length = 0 then caretLine.Extent,true
+        match TextViewUtil.GetVisibleVisualSnapshotLineRange _textView with
+        | NullableUtil.Null -> None
+        | NullableUtil.HasValue range -> 
+            if range.Count = 0 then 
+                None
             else
-                let endLine = 
+                let number = 
                     match countOpt with 
-                    | None -> List.nth lines (lines.Length-1)
-                    | Some(count) ->    
-                        let count = lines.Length - count
-                        List.nth lines count
-                x.SpanAndForwardFromLines caretLine endLine
-        MotionResult.Create span isForward MotionKind.LineWise
-        |> x.ApplyStartOfLineOption
+                    | None -> range.LastLineNumber
+                    | Some count -> range.LastLineNumber - count
+                let visualLine = SnapshotUtil.GetLine range.Snapshot number
+                match BufferGraphUtil.MapPointDownToSnapshotStandard _textView.BufferGraph visualLine.Start x.CurrentSnapshot with
+                | None -> None
+                | Some point -> 
+                    let startPoint, endPoint = SnapshotPointUtil.OrderAscending x.CaretPoint point
+                    let isForward = startPoint.Position = x.CaretPoint.Position
+                    let span = SnapshotSpan(startPoint, endPoint)
+                    MotionResult.Create span isForward MotionKind.LineWise
+                    |> x.ApplyStartOfLineOption
+                    |> Some
 
     /// Motion to put the caret in the middle of the visible window.  
     member x.LineInMiddleOfVisibleWindow () =
@@ -2642,8 +2653,8 @@ type internal MotionUtil
             | Motion.LastSearch isReverse -> x.LastSearch isReverse motionArgument.Count
             | Motion.LineDown -> x.LineDown motionArgument.Count
             | Motion.LineDownToFirstNonBlank -> x.LineDownToFirstNonBlank motionArgument.Count |> Some
-            | Motion.LineFromBottomOfVisibleWindow -> x.LineFromBottomOfVisibleWindow motionArgument.RawCount |> Some
-            | Motion.LineFromTopOfVisibleWindow -> x.LineFromTopOfVisibleWindow motionArgument.RawCount |> Some
+            | Motion.LineFromBottomOfVisibleWindow -> x.LineFromBottomOfVisibleWindow motionArgument.RawCount 
+            | Motion.LineFromTopOfVisibleWindow -> x.LineFromTopOfVisibleWindow motionArgument.RawCount 
             | Motion.LineInMiddleOfVisibleWindow -> x.LineInMiddleOfVisibleWindow() 
             | Motion.LineOrFirstToFirstNonBlank -> x.LineOrFirstToFirstNonBlank motionArgument.RawCount |> Some
             | Motion.LineOrLastToFirstNonBlank -> x.LineOrLastToFirstNonBlank motionArgument.RawCount |> Some
