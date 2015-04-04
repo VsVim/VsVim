@@ -120,7 +120,7 @@ type internal MotionCapture
                 yield ("])", MotionFlags.CaretMovement, Motion.UnmatchedToken (Path.Forward, UnmatchedTokenKind.Paren))
                 yield ("]}", MotionFlags.CaretMovement, Motion.UnmatchedToken (Path.Forward, UnmatchedTokenKind.CurlyBracket))
                 yield (";", MotionFlags.CaretMovement, Motion.RepeatLastCharSearch)
-                yield ("%", MotionFlags.CaretMovement, Motion.MatchingToken)
+                yield ("%", MotionFlags.CaretMovement, Motion.MatchingTokenOrDocumentPercent)
                 yield (",", MotionFlags.CaretMovement, Motion.RepeatLastCharSearchOpposite)
                 yield ("*", MotionFlags.CaretMovement, Motion.NextWord Path.Forward)
                 yield ("#", MotionFlags.CaretMovement, Motion.NextWord Path.Backward)
