@@ -5784,6 +5784,53 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class DocumentPercentMotionTest : NormalModeIntegrationTest
+        {
+            private void CreateTenWords()
+            {
+                Create("dog", "cat", "fish", "bear", "tree", "dog", "cat", "fish", "bear", "tree");
+            }
+
+            private void AssertPercentLine(int number, int expected)
+            {
+                var motion = string.Format("{0}%", number);
+                _vimBuffer.ProcessNotation(motion);
+
+                var lineNumber = _textView.GetCaretLine().LineNumber + 1; // 0 based editor
+                Assert.Equal(expected, lineNumber);
+            }
+
+            [Fact]
+            public void TenWords()
+            {
+                CreateTenWords();
+
+                AssertPercentLine(1, 1);
+                AssertPercentLine(10, 1);
+                AssertPercentLine(60, 6);
+                AssertPercentLine(80, 8);
+                AssertPercentLine(100, 10);
+            }
+
+            [Fact]
+            public void AlwaysRoundAwayFromZero()
+            {
+                CreateTenWords();
+
+                AssertPercentLine(11, 2);
+                AssertPercentLine(91, 10);
+            }
+
+            [Fact]
+            public void MoreThan100PercentIsAnError()
+            {
+                CreateTenWords();
+
+                _textView.MoveCaretToLine(3);
+                AssertPercentLine(120, 4);
+            }
+        }
+
         public sealed class MiscTest : NormalModeIntegrationTest
         {
             /// <summary>
