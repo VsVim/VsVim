@@ -1052,7 +1052,7 @@ type Motion =
 
     /// Get the matching token from the next token on the line.  This is used to implement
     /// the % motion
-    /// TODO: comment here
+    /// If a number is specified, go to {count} percentage in the file
     | MatchingTokenOrDocumentPercent 
 
     /// Search for the next occurrence of the word under the caret
