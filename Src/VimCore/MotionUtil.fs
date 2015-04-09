@@ -1241,6 +1241,23 @@ type internal MotionUtil
                 |> CaretColumn.InLastLine
             MotionResult.CreateExEx range.ExtentIncludingLineBreak isForward MotionKind.LineWise MotionResultFlags.None column |> Some
 
+    member x.MatchingTokenOrDocumentPercent numberOpt = 
+        match numberOpt with
+        | Some 0 -> None
+        | Some x when x > 100 -> None
+        | Some count -> 
+            _jumpList.Add x.CaretPoint
+
+            let lineCount = x.CurrentSnapshot.LineCount
+            let line = (count * lineCount + 99) / 100
+
+            line
+            |> Util.VimLineToTssLine
+            |> x.CurrentSnapshot.GetLineFromLineNumber
+            |> x.LineToLineFirstNonBlankMotion x.CaretLine
+            |> Some
+        | None -> x.MatchingToken()
+
     /// Find the matching token for the next token on the current line 
     member x.MatchingToken() = 
 
@@ -2659,7 +2676,7 @@ type internal MotionUtil
             | Motion.LineUpToFirstNonBlank -> x.LineUpToFirstNonBlank motionArgument.Count |> Some
             | Motion.Mark localMark -> x.Mark localMark
             | Motion.MarkLine localMark -> x.MarkLine localMark
-            | Motion.MatchingToken -> x.MatchingToken()
+            | Motion.MatchingTokenOrDocumentPercent -> x.MatchingTokenOrDocumentPercent motionArgument.RawCount
             | Motion.NextPartialWord path -> x.NextPartialWord path motionArgument.Count
             | Motion.NextWord path -> x.NextWord path motionArgument.Count
             | Motion.ParagraphBackward -> x.ParagraphBackward motionArgument.Count |> Some
