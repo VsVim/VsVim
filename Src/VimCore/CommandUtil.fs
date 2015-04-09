@@ -1923,9 +1923,7 @@ type internal CommandUtil
     member x.PrintFileInformation() =
         let filePath = _vimHost.GetName _textBuffer
         let lineCount = _textBuffer.CurrentSnapshot.LineCount
-        let percent = 
-            let caretLine = x.CaretLineNumber
-            int ((single caretLine) / (single lineCount))
+        let percent = x.CaretLineNumber * 100 / lineCount
         let msg = sprintf "%s %d lines --%d%%--" filePath lineCount percent
         _statusUtil.OnStatus msg
         CommandResult.Completed ModeSwitch.NoSwitch
