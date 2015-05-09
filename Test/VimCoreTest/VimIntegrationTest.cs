@@ -153,15 +153,15 @@ namespace Vim.UnitTest
                 _globalSettings = Vim.GlobalSettings;
                 _fileSystem = new Mock<IFileSystem>();
                 _fileSystem.Setup(x => x.GetVimRcDirectories()).Returns(new string[] { });
-                _originalFileSystem = _vim._fileSystem;
-                _vim._fileSystem = _fileSystem.Object;
+                _originalFileSystem = _vim.FileSystem;
+                _vim.FileSystem = _fileSystem.Object;
                 VimHost.CreateHiddenTextViewFunc = () => TextEditorFactoryService.CreateTextView();
             }
 
             public override void Dispose()
             {
                 base.Dispose();
-                _vim._fileSystem = _originalFileSystem;
+                _vim.FileSystem = _originalFileSystem;
             }
 
             private void Run(string vimRcText)

@@ -354,6 +354,8 @@ type internal Vim
     /// Whether or not Vim is currently in disabled mode
     let mutable _isDisabled = false
 
+    let mutable _fileSystem = _fileSystem
+
     let _registerMap =
         let currentFileNameFunc() = 
             match _activeBufferStack with
@@ -432,6 +434,10 @@ type internal Vim
     member x.AutoLoadVimRc 
         with get () = _autoLoadVimRc
         and set value = _autoLoadVimRc <- value
+
+    member x.FileSystem
+        with get () = _fileSystem
+        and set value = _fileSystem <- value 
 
     member x.IsDisabled 
         with get () = _isDisabled
