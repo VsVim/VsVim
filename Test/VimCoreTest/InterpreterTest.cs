@@ -5,6 +5,7 @@ using EditorUtils;
 using Microsoft.FSharp.Collections;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
+using Moq;
 using Vim.Extensions;
 using Vim.Interpreter;
 using Vim.UnitTest.Mock;
@@ -255,6 +256,42 @@ namespace Vim.UnitTest
                 VimHost.IsDirtyFunc = delegate { return true; };
                 ParseAndRun("e!");
                 Assert.True(_didReloadRun);
+            }
+        }
+
+        public sealed class SourceTest : InterpreterTest
+        {
+            private readonly Mock<IFileSystem> _fileSysetm;
+
+            public SourceTest()
+            {
+                Create();
+                _fileSysetm = new Mock<IFileSystem>(MockBehavior.Strict);
+                _interpreter._fileSystem = _fileSysetm.Object;
+                ((Vim)Vim).FileSystem = _fileSysetm.Object;
+            }
+
+            private void SetText(string fileName, params string[] lines)
+            {
+                _fileSysetm
+                    .Setup(x => x.ReadAllLines(fileName))
+                    .Returns(FSharpOption.Create(lines));
+            }
+
+            [Fact]
+            public void Simple()
+            {
+                SetText("test.txt", ":set ts=12");
+                ParseAndRun(":source test.txt");
+                Assert.Equal(12, _vimBuffer.LocalSettings.TabStop);
+            }
+
+            [Fact]
+            public void Issue1595()
+            {
+                SetText("test.txt", ":set ts=12");
+                ParseAndRun(":source test.txt\t\"several windows key bindings");
+                Assert.Equal(12, _vimBuffer.LocalSettings.TabStop);
             }
         }
 

@@ -1936,6 +1936,7 @@ type Parser
         let hasBang = x.ParseBang()
         x.SkipBlanks()
         let fileName = x.ParseRestOfLine()
+        let fileName = fileName.Trim()
         LineCommand.Source (hasBang, fileName)
 
     /// Parse out the :split command
