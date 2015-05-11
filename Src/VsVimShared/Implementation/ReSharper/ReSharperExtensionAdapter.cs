@@ -56,7 +56,9 @@ namespace Vim.VisualStudio.Implementation.ReSharper
             }
 
             var comparer = StringComparer.OrdinalIgnoreCase;
-            return comparer.Equals(command, "ReSharper.ReSharper_ExtendSelection");
+            return
+                comparer.Equals(command, "ReSharper.ReSharper_ExtendSelection") ||
+                comparer.Equals(command, "ReSharper.ReSharper_SurroundWith");
         }
 
         bool? IExtensionAdapter.ShouldCreateVimBuffer(ITextView textView)
