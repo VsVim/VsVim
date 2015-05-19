@@ -136,6 +136,8 @@ type IWordUtil =
 /// Used to display a word completion list to the user
 type IWordCompletionSession =
 
+    inherit IPropertyOwner
+
     /// Is the session dismissed
     abstract IsDismissed : bool
 

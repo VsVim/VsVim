@@ -115,6 +115,7 @@ namespace Vim.UI.Wpf.Implementation.WordCompletion
         private sealed class DismissedWordCompletionSession : IWordCompletionSession
         {
             private readonly ITextView _textView;
+            private readonly PropertyCollection _properties = new PropertyCollection();
 
             internal DismissedWordCompletionSession(ITextView textView)
             {
@@ -149,6 +150,11 @@ namespace Vim.UI.Wpf.Implementation.WordCompletion
             ITextView IWordCompletionSession.TextView
             {
                 get { return _textView; }
+            }
+
+            PropertyCollection IPropertyOwner.Properties
+            {
+                get { return _properties; }
             }
         }
 
