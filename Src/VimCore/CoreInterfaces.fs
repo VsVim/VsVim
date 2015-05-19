@@ -136,6 +136,8 @@ type IWordUtil =
 /// Used to display a word completion list to the user
 type IWordCompletionSession =
 
+    inherit IPropertyOwner
+
     /// Is the session dismissed
     abstract IsDismissed : bool
 
@@ -153,13 +155,22 @@ type IWordCompletionSession =
 
     /// Raised when the session is dismissed
     [<CLIEvent>]
-    abstract Dismissed: IDelegateEvent<System.EventHandler>
+    abstract Dismissed : IDelegateEvent<System.EventHandler>
+
+type WordCompletionSessionEventArgs(_wordCompletionSession : IWordCompletionSession) =
+    inherit System.EventArgs()
+
+    member x.WordCompletionSession = _wordCompletionSession
 
 /// Factory service for creating IWordCompletionSession instances
 type IWordCompletionSessionFactoryService = 
 
     /// Create a session with the given set of words
     abstract CreateWordCompletionSession : textView : ITextView -> wordSpan : SnapshotSpan -> words : string seq -> isForward : bool -> IWordCompletionSession
+
+    /// Raised when the session is created
+    [<CLIEvent>]
+    abstract Created : IDelegateEvent<System.EventHandler<WordCompletionSessionEventArgs>>
 
 /// Wraps an ITextUndoTransaction so we can avoid all of the null checks
 type IUndoTransaction =
