@@ -162,6 +162,8 @@ namespace Vim.UI.Wpf.Implementation.WordCompletion
         private readonly ICompletionBroker _completionBroker;
         private readonly IIntellisenseSessionStackMapService _intellisenseSessionStackMapService;
 
+        private event EventHandler<WordCompletionSessionEventArgs> _createdEvent = delegate { };
+
         /// <summary>
         /// This is inserted into every ICompletionSession property bag which is created for
         /// a word completion.  It's used to identify all ICompletionSession values which are 
@@ -174,6 +176,12 @@ namespace Vim.UI.Wpf.Implementation.WordCompletion
         {
             _completionBroker = completionBroker;
             _intellisenseSessionStackMapService = intellisenseSessionStackMapService;
+        }
+
+        private void RaiseCompleted(IWordCompletionSession wordCompletionSession)
+        {
+            var args = new WordCompletionSessionEventArgs(wordCompletionSession);
+            _createdEvent(this, args);
         }
 
         #region IWordCompletionSessionFactoryService
@@ -234,12 +242,20 @@ namespace Vim.UI.Wpf.Implementation.WordCompletion
                 var command = isForward ? IntellisenseKeyboardCommand.TopLine : IntellisenseKeyboardCommand.BottomLine;
                 wordCompletionSession.SendCommand(command);
 
+                RaiseCompleted(wordCompletionSession);
+
                 return wordCompletionSession;
             }
             finally
             {
                 textView.Properties.RemoveProperty(_completionDataKey);
             }
+        }
+
+        event EventHandler<WordCompletionSessionEventArgs> IWordCompletionSessionFactoryService.Created
+        {
+            add { _createdEvent += value; }
+            remove { _createdEvent -= value; }
         }
 
         #endregion
