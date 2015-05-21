@@ -3818,6 +3818,9 @@ type IVimHost =
     /// Is auto-command enabled for this host
     abstract IsAutoCommandEnabled : bool
 
+    /// Is undo / redo expected at this point in time due to a host operation.
+    abstract IsUndoRedoExpected : bool 
+
     /// Get the count of window tabs that are active in the host. This refers to tabs for actual 
     /// edit windows, not anything to do with tabs in the text file.  If window tabs are not supported 
     /// then -1 should be returned

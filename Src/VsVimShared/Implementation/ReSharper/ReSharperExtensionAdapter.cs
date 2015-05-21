@@ -48,6 +48,11 @@ namespace Vim.VisualStudio.Implementation.ReSharper
 
         #region IExtensionAdapter
 
+        bool? IExtensionAdapter.IsUndoRedoExpected
+        {
+            get { return null; }
+        }
+
         bool? IExtensionAdapter.ShouldKeepSelectionAfterHostCommand(string command, string argument)
         {
             if (!_reSharperUtil.IsInstalled)

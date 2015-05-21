@@ -9,11 +9,13 @@ using Microsoft.VisualStudio.Text.Tagging;
 using Microsoft.VisualStudio.TextManager.Interop;
 using Vim;
 using Vim.Extensions;
-using Vim.UI.Wpf;
 using EditorUtils;
 
 namespace Vim.VisualStudio.Implementation.ExternalEdit
 {
+    /// <summary>
+    /// Monitors external edits for a particular IVimBuffer instance
+    /// </summary>
     internal sealed class ExternalEditMonitor
     {
         /// <summary>
@@ -28,7 +30,7 @@ namespace Vim.VisualStudio.Implementation.ExternalEdit
         }
 
         private readonly IVimApplicationSettings _vimApplicationSettings;
-        private readonly IVimBuffer _buffer;
+        private readonly IVimBuffer _vimBuffer;
         private readonly ITextView _textView;
         private readonly IProtectedOperations _protectedOperations;
         private readonly Result<IVsTextLines> _vsTextLines;
@@ -36,6 +38,7 @@ namespace Vim.VisualStudio.Implementation.ExternalEdit
         private readonly ReadOnlyCollection<IExternalEditAdapter> _externalEditorAdapters;
         private readonly List<ITrackingSpan> _ignoredExternalEditSpans = new List<ITrackingSpan>();
         private CheckKind? _queuedCheckKind;
+        private bool _controlExternalEdit;
         private bool _leavingExternalEdit;
 
         /// <summary>
@@ -56,6 +59,14 @@ namespace Vim.VisualStudio.Implementation.ExternalEdit
             }
         }
 
+        /// <summary>
+        /// Does the monitor control the current usage of ExternalEdit mode? 
+        /// </summary>
+        internal bool ControlExternalEdit
+        {
+            get { return _controlExternalEdit; }
+        }
+
         internal ExternalEditMonitor(
             IVimApplicationSettings vimApplicationSettings,
             IVimBuffer buffer,
@@ -69,10 +80,10 @@ namespace Vim.VisualStudio.Implementation.ExternalEdit
             _protectedOperations = protectedOperations;
             _externalEditorAdapters = externalEditorAdapters;
             _taggerCollection = taggerCollection;
-            _buffer = buffer;
-            _buffer.TextView.LayoutChanged += OnLayoutChanged;
-            _buffer.SwitchedMode += OnSwitchedMode;
-            _textView = _buffer.TextView;
+            _vimBuffer = buffer;
+            _vimBuffer.TextView.LayoutChanged += OnLayoutChanged;
+            _vimBuffer.SwitchedMode += OnSwitchedMode;
+            _textView = _vimBuffer.TextView;
 
             foreach (var tagger in _taggerCollection)
             {
@@ -82,7 +93,7 @@ namespace Vim.VisualStudio.Implementation.ExternalEdit
 
         internal void Close()
         {
-            _buffer.TextView.LayoutChanged -= OnLayoutChanged;
+            _vimBuffer.TextView.LayoutChanged -= OnLayoutChanged;
             foreach (var tagger in _taggerCollection)
             {
                 tagger.TagsChanged -= OnTagsChanged;
@@ -128,6 +139,7 @@ namespace Vim.VisualStudio.Implementation.ExternalEdit
                 // forward.  Further updates which cause these markers to be rendered shouldn't
                 // cause us to re-enter external edit mode
                 SetIgnoredExternalEditSpans(GetExternalEditSpans(CheckKind.All));
+                _controlExternalEdit = false;
             }
         }
 
@@ -142,7 +154,7 @@ namespace Vim.VisualStudio.Implementation.ExternalEdit
         /// </summary>
         internal void PerformCheck(CheckKind kind)
         {
-            if (!_vimApplicationSettings.EnableExternalEditMonitoring || _buffer.ModeKind == ModeKind.Disabled)
+            if (!_vimApplicationSettings.EnableExternalEditMonitoring || _vimBuffer.ModeKind == ModeKind.Disabled)
             {
                 return;
             }
@@ -154,13 +166,13 @@ namespace Vim.VisualStudio.Implementation.ExternalEdit
 
             // If we're in the middle of a layout then there is no sense in checking now as the values
             // will all be invalidated when the layout ends.  Queue one up for later
-            if (_buffer.TextView.InLayout)
+            if (_vimBuffer.TextView.InLayout)
             {
                 QueueCheck(kind);
                 return;
             }
 
-            if (_buffer.ModeKind == ModeKind.ExternalEdit)
+            if (_vimBuffer.ModeKind == ModeKind.ExternalEdit)
             {
                 CheckForExternalEditEnd();
             }
@@ -175,7 +187,7 @@ namespace Vim.VisualStudio.Implementation.ExternalEdit
         /// </summary>
         private void CheckForExternalEditStart(CheckKind kind)
         {
-            Contract.Assert(_buffer.ModeKind != ModeKind.ExternalEdit);
+            Contract.Assert(_vimBuffer.ModeKind != ModeKind.ExternalEdit);
 
             var externalEditSpans = GetExternalEditSpans(kind);
 
@@ -202,7 +214,8 @@ namespace Vim.VisualStudio.Implementation.ExternalEdit
 
             // Not in an external edit and there are edit markers we need to consider.  Time to enter
             // external edit mode
-            _buffer.SwitchMode(ModeKind.ExternalEdit, ModeArgument.None);
+            _controlExternalEdit = true;
+            _vimBuffer.SwitchMode(ModeKind.ExternalEdit, ModeArgument.None);
         }
 
         /// <summary>
@@ -214,8 +227,15 @@ namespace Vim.VisualStudio.Implementation.ExternalEdit
         /// </summary>
         private void CheckForExternalEditEnd()
         {
-            Contract.Assert(_buffer.ModeKind == ModeKind.ExternalEdit);
+            Contract.Assert(_vimBuffer.ModeKind == ModeKind.ExternalEdit);
             Contract.Assert(_ignoredExternalEditSpans.Count == 0);
+
+            // If the monitor didn't initiate the external edit then we don't control it.  Back 
+            // off and let the owner deal with it 
+            if (!_controlExternalEdit)
+            {
+                return;
+            }
 
             var externalEditSpans = GetExternalEditSpans(CheckKind.All);
             if (externalEditSpans.Count == 0)
@@ -226,7 +246,7 @@ namespace Vim.VisualStudio.Implementation.ExternalEdit
                 _leavingExternalEdit = true;
                 try
                 {
-                    _buffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
+                    _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
                 }
                 finally
                 {
@@ -284,7 +304,7 @@ namespace Vim.VisualStudio.Implementation.ExternalEdit
 
         private void GetExternalEditSpans(List<SnapshotSpan> list, CheckKind kind)
         {
-            var collection = _buffer.TextView.GetLikelyVisibleSnapshotSpans();
+            var collection = _vimBuffer.TextView.GetLikelyVisibleSnapshotSpans();
             foreach (var span in collection)
             {
                 if (0 != (kind & CheckKind.Markers))
@@ -342,7 +362,7 @@ namespace Vim.VisualStudio.Implementation.ExternalEdit
                     {
                         if (adapter.IsExternalEditMarker(marker))
                         {
-                            var markerSpan = marker.GetCurrentSpan(_buffer.TextSnapshot);
+                            var markerSpan = marker.GetCurrentSpan(_vimBuffer.TextSnapshot);
                             if (markerSpan.IsSuccess)
                             {
                                 list.Add(markerSpan.Value);

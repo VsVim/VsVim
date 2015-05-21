@@ -56,6 +56,11 @@ namespace Vim.UI.Wpf
             get { return true; }
         }
 
+        public virtual bool IsUndoRedoExpected
+        {
+            get { return false; }
+        }
+
         public virtual DefaultSettings DefaultSettings
         {
             get { return DefaultSettings.GVim73; }
@@ -475,6 +480,11 @@ namespace Vim.UI.Wpf
         bool IVimHost.IsAutoCommandEnabled
         {
             get { return IsAutoCommandEnabled; }
+        }
+
+        bool IVimHost.IsUndoRedoExpected
+        {
+            get { return IsUndoRedoExpected; }
         }
 
         DefaultSettings IVimHost.DefaultSettings

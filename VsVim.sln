@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2013
-VisualStudioVersion = 12.0.31101.0
+# Visual Studio 14
+VisualStudioVersion = 14.0.22415.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{7CD56D22-AAAA-4A93-8D98-1A014D9A6D39}"
 	ProjectSection(SolutionItems) = preProject
@@ -30,6 +30,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Vs2012", "Src\VsSpecific\Vs2012\Vs2012.csproj", "{60316861-7561-4B07-8A16-212E00A2856E}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Vs2013", "Src\VsSpecific\Vs2013\Vs2013.csproj", "{CA760951-31F6-40B1-BAB5-68CB26816ABE}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Vs2015", "Src\VsSpecific\Vs2015\Vs2015.csproj", "{D8EB4054-F9EB-45DE-B07F-254E253028E7}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -151,6 +153,18 @@ Global
 		{CA760951-31F6-40B1-BAB5-68CB26816ABE}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
 		{CA760951-31F6-40B1-BAB5-68CB26816ABE}.Release|Mixed Platforms.Build.0 = Release|Any CPU
 		{CA760951-31F6-40B1-BAB5-68CB26816ABE}.Release|x86.ActiveCfg = Release|Any CPU
+		{D8EB4054-F9EB-45DE-B07F-254E253028E7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D8EB4054-F9EB-45DE-B07F-254E253028E7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D8EB4054-F9EB-45DE-B07F-254E253028E7}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{D8EB4054-F9EB-45DE-B07F-254E253028E7}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{D8EB4054-F9EB-45DE-B07F-254E253028E7}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{D8EB4054-F9EB-45DE-B07F-254E253028E7}.Debug|x86.Build.0 = Debug|Any CPU
+		{D8EB4054-F9EB-45DE-B07F-254E253028E7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D8EB4054-F9EB-45DE-B07F-254E253028E7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D8EB4054-F9EB-45DE-B07F-254E253028E7}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{D8EB4054-F9EB-45DE-B07F-254E253028E7}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{D8EB4054-F9EB-45DE-B07F-254E253028E7}.Release|x86.ActiveCfg = Release|Any CPU
+		{D8EB4054-F9EB-45DE-B07F-254E253028E7}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

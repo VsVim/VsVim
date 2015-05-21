@@ -164,6 +164,11 @@ namespace Vim.VisualStudio
             get { return _vimApplicationSettings.DefaultSettings; }
         }
 
+        public override bool IsUndoRedoExpected
+        {
+            get { return _extensionAdapterBroker.IsUndoRedoExpected ?? base.IsUndoRedoExpected; }
+        }
+
         public override int TabCount
         {
             get { return _sharedService.GetWindowFrameState().WindowFrameCount; }

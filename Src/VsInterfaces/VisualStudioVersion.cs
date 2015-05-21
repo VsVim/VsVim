@@ -9,6 +9,7 @@ namespace Vim.VisualStudio
         Vs2010,
         Vs2012,
         Vs2013,
+        Vs2015,
         Unknown
     }
 }

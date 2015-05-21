@@ -247,7 +247,11 @@ namespace Vim.VisualStudio.UnitTest
             public void TagsNoMoreExternalEdits()
             {
                 Create("cat", "tree", "dog");
-                _buffer.SwitchMode(ModeKind.ExternalEdit, ModeArgument.None);
+                _buffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
+                CreateTags(_textBuffer.GetLine(0).Extent);
+                _adapter.Setup(x => x.IsExternalEditTag(It.IsAny<ITag>())).Returns(true);
+                _monitor.PerformCheck(ExternalEditMonitor.CheckKind.All);
+                CreateTags();
                 _monitor.PerformCheck(ExternalEditMonitor.CheckKind.All);
                 Assert.Equal(ModeKind.Insert, _buffer.ModeKind);
             }
@@ -277,6 +281,39 @@ namespace Vim.VisualStudio.UnitTest
                 _adapter.Setup(x => x.IsExternalEditTag(It.IsAny<ITag>())).Returns(true);
                 _monitor.PerformCheck(ExternalEditMonitor.CheckKind.Markers);
                 Assert.Equal(ModeKind.Normal, _buffer.ModeKind);
+            }
+        }
+
+        public sealed class ControlExternalEditTest : ExternalEditMonitorTest
+        {
+            [Fact]
+            public void ControlledByOther()
+            {
+                Create("cat");
+                _buffer.SwitchMode(ModeKind.ExternalEdit, ModeArgument.None);
+                Assert.False(_monitor.ControlExternalEdit);
+            }
+
+            [Fact]
+            public void ControlledByMonitor()
+            {
+                Create("cat", "tree", "dog");
+                _buffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
+                CreateTags(_textBuffer.GetLine(0).Extent);
+                _adapter.Setup(x => x.IsExternalEditTag(It.IsAny<ITag>())).Returns(true);
+                _monitor.PerformCheck(ExternalEditMonitor.CheckKind.All);
+                Assert.Equal(ModeKind.ExternalEdit, _buffer.ModeKind);
+                Assert.True(_monitor.ControlExternalEdit);
+            }
+
+            [Fact]
+            public void PerformCheckWhenControlledByOthers()
+            {
+                Create("cat");
+                _buffer.SwitchMode(ModeKind.ExternalEdit, ModeArgument.None);
+                _monitor.PerformCheck(ExternalEditMonitor.CheckKind.All);
+                Assert.Equal(ModeKind.ExternalEdit, _buffer.ModeKind);
+                Assert.False(_monitor.ControlExternalEdit);
             }
         }
     }
