@@ -96,6 +96,7 @@ namespace Vim.VisualStudio.UnitTest
             public void RenameLeftDontChangeNonExternalEdits()
             {
                 _renameUtil.SetupGet(x => x.IsRenameActive).Returns(true);
+                _renameUtil.Setup(x => x.Cancel());
                 _renameUtil.Raise(x => x.IsRenameActiveChanged += null, EventArgs.Empty);
                 _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
                 _renameUtil.SetupGet(x => x.IsRenameActive).Returns(false);
