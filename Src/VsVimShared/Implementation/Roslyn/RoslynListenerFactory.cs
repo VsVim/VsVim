@@ -12,9 +12,10 @@ using Vim;
 namespace Vim.VisualStudio.Implementation.Roslyn
 {
     [Export(typeof(IVimBufferCreationListener))]
+    [Export(typeof(IExtensionAdapter))]
     [ContentType(VimConstants.ContentType)]
     [TextViewRole(PredefinedTextViewRoles.Editable)]
-    internal sealed class RoslynListenerFactory : IVimBufferCreationListener
+    internal sealed class RoslynListenerFactory : IVimBufferCreationListener, IExtensionAdapter
     {
         private IRoslynRenameUtil _roslynRenameUtil;
         private bool _inRename;
@@ -36,6 +37,16 @@ namespace Vim.VisualStudio.Implementation.Roslyn
                     _roslynRenameUtil.IsRenameActiveChanged += OnIsRenameActiveChanged;
                 }
             }
+        }
+
+        /// <summary>
+        /// The Roslyn rename utility manipulates the undo / redo buffer directly during a 
+        /// rename.  Need to register this as expected so the undo implementation doesn't
+        /// raise any errors.
+        /// </summary>
+        internal bool IsUndoRedoExpected
+        {
+            get { return _roslynRenameUtil != null && _roslynRenameUtil.IsRenameActive; }
         }
 
         [ImportingConstructor]
@@ -100,5 +111,29 @@ namespace Vim.VisualStudio.Implementation.Roslyn
         {
             OnVimBufferCreated(vimBuffer);
         }
+
+        #region IExtensionAdapter
+
+        bool? IExtensionAdapter.IsUndoRedoExpected
+        {
+            get { return IsUndoRedoExpected; }
+        }
+
+        bool? IExtensionAdapter.ShouldKeepSelectionAfterHostCommand(string command, string argument)
+        {
+            return null;
+        }
+
+        bool? IExtensionAdapter.ShouldCreateVimBuffer(ITextView textView)
+        {
+            return null;
+        }
+
+        bool? IExtensionAdapter.IsIncrementalSearchActive(ITextView textView)
+        {
+            return null;
+        }
+
+        #endregion
     }
 }

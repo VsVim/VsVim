@@ -121,6 +121,7 @@ and LinkedUndoTransaction
 /// undo rather than throwing and killing the ITextBuffer.  
 and UndoRedoOperations 
     (
+        _vimHost : IVimHost,
         _statusUtil : IStatusUtil,
         _textUndoHistory : ITextUndoHistory option,
         _editorOperationsFactoryService : IEditorOperationsFactoryService
@@ -434,8 +435,10 @@ and UndoRedoOperations
             // Someone else is directly manipulating the undo / redo stack.  We've lost our ability 
             // to do anything here.  Reset our state now to prevent undo errors
             x.ResetState()
-            VimTrace.TraceInfo("!!! Unexpected undo / redo")
-            _statusUtil.OnError Resources.Undo_RedoUnexpected
+
+            if not _vimHost.IsUndoRedoExpected then
+                VimTrace.TraceInfo("!!! Unexpected undo / redo")
+                _statusUtil.OnError Resources.Undo_RedoUnexpected
 
     interface IUndoRedoOperations with
         member x.InLinkedUndoTransaction = x.InLinkedUndoTransaction

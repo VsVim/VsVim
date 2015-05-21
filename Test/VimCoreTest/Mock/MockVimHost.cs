@@ -19,6 +19,7 @@ namespace Vim.UnitTest.Mock
 
         public bool AutoSynchronizeSettings { get; set; }
         public bool IsAutoCommandEnabled { get; set; }
+        public bool IsUndoRedoExpected { get; set; }
         public DefaultSettings DefaultSettings { get; set; }
         public int BeepCount { get; set; }
         public bool ClosedOtherWindows { get; private set; }
@@ -74,6 +75,7 @@ namespace Vim.UnitTest.Mock
         {
             AutoSynchronizeSettings = true;
             IsAutoCommandEnabled = true;
+            IsUndoRedoExpected = false;
             DefaultSettings = DefaultSettings.GVim74;
             GoToDefinitionReturn = true;
             IsCompletionWindowActive = false;
