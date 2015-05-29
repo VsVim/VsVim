@@ -253,6 +253,7 @@ namespace Vim.UnitTest
             Vim.VimData.SearchHistory.Reset();
             Vim.VimData.CommandHistory.Reset();
             Vim.VimData.LastCommand = FSharpOption<StoredCommand>.None;
+            Vim.VimData.LastCommandLine = "";
             Vim.VimData.LastShellCommand = FSharpOption<string>.None;
             Vim.VimData.AutoCommands = FSharpList<AutoCommand>.Empty;
             Vim.VimData.AutoCommandGroups = FSharpList<AutoCommandGroup>.Empty;

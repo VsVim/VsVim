@@ -55,6 +55,7 @@ type internal VimData(_globalSettings : IVimGlobalSettings) as this =
     let mutable _lastCharSearch : (CharSearchKind * Path * char) option = None
     let mutable _lastMacroRun : char option = None
     let mutable _lastCommand : StoredCommand option = None
+    let mutable _lastCommandLine = ""
     let mutable _displayPattern = ""
     let mutable _displayPatternSuspended = false
     let _displayPatternChanged = StandardEvent()
@@ -128,6 +129,9 @@ type internal VimData(_globalSettings : IVimGlobalSettings) as this =
         member x.LastCommand 
             with get() = _lastCommand
             and set value = _lastCommand <- value
+        member x.LastCommandLine
+            with get() = _lastCommandLine
+            and set value = _lastCommandLine <- value
         member x.LastShellCommand
             with get() = _lastShellCommand
             and set value = _lastShellCommand <- value

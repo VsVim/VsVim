@@ -417,6 +417,26 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class LastCommandLineTest : CommandModeIntegrationTest
+        {
+            [Fact]
+            public void Simple()
+            {
+                Create();
+                RunCommandRaw(":/dog");
+                Assert.Equal("/dog", VimData.LastCommandLine);
+            }
+
+            [Fact]
+            public void Error()
+            {
+                Create();
+                VimData.LastCommandLine = "test";
+                RunCommandRaw(":not_a_vim_command");
+                Assert.Equal("not_a_vim_command", VimData.LastCommandLine);
+            }
+        }
+
         public sealed class LineEdittingTest : CommandModeIntegrationTest
         {
             private readonly HistoryList _commandHistoryList;
