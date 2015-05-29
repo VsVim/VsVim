@@ -3753,6 +3753,9 @@ type IVimData =
     /// The last command which was ran 
     abstract LastCommand : StoredCommand option with get, set
 
+    /// The last command line which was ran
+    abstract LastCommandLine : string with get, set
+
     /// The last shell command that was run
     abstract LastShellCommand : string option with get, set
 

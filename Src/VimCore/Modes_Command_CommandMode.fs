@@ -57,7 +57,9 @@ type internal CommandMode
         | _ -> ()
 
         let vimInterpreter = _buffer.Vim.GetVimInterpreter _buffer
-        vimInterpreter.RunLineCommand lineCommand
+        let result = vimInterpreter.RunLineCommand lineCommand
+        _vimData.LastCommandLine <- command
+        result
 
     // Command mode can be validly entered with the selection active.  Consider
     // hitting ':' in Visual Mode.  The selection should be cleared when leaving
