@@ -42,7 +42,7 @@ function test-vsixcontents() {
     & $zip x "-o$target" $vsixPath | out-null
 
     $files = gci $target | %{ $_.Name }
-    if ($files.Count -ne 16) { 
+    if ($files.Count -ne 17) { 
         write-host "Wrong number of files in VSIX. Found ..."
         foreach ($file in $files) {
             write-host "`t$file"
@@ -63,6 +63,7 @@ function test-vsixcontents() {
         "Vim.VisualStudio.Vs2010.dll",
         "Vim.VisualStudio.Vs2012.dll",
         "Vim.VisualStudio.Vs2013.dll",
+        "Vim.VisualStudio.Vs2015.dll",
         "Vim.VisualStudio.Interfaces.dll",
         "Vim.VisualStudio.Shared.dll",
         "VsVim.dll",
