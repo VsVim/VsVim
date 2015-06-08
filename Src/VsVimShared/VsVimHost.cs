@@ -699,7 +699,7 @@ namespace Vim.VisualStudio
                 return true;
             }
 
-            if (_vsAdapter.IsParallelWatchWindowView(textView))
+            if (_vsAdapter.IsWatchWindowView(textView))
             {
                 return false;
             }
