@@ -149,7 +149,7 @@ type internal GlobalSettings() =
 
     static let GlobalSettingInfoList = 
         [|
-            (AtomicInsertName, "ains", SettingValue.Toggle false)
+            (AtomicInsertName, AtomicInsertName, SettingValue.Toggle false)
             (BackspaceName, "bs", SettingValue.String "")
             (CaretOpacityName, CaretOpacityName, SettingValue.Number 65)
             (ClipboardName, "cb", SettingValue.String "")
