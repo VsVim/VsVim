@@ -255,7 +255,7 @@ type internal InsertMode
         // Caret changes can end a text change operation.
         _textView.Caret.PositionChanged
         |> Observable.filter (fun _ -> this.IsActive && not this.IsInProcess)
-        |> Observable.subscribe (fun _ -> this.OnCaretPositionChanged() )
+        |> Observable.subscribe (fun args -> this.OnCaretPositionChanged args)
         |> _bag.Add
 
         // Listen for text changes
@@ -661,7 +661,8 @@ type internal InsertMode
         // Now we need to decided how the external world sees this edit.  If it links with an
         // existing edit then we save it and send it out as a batch later.
         let isEdit = Util.IsFlagSet commandFlags CommandFlags.InsertEdit
-        if isEdit then
+        let isMovement = Util.IsFlagSet commandFlags CommandFlags.Movement
+        if isEdit || (isMovement && _globalSettings.AtomicInsert) then
 
             // If it's an edit then combine it with the existing command and batch them 
             // together.  Don't raise the event yet
@@ -846,9 +847,43 @@ type internal InsertMode
     ///
     /// Need to be careful to not end the edit due to the caret moving as a result of 
     /// normal typing
-    member x.OnCaretPositionChanged () = 
+    member x.OnCaretPositionChanged args = 
         _textChangeTracker.CompleteChange()
-        _sessionData <- { _sessionData with CombinedEditCommand = None }
+        if _globalSettings.AtomicInsert then
+            // Create a combined movement command that goes from the old position to the new position
+            // And combine it with the input command
+            let rec movement command current next = 
+                let combine left right = 
+                    match left with
+                    | None -> Some right
+                    | Some left -> Some (InsertMode.CreateCombinedEditCommand left right)
+                let currentY, currentX = current
+                let nextY, nextX = next
+                // First move to the beginning of the line, since the source and target lines might contain
+                // different amount of characters and/or tabs
+                if currentX > 0 && currentY <> nextY then
+                    let command = combine command (InsertCommand.MoveCaret Direction.Left)
+                    movement command (currentY, currentX - 1) next
+                elif currentY < nextY  then
+                    let command = combine command (InsertCommand.MoveCaret Direction.Down)
+                    movement command (currentY + 1, currentX) next
+                elif currentY > nextY then
+                    let command = combine command (InsertCommand.MoveCaret Direction.Up)
+                    movement command (currentY - 1, currentX) next
+                elif currentX > nextX && currentY = nextY then
+                    let command = combine command (InsertCommand.MoveCaret Direction.Left)
+                    movement command (currentY, currentX - 1) next
+                elif currentX < nextX then
+                    let command = combine command (InsertCommand.MoveCaret Direction.Right)
+                    movement command (currentY, currentX + 1) next
+                else
+                    command
+            let oldPosition = SnapshotPointUtil.GetLineColumn args.OldPosition.BufferPosition
+            let newPosition = SnapshotPointUtil.GetLineColumn args.NewPosition.BufferPosition
+            let command = movement _sessionData.CombinedEditCommand oldPosition newPosition 
+            _sessionData <- { _sessionData with CombinedEditCommand = command }
+        else
+            _sessionData <- { _sessionData with CombinedEditCommand = None }
         _vimBuffer.VimTextBuffer.InsertStartPoint <- Some x.CaretPoint
         _vimBuffer.VimTextBuffer.IsSoftTabStopValidForBackspace <- true
 

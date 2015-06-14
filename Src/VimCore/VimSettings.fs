@@ -149,6 +149,7 @@ type internal GlobalSettings() =
 
     static let GlobalSettingInfoList = 
         [|
+            (AtomicInsertName, AtomicInsertName, SettingValue.Toggle false)
             (BackspaceName, "bs", SettingValue.String "")
             (CaretOpacityName, CaretOpacityName, SettingValue.Number 65)
             (ClipboardName, "cb", SettingValue.String "")
@@ -315,6 +316,9 @@ type internal GlobalSettings() =
 
         // IVimGlobalSettings 
         member x.AddCustomSetting name abbrevation customSettingSource = x.AddCustomSetting name abbrevation customSettingSource
+        member x.AtomicInsert
+            with get() = _map.GetBoolValue AtomicInsertName
+            and set value = _map.TrySetValue AtomicInsertName (SettingValue.Toggle value) |> ignore
         member x.Backspace 
             with get() = _map.GetStringValue BackspaceName
             and set value = _map.TrySetValueFromString BackspaceName value |> ignore
