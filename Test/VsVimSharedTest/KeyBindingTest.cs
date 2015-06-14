@@ -858,6 +858,5 @@ Transact-SQL Editor::Ctrl+J
                 (x, y) => x != y,
                 values: value);
         }
-
     }
 }

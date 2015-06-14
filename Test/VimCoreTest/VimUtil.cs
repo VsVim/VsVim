@@ -8,6 +8,7 @@ using Microsoft.VisualStudio.Text.Operations;
 using Microsoft.VisualStudio.Text.Outlining;
 using Vim.Extensions;
 using Vim.Interpreter;
+using Vim.UnitTest.Mock;
 
 namespace Vim.UnitTest
 {
@@ -32,10 +33,11 @@ namespace Vim.UnitTest
                 option);
         }
 
-        internal static UndoRedoOperations CreateUndoRedoOperations(IStatusUtil statusUtil = null)
+        internal static UndoRedoOperations CreateUndoRedoOperations(IStatusUtil statusUtil = null, IVimHost vimHost = null)
         {
             statusUtil = statusUtil ?? new StatusUtil();
-            return new UndoRedoOperations(statusUtil, FSharpOption<ITextUndoHistory>.None, null);
+            vimHost = vimHost ?? new MockVimHost();
+            return new UndoRedoOperations(vimHost, statusUtil, FSharpOption<ITextUndoHistory>.None, null);
         }
 
         internal static RegisterMap CreateRegisterMap(IClipboardDevice device, Func<string> func)

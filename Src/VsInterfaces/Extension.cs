@@ -26,6 +26,8 @@ namespace Vim.VisualStudio
                     return VisualStudioVersion.Vs2012;
                 case "12":
                     return VisualStudioVersion.Vs2013;
+                case "14":
+                    return VisualStudioVersion.Vs2015;
                 default:
                     return VisualStudioVersion.Unknown;
             }

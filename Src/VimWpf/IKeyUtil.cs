@@ -24,5 +24,5 @@ namespace Vim.UI.Wpf
         /// by character but instead directly by virtual key.  They are handled by this method
         /// </summary>
         bool TryConvertSpecialToKeyInput(Key key, ModifierKeys modifierKeys, out KeyInput keyInput);
-   }
+    }
 }

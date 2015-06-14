@@ -143,7 +143,7 @@ type internal SelectMode
                 // add one here (or even the length of the insert text).  The insert occurred at
                 // the exact point we are tracking and we chose PointTrackingMode.Positive so this
                 // will push the point past the insert
-                let snapshot = edit.Apply()
+                let snapshot = TextEditUtil.ApplyAndGetLatest edit
                 match TrackingPointUtil.GetPointInSnapshot span.End PointTrackingMode.Positive snapshot with
                 | None -> ()
                 | Some point -> TextViewUtil.MoveCaretToPoint _textView point

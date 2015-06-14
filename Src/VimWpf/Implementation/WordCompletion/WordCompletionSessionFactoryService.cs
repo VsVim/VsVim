@@ -115,6 +115,7 @@ namespace Vim.UI.Wpf.Implementation.WordCompletion
         private sealed class DismissedWordCompletionSession : IWordCompletionSession
         {
             private readonly ITextView _textView;
+            private readonly PropertyCollection _properties = new PropertyCollection();
 
             internal DismissedWordCompletionSession(ITextView textView)
             {
@@ -123,7 +124,6 @@ namespace Vim.UI.Wpf.Implementation.WordCompletion
 
             void IWordCompletionSession.Dismiss()
             {
-
             }
 
             event EventHandler IWordCompletionSession.Dismissed
@@ -151,6 +151,11 @@ namespace Vim.UI.Wpf.Implementation.WordCompletion
             {
                 get { return _textView; }
             }
+
+            PropertyCollection IPropertyOwner.Properties
+            {
+                get { return _properties; }
+            }
         }
 
         #endregion
@@ -162,6 +167,8 @@ namespace Vim.UI.Wpf.Implementation.WordCompletion
 
         private readonly ICompletionBroker _completionBroker;
         private readonly IIntellisenseSessionStackMapService _intellisenseSessionStackMapService;
+
+        private event EventHandler<WordCompletionSessionEventArgs> _createdEvent = delegate { };
 
         /// <summary>
         /// This is inserted into every ICompletionSession property bag which is created for
@@ -175,6 +182,12 @@ namespace Vim.UI.Wpf.Implementation.WordCompletion
         {
             _completionBroker = completionBroker;
             _intellisenseSessionStackMapService = intellisenseSessionStackMapService;
+        }
+
+        private void RaiseCompleted(IWordCompletionSession wordCompletionSession)
+        {
+            var args = new WordCompletionSessionEventArgs(wordCompletionSession);
+            _createdEvent(this, args);
         }
 
         #region IWordCompletionSessionFactoryService
@@ -235,12 +248,20 @@ namespace Vim.UI.Wpf.Implementation.WordCompletion
                 var command = isForward ? IntellisenseKeyboardCommand.TopLine : IntellisenseKeyboardCommand.BottomLine;
                 wordCompletionSession.SendCommand(command);
 
+                RaiseCompleted(wordCompletionSession);
+
                 return wordCompletionSession;
             }
             finally
             {
                 textView.Properties.RemoveProperty(_completionDataKey);
             }
+        }
+
+        event EventHandler<WordCompletionSessionEventArgs> IWordCompletionSessionFactoryService.Created
+        {
+            add { _createdEvent += value; }
+            remove { _createdEvent -= value; }
         }
 
         #endregion
@@ -253,6 +274,5 @@ namespace Vim.UI.Wpf.Implementation.WordCompletion
         }
 
         #endregion
-
     }
 }

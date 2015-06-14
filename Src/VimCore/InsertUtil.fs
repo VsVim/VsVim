@@ -153,7 +153,7 @@ type internal InsertUtil
         let bounds = Span(0, x.CurrentSnapshot.Length)
         match x.ApplyTextChangeCore textEdit x.CaretPoint.Position bounds textChange addNewLines with
         | Some position -> 
-            let snapshot = textEdit.Apply()
+            let snapshot = TextEditUtil.ApplyAndGetLatest textEdit
             TextViewUtil.MoveCaretToPosition _textView position
         | None -> textEdit.Cancel()
 

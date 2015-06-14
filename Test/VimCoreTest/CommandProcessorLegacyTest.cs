@@ -522,6 +522,5 @@ namespace Vim.UnitTest
             Create("dog", "cat", "bear", "fish", "tree");
             TestRange(".,+2", _textView.GetLineRange(0, 2));
         }
-
     }
 }

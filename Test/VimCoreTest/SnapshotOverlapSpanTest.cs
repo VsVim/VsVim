@@ -17,7 +17,7 @@ namespace Vim.UnitTest
             _textBuffer = CreateTextBuffer(lines);
         }
 
-        SnapshotOverlapSpan GetSpanFromSpaceAndCount(ITextSnapshotLine line, int start, int count, int tabStop)
+        private SnapshotOverlapSpan GetSpanFromSpaceAndCount(ITextSnapshotLine line, int start, int count, int tabStop)
         {
             var startPoint = SnapshotLineUtil.GetSpaceWithOverlapOrEnd(line, start, tabStop);
             var endPoint = SnapshotLineUtil.GetSpaceWithOverlapOrEnd(line, start + count, tabStop);
@@ -86,17 +86,17 @@ namespace Vim.UnitTest
                 [Fact]
                 public void Complete()
                 {
-                    Create("あいうえお");
+                    Create("\u3042\u3044\u3046\u3048\u304A");
                     var span = new SnapshotOverlapSpan(_textBuffer.GetSpan(0, 2));
-                    Assert.Equal("あい", span.GetText());
+                    Assert.Equal("\u3042\u3044", span.GetText());
                 }
 
                 [Fact]
                 public void Partial()
                 {
-                    Create("あいうえお");
+                    Create("\u3042\u3044\u3046\u3048\u304A");
                     var span = GetSpanFromSpaceAndCount(_textBuffer.GetLine(0), start: 1, count: 4, tabStop: 4);
-                    Assert.Equal(" い ", span.GetText());
+                    Assert.Equal(" \u3044 ", span.GetText());
                 }
             }
         }
@@ -170,7 +170,7 @@ namespace Vim.UnitTest
                 [Fact]
                 public void Complete()
                 {
-                    Create("あいうえお");
+                    Create("\u3042\u3044\u3046\u3048\u304A");
                     var span = GetSpanFromSpaceAndCount(_textBuffer.GetLine(0), start: 0, count: 2, tabStop: 4);
                     Assert.False(span.HasOverlap);
                     Assert.Equal(span.OverarchingSpan, span.InnerSpan);
@@ -182,7 +182,7 @@ namespace Vim.UnitTest
                 [Fact]
                 public void PartialInEnd()
                 {
-                    Create("あいうえお");
+                    Create("\u3042\u3044\u3046\u3048\u304A");
                     var span = GetSpanFromSpaceAndCount(_textBuffer.GetLine(0), start: 0, count: 3, tabStop: 4);
                     Assert.True(span.HasOverlap);
                 }
@@ -193,7 +193,7 @@ namespace Vim.UnitTest
                 [Fact]
                 public void PartialInStart()
                 {
-                    Create("あいうえお");
+                    Create("\u3042\u3044\u3046\u3048\u304A");
                     var span = GetSpanFromSpaceAndCount(_textBuffer.GetLine(0), start: 1, count: 3, tabStop: 4);
                     Assert.True(span.HasOverlap);
                 }

@@ -34,7 +34,7 @@ namespace Vim.UI.Wpf.UnitTest
             _vimBuffer.IncrementalSearchImpl = _search.Object;
             _vimBuffer.VimImpl = MockObjectFactory.CreateVim(factory: _factory).Object;
             _vimBuffer.CommandModeImpl = _factory.Create<ICommandMode>(MockBehavior.Loose).Object;
-            var textBuffer = CreateTextBuffer(new []{""});
+            var textBuffer = CreateTextBuffer(new[] { "" });
             _vimBuffer.TextViewImpl = TextEditorFactoryService.CreateTextView(textBuffer);
 
             Mock<IVimGlobalSettings> globalSettings = new Mock<IVimGlobalSettings>();
@@ -115,7 +115,6 @@ namespace Vim.UI.Wpf.UnitTest
         {
             public MiscTest()
             {
-
             }
 
             private void SimulateKeystroke()

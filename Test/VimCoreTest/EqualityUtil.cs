@@ -8,8 +8,8 @@ namespace Vim.UnitTest
 {
     public class EqualityUnit<T>
     {
-        private static readonly ReadOnlyCollection<T> EmptyCollection = new ReadOnlyCollection<T>(new T[] { });
- 
+        private static readonly ReadOnlyCollection<T> s_emptyCollection = new ReadOnlyCollection<T>(new T[] { });
+
         public readonly T Value;
         public readonly ReadOnlyCollection<T> EqualValues;
         public readonly ReadOnlyCollection<T> NotEqualValues;
@@ -17,14 +17,14 @@ namespace Vim.UnitTest
         {
             get { return Enumerable.Repeat(Value, 1).Concat(EqualValues).Concat(NotEqualValues); }
         }
- 
+
         public EqualityUnit(T value)
         {
             Value = value;
-            EqualValues = EmptyCollection;
-            NotEqualValues = EmptyCollection;
+            EqualValues = s_emptyCollection;
+            NotEqualValues = s_emptyCollection;
         }
- 
+
         public EqualityUnit(
             T value,
             ReadOnlyCollection<T> equalValues,
@@ -34,7 +34,7 @@ namespace Vim.UnitTest
             EqualValues = equalValues;
             NotEqualValues = notEqualValues;
         }
- 
+
         public EqualityUnit<T> WithEqualValues(params T[] equalValues)
         {
             return new EqualityUnit<T>(
@@ -42,7 +42,7 @@ namespace Vim.UnitTest
                 EqualValues.Concat(equalValues).ToList().AsReadOnly(),
                 NotEqualValues);
         }
- 
+
         public EqualityUnit<T> WithNotEqualValues(params T[] notEqualValues)
         {
             return new EqualityUnit<T>(
@@ -51,7 +51,7 @@ namespace Vim.UnitTest
                 NotEqualValues.Concat(notEqualValues).ToList().AsReadOnly());
         }
     }
- 
+
     public static class EqualityUnit
     {
         public static EqualityUnit<T> Create<T>(T value)
@@ -59,7 +59,7 @@ namespace Vim.UnitTest
             return new EqualityUnit<T>(value);
         }
     }
- 
+
     /// <summary>
     /// Base class which does a lot of the boiler plate work for testing that the equality pattern
     /// is properly implemented in objects
@@ -69,7 +69,7 @@ namespace Vim.UnitTest
         private readonly ReadOnlyCollection<EqualityUnit<T>> _equalityUnits;
         private readonly Func<T, T, bool> _compareWithEqualityOperator;
         public readonly Func<T, T, bool> _compareWithInequalityOperator;
- 
+
         public EqualityUtil(
             IEnumerable<EqualityUnit<T>> equalityUnits,
             Func<T, T, bool> compEquality,
@@ -79,7 +79,7 @@ namespace Vim.UnitTest
             _compareWithEqualityOperator = compEquality;
             _compareWithInequalityOperator = compInequality;
         }
- 
+
         public void RunAll(
             bool skipOperators = false,
             bool skipEquatable = false)
@@ -104,7 +104,7 @@ namespace Vim.UnitTest
             ObjectEqualsDifferentType();
             GetHashCodeSemantics();
         }
- 
+
         private void EqualityOperator()
         {
             foreach (var unit in _equalityUnits)
@@ -114,7 +114,7 @@ namespace Vim.UnitTest
                     Assert.True(_compareWithEqualityOperator(unit.Value, value));
                     Assert.True(_compareWithEqualityOperator(value, unit.Value));
                 }
- 
+
                 foreach (var value in unit.NotEqualValues)
                 {
                     Assert.False(_compareWithEqualityOperator(unit.Value, value));
@@ -122,24 +122,24 @@ namespace Vim.UnitTest
                 }
             }
         }
- 
+
         private void EqualityOperatorCheckNull()
         {
             if (typeof(T).IsValueType)
             {
                 return;
             }
- 
+
             foreach (var value in _equalityUnits.SelectMany(x => x.AllValues))
             {
-                if ( !Object.ReferenceEquals(value, null) )
+                if (!Object.ReferenceEquals(value, null))
                 {
                     Assert.False(_compareWithEqualityOperator(default(T), value));
                     Assert.False(_compareWithEqualityOperator(value, default(T)));
                 }
             }
         }
- 
+
         private void InEqualityOperator()
         {
             foreach (var unit in _equalityUnits)
@@ -149,7 +149,7 @@ namespace Vim.UnitTest
                     Assert.False(_compareWithInequalityOperator(unit.Value, value));
                     Assert.False(_compareWithInequalityOperator(value, unit.Value));
                 }
- 
+
                 foreach (var value in unit.NotEqualValues)
                 {
                     Assert.True(_compareWithInequalityOperator(unit.Value, value));
@@ -157,7 +157,7 @@ namespace Vim.UnitTest
                 }
             }
         }
- 
+
         private void InEqualityOperatorCheckNull()
         {
             if (typeof(T).IsValueType)
@@ -166,21 +166,21 @@ namespace Vim.UnitTest
             }
             foreach (var value in _equalityUnits.SelectMany(x => x.AllValues))
             {
-                if ( !Object.ReferenceEquals(value, null) )
+                if (!Object.ReferenceEquals(value, null))
                 {
                     Assert.True(_compareWithInequalityOperator(default(T), value));
                     Assert.True(_compareWithInequalityOperator(value, default(T)));
                 }
             }
         }
- 
+
         private void ImplementsIEquatable()
         {
             var type = typeof(T);
             var targetType = typeof(IEquatable<T>);
             Assert.True(type.GetInterfaces().Contains(targetType));
         }
- 
+
         private void ObjectEquals()
         {
             foreach (var unit in _equalityUnits)
@@ -193,7 +193,7 @@ namespace Vim.UnitTest
                 }
             }
         }
- 
+
         /// <summary>
         /// Comparison with Null should be false for reference types
         /// </summary>
@@ -203,14 +203,14 @@ namespace Vim.UnitTest
             {
                 return;
             }
- 
+
             var allValues = _equalityUnits.SelectMany(x => x.AllValues);
             foreach (var value in allValues)
             {
                 Assert.False(value.Equals(null));
             }
         }
- 
+
         /// <summary>
         /// Passing a value of a different type should just return false
         /// </summary>
@@ -222,7 +222,7 @@ namespace Vim.UnitTest
                 Assert.False(value.Equals(42));
             }
         }
- 
+
         private void GetHashCodeSemantics()
         {
             foreach (var unit in _equalityUnits)
@@ -233,7 +233,7 @@ namespace Vim.UnitTest
                 }
             }
         }
- 
+
         private void EquatableEquals()
         {
             foreach (var unit in _equalityUnits)
@@ -245,7 +245,7 @@ namespace Vim.UnitTest
                     var equatableValue = (IEquatable<T>)value;
                     Assert.True(equatableValue.Equals(unit.Value));
                 }
- 
+
                 foreach (var value in unit.NotEqualValues)
                 {
                     Assert.False(equatableUnit.Equals(value));
@@ -254,7 +254,7 @@ namespace Vim.UnitTest
                 }
             }
         }
- 
+
         /// <summary>
         /// If T is a reference type, null should return false in all cases
         /// </summary>
@@ -264,7 +264,7 @@ namespace Vim.UnitTest
             {
                 return;
             }
- 
+
             foreach (var cur in _equalityUnits.SelectMany(x => x.AllValues))
             {
                 var equatable = (IEquatable<T>)cur;
@@ -273,7 +273,7 @@ namespace Vim.UnitTest
             }
         }
     }
- 
+
     public static class EqualityUtil
     {
         public static void RunAll<T>(
@@ -284,7 +284,7 @@ namespace Vim.UnitTest
             params EqualityUnit<T>[] values)
         {
             var util = new EqualityUtil<T>(values, compEqualsOperator, compNotEqualsOperator);
-            util.RunAll(skipOperators:skipOperators, skipEquatable:skipEquatable);
+            util.RunAll(skipOperators: skipOperators, skipEquatable: skipEquatable);
         }
 
         public static void RunAll<T>(
@@ -301,6 +301,6 @@ namespace Vim.UnitTest
         }
     }
 }
- 
- 
+
+
 

@@ -9,7 +9,7 @@ namespace Vim.VisualStudio
 {
     public interface IToastNotificationService
     {
-        IWpfTextView TextView { get; } 
+        IWpfTextView TextView { get; }
 
         /// <summary>
         /// Display the given toast notification.  Optionally also provide a callback to be 

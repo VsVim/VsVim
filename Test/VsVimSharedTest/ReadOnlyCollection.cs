@@ -5,7 +5,7 @@ using System.Text;
 
 namespace Vim.VisualStudio.Shared.UnitTest
 {
-    class ReadOnlyCollection
+    internal class ReadOnlyCollection
     {
     }
 }

@@ -41,7 +41,7 @@ namespace Vim.VisualStudio.UnitTest
             [Fact]
             public void EventPattern_Is()
             {
-                var all = new[] 
+                var all = new[]
                 {
                     new { Text = "foo += new EventHandler(bar)", NameLength = 3 },
                     new { Text = "foo += new EventHandler(bar_foo)", NameLength = 7 },
@@ -69,7 +69,7 @@ namespace Vim.VisualStudio.UnitTest
             [Fact]
             public void EventPattern_Not()
             {
-                var all = new[] 
+                var all = new[]
                 {
                     new { Text = "new EventHandler(foo", NameLength = 3 },
                     new { Text = "+= EventHandler(foo", NameLength = 3 },

@@ -547,7 +547,7 @@ namespace Vim.UnitTest
                     // and replace with the "completed" text
                     _textBuffer.Replace(new Span(0, 0), "protected");
                     _vimBuffer.ProcessNotation("<Esc>");
-                    Assert.Equal(new[] 
+                    Assert.Equal(new[]
                         {
                             "protected string Prop1",
                             "protected string Prop2",
@@ -569,7 +569,7 @@ namespace Vim.UnitTest
                     // and replace with the "completed" text
                     _textBuffer.Replace(new Span(0, 2), "protected");
                     _vimBuffer.ProcessNotation("<Esc>");
-                    Assert.Equal(new[] 
+                    Assert.Equal(new[]
                         {
                             "protected string Prop1",
                             "protected string Prop2",
@@ -586,7 +586,7 @@ namespace Vim.UnitTest
                 {
                     Create(4, "trucker", "\tdog", "tester");
                     _vimBuffer.ProcessNotation("ll<c-q>jjjIa<Esc>");
-                    Assert.Equal(new[] 
+                    Assert.Equal(new[]
                         {
                             "traucker",
                             "  a  dog",
@@ -605,7 +605,7 @@ namespace Vim.UnitTest
                 {
                     Create(4, "trucker", "\tdog", "tester");
                     _vimBuffer.ProcessNotation("<c-q>jjjIa<Esc>");
-                    Assert.Equal(new[] 
+                    Assert.Equal(new[]
                         {
                             "atrucker",
                             "a\tdog",
@@ -620,7 +620,7 @@ namespace Vim.UnitTest
                 {
                     Create(4, "trucker", "\tdog", "tester");
                     _vimBuffer.ProcessNotation("l<c-q>jjjIa<Esc>");
-                    Assert.Equal(new[] 
+                    Assert.Equal(new[]
                         {
                             "tarucker",
                             " a   dog",
@@ -635,7 +635,7 @@ namespace Vim.UnitTest
                 {
                     Create(4, "trucker", "\tdog", "tester");
                     _vimBuffer.ProcessNotation("lll<c-q>jjjIa<Esc>");
-                    Assert.Equal(new[] 
+                    Assert.Equal(new[]
                         {
                             "truacker",
                             "   a dog",
@@ -2441,7 +2441,7 @@ namespace Vim.UnitTest
 
                 _textView.MoveCaretTo(5);
                 _vimBuffer.Process("vap");
-                
+
                 Assert.Equal(_textView.GetLineRange(0, 2).GetText(), _textView.GetSelectionSpan().GetText());
             }
 

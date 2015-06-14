@@ -53,7 +53,6 @@ namespace Vim.VisualStudio.Implementation.OptionPages
 
         public KeyBindingData()
         {
-
         }
 
         public KeyBindingData(ReadOnlyCollection<CommandKeyBinding> bindings)

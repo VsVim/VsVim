@@ -6,7 +6,7 @@ using Microsoft.VisualStudio.Text.Editor;
 
 namespace Vim.VisualStudio.Implementation.ConflictingKey
 {
-    internal sealed class ConflictingKeyBindingMargin 
+    internal sealed class ConflictingKeyBindingMargin
     {
         private readonly IKeyBindingService _keyBindingService;
         private readonly ConflictingKeyBindingMarginControl _control;

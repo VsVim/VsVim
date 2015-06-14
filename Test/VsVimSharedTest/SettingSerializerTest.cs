@@ -87,7 +87,7 @@ namespace Vim.VisualStudio.UnitTest
 
         public sealed class MiscTest : SettingSerializerTest
         {
-            private static List<CommandKeyBinding> CommandKeyBindings;
+            private static List<CommandKeyBinding> s_commandKeyBindings;
 
             static MiscTest()
             {
@@ -101,7 +101,7 @@ namespace Vim.VisualStudio.UnitTest
                     list.Add(commandKeyBinding);
                 }
 
-                CommandKeyBindings = list;
+                s_commandKeyBindings = list;
             }
 
             private void ExpectEqual(CommandKeyBinding left, CommandKeyBinding right)
@@ -114,7 +114,7 @@ namespace Vim.VisualStudio.UnitTest
             [Fact]
             public void WellKnown()
             {
-                foreach (var commandKeyBinding in CommandKeyBindings)
+                foreach (var commandKeyBinding in s_commandKeyBindings)
                 {
                     var text = SettingSerializer.ConvertToString(new[] { commandKeyBinding });
                     var list = SettingSerializer.ConvertToCommandKeyBindings(text);
@@ -126,12 +126,12 @@ namespace Vim.VisualStudio.UnitTest
             [Fact]
             public void WellKnownAll()
             {
-                var text = SettingSerializer.ConvertToString(CommandKeyBindings);
+                var text = SettingSerializer.ConvertToString(s_commandKeyBindings);
                 var list = SettingSerializer.ConvertToCommandKeyBindings(text);
-                Assert.Equal(CommandKeyBindings.Count, list.Count);
+                Assert.Equal(s_commandKeyBindings.Count, list.Count);
                 for (int i = 0; i < list.Count; i++)
                 {
-                    ExpectEqual(CommandKeyBindings[i], list[i]);
+                    ExpectEqual(s_commandKeyBindings[i], list[i]);
                 }
             }
         }

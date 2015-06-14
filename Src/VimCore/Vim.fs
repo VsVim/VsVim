@@ -55,6 +55,7 @@ type internal VimData(_globalSettings : IVimGlobalSettings) as this =
     let mutable _lastCharSearch : (CharSearchKind * Path * char) option = None
     let mutable _lastMacroRun : char option = None
     let mutable _lastCommand : StoredCommand option = None
+    let mutable _lastCommandLine = ""
     let mutable _displayPattern = ""
     let mutable _displayPatternSuspended = false
     let _displayPatternChanged = StandardEvent()
@@ -128,6 +129,9 @@ type internal VimData(_globalSettings : IVimGlobalSettings) as this =
         member x.LastCommand 
             with get() = _lastCommand
             and set value = _lastCommand <- value
+        member x.LastCommandLine
+            with get() = _lastCommandLine
+            and set value = _lastCommandLine <- value
         member x.LastShellCommand
             with get() = _lastShellCommand
             and set value = _lastShellCommand <- value
@@ -181,7 +185,7 @@ type internal VimBufferFactory
                 let manager = _undoManagerProvider.GetTextBufferUndoManager textBuffer
                 if manager = null then None
                 else manager.TextBufferUndoHistory |> Some
-            UndoRedoOperations(statusUtil, history, _editorOperationsFactoryService) :> IUndoRedoOperations
+            UndoRedoOperations(_host, statusUtil, history, _editorOperationsFactoryService) :> IUndoRedoOperations
 
         VimTextBuffer(textBuffer, localSettings, wordNavigator, _bufferTrackingService, undoRedoOperations, vim)
 
@@ -354,6 +358,8 @@ type internal Vim
     /// Whether or not Vim is currently in disabled mode
     let mutable _isDisabled = false
 
+    let mutable _fileSystem = _fileSystem
+
     let _registerMap =
         let currentFileNameFunc() = 
             match _activeBufferStack with
@@ -432,6 +438,10 @@ type internal Vim
     member x.AutoLoadVimRc 
         with get () = _autoLoadVimRc
         and set value = _autoLoadVimRc <- value
+
+    member x.FileSystem
+        with get () = _fileSystem
+        and set value = _fileSystem <- value 
 
     member x.IsDisabled 
         with get () = _isDisabled

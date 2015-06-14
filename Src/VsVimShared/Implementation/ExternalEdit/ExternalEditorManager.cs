@@ -20,7 +20,7 @@ namespace Vim.VisualStudio.Implementation.ExternalEdit
         [ImportingConstructor]
         internal ExternalEditorManager(
             IVimApplicationSettings vimApplicationSettings,
-            IVsAdapter vsAdapter, 
+            IVsAdapter vsAdapter,
             IVimProtectedOperations protectedOperations,
             [ImportMany] IEnumerable<IExternalEditAdapter> adapters)
         {
@@ -61,8 +61,8 @@ namespace Vim.VisualStudio.Implementation.ExternalEdit
                     taggerList.ToReadOnlyCollectionShallow(),
                     bufferAdapterList.ToReadOnlyCollectionShallow());
                 _monitorMap[vimBuffer] = externalEditMonitor;
-                vimBuffer.Closed += delegate 
-                { 
+                vimBuffer.Closed += delegate
+                {
                     _monitorMap.Remove(vimBuffer);
                     externalEditMonitor.Close();
                 };

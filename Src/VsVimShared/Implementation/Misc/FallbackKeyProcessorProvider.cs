@@ -34,14 +34,16 @@ namespace Vim.VisualStudio.Implementation.Misc
         private readonly IVimApplicationSettings _vimApplicationSettings;
         private readonly IVim _vim;
         private readonly ScopeData _scopeData;
+        private readonly IVsAdapter _vsAdapter;
 
         [ImportingConstructor]
-        internal FallbackKeyProcessorProvider(SVsServiceProvider serviceProvider, IKeyUtil keyUtil, IVimApplicationSettings vimApplicationSettings, IVim vim)
+        internal FallbackKeyProcessorProvider(SVsServiceProvider serviceProvider, IKeyUtil keyUtil, IVimApplicationSettings vimApplicationSettings, IVim vim, IVsAdapter vsAdapter)
         {
             _dte = (_DTE)serviceProvider.GetService(typeof(_DTE));
             _keyUtil = keyUtil;
             _vimApplicationSettings = vimApplicationSettings;
             _vim = vim;
+            _vsAdapter = vsAdapter;
 
             _vsShell = (IVsShell)serviceProvider.GetService(typeof(SVsShell));
             _scopeData = new ScopeData(_vsShell);
@@ -53,6 +55,11 @@ namespace Vim.VisualStudio.Implementation.Misc
         /// </summary>
         KeyProcessor IKeyProcessorProvider.GetAssociatedProcessor(IWpfTextView wpfTextView)
         {
+            if (_vsAdapter.IsWatchWindowView(wpfTextView))
+            {
+                return null;
+            }
+
             IVimBuffer vimBuffer;
             if (!_vim.TryGetOrCreateVimBufferForHost(wpfTextView, out vimBuffer))
             {

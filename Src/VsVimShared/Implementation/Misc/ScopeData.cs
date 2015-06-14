@@ -168,7 +168,6 @@ namespace Vim.VisualStudio.Implementation.Misc
                         {
                             id = resourceId;
                         }
-
                     }
 
                     if (!id.HasValue)
@@ -178,7 +177,7 @@ namespace Vim.VisualStudio.Implementation.Misc
                     }
 
                     var package = Guid.Parse((string)subKey.GetValue("Package"));
-                    return 
+                    return
                         ErrorHandler.Succeeded(vsShell.LoadPackageString(ref package, id.Value, out localizedScopeName)) &&
                         !string.IsNullOrEmpty(localizedScopeName);
                 }

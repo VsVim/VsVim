@@ -666,7 +666,6 @@ namespace Vim.VisualStudio
                 {
                     break;
                 }
-
             } while (true);
 
             return list;

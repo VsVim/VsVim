@@ -147,7 +147,6 @@ namespace Vim.UnitTest
 
         public sealed class TryGetTagsPromptTest : HighlightSearchTaggerSourceTest
         {
-
             /// <summary>
             /// We can promptly say nothing when highlight is disabled
             /// </summary>

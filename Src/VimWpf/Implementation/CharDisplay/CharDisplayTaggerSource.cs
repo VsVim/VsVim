@@ -31,7 +31,7 @@ namespace Vim.UI.Wpf.Implementation.CharDisplay
             }
         }
 
-        private static readonly ReadOnlyCollection<ITagSpan<IntraTextAdornmentTag>> EmptyTagColllection = new ReadOnlyCollection<ITagSpan<IntraTextAdornmentTag>>(new List<ITagSpan<IntraTextAdornmentTag>>());
+        private static readonly ReadOnlyCollection<ITagSpan<IntraTextAdornmentTag>> s_emptyTagColllection = new ReadOnlyCollection<ITagSpan<IntraTextAdornmentTag>>(new List<ITagSpan<IntraTextAdornmentTag>>());
         private readonly ITextView _textView;
         private readonly IEditorFormatMap _editorFormatMap;
         private readonly IControlCharUtil _controlCharUtil;
@@ -67,12 +67,12 @@ namespace Vim.UI.Wpf.Implementation.CharDisplay
         {
             if (span.Snapshot != _textView.TextBuffer.CurrentSnapshot)
             {
-                return EmptyTagColllection;
+                return s_emptyTagColllection;
             }
 
             if (!_controlCharUtil.DisplayControlChars)
             {
-                return EmptyTagColllection;
+                return s_emptyTagColllection;
             }
 
             return GetTagsCore(span);
@@ -100,7 +100,7 @@ namespace Vim.UI.Wpf.Implementation.CharDisplay
                 {
                     adornment = _adornmentCache[cacheIndex].Adornment;
                 }
-                else 
+                else
                 {
                     var textBox = new TextBox();
                     textBox.Text = text;
@@ -256,7 +256,7 @@ namespace Vim.UI.Wpf.Implementation.CharDisplay
 
         void IDisposable.Dispose()
         {
-            Dispose();            
+            Dispose();
         }
 
         #endregion

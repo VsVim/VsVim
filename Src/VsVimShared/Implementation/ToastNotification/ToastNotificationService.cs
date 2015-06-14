@@ -31,7 +31,7 @@ namespace Vim.VisualStudio.Implementation.ToastNotification
         private readonly ToastControl _toastControl;
         private readonly IEditorFormatMap _editorFormatMap;
         private readonly Dictionary<object, ToastData> _toastDataMap = new Dictionary<object, ToastData>();
-        
+
         internal ToastControl ToastControl
         {
             get { return _toastControl; }

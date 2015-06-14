@@ -4546,12 +4546,12 @@ namespace Vim.UnitTest
 
         public abstract class ScrollWindowTest : NormalModeIntegrationTest
         {
-            private static readonly string[] Lines = KeyInputUtilTest.CharLettersLower.Select(x => x.ToString()).ToArray();
+            private static readonly string[] s_lines = KeyInputUtilTest.CharLettersLower.Select(x => x.ToString()).ToArray();
             private readonly int _lastLineNumber = 0;
 
             protected ScrollWindowTest()
             {
-                Create(Lines);
+                Create(s_lines);
                 _lastLineNumber = _textBuffer.CurrentSnapshot.LineCount - 1;
                 _textView.SetVisibleLineCount(5);
                 _globalSettings.ScrollOffset = 1;
@@ -4659,12 +4659,12 @@ namespace Vim.UnitTest
 
         public sealed class ScrollOffsetTest : NormalModeIntegrationTest
         {
-            private static readonly string[] Lines = KeyInputUtilTest.CharLettersLower.Select(x => x.ToString()).ToArray();
+            private static readonly string[] s_lines = KeyInputUtilTest.CharLettersLower.Select(x => x.ToString()).ToArray();
             private readonly int _lastLineNumber = 0;
 
             public ScrollOffsetTest()
             {
-                Create(Lines);
+                Create(s_lines);
                 _lastLineNumber = _textBuffer.CurrentSnapshot.LineCount - 1;
                 _textView.SetVisibleLineCount(5);
                 _globalSettings.ScrollOffset = 2;
@@ -4845,7 +4845,7 @@ namespace Vim.UnitTest
 
                 _textView.MoveCaretTo(_textBuffer.GetLine(2).End);
                 _vimBuffer.ProcessNotation("dd");
-                Assert.Equal( new[] { "cat", "tree" }, _textBuffer.GetLines());
+                Assert.Equal(new[] { "cat", "tree" }, _textBuffer.GetLines());
             }
         }
 
@@ -5781,6 +5781,53 @@ namespace Vim.UnitTest
                 _textView.MoveCaretTo(4);
                 _vimBuffer.ProcessNotation("yge");
                 Assert.Equal("t d", UnnamedRegister.StringValue);
+            }
+        }
+
+        public sealed class DocumentPercentMotionTest : NormalModeIntegrationTest
+        {
+            private void CreateTenWords()
+            {
+                Create("dog", "cat", "fish", "bear", "tree", "dog", "cat", "fish", "bear", "tree");
+            }
+
+            private void AssertPercentLine(int number, int expected)
+            {
+                var motion = string.Format("{0}%", number);
+                _vimBuffer.ProcessNotation(motion);
+
+                var lineNumber = _textView.GetCaretLine().LineNumber + 1; // 0 based editor
+                Assert.Equal(expected, lineNumber);
+            }
+
+            [Fact]
+            public void TenWords()
+            {
+                CreateTenWords();
+
+                AssertPercentLine(1, 1);
+                AssertPercentLine(10, 1);
+                AssertPercentLine(60, 6);
+                AssertPercentLine(80, 8);
+                AssertPercentLine(100, 10);
+            }
+
+            [Fact]
+            public void AlwaysRoundAwayFromZero()
+            {
+                CreateTenWords();
+
+                AssertPercentLine(11, 2);
+                AssertPercentLine(91, 10);
+            }
+
+            [Fact]
+            public void MoreThan100PercentIsAnError()
+            {
+                CreateTenWords();
+
+                _textView.MoveCaretToLine(3);
+                AssertPercentLine(120, 4);
             }
         }
 

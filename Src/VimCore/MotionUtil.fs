@@ -98,7 +98,7 @@ type TagBlockParser (snapshot : ITextSnapshot) =
 
     member x.ParseName startPosition = 
         let mutable position = startPosition
-        while x.TestPosition position (fun c -> CharUtil.IsLetterOrDigit c) do
+        while x.TestPosition position (fun c -> CharUtil.IsTagNameChar c) do
             position <- position + 1
 
         let length = position - startPosition
@@ -205,7 +205,7 @@ type TagBlockParser (snapshot : ITextSnapshot) =
         if x.TestPositionChar position '<' && x.TestPositionChar (position + 1) '/' then
             let textStartPosition = position + 2
             let mutable position = textStartPosition
-            while x.TestPosition position CharUtil.IsLetterOrDigit do
+            while x.TestPosition position CharUtil.IsTagNameChar do
                 position <- position + 1
 
             let length = position - textStartPosition
@@ -823,9 +823,9 @@ type internal MotionUtil
     member x.GetSections sectionKind path point = 
         _textObjectUtil.GetSections sectionKind path point
 
-    member x.SpanAndForwardFromLines (line1:ITextSnapshotLine) (line2:ITextSnapshotLine) = 
-        if line1.LineNumber <= line2.LineNumber then SnapshotSpan(line1.Start, line2.End),true
-        else SnapshotSpan(line2.Start, line1.End),false
+    member x.SpanAndForwardFromLines (line1: ITextSnapshotLine) (line2: ITextSnapshotLine) = 
+        if line1.LineNumber <= line2.LineNumber then SnapshotSpan(line1.Start, line2.EndIncludingLineBreak), true
+        else SnapshotSpan(line2.Start, line1.EndIncludingLineBreak), false
 
     /// Apply the 'startofline' option to the given MotionResult.  This function must be 
     /// called with the MotionData mapped back to the edit snapshot
@@ -1240,6 +1240,23 @@ type internal MotionUtil
                 |> SnapshotPointUtil.GetColumn
                 |> CaretColumn.InLastLine
             MotionResult.CreateExEx range.ExtentIncludingLineBreak isForward MotionKind.LineWise MotionResultFlags.None column |> Some
+
+    member x.MatchingTokenOrDocumentPercent numberOpt = 
+        match numberOpt with
+        | Some 0 -> None
+        | Some x when x > 100 -> None
+        | Some count -> 
+            _jumpList.Add x.CaretPoint
+
+            let lineCount = x.CurrentSnapshot.LineCount
+            let line = (count * lineCount + 99) / 100
+
+            line
+            |> Util.VimLineToTssLine
+            |> x.CurrentSnapshot.GetLineFromLineNumber
+            |> x.LineToLineFirstNonBlankMotion x.CaretLine
+            |> Some
+        | None -> x.MatchingToken()
 
     /// Find the matching token for the next token on the current line 
     member x.MatchingToken() = 
@@ -2211,57 +2228,72 @@ type internal MotionUtil
             let span = SnapshotSpan(startPoint, endPoint)
             MotionResult.Create span isForward MotionKind.CharacterWiseInclusive)
 
-    // TODO: Need to convert this to use the visual snapshot
+    // Line from the top of the visual buffer
     member x.LineFromTopOfVisibleWindow countOpt = 
         _jumpList.Add x.CaretPoint 
 
-        let caretPoint, caretLine = TextViewUtil.GetCaretPointAndLine _textView
-        let lines = TextViewUtil.GetVisibleSnapshotLines _textView |> List.ofSeq
-        let span = 
-            if lines.Length = 0 then
-                caretLine.Extent
+        match TextViewUtil.GetVisibleVisualSnapshotLineRange _textView with 
+        | NullableUtil.Null -> None
+        | NullableUtil.HasValue range -> 
+            if range.Count = 0 then
+                None
             else
-                let count = Util.CountOrDefault countOpt 
-                let count = min count lines.Length
-                let startLine = lines.Head
-                SnapshotPointUtil.GetLineRangeSpan startLine.Start count
-        let isForward = caretPoint.Position <= span.End.Position
-        MotionResult.Create span isForward MotionKind.LineWise
-        |> x.ApplyStartOfLineOption
+                let count = (Util.CountOrDefault countOpt) - 1
+                let count = min count range.Count
+                let visualLine = SnapshotUtil.GetLine range.Snapshot (count + range.StartLineNumber)
+                match BufferGraphUtil.MapPointDownToSnapshotStandard _textView.BufferGraph visualLine.Start x.CurrentSnapshot with
+                | None -> None
+                | Some point -> 
+                    let line = SnapshotPointUtil.GetContainingLine point
+                    let span, isForward = x.SpanAndForwardFromLines x.CaretLine line
+                    MotionResult.Create span isForward MotionKind.LineWise
+                    |> x.ApplyStartOfLineOption
+                    |> Some
 
-    // TODO: Need to convert this to use the visual snapshot
+    // Line from the top of the visual buffer
     member x.LineFromBottomOfVisibleWindow countOpt =
         _jumpList.Add x.CaretPoint 
 
-        let caretPoint,caretLine = TextViewUtil.GetCaretPointAndLine _textView
-        let lines = TextViewUtil.GetVisibleSnapshotLines _textView |> List.ofSeq
-        let span,isForward = 
-            if lines.Length = 0 then caretLine.Extent,true
+        match TextViewUtil.GetVisibleVisualSnapshotLineRange _textView with
+        | NullableUtil.Null -> None
+        | NullableUtil.HasValue range -> 
+            if range.Count = 0 then 
+                None
             else
-                let endLine = 
-                    match countOpt with 
-                    | None -> List.nth lines (lines.Length-1)
-                    | Some(count) ->    
-                        let count = lines.Length - count
-                        List.nth lines count
-                x.SpanAndForwardFromLines caretLine endLine
-        MotionResult.Create span isForward MotionKind.LineWise
-        |> x.ApplyStartOfLineOption
+                let count = (Util.CountOrDefault countOpt) - 1
+                let count = min count (range.Count - 1)
+                let number = range.LastLineNumber - count
+                let visualLine = SnapshotUtil.GetLine range.Snapshot number
+                match BufferGraphUtil.MapPointDownToSnapshotStandard _textView.BufferGraph visualLine.Start x.CurrentSnapshot with
+                | None -> None
+                | Some point -> 
+                    let line = SnapshotPointUtil.GetContainingLine point
+                    let span, isForward = x.SpanAndForwardFromLines x.CaretLine line
+                    MotionResult.Create span isForward MotionKind.LineWise
+                    |> x.ApplyStartOfLineOption
+                    |> Some
 
-    // TODO: Need to convert this to use the visual snapshot
+    /// Motion to put the caret in the middle of the visible window.  
     member x.LineInMiddleOfVisibleWindow () =
         _jumpList.Add x.CaretPoint 
 
-        let caretLine = TextViewUtil.GetCaretLine _textView
-        let lines = TextViewUtil.GetVisibleSnapshotLines _textView |> List.ofSeq
-        let middleLine =
-            if lines.Length = 0 then caretLine
-            else 
-                let index = lines.Length / 2
-                List.nth lines index
-        let span, isForward = x.SpanAndForwardFromLines caretLine middleLine
-        MotionResult.Create span isForward MotionKind.LineWise
-        |> x.ApplyStartOfLineOption
+        match TextViewUtil.GetVisibleVisualSnapshotLineRange _textView with
+        | NullableUtil.Null -> None
+        | NullableUtil.HasValue range -> 
+            if range.Count = 0 then
+                None
+            else
+                let number = (range.Count / 2) + range.StartLineNumber
+                let middleVisualLine = SnapshotUtil.GetLine range.Snapshot number
+                let middleLine = 
+                    match BufferGraphUtil.MapPointDownToSnapshotStandard _textView.BufferGraph middleVisualLine.Start x.CurrentSnapshot with
+                    | None -> x.CaretLine
+                    | Some point -> SnapshotPointUtil.GetContainingLine point
+
+                let span, isForward = x.SpanAndForwardFromLines x.CaretLine middleLine
+                MotionResult.Create span isForward MotionKind.LineWise
+                |> x.ApplyStartOfLineOption
+                |> Some
 
     /// Implements the core portion of section backward motions
     member x.SectionBackwardCore sectionKind count = 
@@ -2635,16 +2667,16 @@ type internal MotionUtil
             | Motion.LastSearch isReverse -> x.LastSearch isReverse motionArgument.Count
             | Motion.LineDown -> x.LineDown motionArgument.Count
             | Motion.LineDownToFirstNonBlank -> x.LineDownToFirstNonBlank motionArgument.Count |> Some
-            | Motion.LineFromBottomOfVisibleWindow -> x.LineFromBottomOfVisibleWindow motionArgument.RawCount |> Some
-            | Motion.LineFromTopOfVisibleWindow -> x.LineFromTopOfVisibleWindow motionArgument.RawCount |> Some
-            | Motion.LineInMiddleOfVisibleWindow -> x.LineInMiddleOfVisibleWindow() |> Some
+            | Motion.LineFromBottomOfVisibleWindow -> x.LineFromBottomOfVisibleWindow motionArgument.RawCount 
+            | Motion.LineFromTopOfVisibleWindow -> x.LineFromTopOfVisibleWindow motionArgument.RawCount 
+            | Motion.LineInMiddleOfVisibleWindow -> x.LineInMiddleOfVisibleWindow() 
             | Motion.LineOrFirstToFirstNonBlank -> x.LineOrFirstToFirstNonBlank motionArgument.RawCount |> Some
             | Motion.LineOrLastToFirstNonBlank -> x.LineOrLastToFirstNonBlank motionArgument.RawCount |> Some
             | Motion.LineUp -> x.LineUp motionArgument.Count
             | Motion.LineUpToFirstNonBlank -> x.LineUpToFirstNonBlank motionArgument.Count |> Some
             | Motion.Mark localMark -> x.Mark localMark
             | Motion.MarkLine localMark -> x.MarkLine localMark
-            | Motion.MatchingToken -> x.MatchingToken()
+            | Motion.MatchingTokenOrDocumentPercent -> x.MatchingTokenOrDocumentPercent motionArgument.RawCount
             | Motion.NextPartialWord path -> x.NextPartialWord path motionArgument.Count
             | Motion.NextWord path -> x.NextWord path motionArgument.Count
             | Motion.ParagraphBackward -> x.ParagraphBackward motionArgument.Count |> Some

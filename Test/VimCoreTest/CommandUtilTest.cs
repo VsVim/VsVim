@@ -326,7 +326,7 @@ namespace Vim.UnitTest
         /// </summary>
         public sealed class CommonOperationsFunctions : CommandUtilTest
         {
-            Mock<ICommonOperations> _commonOperations;
+            private Mock<ICommonOperations> _commonOperations;
 
             internal override ICommonOperations CreateCommonOperations(IVimBufferData vimBufferData)
             {
@@ -796,7 +796,7 @@ namespace Vim.UnitTest
 
         public abstract class ScrollLinesTest : CommandUtilTest
         {
-            IFoldManager _foldManager;
+            private IFoldManager _foldManager;
 
             protected override IFoldManager CreateFoldManager(ITextView textView)
             {
@@ -910,7 +910,7 @@ namespace Vim.UnitTest
             public ScrollPagesTest()
             {
                 Create("a", "b", "c", "d", "e");
-                _textView.SetVisibleLineCount(count: 1);
+                _textView.SetTextViewLineCount(count: 2);
             }
 
             [Fact]
@@ -945,7 +945,7 @@ namespace Vim.UnitTest
 
         public sealed class MiscTest : CommandUtilTest
         {
-            IFoldManager _foldManager;
+            private IFoldManager _foldManager;
 
             protected override IFoldManager CreateFoldManager(ITextView textView)
             {
@@ -1264,7 +1264,6 @@ namespace Vim.UnitTest
                 var command1 = VimUtil.CreatePing(
                     data =>
                     {
-
                     });
             }
 
@@ -1289,7 +1288,6 @@ namespace Vim.UnitTest
                 }
                 catch
                 {
-
                 }
                 Assert.Equal(1, _bulkOperations.BeginCount);
                 Assert.Equal(1, _bulkOperations.BeginCount);
@@ -1554,13 +1552,13 @@ namespace Vim.UnitTest
             public void DeleteSelection_WideCharacters()
             {
                 Create("abcdefgh",
-                       "あいうえお",
+                       "\u3042\u3044\u3046\u3048\u304A",
                        "ijklmnop");
                 _textView.MoveCaretToLine(1);
                 var span = _textView.GetVisualSpanBlock(column: 2, length: 2, startLine: 0, lineCount: 3);
                 _commandUtil.DeleteSelection(UnnamedRegister, span);
                 Assert.Equal("abefgh", _textView.GetLine(0).GetText());
-                Assert.Equal("あうえお", _textView.GetLine(1).GetText());
+                Assert.Equal("\u3042\u3046\u3048\u304A", _textView.GetLine(1).GetText());
                 Assert.Equal("ijmnop", _textView.GetLine(2).GetText());
             }
 
@@ -1571,13 +1569,13 @@ namespace Vim.UnitTest
             public void DeleteSelection_WideCharactersAreHalfRemoved()
             {
                 Create("abcdefgh",
-                       "あいうえお",
+                       "\u3042\u3044\u3046\u3048\u304A",
                        "ijklmnop");
                 _textView.MoveCaretToLine(1);
                 var span = _textView.GetVisualSpanBlock(column: 3, length: 2, startLine: 0, lineCount: 3, tabStop: _localSettings.TabStop);
                 _commandUtil.DeleteSelection(UnnamedRegister, span);
                 Assert.Equal("abcfgh", _textView.GetLine(0).GetText());
-                Assert.Equal("あ  えお", _textView.GetLine(1).GetText());
+                Assert.Equal("\u3042  \u3048\u304A", _textView.GetLine(1).GetText());
                 Assert.Equal("ijknop", _textView.GetLine(2).GetText());
             }
 

@@ -346,7 +346,7 @@ namespace Vim.UnitTest
                 _vimBuffer.Process(":noremap k j", enter: true);
                 _textView.MoveCaretToLine(5);
                 _vimBuffer.Process("qfhhq@f");
-                Assert.Equal(1, _textView.GetCaretPoint().GetContainingLine().LineNumber); 
+                Assert.Equal(1, _textView.GetCaretPoint().GetContainingLine().LineNumber);
             }
         }
 

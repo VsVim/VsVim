@@ -654,6 +654,7 @@ type VimInterpreter
                     | RegisterName.Named named -> not named.IsAppend
                     | RegisterName.SelectionAndDrop drop -> drop <> SelectionAndDropRegister.Star
                     | RegisterName.LastSearchPattern -> true
+                    | RegisterName.ReadOnly ReadOnlyRegister.Colon -> true
                     | _ -> false)
             | _ -> nameList |> Seq.ofList
 

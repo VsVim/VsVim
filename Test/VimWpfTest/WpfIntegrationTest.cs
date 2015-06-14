@@ -15,7 +15,6 @@ namespace Vim.UI.Wpf.UnitTest
 
         public WpfIntegrationTest()
         {
-
         }
 
         protected void Create(params string[] lines)
@@ -54,8 +53,8 @@ namespace Vim.UI.Wpf.UnitTest
             public void AltInput()
             {
                 Create("");
-                _simulation.Run("iÁ");
-                Assert.Equal("Á", _textBuffer.GetLine(0).GetText());
+                _simulation.Run("i\u00C1");
+                Assert.Equal("\u00C1", _textBuffer.GetLine(0).GetText());
             }
         }
     }

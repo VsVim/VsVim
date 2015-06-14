@@ -70,8 +70,8 @@ namespace Vim.VisualStudio
         internal bool IsEditCommand(Guid commandGroup, uint commandId)
         {
             EditCommand command;
-            return 
-                OleCommandUtil.TryConvert(commandGroup, commandId, IntPtr.Zero, VimKeyModifiers.None, out command) && 
+            return
+                OleCommandUtil.TryConvert(commandGroup, commandId, IntPtr.Zero, VimKeyModifiers.None, out command) &&
                 command.HasKeyInput;
         }
 

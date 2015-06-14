@@ -1,7 +1,7 @@
-﻿
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+
 namespace Vim.VisualStudio
 {
     /// <summary>

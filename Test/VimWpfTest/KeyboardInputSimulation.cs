@@ -48,7 +48,7 @@ namespace Vim.UI.Wpf.UnitTest
             /// </summary>
             internal void HandlePreviewKeyDown(object sender, KeyEventArgs e)
             {
-                for (int i = _keyProcessors.Count - 1; i >=0 ; i--)
+                for (int i = _keyProcessors.Count - 1; i >= 0; i--)
                 {
                     var keyProcessor = _keyProcessors[i];
                     if (e.Handled && !keyProcessor.IsInterestedInHandledEvents)
@@ -65,7 +65,7 @@ namespace Vim.UI.Wpf.UnitTest
             /// </summary>
             internal void HandlePreviewKeyUp(object sender, KeyEventArgs e)
             {
-                for (int i = _keyProcessors.Count - 1; i >=0 ; i--)
+                for (int i = _keyProcessors.Count - 1; i >= 0; i--)
                 {
                     var keyProcessor = _keyProcessors[i];
                     if (e.Handled && !keyProcessor.IsInterestedInHandledEvents)
@@ -140,13 +140,11 @@ namespace Vim.UI.Wpf.UnitTest
             internal DefaultKeyboardDevice()
                 : this(InputManager.Current)
             {
-
             }
 
             internal DefaultKeyboardDevice(InputManager inputManager)
                 : base(inputManager)
             {
-
             }
 
             protected override KeyStates GetKeyStatesFromSystem(Key key)
@@ -187,7 +185,7 @@ namespace Vim.UI.Wpf.UnitTest
 
         #endregion
 
-        private static readonly Dictionary<KeyInput, KeyData> KeyDataMap;
+        private static readonly Dictionary<KeyInput, KeyData> s_keyDataMap;
 
         static KeyboardInputSimulation()
         {
@@ -217,7 +215,7 @@ namespace Vim.UI.Wpf.UnitTest
             map[KeyInputUtil.CharToKeyInput(';')] = new KeyData(Key.OemSemicolon, ModifierKeys.None);
             map[KeyInputUtil.CharToKeyInput(':')] = new KeyData(Key.OemSemicolon, ModifierKeys.Shift);
 
-            KeyDataMap = map;
+            s_keyDataMap = map;
         }
 
         private readonly DefaultKeyboardDevice _defaultKeyboardDevice;
@@ -388,7 +386,7 @@ namespace Vim.UI.Wpf.UnitTest
                 {
                     modifierKeys |= ModifierKeys.Shift;
                 }
-                
+
                 if (VimKeyModifiers.Alt == (keyModifiers & VimKeyModifiers.Alt))
                 {
                     modifierKeys |= ModifierKeys.Alt;
@@ -398,7 +396,7 @@ namespace Vim.UI.Wpf.UnitTest
             }
 
             KeyData keyData;
-            if (KeyDataMap.TryGetValue(keyInput, out keyData))
+            if (s_keyDataMap.TryGetValue(keyInput, out keyData))
             {
                 key = keyData.Key;
                 modifierKeys = keyData.ModifierKeys;
@@ -421,7 +419,7 @@ namespace Vim.UI.Wpf.UnitTest
                 case VimKey.Up:
                     return Key.Up;
                 case VimKey.Right:
-                    return Key.Right;   
+                    return Key.Right;
                 case VimKey.Down:
                     return Key.Down;
                 case VimKey.Left:

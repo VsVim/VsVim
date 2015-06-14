@@ -13,7 +13,7 @@ namespace Vim.UnitTest
         [Fact]
         public void MoveCaretToVirtualPoint()
         {
-            var buffer = CreateTextBuffer("foo","bar");
+            var buffer = CreateTextBuffer("foo", "bar");
             var factory = new MockRepository(MockBehavior.Strict);
             var caret = MockObjectFactory.CreateCaret(factory: factory);
             caret.Setup(x => x.EnsureVisible()).Verifiable();
@@ -22,11 +22,11 @@ namespace Vim.UnitTest
             selection.Setup(x => x.Clear()).Verifiable();
 
             var textView = MockObjectFactory.CreateTextView(
-                textBuffer: buffer, 
+                textBuffer: buffer,
                 selection: selection.Object,
                 caret: caret.Object,
                 factory: factory);
-            var point = new VirtualSnapshotPoint(buffer.GetLine(0), 2); 
+            var point = new VirtualSnapshotPoint(buffer.GetLine(0), 2);
             caret.Setup(x => x.MoveTo(point)).Returns(new CaretPosition()).Verifiable();
 
             TextViewUtil.MoveCaretToVirtualPoint(textView.Object, point);
@@ -39,7 +39,7 @@ namespace Vim.UnitTest
             var buffer = CreateTextBuffer("foo", "bar", "dog", "jazz");
             var tuple = MockObjectFactory.CreateTextViewWithVisibleLines(buffer, 0, 2);
             var lines = TextViewUtil.GetVisibleSnapshotLines(tuple.Item1.Object).ToList();
-            Assert.Equal(new int[] { 0, 1, 2}, lines.Select(x => x.LineNumber));
+            Assert.Equal(new int[] { 0, 1, 2 }, lines.Select(x => x.LineNumber));
         }
 
         [Fact]
@@ -48,7 +48,7 @@ namespace Vim.UnitTest
             var buffer = CreateTextBuffer("foo", "bar", "dog", "jazz");
             var tuple = MockObjectFactory.CreateTextViewWithVisibleLines(buffer, 1, 2);
             var lines = TextViewUtil.GetVisibleSnapshotLines(tuple.Item1.Object).ToList();
-            Assert.Equal(new int[] { 1, 2}, lines.Select(x => x.LineNumber));
+            Assert.Equal(new int[] { 1, 2 }, lines.Select(x => x.LineNumber));
         }
 
         /// <summary>
@@ -64,6 +64,5 @@ namespace Vim.UnitTest
             var lines = TextViewUtil.GetVisibleSnapshotLines(view.Object).ToList();
             Assert.Equal(0, lines.Count);
         }
-
     }
 }

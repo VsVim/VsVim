@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel.Composition;
 using System.Diagnostics;
-using System.Linq;  
+using System.Linq;
 using System.Windows.Threading;
 using EditorUtils;
 using Microsoft.VisualStudio.Editor;
@@ -243,5 +243,4 @@ namespace Vim.VisualStudio
 
         #endregion
     }
-
 }

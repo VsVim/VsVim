@@ -5,6 +5,7 @@ using EditorUtils;
 using Microsoft.FSharp.Collections;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
+using Moq;
 using Vim.Extensions;
 using Vim.Interpreter;
 using Vim.UnitTest.Mock;
@@ -173,11 +174,10 @@ namespace Vim.UnitTest
 
         public sealed class DisplayMarkTest : InterpreterTest
         {
-            static readonly FSharpList<Mark> EmptyList = FSharpList<Mark>.Empty;
+            private static readonly FSharpList<Mark> s_emptyList = FSharpList<Mark>.Empty;
 
             public DisplayMarkTest()
             {
-
             }
 
             protected override void Create(params string[] lines)
@@ -197,7 +197,7 @@ namespace Vim.UnitTest
             {
                 Create("cat dog");
                 _vimTextBuffer.SetLocalMark(LocalMark.NewLetter(Letter.C), 0, 1);
-                _interpreter.RunDisplayMarks(EmptyList);
+                _interpreter.RunDisplayMarks(s_emptyList);
                 Verify('c', 1, 1);
             }
 
@@ -210,7 +210,7 @@ namespace Vim.UnitTest
                 Create("cat dog");
                 _vimTextBuffer.SetLocalMark(LocalMark.NewLetter(Letter.B), 0, 1);
                 _vimTextBuffer.SetLocalMark(LocalMark.NewLetter(Letter.A), 0, 2);
-                _interpreter.RunDisplayMarks(EmptyList);
+                _interpreter.RunDisplayMarks(s_emptyList);
                 Verify('a', line: 1, column: 2, index: 1);
                 Verify('b', line: 1, column: 1, index: 2);
             }
@@ -256,6 +256,42 @@ namespace Vim.UnitTest
                 VimHost.IsDirtyFunc = delegate { return true; };
                 ParseAndRun("e!");
                 Assert.True(_didReloadRun);
+            }
+        }
+
+        public sealed class SourceTest : InterpreterTest
+        {
+            private readonly Mock<IFileSystem> _fileSysetm;
+
+            public SourceTest()
+            {
+                Create();
+                _fileSysetm = new Mock<IFileSystem>(MockBehavior.Strict);
+                _interpreter._fileSystem = _fileSysetm.Object;
+                ((Vim)Vim).FileSystem = _fileSysetm.Object;
+            }
+
+            private void SetText(string fileName, params string[] lines)
+            {
+                _fileSysetm
+                    .Setup(x => x.ReadAllLines(fileName))
+                    .Returns(FSharpOption.Create(lines));
+            }
+
+            [Fact]
+            public void Simple()
+            {
+                SetText("test.txt", ":set ts=12");
+                ParseAndRun(":source test.txt");
+                Assert.Equal(12, _vimBuffer.LocalSettings.TabStop);
+            }
+
+            [Fact]
+            public void Issue1595()
+            {
+                SetText("test.txt", ":set ts=12");
+                ParseAndRun(":source test.txt\t\"several windows key bindings");
+                Assert.Equal(12, _vimBuffer.LocalSettings.TabStop);
             }
         }
 
@@ -723,7 +759,7 @@ namespace Vim.UnitTest
                 Create("");
                 _vimData.CommandHistory.AddRange("cat", "dog");
                 ParseAndRun("history");
-                var expected = new[] 
+                var expected = new[]
                 {
                     "      # cmd history",
                     "      1 cat",
@@ -768,7 +804,7 @@ namespace Vim.UnitTest
                 _vimData.CommandHistory.Limit = 2;
                 _vimData.CommandHistory.AddRange("cat", "dog", "fish", "tree");
                 ParseAndRun("history");
-                var expected = new[] 
+                var expected = new[]
                 {
                     "      # cmd history",
                     "      3 fish",
@@ -920,7 +956,7 @@ namespace Vim.UnitTest
 
         public sealed class LetTest : InterpreterTest
         {
-            Dictionary<string, VariableValue> _variableMap;
+            private Dictionary<string, VariableValue> _variableMap;
 
             public LetTest()
             {
@@ -1109,7 +1145,7 @@ namespace Vim.UnitTest
             private void AssertQuickFix(string command, QuickFix quickFix, int count, bool hasBang)
             {
                 var didRun = false;
-                VimHost.RunQuickFixFunc = 
+                VimHost.RunQuickFixFunc =
                     (qf, c, h) =>
                     {
                         Assert.Equal(quickFix, qf);
@@ -1118,7 +1154,7 @@ namespace Vim.UnitTest
                         didRun = true;
                     };
                 Create("");
-                ParseAndRun(command); 
+                ParseAndRun(command);
                 Assert.True(didRun);
             }
 
@@ -1146,7 +1182,7 @@ namespace Vim.UnitTest
             private void AssertLineCore(string line, bool doFind)
             {
                 var found = false;
-                foreach (var status in _statusUtil.LastStatus.Split(new [] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries))
+                foreach (var status in _statusUtil.LastStatus.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries))
                 {
                     if (status == line)
                     {
@@ -1236,7 +1272,6 @@ namespace Vim.UnitTest
                 _vimData.LastSearchData = new SearchData("test", Path.Forward);
                 ParseAndRun("reg");
                 AssertLine(@"""/   test");
-
             }
         }
 
@@ -1343,7 +1378,6 @@ namespace Vim.UnitTest
                 Create();
                 ParseAndRun("if 0", "set ts=13", "else", "set ts=12", "endif");
                 Assert.Equal(12, _localSettings.TabStop);
-
             }
 
             [Fact]
@@ -1353,7 +1387,7 @@ namespace Vim.UnitTest
                 ParseAndRun("if 1", "set ts=13", "elseif 1", "set ts=12", "endif");
                 Assert.Equal(13, _localSettings.TabStop);
             }
-            
+
             [Fact]
             public void IfElseIf2()
             {

@@ -1,4 +1,5 @@
 // !!! Generated file. Do not edit directly !!!
+
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
@@ -10,11 +11,10 @@ using Microsoft.VisualStudio;
 
 namespace Vim.VisualStudio.Vs2012
 {
-    internal partial class SharedService 
+    internal partial class SharedService
     {
         internal SharedService()
         {
-
         }
 
         private bool IsLazyLoaded(uint documentCookie)
@@ -29,7 +29,6 @@ namespace Vim.VisualStudio.Vs2012
         [ImportingConstructor]
         internal SharedServiceVersionFactory()
         {
-
         }
 
         #region ISharedServiceVersionFactory

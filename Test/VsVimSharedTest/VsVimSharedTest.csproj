@@ -91,6 +91,7 @@
     <Compile Include="ReadOnlyCollection.cs" />
     <Compile Include="ReportDesignerUtilTest.cs" />
     <Compile Include="ResultTest.cs" />
+    <Compile Include="RoslynListenerFactoryTest.cs" />
     <Compile Include="ScopeDataTest.cs" />
     <Compile Include="SettingSerializerTest.cs" />
     <Compile Include="ToastNotificationServiceTest.cs" />

@@ -238,7 +238,7 @@ namespace Vim.VisualStudio.UnitTest
             public void FindConflictingCommands6()
             {
                 Create("Global::ctrl+a", "Text Editor::ctrl+z");
-                var inputs = new KeyInput[] { 
+                var inputs = new KeyInput[] {
                 KeyInputUtil.CharWithControlToKeyInput('a'),
                 KeyInputUtil.CharWithControlToKeyInput('z') };
                 var list = _serviceRaw.FindConflictingCommandKeyBindings(_commandListSnapshot, new HashSet<KeyInput>(inputs));

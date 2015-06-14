@@ -138,6 +138,5 @@ namespace Vim.UI.Wpf.Implementation.Misc
         }
 
         #endregion
-
     }
 }

@@ -52,7 +52,6 @@ namespace Vim.VisualStudio.Implementation.Settings
             IVimProtectedOperations protectedOperations)
             : this(vsServiceProvider.GetVisualStudioVersion(), vsServiceProvider.GetWritableSettingsStore(), protectedOperations)
         {
-
         }
 
         internal VimApplicationSettings(VisualStudioVersion visualStudioVersion, WritableSettingsStore settingsStore, IVimProtectedOperations protectedOperations)
@@ -248,7 +247,7 @@ namespace Vim.VisualStudio.Implementation.Settings
 
         bool IVimApplicationSettings.HaveNotifiedVimRcErrors
         {
-            get { return GetBoolean(HaveNotifiedVimRcErrorsName, defaultValue: false); }
+            get { return GetBoolean(HaveNotifiedVimRcErrorsName, defaultValue: true); }
             set { SetBoolean(HaveNotifiedVimRcErrorsName, value); }
         }
 

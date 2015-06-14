@@ -267,7 +267,7 @@ namespace Vim.UnitTest
         [Fact]
         public void GetSpacesToColumn_WideChars()
         {
-            Create("あいうえお");
+            Create("\u3042\u3044\u3046\u3048\u304A");
             Assert.Equal(10, _operationsRaw.GetSpacesToColumn(_textBuffer.GetLine(0), 5));
         }
 

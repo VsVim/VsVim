@@ -39,6 +39,11 @@ namespace Vim.VisualStudio.Implementation.Misc
             return null;
         }
 
+        bool? IExtensionAdapter.IsUndoRedoExpected
+        {
+            get { return RunOnAll(e => e.IsUndoRedoExpected); }
+        }
+
         bool? IExtensionAdapter.ShouldKeepSelectionAfterHostCommand(string command, string argument)
         {
             return RunOnAll(e => e.ShouldKeepSelectionAfterHostCommand(command, argument));

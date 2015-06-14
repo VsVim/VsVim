@@ -5,7 +5,7 @@ using System.Reflection;
 using System.Text;
 using Xunit;
 using Vim.Extensions;
-using Microsoft.FSharp.Core;   
+using Microsoft.FSharp.Core;
 
 namespace Vim.UnitTest
 {
@@ -17,7 +17,7 @@ namespace Vim.UnitTest
         private readonly Assembly _testAssembly = typeof(CodeHygieneTest).Assembly;
         private readonly Assembly _sourceAssembly = typeof(Vim).Assembly;
 
-        static bool IsDiscriminatedUnion(Type type)
+        private static bool IsDiscriminatedUnion(Type type)
         {
             var attribute = type.GetCustomAttributes(typeof(CompilationMappingAttribute), inherit: true);
             if (attribute == null || attribute.Length != 1)
@@ -33,7 +33,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Determine if this type is one that was embedded from FSharp.Core.dll
         /// </summary>
-        static bool IsFSharpCore(Type type)
+        private static bool IsFSharpCore(Type type)
         {
             return type.FullName.StartsWith("Microsoft.FSharp", StringComparison.Ordinal);
         }
@@ -88,11 +88,10 @@ namespace Vim.UnitTest
                     {
                         list.Add(string.Format("{0} does not have [<RequiresQualifiedAccess>]", type.Name));
                     }
-
                 }
 
                 Assert.True(any);
-                var msg = list.Count == 0 
+                var msg = list.Count == 0
                     ? string.Empty
                     : list.Aggregate((x, y) => x + Environment.NewLine + y);
                 Assert.True(0 == list.Count, msg);

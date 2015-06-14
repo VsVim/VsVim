@@ -166,7 +166,7 @@ namespace Vim.UnitTest
             [Fact]
             public void AlternateShiftAndControlWithNonPrintable()
             {
-                Action<string, VimKey> assert = 
+                Action<string, VimKey> assert =
                     (name, vimKey) =>
                     {
                         var notation = String.Format("<CS-{0}>", name);

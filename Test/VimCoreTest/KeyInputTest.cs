@@ -179,6 +179,5 @@ namespace Vim.UnitTest
         {
             Assert.Equal(KeyInputUtil.CharWithControlToKeyInput('T').GetHashCode(), KeyInputUtil.CharWithControlToKeyInput('t').GetHashCode());
         }
-
     }
 }

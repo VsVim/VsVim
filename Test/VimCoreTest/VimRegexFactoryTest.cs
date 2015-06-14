@@ -4,7 +4,7 @@ using System.Text.RegularExpressions;
 
 namespace Vim.UnitTest
 {
-    public abstract class VimRegexFactoryTest 
+    public abstract class VimRegexFactoryTest
     {
         protected IVimGlobalSettings _globalSettings;
 
@@ -21,35 +21,35 @@ namespace Vim.UnitTest
                 Assert.True(regex.IsSome());
                 return regex.Value;
             }
+            [Fact]
 
             /// <summary>
             /// If there is no explicit case option in the flags then the ignore case setting
             /// should be respected
             /// </summary>
-            [Fact]
-            void RespectIgnoreCaseSetting()
+            private void RespectIgnoreCaseSetting()
             {
                 _globalSettings.IgnoreCase = true;
                 var regex = Create("test", SubstituteFlags.None);
                 Assert.True(regex.Regex.Options.HasFlag(RegexOptions.IgnoreCase));
             }
+            [Fact]
 
             /// <summary>
             /// The flag should trump the setting
             /// </summary>
-            [Fact]
-            void RespectIgnoreCaseFlag()
+            private void RespectIgnoreCaseFlag()
             {
                 _globalSettings.IgnoreCase = false;
                 var regex = Create("test", SubstituteFlags.IgnoreCase);
                 Assert.True(regex.Regex.Options.HasFlag(RegexOptions.IgnoreCase));
             }
+            [Fact]
 
             /// <summary>
             /// Smart case should be considered if there is no explicit case flag
             /// </summary>
-            [Fact]
-            void RespectSmartCaseSetting()
+            private void RespectSmartCaseSetting()
             {
                 _globalSettings.IgnoreCase = true;
                 _globalSettings.SmartCase = true;

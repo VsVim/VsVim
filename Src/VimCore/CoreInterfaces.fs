@@ -136,6 +136,8 @@ type IWordUtil =
 /// Used to display a word completion list to the user
 type IWordCompletionSession =
 
+    inherit IPropertyOwner
+
     /// Is the session dismissed
     abstract IsDismissed : bool
 
@@ -153,13 +155,22 @@ type IWordCompletionSession =
 
     /// Raised when the session is dismissed
     [<CLIEvent>]
-    abstract Dismissed: IDelegateEvent<System.EventHandler>
+    abstract Dismissed : IDelegateEvent<System.EventHandler>
+
+type WordCompletionSessionEventArgs(_wordCompletionSession : IWordCompletionSession) =
+    inherit System.EventArgs()
+
+    member x.WordCompletionSession = _wordCompletionSession
 
 /// Factory service for creating IWordCompletionSession instances
 type IWordCompletionSessionFactoryService = 
 
     /// Create a session with the given set of words
     abstract CreateWordCompletionSession : textView : ITextView -> wordSpan : SnapshotSpan -> words : string seq -> isForward : bool -> IWordCompletionSession
+
+    /// Raised when the session is created
+    [<CLIEvent>]
+    abstract Created : IDelegateEvent<System.EventHandler<WordCompletionSessionEventArgs>>
 
 /// Wraps an ITextUndoTransaction so we can avoid all of the null checks
 type IUndoTransaction =
@@ -1052,7 +1063,8 @@ type Motion =
 
     /// Get the matching token from the next token on the line.  This is used to implement
     /// the % motion
-    | MatchingToken 
+    /// If a number is specified, go to {count} percentage in the file
+    | MatchingTokenOrDocumentPercent 
 
     /// Search for the next occurrence of the word under the caret
     | NextWord of Path
@@ -3741,6 +3753,9 @@ type IVimData =
     /// The last command which was ran 
     abstract LastCommand : StoredCommand option with get, set
 
+    /// The last command line which was ran
+    abstract LastCommandLine : string with get, set
+
     /// The last shell command that was run
     abstract LastShellCommand : string option with get, set
 
@@ -3805,6 +3820,9 @@ type IVimHost =
 
     /// Is auto-command enabled for this host
     abstract IsAutoCommandEnabled : bool
+
+    /// Is undo / redo expected at this point in time due to a host operation.
+    abstract IsUndoRedoExpected : bool 
 
     /// Get the count of window tabs that are active in the host. This refers to tabs for actual 
     /// edit windows, not anything to do with tabs in the text file.  If window tabs are not supported 

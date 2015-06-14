@@ -1,6 +1,13 @@
 
 configuration: Debug
 
+install: 
+  - ps: (new-object Net.WebClient).DownloadString("https://raw.github.com/madskristensen/ExtensionScripts/master/AppVeyor/vsix.ps1") | iex
+
+before_build: 
+  # Updates the version number in the .vsixmanifest and updates the AppVeyor build number to match
+  - ps: Vsix-IncrementVsixVersion | Vsix-UpdateBuildVersion
+
 build:
   project: VimAll.sln
   verbosity: minimal
@@ -8,11 +15,11 @@ build:
 after_build:
   - Src\CleanVsix\bin\Debug\CleanVsix.exe Src\VsVim\bin\Debug\VsVim.vsix
 
-artifacts:
-  - path: Src\VsVim\bin\Debug\VsVim.vsix
-
 test_script:
   - Tools\xunit.console.clr4.x86.exe Test\VimCoreTest\bin\Debug\Vim.Core.UnitTest.dll /silent
   - Tools\xunit.console.clr4.x86.exe Test\VimWpfTest\bin\Debug\Vim.UI.Wpf.UnitTest.dll /silent
   - Tools\xunit.console.clr4.x86.exe Test\VsVimSharedTest\bin\Debug\Vim.VisualStudio.Shared.UnitTest.dll /silent
 
+after_test:
+  # Pushes the compiled vsix to artifacts and publishes it to vsixgallery.com
+  - ps: Vsix-PushArtifacts | Vsix-PublishToGallery

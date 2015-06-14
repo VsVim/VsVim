@@ -96,7 +96,7 @@ namespace Vim.VisualStudio
 
         public bool IsSuccess
         {
-            get { return _isSuccess;  }
+            get { return _isSuccess; }
         }
 
         public bool IsError

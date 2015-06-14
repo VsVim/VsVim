@@ -303,7 +303,7 @@ namespace Vim.VisualStudio.UnitTest
             [Fact]
             public void DontHandleIfIncrementalSearchActive()
             {
-                var all = new [] { Key.Enter, Key.Tab, Key.Back };
+                var all = new[] { Key.Enter, Key.Tab, Key.Back };
                 foreach (var key in all)
                 {
                     _vsAdapter.Setup(x => x.IsIncrementalSearchActive(It.IsAny<ITextView>())).Returns(false);
@@ -358,7 +358,7 @@ namespace Vim.VisualStudio.UnitTest
             [Fact]
             public void DontHandleIfIncrementalSearchActive()
             {
-                var all = new [] { KeyInputUtil.EnterKey, KeyInputUtil.CharToKeyInput('a') };
+                var all = new[] { KeyInputUtil.EnterKey, KeyInputUtil.CharToKeyInput('a') };
                 foreach (var keyInput in all)
                 {
                     _vsAdapter.Setup(x => x.IsIncrementalSearchActive(It.IsAny<ITextView>())).Returns(false);

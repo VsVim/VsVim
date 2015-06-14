@@ -26,7 +26,7 @@ namespace Vim.VisualStudio.Implementation.VisualAssist
         private const string RegistryBaseKeyName = @"Software\Whole Tomato\Visual Assist X\";
         private const string RegistryValueName = @"TrackCaretVisibility";
 
-        private static readonly Guid VisualAssistPackageId = new Guid("{44630d46-96b5-488c-8df9-26e21db8c1a3}");
+        private static readonly Guid s_visualAssistPackageId = new Guid("{44630d46-96b5-488c-8df9-26e21db8c1a3}");
 
         private readonly IVim _vim;
         private readonly bool _isVisualAssistInstalled;
@@ -45,7 +45,7 @@ namespace Vim.VisualStudio.Implementation.VisualAssist
             _toastNotificationServiceProvider = toastNotificationServiceProvider;
 
             var vsShell = serviceProvider.GetService<SVsShell, IVsShell>();
-            _isVisualAssistInstalled = vsShell.IsPackageInstalled(VisualAssistPackageId);
+            _isVisualAssistInstalled = vsShell.IsPackageInstalled(s_visualAssistPackageId);
             if (_isVisualAssistInstalled)
             {
                 var dte = serviceProvider.GetService<SDTE, _DTE>();
@@ -69,6 +69,8 @@ namespace Vim.VisualStudio.Implementation.VisualAssist
                     subKey = "VANet10";
                     break;
                 case VisualStudioVersion.Vs2012:
+                case VisualStudioVersion.Vs2013:
+                case VisualStudioVersion.Vs2015:
                     subKey = "VANet11";
                     break;
                 case VisualStudioVersion.Unknown:

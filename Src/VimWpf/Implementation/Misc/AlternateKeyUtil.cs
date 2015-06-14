@@ -7,18 +7,18 @@ namespace Vim.UI.Wpf.Implementation.Misc
     [Export(typeof(IKeyUtil))]
     internal sealed class AlternateKeyUtil : IKeyUtil
     {
-        private static readonly Dictionary<Key, KeyInput> WpfKeyToKeyInputMap;
-        private static readonly Dictionary<VimKey, Key> VimKeyToWpfKeyMap;
-        private static readonly Dictionary<KeyInput, Key> KeyInputToWpfKeyMap;
+        private static readonly Dictionary<Key, KeyInput> s_wpfKeyToKeyInputMap;
+        private static readonly Dictionary<VimKey, Key> s_vimKeyToWpfKeyMap;
+        private static readonly Dictionary<KeyInput, Key> s_keyInputToWpfKeyMap;
 
         static AlternateKeyUtil()
         {
-            VimKeyToWpfKeyMap = BuildVimKeyToWpfKeyMap();
-            KeyInputToWpfKeyMap = BuildKeyInputToWpfKeyMap(VimKeyToWpfKeyMap);
-            WpfKeyToKeyInputMap = new Dictionary<Key, KeyInput>();
-            foreach (var pair in KeyInputToWpfKeyMap)
+            s_vimKeyToWpfKeyMap = BuildVimKeyToWpfKeyMap();
+            s_keyInputToWpfKeyMap = BuildKeyInputToWpfKeyMap(s_vimKeyToWpfKeyMap);
+            s_wpfKeyToKeyInputMap = new Dictionary<Key, KeyInput>();
+            foreach (var pair in s_keyInputToWpfKeyMap)
             {
-                WpfKeyToKeyInputMap[pair.Value] = pair.Key;
+                s_wpfKeyToKeyInputMap[pair.Value] = pair.Key;
             }
         }
 
@@ -89,8 +89,7 @@ namespace Vim.UI.Wpf.Implementation.Misc
 
         internal static bool TrySpecialVimKeyToKey(VimKey vimKey, out Key key)
         {
-            return VimKeyToWpfKeyMap.TryGetValue(vimKey, out key);
-
+            return s_vimKeyToWpfKeyMap.TryGetValue(vimKey, out key);
         }
 
         internal static VimKeyModifiers ConvertToKeyModifiers(ModifierKeys keys)
@@ -143,7 +142,7 @@ namespace Vim.UI.Wpf.Implementation.Misc
 
         bool IKeyUtil.TryConvertSpecialToKeyInput(Key key, ModifierKeys modifierKeys, out KeyInput keyInput)
         {
-            if (WpfKeyToKeyInputMap.TryGetValue(key, out keyInput))
+            if (s_wpfKeyToKeyInputMap.TryGetValue(key, out keyInput))
             {
                 var keyModifiers = ConvertToKeyModifiers(modifierKeys);
                 keyInput = KeyInputUtil.ApplyKeyModifiers(keyInput, keyModifiers);

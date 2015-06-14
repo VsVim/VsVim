@@ -17,7 +17,7 @@ namespace Vim.UnitTest
         {
             _factory = new MockRepository(MockBehavior.Strict);
 
-            var undoRedoOperations = new UndoRedoOperations(new StatusUtil(), FSharpOption<ITextUndoHistory>.None, EditorOperationsFactoryService); 
+            var undoRedoOperations = new UndoRedoOperations(VimHost, new StatusUtil(), FSharpOption<ITextUndoHistory>.None, EditorOperationsFactoryService);
             if (haveRealTransaction)
             {
                 _realTransaction = _factory.Create<ITextUndoTransaction>();
@@ -61,6 +61,5 @@ namespace Vim.UnitTest
             _transaction.Cancel();
             _factory.Verify();
         }
-
     }
 }

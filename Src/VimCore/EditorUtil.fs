@@ -1441,17 +1441,35 @@ module EditorOptionsUtil =
     let SetOptionValue (opts : IEditorOptions) (key : EditorOptionKey<'a>) value =
         opts.SetOptionValue(key, value)
 
+module TextBufferUtil =
+    
+    /// Delete the specified span and return the latest ITextSnapshot after the
+    /// entire delete operation completes vs. the one which is returned for 
+    /// the specific delete operation
+    let DeleteAndGetLatest (textBuffer : ITextBuffer) (deleteSpan : Span) = 
+        textBuffer.Delete(deleteSpan) |> ignore
+        textBuffer.CurrentSnapshot
+
+module TextEditUtil = 
+
+    /// Apply the change and return the latest ITextSnapshot after the edit
+    /// operation completes vs. the one which is returned for this specific
+    /// edit operation.
+    let ApplyAndGetLatest (textEdit : ITextEdit) = 
+        textEdit.Apply() |> ignore
+        textEdit.Snapshot.TextBuffer.CurrentSnapshot
+
 /// Contains operations to help fudge the Editor APIs to be more F# friendly.  Does not
 /// include any Vim specific logic
 module TextViewUtil =
 
-    let GetSnapshot (textView:ITextView) = textView.TextSnapshot
+    let GetSnapshot (textView : ITextView) = textView.TextSnapshot
 
-    let GetCaret (textView:ITextView) = textView.Caret
+    let GetCaret (textView : ITextView) = textView.Caret
 
-    let GetCaretPoint (textView:ITextView) = textView.Caret.Position.BufferPosition
+    let GetCaretPoint (textView : ITextView) = textView.Caret.Position.BufferPosition
 
-    let GetCaretVirtualPoint (textView:ITextView) = textView.Caret.Position.VirtualBufferPosition
+    let GetCaretVirtualPoint (textView : ITextView) = textView.Caret.Position.VirtualBufferPosition
 
     let GetCaretLine textView = GetCaretPoint textView |> SnapshotPointUtil.GetContainingLine
 
@@ -1478,13 +1496,34 @@ module TextViewUtil =
         | None -> 50
         | Some textViewLines -> textViewLines.Count
 
-    /// Return the overaching SnapshotLineRange for the visible lines in the ITextView
+    /// Return the overarching SnapshotLineRange for the visible lines in the ITextView
     let GetVisibleSnapshotLineRange (textView : ITextView) =
         Extensions.GetVisibleSnapshotLineRange(textView)
 
     /// Returns a sequence of ITextSnapshotLine values representing the visible lines in the buffer
     let GetVisibleSnapshotLines (textView : ITextView) =
         match GetVisibleSnapshotLineRange textView with
+        | NullableUtil.HasValue lineRange -> lineRange.Lines
+        | NullableUtil.Null -> Seq.empty
+
+    /// Returns the overarching SnapshotLineRange for the visible lines in the ITextView on the
+    /// Visual snapshot.
+    let GetVisibleVisualSnapshotLineRange (textView : ITextView) = 
+        match GetVisibleSnapshotLineRange textView with
+        | NullableUtil.Null -> NullableUtil.CreateNull<SnapshotLineRange>()
+        | NullableUtil.HasValue range ->
+            match BufferGraphUtil.MapSpanUpToSnapshot textView.BufferGraph range.ExtentIncludingLineBreak SpanTrackingMode.EdgeInclusive textView.TextViewModel.VisualBuffer.CurrentSnapshot with
+            | Some collection -> 
+                collection 
+                |> NormalizedSnapshotSpanCollectionUtil.GetOverarchingSpan 
+                |> SnapshotLineRange.CreateForSpan
+                |> NullableUtil.Create
+            | None -> NullableUtil.CreateNull<SnapshotLineRange>()
+
+    /// Returns a sequence of ITextSnapshotLine values representing the visible lines in the buffer
+    /// on the Visual snapshot
+    let GetVisibleVisualSnapshotLines (textView : ITextView) =
+        match GetVisibleVisualSnapshotLineRange textView with
         | NullableUtil.HasValue lineRange -> lineRange.Lines
         | NullableUtil.Null -> Seq.empty
 

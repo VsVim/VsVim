@@ -461,6 +461,7 @@ module internal CharUtil =
     let IsLower x = System.Char.IsLower(x)
     let IsLowerLetter x = IsLower x && IsLetter x
     let IsLetterOrDigit x = System.Char.IsLetterOrDigit(x)
+    let IsTagNameChar x = System.Char.IsLetterOrDigit(x) || x = ':' || x = '.' || x = '_'
     let ToLower x = System.Char.ToLower(x)
     let ToUpper x = System.Char.ToUpper(x)
     let ChangeCase x = if IsUpper x then ToLower x else ToUpper x
@@ -678,6 +679,9 @@ module internal NullableUtil =
 
     let Create (x : 'T) =
         System.Nullable<'T>(x)
+
+    let CreateNull<'T when 'T : (new : unit -> 'T) and 'T : struct and 'T :> System.ValueType> () =
+        System.Nullable<'T>()
 
     let ToOption (x : System.Nullable<_>) =
         if x.HasValue then

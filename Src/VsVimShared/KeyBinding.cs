@@ -115,7 +115,7 @@ namespace Vim.VisualStudio
 
             EnsureVsMap();
             var input = stroke.KeyInput;
-            var query = _vsMap.Where(x => x.Value == input);
+            var query = s_vsMap.Where(x => x.Value == input);
             if (query.Any())
             {
                 builder.Append(query.First().Key);
@@ -148,8 +148,8 @@ namespace Vim.VisualStudio
 
         #region Parsing Methods
 
-        private static readonly string[] ModifierPrefix = new[] { "Shift", "Alt", "Ctrl" };
-        private static Dictionary<string, KeyInput> _vsMap;
+        private static readonly string[] s_modifierPrefix = new[] { "Shift", "Alt", "Ctrl" };
+        private static Dictionary<string, KeyInput> s_vsMap;
 
         private static void BuildVsMap()
         {
@@ -187,12 +187,12 @@ namespace Vim.VisualStudio
             map.Add("F12", KeyInputUtil.VimKeyToKeyInput(VimKey.F12));
             map.Add("Space", KeyInputUtil.CharToKeyInput(' '));
 
-            _vsMap = map;
+            s_vsMap = map;
         }
 
         private static void EnsureVsMap()
         {
-            if (null == _vsMap)
+            if (null == s_vsMap)
             {
                 BuildVsMap();
             }
@@ -255,7 +255,7 @@ namespace Vim.VisualStudio
         private static bool TryConvertVsSpecificKey(string keystroke, out KeyInput keyInput)
         {
             EnsureVsMap();
-            if (_vsMap.TryGetValue(keystroke, out keyInput))
+            if (s_vsMap.TryGetValue(keystroke, out keyInput))
             {
                 return true;
             }
@@ -295,7 +295,7 @@ namespace Vim.VisualStudio
 
             // First get rid of the Modifiers
             var mod = VimKeyModifiers.None;
-            while (ModifierPrefix.Any(x => entry.StartsWith(x, StringComparison.OrdinalIgnoreCase)))
+            while (s_modifierPrefix.Any(x => entry.StartsWith(x, StringComparison.OrdinalIgnoreCase)))
             {
                 var index = entry.IndexOf('+');
                 if (index < 0)
