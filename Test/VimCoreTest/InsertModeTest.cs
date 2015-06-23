@@ -30,7 +30,7 @@ namespace Vim.UnitTest
         protected Mock<IDisplayWindowBroker> _broker;
         protected Mock<IEditorOptions> _editorOptions;
         protected IUndoRedoOperations _undoRedoOperations;
-        protected Mock<ITextChangeTracker> _textChangeTracker;
+        internal Mock<ITextChangeTracker> _textChangeTracker;
         internal Mock<IInsertUtil> _insertUtil;
         protected Mock<IKeyboardDevice> _keyboardDevice;
         protected Mock<IMouseDevice> _mouseDevice;

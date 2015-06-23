@@ -213,35 +213,6 @@ type IKeyboardDevice =
     abstract KeyModifiers : VimKeyModifiers
 
 /// Tracks changes to the associated ITextView
-type ITextChangeTracker =
-
-    /// Associated ITextView
-    abstract TextView : ITextView
-
-    /// Whether or not change tracking is currently enabled.  Disabling the tracking will
-    /// cause the current change to be completed
-    abstract TrackCurrentChange : bool with get, set
-
-    /// Current change
-    abstract CurrentChange : TextChange option
-
-    /// Complete the current change if there is one
-    abstract CompleteChange : unit -> unit
-
-    /// Clear out the current change without completing it
-    abstract ClearChange : unit -> unit
-
-    /// Raised when a change is completed
-    [<CLIEvent>]
-    abstract ChangeCompleted : IDelegateEvent<System.EventHandler<TextChangeEventArgs>>
-
-/// Manages the ITextChangeTracker instances
-type ITextChangeTrackerFactory =
-
-    /// Get the ITextChangeTracker associated with the given vim buffer information
-    abstract GetTextChangeTracker : vimBufferData : IVimBufferData -> ITextChangeTracker
-
-/// Tracks changes to the associated ITextView
 type ILineChangeTracker =
 
     /// Swap the most recently changed line with its saved copy
