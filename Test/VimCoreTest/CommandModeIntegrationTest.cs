@@ -11,12 +11,12 @@ namespace Vim.UnitTest
 {
     public abstract class CommandModeIntegrationTest : VimTestBase
     {
-        protected IVimBuffer _vimBuffer;
-        protected ITextView _textView;
-        protected ITextBuffer _textBuffer;
-        protected ICommandMode _commandMode;
-        protected MockVimHost _vimHost;
-        protected string _lastStatus;
+        private IVimBuffer _vimBuffer;
+        private ITextView _textView;
+        private ITextBuffer _textBuffer;
+        private ICommandMode _commandMode;
+        private MockVimHost _vimHost;
+        private string _lastStatus;
 
         public virtual void Create(params string[] lines)
         {
@@ -351,6 +351,47 @@ namespace Vim.UnitTest
                 _vimBuffer.ProcessNotation(":delmarks!", enter: true);
                 Assert.False(HasLocalMark(Letter.A));
                 Assert.True(HasGlobalMark(Letter.A));
+            }
+        }
+
+        public sealed class GlobalTest : CommandModeIntegrationTest
+        {
+            [Fact]
+            public void DeleteSelected()
+            {
+                Create("cat", "dog", "cattle");
+                _vimBuffer.ProcessNotation(":g/cat/d", enter: true);
+                Assert.Equal(new[] { "dog" }, _vimBuffer.TextBuffer.GetLines());
+            }
+
+            [Fact]
+            public void UpdateLastSearch()
+            {
+                Create("cat", "dog", "cattle");
+                _vimBuffer.VimData.LastSearchData = new SearchData("cat", Path.Forward);
+                _vimBuffer.ProcessNotation(":g/cat/echo", enter: true);
+                Assert.Equal("cat", _vimBuffer.VimData.LastSearchData.Pattern);
+            }
+
+            [Fact]
+            public void SpaceDoesntUseLastSearch()
+            {
+                Create("cat", "dog", "cattle", "big dog");
+                _vimBuffer.VimData.LastSearchData = new SearchData("cat", Path.Forward);
+                _vimBuffer.ProcessNotation(":g/ /d", enter: true);
+                Assert.Equal(new[] { "cat", "dog", "cattle" }, _vimBuffer.TextBuffer.GetLines());
+            }
+
+            /// <summary>
+            /// By default the global command should use the last search pattern
+            /// </summary>
+            [Fact]
+            public void Issue1626()
+            {
+                Create("cat", "dog", "cattle");
+                _vimBuffer.VimData.LastSearchData = new SearchData("cat", Path.Forward);
+                _vimBuffer.ProcessNotation(":g//d", enter: true);
+                Assert.Equal(new[] { "dog" }, _vimBuffer.TextBuffer.GetLines());
             }
         }
 

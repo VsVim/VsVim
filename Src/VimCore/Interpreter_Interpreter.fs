@@ -780,6 +780,11 @@ type VimInterpreter
 
     /// Run the global command.  
     member x.RunGlobal lineRange pattern matchPattern lineCommand =
+
+        let pattern = 
+            if StringUtil.isNullOrEmpty pattern then _vimData.LastSearchData.Pattern
+            else pattern
+
         x.RunWithLineRangeOrDefault lineRange DefaultLineRange.EntireBuffer (fun lineRange ->
             let options = VimRegexFactory.CreateRegexOptions _globalSettings
             match VimRegexFactory.Create pattern options with
