@@ -133,7 +133,7 @@ type internal CommandUtil
             // Calculate te new value of the number 
             let text = 
                 match numberValue with
-                | NumberValue.Alpha c -> c |> CharUtil.AlphaAdd count |> StringUtil.ofChar
+                | NumberValue.Alpha c -> c |> CharUtil.AlphaAdd count |> StringUtil.OfChar
                 | NumberValue.Decimal number -> sprintf "%d" (number + count)
                 | NumberValue.Octal number -> sprintf "0%o" (number + count)
                 | NumberValue.Hex number -> sprintf "0x%x" (number + count)
@@ -162,7 +162,7 @@ type internal CommandUtil
         // Adjust the indentation on a given line of text to have the indentation
         // previously calculated
         let adjustTextLine (textLine : TextLine) =
-            let oldIndent = textLine.Text |> Seq.takeWhile CharUtil.IsBlank |> StringUtil.ofCharSeq
+            let oldIndent = textLine.Text |> Seq.takeWhile CharUtil.IsBlank |> StringUtil.OfCharSeq
             let text = indent + (textLine.Text.Substring(oldIndent.Length))
             { textLine with Text = text }
 
@@ -235,7 +235,7 @@ type internal CommandUtil
         |> Seq.concat
         |> Seq.filter (fun p -> CharUtil.IsLetter (p.GetChar()))
         |> Seq.iter (fun p ->
-            let change = func (p.GetChar()) |> StringUtil.ofChar
+            let change = func (p.GetChar()) |> StringUtil.OfChar
             edit.Replace(p.Position, 1, change) |> ignore)
         edit.Apply() |> ignore
 

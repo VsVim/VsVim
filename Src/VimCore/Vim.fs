@@ -68,7 +68,7 @@ type internal VimData(_globalSettings : IVimGlobalSettings) as this =
         // The lifetime of VimData is the same as IGlobalSettings and hence there is no need
         // to unsubsribe from this event.  Nor is there any real mechanism.  
         (_globalSettings :> IVimSettings).SettingChanged 
-        |> Observable.filter (fun args -> StringUtil.isEqual args.Setting.Name GlobalSettingNames.HighlightSearchName)
+        |> Observable.filter (fun args -> StringUtil.IsEqual args.Setting.Name GlobalSettingNames.HighlightSearchName)
         |> Observable.add (fun _ -> 
             _displayPatternSuspended <- false
             this.CheckDisplayPattern())
@@ -384,7 +384,7 @@ type internal Vim
         // a derived type
 
         (_globalSettings :> IVimSettings).SettingChanged 
-        |> Event.filter (fun args -> StringUtil.isEqual args.Setting.Name GlobalSettingNames.HistoryName)
+        |> Event.filter (fun args -> StringUtil.IsEqual args.Setting.Name GlobalSettingNames.HistoryName)
         |> Event.add (fun _ -> 
             _vimData.SearchHistory.Limit <- _globalSettings.History
             _vimData.CommandHistory.Limit <- _globalSettings.History)

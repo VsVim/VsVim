@@ -663,7 +663,7 @@ type VimInterpreter
             displayNames 
             |> Seq.map (fun name -> 
                 let register = _registerMap.GetRegister name
-                match register.Name.Char, StringUtil.isNullOrEmpty register.StringValue with
+                match register.Name.Char, StringUtil.IsNullOrEmpty register.StringValue with
                 | None, _ -> None
                 | Some c, true -> None
                 | Some c, false -> Some (c, normalizeDisplayString register.StringValue))
@@ -782,7 +782,7 @@ type VimInterpreter
     member x.RunGlobal lineRange pattern matchPattern lineCommand =
 
         let pattern = 
-            if StringUtil.isNullOrEmpty pattern then _vimData.LastSearchData.Pattern
+            if StringUtil.IsNullOrEmpty pattern then _vimData.LastSearchData.Pattern
             else pattern
 
         x.RunWithLineRangeOrDefault lineRange DefaultLineRange.EntireBuffer (fun lineRange ->
@@ -1166,7 +1166,7 @@ type VimInterpreter
     member x.RunSearch lineRange path pattern = 
         x.RunWithLineRangeOrDefault lineRange DefaultLineRange.CurrentLine (fun lineRange ->
             let pattern = 
-                if StringUtil.isNullOrEmpty pattern then _vimData.LastSearchData.Pattern
+                if StringUtil.IsNullOrEmpty pattern then _vimData.LastSearchData.Pattern
                 else pattern
     
             // Searches start after the end of the specified line range

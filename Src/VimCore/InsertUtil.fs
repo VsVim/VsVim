@@ -114,7 +114,7 @@ type internal InsertUtil
 
         let mutable error = false
 
-        if not (StringUtil.isNullOrEmpty insertText.Value) then
+        if not (StringUtil.IsNullOrEmpty insertText.Value) then
             if not (textEdit.Insert(position, insertText.Value)) then
                 error <- true
 
@@ -178,7 +178,7 @@ type internal InsertUtil
                 let currentLine = SnapshotUtil.GetLine currentSnapshot lineNumber
                 let point = SnapshotLineUtil.GetSpaceWithOverlapOrEnd currentLine spaces _localSettings.TabStop
                 if point.SpacesBefore > 0 then
-                    let text = StringUtil.repeatChar point.Width ' '
+                    let text = StringUtil.RepeatChar point.Width ' '
                     let span = Span(point.Point.Position, 1)
                     textEdit.Replace(span, text) |> ignore
 
@@ -310,7 +310,7 @@ type internal InsertUtil
             EditorOptionsUtil.SetOptionValue _editorOptions DefaultTextViewOptions.OverwriteModeId true
 
         try
-            let text = StringUtil.ofChar c
+            let text = StringUtil.OfChar c
             x.Insert text
         finally 
             if not oldValue then
@@ -322,7 +322,7 @@ type internal InsertUtil
             _operations.Beep()
             CommandResult.Error
         | Some point -> 
-            let text = SnapshotPointUtil.GetChar point |> StringUtil.ofChar
+            let text = SnapshotPointUtil.GetChar point |> StringUtil.OfChar
             x.EditWithUndoTransaction "Insert Character Above" (fun () ->
                 let position = x.CaretPoint.Position
                 _textBuffer.Insert(position, text) |> ignore
@@ -357,7 +357,7 @@ type internal InsertUtil
                     // If there is actual text on this new line (enter in the middle of the
                     // line) then we need to insert white space.  Else we just put the caret
                     // into virtual space
-                    let indentText = StringUtil.repeat indent " " |> _operations.NormalizeBlanks
+                    let indentText = StringUtil.Repeat indent " " |> _operations.NormalizeBlanks
                     if indentText.Length > 0 && newLine.Length > 0 then
                         _textBuffer.Insert(newLine.Start.Position, indentText) |> ignore
                         TextViewUtil.MoveCaretToPosition _textView (newLine.Start.Position + indentText.Length)
@@ -399,7 +399,7 @@ type internal InsertUtil
                     // When only spaces are being inserted we don't normalize away any tabs that exist before
                     // the caret.  Just insert the spaces
                     let caretPosition = x.CaretPoint.Position + addedSpaces
-                    let text = StringUtil.repeatChar addedSpaces ' '
+                    let text = StringUtil.RepeatChar addedSpaces ' '
                     _textBuffer.Insert(x.CaretPoint.Position, text) |> ignore
                     caretPosition
                  else
@@ -415,7 +415,7 @@ type internal InsertUtil
 
                     let text = 
                         let existingText = x.CurrentSnapshot.GetText(existingRange)
-                        let indentText = StringUtil.repeatChar addedSpaces ' ' 
+                        let indentText = StringUtil.RepeatChar addedSpaces ' ' 
                         _operations.NormalizeBlanksAtColumn (existingText + indentText) insertColumn
 
                     let caretPosition = insertColumn.Point.Position + text.Length
@@ -582,7 +582,7 @@ type internal InsertUtil
 
         // Replace the current indent with a new indent
         let newColumn = max (column + offset) 0
-        let spaces = StringUtil.repeatChar newColumn ' '
+        let spaces = StringUtil.RepeatChar newColumn ' '
         let indent = _operations.NormalizeBlanks spaces
         _textBuffer.Replace(indentSpan.Span, indent) |> ignore
 
@@ -739,7 +739,7 @@ type internal InsertUtil
             if diff <= 0 then
                 BackspaceCommand.Characters 1
             else
-                let text = StringUtil.repeatChar diff ' '
+                let text = StringUtil.RepeatChar diff ' '
                 BackspaceCommand.Replace (1, text)
         else
             // Backspacing over white space.  If everything between here and the previous tab boundary

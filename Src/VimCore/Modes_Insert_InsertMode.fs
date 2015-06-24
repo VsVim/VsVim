@@ -428,7 +428,7 @@ type internal InsertMode
                         if _isReplace then
                             InsertCommand.Replace c
                         else
-                            let text = StringUtil.ofChar c
+                            let text = StringUtil.OfChar c
                             InsertCommand.Insert text
                     let commandFlags = CommandFlags.Repeatable ||| CommandFlags.InsertEdit
                     let keyInputSet = KeyInputSet.OneKeyInput keyInput
@@ -965,13 +965,13 @@ type internal InsertMode
             | ModeArgument.InsertWithCount count ->
                 if count > 1 then
                     let transaction = _undoRedoOperations.CreateLinkedUndoTransactionWithFlags "Insert with count" LinkedUndoTransactionFlags.CanBeEmpty
-                    Some transaction, InsertKind.Repeat (count, false, TextChange.Insert StringUtil.empty)
+                    Some transaction, InsertKind.Repeat (count, false, TextChange.Insert StringUtil.Empty)
                 else
                     None, InsertKind.Normal
             | ModeArgument.InsertWithCountAndNewLine count ->
                 if count > 1 then
                     let transaction = _undoRedoOperations.CreateLinkedUndoTransactionWithFlags "Insert with count and new line" LinkedUndoTransactionFlags.CanBeEmpty
-                    Some transaction, InsertKind.Repeat (count, true, TextChange.Insert StringUtil.empty)
+                    Some transaction, InsertKind.Repeat (count, true, TextChange.Insert StringUtil.Empty)
                 else
                     None, InsertKind.Normal
             | ModeArgument.InsertWithTransaction transaction ->

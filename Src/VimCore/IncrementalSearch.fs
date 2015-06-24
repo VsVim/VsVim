@@ -101,7 +101,7 @@ type internal IncrementalSearch
         x.Cancel()
 
         let start = TextViewUtil.GetCaretPoint _textView
-        let searchData = SearchData(StringUtil.empty, path, _globalSettings.WrapScan)
+        let searchData = SearchData(StringUtil.Empty, path, _globalSettings.WrapScan)
         let searchResult = SearchResult.NotFound (searchData, false)
         let incrementalSearchData = {
             SearchResult = searchResult
@@ -133,7 +133,7 @@ type internal IncrementalSearch
                 member this.Cancelled (data : ITrackingPoint) = runActive (fun session -> x.RunCancelled session) ()
             }
 
-        let historySession = HistoryUtil.CreateHistorySession historyClient startPoint StringUtil.empty
+        let historySession = HistoryUtil.CreateHistorySession historyClient startPoint StringUtil.Empty
         _incrementalSearchSession <- Some (IncrementalSearchSession(key, historySession, incrementalSearchData))
 
         // Raise the event
@@ -163,7 +163,7 @@ type internal IncrementalSearch
         let incrementalSearchData = incrementalSearchSession.IncrementalSearchData
         let searchData = SearchData.Parse rawPattern incrementalSearchData.SearchData.Kind incrementalSearchData.SearchData.Options
         let searchResult =
-            if StringUtil.isNullOrEmpty rawPattern then
+            if StringUtil.IsNullOrEmpty rawPattern then
                 SearchResult.NotFound (searchData, false)
             else
                 match TrackingPointUtil.GetPoint _textView.TextSnapshot startPoint with
@@ -184,7 +184,7 @@ type internal IncrementalSearch
     /// Called when the processing is completed.  Raise the completed event and return
     /// the final SearchResult
     member x.RunCompleted incrementalSearchSession startPoint =
-        if StringUtil.isNullOrEmpty incrementalSearchSession.IncrementalSearchData.SearchData.Pattern then
+        if StringUtil.IsNullOrEmpty incrementalSearchSession.IncrementalSearchData.SearchData.Pattern then
             // When the user simply hits Enter on an empty incremental search then
             // we should be re-using the 'LastSearch' value.
             let incrementalSearchData = x.RunSearchCore incrementalSearchSession startPoint _vimData.LastSearchData.Pattern

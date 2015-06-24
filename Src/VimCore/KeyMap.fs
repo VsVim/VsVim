@@ -208,11 +208,11 @@ type internal KeyMap
                         value.StringValue
                     else
                         "\\"
-                StringUtil.replaceNoCase str "<leader>" replace
+                StringUtil.ReplaceNoCase str "<leader>" replace
             else
                 str
 
-        if StringUtil.isNullOrEmpty rhs then
+        if StringUtil.IsNullOrEmpty rhs then
             false
         else
             let lhs = replaceLeader lhs

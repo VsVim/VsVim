@@ -4,7 +4,7 @@ namespace Vim
 module PatternUtil =
 
     /// Is this a whole word pattern?
-    let IsWholeWord pattern = StringUtil.startsWith "\<" pattern && StringUtil.endsWith "\>" pattern
+    let IsWholeWord pattern = StringUtil.StartsWith "\<" pattern && StringUtil.EndsWith "\>" pattern
 
     /// Will return the whole word being wrapped if this is a whole word pattern
     let GetUnderlyingWholeWord pattern = 

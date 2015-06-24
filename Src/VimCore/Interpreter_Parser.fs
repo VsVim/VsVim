@@ -484,7 +484,7 @@ type Parser
     /// Parse out the remainder of the line including any trailing blanks
     member x.ParseRestOfLine() = 
         match x.ParseWhile (fun _ -> true) with
-        | None -> StringUtil.empty
+        | None -> StringUtil.Empty
         | Some text -> text
 
     /// Parse out the mapclear variants. 
@@ -521,7 +521,7 @@ type Parser
 
             let rightKeyNotation = x.ParseWhileEx TokenizerFlags.AllowDoubleQuote (fun _ -> true)
             let rightKeyNotation = OptionUtil.getOrDefault "" rightKeyNotation
-            if StringUtil.isBlanks rightKeyNotation then
+            if StringUtil.IsBlanks rightKeyNotation then
                 LineCommand.DisplayKeyMap (keyRemapModes, Some leftKeyNotation)
             else
                 LineCommand.MapKeys (leftKeyNotation, rightKeyNotation, keyRemapModes, allowRemap, mapArgumentList)
@@ -2166,7 +2166,7 @@ type Parser
             x.TryExpand word |> doParse
         | TokenKind.Character c ->
             _tokenizer.MoveNextToken()
-            c |> StringUtil.ofChar |> x.TryExpand |> doParse
+            c |> StringUtil.OfChar |> x.TryExpand |> doParse
         | TokenKind.EndOfLine ->
             match lineRange with
             | LineRangeSpecifier.None -> handleParseResult LineCommand.Nop

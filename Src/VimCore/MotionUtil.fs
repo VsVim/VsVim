@@ -191,7 +191,7 @@ type TagBlockParser (snapshot : ITextSnapshot) =
             _builder {
                 let! nameSpan = x.ParseName (startPosition + 1) 
                 let text = _snapshot.GetText(nameSpan)
-                if StringUtil.isEqualIgnoreCase "br" text || StringUtil.isEqualIgnoreCase "meta" text then
+                if StringUtil.IsEqualIgnoreCase "br" text || StringUtil.IsEqualIgnoreCase "meta" text then
                     return! None
                 else
                     let! position = x.ParseAttributes nameSpan.End
@@ -240,7 +240,7 @@ type TagBlockParser (snapshot : ITextSnapshot) =
             | None ->
                 match x.ParseEndTag position with 
                 | Some (endTagName, nextPosition) ->
-                    if StringUtil.isEqualIgnoreCase tagName endTagName then
+                    if StringUtil.IsEqualIgnoreCase tagName endTagName then
                         endPosition <- Some (position, nextPosition)
                     else
                         position <- position + 1
@@ -503,8 +503,8 @@ type MatchingTokenUtil() =
         // Find the closest index to column for either of these characters.  Whichever is 
         // closest wins.
         let findSimplePair c1 c2 kind = 
-            let result1 = StringUtil.indexOfCharAt c1 column lineText
-            let result2 = StringUtil.indexOfCharAt c2 column lineText
+            let result1 = StringUtil.IndexOfCharAt c1 column lineText
+            let result2 = StringUtil.IndexOfCharAt c2 column lineText
             reducePair result1 result2 kind
 
         // Find the closest comment string to the specified column
@@ -512,10 +512,10 @@ type MatchingTokenUtil() =
 
             // Check at the column and one before if not found at the column
             let indexOf text = 
-                let result = StringUtil.indexOfStringAt text column lineText
+                let result = StringUtil.IndexOfStringAt text column lineText
                 match result with
                 | None -> 
-                    if column > 0 then StringUtil.indexOfStringAt text (column - 1) lineText
+                    if column > 0 then StringUtil.IndexOfStringAt text (column - 1) lineText
                     else None 
                 | Some index -> result
 
@@ -1102,7 +1102,7 @@ type internal MotionUtil
         // will take into account escaped characters
         let quotePoints = 
             let isEscapeChar c = 
-                StringUtil.containsChar _localSettings.QuoteEscape c 
+                StringUtil.ContainsChar _localSettings.QuoteEscape c 
 
             let list = List<SnapshotPoint>()
             let endPosition = x.CaretLine.End.Position
@@ -2504,7 +2504,7 @@ type internal MotionUtil
     /// Move the caret to the next occurrence of the last search
     member x.LastSearch isReverse count =
         let last = _vimData.LastSearchData
-        if StringUtil.isNullOrEmpty last.Pattern then
+        if StringUtil.IsNullOrEmpty last.Pattern then
             _statusUtil.OnError Resources.NormalMode_NoPreviousSearch
             None
         else

@@ -50,7 +50,7 @@ type internal RegisterMap (_map : Map<RegisterName, Register>) =
                 with get() = 
                     let text = 
                         match currentFileNameFunc() with
-                        | None -> StringUtil.empty
+                        | None -> StringUtil.Empty
                         | Some(str) -> str
                     RegisterValue(text, OperationKind.CharacterWise)
                 and set _ = () }

@@ -274,7 +274,7 @@ type TextChange =
                 | None -> None
                 | Some text -> inner right text
 
-        inner x StringUtil.empty
+        inner x StringUtil.Empty
 
     /// Get the last / most recent change in the TextChange tree
     member x.LastChange = 
@@ -286,7 +286,7 @@ type TextChange =
 
     member x.IsEmpty = 
         match x with 
-        | Insert text -> StringUtil.isNullOrEmpty text
+        | Insert text -> StringUtil.IsNullOrEmpty text
         | DeleteLeft count -> count = 0
         | DeleteRight count -> count = 0
         | Combination (left, right) -> left.IsEmpty && right.IsEmpty
@@ -377,7 +377,7 @@ type TextChange =
             | Combination (leftSubLeft, leftSubRight) -> complexMerge leftSubLeft leftSubRight
 
     static member Replace str =
-        let left = str |> StringUtil.length |> TextChange.DeleteLeft
+        let left = str |> StringUtil.Length |> TextChange.DeleteLeft
         let right = TextChange.Insert str
         TextChange.Combination (left, right)
 
@@ -496,7 +496,7 @@ type SearchOffsetData =
 
         let parseSearch () = 
             index := index.Value + 1
-            match StringUtil.charAtOption index.Value offset with
+            match StringUtil.CharAtOption index.Value offset with
             | Option.Some '/' -> 
                 let path = Path.Forward
                 let pattern = offset.Substring(index.Value + 1)
@@ -521,7 +521,7 @@ type SearchOffsetData =
             | _ -> SearchOffsetData.None
 
     static member Parse (offset : string) =
-        if StringUtil.isNullOrEmpty offset then
+        if StringUtil.IsNullOrEmpty offset then
             SearchOffsetData.None
         else
             SearchOffsetData.ParseCore offset
@@ -1264,7 +1264,7 @@ type KeyInputSet =
 
     /// A string representation of the name.  It is unreliable to use this for anything
     /// other than display as two distinct KeyInput values can map to a single char
-    member x.Name = x.KeyInputs |> Seq.map (fun ki -> ki.Char) |> StringUtil.ofCharSeq
+    member x.Name = x.KeyInputs |> Seq.map (fun ki -> ki.Char) |> StringUtil.OfCharSeq
 
     /// Length of the contained KeyInput's
     member x.Length =
@@ -1335,7 +1335,7 @@ type KeyInputSet =
             if ki.Key = VimKey.RawCharacter then ki.Char.ToString()
             elif ki.Key = VimKey.None then "<None>"
             else System.String.Format("<{0}>", ki.Key)  )
-        |> StringUtil.ofStringSeq
+        |> StringUtil.OfStringSeq
 
     interface System.IComparable with
         member x.CompareTo yobj = 
@@ -3640,10 +3640,10 @@ type HistoryList () =
 
     /// Adds an item to the top of the history list
     member x.Add value = 
-        if not (StringUtil.isNullOrEmpty value) then
+        if not (StringUtil.IsNullOrEmpty value) then
             let list =
                 _list
-                |> Seq.filter (fun x -> not (StringUtil.isEqual x value))
+                |> Seq.filter (fun x -> not (StringUtil.IsEqual x value))
                 |> Seq.truncate (_limit - 1)
                 |> List.ofSeq
             _list <- value :: list

@@ -26,7 +26,7 @@ type internal CommandMode
         BindFunction = fun _ -> BindResult.Error
     }
 
-    let mutable _command = StringUtil.empty
+    let mutable _command = StringUtil.Empty
     let mutable _historySession : IHistorySession<int, int> option = None
     let mutable _bindData = BindDataError
     let mutable _keepSelection = false
@@ -104,14 +104,14 @@ type internal CommandMode
 
         /// Run the specified command
         let completed command =
-            x.Command <- StringUtil.empty
+            x.Command <- StringUtil.Empty
             x.ParseAndRunInput command
             x.MaybeClearSelection false
             0
 
         /// User cancelled input.  Reset the selection
         let cancelled () = 
-            x.Command <- StringUtil.empty
+            x.Command <- StringUtil.Empty
             x.MaybeClearSelection true
 
         // First key stroke.  Create a history client and get going
@@ -137,21 +137,21 @@ type internal CommandMode
 
         let commandText = 
             match arg with
-            | ModeArgument.None -> StringUtil.empty
+            | ModeArgument.None -> StringUtil.Empty
             | ModeArgument.FromVisual -> FromVisualModeString
-            | ModeArgument.Substitute _ -> StringUtil.empty
-            | ModeArgument.InitialVisualSelection _ -> StringUtil.empty
-            | ModeArgument.InsertBlock (_, transaction) -> transaction.Complete(); StringUtil.empty
-            | ModeArgument.InsertWithCount _ -> StringUtil.empty
-            | ModeArgument.InsertWithCountAndNewLine _ -> StringUtil.empty
-            | ModeArgument.InsertWithTransaction transaction -> transaction.Complete(); StringUtil.empty
+            | ModeArgument.Substitute _ -> StringUtil.Empty
+            | ModeArgument.InitialVisualSelection _ -> StringUtil.Empty
+            | ModeArgument.InsertBlock (_, transaction) -> transaction.Complete(); StringUtil.Empty
+            | ModeArgument.InsertWithCount _ -> StringUtil.Empty
+            | ModeArgument.InsertWithCountAndNewLine _ -> StringUtil.Empty
+            | ModeArgument.InsertWithTransaction transaction -> transaction.Complete(); StringUtil.Empty
 
-        if not (StringUtil.isNullOrEmpty commandText) then
+        if not (StringUtil.IsNullOrEmpty commandText) then
             x.ChangeCommand commandText
 
     member x.OnLeave() = 
         x.MaybeClearSelection true
-        _command <- StringUtil.empty
+        _command <- StringUtil.Empty
         _historySession <- None
         _bindData <- BindDataError
         _keepSelection <- false

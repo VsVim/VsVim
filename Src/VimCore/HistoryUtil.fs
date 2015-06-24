@@ -116,9 +116,9 @@ type internal HistorySession<'TData, 'TResult>
         match _historyState with 
         | HistoryState.Empty ->
             let list = 
-                if not (StringUtil.isNullOrEmpty _command) then
+                if not (StringUtil.IsNullOrEmpty _command) then
                     _historyClient.HistoryList
-                    |> Seq.filter (fun value -> StringUtil.startsWith _command value)
+                    |> Seq.filter (fun value -> StringUtil.StartsWith _command value)
                     |> List.ofSeq
                 else
                     _historyClient.HistoryList.Items

@@ -28,7 +28,7 @@ type internal NormalMode
 
     /// Reset state for data in Normal Mode
     static let EmptyData = {
-        Command = StringUtil.empty
+        Command = StringUtil.Empty
         InReplace = false
     }
 
@@ -246,9 +246,9 @@ type internal NormalMode
     member x.OnGlobalSettingsChanged (args : SettingEventArgs) = 
         if x.IsCommandRunnerPopulated then
             let setting = args.Setting
-            if StringUtil.isEqual setting.Name GlobalSettingNames.TildeOpName then
+            if StringUtil.IsEqual setting.Name GlobalSettingNames.TildeOpName then
                 x.UpdateTildeCommand()
-            elif StringUtil.isEqual setting.Name GlobalSettingNames.KeyModelName then
+            elif StringUtil.IsEqual setting.Name GlobalSettingNames.KeyModelName then
                 x.UpdateSelectionCommands()
 
     /// Bind the character in a replace character command: 'r'.  
