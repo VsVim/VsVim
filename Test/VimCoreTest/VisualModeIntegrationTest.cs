@@ -155,16 +155,20 @@ namespace Vim.UnitTest
                         _textView.Selection.SelectedSpans);
                 }
 
+                /// <summary>
+                /// This is an anti fact
+                /// 
+                /// The WPF editor can't place the caret in the middle of a tab.  It can't
+                /// for example put it on the 2 of the 4th space a tab occupies.  
+                /// </summary>
                 [Fact]
-                public void TabExtendsPastLineAbove()
+                public void MiddleOfTab()
                 {
                     Create("cat", "d\tog");
                     _vimBuffer.LocalSettings.TabStop = 4;
                     _vimBuffer.ProcessNotation("ll<C-q>jl");
                     var textView = _vimBuffer.TextView;
                     Assert.Equal('t', textView.Selection.Start.Position.GetChar());
-
-                    // *** this could be wrong
                     Assert.Equal('g', textView.Selection.End.Position.GetChar());
                 }
             }
@@ -943,20 +947,20 @@ namespace Vim.UnitTest
             public sealed class BlockWiseTest : ReplaceSelectionTest
             {
                 /// <summary>
-                /// TODO: This test is actually different from gVim.  Here gVim would replace
-                /// with "d aaag" on the second line (3 a's instead of 4).  There appears to be a
-                /// bug in the width calculation of the start of the SnasphotOverlapSpan.  It claims
-                /// to have a width of 4 and spaces before of 3.  There are only 3 characters available
-                /// though total because the 'd' occupies part of the tab width.  Need to resolve
-                /// this 
+                /// This is an anti test.
+                /// 
+                /// The WPF editor has no way to position the caret in the middle of a 
+                /// tab.  It can't for instance place it on the 2 space of the 4 spaces
+                /// the caret occupies.  Hence this test have a deviating behavior from
+                /// gVim because the caret position differs on the final 'l' 
                 /// </summary>
-                [Fact(Skip = "Fix this once and for all")]
+                [Fact]
                 public void Overlap()
                 {
                     Create("cat", "d\tog");
                     _vimBuffer.LocalSettings.TabStop = 4;
                     _vimBuffer.ProcessNotation("ll<C-q>jlra");
-                    Assert.Equal(new[] { "caa", "d aaog" }, _textBuffer.GetLines());
+                    Assert.Equal(new[] { "caa", "d aaag" }, _textBuffer.GetLines());
                 }
             }
         }
