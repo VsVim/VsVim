@@ -2184,7 +2184,7 @@ type internal CommandUtil
                     let startPoint = span.Start
                     builder.Length <- 0
                     builder.AppendCharCount ' ' startPoint.SpacesBefore
-                    builder.AppendStringCount replaceText (startPoint.Width - startPoint.SpacesBefore)
+                    builder.AppendStringCount replaceText (startPoint.Spaces - startPoint.SpacesBefore)
                     edit.Replace(Span(startPoint.Point.Position, 1), (builder.ToString())) |> ignore
 
                 SnapshotSpanUtil.GetPoints Path.Forward span.InnerSpan

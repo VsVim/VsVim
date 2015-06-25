@@ -178,7 +178,7 @@ type internal InsertUtil
                 let currentLine = SnapshotUtil.GetLine currentSnapshot lineNumber
                 let point = SnapshotLineUtil.GetSpaceWithOverlapOrEnd currentLine spaces _localSettings.TabStop
                 if point.SpacesBefore > 0 then
-                    let text = StringUtil.RepeatChar point.Width ' '
+                    let text = StringUtil.RepeatChar point.Spaces ' '
                     let span = Span(point.Point.Position, 1)
                     textEdit.Replace(span, text) |> ignore
 

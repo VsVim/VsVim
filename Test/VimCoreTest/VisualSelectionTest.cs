@@ -462,6 +462,22 @@ namespace Vim.UnitTest
                     var blockSpan = new BlockSpan(_textBuffer.GetPointInLine(0, 1), tabStop: 4, spaces: 3, height: 2);
                     Assert.Equal(blockSpan, visualSelection.AsBlock().Item1);
                 }
+
+                [Fact]
+                public void AfterTab()
+                {
+                    Create("cat", "d\tog");
+                    var visualSelection = VisualSelection.CreateForPoints(
+                        VisualKind.Block,
+                        _textBuffer.GetPointInLine(0, 2),
+                        _textBuffer.GetPointInLine(1, 2),
+                        tabStop: 4);
+                    var blockSpan = visualSelection.AsBlock().Item1;
+
+                    var endPoint = _textBuffer.GetPointInLine(1, 3);
+                    Assert.Equal('g', endPoint.GetChar());
+                    Assert.Equal(endPoint, blockSpan.End);
+                }
             }
         }
 

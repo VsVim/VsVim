@@ -442,7 +442,7 @@ namespace Vim.UnitTest
                 {
                     string[] lines = new string[] { "hello", "h\u0327e\u0301\u200bllo\u030a\u0305" };
                     Create(lines);
-                    var blockSpan = _textBuffer.GetBlockSpan(0, 5, 0, 2, tabStop: _vimBuffer.LocalSettings.TabStop);
+                    var blockSpan = _textBuffer.GetBlockSpan(0, length: 6, startLine: 0, lineCount: 2, tabStop: _vimBuffer.LocalSettings.TabStop);
                     var expected = new List<Tuple<int, int>> {
                         Tuple.Create(0, 0),
                         Tuple.Create(0, _vimBuffer.LocalSettings.TabStop - 1) };

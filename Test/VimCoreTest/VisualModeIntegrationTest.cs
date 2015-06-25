@@ -154,6 +154,19 @@ namespace Vim.UnitTest
                         },
                         _textView.Selection.SelectedSpans);
                 }
+
+                [Fact]
+                public void TabExtendsPastLineAbove()
+                {
+                    Create("cat", "d\tog");
+                    _vimBuffer.LocalSettings.TabStop = 4;
+                    _vimBuffer.ProcessNotation("ll<C-q>jl");
+                    var textView = _vimBuffer.TextView;
+                    Assert.Equal('t', textView.Selection.Start.Position.GetChar());
+
+                    // *** this could be wrong
+                    Assert.Equal('g', textView.Selection.End.Position.GetChar());
+                }
             }
 
             public sealed class MiscTest : BlockSelectionTest
@@ -937,13 +950,13 @@ namespace Vim.UnitTest
                 /// though total because the 'd' occupies part of the tab width.  Need to resolve
                 /// this 
                 /// </summary>
-                [Fact(Skip = "Need to actually fix this test once and for all")]
+                [Fact(Skip = "Fix this once and for all")]
                 public void Overlap()
                 {
                     Create("cat", "d\tog");
                     _vimBuffer.LocalSettings.TabStop = 4;
                     _vimBuffer.ProcessNotation("ll<C-q>jlra");
-                    Assert.Equal(new[] { "caa", "d aaaag" }, _textBuffer.GetLines());
+                    Assert.Equal(new[] { "caa", "d aaog" }, _textBuffer.GetLines());
                 }
             }
         }

@@ -33,8 +33,8 @@ namespace Vim.UnitTest
                 {
                     Create("\tcat\t");
                     var span = new SnapshotOverlapSpan(
-                        new SnapshotOverlapPoint(_textBuffer.GetPoint(0), before: 0, width: 4),
-                        new SnapshotOverlapPoint(_textBuffer.GetPoint(2), before: 0, width: 1));
+                        new SnapshotOverlapPoint(_textBuffer.GetPoint(0), beforeSpaces: 0, totalSpaces: 4),
+                        new SnapshotOverlapPoint(_textBuffer.GetPoint(2), beforeSpaces: 0, totalSpaces: 1));
                     Assert.Equal("\tc", span.GetText());
                 }
 
@@ -43,8 +43,8 @@ namespace Vim.UnitTest
                 {
                     Create("\tcat\t");
                     var span = new SnapshotOverlapSpan(
-                        new SnapshotOverlapPoint(_textBuffer.GetPoint(0), before: 1, width: 4),
-                        new SnapshotOverlapPoint(_textBuffer.GetPoint(2), before: 0, width: 1));
+                        new SnapshotOverlapPoint(_textBuffer.GetPoint(0), beforeSpaces: 1, totalSpaces: 4),
+                        new SnapshotOverlapPoint(_textBuffer.GetPoint(2), beforeSpaces: 0, totalSpaces: 1));
                     Assert.Equal("   c", span.GetText());
                 }
 
@@ -53,8 +53,8 @@ namespace Vim.UnitTest
                 {
                     Create("\tcat\t");
                     var span = new SnapshotOverlapSpan(
-                        new SnapshotOverlapPoint(_textBuffer.GetPoint(3), before: 0, width: 1),
-                        new SnapshotOverlapPoint(_textBuffer.GetPoint(5), before: 0, width: 1));
+                        new SnapshotOverlapPoint(_textBuffer.GetPoint(3), beforeSpaces: 0, totalSpaces: 1),
+                        new SnapshotOverlapPoint(_textBuffer.GetPoint(5), beforeSpaces: 0, totalSpaces: 1));
                     Assert.Equal("t\t", span.GetText());
                 }
 
@@ -63,8 +63,8 @@ namespace Vim.UnitTest
                 {
                     Create("\tcat\t");
                     var span = new SnapshotOverlapSpan(
-                        new SnapshotOverlapPoint(_textBuffer.GetPoint(3), before: 0, width: 1),
-                        new SnapshotOverlapPoint(_textBuffer.GetPoint(4), before: 3, width: 4));
+                        new SnapshotOverlapPoint(_textBuffer.GetPoint(3), beforeSpaces: 0, totalSpaces: 1),
+                        new SnapshotOverlapPoint(_textBuffer.GetPoint(4), beforeSpaces: 3, totalSpaces: 4));
                     Assert.Equal("t   ", span.GetText());
                 }
 
@@ -108,8 +108,8 @@ namespace Vim.UnitTest
             {
                 Create("cat");
                 var span = new SnapshotOverlapSpan(
-                    new SnapshotOverlapPoint(_textBuffer.GetPoint(0), before: 0, width: 1),
-                    new SnapshotOverlapPoint(_textBuffer.GetPoint(1), before: 0, width: 1));
+                    new SnapshotOverlapPoint(_textBuffer.GetPoint(0), beforeSpaces: 0, totalSpaces: 1),
+                    new SnapshotOverlapPoint(_textBuffer.GetPoint(1), beforeSpaces: 0, totalSpaces: 1));
                 Assert.Equal(_textBuffer.GetPoint(1), span.OverarchingEnd);
             }
 
@@ -123,8 +123,8 @@ namespace Vim.UnitTest
             {
                 Create("c\tt");
                 var span = new SnapshotOverlapSpan(
-                    new SnapshotOverlapPoint(_textBuffer.GetPoint(0), before: 0, width: 1),
-                    new SnapshotOverlapPoint(_textBuffer.GetPoint(1), before: 1, width: 4));
+                    new SnapshotOverlapPoint(_textBuffer.GetPoint(0), beforeSpaces: 0, totalSpaces: 1),
+                    new SnapshotOverlapPoint(_textBuffer.GetPoint(1), beforeSpaces: 1, totalSpaces: 4));
                 Assert.Equal(_textBuffer.GetPoint(2), span.OverarchingEnd);
             }
         }
@@ -140,8 +140,8 @@ namespace Vim.UnitTest
             {
                 Create("\tcat");
                 var span = new SnapshotOverlapSpan(
-                    new SnapshotOverlapPoint(_textBuffer.GetPoint(0), before: 0, width: 8),
-                    new SnapshotOverlapPoint(_textBuffer.GetPoint(0), before: 2, width: 8));
+                    new SnapshotOverlapPoint(_textBuffer.GetPoint(0), beforeSpaces: 0, totalSpaces: 8),
+                    new SnapshotOverlapPoint(_textBuffer.GetPoint(0), beforeSpaces: 2, totalSpaces: 8));
                 Assert.Equal(1, span.OverarchingSpan.Length);
             }
         }
@@ -157,8 +157,8 @@ namespace Vim.UnitTest
             {
                 Create("\t");
                 var span = new SnapshotOverlapSpan(
-                    new SnapshotOverlapPoint(_textBuffer.GetPoint(0), before: 0, width: 8),
-                    new SnapshotOverlapPoint(_textBuffer.GetPoint(0), before: 2, width: 8));
+                    new SnapshotOverlapPoint(_textBuffer.GetPoint(0), beforeSpaces: 0, totalSpaces: 8),
+                    new SnapshotOverlapPoint(_textBuffer.GetPoint(0), beforeSpaces: 2, totalSpaces: 8));
                 Assert.Equal(0, span.InnerSpan.Length);
             }
         }

@@ -100,41 +100,52 @@ type SnapshotColumn
 type SnapshotOverlapPoint =
 
     val private _point : SnapshotPoint
-    val private _before : int
-    val private _width : int
+
+    /// The number of spaces into the point where this overlap point occurs
+    val private _beforeSpaces : int
+
+    /// The number of spaces the point occupies in the editor. 
+    ///
+    /// An interesting case to consider here is tabs.  They will not always occupy 
+    /// 'tabstop' spaces.  It can occupy less if there is a character in front of the 
+    /// tab which occurs on a 'tabstop' boundary. 
+    val private _totalSpaces : int
 
     /// !!!Do not call this directly!!!
     ///
     /// This constructor is meant for internal usage only.  If friend types existed this would employ
-    /// a friend type to protect it.  It's far too easy to get the 'width' parameter incorrect.  Instead
+    /// a friend type to protect it.  It's far too easy to get the 'totalSpaces' parameter incorrect.  Instead
     /// go through a supported API for creating them
-    internal new (point : SnapshotPoint, before : int, width : int) = 
-        if width < 0 then
-            invalidArg "width" "Width must be positive"
-        { _point = point; _before = before; _width = width }
+    internal new (point : SnapshotPoint, beforeSpaces : int, totalSpaces : int) = 
+        if totalSpaces < 0 then
+            invalidArg "totalSpaces" "totalSpaces must be positive"
+        { _point = point; _beforeSpaces = beforeSpaces; _totalSpaces = totalSpaces }
 
     /// Create a SnapshotOverlapPoint over a SnapshotPoint value.  Even if the character underneath
     /// the SnapshotPoint is wide this will treate it as a width 0 character.  It will never see it
     /// as an overlap 
+    ///
+    /// TODO: This API is fundamentally incorrect because it treats all points as a one space item
+    /// even if the underlying character is spaces wide.  
     new (point : SnapshotPoint) =
         let width = 
             if EditorCoreUtil.IsEndPoint point then
                 0
             else
                 1
-        { _point = point; _before = 0; _width = width }
+        { _point = point; _beforeSpaces = 0; _totalSpaces = width }
 
     /// The number of spaces in the overlap point before this space
-    member x.SpacesBefore = x._before
+    member x.SpacesBefore = x._beforeSpaces
 
     /// The number of spaces in the overlap point after this space 
-    member x.SpacesAfter = max 0 ((x._width - 1) - x._before)
+    member x.SpacesAfter = max 0 ((x._totalSpaces - 1) - x._beforeSpaces)
 
     /// The SnapshotPoint in which this overlap occurs
     member x.Point = x._point
 
     /// Number of spaces this SnapshotOverlapPoint occupies
-    member x.Width = x._width
+    member x.Spaces = x._totalSpaces
 
     member x.Snapshot = x._point.Snapshot
 
@@ -142,7 +153,7 @@ type SnapshotOverlapPoint =
     static member op_Inequality(this,other) = not (System.Collections.Generic.EqualityComparer<SnapshotOverlapPoint>.Default.Equals(this,other))
 
     override x.ToString() = 
-        sprintf "Point: %s Width: %d Before: %d After: %d" (x.Point.ToString()) x.Width x.SpacesBefore x.SpacesAfter
+        sprintf "Point: %s Spaces: %d Before: %d After: %d" (x.Point.ToString()) x.Spaces x.SpacesBefore x.SpacesAfter
 
 [<StructuralEquality>] 
 [<NoComparison>] 
@@ -808,36 +819,44 @@ module SnapshotLineUtil =
     // that column inside the character. Returns End if it goes beyond the last 
     // point in the string
     let GetSpaceWithOverlapOrEnd line spacesCount tabStop = 
+
         let snapshot = GetSnapshot line
         let endPoint = GetEnd line
 
-        // The following retrieves the location of the character that is
-        // spacesCount cells inside the line. The result is a triple 
-        // (pre, position, post) where
-        //    position is the position in the snapshot of the character that 
-        //       overlaps the spacesCount-th cell 
-        //    pre is the number of cells that the character spans before the
-        //       spacesCount-th cell
-        //    post is the number of cells that the character spans after the
-        //       spacesCount-th cell
-        let rec inner position spacesCount = 
-            if position = endPoint.Position then
-                (0, endPoint, 0)
-            else 
-                let point = SnapshotPoint(snapshot, position)
-                let c = point.GetChar()
-                let charWidth = CharUtil.GetCharacterWidth c tabStop
-                let remaining = spacesCount - charWidth
+        let mutable point = line.Start
+        let mutable spaces = 0 
+        let mutable value : SnapshotOverlapPoint option = None
 
-                if spacesCount = 0 && charWidth <> 0 then
-                    (0, point, charWidth)
-                elif remaining < 0 then
-                    (spacesCount, point, charWidth)
+        if point = endPoint then
+            value <- Some (SnapshotOverlapPoint(point, 0, 0))
+
+        while Option.isNone value do
+            let currentWidth = 
+                let current = point.GetChar()
+                if current = '\t' then 
+                    // A tab takes up the remaining spaces on a tabstop increment.
+                    let remainder = tabStop - (spaces % tabStop)
+                    if remainder = 0 then tabStop
+                    else remainder
                 else
-                    inner (position + 1) remaining
+                    CharUtil.GetCharacterWidth current tabStop
 
-        let (before, point, width) = inner line.Start.Position spacesCount
-        SnapshotOverlapPoint(point, before, width)
+            if spaces = spacesCount then
+                // Landed at the SnapshotPoint in question
+                value <- Some (SnapshotOverlapPoint(point, 0, currentWidth))
+            elif (spaces + currentWidth) > spacesCount then
+                // The space is a slice of a SnapshotPoint value.  Have to determine the
+                // offset
+                let before = spacesCount - spaces
+                value <- Some (SnapshotOverlapPoint(point, before, currentWidth))
+            else
+                point <- SnapshotPoint(snapshot, point.Position + 1)
+                spaces <- spaces + currentWidth
+
+                if point = endPoint then
+                    value <- Some (SnapshotOverlapPoint(point, 0, 0))
+
+        Option.get value
 
     // Get the point in the given line which is just before the character that 
     // overlaps the specified column into the line. Returns End if it goes 
