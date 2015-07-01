@@ -61,6 +61,8 @@ namespace Vim.VisualStudio.Implementation.ReSharper
                         return ReSharperVersion.Version9;
                     case 102:
                         return ReSharperVersion.Version91;
+                    case 103:
+                        return ReSharperVersion.Version92;
                     default:
                         return ReSharperVersion.Version9;
                 }

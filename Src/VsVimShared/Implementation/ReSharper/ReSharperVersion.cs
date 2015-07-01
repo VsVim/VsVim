@@ -9,6 +9,7 @@ namespace Vim.VisualStudio.Implementation.ReSharper
         Version81,
         Version82,
         Version9,
-        Version91
+        Version91,
+        Version92
     }
 }
