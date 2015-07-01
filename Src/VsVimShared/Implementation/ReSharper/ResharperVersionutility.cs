@@ -55,19 +55,15 @@ namespace Vim.VisualStudio.Implementation.ReSharper
                 var version = new Version(fvi.FileVersion);
 
                 // Starting with ReSharper 9, the assembly we detect is part of the "ReSharper Platform"
-                // Which for ReSharper 9 is of version 6.0
-                // and Resharper 9.1 has version 102
-                if (version.Major == 6 || version.Major == 102)
+                switch (version.Major)
                 {
-                    switch (version.Minor)
-                    {
-                        case 0:
-                            return ReSharperVersion.Version9;
-                        default:
-                            return ReSharperVersion.Version9;
-                    }
+                    case 6:
+                        return ReSharperVersion.Version9;
+                    case 102:
+                        return ReSharperVersion.Version91;
+                    default:
+                        return ReSharperVersion.Version9;
                 }
-                return ReSharperVersion.Unknown;
             }
             if (assembly.FullName.StartsWith(ResharperAssemblyName2010) ||
                 assembly.FullName.StartsWith(ResharperAssemblyName2012))

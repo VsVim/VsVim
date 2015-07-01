@@ -157,7 +157,8 @@ namespace Vim.VisualStudio.Implementation.ReSharper
 
         internal ReSharperV81Or2EditTagDetector(ReSharperVersion version)
         {
-            Debug.Assert(version == ReSharperVersion.Version81 || version == ReSharperVersion.Version82 || version == ReSharperVersion.Version9);
+            Debug.Assert(version == ReSharperVersion.Version81 || version == ReSharperVersion.Version82 ||
+                         version == ReSharperVersion.Version9 || version == ReSharperVersion.Version91);
             _version = version;
         }
 
