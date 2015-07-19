@@ -6751,6 +6751,16 @@ namespace Vim.UnitTest
                 Assert.Equal(new[] { "cat", "  ", "   ", "dog" }, _textBuffer.GetLines());
                 Assert.Equal(_textBuffer.GetPointInLine(1, 1), _textView.GetCaretPoint());
             }
+
+            [Fact]
+            public void Issue1614()
+            {
+                Create("if (true)", "{", "  statement;", "}", "// after");
+                _localSettings.ShiftWidth = 2;
+                _textView.MoveCaretToLine(2);
+                _vimBuffer.ProcessNotation(">i{");
+                Assert.Equal("    statement;", _textBuffer.GetLine(2).GetText());
+            }
         }
     }
 }
