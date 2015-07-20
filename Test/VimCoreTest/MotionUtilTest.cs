@@ -557,6 +557,43 @@ more";
                 Assert.True(motionResult.IsNone());
             }
 
+            [Fact]
+            public void CountWithSideBySideBlocks()
+            {
+                Create("a (cat (dog)(blah)) fish");
+
+                var point = _textBuffer.GetPoint(8);
+                Assert.Equal('d', point.GetChar());
+                var motionResult = _motionUtil.InnerBlock(point, BlockKind.Paren, count: 2).Value;
+
+                Assert.Equal("cat (dog)(blah)", motionResult.Span.GetText());
+            }
+
+            [Fact]
+            public void CountWithSideBySideBlocksAlt()
+            {
+                Create("a (cat (dog)(blah)) fish");
+
+                var point = _textBuffer.GetPoint(13);
+                Assert.Equal('b', point.GetChar());
+                var motionResult = _motionUtil.InnerBlock(point, BlockKind.Paren, count: 2).Value;
+
+                Assert.Equal("cat (dog)(blah)", motionResult.Span.GetText());
+            }
+
+            [Fact]
+            public void CountWithSideBySideBlocksHarder()
+            {
+                Create("a (cat (dog)(blah)(again(deep))) fish");
+
+                var point = _textBuffer.GetPoint(8);
+                Assert.Equal('d', point.GetChar());
+                var motionResult = _motionUtil.InnerBlock(point, BlockKind.Paren, count: 2).Value;
+
+                Assert.Equal("cat (dog)(blah)(again(deep))", motionResult.Span.GetText());
+            }
+
+
             /// <summary>
             /// Single line inner block test should use inner block behavior
             /// </summary>

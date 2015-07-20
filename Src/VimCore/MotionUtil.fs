@@ -1095,13 +1095,37 @@ type internal MotionUtil
         | _ -> None
 
     member x.GetBlockWithCount (blockKind : BlockKind) contextPoint count = 
-        let tuple = x.GetBlock blockKind contextPoint
-        match tuple, count with 
-        | Some _, 1 -> tuple
-        | Some (_, closePoint), count -> 
-            let contextPoint = closePoint.Add(1)
-            x.GetBlockWithCount blockKind contextPoint (count - 1)
-        | None, _ -> None
+
+        // Need to wrap GetBlock to account for blocks being side by 
+        // side.  In that case we have to detect a side by side block and 
+        // keep moving right until we get the outer block or None
+        let getBlockHelper closePoint =
+            let mutable isDone = false
+            let mutable contextPoint = SnapshotPointUtil.AddOne closePoint
+            let mutable result : (SnapshotPoint * SnapshotPoint) option = None
+
+            while not isDone do
+                match x.GetBlock blockKind contextPoint with
+                | None -> isDone <- true
+                | Some (newOpenPoint, newClosePoint) ->
+                    if closePoint.Position > newOpenPoint.Position && closePoint.Position < newClosePoint.Position then
+                        result <- Some (newOpenPoint, newClosePoint)
+                        isDone <- true
+                    else
+                        contextPoint <- SnapshotPointUtil.AddOne newClosePoint
+            result
+
+        let rec inner openPoint closePoint count = 
+            if count = 0 then
+                Some (openPoint, closePoint)
+            else
+                match getBlockHelper closePoint with 
+                | None -> None
+                | Some (openPoint, closePoint) -> inner openPoint closePoint (count - 1)
+
+        match x.GetBlock blockKind contextPoint with
+        | Some (openPoint, closePoint) -> inner openPoint closePoint (count - 1)
+        | None -> None
 
     member x.GetQuotedStringData quoteChar = 
 
