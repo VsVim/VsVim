@@ -311,9 +311,18 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
         /// </summary>
         private void UpdateTextColor()
         {
-            var propertyMap = _editorFormatMap.GetProperties(CommandMarginFormatDefinition.Name);
-            _margin.TextForeground = propertyMap.GetForegroundBrush(SystemColors.WindowTextBrush);
-            _margin.TextBackground = propertyMap.GetBackgroundBrush(SystemColors.WindowBrush);
+            if (SystemParameters.HighContrast)
+            {
+                var textProperties = _classificationFormatMap.DefaultTextProperties;
+                _margin.TextForeground = textProperties.ForegroundBrush;
+                _margin.TextBackground = textProperties.BackgroundBrush;
+            }
+            else
+            {
+                var propertyMap = _editorFormatMap.GetProperties(CommandMarginFormatDefinition.Name);
+                _margin.TextForeground = propertyMap.GetForegroundBrush(SystemColors.WindowTextBrush);
+                _margin.TextBackground = propertyMap.GetBackgroundBrush(SystemColors.WindowBrush);
+            }
         }
 
         /// <summary>
