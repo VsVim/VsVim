@@ -202,6 +202,7 @@ if (-not $fast) {
     build-clean Src\VsSpecific\Vs2010\Vs2010.csproj
     build-clean Src\VsSpecific\Vs2012\Vs2012.csproj
     build-clean Src\VsSpecific\Vs2013\Vs2013.csproj
+    build-clean Src\VsSpecific\Vs2015\Vs2015.csproj
     build-clean Src\VsVim\VsVim.csproj
 }
 
