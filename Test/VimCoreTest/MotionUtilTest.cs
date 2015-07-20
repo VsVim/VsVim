@@ -340,6 +340,99 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class AllBlockTest : MotionUtilTest
+        {
+            /// <summary>
+            /// If there is not text after the { then that is simply excluded from the span.
+            /// </summary>
+            [Fact]
+            public void SingleNoTextAfterOpenBrace()
+            {
+                Create("if (true)", "{", "  statement;", "}", "// after");
+
+                var line = _textBuffer.GetLineFromLineNumber(2);
+                var motionResult = _motionUtil.AllBlock(line.Start, BlockKind.CurlyBracket, count: 1).Value;
+                var lineRange = _textBuffer.GetLineRange(startLine: 1, endLine: 3);
+                Assert.Equal(lineRange.Extent, motionResult.Span);
+                Assert.Equal(OperationKind.CharacterWise, motionResult.OperationKind);
+            }
+
+            [Fact]
+            public void SingleTextBeforeOpenBrace()
+            {
+                // The key to this test is the text before the open brace
+                Create("if (true)", "dog {", "  statement;", "}", "// after");
+
+                var line = _textBuffer.GetLineFromLineNumber(2);
+                var motionResult = _motionUtil.AllBlock(line.Start, BlockKind.CurlyBracket, count: 1).Value;
+                var span = new SnapshotSpan(
+                    _textBuffer.GetPointInLine(line: 1, column: 4),
+                    _textBuffer.GetLine(3).End);
+                Assert.Equal(span, motionResult.Span);
+                Assert.Equal(OperationKind.CharacterWise, motionResult.OperationKind);
+            }
+
+            [Fact]
+            public void SingleTextAfterCloseBrace()
+            {
+                // The key to this test is the text after the close brace
+                Create("if (true)", "{", "  statement;", "} dog", "// after");
+
+                var line = _textBuffer.GetLineFromLineNumber(2);
+                var motionResult = _motionUtil.AllBlock(line.Start, BlockKind.CurlyBracket, count: 1).Value;
+                var span = new SnapshotSpan(
+                    _textBuffer.GetLine(1).Start,
+                    _textBuffer.GetPointInLine(line: 3, column: 1));
+                Assert.Equal(span, motionResult.Span);
+                Assert.Equal(OperationKind.CharacterWise, motionResult.OperationKind);
+            }
+
+            [Fact]
+            public void SingleLineWiseWithCount()
+            {
+                var text = 
+@"if (true)
+{
+  s1;
+  if (false)
+  {
+    s2;
+  }
+}
+more";
+                Create(text.Split(new[] { Environment.NewLine }, StringSplitOptions.None));
+
+                var line = _textBuffer.GetLineFromLineNumber(5);
+                var motionResult = _motionUtil.AllBlock(line.Start, BlockKind.CurlyBracket, count: 2).Value;
+                var lineRange = _textBuffer.GetLineRange(startLine: 1, endLine: 7);
+                Assert.Equal(lineRange.Extent, motionResult.Span);
+                Assert.Equal(OperationKind.CharacterWise, motionResult.OperationKind);
+            }
+
+            [Fact]
+            public void ValidCount()
+            {
+                Create("a (cat (dog)) fish");
+
+                var point = _textBuffer.GetPoint(8);
+                Assert.Equal('d', point.GetChar());
+                var motionResult = _motionUtil.AllBlock(point, BlockKind.Paren, count: 2).Value;
+
+                Assert.Equal("(cat (dog))", motionResult.Span.GetText());
+            }
+
+            [Fact]
+            public void InvalidCount()
+            {
+                Create("a (cat (dog)) fish");
+
+                var point = _textBuffer.GetPoint(8);
+                Assert.Equal('d', point.GetChar());
+                var motionResult = _motionUtil.AllBlock(point, BlockKind.Paren, count: 3);
+                Assert.True(motionResult.IsNone());
+            }
+        }
+
         public sealed class InnerBlockTest : MotionUtilTest
         {
             /// <summary>
@@ -415,8 +508,57 @@ namespace Vim.UnitTest
                 Assert.Equal(OperationKind.CharacterWise, motionResult.OperationKind);
             }
 
+            [Fact]
+            public void SingleLineWiseWithCount()
+            {
+                var text = 
+@"if (true)
+{
+  s1;
+  if (false)
+  {
+    s2;
+  }
+}";
+                Create(text.Split(new[] { Environment.NewLine }, StringSplitOptions.None));
+
+                var line = _textBuffer.GetLineFromLineNumber(5);
+                var motionResult = _motionUtil.InnerBlock(line.Start, BlockKind.CurlyBracket, count: 2).Value;
+                var lineRange = SnapshotLineRangeUtil.CreateForLineAndCount(
+                    _textBuffer.GetLine(2),
+                    count: 5).Value;
+                Assert.Equal(lineRange.ExtentIncludingLineBreak, motionResult.Span);
+
+                // Definitely a linewise paste operation.  This can be verified by simply pasting the
+                // result here. 
+                Assert.Equal(OperationKind.LineWise, motionResult.OperationKind);
+            }
+
+            [Fact]
+            public void ValidCount()
+            {
+                Create("a (cat (dog)) fish");
+
+                var point = _textBuffer.GetPoint(8);
+                Assert.Equal('d', point.GetChar());
+                var motionResult = _motionUtil.InnerBlock(point, BlockKind.Paren, count: 2).Value;
+
+                Assert.Equal("cat (dog)", motionResult.Span.GetText());
+            }
+
+            [Fact]
+            public void InvalidCount()
+            {
+                Create("a (cat (dog)) fish");
+
+                var point = _textBuffer.GetPoint(8);
+                Assert.Equal('d', point.GetChar());
+                var motionResult = _motionUtil.InnerBlock(point, BlockKind.Paren, count: 3);
+                Assert.True(motionResult.IsNone());
+            }
+
             /// <summary>
-            /// Single line inner block test should use inner block beahaviour
+            /// Single line inner block test should use inner block behavior
             /// </summary>
             [Fact]
             public void Simple()
