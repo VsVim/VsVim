@@ -1304,11 +1304,11 @@ type internal MotionUtil
 
     /// Implement the all block motion
     member x.AllBlock contextPoint blockKind count =
-        match x.GetBlock blockKind contextPoint, count with
-        | Some (openPoint, closePoint), 1 -> 
+        match x.GetBlockWithCount blockKind contextPoint count with
+        | Some (openPoint, closePoint) -> 
             let span = SnapshotSpan(openPoint, closePoint.Add(1))
             MotionResult.Create span true MotionKind.CharacterWiseInclusive |> Some
-        | _ -> None
+        | None -> None
 
     /// Implementation of the 'ap' motion.  Unfortunately this is not as simple as the documentation
     /// states it is.  While the 'ap' motion uses the same underlying definition of a paragraph 
