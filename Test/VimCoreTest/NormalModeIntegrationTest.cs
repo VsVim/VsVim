@@ -6753,6 +6753,19 @@ namespace Vim.UnitTest
             }
 
             [Fact]
+            public void InnerBlockYankAndPasteIsLinewise()
+            {
+                Create("if (true)", "{", "  statement;", "}", "// after");
+                _textView.MoveCaretToLine(2);
+                _vimBuffer.ProcessNotation("yi}");
+                Assert.True(UnnamedRegister.OperationKind.IsLineWise);
+                _vimBuffer.ProcessNotation("p");
+                Assert.Equal(
+                    new[] { "  statement;", "  statement;" },
+                    _textBuffer.GetLineRange(startLine: 2, endLine: 3).Lines.Select(x => x.GetText()));
+            }
+
+            [Fact]
             public void Issue1614()
             {
                 Create("if (true)", "{", "  statement;", "}", "// after");

@@ -1091,9 +1091,7 @@ type internal MotionUtil
                 |> SeqUtil.tryFind 0 (findMatched startChar endChar)
 
         match startPoint, lastPoint with
-        | Some startPoint, Some lastPoint -> 
-            let endPoint = SnapshotPointUtil.AddOneOrCurrent lastPoint
-            SnapshotSpan(startPoint, endPoint) |> Some
+        | Some startPoint, Some lastPoint -> Some (startPoint, lastPoint)
         | _ -> None
 
     member x.GetQuotedStringData quoteChar = 
@@ -1297,14 +1295,11 @@ type internal MotionUtil
 
     /// Implement the all block motion
     member x.AllBlock contextPoint blockKind count =
-
-        if count <> 1 then
-            None
-        else
-            let span = x.GetBlock blockKind contextPoint 
-            match span with
-            | None -> None
-            | Some span -> MotionResult.Create span true MotionKind.CharacterWiseInclusive |> Some
+        match x.GetBlock blockKind contextPoint, count with
+        | Some (openPoint, closePoint), 1 -> 
+            let span = SnapshotSpan(openPoint, closePoint.Add(1))
+            MotionResult.Create span true MotionKind.CharacterWiseInclusive |> Some
+        | _ -> None
 
     /// Implementation of the 'ap' motion.  Unfortunately this is not as simple as the documentation
     /// states it is.  While the 'ap' motion uses the same underlying definition of a paragraph 
@@ -1854,36 +1849,36 @@ type internal MotionUtil
     /// An inner block motion is just the all block motion with the start and 
     /// end character removed 
     member x.InnerBlock contextPoint blockKind count =
-        if count <> 1 then
-            None
-        else
-            match x.GetBlock blockKind contextPoint with
-            | None -> None
-            | Some span when span.Snapshot.LineCount = 1 ->
-                if span.Length < 3 then
-                    None
+        match x.GetBlock blockKind contextPoint, count with
+        | Some (openPoint, closePoint), 1 -> 
+            let snapshot = openPoint.Snapshot
+            let openLine = openPoint.GetContainingLine()
+            let closeLine = closePoint.GetContainingLine()
+
+            let isOpenLineWise = openPoint.Position + 1 = openLine.End.Position 
+            let isCloseLineWise = 
+                SnapshotSpan(closeLine.Start, closePoint)
+                |> SnapshotSpanUtil.GetPoints Path.Forward
+                |> Seq.forall SnapshotPointUtil.IsBlank
+
+            let (span, motionKind) =
+                if isOpenLineWise && isCloseLineWise then
+                    let range = SnapshotLineRangeUtil.CreateForLineNumberRange snapshot (openLine.LineNumber + 1) (closeLine.LineNumber - 1)
+                    (range.ExtentIncludingLineBreak, MotionKind.LineWise)
+                elif isOpenLineWise then
+                    let line = SnapshotUtil.GetLine snapshot (openLine.LineNumber + 1)
+                    let span = SnapshotSpan(line.Start, closePoint)
+                    (span, MotionKind.CharacterWiseInclusive)
+                elif isCloseLineWise then
+                    let line = SnapshotUtil.GetLine snapshot (closeLine.LineNumber - 1)
+                    let span = SnapshotSpan(openPoint.Add(1), line.End)
+                    (span, MotionKind.CharacterWiseInclusive)
                 else
-                    let startPoint = SnapshotPointUtil.AddOne span.Start
-                    let endPoint = SnapshotPointUtil.SubtractOne span.End
-                    let span = SnapshotSpan(startPoint, endPoint)
-                    MotionResult.Create span true MotionKind.CharacterWiseInclusive |> Some
+                    let span = SnapshotSpan(openPoint.Add(1), closePoint)
+                    (span, MotionKind.CharacterWiseInclusive)
 
-            | Some span ->
-                let startPoint = 
-                    if SnapshotPointUtil.IsLastPointOnLine span.Start then
-                        span.Start.GetContainingLine().EndIncludingLineBreak
-                    else
-                        span.Start.Add 1
-
-                let endPoint =
-                    if SnapshotLineUtil.IsFirstNonBlank(span.End.Subtract 1) then
-                        let line = SnapshotUtil.GetLineOrFirst span.Snapshot (span.End.GetContainingLine().LineNumber - 1)
-                        line.End
-                    else
-                        span.End.Subtract 1
-
-                let span = SnapshotSpanUtil.Create startPoint endPoint
-                MotionResult.Create span true MotionKind.CharacterWiseInclusive |> Some
+            MotionResult.Create span true motionKind |> Some
+        | _ -> None
                 
     /// Implement the 'iw' motion.  Unlike the 'aw' motion it is not limited to a specific line
     /// and can exceed it

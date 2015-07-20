@@ -2422,7 +2422,7 @@ namespace Vim.UnitTest
                 _textView.MoveCaretToLine(4);
                 _vimBuffer.Process("viB");
                 Assert.Equal(_textBuffer.GetLineRange(4, 5).GetText(), _textView.GetSelectionSpan().GetText());
-                Assert.Equal(47, _textView.GetCaretPoint().Position);
+                Assert.Equal(48, _textView.GetCaretPoint().Position);
             }
 
             /// <summary>
@@ -2505,6 +2505,35 @@ namespace Vim.UnitTest
                 Create("hello world");
                 _vimBuffer.ProcessNotation("vl");
                 Assert.False(_vimBuffer.CanProcess(VimKey.LeftDrag));
+            }
+        }
+
+        public sealed class TextObjectTest : VisualModeIntegrationTest
+        {
+            [Fact]
+            public void InnerBlockYankAndPasteIsLinewise()
+            {
+                Create("if (true)", "{", "  statement;", "}", "// after");
+                _textView.MoveCaretToLine(2);
+                _vimBuffer.ProcessNotation("vi}");
+                Assert.Equal(ModeKind.VisualCharacter, _vimBuffer.ModeKind);
+                _vimBuffer.ProcessNotation("y");
+                Assert.True(UnnamedRegister.OperationKind.IsCharacterWise);
+                _vimBuffer.ProcessNotation("p");
+                Assert.Equal(
+                    new[] { "   statement;", " statement;" },
+                    _textBuffer.GetLineRange(startLine: 2, endLine: 3).Lines.Select(x => x.GetText()));
+            }
+
+            [Fact]
+            public void InnerBlockShouldGoToEol()
+            {
+                Create("if (true)", "{", "  statement;", "}", "// after");
+                _textView.MoveCaretToLine(2);
+                _vimBuffer.ProcessNotation("vi}");
+
+                var column = _textView.GetCaretColumn();
+                Assert.True(column.IsInsideLineBreak);
             }
         }
 
