@@ -234,6 +234,422 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class GetBlockTest : MotionUtilTest
+        {
+            private SnapshotSpan GetBlockSpan(BlockKind blockKind, SnapshotPoint point)
+            {
+                var option = _motionUtil.GetBlock(blockKind, point);
+                Assert.True(option.IsSome());
+                var tuple = option.Value;
+                return new SnapshotSpan(tuple.Item1, tuple.Item2.Add(1));
+            }
+
+            /// <summary>
+            /// Simple matched bracket test
+            /// </summary>
+            [Fact]
+            public void Simple()
+            {
+                Create("[cat] dog");
+                var span = GetBlockSpan(BlockKind.Bracket, _textBuffer.GetPoint(0));
+                Assert.Equal(_textBuffer.GetSpan(0, 5), span);
+            }
+
+            /// <summary>
+            /// Simple matched bracket test from the middle
+            /// </summary>
+            [Fact]
+            public void Simple_FromMiddle()
+            {
+                Create("[cat] dog");
+                var span = GetBlockSpan(BlockKind.Bracket, _textBuffer.GetPoint(2));
+                Assert.Equal(_textBuffer.GetSpan(0, 5), span);
+            }
+
+            /// <summary>
+            /// Make sure that we can process the nested block when the caret is before it
+            /// </summary>
+            [Fact]
+            public void Nested_Before()
+            {
+                Create("cat (fo(a)od) dog");
+                var span = GetBlockSpan(BlockKind.Paren, _textBuffer.GetPoint(6));
+                Assert.Equal(_textBuffer.GetSpan(4, 9), span);
+            }
+
+            /// <summary>
+            /// Make sure that we can process the nested block when the caret is after it
+            /// </summary>
+            [Fact]
+            public void Nested_After()
+            {
+                Create("cat (fo(a)od) dog");
+                var span = GetBlockSpan(BlockKind.Paren, _textBuffer.GetPoint(10));
+                Assert.Equal(_textBuffer.GetSpan(4, 9), span);
+            }
+
+            /// <summary>
+            /// Make sure that we can process the nested block when the caret is at the end
+            /// </summary>
+            [Fact]
+            public void Nested_FromLastChar()
+            {
+                Create("cat (fo(a)od) dog");
+                var span = GetBlockSpan(BlockKind.Paren, _textBuffer.GetPoint(12));
+                Assert.Equal(_textBuffer.GetSpan(4, 9), span);
+            }
+
+            /// <summary>
+            /// Make sure that we can process the nested block when the caret is at the start
+            /// </summary>
+            [Fact]
+            public void Nested_FromFirstChar()
+            {
+                Create("cat (fo(a)od) dog");
+                var span = GetBlockSpan(BlockKind.Paren, _textBuffer.GetPoint(4));
+                Assert.Equal(_textBuffer.GetSpan(4, 9), span);
+            }
+            /// <summary>
+            /// Bad match because of no start char
+            /// </summary>
+            [Fact]
+            public void Bad_NoStartChar()
+            {
+                Create("cat] dog");
+                var span = _motionUtil.GetBlock(BlockKind.Bracket, _textBuffer.GetPoint(0));
+                Assert.True(span.IsNone());
+            }
+
+            /// <summary>
+            /// Bad match because of no end char
+            /// </summary>
+            [Fact]
+            public void Bad_NoEndChar()
+            {
+                Create("[cat dog");
+                var span = _motionUtil.GetBlock(BlockKind.Bracket, _textBuffer.GetPoint(0));
+                Assert.True(span.IsNone());
+            }
+
+            [Fact]
+            public void Bad_EscapedStartChar()
+            {
+                Create(@"\[cat] dog");
+                var span = _motionUtil.GetBlock(BlockKind.Bracket, _textBuffer.GetPoint(1));
+                Assert.True(span.IsNone());
+            }
+        }
+
+        public sealed class AllBlockTest : MotionUtilTest
+        {
+            /// <summary>
+            /// If there is not text after the { then that is simply excluded from the span.
+            /// </summary>
+            [Fact]
+            public void SingleNoTextAfterOpenBrace()
+            {
+                Create("if (true)", "{", "  statement;", "}", "// after");
+
+                var line = _textBuffer.GetLineFromLineNumber(2);
+                var motionResult = _motionUtil.AllBlock(line.Start, BlockKind.CurlyBracket, count: 1).Value;
+                var lineRange = _textBuffer.GetLineRange(startLine: 1, endLine: 3);
+                Assert.Equal(lineRange.Extent, motionResult.Span);
+                Assert.Equal(OperationKind.CharacterWise, motionResult.OperationKind);
+            }
+
+            [Fact]
+            public void SingleTextBeforeOpenBrace()
+            {
+                // The key to this test is the text before the open brace
+                Create("if (true)", "dog {", "  statement;", "}", "// after");
+
+                var line = _textBuffer.GetLineFromLineNumber(2);
+                var motionResult = _motionUtil.AllBlock(line.Start, BlockKind.CurlyBracket, count: 1).Value;
+                var span = new SnapshotSpan(
+                    _textBuffer.GetPointInLine(line: 1, column: 4),
+                    _textBuffer.GetLine(3).End);
+                Assert.Equal(span, motionResult.Span);
+                Assert.Equal(OperationKind.CharacterWise, motionResult.OperationKind);
+            }
+
+            [Fact]
+            public void SingleTextAfterCloseBrace()
+            {
+                // The key to this test is the text after the close brace
+                Create("if (true)", "{", "  statement;", "} dog", "// after");
+
+                var line = _textBuffer.GetLineFromLineNumber(2);
+                var motionResult = _motionUtil.AllBlock(line.Start, BlockKind.CurlyBracket, count: 1).Value;
+                var span = new SnapshotSpan(
+                    _textBuffer.GetLine(1).Start,
+                    _textBuffer.GetPointInLine(line: 3, column: 1));
+                Assert.Equal(span, motionResult.Span);
+                Assert.Equal(OperationKind.CharacterWise, motionResult.OperationKind);
+            }
+
+            [Fact]
+            public void SingleLineWiseWithCount()
+            {
+                var text = 
+@"if (true)
+{
+  s1;
+  if (false)
+  {
+    s2;
+  }
+}
+more";
+                Create(text.Split(new[] { Environment.NewLine }, StringSplitOptions.None));
+
+                var line = _textBuffer.GetLineFromLineNumber(5);
+                var motionResult = _motionUtil.AllBlock(line.Start, BlockKind.CurlyBracket, count: 2).Value;
+                var lineRange = _textBuffer.GetLineRange(startLine: 1, endLine: 7);
+                Assert.Equal(lineRange.Extent, motionResult.Span);
+                Assert.Equal(OperationKind.CharacterWise, motionResult.OperationKind);
+            }
+
+            [Fact]
+            public void ValidCount()
+            {
+                Create("a (cat (dog)) fish");
+
+                var point = _textBuffer.GetPoint(8);
+                Assert.Equal('d', point.GetChar());
+                var motionResult = _motionUtil.AllBlock(point, BlockKind.Paren, count: 2).Value;
+
+                Assert.Equal("(cat (dog))", motionResult.Span.GetText());
+            }
+
+            [Fact]
+            public void InvalidCount()
+            {
+                Create("a (cat (dog)) fish");
+
+                var point = _textBuffer.GetPoint(8);
+                Assert.Equal('d', point.GetChar());
+                var motionResult = _motionUtil.AllBlock(point, BlockKind.Paren, count: 3);
+                Assert.True(motionResult.IsNone());
+            }
+        }
+
+        public sealed class InnerBlockTest : MotionUtilTest
+        {
+            /// <summary>
+            /// If there is not text after the { then that is simply excluded from the span.
+            /// </summary>
+            [Fact]
+            public void SingleNoTextAfterOpenBrace()
+            {
+                Create("if (true)", "{", "  statement;", "}", "// after");
+
+                var line = _textBuffer.GetLineFromLineNumber(2);
+                var motionResult = _motionUtil.InnerBlock(line.Start, BlockKind.CurlyBracket, count: 1).Value;
+                Assert.Equal(line.ExtentIncludingLineBreak, motionResult.Span);
+
+                // Definitely a linewise paste operation.  This can be verified by simply pasting the
+                // result here. 
+                Assert.Equal(OperationKind.LineWise, motionResult.OperationKind);
+            }
+
+            [Fact]
+            public void SingleNoTextAfterOpenBraceSpaceBeforeClose()
+            {
+                // The key to this test is the space before the close brace. 
+                Create("if (true)", "{", "  statement;", "  }", "// after");
+
+                var line = _textBuffer.GetLineFromLineNumber(2);
+                var motionResult = _motionUtil.InnerBlock(line.Start, BlockKind.CurlyBracket, count: 1).Value;
+                Assert.Equal(line.ExtentIncludingLineBreak, motionResult.Span);
+                Assert.Equal(OperationKind.LineWise, motionResult.OperationKind);
+            }
+
+            [Fact]
+            public void SingleSpaceAfterOpenBrace()
+            {
+                // The key to this test is the space after the { 
+                Create("if (true)", "{ ", "  statement;", "}", "// after");
+
+                var line = _textBuffer.GetLineFromLineNumber(2);
+                var motionResult = _motionUtil.InnerBlock(line.Start, BlockKind.CurlyBracket, count: 1).Value;
+                var span = new SnapshotSpan(
+                    _textBuffer.GetPointInLine(line: 1, column: 1),
+                    _textBuffer.GetLine(2).End);
+                Assert.Equal(span, motionResult.Span);
+                Assert.Equal(OperationKind.CharacterWise, motionResult.OperationKind);
+            }
+
+            [Fact]
+            public void SingleTextAfterOpenBrace()
+            {
+                Create("if (true)", "{ // test", "  statement;", "}", "// after");
+
+                var line = _textBuffer.GetLineFromLineNumber(2);
+                var motionResult = _motionUtil.InnerBlock(line.Start, BlockKind.CurlyBracket, count: 1).Value;
+                var span = new SnapshotSpan(
+                    _textBuffer.GetPointInLine(line: 1, column: 1),
+                    _textBuffer.GetLine(2).End);
+                Assert.Equal(span, motionResult.Span);
+                Assert.Equal(OperationKind.CharacterWise, motionResult.OperationKind);
+            }
+
+            [Fact]
+            public void SingleTextBeforeCloseBrace()
+            {
+                Create("if (true)", "{", "  statement;", "dog }", "// after");
+
+                var line = _textBuffer.GetLineFromLineNumber(2);
+                var motionResult = _motionUtil.InnerBlock(line.Start, BlockKind.CurlyBracket, count: 1).Value;
+
+                var span = new SnapshotSpan(
+                    _textBuffer.GetLine(2).Start,
+                    _textBuffer.GetPointInLine(line: 3, column: 4));
+                Assert.Equal(span, motionResult.Span);
+                Assert.Equal(OperationKind.CharacterWise, motionResult.OperationKind);
+            }
+
+            [Fact]
+            public void SingleLineWiseWithCount()
+            {
+                var text = 
+@"if (true)
+{
+  s1;
+  if (false)
+  {
+    s2;
+  }
+}";
+                Create(text.Split(new[] { Environment.NewLine }, StringSplitOptions.None));
+
+                var line = _textBuffer.GetLineFromLineNumber(5);
+                var motionResult = _motionUtil.InnerBlock(line.Start, BlockKind.CurlyBracket, count: 2).Value;
+                var lineRange = SnapshotLineRangeUtil.CreateForLineAndCount(
+                    _textBuffer.GetLine(2),
+                    count: 5).Value;
+                Assert.Equal(lineRange.ExtentIncludingLineBreak, motionResult.Span);
+
+                // Definitely a linewise paste operation.  This can be verified by simply pasting the
+                // result here. 
+                Assert.Equal(OperationKind.LineWise, motionResult.OperationKind);
+            }
+
+            [Fact]
+            public void ValidCount()
+            {
+                Create("a (cat (dog)) fish");
+
+                var point = _textBuffer.GetPoint(8);
+                Assert.Equal('d', point.GetChar());
+                var motionResult = _motionUtil.InnerBlock(point, BlockKind.Paren, count: 2).Value;
+
+                Assert.Equal("cat (dog)", motionResult.Span.GetText());
+            }
+
+            [Fact]
+            public void InvalidCount()
+            {
+                Create("a (cat (dog)) fish");
+
+                var point = _textBuffer.GetPoint(8);
+                Assert.Equal('d', point.GetChar());
+                var motionResult = _motionUtil.InnerBlock(point, BlockKind.Paren, count: 3);
+                Assert.True(motionResult.IsNone());
+            }
+
+            [Fact]
+            public void CountWithSideBySideBlocks()
+            {
+                Create("a (cat (dog)(blah)) fish");
+
+                var point = _textBuffer.GetPoint(8);
+                Assert.Equal('d', point.GetChar());
+                var motionResult = _motionUtil.InnerBlock(point, BlockKind.Paren, count: 2).Value;
+
+                Assert.Equal("cat (dog)(blah)", motionResult.Span.GetText());
+            }
+
+            [Fact]
+            public void CountWithSideBySideBlocksAlt()
+            {
+                Create("a (cat (dog)(blah)) fish");
+
+                var point = _textBuffer.GetPoint(13);
+                Assert.Equal('b', point.GetChar());
+                var motionResult = _motionUtil.InnerBlock(point, BlockKind.Paren, count: 2).Value;
+
+                Assert.Equal("cat (dog)(blah)", motionResult.Span.GetText());
+            }
+
+            [Fact]
+            public void CountWithSideBySideBlocksHarder()
+            {
+                Create("a (cat (dog)(blah)(again(deep))) fish");
+
+                var point = _textBuffer.GetPoint(8);
+                Assert.Equal('d', point.GetChar());
+                var motionResult = _motionUtil.InnerBlock(point, BlockKind.Paren, count: 2).Value;
+
+                Assert.Equal("cat (dog)(blah)(again(deep))", motionResult.Span.GetText());
+            }
+
+
+            /// <summary>
+            /// Single line inner block test should use inner block behavior
+            /// </summary>
+            [Fact]
+            public void Simple()
+            {
+                Create("[cat]");
+                var lines = _motionUtil.InnerBlock(_textBuffer.GetPoint(2), BlockKind.Bracket, 1).Value.Span.GetText();
+                Assert.Equal("cat", lines);
+            }
+
+            /// <summary>
+            /// Multiline inner block test should use inner block behavior
+            /// </summary>
+            [Fact]
+            public void Lines()
+            {
+                Create("[", "cat", "]");
+                var lines = _motionUtil.InnerBlock(_textBuffer.GetPointInLine(1, 1), BlockKind.Bracket, 1).Value.Span.GetText();
+                Assert.Equal(_textBuffer.GetLine(1).ExtentIncludingLineBreak.GetText(), lines);
+            }
+
+            /// <summary>
+            /// Lines with whitespace inner block test
+            /// </summary>
+            [Fact]
+            public void LinesAndWhitespace()
+            {
+                Create("", "    [", "      cat", "     ] ", "");
+                var lines = _motionUtil.InnerBlock(_textBuffer.GetPointInLine(2, 1), BlockKind.Bracket, 1).Value.Span.GetText();
+                Assert.Equal(_textBuffer.GetLine(2).ExtentIncludingLineBreak.GetText(), lines);
+            }
+
+            /// <summary>
+            /// Inner block with content on line with start bracket
+            /// </summary>
+            [Fact]
+            public void ContentOnLineWithOpeningBracket()
+            {
+                Create("[ dog", "  cat", "  ] ");
+                var lines = _motionUtil.InnerBlock(_textBuffer.GetPointInLine(1, 1), BlockKind.Bracket, 1).Value.Span.GetText();
+                Assert.Equal(" dog" + Environment.NewLine + "  cat", lines);
+            }
+
+            /// <summary>
+            /// Inner block with content on line with start bracket
+            /// </summary>
+            [Fact]
+            public void ContentOnLineWithClosingBracket()
+            {
+                Create("[ ", "  cat", "  dog ] ");
+                var lines = _motionUtil.InnerBlock(_textBuffer.GetPointInLine(1, 1), BlockKind.Bracket, 1).Value.Span.GetText();
+                Assert.Equal(" " + Environment.NewLine + "  cat" + Environment.NewLine + "  dog ", lines);
+            }
+        }
+
         public sealed class QuotedStringTest : MotionUtilTest
         {
             [Fact]
@@ -2571,155 +2987,6 @@ namespace Vim.UnitTest
                 _motionUtil.LastSearch(true, 1);
                 Assert.Equal(data, _vimData.LastSearchData);
                 _statusUtil.Verify();
-            }
-
-            /// <summary>
-            /// Single line inner block test should use inner block beahaviour
-            /// </summary>
-            [Fact]
-            public void GetInnerBlock_Simple()
-            {
-                Create("[cat]");
-                var lines = _motionUtil.InnerBlock(_textBuffer.GetPoint(2), BlockKind.Bracket, 1).Value.Span.GetText();
-                Assert.Equal("cat", lines);
-            }
-
-            /// <summary>
-            /// Multiline inner block test should use inner block beahavior
-            /// </summary>
-            [Fact]
-            public void GetInnerBlock_Lines()
-            {
-                Create("[", "cat", "]");
-                var lines = _motionUtil.InnerBlock(_textBuffer.GetPointInLine(1, 1), BlockKind.Bracket, 1).Value.Span.GetText();
-                Assert.Equal(_textBuffer.GetLine(1).GetText(), lines);
-            }
-
-            /// <summary>
-            /// Lines with whitespace inner block test
-            /// </summary>
-            [Fact]
-            public void GetInnerBlock_LinesAndWhitespace()
-            {
-                Create("", "    [", "      cat", "     ] ", "");
-                var lines = _motionUtil.InnerBlock(_textBuffer.GetPointInLine(2, 1), BlockKind.Bracket, 1).Value.Span.GetText();
-                Assert.Equal(_textBuffer.GetLine(2).GetText(), lines);
-            }
-
-            /// <summary>
-            /// Inner block with content on line with start bracket
-            /// </summary>
-            [Fact]
-            public void GetInnerBlock_ContentOnLineWithOpeningBracket()
-            {
-                Create("[ dog", "  cat", "  ] ");
-                var lines = _motionUtil.InnerBlock(_textBuffer.GetPointInLine(1, 1), BlockKind.Bracket, 1).Value.Span.GetText();
-                Assert.Equal(" dog" + Environment.NewLine + "  cat", lines);
-            }
-
-            /// <summary>
-            /// Inner block with content on line with start bracket
-            /// </summary>
-            [Fact]
-            public void GetInnerBlock_ContentOnLineWithClosingBracket()
-            {
-                Create("[ ", "  cat", "  dog ] ");
-                var lines = _motionUtil.InnerBlock(_textBuffer.GetPointInLine(1, 1), BlockKind.Bracket, 1).Value.Span.GetText();
-                Assert.Equal(" " + Environment.NewLine + "  cat" + Environment.NewLine + "  dog ", lines);
-            }
-
-            /// <summary>
-            /// Simple matched bracket test
-            /// </summary>
-            [Fact]
-            public void GetBlock_Simple()
-            {
-                Create("[cat] dog");
-                var span = _motionUtil.GetBlock(BlockKind.Bracket, _textBuffer.GetPoint(0)).Value;
-                Assert.Equal(_textBuffer.GetSpan(0, 5), span);
-            }
-
-            /// <summary>
-            /// Simple matched bracket test from the middle
-            /// </summary>
-            [Fact]
-            public void GetBlock_Simple_FromMiddle()
-            {
-                Create("[cat] dog");
-                var span = _motionUtil.GetBlock(BlockKind.Bracket, _textBuffer.GetPoint(2)).Value;
-                Assert.Equal(_textBuffer.GetSpan(0, 5), span);
-            }
-
-            /// <summary>
-            /// Make sure that we can process the nested block when the caret is before it
-            /// </summary>
-            [Fact]
-            public void GetBlock_Nested_Before()
-            {
-                Create("cat (fo(a)od) dog");
-                var span = _motionUtil.GetBlock(BlockKind.Paren, _textBuffer.GetPoint(6)).Value;
-                Assert.Equal(_textBuffer.GetSpan(4, 9), span);
-            }
-
-            /// <summary>
-            /// Make sure that we can process the nested block when the caret is after it
-            /// </summary>
-            [Fact]
-            public void GetBlock_Nested_After()
-            {
-                Create("cat (fo(a)od) dog");
-                var span = _motionUtil.GetBlock(BlockKind.Paren, _textBuffer.GetPoint(10)).Value;
-                Assert.Equal(_textBuffer.GetSpan(4, 9), span);
-            }
-
-            /// <summary>
-            /// Make sure that we can process the nested block when the caret is at the end
-            /// </summary>
-            [Fact]
-            public void GetBlock_Nested_FromLastChar()
-            {
-                Create("cat (fo(a)od) dog");
-                var span = _motionUtil.GetBlock(BlockKind.Paren, _textBuffer.GetPoint(12)).Value;
-                Assert.Equal(_textBuffer.GetSpan(4, 9), span);
-            }
-            /// <summary>
-            /// Make sure that we can process the nested block when the caret is at the start
-            /// </summary>
-            [Fact]
-            public void GetBlock_Nested_FromFirstChar()
-            {
-                Create("cat (fo(a)od) dog");
-                var span = _motionUtil.GetBlock(BlockKind.Paren, _textBuffer.GetPoint(4)).Value;
-                Assert.Equal(_textBuffer.GetSpan(4, 9), span);
-            }
-            /// <summary>
-            /// Bad match because of no start char
-            /// </summary>
-            [Fact]
-            public void GetBlock_Bad_NoStartChar()
-            {
-                Create("cat] dog");
-                var span = _motionUtil.GetBlock(BlockKind.Bracket, _textBuffer.GetPoint(0));
-                Assert.True(span.IsNone());
-            }
-
-            /// <summary>
-            /// Bad match because of no end char
-            /// </summary>
-            [Fact]
-            public void GetBlock_Bad_NoEndChar()
-            {
-                Create("[cat dog");
-                var span = _motionUtil.GetBlock(BlockKind.Bracket, _textBuffer.GetPoint(0));
-                Assert.True(span.IsNone());
-            }
-
-            [Fact]
-            public void GetBlock_Bad_EscapedStartChar()
-            {
-                Create(@"\[cat] dog");
-                var span = _motionUtil.GetBlock(BlockKind.Bracket, _textBuffer.GetPoint(1));
-                Assert.True(span.IsNone());
             }
 
             /// <summary>

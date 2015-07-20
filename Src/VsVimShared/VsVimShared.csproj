@@ -147,6 +147,7 @@
       <DependentUpon>LinkBanner.xaml</DependentUpon>
     </Compile>
     <Compile Include="Implementation\UpgradeNotification\VimRcLoadNotificationMarginProvider.cs" />
+    <Compile Include="Implementation\VisualAssist\VisualAssistExtensionAdapter.cs" />
     <Compile Include="IToastNotifaction.cs" />
     <Compile Include="Implementation\VisualAssist\IVisualAssistUtil.cs" />
     <Compile Include="Implementation\VisualAssist\VisualAssistKeyProcessor.cs" />

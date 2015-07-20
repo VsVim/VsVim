@@ -6751,6 +6751,29 @@ namespace Vim.UnitTest
                 Assert.Equal(new[] { "cat", "  ", "   ", "dog" }, _textBuffer.GetLines());
                 Assert.Equal(_textBuffer.GetPointInLine(1, 1), _textView.GetCaretPoint());
             }
+
+            [Fact]
+            public void InnerBlockYankAndPasteIsLinewise()
+            {
+                Create("if (true)", "{", "  statement;", "}", "// after");
+                _textView.MoveCaretToLine(2);
+                _vimBuffer.ProcessNotation("yi}");
+                Assert.True(UnnamedRegister.OperationKind.IsLineWise);
+                _vimBuffer.ProcessNotation("p");
+                Assert.Equal(
+                    new[] { "  statement;", "  statement;" },
+                    _textBuffer.GetLineRange(startLine: 2, endLine: 3).Lines.Select(x => x.GetText()));
+            }
+
+            [Fact]
+            public void Issue1614()
+            {
+                Create("if (true)", "{", "  statement;", "}", "// after");
+                _localSettings.ShiftWidth = 2;
+                _textView.MoveCaretToLine(2);
+                _vimBuffer.ProcessNotation(">i{");
+                Assert.Equal("    statement;", _textBuffer.GetLine(2).GetText());
+            }
         }
     }
 }

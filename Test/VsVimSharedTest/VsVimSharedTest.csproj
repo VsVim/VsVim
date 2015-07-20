@@ -115,6 +115,7 @@
     <Compile Include="Utils\ReSharperCommandTargetSimulation.cs" />
     <Compile Include="Utils\VsSimulation.cs" />
     <Compile Include="VimApplicationSettingsTest.cs" />
+    <Compile Include="VisualAssistExtensionAdapterTest.cs" />
     <Compile Include="VsAdapterTest.cs" />
     <Compile Include="VsCommandTargetTest.cs" />
     <Compile Include="VsFilterKeysAdapterTest.cs" />
