@@ -1094,6 +1094,15 @@ type internal MotionUtil
         | Some startPoint, Some lastPoint -> Some (startPoint, lastPoint)
         | _ -> None
 
+    member x.GetBlockWithCount (blockKind : BlockKind) contextPoint count = 
+        let tuple = x.GetBlock blockKind contextPoint
+        match tuple, count with 
+        | Some _, 1 -> tuple
+        | Some (_, closePoint), count -> 
+            let contextPoint = closePoint.Add(1)
+            x.GetBlockWithCount blockKind contextPoint (count - 1)
+        | None, _ -> None
+
     member x.GetQuotedStringData quoteChar = 
 
         // All of the points which represent a valid quoteChar value on the line.  This
@@ -1849,8 +1858,8 @@ type internal MotionUtil
     /// An inner block motion is just the all block motion with the start and 
     /// end character removed 
     member x.InnerBlock contextPoint blockKind count =
-        match x.GetBlock blockKind contextPoint, count with
-        | Some (openPoint, closePoint), 1 -> 
+        match x.GetBlockWithCount blockKind contextPoint count with
+        | Some (openPoint, closePoint) ->
             let snapshot = openPoint.Snapshot
             let openLine = openPoint.GetContainingLine()
             let closeLine = closePoint.GetContainingLine()
@@ -1878,7 +1887,7 @@ type internal MotionUtil
                     (span, MotionKind.CharacterWiseInclusive)
 
             MotionResult.Create span true motionKind |> Some
-        | _ -> None
+        | None -> None
                 
     /// Implement the 'iw' motion.  Unlike the 'aw' motion it is not limited to a specific line
     /// and can exceed it
