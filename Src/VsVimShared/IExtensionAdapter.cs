@@ -29,7 +29,7 @@ namespace Vim.VisualStudio
     /// </summary>
     internal interface IExtensionAdapterBroker : IExtensionAdapter
     {
-        ReadOnlyCollection<IExtensionAdapter> ExtensionAdapters
+        IEnumerable<IExtensionAdapter> ExtensionAdapters
         {
             get;
         }

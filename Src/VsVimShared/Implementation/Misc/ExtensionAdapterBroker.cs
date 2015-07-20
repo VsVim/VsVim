@@ -12,24 +12,24 @@ namespace Vim.VisualStudio.Implementation.Misc
     [Export(typeof(IExtensionAdapterBroker))]
     internal sealed class ExtensionAdapterBroker : IExtensionAdapterBroker
     {
-        private readonly ReadOnlyCollection<IExtensionAdapter> _extensionAdapters;
+        private readonly ReadOnlyCollection<Lazy<IExtensionAdapter>> _extensionAdapters;
 
         [ImportingConstructor]
-        internal ExtensionAdapterBroker([ImportMany] IEnumerable<IExtensionAdapter> collection)
+        internal ExtensionAdapterBroker([ImportMany] IEnumerable<Lazy<IExtensionAdapter>> collection)
         {
             _extensionAdapters = collection.ToReadOnlyCollection();
         }
 
-        ReadOnlyCollection<IExtensionAdapter> IExtensionAdapterBroker.ExtensionAdapters
+        IEnumerable<IExtensionAdapter> IExtensionAdapterBroker.ExtensionAdapters
         {
-            get { return _extensionAdapters; }
+            get { return _extensionAdapters.Select(x => x.Value); }
         }
 
         private bool? RunOnAll(Func<IExtensionAdapter, bool?> func)
         {
             foreach (var extensionAdapter in _extensionAdapters)
             {
-                var result = func(extensionAdapter);
+                var result = func(extensionAdapter.Value);
                 if (result.HasValue)
                 {
                     return result;
