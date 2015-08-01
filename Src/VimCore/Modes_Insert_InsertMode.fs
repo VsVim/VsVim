@@ -85,7 +85,6 @@ type WordCompletionUtil
         // Combine the collections
         Seq.append wordsAfter wordsBefore
         |> Seq.filter filterFunc
-        |> Seq.map SnapshotSpanUtil.GetText
 
     /// Get the word completion entries in the specified ITextSnapshot.  If the token is cancelled the 
     /// exception will be propagated out of this method.  This method will return duplicate words too
@@ -95,7 +94,6 @@ type WordCompletionUtil
         startPoint
         |> _wordUtil.GetWords WordKind.NormalWord Path.Forward
         |> Seq.filter filterFunc
-        |> Seq.map (fun wordSpan -> wordSpan.GetText())
 
     member x.GetWordCompletions (wordSpan : SnapshotSpan) =
         let comparer = if _globalSettings.IgnoreCase then CharComparer.IgnoreCase else CharComparer.Exact
@@ -109,11 +107,30 @@ type WordCompletionUtil
             |> Seq.filter (fun snapshot -> snapshot.TextBuffer <> fileTextBuffer)
             |> Seq.collect (fun snapshot -> x.GetWordCompletionsInFile filterText comparer snapshot)
 
+        let wordSpanStart = wordSpan.Start.Position
+        let sortComparer (x : SnapshotSpan) (y : SnapshotSpan) = 
+            let xPos = x.Start.Position
+            let yPos = y.Start.Position
+            if x.Snapshot.TextBuffer = fileTextBuffer && y.Snapshot.TextBuffer = fileTextBuffer then
+                let xPos = if xPos < wordSpanStart then xPos + wordSpan.Snapshot.Length else xPos
+                let yPos = if yPos < wordSpanStart then yPos + wordSpan.Snapshot.Length else yPos
+                xPos.CompareTo(yPos)
+            elif x.Snapshot.TextBuffer = fileTextBuffer then
+                -1
+            elif y.Snapshot.TextBuffer = fileTextBuffer then
+                1
+            else
+                xPos.CompareTo(yPos)
+
         fileCompletions
         |> Seq.append otherFileCompletions  
-        |> Seq.filter (fun word -> word.Length > 1)
+        |> Seq.filter (fun span -> span.Length > 1)
+        |> List.ofSeq
+        |> List.sortWith sortComparer
+        |> Seq.map SnapshotSpanUtil.GetText
         |> Seq.distinct
         |> List.ofSeq
+
 
 [<RequireQualifiedAccess>]
 type InsertKind =
