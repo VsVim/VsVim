@@ -200,7 +200,7 @@ namespace Vim.VisualStudio
                     command.Bindings = bindings;
                 }
             }
-            catch (COMException)
+            catch (Exception)
             {
                 // Several implementations, Transact SQL in particular, return E_FAIL for this
                 // operation.  Simply ignore the failure and continue
