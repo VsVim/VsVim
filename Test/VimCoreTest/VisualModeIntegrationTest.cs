@@ -2388,6 +2388,7 @@ namespace Vim.UnitTest
                 EnterMode(ModeKind.VisualCharacter, new SnapshotSpan(_textView.TextSnapshot, 5, 1));
                 _vimBuffer.Process(@"i""i""");
                 Assert.Equal(@"""dog""", _textView.GetSelectionSpan().GetText());
+                Assert.Equal(8, _textView.GetCaretPoint().Position);
             }
 
             [Fact]
@@ -2397,6 +2398,7 @@ namespace Vim.UnitTest
                 EnterMode(ModeKind.VisualCharacter, new SnapshotSpan(_textView.TextSnapshot, 5, 1));
                 _vimBuffer.Process(@"2i""");
                 Assert.Equal(@"""dog""", _textView.GetSelectionSpan().GetText());
+                Assert.Equal(8, _textView.GetCaretPoint().Position);
             }
 
             /// <summary>
