@@ -797,7 +797,7 @@ more";
             {
                 Create(@"x 'cat'dog'");
                 _textView.MoveCaretTo(3);
-                var data = _motionUtil.QuotedStringContents('\'');
+                var data = _motionUtil.QuotedStringContentsWithCount('\'', 1);
                 Assert.True(data.IsSome());
                 Assert.Equal("cat", data.value.Span.GetText());
             }
@@ -807,7 +807,7 @@ more";
             {
                 Create(@"x 'cat'dog'");
                 _textView.MoveCaretTo(8);
-                var data = _motionUtil.QuotedStringContents('\'');
+                var data = _motionUtil.QuotedStringContentsWithCount('\'', 1);
                 Assert.True(data.IsSome());
                 Assert.Equal("dog", data.value.Span.GetText());
             }
@@ -822,7 +822,7 @@ more";
                 Create(@"x 'cat'dog'");
                 _textView.MoveCaretTo(6);
                 Assert.Equal('\'', _textView.GetCaretPoint().GetChar());
-                var data = _motionUtil.QuotedStringContents('\'');
+                var data = _motionUtil.QuotedStringContentsWithCount('\'', 1);
                 Assert.True(data.IsSome());
                 Assert.Equal("cat", data.value.Span.GetText());
             }
@@ -836,7 +836,7 @@ more";
                 Create(@"x 'cat'dog'fish'");
                 _textView.MoveCaretTo(10);
                 Assert.Equal('\'', _textView.GetCaretPoint().GetChar());
-                var data = _motionUtil.QuotedStringContents('\'');
+                var data = _motionUtil.QuotedStringContentsWithCount('\'', 1);
                 Assert.True(data.IsSome());
                 Assert.Equal("fish", data.value.Span.GetText());
             }
@@ -846,7 +846,7 @@ more";
             {
                 Create(@"let x = '\\'");
                 _textView.MoveCaretTo(9);
-                var data = _motionUtil.QuotedStringContents('\'');
+                var data = _motionUtil.QuotedStringContentsWithCount('\'', 1);
                 Assert.True(data.IsSome());
                 Assert.Equal(@"\\", data.Value.Span.GetText());
             }
@@ -2588,7 +2588,7 @@ more";
             public void QuotedStringContents1()
             {
                 Create(@"""foo""");
-                var data = _motionUtil.QuotedStringContents('"');
+                var data = _motionUtil.QuotedStringContentsWithCount('"', 1);
                 Assert.True(data.IsSome());
                 AssertData(data.Value, new SnapshotSpan(_snapshot, 1, 3), MotionKind.CharacterWiseInclusive);
             }
@@ -2597,7 +2597,7 @@ more";
             public void QuotedStringContents2()
             {
                 Create(@" ""bar""");
-                var data = _motionUtil.QuotedStringContents('"');
+                var data = _motionUtil.QuotedStringContentsWithCount('"', 1);
                 Assert.True(data.IsSome());
                 AssertData(data.Value, new SnapshotSpan(_snapshot, 2, 3), MotionKind.CharacterWiseInclusive);
             }
@@ -2608,7 +2608,7 @@ more";
                 Create(@"""foo"" ""bar""");
                 var start = _snapshot.GetText().IndexOf('b');
                 _textView.MoveCaretTo(start);
-                var data = _motionUtil.QuotedStringContents('"');
+                var data = _motionUtil.QuotedStringContentsWithCount('"', 1);
                 Assert.True(data.IsSome());
                 AssertData(data.Value, new SnapshotSpan(_snapshot, start, 3), MotionKind.CharacterWiseInclusive);
             }

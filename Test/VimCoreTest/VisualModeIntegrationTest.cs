@@ -2369,6 +2369,39 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
+            /// Text object selections will extend to outer blocks
+            /// </summary>
+            [Fact]
+            public void TextObject_Count_AllParen_ExpandOutward()
+            {
+                Create("cat (fo(bad)od) bear");
+                _textView.MoveCaretTo(9);
+                _vimBuffer.Process("v2ab");
+                Assert.Equal("(fo(bad)od)", _textView.GetSelectionSpan().GetText());
+                Assert.Equal(14, _textView.GetCaretPoint().Position);
+            }
+
+            [Fact]
+            public void TextObject_Quotes_Included()
+            {
+                Create(@"cat ""dog"" tree");
+                EnterMode(ModeKind.VisualCharacter, new SnapshotSpan(_textView.TextSnapshot, 5, 1));
+                _vimBuffer.Process(@"i""i""");
+                Assert.Equal(@"""dog""", _textView.GetSelectionSpan().GetText());
+                Assert.Equal(8, _textView.GetCaretPoint().Position);
+            }
+
+            [Fact]
+            public void TextObject_Count_Quotes_Included()
+            {
+                Create(@"cat ""dog"" tree");
+                EnterMode(ModeKind.VisualCharacter, new SnapshotSpan(_textView.TextSnapshot, 5, 1));
+                _vimBuffer.Process(@"2i""");
+                Assert.Equal(@"""dog""", _textView.GetSelectionSpan().GetText());
+                Assert.Equal(8, _textView.GetCaretPoint().Position);
+            }
+
+            /// <summary>
             /// If we've already selected the inner block at the caret then move outward 
             /// and select the containing block
             /// </summary>

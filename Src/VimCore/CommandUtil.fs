@@ -1503,7 +1503,7 @@ type internal CommandUtil
                 CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Move the caret to the result of the text object selection
-    member x.MoveCaretToTextObject motion textObjectKind (visualSpan : VisualSpan) = 
+    member x.MoveCaretToTextObject count motion textObjectKind (visualSpan : VisualSpan) = 
 
         // First step is to get the desired final mode of the text object movement
         let desiredVisualKind = 
@@ -1556,7 +1556,7 @@ type internal CommandUtil
             if isInitialSelection then
                 // For an initial selection we just do a standard motion from the caret point
                 // and update the selection.
-                let argument = { MotionContext = MotionContext.Movement; OperatorCount = None; MotionCount = Some 1}
+                let argument = { MotionContext = MotionContext.Movement; OperatorCount = None; MotionCount = Some count}
                 match _motionUtil.GetMotion motion argument with
                 | None -> onError ()
                 | Some motionResult -> 
@@ -1581,8 +1581,8 @@ type internal CommandUtil
                     _commonOperations.MoveCaretToMotionResult motionResult
                     CommandResult.Completed ModeSwitch.NoSwitch
 
-        let moveBlock blockKind isAll = 
-            let argument = { MotionContext = MotionContext.Movement; OperatorCount = None; MotionCount = Some 1}
+        let moveBlock blockKind motion = 
+            let argument = { MotionContext = MotionContext.Movement; OperatorCount = None; MotionCount = Some count}
             match _motionUtil.GetMotion motion argument with
             | None -> onError ()
             | Some motionResult -> 
@@ -1594,16 +1594,21 @@ type internal CommandUtil
                     // Attempt to expand the selection to the encompassing block.  Simply move
                     // the caret outside the current block and attempt again to get the 
                     let contextPoint = 
-                        let offset = if isAll then 1 else 2
+                        let offset = match motion with
+                                     | Motion.AllBlock _ -> 1
+                                     | Motion.InnerBlock _ -> 2
+                                     | _ -> 0
+
                         SnapshotPointUtil.TryAdd offset x.CaretPoint
                     match contextPoint |> OptionUtil.map2 (fun point -> _motionUtil.GetTextObject motion point) with
                     | None -> onError()
                     | Some motionResult -> setSelection motionResult.Span
 
         match motion with
-        | Motion.AllBlock blockKind -> moveBlock blockKind true
-        | Motion.InnerBlock blockKind -> moveBlock blockKind false
+        | Motion.AllBlock blockKind -> moveBlock blockKind motion
+        | Motion.InnerBlock blockKind -> moveBlock blockKind motion
         | Motion.TagBlock kind -> moveTag kind
+        | Motion.QuotedStringContents quote -> moveBlock quote motion
         | _ -> moveNormal () 
 
     /// Open a fold in visual mode.  In Visual Mode a single fold level is opened for every
@@ -2427,7 +2432,7 @@ type internal CommandUtil
         | VisualCommand.GoToFileInSelection -> x.GoToFileInSelection visualSpan
         | VisualCommand.JoinSelection kind -> x.JoinSelection kind visualSpan
         | VisualCommand.InvertSelection columnOnlyInBlock -> x.InvertSelection visualSpan streamSelectionSpan columnOnlyInBlock
-        | VisualCommand.MoveCaretToTextObject (motion, textObjectKind)-> x.MoveCaretToTextObject motion textObjectKind visualSpan
+        | VisualCommand.MoveCaretToTextObject (motion, textObjectKind)-> x.MoveCaretToTextObject count motion textObjectKind visualSpan
         | VisualCommand.OpenFoldInSelection -> x.OpenFoldInSelection visualSpan
         | VisualCommand.OpenAllFoldsInSelection -> x.OpenAllFoldsInSelection visualSpan
         | VisualCommand.PutOverSelection moveCaretAfterText -> x.PutOverSelection register count moveCaretAfterText visualSpan 

@@ -2450,11 +2450,24 @@ type internal MotionUtil
                     SnapshotSpanUtil.Create data.LeadingWhiteSpace.Start data.TrailingWhiteSpace.Start
             MotionResult.Create span true MotionKind.CharacterWiseInclusive |> Some
 
-    member x.QuotedStringContents quoteChar = 
+    member x.QuotedStringContentsWithCount quoteChar count = 
+        let QuotedStringContents quoteChar = 
+            match x.GetQuotedStringData quoteChar with
+            | None -> None 
+            | Some data ->
+                let span = data.Contents
+                MotionResult.Create span true MotionKind.CharacterWiseInclusive |> Some
+
+        if count > 1 then
+          x.QuotedStringWithoutSpaces quoteChar
+        else
+          QuotedStringContents quoteChar
+
+    member x.QuotedStringWithoutSpaces quoteChar = 
         match x.GetQuotedStringData quoteChar with
         | None -> None 
-        | Some data ->
-            let span = data.Contents
+        | Some data -> 
+            let span = SnapshotSpanUtil.Create data.LeadingQuote data.TrailingWhiteSpace.Start
             MotionResult.Create span true MotionKind.CharacterWiseInclusive |> Some
 
     /// Get the motion for a search command.  Used to implement the '/' and '?' motions
@@ -2710,7 +2723,7 @@ type internal MotionUtil
             | Motion.ParagraphBackward -> x.ParagraphBackward motionArgument.Count |> Some
             | Motion.ParagraphForward -> x.ParagraphForward motionArgument.Count |> Some
             | Motion.QuotedString quoteChar -> x.QuotedString quoteChar
-            | Motion.QuotedStringContents quoteChar -> x.QuotedStringContents quoteChar
+            | Motion.QuotedStringContents quoteChar -> x.QuotedStringContentsWithCount quoteChar motionArgument.Count
             | Motion.RepeatLastCharSearch -> x.RepeatLastCharSearch()
             | Motion.RepeatLastCharSearchOpposite -> x.RepeatLastCharSearchOpposite()
             | Motion.Search searchData-> x.Search searchData motionArgument.Count
@@ -2742,6 +2755,7 @@ type internal MotionUtil
         | Motion.TagBlock kind -> x.TagBlock 1 point kind
         | Motion.InnerWord wordKind -> x.InnerWord wordKind 1 point 
         | Motion.InnerBlock blockKind -> x.InnerBlock point blockKind 1
+        | Motion.QuotedStringContents quote -> x.QuotedStringWithoutSpaces quote
         | _ -> None
 
     interface IMotionUtil with
