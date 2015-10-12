@@ -168,7 +168,7 @@ namespace Vim.UnitTest
             [Fact]
             public void MultipleAttributes()
             {
-                var tagBlock = Parse("<a name1='foo' name2='bar'></a>").Single();
+                var tagBlock = Parse("<a name1='foo' name2='bar' name-dash='abc' novalue></a>").Single();
                 Assert.Equal("a", tagBlock.Text);
                 Assert.Equal(0, tagBlock.Children.Count);
             }
@@ -205,6 +205,15 @@ namespace Vim.UnitTest
                 Assert.Equal("a", tagBlock.Text);
                 Assert.Equal(0, tagBlock.Children.Count);
             }
+
+            [Fact]
+            public void NoValue()
+            {
+                var tagBlock = Parse(@"<button disabled>search</button>").Single();
+                Assert.Equal("button", tagBlock.Text);
+                Assert.Equal(0, tagBlock.Children.Count);
+            }
+
         }
     }
 }

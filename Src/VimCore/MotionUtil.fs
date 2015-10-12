@@ -146,12 +146,16 @@ type TagBlockParser (snapshot : ITextSnapshot) =
         let position = x.SkipBlanks startPosition
         _builder { 
             let! nameSpan = x.ParseAttributeName position
-            let! position = x.ParseChar (x.SkipBlanks nameSpan.End) '='
-            let quotePosition = x.SkipBlanks position
-            let! quoteChar = x.ParseQuoteChar quotePosition
-            let! valueSpan = x.ParseAttributeValue (quotePosition + 1) quoteChar
-            let! valueEnd = x.ParseChar valueSpan.End quoteChar
-            return Span.FromBounds(startPosition, valueEnd)
+            let position = x.SkipBlanks nameSpan.End
+            if x.TestPositionChar position '=' then
+                let quotePosition = position + 1
+                let! quoteChar = x.ParseQuoteChar quotePosition
+                let! valueSpan = x.ParseAttributeValue (quotePosition + 1) quoteChar
+                let! valueEnd = x.ParseChar valueSpan.End quoteChar
+                return Span.FromBounds(startPosition, valueEnd)
+            else
+                //The attribute has no value
+                return Span.FromBounds(startPosition, nameSpan.End)
         }
 
     /// This will be called with the position pointing immediately after the end of the 
