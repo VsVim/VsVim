@@ -288,6 +288,10 @@ type VimInterpreter
     // Get a tuple of the ITextSnapshotLine specified by the given LineSpecifier and the 
     // corresponding vim line number
     member x.GetLineAndVimLineNumberCore lineSpecifier (currentLine : ITextSnapshotLine) = 
+
+        // To convert from a VS line number to a vim line number, simply add 1
+        let getLineAndNumber (line : ITextSnapshotLine) = (line, line.LineNumber + 1)
+
         // Get the ITextSnapshotLine specified by lineSpecifier and then apply the
         // given adjustment to the number.  Can fail if the line number adjustment
         // is invalid
@@ -300,21 +304,31 @@ type VimInterpreter
 
         match lineSpecifier with 
         | LineSpecifier.CurrentLine -> 
-            let line = x.CaretLine
-            (line, line.LineNumber + 1) |> Some
+            x.CaretLine |> getLineAndNumber |> Some
+
         | LineSpecifier.LastLine ->
             let line = SnapshotUtil.GetLastLine x.CurrentSnapshot
-            (line, line.LineNumber + 1) |> Some
-        | LineSpecifier.LineSpecifierWithAdjustment (lineSpecifier, adjustment) ->
+            line |> getLineAndNumber |> Some
 
-            x.GetLine lineSpecifier |> OptionUtil.map2 (getAdjustment adjustment)
         | LineSpecifier.MarkLine mark ->
-
             // Get the line containing the mark in the context of this IVimTextBuffer
             _markMap.GetMark mark _vimBufferData
             |> Option.map VirtualSnapshotPointUtil.GetPoint
             |> Option.map SnapshotPointUtil.GetContainingLine
-            |> Option.map (fun line -> line, line.LineNumber + 1)
+            |> Option.map getLineAndNumber
+
+        | LineSpecifier.Number number ->
+            // Must be a valid number 
+            let tssNumber = Util.VimLineToTssLine number
+            SnapshotUtil.TryGetLine x.CurrentSnapshot tssNumber
+            |> Option.map (fun line -> line, number)
+
+        | LineSpecifier.LineSpecifierWithAdjustment (lineSpecifier, adjustment) ->
+            x.GetLine lineSpecifier |> OptionUtil.map2 (getAdjustment adjustment)
+
+        | LineSpecifier.AdjustmentOnCurrent adjustment -> 
+            getAdjustment adjustment currentLine
+
         | LineSpecifier.NextLineWithPattern pattern ->
             // TODO: Implement
             None
@@ -324,11 +338,6 @@ type VimInterpreter
         | LineSpecifier.NextLineWithPreviousSubstitutePattern ->
             // TODO: Implement
             None
-        | LineSpecifier.Number number ->
-            // Must be a valid number 
-            let tssNumber = Util.VimLineToTssLine number
-            SnapshotUtil.TryGetLine x.CurrentSnapshot tssNumber
-            |> Option.map (fun line -> line, number)
         | LineSpecifier.PreviousLineWithPattern pattern ->
             // TODO: Implement
             None
@@ -336,16 +345,15 @@ type VimInterpreter
             // TODO: Implement
             None
 
-        | LineSpecifier.AdjustmentOnCurrent adjustment -> 
-            getAdjustment adjustment currentLine
+    // Get a tuple of the ITextSnapshotLine specified by the given LineSpecifier and the 
+    // corresponding vim line number
+    member x.GetLineAndVimLineNumber lineSpecifier =
+        x.GetLineAndVimLineNumberCore lineSpecifier x.CaretLine
 
     /// Get the ITextSnapshotLine specified by the given LineSpecifier
     member x.GetLineCore lineSpecifier currentLine = 
         x.GetLineAndVimLineNumberCore lineSpecifier currentLine
         |> Option.map (fun (line, vimLine) -> line)
-
-    member x.GetLineAndVimLineNumber lineSpecifier =
-        x.GetLineAndVimLineNumberCore lineSpecifier x.CaretLine
 
     /// Get the ITextSnapshotLine specified by the given LineSpecifier
     member x.GetLine lineSpecifier = 
