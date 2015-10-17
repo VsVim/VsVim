@@ -285,6 +285,50 @@ type VimInterpreter
         // TODO: Implement
         None
 
+    member x.GetVimLineNumber lineSpecifier currentLine =
+
+        // Get the ITextSnapshotLine specified by lineSpecifier and then apply the
+        // given adjustment to the number.  Can fail if the line number adjustment
+        // is invalid
+        let getAdjustment adjustment (line : ITextSnapshotLine) = 
+            adjustment + line.LineNumber + 1
+
+        match lineSpecifier with 
+        | LineSpecifier.CurrentLine -> 
+            x.CaretLine.LineNumber + 1 |> Some
+        | LineSpecifier.LastLine ->
+            (SnapshotUtil.GetLastLineNumber x.CurrentSnapshot) + 1 |> Some
+        | LineSpecifier.LineSpecifierWithAdjustment (lineSpecifier, adjustment) ->
+
+            x.GetVimLineNumber lineSpecifier currentLine |> Option.map (fun line -> line + adjustment)
+        | LineSpecifier.MarkLine mark ->
+
+            // Get the line containing the mark in the context of this IVimTextBuffer
+            _markMap.GetMark mark _vimBufferData
+            |> Option.map VirtualSnapshotPointUtil.GetPoint
+            |> Option.map SnapshotPointUtil.GetContainingLine
+            |> Option.map (fun line -> line.LineNumber + 1)
+        | LineSpecifier.NextLineWithPattern pattern ->
+            // TODO: Implement
+            None
+        | LineSpecifier.NextLineWithPreviousPattern ->
+            // TODO: Implement
+            None
+        | LineSpecifier.NextLineWithPreviousSubstitutePattern ->
+            // TODO: Implement
+            None
+        | LineSpecifier.Number number ->
+            number |> Some
+        | LineSpecifier.PreviousLineWithPattern pattern ->
+            // TODO: Implement
+            None
+        | LineSpecifier.PreviousLineWithPreviousPattern ->
+            // TODO: Implement
+            None
+
+        | LineSpecifier.AdjustmentOnCurrent adjustment -> 
+            getAdjustment adjustment currentLine |> Some
+
     /// Get the ITextSnapshotLine specified by the given LineSpecifier
     member x.GetLineCore lineSpecifier currentLine = 
 
