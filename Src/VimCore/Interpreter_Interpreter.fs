@@ -285,11 +285,9 @@ type VimInterpreter
         // TODO: Implement
         None
 
-    member x.GetVimLineNumber lineSpecifier currentLine =
-        x.GetLineAndVimLineNumber lineSpecifier currentLine
-        |> Option.map (fun (vimLine, line) -> vimLine)
-
-    member x.GetLineAndVimLineNumber lineSpecifier currentLine = 
+    // Get a tuple of the ITextSnapshotLine specified by the given LineSpecifier and the 
+    // corresponding vim line number
+    member x.GetLineAndVimLineNumberCore lineSpecifier (currentLine : ITextSnapshotLine) = 
         // Get the ITextSnapshotLine specified by lineSpecifier and then apply the
         // given adjustment to the number.  Can fail if the line number adjustment
         // is invalid
@@ -343,8 +341,15 @@ type VimInterpreter
 
     /// Get the ITextSnapshotLine specified by the given LineSpecifier
     member x.GetLineCore lineSpecifier currentLine = 
-        x.GetLineAndVimLineNumber lineSpecifier currentLine
+        x.GetLineAndVimLineNumberCore lineSpecifier currentLine
         |> Option.map (fun (vimLine, line) -> line)
+
+    member x.GetLineAndVimLineNumber lineSpecifier =
+        x.GetLineAndVimLineNumberCore lineSpecifier x.CaretLine
+
+    member x.GetVimLineNumber lineSpecifier currentLine =
+        x.GetLineAndVimLineNumberCore lineSpecifier currentLine
+        |> Option.map (fun (vimLine, line) -> vimLine)
 
     /// Get the ITextSnapshotLine specified by the given LineSpecifier
     member x.GetLine lineSpecifier = 
