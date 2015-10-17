@@ -347,10 +347,6 @@ type VimInterpreter
     member x.GetLineAndVimLineNumber lineSpecifier =
         x.GetLineAndVimLineNumberCore lineSpecifier x.CaretLine
 
-    member x.GetVimLineNumber lineSpecifier currentLine =
-        x.GetLineAndVimLineNumberCore lineSpecifier currentLine
-        |> Option.map (fun (line, vimLine) -> vimLine)
-
     /// Get the ITextSnapshotLine specified by the given LineSpecifier
     member x.GetLine lineSpecifier = 
         x.GetLineCore lineSpecifier x.CaretLine
