@@ -508,27 +508,28 @@ type VimInterpreter
                 | LineRangeSpecifier.Join _ -> None
                 | LineRangeSpecifier.Range (left, _ , _) -> left |> Some
                 | LineRangeSpecifier.SingleLine line -> 
+                    // If a single line and a count is specified then we need to apply the count to
+                    // the line
                     match count with
                     | Some count -> LineSpecifier.LineSpecifierWithAdjustment(line, count) |> Some
                     | _ -> line |> Some
 
 
-            let destLine = destLineSpec |> OptionUtil.map2 x.GetLine
+            let destLineInfo = destLineSpec |> OptionUtil.map2 x.GetLineAndVimLineNumber
 
-            match destLineSpec, destLine with
-            | None, _ 
-            | _, None
-            | None, None ->
+            match destLineInfo with
+            | None ->
                  _statusUtil.OnError Resources.Common_InvalidAddress
             
-            | Some destLineSpec, Some destLine -> 
+            | Some (destLineNum, destLine) -> 
 
                 let destPosition = 
-                    // If the target line is vim line 0, the intent is to insert the copied
-                    // or moved text above the first line
-                    match x.GetVimLineNumber destLineSpec x.CaretLine with
-                    | Some 0 -> destLine.Start.Position
-                    | _ -> destLine.EndIncludingLineBreak.Position
+                    if destLineNum = 0 then
+                        // If the target line is vim line 0, the intent is to insert the text
+                        // above the first line
+                        destLine.Start.Position
+                    else 
+                        destLine.EndIncludingLineBreak.Position
 
                 let text = 
                     if destLine.LineBreakLength = 0 then
