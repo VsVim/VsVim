@@ -528,62 +528,70 @@ type VimInterpreter
 
             // The :copy command allows the specification of a full range but for the destination
             // it will only be valid for single line specifiers.  
-            let destLine = 
+            let destLineSpec = 
                 match destLineRange with 
                 | LineRangeSpecifier.None -> None
                 | LineRangeSpecifier.EntireBuffer -> None
                 | LineRangeSpecifier.WithEndCount _ -> None
                 | LineRangeSpecifier.Join _ -> None
-                | LineRangeSpecifier.Range (left, _ , _) -> x.GetLine left
+                | LineRangeSpecifier.Range (left, _ , _) -> left |> Some
                 | LineRangeSpecifier.SingleLine line -> 
+                    match count with
+                    | Some count -> LineSpecifier.LineSpecifierWithAdjustment(line, count) |> Some
+                    | _ -> line |> Some
 
-                    // If a single line and a count is specified then we need to apply the count to
-                    // the line
-                    let line = x.GetLine line
-                    match line, count with
-                    | Some line, Some count -> SnapshotUtil.TryGetLine x.CurrentSnapshot (line.LineNumber + count)
-                    | _ -> line
 
-            match destLine with
+            match destLineSpec with
             | None -> _statusUtil.OnError Resources.Common_InvalidAddress
-            | Some destLine -> 
+            | Some destLineSpec -> 
 
-                let text = 
-                    if destLine.LineBreakLength = 0 then
-                        // Last line in the ITextBuffer.  Inserted text must begin with a line 
-                        // break to force a new line and additionally don't use the final new
-                        // line from the source as it would add an extra line to the buffer
-                        let newLineText = _commonOperations.GetNewLineText destLine.EndIncludingLineBreak
-                        newLineText + (sourceLineRange.GetText())
-                    elif sourceLineRange.LastLine.LineBreakLength = 0 then
-                        // Last line in the source doesn't have a new line (last line).  Need
-                        // to add one to create a break for line after
-                        let newLineText = _commonOperations.GetNewLineText destLine.EndIncludingLineBreak
-                        (sourceLineRange.GetText()) + newLineText 
-                    else
-                        sourceLineRange.GetTextIncludingLineBreak()
+                let destLine = x.GetLine destLineSpec
 
-                // Use an undo transaction so that the caret move and insert is a single
-                // operation
-                _undoRedoOperations.EditWithUndoTransaction transactionName _textView (fun() -> editOperation sourceLineRange destLine text))
+                match destLine with
+                | None -> _statusUtil.OnError Resources.Common_InvalidAddress
+                | Some destLine -> 
+
+                    let destPosition = 
+                        // If the target line is vim line 0, the intent is to insert the copied
+                        // or moved text above the first line
+                        match x.GetVimLineNumber destLineSpec x.CaretLine with
+                        | Some 0 -> destLine.Start.Position
+                        | _ -> destLine.EndIncludingLineBreak.Position
+
+                    let text = 
+                        if destLine.LineBreakLength = 0 then
+                            // Last line in the ITextBuffer.  Inserted text must begin with a line 
+                            // break to force a new line and additionally don't use the final new
+                            // line from the source as it would add an extra line to the buffer
+                            let newLineText = _commonOperations.GetNewLineText destLine.EndIncludingLineBreak
+                            newLineText + (sourceLineRange.GetText())
+                        elif sourceLineRange.LastLine.LineBreakLength = 0 then
+                            // Last line in the source doesn't have a new line (last line).  Need
+                            // to add one to create a break for line after
+                            let newLineText = _commonOperations.GetNewLineText destLine.EndIncludingLineBreak
+                            (sourceLineRange.GetText()) + newLineText 
+                        else
+                            sourceLineRange.GetTextIncludingLineBreak()
+
+                    // Use an undo transaction so that the caret move and insert is a single
+                    // operation
+                    _undoRedoOperations.EditWithUndoTransaction transactionName _textView (fun() -> editOperation sourceLineRange destPosition text))
 
     /// Copy the text from the source address to the destination address
     member x.RunCopyTo sourceLineRange destLineRange count =
-        x.RunCopyOrMoveTo sourceLineRange destLineRange count "CopyTo" (fun sourceLineRange destLine text ->
-            let destPosition = destLine.EndIncludingLineBreak.Position
+        x.RunCopyOrMoveTo sourceLineRange destLineRange count "CopyTo" (fun sourceLineRange destPosition text ->
 
             _textBuffer.Insert(destPosition, text) |> ignore
             TextViewUtil.MoveCaretToPosition _textView destPosition)
 
     member x.RunMoveTo sourceLineRange destLineRange count =
-        x.RunCopyOrMoveTo sourceLineRange destLineRange count "MoveTo" (fun sourceLineRange destLine text ->
-            let destPosition = destLine.EndIncludingLineBreak.Position
+        x.RunCopyOrMoveTo sourceLineRange destLineRange count "MoveTo" (fun sourceLineRange destPosition text ->
 
             use edit = _textBuffer.CreateEdit()
             edit.Insert(destPosition, text) |> ignore
             edit.Delete(sourceLineRange.ExtentIncludingLineBreak.Span) |> ignore
             edit.Apply() |> ignore
-            TextViewUtil.MoveCaretToPosition _textView destLine.End.Position)
+            TextViewUtil.MoveCaretToPosition _textView destPosition)
 
     /// Clear out the key map for the given modes
     member x.RunClearKeyMap keyRemapModes mapArgumentList = 
