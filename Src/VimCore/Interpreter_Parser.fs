@@ -915,7 +915,7 @@ type Parser
         | LineRangeSpecifier.None -> LineCommand.ParseError Resources.Common_InvalidAddress
         | _ -> LineCommand.CopyTo (sourceLineRange, destinationLineRange, count)
 
-    /// Parse out the :copy command.  It has a single required argument that is the destination
+    /// Parse out the :move command.  It has a single required argument that is the destination
     /// address
     member x.ParseMoveTo sourceLineRange = 
         x.SkipBlanks()
