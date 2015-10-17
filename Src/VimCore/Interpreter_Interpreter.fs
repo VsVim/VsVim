@@ -296,15 +296,15 @@ type VimInterpreter
             let number = Util.VimLineToTssLine vimLine
 
             SnapshotUtil.TryGetLine x.CurrentSnapshot number
-            |> Option.map (fun line -> vimLine, line)
+            |> Option.map (fun line -> line, vimLine)
 
         match lineSpecifier with 
         | LineSpecifier.CurrentLine -> 
             let line = x.CaretLine
-            (line.LineNumber + 1, line) |> Some
+            (line, line.LineNumber + 1) |> Some
         | LineSpecifier.LastLine ->
             let line = SnapshotUtil.GetLastLine x.CurrentSnapshot
-            (line.LineNumber + 1, line) |> Some
+            (line, line.LineNumber + 1) |> Some
         | LineSpecifier.LineSpecifierWithAdjustment (lineSpecifier, adjustment) ->
 
             x.GetLine lineSpecifier |> OptionUtil.map2 (getAdjustment adjustment)
@@ -314,7 +314,7 @@ type VimInterpreter
             _markMap.GetMark mark _vimBufferData
             |> Option.map VirtualSnapshotPointUtil.GetPoint
             |> Option.map SnapshotPointUtil.GetContainingLine
-            |> Option.map (fun line -> line.LineNumber + 1, line)
+            |> Option.map (fun line -> line, line.LineNumber + 1)
         | LineSpecifier.NextLineWithPattern pattern ->
             // TODO: Implement
             None
@@ -328,7 +328,7 @@ type VimInterpreter
             // Must be a valid number 
             let tssNumber = Util.VimLineToTssLine number
             SnapshotUtil.TryGetLine x.CurrentSnapshot tssNumber
-            |> Option.map (fun line -> number, line)
+            |> Option.map (fun line -> line, number)
         | LineSpecifier.PreviousLineWithPattern pattern ->
             // TODO: Implement
             None
@@ -342,14 +342,14 @@ type VimInterpreter
     /// Get the ITextSnapshotLine specified by the given LineSpecifier
     member x.GetLineCore lineSpecifier currentLine = 
         x.GetLineAndVimLineNumberCore lineSpecifier currentLine
-        |> Option.map (fun (vimLine, line) -> line)
+        |> Option.map (fun (line, vimLine) -> line)
 
     member x.GetLineAndVimLineNumber lineSpecifier =
         x.GetLineAndVimLineNumberCore lineSpecifier x.CaretLine
 
     member x.GetVimLineNumber lineSpecifier currentLine =
         x.GetLineAndVimLineNumberCore lineSpecifier currentLine
-        |> Option.map (fun (vimLine, line) -> vimLine)
+        |> Option.map (fun (line, vimLine) -> vimLine)
 
     /// Get the ITextSnapshotLine specified by the given LineSpecifier
     member x.GetLine lineSpecifier = 
@@ -521,7 +521,7 @@ type VimInterpreter
             | None ->
                  _statusUtil.OnError Resources.Common_InvalidAddress
             
-            | Some (destLineNum, destLine) -> 
+            | Some (destLine, destLineNum) -> 
 
                 let destPosition = 
                     if destLineNum = 0 then
