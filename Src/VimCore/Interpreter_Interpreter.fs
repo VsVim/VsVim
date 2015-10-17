@@ -541,41 +541,41 @@ type VimInterpreter
                     | _ -> line |> Some
 
 
-            match destLineSpec with
-            | None -> _statusUtil.OnError Resources.Common_InvalidAddress
-            | Some destLineSpec -> 
+            let destLine = destLineSpec |> OptionUtil.map2 x.GetLine
 
-                let destLine = x.GetLine destLineSpec
+            match destLineSpec, destLine with
+            | None, _ 
+            | _, None
+            | None, None ->
+                 _statusUtil.OnError Resources.Common_InvalidAddress
+            
+            | Some destLineSpec, Some destLine -> 
 
-                match destLine with
-                | None -> _statusUtil.OnError Resources.Common_InvalidAddress
-                | Some destLine -> 
+                let destPosition = 
+                    // If the target line is vim line 0, the intent is to insert the copied
+                    // or moved text above the first line
+                    match x.GetVimLineNumber destLineSpec x.CaretLine with
+                    | Some 0 -> destLine.Start.Position
+                    | _ -> destLine.EndIncludingLineBreak.Position
 
-                    let destPosition = 
-                        // If the target line is vim line 0, the intent is to insert the copied
-                        // or moved text above the first line
-                        match x.GetVimLineNumber destLineSpec x.CaretLine with
-                        | Some 0 -> destLine.Start.Position
-                        | _ -> destLine.EndIncludingLineBreak.Position
+                let text = 
+                    if destLine.LineBreakLength = 0 then
+                        // Last line in the ITextBuffer.  Inserted text must begin with a line 
+                        // break to force a new line and additionally don't use the final new
+                        // line from the source as it would add an extra line to the buffer
+                        let newLineText = _commonOperations.GetNewLineText destLine.EndIncludingLineBreak
+                        newLineText + (sourceLineRange.GetText())
+                    elif sourceLineRange.LastLine.LineBreakLength = 0 then
+                        // Last line in the source doesn't have a new line (last line).  Need
+                        // to add one to create a break for line after
+                        let newLineText = _commonOperations.GetNewLineText destLine.EndIncludingLineBreak
+                        (sourceLineRange.GetText()) + newLineText 
+                    else
+                        sourceLineRange.GetTextIncludingLineBreak()
 
-                    let text = 
-                        if destLine.LineBreakLength = 0 then
-                            // Last line in the ITextBuffer.  Inserted text must begin with a line 
-                            // break to force a new line and additionally don't use the final new
-                            // line from the source as it would add an extra line to the buffer
-                            let newLineText = _commonOperations.GetNewLineText destLine.EndIncludingLineBreak
-                            newLineText + (sourceLineRange.GetText())
-                        elif sourceLineRange.LastLine.LineBreakLength = 0 then
-                            // Last line in the source doesn't have a new line (last line).  Need
-                            // to add one to create a break for line after
-                            let newLineText = _commonOperations.GetNewLineText destLine.EndIncludingLineBreak
-                            (sourceLineRange.GetText()) + newLineText 
-                        else
-                            sourceLineRange.GetTextIncludingLineBreak()
-
-                    // Use an undo transaction so that the caret move and insert is a single
-                    // operation
-                    _undoRedoOperations.EditWithUndoTransaction transactionName _textView (fun() -> editOperation sourceLineRange destPosition text))
+                // Use an undo transaction so that the caret move and insert is a single
+                // operation
+                _undoRedoOperations.EditWithUndoTransaction transactionName _textView (fun() -> editOperation sourceLineRange destPosition text))
 
     /// Copy the text from the source address to the destination address
     member x.RunCopyTo sourceLineRange destLineRange count =
