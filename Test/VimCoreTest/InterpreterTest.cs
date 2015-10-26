@@ -170,6 +170,22 @@ namespace Vim.UnitTest
                     _textBuffer.GetLines().ToArray());
                 Assert.Equal(_textBuffer.GetLine(1).Start, _textView.GetCaretPoint());
             }
+
+            /// <summary>
+            /// Copy to the first line
+            /// </summary>
+            [Fact]
+            public void ToFirstLine() {
+                Create("cat", "dog", "fish", "bear", "tree");
+                _textView.MoveCaretToLine(3);
+                ParseAndRun("co -4");
+
+                Assert.Equal(
+                    new [] {"bear","cat", "dog", "fish", "bear", "tree"},
+                    _textBuffer.GetLines().ToArray());
+
+                Assert.Equal(_textBuffer.GetLine(0).Start, _textView.GetCaretPoint());
+            }
         }
 
         public sealed class DisplayMarkTest : InterpreterTest

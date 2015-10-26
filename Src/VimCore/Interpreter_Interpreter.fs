@@ -285,33 +285,50 @@ type VimInterpreter
         // TODO: Implement
         None
 
-    /// Get the ITextSnapshotLine specified by the given LineSpecifier
-    member x.GetLineCore lineSpecifier currentLine = 
+    // Get a tuple of the ITextSnapshotLine specified by the given LineSpecifier and the 
+    // corresponding vim line number
+    member x.GetLineAndVimLineNumberCore lineSpecifier (currentLine : ITextSnapshotLine) = 
+
+        // To convert from a VS line number to a vim line number, simply add 1
+        let getLineAndNumber (line : ITextSnapshotLine) = (line, line.LineNumber + 1)
 
         // Get the ITextSnapshotLine specified by lineSpecifier and then apply the
         // given adjustment to the number.  Can fail if the line number adjustment
         // is invalid
         let getAdjustment adjustment (line : ITextSnapshotLine) = 
-            let number = 
-                let start = line.LineNumber + 1
-                Util.VimLineToTssLine (start + adjustment)
+            let vimLine = line.LineNumber + 1 + adjustment
+            let number = Util.VimLineToTssLine vimLine
 
             SnapshotUtil.TryGetLine x.CurrentSnapshot number
+            |> Option.map (fun line -> line, vimLine)
 
         match lineSpecifier with 
         | LineSpecifier.CurrentLine -> 
-            x.CaretLine |> Some
+            x.CaretLine |> getLineAndNumber |> Some
+
         | LineSpecifier.LastLine ->
-            SnapshotUtil.GetLastLine x.CurrentSnapshot |> Some
-        | LineSpecifier.LineSpecifierWithAdjustment (lineSpecifier, adjustment) ->
+            let line = SnapshotUtil.GetLastLine x.CurrentSnapshot
+            line |> getLineAndNumber |> Some
 
-            x.GetLine lineSpecifier |> OptionUtil.map2 (getAdjustment adjustment)
         | LineSpecifier.MarkLine mark ->
-
             // Get the line containing the mark in the context of this IVimTextBuffer
             _markMap.GetMark mark _vimBufferData
             |> Option.map VirtualSnapshotPointUtil.GetPoint
             |> Option.map SnapshotPointUtil.GetContainingLine
+            |> Option.map getLineAndNumber
+
+        | LineSpecifier.Number number ->
+            // Must be a valid number 
+            let tssNumber = Util.VimLineToTssLine number
+            SnapshotUtil.TryGetLine x.CurrentSnapshot tssNumber
+            |> Option.map (fun line -> line, number)
+
+        | LineSpecifier.LineSpecifierWithAdjustment (lineSpecifier, adjustment) ->
+            x.GetLine lineSpecifier |> OptionUtil.map2 (getAdjustment adjustment)
+
+        | LineSpecifier.AdjustmentOnCurrent adjustment -> 
+            getAdjustment adjustment currentLine
+
         | LineSpecifier.NextLineWithPattern pattern ->
             // TODO: Implement
             None
@@ -321,10 +338,6 @@ type VimInterpreter
         | LineSpecifier.NextLineWithPreviousSubstitutePattern ->
             // TODO: Implement
             None
-        | LineSpecifier.Number number ->
-            // Must be a valid number 
-            let number = Util.VimLineToTssLine number
-            SnapshotUtil.TryGetLine x.CurrentSnapshot number
         | LineSpecifier.PreviousLineWithPattern pattern ->
             // TODO: Implement
             None
@@ -332,8 +345,15 @@ type VimInterpreter
             // TODO: Implement
             None
 
-        | LineSpecifier.AdjustmentOnCurrent adjustment -> 
-            getAdjustment adjustment currentLine
+    // Get a tuple of the ITextSnapshotLine specified by the given LineSpecifier and the 
+    // corresponding vim line number
+    member x.GetLineAndVimLineNumber lineSpecifier =
+        x.GetLineAndVimLineNumberCore lineSpecifier x.CaretLine
+
+    /// Get the ITextSnapshotLine specified by the given LineSpecifier
+    member x.GetLineCore lineSpecifier currentLine = 
+        x.GetLineAndVimLineNumberCore lineSpecifier currentLine
+        |> Option.map (fun (line, vimLine) -> line)
 
     /// Get the ITextSnapshotLine specified by the given LineSpecifier
     member x.GetLine lineSpecifier = 
@@ -484,25 +504,36 @@ type VimInterpreter
 
             // The :copy command allows the specification of a full range but for the destination
             // it will only be valid for single line specifiers.  
-            let destLine = 
+            let destLineSpec = 
                 match destLineRange with 
                 | LineRangeSpecifier.None -> None
                 | LineRangeSpecifier.EntireBuffer -> None
                 | LineRangeSpecifier.WithEndCount _ -> None
                 | LineRangeSpecifier.Join _ -> None
-                | LineRangeSpecifier.Range (left, _ , _) -> x.GetLine left
+                | LineRangeSpecifier.Range (left, _ , _) -> left |> Some
                 | LineRangeSpecifier.SingleLine line -> 
-
                     // If a single line and a count is specified then we need to apply the count to
                     // the line
-                    let line = x.GetLine line
-                    match line, count with
-                    | Some line, Some count -> SnapshotUtil.TryGetLine x.CurrentSnapshot (line.LineNumber + count)
-                    | _ -> line
+                    match count with
+                    | Some count -> LineSpecifier.LineSpecifierWithAdjustment(line, count) |> Some
+                    | _ -> line |> Some
 
-            match destLine with
-            | None -> _statusUtil.OnError Resources.Common_InvalidAddress
-            | Some destLine -> 
+
+            let destLineInfo = destLineSpec |> OptionUtil.map2 x.GetLineAndVimLineNumber
+
+            match destLineInfo with
+            | None ->
+                 _statusUtil.OnError Resources.Common_InvalidAddress
+            
+            | Some (destLine, destLineNum) -> 
+
+                let destPosition = 
+                    if destLineNum = 0 then
+                        // If the target line is vim line 0, the intent is to insert the text
+                        // above the first line
+                        destLine.Start.Position
+                    else 
+                        destLine.EndIncludingLineBreak.Position
 
                 let text = 
                     if destLine.LineBreakLength = 0 then
@@ -521,25 +552,23 @@ type VimInterpreter
 
                 // Use an undo transaction so that the caret move and insert is a single
                 // operation
-                _undoRedoOperations.EditWithUndoTransaction transactionName _textView (fun() -> editOperation sourceLineRange destLine text))
+                _undoRedoOperations.EditWithUndoTransaction transactionName _textView (fun() -> editOperation sourceLineRange destPosition text))
 
     /// Copy the text from the source address to the destination address
     member x.RunCopyTo sourceLineRange destLineRange count =
-        x.RunCopyOrMoveTo sourceLineRange destLineRange count "CopyTo" (fun sourceLineRange destLine text ->
-            let destPosition = destLine.EndIncludingLineBreak.Position
+        x.RunCopyOrMoveTo sourceLineRange destLineRange count "CopyTo" (fun sourceLineRange destPosition text ->
 
             _textBuffer.Insert(destPosition, text) |> ignore
             TextViewUtil.MoveCaretToPosition _textView destPosition)
 
     member x.RunMoveTo sourceLineRange destLineRange count =
-        x.RunCopyOrMoveTo sourceLineRange destLineRange count "MoveTo" (fun sourceLineRange destLine text ->
-            let destPosition = destLine.EndIncludingLineBreak.Position
+        x.RunCopyOrMoveTo sourceLineRange destLineRange count "MoveTo" (fun sourceLineRange destPosition text ->
 
             use edit = _textBuffer.CreateEdit()
             edit.Insert(destPosition, text) |> ignore
             edit.Delete(sourceLineRange.ExtentIncludingLineBreak.Span) |> ignore
             edit.Apply() |> ignore
-            TextViewUtil.MoveCaretToPosition _textView destLine.End.Position)
+            TextViewUtil.MoveCaretToPosition _textView destPosition)
 
     /// Clear out the key map for the given modes
     member x.RunClearKeyMap keyRemapModes mapArgumentList = 

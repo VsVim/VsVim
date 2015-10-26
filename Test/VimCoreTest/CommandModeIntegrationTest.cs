@@ -578,6 +578,22 @@ namespace Vim.UnitTest
                 Assert.Equal(_textBuffer.GetLine(1).GetText(), "bear");
                 Assert.Equal(_textBuffer.GetLine(2).GetText(), "cat");
             }
+
+
+            /// <summary>
+            /// Specifying "line 0" should move to before the first line.
+            /// </summary>
+            [Fact]
+            public void MoveToBeforeFirstLineInFile() {
+                Create("cat", "dog", "bear");
+
+                _textView.MoveCaretToLine(2);
+                RunCommand("m0");
+
+                Assert.Equal(_textBuffer.GetLine(0).GetText(), "bear");
+                Assert.Equal(_textBuffer.GetLine(1).GetText(), "cat");
+                Assert.Equal(_textBuffer.GetLine(2).GetText(), "dog");
+            }
         }
 
         public sealed class PasteTest : CommandModeIntegrationTest
