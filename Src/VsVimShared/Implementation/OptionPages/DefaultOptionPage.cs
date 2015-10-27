@@ -228,6 +228,11 @@ namespace Vim.VisualStudio.Implementation.OptionPages
         [Category(CategoryEditing)]
         public bool UseEditorDefaults { get; set; }
 
+        [DisplayName("Clean Macro Recording")]
+        [Description("During macro recording disable features that would interfere with it: intellisense, brace completion, etc ...")]
+        [Category(CategoryEditing)]
+        public bool CleanMacros { get; set; }
+
         [DisplayName("VimRc File Loading")]
         [Description("Controls how VsVim probes for vsvimrc / vimrc files")]
         [Category(CategoryGeneral)]
@@ -312,6 +317,7 @@ namespace Vim.VisualStudio.Implementation.OptionPages
                 UseEditorIndent = vimApplicationSettings.UseEditorIndent;
                 UseEditorTabAndBackspace = vimApplicationSettings.UseEditorTabAndBackspace;
                 UseEditorCommandMargin = vimApplicationSettings.UseEditorCommandMargin;
+                CleanMacros = vimApplicationSettings.CleanMacros;
                 VimRcLoadSetting = vimApplicationSettings.VimRcLoadSetting;
                 DisplayControlCharacters = vimApplicationSettings.DisplayControlChars;
                 DisplayVimRcLoadErrors = !vimApplicationSettings.HaveNotifiedVimRcErrors;
@@ -334,6 +340,7 @@ namespace Vim.VisualStudio.Implementation.OptionPages
                 vimApplicationSettings.UseEditorIndent = UseEditorIndent;
                 vimApplicationSettings.UseEditorTabAndBackspace = UseEditorTabAndBackspace;
                 vimApplicationSettings.UseEditorCommandMargin = UseEditorCommandMargin;
+                vimApplicationSettings.CleanMacros = CleanMacros;
                 vimApplicationSettings.VimRcLoadSetting = VimRcLoadSetting;
                 vimApplicationSettings.DisplayControlChars = DisplayControlCharacters;
                 vimApplicationSettings.HaveNotifiedVimRcErrors = !DisplayVimRcLoadErrors;
