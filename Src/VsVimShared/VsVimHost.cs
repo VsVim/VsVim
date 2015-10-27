@@ -44,6 +44,7 @@ namespace Vim.VisualStudio
             private const string UseEditorDefaultsName = "vsvim_useeditordefaults";
             private const string UseEditorTabAndBackspaceName = "vsvim_useeditortab";
             private const string UseEditorCommandMarginName = "vsvim_useeditorcommandmargin";
+            private const string CleanMacros = "vsvim_cleanmacros";
 
             private readonly IVimApplicationSettings _vimApplicationSettings;
 
@@ -59,6 +60,7 @@ namespace Vim.VisualStudio
                 globalSettings.AddCustomSetting(UseEditorDefaultsName, UseEditorDefaultsName, settingsSource);
                 globalSettings.AddCustomSetting(UseEditorTabAndBackspaceName, UseEditorTabAndBackspaceName, settingsSource);
                 globalSettings.AddCustomSetting(UseEditorCommandMarginName, UseEditorCommandMarginName, settingsSource);
+                globalSettings.AddCustomSetting(CleanMacros, CleanMacros, settingsSource);
             }
 
             SettingValue IVimCustomSettingSource.GetDefaultSettingValue(string name)
@@ -82,6 +84,9 @@ namespace Vim.VisualStudio
                         break;
                     case UseEditorCommandMarginName:
                         value = _vimApplicationSettings.UseEditorCommandMargin;
+                        break;
+                    case CleanMacros:
+                        value = _vimApplicationSettings.CleanMacros;
                         break;
                     default:
                         value = false;
@@ -112,6 +117,9 @@ namespace Vim.VisualStudio
                         break;
                     case UseEditorCommandMarginName:
                         _vimApplicationSettings.UseEditorCommandMargin = value;
+                        break;
+                    case CleanMacros:
+                        _vimApplicationSettings.CleanMacros = value;
                         break;
                     default:
                         value = false;
