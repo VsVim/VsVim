@@ -89,7 +89,6 @@ namespace Vim.UI.Wpf.Implementation.Misc
                 }
 
                 Thread.Sleep(TimeSpan.FromMilliseconds(pauseMilliseconds));
-                i--;
             } while (true);
         }
 
