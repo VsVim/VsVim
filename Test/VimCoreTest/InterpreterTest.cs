@@ -1757,6 +1757,31 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
+            /// Test out the :normal command with delete line (dd) and put (p) key strokes
+            /// </summary>
+            [Fact]
+            public void Normal_DeletePut()
+            {
+                Create("cat", "dog", "fish");
+                ParseAndRun("norm ddp");
+                Assert.Equal("dog", _textBuffer.GetLine(0).GetText());
+                Assert.Equal("cat", _textBuffer.GetLine(1).GetText());
+                Assert.Equal("fish", _textBuffer.GetLine(2).GetText());
+
+            }
+
+            /// <summary>
+            /// Test out the :normal command with remove (x) with extra leading spaces
+            /// </summary>
+            [Fact]
+            public void Normal_RemoveWithSpaces()
+            {
+                Create("ccat");
+                ParseAndRun("norm  x");
+                Assert.Equal("cat", _textBuffer.GetLine(0).GetText());
+            }
+
+            /// <summary>
             /// Can't get the range for a mark that doesn't exist
             /// </summary>
             [Fact]
