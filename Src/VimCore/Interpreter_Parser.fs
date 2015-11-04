@@ -153,6 +153,7 @@ type Parser
         ("make", "mak")
         ("marks", "")
         ("nohlsearch", "noh")
+        ("normal", "norm")
         ("only", "on")
         ("pwd", "pw")
         ("print", "p")
@@ -1650,6 +1651,17 @@ type Parser
         x.ParseGlobalCore lineRange (not hasBang)
 
     /// Parse out the :help command
+    member x.ParseNormal lineRange =
+        let inputs = seq {
+            while not _tokenizer.IsAtEndOfLine && _tokenizer.CurrentChar = ' ' do
+                _tokenizer.MoveNextChar()
+
+            while not _tokenizer.IsAtEndOfLine do
+                yield KeyInputUtil.CharToKeyInput _tokenizer.CurrentChar
+                _tokenizer.MoveNextChar()
+        }
+        LineCommand.Normal (List.ofSeq inputs)
+
     member x.ParseHelp() =
         _tokenizer.MoveToEndOfLine()
         LineCommand.Help
@@ -2067,6 +2079,7 @@ type Parser
                 | "fold" -> x.ParseFold lineRange
                 | "function" -> noRange x.ParseFunctionStart
                 | "global" -> x.ParseGlobal lineRange
+                | "normal" -> x.ParseNormal lineRange
                 | "help" -> noRange x.ParseHelp
                 | "history" -> noRange (fun () -> x.ParseHistory())
                 | "if" -> noRange x.ParseIfStart

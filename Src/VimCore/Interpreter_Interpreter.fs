@@ -4,6 +4,7 @@ open EditorUtils
 open Microsoft.VisualStudio.Text
 open Vim
 open Vim.StringBuilderExtensions
+open Vim.VimCoreExtensions
 open System.Collections.Generic
 open System.ComponentModel.Composition
 
@@ -806,6 +807,47 @@ type VimInterpreter
         x.RunWithLineRangeOrDefault lineRange DefaultLineRange.CurrentLine (fun lineRange ->
             if lineRange.Count > 1 then
                 _foldManager.CreateFold lineRange)
+
+    member x.RunNormal input =
+        let map = System.Collections.Generic.Dictionary<ITextBuffer, IVimBuffer*ILinkedUndoTransaction>();
+        try
+            let rec inner list = 
+                match list with 
+                | [] -> 
+                    // No more input so we are finished
+                    true
+                | keyInput :: tail -> 
+
+                    // Prefer the focussed IVimBuffer over the current.  It's possible for the 
+                    // macro playback switch the active buffer via gt, gT, etc ... and playback 
+                    // should continue on the newly focussed IVimBuffer.  Should the host API
+                    // fail to return an active IVimBuffer continue using the original one
+                    let buffer = 
+                        match _vim.FocusedBuffer with
+                        | Some buffer -> buffer
+                        | None -> _vimBuffer
+
+                    // Make sure we have an IUndoTransaction open in the ITextBuffer
+                    if not (map.ContainsKey(buffer.TextBuffer)) then
+                        buffer.SwitchMode ModeKind.Normal ModeArgument.None |> ignore
+                        let transaction = _undoRedoOperations.CreateLinkedUndoTransactionWithFlags "Normal Command" LinkedUndoTransactionFlags.CanBeEmpty
+                        map.Add(buffer.TextBuffer, (buffer, transaction))
+
+                    // Actually run the KeyInput.  If processing the KeyInput value results
+                    // in an error then we should stop processing the macro
+                    match buffer.Process keyInput with
+                    | ProcessResult.Handled _ -> inner tail
+                    | ProcessResult.HandledNeedMoreInput -> inner tail
+                    | ProcessResult.NotHandled -> false
+                    | ProcessResult.Error -> false
+
+            inner input |> ignore
+        finally
+            map.Values |> Seq.iter (fun (buffer, transaction) ->
+                buffer.SwitchPreviousMode() |> ignore
+                transaction.Dispose()
+            )
+
 
     /// Run the global command.  
     member x.RunGlobal lineRange pattern matchPattern lineCommand =
@@ -1632,6 +1674,7 @@ type VimInterpreter
         | LineCommand.MoveTo (sourceLineRange, destLineRange, count) -> x.RunMoveTo sourceLineRange destLineRange count
         | LineCommand.NoHighlightSearch -> x.RunNoHighlightSearch()
         | LineCommand.Nop -> ()
+        | LineCommand.Normal command -> x.RunNormal command
         | LineCommand.Only -> x.RunOnly()
         | LineCommand.ParseError msg -> x.RunParseError msg
         | LineCommand.Print (lineRange, lineCommandFlags)-> x.RunPrint lineRange lineCommandFlags
