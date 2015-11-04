@@ -498,7 +498,7 @@ and [<RequireQualifiedAccess>] LineCommand =
     /// then it will be run on the lines which don't match the pattern
     | Global of LineRangeSpecifier * string * bool * LineCommand
 
-    | Normal of string
+    | Normal of KeyInput list
 
     /// Go to the first tab 
     | GoToFirstTab

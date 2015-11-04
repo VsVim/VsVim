@@ -808,11 +808,9 @@ type VimInterpreter
             if lineRange.Count > 1 then
                 _foldManager.CreateFold lineRange)
 
-    member x.RunNormal (command: string) =
+    member x.RunNormal input =
         let map = System.Collections.Generic.Dictionary<ITextBuffer, IVimBuffer*ILinkedUndoTransaction>();
         try
-            let reg = RegisterValue(command, OperationKind.CharacterWise)
-
             let rec inner list = 
                 match list with 
                 | [] -> 
@@ -843,7 +841,7 @@ type VimInterpreter
                     | ProcessResult.NotHandled -> false
                     | ProcessResult.Error -> false
 
-            inner (reg.KeyInputs) |> ignore
+            inner input |> ignore
         finally
             map.Values |> Seq.iter (fun (buffer, transaction) ->
                 buffer.SwitchPreviousMode() |> ignore

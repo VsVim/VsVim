@@ -1652,16 +1652,15 @@ type Parser
 
     /// Parse out the :help command
     member x.ParseNormal lineRange =
-        let chars = seq {
+        let inputs = seq {
             while not _tokenizer.IsAtEndOfLine && _tokenizer.CurrentChar = ' ' do
                 _tokenizer.MoveNextChar()
 
             while not _tokenizer.IsAtEndOfLine do
-                yield _tokenizer.CurrentChar
+                yield KeyInputUtil.CharToKeyInput _tokenizer.CurrentChar
                 _tokenizer.MoveNextChar()
         }
-        let command = chars |> System.String.Concat
-        LineCommand.Normal command
+        LineCommand.Normal (List.ofSeq inputs)
 
     member x.ParseHelp() =
         _tokenizer.MoveToEndOfLine()
