@@ -809,8 +809,8 @@ type VimInterpreter
                 _foldManager.CreateFold lineRange)
 
     member x.RunNormal (lineRange: LineRangeSpecifier) input =
-        let transactionMap = System.Collections.Generic.Dictionary<ITextBuffer, ILinkedUndoTransaction>();
-        let modeSwitchMap = System.Collections.Generic.Dictionary<ITextBuffer, IVimBuffer>();
+        let transactionMap = System.Collections.Generic.Dictionary<IVimBuffer, ILinkedUndoTransaction>();
+        let modeSwitchMap = System.Collections.Generic.Dictionary<IVimBuffer, IVimBuffer>();
         try
             let rec inner list = 
                 match list with 
@@ -829,13 +829,13 @@ type VimInterpreter
                         | None -> _vimBuffer
 
                     // Make sure we have an IUndoTransaction open in the ITextBuffer
-                    if not (transactionMap.ContainsKey(buffer.TextBuffer)) then
+                    if not (transactionMap.ContainsKey(buffer)) then
                         let transaction = _undoRedoOperations.CreateLinkedUndoTransactionWithFlags "Normal Command" LinkedUndoTransactionFlags.CanBeEmpty
-                        transactionMap.Add(buffer.TextBuffer, transaction)
+                        transactionMap.Add(buffer, transaction)
 
-                    if not (modeSwitchMap.ContainsKey(buffer.TextBuffer)) then
+                    if not (modeSwitchMap.ContainsKey(buffer)) then
                         buffer.SwitchMode ModeKind.Normal ModeArgument.None |> ignore
-                        modeSwitchMap.Add(buffer.TextBuffer, buffer)
+                        modeSwitchMap.Add(buffer, buffer)
 
                     // Actually run the KeyInput.  If processing the KeyInput value results
                     // in an error then we should stop processing the macro

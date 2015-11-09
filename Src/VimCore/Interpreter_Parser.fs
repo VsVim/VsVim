@@ -1650,18 +1650,17 @@ type Parser
         let hasBang = x.ParseBang()
         x.ParseGlobalCore lineRange (not hasBang)
 
-    /// Parse out the :help command
+    /// Parse out the :normal command
     member x.ParseNormal lineRange =
+        x.SkipBlanks ()
         let inputs = seq {
-            while not _tokenizer.IsAtEndOfLine && _tokenizer.CurrentChar = ' ' do
-                _tokenizer.MoveNextChar()
-
             while not _tokenizer.IsAtEndOfLine do
                 yield KeyInputUtil.CharToKeyInput _tokenizer.CurrentChar
                 _tokenizer.MoveNextChar()
         }
         LineCommand.Normal (lineRange, List.ofSeq inputs)
 
+    /// Parse out the :help command
     member x.ParseHelp() =
         _tokenizer.MoveToEndOfLine()
         LineCommand.Help
