@@ -4,6 +4,7 @@ open EditorUtils
 open Microsoft.VisualStudio.Text
 open Vim
 open Vim.StringBuilderExtensions
+open Vim.VimCoreExtensions
 open System.Collections.Generic
 open System.ComponentModel.Composition
 
@@ -806,6 +807,97 @@ type VimInterpreter
         x.RunWithLineRangeOrDefault lineRange DefaultLineRange.CurrentLine (fun lineRange ->
             if lineRange.Count > 1 then
                 _foldManager.CreateFold lineRange)
+
+    member x.RunNormal (lineRange: LineRangeSpecifier) input =
+        let transactionMap = System.Collections.Generic.Dictionary<IVimBuffer, ILinkedUndoTransaction>();
+        let modeSwitchMap = System.Collections.Generic.Dictionary<IVimBuffer, IVimBuffer>();
+        try
+            let rec inner list = 
+                match list with 
+                | [] -> 
+                    // No more input so we are finished
+                    true
+                | keyInput :: tail -> 
+
+                    // Prefer the focussed IVimBuffer over the current.  It's possible for the 
+                    // macro playback switch the active buffer via gt, gT, etc ... and playback 
+                    // should continue on the newly focussed IVimBuffer.  Should the host API
+                    // fail to return an active IVimBuffer continue using the original one
+                    let buffer = 
+                        match _vim.FocusedBuffer with
+                        | Some buffer -> buffer
+                        | None -> _vimBuffer
+
+                    // Make sure we have an IUndoTransaction open in the ITextBuffer
+                    if not (transactionMap.ContainsKey(buffer)) then
+                        let transaction = _undoRedoOperations.CreateLinkedUndoTransactionWithFlags "Normal Command" LinkedUndoTransactionFlags.CanBeEmpty
+                        transactionMap.Add(buffer, transaction)
+
+                    if not (modeSwitchMap.ContainsKey(buffer)) then
+                        buffer.SwitchMode ModeKind.Normal ModeArgument.None |> ignore
+                        modeSwitchMap.Add(buffer, buffer)
+
+                    // Actually run the KeyInput.  If processing the KeyInput value results
+                    // in an error then we should stop processing the macro
+                    match buffer.Process keyInput with
+                    | ProcessResult.Handled _ -> inner tail
+                    | ProcessResult.HandledNeedMoreInput -> inner tail
+                    | ProcessResult.NotHandled -> false
+                    | ProcessResult.Error -> false
+
+            let revertModes () =
+                modeSwitchMap.Values |> Seq.iter (fun buffer ->
+                    buffer.SwitchPreviousMode() |> ignore
+                )
+
+            match x.GetLineRange lineRange  with
+            | None ->
+                try
+                    inner input |> ignore
+                finally
+                    revertModes ()
+            | _ ->
+                x.RunWithLineRange lineRange (fun lineRange ->
+                    // Each command we run can, and often will, change the underlying buffer whcih
+                    // will change the current ITextSnapshot.  Run one pass to get the line numbers
+                    // and then a second to edit the commands
+                    let lineNumbers = 
+                        lineRange.Lines
+                        |> Seq.map (fun snapshotLine ->
+                            let line, column = SnapshotPointUtil.GetLineColumn snapshotLine.Start
+                            _bufferTrackingService.CreateLineColumn _textBuffer line column LineColumnTrackingMode.Default)
+                        |> List.ofSeq
+
+                    // Now perform the command for every line.  Make sure to map forward to the 
+                    // current ITextSnapshot
+                    lineNumbers |> List.iter (fun trackingLineColumn ->
+                        match trackingLineColumn.Point with
+                        | None -> ()
+                        | Some point ->
+                            let point = 
+                                point
+                                |> SnapshotPointUtil.GetContainingLine
+                                |> SnapshotLineUtil.GetStart
+    
+                            // Caret needs to move to the start of the line for each :global command
+                            // action.  The caret will persist on the final line in the range once
+                            // the :global command completes
+                            TextViewUtil.MoveCaretToPoint _textView point
+                            try
+                                inner input |> ignore
+                            finally
+                                revertModes ()
+                        )
+    
+                    // Now close all of the ITrackingLineColumn values so that they stop taking up resources
+                    lineNumbers |> List.iter (fun trackingLineColumn -> trackingLineColumn.Close())
+                )
+
+        finally
+            transactionMap.Values |> Seq.iter (fun transaction ->
+                transaction.Dispose()
+            )
+
 
     /// Run the global command.  
     member x.RunGlobal lineRange pattern matchPattern lineCommand =
@@ -1632,6 +1724,7 @@ type VimInterpreter
         | LineCommand.MoveTo (sourceLineRange, destLineRange, count) -> x.RunMoveTo sourceLineRange destLineRange count
         | LineCommand.NoHighlightSearch -> x.RunNoHighlightSearch()
         | LineCommand.Nop -> ()
+        | LineCommand.Normal (lineRange, command) -> x.RunNormal lineRange command
         | LineCommand.Only -> x.RunOnly()
         | LineCommand.ParseError msg -> x.RunParseError msg
         | LineCommand.Print (lineRange, lineCommandFlags)-> x.RunPrint lineRange lineCommandFlags
