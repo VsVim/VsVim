@@ -129,6 +129,11 @@ namespace Vim.VisualStudio
             }
         }
 
+        private void ToggleEnabled()
+        {
+            _vim.IsDisabled = !_vim.IsDisabled;
+        }
+
         #region IOleCommandTarget
 
         int IOleCommandTarget.Exec(ref Guid commandGroup, uint commandId, uint commandExecOpt, IntPtr variantIn, IntPtr variantOut)
@@ -145,6 +150,9 @@ namespace Vim.VisualStudio
                         break;
                     case CommandIds.ClearTSQLBindings:
                         ClearTSQLBindings();
+                        break;
+                    case CommandIds.ToggleEnabled:
+                        ToggleEnabled();
                         break;
                     default:
                         Debug.Assert(false);
