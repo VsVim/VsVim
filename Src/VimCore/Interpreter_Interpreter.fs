@@ -849,6 +849,7 @@ type VimInterpreter
                 modeSwitchMap.Values |> Seq.iter (fun buffer ->
                     buffer.SwitchPreviousMode() |> ignore
                 )
+                modeSwitchMap.Clear()
 
             match x.GetLineRange lineRange  with
             | None ->
