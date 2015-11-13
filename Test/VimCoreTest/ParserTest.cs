@@ -753,6 +753,30 @@ let x = 42
             {
                 Assert.Equal("\t", ParseStringConstant(@"""\t"""));
             }
+
+            [Fact]
+            public void QuoteEscape()
+            {
+                Assert.Equal("\"", ParseStringConstant(@"""\"""""));
+            }
+
+            [Fact]
+            public void EscChar()
+            {
+                Assert.Equal(string.Format("{0}", CharCodes.Escape), ParseStringConstant(@"""\<ESC>"""));
+            }
+
+            [Fact]
+            public void UncompleteKeySequence()
+            {
+                Assert.Equal("<ESC", ParseStringConstant(@"""\<ESC"""));
+            }
+
+            [Fact]
+            public void UncompleteAndValueKeySequence()
+            {
+                Assert.Equal(string.Format("<ESC{0}", CharCodes.Escape), ParseStringConstant(@"""\<ESC\<ESC>"""));
+            }
         }
 
         public sealed class SubstituteTest : ParserTest
