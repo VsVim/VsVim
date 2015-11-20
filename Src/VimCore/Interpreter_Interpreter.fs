@@ -286,8 +286,16 @@ type VimInterpreter
         // TODO: Implement
         None
 
-    // Get a tuple of the ITextSnapshotLine specified by the given LineSpecifier and the 
-    // corresponding vim line number
+    /// Resolve the given path.  In the case the path contains illegal characters it 
+    /// will be returned unaltered. 
+    member x.ResolveVimPath (path : string) =
+        try
+            SystemUtil.ResolveVimPath _vimData.CurrentDirectory path
+        with
+            | _ -> path
+
+    /// Get a tuple of the ITextSnapshotLine specified by the given LineSpecifier and the 
+    /// corresponding vim line number
     member x.GetLineAndVimLineNumberCore lineSpecifier (currentLine : ITextSnapshotLine) = 
 
         // To convert from a VS line number to a vim line number, simply add 1
@@ -794,7 +802,7 @@ type VimInterpreter
         elif not hasBang && _vimHost.IsDirty _textBuffer then
             _statusUtil.OnError Resources.Common_NoWriteSinceLastChange
         else
-            let filePath = SystemUtil.ResolveVimPath _vimData.CurrentDirectory filePath
+            let filePath = x.ResolveVimPath filePath
             _vimHost.LoadFileIntoExistingWindow filePath _textView |> ignore
 
     /// Get the value of the specified expression 
@@ -1157,7 +1165,7 @@ type VimInterpreter
                 match filePath with
                 | None -> _vimHost.Save _textView.TextBuffer |> ignore  
                 | Some filePath ->
-                    let filePath = SystemUtil.ResolveVimPath _vimData.CurrentDirectory filePath
+                    let filePath = x.ResolveVimPath filePath
                     _vimHost.SaveTextAs (lineRange.GetTextIncludingLineBreak()) filePath |> ignore
     
                 _commonOperations.CloseWindowUnlessDirty())
@@ -1185,7 +1193,7 @@ type VimInterpreter
 
     /// Run the read file command.
     member x.RunReadFile lineRange fileOptionList filePath =
-        let filePath = SystemUtil.ResolveVimPath _vimData.CurrentDirectory filePath
+        let filePath = x.ResolveVimPath filePath
         x.RunWithLineRangeOrDefault lineRange DefaultLineRange.CurrentLine (fun lineRange ->
             if not (List.isEmpty fileOptionList) then
                 _statusUtil.OnError (Resources.Interpreter_OptionNotSupported "[++opt]")
@@ -1494,7 +1502,7 @@ type VimInterpreter
         if hasBang then
             _statusUtil.OnError (Resources.Interpreter_OptionNotSupported "!")
         else
-            let filePath = SystemUtil.ResolveVimPath _vimData.CurrentDirectory filePath
+            let filePath = x.ResolveVimPath filePath
             match _fileSystem.ReadAllLines filePath with
             | None -> _statusUtil.OnError (Resources.CommandMode_CouldNotOpenFile filePath)
             | Some lines -> x.RunScript lines
@@ -1625,7 +1633,7 @@ type VimInterpreter
         let filePath =
             match filePath with
             | Some filePath ->
-                Some (SystemUtil.ResolveVimPath _vimData.CurrentDirectory filePath)
+                Some (x.ResolveVimPath filePath)
             | None ->
                 None
         if not (List.isEmpty fileOptionList) then

@@ -10,6 +10,7 @@ using Vim.Extensions;
 using Vim.Interpreter;
 using Vim.UnitTest.Mock;
 using Xunit;
+using Microsoft.FSharp.Core;
 
 namespace Vim.UnitTest
 {
@@ -277,19 +278,19 @@ namespace Vim.UnitTest
 
         public sealed class SourceTest : InterpreterTest
         {
-            private readonly Mock<IFileSystem> _fileSysetm;
+            private readonly Mock<IFileSystem> _fileSystem;
 
             public SourceTest()
             {
                 Create();
-                _fileSysetm = new Mock<IFileSystem>(MockBehavior.Strict);
-                _interpreter._fileSystem = _fileSysetm.Object;
-                ((Vim)Vim).FileSystem = _fileSysetm.Object;
+                _fileSystem = new Mock<IFileSystem>(MockBehavior.Strict);
+                _interpreter._fileSystem = _fileSystem.Object;
+                ((Vim)Vim).FileSystem = _fileSystem.Object;
             }
 
             private void SetText(string fileName, params string[] lines)
             {
-                _fileSysetm
+                _fileSystem
                     .Setup(x => x.ReadAllLines(fileName))
                     .Returns(FSharpOption.Create(lines));
             }
@@ -308,6 +309,17 @@ namespace Vim.UnitTest
                 SetText("test.txt", ":set ts=12");
                 ParseAndRun(":source test.txt\t\"several windows key bindings");
                 Assert.Equal(12, _vimBuffer.LocalSettings.TabStop);
+            }
+
+            [Fact]
+            public void Issue1699()
+            {
+                var filePath = "file<name>.txt";
+                _fileSystem
+                    .Setup(x => x.ReadAllLines(filePath))
+                    .Returns(FSharpOption<string[]>.None);
+                ParseAndRun(string.Format(":source {0}", filePath));
+                Assert.Equal(Resources.CommandMode_CouldNotOpenFile(filePath), _statusUtil.LastError);
             }
         }
 
@@ -1153,6 +1165,14 @@ namespace Vim.UnitTest
                 ParseAndRun("w");
                 Assert.Same(_textBuffer, VimHost.LastSaved);
                 Assert.Null(_filePath);
+            }
+
+            public void Issue1699()
+            {
+                Create("cat");
+                var filePath = "file<name>.txt";
+                VimHost.RunSaveTextAs = delegate { return false; };
+                ParseAndRun(string.Format("w {0}", filePath));
             }
         }
 
