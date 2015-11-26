@@ -1757,6 +1757,17 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
+            /// Test out the :global command with normal command deleting after search pattern
+            /// </summary>
+            [Fact]
+            public void Global_Normal_Search_Delete()
+            {
+                Create("cat,dog");
+                ParseAndRun("g/,/norm nD");
+                Assert.Equal("cat", _textBuffer.GetLine(0).GetText());
+            }
+
+            /// <summary>
             /// Test out the :normal command with delete line (dd) and put (p) key strokes
             /// </summary>
             [Fact]
