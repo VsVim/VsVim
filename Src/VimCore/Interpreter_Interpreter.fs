@@ -905,7 +905,9 @@ type VimInterpreter
 
         let pattern = 
             if StringUtil.IsNullOrEmpty pattern then _vimData.LastSearchData.Pattern
-            else pattern
+            else
+                _vimData.LastSearchData <- SearchData(pattern, Path.Forward)
+                pattern
 
         x.RunWithLineRangeOrDefault lineRange DefaultLineRange.EntireBuffer (fun lineRange ->
             let options = VimRegexFactory.CreateRegexOptions _globalSettings
