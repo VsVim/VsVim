@@ -1634,10 +1634,8 @@ type VimInterpreter
     member x.RunWrite lineRange hasBang fileOptionList filePath =
         let filePath =
             match filePath with
-            | Some filePath ->
-                Some (x.ResolveVimPath filePath)
-            | None ->
-                None
+            | Some filePath -> Some (x.ResolveVimPath filePath)
+            | None -> None
         if not (List.isEmpty fileOptionList) then
             _statusUtil.OnError (Resources.Interpreter_OptionNotSupported "[++opt]")
         else

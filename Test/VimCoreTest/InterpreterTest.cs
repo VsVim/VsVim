@@ -1167,12 +1167,21 @@ namespace Vim.UnitTest
                 Assert.Null(_filePath);
             }
 
-            public void Issue1699()
+            [Fact]
+            public void InvalidCharacters()
             {
                 Create("cat");
                 var filePath = "file<name>.txt";
                 VimHost.RunSaveTextAs = delegate { return false; };
                 ParseAndRun(string.Format("w {0}", filePath));
+            }
+
+            [Fact]
+            public void Issue1699()
+            {
+                Create("cat");
+                VimHost.RunSaveTextAs = delegate { return false; };
+                ParseAndRun("w'");
             }
         }
 
