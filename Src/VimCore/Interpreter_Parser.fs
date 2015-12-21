@@ -1653,6 +1653,7 @@ type Parser
     /// Parse out the :normal command
     member x.ParseNormal lineRange =
         x.SkipBlanks ()
+        _tokenizer.TokenizerFlags <- _tokenizer.TokenizerFlags ||| TokenizerFlags.AllowDoubleQuote
         let inputs = seq {
             while not _tokenizer.IsAtEndOfLine do
                 yield KeyInputUtil.CharToKeyInput _tokenizer.CurrentChar
