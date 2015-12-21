@@ -1786,6 +1786,17 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
+            /// Test out the :global command delete until double quote character
+            /// </summary>
+            [Fact]
+            public void Global_Normal_DeleteUntilDoubleQuote()
+            {
+                Create("cat\"dog");
+                ParseAndRun("norm df\"");
+                Assert.Equal("dog", _textBuffer.GetLine(0).GetText());
+            }
+
+            /// <summary>
             /// Test out the :global command with normal command deleting after search pattern
             /// </summary>
             [Fact]
