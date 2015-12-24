@@ -220,7 +220,7 @@ namespace Vim.VisualStudio.UnitTest
             {
                 try
                 {
-                    _vim.MacroRecorder.StartRecording(UnnamedRegister, isAppend: false);
+                    _vim.MacroRecorder.StartRecording(UnnamedRegister, false);
                     _vimApplicationSettings.SetupGet(x => x.CleanMacros).Returns(true);
                     _vimApplicationSettings.SetupGet(x => x.UseEditorTabAndBackspace).Returns(false);
                     Assert.False(_targetRaw.TryCustomProcess(InsertCommand.InsertTab));
