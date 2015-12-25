@@ -29,25 +29,6 @@ namespace Vim.VisualStudio.Implementation.ReSharper
             _textDocumentFactoryService = textDocumentFactoryService;
         }
 
-        /// <summary>
-        /// This is a bit of a heuristic.  It is technically possible for another component to create
-        /// a <see cref="ITextDocument"/> with the specified name pattern.  However it seems unlikely 
-        /// that it will happen when R# is also installed.
-        /// </summary>
-        private bool IsRegexEditorTextBuffer(ITextView textView)
-        {
-            Debug.Assert(_reSharperUtil.IsInstalled);
-
-            var textBuffer = textView.TextDataModel.DocumentBuffer;
-            ITextDocument textDocument;
-            if (!_textDocumentFactoryService.TryGetTextDocument(textBuffer, out textDocument))
-            {
-                return false;
-            }
-
-            return textDocument.FilePath.StartsWith(FilePathPrefixRegexEditor, StringComparison.OrdinalIgnoreCase);
-        }
-
         internal bool? ShouldCreateVimBuffer(ITextView textView)
         {
             if (!_reSharperUtil.IsInstalled)
@@ -72,11 +53,6 @@ namespace Vim.VisualStudio.Implementation.ReSharper
             }
 
             return null;
-        }
-
-        private bool IsUnitTestSessionsBuffer(ITextDocument textDocument)
-        {
-            return textDocument.FilePath.StartsWith("StackTraceExplorerEditor");
         }
 
         #region IExtensionAdapter
