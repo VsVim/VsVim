@@ -48,15 +48,7 @@ namespace Vim.VisualStudio.Implementation.ExternalEdit
         /// </summary>
         internal IEnumerable<ITrackingSpan> IgnoredExternalEditSpans
         {
-            get
-            {
-                return _ignoredExternalEditSpans;
-            }
-            set
-            {
-                _ignoredExternalEditSpans.Clear();
-                _ignoredExternalEditSpans.AddRange(value);
-            }
+            get { return _ignoredExternalEditSpans; }
         }
 
         /// <summary>
@@ -189,33 +181,43 @@ namespace Vim.VisualStudio.Implementation.ExternalEdit
         {
             Contract.Assert(_vimBuffer.ModeKind != ModeKind.ExternalEdit);
 
+            if (IsExternalEditStart(kind))
+            {
+                // Clear out the ignored markers.  Everything is fair game again when we restart
+                // the external edit
+                _ignoredExternalEditSpans.Clear();
+
+                // Not in an external edit and there are edit markers we need to consider.  Time to enter
+                // external edit mode
+                _controlExternalEdit = true;
+                _vimBuffer.SwitchMode(ModeKind.ExternalEdit, ModeArgument.None);
+            }
+        }
+
+        private bool IsExternalEditStart(CheckKind kind)
+        {
+            Contract.Assert(_vimBuffer.ModeKind != ModeKind.ExternalEdit);
+
             var externalEditSpans = GetExternalEditSpans(kind);
 
-            // If at some point all of the external edit spans dissapear then we 
-            // don't need to track them anymore.  Very important to clear the cache 
-            // here as the user could fire up an external edit at the exact same location
-            // and we want that to register as an external edit
             if (externalEditSpans.Count == 0)
             {
+                // If at some point all of the external edit spans dissapear then we 
+                // don't need to track them anymore.  Very important to clear the cache 
+                // here as the user could fire up an external edit at the exact same location
+                // and we want that to register as an external edit
                 _ignoredExternalEditSpans.Clear();
-                return;
+                return false;
             }
 
             // If we should ignore all of the spans then we've not entered an external 
             // edit
             if (externalEditSpans.All(ShouldIgnore))
             {
-                return;
+                return false;
             }
 
-            // Clear out the ignored markers.  Everything is fair game again when we restart
-            // the external edit
-            _ignoredExternalEditSpans.Clear();
-
-            // Not in an external edit and there are edit markers we need to consider.  Time to enter
-            // external edit mode
-            _controlExternalEdit = true;
-            _vimBuffer.SwitchMode(ModeKind.ExternalEdit, ModeArgument.None);
+            return true;
         }
 
         /// <summary>
