@@ -18,12 +18,33 @@ namespace Vim.VisualStudio.Implementation.ReSharper
     [Export(typeof(IExternalEditAdapter))]
     internal sealed class ReSharperExternalEditAdapter : IExternalEditAdapter
     {
+        private struct VersionInfo
+        {
+            internal readonly ReSharperVersion Version;
+            internal readonly IReSharperEditTagDetector EditTagDetector;
+
+            /// <summary>
+            /// The <see cref="ITaggerProvider"/> specific to R# live templates.  Can be null in the 
+            /// cases where it was not detectable.
+            /// </summary>
+            internal readonly ITaggerProvider TaggerProvider;
+
+            internal VersionInfo(ReSharperVersion version, IReSharperEditTagDetector editTagDetector, ITaggerProvider taggerProvider)
+            {
+                Contract.Assert(editTagDetector != null);
+
+                Version = version;
+                EditTagDetector = editTagDetector;
+                TaggerProvider = taggerProvider;
+            }
+        }
+
         internal const string ResharperTaggerProviderName = "VsDocumentMarkupTaggerProvider";
 
         private readonly IReSharperUtil _reSharperUtil;
         private readonly IVimBufferCoordinatorFactory _vimBufferCoordinatorFactory;
         private readonly Dictionary<Type, bool> _tagMap = new Dictionary<Type, bool>();
-        private IReSharperEditTagDetector _reSharperEditTagDetector;
+        private VersionInfo? _versionInfo;
 
         /// <summary>
         /// Need to have an Import on a property vs. a constructor parameter to break a dependency
@@ -47,7 +68,21 @@ namespace Vim.VisualStudio.Implementation.ReSharper
                 return false;
             }
 
-            return TryGetResharperTagger(textView.TextBuffer, out tagger);
+            if (!_versionInfo.HasValue)
+            {
+                // There is a possible race in MEF construction which would allow this method to be 
+                // called before we had the list of ITaggerProvider instances to query.  In that case
+                // defer to the next check.
+                if (TaggerProviders == null)
+                {
+                    tagger = null;
+                    return false;
+                }
+
+                _versionInfo = DetectVersionInfo();
+            }
+
+            return IsInterested(textView.TextBuffer, out tagger);
         }
 
         internal bool IsExternalEditTag(ITag tag)
@@ -55,28 +90,25 @@ namespace Vim.VisualStudio.Implementation.ReSharper
             return IsVsAdornmentTagType(tag.GetType()) && IsEditTag(tag);
         }
 
-        internal void SetReSharperVersion(ReSharperVersion reSharperVersion)
+        internal IReSharperEditTagDetector GetEditTagDetector(ReSharperVersion reSharperVersion)
         {
             switch (reSharperVersion)
             {
                 case ReSharperVersion.Version7AndEarlier:
-                    _reSharperEditTagDetector = new ReSharperV7EditTagDetector();
-                    break;
+                    return new ReSharperV7EditTagDetector();
                 case ReSharperVersion.Version8:
-                    _reSharperEditTagDetector = new ReSharperV8EditTagDetector();
-                    break;
+                    return new ReSharperV8EditTagDetector();
                 case ReSharperVersion.Version81:
                 case ReSharperVersion.Version82:
-                    _reSharperEditTagDetector = new ReSharperV81Or2EditTagDetector(reSharperVersion);
-                    break;
+                    return new ReSharperV81Or2EditTagDetector(reSharperVersion);
                 case ReSharperVersion.Version9:
                 case ReSharperVersion.Version91:
                 case ReSharperVersion.Version92:
-                    _reSharperEditTagDetector = new ReSharperV81Or2EditTagDetector(reSharperVersion);
-                    break;
+                    return new ReSharperV81Or2EditTagDetector(reSharperVersion);
+                case ReSharperVersion.Version10:
+                    return new ReSharperDefaultEditTagDetector();
                 case ReSharperVersion.Unknown:
-                    _reSharperEditTagDetector = new ReSharperUnknownEditTagDetector();
-                    break;
+                    return new ReSharperDefaultEditTagDetector();
                 default:
                     throw new Exception("Wrong enum value");
             }
@@ -98,17 +130,10 @@ namespace Vim.VisualStudio.Implementation.ReSharper
         /// <summary>
         /// Get the R# tagger for the ITextBuffer if it exists
         /// </summary>
-        private bool TryGetResharperTagger(ITextBuffer textBuffer, out ITagger<ITag> tagger)
+        private bool IsInterested(ITextBuffer textBuffer, out ITagger<ITag> tagger)
         {
             Contract.Assert(_reSharperUtil.IsInstalled);
-
-            // This is available as a post construction MEF import so it's very possible
-            // that this is null if it's not initialized
-            if (TaggerProviders == null)
-            {
-                tagger = null;
-                return false;
-            }
+            Contract.Assert(_versionInfo.HasValue);
 
             // R# exposes it's ITaggerProvider instances for the "text" content type.  As much as
             // I would like to query to make sure they always support the content type we don't
@@ -119,19 +144,19 @@ namespace Vim.VisualStudio.Implementation.ReSharper
                 return false;
             }
 
-            bool sawName;
-            if (TryGetSpecificTagger(textBuffer, out sawName, out tagger))
+            var versionInfo = _versionInfo.Value;
+            if (versionInfo.Version >= ReSharperVersion.Version10)
             {
+                // Version 10 and above doesn't use tag detection, it just looks for the key.  No need
+                // for a specific ITagger here.
+                tagger = null;
                 return true;
             }
 
-            if (sawName && TryGetGeneralTagger(textBuffer, out tagger))
-            {
-                return true;
-            }
-
-            tagger = null;
-            return false;
+            tagger = versionInfo.TaggerProvider != null 
+                ? versionInfo.TaggerProvider.SafeCreateTagger<ITag>(textBuffer).GetValueOrDefault()
+                : null;
+            return tagger != null;
         }
 
         /// <summary>
@@ -142,11 +167,8 @@ namespace Vim.VisualStudio.Implementation.ReSharper
         /// order.  They all have the same fully qualified name.  The only way to 
         /// distinguish them is to look at the assembly name containing the type
         /// </summary>
-        private bool TryGetSpecificTagger(ITextBuffer textBuffer, out bool sawName, out ITagger<ITag> tagger)
+        private VersionInfo DetectVersionInfo()
         {
-            sawName = false;
-            tagger = null;
-
             foreach (var provider in GetTaggerProvidersSafe())
             {
                 var providerType = provider.GetType();
@@ -161,52 +183,16 @@ namespace Vim.VisualStudio.Implementation.ReSharper
                     var version = ResharperVersionUtility.DetectFromAssembly(providerType.Assembly);
                     if (version != ReSharperVersion.Unknown)
                     {
-                        SetReSharperVersion(version);
-                        var taggerResult = provider.SafeCreateTagger<ITag>(textBuffer);
-                        if (taggerResult.IsSuccess)
-                        {
-                            tagger = taggerResult.Value;
-                            return true;
-                        }
-                    }
-                    else
-                    {
-                        sawName = true;
+                        var editTagDetector = GetEditTagDetector(version);
+                        return new VersionInfo(version, editTagDetector, provider);
                     }
                 }
             }
 
-            return false;
-        }
-
-        /// <summary>
-        /// This method is to try to account for ReSharper versions that are not released at
-        /// this time.  Instead of looking for the version specific names we just look at the
-        /// jet brains assembly that have the correct tagger name
-        ///
-        /// One problem here is that the tagger implementations are shared between a couple
-        /// of JetBrains products including dotCover.  Hence we need to keep in mind both the
-        /// assembly and tagger name here
-        /// </summary>
-        private bool TryGetGeneralTagger(ITextBuffer textBuffer, out ITagger<ITag> tagger)
-        {
-            foreach (var provider in GetTaggerProvidersSafe())
-            {
-                var providerType = provider.GetType();
-                if (providerType.Name == ResharperTaggerProviderName &&
-                    providerType.Assembly.FullName.StartsWith("JetBrains", StringComparison.OrdinalIgnoreCase))
-                {
-                    var taggerResult = provider.SafeCreateTagger<ITag>(textBuffer);
-                    if (taggerResult.IsSuccess)
-                    {
-                        tagger = taggerResult.Value;
-                        return true;
-                    }
-                }
-            }
-
-            tagger = null;
-            return false;
+            return new VersionInfo(
+                ReSharperVersion.Unknown,
+                GetEditTagDetector(ReSharperVersion.Unknown),
+                taggerProvider: null);
         }
 
         /// <summary>
@@ -237,12 +223,12 @@ namespace Vim.VisualStudio.Implementation.ReSharper
 
         private bool IsEditTag(ITag tag)
         {
-            if (_reSharperEditTagDetector == null)
+            if (!_versionInfo.HasValue)
             {
                 return false;
             }
 
-            return _reSharperEditTagDetector.IsEditTag(tag);
+            return _versionInfo.Value.EditTagDetector.IsEditTag(tag);
         }
 
         #region IExternalEditAdapter
