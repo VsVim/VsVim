@@ -50,6 +50,11 @@ namespace Vim.VisualStudio.Implementation.ExternalEdit
             return true;
         }
 
+        bool? IExternalEditAdapter.IsExternalEditActive(ITextView textView)
+        {
+            return null;
+        }
+
         bool IExternalEditAdapter.IsExternalEditMarker(IVsTextLineMarker marker)
         {
             return IsExternalEditMarker(marker);

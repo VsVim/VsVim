@@ -62,7 +62,8 @@ namespace Vim.VisualStudio.UnitTest
             public void RightTagWithAttributes()
             {
                 Create("");
-                _editAdapterRaw.SetReSharperVersion(ReSharperVersion.Version7AndEarlier);
+                _editAdapterRaw.ResetForVersion(ReSharperVersion.Version7AndEarlier);
+
                 var array = new[]
                             {
                                 ReSharperEditTagDetectorBase.ExternalEditAttribute1,
