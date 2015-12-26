@@ -198,6 +198,11 @@ namespace Vim.VisualStudio.Implementation.ExternalEdit
         {
             Contract.Assert(_vimBuffer.ModeKind != ModeKind.ExternalEdit);
 
+            if (GetAnyExternalEditActive())
+            {
+                return true;
+            }
+
             var externalEditSpans = GetExternalEditSpans(kind);
 
             if (externalEditSpans.Count == 0)
@@ -235,6 +240,11 @@ namespace Vim.VisualStudio.Implementation.ExternalEdit
             // If the monitor didn't initiate the external edit then we don't control it.  Back 
             // off and let the owner deal with it 
             if (!_controlExternalEdit)
+            {
+                return;
+            }
+
+            if (GetAnyExternalEditActive())
             {
                 return;
             }
@@ -346,6 +356,20 @@ namespace Vim.VisualStudio.Implementation.ExternalEdit
                     }
                 }
             }
+        }
+
+        private bool GetAnyExternalEditActive()
+        {
+            foreach (var cur in _externalEditorAdapters)
+            {
+                var result = cur.IsExternalEditActive(_textView);
+                if (result.HasValue && result.Value)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         /// <summary>

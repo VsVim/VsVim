@@ -29,6 +29,11 @@ namespace Vim.VisualStudio.Implementation.ReSharper
             /// </summary>
             internal readonly ITaggerProvider TaggerProvider;
 
+            /// <summary>
+            /// Before ReSharper 10.0 all of the detection for external edits was tag based.
+            /// </summary>
+            internal bool UseTagBasedDetection { get { return Version < ReSharperVersion.Version10; } }
+
             internal VersionInfo(ReSharperVersion version, IReSharperEditTagDetector editTagDetector, ITaggerProvider taggerProvider)
             {
                 Contract.Assert(editTagDetector != null);
@@ -40,6 +45,7 @@ namespace Vim.VisualStudio.Implementation.ReSharper
         }
 
         internal const string ResharperTaggerProviderName = "VsDocumentMarkupTaggerProvider";
+        internal static readonly Guid LiveTemplateKey = new Guid("A6FD6EDE-B430-46C3-9991-DA077ECF5C0B");
 
         private readonly IReSharperUtil _reSharperUtil;
         private readonly IVimBufferCoordinatorFactory _vimBufferCoordinatorFactory;
@@ -145,7 +151,7 @@ namespace Vim.VisualStudio.Implementation.ReSharper
             }
 
             var versionInfo = _versionInfo.Value;
-            if (versionInfo.Version >= ReSharperVersion.Version10)
+            if (!versionInfo.UseTagBasedDetection)
             {
                 // Version 10 and above doesn't use tag detection, it just looks for the key.  No need
                 // for a specific ITagger here.
@@ -153,7 +159,7 @@ namespace Vim.VisualStudio.Implementation.ReSharper
                 return true;
             }
 
-            tagger = versionInfo.TaggerProvider != null 
+            tagger = versionInfo.TaggerProvider != null
                 ? versionInfo.TaggerProvider.SafeCreateTagger<ITag>(textBuffer).GetValueOrDefault()
                 : null;
             return tagger != null;
@@ -195,6 +201,12 @@ namespace Vim.VisualStudio.Implementation.ReSharper
                 taggerProvider: null);
         }
 
+        internal void ResetForVersion(ReSharperVersion version, ITaggerProvider taggerProvider = null)
+        {
+            var editTagDetector = GetEditTagDetector(version);
+            _versionInfo = new VersionInfo(version, editTagDetector, taggerProvider);
+        }
+
         /// <summary>
         /// The Lazy(Of ITaggerProvider) value can throw on the Value property.  The call back 
         /// is what invokes composition and that can fail.  Handle the exception here and ignore
@@ -228,7 +240,24 @@ namespace Vim.VisualStudio.Implementation.ReSharper
                 return false;
             }
 
-            return _versionInfo.Value.EditTagDetector.IsEditTag(tag);
+            var versionInfo = _versionInfo.Value;
+            return versionInfo.UseTagBasedDetection && versionInfo.EditTagDetector.IsEditTag(tag);
+        }
+
+        private bool? IsExternalEditActive(ITextView textView)
+        {
+            if (!_versionInfo.HasValue)
+            {
+                return false;
+            }
+
+            var versionInfo = _versionInfo.Value;
+            if (versionInfo.UseTagBasedDetection)
+            {
+                return null;
+            }
+
+            return textView.Properties.ContainsProperty(LiveTemplateKey);
         }
 
         #region IExternalEditAdapter
@@ -236,6 +265,11 @@ namespace Vim.VisualStudio.Implementation.ReSharper
         bool IExternalEditAdapter.IsInterested(ITextView textView, out ITagger<ITag> tagger)
         {
             return IsInterested(textView, out tagger);
+        }
+
+        bool? IExternalEditAdapter.IsExternalEditActive(ITextView textView)
+        {
+            return IsExternalEditActive(textView);
         }
 
         bool IExternalEditAdapter.IsExternalEditMarker(IVsTextLineMarker marker)

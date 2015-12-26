@@ -13,6 +13,11 @@ namespace Vim.VisualStudio
         bool IsInterested(ITextView textView, out ITagger<ITag> tagger);
 
         /// <summary>
+        /// Is an external edit currently active in the ITextView.  
+        /// </summary>
+        bool? IsExternalEditActive(ITextView textView);
+
+        /// <summary>
         /// Does this IVsTextLineMarker represent an external edit 
         /// </summary>
         bool IsExternalEditMarker(IVsTextLineMarker marker);

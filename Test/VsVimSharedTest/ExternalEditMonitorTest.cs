@@ -28,6 +28,7 @@ namespace Vim.VisualStudio.UnitTest
         private ITextBuffer _textBuffer;
         private ITextView _textView;
         private Mock<IExternalEditAdapter> _adapter;
+        private Mock<IExternalEditAdapter> _adapter2;
         private Mock<ITagger<ITag>> _tagger;
         private Mock<IVsTextLines> _vsTextLines;
         private Mock<IVimApplicationSettings> _vimApplicationSettings;
@@ -48,10 +49,9 @@ namespace Vim.VisualStudio.UnitTest
             _vimApplicationSettings.SetupGet(x => x.EnableExternalEditMonitoring).Returns(true);
 
             // Have adatper ignore by default
-            _adapter = _factory.Create<IExternalEditAdapter>(MockBehavior.Strict);
-            _adapter.Setup(x => x.IsExternalEditTag(It.IsAny<ITag>())).Returns(false);
-            _adapter.Setup(x => x.IsExternalEditMarker(It.IsAny<IVsTextLineMarker>())).Returns(false);
-            var adapterList = new List<IExternalEditAdapter> { _adapter.Object };
+            _adapter = CreateAdapter();
+            _adapter2 = CreateAdapter();
+            var adapterList = new List<IExternalEditAdapter> { _adapter.Object, _adapter2.Object };
 
             Result<IVsTextLines> textLines = Result.Error;
             if (hasTextLines)
@@ -82,6 +82,15 @@ namespace Vim.VisualStudio.UnitTest
         {
             base.Dispose();
             Dispatcher.CurrentDispatcher.DoEvents();
+        }
+
+        private Mock<IExternalEditAdapter> CreateAdapter()
+        {
+            var adapter = _factory.Create<IExternalEditAdapter>(MockBehavior.Strict);
+            adapter.Setup(x => x.IsExternalEditActive(It.IsAny<ITextView>())).Returns((bool?)null);
+            adapter.Setup(x => x.IsExternalEditTag(It.IsAny<ITag>())).Returns(false);
+            adapter.Setup(x => x.IsExternalEditMarker(It.IsAny<IVsTextLineMarker>())).Returns(false);
+            return adapter;
         }
 
         /// <summary>
@@ -314,6 +323,41 @@ namespace Vim.VisualStudio.UnitTest
                 _monitor.PerformCheck(ExternalEditMonitor.CheckKind.All);
                 Assert.Equal(ModeKind.ExternalEdit, _buffer.ModeKind);
                 Assert.False(_monitor.ControlExternalEdit);
+            }
+        }
+
+        public sealed class IsExternalEditActiveTest : ExternalEditMonitorTest
+        {
+            [Fact]
+            public void OnOffTest()
+            {
+                Create("cat");
+                _adapter.Setup(x => x.IsExternalEditActive(_textView)).Returns(true);
+                _monitor.PerformCheck(ExternalEditMonitor.CheckKind.All);
+                Assert.Equal(ModeKind.ExternalEdit, _buffer.ModeKind);
+                Assert.True(_monitor.ControlExternalEdit);
+
+                _adapter.Setup(x => x.IsExternalEditActive(_textView)).Returns(false);
+                _monitor.PerformCheck(ExternalEditMonitor.CheckKind.All);
+                Assert.NotEqual(ModeKind.ExternalEdit, _buffer.ModeKind);
+            }
+
+            /// <summary>
+            /// If at least one thinks an external edit is active then it's active
+            /// </summary>
+            [Fact]
+            public void AdapterDisagree()
+            {
+                Create("cat");
+                _adapter.Setup(x => x.IsExternalEditActive(_textView)).Returns(true);
+                _adapter2.Setup(x => x.IsExternalEditActive(_textView)).Returns(false);
+                _monitor.PerformCheck(ExternalEditMonitor.CheckKind.All);
+                Assert.Equal(ModeKind.ExternalEdit, _buffer.ModeKind);
+                Assert.True(_monitor.ControlExternalEdit);
+
+                _adapter.Setup(x => x.IsExternalEditActive(_textView)).Returns(false);
+                _monitor.PerformCheck(ExternalEditMonitor.CheckKind.All);
+                Assert.NotEqual(ModeKind.ExternalEdit, _buffer.ModeKind);
             }
         }
     }
