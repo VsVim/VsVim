@@ -1252,6 +1252,22 @@ more";
                 Assert.Equal(MotionKind.CharacterWiseInclusive, data.MotionKind);
             }
 
+            /// <summary>
+            /// In the case the caret is on the end position of a line the search should actually start
+            /// on the last valid column. Yet the returned span should not include the start token.
+            /// </summary>
+            [Fact]
+            public void EndOfLine()
+            {
+                Create("{", "}  ");
+                _textView.MoveCaretTo(_textBuffer.GetLine(0).End);
+                var data = _motionUtil.MatchingToken().Value;
+                var span = new SnapshotSpan(
+                    _textBuffer.GetPointInLine(line: 0, column: 1),
+                    _textBuffer.GetPointInLine(line: 1, column: 1));
+                Assert.Equal(span, data.Span);
+                Assert.Equal(MotionKind.CharacterWiseInclusive, data.MotionKind);
+            }
         }
 
         public sealed class Misc : MotionUtilTest

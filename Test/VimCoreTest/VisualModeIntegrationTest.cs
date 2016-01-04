@@ -2539,6 +2539,19 @@ namespace Vim.UnitTest
                 _vimBuffer.ProcessNotation("vl");
                 Assert.False(_vimBuffer.CanProcess(VimKey.LeftDrag));
             }
+
+            [Fact]
+            public void Issue1715()
+            {
+                Create(@"        public override void Name(List<object> parameter)
+        {
+            throw new NotImplementedException();
+        }");
+                var index = _textBuffer.GetLine(0).GetText().IndexOf('N');
+                _textView.MoveCaretTo(index);
+                _vimBuffer.Process("Vj%");
+                Assert.Equal(_textBuffer.GetLineRange(startLine: 0, endLine: 3).ExtentIncludingLineBreak, _textView.GetSelectionSpan());
+            }
         }
 
         public sealed class TextObjectTest : VisualModeIntegrationTest
