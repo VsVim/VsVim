@@ -46,6 +46,16 @@ namespace Vim.VisualStudio
             _vim = _exportProvider.GetExportedValue<IVim>();
         }
 
+        protected override void Dispose(bool disposing)
+        {
+            base.Dispose(disposing);
+
+            if (disposing)
+            {
+                _vim.SaveSessionData();
+            }
+        }
+
         private void DumpKeyboard()
         {
             var keyBindingService = _exportProvider.GetExportedValue<IKeyBindingService>();

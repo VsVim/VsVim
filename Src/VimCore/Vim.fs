@@ -785,6 +785,7 @@ type internal Vim
         x.WriteSessionData sessionData filePath
 
     member x.SaveSessionData() =
+        _fileSystem.CreateDirectory (x.GetSessionDataDirectory()) |> ignore
         x.SaveSessionDataCore (x.GetSessionDataFilePath())
 
     member x.RemoveVimBuffer textView = 

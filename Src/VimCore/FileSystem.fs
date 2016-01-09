@@ -178,7 +178,15 @@ type internal FileSystem() =
         with
             _ -> false
 
+    member x.CreateDirectory path =
+        try
+            Directory.CreateDirectory path |> ignore
+            true
+        with
+            _ -> false
+
     interface IFileSystem with
+        member x.CreateDirectory path = x.CreateDirectory path
         member x.GetVimRcDirectories() = x.GetVimRcDirectories()
         member x.GetVimRcFilePaths() = x.GetVimRcFilePaths()
         member x.ReadAllLines path = x.ReadAllLines path

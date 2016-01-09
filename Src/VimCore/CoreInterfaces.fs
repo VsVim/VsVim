@@ -104,6 +104,9 @@ type IStatusUtil =
 /// Abstracts away VsVim's interaction with the file system to facilitate testing
 type IFileSystem =
 
+    /// Create the specified directory, returns true if it was actually created
+    abstract CreateDirectory : path : string -> bool 
+
     /// Get the directories to probe for RC files
     abstract GetVimRcDirectories : unit -> string[]
 
