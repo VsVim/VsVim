@@ -738,9 +738,9 @@ type internal Vim
         System.IO.Path.Combine(filePath, "VsVim")
 
     member x.GetSessionDataFilePath() =
-        System.IO.Path.Combine(x.GetSessionDataDirectory(), "vimdata")
+        System.IO.Path.Combine(x.GetSessionDataDirectory(), "vimdata.json")
 
-    member x.ReadSessionData() =
+    member x.ReadSessionData filePath =
         let filePath=  x.GetSessionDataFilePath()
         match _fileSystem.Read filePath with
         | None -> SessionData.Empty
@@ -752,8 +752,7 @@ type internal Vim
             with
                 _ -> SessionData.Empty
 
-    member x.WriteSessionData (sessionData : SessionData) = 
-        let filePath = x.GetSessionDataFilePath()
+    member x.WriteSessionData (sessionData : SessionData) filePath = 
         let serializer = new DataContractJsonSerializer(typeof<SessionData>)
         use stream = new System.IO.MemoryStream()
         try
@@ -763,8 +762,8 @@ type internal Vim
         with
             _ as ex -> VimTrace.TraceError ex
 
-    member x.LoadSessionData() = 
-        let sessionData = x.ReadSessionData()
+    member x.LoadSessionDataCore filePath =
+        let sessionData = x.ReadSessionData (x.GetSessionDataFilePath())
         for sessionReg in sessionData.Registers do
             match sessionReg.Name |> RegisterName.OfChar |> Option.map _registerMap.GetRegister with
             | Some register -> 
@@ -772,7 +771,10 @@ type internal Vim
                 _registerMap.SetRegisterValue register RegisterOperation.Yank registerValue
             | None -> ()
 
-    member x.SaveSessionData() = 
+    member x.LoadSessionData() =
+        x.LoadSessionDataCore (x.GetSessionDataFilePath())
+
+    member x.SaveSessionDataCore filePath = 
         let sessionRegisterArray = 
             NamedRegister.All
             |> Seq.map (fun n -> 
@@ -780,7 +782,10 @@ type internal Vim
                 { Name = n.Char; Kind = value.OperationKind; Value = value.StringValue })
             |> Seq.toArray
         let sessionData = { Registers = sessionRegisterArray }
-        x.WriteSessionData sessionData
+        x.WriteSessionData sessionData filePath
+
+    member x.SaveSessionData() =
+        x.SaveSessionDataCore (x.GetSessionDataFilePath())
 
     member x.RemoveVimBuffer textView = 
         let found, tuple = _vimBufferMap.TryGetValue(textView)

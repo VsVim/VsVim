@@ -226,6 +226,7 @@ namespace Vim.UnitTest
 
             // Don't let the personal VimRc of the user interfere with the unit tests
             Vim.AutoLoadVimRc = false;
+            Vim.AutoLoadSessionData = false;
 
             // Don't let the current directory leak into the tests
             Vim.VimData.CurrentDirectory = "";

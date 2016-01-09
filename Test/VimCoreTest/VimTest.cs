@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Runtime.Serialization;
+using System.Runtime.Serialization.Json;
 using Microsoft.FSharp.Collections;
 using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text.Editor;
@@ -8,6 +10,8 @@ using Vim.Extensions;
 using Vim.UnitTest.Mock;
 using System.Collections.Generic;
 using Vim.Interpreter;
+using MemoryStream = System.IO.MemoryStream;
+using Stream = System.IO.Stream;
 
 namespace Vim.UnitTest
 {
@@ -170,6 +174,89 @@ namespace Vim.UnitTest
                 _vim.CreateVimBuffer(CreateTextView());
                 Assert.True(_vim.VimRcState.IsLoadSucceeded);
                 Assert.Equal(1, _simpleListener.Count);
+            }
+        }
+
+        public sealed class LoadSessionDataTest : VimTest
+        {
+            private readonly MemoryStream _stream;
+
+            public LoadSessionDataTest()
+            {
+                _stream = new MemoryStream();
+                _fileSystem
+                    .Setup(x => x.Read(It.IsAny<string>()))
+                    .Returns(() => FSharpOption.Create(GetStreamCopy()));
+                _fileSystem
+                    .Setup(x => x.Write(It.IsAny<string>(), It.IsAny<Stream>()))
+                    .Callback<string, Stream>((_, stream) => stream.CopyTo(_stream))
+                    .Returns(true);
+            }
+
+            private Stream GetStreamCopy()
+            {
+                var stream = new MemoryStream();
+                _stream.CopyTo(stream);
+                stream.Position = 0;
+                return stream;
+            }
+
+            private void WriteData(params string[] data)
+            {
+                var list = new List<SessionRegisterValue>();
+                foreach (var entry in data)
+                {
+                    var name = entry[0];
+                    var kind = entry[1] == 'c' ? OperationKind.CharacterWise : OperationKind.LineWise;
+                    var value = entry.Substring(2);
+                    list.Add(new SessionRegisterValue(name, kind, value));
+                }
+
+                var serializer = new DataContractJsonSerializer(typeof(SessionData));
+                serializer.WriteObject(_stream, new SessionData(list.ToArray()));
+                _stream.Position = 0;
+            }
+
+            private void AssertRegister(char name, OperationKind kind, string value)
+            {
+                var register = _vim.RegisterMap.GetRegister(name);
+                Assert.Equal(kind, register.OperationKind);
+                Assert.Equal(value, register.StringValue);
+            }
+
+            [Fact]
+            public void SimpleLoad()
+            {
+                WriteData("acdog", "blcat\n");
+                _vimRaw.LoadSessionData();
+                AssertRegister('a', OperationKind.CharacterWise, "dog");
+                AssertRegister('b', OperationKind.LineWise, "cat\n");
+            }
+
+            [Fact]
+            public void DoubleLoad()
+            {
+                WriteData("acdog", "blcat\n");
+                _vimRaw.LoadSessionData();
+                AssertRegister('a', OperationKind.CharacterWise, "dog");
+                _vim.RegisterMap.SetRegisterValue('a', "cat");
+                AssertRegister('a', OperationKind.CharacterWise, "cat");
+                _stream.Position = 0;
+                _vimRaw.LoadSessionData();
+                AssertRegister('a', OperationKind.CharacterWise, "dog");
+            }
+
+            [Fact]
+            public void SimpleSave()
+            {
+                _vim.RegisterMap.SetRegisterValue('h', "dog");
+                _vim.RegisterMap.SetRegisterValue('i', "cat");
+                _vim.SaveSessionData();
+                _vim.RegisterMap.Clear();
+                _stream.Position = 0;
+                _vim.LoadSessionData();
+                AssertRegister('h', OperationKind.CharacterWise, "dog");
+                AssertRegister('i', OperationKind.CharacterWise, "cat");
             }
         }
 
