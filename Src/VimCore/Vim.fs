@@ -6,11 +6,37 @@ open Microsoft.VisualStudio.Text.Editor
 open Microsoft.VisualStudio.Text.Operations
 open Microsoft.VisualStudio.Text.Outlining
 open Microsoft.VisualStudio.Text.Classification
+open System
 open System.ComponentModel.Composition
 open System.Collections.Generic
 open System.Runtime.InteropServices
+open System.Runtime.Serialization
+open System.Runtime.Serialization.Json
 open Vim.Modes
 open Vim.Interpreter
+
+[<DataContract>]
+type SessionRegisterValue = {
+    [<field: DataMember>] 
+    Name : char
+
+    [<field: DataMember>]
+    Kind : OperationKind
+
+    [<field: DataMember>]
+    Value : string
+}
+
+[<DataContract>]
+type SessionData = {
+    [<field: DataMember>]
+    Registers : SessionRegisterValue[]
+
+} 
+    with
+
+    static member Empty = { Registers = [| |] }
+
 
 [<Export(typeof<IBulkOperations>)>]
 type internal BulkOperations  
@@ -346,6 +372,8 @@ type internal Vim
     /// Whether or not the vimrc file should be automatically loaded before creating the 
     /// first IVimBuffer instance
     let mutable _autoLoadVimRc = true
+    let mutable _autoLoadSessionData = true
+    let mutable _sessionDataAutoLoaded = false
     let mutable _isLoadingVimRc = false
     let mutable _vimRcState = VimRcState.None
 
@@ -435,15 +463,19 @@ type internal Vim
         | None -> _statusUtilFactory.EmptyStatusUtil
 
     member x.AutoLoadVimRc 
-        with get () = _autoLoadVimRc
+        with get() = _autoLoadVimRc
         and set value = _autoLoadVimRc <- value
 
+    member x.AutoLoadSessionData
+        with get() = _autoLoadSessionData
+        and set value = _autoLoadSessionData <- value
+
     member x.FileSystem
-        with get () = _fileSystem
+        with get() = _fileSystem
         and set value = _fileSystem <- value 
 
     member x.IsDisabled 
-        with get () = _isDisabled
+        with get() = _isDisabled
         and set value = 
             let changed = value <> _isDisabled
             _isDisabled <- value
@@ -473,14 +505,14 @@ type internal Vim
 
     /// Get the IVimLocalSettings which should be the basis for a newly created IVimTextBuffer
     member x.GetLocalSettingsForNewTextBuffer () =
-        x.MaybeLoadVimRc()
+        x.MaybeLoadFiles()
         match x.ActiveBuffer with
         | Some buffer -> buffer.LocalSettings
         | None -> _vimRcLocalSettings
 
     /// Get the IVimWindowSettings which should be the basis for a newly created IVimBuffer
     member x.GetWindowSettingsForNewBuffer () =
-        x.MaybeLoadVimRc()
+        x.MaybeLoadFiles()
         match x.ActiveBuffer with
         | Some buffer -> buffer.WindowSettings
         | None -> _vimRcWindowSettings
@@ -588,12 +620,16 @@ type internal Vim
             let settings = x.GetWindowSettingsForNewBuffer()
             x.CreateVimBuffer textView (Some settings)
 
-    member x.MaybeLoadVimRc() =
+    member x.MaybeLoadFiles() =
         if x.AutoLoadVimRc then
             match _vimRcState with
             | VimRcState.None -> x.LoadVimRc() |> ignore
             | VimRcState.LoadSucceeded _ -> ()
             | VimRcState.LoadFailed -> ()
+
+        if x.AutoLoadSessionData && not _sessionDataAutoLoaded then
+            x.LoadSessionData()
+            _sessionDataAutoLoaded <- true
 
     member x.LoadVimRcCore() =
         Contract.Assert(_isLoadingVimRc)
@@ -697,6 +733,55 @@ type internal Vim
         | _ -> 
             _globalSettings.Backspace <- "indent,eol,start"
 
+    member x.GetSessionDataDirectory() =
+        let filePath = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData)
+        System.IO.Path.Combine(filePath, "VsVim")
+
+    member x.GetSessionDataFilePath() =
+        System.IO.Path.Combine(x.GetSessionDataDirectory(), "vimdata")
+
+    member x.ReadSessionData() =
+        let filePath=  x.GetSessionDataFilePath()
+        match _fileSystem.Read filePath with
+        | None -> SessionData.Empty
+        | Some stream -> 
+            try
+                use stream = stream
+                let serializer = new DataContractJsonSerializer(typeof<SessionData>)
+                serializer.ReadObject(stream) :?> SessionData
+            with
+                _ -> SessionData.Empty
+
+    member x.WriteSessionData (sessionData : SessionData) = 
+        let filePath = x.GetSessionDataFilePath()
+        let serializer = new DataContractJsonSerializer(typeof<SessionData>)
+        use stream = new System.IO.MemoryStream()
+        try
+            serializer.WriteObject(stream, sessionData)
+            stream.Position <- 0L
+            _fileSystem.Write filePath stream |> ignore
+        with
+            _ as ex -> VimTrace.TraceError ex
+
+    member x.LoadSessionData() = 
+        let sessionData = x.ReadSessionData()
+        for sessionReg in sessionData.Registers do
+            match sessionReg.Name |> RegisterName.OfChar |> Option.map _registerMap.GetRegister with
+            | Some register -> 
+                let registerValue = RegisterValue(sessionReg.Value, sessionReg.Kind)
+                _registerMap.SetRegisterValue register RegisterOperation.Yank registerValue
+            | None -> ()
+
+    member x.SaveSessionData() = 
+        let sessionRegisterArray = 
+            NamedRegister.All
+            |> Seq.map (fun n -> 
+                let value = _registerMap.GetRegister (RegisterName.Named n)
+                { Name = n.Char; Kind = value.OperationKind; Value = value.StringValue })
+            |> Seq.toArray
+        let sessionData = { Registers = sessionRegisterArray }
+        x.WriteSessionData sessionData
+
     member x.RemoveVimBuffer textView = 
         let found, tuple = _vimBufferMap.TryGetValue(textView)
         if found then 
@@ -741,7 +826,7 @@ type internal Vim
         else
             false
 
-    member x.TryGetVimTextBuffer(textBuffer : ITextBuffer, [<Out>] vimTextBuffer : IVimTextBuffer byref) =
+    member x.TryGetVimTextBuffer (textBuffer : ITextBuffer, [<Out>] vimTextBuffer : IVimTextBuffer byref) =
         match PropertyCollectionUtil.GetValue<IVimTextBuffer> _vimTextBufferKey textBuffer.Properties with
         | Some found ->
             vimTextBuffer <- found
@@ -781,6 +866,9 @@ type internal Vim
         member x.AutoLoadVimRc 
             with get() = x.AutoLoadVimRc
             and set value = x.AutoLoadVimRc <- value
+        member x.AutoLoadSessionData 
+            with get() = x.AutoLoadSessionData 
+            and set value = x.AutoLoadSessionData <- value
         member x.FocusedBuffer = x.FocusedBuffer
         member x.VariableMap = x.VariableMap
         member x.VimBuffers = x.VimBuffers
@@ -804,7 +892,9 @@ type internal Vim
         member x.GetOrCreateVimBuffer textView = x.GetOrCreateVimBuffer textView
         member x.GetOrCreateVimTextBuffer textBuffer = x.GetOrCreateVimTextBuffer textBuffer
         member x.LoadVimRc() = x.LoadVimRc()
+        member x.LoadSessionData() = x.LoadSessionData()
         member x.RemoveVimBuffer textView = x.RemoveVimBuffer textView
+        member x.SaveSessionData() = x.SaveSessionData()
         member x.ShouldCreateVimBuffer textView = x.ShouldCreateVimBuffer textView
         member x.TryGetOrCreateVimBufferForHost(textView, vimBuffer) = x.TryGetOrCreateVimBufferForHost(textView, &vimBuffer)
         member x.TryGetVimBuffer(textView, vimBuffer) = x.TryGetVimBuffer(textView, &vimBuffer)

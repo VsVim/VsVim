@@ -117,6 +117,10 @@ type IFileSystem =
     /// Read the contents of the directory 
     abstract ReadDirectoryContents : directoryPath : string -> string[] option
 
+    abstract Read : filePath : string -> System.IO.Stream option
+
+    abstract Write : filePath : string -> stream : System.IO.Stream -> bool
+
 /// Utility function for searching for Word values.  This is a MEF importable
 /// component
 [<UsedInBackgroundThread>]
@@ -4041,6 +4045,10 @@ and IVim =
     /// is created
     abstract AutoLoadVimRc : bool with get, set
 
+    /// Whether or not saved data like macros shuold be autoloaded before the first IVimBuffer 
+    // is created
+    abstract AutoLoadSessionData : bool with get, set
+
     /// Get the set of tracked IVimBuffer instances
     abstract VimBuffers : IVimBuffer list
 
@@ -4102,6 +4110,12 @@ and IVim =
     /// Load the VimRc file.  If the file was previously loaded a new load will be 
     /// attempted.  Returns true if a VimRc was actually loaded.
     abstract LoadVimRc : unit -> VimRcState
+
+    /// Load the saved data file. 
+    abstract LoadSessionData : unit -> unit
+
+    /// Save out the current session data.
+    abstract SaveSessionData : unit -> unit
 
     /// Remove the IVimBuffer associated with the given view.  This will not actually close
     /// the IVimBuffer but instead just removes it's association with the given view
