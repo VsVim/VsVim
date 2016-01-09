@@ -17,21 +17,20 @@ open Vim.Interpreter
 
 [<DataContract>]
 type SessionRegisterValue = {
-    [<field: DataMember>] 
+    [<field: DataMember(Name = "name")>] 
     Name : char
 
-    [<field: DataMember>]
-    Kind : OperationKind
+    [<field: DataMember(Name = "isCharacterWise")>]
+    IsCharacterWise : bool
 
-    [<field: DataMember>]
+    [<field: DataMember(Name = "value")>]
     Value : string
 }
 
 [<DataContract>]
 type SessionData = {
-    [<field: DataMember>]
+    [<field: DataMember(Name = "registers")>]
     Registers : SessionRegisterValue[]
-
 } 
     with
 
@@ -764,10 +763,12 @@ type internal Vim
 
     member x.LoadSessionDataCore filePath =
         let sessionData = x.ReadSessionData (x.GetSessionDataFilePath())
-        for sessionReg in sessionData.Registers do
+        let registers = if sessionData.Registers = null then [| |] else sessionData.Registers
+        for sessionReg in registers do
             match sessionReg.Name |> RegisterName.OfChar |> Option.map _registerMap.GetRegister with
             | Some register -> 
-                let registerValue = RegisterValue(sessionReg.Value, sessionReg.Kind)
+                let kind = if sessionReg.IsCharacterWise then OperationKind.CharacterWise else OperationKind.LineWise
+                let registerValue = RegisterValue(sessionReg.Value, kind)
                 _registerMap.SetRegisterValue register RegisterOperation.Yank registerValue
             | None -> ()
 
@@ -777,9 +778,11 @@ type internal Vim
     member x.SaveSessionDataCore filePath = 
         let sessionRegisterArray = 
             NamedRegister.All
+            |> Seq.filter (fun n -> not n.IsAppend)
             |> Seq.map (fun n -> 
                 let value = _registerMap.GetRegister (RegisterName.Named n)
-                { Name = n.Char; Kind = value.OperationKind; Value = value.StringValue })
+                let isCharacterWise = value.OperationKind = OperationKind.CharacterWise
+                { Name = n.Char; IsCharacterWise = isCharacterWise; Value = value.StringValue })
             |> Seq.toArray
         let sessionData = { Registers = sessionRegisterArray }
         x.WriteSessionData sessionData filePath

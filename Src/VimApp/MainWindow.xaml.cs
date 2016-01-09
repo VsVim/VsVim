@@ -147,6 +147,12 @@ namespace VimApp
             AddNewTab("Empty Doc");
         }
 
+        protected override void OnClosed(EventArgs e)
+        {
+            base.OnClosed(e);
+            _vimComponentHost.Vim.SaveSessionData();
+        }
+
         internal IWpfTextView CreateTextView(ITextBuffer textBuffer)
         {
             return CreateTextView(

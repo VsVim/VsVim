@@ -87,6 +87,7 @@ namespace Vim.UnitTest
                 new StatusUtilFactory());
             _vim = _vimRaw;
             _vim.AutoLoadVimRc = false;
+            _vim.AutoLoadSessionData = false;
         }
 
         public sealed class LoadVimRcTest : VimTest
@@ -191,6 +192,9 @@ namespace Vim.UnitTest
                     .Setup(x => x.Write(It.IsAny<string>(), It.IsAny<Stream>()))
                     .Callback<string, Stream>((_, stream) => stream.CopyTo(_stream))
                     .Returns(true);
+                _fileSystem
+                    .Setup(x => x.CreateDirectory(It.IsAny<string>()))
+                    .Returns(true);
             }
 
             private Stream GetStreamCopy()
@@ -207,14 +211,23 @@ namespace Vim.UnitTest
                 foreach (var entry in data)
                 {
                     var name = entry[0];
-                    var kind = entry[1] == 'c' ? OperationKind.CharacterWise : OperationKind.LineWise;
+                    var isCharacterWise = entry[1] == 'c';
                     var value = entry.Substring(2);
-                    list.Add(new SessionRegisterValue(name, kind, value));
+                    list.Add(new SessionRegisterValue(name, isCharacterWise, value));
                 }
 
                 var serializer = new DataContractJsonSerializer(typeof(SessionData));
                 serializer.WriteObject(_stream, new SessionData(list.ToArray()));
                 _stream.Position = 0;
+            }
+
+            private SessionData ReadData()
+            {
+                var serializer = new DataContractJsonSerializer(typeof(SessionData));
+                _stream.Position = 0;
+                var data = (SessionData)serializer.ReadObject(_stream);
+                _stream.Position = 0;
+                return data;
             }
 
             private void AssertRegister(char name, OperationKind kind, string value)
@@ -257,6 +270,19 @@ namespace Vim.UnitTest
                 _vim.LoadSessionData();
                 AssertRegister('h', OperationKind.CharacterWise, "dog");
                 AssertRegister('i', OperationKind.CharacterWise, "cat");
+            }
+
+            [Fact]
+            public void SaveDontSerializeAppendRegisters()
+            {
+                _vim.RegisterMap.SetRegisterValue('h', "dog");
+                _vim.RegisterMap.SetRegisterValue('i', "cat");
+                _vim.SaveSessionData();
+                foreach (var sessionReg in ReadData().Registers)
+                {
+                    var name = NamedRegister.OfChar(sessionReg.Name).Value;
+                    Assert.False(name.IsAppend);
+                }
             }
         }
 
