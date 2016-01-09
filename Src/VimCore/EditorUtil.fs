@@ -723,7 +723,7 @@ module SnapshotLineUtil =
     /// Get the text of the ITextSnapshotLine including the line break
     let GetTextIncludingLineBreak (line : ITextSnapshotLine) = line.GetTextIncludingLineBreak()
 
-    /// Get the last point which is included in this line not conspiring the line 
+    /// Get the last point which is included in this line not including the line 
     /// break.  Can be None if this is a 0 length line 
     let GetLastIncludedPoint line = 
         let span = GetExtent line

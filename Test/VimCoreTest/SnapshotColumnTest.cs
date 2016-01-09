@@ -69,5 +69,31 @@ namespace Vim.UnitTest
                 Assert.Equal(0, column.LineNumber);
             }
         }
+
+        public sealed class Ctor : SnapshotColumnTest
+        {
+            [Fact]
+            public void PointSimple()
+            {
+                Create("cat", "dog");
+                var point = _textBuffer.GetPoint(1);
+                var column = new SnapshotColumn(point);
+                Assert.Equal(0, column.LineNumber);
+                Assert.Equal(1, column.Column);
+                Assert.False(column.IsInsideLineBreak);
+            }
+
+            [Fact]
+            public void PointInsideLineBreak()
+            {
+                Create("cat", "dog");
+                var point = _textBuffer.GetPoint(_textBuffer.GetLine(0).End);
+                var column = new SnapshotColumn(point);
+                Assert.Equal(0, column.LineNumber);
+                Assert.Equal(3, column.Column);
+                Assert.True(column.IsInsideLineBreak);
+                Assert.Equal("cat", column.Line.GetText());
+            }
+        }
     }
 }

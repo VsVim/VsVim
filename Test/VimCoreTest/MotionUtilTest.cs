@@ -1133,6 +1133,143 @@ more";
             }
         }
 
+        public sealed class MatchingTokenTest : MotionUtilTest
+        {
+            [Fact]
+            public void SimpleParens()
+            {
+                Create("( )");
+                var data = _motionUtil.MatchingToken().Value;
+                Assert.Equal("( )", data.Span.GetText());
+                Assert.True(data.IsForward);
+                Assert.Equal(MotionKind.CharacterWiseInclusive, data.MotionKind);
+                Assert.Equal(OperationKind.CharacterWise, data.OperationKind);
+            }
+
+            [Fact]
+            public void SimpleParensWithPrefix()
+            {
+                Create("cat( )");
+                var data = _motionUtil.MatchingToken().Value;
+                Assert.Equal("cat( )", data.Span.GetText());
+                Assert.True(data.IsForward);
+            }
+
+            [Fact]
+            public void TooManyOpenOnSameLine()
+            {
+                Create("cat(( )");
+                Assert.True(_motionUtil.MatchingToken().IsNone());
+            }
+
+            [Fact]
+            public void AcrossLines()
+            {
+                Create("cat(", ")");
+                var span = new SnapshotSpan(
+                    _textView.GetLine(0).Start,
+                    _textView.GetLine(1).Start.Add(1));
+                var data = _motionUtil.MatchingToken().Value;
+                Assert.Equal(span, data.Span);
+                Assert.True(data.IsForward);
+            }
+
+            [Fact]
+            public void ParensFromEnd()
+            {
+                Create("cat( )");
+                _textView.MoveCaretTo(5);
+                var data = _motionUtil.MatchingToken().Value;
+                Assert.Equal("( )", data.Span.GetText());
+                Assert.False(data.IsForward);
+            }
+
+            [Fact]
+            public void ParensFromMiddle()
+            {
+                Create("cat( )");
+                _textView.MoveCaretTo(4);
+                var data = _motionUtil.MatchingToken().Value;
+                Assert.Equal("( ", data.Span.GetText());
+                Assert.False(data.IsForward);
+            }
+
+            /// <summary>
+            /// Make sure we function properly with nested parens.
+            /// </summary>
+            [Fact]
+            public void ParensNestedFromEnd()
+            {
+                Create("(((a)))");
+                _textView.MoveCaretTo(5);
+                var data = _motionUtil.MatchingToken().Value;
+                Assert.Equal("((a))", data.Span.GetText());
+                Assert.False(data.IsForward);
+            }
+
+            /// <summary>
+            /// Make sure we function properly with consecutive sets of parens
+            /// </summary>
+            [Fact]
+            public void ParensConsecutiveSetsFromEnd()
+            {
+                Create("((a)) /* ((b))");
+                _textView.MoveCaretTo(12);
+                var data = _motionUtil.MatchingToken().Value;
+                Assert.Equal("(b)", data.Span.GetText());
+                Assert.False(data.IsForward);
+            }
+
+            /// <summary>
+            /// Make sure we function properly with consecutive sets of parens
+            /// </summary>
+            [Fact]
+            public void ParensConsecutiveSetsFromEnd2()
+            {
+                Create("((a)) /* ((b))");
+                _textView.MoveCaretTo(13);
+                var data = _motionUtil.MatchingToken().Value;
+                Assert.Equal("((b))", data.Span.GetText());
+                Assert.False(data.IsForward);
+            }
+
+            [Fact]
+            public void CommentStartDoesNotNest()
+            {
+                Create("/* /* */");
+                var data = _motionUtil.MatchingToken().Value;
+                Assert.Equal("/* /* */", data.Span.GetText());
+                Assert.True(data.IsForward);
+            }
+
+            [Fact]
+            public void IfElsePreProc()
+            {
+                Create("#if foo #endif", "again", "#endif");
+                var data = _motionUtil.MatchingToken().Value;
+                var span = new SnapshotSpan(_textView.GetPoint(0), _textView.GetLine(2).Start.Add(1));
+                Assert.Equal(span, data.Span);
+                Assert.Equal(MotionKind.CharacterWiseInclusive, data.MotionKind);
+            }
+
+            /// <summary>
+            /// In the case the caret is on the end position of a line the search should actually start
+            /// on the last valid column. Yet the returned span should not include the start token.
+            /// </summary>
+            [Fact]
+            public void EndOfLine()
+            {
+                Create("{", "}  ");
+                _textView.MoveCaretTo(_textBuffer.GetLine(0).End);
+                var data = _motionUtil.MatchingToken().Value;
+                var span = new SnapshotSpan(
+                    _textBuffer.GetPointInLine(line: 0, column: 1),
+                    _textBuffer.GetPointInLine(line: 1, column: 1));
+                Assert.Equal(span, data.Span);
+                Assert.Equal(MotionKind.CharacterWiseInclusive, data.MotionKind);
+            }
+        }
+
         public sealed class Misc : MotionUtilTest
         {
             [Fact]
@@ -2713,123 +2850,6 @@ more";
                 Assert.Equal(2, data.CaretColumn.AsInLastLine().Item);
                 Assert.False(data.IsForward);
                 Assert.Equal(_textView.GetLineRange(1, 2).ExtentIncludingLineBreak, data.Span);
-            }
-
-            [Fact]
-            public void MatchingToken_SimpleParens()
-            {
-                Create("( )");
-                var data = _motionUtil.MatchingToken().Value;
-                Assert.Equal("( )", data.Span.GetText());
-                Assert.True(data.IsForward);
-                Assert.Equal(MotionKind.CharacterWiseInclusive, data.MotionKind);
-                Assert.Equal(OperationKind.CharacterWise, data.OperationKind);
-            }
-
-            [Fact]
-            public void MatchingToken_SimpleParensWithPrefix()
-            {
-                Create("cat( )");
-                var data = _motionUtil.MatchingToken().Value;
-                Assert.Equal("cat( )", data.Span.GetText());
-                Assert.True(data.IsForward);
-            }
-
-            [Fact]
-            public void MatchingToken_TooManyOpenOnSameLine()
-            {
-                Create("cat(( )");
-                Assert.True(_motionUtil.MatchingToken().IsNone());
-            }
-
-            [Fact]
-            public void MatchingToken_AcrossLines()
-            {
-                Create("cat(", ")");
-                var span = new SnapshotSpan(
-                    _textView.GetLine(0).Start,
-                    _textView.GetLine(1).Start.Add(1));
-                var data = _motionUtil.MatchingToken().Value;
-                Assert.Equal(span, data.Span);
-                Assert.True(data.IsForward);
-            }
-
-            [Fact]
-            public void MatchingToken_ParensFromEnd()
-            {
-                Create("cat( )");
-                _textView.MoveCaretTo(5);
-                var data = _motionUtil.MatchingToken().Value;
-                Assert.Equal("( )", data.Span.GetText());
-                Assert.False(data.IsForward);
-            }
-
-            [Fact]
-            public void MatchingToken_ParensFromMiddle()
-            {
-                Create("cat( )");
-                _textView.MoveCaretTo(4);
-                var data = _motionUtil.MatchingToken().Value;
-                Assert.Equal("( ", data.Span.GetText());
-                Assert.False(data.IsForward);
-            }
-
-            /// <summary>
-            /// Make sure we function properly with nested parens.
-            /// </summary>
-            [Fact]
-            public void MatchingToken_ParensNestedFromEnd()
-            {
-                Create("(((a)))");
-                _textView.MoveCaretTo(5);
-                var data = _motionUtil.MatchingToken().Value;
-                Assert.Equal("((a))", data.Span.GetText());
-                Assert.False(data.IsForward);
-            }
-
-            /// <summary>
-            /// Make sure we function properly with consecutive sets of parens
-            /// </summary>
-            [Fact]
-            public void MatchingToken_ParensConsecutiveSetsFromEnd()
-            {
-                Create("((a)) /* ((b))");
-                _textView.MoveCaretTo(12);
-                var data = _motionUtil.MatchingToken().Value;
-                Assert.Equal("(b)", data.Span.GetText());
-                Assert.False(data.IsForward);
-            }
-
-            /// <summary>
-            /// Make sure we function properly with consecutive sets of parens
-            /// </summary>
-            [Fact]
-            public void MatchingToken_ParensConsecutiveSetsFromEnd2()
-            {
-                Create("((a)) /* ((b))");
-                _textView.MoveCaretTo(13);
-                var data = _motionUtil.MatchingToken().Value;
-                Assert.Equal("((b))", data.Span.GetText());
-                Assert.False(data.IsForward);
-            }
-
-            [Fact]
-            public void MatchingToken_CommentStartDoesNotNest()
-            {
-                Create("/* /* */");
-                var data = _motionUtil.MatchingToken().Value;
-                Assert.Equal("/* /* */", data.Span.GetText());
-                Assert.True(data.IsForward);
-            }
-
-            [Fact]
-            public void MatchingToken_IfElsePreProc()
-            {
-                Create("#if foo #endif", "again", "#endif");
-                var data = _motionUtil.MatchingToken().Value;
-                var span = new SnapshotSpan(_textView.GetPoint(0), _textView.GetLine(2).Start.Add(1));
-                Assert.Equal(span, data.Span);
-                Assert.Equal(MotionKind.CharacterWiseInclusive, data.MotionKind);
             }
 
             /// <summary>
