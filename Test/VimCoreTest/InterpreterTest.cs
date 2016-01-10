@@ -333,7 +333,7 @@ namespace Vim.UnitTest
             public void EmptySearchUsesLastSearch()
             {
                 Create("cat tree");
-                Vim.VimData.LastSearchData = new SearchData("cat", new Path(0));
+                Vim.VimData.LastSearchData = new SearchData("cat", new SearchPath(0));
                 ParseAndRun("s//dog/");
                 Assert.Equal("dog tree", _textBuffer.GetLine(0).GetText());
             }
@@ -487,7 +487,7 @@ namespace Vim.UnitTest
                 Create("cat", "dog");
                 ParseAndRun(":/dog");
                 Assert.Equal("dog", _vimData.LastSearchData.Pattern);
-                Assert.Equal(Path.Forward, _vimData.LastSearchData.Path);
+                Assert.Equal(SearchPath.Forward, _vimData.LastSearchData.Path);
             }
 
             [Fact]
@@ -496,7 +496,7 @@ namespace Vim.UnitTest
                 Create("cat", "dog");
                 ParseAndRun(":?dog");
                 Assert.Equal("dog", _vimData.LastSearchData.Pattern);
-                Assert.Equal(Path.Backward, _vimData.LastSearchData.Path);
+                Assert.Equal(SearchPath.Backward, _vimData.LastSearchData.Path);
             }
         }
 
@@ -1314,7 +1314,7 @@ namespace Vim.UnitTest
             public void LastSearch_ViaLastPattern()
             {
                 Create("");
-                _vimData.LastSearchData = new SearchData("test", Path.Forward);
+                _vimData.LastSearchData = new SearchData("test", SearchPath.Forward);
                 ParseAndRun("reg");
                 AssertLine(@"""/   test");
             }

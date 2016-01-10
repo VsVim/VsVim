@@ -40,8 +40,8 @@ type internal WordUtil() =
             // in the middle of a line and we can't return any spans which are past / before 
             // the point depending on the direction
             match path with
-            | Path.Forward -> span.End.Position > point.Position
-            | Path.Backward -> span.Start.Position < point.Position)
+            | SearchPath.Forward -> span.End.Position > point.Position
+            | SearchPath.Backward -> span.Start.Position < point.Position)
 
     /// Get the SnapshotSpan for the full word span which crosses the given SanpshotPoint
     ///
@@ -49,7 +49,7 @@ type internal WordUtil() =
     /// static to promote safety
     [<UsedInBackgroundThread()>]
     static member GetFullWordSpan wordKind point = 
-        let word = WordUtil.GetWords wordKind Path.Forward point |> SeqUtil.tryHeadOnly
+        let word = WordUtil.GetWords wordKind SearchPath.Forward point |> SeqUtil.tryHeadOnly
         match word with 
         | None -> 
             // No more words forward then no word at the given SnapshotPoint

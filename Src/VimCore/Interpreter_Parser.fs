@@ -2160,8 +2160,8 @@ type Parser
                 | "xnoremap"-> noRange (fun () -> x.ParseMapKeysNoRemap false [KeyRemapMode.Visual])
                 | "xunmap" -> noRange (fun () -> x.ParseMapUnmap false [KeyRemapMode.Visual])
                 | "yank" -> x.ParseYank lineRange
-                | "/" -> x.ParseSearch lineRange Path.Forward
-                | "?" -> x.ParseSearch lineRange Path.Backward
+                | "/" -> x.ParseSearch lineRange SearchPath.Forward
+                | "?" -> x.ParseSearch lineRange SearchPath.Backward
                 | "<" -> x.ParseShiftLeft lineRange
                 | ">" -> x.ParseShiftRight lineRange
                 | "&" -> x.ParseSubstituteRepeat lineRange SubstituteFlags.None

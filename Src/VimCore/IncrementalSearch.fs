@@ -19,7 +19,7 @@ type IncrementalSearchData = {
     member x.SearchData = x.SearchResult.SearchData
 
     static member Default = 
-        let searchData = SearchData("", Path.Forward, false)
+        let searchData = SearchData("", SearchPath.Forward, false)
         let searchResult = SearchResult.NotFound (searchData, false)
         {
             SearchResult = searchResult

@@ -12,11 +12,11 @@ namespace Vim.UnitTest
     {
         private void AssertWordSpans(string input, WordKind kind, params string[] expected)
         {
-            var wordsForward = TextUtil.GetWordSpans(kind, Path.Forward, input).Select(x => input.Substring(x.Start, x.Length)).ToList();
+            var wordsForward = TextUtil.GetWordSpans(kind, SearchPath.Forward, input).Select(x => input.Substring(x.Start, x.Length)).ToList();
             Assert.Equal(
                 expected,
                 wordsForward);
-            var wordsBackward = TextUtil.GetWordSpans(kind, Path.Backward, input).Select(x => input.Substring(x.Start, x.Length)).ToList();
+            var wordsBackward = TextUtil.GetWordSpans(kind, SearchPath.Backward, input).Select(x => input.Substring(x.Start, x.Length)).ToList();
             Assert.Equal(
                 expected.Reverse(),
                 wordsBackward);

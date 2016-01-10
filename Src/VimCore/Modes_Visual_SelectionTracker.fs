@@ -59,7 +59,7 @@ type internal SelectionTracker
             // here
             let caretPoint = TextViewUtil.GetCaretPoint _textView
             let visualSelection = VisualSelection.CreateInitial _visualKind caretPoint _localSettings.TabStop _globalSettings.SelectionKind
-            visualSelection.VisualSpan.Select _textView Path.Forward
+            visualSelection.VisualSpan.Select _textView SearchPath.Forward
 
             _anchorPoint <- Some caretPoint
             _extendIntoLineBreak <- false

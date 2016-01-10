@@ -1356,9 +1356,9 @@ namespace Vim.UnitTest
 
         #region IIncrementalSearch
 
-        public static BindResult<SearchResult> DoSearch(this IIncrementalSearch search, string text, Path path = null, bool enter = true)
+        public static BindResult<SearchResult> DoSearch(this IIncrementalSearch search, string text, SearchPath path = null, bool enter = true)
         {
-            path = path ?? Path.Forward;
+            path = path ?? SearchPath.Forward;
             var result = search.Begin(path).Run(text);
             return enter
                 ? result.Run(VimKey.Enter)

@@ -383,7 +383,7 @@ namespace Vim.UnitTest
                 _textBuffer = CreateTextBuffer(lines);
             }
 
-            private SnapshotPoint Find(Path path, UnmatchedTokenKind kind, int position = 0, int count = 1)
+            private SnapshotPoint Find(SearchPath path, UnmatchedTokenKind kind, int position = 0, int count = 1)
             {
                 var point = _textBuffer.GetPoint(position);
                 var found = _matchingTokenUtil.FindUnmatchedToken(path, kind, point, count);
@@ -395,7 +395,7 @@ namespace Vim.UnitTest
             public void BraceForward()
             {
                 Create(" {}}");
-                var point = Find(Path.Forward, UnmatchedTokenKind.CurlyBracket);
+                var point = Find(SearchPath.Forward, UnmatchedTokenKind.CurlyBracket);
                 Assert.Equal(3, point.Position);
             }
 
@@ -403,7 +403,7 @@ namespace Vim.UnitTest
             public void BraceBackward()
             {
                 Create("{{}  ");
-                var point = Find(Path.Backward, UnmatchedTokenKind.CurlyBracket, 4);
+                var point = Find(SearchPath.Backward, UnmatchedTokenKind.CurlyBracket, 4);
                 Assert.Equal(0, point.Position);
             }
         }

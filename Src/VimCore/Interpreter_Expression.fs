@@ -641,7 +641,7 @@ and [<RequireQualifiedAccess>] LineCommand =
     | Set of SetArgument list
 
     /// Process the '/' and '?' commands
-    | Search of LineRangeSpecifier * Path * string
+    | Search of LineRangeSpecifier * SearchPath * string
 
     /// Execute the given shell command
     | ShellCommand of string

@@ -914,7 +914,7 @@ type VimInterpreter
         let pattern = 
             if StringUtil.IsNullOrEmpty pattern then _vimData.LastSearchData.Pattern
             else
-                _vimData.LastSearchData <- SearchData(pattern, Path.Forward)
+                _vimData.LastSearchData <- SearchData(pattern, SearchPath.Forward)
                 pattern
 
         x.RunWithLineRangeOrDefault lineRange DefaultLineRange.EntireBuffer (fun lineRange ->
@@ -977,12 +977,12 @@ type VimInterpreter
     /// Go to the next "count" tab 
     member x.RunGoToNextTab count = 
         let count = x.GetCountOrDefault count
-        _commonOperations.GoToNextTab Path.Forward count
+        _commonOperations.GoToNextTab SearchPath.Forward count
 
     /// Go to the previous "count" tab 
     member x.RunGoToPreviousTab count = 
         let count = x.GetCountOrDefault count
-        _commonOperations.GoToNextTab Path.Backward count
+        _commonOperations.GoToNextTab SearchPath.Backward count
 
     member x.RunHelp () = 
         _statusUtil.OnStatus "For help on VsVim, please visit the Wiki page (https://github.com/jaredpar/VsVim/wiki)"
@@ -1267,7 +1267,7 @@ type VimInterpreter
                         // Now find the first point which is not a space or tab. 
                         let endPoint = 
                             SnapshotSpan(startPoint, lineRange.End)
-                            |> SnapshotSpanUtil.GetPoints Path.Forward
+                            |> SnapshotSpanUtil.GetPoints SearchPath.Forward
                             |> Seq.skipWhile SnapshotPointUtil.IsBlank
                             |> SeqUtil.headOrDefault lineRange.End
                         let span = SnapshotSpan(startPoint, endPoint)
@@ -1281,7 +1281,7 @@ type VimInterpreter
                     else
                         let hasTab = 
                             span 
-                            |> SnapshotSpanUtil.GetPoints Path.Forward
+                            |> SnapshotSpanUtil.GetPoints SearchPath.Forward
                             |> SeqUtil.any (SnapshotPointUtil.IsChar '\t')
                         hasTab)
     

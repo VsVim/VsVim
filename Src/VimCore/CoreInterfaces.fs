@@ -134,7 +134,7 @@ type IWordUtil =
 
     /// Get the SnapshotSpan for Word values from the given point.  If the provided point is 
     /// in the middle of a word the span of the entire word will be returned
-    abstract GetWords : wordKind : WordKind -> path : Path -> point : SnapshotPoint -> SnapshotSpan seq
+    abstract GetWords : wordKind : WordKind -> path : SearchPath -> point : SnapshotPoint -> SnapshotSpan seq
 
     /// Create an ITextStructureNavigator where the extent of words is calculated for
     /// the specified WordKind value
@@ -418,7 +418,7 @@ type PatternData = {
     Pattern : string
 
     /// The direction in which the pattern was searched for
-    Path : Path
+    Path : SearchPath
 }
 
 type PatternDataEventArgs(_patternData : PatternData) =
@@ -505,11 +505,11 @@ type SearchOffsetData =
             index := index.Value + 1
             match StringUtil.CharAtOption index.Value offset with
             | Option.Some '/' -> 
-                let path = Path.Forward
+                let path = SearchPath.Forward
                 let pattern = offset.Substring(index.Value + 1)
                 SearchOffsetData.Search ({ Pattern = pattern; Path = path})
             | Option.Some '?' -> 
-                let path = Path.Backward
+                let path = SearchPath.Backward
                 let pattern = offset.Substring(index.Value + 1)
                 SearchOffsetData.Search ({ Pattern = pattern; Path = path})
             | _ ->
@@ -543,11 +543,11 @@ type SearchData
         _options : SearchOptions
     ) = 
 
-    new (pattern : string, path : Path, isWrap : bool) =
+    new (pattern : string, path : SearchPath, isWrap : bool) =
         let kind = SearchKind.OfPathAndWrap path isWrap
         SearchData(pattern, SearchOffsetData.None, kind, SearchOptions.Default)
 
-    new (pattern : string, path : Path) = 
+    new (pattern : string, path : SearchPath) = 
         let kind = SearchKind.OfPathAndWrap path true
         SearchData(pattern, SearchOffsetData.None, kind, SearchOptions.Default)
 
@@ -974,7 +974,7 @@ type Motion =
     | ArrowRight
 
     /// Implements the f, F, t and T motions
-    | CharSearch of CharSearchKind * Path * char
+    | CharSearch of CharSearchKind * SearchPath * char
 
     /// Get the span of "count" display lines upward.  Display lines can differ when
     /// wrap is enabled
@@ -1074,10 +1074,10 @@ type Motion =
     | MatchingTokenOrDocumentPercent 
 
     /// Search for the next occurrence of the word under the caret
-    | NextWord of Path
+    | NextWord of SearchPath
 
     /// Search for the next partial occurrence of the word under the caret
-    | NextPartialWord of Path
+    | NextPartialWord of SearchPath
 
     /// Count paragraphs backwards
     | ParagraphBackward
@@ -1125,7 +1125,7 @@ type Motion =
     | TagBlock of TagBlockKind
 
     /// The [(, ]), ]}, [{ motions
-    | UnmatchedToken of Path * UnmatchedTokenKind
+    | UnmatchedToken of SearchPath * UnmatchedTokenKind
 
     /// Implement the b/B motion
     | WordBackward of WordKind
@@ -1776,8 +1776,8 @@ type VisualSpan =
 
             let startPoint, endPoint = 
                 match path with
-                | Path.Forward -> startPoint, endPoint 
-                | Path.Backward -> endPoint, startPoint
+                | SearchPath.Forward -> startPoint, endPoint 
+                | SearchPath.Backward -> endPoint, startPoint
 
             // The editor will normalize SnapshotSpan values here which extend into the line break
             // portion of the line to not include the line break.  Must use VirtualSnapshotPoint 
@@ -1908,11 +1908,11 @@ type VisualSpan =
 type VisualSelection =
 
     /// The underlying span and whether or not this is a forward looking span.  
-    | Character of CharacterSpan * Path
+    | Character of CharacterSpan * SearchPath
 
     /// The underlying range, whether or not is forwards or backwards and the int 
     /// is which column in the range the caret should be placed in
-    | Line of SnapshotLineRange * Path * int 
+    | Line of SnapshotLineRange * SearchPath * int 
 
     /// Just keep the BlockSpan and the caret information for the block
     | Block of BlockSpan * BlockCaretLocation
@@ -1921,12 +1921,12 @@ type VisualSelection =
 
     member x.IsCharacterForward =
         match x with
-        | Character (_, path) -> path.IsPathForward
+        | Character (_, path) -> path.IsSearchPathForward
         | _ -> false
 
     member x.IsLineForward = 
         match x with
-        | Line (_, path, _) -> path.IsPathForward
+        | Line (_, path, _) -> path.IsSearchPathForward
         | _ -> false
 
     member x.VisualKind = 
@@ -2002,21 +2002,21 @@ type VisualSelection =
             // The caret is either positioned at the start or the end of the selected
             // SnapshotSpan
             match path with
-            | Path.Forward ->
+            | SearchPath.Forward ->
                 if selectionKind = SelectionKind.Inclusive && characterSpan.LastLine.Length = 0 then
                     // Need to special case the empty last line because there is no character which
                     // isn't inside the line break here.  Just return the start as the caret position
                     characterSpan.LastLine.Start
                 else
                     getAdjustedEnd characterSpan.Span
-            | Path.Backward -> characterSpan.Start
+            | SearchPath.Backward -> characterSpan.Start
 
         | Line (snapshotLineRange, path, column) ->
 
             // The caret is either positioned at the start or the end of the selected range
             // and can be on any column in either
             let line = 
-                if path.IsPathForward then
+                if path.IsSearchPathForward then
                     snapshotLineRange.LastLine
                 else
                     snapshotLineRange.StartLine
@@ -2041,17 +2041,17 @@ type VisualSelection =
             match x with
             | Character (_, path) -> path
             | Line (_, path, _) -> path
-            | Block _ -> Path.Forward
+            | Block _ -> SearchPath.Forward
         x.VisualSpan.Select textView path
 
     /// Create for the given VisualSpan.  Assumes this was a forward created VisualSpan
     static member CreateForward visualSpan = 
         match visualSpan with
         | VisualSpan.Character span -> 
-            VisualSelection.Character (span, Path.Forward)
+            VisualSelection.Character (span, SearchPath.Forward)
         | VisualSpan.Line lineRange ->
             let column = SnapshotPointUtil.GetColumn lineRange.LastLine.End
-            VisualSelection.Line (lineRange, Path.Forward, column)
+            VisualSelection.Line (lineRange, SearchPath.Forward, column)
         | VisualSpan.Block blockSpan ->
             VisualSelection.Block (blockSpan, BlockCaretLocation.BottomRight)
 
@@ -2101,8 +2101,8 @@ type VisualSelection =
                 (abs (anchorLine.LineNumber - caretLine.LineNumber)) + 1
 
             let path = 
-                if anchorSpaces <= caretSpaces then Path.Forward
-                else Path.Backward
+                if anchorSpaces <= caretSpaces then SearchPath.Forward
+                else SearchPath.Backward
 
             let blockSpan = BlockSpan(startPoint, tabStop, spaces, height)
             VisualSpan.Block blockSpan, path
@@ -2118,7 +2118,7 @@ type VisualSelection =
                     let activePoint = SnapshotPointUtil.AddOneOrCurrent anchorPoint
                     caretPoint, activePoint
 
-            let path = Path.Create isForward
+            let path = SearchPath.Create isForward
             VisualSpan.CreateForSelectionPoints visualKind anchorPoint activePoint tabStop, path
 
         let visualSpan, path = 
@@ -2154,9 +2154,9 @@ type VisualSelection =
 
         let path = 
             if textView.Selection.IsReversed then
-                Path.Backward
+                SearchPath.Backward
             else
-                Path.Forward
+                SearchPath.Forward
 
         let caretPoint = TextViewUtil.GetCaretPoint textView
         VisualSelection.Create visualSpan path caretPoint 
@@ -2172,13 +2172,13 @@ type VisualSelection =
                     | SelectionKind.Inclusive -> SnapshotPointUtil.AddOneOrCurrent caretPoint
                     | SelectionKind.Exclusive -> caretPoint
                 CharacterSpan(caretPoint, endPoint)
-            VisualSelection.Character (characterSpan, Path.Forward)
+            VisualSelection.Character (characterSpan, SearchPath.Forward)
         | VisualKind.Line ->
             let lineRange = 
                 let line = SnapshotPointUtil.GetContainingLine caretPoint
                 SnapshotLineRangeUtil.CreateForLine line
             let column = SnapshotPointUtil.GetColumn caretPoint
-            VisualSelection.Line (lineRange, Path.Forward, column)
+            VisualSelection.Line (lineRange, SearchPath.Forward, column)
         | VisualKind.Block ->
             let blockSpan = BlockSpan(caretPoint, tabStop, 1, 1)
             VisualSelection.Block (blockSpan, BlockCaretLocation.BottomRight)
@@ -2457,7 +2457,7 @@ type NormalCommand =
     | GoToLocalDeclaration
 
     /// Go to the next tab in the specified direction
-    | GoToNextTab of Path
+    | GoToNextTab of SearchPath
 
     /// GoTo the ITextView in the specified direction
     | GoToView of Direction
@@ -3443,7 +3443,7 @@ type IIncrementalSearch =
     abstract WordNavigator : ITextStructureNavigator
 
     /// Begin an incremental search in the ITextView
-    abstract Begin : path : Path -> BindData<SearchResult>
+    abstract Begin : path : SearchPath -> BindData<SearchResult>
 
     /// Cancel an incremental search which is currently in progress
     abstract Cancel : unit -> unit
@@ -3755,7 +3755,7 @@ type IVimData =
     /// Motion function used with the last f, F, t or T motion.  The 
     /// first item in the tuple is the forward version and the second item
     /// is the backwards version
-    abstract LastCharSearch : (CharSearchKind * Path * char) option with get, set
+    abstract LastCharSearch : (CharSearchKind * SearchPath * char) option with get, set
 
     /// The last command which was ran 
     abstract LastCommand : StoredCommand option with get, set

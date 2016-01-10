@@ -56,7 +56,7 @@ namespace Vim.UnitTest
         protected void EnterMode(SnapshotSpan span)
         {
             var characterSpan = new CharacterSpan(span);
-            var visualSelection = VisualSelection.NewCharacter(characterSpan, Path.Forward);
+            var visualSelection = VisualSelection.NewCharacter(characterSpan, SearchPath.Forward);
             visualSelection.SelectAndMoveCaret(_textView);
             Assert.False(_context.IsEmpty);
             _context.RunAll();
@@ -1577,7 +1577,7 @@ namespace Vim.UnitTest
                 _vimBuffer.Process('>');
                 var visualSelection = VisualSelection.NewCharacter(
                     new CharacterSpan(_textView.GetLine(0).Start, 2, 1),
-                    Path.Forward);
+                    SearchPath.Forward);
                 Assert.True(_vimTextBuffer.LastVisualSelection.IsSome());
                 Assert.Equal(visualSelection, _vimTextBuffer.LastVisualSelection.Value);
             }
@@ -1732,7 +1732,7 @@ namespace Vim.UnitTest
                 Create("dogs", "cats", "fish");
 
                 var lineRange = _textView.GetLineRange(0, 1);
-                var visualSelection = VisualSelection.NewLine(lineRange, Path.Forward, 1);
+                var visualSelection = VisualSelection.NewLine(lineRange, SearchPath.Forward, 1);
                 _vimBuffer.SwitchMode(ModeKind.VisualLine, ModeArgument.NewInitialVisualSelection(visualSelection, FSharpOption<SnapshotPoint>.None));
                 _context.RunAll();
                 Assert.Equal(visualSelection, VisualSelection.CreateForSelection(_textView, VisualKind.Line, SelectionKind.Inclusive, tabStop: 4));

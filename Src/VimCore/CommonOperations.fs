@@ -29,8 +29,8 @@ module internal CommonUtil =
             let format = 
                 if isOutsidePath then
                     match searchData.Kind.Path with
-                    | Path.Forward -> Resources.Common_SearchHitBottomWithout
-                    | Path.Backward -> Resources.Common_SearchHitTopWithout 
+                    | SearchPath.Forward -> Resources.Common_SearchHitBottomWithout
+                    | SearchPath.Backward -> Resources.Common_SearchHitTopWithout 
                 else
                     Resources.Common_PatternNotFound
 
@@ -754,10 +754,10 @@ type internal CommonOperations
         if tabCount >= 0 && tabIndex >= 0 && tabIndex < tabCount then
             let count = count % tabCount
             match path with
-            | Path.Forward -> 
+            | SearchPath.Forward -> 
                 tabIndex <- tabIndex + count
                 tabIndex <- tabIndex % tabCount
-            | Path.Backward -> 
+            | SearchPath.Backward -> 
                 tabIndex <- tabIndex - count
                 if tabIndex < 0 then
                     tabIndex <- tabIndex + tabCount
@@ -1085,7 +1085,7 @@ type internal CommonOperations
             //
             // A substitute command should update both of them 
             _vimData.LastSubstituteData <- Some { SearchPattern = pattern; Substitute = replace; Flags = flags}
-            _vimData.LastSearchData <- SearchData(pattern, Path.Forward, _globalSettings.WrapScan)
+            _vimData.LastSearchData <- SearchData(pattern, SearchPath.Forward, _globalSettings.WrapScan)
 
     /// Convert the provided whitespace into spaces.  The conversion of 
     /// tabs into spaces will be done based on the TabSize setting

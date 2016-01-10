@@ -1981,7 +1981,7 @@ namespace Vim.UnitTest
                 {
                     Create("");
                     _globalSettings.HighlightSearch = true;
-                    _vimData.LastSearchData = new SearchData("cat", Path.Forward);
+                    _vimData.LastSearchData = new SearchData("cat", SearchPath.Forward);
                     _vimBuffer.Process(":nnoremap <Esc> :nohl<Enter><Esc>", enter: true);
 
                     var ran = false;
@@ -2088,7 +2088,7 @@ namespace Vim.UnitTest
                 Create("dog cat dog");
                 _textView.MoveCaretTo(1);
                 _vimBuffer.LocalSettings.GlobalSettings.WrapScan = false;
-                _vimBuffer.VimData.LastSearchData = new SearchData("dog", Path.Backward);
+                _vimBuffer.VimData.LastSearchData = new SearchData("dog", SearchPath.Backward);
                 _vimBuffer.Process('/');
                 _vimBuffer.Process(VimKey.Enter);
                 Assert.Equal(8, _textView.GetCaretPoint());
@@ -2113,7 +2113,7 @@ namespace Vim.UnitTest
             public void UsedBySubstitute()
             {
                 Create("dog cat dog");
-                _vimBuffer.VimData.LastSearchData = new SearchData("dog", Path.Forward);
+                _vimBuffer.VimData.LastSearchData = new SearchData("dog", SearchPath.Forward);
                 _vimBuffer.Process(":s//cat", enter: true);
                 Assert.Equal("cat cat dog", _textView.GetLine(0).GetText());
             }
@@ -2281,7 +2281,7 @@ namespace Vim.UnitTest
                 Create("the brown dog");
                 var span = new SnapshotSpan(_textView.GetPoint(4), _textView.GetPoint(9));
                 Assert.Equal("brown", span.GetText());
-                var visualSelection = VisualSelection.NewCharacter(new CharacterSpan(span), Path.Backward);
+                var visualSelection = VisualSelection.NewCharacter(new CharacterSpan(span), SearchPath.Backward);
                 _vimTextBuffer.LastVisualSelection = FSharpOption.Create(visualSelection);
                 _vimBuffer.Process("y`>");
                 Assert.Equal("the brown", _vimBuffer.RegisterMap.GetRegister(RegisterName.Unnamed).StringValue);
@@ -6315,13 +6315,13 @@ namespace Vim.UnitTest
             public void RepeatLastCharSearch_ManyTimes()
             {
                 Create("hello world dog");
-                _vimBuffer.VimData.LastCharSearch = FSharpOption.Create(Tuple.Create(CharSearchKind.ToChar, Path.Forward, 'o'));
+                _vimBuffer.VimData.LastCharSearch = FSharpOption.Create(Tuple.Create(CharSearchKind.ToChar, SearchPath.Forward, 'o'));
                 _textView.MoveCaretTo(_textView.GetEndPoint().Subtract(1));
                 _vimBuffer.Process(',');
-                Assert.Equal(Path.Forward, _vimBuffer.VimData.LastCharSearch.Value.Item2);
+                Assert.Equal(SearchPath.Forward, _vimBuffer.VimData.LastCharSearch.Value.Item2);
                 Assert.Equal(13, _textView.GetCaretPoint().Position);
                 _vimBuffer.Process(',');
-                Assert.Equal(Path.Forward, _vimBuffer.VimData.LastCharSearch.Value.Item2);
+                Assert.Equal(SearchPath.Forward, _vimBuffer.VimData.LastCharSearch.Value.Item2);
                 Assert.Equal(7, _textView.GetCaretPoint().Position);
             }
 
@@ -6634,7 +6634,7 @@ namespace Vim.UnitTest
                 Create("cats", "dogs", "fish");
                 var visualSelection = VisualSelection.NewLine(
                     _textView.GetLineRange(0, 1),
-                    Path.Forward,
+                    SearchPath.Forward,
                     1);
                 _vimTextBuffer.LastVisualSelection = FSharpOption.Create(visualSelection);
                 _vimBuffer.Process("gv");

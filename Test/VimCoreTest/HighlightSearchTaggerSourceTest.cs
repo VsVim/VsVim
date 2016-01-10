@@ -113,14 +113,14 @@ namespace Vim.UnitTest
             {
                 Create("");
                 _globalSettings.HighlightSearch = true;
-                _vimData.LastSearchData = new SearchData("cat", Path.Forward);
+                _vimData.LastSearchData = new SearchData("cat", SearchPath.Forward);
             }
 
             [Fact]
             public void Standard()
             {
                 _globalSettings.HighlightSearch = true;
-                _vimData.LastSearchData = new SearchData("cat", Path.Forward);
+                _vimData.LastSearchData = new SearchData("cat", SearchPath.Forward);
                 Assert.True(_asyncTaggerSourceRaw.IsProvidingTags);
             }
 
@@ -198,7 +198,7 @@ namespace Vim.UnitTest
             public ChangedTest()
             {
                 Create("");
-                _vimData.LastSearchData = new SearchData("dog", Path.Forward);
+                _vimData.LastSearchData = new SearchData("dog", SearchPath.Forward);
                 _asyncTaggerSource.Changed += delegate { _raised = true; };
             }
 
@@ -236,7 +236,7 @@ namespace Vim.UnitTest
             [Fact]
             public void DisplayPatternChanged()
             {
-                _vimData.LastSearchData = new SearchData("hello", Path.Forward);
+                _vimData.LastSearchData = new SearchData("hello", SearchPath.Forward);
                 Assert.True(_raised);
             }
 
@@ -272,7 +272,7 @@ namespace Vim.UnitTest
             [Fact]
             public void ResetOneTimeDisabled()
             {
-                _vimData.LastSearchData = new SearchData("cat", Path.Forward);
+                _vimData.LastSearchData = new SearchData("cat", SearchPath.Forward);
                 _globalSettings.HighlightSearch = false;
                 _vimData.SuspendDisplayPattern();
                 _globalSettings.HighlightSearch = true;

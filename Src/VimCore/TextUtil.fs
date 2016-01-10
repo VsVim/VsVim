@@ -65,8 +65,8 @@ module internal TextUtil =
 
         // Now return the actual sequence 
         match path with
-        | Path.Forward -> wordsForward
-        | Path.Backward -> wordsForward |> List.ofSeq |> List.rev |> Seq.ofList
+        | SearchPath.Forward -> wordsForward
+        | SearchPath.Backward -> wordsForward |> List.ofSeq |> List.rev |> Seq.ofList
 
 
     let rec private GetNormalWordPredicate input index dir = 
