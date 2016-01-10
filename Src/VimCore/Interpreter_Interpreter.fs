@@ -7,6 +7,7 @@ open Vim.StringBuilderExtensions
 open Vim.VimCoreExtensions
 open System.Collections.Generic
 open System.ComponentModel.Composition
+open System.IO
 
 [<RequireQualifiedAccess>]
 type DefaultLineRange =
@@ -475,11 +476,11 @@ type VimInterpreter
             _statusUtil.OnStatus x.CurrentDirectory
         | Some directoryPath ->
             let directoryPath = 
-                if not (System.IO.Path.IsPathRooted directoryPath) then
-                    System.IO.Path.GetFullPath(System.IO.Path.Combine(_vimData.CurrentDirectory, directoryPath))
+                if not (Path.IsPathRooted directoryPath) then
+                    Path.GetFullPath(Path.Combine(_vimData.CurrentDirectory, directoryPath))
                 else directoryPath
 
-            if not (System.IO.Directory.Exists directoryPath) then
+            if not (Directory.Exists directoryPath) then
                 // Not a fan of this function but we need to emulate the Vim behavior here
                 _statusUtil.OnError (Resources.Interpreter_CantFindDirectory directoryPath)
             else
@@ -496,11 +497,11 @@ type VimInterpreter
             _statusUtil.OnStatus x.CurrentDirectory
         | Some directoryPath ->
             let directoryPath = 
-                if not (System.IO.Path.IsPathRooted directoryPath) then
-                    System.IO.Path.GetFullPath(System.IO.Path.Combine(_vimData.CurrentDirectory, directoryPath))
+                if not (Path.IsPathRooted directoryPath) then
+                    Path.GetFullPath(Path.Combine(_vimData.CurrentDirectory, directoryPath))
                 else directoryPath
 
-            if not (System.IO.Directory.Exists directoryPath) then
+            if not (Directory.Exists directoryPath) then
                 // Not a fan of this function but we need to emulate the Vim behavior here
                 _statusUtil.OnError (Resources.Interpreter_CantFindDirectory directoryPath)
             else

@@ -3,6 +3,7 @@
 namespace Vim
 open Microsoft.VisualStudio.Text
 open System.Collections.ObjectModel
+open System.IO
 open System.Text
 open System.Text.RegularExpressions
 
@@ -878,7 +879,7 @@ module internal SystemUtil =
             else
                 path2
 
-        System.IO.Path.Combine(path1, path2)
+        Path.Combine(path1, path2)
 
     /// Get the value of $HOME.  There is no explicit documentation that I could find 
     /// for how this value is calculated.  However experimentation shows that gVim 7.1
@@ -902,9 +903,9 @@ module internal SystemUtil =
                 true
             else
                 let separator = text.Chars(1)
-                if separator = System.IO.Path.DirectorySeparatorChar then
+                if separator = Path.DirectorySeparatorChar then
                     true
-                elif separator = System.IO.Path.AltDirectorySeparatorChar then
+                elif separator = Path.AltDirectorySeparatorChar then
                     true
                 else
                     false
@@ -956,7 +957,7 @@ module internal SystemUtil =
             Some text
 
     let EnsureRooted currentDirectory text = 
-        if System.IO.Path.IsPathRooted text || not (System.IO.Path.IsPathRooted currentDirectory) then
+        if Path.IsPathRooted text || not (Path.IsPathRooted currentDirectory) then
             text
         else
             CombinePath currentDirectory text
@@ -968,7 +969,7 @@ module internal SystemUtil =
     let ResolveVimPath currentDirectory text = 
         match text with
         | "." -> currentDirectory
-        | ".." -> System.IO.Path.GetPathRoot currentDirectory
+        | ".." -> Path.GetPathRoot currentDirectory
         | _ -> 
             let text = ResolvePath text
             EnsureRooted currentDirectory text

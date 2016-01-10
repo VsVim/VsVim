@@ -1,17 +1,16 @@
-﻿using System;
-using System.Runtime.Serialization;
-using System.Runtime.Serialization.Json;
-using Microsoft.FSharp.Collections;
+﻿using Microsoft.FSharp.Collections;
 using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text.Editor;
 using Moq;
-using Xunit;
-using Vim.Extensions;
-using Vim.UnitTest.Mock;
+using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Runtime.Serialization;
+using System.Runtime.Serialization.Json;
+using Vim.Extensions;
 using Vim.Interpreter;
-using MemoryStream = System.IO.MemoryStream;
-using Stream = System.IO.Stream;
+using Vim.UnitTest.Mock;
+using Xunit;
 
 namespace Vim.UnitTest
 {

@@ -1,7 +1,7 @@
 ﻿using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using System.Windows.Input;
-using IOPath = System.IO.Path;
+using System.IO;
 
 namespace Vim.UI.Wpf.Implementation.Directory
 {
@@ -29,7 +29,7 @@ namespace Vim.UI.Wpf.Implementation.Directory
 
             var line = _textView.Caret.Position.BufferPosition.GetContainingLine();
             var name = line.GetText().TrimEnd('/');
-            var filePath = IOPath.Combine(_directoryPath, name);
+            var filePath = Path.Combine(_directoryPath, name);
             _vimHost.LoadFileIntoExistingWindow(filePath, _textView);
             args.Handled = true;
         }

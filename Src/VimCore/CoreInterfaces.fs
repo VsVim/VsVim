@@ -8,6 +8,7 @@ open Microsoft.VisualStudio.Text.Operations
 open Microsoft.VisualStudio.Text.Outlining
 open Microsoft.VisualStudio.Utilities
 open System.Diagnostics
+open System.IO
 open System.Runtime.CompilerServices
 open System.Runtime.InteropServices
 open System.Collections.Generic
@@ -120,9 +121,9 @@ type IFileSystem =
     /// Read the contents of the directory 
     abstract ReadDirectoryContents : directoryPath : string -> string[] option
 
-    abstract Read : filePath : string -> System.IO.Stream option
+    abstract Read : filePath : string -> Stream option
 
-    abstract Write : filePath : string -> stream : System.IO.Stream -> bool
+    abstract Write : filePath : string -> stream : Stream -> bool
 
 /// Utility function for searching for Word values.  This is a MEF importable
 /// component

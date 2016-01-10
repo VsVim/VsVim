@@ -5,7 +5,6 @@ using Moq;
 using Xunit;
 using Vim.Extensions;
 using Xunit.Extensions;
-using Path = System.IO.Path;
 using Microsoft.FSharp.Core;
 using Vim.UnitTest.Mock;
 

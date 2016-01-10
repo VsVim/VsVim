@@ -9,6 +9,7 @@ open Microsoft.VisualStudio.Text.Classification
 open System
 open System.ComponentModel.Composition
 open System.Collections.Generic
+open System.IO
 open System.Runtime.InteropServices
 open System.Runtime.Serialization
 open System.Runtime.Serialization.Json
@@ -392,7 +393,7 @@ type internal Vim
             | [] -> None
             | h::_ -> 
                 let name = _vimHost.GetName h.TextBuffer 
-                let name = System.IO.Path.GetFileName(name)
+                let name = Path.GetFileName(name)
                 Some name
         RegisterMap(_vimData, _clipboardDevice, currentFileNameFunc) :> IRegisterMap
 
@@ -734,10 +735,10 @@ type internal Vim
 
     member x.GetSessionDataDirectory() =
         let filePath = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData)
-        System.IO.Path.Combine(filePath, "VsVim")
+        Path.Combine(filePath, "VsVim")
 
     member x.GetSessionDataFilePath() =
-        System.IO.Path.Combine(x.GetSessionDataDirectory(), "vimdata.json")
+        Path.Combine(x.GetSessionDataDirectory(), "vimdata.json")
 
     member x.ReadSessionData filePath =
         let filePath=  x.GetSessionDataFilePath()
@@ -753,7 +754,7 @@ type internal Vim
 
     member x.WriteSessionData (sessionData : SessionData) filePath = 
         let serializer = new DataContractJsonSerializer(typeof<SessionData>)
-        use stream = new System.IO.MemoryStream()
+        use stream = new MemoryStream()
         try
             serializer.WriteObject(stream, sessionData)
             stream.Position <- 0L

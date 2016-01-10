@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.IO;
 using System.Text;
 using EditorUtils;
 using EnvDTE;
@@ -87,7 +88,7 @@ namespace Vim.VisualStudio.UnitTest
                 SetCore(collectionPath, propertyName, value);
             }
 
-            public override void SetMemoryStream(string collectionPath, string propertyName, System.IO.MemoryStream value)
+            public override void SetMemoryStream(string collectionPath, string propertyName, MemoryStream value)
             {
                 SetCore(collectionPath, propertyName, value);
             }
@@ -147,9 +148,9 @@ namespace Vim.VisualStudio.UnitTest
                 throw new NotImplementedException();
             }
 
-            public override System.IO.MemoryStream GetMemoryStream(string collectionPath, string propertyName)
+            public override MemoryStream GetMemoryStream(string collectionPath, string propertyName)
             {
-                return GetCore<System.IO.MemoryStream>(collectionPath, propertyName);
+                return GetCore<MemoryStream>(collectionPath, propertyName);
             }
 
             public override int GetPropertyCount(string collectionPath)

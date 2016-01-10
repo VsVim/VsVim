@@ -58,7 +58,7 @@ namespace Vim.VisualStudio.Implementation.UpgradeNotification
             RemoveToastWithKey(_errorToastKey);
             try
             {
-                var fileName = System.IO.Path.GetTempFileName();
+                var fileName = Path.GetTempFileName();
                 File.WriteAllLines(fileName, errors);
                 _vsAdapter.OpenFile(fileName);
             }

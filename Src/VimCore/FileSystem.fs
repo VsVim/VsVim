@@ -132,7 +132,7 @@ type internal FileSystem() =
         // http://blogs.msdn.com/b/jaredpar/archive/2009/12/10/the-file-system-is-unpredictable.aspx 
         if System.String.IsNullOrEmpty path then 
             None
-        elif System.IO.File.Exists path then 
+        elif File.Exists path then 
 
             match x.ReadAllLinesWithEncoding path with
             | None -> None
