@@ -2,7 +2,7 @@
 configuration: Debug
 
 branches:
-  -only:
+  only:
     master
 
 install: 
