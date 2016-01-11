@@ -5,12 +5,12 @@ branches:
   only:
     - master
 
-install: 
-  - ps: (new-object Net.WebClient).DownloadString("https://raw.github.com/madskristensen/ExtensionScripts/master/AppVeyor/vsix.ps1") | iex
+#install: 
+#- ps: (new-object Net.WebClient).DownloadString("https://raw.github.com/madskristensen/ExtensionScripts/master/AppVeyor/vsix.ps1") | iex
 
-before_build: 
+#before_build: 
   # Updates the version number in the .vsixmanifest and updates the AppVeyor build number to match
-  - ps: Vsix-IncrementVsixVersion | Vsix-UpdateBuildVersion
+  #- ps: Vsix-IncrementVsixVersion | Vsix-UpdateBuildVersion
 
 build:
   project: VimAll.sln
@@ -24,6 +24,6 @@ test_script:
   - Tools\xunit.console.clr4.x86.exe Test\VimWpfTest\bin\Debug\Vim.UI.Wpf.UnitTest.dll /silent /noshadow
   - Tools\xunit.console.clr4.x86.exe Test\VsVimSharedTest\bin\Debug\Vim.VisualStudio.Shared.UnitTest.dll /silent /noshadow
 
-after_test:
+#after_test:
   # Pushes the compiled vsix to artifacts and publishes it to vsixgallery.com
-  - ps: Vsix-PushArtifacts | Vsix-PublishToGallery
+  #- ps: Vsix-PushArtifacts | Vsix-PublishToGallery
