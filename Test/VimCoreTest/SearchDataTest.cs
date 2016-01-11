@@ -22,27 +22,27 @@ namespace Vim.UnitTest
             public void Pattern()
             {
                 Run(EqualityUnit
-                    .Create(new SearchData("world", Path.Forward, true))
-                    .WithEqualValues(new SearchData("world", Path.Forward, true))
-                    .WithNotEqualValues(new SearchData("hello", Path.Forward, true)));
+                    .Create(new SearchData("world", SearchPath.Forward, true))
+                    .WithEqualValues(new SearchData("world", SearchPath.Forward, true))
+                    .WithNotEqualValues(new SearchData("hello", SearchPath.Forward, true)));
             }
 
             [Fact]
             public void Paths()
             {
                 Run(EqualityUnit
-                    .Create(new SearchData("world", Path.Forward, true))
-                    .WithEqualValues(new SearchData("world", Path.Forward, true))
-                    .WithNotEqualValues(new SearchData("world", Path.Backward, true)));
+                    .Create(new SearchData("world", SearchPath.Forward, true))
+                    .WithEqualValues(new SearchData("world", SearchPath.Forward, true))
+                    .WithNotEqualValues(new SearchData("world", SearchPath.Backward, true)));
             }
 
             [Fact]
             public void Wrap()
             {
                 Run(EqualityUnit
-                    .Create(new SearchData("world", Path.Forward, true))
-                    .WithEqualValues(new SearchData("world", Path.Forward, true))
-                    .WithNotEqualValues(new SearchData("world", Path.Forward, false)));
+                    .Create(new SearchData("world", SearchPath.Forward, true))
+                    .WithEqualValues(new SearchData("world", SearchPath.Forward, true))
+                    .WithNotEqualValues(new SearchData("world", SearchPath.Forward, false)));
             }
         }
 

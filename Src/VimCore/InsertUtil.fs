@@ -758,7 +758,7 @@ type internal InsertUtil
                 let tabBoundaryPoint = _operations.GetPointForSpaces x.CaretLine tabBoundarySpaces
                 let allBlank = 
                     SnapshotSpan(tabBoundaryPoint, x.CaretPoint)
-                    |> SnapshotSpanUtil.GetPoints Path.Forward 
+                    |> SnapshotSpanUtil.GetPoints SearchPath.Forward 
                     |> Seq.forall SnapshotPointUtil.IsBlank
                 if allBlank then
                     BackspaceCommand.Characters (x.CaretPoint.Position - tabBoundaryPoint.Position)

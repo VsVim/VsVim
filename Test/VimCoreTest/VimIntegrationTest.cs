@@ -5,7 +5,6 @@ using Moq;
 using Xunit;
 using Vim.Extensions;
 using Xunit.Extensions;
-using Path = System.IO.Path;
 using Microsoft.FSharp.Core;
 using Vim.UnitTest.Mock;
 
@@ -314,7 +313,7 @@ autocmd BufEnter *.html set ts=12
             public DisplayPatternTest()
             {
                 Vim.GlobalSettings.HighlightSearch = true;
-                VimData.LastSearchData = new SearchData("cat", Path.Forward);
+                VimData.LastSearchData = new SearchData("cat", SearchPath.Forward);
                 VimData.DisplayPatternChanged += delegate { _didRun = true; };
             }
 

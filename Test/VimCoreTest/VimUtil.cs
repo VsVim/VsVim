@@ -212,9 +212,9 @@ namespace Vim.UnitTest
 
         internal static PatternData CreatePatternData(
             string pattern,
-            Path path = null)
+            SearchPath path = null)
         {
-            path = path ?? Path.Forward;
+            path = path ?? SearchPath.Forward;
             return new PatternData(pattern, path);
         }
 

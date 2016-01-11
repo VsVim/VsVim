@@ -44,7 +44,7 @@ namespace Vim.UnitTest
 
         private void ProcessWithEnter(string value)
         {
-            var beginData = _search.Begin(Path.Forward);
+            var beginData = _search.Begin(SearchPath.Forward);
             var result = string.IsNullOrEmpty(value)
                 ? beginData.Run(VimKey.Enter)
                 : beginData.Run(value).Run(VimKey.Enter);
@@ -61,7 +61,7 @@ namespace Vim.UnitTest
             {
                 Create("foo bar");
                 var data = new SearchData("b", SearchOffsetData.None, SearchKind.ForwardWithWrap, s_options);
-                Assert.True(_search.Begin(Path.Forward).Run("b").IsNeedMoreInput);
+                Assert.True(_search.Begin(SearchPath.Forward).Run("b").IsNeedMoreInput);
             }
 
             /// <summary>
@@ -71,7 +71,7 @@ namespace Vim.UnitTest
             public void EnterShouldComplete()
             {
                 Create("foo bar");
-                Assert.True(_search.Begin(Path.Forward).Run("f").Run(VimKey.Enter).IsComplete);
+                Assert.True(_search.Begin(SearchPath.Forward).Run("f").Run(VimKey.Enter).IsComplete);
                 _factory.Verify();
                 Assert.Equal("f", _vimData.LastSearchData.Pattern);
             }
@@ -83,7 +83,7 @@ namespace Vim.UnitTest
             public void EscapeShouldCancel()
             {
                 Create("foo bar");
-                Assert.True(_search.Begin(Path.Forward).Run(VimKey.Escape).IsCancelled);
+                Assert.True(_search.Begin(SearchPath.Forward).Run(VimKey.Escape).IsCancelled);
             }
 
             /// <summary>
@@ -136,7 +136,7 @@ namespace Vim.UnitTest
                         didRun = true;
                         Assert.True(args.SearchResult.IsNotFound);
                     };
-                _search.Begin(Path.Forward);
+                _search.Begin(SearchPath.Forward);
                 Assert.True(didRun);
             }
 
@@ -149,7 +149,7 @@ namespace Vim.UnitTest
             {
                 Create("foo bar");
                 var didRun = false;
-                var bind = _search.Begin(Path.Forward);
+                var bind = _search.Begin(SearchPath.Forward);
                 _search.CurrentSearchUpdated +=
                     (unused, args) =>
                     {
@@ -176,14 +176,14 @@ namespace Vim.UnitTest
 
                 ProcessWithEnter("foo");
                 Assert.True(didRun);
-                Assert.Equal(new SearchData("foo", Path.Forward), _vimData.LastSearchData);
+                Assert.Equal(new SearchData("foo", SearchPath.Forward), _vimData.LastSearchData);
             }
 
             [Fact]
             public void CurrentSearch1()
             {
                 Create("foo bar");
-                _search.Begin(Path.Forward).Run("B");
+                _search.Begin(SearchPath.Forward).Run("B");
                 Assert.Equal("B", _search.CurrentSearchData.Pattern);
             }
 
@@ -191,7 +191,7 @@ namespace Vim.UnitTest
             public void CurrentSearch3()
             {
                 Create("foo bar");
-                _search.Begin(Path.Forward).Run("ab");
+                _search.Begin(SearchPath.Forward).Run("ab");
                 Assert.Equal("ab", _search.CurrentSearchData.Pattern);
             }
 
@@ -199,7 +199,7 @@ namespace Vim.UnitTest
             public void InSearch1()
             {
                 Create("foo bar");
-                _search.Begin(Path.Forward);
+                _search.Begin(SearchPath.Forward);
                 Assert.True(_search.InSearch);
             }
 
@@ -219,7 +219,7 @@ namespace Vim.UnitTest
             public void InSearch3()
             {
                 Create("foo bar");
-                _search.Begin(Path.Forward).Run(VimKey.Escape);
+                _search.Begin(SearchPath.Forward).Run(VimKey.Escape);
                 Assert.False(_search.InSearch);
             }
 
@@ -230,7 +230,7 @@ namespace Vim.UnitTest
             public void Backspace_NoText()
             {
                 Create("foo bar");
-                var result = _search.Begin(Path.Forward).Run(VimKey.Back);
+                var result = _search.Begin(SearchPath.Forward).Run(VimKey.Back);
                 Assert.True(result.IsCancelled);
             }
 
@@ -241,7 +241,7 @@ namespace Vim.UnitTest
             public void Backspace_WithText()
             {
                 Create("foo bar");
-                var result = _search.Begin(Path.Forward).Run("b").Run(VimKey.Back);
+                var result = _search.Begin(SearchPath.Forward).Run("b").Run(VimKey.Back);
                 Assert.True(result.IsNeedMoreInput);
             }
 
@@ -254,7 +254,7 @@ namespace Vim.UnitTest
             {
                 Create("foo bar");
                 _globalSettings.WrapScan = false;
-                var result = _search.Begin(Path.Forward).Run("f").Run(VimKey.Enter).AsComplete().Item;
+                var result = _search.Begin(SearchPath.Forward).Run("f").Run(VimKey.Enter).AsComplete().Item;
                 Assert.True(result.IsNotFound);
                 Assert.True(result.AsNotFound().Item2);
             }
@@ -269,7 +269,7 @@ namespace Vim.UnitTest
                 Create("cat bar");
                 _globalSettings.WrapScan = false;
                 _textView.MoveCaretTo(2);
-                var result = _search.Begin(Path.Backward).Run("t").Run(VimKey.Enter).AsComplete().Item;
+                var result = _search.Begin(SearchPath.Backward).Run("t").Run(VimKey.Enter).AsComplete().Item;
                 Assert.True(result.IsNotFound);
             }
         }
@@ -327,7 +327,7 @@ namespace Vim.UnitTest
             {
                 Create("cat bear");
                 _vimData.SearchHistory = (new[] { "a", "b" }).ToHistoryList();
-                _search.Begin(Path.Forward).Run(VimKey.Up);
+                _search.Begin(SearchPath.Forward).Run(VimKey.Up);
                 Assert.Equal("a", _search.CurrentSearchData.Pattern);
             }
 
@@ -339,7 +339,7 @@ namespace Vim.UnitTest
             {
                 Create("dog cat");
                 _vimData.SearchHistory = (new[] { "a", "b" }).ToHistoryList();
-                _search.Begin(Path.Forward).Run(VimKey.Up).Run(VimKey.Up);
+                _search.Begin(SearchPath.Forward).Run(VimKey.Up).Run(VimKey.Up);
                 Assert.Equal("b", _search.CurrentSearchData.Pattern);
             }
 
@@ -352,7 +352,7 @@ namespace Vim.UnitTest
             {
                 Create("dog cat");
                 _vimData.SearchHistory = (new[] { "a", "b" }).ToHistoryList();
-                _search.Begin(Path.Forward).Run(VimKey.Up).Run(VimKey.Down);
+                _search.Begin(SearchPath.Forward).Run(VimKey.Up).Run(VimKey.Down);
                 Assert.Equal("", _search.CurrentSearchData.Pattern);
             }
 
@@ -364,7 +364,7 @@ namespace Vim.UnitTest
             {
                 Create("dog cat");
                 _vimData.SearchHistory = (new[] { "a", "b" }).ToHistoryList();
-                _search.Begin(Path.Forward).Run(VimKey.Up, VimKey.Up, VimKey.Down);
+                _search.Begin(SearchPath.Forward).Run(VimKey.Up, VimKey.Up, VimKey.Down);
                 Assert.Equal("a", _search.CurrentSearchData.Pattern);
             }
 
@@ -376,7 +376,7 @@ namespace Vim.UnitTest
             {
                 Create("dog cat");
                 _vimData.SearchHistory = (new[] { "a", "b" }).ToHistoryList();
-                _search.Begin(Path.Forward).Run(VimKey.Down);
+                _search.Begin(SearchPath.Forward).Run(VimKey.Down);
                 Assert.Equal(1, _vimHost.BeepCount);
             }
 

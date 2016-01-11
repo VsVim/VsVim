@@ -151,7 +151,7 @@ namespace Vim.UnitTest
         {
             Create("foo", "bar");
             var point = new SnapshotPoint(_snapshot, 0);
-            var agg = SnapshotPointUtil.GetLines(point, Path.Forward).Select(x => x.GetText()).Aggregate((x, y) => x + y);
+            var agg = SnapshotPointUtil.GetLines(point, SearchPath.Forward).Select(x => x.GetText()).Aggregate((x, y) => x + y);
             Assert.Equal("foobar", agg);
         }
 
@@ -163,7 +163,7 @@ namespace Vim.UnitTest
         {
             Create("foo", "bar", "baz");
             var point = new SnapshotPoint(_snapshot, 6);
-            var agg = SnapshotPointUtil.GetLines(point, Path.Forward)
+            var agg = SnapshotPointUtil.GetLines(point, SearchPath.Forward)
                 .Select(x => x.GetText())
                 .Aggregate((x, y) => x + y);
             Assert.Equal("barbaz", agg);
@@ -174,7 +174,7 @@ namespace Vim.UnitTest
         {
             Create("foo bar", "baz");
             var line = _snapshot.GetLineFromLineNumber(1);
-            var list = SnapshotPointUtil.GetLines(line.Start.Subtract(1), Path.Backward);
+            var list = SnapshotPointUtil.GetLines(line.Start.Subtract(1), SearchPath.Backward);
             Assert.Equal(1, list.Count());
         }
 
@@ -183,7 +183,7 @@ namespace Vim.UnitTest
         {
             Create("abcde".Select(x => x.ToString()).ToArray());
             var line = _snapshot.GetLineFromLineNumber(2);
-            var msg = SnapshotPointUtil.GetLines(line.Start, Path.Backward).Select(x => x.GetText()).Aggregate((x, y) => x + y);
+            var msg = SnapshotPointUtil.GetLines(line.Start, SearchPath.Backward).Select(x => x.GetText()).Aggregate((x, y) => x + y);
             Assert.Equal("cba", msg);
         }
 
@@ -192,7 +192,7 @@ namespace Vim.UnitTest
         {
             Create("abcde".Select(x => x.ToString()).ToArray());
             var line = _snapshot.GetLineFromLineNumber(2);
-            var msg = SnapshotPointUtil.GetLines(line.Start, Path.Forward).Select(x => x.GetText()).Aggregate((x, y) => x + y);
+            var msg = SnapshotPointUtil.GetLines(line.Start, SearchPath.Forward).Select(x => x.GetText()).Aggregate((x, y) => x + y);
             Assert.Equal("cde", msg);
         }
 
@@ -204,7 +204,7 @@ namespace Vim.UnitTest
         {
             Create("foo");
             var line = _snapshot.GetLineFromLineNumber(0);
-            var list = SnapshotPointUtil.GetSpans(Path.Forward, line.End);
+            var list = SnapshotPointUtil.GetSpans(SearchPath.Forward, line.End);
             Assert.Equal(0, list.Count());
         }
 
@@ -216,7 +216,7 @@ namespace Vim.UnitTest
         {
             Create("foo");
             var line = _snapshot.GetLineFromLineNumber(0);
-            var list = SnapshotPointUtil.GetSpans(Path.Backward, line.Start + 2);
+            var list = SnapshotPointUtil.GetSpans(SearchPath.Backward, line.Start + 2);
             Assert.Equal(1, list.Count());
         }
 
@@ -228,7 +228,7 @@ namespace Vim.UnitTest
         {
             Create("foo", "bar", "baz");
             var line = _snapshot.GetLineFromLineNumber(1);
-            var list = SnapshotPointUtil.GetSpans(Path.Forward, line.Start + 1);
+            var list = SnapshotPointUtil.GetSpans(SearchPath.Forward, line.Start + 1);
             Assert.Equal(2, list.Count());
         }
 
@@ -240,7 +240,7 @@ namespace Vim.UnitTest
         {
             Create("foo bar", "baz");
             var line = _snapshot.GetLineFromLineNumber(1);
-            var list = SnapshotPointUtil.GetSpans(Path.Backward, line.Start).Select(x => x.GetText()).ToList();
+            var list = SnapshotPointUtil.GetSpans(SearchPath.Backward, line.Start).Select(x => x.GetText()).ToList();
             Assert.Equal(new[] { "foo bar" }, list);
         }
 
@@ -249,7 +249,7 @@ namespace Vim.UnitTest
         {
             Create("foo bar", "baz");
             var line = _snapshot.GetLineFromLineNumber(1);
-            var list = SnapshotPointUtil.GetSpans(Path.Backward, line.Start.Subtract(1));
+            var list = SnapshotPointUtil.GetSpans(SearchPath.Backward, line.Start.Subtract(1));
             Assert.Equal(1, list.Count());
         }
 
@@ -287,7 +287,7 @@ namespace Vim.UnitTest
         {
             Create("foo", "bar");
             var start = SnapshotUtil.GetStartPoint(_textBuffer.CurrentSnapshot);
-            foreach (var cur in SnapshotPointUtil.GetPoints(Path.Forward, start))
+            foreach (var cur in SnapshotPointUtil.GetPoints(SearchPath.Forward, start))
             {
                 var notUsed = cur.GetChar();
             }
@@ -298,7 +298,7 @@ namespace Vim.UnitTest
         {
             Create("foo bar");
             var start = SnapshotUtil.GetStartPoint(_textBuffer.CurrentSnapshot).Add(1);
-            var first = SnapshotPointUtil.GetPoints(Path.Forward, start).First();
+            var first = SnapshotPointUtil.GetPoints(SearchPath.Forward, start).First();
             Assert.Equal('o', first.GetChar());
         }
 
@@ -307,7 +307,7 @@ namespace Vim.UnitTest
         {
             Create("foo bar");
             var start = SnapshotUtil.GetStartPoint(_textBuffer.CurrentSnapshot);
-            var points = SnapshotPointUtil.GetPoints(Path.Forward, start);
+            var points = SnapshotPointUtil.GetPoints(SearchPath.Forward, start);
             var str = points.Select(x => x.GetChar().ToString()).Aggregate((x, y) => x + y);
             Assert.Equal("foo bar", str);
         }
@@ -320,7 +320,7 @@ namespace Vim.UnitTest
         {
             Create("foo", "bar");
             var start = SnapshotUtil.GetStartPoint(_textBuffer.CurrentSnapshot);
-            foreach (var cur in SnapshotPointUtil.GetPoints(Path.Forward, start))
+            foreach (var cur in SnapshotPointUtil.GetPoints(SearchPath.Forward, start))
             {
                 var notUsed = cur.GetChar();
             }
@@ -331,7 +331,7 @@ namespace Vim.UnitTest
         {
             Create("foo bar");
             var start = SnapshotUtil.GetStartPoint(_textBuffer.CurrentSnapshot).Add(1);
-            var first = SnapshotPointUtil.GetPoints(Path.Backward, start).First();
+            var first = SnapshotPointUtil.GetPoints(SearchPath.Backward, start).First();
             Assert.Equal('o', first.GetChar());
         }
 
@@ -340,7 +340,7 @@ namespace Vim.UnitTest
         {
             Create("foo bar");
             var start = _textBuffer.GetEndPoint();
-            var points = SnapshotPointUtil.GetPoints(Path.Backward, start);
+            var points = SnapshotPointUtil.GetPoints(SearchPath.Backward, start);
             var str = points.Select(x => x.GetChar().ToString()).Aggregate((x, y) => x + y);
             Assert.Equal("rab oof", str);
         }
@@ -350,7 +350,7 @@ namespace Vim.UnitTest
         {
             Create("foo bar");
             var start = _textBuffer.CurrentSnapshot.GetLineRange(0).End;
-            var points = SnapshotPointUtil.GetPoints(Path.Backward, start);
+            var points = SnapshotPointUtil.GetPoints(SearchPath.Backward, start);
             var str = points.Select(x => x.GetChar().ToString()).Aggregate((x, y) => x + y);
             Assert.Equal("rab oof", str);
         }

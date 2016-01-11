@@ -132,7 +132,7 @@ type internal FileSystem() =
         // http://blogs.msdn.com/b/jaredpar/archive/2009/12/10/the-file-system-is-unpredictable.aspx 
         if System.String.IsNullOrEmpty path then 
             None
-        elif System.IO.File.Exists path then 
+        elif File.Exists path then 
 
             match x.ReadAllLinesWithEncoding path with
             | None -> None
@@ -160,9 +160,37 @@ type internal FileSystem() =
 
         Seq.toArray all
 
+    member x.Read filePath = 
+        try
+            // The Exists check is just to avoid the first chance exception here.
+            if File.Exists filePath then
+                File.Open(filePath, FileMode.Open) :> Stream |> Some
+            else
+                None
+        with 
+            _ -> None
+
+    member x.Write filePath (stream : Stream) = 
+        try
+            use fileStream = File.Open(filePath, FileMode.Create, FileAccess.Write)
+            stream.CopyTo(fileStream)
+            true
+        with
+            _ -> false
+
+    member x.CreateDirectory path =
+        try
+            Directory.CreateDirectory path |> ignore
+            true
+        with
+            _ -> false
+
     interface IFileSystem with
+        member x.CreateDirectory path = x.CreateDirectory path
         member x.GetVimRcDirectories() = x.GetVimRcDirectories()
         member x.GetVimRcFilePaths() = x.GetVimRcFilePaths()
         member x.ReadAllLines path = x.ReadAllLines path
         member x.ReadDirectoryContents directoryPath = x.ReadDirectoryContents directoryPath
+        member x.Read filePath = x.Read filePath
+        member x.Write filePath stream = x.Write filePath stream
 

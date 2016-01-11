@@ -28,7 +28,7 @@ namespace Vim.UnitTest
         public void GetPoints1()
         {
             Create("foo");
-            var points = SnapshotLineUtil.GetPoints(Path.Forward, _buffer.CurrentSnapshot.GetLineFromLineNumber(0));
+            var points = SnapshotLineUtil.GetPoints(SearchPath.Forward, _buffer.CurrentSnapshot.GetLineFromLineNumber(0));
             var text = points.Select(x => x.GetChar().ToString()).Aggregate((x, y) => x + y);
             Assert.Equal("foo", text);
         }

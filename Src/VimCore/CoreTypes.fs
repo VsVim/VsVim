@@ -370,27 +370,27 @@ type Direction =
 [<RequireQualifiedAccess>]
 [<StructuralEquality>]
 [<NoComparison>]
-type Path =
+type SearchPath =
     | Forward
     | Backward
 
     with
 
-    member x.IsPathForward = 
+    member x.IsSearchPathForward = 
         match x with
-        | Path.Forward -> true
-        | Path.Backward -> false
+        | SearchPath.Forward -> true
+        | SearchPath.Backward -> false
 
-    member x.IsPathBackward = not x.IsPathForward
+    member x.IsSearchPathBackward = not x.IsSearchPathForward
 
     static member Reverse path = 
         match path with
-        | Path.Forward -> Path.Backward
-        | Path.Backward -> Path.Forward
+        | SearchPath.Forward -> SearchPath.Backward
+        | SearchPath.Backward -> SearchPath.Forward
 
     static member Create isForward = 
-        if isForward then Path.Forward 
-        else Path.Backward
+        if isForward then SearchPath.Forward 
+        else SearchPath.Backward
 
 [<RequireQualifiedAccess>]
 [<StructuralEquality>]
@@ -420,10 +420,10 @@ type SearchKind =
     /// Get the Path value for this SearchKind
     member x.Path = 
         match x with 
-        | SearchKind.Forward -> Path.Forward
-        | SearchKind.ForwardWithWrap -> Path.Forward
-        | SearchKind.Backward -> Path.Backward
-        | SearchKind.BackwardWithWrap -> Path.Backward
+        | SearchKind.Forward -> SearchPath.Forward
+        | SearchKind.ForwardWithWrap -> SearchPath.Forward
+        | SearchKind.Backward -> SearchPath.Backward
+        | SearchKind.BackwardWithWrap -> SearchPath.Backward
 
     /// Reverse the direction of the given SearchKind
     static member Reverse x =
@@ -443,11 +443,11 @@ type SearchKind =
 
     static member OfPath path = 
         match path with 
-        | Path.Forward -> SearchKind.Forward
-        | Path.Backward -> SearchKind.Backward
+        | SearchPath.Forward -> SearchKind.Forward
+        | SearchPath.Backward -> SearchKind.Backward
 
     static member OfPathAndWrap path wrap =
         match path with
-        | Path.Forward -> if wrap then SearchKind.ForwardWithWrap else SearchKind.Forward
-        | Path.Backward -> if wrap then SearchKind.BackwardWithWrap else SearchKind.Backward
+        | SearchPath.Forward -> if wrap then SearchKind.ForwardWithWrap else SearchKind.Forward
+        | SearchPath.Backward -> if wrap then SearchKind.BackwardWithWrap else SearchKind.Backward
 

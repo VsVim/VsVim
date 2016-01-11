@@ -61,7 +61,7 @@ type WordCompletionUtil
         let snapshot = wordSpan.Snapshot
         let wordsBefore = 
             let startPoint = SnapshotUtil.GetStartPoint snapshot
-            _wordUtil.GetWords WordKind.NormalWord Path.Forward startPoint
+            _wordUtil.GetWords WordKind.NormalWord SearchPath.Forward startPoint
             |> Seq.filter (fun span -> span.End.Position <= wordSpan.Start.Position)
 
         // Get the sequence of words after the completion word 
@@ -70,13 +70,13 @@ type WordCompletionUtil
             // The provided SnapshotSpan can be a subset of an entire word.  If so then
             // we want to consider the text to the right of the caret as a full word
             match _wordUtil.GetFullWordSpan WordKind.NormalWord wordSpan.Start with
-            | None -> _wordUtil.GetWords WordKind.NormalWord Path.Forward wordSpan.End
+            | None -> _wordUtil.GetWords WordKind.NormalWord SearchPath.Forward wordSpan.End
             | Some fullWordSpan ->
                 if fullWordSpan = wordSpan then
-                    _wordUtil.GetWords WordKind.NormalWord Path.Forward wordSpan.End
+                    _wordUtil.GetWords WordKind.NormalWord SearchPath.Forward wordSpan.End
                 else
                     let remaining = SnapshotSpan(wordSpan.End, fullWordSpan.End)
-                    let after = _wordUtil.GetWords WordKind.NormalWord Path.Forward fullWordSpan.End
+                    let after = _wordUtil.GetWords WordKind.NormalWord SearchPath.Forward fullWordSpan.End
                     Seq.append (Seq.singleton remaining) after
 
         let filterText = wordSpan.GetText()
@@ -92,7 +92,7 @@ type WordCompletionUtil
         let filterFunc = WordCompletionUtil.GetFilterFunc filterText comparer
         let startPoint = SnapshotPoint(snapshot, 0) 
         startPoint
-        |> _wordUtil.GetWords WordKind.NormalWord Path.Forward
+        |> _wordUtil.GetWords WordKind.NormalWord SearchPath.Forward
         |> Seq.filter filterFunc
 
     member x.GetWordCompletions (wordSpan : SnapshotSpan) =

@@ -327,27 +327,27 @@ module SnapshotUtil =
     /// will be included in the returned sequence unless it's an invalid line
     let GetLines snapshot lineNumber path =
         match path, IsLineNumberValid snapshot lineNumber with
-        | Path.Forward, true ->
+        | SearchPath.Forward, true ->
             let endLineNumber = GetLastLineNumber snapshot
             seq {
                 for i = lineNumber to endLineNumber do
                     yield GetLine snapshot i
             }
-        | Path.Backward, true ->
+        | SearchPath.Backward, true ->
             seq {
                 for i = 0 to lineNumber do
                     let number = lineNumber - i
                     yield GetLine snapshot number
             }
-        | Path.Forward, false -> 
+        | SearchPath.Forward, false -> 
             Seq.empty
-        | Path.Backward, false ->
+        | SearchPath.Backward, false ->
             Seq.empty
 
     /// Get the lines in the specified range
     let GetLineRange snapshot startLineNumber endLineNumber = 
         let count = endLineNumber - startLineNumber + 1
-        GetLines snapshot startLineNumber Path.Forward
+        GetLines snapshot startLineNumber SearchPath.Forward
         |> Seq.truncate count
 
     /// Try and get the line at the specified number
@@ -406,13 +406,13 @@ module SnapshotSpanUtil =
         let positions =
             let offset = startPoint.Position
             match path with 
-            | Path.Forward ->
+            | SearchPath.Forward ->
                 let max = span.Length - 1
                 seq {
                     for i = 0 to max do
                         yield i + offset
                 }
-            | Path.Backward ->
+            | SearchPath.Backward ->
                 let length = span.Length
                 seq {
                     for i = 1 to length do
@@ -511,7 +511,7 @@ module SnapshotSpanUtil =
     let GetAllLines span = 
         let startLine = GetStartLine span
         let count = GetLineCount span
-        SnapshotUtil.GetLines span.Snapshot startLine.LineNumber Path.Forward
+        SnapshotUtil.GetLines span.Snapshot startLine.LineNumber SearchPath.Forward
         |> Seq.take count
 
     /// Break the SnapshotSpan into 3 separate parts.  The middle is the ITextSnapshotLine seq
@@ -675,12 +675,12 @@ module SnapshotLineUtil =
                 GetLength line
         let max = length - 1
         match path with 
-        | Path.Forward ->
+        | SearchPath.Forward ->
             seq { 
                 for i = 0 to max do
                     yield SnapshotColumn(line, i)
             }
-        | Path.Backward ->
+        | SearchPath.Backward ->
             seq { 
                 for i = 0 to max do
                     let column = (length - 1) - i
@@ -702,7 +702,7 @@ module SnapshotLineUtil =
     /// Get the indent point of the ITextSnapshotLine
     let GetIndentPoint line =
         line 
-        |> GetPoints Path.Forward
+        |> GetPoints SearchPath.Forward
         |> Seq.skipWhile (fun point -> point.GetChar() |> CharUtil.IsBlank)
         |> SeqUtil.tryHeadOnly
         |> OptionUtil.getOrDefault (GetEnd line)
@@ -752,7 +752,7 @@ module SnapshotLineUtil =
     let IsBlankOrEmpty line = 
         line
         |> GetExtent
-        |> SnapshotSpanUtil.GetPoints Path.Forward
+        |> SnapshotSpanUtil.GetPoints SearchPath.Forward
         |> Seq.forall (fun point -> CharUtil.IsBlank (point.GetChar()))
 
     /// Does the line have at least 1 character all of which are blank?
@@ -762,7 +762,7 @@ module SnapshotLineUtil =
     let GetFirstNonBlank line = 
         line
         |> GetExtent
-        |> SnapshotSpanUtil.GetPoints Path.Forward
+        |> SnapshotSpanUtil.GetPoints SearchPath.Forward
         |> Seq.skipWhile (fun point -> CharUtil.IsBlank (point.GetChar()))
         |> SeqUtil.tryHeadOnly
 
@@ -1081,7 +1081,7 @@ module SnapshotPointUtil =
         let snapshot = GetSnapshot point
         let startLine = GetContainingLine point
         match path with
-        | Path.Forward ->
+        | SearchPath.Forward ->
 
             seq {
                 // Return the rest of the start line if we are not in a line break
@@ -1090,13 +1090,13 @@ module SnapshotPointUtil =
 
                 // Return the rest of the line extents
                 let lines = 
-                    SnapshotUtil.GetLines snapshot startLine.LineNumber Path.Forward
+                    SnapshotUtil.GetLines snapshot startLine.LineNumber SearchPath.Forward
                     |> SeqUtil.skipMax 1
                     |> Seq.map SnapshotLineUtil.GetExtent
                 yield! lines
             }
 
-        | Path.Backward ->
+        | SearchPath.Backward ->
             seq {
                 // Return the beginning of the start line if this is not the start
                 if point <> startLine.Start then
@@ -1104,7 +1104,7 @@ module SnapshotPointUtil =
 
                 // Return the rest of the line extents
                 let lines =
-                    SnapshotUtil.GetLines snapshot startLine.LineNumber Path.Backward
+                    SnapshotUtil.GetLines snapshot startLine.LineNumber SearchPath.Backward
                     |> SeqUtil.skipMax 1
                     |> Seq.map SnapshotLineUtil.GetExtent
                 yield! lines
@@ -1116,8 +1116,8 @@ module SnapshotPointUtil =
         let span = 
             let snapshot = GetSnapshot point
             match path with
-            | Path.Forward -> SnapshotSpan(point, SnapshotUtil.GetEndPoint snapshot)
-            | Path.Backward -> SnapshotSpan(SnapshotUtil.GetStartPoint snapshot, AddOneOrCurrent point)
+            | SearchPath.Forward -> SnapshotSpan(point, SnapshotUtil.GetEndPoint snapshot)
+            | SearchPath.Backward -> SnapshotSpan(SnapshotUtil.GetStartPoint snapshot, AddOneOrCurrent point)
         SnapshotSpanUtil.GetPoints path span
 
     /// Start searching the snapshot at the given point and return the buffer as a 
@@ -1164,7 +1164,7 @@ module SnapshotPointUtil =
         if IsInsideLineBreak startPoint then Seq.empty
         else 
             let line = GetContainingLine startPoint
-            SnapshotSpan(startPoint, line.End) |> SnapshotSpanUtil.GetPoints Path.Forward
+            SnapshotSpan(startPoint, line.End) |> SnapshotSpanUtil.GetPoints SearchPath.Forward
 
     /// Get the points on the containing line start starting at the passed in value in reverse order.  If the
     /// passed in point is inside the line break then the points of the entire line will be returned
@@ -1176,7 +1176,7 @@ module SnapshotPointUtil =
                 // Adding 1 is safe here.  The End position is always a valid SnapshotPoint and since we're
                 // not in the line break startPoint must be < End and hence startPoint.Add(1) <= End
                 SnapshotSpan(line.Start, startPoint.Add(1)) 
-        span |> SnapshotSpanUtil.GetPoints Path.Backward
+        span |> SnapshotSpanUtil.GetPoints SearchPath.Backward
 
     /// Try and get the previous point on the same line.  If this is at the start of the line 
     /// None will be returned
@@ -1936,8 +1936,8 @@ module SnapshotColumnUtil =
         let startLineNumber = SnapshotPointUtil.GetLineNumber point
         let filter = 
             match path with 
-            | Path.Forward -> fun (c : SnapshotColumn) -> c.Point.Position >= point.Position
-            | Path.Backward -> fun (c : SnapshotColumn) -> c.Point.Position <= point.Position
+            | SearchPath.Forward -> fun (c : SnapshotColumn) -> c.Point.Position >= point.Position
+            | SearchPath.Backward -> fun (c : SnapshotColumn) -> c.Point.Position <= point.Position
 
         SnapshotUtil.GetLines snapshot startLineNumber path
         |> Seq.collect (fun line -> 

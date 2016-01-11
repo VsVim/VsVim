@@ -325,7 +325,7 @@ type internal TextObjectUtil
             let endPoint =
                 point 
                 |> SnapshotPointUtil.AddOne
-                |> SnapshotColumnUtil.GetColumnsIncludingLineBreak Path.Forward
+                |> SnapshotColumnUtil.GetColumnsIncludingLineBreak SearchPath.Forward
                 |> Seq.skipWhile (fun c -> not (x.IsParagraphStart c))
                 |> Seq.map SnapshotColumnUtil.GetPoint
                 |> SeqUtil.headOrDefault (SnapshotUtil.GetEndPoint snapshot)
@@ -344,7 +344,7 @@ type internal TextObjectUtil
         let snapshot = SnapshotPointUtil.GetSnapshot point
         let getSectionStartBackward point = 
             let line = SnapshotPointUtil.GetContainingLine point
-            SnapshotUtil.GetLines snapshot line.LineNumber Path.Backward
+            SnapshotUtil.GetLines snapshot line.LineNumber SearchPath.Backward
             |> Seq.skipWhile isNotSectionStart
             |> SeqUtil.headOrDefault (SnapshotUtil.GetFirstLine snapshot)
 
@@ -352,7 +352,7 @@ type internal TextObjectUtil
         let getSectionRangeFromStart (startLine: ITextSnapshotLine) =
             Contract.Assert (x.IsSectionStart sectionKind startLine)
             let nextStartLine = 
-                SnapshotUtil.GetLines snapshot startLine.LineNumber Path.Forward
+                SnapshotUtil.GetLines snapshot startLine.LineNumber SearchPath.Forward
                 |> SeqUtil.skipMax 1
                 |> Seq.skipWhile isNotSectionStart
                 |> SeqUtil.tryHeadOnly
@@ -365,7 +365,7 @@ type internal TextObjectUtil
             SnapshotLineRangeUtil.CreateForLineAndCount startLine count |> Option.get
 
         match path with
-        | Path.Forward ->
+        | SearchPath.Forward ->
             // Start the search from the nearest section start backward
             let startLine = getSectionStartBackward point
 
@@ -377,7 +377,7 @@ type internal TextObjectUtil
                     let startLine = SnapshotPointUtil.GetContainingLine point
                     let range = getSectionRangeFromStart startLine
                     Some (range, range.EndIncludingLineBreak)) startLine.Start
-        | Path.Backward ->
+        | SearchPath.Backward ->
 
             // Create the sequence by doing an unfold.  The provided point will be the 
             // start point of the following section SnapshotLineRange
@@ -438,7 +438,7 @@ type internal TextObjectUtil
             let endPoint = 
                 point
                 |> SnapshotPointUtil.AddOne
-                |> SnapshotColumnUtil.GetColumnsIncludingLineBreak Path.Forward
+                |> SnapshotColumnUtil.GetColumnsIncludingLineBreak SearchPath.Forward
                 |> Seq.skipWhile (fun c -> not (x.IsSentenceEnd sentenceKind c))
                 |> Seq.map (fun c -> c.Point)
                 |> SeqUtil.headOrDefault (SnapshotUtil.GetEndPoint snapshot)
@@ -463,7 +463,7 @@ type internal TextObjectUtil
         // Get the section start going backwards from the given point.
         let getStartBackward point = 
             point 
-            |> SnapshotColumnUtil.GetColumnsIncludingLineBreak Path.Backward
+            |> SnapshotColumnUtil.GetColumnsIncludingLineBreak SearchPath.Backward
             |> Seq.skipWhile isNotStartColumn
             |> Seq.map SnapshotColumnUtil.GetPoint
             |> SeqUtil.headOrDefault (SnapshotPoint(snapshot, 0))
@@ -471,14 +471,14 @@ type internal TextObjectUtil
         // Get the section start going forward from the given point 
         let getStartForward point = 
             point
-            |> SnapshotColumnUtil.GetColumnsIncludingLineBreak Path.Forward
+            |> SnapshotColumnUtil.GetColumnsIncludingLineBreak SearchPath.Forward
             |> Seq.skipWhile isNotStartColumn
             |> Seq.map SnapshotColumnUtil.GetPoint
             |> SeqUtil.headOrDefault (SnapshotUtil.GetEndPoint snapshot)
 
         // Search includes the section which contains the start point so go ahead and get it
         match path, SnapshotPointUtil.IsStartPoint point with 
-        | Path.Forward, _ ->
+        | SearchPath.Forward, _ ->
 
             // Get the next object.  The provided point should either be <end> or point 
             // to the start of a section
@@ -508,10 +508,10 @@ type internal TextObjectUtil
                 else
                     startPoint
             Seq.unfold getNext startPoint
-        | Path.Backward, true ->
+        | SearchPath.Backward, true ->
             // Handle the special case here
             Seq.empty
-        | Path.Backward, false ->
+        | SearchPath.Backward, false ->
 
             // Get the previous section.  The provided point should either be 0 or point
             // to the start of a section

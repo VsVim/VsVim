@@ -261,7 +261,7 @@ type internal TrackingVisualSpan =
 type internal TrackingVisualSelection 
     (
         _trackingVisualSpan : ITrackingVisualSpan,
-        _path : Path,
+        _path : SearchPath,
         _column : int,
         _blockCaretLocation : BlockCaretLocation
     ) =
@@ -295,7 +295,7 @@ type internal TrackingVisualSelection
             match visualSelection with
             | VisualSelection.Character (_, path) -> path, 0, BlockCaretLocation.TopRight
             | VisualSelection.Line (_, path, column) -> path, column, BlockCaretLocation.TopRight
-            | VisualSelection.Block (_, blockCaretLocation) -> Path.Forward, 0, blockCaretLocation
+            | VisualSelection.Block (_, blockCaretLocation) -> SearchPath.Forward, 0, blockCaretLocation
         TrackingVisualSelection(trackingVisualSpan, path, column, blockCaretLocation)
 
     interface ITrackingVisualSelection with

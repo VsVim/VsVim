@@ -234,7 +234,7 @@ namespace Vim.UnitTest
                 foreach (var visualKind in VisualKind.All)
                 {
                     var visualSpan = VisualSpan.CreateForSpan(textBuffer.GetSpan(0, 1), visualKind, tabStop: 4);
-                    var visualSelection = VisualSelection.Create(visualSpan, Path.Forward, textBuffer.GetPoint(0));
+                    var visualSelection = VisualSelection.Create(visualSpan, SearchPath.Forward, textBuffer.GetPoint(0));
                     var trackingVisualSelection = _bufferTrackingService.CreateVisualSelection(visualSelection);
                     Assert.True(_bufferTrackingService.HasTrackingItems(textBuffer));
                     trackingVisualSelection.Close();

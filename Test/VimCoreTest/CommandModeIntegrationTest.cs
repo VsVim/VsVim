@@ -368,7 +368,7 @@ namespace Vim.UnitTest
             public void UpdateLastSearch()
             {
                 Create("cat", "dog", "cattle");
-                _vimBuffer.VimData.LastSearchData = new SearchData("cat", Path.Forward);
+                _vimBuffer.VimData.LastSearchData = new SearchData("cat", SearchPath.Forward);
                 _vimBuffer.ProcessNotation(":g/cat/echo", enter: true);
                 Assert.Equal("cat", _vimBuffer.VimData.LastSearchData.Pattern);
             }
@@ -377,7 +377,7 @@ namespace Vim.UnitTest
             public void SpaceDoesntUseLastSearch()
             {
                 Create("cat", "dog", "cattle", "big dog");
-                _vimBuffer.VimData.LastSearchData = new SearchData("cat", Path.Forward);
+                _vimBuffer.VimData.LastSearchData = new SearchData("cat", SearchPath.Forward);
                 _vimBuffer.ProcessNotation(":g/ /d", enter: true);
                 Assert.Equal(new[] { "cat", "dog", "cattle" }, _vimBuffer.TextBuffer.GetLines());
             }
@@ -389,7 +389,7 @@ namespace Vim.UnitTest
             public void Issue1626()
             {
                 Create("cat", "dog", "cattle");
-                _vimBuffer.VimData.LastSearchData = new SearchData("cat", Path.Forward);
+                _vimBuffer.VimData.LastSearchData = new SearchData("cat", SearchPath.Forward);
                 _vimBuffer.ProcessNotation(":g//d", enter: true);
                 Assert.Equal(new[] { "dog" }, _vimBuffer.TextBuffer.GetLines());
             }

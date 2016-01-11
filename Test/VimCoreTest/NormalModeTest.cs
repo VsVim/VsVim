@@ -143,7 +143,7 @@ namespace Vim.UnitTest
         {
             Create(s_defaultLines);
             _incrementalSearch
-                .Setup(x => x.Begin(Path.Forward))
+                .Setup(x => x.Begin(SearchPath.Forward))
                 .Returns(VimUtil.CreateBindData<SearchResult>());
             _mode.Process(KeyInputUtil.CharToKeyInput('/'));
             Assert.True(_mode.CanProcess(KeyInputUtil.CharToKeyInput('U')));
@@ -908,7 +908,7 @@ namespace Vim.UnitTest
         {
             Create("foo bar");
             _incrementalSearch
-                .Setup(x => x.Begin(Path.Forward))
+                .Setup(x => x.Begin(SearchPath.Forward))
                 .Returns(VimUtil.CreateBindData<SearchResult>())
                 .Verifiable();
             _mode.Process('/');
@@ -923,7 +923,7 @@ namespace Vim.UnitTest
         {
             Create("foo bar");
             _incrementalSearch
-                .Setup(x => x.Begin(Path.Backward))
+                .Setup(x => x.Begin(SearchPath.Backward))
                 .Returns(VimUtil.CreateBindData<SearchResult>())
                 .Verifiable();
             _mode.Process('?');
@@ -938,7 +938,7 @@ namespace Vim.UnitTest
         {
             Create("foo bar");
             _incrementalSearch
-                .Setup(x => x.Begin(Path.Forward))
+                .Setup(x => x.Begin(SearchPath.Forward))
                 .Returns(VimUtil.CreateBindData<SearchResult>())
                 .Verifiable();
             _mode.Process('/');
@@ -955,7 +955,7 @@ namespace Vim.UnitTest
         public void Bind_Motion_NextWord_Forward()
         {
             Create("");
-            _commandUtil.SetupCommandNormal(NormalCommand.NewMoveCaretToMotion(Motion.NewNextWord(Path.Forward)));
+            _commandUtil.SetupCommandNormal(NormalCommand.NewMoveCaretToMotion(Motion.NewNextWord(SearchPath.Forward)));
             _mode.Process("*");
             _commandUtil.Verify();
         }
@@ -964,7 +964,7 @@ namespace Vim.UnitTest
         public void Bind_Motion_NextWord_Backward()
         {
             Create("");
-            _commandUtil.SetupCommandNormal(NormalCommand.NewMoveCaretToMotion(Motion.NewNextWord(Path.Backward)));
+            _commandUtil.SetupCommandNormal(NormalCommand.NewMoveCaretToMotion(Motion.NewNextWord(SearchPath.Backward)));
             _mode.Process("#");
             _commandUtil.Verify();
         }
@@ -973,7 +973,7 @@ namespace Vim.UnitTest
         public void Bind_Motion_NextPartialWord_Forward()
         {
             Create("");
-            _commandUtil.SetupCommandNormal(NormalCommand.NewMoveCaretToMotion(Motion.NewNextPartialWord(Path.Forward)));
+            _commandUtil.SetupCommandNormal(NormalCommand.NewMoveCaretToMotion(Motion.NewNextPartialWord(SearchPath.Forward)));
             _mode.Process("g*");
             _commandUtil.Verify();
         }
@@ -982,7 +982,7 @@ namespace Vim.UnitTest
         public void Bind_Motion_NextPartialWord_Backward()
         {
             Create("");
-            _commandUtil.SetupCommandNormal(NormalCommand.NewMoveCaretToMotion(Motion.NewNextPartialWord(Path.Backward)));
+            _commandUtil.SetupCommandNormal(NormalCommand.NewMoveCaretToMotion(Motion.NewNextPartialWord(SearchPath.Backward)));
             _mode.Process("g#");
             _commandUtil.Verify();
         }
@@ -1219,7 +1219,7 @@ namespace Vim.UnitTest
         {
             Create("foobar");
             _incrementalSearch
-                .Setup(x => x.Begin(Path.Forward))
+                .Setup(x => x.Begin(SearchPath.Forward))
                 .Returns(VimUtil.CreateBindData<SearchResult>(remapMode: KeyRemapMode.Command));
             _mode.Process('/');
             Assert.Equal(KeyRemapMode.Command, _mode.KeyRemapMode);
@@ -1275,7 +1275,7 @@ namespace Vim.UnitTest
         {
             Create("foobar");
             _incrementalSearch
-                .Setup(x => x.Begin(Path.Forward))
+                .Setup(x => x.Begin(SearchPath.Forward))
                 .Returns(VimUtil.CreateBindData<SearchResult>());
             _mode.Process('/');
             Assert.True(_mode.CommandRunner.IsWaitingForMoreInput);
@@ -1486,7 +1486,7 @@ namespace Vim.UnitTest
         public void Bind_GoToNextTab_Forward()
         {
             Create("");
-            _commandUtil.SetupCommandNormal(NormalCommand.NewGoToNextTab(Path.Forward));
+            _commandUtil.SetupCommandNormal(NormalCommand.NewGoToNextTab(SearchPath.Forward));
             _mode.Process("gt");
             _commandUtil.Verify();
         }
@@ -1495,7 +1495,7 @@ namespace Vim.UnitTest
         public void Bind_GoToNextTab_ForwardViaPageDown()
         {
             Create("");
-            _commandUtil.SetupCommandNormal(NormalCommand.NewGoToNextTab(Path.Forward));
+            _commandUtil.SetupCommandNormal(NormalCommand.NewGoToNextTab(SearchPath.Forward));
             _mode.Process(KeyInputUtil.ApplyKeyModifiersToKey(VimKey.PageDown, VimKeyModifiers.Control));
             _commandUtil.Verify();
         }
@@ -1504,7 +1504,7 @@ namespace Vim.UnitTest
         public void Bind_GoToNextTab_Backward()
         {
             Create("");
-            _commandUtil.SetupCommandNormal(NormalCommand.NewGoToNextTab(Path.Backward));
+            _commandUtil.SetupCommandNormal(NormalCommand.NewGoToNextTab(SearchPath.Backward));
             _mode.Process("gT");
             _commandUtil.Verify();
         }
@@ -1513,7 +1513,7 @@ namespace Vim.UnitTest
         public void Bind_GoToNextTab_BackwardViaPageUp()
         {
             Create("");
-            _commandUtil.SetupCommandNormal(NormalCommand.NewGoToNextTab(Path.Backward));
+            _commandUtil.SetupCommandNormal(NormalCommand.NewGoToNextTab(SearchPath.Backward));
             _mode.Process(KeyInputUtil.ApplyKeyModifiersToKey(VimKey.PageUp, VimKeyModifiers.Control));
             _commandUtil.Verify();
         }

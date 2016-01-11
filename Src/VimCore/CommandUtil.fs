@@ -231,7 +231,7 @@ type internal CommandUtil
 
         use edit = _textBuffer.CreateEdit()
         editSpan.Spans
-        |> Seq.map (SnapshotSpanUtil.GetPoints Path.Forward)
+        |> Seq.map (SnapshotSpanUtil.GetPoints SearchPath.Forward)
         |> Seq.concat
         |> Seq.filter (fun p -> CharUtil.IsLetter (p.GetChar()))
         |> Seq.iter (fun p ->
@@ -248,7 +248,7 @@ type internal CommandUtil
         // so move before and inside the transaction
         let position = 
             x.CaretLine
-            |> SnapshotLineUtil.GetPoints Path.Forward
+            |> SnapshotLineUtil.GetPoints SearchPath.Forward
             |> Seq.skipWhile SnapshotPointUtil.IsWhiteSpace
             |> Seq.map SnapshotPointUtil.GetPosition
             |> SeqUtil.tryHeadOnly
@@ -326,7 +326,7 @@ type internal CommandUtil
             if result.IsAnyWordMotion && result.IsForward then
                 let point = 
                     result.Span
-                    |> SnapshotSpanUtil.GetPoints Path.Backward
+                    |> SnapshotSpanUtil.GetPoints SearchPath.Backward
                     |> Seq.tryFind (fun x -> x.GetChar() |> CharUtil.IsWhiteSpace |> not)
                 match point with 
                 | Some(p) -> 
@@ -402,7 +402,7 @@ type internal CommandUtil
                 else
                     SnapshotUtil.GetLine range.Snapshot (range.StartLineNumber + 1)
             line
-            |> SnapshotLineUtil.GetPoints Path.Forward
+            |> SnapshotLineUtil.GetPoints SearchPath.Forward
             |> Seq.skipWhile SnapshotPointUtil.IsBlank
             |> SeqUtil.tryHeadOnly
         match point with
@@ -785,7 +785,7 @@ type internal CommandUtil
                     else result.LastOrStart
                 let endsInWhiteSpace = 
                     lastPoint
-                    |> SnapshotPointUtil.GetPoints Path.Forward
+                    |> SnapshotPointUtil.GetPoints SearchPath.Forward
                     |> Seq.takeWhile (fun point -> point.Position < lastLine.End.Position)
                     |> Seq.forall SnapshotPointUtil.IsWhiteSpace
 
@@ -977,7 +977,7 @@ type internal CommandUtil
             // past blanks as they don't factor in here
             let index = 
                 span
-                |> SnapshotSpanUtil.GetPoints Path.Forward
+                |> SnapshotSpanUtil.GetPoints SearchPath.Forward
                 |> Seq.skipWhile (fun point -> 
                     if _localSettings.IsNumberFormatSupported(NumberFormat.Alpha) then
                         SnapshotPointUtil.IsBlank point
@@ -1044,7 +1044,7 @@ type internal CommandUtil
             if _localSettings.IsNumberFormatSupported NumberFormat.Alpha then
                 // Now check for alpha by going forward to the first alpha character
                 span
-                |> SnapshotSpanUtil.GetPoints Path.Forward
+                |> SnapshotSpanUtil.GetPoints SearchPath.Forward
                 |> Seq.skipWhile (fun point -> point |> SnapshotPointUtil.GetChar |> CharUtil.IsAlpha |> not)
                 |> Seq.map (fun point -> 
                     let c = point.GetChar()
@@ -1101,13 +1101,13 @@ type internal CommandUtil
     /// Go to the next tab in the specified direction
     member x.GoToNextTab path countOption = 
         match path with
-        | Path.Forward ->
+        | SearchPath.Forward ->
             match countOption with
             | Some count -> _commonOperations.GoToTab count
             | None -> _commonOperations.GoToNextTab path 1
-        | Path.Backward ->
+        | SearchPath.Backward ->
             let count = countOption |> OptionUtil.getOrDefault 1
-            _commonOperations.GoToNextTab Path.Backward count
+            _commonOperations.GoToNextTab SearchPath.Backward count
 
         CommandResult.Completed ModeSwitch.NoSwitch
 
@@ -1242,7 +1242,7 @@ type internal CommandUtil
     member x.InsertAtFirstNonBlank count =
         let point = 
             x.CaretLine
-            |> SnapshotLineUtil.GetPoints Path.Forward
+            |> SnapshotLineUtil.GetPoints SearchPath.Forward
             |> Seq.skipWhile SnapshotPointUtil.IsWhiteSpace
             |> SeqUtil.tryHeadOnly
             |> OptionUtil.getOrDefault x.CaretLine.End
@@ -2192,7 +2192,7 @@ type internal CommandUtil
                     builder.AppendStringCount replaceText (startPoint.Spaces - startPoint.SpacesBefore)
                     edit.Replace(Span(startPoint.Point.Position, 1), (builder.ToString())) |> ignore
 
-                SnapshotSpanUtil.GetPoints Path.Forward span.InnerSpan
+                SnapshotSpanUtil.GetPoints SearchPath.Forward span.InnerSpan
                 |> Seq.filter (fun point -> not (SnapshotPointUtil.IsInsideLineBreak point))
                 |> Seq.iter (fun point -> edit.Replace(Span(point.Position, 1), replaceText) |> ignore)
 
