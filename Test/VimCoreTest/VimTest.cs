@@ -287,6 +287,8 @@ namespace Vim.UnitTest
         }
         */
 
+            // data
+
         public sealed class FocussedBufferTest : VimTest
         {
             /// <summary>
