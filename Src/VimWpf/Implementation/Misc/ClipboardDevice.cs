@@ -83,7 +83,7 @@ namespace Vim.UI.Wpf.Implementation.Misc
                     if (i == 0)
                     {
                         _protectedOperations.Report(ex);
-                        _useTextMethods = false;
+                        _useTextMethods = true;
                         return false;
                     }
                 }

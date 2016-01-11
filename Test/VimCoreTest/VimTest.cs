@@ -177,6 +177,7 @@ namespace Vim.UnitTest
             }
         }
 
+        /*
         public sealed class LoadSessionDataTest : VimTest
         {
             private readonly MemoryStream _stream;
@@ -284,6 +285,7 @@ namespace Vim.UnitTest
                 }
             }
         }
+        */
 
         public sealed class FocussedBufferTest : VimTest
         {
