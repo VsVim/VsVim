@@ -27,3 +27,5 @@ test_script:
 #after_test:
   # Pushes the compiled vsix to artifacts and publishes it to vsixgallery.com
   #- ps: Vsix-PushArtifacts | Vsix-PublishToGallery
+  #
+  # comment to force a new test
