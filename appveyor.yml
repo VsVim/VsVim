@@ -29,3 +29,4 @@ test_script:
   #- ps: Vsix-PushArtifacts | Vsix-PublishToGallery
   #
   # comment to force a new test
+  # comment to force a new test
