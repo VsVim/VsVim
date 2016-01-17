@@ -2868,7 +2868,7 @@ type InsertCommand  =
         | InsertCommand.InsertCharacterAboveCaret -> None
         | InsertCommand.InsertCharacterBelowCaret -> None
         | InsertCommand.InsertNewLine -> Some (TextChange.Insert (EditUtil.NewLine editorOptions))
-        | InsertCommand.InsertTab -> Some (TextChange.Insert "\t")
+        | InsertCommand.InsertTab -> Some (TextChange.Insert (EditUtil.GetTabText editorOptions))
         | InsertCommand.MoveCaret _ -> None
         | InsertCommand.MoveCaretWithArrow _ -> None
         | InsertCommand.MoveCaretByWord _ -> None

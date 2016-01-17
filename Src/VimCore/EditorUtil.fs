@@ -1755,6 +1755,13 @@ module EditUtil =
     /// NewLine to use for the ITextBuffer
     let NewLine (options : IEditorOptions) = DefaultOptionExtensions.GetNewLineCharacter options
 
+    /// Get the text for a tab character based on the given options
+    let GetTabText (options : IEditorOptions) = 
+        if DefaultOptionExtensions.IsConvertTabsToSpacesEnabled options then
+            StringUtil.RepeatChar (DefaultOptionExtensions.GetTabSize options) ' '
+        else
+            "\t"
+
     /// Get the length of the line break at the given index 
     let GetLineBreakLength (str : string) index =
         match str.Chars(index) with
