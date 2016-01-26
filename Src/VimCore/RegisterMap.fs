@@ -100,7 +100,7 @@ type internal RegisterMap (_map : Map<RegisterName, Register>) =
     /// Updates the given register with the specified value.  This will also update 
     /// other registers based on the type of update that is being performed.  See 
     /// :help registers for the full details
-    member x.SetRegisterValue (reg : Register) regOperation (value : RegisterValue) = 
+    member x.SetRegisterValue (reg : Register) regOperation (value : RegisterValue) (clipboardOptions : Vim.ClipboardOptions) = 
         if reg.Name <> RegisterName.Blackhole then
 
             reg.RegisterValue <- value
@@ -120,6 +120,10 @@ type internal RegisterMap (_map : Map<RegisterName, Register>) =
             match regOperation with
             | RegisterOperation.Delete ->
 
+                if Util.IsFlagSet clipboardOptions ClipboardOptions.Unnamed then
+                    let regStar = x.GetRegister (RegisterName.SelectionAndDrop SelectionAndDropRegister.Star)
+                    regStar.RegisterValue <- value
+                    
                 if hasNewLine then
 
                   // Update the numbered registers with the new values if this delete spanned more
@@ -151,7 +155,7 @@ type internal RegisterMap (_map : Map<RegisterName, Register>) =
                 regSmallDelete.RegisterValue <- value
 
     interface IRegisterMap with
-        member x.RegisterNames = _map |> Seq.map (fun pair -> pair.Key)
+        member x.RegisterNames = _map |> Seq.map (fun pair -> pair.Key) 
         member x.GetRegister name = x.GetRegister name
-        member x.SetRegisterValue register operation value = x.SetRegisterValue register operation value
+        member x.SetRegisterValue register operation value (clipboardOptions : Vim.ClipboardOptions) = x.SetRegisterValue register operation value clipboardOptions
 

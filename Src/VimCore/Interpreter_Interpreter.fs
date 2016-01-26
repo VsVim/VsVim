@@ -1050,7 +1050,7 @@ type VimInterpreter
         let setRegister (value : string) =
             let register = _registerMap.GetRegister name
             let registerValue = RegisterValue(value, OperationKind.CharacterWise)
-            _registerMap.SetRegisterValue register RegisterOperation.Yank registerValue
+            _registerMap.SetRegisterValue register RegisterOperation.Yank registerValue _globalSettings.ClipboardOptions
         match _exprInterpreter.GetExpressionAsString expr with
         | Some value -> setRegister value
         | None -> ()
@@ -1672,7 +1672,7 @@ type VimInterpreter
 
             let stringData = StringData.OfSpan lineRange.ExtentIncludingLineBreak
             let value = _commonOperations.CreateRegisterValue x.CaretPoint stringData OperationKind.LineWise
-            _registerMap.SetRegisterValue register RegisterOperation.Yank value)
+            _registerMap.SetRegisterValue register RegisterOperation.Yank value _globalSettings.ClipboardOptions)
 
     /// Run the specified LineCommand
     member x.RunLineCommand lineCommand = 

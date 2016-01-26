@@ -770,7 +770,7 @@ type internal Vim
             | Some register -> 
                 let kind = if sessionReg.IsCharacterWise then OperationKind.CharacterWise else OperationKind.LineWise
                 let registerValue = RegisterValue(sessionReg.Value, kind)
-                _registerMap.SetRegisterValue register RegisterOperation.Yank registerValue
+                _registerMap.SetRegisterValue register RegisterOperation.Yank registerValue _globalSettings.ClipboardOptions
             | None -> ()
 
     member x.LoadSessionData() =

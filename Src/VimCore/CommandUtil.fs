@@ -372,7 +372,7 @@ type internal CommandUtil
 
         // Now that the delete is complete update the register
         let value = x.CreateRegisterValue (StringData.OfSpan span) result.OperationKind
-        _registerMap.SetRegisterValue register RegisterOperation.Delete value
+        _registerMap.SetRegisterValue register RegisterOperation.Delete value _globalSettings.ClipboardOptions
 
         commandResult
 
@@ -422,7 +422,7 @@ type internal CommandUtil
             // operation.  
             let stringData = range.Extent.GetText() |> StringData.Simple
             let value = x.CreateRegisterValue stringData OperationKind.LineWise
-            _registerMap.SetRegisterValue register RegisterOperation.Delete value)
+            _registerMap.SetRegisterValue register RegisterOperation.Delete value _globalSettings.ClipboardOptions)
 
     /// Delete the selected lines and begin insert mode (implements the 'S', 'C' and 'R' visual
     /// mode commands.  This is very similar to DeleteLineSelection except that block deletion
@@ -483,7 +483,7 @@ type internal CommandUtil
                 else visualSpan.EditSpan.OverarchingSpan |> SnapshotLineRangeUtil.CreateForSpan |> deleteRange
 
         let value = x.CreateRegisterValue (StringData.OfEditSpan editSpan) OperationKind.LineWise
-        _registerMap.SetRegisterValue register RegisterOperation.Delete value
+        _registerMap.SetRegisterValue register RegisterOperation.Delete value _globalSettings.ClipboardOptions
 
         commandResult
 
@@ -604,7 +604,7 @@ type internal CommandUtil
 
             // Put the deleted text into the specified register
             let value = RegisterValue(StringData.OfSpan span, OperationKind.CharacterWise)
-            _registerMap.SetRegisterValue register RegisterOperation.Delete value
+            _registerMap.SetRegisterValue register RegisterOperation.Delete value _globalSettings.ClipboardOptions
 
         CommandResult.Completed ModeSwitch.NoSwitch
 
@@ -627,7 +627,7 @@ type internal CommandUtil
 
         // Put the deleted text into the specified register once the delete completes
         let value = RegisterValue(StringData.OfSpan span, OperationKind.CharacterWise)
-        _registerMap.SetRegisterValue register RegisterOperation.Delete value
+        _registerMap.SetRegisterValue register RegisterOperation.Delete value _globalSettings.ClipboardOptions
 
         CommandResult.Completed ModeSwitch.NoSwitch
 
@@ -708,7 +708,7 @@ type internal CommandUtil
                 editSpan)
 
         let value = x.CreateRegisterValue (StringData.OfEditSpan editSpan) OperationKind.LineWise
-        _registerMap.SetRegisterValue register RegisterOperation.Delete value
+        _registerMap.SetRegisterValue register RegisterOperation.Delete value _globalSettings.ClipboardOptions
 
         CommandResult.Completed ModeSwitch.SwitchPreviousMode
 
@@ -750,7 +750,7 @@ type internal CommandUtil
         // BTODO: The wrong text is being put into the register here.  It should include the overlap data
         let operationKind = visualSpan.OperationKind
         let value = x.CreateRegisterValue (StringData.OfEditSpan visualSpan.EditSpan) operationKind
-        _registerMap.SetRegisterValue register RegisterOperation.Delete value
+        _registerMap.SetRegisterValue register RegisterOperation.Delete value _globalSettings.ClipboardOptions
 
         CommandResult.Completed ModeSwitch.SwitchPreviousMode
 
@@ -814,7 +814,7 @@ type internal CommandUtil
         // from the buffer
         if not span.IsEmpty then
             let value = x.CreateRegisterValue (StringData.OfSpan span) operationKind
-            _registerMap.SetRegisterValue register RegisterOperation.Delete value
+            _registerMap.SetRegisterValue register RegisterOperation.Delete value _globalSettings.ClipboardOptions
 
         CommandResult.Completed ModeSwitch.NoSwitch
 
@@ -852,7 +852,7 @@ type internal CommandUtil
         // Delete is complete so update the register.  Strangely enough this is a character wise
         // operation even though it involves line deletion
         let value = RegisterValue(StringData.OfSpan span, OperationKind.CharacterWise)
-        _registerMap.SetRegisterValue register RegisterOperation.Delete value
+        _registerMap.SetRegisterValue register RegisterOperation.Delete value _globalSettings.ClipboardOptions
 
     /// Run the specified action with a wrapped undo transaction.  This is often necessary when
     /// an edit command manipulates the caret
@@ -949,9 +949,9 @@ type internal CommandUtil
             match commandData.RegisterName with
             | Some name -> name
             | None ->
-                if Util.IsFlagSet _globalSettings.ClipboardOptions ClipboardOptions.Unnamed then
-                    RegisterName.SelectionAndDrop SelectionAndDropRegister.Star
-                else
+                //if Util.IsFlagSet _globalSettings.ClipboardOptions ClipboardOptions.Unnamed then
+                //    RegisterName.SelectionAndDrop SelectionAndDropRegister.Star
+                //else
                     RegisterName.Unnamed
 
         _registerMap.GetRegister name
@@ -1921,7 +1921,7 @@ type internal CommandUtil
         // Update the unnamed register with the deleted text
         let value = x.CreateRegisterValue (StringData.OfEditSpan deletedSpan) operationKind
         let unnamedRegister = _registerMap.GetRegister RegisterName.Unnamed
-        _registerMap.SetRegisterValue unnamedRegister RegisterOperation.Delete value 
+        _registerMap.SetRegisterValue unnamedRegister RegisterOperation.Delete value  _globalSettings.ClipboardOptions
 
         CommandResult.Completed ModeSwitch.SwitchPreviousMode
 
@@ -2820,7 +2820,7 @@ type internal CommandUtil
     
                 // Put the deleted text into the specified register
                 let value = RegisterValue(StringData.OfSpan span, OperationKind.CharacterWise)
-                _registerMap.SetRegisterValue register RegisterOperation.Delete value)
+                _registerMap.SetRegisterValue register RegisterOperation.Delete value _globalSettings.ClipboardOptions)
 
     /// Subtract 'count' values from the word under the caret
     member x.SubtractFromWord count =
@@ -2983,14 +2983,14 @@ type internal CommandUtil
 
             let data = StringData.OfSpan span
             let value = x.CreateRegisterValue data OperationKind.LineWise
-            _registerMap.SetRegisterValue register RegisterOperation.Yank value
+            _registerMap.SetRegisterValue register RegisterOperation.Yank value _globalSettings.ClipboardOptions
 
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Yank the contents of the motion into the specified register
     member x.YankMotion register (result: MotionResult) = 
         let value = x.CreateRegisterValue (StringData.OfSpan result.Span) result.OperationKind
-        _registerMap.SetRegisterValue register RegisterOperation.Yank value
+        _registerMap.SetRegisterValue register RegisterOperation.Yank value _globalSettings.ClipboardOptions
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Yank the lines in the specified selection
@@ -3010,14 +3010,14 @@ type internal CommandUtil
 
         let data = StringData.OfEditSpan editSpan
         let value = x.CreateRegisterValue data operationKind
-        _registerMap.SetRegisterValue register RegisterOperation.Yank value
+        _registerMap.SetRegisterValue register RegisterOperation.Yank value _globalSettings.ClipboardOptions
         CommandResult.Completed ModeSwitch.SwitchPreviousMode
 
     /// Yank the selection into the specified register
     member x.YankSelection register (visualSpan : VisualSpan) = 
         let data = StringData.OfEditSpan visualSpan.EditSpan
         let value = x.CreateRegisterValue data visualSpan.OperationKind
-        _registerMap.SetRegisterValue register RegisterOperation.Yank value
+        _registerMap.SetRegisterValue register RegisterOperation.Yank value _globalSettings.ClipboardOptions
         CommandResult.Completed ModeSwitch.SwitchPreviousMode
 
     /// Cut selection

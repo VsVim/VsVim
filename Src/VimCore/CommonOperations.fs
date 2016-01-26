@@ -372,7 +372,7 @@ type internal CommonOperations
 
                 // Now update the register after the delete completes
                 let value = x.CreateRegisterValue x.CaretPoint stringData OperationKind.LineWise
-                _registerMap.SetRegisterValue register RegisterOperation.Delete value
+                _registerMap.SetRegisterValue register RegisterOperation.Delete value _globalSettings.ClipboardOptions
 
             | _ ->
                 // If we couldn't map back down raise an error
