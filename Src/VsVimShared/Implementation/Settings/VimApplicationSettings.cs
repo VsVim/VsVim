@@ -28,6 +28,7 @@ namespace Vim.VisualStudio.Implementation.Settings
         internal const string UseEditorDefaultsName = "UseEditorDefaults";
         internal const string UseEditorTabAndBackspaceName = "UseEditorTabAndBackspace";
         internal const string UseEditorCommandMarginName = "UseEditorCommandMargin";
+        internal const string CleanMacrosName = "CleanMacros";
         internal const string WordWrapDisplayName = "WordWrapDisplay";
         internal const string ErrorGetFormat = "Cannot get setting {0}";
         internal const string ErrorSetFormat = "Cannot set setting {0}";
@@ -231,6 +232,12 @@ namespace Vim.VisualStudio.Implementation.Settings
         {
             get { return GetBoolean(UseEditorCommandMarginName, defaultValue: true); }
             set { SetBoolean(UseEditorCommandMarginName, value); }
+        }
+
+        bool IVimApplicationSettings.CleanMacros
+        {
+            get { return GetBoolean(CleanMacrosName, defaultValue: false); }
+            set { SetBoolean(CleanMacrosName, value); }
         }
 
         bool IVimApplicationSettings.HaveUpdatedKeyBindings

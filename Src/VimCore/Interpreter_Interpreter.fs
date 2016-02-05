@@ -4,6 +4,7 @@ open EditorUtils
 open Microsoft.VisualStudio.Text
 open Vim
 open Vim.StringBuilderExtensions
+open Vim.VimCoreExtensions
 open System.Collections.Generic
 open System.ComponentModel.Composition
 
@@ -285,33 +286,58 @@ type VimInterpreter
         // TODO: Implement
         None
 
-    /// Get the ITextSnapshotLine specified by the given LineSpecifier
-    member x.GetLineCore lineSpecifier currentLine = 
+    /// Resolve the given path.  In the case the path contains illegal characters it 
+    /// will be returned unaltered. 
+    member x.ResolveVimPath (path : string) =
+        try
+            SystemUtil.ResolveVimPath _vimData.CurrentDirectory path
+        with
+            | _ -> path
+
+    /// Get a tuple of the ITextSnapshotLine specified by the given LineSpecifier and the 
+    /// corresponding vim line number
+    member x.GetLineAndVimLineNumberCore lineSpecifier (currentLine : ITextSnapshotLine) = 
+
+        // To convert from a VS line number to a vim line number, simply add 1
+        let getLineAndNumber (line : ITextSnapshotLine) = (line, line.LineNumber + 1)
 
         // Get the ITextSnapshotLine specified by lineSpecifier and then apply the
         // given adjustment to the number.  Can fail if the line number adjustment
         // is invalid
         let getAdjustment adjustment (line : ITextSnapshotLine) = 
-            let number = 
-                let start = line.LineNumber + 1
-                Util.VimLineToTssLine (start + adjustment)
+            let vimLine = line.LineNumber + 1 + adjustment
+            let number = Util.VimLineToTssLine vimLine
 
             SnapshotUtil.TryGetLine x.CurrentSnapshot number
+            |> Option.map (fun line -> line, vimLine)
 
         match lineSpecifier with 
         | LineSpecifier.CurrentLine -> 
-            x.CaretLine |> Some
+            x.CaretLine |> getLineAndNumber |> Some
+
         | LineSpecifier.LastLine ->
-            SnapshotUtil.GetLastLine x.CurrentSnapshot |> Some
-        | LineSpecifier.LineSpecifierWithAdjustment (lineSpecifier, adjustment) ->
+            let line = SnapshotUtil.GetLastLine x.CurrentSnapshot
+            line |> getLineAndNumber |> Some
 
-            x.GetLine lineSpecifier |> OptionUtil.map2 (getAdjustment adjustment)
         | LineSpecifier.MarkLine mark ->
-
             // Get the line containing the mark in the context of this IVimTextBuffer
             _markMap.GetMark mark _vimBufferData
             |> Option.map VirtualSnapshotPointUtil.GetPoint
             |> Option.map SnapshotPointUtil.GetContainingLine
+            |> Option.map getLineAndNumber
+
+        | LineSpecifier.Number number ->
+            // Must be a valid number 
+            let tssNumber = Util.VimLineToTssLine number
+            SnapshotUtil.TryGetLine x.CurrentSnapshot tssNumber
+            |> Option.map (fun line -> line, number)
+
+        | LineSpecifier.LineSpecifierWithAdjustment (lineSpecifier, adjustment) ->
+            x.GetLine lineSpecifier |> OptionUtil.map2 (getAdjustment adjustment)
+
+        | LineSpecifier.AdjustmentOnCurrent adjustment -> 
+            getAdjustment adjustment currentLine
+
         | LineSpecifier.NextLineWithPattern pattern ->
             // TODO: Implement
             None
@@ -321,10 +347,6 @@ type VimInterpreter
         | LineSpecifier.NextLineWithPreviousSubstitutePattern ->
             // TODO: Implement
             None
-        | LineSpecifier.Number number ->
-            // Must be a valid number 
-            let number = Util.VimLineToTssLine number
-            SnapshotUtil.TryGetLine x.CurrentSnapshot number
         | LineSpecifier.PreviousLineWithPattern pattern ->
             // TODO: Implement
             None
@@ -332,8 +354,15 @@ type VimInterpreter
             // TODO: Implement
             None
 
-        | LineSpecifier.AdjustmentOnCurrent adjustment -> 
-            getAdjustment adjustment currentLine
+    // Get a tuple of the ITextSnapshotLine specified by the given LineSpecifier and the 
+    // corresponding vim line number
+    member x.GetLineAndVimLineNumber lineSpecifier =
+        x.GetLineAndVimLineNumberCore lineSpecifier x.CaretLine
+
+    /// Get the ITextSnapshotLine specified by the given LineSpecifier
+    member x.GetLineCore lineSpecifier currentLine = 
+        x.GetLineAndVimLineNumberCore lineSpecifier currentLine
+        |> Option.map (fun (line, vimLine) -> line)
 
     /// Get the ITextSnapshotLine specified by the given LineSpecifier
     member x.GetLine lineSpecifier = 
@@ -484,25 +513,36 @@ type VimInterpreter
 
             // The :copy command allows the specification of a full range but for the destination
             // it will only be valid for single line specifiers.  
-            let destLine = 
+            let destLineSpec = 
                 match destLineRange with 
                 | LineRangeSpecifier.None -> None
                 | LineRangeSpecifier.EntireBuffer -> None
                 | LineRangeSpecifier.WithEndCount _ -> None
                 | LineRangeSpecifier.Join _ -> None
-                | LineRangeSpecifier.Range (left, _ , _) -> x.GetLine left
+                | LineRangeSpecifier.Range (left, _ , _) -> left |> Some
                 | LineRangeSpecifier.SingleLine line -> 
-
                     // If a single line and a count is specified then we need to apply the count to
                     // the line
-                    let line = x.GetLine line
-                    match line, count with
-                    | Some line, Some count -> SnapshotUtil.TryGetLine x.CurrentSnapshot (line.LineNumber + count)
-                    | _ -> line
+                    match count with
+                    | Some count -> LineSpecifier.LineSpecifierWithAdjustment(line, count) |> Some
+                    | _ -> line |> Some
 
-            match destLine with
-            | None -> _statusUtil.OnError Resources.Common_InvalidAddress
-            | Some destLine -> 
+
+            let destLineInfo = destLineSpec |> OptionUtil.map2 x.GetLineAndVimLineNumber
+
+            match destLineInfo with
+            | None ->
+                 _statusUtil.OnError Resources.Common_InvalidAddress
+            
+            | Some (destLine, destLineNum) -> 
+
+                let destPosition = 
+                    if destLineNum = 0 then
+                        // If the target line is vim line 0, the intent is to insert the text
+                        // above the first line
+                        destLine.Start.Position
+                    else 
+                        destLine.EndIncludingLineBreak.Position
 
                 let text = 
                     if destLine.LineBreakLength = 0 then
@@ -521,25 +561,23 @@ type VimInterpreter
 
                 // Use an undo transaction so that the caret move and insert is a single
                 // operation
-                _undoRedoOperations.EditWithUndoTransaction transactionName _textView (fun() -> editOperation sourceLineRange destLine text))
+                _undoRedoOperations.EditWithUndoTransaction transactionName _textView (fun() -> editOperation sourceLineRange destPosition text))
 
     /// Copy the text from the source address to the destination address
     member x.RunCopyTo sourceLineRange destLineRange count =
-        x.RunCopyOrMoveTo sourceLineRange destLineRange count "CopyTo" (fun sourceLineRange destLine text ->
-            let destPosition = destLine.EndIncludingLineBreak.Position
+        x.RunCopyOrMoveTo sourceLineRange destLineRange count "CopyTo" (fun sourceLineRange destPosition text ->
 
             _textBuffer.Insert(destPosition, text) |> ignore
             TextViewUtil.MoveCaretToPosition _textView destPosition)
 
     member x.RunMoveTo sourceLineRange destLineRange count =
-        x.RunCopyOrMoveTo sourceLineRange destLineRange count "MoveTo" (fun sourceLineRange destLine text ->
-            let destPosition = destLine.EndIncludingLineBreak.Position
+        x.RunCopyOrMoveTo sourceLineRange destLineRange count "MoveTo" (fun sourceLineRange destPosition text ->
 
             use edit = _textBuffer.CreateEdit()
             edit.Insert(destPosition, text) |> ignore
             edit.Delete(sourceLineRange.ExtentIncludingLineBreak.Span) |> ignore
             edit.Apply() |> ignore
-            TextViewUtil.MoveCaretToPosition _textView destLine.End.Position)
+            TextViewUtil.MoveCaretToPosition _textView destPosition)
 
     /// Clear out the key map for the given modes
     member x.RunClearKeyMap keyRemapModes mapArgumentList = 
@@ -654,6 +692,7 @@ type VimInterpreter
                     | RegisterName.Named named -> not named.IsAppend
                     | RegisterName.SelectionAndDrop drop -> drop <> SelectionAndDropRegister.Star
                     | RegisterName.LastSearchPattern -> true
+                    | RegisterName.ReadOnly ReadOnlyRegister.Colon -> true
                     | _ -> false)
             | _ -> nameList |> Seq.ofList
 
@@ -662,7 +701,7 @@ type VimInterpreter
             displayNames 
             |> Seq.map (fun name -> 
                 let register = _registerMap.GetRegister name
-                match register.Name.Char, StringUtil.isNullOrEmpty register.StringValue with
+                match register.Name.Char, StringUtil.IsNullOrEmpty register.StringValue with
                 | None, _ -> None
                 | Some c, true -> None
                 | Some c, false -> Some (c, normalizeDisplayString register.StringValue))
@@ -763,7 +802,7 @@ type VimInterpreter
         elif not hasBang && _vimHost.IsDirty _textBuffer then
             _statusUtil.OnError Resources.Common_NoWriteSinceLastChange
         else
-            let filePath = SystemUtil.ResolveVimPath _vimData.CurrentDirectory filePath
+            let filePath = x.ResolveVimPath filePath
             _vimHost.LoadFileIntoExistingWindow filePath _textView |> ignore
 
     /// Get the value of the specified expression 
@@ -777,8 +816,107 @@ type VimInterpreter
             if lineRange.Count > 1 then
                 _foldManager.CreateFold lineRange)
 
+    member x.RunNormal (lineRange: LineRangeSpecifier) input =
+        let transactionMap = System.Collections.Generic.Dictionary<IVimBuffer, ILinkedUndoTransaction>();
+        let modeSwitchMap = System.Collections.Generic.Dictionary<IVimBuffer, IVimBuffer>();
+        try
+            let rec inner list = 
+                match list with 
+                | [] -> 
+                    // No more input so we are finished
+                    true
+                | keyInput :: tail -> 
+
+                    // Prefer the focussed IVimBuffer over the current.  It's possible for the 
+                    // macro playback switch the active buffer via gt, gT, etc ... and playback 
+                    // should continue on the newly focussed IVimBuffer.  Should the host API
+                    // fail to return an active IVimBuffer continue using the original one
+                    let buffer = 
+                        match _vim.FocusedBuffer with
+                        | Some buffer -> buffer
+                        | None -> _vimBuffer
+
+                    // Make sure we have an IUndoTransaction open in the ITextBuffer
+                    if not (transactionMap.ContainsKey(buffer)) then
+                        let transaction = _undoRedoOperations.CreateLinkedUndoTransactionWithFlags "Normal Command" LinkedUndoTransactionFlags.CanBeEmpty
+                        transactionMap.Add(buffer, transaction)
+
+                    if not (modeSwitchMap.ContainsKey(buffer)) then
+                        buffer.SwitchMode ModeKind.Normal ModeArgument.None |> ignore
+                        modeSwitchMap.Add(buffer, buffer)
+
+                    // Actually run the KeyInput.  If processing the KeyInput value results
+                    // in an error then we should stop processing the macro
+                    match buffer.Process keyInput with
+                    | ProcessResult.Handled _ -> inner tail
+                    | ProcessResult.HandledNeedMoreInput -> inner tail
+                    | ProcessResult.NotHandled -> false
+                    | ProcessResult.Error -> false
+
+            let revertModes () =
+                modeSwitchMap.Values |> Seq.iter (fun buffer ->
+                    buffer.SwitchPreviousMode() |> ignore
+                )
+                modeSwitchMap.Clear()
+
+            match x.GetLineRange lineRange  with
+            | None ->
+                try
+                    inner input |> ignore
+                finally
+                    revertModes ()
+            | _ ->
+                x.RunWithLineRange lineRange (fun lineRange ->
+                    // Each command we run can, and often will, change the underlying buffer whcih
+                    // will change the current ITextSnapshot.  Run one pass to get the line numbers
+                    // and then a second to edit the commands
+                    let lineNumbers = 
+                        lineRange.Lines
+                        |> Seq.map (fun snapshotLine ->
+                            let line, column = SnapshotPointUtil.GetLineColumn snapshotLine.Start
+                            _bufferTrackingService.CreateLineColumn _textBuffer line column LineColumnTrackingMode.Default)
+                        |> List.ofSeq
+
+                    // Now perform the command for every line.  Make sure to map forward to the 
+                    // current ITextSnapshot
+                    lineNumbers |> List.iter (fun trackingLineColumn ->
+                        match trackingLineColumn.Point with
+                        | None -> ()
+                        | Some point ->
+                            let point = 
+                                point
+                                |> SnapshotPointUtil.GetContainingLine
+                                |> SnapshotLineUtil.GetStart
+    
+                            // Caret needs to move to the start of the line for each :global command
+                            // action.  The caret will persist on the final line in the range once
+                            // the :global command completes
+                            TextViewUtil.MoveCaretToPoint _textView point
+                            try
+                                inner input |> ignore
+                            finally
+                                revertModes ()
+                        )
+    
+                    // Now close all of the ITrackingLineColumn values so that they stop taking up resources
+                    lineNumbers |> List.iter (fun trackingLineColumn -> trackingLineColumn.Close())
+                )
+
+        finally
+            transactionMap.Values |> Seq.iter (fun transaction ->
+                transaction.Dispose()
+            )
+
+
     /// Run the global command.  
     member x.RunGlobal lineRange pattern matchPattern lineCommand =
+
+        let pattern = 
+            if StringUtil.IsNullOrEmpty pattern then _vimData.LastSearchData.Pattern
+            else
+                _vimData.LastSearchData <- SearchData(pattern, Path.Forward)
+                pattern
+
         x.RunWithLineRangeOrDefault lineRange DefaultLineRange.EntireBuffer (fun lineRange ->
             let options = VimRegexFactory.CreateRegexOptions _globalSettings
             match VimRegexFactory.Create pattern options with
@@ -1029,7 +1167,7 @@ type VimInterpreter
                 match filePath with
                 | None -> _vimHost.Save _textView.TextBuffer |> ignore  
                 | Some filePath ->
-                    let filePath = SystemUtil.ResolveVimPath _vimData.CurrentDirectory filePath
+                    let filePath = x.ResolveVimPath filePath
                     _vimHost.SaveTextAs (lineRange.GetTextIncludingLineBreak()) filePath |> ignore
     
                 _commonOperations.CloseWindowUnlessDirty())
@@ -1057,7 +1195,7 @@ type VimInterpreter
 
     /// Run the read file command.
     member x.RunReadFile lineRange fileOptionList filePath =
-        let filePath = SystemUtil.ResolveVimPath _vimData.CurrentDirectory filePath
+        let filePath = x.ResolveVimPath filePath
         x.RunWithLineRangeOrDefault lineRange DefaultLineRange.CurrentLine (fun lineRange ->
             if not (List.isEmpty fileOptionList) then
                 _statusUtil.OnError (Resources.Interpreter_OptionNotSupported "[++opt]")
@@ -1160,7 +1298,7 @@ type VimInterpreter
     member x.RunSearch lineRange path pattern = 
         x.RunWithLineRangeOrDefault lineRange DefaultLineRange.CurrentLine (fun lineRange ->
             let pattern = 
-                if StringUtil.isNullOrEmpty pattern then _vimData.LastSearchData.Pattern
+                if StringUtil.IsNullOrEmpty pattern then _vimData.LastSearchData.Pattern
                 else pattern
     
             // Searches start after the end of the specified line range
@@ -1366,7 +1504,7 @@ type VimInterpreter
         if hasBang then
             _statusUtil.OnError (Resources.Interpreter_OptionNotSupported "!")
         else
-            let filePath = SystemUtil.ResolveVimPath _vimData.CurrentDirectory filePath
+            let filePath = x.ResolveVimPath filePath
             match _fileSystem.ReadAllLines filePath with
             | None -> _statusUtil.OnError (Resources.CommandMode_CouldNotOpenFile filePath)
             | Some lines -> x.RunScript lines
@@ -1496,10 +1634,8 @@ type VimInterpreter
     member x.RunWrite lineRange hasBang fileOptionList filePath =
         let filePath =
             match filePath with
-            | Some filePath ->
-                Some (SystemUtil.ResolveVimPath _vimData.CurrentDirectory filePath)
-            | None ->
-                None
+            | Some filePath -> Some (x.ResolveVimPath filePath)
+            | None -> None
         if not (List.isEmpty fileOptionList) then
             _statusUtil.OnError (Resources.Interpreter_OptionNotSupported "[++opt]")
         else
@@ -1597,6 +1733,7 @@ type VimInterpreter
         | LineCommand.MoveTo (sourceLineRange, destLineRange, count) -> x.RunMoveTo sourceLineRange destLineRange count
         | LineCommand.NoHighlightSearch -> x.RunNoHighlightSearch()
         | LineCommand.Nop -> ()
+        | LineCommand.Normal (lineRange, command) -> x.RunNormal lineRange command
         | LineCommand.Only -> x.RunOnly()
         | LineCommand.ParseError msg -> x.RunParseError msg
         | LineCommand.Print (lineRange, lineCommandFlags)-> x.RunPrint lineRange lineCommandFlags

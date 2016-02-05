@@ -50,7 +50,7 @@ type Token
     member x.TokenText = 
         if _startIndex + _length > _lineText.Length then
             // EndOfLine token doesn't have valid text
-            StringUtil.empty
+            StringUtil.Empty
         else
             _lineText.Substring(_startIndex, _length)
 

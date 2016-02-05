@@ -19,7 +19,6 @@ namespace Vim.VisualStudio.Implementation.ReSharper
         private readonly IReSharperUtil _reSharperUtil;
         private readonly ITextDocumentFactoryService _textDocumentFactoryService;
 
-
         [ImportingConstructor]
         internal ReSharperExtensionAdapter(IReSharperUtil reSharperUtil, ITextDocumentFactoryService textDocumentFactoryService)
         {
@@ -28,7 +27,7 @@ namespace Vim.VisualStudio.Implementation.ReSharper
         }
 
         /// <summary>
-        /// This is a bit of a hueristic.  It is technically possible for another component to create
+        /// This is a bit of a heuristic.  It is technically possible for another component to create
         /// a <see cref="ITextDocument"/> with the specified name pattern.  However it seems unlikely 
         /// that it will happen when R# is also installed.
         /// </summary>
@@ -48,6 +47,11 @@ namespace Vim.VisualStudio.Implementation.ReSharper
 
         #region IExtensionAdapter
 
+        bool? IExtensionAdapter.IsUndoRedoExpected
+        {
+            get { return null; }
+        }
+
         bool? IExtensionAdapter.ShouldKeepSelectionAfterHostCommand(string command, string argument)
         {
             if (!_reSharperUtil.IsInstalled)
@@ -56,7 +60,13 @@ namespace Vim.VisualStudio.Implementation.ReSharper
             }
 
             var comparer = StringComparer.OrdinalIgnoreCase;
-            return comparer.Equals(command, "ReSharper.ReSharper_ExtendSelection");
+            if (comparer.Equals(command, "ReSharper.ReSharper_ExtendSelection") ||
+                comparer.Equals(command, "ReSharper.ReSharper_SurroundWith"))
+            {
+                return true;
+            }
+
+            return null;
         }
 
         bool? IExtensionAdapter.ShouldCreateVimBuffer(ITextView textView)

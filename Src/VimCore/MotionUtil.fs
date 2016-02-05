@@ -146,12 +146,16 @@ type TagBlockParser (snapshot : ITextSnapshot) =
         let position = x.SkipBlanks startPosition
         _builder { 
             let! nameSpan = x.ParseAttributeName position
-            let! position = x.ParseChar (x.SkipBlanks nameSpan.End) '='
-            let quotePosition = x.SkipBlanks position
-            let! quoteChar = x.ParseQuoteChar quotePosition
-            let! valueSpan = x.ParseAttributeValue (quotePosition + 1) quoteChar
-            let! valueEnd = x.ParseChar valueSpan.End quoteChar
-            return Span.FromBounds(startPosition, valueEnd)
+            let position = x.SkipBlanks nameSpan.End
+            if x.TestPositionChar position '=' then
+                let quotePosition = position + 1
+                let! quoteChar = x.ParseQuoteChar quotePosition
+                let! valueSpan = x.ParseAttributeValue (quotePosition + 1) quoteChar
+                let! valueEnd = x.ParseChar valueSpan.End quoteChar
+                return Span.FromBounds(startPosition, valueEnd)
+            else
+                //The attribute has no value
+                return Span.FromBounds(startPosition, nameSpan.End)
         }
 
     /// This will be called with the position pointing immediately after the end of the 
@@ -191,7 +195,7 @@ type TagBlockParser (snapshot : ITextSnapshot) =
             _builder {
                 let! nameSpan = x.ParseName (startPosition + 1) 
                 let text = _snapshot.GetText(nameSpan)
-                if StringUtil.isEqualIgnoreCase "br" text || StringUtil.isEqualIgnoreCase "meta" text then
+                if StringUtil.IsEqualIgnoreCase "br" text || StringUtil.IsEqualIgnoreCase "meta" text then
                     return! None
                 else
                     let! position = x.ParseAttributes nameSpan.End
@@ -240,7 +244,7 @@ type TagBlockParser (snapshot : ITextSnapshot) =
             | None ->
                 match x.ParseEndTag position with 
                 | Some (endTagName, nextPosition) ->
-                    if StringUtil.isEqualIgnoreCase tagName endTagName then
+                    if StringUtil.IsEqualIgnoreCase tagName endTagName then
                         endPosition <- Some (position, nextPosition)
                     else
                         position <- position + 1
@@ -503,8 +507,8 @@ type MatchingTokenUtil() =
         // Find the closest index to column for either of these characters.  Whichever is 
         // closest wins.
         let findSimplePair c1 c2 kind = 
-            let result1 = StringUtil.indexOfCharAt c1 column lineText
-            let result2 = StringUtil.indexOfCharAt c2 column lineText
+            let result1 = StringUtil.IndexOfCharAt c1 column lineText
+            let result2 = StringUtil.IndexOfCharAt c2 column lineText
             reducePair result1 result2 kind
 
         // Find the closest comment string to the specified column
@@ -512,10 +516,10 @@ type MatchingTokenUtil() =
 
             // Check at the column and one before if not found at the column
             let indexOf text = 
-                let result = StringUtil.indexOfStringAt text column lineText
+                let result = StringUtil.IndexOfStringAt text column lineText
                 match result with
                 | None -> 
-                    if column > 0 then StringUtil.indexOfStringAt text (column - 1) lineText
+                    if column > 0 then StringUtil.IndexOfStringAt text (column - 1) lineText
                     else None 
                 | Some index -> result
 
@@ -1091,10 +1095,41 @@ type internal MotionUtil
                 |> SeqUtil.tryFind 0 (findMatched startChar endChar)
 
         match startPoint, lastPoint with
-        | Some startPoint, Some lastPoint -> 
-            let endPoint = SnapshotPointUtil.AddOneOrCurrent lastPoint
-            SnapshotSpan(startPoint, endPoint) |> Some
+        | Some startPoint, Some lastPoint -> Some (startPoint, lastPoint)
         | _ -> None
+
+    member x.GetBlockWithCount (blockKind : BlockKind) contextPoint count = 
+
+        // Need to wrap GetBlock to account for blocks being side by 
+        // side.  In that case we have to detect a side by side block and 
+        // keep moving right until we get the outer block or None
+        let getBlockHelper closePoint =
+            let mutable isDone = false
+            let mutable contextPoint = SnapshotPointUtil.AddOne closePoint
+            let mutable result : (SnapshotPoint * SnapshotPoint) option = None
+
+            while not isDone do
+                match x.GetBlock blockKind contextPoint with
+                | None -> isDone <- true
+                | Some (newOpenPoint, newClosePoint) ->
+                    if closePoint.Position > newOpenPoint.Position && closePoint.Position < newClosePoint.Position then
+                        result <- Some (newOpenPoint, newClosePoint)
+                        isDone <- true
+                    else
+                        contextPoint <- SnapshotPointUtil.AddOne newClosePoint
+            result
+
+        let rec inner openPoint closePoint count = 
+            if count = 0 then
+                Some (openPoint, closePoint)
+            else
+                match getBlockHelper closePoint with 
+                | None -> None
+                | Some (openPoint, closePoint) -> inner openPoint closePoint (count - 1)
+
+        match x.GetBlock blockKind contextPoint with
+        | Some (openPoint, closePoint) -> inner openPoint closePoint (count - 1)
+        | None -> None
 
     member x.GetQuotedStringData quoteChar = 
 
@@ -1102,7 +1137,7 @@ type internal MotionUtil
         // will take into account escaped characters
         let quotePoints = 
             let isEscapeChar c = 
-                StringUtil.containsChar _localSettings.QuoteEscape c 
+                StringUtil.ContainsChar _localSettings.QuoteEscape c 
 
             let list = List<SnapshotPoint>()
             let endPosition = x.CaretLine.End.Position
@@ -1241,6 +1276,23 @@ type internal MotionUtil
                 |> CaretColumn.InLastLine
             MotionResult.CreateExEx range.ExtentIncludingLineBreak isForward MotionKind.LineWise MotionResultFlags.None column |> Some
 
+    member x.MatchingTokenOrDocumentPercent numberOpt = 
+        match numberOpt with
+        | Some 0 -> None
+        | Some x when x > 100 -> None
+        | Some count -> 
+            _jumpList.Add x.CaretPoint
+
+            let lineCount = x.CurrentSnapshot.LineCount
+            let line = (count * lineCount + 99) / 100
+
+            line
+            |> Util.VimLineToTssLine
+            |> x.CurrentSnapshot.GetLineFromLineNumber
+            |> x.LineToLineFirstNonBlankMotion x.CaretLine
+            |> Some
+        | None -> x.MatchingToken()
+
     /// Find the matching token for the next token on the current line 
     member x.MatchingToken() = 
 
@@ -1280,14 +1332,11 @@ type internal MotionUtil
 
     /// Implement the all block motion
     member x.AllBlock contextPoint blockKind count =
-
-        if count <> 1 then
-            None
-        else
-            let span = x.GetBlock blockKind contextPoint 
-            match span with
-            | None -> None
-            | Some span -> MotionResult.Create span true MotionKind.CharacterWiseInclusive |> Some
+        match x.GetBlockWithCount blockKind contextPoint count with
+        | Some (openPoint, closePoint) -> 
+            let span = SnapshotSpan(openPoint, closePoint.Add(1))
+            MotionResult.Create span true MotionKind.CharacterWiseInclusive |> Some
+        | None -> None
 
     /// Implementation of the 'ap' motion.  Unfortunately this is not as simple as the documentation
     /// states it is.  While the 'ap' motion uses the same underlying definition of a paragraph 
@@ -1837,36 +1886,36 @@ type internal MotionUtil
     /// An inner block motion is just the all block motion with the start and 
     /// end character removed 
     member x.InnerBlock contextPoint blockKind count =
-        if count <> 1 then
-            None
-        else
-            match x.GetBlock blockKind contextPoint with
-            | None -> None
-            | Some span when span.Snapshot.LineCount = 1 ->
-                if span.Length < 3 then
-                    None
+        match x.GetBlockWithCount blockKind contextPoint count with
+        | Some (openPoint, closePoint) ->
+            let snapshot = openPoint.Snapshot
+            let openLine = openPoint.GetContainingLine()
+            let closeLine = closePoint.GetContainingLine()
+
+            let isOpenLineWise = openPoint.Position + 1 = openLine.End.Position 
+            let isCloseLineWise = 
+                SnapshotSpan(closeLine.Start, closePoint)
+                |> SnapshotSpanUtil.GetPoints Path.Forward
+                |> Seq.forall SnapshotPointUtil.IsBlank
+
+            let (span, motionKind) =
+                if isOpenLineWise && isCloseLineWise then
+                    let range = SnapshotLineRangeUtil.CreateForLineNumberRange snapshot (openLine.LineNumber + 1) (closeLine.LineNumber - 1)
+                    (range.ExtentIncludingLineBreak, MotionKind.LineWise)
+                elif isOpenLineWise then
+                    let line = SnapshotUtil.GetLine snapshot (openLine.LineNumber + 1)
+                    let span = SnapshotSpan(line.Start, closePoint)
+                    (span, MotionKind.CharacterWiseInclusive)
+                elif isCloseLineWise then
+                    let line = SnapshotUtil.GetLine snapshot (closeLine.LineNumber - 1)
+                    let span = SnapshotSpan(openPoint.Add(1), line.End)
+                    (span, MotionKind.CharacterWiseInclusive)
                 else
-                    let startPoint = SnapshotPointUtil.AddOne span.Start
-                    let endPoint = SnapshotPointUtil.SubtractOne span.End
-                    let span = SnapshotSpan(startPoint, endPoint)
-                    MotionResult.Create span true MotionKind.CharacterWiseInclusive |> Some
+                    let span = SnapshotSpan(openPoint.Add(1), closePoint)
+                    (span, MotionKind.CharacterWiseInclusive)
 
-            | Some span ->
-                let startPoint = 
-                    if SnapshotPointUtil.IsLastPointOnLine span.Start then
-                        span.Start.GetContainingLine().EndIncludingLineBreak
-                    else
-                        span.Start.Add 1
-
-                let endPoint =
-                    if SnapshotLineUtil.IsFirstNonBlank(span.End.Subtract 1) then
-                        let line = SnapshotUtil.GetLineOrFirst span.Snapshot (span.End.GetContainingLine().LineNumber - 1)
-                        line.End
-                    else
-                        span.End.Subtract 1
-
-                let span = SnapshotSpanUtil.Create startPoint endPoint
-                MotionResult.Create span true MotionKind.CharacterWiseInclusive |> Some
+            MotionResult.Create span true motionKind |> Some
+        | None -> None
                 
     /// Implement the 'iw' motion.  Unlike the 'aw' motion it is not limited to a specific line
     /// and can exceed it
@@ -2405,11 +2454,24 @@ type internal MotionUtil
                     SnapshotSpanUtil.Create data.LeadingWhiteSpace.Start data.TrailingWhiteSpace.Start
             MotionResult.Create span true MotionKind.CharacterWiseInclusive |> Some
 
-    member x.QuotedStringContents quoteChar = 
+    member x.QuotedStringContentsWithCount quoteChar count = 
+        let QuotedStringContents quoteChar = 
+            match x.GetQuotedStringData quoteChar with
+            | None -> None 
+            | Some data ->
+                let span = data.Contents
+                MotionResult.Create span true MotionKind.CharacterWiseInclusive |> Some
+
+        if count > 1 then
+          x.QuotedStringWithoutSpaces quoteChar
+        else
+          QuotedStringContents quoteChar
+
+    member x.QuotedStringWithoutSpaces quoteChar = 
         match x.GetQuotedStringData quoteChar with
         | None -> None 
-        | Some data ->
-            let span = data.Contents
+        | Some data -> 
+            let span = SnapshotSpanUtil.Create data.LeadingQuote data.TrailingWhiteSpace.Start
             MotionResult.Create span true MotionKind.CharacterWiseInclusive |> Some
 
     /// Get the motion for a search command.  Used to implement the '/' and '?' motions
@@ -2487,7 +2549,7 @@ type internal MotionUtil
     /// Move the caret to the next occurrence of the last search
     member x.LastSearch isReverse count =
         let last = _vimData.LastSearchData
-        if StringUtil.isNullOrEmpty last.Pattern then
+        if StringUtil.IsNullOrEmpty last.Pattern then
             _statusUtil.OnError Resources.NormalMode_NoPreviousSearch
             None
         else
@@ -2659,13 +2721,13 @@ type internal MotionUtil
             | Motion.LineUpToFirstNonBlank -> x.LineUpToFirstNonBlank motionArgument.Count |> Some
             | Motion.Mark localMark -> x.Mark localMark
             | Motion.MarkLine localMark -> x.MarkLine localMark
-            | Motion.MatchingToken -> x.MatchingToken()
+            | Motion.MatchingTokenOrDocumentPercent -> x.MatchingTokenOrDocumentPercent motionArgument.RawCount
             | Motion.NextPartialWord path -> x.NextPartialWord path motionArgument.Count
             | Motion.NextWord path -> x.NextWord path motionArgument.Count
             | Motion.ParagraphBackward -> x.ParagraphBackward motionArgument.Count |> Some
             | Motion.ParagraphForward -> x.ParagraphForward motionArgument.Count |> Some
             | Motion.QuotedString quoteChar -> x.QuotedString quoteChar
-            | Motion.QuotedStringContents quoteChar -> x.QuotedStringContents quoteChar
+            | Motion.QuotedStringContents quoteChar -> x.QuotedStringContentsWithCount quoteChar motionArgument.Count
             | Motion.RepeatLastCharSearch -> x.RepeatLastCharSearch()
             | Motion.RepeatLastCharSearchOpposite -> x.RepeatLastCharSearchOpposite()
             | Motion.Search searchData-> x.Search searchData motionArgument.Count
@@ -2697,6 +2759,7 @@ type internal MotionUtil
         | Motion.TagBlock kind -> x.TagBlock 1 point kind
         | Motion.InnerWord wordKind -> x.InnerWord wordKind 1 point 
         | Motion.InnerBlock blockKind -> x.InnerBlock point blockKind 1
+        | Motion.QuotedStringContents quote -> x.QuotedStringWithoutSpaces quote
         | _ -> None
 
     interface IMotionUtil with

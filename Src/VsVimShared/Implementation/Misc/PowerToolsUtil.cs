@@ -102,6 +102,11 @@ namespace Vim.VisualStudio.Implementation.Misc
 
         #region IExtensionAdapter
 
+        bool? IExtensionAdapter.IsUndoRedoExpected
+        {
+            get { return null; }
+        }
+
         bool? IExtensionAdapter.ShouldKeepSelectionAfterHostCommand(string command, string argument)
         {
             return null;

@@ -194,7 +194,7 @@ type internal SelectMode
                     x.ProcessCaretMovement caretMovement keyInput
                 | None ->
                     if IsTextKeyInput keyInput then
-                        x.ProcessInput (StringUtil.ofChar keyInput.Char) true
+                        x.ProcessInput (StringUtil.OfChar keyInput.Char) true
                     else
                         match _runner.Run keyInput with
                         | BindResult.NeedMoreInput _ ->

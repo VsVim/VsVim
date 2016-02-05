@@ -11,12 +11,12 @@ namespace Vim.UnitTest
 {
     public abstract class CommandModeIntegrationTest : VimTestBase
     {
-        protected IVimBuffer _vimBuffer;
-        protected ITextView _textView;
-        protected ITextBuffer _textBuffer;
-        protected ICommandMode _commandMode;
-        protected MockVimHost _vimHost;
-        protected string _lastStatus;
+        private IVimBuffer _vimBuffer;
+        private ITextView _textView;
+        private ITextBuffer _textBuffer;
+        private ICommandMode _commandMode;
+        private MockVimHost _vimHost;
+        private string _lastStatus;
 
         public virtual void Create(params string[] lines)
         {
@@ -354,6 +354,47 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class GlobalTest : CommandModeIntegrationTest
+        {
+            [Fact]
+            public void DeleteSelected()
+            {
+                Create("cat", "dog", "cattle");
+                _vimBuffer.ProcessNotation(":g/cat/d", enter: true);
+                Assert.Equal(new[] { "dog" }, _vimBuffer.TextBuffer.GetLines());
+            }
+
+            [Fact]
+            public void UpdateLastSearch()
+            {
+                Create("cat", "dog", "cattle");
+                _vimBuffer.VimData.LastSearchData = new SearchData("cat", Path.Forward);
+                _vimBuffer.ProcessNotation(":g/cat/echo", enter: true);
+                Assert.Equal("cat", _vimBuffer.VimData.LastSearchData.Pattern);
+            }
+
+            [Fact]
+            public void SpaceDoesntUseLastSearch()
+            {
+                Create("cat", "dog", "cattle", "big dog");
+                _vimBuffer.VimData.LastSearchData = new SearchData("cat", Path.Forward);
+                _vimBuffer.ProcessNotation(":g/ /d", enter: true);
+                Assert.Equal(new[] { "cat", "dog", "cattle" }, _vimBuffer.TextBuffer.GetLines());
+            }
+
+            /// <summary>
+            /// By default the global command should use the last search pattern
+            /// </summary>
+            [Fact]
+            public void Issue1626()
+            {
+                Create("cat", "dog", "cattle");
+                _vimBuffer.VimData.LastSearchData = new SearchData("cat", Path.Forward);
+                _vimBuffer.ProcessNotation(":g//d", enter: true);
+                Assert.Equal(new[] { "dog" }, _vimBuffer.TextBuffer.GetLines());
+            }
+        }
+
         public sealed class IncrementalSearchTest : CommandModeIntegrationTest
         {
             /// <summary>
@@ -414,6 +455,26 @@ namespace Vim.UnitTest
                 RunCommandRaw(":/dog");
                 _vimBuffer.Process("n");
                 Assert.Equal(_textBuffer.GetLine(2).Start, _textView.GetCaretPoint());
+            }
+        }
+
+        public sealed class LastCommandLineTest : CommandModeIntegrationTest
+        {
+            [Fact]
+            public void Simple()
+            {
+                Create();
+                RunCommandRaw(":/dog");
+                Assert.Equal("/dog", VimData.LastCommandLine);
+            }
+
+            [Fact]
+            public void Error()
+            {
+                Create();
+                VimData.LastCommandLine = "test";
+                RunCommandRaw(":not_a_vim_command");
+                Assert.Equal("not_a_vim_command", VimData.LastCommandLine);
             }
         }
 
@@ -516,6 +577,22 @@ namespace Vim.UnitTest
                 Assert.Equal(_textBuffer.GetLine(0).GetText(), "dog");
                 Assert.Equal(_textBuffer.GetLine(1).GetText(), "bear");
                 Assert.Equal(_textBuffer.GetLine(2).GetText(), "cat");
+            }
+
+
+            /// <summary>
+            /// Specifying "line 0" should move to before the first line.
+            /// </summary>
+            [Fact]
+            public void MoveToBeforeFirstLineInFile() {
+                Create("cat", "dog", "bear");
+
+                _textView.MoveCaretToLine(2);
+                RunCommand("m0");
+
+                Assert.Equal(_textBuffer.GetLine(0).GetText(), "bear");
+                Assert.Equal(_textBuffer.GetLine(1).GetText(), "cat");
+                Assert.Equal(_textBuffer.GetLine(2).GetText(), "dog");
             }
         }
 

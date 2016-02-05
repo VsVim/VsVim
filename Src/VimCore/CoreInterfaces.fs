@@ -136,6 +136,8 @@ type IWordUtil =
 /// Used to display a word completion list to the user
 type IWordCompletionSession =
 
+    inherit IPropertyOwner
+
     /// Is the session dismissed
     abstract IsDismissed : bool
 
@@ -153,13 +155,22 @@ type IWordCompletionSession =
 
     /// Raised when the session is dismissed
     [<CLIEvent>]
-    abstract Dismissed: IDelegateEvent<System.EventHandler>
+    abstract Dismissed : IDelegateEvent<System.EventHandler>
+
+type WordCompletionSessionEventArgs(_wordCompletionSession : IWordCompletionSession) =
+    inherit System.EventArgs()
+
+    member x.WordCompletionSession = _wordCompletionSession
 
 /// Factory service for creating IWordCompletionSession instances
 type IWordCompletionSessionFactoryService = 
 
     /// Create a session with the given set of words
     abstract CreateWordCompletionSession : textView : ITextView -> wordSpan : SnapshotSpan -> words : string seq -> isForward : bool -> IWordCompletionSession
+
+    /// Raised when the session is created
+    [<CLIEvent>]
+    abstract Created : IDelegateEvent<System.EventHandler<WordCompletionSessionEventArgs>>
 
 /// Wraps an ITextUndoTransaction so we can avoid all of the null checks
 type IUndoTransaction =
@@ -263,7 +274,7 @@ type TextChange =
                 | None -> None
                 | Some text -> inner right text
 
-        inner x StringUtil.empty
+        inner x StringUtil.Empty
 
     /// Get the last / most recent change in the TextChange tree
     member x.LastChange = 
@@ -275,7 +286,7 @@ type TextChange =
 
     member x.IsEmpty = 
         match x with 
-        | Insert text -> StringUtil.isNullOrEmpty text
+        | Insert text -> StringUtil.IsNullOrEmpty text
         | DeleteLeft count -> count = 0
         | DeleteRight count -> count = 0
         | Combination (left, right) -> left.IsEmpty && right.IsEmpty
@@ -366,7 +377,7 @@ type TextChange =
             | Combination (leftSubLeft, leftSubRight) -> complexMerge leftSubLeft leftSubRight
 
     static member Replace str =
-        let left = str |> StringUtil.length |> TextChange.DeleteLeft
+        let left = str |> StringUtil.Length |> TextChange.DeleteLeft
         let right = TextChange.Insert str
         TextChange.Combination (left, right)
 
@@ -485,7 +496,7 @@ type SearchOffsetData =
 
         let parseSearch () = 
             index := index.Value + 1
-            match StringUtil.charAtOption index.Value offset with
+            match StringUtil.CharAtOption index.Value offset with
             | Option.Some '/' -> 
                 let path = Path.Forward
                 let pattern = offset.Substring(index.Value + 1)
@@ -510,7 +521,7 @@ type SearchOffsetData =
             | _ -> SearchOffsetData.None
 
     static member Parse (offset : string) =
-        if StringUtil.isNullOrEmpty offset then
+        if StringUtil.IsNullOrEmpty offset then
             SearchOffsetData.None
         else
             SearchOffsetData.ParseCore offset
@@ -1052,7 +1063,8 @@ type Motion =
 
     /// Get the matching token from the next token on the line.  This is used to implement
     /// the % motion
-    | MatchingToken 
+    /// If a number is specified, go to {count} percentage in the file
+    | MatchingTokenOrDocumentPercent 
 
     /// Search for the next occurrence of the word under the caret
     | NextWord of Path
@@ -1252,7 +1264,7 @@ type KeyInputSet =
 
     /// A string representation of the name.  It is unreliable to use this for anything
     /// other than display as two distinct KeyInput values can map to a single char
-    member x.Name = x.KeyInputs |> Seq.map (fun ki -> ki.Char) |> StringUtil.ofCharSeq
+    member x.Name = x.KeyInputs |> Seq.map (fun ki -> ki.Char) |> StringUtil.OfCharSeq
 
     /// Length of the contained KeyInput's
     member x.Length =
@@ -1323,7 +1335,7 @@ type KeyInputSet =
             if ki.Key = VimKey.RawCharacter then ki.Char.ToString()
             elif ki.Key = VimKey.None then "<None>"
             else System.String.Format("<{0}>", ki.Key)  )
-        |> StringUtil.ofStringSeq
+        |> StringUtil.OfStringSeq
 
     interface System.IComparable with
         member x.CompareTo yobj = 
@@ -3628,10 +3640,10 @@ type HistoryList () =
 
     /// Adds an item to the top of the history list
     member x.Add value = 
-        if not (StringUtil.isNullOrEmpty value) then
+        if not (StringUtil.IsNullOrEmpty value) then
             let list =
                 _list
-                |> Seq.filter (fun x -> not (StringUtil.isEqual x value))
+                |> Seq.filter (fun x -> not (StringUtil.IsEqual x value))
                 |> Seq.truncate (_limit - 1)
                 |> List.ofSeq
             _list <- value :: list
@@ -3741,6 +3753,9 @@ type IVimData =
     /// The last command which was ran 
     abstract LastCommand : StoredCommand option with get, set
 
+    /// The last command line which was ran
+    abstract LastCommandLine : string with get, set
+
     /// The last shell command that was run
     abstract LastShellCommand : string option with get, set
 
@@ -3805,6 +3820,9 @@ type IVimHost =
 
     /// Is auto-command enabled for this host
     abstract IsAutoCommandEnabled : bool
+
+    /// Is undo / redo expected at this point in time due to a host operation.
+    abstract IsUndoRedoExpected : bool 
 
     /// Get the count of window tabs that are active in the host. This refers to tabs for actual 
     /// edit windows, not anything to do with tabs in the text file.  If window tabs are not supported 

@@ -154,6 +154,23 @@ namespace Vim.UnitTest
                         },
                         _textView.Selection.SelectedSpans);
                 }
+
+                /// <summary>
+                /// This is an anti fact
+                /// 
+                /// The WPF editor can't place the caret in the middle of a tab.  It can't
+                /// for example put it on the 2 of the 4th space a tab occupies.  
+                /// </summary>
+                [Fact]
+                public void MiddleOfTab()
+                {
+                    Create("cat", "d\tog");
+                    _vimBuffer.LocalSettings.TabStop = 4;
+                    _vimBuffer.ProcessNotation("ll<C-q>jl");
+                    var textView = _vimBuffer.TextView;
+                    Assert.Equal('t', textView.Selection.Start.Position.GetChar());
+                    Assert.Equal('g', textView.Selection.End.Position.GetChar());
+                }
             }
 
             public sealed class MiscTest : BlockSelectionTest
@@ -930,20 +947,20 @@ namespace Vim.UnitTest
             public sealed class BlockWiseTest : ReplaceSelectionTest
             {
                 /// <summary>
-                /// TODO: This test is actually different from gVim.  Here gVim would replace
-                /// with "d aaag" on the second line (3 a's instead of 4).  There appears to be a
-                /// bug in the width calculation of the start of the SnasphotOverlapSpan.  It claims
-                /// to have a width of 4 and spaces before of 3.  There are only 3 characters available
-                /// though total because the 'd' occupies part of the tab width.  Need to resolve
-                /// this 
+                /// This is an anti test.
+                /// 
+                /// The WPF editor has no way to position the caret in the middle of a 
+                /// tab.  It can't for instance place it on the 2 space of the 4 spaces
+                /// the caret occupies.  Hence this test have a deviating behavior from
+                /// gVim because the caret position differs on the final 'l' 
                 /// </summary>
-                [Fact(Skip = "Need to actually fix this test once and for all")]
+                [Fact]
                 public void Overlap()
                 {
                     Create("cat", "d\tog");
                     _vimBuffer.LocalSettings.TabStop = 4;
                     _vimBuffer.ProcessNotation("ll<C-q>jlra");
-                    Assert.Equal(new[] { "caa", "d aaaag" }, _textBuffer.GetLines());
+                    Assert.Equal(new[] { "caa", "d aaag" }, _textBuffer.GetLines());
                 }
             }
         }
@@ -2352,6 +2369,39 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
+            /// Text object selections will extend to outer blocks
+            /// </summary>
+            [Fact]
+            public void TextObject_Count_AllParen_ExpandOutward()
+            {
+                Create("cat (fo(bad)od) bear");
+                _textView.MoveCaretTo(9);
+                _vimBuffer.Process("v2ab");
+                Assert.Equal("(fo(bad)od)", _textView.GetSelectionSpan().GetText());
+                Assert.Equal(14, _textView.GetCaretPoint().Position);
+            }
+
+            [Fact]
+            public void TextObject_Quotes_Included()
+            {
+                Create(@"cat ""dog"" tree");
+                EnterMode(ModeKind.VisualCharacter, new SnapshotSpan(_textView.TextSnapshot, 5, 1));
+                _vimBuffer.Process(@"i""i""");
+                Assert.Equal(@"""dog""", _textView.GetSelectionSpan().GetText());
+                Assert.Equal(8, _textView.GetCaretPoint().Position);
+            }
+
+            [Fact]
+            public void TextObject_Count_Quotes_Included()
+            {
+                Create(@"cat ""dog"" tree");
+                EnterMode(ModeKind.VisualCharacter, new SnapshotSpan(_textView.TextSnapshot, 5, 1));
+                _vimBuffer.Process(@"2i""");
+                Assert.Equal(@"""dog""", _textView.GetSelectionSpan().GetText());
+                Assert.Equal(8, _textView.GetCaretPoint().Position);
+            }
+
+            /// <summary>
             /// If we've already selected the inner block at the caret then move outward 
             /// and select the containing block
             /// </summary>
@@ -2405,7 +2455,7 @@ namespace Vim.UnitTest
                 _textView.MoveCaretToLine(4);
                 _vimBuffer.Process("viB");
                 Assert.Equal(_textBuffer.GetLineRange(4, 5).GetText(), _textView.GetSelectionSpan().GetText());
-                Assert.Equal(47, _textView.GetCaretPoint().Position);
+                Assert.Equal(48, _textView.GetCaretPoint().Position);
             }
 
             /// <summary>
@@ -2488,6 +2538,35 @@ namespace Vim.UnitTest
                 Create("hello world");
                 _vimBuffer.ProcessNotation("vl");
                 Assert.False(_vimBuffer.CanProcess(VimKey.LeftDrag));
+            }
+        }
+
+        public sealed class TextObjectTest : VisualModeIntegrationTest
+        {
+            [Fact]
+            public void InnerBlockYankAndPasteIsLinewise()
+            {
+                Create("if (true)", "{", "  statement;", "}", "// after");
+                _textView.MoveCaretToLine(2);
+                _vimBuffer.ProcessNotation("vi}");
+                Assert.Equal(ModeKind.VisualCharacter, _vimBuffer.ModeKind);
+                _vimBuffer.ProcessNotation("y");
+                Assert.True(UnnamedRegister.OperationKind.IsCharacterWise);
+                _vimBuffer.ProcessNotation("p");
+                Assert.Equal(
+                    new[] { "   statement;", " statement;" },
+                    _textBuffer.GetLineRange(startLine: 2, endLine: 3).Lines.Select(x => x.GetText()));
+            }
+
+            [Fact]
+            public void InnerBlockShouldGoToEol()
+            {
+                Create("if (true)", "{", "  statement;", "}", "// after");
+                _textView.MoveCaretToLine(2);
+                _vimBuffer.ProcessNotation("vi}");
+
+                var column = _textView.GetCaretColumn();
+                Assert.True(column.IsInsideLineBreak);
             }
         }
 

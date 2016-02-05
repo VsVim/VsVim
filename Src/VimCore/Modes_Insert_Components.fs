@@ -1,11 +1,34 @@
 ﻿#light
 
-namespace Vim
+namespace Vim.Modes.Insert
 open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Editor
 open Microsoft.VisualStudio.Text.Operations
 open Microsoft.VisualStudio.Utilities
-open System.ComponentModel.Composition
+open Vim
+
+/// Used to track and accumulate the changes to ITextView instance
+type internal ITextChangeTracker =
+
+    /// Associated ITextView
+    abstract TextView : ITextView
+
+    /// Whether or not change tracking is currently enabled.  Disabling the tracking will
+    /// cause the current change to be completed
+    abstract TrackCurrentChange : bool with get, set
+
+    /// Current change
+    abstract CurrentChange : TextChange option
+
+    /// Complete the current change if there is one
+    abstract CompleteChange : unit -> unit
+
+    /// Clear out the current change without completing it
+    abstract ClearChange : unit -> unit
+
+    /// Raised when a change is completed
+    [<CLIEvent>]
+    abstract ChangeCompleted : IDelegateEvent<System.EventHandler<TextChangeEventArgs>>
 
 /// Used to track changes to an individual IVimBuffer
 type internal TextChangeTracker
@@ -14,6 +37,8 @@ type internal TextChangeTracker
         _textView : ITextView,
         _operations : ICommonOperations
     ) as this =
+
+    static let Key = System.Object()
 
     let _bag = DisposableBag()
     let _changeCompletedEvent = StandardEvent<TextChangeEventArgs>()
@@ -94,7 +119,7 @@ type internal TextChangeTracker
         // the ITextBuffer and tabs are enabled and the user hits <Tab> the spaces will be deleted
         // and replaced with tabs.  The result of the edit though should be recorded as simply 
         // tabs
-        if change.OldText.Length > 0 && StringUtil.isBlanks change.NewText && StringUtil.isBlanks change.OldText then
+        if change.OldText.Length > 0 && StringUtil.IsBlanks change.NewText && StringUtil.IsBlanks change.OldText then
             let oldText = _operations.NormalizeBlanks change.OldText
             let newText = _operations.NormalizeBlanks change.NewText
             if newText.StartsWith oldText then
@@ -176,6 +201,12 @@ type internal TextChangeTracker
             x.CompleteChange()
             _currentTextChange <- Some (newTextChange, newChange)
 
+    static member GetTextChangeTracker (bufferData : IVimBufferData) (commonOperationsFactory : ICommonOperationsFactory) =
+        let textView = bufferData.TextView
+        textView.Properties.GetOrCreateSingletonProperty(Key, (fun () -> 
+            let operations = commonOperationsFactory.GetCommonOperations bufferData
+            TextChangeTracker(bufferData.VimTextBuffer, textView, operations)))
+
     interface ITextChangeTracker with 
         member x.TextView = _textView
         member x.TrackCurrentChange
@@ -186,19 +217,3 @@ type internal TextChangeTracker
         member x.ClearChange () = x.ClearChange ()
         [<CLIEvent>]
         member x.ChangeCompleted = _changeCompletedEvent.Publish
-
-[<Export(typeof<ITextChangeTrackerFactory>)>]
-type internal TextChangeTrackerFactory 
-    [<ImportingConstructor>]
-    (
-        _commonOperationsFactory : ICommonOperationsFactory
-    )  =
-
-    let _key = System.Object()
-    
-    interface ITextChangeTrackerFactory with
-        member x.GetTextChangeTracker (bufferData : IVimBufferData) =
-            let textView = bufferData.TextView
-            textView.Properties.GetOrCreateSingletonProperty(_key, (fun () -> 
-                let operations = _commonOperationsFactory.GetCommonOperations bufferData
-                TextChangeTracker(bufferData.VimTextBuffer, textView, operations) :> ITextChangeTracker))

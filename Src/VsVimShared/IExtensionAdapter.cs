@@ -14,6 +14,8 @@ namespace Vim.VisualStudio
     /// </summary>
     internal interface IExtensionAdapter
     {
+        bool? IsUndoRedoExpected { get; }
+
         bool? ShouldKeepSelectionAfterHostCommand(string command, string argument);
 
         bool? ShouldCreateVimBuffer(ITextView textView);
@@ -27,7 +29,7 @@ namespace Vim.VisualStudio
     /// </summary>
     internal interface IExtensionAdapterBroker : IExtensionAdapter
     {
-        ReadOnlyCollection<IExtensionAdapter> ExtensionAdapters
+        IEnumerable<IExtensionAdapter> ExtensionAdapters
         {
             get;
         }

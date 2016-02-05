@@ -293,7 +293,7 @@ module KeyNotationUtil =
                     current
 
             let prefix = getPrefix "" keyModifiers
-            if StringUtil.isNullOrEmpty prefix then
+            if StringUtil.IsNullOrEmpty prefix then
                 if forceBookend then
                     sprintf "<%s>" name
                 else
@@ -310,11 +310,11 @@ module KeyNotationUtil =
                 let value = int c;
                 if value >= 1 && value <= 26 then
                     let baseCode = value - 1 
-                    let name = char ((int 'A') + baseCode) |> StringUtil.ofChar
+                    let name = char ((int 'A') + baseCode) |> StringUtil.OfChar
                     let keyModifiers = keyInput.KeyModifiers ||| VimKeyModifiers.Control
                     inner name keyModifiers false
                 else
-                    inner (c |> StringUtil.ofChar) keyInput.KeyModifiers false
+                    inner (c |> StringUtil.OfChar) keyInput.KeyModifiers false
 
         match TryGetSpecialKeyName keyInput with 
         | Some (name, modifiers) -> inner name modifiers true

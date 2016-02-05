@@ -99,6 +99,7 @@
     <Compile Include="Modes_Command_CommandMode.fs" />
     <Compile Include="Modes_Normal_NormalMode.fsi" />
     <Compile Include="Modes_Normal_NormalMode.fs" />
+    <Compile Include="Modes_Insert_Components.fs" />
     <Compile Include="Modes_Insert_InsertMode.fsi" />
     <Compile Include="Modes_Insert_InsertMode.fs" />
     <Compile Include="Modes_Visual_ISelectionTracker.fs" />
@@ -156,8 +157,6 @@
     <Compile Include="Vim.fs" />
     <Compile Include="StatusUtil.fsi" />
     <Compile Include="StatusUtil.fs" />
-    <Compile Include="TextChangeTracker.fsi" />
-    <Compile Include="TextChangeTracker.fs" />
     <Compile Include="LineChangeTracker.fsi" />
     <Compile Include="LineChangeTracker.fs" />
     <Compile Include="MefComponents.fsi" />

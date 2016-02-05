@@ -1,5 +1,6 @@
 ﻿using EditorUtils;
 using Microsoft.VisualStudio.Text;
+using System.Linq;
 using System.Reflection;
 using Xunit;
 
@@ -109,6 +110,19 @@ namespace Vim.UnitTest
             {
                 var type = typeof(BlockSpan);
                 Assert.Equal(4, type.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance).Length);
+            }
+        }
+
+        public sealed class TabTest : BlockSpanTest
+        {
+            [Fact]
+            public void PartialTab()
+            {
+                Create("trucker", "\tdog");
+                var blockSpan = new BlockSpan(_textBuffer.GetPoint(position: 2), tabStop: 4, spaces: 3, height: 2);
+                Assert.Equal(
+                    new[] { "uck", "  d" },
+                    blockSpan.BlockOverlapSpans.Select(x => x.GetText()));
             }
         }
     }

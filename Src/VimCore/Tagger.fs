@@ -67,7 +67,7 @@ type IncrementalSearchTaggerSource (_vimBuffer : IVimBuffer) as this =
         // Up cast here to work around the F# bug which prevents accessing a CLIEvent from
         // a derived type
         (_globalSettings :> IVimSettings).SettingChanged 
-        |> Observable.filter (fun args -> StringUtil.isEqual args.Setting.Name GlobalSettingNames.IncrementalSearchName)
+        |> Observable.filter (fun args -> StringUtil.IsEqual args.Setting.Name GlobalSettingNames.IncrementalSearchName)
         |> Observable.subscribe (fun _ -> raiseChanged())
         |> _eventHandlers.Add
 
@@ -177,7 +177,7 @@ type HighlightSearchTaggerSource
     /// Whether or not we are currently providing any tags.  Tags are surpressed in a
     /// number of scenarios
     member x.IsProvidingTags = 
-        _isVisible && not (StringUtil.isNullOrEmpty _vimData.DisplayPattern)
+        _isVisible && not (StringUtil.IsNullOrEmpty _vimData.DisplayPattern)
 
     /// Get the search information for a background 
     member x.GetDataForSnapshot() =  
@@ -193,7 +193,7 @@ type HighlightSearchTaggerSource
         if not x.IsProvidingTags then
             // Not currently providing any tags.  Return an empty set here for any requests
             Some List.empty
-        elif StringUtil.isNullOrEmpty searchData.Pattern then
+        elif StringUtil.IsNullOrEmpty searchData.Pattern then
             // Nothing to give if there is no pattern
             Some List.empty
         else
@@ -204,7 +204,7 @@ type HighlightSearchTaggerSource
     [<UsedInBackgroundThread>]
     static member GetTagsInBackground (highlightSearchData : HighlightSearchData) span (cancellationToken : CancellationToken) = 
 
-        if StringUtil.isNullOrEmpty highlightSearchData.Pattern then
+        if StringUtil.IsNullOrEmpty highlightSearchData.Pattern then
             ReadOnlyCollectionUtil.Empty
         else
 

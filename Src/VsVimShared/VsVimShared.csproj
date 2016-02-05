@@ -127,6 +127,9 @@
     <Compile Include="Implementation\ReSharper\ReSharperTagDetector.cs" />
     <Compile Include="Implementation\ReSharper\ReSharperVersion.cs" />
     <Compile Include="Implementation\ReSharper\ResharperVersionutility.cs" />
+    <Compile Include="Implementation\Roslyn\IRoslynRenameUtil.cs" />
+    <Compile Include="Implementation\Roslyn\RoslynListenerFactory.cs" />
+    <Compile Include="Implementation\Roslyn\RoslynRenameUtil.cs" />
     <Compile Include="Implementation\Settings\SettingSerializer.cs" />
     <Compile Include="Implementation\Settings\VimApplicationSettings.cs" />
     <Compile Include="Implementation\SharedService\DefaultSharedServiceFactory.cs" />
@@ -144,6 +147,7 @@
       <DependentUpon>LinkBanner.xaml</DependentUpon>
     </Compile>
     <Compile Include="Implementation\UpgradeNotification\VimRcLoadNotificationMarginProvider.cs" />
+    <Compile Include="Implementation\VisualAssist\VisualAssistExtensionAdapter.cs" />
     <Compile Include="IToastNotifaction.cs" />
     <Compile Include="Implementation\VisualAssist\IVisualAssistUtil.cs" />
     <Compile Include="Implementation\VisualAssist\VisualAssistKeyProcessor.cs" />

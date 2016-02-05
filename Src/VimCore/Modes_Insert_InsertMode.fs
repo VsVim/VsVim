@@ -85,7 +85,6 @@ type WordCompletionUtil
         // Combine the collections
         Seq.append wordsAfter wordsBefore
         |> Seq.filter filterFunc
-        |> Seq.map SnapshotSpanUtil.GetText
 
     /// Get the word completion entries in the specified ITextSnapshot.  If the token is cancelled the 
     /// exception will be propagated out of this method.  This method will return duplicate words too
@@ -95,7 +94,6 @@ type WordCompletionUtil
         startPoint
         |> _wordUtil.GetWords WordKind.NormalWord Path.Forward
         |> Seq.filter filterFunc
-        |> Seq.map (fun wordSpan -> wordSpan.GetText())
 
     member x.GetWordCompletions (wordSpan : SnapshotSpan) =
         let comparer = if _globalSettings.IgnoreCase then CharComparer.IgnoreCase else CharComparer.Exact
@@ -109,11 +107,30 @@ type WordCompletionUtil
             |> Seq.filter (fun snapshot -> snapshot.TextBuffer <> fileTextBuffer)
             |> Seq.collect (fun snapshot -> x.GetWordCompletionsInFile filterText comparer snapshot)
 
+        let wordSpanStart = wordSpan.Start.Position
+        let sortComparer (x : SnapshotSpan) (y : SnapshotSpan) = 
+            let xPos = x.Start.Position
+            let yPos = y.Start.Position
+            if x.Snapshot.TextBuffer = fileTextBuffer && y.Snapshot.TextBuffer = fileTextBuffer then
+                let xPos = if xPos < wordSpanStart then xPos + wordSpan.Snapshot.Length else xPos
+                let yPos = if yPos < wordSpanStart then yPos + wordSpan.Snapshot.Length else yPos
+                xPos.CompareTo(yPos)
+            elif x.Snapshot.TextBuffer = fileTextBuffer then
+                -1
+            elif y.Snapshot.TextBuffer = fileTextBuffer then
+                1
+            else
+                xPos.CompareTo(yPos)
+
         fileCompletions
         |> Seq.append otherFileCompletions  
-        |> Seq.filter (fun word -> word.Length > 1)
+        |> Seq.filter (fun span -> span.Length > 1)
+        |> List.ofSeq
+        |> List.sortWith sortComparer
+        |> Seq.map SnapshotSpanUtil.GetText
         |> Seq.distinct
         |> List.ofSeq
+
 
 [<RequireQualifiedAccess>]
 type InsertKind =
@@ -255,7 +272,7 @@ type internal InsertMode
         // Caret changes can end a text change operation.
         _textView.Caret.PositionChanged
         |> Observable.filter (fun _ -> this.IsActive && not this.IsInProcess)
-        |> Observable.subscribe (fun _ -> this.OnCaretPositionChanged() )
+        |> Observable.subscribe (fun args -> this.OnCaretPositionChanged args)
         |> _bag.Add
 
         // Listen for text changes
@@ -428,7 +445,7 @@ type internal InsertMode
                         if _isReplace then
                             InsertCommand.Replace c
                         else
-                            let text = StringUtil.ofChar c
+                            let text = StringUtil.OfChar c
                             InsertCommand.Insert text
                     let commandFlags = CommandFlags.Repeatable ||| CommandFlags.InsertEdit
                     let keyInputSet = KeyInputSet.OneKeyInput keyInput
@@ -661,7 +678,8 @@ type internal InsertMode
         // Now we need to decided how the external world sees this edit.  If it links with an
         // existing edit then we save it and send it out as a batch later.
         let isEdit = Util.IsFlagSet commandFlags CommandFlags.InsertEdit
-        if isEdit then
+        let isMovement = Util.IsFlagSet commandFlags CommandFlags.Movement
+        if isEdit || (isMovement && _globalSettings.AtomicInsert) then
 
             // If it's an edit then combine it with the existing command and batch them 
             // together.  Don't raise the event yet
@@ -846,9 +864,43 @@ type internal InsertMode
     ///
     /// Need to be careful to not end the edit due to the caret moving as a result of 
     /// normal typing
-    member x.OnCaretPositionChanged () = 
+    member x.OnCaretPositionChanged args = 
         _textChangeTracker.CompleteChange()
-        _sessionData <- { _sessionData with CombinedEditCommand = None }
+        if _globalSettings.AtomicInsert then
+            // Create a combined movement command that goes from the old position to the new position
+            // And combine it with the input command
+            let rec movement command current next = 
+                let combine left right = 
+                    match left with
+                    | None -> Some right
+                    | Some left -> Some (InsertMode.CreateCombinedEditCommand left right)
+                let currentY, currentX = current
+                let nextY, nextX = next
+                // First move to the beginning of the line, since the source and target lines might contain
+                // different amount of characters and/or tabs
+                if currentX > 0 && currentY <> nextY then
+                    let command = combine command (InsertCommand.MoveCaret Direction.Left)
+                    movement command (currentY, currentX - 1) next
+                elif currentY < nextY  then
+                    let command = combine command (InsertCommand.MoveCaret Direction.Down)
+                    movement command (currentY + 1, currentX) next
+                elif currentY > nextY then
+                    let command = combine command (InsertCommand.MoveCaret Direction.Up)
+                    movement command (currentY - 1, currentX) next
+                elif currentX > nextX && currentY = nextY then
+                    let command = combine command (InsertCommand.MoveCaret Direction.Left)
+                    movement command (currentY, currentX - 1) next
+                elif currentX < nextX then
+                    let command = combine command (InsertCommand.MoveCaret Direction.Right)
+                    movement command (currentY, currentX + 1) next
+                else
+                    command
+            let oldPosition = SnapshotPointUtil.GetLineColumn args.OldPosition.BufferPosition
+            let newPosition = SnapshotPointUtil.GetLineColumn args.NewPosition.BufferPosition
+            let command = movement _sessionData.CombinedEditCommand oldPosition newPosition 
+            _sessionData <- { _sessionData with CombinedEditCommand = command }
+        else
+            _sessionData <- { _sessionData with CombinedEditCommand = None }
         _vimBuffer.VimTextBuffer.InsertStartPoint <- Some x.CaretPoint
         _vimBuffer.VimTextBuffer.IsSoftTabStopValidForBackspace <- true
 
@@ -930,13 +982,13 @@ type internal InsertMode
             | ModeArgument.InsertWithCount count ->
                 if count > 1 then
                     let transaction = _undoRedoOperations.CreateLinkedUndoTransactionWithFlags "Insert with count" LinkedUndoTransactionFlags.CanBeEmpty
-                    Some transaction, InsertKind.Repeat (count, false, TextChange.Insert StringUtil.empty)
+                    Some transaction, InsertKind.Repeat (count, false, TextChange.Insert StringUtil.Empty)
                 else
                     None, InsertKind.Normal
             | ModeArgument.InsertWithCountAndNewLine count ->
                 if count > 1 then
                     let transaction = _undoRedoOperations.CreateLinkedUndoTransactionWithFlags "Insert with count and new line" LinkedUndoTransactionFlags.CanBeEmpty
-                    Some transaction, InsertKind.Repeat (count, true, TextChange.Insert StringUtil.empty)
+                    Some transaction, InsertKind.Repeat (count, true, TextChange.Insert StringUtil.Empty)
                 else
                     None, InsertKind.Normal
             | ModeArgument.InsertWithTransaction transaction ->

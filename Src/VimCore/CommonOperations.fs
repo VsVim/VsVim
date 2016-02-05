@@ -153,7 +153,7 @@ type internal CommonOperations
     member x.FillInVirtualSpace () =
         if x.CaretVirtualPoint.IsInVirtualSpace then
             let blanks : string = 
-                let blanks = StringUtil.repeatChar x.CaretVirtualPoint.VirtualSpaces ' '
+                let blanks = StringUtil.RepeatChar x.CaretVirtualPoint.VirtualSpaces ' '
                 x.NormalizeBlanks blanks
 
             // Make sure to position the caret to the end of the newly inserted spaces
@@ -801,13 +801,13 @@ type internal CommonOperations
             span
             |> SnapshotSpanUtil.GetText
             |> Seq.takeWhile CharUtil.IsBlank
-            |> StringUtil.ofCharSeq
+            |> StringUtil.OfCharSeq
         x.NormalizeBlanksToSpaces text, text.Length
 
     /// Normalize any blanks to the appropriate number of space characters based on the 
     /// Vim settings
     member x.NormalizeBlanksToSpaces (text : string) =
-        Contract.Assert(StringUtil.isBlanks text)
+        Contract.Assert(StringUtil.IsBlanks text)
         let builder = System.Text.StringBuilder()
         let tabSize = _localSettings.TabStop
         for c in text do
@@ -834,14 +834,14 @@ type internal CommonOperations
             let tabSize = _localSettings.TabStop
             let spacesCount = text.Length % tabSize
             let tabCount = (text.Length - spacesCount) / tabSize 
-            let prefix = StringUtil.repeatChar tabCount '\t'
-            let suffix = StringUtil.repeatChar spacesCount ' '
+            let prefix = StringUtil.RepeatChar tabCount '\t'
+            let suffix = StringUtil.RepeatChar spacesCount ' '
             prefix + suffix
 
     /// Fully normalize white space into tabs / spaces based on the ExpandTab, TabSize 
     /// settings
     member x.NormalizeBlanks text = 
-        Contract.Assert(StringUtil.isBlanks text)
+        Contract.Assert(StringUtil.IsBlanks text)
         text
         |> x.NormalizeBlanksToSpaces
         |> x.NormalizeSpaces
@@ -880,7 +880,7 @@ type internal CommonOperations
             else
                 let gapText = 
                     if _localSettings.ExpandTab then 
-                        StringUtil.repeatChar gap ' '
+                        StringUtil.RepeatChar gap ' '
                     else 
                         "\t"
 
@@ -911,7 +911,7 @@ type internal CommonOperations
             let ws, originalLength = x.GetAndNormalizeLeadingBlanksToSpaces span
             let ws = 
                 let length = max (ws.Length - count) 0
-                StringUtil.repeatChar length ' ' |> x.NormalizeSpaces
+                StringUtil.RepeatChar length ' ' |> x.NormalizeSpaces
             edit.Replace(span.Start.Position, originalLength, ws) |> ignore)
 
         edit.Apply() |> ignore
@@ -920,7 +920,7 @@ type internal CommonOperations
     member x.ShiftLineBlockRight (col: SnapshotSpan seq) multiplier =
         let shiftText = 
             let count = _localSettings.ShiftWidth * multiplier
-            StringUtil.repeatChar count ' '
+            StringUtil.RepeatChar count ' '
 
         use edit = _textBuffer.CreateEdit()
 
@@ -946,7 +946,7 @@ type internal CommonOperations
             let ws, originalLength = x.GetAndNormalizeLeadingBlanksToSpaces span
             let ws = 
                 let length = max (ws.Length - count) 0
-                StringUtil.repeatChar length ' ' |> x.NormalizeSpaces
+                StringUtil.RepeatChar length ' ' |> x.NormalizeSpaces
             edit.Replace(span.Start.Position, originalLength, ws) |> ignore)
         edit.Apply() |> ignore
 
@@ -955,7 +955,7 @@ type internal CommonOperations
     member x.ShiftLineRangeRight (range : SnapshotLineRange) multiplier =
         let shiftText = 
             let count = _localSettings.ShiftWidth * multiplier
-            StringUtil.repeatChar count ' '
+            StringUtil.RepeatChar count ' '
 
         use edit = _textBuffer.CreateEdit()
         range.Lines
@@ -1260,7 +1260,7 @@ type internal CommonOperations
 
                 // Strings are inserted line wise into the ITextBuffer.  Build up an
                 // aggregate string and insert it here
-                let text = col |> Seq.fold (fun state elem -> state + elem + (EditUtil.NewLine _editorOptions)) StringUtil.empty
+                let text = col |> Seq.fold (fun state elem -> state + elem + (EditUtil.NewLine _editorOptions)) StringUtil.Empty
 
                 edit.Insert(point.Position, text) |> ignore
 

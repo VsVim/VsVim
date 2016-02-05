@@ -169,6 +169,7 @@ namespace Vim.VisualStudio.UnitTest
                 : base(isReSharperInstalled: false)
             {
                 _vimBuffer.LocalSettings.SoftTabStop = 4;
+                _vimApplicationSettings.SetupGet(x => x.CleanMacros).Returns(false);
             }
 
             [Fact]
@@ -208,6 +209,38 @@ namespace Vim.VisualStudio.UnitTest
                 _vimApplicationSettings.SetupGet(x => x.UseEditorTabAndBackspace).Returns(false);
                 _vimBuffer.LocalSettings.SoftTabStop = 4;
                 Assert.False(_targetRaw.TryCustomProcess(InsertCommand.InsertTab));
+            }
+
+            /// <summary>
+            /// Don't custom process anything when doing clean macro recording.  Let core vim
+            /// handle it all so we don't affect the output with intellisense.
+            /// </summary>
+            [Fact]
+            public void CleanMacrosRecording()
+            {
+                try
+                {
+                    _vim.MacroRecorder.StartRecording(UnnamedRegister, false);
+                    _vimApplicationSettings.SetupGet(x => x.CleanMacros).Returns(true);
+                    _vimApplicationSettings.SetupGet(x => x.UseEditorTabAndBackspace).Returns(false);
+                    Assert.False(_targetRaw.TryCustomProcess(InsertCommand.InsertTab));
+                    Assert.False(_targetRaw.TryCustomProcess(InsertCommand.Back));
+                }
+                finally
+                {
+                    _vim.MacroRecorder.StopRecording();
+                }
+            }
+
+            [Fact]
+            public void CleanMacrosNotRecording()
+            {
+                _nextTarget.SetupExecOne();
+                _vimApplicationSettings.SetupGet(x => x.CleanMacros).Returns(true);
+                _vimApplicationSettings.SetupGet(x => x.UseEditorTabAndBackspace).Returns(true);
+                Assert.False(_vim.MacroRecorder.IsRecording);
+                Assert.True(_targetRaw.TryCustomProcess(InsertCommand.InsertTab));
+                Assert.True(_targetRaw.TryCustomProcess(InsertCommand.Back));
             }
         }
 

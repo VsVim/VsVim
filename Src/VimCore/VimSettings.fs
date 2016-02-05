@@ -149,6 +149,7 @@ type internal GlobalSettings() =
 
     static let GlobalSettingInfoList = 
         [|
+            (AtomicInsertName, AtomicInsertName, SettingValue.Toggle false)
             (BackspaceName, "bs", SettingValue.String "")
             (CaretOpacityName, CaretOpacityName, SettingValue.Number 65)
             (ClipboardName, "cb", SettingValue.String "")
@@ -181,9 +182,9 @@ type internal GlobalSettings() =
             (TimeoutExName, TimeoutExName, SettingValue.Toggle false)
             (TimeoutLengthName, "tm", SettingValue.Number 1000)
             (TimeoutLengthExName, "ttm", SettingValue.Number -1)
-            (VimRcName, VimRcName, SettingValue.String(StringUtil.empty))
-            (VimRcPathsName, VimRcPathsName, SettingValue.String(StringUtil.empty))
-            (VirtualEditName, "ve", SettingValue.String(StringUtil.empty))
+            (VimRcName, VimRcName, SettingValue.String(StringUtil.Empty))
+            (VimRcPathsName, VimRcPathsName, SettingValue.String(StringUtil.Empty))
+            (VirtualEditName, "ve", SettingValue.String(StringUtil.Empty))
             (VisualBellName, "vb", SettingValue.Toggle false)
             (WhichWrapName, "ww", SettingValue.String "b,s")
             (WrapScanName, "ws", SettingValue.Toggle true)
@@ -230,13 +231,13 @@ type internal GlobalSettings() =
 
     member x.IsCommaSubOptionPresent optionName suboptionName =
         _map.GetStringValue optionName
-        |> StringUtil.split ','
-        |> Seq.exists (fun x -> StringUtil.isEqual suboptionName x)
+        |> StringUtil.Split ','
+        |> Seq.exists (fun x -> StringUtil.IsEqual suboptionName x)
 
     /// Convert a comma separated option into a set of type safe options
     member x.GetCommaOptions name mappingList emptyOption combineFunc = 
         _map.GetStringValue name 
-        |> StringUtil.split ',' 
+        |> StringUtil.Split ',' 
         |> Seq.fold (fun (options : 'a) (current : string)->
             match List.tryFind (fun (name, _) -> name = current) mappingList with
             | None -> options
@@ -315,6 +316,9 @@ type internal GlobalSettings() =
 
         // IVimGlobalSettings 
         member x.AddCustomSetting name abbrevation customSettingSource = x.AddCustomSetting name abbrevation customSettingSource
+        member x.AtomicInsert
+            with get() = _map.GetBoolValue AtomicInsertName
+            and set value = _map.TrySetValue AtomicInsertName (SettingValue.Toggle value) |> ignore
         member x.Backspace 
             with get() = _map.GetStringValue BackspaceName
             and set value = _map.TrySetValueFromString BackspaceName value |> ignore
@@ -499,7 +503,7 @@ type internal LocalSettings
         // The format is supported if the name is in the comma delimited value
         let isSupported format = 
             _map.GetStringValue NumberFormatsName
-            |> StringUtil.split ','
+            |> StringUtil.Split ','
             |> Seq.exists (fun value -> value = format)
 
         match numberFormat with

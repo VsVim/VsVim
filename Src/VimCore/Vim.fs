@@ -55,6 +55,7 @@ type internal VimData(_globalSettings : IVimGlobalSettings) as this =
     let mutable _lastCharSearch : (CharSearchKind * Path * char) option = None
     let mutable _lastMacroRun : char option = None
     let mutable _lastCommand : StoredCommand option = None
+    let mutable _lastCommandLine = ""
     let mutable _displayPattern = ""
     let mutable _displayPatternSuspended = false
     let _displayPatternChanged = StandardEvent()
@@ -67,7 +68,7 @@ type internal VimData(_globalSettings : IVimGlobalSettings) as this =
         // The lifetime of VimData is the same as IGlobalSettings and hence there is no need
         // to unsubsribe from this event.  Nor is there any real mechanism.  
         (_globalSettings :> IVimSettings).SettingChanged 
-        |> Observable.filter (fun args -> StringUtil.isEqual args.Setting.Name GlobalSettingNames.HighlightSearchName)
+        |> Observable.filter (fun args -> StringUtil.IsEqual args.Setting.Name GlobalSettingNames.HighlightSearchName)
         |> Observable.add (fun _ -> 
             _displayPatternSuspended <- false
             this.CheckDisplayPattern())
@@ -128,6 +129,9 @@ type internal VimData(_globalSettings : IVimGlobalSettings) as this =
         member x.LastCommand 
             with get() = _lastCommand
             and set value = _lastCommand <- value
+        member x.LastCommandLine
+            with get() = _lastCommandLine
+            and set value = _lastCommandLine <- value
         member x.LastShellCommand
             with get() = _lastShellCommand
             and set value = _lastShellCommand <- value
@@ -158,7 +162,6 @@ type internal VimBufferFactory
         _completionWindowBrokerFactoryService : IDisplayWindowBrokerFactoryService,
         _commonOperationsFactory : ICommonOperationsFactory,
         _wordUtil : IWordUtil,
-        _textChangeTrackerFactory : ITextChangeTrackerFactory,
         _lineChangeTrackerFactory : ILineChangeTrackerFactory,
         _textSearchService : ITextSearchService,
         _bufferTrackingService : IBufferTrackingService,
@@ -181,7 +184,7 @@ type internal VimBufferFactory
                 let manager = _undoManagerProvider.GetTextBufferUndoManager textBuffer
                 if manager = null then None
                 else manager.TextBufferUndoHistory |> Some
-            UndoRedoOperations(statusUtil, history, _editorOperationsFactoryService) :> IUndoRedoOperations
+            UndoRedoOperations(_host, statusUtil, history, _editorOperationsFactoryService) :> IUndoRedoOperations
 
         VimTextBuffer(textBuffer, localSettings, wordNavigator, _bufferTrackingService, undoRedoOperations, vim)
 
@@ -208,7 +211,7 @@ type internal VimBufferFactory
         let incrementalSearch = IncrementalSearch(vimBufferData, commonOperations) :> IIncrementalSearch
         let capture = MotionCapture(vimBufferData, incrementalSearch) :> IMotionCapture
 
-        let textChangeTracker = _textChangeTrackerFactory.GetTextChangeTracker vimBufferData
+        let textChangeTracker = Modes.Insert.TextChangeTracker.GetTextChangeTracker vimBufferData _commonOperationsFactory
         let lineChangeTracker = _lineChangeTrackerFactory.GetLineChangeTracker vimBufferData
         let motionUtil = MotionUtil(vimBufferData, commonOperations) :> IMotionUtil
         let foldManager = _foldManagerFactory.GetFoldManager textView
@@ -250,7 +253,7 @@ type internal VimBufferFactory
             [
                 ((Modes.Normal.NormalMode(vimBufferData, commonOperations, motionUtil, createCommandRunner VisualKind.Character KeyRemapMode.Normal, capture)) :> IMode)
                 ((Modes.Command.CommandMode(buffer, commonOperations)) :> IMode)
-                ((Modes.Insert.InsertMode(buffer, commonOperations, broker, editOptions, undoRedoOperations, textChangeTracker, insertUtil, motionUtil, commandUtil, capture, false, _keyboardDevice, _mouseDevice, wordUtil, _wordCompletionSessionFactoryService)) :> IMode)
+                ((Modes.Insert.InsertMode(buffer, commonOperations, broker, editOptions, undoRedoOperations, textChangeTracker :> Modes.Insert.ITextChangeTracker, insertUtil, motionUtil, commandUtil, capture, false, _keyboardDevice, _mouseDevice, wordUtil, _wordCompletionSessionFactoryService)) :> IMode)
                 ((Modes.Insert.InsertMode(buffer, commonOperations, broker, editOptions, undoRedoOperations, textChangeTracker, insertUtil, motionUtil, commandUtil, capture, true, _keyboardDevice, _mouseDevice, wordUtil, _wordCompletionSessionFactoryService)) :> IMode)
                 ((Modes.SubstituteConfirm.SubstituteConfirmMode(vimBufferData, commonOperations) :> IMode))
                 (DisabledMode(vimBufferData) :> IMode)
@@ -354,6 +357,8 @@ type internal Vim
     /// Whether or not Vim is currently in disabled mode
     let mutable _isDisabled = false
 
+    let mutable _fileSystem = _fileSystem
+
     let _registerMap =
         let currentFileNameFunc() = 
             match _activeBufferStack with
@@ -379,7 +384,7 @@ type internal Vim
         // a derived type
 
         (_globalSettings :> IVimSettings).SettingChanged 
-        |> Event.filter (fun args -> StringUtil.isEqual args.Setting.Name GlobalSettingNames.HistoryName)
+        |> Event.filter (fun args -> StringUtil.IsEqual args.Setting.Name GlobalSettingNames.HistoryName)
         |> Event.add (fun _ -> 
             _vimData.SearchHistory.Limit <- _globalSettings.History
             _vimData.CommandHistory.Limit <- _globalSettings.History)
@@ -432,6 +437,10 @@ type internal Vim
     member x.AutoLoadVimRc 
         with get () = _autoLoadVimRc
         and set value = _autoLoadVimRc <- value
+
+    member x.FileSystem
+        with get () = _fileSystem
+        and set value = _fileSystem <- value 
 
     member x.IsDisabled 
         with get () = _isDisabled

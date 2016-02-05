@@ -13,8 +13,8 @@ type StringData =
 
     member x.ApplyCount count =
         match x with 
-        | Simple str -> StringUtil.repeat count str |> Simple
-        | Block col -> col |> NonEmptyCollectionUtil.Map (StringUtil.repeat count) |> Block
+        | Simple str -> StringUtil.Repeat count str |> Simple
+        | Block col -> col |> NonEmptyCollectionUtil.Map (StringUtil.Repeat count) |> Block
 
     /// Returns the first String in the StringData instance. 
     member x.FirstString = 
@@ -25,7 +25,7 @@ type StringData =
     member x.String =
         match x with 
         | Simple str -> str
-        | Block l -> l |> StringUtil.combineWith System.Environment.NewLine
+        | Block l -> l |> StringUtil.CombineWith System.Environment.NewLine
 
     /// Append the specified string data to this StringData instance and return a 
     /// combined value.  This is used when append operations are done wit the yank 
@@ -39,7 +39,7 @@ type StringData =
 
     static member OfNormalizedSnasphotSpanCollection (col : NormalizedSnapshotSpanCollection) = 
         if col.Count = 0 then
-            StringData.Simple StringUtil.empty
+            StringData.Simple StringUtil.Empty
         elif col.Count = 1 then 
             col.[0] |> SnapshotSpanUtil.GetText |> StringData.Simple
         else
@@ -478,7 +478,7 @@ type RegisterValue
         if _isString then
             _stringData
         else
-            _keyInputs |> Seq.map (fun ki -> ki.Char) |> StringUtil.ofCharSeq |> StringData.Simple
+            _keyInputs |> Seq.map (fun ki -> ki.Char) |> StringUtil.OfCharSeq |> StringData.Simple
 
     /// Get the RegisterData as a KeyInput list instance
     member x.KeyInputs =
@@ -505,7 +505,7 @@ type RegisterValue
         if _isString then
             _stringData.String
         else
-            _keyInputs |> Seq.map (fun keyInput -> keyInput.Char) |> StringUtil.ofCharSeq
+            _keyInputs |> Seq.map (fun keyInput -> keyInput.Char) |> StringUtil.OfCharSeq
 
     /// The OperationKind which produced this value
     member x.OperationKind = _operationKind 
@@ -529,7 +529,7 @@ type internal IRegisterValueBacking =
 /// Default implementation of IRegisterValueBacking.  Just holds the RegisterValue
 /// in a mutable field
 type internal DefaultRegisterValueBacking() = 
-    let mutable _value = RegisterValue(StringUtil.empty, OperationKind.CharacterWise)
+    let mutable _value = RegisterValue(StringUtil.Empty, OperationKind.CharacterWise)
     interface IRegisterValueBacking with
         member x.RegisterValue
             with get() = _value

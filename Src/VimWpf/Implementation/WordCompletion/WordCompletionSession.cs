@@ -4,6 +4,7 @@ using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Vim.Extensions;
 using System.Collections.Generic;
+using Microsoft.VisualStudio.Utilities;
 
 namespace Vim.UI.Wpf.Implementation.WordCompletion
 {
@@ -139,5 +140,14 @@ namespace Vim.UI.Wpf.Implementation.WordCompletion
         }
 
         #endregion
+
+        #region IPropertyOwner 
+
+        PropertyCollection IPropertyOwner.Properties
+        {
+            get { return _completionSession.Properties; }
+        }
+
+        #endregion 
     }
 }

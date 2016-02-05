@@ -461,7 +461,7 @@ module internal CharUtil =
     let IsLower x = System.Char.IsLower(x)
     let IsLowerLetter x = IsLower x && IsLetter x
     let IsLetterOrDigit x = System.Char.IsLetterOrDigit(x)
-    let IsTagNameChar x = System.Char.IsLetterOrDigit(x) || x = ':' || x = '.' || x = '_'
+    let IsTagNameChar x = System.Char.IsLetterOrDigit(x) || x = ':' || x = '.' || x = '_' || x = '-'
     let ToLower x = System.Char.ToLower(x)
     let ToUpper x = System.Char.ToUpper(x)
     let ChangeCase x = if IsUpper x then ToLower x else ToUpper x
@@ -946,7 +946,8 @@ module internal SystemUtil =
         else
             text
 
-    /// Try to expand all the referenced environment variables
+    /// Try to expand all the referenced environment variables and leading tilde
+    /// values.  Returns true if the path was resolved according to Vim rules.  
     let TryResolvePath text =
         let text = ResolvePath text
         if StartsWithTilde text || text.Contains("$") then
@@ -962,6 +963,8 @@ module internal SystemUtil =
 
     /// Like ResolvePath except it will always return a rooted path.  If the provided path
     /// isn't rooted it will be rooted inside of 'currentDirectory'
+    ///
+    /// This method can throw when provided paths with invalid path characters.
     let ResolveVimPath currentDirectory text = 
         match text with
         | "." -> currentDirectory
@@ -969,6 +972,3 @@ module internal SystemUtil =
         | _ -> 
             let text = ResolvePath text
             EnsureRooted currentDirectory text
-
-    let TryResolveVimPath currentDirectory text =
-        TryResolvePath text |> Option.map (fun text -> EnsureRooted currentDirectory text)

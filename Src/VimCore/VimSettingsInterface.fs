@@ -11,6 +11,7 @@ open System.Runtime.CompilerServices
 open System.Collections.Generic
 
 module GlobalSettingNames = 
+    let AtomicInsertName = "vsvimatomicinsert"
     let BackspaceName = "backspace"
     let CaretOpacityName = "vsvimcaret"
     let CurrentDirectoryPathName = "cdpath"
@@ -275,6 +276,10 @@ and IVimGlobalSettings =
 
     /// Add a custom setting to the current collection
     abstract AddCustomSetting : name : string -> abbrevation : string -> customSettingSource : IVimCustomSettingSource -> unit
+
+    /// When set, don't break inserts into multiple inserts when moving the cursor. Applies to all kinds of cursor movements, arrow keys,
+    /// automatic movements from intellisense for example or mouse movements.
+    abstract AtomicInsert : bool with get, set
 
     /// The multi-value option for determining backspace behavior.  Valid values include 
     /// indent, eol, start.  Usually accessed through the IsBackSpace helpers

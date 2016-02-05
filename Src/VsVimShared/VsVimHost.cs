@@ -44,6 +44,7 @@ namespace Vim.VisualStudio
             private const string UseEditorDefaultsName = "vsvim_useeditordefaults";
             private const string UseEditorTabAndBackspaceName = "vsvim_useeditortab";
             private const string UseEditorCommandMarginName = "vsvim_useeditorcommandmargin";
+            private const string CleanMacros = "vsvim_cleanmacros";
 
             private readonly IVimApplicationSettings _vimApplicationSettings;
 
@@ -59,6 +60,7 @@ namespace Vim.VisualStudio
                 globalSettings.AddCustomSetting(UseEditorDefaultsName, UseEditorDefaultsName, settingsSource);
                 globalSettings.AddCustomSetting(UseEditorTabAndBackspaceName, UseEditorTabAndBackspaceName, settingsSource);
                 globalSettings.AddCustomSetting(UseEditorCommandMarginName, UseEditorCommandMarginName, settingsSource);
+                globalSettings.AddCustomSetting(CleanMacros, CleanMacros, settingsSource);
             }
 
             SettingValue IVimCustomSettingSource.GetDefaultSettingValue(string name)
@@ -82,6 +84,9 @@ namespace Vim.VisualStudio
                         break;
                     case UseEditorCommandMarginName:
                         value = _vimApplicationSettings.UseEditorCommandMargin;
+                        break;
+                    case CleanMacros:
+                        value = _vimApplicationSettings.CleanMacros;
                         break;
                     default:
                         value = false;
@@ -112,6 +117,9 @@ namespace Vim.VisualStudio
                         break;
                     case UseEditorCommandMarginName:
                         _vimApplicationSettings.UseEditorCommandMargin = value;
+                        break;
+                    case CleanMacros:
+                        _vimApplicationSettings.CleanMacros = value;
                         break;
                     default:
                         value = false;
@@ -162,6 +170,11 @@ namespace Vim.VisualStudio
         public override DefaultSettings DefaultSettings
         {
             get { return _vimApplicationSettings.DefaultSettings; }
+        }
+
+        public override bool IsUndoRedoExpected
+        {
+            get { return _extensionAdapterBroker.IsUndoRedoExpected ?? base.IsUndoRedoExpected; }
         }
 
         public override int TabCount
@@ -565,17 +578,23 @@ namespace Vim.VisualStudio
             }
         }
 
-        private void MoveFocusHorizontally(int indexDelta)
+        private bool MoveFocusHorizontally(int indexDelta)
         {
             // Thanks to https://github.com/mrdooz/TabGroupJumper/blob/master/TabGroupJumper/Connect.cs
             var topLevelWindows = _dte.Windows.Cast<Window>()
                 .Where(window => window.Kind == "Document" && (window.Left > 0))
                 .ToList();
             topLevelWindows.Sort((a, b) => a.Left < b.Left ? -1 : 1);
-            var indexOfActiveDoc = topLevelWindows.FindIndex(win => win.Document == _dte.ActiveDocument);
-            var movedIndex = indexOfActiveDoc - indexDelta;
+            var indexOfActiveDoc = topLevelWindows.FindIndex(win => win == _dte.ActiveWindow);
+            var movedIndex = indexOfActiveDoc + indexDelta;
             var newIndex = (movedIndex < 0 ? movedIndex + topLevelWindows.Count : movedIndex % topLevelWindows.Count);
+            if (newIndex >= topLevelWindows.Count)
+            {
+                return false;
+            }
+
             topLevelWindows[newIndex].Activate();
+            return true;
         }
 
         public override void MoveFocus(ITextView textView, Direction direction)
@@ -590,12 +609,10 @@ namespace Vim.VisualStudio
                     result = _textManager.MoveViewDown(textView);
                     break;
                 case Direction.Left:
-                    MoveFocusHorizontally(-1);
-                    result = true;
+                    result = MoveFocusHorizontally(-1);
                     break;
                 case Direction.Right:
-                    MoveFocusHorizontally(1);
-                    result = true;
+                    result = MoveFocusHorizontally(1);
                     break;
                 default:
                     throw Contract.GetInvalidEnumException(direction);
@@ -690,7 +707,7 @@ namespace Vim.VisualStudio
                 return true;
             }
 
-            if (_vsAdapter.IsParallelWatchWindowView(textView))
+            if (_vsAdapter.IsWatchWindowView(textView))
             {
                 return false;
             }

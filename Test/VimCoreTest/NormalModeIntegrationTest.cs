@@ -5784,6 +5784,53 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class DocumentPercentMotionTest : NormalModeIntegrationTest
+        {
+            private void CreateTenWords()
+            {
+                Create("dog", "cat", "fish", "bear", "tree", "dog", "cat", "fish", "bear", "tree");
+            }
+
+            private void AssertPercentLine(int number, int expected)
+            {
+                var motion = string.Format("{0}%", number);
+                _vimBuffer.ProcessNotation(motion);
+
+                var lineNumber = _textView.GetCaretLine().LineNumber + 1; // 0 based editor
+                Assert.Equal(expected, lineNumber);
+            }
+
+            [Fact]
+            public void TenWords()
+            {
+                CreateTenWords();
+
+                AssertPercentLine(1, 1);
+                AssertPercentLine(10, 1);
+                AssertPercentLine(60, 6);
+                AssertPercentLine(80, 8);
+                AssertPercentLine(100, 10);
+            }
+
+            [Fact]
+            public void AlwaysRoundAwayFromZero()
+            {
+                CreateTenWords();
+
+                AssertPercentLine(11, 2);
+                AssertPercentLine(91, 10);
+            }
+
+            [Fact]
+            public void MoreThan100PercentIsAnError()
+            {
+                CreateTenWords();
+
+                _textView.MoveCaretToLine(3);
+                AssertPercentLine(120, 4);
+            }
+        }
+
         public sealed class MiscTest : NormalModeIntegrationTest
         {
             /// <summary>
@@ -6703,6 +6750,29 @@ namespace Vim.UnitTest
                 _vimBuffer.Process("dw");
                 Assert.Equal(new[] { "cat", "  ", "   ", "dog" }, _textBuffer.GetLines());
                 Assert.Equal(_textBuffer.GetPointInLine(1, 1), _textView.GetCaretPoint());
+            }
+
+            [Fact]
+            public void InnerBlockYankAndPasteIsLinewise()
+            {
+                Create("if (true)", "{", "  statement;", "}", "// after");
+                _textView.MoveCaretToLine(2);
+                _vimBuffer.ProcessNotation("yi}");
+                Assert.True(UnnamedRegister.OperationKind.IsLineWise);
+                _vimBuffer.ProcessNotation("p");
+                Assert.Equal(
+                    new[] { "  statement;", "  statement;" },
+                    _textBuffer.GetLineRange(startLine: 2, endLine: 3).Lines.Select(x => x.GetText()));
+            }
+
+            [Fact]
+            public void Issue1614()
+            {
+                Create("if (true)", "{", "  statement;", "}", "// after");
+                _localSettings.ShiftWidth = 2;
+                _textView.MoveCaretToLine(2);
+                _vimBuffer.ProcessNotation(">i{");
+                Assert.Equal("    statement;", _textBuffer.GetLine(2).GetText());
             }
         }
     }

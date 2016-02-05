@@ -25,7 +25,7 @@ namespace Vim.UnitTest
             Create(ModeArgument.None, lines);
         }
 
-        protected void Create(ModeArgument argument, params string[] lines)
+        protected virtual void Create(ModeArgument argument, params string[] lines)
         {
             _textView = CreateTextView(lines);
             _textBuffer = _textView.TextBuffer;
@@ -1777,6 +1777,70 @@ namespace Vim.UnitTest
                 Assert.Equal(0, _textView.GetCaretPoint().Position);
             }
 
+            
+            /// <summary>
+            /// When moving using the arrrow keys, it behaves the same way as stopping the insert mode, 
+            /// move the cursor, and then enter the insert mode again. Therefore only the text written after
+            /// the move will be repeated.
+            /// </summary>
+            [Fact]
+            public void Repeat_With_Arrow_Right()
+            {
+                Create("cat dog");
+                _vimBuffer.Process("dog");
+                _vimBuffer.Process(VimKey.Right);
+                _vimBuffer.Process("cat");
+                _vimBuffer.Process(VimKey.Escape);
+                Assert.Equal("dogccatat dog", _textView.GetLine(0).GetText());
+                Assert.Equal(6, _textView.GetCaretPoint().Position);
+                _textView.MoveCaretTo(0);
+                _vimBuffer.Process(".");
+                Assert.Equal("catdogccatat dog", _textView.GetLine(0).GetText());
+                Assert.Equal(2, _textView.GetCaretPoint().Position);
+            }
+
+            /// <summary>
+            /// When moving using the arrrow keys, it behaves the same way as stopping the insert mode, 
+            /// move the cursor, and then enter the insert mode again. Therefore only the text written after
+            /// the move will be repeated.
+            /// </summary>
+            [Fact]
+            public void Repeat_With_Arrow_Left()
+            {
+                Create("cat dog");
+                _vimBuffer.Process("dog");
+                _vimBuffer.Process(VimKey.Left);
+                _vimBuffer.Process("cat");
+                _vimBuffer.Process(VimKey.Escape);
+                Assert.Equal("docatgcat dog", _textView.GetLine(0).GetText());
+                Assert.Equal(4, _textView.GetCaretPoint().Position);
+                _textView.MoveCaretTo(0);
+                _vimBuffer.Process(".");
+                Assert.Equal("catdocatgcat dog", _textView.GetLine(0).GetText());
+                Assert.Equal(2, _textView.GetCaretPoint().Position);
+            }
+
+            /// <summary>
+            /// When moving the cursor using the mouse, it behaves the same way as stopping the insert mode, 
+            /// move the cursor, and then enter the insert mode again. Therefore only the text written after
+            /// the move will be repeated.
+            /// </summary>
+            [Fact]
+            public void Repeat_With_Mouse_Move()
+            {
+                Create("cat dog");
+                _vimBuffer.Process("dog");
+                _textView.MoveCaretTo(6);
+                _vimBuffer.Process("cat");
+                _vimBuffer.Process(VimKey.Escape);
+                Assert.Equal("dogcatcat dog", _textView.GetLine(0).GetText());
+                Assert.Equal(8, _textView.GetCaretPoint().Position);
+                _textView.MoveCaretTo(0);
+                _vimBuffer.Process(".");
+                Assert.Equal("catdogcatcat dog", _textView.GetLine(0).GetText());
+                Assert.Equal(2, _textView.GetCaretPoint().Position);
+            }
+
             /// <summary>
             /// This test is mainly a regression test against the selection change logic
             /// </summary>
@@ -2529,6 +2593,282 @@ namespace Vim.UnitTest
                     _vimBuffer.ProcessNotation("i<BS><BS>");
                     Assert.Equal("", _textBuffer.GetLine(0).GetText());
                 }
+            }
+        }
+
+        public sealed class AtomicInsertTests : InsertModeIntegrationTest
+        {
+            
+            protected override void Create(ModeArgument argument, params string[] lines)
+            {
+                base.Create(argument, lines);
+                _globalSettings.AtomicInsert = true;
+            }
+
+            /// <summary>
+            /// Just a sanity check that insert works normally when atomic inserts are enabled
+            /// </summary>
+            [Fact]
+            public void SimpleInsert()
+            {
+                Create("");
+                _vimBuffer.Process("hello");
+                _vimBuffer.Process(VimKey.Escape);
+                Assert.Equal("hello", _textBuffer.GetLine(0).GetText());
+                _textView.MoveCaretTo(0);
+                _vimBuffer.Process(".");
+                Assert.Equal("hellohello", _textBuffer.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// Simulate a typo, followed by the left arrow key to correct
+            /// </summary>
+            [Fact]
+            public void InsertWithArrowLeft()
+            {
+                Create("");
+                _vimBuffer.Process("helo");
+                _vimBuffer.Process(VimKey.Left);
+                _vimBuffer.Process("l");
+                _vimBuffer.Process(VimKey.Escape);
+                Assert.Equal("hello", _textBuffer.GetLine(0).GetText());
+                Assert.Equal(3, _textView.GetCaretPoint().Position);
+                _textView.MoveCaretTo(0);
+                _vimBuffer.Process(".");
+                Assert.Equal("hellohello", _textBuffer.GetLine(0).GetText());
+                Assert.Equal(3, _textView.GetCaretPoint().Position);
+            }
+
+            /// <summary>
+            /// Simulate a typo, followed by two left arrow keys to correct
+            /// </summary>
+            [Fact]
+            public void InsertWithArrowLeftTwice()
+            {
+                Create("");
+                _vimBuffer.Process("at");
+                _vimBuffer.Process(VimKey.Left);
+                _vimBuffer.Process(VimKey.Left);
+                _vimBuffer.Process("c");
+                _vimBuffer.Process(VimKey.Escape);
+                Assert.Equal("cat", _textBuffer.GetLine(0).GetText());
+                Assert.Equal(0, _textView.GetCaretPoint().Position);
+                _vimBuffer.Process(".");
+                Assert.Equal("catcat", _textBuffer.GetLine(0).GetText());
+                Assert.Equal(0, _textView.GetCaretPoint().Position);
+            }
+
+            /// <summary>
+            /// Simulate entering the insert mode at the wrong position, and use the arrow keys to navigate
+            /// </summary>
+            [Fact]
+            public void InsertWithArrowRight()
+            {
+                Create("cat dog");
+                _vimBuffer.Process(VimKey.Right);
+                _vimBuffer.Process(VimKey.Right);
+                _vimBuffer.Process(VimKey.Right);
+                _vimBuffer.Process(VimKey.Right);
+                _vimBuffer.Process("dog ");
+                _vimBuffer.Process(VimKey.Escape);
+                Assert.Equal("cat dog dog", _textBuffer.GetLine(0).GetText());
+                Assert.Equal(7, _textView.GetCaretPoint().Position);
+                _textView.MoveCaretTo(0);
+                _vimBuffer.Process(".");
+                Assert.Equal("cat dog dog dog", _textBuffer.GetLine(0).GetText());
+                Assert.Equal(7, _textView.GetCaretPoint().Position);
+            }
+
+            /// <summary>
+            /// Simulate entering the insert mode, add some text, and then use the arrow keys to change text on the next line as well
+            /// </summary>
+            [Fact]
+            public void InsertWithArrowDown()
+            {
+                Create("cat dog", "rabbit mouse");
+                _vimBuffer.Process("horse ");
+                _vimBuffer.Process(VimKey.Down);
+                _vimBuffer.Process(VimKey.Right);
+                _vimBuffer.Process("cow ");
+                _vimBuffer.Process(VimKey.Escape);
+                Assert.Equal("horse cat dog", _textBuffer.GetLine(0).GetText());
+                Assert.Equal("rabbit cow mouse", _textBuffer.GetLine(1).GetText());
+                _textView.MoveCaretTo(0);
+                _vimBuffer.Process(".");
+                Assert.Equal("horse horse cat dog", _textBuffer.GetLine(0).GetText());
+                Assert.Equal("rabbit cow cow mouse", _textBuffer.GetLine(1).GetText());
+            }
+
+            /// <summary>
+            /// Move a word to the right in insert mode, and repeat from the beginning of word
+            /// </summary>
+            [Fact]
+            public void MoveWordForward()
+            {
+                Create("cat dog");
+                _vimBuffer.Process(KeyInputUtil.ApplyKeyModifiersToKey(VimKey.Right, VimKeyModifiers.Control));
+                _vimBuffer.Process("horse ");
+                Assert.Equal("cat horse dog", _textBuffer.GetLine(0).GetText());
+                _vimBuffer.Process(VimKey.Escape);
+                _vimBuffer.Process("b");
+                _vimBuffer.Process(".");
+                Assert.Equal("cat horse horse dog", _textBuffer.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// Move the cursor forward on the same line and then edit some more
+            /// The movements should be converted to relative ones
+            /// </summary>
+            [Fact]
+            public void MoveCursorForwardSameLine()
+            {
+                Create("cat dog mouse");
+                _vimBuffer.Process("horse ");
+                _textView.MoveCaretTo(10);
+                _vimBuffer.Process("cow ");
+                _vimBuffer.Process(VimKey.Escape);
+                Assert.Equal("horse cat cow dog mouse", _textBuffer.GetLine(0).GetText());
+                _vimBuffer.Process("l");
+                _vimBuffer.Process(".");
+                Assert.Equal("horse cat cow horse dog cow mouse", _textBuffer.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// Move the cursor backwards on the same line and then edit some more
+            /// The movements should be converted to relative ones
+            /// </summary>
+            [Fact]
+            public void MoveCursorBackwardSameLine()
+            {
+                Create("cat dog mouse");
+                _vimBuffer.Process(VimKey.Escape);
+                _vimBuffer.Process("ww");
+                _vimBuffer.Process("i");
+                _vimBuffer.Process("horse ");
+                _textView.MoveCaretTo(4);
+                _vimBuffer.Process("cow ");
+                _vimBuffer.Process(VimKey.Escape);
+                Assert.Equal("cat cow dog horse mouse", _textBuffer.GetLine(0).GetText());
+                _vimBuffer.Process("l");
+                _vimBuffer.Process(".");
+                Assert.Equal("cat cow cow horse dog horse mouse", _textBuffer.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// Move the cursor backards to a new line, but the same column, and edit some more
+            /// The movements should be converted to relative ones
+            /// </summary>
+            [Fact]
+            public void MoveCursorBackwardPrevLineSameColumn()
+            {
+                Create("");
+                _vimBuffer.Process(VimKey.Escape);
+                _vimBuffer.Process("o");
+                _vimBuffer.Process("cat dog");
+                _vimBuffer.Process(VimKey.Enter);
+                _vimBuffer.Process("mouse");
+                _textView.MoveCaretTo(7);
+                _vimBuffer.Process("og d");
+                _vimBuffer.Process(VimKey.Escape);
+                Assert.Equal("cat dog dog", _textBuffer.GetLine(1).GetText());
+                Assert.Equal("mouse", _textBuffer.GetLine(2).GetText());
+                _vimBuffer.Process("j.");
+                Assert.Equal("cat dog dog", _textBuffer.GetLine(3).GetText());
+                Assert.Equal("mouse", _textBuffer.GetLine(4).GetText());
+            }
+            
+            /// <summary>
+            /// Move the cursor forward to a new line, but the same column, and edit some more
+            /// The movements should be converted to relative ones
+            /// </summary>
+            [Fact]
+            public void MoveCursorForwardNextLineSameColumn()
+            {
+                Create("cat dog mouse");
+                _vimBuffer.Process(VimKey.Escape);
+                _vimBuffer.Process("O");
+                _vimBuffer.Process("cat dog");
+                _textView.MoveCaretTo(16);
+                _vimBuffer.Process(" horse");
+                _vimBuffer.Process(VimKey.Escape);
+                Assert.Equal("cat dog", _textBuffer.GetLine(0).GetText());
+                Assert.Equal("cat dog horse mouse", _textBuffer.GetLine(1).GetText());
+                _vimBuffer.Process(".");
+                Assert.Equal("cat dog", _textBuffer.GetLine(0).GetText());
+                Assert.Equal("cat dog", _textBuffer.GetLine(1).GetText());
+                Assert.Equal("cat dog horse horse mouse", _textBuffer.GetLine(2).GetText());
+            }
+
+            /// <summary>
+            /// Move the cursor forward to a new longer line
+            /// Let there be one short line between the two lines
+            /// The movements should be converted to relative ones
+            /// </summary>
+            [Fact]
+            public void MoveCursorForwardNextLineLonger()
+            {
+                Create("cat", "cat dog rat mouse");
+                _vimBuffer.Process(VimKey.Escape);
+                _vimBuffer.Process("O");
+                _vimBuffer.Process("cat dog");
+                _textView.MoveCaretTo(26);
+                _vimBuffer.Process("horse ");
+                _vimBuffer.Process(VimKey.Escape);
+                Assert.Equal("cat dog", _textBuffer.GetLine(0).GetText());
+                Assert.Equal("cat", _textBuffer.GetLine(1).GetText());
+                Assert.Equal("cat dog rat horse mouse", _textBuffer.GetLine(2).GetText());
+                _vimBuffer.Process(".");
+                Assert.Equal("cat dog", _textBuffer.GetLine(0).GetText());
+                Assert.Equal("cat", _textBuffer.GetLine(1).GetText());
+                Assert.Equal("cat dog", _textBuffer.GetLine(2).GetText());
+                Assert.Equal("cat dog rat horse horse mouse", _textBuffer.GetLine(3).GetText());
+            }
+
+            /// <summary>
+            /// Move the cursor forward to a new shorter line
+            /// Let there be one short line between the two lines
+            /// The movements should be converted to relative ones
+            /// </summary>
+            [Fact]
+            public void MoveCursorForwardNextLineShorter()
+            {
+                Create("cat", "cat dog");
+                _vimBuffer.Process(VimKey.Escape);
+                _vimBuffer.Process("O");
+                _vimBuffer.Process("cat dog rat mouse");
+                _textView.MoveCaretTo(28);
+                _vimBuffer.Process("horse ");
+                _vimBuffer.Process(VimKey.Escape);
+                Assert.Equal("cat dog rat mouse", _textBuffer.GetLine(0).GetText());
+                Assert.Equal("cat", _textBuffer.GetLine(1).GetText());
+                Assert.Equal("cat horse dog", _textBuffer.GetLine(2).GetText());
+                _vimBuffer.Process(".");
+                Assert.Equal("cat dog rat mouse", _textBuffer.GetLine(0).GetText());
+                Assert.Equal("cat", _textBuffer.GetLine(1).GetText());
+                Assert.Equal("cat dog rat mouse", _textBuffer.GetLine(2).GetText());
+                Assert.Equal("cat horse horse dog", _textBuffer.GetLine(3).GetText());
+            }
+            
+            /// <summary>
+            /// Move the cursor forward to a new shorter line containing a tab
+            /// The movements should be converted to relative ones
+            /// </summary>
+            [Fact]
+            public void MoveCursorForwardNextLineShorterContainingTab()
+            {
+                Create("\tcat dog");
+                _vimBuffer.Process(VimKey.Escape);
+                _vimBuffer.Process("O");
+                _vimBuffer.Process("cat dog mouse");
+                _textView.MoveCaretTo(16);
+                _vimBuffer.Process("horse ");
+                _vimBuffer.Process(VimKey.Escape);
+                Assert.Equal("cat dog mouse", _textBuffer.GetLine(0).GetText());
+                Assert.Equal("\thorse cat dog", _textBuffer.GetLine(1).GetText());
+                _vimBuffer.Process(".");
+                Assert.Equal("cat dog mouse", _textBuffer.GetLine(0).GetText());
+                Assert.Equal("cat dog mouse", _textBuffer.GetLine(1).GetText());
+                Assert.Equal("\thorse horse cat dog", _textBuffer.GetLine(2).GetText());
             }
         }
     }

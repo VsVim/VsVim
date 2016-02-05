@@ -153,6 +153,7 @@ type Parser
         ("make", "mak")
         ("marks", "")
         ("nohlsearch", "noh")
+        ("normal", "norm")
         ("only", "on")
         ("pwd", "pw")
         ("print", "p")
@@ -484,7 +485,7 @@ type Parser
     /// Parse out the remainder of the line including any trailing blanks
     member x.ParseRestOfLine() = 
         match x.ParseWhile (fun _ -> true) with
-        | None -> StringUtil.empty
+        | None -> StringUtil.Empty
         | Some text -> text
 
     /// Parse out the mapclear variants. 
@@ -521,7 +522,7 @@ type Parser
 
             let rightKeyNotation = x.ParseWhileEx TokenizerFlags.AllowDoubleQuote (fun _ -> true)
             let rightKeyNotation = OptionUtil.getOrDefault "" rightKeyNotation
-            if StringUtil.isBlanks rightKeyNotation then
+            if StringUtil.IsBlanks rightKeyNotation then
                 LineCommand.DisplayKeyMap (keyRemapModes, Some leftKeyNotation)
             else
                 LineCommand.MapKeys (leftKeyNotation, rightKeyNotation, keyRemapModes, allowRemap, mapArgumentList)
@@ -915,7 +916,7 @@ type Parser
         | LineRangeSpecifier.None -> LineCommand.ParseError Resources.Common_InvalidAddress
         | _ -> LineCommand.CopyTo (sourceLineRange, destinationLineRange, count)
 
-    /// Parse out the :copy command.  It has a single required argument that is the destination
+    /// Parse out the :move command.  It has a single required argument that is the destination
     /// address
     member x.ParseMoveTo sourceLineRange = 
         x.SkipBlanks()
@@ -1649,6 +1650,17 @@ type Parser
         let hasBang = x.ParseBang()
         x.ParseGlobalCore lineRange (not hasBang)
 
+    /// Parse out the :normal command
+    member x.ParseNormal lineRange =
+        x.SkipBlanks ()
+        _tokenizer.TokenizerFlags <- _tokenizer.TokenizerFlags ||| TokenizerFlags.AllowDoubleQuote
+        let inputs = seq {
+            while not _tokenizer.IsAtEndOfLine do
+                yield KeyInputUtil.CharToKeyInput _tokenizer.CurrentChar
+                _tokenizer.MoveNextChar()
+        }
+        LineCommand.Normal (lineRange, List.ofSeq inputs)
+
     /// Parse out the :help command
     member x.ParseHelp() =
         _tokenizer.MoveToEndOfLine()
@@ -1936,6 +1948,7 @@ type Parser
         let hasBang = x.ParseBang()
         x.SkipBlanks()
         let fileName = x.ParseRestOfLine()
+        let fileName = fileName.Trim()
         LineCommand.Source (hasBang, fileName)
 
     /// Parse out the :split command
@@ -2066,6 +2079,7 @@ type Parser
                 | "fold" -> x.ParseFold lineRange
                 | "function" -> noRange x.ParseFunctionStart
                 | "global" -> x.ParseGlobal lineRange
+                | "normal" -> x.ParseNormal lineRange
                 | "help" -> noRange x.ParseHelp
                 | "history" -> noRange (fun () -> x.ParseHistory())
                 | "if" -> noRange x.ParseIfStart
@@ -2165,7 +2179,7 @@ type Parser
             x.TryExpand word |> doParse
         | TokenKind.Character c ->
             _tokenizer.MoveNextToken()
-            c |> StringUtil.ofChar |> x.TryExpand |> doParse
+            c |> StringUtil.OfChar |> x.TryExpand |> doParse
         | TokenKind.EndOfLine ->
             match lineRange with
             | LineRangeSpecifier.None -> handleParseResult LineCommand.Nop

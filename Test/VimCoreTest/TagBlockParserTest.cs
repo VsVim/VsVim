@@ -168,7 +168,7 @@ namespace Vim.UnitTest
             [Fact]
             public void MultipleAttributes()
             {
-                var tagBlock = Parse("<a name1='foo' name2='bar'></a>").Single();
+                var tagBlock = Parse("<a name1='foo' name2='bar' name-dash='abc' novalue></a>").Single();
                 Assert.Equal("a", tagBlock.Text);
                 Assert.Equal(0, tagBlock.Children.Count);
             }
@@ -194,6 +194,26 @@ namespace Vim.UnitTest
                 action("<a name1=\"f hello // bar");
                 action("<a name1=> <gain");
             }
+
+            /// <summary>
+            /// Issue 1644
+            /// </summary>
+            [Fact]
+            public void NamesWithDashes()
+            {
+                var tagBlock = Parse(@"<a name-dash=""1"">cat</a>").Single();
+                Assert.Equal("a", tagBlock.Text);
+                Assert.Equal(0, tagBlock.Children.Count);
+            }
+
+            [Fact]
+            public void NoValue()
+            {
+                var tagBlock = Parse(@"<button disabled>search</button>").Single();
+                Assert.Equal("button", tagBlock.Text);
+                Assert.Equal(0, tagBlock.Children.Count);
+            }
+
         }
     }
 }

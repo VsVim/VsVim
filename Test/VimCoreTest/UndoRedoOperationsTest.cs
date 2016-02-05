@@ -64,6 +64,7 @@ namespace Vim.UnitTest
             }
 
             _undoRedoOperationsRaw = new UndoRedoOperations(
+                VimHost,
                 _statusUtil.Object,
                 textUndoHistory,
                 editorOperationsFactoryService.Object);

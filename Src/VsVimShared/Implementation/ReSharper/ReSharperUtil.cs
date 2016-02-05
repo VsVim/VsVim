@@ -21,15 +21,25 @@ namespace Vim.VisualStudio.Implementation.ReSharper
         private readonly bool _isResharperInstalled;
 
         [ImportingConstructor]
-        internal ReSharperUtil(SVsServiceProvider serviceProvider)
+        internal ReSharperUtil(SVsServiceProvider serviceProvider, IWordCompletionSessionFactoryService wordCompletionSessionFactory)
         {
             var vsShell = serviceProvider.GetService<SVsShell, IVsShell>();
             _isResharperInstalled = vsShell.IsPackageInstalled(s_resharper5Guid);
+            if (_isResharperInstalled)
+            {
+                wordCompletionSessionFactory.Created += OnWordCompletionSessionCreated;
+            }
         }
 
         internal ReSharperUtil(bool isResharperInstalled)
         {
             _isResharperInstalled = isResharperInstalled;
+        }
+
+        private void OnWordCompletionSessionCreated(object sender, WordCompletionSessionEventArgs e)
+        {
+            // This prevents R# from dismissing any word completion sessions VsVim creates.  
+            e.WordCompletionSession.Properties[s_resharper5Guid] = this;
         }
 
         bool IReSharperUtil.IsInstalled

@@ -41,6 +41,7 @@ _ReSharper.VsVim
 VimAll.sln.ide/
 VimCore.sln.ide/
 VsVim.sln.ide/
+vbcs.cache/
 
 # Place where dogfood drops get put into. 
 Dogfood/

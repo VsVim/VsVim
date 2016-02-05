@@ -35,15 +35,22 @@ type LastSearchRegisterValueBacking (_vimData : IVimData) =
             with get () = RegisterValue(_vimData.LastSearchData.Pattern, OperationKind.CharacterWise)
             and set value = _vimData.LastSearchData <- SearchData(value.StringValue, Path.Forward, false)
 
-type internal RegisterMap (_map: Map<RegisterName, Register>) =
+type CommandLineBacking (_vimData : IVimData) = 
+    interface IRegisterValueBacking  with
+        member x.RegisterValue
+            with get() = RegisterValue(_vimData.LastCommandLine, OperationKind.CharacterWise)
+            and set value = ()
+
+type internal RegisterMap (_map : Map<RegisterName, Register>) =
     new(vimData : IVimData, clipboard : IClipboardDevice, currentFileNameFunc : unit -> string option) = 
         let clipboardBacking = ClipboardRegisterValueBacking(clipboard) :> IRegisterValueBacking
+        let commandLineBacking = CommandLineBacking(vimData) :> IRegisterValueBacking
         let fileNameBacking = { new IRegisterValueBacking with
             member x.RegisterValue
                 with get() = 
                     let text = 
                         match currentFileNameFunc() with
-                        | None -> StringUtil.empty
+                        | None -> StringUtil.Empty
                         | Some(str) -> str
                     RegisterValue(text, OperationKind.CharacterWise)
                 and set _ = () }
@@ -53,9 +60,10 @@ type internal RegisterMap (_map: Map<RegisterName, Register>) =
 
         let getBacking name = 
             match name with 
-            | RegisterName.SelectionAndDrop(SelectionAndDropRegister.Plus) -> clipboardBacking
-            | RegisterName.SelectionAndDrop(SelectionAndDropRegister.Star) -> clipboardBacking
-            | RegisterName.ReadOnly(ReadOnlyRegister.Percent) -> fileNameBacking
+            | RegisterName.SelectionAndDrop SelectionAndDropRegister.Plus -> clipboardBacking
+            | RegisterName.SelectionAndDrop SelectionAndDropRegister.Star  -> clipboardBacking
+            | RegisterName.ReadOnly ReadOnlyRegister.Percent -> fileNameBacking
+            | RegisterName.ReadOnly ReadOnlyRegister.Colon -> commandLineBacking
             | RegisterName.LastSearchPattern -> LastSearchRegisterValueBacking(vimData) :> IRegisterValueBacking
             | _ -> DefaultRegisterValueBacking() :> IRegisterValueBacking
 

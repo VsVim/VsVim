@@ -3,6 +3,7 @@ using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Moq;
 using Vim.Extensions;
+using Vim.Modes.Insert;
 using Xunit;
 
 namespace Vim.UnitTest

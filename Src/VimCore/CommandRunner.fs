@@ -104,7 +104,7 @@ type internal CommandRunner
                 _count <- Some count 
                 completeFunc count ki
 
-        inner StringUtil.empty initialDigit 
+        inner StringUtil.Empty initialDigit 
 
     /// Bind the optional register and count operations and then pass that off to the command 
     /// infrastructure

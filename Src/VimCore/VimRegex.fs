@@ -49,7 +49,7 @@ module VimRegexUtils =
             with 
                 | :? System.ArgumentException -> None
 
-    let Escape c = c |> StringUtil.ofChar |> Regex.Escape 
+    let Escape c = c |> StringUtil.OfChar |> Regex.Escape 
 
 [<RequireQualifiedAccess>]
 [<NoComparison>]
@@ -340,18 +340,18 @@ type VimRegexBuilder
         _index <- _index - count
 
     member x.CharAtIndex = 
-        StringUtil.charAtOption x.Index x.Pattern
+        StringUtil.CharAtOption x.Index x.Pattern
 
     member x.CharAtIndexOrDefault = 
-        match StringUtil.charAtOption x.Index x.Pattern with
+        match StringUtil.CharAtOption x.Index x.Pattern with
         | Some c -> c
         | None -> char 0
 
     member x.CharAt index = 
-        StringUtil.charAtOption index x.Pattern
+        StringUtil.CharAtOption index x.Pattern
 
     member x.CharAtOrDefault index = 
-        match StringUtil.charAtOption index x.Pattern with
+        match StringUtil.CharAtOption index x.Pattern with
         | None -> char 0
         | Some c -> c
 
@@ -362,7 +362,7 @@ type VimRegexBuilder
         x.Builder.AppendChar c
 
     member x.AppendEscapedChar c = 
-        c |> StringUtil.ofChar |> Regex.Escape |> x.AppendString
+        c |> StringUtil.OfChar |> Regex.Escape |> x.AppendString
 
     member x.BeginCollection() = 
         x.AppendChar '['
@@ -395,18 +395,18 @@ module VimRegexFactory =
         [0 .. 255]
         |> Seq.map (fun x -> char x)
         |> Seq.filter filterFunc
-        |> StringUtil.ofCharSeq
+        |> StringUtil.OfCharSeq
 
     let ControlCharString = GenerateCharString CharUtil.IsControl
     let PunctuationCharString = GenerateCharString Char.IsPunctuation
     let SpaceCharString = GenerateCharString Char.IsWhiteSpace
 
     let PrintableGroupPattern = 
-        let str = [0 .. 255] |> Seq.map (fun i -> char i) |> Seq.filter (fun c -> not (Char.IsControl c)) |> StringUtil.ofCharSeq
+        let str = [0 .. 255] |> Seq.map (fun i -> char i) |> Seq.filter (fun c -> not (Char.IsControl c)) |> StringUtil.OfCharSeq
         "[" + str + "]"
 
     let PrintableGroupNoDigitsPattern = 
-        let str = [0 .. 255] |> Seq.map (fun i -> char i) |> Seq.filter (fun c -> not (Char.IsControl c) && not (Char.IsDigit c)) |> StringUtil.ofCharSeq
+        let str = [0 .. 255] |> Seq.map (fun i -> char i) |> Seq.filter (fun c -> not (Char.IsControl c) && not (Char.IsDigit c)) |> StringUtil.OfCharSeq
         "[" + str + "]"
 
     /// These are the named collections specified out inside of :help E769.  These are always
@@ -423,10 +423,10 @@ module VimRegexFactory =
             ("space", SpaceCharString)
             ("upper", "A-Z")
             ("xdigit", "A-Fa-f0-9")
-            ("return", StringUtil.ofChar CharCodes.Enter)
+            ("return", StringUtil.OfChar CharCodes.Enter)
             ("tab", "`t")
-            ("escape", StringUtil.ofChar CharCodes.Escape)
-            ("backspace", StringUtil.ofChar CharCodes.Backspace)
+            ("escape", StringUtil.OfChar CharCodes.Escape)
+            ("backspace", StringUtil.OfChar CharCodes.Backspace)
         |] |> Map.ofArray
 
     /// In Vim if a collection is unmatched then it is appended literally into the match 
