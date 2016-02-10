@@ -316,6 +316,12 @@ type internal InsertUtil
             if not oldValue then
                 EditorOptionsUtil.SetOptionValue _editorOptions DefaultTextViewOptions.OverwriteModeId false
 
+    member x.Replace (s : string) =
+        // overwrite does not seem to be respected, just using delete instead
+        x.DeleteRight(s.Length - 1) |> ignore
+        x.Insert s
+
+
     member x.InsertCharacterCore msg lineNumber =
         match SnapshotUtil.TryGetPointInLine _textBuffer.CurrentSnapshot lineNumber x.CaretColumn.Column with
         | None -> 
@@ -545,6 +551,7 @@ type internal InsertUtil
             | InsertCommand.MoveCaretWithArrow direction -> x.MoveCaretWithArrow direction
             | InsertCommand.MoveCaretByWord direction -> x.MoveCaretByWord direction
             | InsertCommand.Replace c -> x.Replace c
+            | InsertCommand.Overwrite s -> x.Replace s
             | InsertCommand.ShiftLineLeft -> x.ShiftLineLeft ()
             | InsertCommand.ShiftLineRight -> x.ShiftLineRight ()
             | InsertCommand.DeleteLineBeforeCursor -> x.DeleteLineBeforeCursor()

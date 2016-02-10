@@ -123,6 +123,32 @@ namespace Vim.UnitTest
                 Assert.Equal("big tree", _textBuffer.GetLine(0).GetText());
                 Assert.Equal("dog", _textBuffer.GetLine(1).GetText());
             }
+
+            [Fact]
+            public void PasteOverwritesFullLengthOfRegister()
+            {
+                Create("12345 world");
+                UnnamedRegister.UpdateValue("hello");
+                _vimBuffer.ProcessNotation("<S-R>");
+                Assert.Equal(ModeKind.Replace, _vimBuffer.Mode.ModeKind);
+                _vimBuffer.ProcessNotation("<C-r>\"");
+                Assert.Equal("hello world", _textBuffer.GetLine(0).GetText());
+                Assert.Equal(5, _textView.GetCaretPoint().Position);
+                Assert.Equal("hello", UnnamedRegister.StringValue);
+            }
+
+            [Fact]
+            public void PasteOverwritesFullLengthOfRegisterPastEndOfLine()
+            {
+                Create("123");
+                UnnamedRegister.UpdateValue("hello");
+                _vimBuffer.ProcessNotation("<S-R>");
+                Assert.Equal(ModeKind.Replace, _vimBuffer.Mode.ModeKind);
+                _vimBuffer.ProcessNotation("<C-r>\"");
+                Assert.Equal("hello", _textBuffer.GetLine(0).GetText());
+                Assert.Equal(5, _textView.GetCaretPoint().Position);
+                Assert.Equal("hello", UnnamedRegister.StringValue);
+            }
         }
     }
 }
