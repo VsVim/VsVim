@@ -2819,6 +2819,9 @@ type InsertCommand  =
     /// Replace the character under the caret with the specified value
     | Replace of char
 
+    /// Overwrite the characters under the caret with the specified string
+    | Overwrite of string
+
     /// Shift the current line one indent width to the left
     | ShiftLineLeft 
 
@@ -2873,6 +2876,7 @@ type InsertCommand  =
         | InsertCommand.MoveCaretWithArrow _ -> None
         | InsertCommand.MoveCaretByWord _ -> None
         | InsertCommand.Replace c -> Some (TextChange.Combination ((TextChange.DeleteRight 1), (TextChange.Insert (c.ToString()))))
+        | InsertCommand.Overwrite s -> Some (TextChange.Replace s)
         | InsertCommand.ShiftLineLeft -> None
         | InsertCommand.ShiftLineRight -> None
         | InsertCommand.DeleteLineBeforeCursor -> None
