@@ -321,7 +321,6 @@ type internal InsertUtil
         x.DeleteRight(s.Length - 1) |> ignore
         x.Insert s
 
-
     member x.InsertCharacterCore msg lineNumber =
         match SnapshotUtil.TryGetPointInLine _textBuffer.CurrentSnapshot lineNumber x.CaretColumn.Column with
         | None -> 

@@ -63,7 +63,7 @@ namespace Vim.UnitTest
         public HistorySessionTest()
         {
             _client = new Client() { HistoryList = new HistoryList(), RegisterMap = Vim.RegisterMap };
-            _historySession = HistoryUtil.CreateHistorySession(_client, 0, "");
+            _historySession = HistoryUtil.CreateHistorySession(_client, 0, "", null);
             _bindData = _historySession.CreateBindDataStorage().CreateBindData();
         }
 
@@ -121,6 +121,14 @@ namespace Vim.UnitTest
                 ProcessNotation("<CR>");
                 Assert.False(_historySession.InPasteWait);
                 Assert.Equal("cat", _client.ProcessValue.Item2);
+            }
+
+            [Fact]
+            public void CantUsePasteSpecialFirst()
+            {
+                ProcessNotation("cat<C-w>");
+                Assert.False(_historySession.InPasteWait);
+                Assert.Equal("", _client.ProcessValue.Item2);
             }
         }
 
