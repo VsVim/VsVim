@@ -19,13 +19,15 @@ type HistoryCommand =
     | Cancel
     | Back
     | Paste
+    | PasteSpecial of WordKind
     | Clear
 
 type internal HistorySession<'TData, 'TResult>
     (
         _historyClient : IHistoryClient<'TData, 'TResult>,
         _initialClientData : 'TData,
-        _command : string
+        _command : string,
+        _buffer : IVimBuffer option
     ) =
 
     let _registerMap = _historyClient.RegisterMap
@@ -49,22 +51,18 @@ type internal HistorySession<'TData, 'TResult>
 
     /// Process a single KeyInput value in the state machine. 
     member x.Process (keyInput: KeyInput) =
-        if _inPasteWait then
-            x.ProcessPaste keyInput
-        else
-            x.ProcessCore keyInput
-
-    member x.ProcessCore keyInput =
         match Map.tryFind keyInput HistoryUtil.KeyInputMap with
         | Some HistoryCommand.Execute ->
             // Enter key completes the action
             let result = _historyClient.Completed _clientData _command
             _historyClient.HistoryList.Add _command
+            _inPasteWait <- false
             BindResult.Complete result
         | Some HistoryCommand.Cancel ->
             // Escape cancels the current search.  It does update the history though
             _historyClient.Cancelled _clientData
             _historyClient.HistoryList.Add _command
+            _inPasteWait <- false
             BindResult.Cancelled
         | Some HistoryCommand.Back ->
             match _command.Length with
@@ -82,13 +80,18 @@ type internal HistorySession<'TData, 'TResult>
         | Some HistoryCommand.Paste ->
             _inPasteWait <- true
             x.CreateBindResult()
+        | Some (HistoryCommand.PasteSpecial wordKind) ->
+            x.ProcessPasteSpecial wordKind
         | Some HistoryCommand.Clear ->
             x.ResetCommand ""
             x.CreateBindResult()
         | None -> 
-            let command = _command + (keyInput.Char.ToString())
-            x.ResetCommand command
-            x.CreateBindResult()
+            if _inPasteWait then
+                x.ProcessPaste keyInput
+            else
+                let command = _command + (keyInput.Char.ToString())
+                x.ResetCommand command
+                x.CreateBindResult()
 
     member x.ProcessPaste keyInput = 
         match RegisterName.OfChar keyInput.Char with
@@ -99,6 +102,22 @@ type internal HistorySession<'TData, 'TResult>
 
         _inPasteWait <- false
         x.CreateBindResult()
+
+    member x.ProcessPasteSpecial wordKind =
+        match _inPasteWait, _buffer with
+        | false, _
+        | _, None ->
+            x.ResetCommand ""
+            BindResult<_>.Error
+        | true, Some buffer ->
+            let motion = Motion.InnerWord wordKind
+            let arg = { MotionContext = MotionContext.AfterOperator; OperatorCount = None; MotionCount = None }
+            let currentWord = buffer.MotionUtil.GetMotion motion arg
+            match currentWord with
+            | None -> x.ResetCommand _command
+            | Some cw -> x.ResetCommand (_command + cw.Span.GetText())
+
+            x.CreateBindResult()
 
     /// Run a history scroll at the specified index
     member x.DoHistoryScroll (historyList : string list) index =
@@ -164,6 +183,8 @@ and internal HistoryUtil ()  =
                 yield ("<C-n>", HistoryCommand.Next)
                 yield ("<C-R>", HistoryCommand.Paste)
                 yield ("<C-U>", HistoryCommand.Clear)
+                yield ("<C-w>", HistoryCommand.PasteSpecial WordKind.NormalWord)
+                yield ("<C-a>", HistoryCommand.PasteSpecial WordKind.BigWord)
             }
             |> Seq.map (fun (notation, cmd) -> (KeyNotationUtil.StringToKeyInput notation, cmd))
 
@@ -197,7 +218,7 @@ and internal HistoryUtil ()  =
 
     static member KeyInputMap = _keyInputMap
 
-    static member CreateHistorySession<'TData, 'TResult> historyClient clientData command =
-        let historySession = HistorySession<'TData, 'TResult>(historyClient, clientData, command)
+    static member CreateHistorySession<'TData, 'TResult> historyClient clientData command buffer =
+        let historySession = HistorySession<'TData, 'TResult>(historyClient, clientData, command, buffer)
         historySession :> IHistorySession<'TData, 'TResult>
 
