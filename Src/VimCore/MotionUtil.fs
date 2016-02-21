@@ -1074,7 +1074,13 @@ type internal MotionUtil
             | None -> false
             | Some point -> SnapshotPointUtil.GetChar point = '\\'
 
-        let isChar c point = SnapshotPointUtil.GetChar point = c && not (isEscaped point) 
+        let isDoubleEscaped point = 
+            match SnapshotPointUtil.TrySubtract point 2, SnapshotPointUtil.TrySubtract point 2 with
+            | None, _
+            | _, None -> false
+            | Some point1, Some point2 -> SnapshotPointUtil.GetChar point1 = '\\' && SnapshotPointUtil.GetChar point2 = '\\'
+
+        let isChar c point = SnapshotPointUtil.GetChar point = c && (not (isEscaped point) || isDoubleEscaped point)
 
         let findMatched plusChar minusChar = 
             let inner point count = 

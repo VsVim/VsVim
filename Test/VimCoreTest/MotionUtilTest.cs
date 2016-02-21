@@ -593,7 +593,6 @@ more";
                 Assert.Equal("cat (dog)(blah)(again(deep))", motionResult.Span.GetText());
             }
 
-
             /// <summary>
             /// Single line inner block test should use inner block behavior
             /// </summary>
@@ -647,6 +646,14 @@ more";
                 Create("[ ", "  cat", "  dog ] ");
                 var lines = _motionUtil.InnerBlock(_textBuffer.GetPointInLine(1, 1), BlockKind.Bracket, 1).Value.Span.GetText();
                 Assert.Equal(" " + Environment.NewLine + "  cat" + Environment.NewLine + "  dog ", lines);
+            }
+
+            [Fact]
+            public void DisregardDoubleCommentedMatchType()
+            {
+                Create(@"OutlineFileNameRegex(DuplicateBackslash(L""^OutlineFileName:(.*\\.*\\\\).* $""));");
+                var motion = _motionUtil.InnerBlock(_textBuffer.GetPoint(22), BlockKind.Paren, 1);
+                Assert.Equal(@"DuplicateBackslash(L""^OutlineFileName:(.*\\.*\\\\).* $"")", motion.Value.Span.GetText());
             }
         }
 
