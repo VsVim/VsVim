@@ -17,20 +17,46 @@ namespace Vim.VisualStudio.Implementation.Misc
     internal sealed class FallbackKeyProcessor : KeyProcessor
     {
         /// <summary>
+        /// A smaller container that represents the parts of a KeyStroke that
+        /// the FallbackKeyProcessor uses.
+        /// </summary>
+        internal struct KeyCharModifier
+        {
+            private char _char;
+            private VimKeyModifiers _keyModifiers;
+
+            internal KeyCharModifier(char c, VimKeyModifiers keyModifiers)
+            {
+                _char = c;
+                _keyModifiers = keyModifiers;
+            }
+            internal char Char { get { return _char; } }
+            internal VimKeyModifiers KeyModifiers { get { return _keyModifiers; } }
+
+            internal static KeyCharModifier Create(KeyStroke stroke)
+            {
+                return new KeyCharModifier(stroke.Char, stroke.KeyModifiers);
+            }
+        }
+
+        /// <summary>
         /// A fallback command is a tuple of a previously bound key paired
         /// with its corresponding Visual Studio command
         /// </summary>
         internal struct FallbackCommand
         {
-            private KeyInput _keyInput;
+            private ScopeKind _scopeKind;
+            private List<KeyCharModifier> _keyBinding;
             private CommandId _command;
 
-            internal FallbackCommand(KeyInput keyInput, CommandId command)
+            internal FallbackCommand(ScopeKind scopeKind, KeyBinding keyBinding, CommandId command)
             {
-                _keyInput = keyInput;
+                _scopeKind = scopeKind;
+                _keyBinding = keyBinding.KeyStrokes.Select(KeyCharModifier.Create).ToList();
                 _command = command;
             }
-            internal KeyInput KeyInput { get { return _keyInput; } }
+            internal ScopeKind ScopeKind { get { return _scopeKind; } }
+            internal List<KeyCharModifier> KeyBindings { get { return _keyBinding; } }
             internal CommandId Command { get { return _command; } }
         }
 
@@ -41,7 +67,8 @@ namespace Vim.VisualStudio.Implementation.Misc
         private readonly IVimBuffer _vimBuffer;
         private readonly ScopeData _scopeData;
 
-        private List<FallbackCommand> _fallbackCommandList;
+        private KeyInput _firstChord;
+        private ILookup<char, FallbackCommand> _fallbackCommandList;
 
         /// <summary>
         /// In general a key processor applies to a specific IWpfTextView but
@@ -56,7 +83,7 @@ namespace Vim.VisualStudio.Implementation.Misc
             _vimApplicationSettings = vimApplicationSettings;
             _vimBuffer = vimBuffer;
             _scopeData = scopeData;
-            _fallbackCommandList = new List<FallbackCommand>();
+            _fallbackCommandList = Enumerable.Empty<FallbackCommand>().ToLookup(x => 'a');
 
             // Register for key binding changes and get the current bindings
             _vimApplicationSettings.SettingsChanged += OnSettingsChanged;
@@ -81,23 +108,15 @@ namespace Vim.VisualStudio.Implementation.Misc
         private void GetKeyBindings()
         {
             // Construct a list of all fallback commands keys we had to unbind.
-            // We are only interested in the bindings scoped to text views and
-            // consisting of a single keystroke. Sort the bindings in order of
-            // more specific bindings first
+            // We are only interested in the bindings scoped to text views and global.
             _fallbackCommandList = _vimApplicationSettings.RemovedBindings
                 .Where(binding => IsTextViewBinding(binding))
-                .Select(binding => Tuple.Create(
-                    binding.KeyBinding.Scope,
+                .Select(binding => new FallbackCommand(
+                    _scopeData.GetScopeKind(binding.KeyBinding.Scope),
                     KeyBinding.Parse(binding.KeyBinding.CommandString),
                     binding.Id
                 ))
-                .Where(tuple => tuple.Item2.KeyStrokes.Count == 1)
-                .OrderBy(tuple => GetScopeOrder(tuple.Item1))
-                .Select(tuple => new FallbackCommand(
-                    tuple.Item2.FirstKeyStroke.AggregateKeyInput,
-                    tuple.Item3
-                ))
-                .ToList();
+                .ToLookup(fallbackCommand => fallbackCommand.KeyBindings[0].Char);
         }
 
         /// <summary>
@@ -119,9 +138,9 @@ namespace Vim.VisualStudio.Implementation.Misc
         /// Get a sortable numeric value corresponding to a scope.  Lower
         /// numbers cause the binding to be considered first
         /// </summary>
-        private int GetScopeOrder(string scope)
+        private int GetScopeOrder(ScopeKind scope)
         {
-            switch (_scopeData.GetScopeKind(scope))
+            switch (scope)
             {
                 case ScopeKind.TextEditor:
                     return 1;
@@ -158,7 +177,7 @@ namespace Vim.VisualStudio.Implementation.Misc
             }
 
             var c = (char)('a' + (key - Key.A));
-            keyInput = KeyInputUtil.ApplyKeyModifiersToChar(c, keyModifiers);
+            keyInput = KeyInputUtil.ChangeKeyModifiersDangerous(KeyInputUtil.CharToKeyInput(c), keyModifiers);
             return true;
         }
 
@@ -179,6 +198,7 @@ namespace Vim.VisualStudio.Implementation.Misc
             }
             else
             {
+                _firstChord = null;
                 base.KeyDown(args);
             }
         }
@@ -192,6 +212,7 @@ namespace Vim.VisualStudio.Implementation.Misc
             // unless vim is currently disabled
             if (_vimBuffer != null && _vimBuffer.ModeKind != ModeKind.Disabled)
             {
+                _firstChord = null;
                 return false;
             }
 
@@ -200,19 +221,53 @@ namespace Vim.VisualStudio.Implementation.Misc
             // take place in this scenario
             if (_vsShell.IsInModalState())
             {
+                _firstChord = null;
                 return false;
             }
 
             // Check for any applicable fallback bindings, in order
             VimTrace.TraceInfo("FallbackKeyProcessor::TryProcess {0}", keyInput);
-            foreach (var fallbackCommand in _fallbackCommandList)
+            var findFirstChar = _firstChord != null ? _firstChord.Char : keyInput.Char;
+            var findFirstModifiers = _firstChord != null ? _firstChord.KeyModifiers : keyInput.KeyModifiers;
+            var cmds = _fallbackCommandList[findFirstChar]
+                .Where(fallbackCommand => fallbackCommand.KeyBindings[0].KeyModifiers == findFirstModifiers)
+                .OrderBy(fallbackCommand => GetScopeOrder(fallbackCommand.ScopeKind))
+                .ToList();
+
+            if (cmds.Count == 0)
             {
-                if (fallbackCommand.KeyInput == keyInput)
-                {
-                    return SafeExecuteCommand(fallbackCommand.Command);
-                }
+                _firstChord = null;
+                return false;
             }
-            return false;
+            else if (cmds.Count == 1 && cmds[0].KeyBindings.Count == 1)
+            {
+                _firstChord = null;
+                var cmd = cmds.First();
+                return SafeExecuteCommand(cmd.Command);
+            }
+            else if (_firstChord != null)
+            {
+                var secondChord = cmds
+                    .Where(fallbackCommand => fallbackCommand.KeyBindings[1].KeyModifiers == keyInput.KeyModifiers &&
+                        fallbackCommand.KeyBindings[1].Char == keyInput.Char)
+                    .OrderBy(fallbackCommand => GetScopeOrder(fallbackCommand.ScopeKind))
+                    .ToList();
+
+                if (secondChord.Count == 0)
+                {
+                    _firstChord = null;
+                    return false;
+                }
+
+                _firstChord = null;
+                var cmd = secondChord.First();
+                return SafeExecuteCommand(cmd.Command);
+            }
+            else
+            {
+                _firstChord = keyInput;
+                return true;
+            }
         }
 
         /// <summary>
