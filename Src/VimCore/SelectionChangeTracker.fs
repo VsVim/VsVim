@@ -213,7 +213,7 @@ type internal SelectionChangeTracker
             | Some textViewLines, Some wpfPoint ->
                 let x = wpfPoint.X
                 let y = wpfPoint.Y
-                let textViewLine = textViewLines.GetTextViewLineContainingYCoordinate y
+                let textViewLine = textViewLines.GetTextViewLineContainingYCoordinate (y + _textView.ViewportTop)
                 if textViewLine <> null then
                     let point = textViewLine.GetBufferPositionFromXCoordinate x 
                     VimTrace.TraceInfo("Caret {0} Point = {1}", x, if point.HasValue then point.Value.GetChar() else ' ')
