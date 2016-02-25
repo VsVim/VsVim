@@ -107,6 +107,7 @@ namespace Vim.UI.Wpf.Implementation.CharDisplay
                     textBox.BorderThickness = new Thickness(0);
                     textBox.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
                     textBox.Foreground = _foregroundBrush;
+                    textBox.CaretBrush = _foregroundBrush;
                     textBox.FontWeight = FontWeights.Bold;
                     adornment = textBox;
                     _adornmentCache.Insert(cacheIndex, new AdornmentData(position, adornment));
