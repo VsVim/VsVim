@@ -32,11 +32,11 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
             _protectedOperations = protectedOperations;
         }
 
-        private IBlockCaret CreateBlockCaret(IWpfTextView textView)
+        private IBlockCaret CreateBlockCaret(IWpfTextView textView, IVimGlobalSettings globalSettings)
         {
             var classificationFormaptMap = _classificationFormatMapService.GetClassificationFormatMap(textView);
             var formatMap = _formatMapService.GetEditorFormatMap(textView);
-            return new BlockCaret(textView, BlockCaretAdornmentLayerName, classificationFormaptMap, formatMap, _controlCharUtil, _protectedOperations);
+            return new BlockCaret(textView, BlockCaretAdornmentLayerName, classificationFormaptMap, formatMap, _controlCharUtil, _protectedOperations, globalSettings);
         }
 
         #region IVimBufferCreationListener
@@ -50,7 +50,7 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
             }
 
             // Setup the block caret 
-            var caret = CreateBlockCaret(textView);
+            var caret = CreateBlockCaret(textView, vimBuffer.LocalSettings.GlobalSettings);
             var caretController = new BlockCaretController(vimBuffer, caret);
         }
 
