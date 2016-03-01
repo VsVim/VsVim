@@ -22,8 +22,8 @@ namespace Vim.VisualStudio.Implementation.Misc
         /// </summary>
         internal struct KeyCharModifier
         {
-            private char _char;
-            private VimKeyModifiers _keyModifiers;
+            private readonly char _char;
+            private readonly VimKeyModifiers _keyModifiers;
 
             internal KeyCharModifier(char c, VimKeyModifiers keyModifiers)
             {
@@ -45,9 +45,9 @@ namespace Vim.VisualStudio.Implementation.Misc
         /// </summary>
         internal struct FallbackCommand
         {
-            private ScopeKind _scopeKind;
-            private List<KeyCharModifier> _keyBinding;
-            private CommandId _command;
+            private readonly ScopeKind _scopeKind;
+            private readonly List<KeyCharModifier> _keyBinding;
+            private readonly CommandId _command;
 
             internal FallbackCommand(ScopeKind scopeKind, KeyBinding keyBinding, CommandId command)
             {
