@@ -43,7 +43,6 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
         private readonly object _tag = new object();
         private readonly DispatcherTimer _blinkTimer;
         private readonly IControlCharUtil _controlCharUtil;
-        private readonly IVimGlobalSettings _globalSettings;
         private CaretData? _caretData;
         private CaretDisplay _caretDisplay;
         private FormattedText _formattedText;
@@ -119,7 +118,7 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
             }
         }
 
-        internal BlockCaret(ITextView textView, IClassificationFormatMap classificationFormatMap, IEditorFormatMap formatMap, IAdornmentLayer layer, IControlCharUtil controlCharUtil, IProtectedOperations protectedOperations, IVimGlobalSettings globalSettings)
+        internal BlockCaret(ITextView textView, IClassificationFormatMap classificationFormatMap, IEditorFormatMap formatMap, IAdornmentLayer layer, IControlCharUtil controlCharUtil, IProtectedOperations protectedOperations)
         {
             _textView = textView;
             _editorFormatMap = formatMap;
@@ -127,7 +126,6 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
             _protectedOperations = protectedOperations;
             _classificationFormatMap = classificationFormatMap;
             _controlCharUtil = controlCharUtil;
-            _globalSettings = globalSettings;
 
             _textView.LayoutChanged += OnCaretEvent;
             _textView.GotAggregateFocus += OnCaretEvent;
@@ -145,8 +143,8 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
             _blinkTimer.IsEnabled = caretBlinkTime != null;
         }
 
-        internal BlockCaret(IWpfTextView textView, string adornmentLayerName, IClassificationFormatMap classificationFormatMap, IEditorFormatMap formatMap, IControlCharUtil controlCharUtil, IProtectedOperations protectedOperations, IVimGlobalSettings globalSettings) :
-            this(textView, classificationFormatMap, formatMap, textView.GetAdornmentLayer(adornmentLayerName), controlCharUtil, protectedOperations, globalSettings)
+        internal BlockCaret(IWpfTextView textView, string adornmentLayerName, IClassificationFormatMap classificationFormatMap, IEditorFormatMap formatMap, IControlCharUtil controlCharUtil, IProtectedOperations protectedOperations) :
+            this(textView, classificationFormatMap, formatMap, textView.GetAdornmentLayer(adornmentLayerName), controlCharUtil, protectedOperations)
         {
         }
 
@@ -255,14 +253,7 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
         private void MoveCaretImageToCaret(CaretData caretData)
         {
             var point = GetRealCaretVisualPoint();
-            var isVeOneMore = _globalSettings.VirtualEdit.Equals("onemore", StringComparison.OrdinalIgnoreCase);
-            var isLastPosition = SnapshotPointUtil.IsLastPointOnLineIncludingLineBreak(_textView.GetCaretPoint());
-
-            var offsetX = isLastPosition || !isVeOneMore
-                ? caretData.Size.Width
-                : 0;
-
-            Canvas.SetLeft(caretData.Image, Math.Max(point.X - offsetX, 0));
+            Canvas.SetLeft(caretData.Image, point.X);
             Canvas.SetTop(caretData.Image, point.Y + caretData.YDisplayOffset);
         }
 

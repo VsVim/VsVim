@@ -87,7 +87,7 @@ type internal SelectionChangeTracker
     /// adjusting the screen to account for 'scrolloff'
     member x.OnPositionChanged() = 
         if not _vimBuffer.IsProcessingInput then
-            _commonOperations.EnsureAtCaret ViewFlags.ScrollOffset
+            _commonOperations.EnsureAtCaret (ViewFlags.ScrollOffset ||| ViewFlags.VirtualEdit)
 
     member x.OnBufferClosed() = 
         _bag.DisposeAll()

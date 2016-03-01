@@ -2584,6 +2584,7 @@ namespace Vim.UnitTest
                 {
                     Create("");
                     _globalSettings.Backspace = "start,eol,indent";
+                    _globalSettings.VirtualEdit = "onemore";
                     _localSettings.SoftTabStop = 4;
                     _localSettings.TabStop = 4;
                     _localSettings.ExpandTab = true;

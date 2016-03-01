@@ -39,6 +39,7 @@ namespace Vim.UnitTest
             _vimTextBuffer = _vimBuffer.VimTextBuffer;
             _registerMap = _vimBuffer.RegisterMap;
             _globalSettings = _vimBuffer.LocalSettings.GlobalSettings;
+            _globalSettings.VirtualEdit = "onemore";
             Assert.True(_context.IsEmpty);
 
             // Need to make sure it's focused so macro recording will work

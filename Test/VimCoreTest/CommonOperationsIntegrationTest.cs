@@ -229,8 +229,8 @@ namespace Vim.UnitTest
             public void VirtualEditOneMore()
             {
                 Create("cat", "dog");
-                _textView.MoveCaretTo(3);
                 _globalSettings.VirtualEdit = "onemore";
+                _textView.MoveCaretTo(3);
                 _commonOperationsRaw.AdjustCaretForVirtualEdit();
                 Assert.Equal(3, _textView.GetCaretPoint().Position);
             }

@@ -31,6 +31,7 @@ namespace Vim.UnitTest
             _vimBuffer = Vim.CreateVimBuffer(_textView);
             _globalSettings = _vimBuffer.GlobalSettings;
             _localSettings = _vimBuffer.LocalSettings;
+            _globalSettings.VirtualEdit = "onemore";
 
             var operations = CommonOperationsFactory.GetCommonOperations(_vimBuffer.VimBufferData);
             var motionUtil = new MotionUtil(_vimBuffer.VimBufferData, operations);
@@ -64,6 +65,7 @@ namespace Vim.UnitTest
                 public void AtEndOfBuffer()
                 {
                     Create("cat");
+                    _globalSettings.VirtualEdit = "onemore";
                     _textView.MoveCaretTo(3);
                     _insertUtilRaw.ApplyTextChange(TextChange.NewDeleteRight(4), addNewLines: false);
                     Assert.Equal("cat", _textBuffer.GetLine(0).GetText());

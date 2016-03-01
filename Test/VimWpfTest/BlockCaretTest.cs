@@ -28,7 +28,7 @@ namespace Vim.UI.Wpf.UnitTest
             _formatMap = new Mock<IEditorFormatMap>(MockBehavior.Strict);
             _classificationFormatMap = new Mock<IClassificationFormatMap>(MockBehavior.Strict);
             _layer = new Mock<IAdornmentLayer>(MockBehavior.Strict);
-            _blockCaretRaw = new BlockCaret(_textview.Object, _classificationFormatMap.Object, _formatMap.Object, _layer.Object, new ControlCharUtil(), ProtectedOperations, Vim.GlobalSettings);
+            _blockCaretRaw = new BlockCaret(_textview.Object, _classificationFormatMap.Object, _formatMap.Object, _layer.Object, new ControlCharUtil(), ProtectedOperations);
             _blockCaret = _blockCaretRaw;
         }
 
