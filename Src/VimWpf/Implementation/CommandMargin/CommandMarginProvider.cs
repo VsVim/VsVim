@@ -19,6 +19,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
     [MarginContainer(PredefinedMarginNames.Bottom)]
     [ContentType(VimConstants.ContentType)]
     [Name(CommandMargin.Name)]
+    [Order(After = "Wpf Horizontal Scrollbar")]
     [TextViewRole(PredefinedTextViewRoles.Editable)]
     internal sealed class CommandMarginProvider : IWpfTextViewMarginProvider
     {
