@@ -177,9 +177,9 @@ type internal CommonOperations
         let allowPastEndOfLine = 
             _vimTextBuffer.ModeKind = ModeKind.Insert ||
             _globalSettings.IsVirtualEditOneMore ||
-            VisualKind.IsAnyVisualOrSelect _vimTextBuffer.ModeKind
+            VisualKind.IsAnySelect _vimTextBuffer.ModeKind
 
-        if not allowPastEndOfLine then
+        if not allowPastEndOfLine && not (VisualKind.IsAnyVisual _vimTextBuffer.ModeKind) then
             let point = TextViewUtil.GetCaretPoint _textView
             let line = SnapshotPointUtil.GetContainingLine point
             if point.Position >= line.End.Position && line.Length > 0 then 

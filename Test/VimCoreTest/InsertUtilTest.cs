@@ -2,6 +2,7 @@
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Xunit;
+using Xunit.Extensions;
 
 namespace Vim.UnitTest
 {
@@ -21,17 +22,17 @@ namespace Vim.UnitTest
         /// <summary>
         /// Create the IVimBuffer with the given set of lines.  Note that we intentionally don't
         /// set the mode to Insert here because the given commands should work irrespective of the 
-        /// mode
+        /// mode. There are a few tests that rely on behavior from SelectionChangeTracker so they set
+        /// the mode to Insert.
         /// </summary>
         /// <param name="lines"></param>
-        private void Create(params string[] lines)
+        protected virtual void Create(params string[] lines)
         {
             _textView = CreateTextView(lines);
             _textBuffer = _textView.TextBuffer;
             _vimBuffer = Vim.CreateVimBuffer(_textView);
             _globalSettings = _vimBuffer.GlobalSettings;
             _localSettings = _vimBuffer.LocalSettings;
-            _globalSettings.VirtualEdit = "onemore";
 
             var operations = CommonOperationsFactory.GetCommonOperations(_vimBuffer.VimBufferData);
             var motionUtil = new MotionUtil(_vimBuffer.VimBufferData, operations);
@@ -63,6 +64,16 @@ namespace Vim.UnitTest
 
                 [Fact]
                 public void AtEndOfBuffer()
+                {
+                    Create("cat");
+                    _textView.MoveCaretTo(3);
+                    _insertUtilRaw.ApplyTextChange(TextChange.NewDeleteRight(4), addNewLines: false);
+                    Assert.Equal("ca", _textBuffer.GetLine(0).GetText());
+                    Assert.Equal(2, _textView.GetCaretPoint().Position);
+                }
+
+                [Fact]
+                public void AtEndOfBufferWithVeOnemore()
                 {
                     Create("cat");
                     _globalSettings.VirtualEdit = "onemore";
@@ -252,6 +263,18 @@ namespace Vim.UnitTest
                 _globalSettings.Backspace = "start";
                 _textView.MoveCaretTo(12);
                 _insertUtilRaw.DeleteLineBeforeCursor();
+                Assert.Equal("t", _textView.GetLine(0).GetText());
+                Assert.Equal(0, _textView.GetCaretPoint().Position);
+            }
+
+            [Fact]
+            public void DeleteLineBeforeCursorWithVeOnemore_EndOfLine()
+            {
+                Create("dog bear cat");
+                _globalSettings.VirtualEdit = "onemore";
+                _globalSettings.Backspace = "start";
+                _textView.MoveCaretTo(12);
+                _insertUtilRaw.DeleteLineBeforeCursor();
                 Assert.Equal("", _textView.GetLine(0).GetText());
                 Assert.Equal(0, _textView.GetCaretPoint().Position);
             }
@@ -356,6 +379,148 @@ namespace Vim.UnitTest
             /// </summary>
             [Fact]
             public void Left_FromVirtualSpace()
+            {
+                Create("", "dog");
+                _vimBuffer.LocalSettings.ShiftWidth = 4;
+                _textView.MoveCaretTo(0, 8);
+
+                _insertUtilRaw.ShiftLineLeft();
+
+                Assert.Equal("    ", _textView.GetLine(0).GetText());
+                Assert.Equal(3, _insertUtilRaw.CaretColumn.Column);
+                Assert.False(_textView.Caret.InVirtualSpace);
+                // probably redundant, but we just want to be sure...
+                Assert.Equal(0, _textView.Caret.Position.VirtualSpaces);
+            }
+
+            /// <summary>
+            /// This is actually non-vim behavior. Vim would leave the caret where it started, just
+            /// dedented 2 columns. I think we're opting for VS-ish behavior instead here.
+            /// </summary>
+            [Fact]
+            public void Left_CaretIsMovedToBeginningOfLineIfInVirtualSpaceAfterEndOfLine()
+            {
+                Create("    foo");
+                _vimBuffer.LocalSettings.ShiftWidth = 2;
+                _textView.MoveCaretTo(0, 16);
+
+                _insertUtilRaw.ShiftLineLeft();
+
+                Assert.Equal("  foo", _textView.GetLine(0).GetText());
+                Assert.Equal(2, _insertUtilRaw.CaretColumn.Column);
+                Assert.Equal(0, _textView.Caret.Position.VirtualSpaces);
+            }
+
+            /// <summary>
+            /// Make sure that shift right functions correctly when the caret is in virtual
+            /// space.  The virtual space should just be converted to spaces and processed
+            /// as such
+            /// </summary>
+            [Fact]
+            public void Right_FromVirtualSpace()
+            {
+                Create("", "dog");
+                _vimBuffer.LocalSettings.ShiftWidth = 4;
+                _vimBuffer.LocalSettings.ExpandTab = true;
+                _textView.MoveCaretTo(0, 8);
+
+                _insertUtilRaw.ShiftLineRight();
+
+                Assert.Equal("            ", _textView.GetLine(0).GetText());
+                Assert.Equal(11, _insertUtilRaw.CaretColumn.Column);
+                Assert.False(_textView.Caret.InVirtualSpace);
+                // probably redundant, but we just want to be sure...
+                Assert.Equal(0, _textView.Caret.Position.VirtualSpaces);
+            }
+
+            /// <summary>
+            /// Make sure that shift right functions correctly when the caret is in virtual
+            /// space with leading spaces.
+            /// </summary>
+            [Fact]
+            public void Right_FromVirtualSpaceWithLeadingSpaces()
+            {
+                Create("    ", "dog");
+                _vimBuffer.LocalSettings.ShiftWidth = 4;
+                _vimBuffer.LocalSettings.ExpandTab = true;
+                _textView.MoveCaretTo(4, 4);
+
+                _insertUtilRaw.ShiftLineRight();
+
+                Assert.Equal("        ", _textView.GetLine(0).GetText());
+                Assert.Equal(8, _insertUtilRaw.CaretColumn.Column);
+                Assert.False(_textView.Caret.InVirtualSpace);
+                // probably redundant, but we just want to be sure...
+                Assert.Equal(0, _textView.Caret.Position.VirtualSpaces);
+            }
+
+            /// <summary>
+            /// Make sure that shift right properly produces mixed tabs and spaces
+            /// when the 'shiftwidth' is smaller than the 'tabstop'
+            /// as such
+            /// </summary>
+            [Fact]
+            public void Right_ToTabsAndSpaces()
+            {
+                Create("", "dog");
+                _vimBuffer.LocalSettings.ShiftWidth = 4;
+                _textView.MoveCaretTo(0, 8);
+
+                _insertUtilRaw.ShiftLineRight();
+
+                Assert.Equal("\t    ", _textView.GetLine(0).GetText());
+                Assert.Equal(4, _insertUtilRaw.CaretColumn.Column);
+                Assert.False(_textView.Caret.InVirtualSpace);
+                // probably redundant, but we just want to be sure...
+                Assert.Equal(0, _textView.Caret.Position.VirtualSpaces);
+            }
+
+            /// <summary>
+            /// Make sure that shift right functions correctly on blank lines
+            /// </summary>
+            [Fact]
+            public void Right_FromBlankLine()
+            {
+                Create("");
+                _vimBuffer.LocalSettings.ShiftWidth = 4;
+                _insertUtilRaw.ShiftLineRight();
+
+                Assert.Equal("    ", _textView.GetLine(0).GetText());
+                Assert.Equal(4, _insertUtilRaw.CaretColumn.Column);
+            }
+
+            /// <summary>
+            /// Make sure that shift right functions correctly on lines with
+            /// leading blanks not equivalent to a multiple of the shift wdith
+            /// </summary>
+            [Fact]
+            public void Right_WithIrregularLeadingBlanks()
+            {
+                Create("   abc");
+                _textView.MoveCaretTo(3);
+                _vimBuffer.LocalSettings.ShiftWidth = 4;
+                _insertUtilRaw.ShiftLineRight();
+
+                Assert.Equal("    abc", _textView.GetLine(0).GetText());
+                Assert.Equal(4, _insertUtilRaw.CaretColumn.Column);
+            }
+        }
+
+        public sealed class ShiftTestWithVirtualEditOneMore : InsertUtilTest
+        {
+            protected override void Create(params string[] lines)
+            {
+                base.Create(lines);
+                _globalSettings.VirtualEdit = "onemore";
+            }
+
+            /// <summary>
+            /// Make sure that shift left functions correctly when the caret is in virtual
+            /// space.  The virtual space should just be converted to spaces and processed
+            /// as such
+            /// </summary>
+            [Fact]
+            public void Left_FromVirtualSpaceWithVeOneMore()
             {
                 Create("", "dog");
                 _vimBuffer.LocalSettings.ShiftWidth = 4;
@@ -559,10 +724,13 @@ namespace Vim.UnitTest
             /// <summary>
             /// Issue #1269 - part II
             /// </summary>
-            [Fact]
-            public void Forward_FromLastWordOfLastLine()
+            [Theory]
+            [PropertyData("VirtualEditOptions")]
+            public void Forward_FromLastWordOfLastLine(string virtualEdit)
             {
                 Create("cat", "dog");
+                _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
+                _globalSettings.VirtualEdit = virtualEdit;
                 _textView.MoveCaretTo(5);
 
                 _insertUtilRaw.MoveCaretByWord(Direction.Right);
@@ -594,10 +762,13 @@ namespace Vim.UnitTest
             /// Arrow left at beginning of line with 'whichwrap=['
             /// should move the end of the previous line
             /// </summary>
-            [Fact]
-            public void With_IsWhichWrapArrowLeftInsert()
+            [Theory]
+            [PropertyData("VirtualEditOptions")]
+            public void With_IsWhichWrapArrowLeftInsert(string virtualEdit)
             {
                 Create("dog", "cat");
+                _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
+                _globalSettings.VirtualEdit = virtualEdit;
                 _globalSettings.WhichWrap = "[";
                 _textView.MoveCaretTo(5);
                 _insertUtilRaw.MoveCaretWithArrow(Direction.Left);
@@ -608,10 +779,13 @@ namespace Vim.UnitTest
             /// Arrow right at end of line without 'whichwrap=['
             /// should stay put
             /// </summary>
-            [Fact]
-            public void Without_IsWhichWrapArrowRightInsert()
+            [Theory]
+            [PropertyData("VirtualEditOptions")]
+            public void Without_IsWhichWrapArrowRightInsert(string virtualEdit)
             {
                 Create("dog", "cat");
+                _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
+                _globalSettings.VirtualEdit = virtualEdit;
                 _globalSettings.WhichWrap = "";
                 _textView.MoveCaretTo(3);
                 _insertUtilRaw.MoveCaretWithArrow(Direction.Right);
@@ -622,10 +796,13 @@ namespace Vim.UnitTest
             /// Arrow right at end of line with 'whichwrap=]'
             /// should move the beginning of the next line
             /// </summary>
-            [Fact]
-            public void With_IsWhichWrapArrowRightInsert()
+            [Theory]
+            [PropertyData("VirtualEditOptions")]
+            public void With_IsWhichWrapArrowRightInsert(string virtualEdit)
             {
                 Create("dog", "cat");
+                _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
+                _globalSettings.VirtualEdit = virtualEdit;
                 _globalSettings.WhichWrap = "]";
                 _textView.MoveCaretTo(3);
                 _insertUtilRaw.MoveCaretWithArrow(Direction.Right);
