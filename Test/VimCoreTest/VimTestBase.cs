@@ -492,5 +492,20 @@ namespace Vim.UnitTest
             var host = TextEditorFactoryService.CreateTextViewHost((IWpfTextView)textView, setFocus: false);
             host.HostControl.UpdateLayout();
         }
+
+        /// <summary>
+        /// This must be public static for xunit to pick it up as a Theory data source
+        /// </summary>
+        public static object[] VirtualEditOptions
+        {
+            get
+            {
+                return new[]
+                {
+                    new object[] { "" },
+                    new object[] { "onemore" },
+                };
+            }
+        }
     }
 }
