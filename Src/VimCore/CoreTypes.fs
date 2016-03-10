@@ -345,6 +345,9 @@ type Mark =
     /// The last jump which is specific to a window
     | LastJump 
 
+    // The position when the current buffer was last exited
+    | LastExitedPosition
+
     with
 
     member x.Char =
@@ -352,12 +355,15 @@ type Mark =
         | LocalMark localMark -> localMark.Char
         | GlobalMark letter -> CharUtil.ToUpper letter.Char
         | LastJump -> '\''
+        | LastExitedPosition -> '"'
 
     static member OfChar c =
         if CharUtil.IsUpper c then 
             c |> CharUtil.ToLower |> Letter.OfChar |> Option.map GlobalMark
         elif c = '\'' || c = '`' then
             Some LastJump
+        elif c = '"' then
+            Some LastExitedPosition
         else
             LocalMark.OfChar c |> Option.map LocalMark
     

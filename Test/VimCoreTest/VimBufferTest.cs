@@ -1,5 +1,7 @@
 ﻿using System;
 using EditorUtils;
+using Microsoft.FSharp.Core;
+using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Moq;
 using Vim.Extensions;
@@ -411,6 +413,96 @@ namespace Vim.UnitTest
                     };
                 _vimBuffer.Close();
                 Assert.Equal(2, count);
+            }
+        }
+        
+        public class ClosingSetsLastEditedPositionMark : VimBufferTest
+        {
+            public ClosingSetsLastEditedPositionMark()
+            {
+                OpenFakeVimBufferTestWindow();
+            }
+
+            private void OpenFakeVimBufferTestWindow()
+            {
+                OpenFakeVimBufferTestWindow("Hello", "World!");
+            }
+
+            private void OpenFakeVimBufferTestWindow(params string[] lines)
+            {
+                _textView = CreateTextView(lines);
+                _textView.MoveCaretTo(0);
+                _textView.TextBuffer.Properties.AddProperty(Mock.MockVimHost.FileNameKey, "VimBufferTest.cs");
+                _vimBuffer = Vim.CreateVimBuffer(_textView);
+                _vimBuffer.SwitchMode(ModeKind.Command, ModeArgument.None);
+            }
+
+            private void AssertPosition(int lineNumber, int column, FSharpOption<VirtualSnapshotPoint> option)
+            {
+                Assert.True(option.IsSome());
+                var line = VirtualSnapshotPointUtil.GetPoint(option.value).GetColumn();
+                Assert.Equal(lineNumber, line.LineNumber);
+                Assert.Equal(column, line.Column);
+            }
+
+            [Fact]
+            public void FirstTimeBufferIsZeroZero()
+            {
+                var option = Vim.MarkMap.GetMark(Mark.LastExitedPosition, _vimBuffer.VimBufferData);
+                AssertPosition(0, 0, option);
+            }
+
+            [Fact]
+            public void ReopeningTheWindow()
+            {
+                _textView.MoveCaretToLine(1, 2);
+                _vimBuffer.Close();
+
+                // reopen the file
+                OpenFakeVimBufferTestWindow();
+
+                var option = Vim.MarkMap.GetMark(Mark.LastExitedPosition, _vimBuffer.VimBufferData);
+                AssertPosition(1, 2, option);
+            }
+
+            [Fact]
+            public void ReopeningTheWindowLastPositionAtColumnZeroWithLenZeroIsOk()
+            {
+                _textView.SetText("Hello", "", "World!");
+                _textView.MoveCaretToLine(1, 0);
+                _vimBuffer.Close();
+
+                // reopen the file
+                OpenFakeVimBufferTestWindow();
+
+                var option = Vim.MarkMap.GetMark(Mark.LastExitedPosition, _vimBuffer.VimBufferData);
+                AssertPosition(1, 0, option);
+            }
+
+            [Fact]
+            public void ReopeningTheWindowWithInvalidColumnLastPositionGoesToZeroZero()
+            {
+                _textView.MoveCaretToLine(1, 2);
+                _vimBuffer.Close();
+
+                // reopen the file to invalid column position
+                OpenFakeVimBufferTestWindow("Hello", "");
+
+                var option = Vim.MarkMap.GetMark(Mark.LastExitedPosition, _vimBuffer.VimBufferData);
+                AssertPosition(0, 0, option);
+            }
+
+            [Fact]
+            public void ReopeningTheWindowWithInvalidLineLastPositionGoesToZeroZero()
+            {
+                _textView.MoveCaretToLine(1, 2);
+                _vimBuffer.Close();
+
+                // reopen the file to invalid line position
+                OpenFakeVimBufferTestWindow("Hello");
+
+                var option = Vim.MarkMap.GetMark(Mark.LastExitedPosition, _vimBuffer.VimBufferData);
+                AssertPosition(0, 0, option);
             }
         }
 

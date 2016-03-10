@@ -606,6 +606,7 @@ type VimInterpreter
         | Mark.LocalMark localMark -> _vimTextBuffer.RemoveLocalMark localMark |> ignore
         | Mark.GlobalMark letter -> _markMap.RemoveGlobalMark letter |> ignore
         | Mark.LastJump -> ()
+        | Mark.LastExitedPosition -> ()
 
     member x.RunDeleteMarks marks = 
         marks |> Seq.iter x.RunDeleteMarkCore

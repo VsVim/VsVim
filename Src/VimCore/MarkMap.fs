@@ -20,6 +20,8 @@ type MarkMap(_bufferTrackingService : IBufferTrackingService) =
     /// in memory.
     let mutable _globalMarkMap : Map<Letter, WeakReference<ITextBuffer>> = Map.empty
 
+    let mutable _globalLastExitedMap : Map<string, int * int> = Map.empty
+
     /// Get the core information about the global mark represented by the letter
     member x.GetGlobalMarkData letter =
         match Map.tryFind letter _globalMarkMap with
@@ -92,6 +94,27 @@ type MarkMap(_bufferTrackingService : IBufferTrackingService) =
             vimBufferData.VimTextBuffer.GetLocalMark localMark
         | Mark.LastJump -> 
             vimBufferData.JumpList.LastJumpLocation
+        | Mark.LastExitedPosition ->
+            let getZeroZero() =
+                let snapshotLine' = vimBufferData.TextBuffer.CurrentSnapshot.GetLineFromPosition 0
+                let snapshot = snapshotLine'.Start.Add(0)
+                Some (VirtualSnapshotPointUtil.OfPoint snapshot)
+
+            let (line, column) =
+                match _globalLastExitedMap.TryFind (vimBufferData.Vim.VimHost.GetName vimBufferData.TextBuffer) with
+                | Some (line, column) -> (line, column)
+                | None -> (0, 0)
+
+            // not using TryGetPointInLine because None is returned when column and lineLength are both 0,
+            //  which can be valid in this case
+            match SnapshotUtil.TryGetLine vimBufferData.TextBuffer.CurrentSnapshot line with
+            | None -> getZeroZero()
+            | Some snapshotLine ->
+                if column >= snapshotLine.Length && not (column = 0 && snapshotLine.Length = 0) then
+                    getZeroZero()
+                else
+                    let snapshot = snapshotLine.Start.Add(column)
+                    Some (VirtualSnapshotPointUtil.OfPoint snapshot)
 
     /// Set the given mark to the specified line and column in the context of the IVimTextBuffer
     member x.SetMark mark (vimBufferData : IVimBufferData) line column = 
@@ -105,6 +128,24 @@ type MarkMap(_bufferTrackingService : IBufferTrackingService) =
         | Mark.LastJump ->
             vimBufferData.JumpList.SetLastJumpLocation line column
             true
+        | Mark.LastExitedPosition ->
+            let bufferName = vimBufferData.VimTextBuffer.Name
+            if not (System.String.IsNullOrEmpty bufferName) then
+                _globalLastExitedMap <-
+                    _globalLastExitedMap.Remove bufferName
+                    |> Map.add bufferName (line, column)
+                true
+            else
+                false
+
+    member x.SetLastExitedPosition bufferName line column =
+        if not (System.String.IsNullOrEmpty bufferName) then
+            _globalLastExitedMap <-
+                _globalLastExitedMap.Remove bufferName
+                |> Map.add bufferName (line, column)
+            true
+        else
+            false
 
     member x.Clear () = 
 
@@ -120,6 +161,6 @@ type MarkMap(_bufferTrackingService : IBufferTrackingService) =
         member x.GetMark mark vimTextBuffer = x.GetMark mark vimTextBuffer
         member x.SetGlobalMark letter vimTextBuffer line column = x.SetGlobalMark letter vimTextBuffer line column
         member x.SetMark mark vimTextBuffer line column = x.SetMark mark vimTextBuffer line column
+        member x.SetLastExitedPosition buffername line column = x.SetLastExitedPosition buffername line column
         member x.RemoveGlobalMark letter = x.RemoveGlobalMark letter
         member x.Clear() = x.Clear()
-
