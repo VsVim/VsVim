@@ -169,6 +169,8 @@ type internal VimBuffer
         |> Observable.subscribe (fun args -> this.OnVimTextBufferSwitchedMode args.ModeKind args.ModeArgument)
         |> _bag.Add
 
+        _vim.MarkMap.SetMark Mark.LastJump _vimBufferData 0 0 |> ignore
+
     member x.BufferedKeyInputs =
         match _bufferedKeyInput with
         | None -> List.empty

@@ -212,5 +212,20 @@ namespace Vim.UnitTest
                 Assert.Equal(otherMark, mark);
             }
         }
+
+        [Fact]
+        public void NewBufferHasLastJump()
+        {
+            var vimBufferData = CreateVimBufferData("foo");
+            var vimBuffer = CreateVimBuffer(vimBufferData);
+            Assert.True(_markMap.GetMark(Mark.LastJump, vimBufferData).IsSome());
+        }
+
+        [Fact]
+        public void NewBufferHasLastExitedPosition()
+        {
+            var vimBufferData = CreateVimBufferData("foo");
+            Assert.True(_markMap.GetMark(Mark.LastExitedPosition, vimBufferData).IsSome());
+        }
     }
 }
