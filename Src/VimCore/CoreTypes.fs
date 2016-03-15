@@ -291,6 +291,8 @@ type LocalMark =
     | Letter of Letter
     | Number of NumberMark
     | LastInsertExit
+    | LastChangedOrYankedStart
+    | LastChangedOrYankedEnd
     | LastSelectionStart
     | LastSelectionEnd
     | LastEdit
@@ -301,6 +303,8 @@ type LocalMark =
         match x with 
         | Letter letter -> letter.Char
         | Number number -> number.Char
+        | LastChangedOrYankedStart -> '['
+        | LastChangedOrYankedEnd -> ']'
         | LastSelectionStart -> '<'
         | LastSelectionEnd -> '>'
         | LastInsertExit -> '^'
@@ -312,6 +316,8 @@ type LocalMark =
                 yield LocalMark.Letter letter
             for number in NumberMark.All do
                 yield LocalMark.Number number
+            yield LocalMark.LastChangedOrYankedStart
+            yield LocalMark.LastChangedOrYankedEnd
             yield LocalMark.LastSelectionStart
             yield LocalMark.LastSelectionEnd
             yield LocalMark.LastEdit
@@ -325,6 +331,8 @@ type LocalMark =
             | Some number -> Some (LocalMark.Number number)
             | None -> 
                 match c with 
+                | '[' -> Some LocalMark.LastChangedOrYankedStart
+                | ']' -> Some LocalMark.LastChangedOrYankedEnd
                 | '<' -> Some LocalMark.LastSelectionStart
                 | '>' -> Some LocalMark.LastSelectionEnd
                 | '^' -> Some LocalMark.LastInsertExit

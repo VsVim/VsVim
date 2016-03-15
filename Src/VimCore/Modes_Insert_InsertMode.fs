@@ -973,6 +973,9 @@ type internal InsertMode
 
         // Record start point upon initial entry to insert mode
         _vimBuffer.VimTextBuffer.InsertStartPoint <- Some x.CaretPoint
+        _vimBuffer.VimTextBuffer.LastChangedOrYankedStart <- Some x.CaretPoint
+        _vimBuffer.VimTextBuffer.LastChangedOrYankedEnd <- Some x.CaretPoint
+
         _vimBuffer.VimTextBuffer.IsSoftTabStopValidForBackspace <- true
 
         // When starting insert mode we want to track the edits to the IVimBuffer as a 
@@ -1048,6 +1051,12 @@ type internal InsertMode
         // Dismiss any active ICompletionSession 
         x.CancelWordCompletionSession()
 
+        // Update special marks
+        // Would you prefer an if statement in this case?
+        match SnapshotPointUtil.IsEndPoint x.CaretPoint with
+        | true ->  _vimBuffer.VimTextBuffer.LastChangedOrYankedEnd <- Some(x.CaretPoint)
+        | false -> _vimBuffer.VimTextBuffer.LastChangedOrYankedEnd <- Some(x.CaretPoint.Add 1)
+
         // The 'start' point is not valid when we are not in insert mode 
         _vimBuffer.VimTextBuffer.InsertStartPoint <- None
         _vimBuffer.VimTextBuffer.IsSoftTabStopValidForBackspace <- true
@@ -1078,4 +1087,3 @@ type internal InsertMode
 
         [<CLIEvent>]
         member x.CommandRan = _commandRanEvent.Publish
-

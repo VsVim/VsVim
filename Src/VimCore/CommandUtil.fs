@@ -482,6 +482,7 @@ type internal CommandUtil
                 if specialCaseBlock then deleteBlock blockSpan.BlockOverlapSpans
                 else visualSpan.EditSpan.OverarchingSpan |> SnapshotLineRangeUtil.CreateForSpan |> deleteRange
 
+        x.UpdateLastChangedOrYankedSpan editSpan.OverarchingSpan
         let value = x.CreateRegisterValue (StringData.OfEditSpan editSpan) OperationKind.LineWise
         _registerMap.SetRegisterValue register RegisterOperation.Delete value
 
@@ -695,7 +696,10 @@ type internal CommandUtil
                         collection |> Seq.iter (fun span -> edit.Delete(span) |> ignore)
 
                         EditSpan.Block collection
-    
+
+                // TODO: Not sure if this should be in this scope or the outer scope
+                x.UpdateLastChangedOrYankedSpan editSpan.OverarchingSpan
+
                 edit.Apply() |> ignore
     
                 // Now position the cursor back at the start of the VisualSpan
@@ -723,8 +727,10 @@ type internal CommandUtil
         TextViewUtil.MoveCaretToPoint _textView startPoint
         x.EditWithUndoTransaction "DeleteSelection" (fun () ->
             use edit = _textBuffer.CreateEdit()
+            let mutable endPoint : SnapshotPoint option = None
             visualSpan.OverlapSpans |> Seq.iter (fun overlapSpan ->
                 let span = overlapSpan.OverarchingSpan
+                let endPoint = Some(span.End)
 
                 // If the last included point in the SnapshotSpan is inside the line break
                 // portion of a line then extend the SnapshotSpan to encompass the full
@@ -743,6 +749,16 @@ type internal CommandUtil
                             span
 
                 edit.Delete(overlapSpan) |> ignore)
+            
+            let startPoint = Seq.head visualSpan.OverlapSpans |> fun span -> span.OverarchingStart
+            
+            match endPoint with
+            | None -> 
+                x.UpdateLastChangedOrYankedSpan (SnapshotSpanUtil.Create startPoint startPoint)
+            | Some point -> 
+                x.UpdateLastChangedOrYankedSpan (SnapshotSpanUtil.Create startPoint point)
+
+
 
             let snapshot = TextEditUtil.ApplyAndGetLatest edit
             TextViewUtil.MoveCaretToPosition _textView startPoint.Position)
@@ -815,6 +831,9 @@ type internal CommandUtil
         if not span.IsEmpty then
             let value = x.CreateRegisterValue (StringData.OfSpan span) operationKind
             _registerMap.SetRegisterValue register RegisterOperation.Delete value
+
+        // Update special marks
+        x.UpdateLastChangedOrYankedSpan (SnapshotSpanUtil.Create span.Start span.Start)
 
         CommandResult.Completed ModeSwitch.NoSwitch
 
@@ -1917,7 +1936,10 @@ type internal CommandUtil
                     x.PutCore point stringData operationKind moveCaretAfterText
 
                     EditSpan.Block col, OperationKind.CharacterWise)
-
+        // Update special marks
+        let deleteStartPoint = deletedSpan.OverarchingSpan.Start
+        x.UpdateLastChangedOrYankedSpan (SnapshotSpanUtil.Create deleteStartPoint deleteStartPoint)
+    
         // Update the unnamed register with the deleted text
         let value = x.CreateRegisterValue (StringData.OfEditSpan deletedSpan) operationKind
         let unnamedRegister = _registerMap.GetRegister RegisterName.Unnamed
@@ -2983,6 +3005,7 @@ type internal CommandUtil
 
             let data = StringData.OfSpan span
             let value = x.CreateRegisterValue data OperationKind.LineWise
+            x.UpdateLastChangedOrYankedSpan span            
             _registerMap.SetRegisterValue register RegisterOperation.Yank value
 
         CommandResult.Completed ModeSwitch.NoSwitch
@@ -2990,6 +3013,14 @@ type internal CommandUtil
     /// Yank the contents of the motion into the specified register
     member x.YankMotion register (result: MotionResult) = 
         let value = x.CreateRegisterValue (StringData.OfSpan result.Span) result.OperationKind
+
+        // For some reason MotionResult.End seems to be 1 more than the position stored in the mark
+        // Though only if the motion actually moved forward
+        if result.End = result.Start then
+            x.UpdateLastChangedOrYankedSpan (SnapshotSpanUtil.Create result.Start result.End)
+        else
+            x.UpdateLastChangedOrYankedSpan (SnapshotSpanUtil.Create result.Start (result.End - 1))
+            
         _registerMap.SetRegisterValue register RegisterOperation.Yank value
         CommandResult.Completed ModeSwitch.NoSwitch
 
@@ -3010,6 +3041,7 @@ type internal CommandUtil
 
         let data = StringData.OfEditSpan editSpan
         let value = x.CreateRegisterValue data operationKind
+        x.UpdateLastChangedOrYankedSpan (SnapshotSpanUtil.Create visualSpan.Start visualSpan.End)
         _registerMap.SetRegisterValue register RegisterOperation.Yank value
         CommandResult.Completed ModeSwitch.SwitchPreviousMode
 
@@ -3017,6 +3049,7 @@ type internal CommandUtil
     member x.YankSelection register (visualSpan : VisualSpan) = 
         let data = StringData.OfEditSpan visualSpan.EditSpan
         let value = x.CreateRegisterValue data visualSpan.OperationKind
+        x.UpdateLastChangedOrYankedSpan visualSpan.EditSpan.OverarchingSpan
         _registerMap.SetRegisterValue register RegisterOperation.Yank value
         CommandResult.Completed ModeSwitch.SwitchPreviousMode
 
@@ -3042,6 +3075,11 @@ type internal CommandUtil
     member x.SelectAll () =
         _textView.Selection.Select(_textBuffer.CurrentSnapshot.GetExtent(), false)
         CommandResult.Completed ModeSwitch.NoSwitch
+
+    member x.UpdateLastChangedOrYankedSpan (span: SnapshotSpan) =
+        // It seems the last mark is always set to the end of the span minus 1 position.
+        _vimTextBuffer.LastChangedOrYankedStart <- Some(span.Start)
+        _vimTextBuffer.LastChangedOrYankedEnd <- Some(span.End)
 
     interface ICommandUtil with
         member x.RunNormalCommand command data = x.RunNormalCommand command data
