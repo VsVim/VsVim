@@ -40,6 +40,7 @@ namespace Vim.UnitTest
             _editOpts = _factory.Create<IEditorOperations>();
             _vimHost = _factory.Create<IVimHost>();
             _vimHost.Setup(x => x.IsDirty(It.IsAny<ITextBuffer>())).Returns(false);
+            _vimHost.Setup(x => x.GetName(It.IsAny<ITextBuffer>())).Returns("CommandProcessorLegacyTest.cs");
             _operations = _factory.Create<ICommonOperations>();
             _operations.SetupGet(x => x.EditorOperations).Returns(_editOpts.Object);
             _operations

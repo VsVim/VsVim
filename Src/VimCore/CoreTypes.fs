@@ -312,9 +312,10 @@ type LocalMark =
                 yield LocalMark.Letter letter
             for number in NumberMark.All do
                 yield LocalMark.Number number
+            yield LocalMark.LastInsertExit
+            yield LocalMark.LastEdit
             yield LocalMark.LastSelectionStart
             yield LocalMark.LastSelectionEnd
-            yield LocalMark.LastEdit
         }
 
     static member OfChar c =
@@ -366,7 +367,7 @@ type Mark =
             Some LastExitedPosition
         else
             LocalMark.OfChar c |> Option.map LocalMark
-    
+
 type Direction =
     | Up        = 1
     | Down      = 2

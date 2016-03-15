@@ -1,10 +1,12 @@
 ﻿using System;
 using EditorUtils;
+using Microsoft.FSharp.Collections;
 using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Moq;
 using Vim.Extensions;
+using Vim.Interpreter;
 using Xunit;
 
 namespace Vim.UnitTest
@@ -416,28 +418,134 @@ namespace Vim.UnitTest
             }
         }
         
+        public class SpecialMarks : ClosingSetsLastEditedPositionMark
+        {
+            [Fact]
+            public void SpecialMarksAreSet()
+            {
+                var s_emptyList = FSharpList<Mark>.Empty;
+                OpenFakeVimBufferTestWindow("");
+                var interpreter = new VimInterpreter(
+                    _vimBuffer,
+                    CommonOperationsFactory.GetCommonOperations(_vimBufferData),
+                    FoldManagerFactory.GetFoldManager(_vimBufferData.TextView),
+                    new FileSystem(),
+                    BufferTrackingService);
+                _vimBuffer.ProcessNotation("<ESC>i1<CR>2<CR>3<CR>4<CR>5<CR>6<CR>7<CR>8<CR>9<CR>0<ESC>");
+                interpreter.RunDisplayMarks(s_emptyList);
+                var expectedMarks = new[] {
+                    @"mark line  col file/text",
+                    @" '      1    0 VimBufferTest.cs",
+                   @" ""      1    0 VimBufferTest.cs",
+                    //@" [      1    0 VimBufferTest.cs",
+                    //@" ]     10    1 VimBufferTest.cs",
+                    @" ^     10    1 VimBufferTest.cs",
+                    @" .     10    0 VimBufferTest.cs",
+                };
+                Assert.Equal(string.Join(Environment.NewLine, expectedMarks), _statusUtil.LastStatus);
+
+                // set an upper and lower mark
+                _vimBuffer.ProcessNotation("kmzkmZ");
+
+                _vimBuffer.ProcessNotation("1G");
+                interpreter.RunDisplayMarks(s_emptyList);
+                expectedMarks = new[] {
+                    @"mark line  col file/text",
+                    @" '      8    0 VimBufferTest.cs",
+                    @" z      9    0 VimBufferTest.cs",
+                    @" Z      8    0 VimBufferTest.cs",
+                   @" ""      1    0 VimBufferTest.cs",
+                    //@" [      1    0 VimBufferTest.cs",
+                    //@" ]     10    1 VimBufferTest.cs",
+                    @" ^     10    1 VimBufferTest.cs",
+                    @" .     10    0 VimBufferTest.cs",
+                };
+                Assert.Equal(string.Join(Environment.NewLine, expectedMarks), _statusUtil.LastStatus);
+
+                _vimBuffer.ProcessNotation("yy");
+                interpreter.RunDisplayMarks(s_emptyList);
+                expectedMarks = new[] {
+                    @"mark line  col file/text",
+                    @" '      8    0 VimBufferTest.cs",
+                    @" z      9    0 VimBufferTest.cs",
+                    @" Z      8    0 VimBufferTest.cs",
+                   @" ""      1    0 VimBufferTest.cs",
+                    //@" [      1    0 VimBufferTest.cs",
+                    //@" ]     10    1 VimBufferTest.cs",
+                    @" ^     10    1 VimBufferTest.cs",
+                    @" .     10    0 VimBufferTest.cs",
+                };
+                Assert.Equal(string.Join(Environment.NewLine, expectedMarks), _statusUtil.LastStatus);
+
+                // set an upper and lower mark
+                _vimBuffer.ProcessNotation("jmajmA2k");
+
+                _vimBuffer.ProcessNotation("5jp");
+                interpreter.RunDisplayMarks(s_emptyList);
+                expectedMarks = new[] {
+                    @"mark line  col file/text",
+                    @" '      9    0 VimBufferTest.cs",
+                    @" a      2    0 VimBufferTest.cs",
+                    @" z     10    0 VimBufferTest.cs",
+                    @" A      3    0 VimBufferTest.cs",
+                    @" Z      9    0 VimBufferTest.cs",
+                   @" ""      1    0 VimBufferTest.cs",
+                    //@" [      7    0 VimBufferTest.cs",
+                    //@" ]      7    1 VimBufferTest.cs",
+                    @" ^     11    1 VimBufferTest.cs",
+                    @" .      7    1 VimBufferTest.cs",
+                };
+                Assert.Equal(string.Join(Environment.NewLine, expectedMarks), _statusUtil.LastStatus);
+
+                _vimBuffer.ProcessNotation("kV<ESC>");
+                interpreter.RunDisplayMarks(s_emptyList);
+                
+                expectedMarks = new[] {
+                    @"mark line  col file/text",
+                    @" '      9    0 VimBufferTest.cs",
+                    @" a      2    0 VimBufferTest.cs",
+                    @" z     10    0 VimBufferTest.cs",
+                    @" A      3    0 VimBufferTest.cs",
+                    @" Z      9    0 VimBufferTest.cs",
+                   @" ""      1    0 VimBufferTest.cs",
+                    //@" [      7    0 VimBufferTest.cs",
+                    //@" ]      7    1 VimBufferTest.cs",
+                    @" ^     11    1 VimBufferTest.cs",
+                    @" .      7    1 VimBufferTest.cs",
+                    @" <      6    0 VimBufferTest.cs",
+                    @" >      6    1 VimBufferTest.cs",
+                };
+                Assert.Equal(string.Join(Environment.NewLine, expectedMarks), _statusUtil.LastStatus);
+            }
+        }
+
         public class ClosingSetsLastEditedPositionMark : VimBufferTest
         {
+            protected TestableStatusUtil _statusUtil = new TestableStatusUtil();
+            protected IVimBufferData _vimBufferData;
+
             public ClosingSetsLastEditedPositionMark()
             {
                 OpenFakeVimBufferTestWindow();
+                _vimBuffer.MarkMap.SetLastExitedPosition("VimBufferTest.cs", 0, 0);
             }
 
-            private void OpenFakeVimBufferTestWindow()
+            protected void OpenFakeVimBufferTestWindow()
             {
                 OpenFakeVimBufferTestWindow("Hello", "World!");
             }
 
-            private void OpenFakeVimBufferTestWindow(params string[] lines)
+            protected void OpenFakeVimBufferTestWindow(params string[] lines)
             {
                 _textView = CreateTextView(lines);
                 _textView.MoveCaretTo(0);
                 _textView.TextBuffer.Properties.AddProperty(Mock.MockVimHost.FileNameKey, "VimBufferTest.cs");
-                _vimBuffer = Vim.CreateVimBuffer(_textView);
+                _vimBufferData = CreateVimBufferData(_textView, statusUtil: _statusUtil);
+                _vimBuffer = CreateVimBuffer(_vimBufferData);
                 _vimBuffer.SwitchMode(ModeKind.Command, ModeArgument.None);
             }
 
-            private void AssertPosition(int lineNumber, int column, FSharpOption<VirtualSnapshotPoint> option)
+            protected void AssertPosition(int lineNumber, int column, FSharpOption<VirtualSnapshotPoint> option)
             {
                 Assert.True(option.IsSome());
                 var line = VirtualSnapshotPointUtil.GetPoint(option.value).GetColumn();

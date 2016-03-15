@@ -11,6 +11,7 @@ using Vim.Extensions;
 using Vim.Interpreter;
 using Vim.UnitTest.Mock;
 using Xunit;
+using Microsoft.VisualStudio.Text;
 
 namespace Vim.UnitTest
 {
@@ -58,6 +59,7 @@ namespace Vim.UnitTest
             _vimHost.Setup(x => x.CreateHiddenTextView()).Returns(CreateTextView());
             _vimHost.Setup(x => x.AutoSynchronizeSettings).Returns(true);
             _vimHost.Setup(x => x.VimCreated(It.IsAny<IVim>()));
+            _vimHost.Setup(x => x.GetName(It.IsAny<ITextBuffer>())).Returns("VimTest.cs");
             _vimHost.SetupGet(x => x.DefaultSettings).Returns(DefaultSettings.GVim73);
             if (createVim)
             {
@@ -68,13 +70,16 @@ namespace Vim.UnitTest
         private void CreateVim()
         {
             var creationListeners = new[] { new Lazy<IVimBufferCreationListener>(() => _simpleListener) };
+            var markMap = _factory.Create<IMarkMap>();
+            markMap.Setup(x => x.SetMark(Mark.LastJump, It.IsAny<IVimBufferData>(), 0, 0)).Returns(true);
+            markMap.Setup(x => x.SetLastExitedPosition("VimTest.cs", 0, 0)).Returns(true);
             _vimRaw = new Vim(
                 _vimHost.Object,
                 _bufferFactory,
                 CompositionContainer.GetExportedValue<IVimInterpreterFactory>(),
                 creationListeners.ToFSharpList(),
                 _globalSettings,
-                _factory.Create<IMarkMap>().Object,
+                markMap.Object,
                 _keyMap,
                 MockObjectFactory.CreateClipboardDevice().Object,
                 _factory.Create<ISearchService>().Object,
