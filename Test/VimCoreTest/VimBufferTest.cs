@@ -574,6 +574,26 @@ namespace Vim.UnitTest
             }
 
             [Fact]
+            public void ReopeningTheWindowLastColumn()
+            {
+                _vimBuffer.MarkMap.SetLastExitedPosition("VimBufferTest.cs", 0, 5);
+                OpenFakeVimBufferTestWindow();
+
+                var option = Vim.MarkMap.GetMark(Mark.LastExitedPosition, _vimBuffer.VimBufferData);
+                AssertPosition(0, 5, option);
+            }
+
+            [Fact]
+            public void ReopeningTheWindowLastColumnAfterFirstLine()
+            {
+                _vimBuffer.MarkMap.SetLastExitedPosition("VimBufferTest.cs", 1, 6);
+                OpenFakeVimBufferTestWindow();
+
+                var option = Vim.MarkMap.GetMark(Mark.LastExitedPosition, _vimBuffer.VimBufferData);
+                AssertPosition(1, 6, option);
+            }
+
+            [Fact]
             public void ReopeningTheWindowLastPositionAtColumnZeroWithLenZeroIsOk()
             {
                 _textView.SetText("Hello", "", "World!");

@@ -96,8 +96,7 @@ type MarkMap(_bufferTrackingService : IBufferTrackingService) =
             vimBufferData.JumpList.LastJumpLocation
         | Mark.LastExitedPosition ->
             let getZeroZero() =
-                let snapshotLine' = vimBufferData.TextBuffer.CurrentSnapshot.GetLineFromPosition 0
-                let snapshot = snapshotLine'.Start.Add(0)
+                let snapshot = SnapshotUtil.GetStartPoint vimBufferData.TextBuffer.CurrentSnapshot
                 Some (VirtualSnapshotPointUtil.OfPoint snapshot)
 
             let (line, column) =
@@ -110,7 +109,7 @@ type MarkMap(_bufferTrackingService : IBufferTrackingService) =
             match SnapshotUtil.TryGetLine vimBufferData.TextBuffer.CurrentSnapshot line with
             | None -> getZeroZero()
             | Some snapshotLine ->
-                if column >= snapshotLine.Length && not (column = 0 && snapshotLine.Length = 0) then
+                if column > snapshotLine.Length && not (column = 0 && snapshotLine.Length = 0) then
                     getZeroZero()
                 else
                     let snapshot = snapshotLine.Start.Add(column)
