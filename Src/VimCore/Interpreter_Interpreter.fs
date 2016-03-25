@@ -606,6 +606,7 @@ type VimInterpreter
         | Mark.LocalMark localMark -> _vimTextBuffer.RemoveLocalMark localMark |> ignore
         | Mark.GlobalMark letter -> _markMap.RemoveGlobalMark letter |> ignore
         | Mark.LastJump -> ()
+        | Mark.LastExitedPosition -> ()
 
     member x.RunDeleteMarks marks = 
         marks |> Seq.iter x.RunDeleteMarkCore
@@ -735,19 +736,28 @@ type VimInterpreter
                 let column = point.Position.Position - textLine.Start.Position
                 let column = if point.IsInVirtualSpace then column + point.VirtualSpaces else column
                 let name = _vimHost.GetName point.Position.Snapshot.TextBuffer
-                sprintf " %c   %5d%5d %s" ident lineNum column name
-            let localSeq = 
-                _vimTextBuffer.LocalMarks
-                |> Seq.map (fun (localMark, point) -> (localMark.Char, point))
-                |> Seq.sortBy fst
-            let globalSeq = 
-                _markMap.GlobalMarks 
-                |> Seq.map (fun (letter, point) -> (CharUtil.ToUpper letter.Char, point))
-                |> Seq.sortBy fst
-            localSeq 
-            |> Seq.append globalSeq
+                sprintf " %c  %5d%5d %s" ident lineNum column name
+            let getMark (mark:Mark) = (mark.Char, (_markMap.GetMark mark _vimBufferData))
+
+            seq {
+                yield Mark.LastJump
+                for letter in Letter.All do
+                    yield Mark.LocalMark (LocalMark.Letter letter)
+                for letter in Letter.All do
+                    yield Mark.GlobalMark letter
+                for number in NumberMark.All do
+                    yield Mark.LocalMark (LocalMark.Number number)
+                yield Mark.LastExitedPosition
+                yield Mark.LocalMark LocalMark.LastInsertExit
+                yield Mark.LocalMark LocalMark.LastEdit
+                yield Mark.LocalMark LocalMark.LastSelectionStart
+                yield Mark.LocalMark LocalMark.LastSelectionEnd
+            }
+            |> Seq.map getMark
+            |> Seq.filter (fun (c,option) -> option.IsSome)
+            |> Seq.map (fun (c, option) -> (c, option.Value))
             |> Seq.map (fun (c,p) -> printMark c p )
-            |> Seq.append ( "mark line  col file/text"  |> Seq.singleton)
+            |> Seq.append ("mark line  col file/text" |> Seq.singleton)
             |> _statusUtil.OnStatusLong
 
     /// Run the echo command
