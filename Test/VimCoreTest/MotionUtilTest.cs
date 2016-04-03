@@ -1339,7 +1339,7 @@ more";
             [Fact]
             public void StartingAfterFirstBlockSelectFilledLinesUntilBlankFromMiddle()
             {
-                Create("a", "b", "", "c", "d", "e", "");
+                Create("a", "b", "", "c", "d", "e", " ");
                 _textView.MoveCaretToLine(4);
                 var span = _motionUtil.InnerParagraph(1).Value.Span;
                 Assert.Equal(_snapshot.GetLineRange(3, 5).ExtentIncludingLineBreak, span);
