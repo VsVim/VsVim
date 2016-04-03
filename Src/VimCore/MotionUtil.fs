@@ -2073,6 +2073,42 @@ type internal MotionUtil
         | None -> None
         | Some span -> MotionResult.CreateEx span true MotionKind.CharacterWiseInclusive MotionResultFlags.AnyWord |> Some
 
+    /// Implementation of the 'ip' motion. Blank and empty lines are counted together.
+    member x.InnerParagraph count =
+        let isWhiteSpace point =
+            let line = SnapshotPointUtil.GetContainingLine point
+            System.String.IsNullOrWhiteSpace(line.GetText())
+
+        let startPoint =
+            x.CaretPoint
+            |> SnapshotPointUtil.GetPointsIncludingLineBreak SearchPath.Backward
+            |> Seq.takeWhile (fun point -> isWhiteSpace x.CaretPoint = isWhiteSpace point)
+            |> SeqUtil.lastOrDefault (SnapshotUtil.GetStartPoint x.CurrentSnapshot)
+
+        let endPoint =
+            let rec ep pt counter =
+                let lastCount = counter = count
+                let isEnd point = SnapshotPointUtil.IsEndPoint point
+                let point =
+                    pt
+                    |> SnapshotPointUtil.GetPointsIncludingLineBreak SearchPath.Forward
+                    |> (fun s -> Seq.concat [s; (Seq.singleton (SnapshotUtil.GetEndPoint pt.Snapshot))] )
+                    |> Seq.skipWhile (fun point -> isWhiteSpace pt = isWhiteSpace point && not (lastCount && isEnd point))
+                    |> SeqUtil.tryHeadOnly
+                if point.IsNone then None
+                elif lastCount then Some point.Value
+                else
+                    let nextStartPoint = if SnapshotPointUtil.IsInsideLineBreak point.Value then point.Value
+                                         else SnapshotPointUtil.AddOneOrCurrent point.Value
+                    ep nextStartPoint (counter + 1)
+            ep x.CaretPoint 1
+
+        match endPoint with
+        | None -> None
+        | Some endPoint ->
+            let snapshot = SnapshotSpan(startPoint, endPoint)
+            MotionResult.Create snapshot true MotionKind.CharacterWiseExclusive |> Some
+
     /// Implements the '+', '<CR>', 'CTRL-M' motions. 
     ///
     /// This is a line wise motion which uses counts hence we must use the visual snapshot
@@ -2725,6 +2761,7 @@ type internal MotionUtil
             | Motion.FirstNonBlankOnLine -> x.FirstNonBlankOnLine motionArgument.Count |> Some
             | Motion.InnerBlock blockKind -> x.InnerBlock x.CaretPoint blockKind motionArgument.Count
             | Motion.InnerWord wordKind -> x.InnerWord wordKind motionArgument.Count x.CaretPoint
+            | Motion.InnerParagraph -> x.InnerParagraph motionArgument.Count
             | Motion.LastNonBlankOnLine -> x.LastNonBlankOnLine motionArgument.Count |> Some
             | Motion.LastSearch isReverse -> x.LastSearch isReverse motionArgument.Count
             | Motion.LineDown -> x.LineDown motionArgument.Count
