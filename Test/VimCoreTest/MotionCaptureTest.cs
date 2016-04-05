@@ -270,6 +270,18 @@ namespace Vim.UnitTest
         }
 
         [Fact]
+        public void AllParagraph()
+        {
+            AssertMotion("ap", Motion.AllParagraph);
+        }
+
+        [Fact]
+        public void InnerParagraph()
+        {
+            AssertMotion("ip", Motion.InnerParagraph);
+        }
+
+        [Fact]
         public void ParagraphForward()
         {
             AssertMotion("}", Motion.ParagraphForward);

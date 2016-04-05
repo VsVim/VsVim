@@ -59,6 +59,7 @@ type internal MotionCapture
                 yield ("ib", MotionFlags.TextObject ||| MotionFlags.TextObjectWithAlwaysCharacter, Motion.InnerBlock BlockKind.Paren)
                 yield ("iB", MotionFlags.TextObject ||| MotionFlags.TextObjectWithAlwaysCharacter, Motion.InnerBlock BlockKind.CurlyBracket)
                 yield ("it", MotionFlags.TextObject ||| MotionFlags.TextObjectWithAlwaysCharacter, Motion.TagBlock TagBlockKind.Inner)
+                yield ("ip", MotionFlags.TextObject ||| MotionFlags.TextObjectWithAlwaysCharacter, Motion.InnerParagraph)
                 yield ("iw", MotionFlags.TextObject ||| MotionFlags.TextObjectWithLineToCharacter, Motion.InnerWord WordKind.NormalWord)
                 yield ("iW", MotionFlags.TextObject ||| MotionFlags.TextObjectWithLineToCharacter, Motion.InnerWord WordKind.BigWord)
                 yield ("i\"", MotionFlags.TextObject ||| MotionFlags.TextObjectWithAlwaysCharacter, Motion.QuotedStringContents '"')

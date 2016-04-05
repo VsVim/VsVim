@@ -1017,6 +1017,9 @@ type Motion =
     /// Inner word motion
     | InnerWord of WordKind
 
+    /// Inner paragraph motion
+    | InnerParagraph
+
     /// Inner block motion
     | InnerBlock of BlockKind
 
