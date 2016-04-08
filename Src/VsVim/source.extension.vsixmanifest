@@ -40,6 +40,8 @@
         <Edition>Ultimate</Edition>
         <Edition>Premium</Edition>
         <Edition>Pro</Edition>
+        <Edition>Community</Edition>
+        <Edition>Enterprise</Edition>
         <Edition>IntegratedShell</Edition>
       </VisualStudio>
       <IsolatedShell Version="6.0">AtmelStudio</IsolatedShell>
