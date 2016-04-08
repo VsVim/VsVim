@@ -226,6 +226,7 @@ namespace Vim.UnitTest
 
             // Don't let the personal VimRc of the user interfere with the unit tests
             Vim.AutoLoadVimRc = false;
+            Vim.AutoLoadSessionData = false;
 
             // Don't let the current directory leak into the tests
             Vim.VimData.CurrentDirectory = "";
@@ -490,6 +491,21 @@ namespace Vim.UnitTest
             // Need to force a layout here to get it to respect the tab settings
             var host = TextEditorFactoryService.CreateTextViewHost((IWpfTextView)textView, setFocus: false);
             host.HostControl.UpdateLayout();
+        }
+
+        /// <summary>
+        /// This must be public static for xunit to pick it up as a Theory data source
+        /// </summary>
+        public static object[] VirtualEditOptions
+        {
+            get
+            {
+                return new[]
+                {
+                    new object[] { "" },
+                    new object[] { "onemore" },
+                };
+            }
         }
     }
 }

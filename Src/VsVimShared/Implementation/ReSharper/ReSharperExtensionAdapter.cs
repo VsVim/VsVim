@@ -16,6 +16,9 @@ namespace Vim.VisualStudio.Implementation.ReSharper
     [Export(typeof(IExtensionAdapter))]
     internal sealed class ReSharperExtensionAdapter : IExtensionAdapter
     {
+        internal const string FilePathPrefixRegexEditor = "RegularExpressionEditor";
+        internal const string FilePathPrefixUnitTestSessionOutput = "StackTraceExplorerEditor";
+
         private readonly IReSharperUtil _reSharperUtil;
         private readonly ITextDocumentFactoryService _textDocumentFactoryService;
 
@@ -26,23 +29,30 @@ namespace Vim.VisualStudio.Implementation.ReSharper
             _textDocumentFactoryService = textDocumentFactoryService;
         }
 
-        /// <summary>
-        /// This is a bit of a heuristic.  It is technically possible for another component to create
-        /// a <see cref="ITextDocument"/> with the specified name pattern.  However it seems unlikely 
-        /// that it will happen when R# is also installed.
-        /// </summary>
-        private bool IsRegexEditorTextBuffer(ITextView textView)
+        internal bool? ShouldCreateVimBuffer(ITextView textView)
         {
-            Debug.Assert(_reSharperUtil.IsInstalled);
+            if (!_reSharperUtil.IsInstalled)
+            {
+                return null;
+            }
 
             var textBuffer = textView.TextDataModel.DocumentBuffer;
             ITextDocument textDocument;
             if (!_textDocumentFactoryService.TryGetTextDocument(textBuffer, out textDocument))
             {
+                return null;
+            }
+
+            // This is a bit of a heuristic.  It is technically possible for another component to create
+            // a <see cref="ITextDocument"/> with the specified name pattern.  However it seems unlikely 
+            // that it will happen when R# is also installed.
+            if (textDocument.FilePath.StartsWith(FilePathPrefixRegexEditor, StringComparison.OrdinalIgnoreCase) ||
+                textDocument.FilePath.StartsWith(FilePathPrefixUnitTestSessionOutput, StringComparison.OrdinalIgnoreCase))
+            {
                 return false;
             }
 
-            return textDocument.FilePath.StartsWith("RegularExpressionEditor.", StringComparison.OrdinalIgnoreCase);
+            return null;
         }
 
         #region IExtensionAdapter
@@ -71,12 +81,7 @@ namespace Vim.VisualStudio.Implementation.ReSharper
 
         bool? IExtensionAdapter.ShouldCreateVimBuffer(ITextView textView)
         {
-            if (_reSharperUtil.IsInstalled && IsRegexEditorTextBuffer(textView))
-            {
-                return false;
-            }
-
-            return null;
+            return ShouldCreateVimBuffer(textView);
         }
 
         bool? IExtensionAdapter.IsIncrementalSearchActive(ITextView textView)

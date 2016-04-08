@@ -125,7 +125,7 @@ type internal CommandMode
                 member this.Completed _ command = completed command
                 member this.Cancelled _ = cancelled ()
             }
-        HistoryUtil.CreateHistorySession historyClient 0 _command
+        HistoryUtil.CreateHistorySession historyClient 0 _command (Some _buffer)
 
     member x.OnEnter arg = 
         let historySession = x.CreateHistorySession()

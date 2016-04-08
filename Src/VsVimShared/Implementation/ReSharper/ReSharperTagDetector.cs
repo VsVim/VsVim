@@ -199,13 +199,13 @@ namespace Vim.VisualStudio.Implementation.ReSharper
             }
         }
     }
-    /// <summary>
-    /// Used in the cases where the version of R# cannot be detected 
-    /// </summary>
-    internal sealed class ReSharperUnknownEditTagDetector : IReSharperEditTagDetector
-    {
-        #region IReSharperEditTagDetector
 
+    /// <summary>
+    /// Used in the cases where the version of R# cannot be detected.  Always indicates no tags 
+    /// are present.
+    /// </summary>
+    internal sealed class ReSharperDefaultEditTagDetector : IReSharperEditTagDetector
+    {
         ReSharperVersion IReSharperEditTagDetector.Version
         {
             get { return ReSharperVersion.Unknown; }
@@ -215,7 +215,5 @@ namespace Vim.VisualStudio.Implementation.ReSharper
         {
             return false;
         }
-
-        #endregion
     }
 }

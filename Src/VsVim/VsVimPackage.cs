@@ -1,23 +1,22 @@
-﻿using System;
+﻿using EnvDTE;
+using Microsoft.VisualStudio;
+using Microsoft.VisualStudio.ComponentModelHost;
+using Microsoft.VisualStudio.OLE.Interop;
+using Microsoft.VisualStudio.Shell;
+using Microsoft.VisualStudio.Shell.Interop;
+using Microsoft.Win32;
+using System;
+using System.ComponentModel.Composition.Hosting;
+using System.ComponentModel.Design;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
-using System.ComponentModel.Design;
-using Microsoft.Win32;
-using Microsoft.VisualStudio;
-using Microsoft.VisualStudio.Shell.Interop;
-using Microsoft.VisualStudio.OLE.Interop;
-using Microsoft.VisualStudio.Shell;
-using Microsoft.VisualStudio.ComponentModelHost;
-using Vim.UI.Wpf;
-using System.ComponentModel.Composition.Hosting;
+using System.Text;
 using Vim;
 using Vim.Extensions;
-using System.Text;
-using IOPath = System.IO.Path;
-using EnvDTE;
+using Vim.UI.Wpf;
 
 namespace Vim.VisualStudio
 {
@@ -46,10 +45,20 @@ namespace Vim.VisualStudio
             _vim = _exportProvider.GetExportedValue<IVim>();
         }
 
+        protected override void Dispose(bool disposing)
+        {
+            base.Dispose(disposing);
+
+            if (disposing)
+            {
+                _vim.SaveSessionData();
+            }
+        }
+
         private void DumpKeyboard()
         {
             var keyBindingService = _exportProvider.GetExportedValue<IKeyBindingService>();
-            var folder = IOPath.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), @"VsVim");
+            var folder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), @"VsVim");
             try
             {
                 Directory.CreateDirectory(folder);
@@ -59,7 +68,7 @@ namespace Vim.VisualStudio
                 // Don't care if it throws, just want to make sure the folder exists
             }
 
-            var filePath = IOPath.Combine(folder, "keyboard.txt");
+            var filePath = Path.Combine(folder, "keyboard.txt");
             using (var streamWriter = new StreamWriter(filePath, append: false, encoding: Encoding.Unicode))
             {
                 keyBindingService.DumpKeyboard(streamWriter);
@@ -129,6 +138,11 @@ namespace Vim.VisualStudio
             }
         }
 
+        private void ToggleEnabled()
+        {
+            _vim.IsDisabled = !_vim.IsDisabled;
+        }
+
         #region IOleCommandTarget
 
         int IOleCommandTarget.Exec(ref Guid commandGroup, uint commandId, uint commandExecOpt, IntPtr variantIn, IntPtr variantOut)
@@ -145,6 +159,9 @@ namespace Vim.VisualStudio
                         break;
                     case CommandIds.ClearTSQLBindings:
                         ClearTSQLBindings();
+                        break;
+                    case CommandIds.ToggleEnabled:
+                        ToggleEnabled();
                         break;
                     default:
                         Debug.Assert(false);

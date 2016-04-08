@@ -498,6 +498,9 @@ and [<RequireQualifiedAccess>] LineCommand =
     /// then it will be run on the lines which don't match the pattern
     | Global of LineRangeSpecifier * string * bool * LineCommand
 
+    // Executes the given key strokes as if they were typed in normal mode
+    | Normal of LineRangeSpecifier * KeyInput list
+
     /// Go to the first tab 
     | GoToFirstTab
 
@@ -638,7 +641,7 @@ and [<RequireQualifiedAccess>] LineCommand =
     | Set of SetArgument list
 
     /// Process the '/' and '?' commands
-    | Search of LineRangeSpecifier * Path * string
+    | Search of LineRangeSpecifier * SearchPath * string
 
     /// Execute the given shell command
     | ShellCommand of string

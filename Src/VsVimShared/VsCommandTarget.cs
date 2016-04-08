@@ -81,6 +81,13 @@ namespace Vim.VisualStudio
         /// </summary>
         public bool TryCustomProcess(InsertCommand command)
         {
+            // Don't want to let VS process insert commands during clean macro recording.  Doing so
+            // will pop up UI, auto complete braces, etc ...  which interfere with recording.
+            if (_vim.MacroRecorder.IsRecording && _vimApplicationSettings.CleanMacros)
+            {
+                return false;
+            }
+
             var oleCommandData = OleCommandData.Empty;
             try
             {

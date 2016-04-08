@@ -181,6 +181,7 @@
     <Reference Include="System.ComponentModel.Composition" />
     <Reference Include="System.Core" />
     <Reference Include="System.Numerics" />
+    <Reference Include="System.Runtime.Serialization" />
     <Reference Include="System.ServiceModel.Internals" />
     <Reference Include="SMDiagnostics" />
     <Reference Include="PresentationUI" />

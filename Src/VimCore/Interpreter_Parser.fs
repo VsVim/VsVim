@@ -153,6 +153,7 @@ type Parser
         ("make", "mak")
         ("marks", "")
         ("nohlsearch", "noh")
+        ("normal", "norm")
         ("only", "on")
         ("pwd", "pw")
         ("print", "p")
@@ -915,7 +916,7 @@ type Parser
         | LineRangeSpecifier.None -> LineCommand.ParseError Resources.Common_InvalidAddress
         | _ -> LineCommand.CopyTo (sourceLineRange, destinationLineRange, count)
 
-    /// Parse out the :copy command.  It has a single required argument that is the destination
+    /// Parse out the :move command.  It has a single required argument that is the destination
     /// address
     member x.ParseMoveTo sourceLineRange = 
         x.SkipBlanks()
@@ -1649,6 +1650,17 @@ type Parser
         let hasBang = x.ParseBang()
         x.ParseGlobalCore lineRange (not hasBang)
 
+    /// Parse out the :normal command
+    member x.ParseNormal lineRange =
+        x.SkipBlanks ()
+        _tokenizer.TokenizerFlags <- _tokenizer.TokenizerFlags ||| TokenizerFlags.AllowDoubleQuote
+        let inputs = seq {
+            while not _tokenizer.IsAtEndOfLine do
+                yield KeyInputUtil.CharToKeyInput _tokenizer.CurrentChar
+                _tokenizer.MoveNextChar()
+        }
+        LineCommand.Normal (lineRange, List.ofSeq inputs)
+
     /// Parse out the :help command
     member x.ParseHelp() =
         _tokenizer.MoveToEndOfLine()
@@ -2067,6 +2079,7 @@ type Parser
                 | "fold" -> x.ParseFold lineRange
                 | "function" -> noRange x.ParseFunctionStart
                 | "global" -> x.ParseGlobal lineRange
+                | "normal" -> x.ParseNormal lineRange
                 | "help" -> noRange x.ParseHelp
                 | "history" -> noRange (fun () -> x.ParseHistory())
                 | "if" -> noRange x.ParseIfStart
@@ -2147,8 +2160,8 @@ type Parser
                 | "xnoremap"-> noRange (fun () -> x.ParseMapKeysNoRemap false [KeyRemapMode.Visual])
                 | "xunmap" -> noRange (fun () -> x.ParseMapUnmap false [KeyRemapMode.Visual])
                 | "yank" -> x.ParseYank lineRange
-                | "/" -> x.ParseSearch lineRange Path.Forward
-                | "?" -> x.ParseSearch lineRange Path.Backward
+                | "/" -> x.ParseSearch lineRange SearchPath.Forward
+                | "?" -> x.ParseSearch lineRange SearchPath.Backward
                 | "<" -> x.ParseShiftLeft lineRange
                 | ">" -> x.ParseShiftRight lineRange
                 | "&" -> x.ParseSubstituteRepeat lineRange SubstituteFlags.None

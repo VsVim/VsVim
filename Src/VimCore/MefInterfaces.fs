@@ -379,7 +379,7 @@ type ICommonOperations =
 
     /// Go to the "count" next tab window in the specified direction.  This will wrap 
     /// around
-    abstract GoToNextTab : path : Path -> count : int -> unit
+    abstract GoToNextTab : path : SearchPath -> count : int -> unit
 
     /// Go the nth tab.  This uses vim's method of numbering tabs which is a 1 based list.  Both
     /// 0 and 1 can be used to access the first tab

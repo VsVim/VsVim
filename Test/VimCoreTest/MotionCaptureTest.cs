@@ -181,25 +181,25 @@ namespace Vim.UnitTest
         [Fact]
         public void CharSearch_ToCharForward()
         {
-            AssertMotion("fc", Motion.NewCharSearch(CharSearchKind.ToChar, Path.Forward, 'c'));
+            AssertMotion("fc", Motion.NewCharSearch(CharSearchKind.ToChar, SearchPath.Forward, 'c'));
         }
 
         [Fact]
         public void CharSearch_TillCharForward()
         {
-            AssertMotion("tc", Motion.NewCharSearch(CharSearchKind.TillChar, Path.Forward, 'c'));
+            AssertMotion("tc", Motion.NewCharSearch(CharSearchKind.TillChar, SearchPath.Forward, 'c'));
         }
 
         [Fact]
         public void CharSearch_ToCharBackward()
         {
-            AssertMotion("Fc", Motion.NewCharSearch(CharSearchKind.ToChar, Path.Backward, 'c'));
+            AssertMotion("Fc", Motion.NewCharSearch(CharSearchKind.ToChar, SearchPath.Backward, 'c'));
         }
 
         [Fact]
         public void CharSearch_TillCharBackward()
         {
-            AssertMotion("Tc", Motion.NewCharSearch(CharSearchKind.TillChar, Path.Backward, 'c'));
+            AssertMotion("Tc", Motion.NewCharSearch(CharSearchKind.TillChar, SearchPath.Backward, 'c'));
         }
 
         [Fact]
@@ -270,6 +270,18 @@ namespace Vim.UnitTest
         }
 
         [Fact]
+        public void AllParagraph()
+        {
+            AssertMotion("ap", Motion.AllParagraph);
+        }
+
+        [Fact]
+        public void InnerParagraph()
+        {
+            AssertMotion("ip", Motion.InnerParagraph);
+        }
+
+        [Fact]
         public void ParagraphForward()
         {
             AssertMotion("}", Motion.ParagraphForward);
@@ -335,7 +347,7 @@ namespace Vim.UnitTest
             var motionResult = Process("?world", enter: true).AsComplete().Item;
             var searchData = ((Motion.Search)motionResult).Item;
             Assert.Equal("world", searchData.Pattern);
-            Assert.Equal(Path.Backward, searchData.Path);
+            Assert.Equal(SearchPath.Backward, searchData.Path);
             Assert.True(searchData.Kind.IsBackwardWithWrap);
         }
 
@@ -346,7 +358,7 @@ namespace Vim.UnitTest
             var motionResult = Process("/world", enter: true).AsComplete().Item;
             var searchData = ((Motion.Search)motionResult).Item;
             Assert.Equal("world", searchData.Pattern);
-            Assert.Equal(Path.Forward, searchData.Path);
+            Assert.Equal(SearchPath.Forward, searchData.Path);
             Assert.True(searchData.Kind.IsForwardWithWrap);
         }
 

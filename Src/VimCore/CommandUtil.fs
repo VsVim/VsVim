@@ -231,7 +231,7 @@ type internal CommandUtil
 
         use edit = _textBuffer.CreateEdit()
         editSpan.Spans
-        |> Seq.map (SnapshotSpanUtil.GetPoints Path.Forward)
+        |> Seq.map (SnapshotSpanUtil.GetPoints SearchPath.Forward)
         |> Seq.concat
         |> Seq.filter (fun p -> CharUtil.IsLetter (p.GetChar()))
         |> Seq.iter (fun p ->
@@ -248,7 +248,7 @@ type internal CommandUtil
         // so move before and inside the transaction
         let position = 
             x.CaretLine
-            |> SnapshotLineUtil.GetPoints Path.Forward
+            |> SnapshotLineUtil.GetPoints SearchPath.Forward
             |> Seq.skipWhile SnapshotPointUtil.IsWhiteSpace
             |> Seq.map SnapshotPointUtil.GetPosition
             |> SeqUtil.tryHeadOnly
@@ -326,7 +326,7 @@ type internal CommandUtil
             if result.IsAnyWordMotion && result.IsForward then
                 let point = 
                     result.Span
-                    |> SnapshotSpanUtil.GetPoints Path.Backward
+                    |> SnapshotSpanUtil.GetPoints SearchPath.Backward
                     |> Seq.tryFind (fun x -> x.GetChar() |> CharUtil.IsWhiteSpace |> not)
                 match point with 
                 | Some(p) -> 
@@ -402,7 +402,7 @@ type internal CommandUtil
                 else
                     SnapshotUtil.GetLine range.Snapshot (range.StartLineNumber + 1)
             line
-            |> SnapshotLineUtil.GetPoints Path.Forward
+            |> SnapshotLineUtil.GetPoints SearchPath.Forward
             |> Seq.skipWhile SnapshotPointUtil.IsBlank
             |> SeqUtil.tryHeadOnly
         match point with
@@ -785,7 +785,7 @@ type internal CommandUtil
                     else result.LastOrStart
                 let endsInWhiteSpace = 
                     lastPoint
-                    |> SnapshotPointUtil.GetPoints Path.Forward
+                    |> SnapshotPointUtil.GetPoints SearchPath.Forward
                     |> Seq.takeWhile (fun point -> point.Position < lastLine.End.Position)
                     |> Seq.forall SnapshotPointUtil.IsWhiteSpace
 
@@ -977,7 +977,7 @@ type internal CommandUtil
             // past blanks as they don't factor in here
             let index = 
                 span
-                |> SnapshotSpanUtil.GetPoints Path.Forward
+                |> SnapshotSpanUtil.GetPoints SearchPath.Forward
                 |> Seq.skipWhile (fun point -> 
                     if _localSettings.IsNumberFormatSupported(NumberFormat.Alpha) then
                         SnapshotPointUtil.IsBlank point
@@ -1044,7 +1044,7 @@ type internal CommandUtil
             if _localSettings.IsNumberFormatSupported NumberFormat.Alpha then
                 // Now check for alpha by going forward to the first alpha character
                 span
-                |> SnapshotSpanUtil.GetPoints Path.Forward
+                |> SnapshotSpanUtil.GetPoints SearchPath.Forward
                 |> Seq.skipWhile (fun point -> point |> SnapshotPointUtil.GetChar |> CharUtil.IsAlpha |> not)
                 |> Seq.map (fun point -> 
                     let c = point.GetChar()
@@ -1101,13 +1101,13 @@ type internal CommandUtil
     /// Go to the next tab in the specified direction
     member x.GoToNextTab path countOption = 
         match path with
-        | Path.Forward ->
+        | SearchPath.Forward ->
             match countOption with
             | Some count -> _commonOperations.GoToTab count
             | None -> _commonOperations.GoToNextTab path 1
-        | Path.Backward ->
+        | SearchPath.Backward ->
             let count = countOption |> OptionUtil.getOrDefault 1
-            _commonOperations.GoToNextTab Path.Backward count
+            _commonOperations.GoToNextTab SearchPath.Backward count
 
         CommandResult.Completed ModeSwitch.NoSwitch
 
@@ -1242,7 +1242,7 @@ type internal CommandUtil
     member x.InsertAtFirstNonBlank count =
         let point = 
             x.CaretLine
-            |> SnapshotLineUtil.GetPoints Path.Forward
+            |> SnapshotLineUtil.GetPoints SearchPath.Forward
             |> Seq.skipWhile SnapshotPointUtil.IsWhiteSpace
             |> SeqUtil.tryHeadOnly
             |> OptionUtil.getOrDefault x.CaretLine.End
@@ -1392,6 +1392,10 @@ type internal CommandUtil
             match _jumpList.LastJumpLocation with
             | None -> markNotSet()
             | Some point -> jumpLocal point
+        | Mark.LastExitedPosition ->
+            match _vimTextBuffer.Vim.MarkMap.GetMark Mark.LastExitedPosition _vimBufferData with
+            | None -> markNotSet()
+            | Some point -> jumpLocal point
 
     /// Jump to the specified mark
     member x.JumpToMark mark = 
@@ -1503,7 +1507,7 @@ type internal CommandUtil
                 CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Move the caret to the result of the text object selection
-    member x.MoveCaretToTextObject motion textObjectKind (visualSpan : VisualSpan) = 
+    member x.MoveCaretToTextObject count motion textObjectKind (visualSpan : VisualSpan) = 
 
         // First step is to get the desired final mode of the text object movement
         let desiredVisualKind = 
@@ -1556,7 +1560,7 @@ type internal CommandUtil
             if isInitialSelection then
                 // For an initial selection we just do a standard motion from the caret point
                 // and update the selection.
-                let argument = { MotionContext = MotionContext.Movement; OperatorCount = None; MotionCount = Some 1}
+                let argument = { MotionContext = MotionContext.Movement; OperatorCount = None; MotionCount = Some count}
                 match _motionUtil.GetMotion motion argument with
                 | None -> onError ()
                 | Some motionResult -> 
@@ -1581,8 +1585,8 @@ type internal CommandUtil
                     _commonOperations.MoveCaretToMotionResult motionResult
                     CommandResult.Completed ModeSwitch.NoSwitch
 
-        let moveBlock blockKind isAll = 
-            let argument = { MotionContext = MotionContext.Movement; OperatorCount = None; MotionCount = Some 1}
+        let moveBlock blockKind motion = 
+            let argument = { MotionContext = MotionContext.Movement; OperatorCount = None; MotionCount = Some count}
             match _motionUtil.GetMotion motion argument with
             | None -> onError ()
             | Some motionResult -> 
@@ -1594,16 +1598,21 @@ type internal CommandUtil
                     // Attempt to expand the selection to the encompassing block.  Simply move
                     // the caret outside the current block and attempt again to get the 
                     let contextPoint = 
-                        let offset = if isAll then 1 else 2
+                        let offset = match motion with
+                                     | Motion.AllBlock _ -> 1
+                                     | Motion.InnerBlock _ -> 2
+                                     | _ -> 0
+
                         SnapshotPointUtil.TryAdd offset x.CaretPoint
                     match contextPoint |> OptionUtil.map2 (fun point -> _motionUtil.GetTextObject motion point) with
                     | None -> onError()
                     | Some motionResult -> setSelection motionResult.Span
 
         match motion with
-        | Motion.AllBlock blockKind -> moveBlock blockKind true
-        | Motion.InnerBlock blockKind -> moveBlock blockKind false
+        | Motion.AllBlock blockKind -> moveBlock blockKind motion
+        | Motion.InnerBlock blockKind -> moveBlock blockKind motion
         | Motion.TagBlock kind -> moveTag kind
+        | Motion.QuotedStringContents quote -> moveBlock quote motion
         | _ -> moveNormal () 
 
     /// Open a fold in visual mode.  In Visual Mode a single fold level is opened for every
@@ -2187,7 +2196,7 @@ type internal CommandUtil
                     builder.AppendStringCount replaceText (startPoint.Spaces - startPoint.SpacesBefore)
                     edit.Replace(Span(startPoint.Point.Position, 1), (builder.ToString())) |> ignore
 
-                SnapshotSpanUtil.GetPoints Path.Forward span.InnerSpan
+                SnapshotSpanUtil.GetPoints SearchPath.Forward span.InnerSpan
                 |> Seq.filter (fun point -> not (SnapshotPointUtil.IsInsideLineBreak point))
                 |> Seq.iter (fun point -> edit.Replace(Span(point.Position, 1), replaceText) |> ignore)
 
@@ -2427,7 +2436,7 @@ type internal CommandUtil
         | VisualCommand.GoToFileInSelection -> x.GoToFileInSelection visualSpan
         | VisualCommand.JoinSelection kind -> x.JoinSelection kind visualSpan
         | VisualCommand.InvertSelection columnOnlyInBlock -> x.InvertSelection visualSpan streamSelectionSpan columnOnlyInBlock
-        | VisualCommand.MoveCaretToTextObject (motion, textObjectKind)-> x.MoveCaretToTextObject motion textObjectKind visualSpan
+        | VisualCommand.MoveCaretToTextObject (motion, textObjectKind)-> x.MoveCaretToTextObject count motion textObjectKind visualSpan
         | VisualCommand.OpenFoldInSelection -> x.OpenFoldInSelection visualSpan
         | VisualCommand.OpenAllFoldsInSelection -> x.OpenAllFoldsInSelection visualSpan
         | VisualCommand.PutOverSelection moveCaretAfterText -> x.PutOverSelection register count moveCaretAfterText visualSpan 

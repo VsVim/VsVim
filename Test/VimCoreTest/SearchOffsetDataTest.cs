@@ -31,9 +31,9 @@ namespace Vim.UnitTest
                 Assert.Equal(count, ((SearchOffsetData.Start)data).Item);
             }
 
-            private static void AssertSearch(string offset, string search, Path direction = null)
+            private static void AssertSearch(string offset, string search, SearchPath direction = null)
             {
-                direction = direction ?? Path.Forward;
+                direction = direction ?? SearchPath.Forward;
                 var data = SearchOffsetData.Parse(offset);
                 Assert.True(data.IsSearch);
                 Assert.Equal(search, ((SearchOffsetData.Search)data).Item.Pattern);
@@ -81,9 +81,9 @@ namespace Vim.UnitTest
             [Fact]
             public void Search()
             {
-                AssertSearch(";/foo", "foo", Path.Forward);
-                AssertSearch(";?foo", "foo", Path.Backward);
-                AssertSearch(";/hello", "hello", Path.Forward);
+                AssertSearch(";/foo", "foo", SearchPath.Forward);
+                AssertSearch(";?foo", "foo", SearchPath.Backward);
+                AssertSearch(";/hello", "hello", SearchPath.Forward);
             }
         }
     }

@@ -83,13 +83,12 @@ namespace Vim.UI.Wpf.Implementation.Misc
                     if (i == 0)
                     {
                         _protectedOperations.Report(ex);
-                        _useTextMethods = true;
+                        _useTextMethods = false;
                         return false;
                     }
                 }
 
                 Thread.Sleep(TimeSpan.FromMilliseconds(pauseMilliseconds));
-                i--;
             } while (true);
         }
 

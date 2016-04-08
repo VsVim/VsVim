@@ -48,14 +48,14 @@ namespace Vim.UnitTest
                 public EventTest()
                 {
                     _globalSettings.HighlightSearch = true;
-                    _vimData.LastSearchData = new SearchData("cat", Path.Forward);
+                    _vimData.LastSearchData = new SearchData("cat", SearchPath.Forward);
                     _vimData.DisplayPatternChanged += delegate { _runCount++; };
                 }
 
                 [Fact]
                 public void PatternChanged()
                 {
-                    _vimData.LastSearchData = new SearchData("dog", Path.Forward);
+                    _vimData.LastSearchData = new SearchData("dog", SearchPath.Forward);
                     Assert.Equal(1, _runCount);
                 }
 
@@ -77,9 +77,9 @@ namespace Vim.UnitTest
                 [Fact]
                 public void PathChanged()
                 {
-                    _vimData.LastSearchData = new SearchData("dog", Path.Forward);
+                    _vimData.LastSearchData = new SearchData("dog", SearchPath.Forward);
                     _runCount = 0;
-                    _vimData.LastSearchData = new SearchData("dog", Path.Backward);
+                    _vimData.LastSearchData = new SearchData("dog", SearchPath.Backward);
                     Assert.Equal(0, _runCount);
                 }
 
@@ -105,7 +105,7 @@ namespace Vim.UnitTest
                 [Fact]
                 public void Standard()
                 {
-                    _vimData.LastSearchData = new SearchData("dog", Path.Forward);
+                    _vimData.LastSearchData = new SearchData("dog", SearchPath.Forward);
                     Assert.Equal("dog", _vimData.DisplayPattern);
                 }
 
@@ -113,7 +113,7 @@ namespace Vim.UnitTest
                 public void HighlightDisabled()
                 {
                     _globalSettings.HighlightSearch = false;
-                    _vimData.LastSearchData = new SearchData("dog", Path.Forward);
+                    _vimData.LastSearchData = new SearchData("dog", SearchPath.Forward);
                     Assert.True(String.IsNullOrEmpty(_vimData.DisplayPattern));
                 }
             }
@@ -128,7 +128,7 @@ namespace Vim.UnitTest
                 public EventTest()
                 {
                     _globalSettings.HighlightSearch = true;
-                    _vimData.LastSearchData = new SearchData("cat", Path.Forward);
+                    _vimData.LastSearchData = new SearchData("cat", SearchPath.Forward);
                     _vimData.DisplayPatternChanged += delegate { _runCount++; };
                 }
 
@@ -195,7 +195,7 @@ namespace Vim.UnitTest
                 public DisplayPatternTest()
                 {
                     _globalSettings.HighlightSearch = true;
-                    _vimData.LastSearchData = new SearchData("cat", Path.Forward);
+                    _vimData.LastSearchData = new SearchData("cat", SearchPath.Forward);
                 }
 
                 [Fact]

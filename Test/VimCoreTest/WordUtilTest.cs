@@ -34,7 +34,7 @@ namespace Vim.UnitTest
         public void GetWords_Normal()
         {
             Create("dog ca$$t $b");
-            var ret = _wordUtil.GetWords(WordKind.NormalWord, Path.Forward, _textBuffer.GetPoint(0));
+            var ret = _wordUtil.GetWords(WordKind.NormalWord, SearchPath.Forward, _textBuffer.GetPoint(0));
             Assert.Equal(
                 new[] { "dog", "ca", "$$", "t", "$", "b" },
                 ret.Select(x => x.GetText()).ToList());
@@ -47,7 +47,7 @@ namespace Vim.UnitTest
         public void GetWords_BlankLine()
         {
             Create("dog cat", "", "bear");
-            var ret = _wordUtil.GetWords(WordKind.NormalWord, Path.Forward, _textBuffer.GetPoint(0));
+            var ret = _wordUtil.GetWords(WordKind.NormalWord, SearchPath.Forward, _textBuffer.GetPoint(0));
             Assert.Equal(
                 new[] { "dog", "cat", Environment.NewLine, "bear" },
                 ret.Select(x => x.GetText()).ToList());
@@ -60,7 +60,7 @@ namespace Vim.UnitTest
         public void GetWords_FromMiddleOfWord()
         {
             Create("dog cat");
-            var ret = _wordUtil.GetWords(WordKind.NormalWord, Path.Forward, _textBuffer.GetPoint(1));
+            var ret = _wordUtil.GetWords(WordKind.NormalWord, SearchPath.Forward, _textBuffer.GetPoint(1));
             Assert.Equal(
                 new[] { "dog", "cat" },
                 ret.Select(x => x.GetText()).ToList());
@@ -73,7 +73,7 @@ namespace Vim.UnitTest
         public void GetWords_FromEndOfWord()
         {
             Create("dog cat");
-            var ret = _wordUtil.GetWords(WordKind.NormalWord, Path.Forward, _textBuffer.GetPoint(2));
+            var ret = _wordUtil.GetWords(WordKind.NormalWord, SearchPath.Forward, _textBuffer.GetPoint(2));
             Assert.Equal(
                 new[] { "dog", "cat" },
                 ret.Select(x => x.GetText()).ToList());
@@ -86,7 +86,7 @@ namespace Vim.UnitTest
         public void GetWords_BackwardFromMiddle()
         {
             Create("dog cat");
-            var ret = _wordUtil.GetWords(WordKind.NormalWord, Path.Backward, _textBuffer.GetPoint(5));
+            var ret = _wordUtil.GetWords(WordKind.NormalWord, SearchPath.Backward, _textBuffer.GetPoint(5));
             Assert.Equal(
                 new[] { "cat", "dog" },
                 ret.Select(x => x.GetText()).ToList());
@@ -99,7 +99,7 @@ namespace Vim.UnitTest
         public void GetWords_BackwardFromStart()
         {
             Create("dog cat");
-            var ret = _wordUtil.GetWords(WordKind.NormalWord, Path.Backward, _textBuffer.GetPoint(4));
+            var ret = _wordUtil.GetWords(WordKind.NormalWord, SearchPath.Backward, _textBuffer.GetPoint(4));
             Assert.Equal(
                 new[] { "dog" },
                 ret.Select(x => x.GetText()).ToList());
@@ -112,7 +112,7 @@ namespace Vim.UnitTest
         public void GetWords_BackwardBlankLine()
         {
             Create("dog", "", "cat");
-            var ret = _wordUtil.GetWords(WordKind.NormalWord, Path.Backward, _textBuffer.GetLine(2).Start.Add(1));
+            var ret = _wordUtil.GetWords(WordKind.NormalWord, SearchPath.Backward, _textBuffer.GetLine(2).Start.Add(1));
             Assert.Equal(
                 new[] { "cat", Environment.NewLine, "dog" },
                 ret.Select(x => x.GetText()).ToList());

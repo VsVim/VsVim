@@ -44,7 +44,7 @@ namespace Vim.UnitTest
             return findData.AsResult().FindOptions;
         }
 
-        private SearchResult FindNextPattern(string pattern, Path path, SnapshotPoint point, int count)
+        private SearchResult FindNextPattern(string pattern, SearchPath path, SnapshotPoint point, int count)
         {
             var searchData = new SearchData(pattern, path, _globalSettings.WrapScan);
             return _search.FindNextPattern(point, searchData, _wordNavigator, count);
@@ -254,7 +254,7 @@ namespace Vim.UnitTest
             public void WithCount()
             {
                 Create("cat dog cat", "cat");
-                var result = FindNextPattern("cat", Path.Forward, _textBuffer.GetPoint(0), 2);
+                var result = FindNextPattern("cat", SearchPath.Forward, _textBuffer.GetPoint(0), 2);
                 Assert.True(result.IsFound);
                 Assert.Equal(_textBuffer.GetLine(1).Extent, result.AsFound().Item2);
                 Assert.False(result.AsFound().Item4);
@@ -267,7 +267,7 @@ namespace Vim.UnitTest
             public void DontMatchPartialForWholeWord()
             {
                 Create("dog doggy dog");
-                var result = FindNextPattern(@"\<dog\>", Path.Forward, _textBuffer.GetPoint(0), 1);
+                var result = FindNextPattern(@"\<dog\>", SearchPath.Forward, _textBuffer.GetPoint(0), 1);
                 Assert.True(result.IsFound(10));
             }
 
@@ -279,7 +279,7 @@ namespace Vim.UnitTest
             {
                 Create("cat dog", "cat");
                 _globalSettings.WrapScan = true;
-                var result = FindNextPattern(@"\<cat\>", Path.Backward, _textBuffer.GetLine(1).Start, 1);
+                var result = FindNextPattern(@"\<cat\>", SearchPath.Backward, _textBuffer.GetLine(1).Start, 1);
                 Assert.True(result.IsFound(0));
             }
 
@@ -292,7 +292,7 @@ namespace Vim.UnitTest
             public void StartOnSecondChar()
             {
                 Create("cat cat cat");
-                var result = FindNextPattern(@"\<cat\>", Path.Forward, _textBuffer.GetPoint(1), 1);
+                var result = FindNextPattern(@"\<cat\>", SearchPath.Forward, _textBuffer.GetPoint(1), 1);
                 Assert.True(result.IsFound(4));
             }
 
@@ -304,7 +304,7 @@ namespace Vim.UnitTest
             public void BackwardFromFirstChar()
             {
                 Create("cat cat cat");
-                var result = FindNextPattern(@"cat", Path.Backward, _textBuffer.GetPoint(4), 1);
+                var result = FindNextPattern(@"cat", SearchPath.Backward, _textBuffer.GetPoint(4), 1);
                 Assert.True(result.IsFound(0));
             }
 
@@ -316,7 +316,7 @@ namespace Vim.UnitTest
             public void DontStartOnPointForward()
             {
                 Create("foo bar", "foo");
-                var result = FindNextPattern("foo", Path.Forward, _textBuffer.GetPoint(0), 1);
+                var result = FindNextPattern("foo", SearchPath.Forward, _textBuffer.GetPoint(0), 1);
                 Assert.Equal(_textBuffer.GetLine(1).Start, result.AsFound().Item2.Start);
             }
 
@@ -328,7 +328,7 @@ namespace Vim.UnitTest
             public void DontStartOnPointBackward()
             {
                 Create("foo bar", "foo");
-                var result = FindNextPattern("foo", Path.Backward, _textBuffer.GetLine(1).Start, 1);
+                var result = FindNextPattern("foo", SearchPath.Backward, _textBuffer.GetLine(1).Start, 1);
                 Assert.Equal(_textBuffer.GetPoint(0), result.AsFound().Item2.Start);
             }
 
@@ -340,7 +340,7 @@ namespace Vim.UnitTest
             {
                 Create("dog", "cat");
                 _globalSettings.WrapScan = false;
-                var result = FindNextPattern("dog", Path.Forward, _textBuffer.GetPoint(0), 1);
+                var result = FindNextPattern("dog", SearchPath.Forward, _textBuffer.GetPoint(0), 1);
                 Assert.True(result.IsNotFound);
                 Assert.True(result.AsNotFound().Item2);
             }
@@ -353,7 +353,7 @@ namespace Vim.UnitTest
             {
                 Create("dog", "cat");
                 _globalSettings.WrapScan = false;
-                var result = FindNextPattern("dog", Path.Backward, _textBuffer.GetPoint(0), 1);
+                var result = FindNextPattern("dog", SearchPath.Backward, _textBuffer.GetPoint(0), 1);
                 Assert.True(result.IsNotFound);
                 Assert.True(result.AsNotFound().Item2);
             }
@@ -379,7 +379,7 @@ namespace Vim.UnitTest
             {
                 Create("i", "int foo()", "cat");
                 var pattern = PatternUtil.CreateWholeWord("i");
-                var result = FindNextPattern(pattern, Path.Backward, _textBuffer.GetPointInLine(2, 1), 1);
+                var result = FindNextPattern(pattern, SearchPath.Backward, _textBuffer.GetPointInLine(2, 1), 1);
                 Assert.True(result.IsFound(0));
             }
         }
@@ -461,7 +461,7 @@ namespace Vim.UnitTest
                 public void SimpleCase()
                 {
                     Create("big", "cat", "dog", "fish");
-                    var span = ApplySearchOffsetData(_textBuffer.GetLineSpan(0, 2), SearchOffsetData.NewSearch(new PatternData("dog", Path.Forward)));
+                    var span = ApplySearchOffsetData(_textBuffer.GetLineSpan(0, 2), SearchOffsetData.NewSearch(new PatternData("dog", SearchPath.Forward)));
                     Assert.Equal(_textBuffer.GetLineSpan(2, 3), span);
                 }
             }
@@ -489,10 +489,10 @@ namespace Vim.UnitTest
                 base.Create(_mock.Object, lines);
             }
 
-            private void FindNext(string text, int position = 0, Path path = null, bool isWrap = true, ITextStructureNavigator navigator = null)
+            private void FindNext(string text, int position = 0, SearchPath path = null, bool isWrap = true, ITextStructureNavigator navigator = null)
             {
                 navigator = navigator ?? _wordNavigator;
-                path = path ?? Path.Forward;
+                path = path ?? SearchPath.Forward;
                 var point = _textBuffer.GetPoint(position);
                 _search.FindNext(point, new SearchData(text, path, isWrap), navigator);
             }

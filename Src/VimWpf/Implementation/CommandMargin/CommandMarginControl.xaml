@@ -40,6 +40,7 @@
             Visibility="{Binding Path=IsRecording}"
             Foreground="{Binding Path=TextForeground}"
             Background="{Binding Path=TextBackground}"
+            CaretBrush="{Binding Path=TextForeground}"
             />
 
         <ScrollViewer 
@@ -56,6 +57,7 @@
                 FontSize="{Binding Path=TextFontSize}"
                 Foreground="{Binding Path=TextForeground}"
                 Background="{Binding Path=TextBackground}"
+                CaretBrush="{Binding Path=TextForeground}"
                 />
         </ScrollViewer>
     </Grid>

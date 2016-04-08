@@ -3,6 +3,7 @@
 namespace Vim
 open Microsoft.VisualStudio.Text
 open System.Collections.ObjectModel
+open System.IO
 open System.Text
 open System.Text.RegularExpressions
 
@@ -170,16 +171,31 @@ module internal SeqUtil =
         | Some h -> h
         | None -> defaultValue
 
-    /// Get the last element in the sequence.  Throws an ArgumentException if 
+    /// Get the last element in the sequence.  Returns the None if
     /// the sequence is empty
-    let last (s:'a seq) = 
+    let tryLast (s:'a seq) =
         use e = s.GetEnumerator()
-        if not (e.MoveNext()) then invalidArg "s" "Sequence must not be empty"
+        if not (e.MoveNext()) then
+            None
+        else
+            let mutable value = e.Current
+            while e.MoveNext() do
+                value <- e.Current
+            Some value
 
-        let mutable value = e.Current
-        while e.MoveNext() do
-            value <- e.Current
-        value
+    /// Get the last element in the sequence.  Throws an ArgumentException if
+    /// the sequence is empty
+    let last (s:'a seq) =
+        match tryLast s with
+        | Some h -> h
+        | None ->  invalidArg "s" "Sequence must not be empty"
+
+    /// Get the last element in the sequence.  Returns the default value if
+    /// the sequence is empty
+    let lastOrDefault defaultValue (s:'a seq) =
+        match tryLast s with
+        | Some h -> h
+        | None -> defaultValue
 
     /// Return if the sequence is not empty
     let isNotEmpty s = not (s |> Seq.isEmpty)
@@ -461,7 +477,7 @@ module internal CharUtil =
     let IsLower x = System.Char.IsLower(x)
     let IsLowerLetter x = IsLower x && IsLetter x
     let IsLetterOrDigit x = System.Char.IsLetterOrDigit(x)
-    let IsTagNameChar x = System.Char.IsLetterOrDigit(x) || x = ':' || x = '.' || x = '_'
+    let IsTagNameChar x = System.Char.IsLetterOrDigit(x) || x = ':' || x = '.' || x = '_' || x = '-'
     let ToLower x = System.Char.ToLower(x)
     let ToUpper x = System.Char.ToUpper(x)
     let ChangeCase x = if IsUpper x then ToLower x else ToUpper x
@@ -878,7 +894,7 @@ module internal SystemUtil =
             else
                 path2
 
-        System.IO.Path.Combine(path1, path2)
+        Path.Combine(path1, path2)
 
     /// Get the value of $HOME.  There is no explicit documentation that I could find 
     /// for how this value is calculated.  However experimentation shows that gVim 7.1
@@ -902,9 +918,9 @@ module internal SystemUtil =
                 true
             else
                 let separator = text.Chars(1)
-                if separator = System.IO.Path.DirectorySeparatorChar then
+                if separator = Path.DirectorySeparatorChar then
                     true
-                elif separator = System.IO.Path.AltDirectorySeparatorChar then
+                elif separator = Path.AltDirectorySeparatorChar then
                     true
                 else
                     false
@@ -946,7 +962,8 @@ module internal SystemUtil =
         else
             text
 
-    /// Try to expand all the referenced environment variables
+    /// Try to expand all the referenced environment variables and leading tilde
+    /// values.  Returns true if the path was resolved according to Vim rules.  
     let TryResolvePath text =
         let text = ResolvePath text
         if StartsWithTilde text || text.Contains("$") then
@@ -955,20 +972,19 @@ module internal SystemUtil =
             Some text
 
     let EnsureRooted currentDirectory text = 
-        if System.IO.Path.IsPathRooted text || not (System.IO.Path.IsPathRooted currentDirectory) then
+        if Path.IsPathRooted text || not (Path.IsPathRooted currentDirectory) then
             text
         else
             CombinePath currentDirectory text
 
     /// Like ResolvePath except it will always return a rooted path.  If the provided path
     /// isn't rooted it will be rooted inside of 'currentDirectory'
+    ///
+    /// This method can throw when provided paths with invalid path characters.
     let ResolveVimPath currentDirectory text = 
         match text with
         | "." -> currentDirectory
-        | ".." -> System.IO.Path.GetPathRoot currentDirectory
+        | ".." -> Path.GetPathRoot currentDirectory
         | _ -> 
             let text = ResolvePath text
             EnsureRooted currentDirectory text
-
-    let TryResolveVimPath currentDirectory text =
-        TryResolvePath text |> Option.map (fun text -> EnsureRooted currentDirectory text)

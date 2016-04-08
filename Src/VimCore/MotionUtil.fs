@@ -146,12 +146,16 @@ type TagBlockParser (snapshot : ITextSnapshot) =
         let position = x.SkipBlanks startPosition
         _builder { 
             let! nameSpan = x.ParseAttributeName position
-            let! position = x.ParseChar (x.SkipBlanks nameSpan.End) '='
-            let quotePosition = x.SkipBlanks position
-            let! quoteChar = x.ParseQuoteChar quotePosition
-            let! valueSpan = x.ParseAttributeValue (quotePosition + 1) quoteChar
-            let! valueEnd = x.ParseChar valueSpan.End quoteChar
-            return Span.FromBounds(startPosition, valueEnd)
+            let position = x.SkipBlanks nameSpan.End
+            if x.TestPositionChar position '=' then
+                let quotePosition = position + 1
+                let! quoteChar = x.ParseQuoteChar quotePosition
+                let! valueSpan = x.ParseAttributeValue (quotePosition + 1) quoteChar
+                let! valueEnd = x.ParseChar valueSpan.End quoteChar
+                return Span.FromBounds(startPosition, valueEnd)
+            else
+                //The attribute has no value
+                return Span.FromBounds(startPosition, nameSpan.End)
         }
 
     /// This will be called with the position pointing immediately after the end of the 
@@ -690,10 +694,21 @@ type MatchingTokenUtil() =
 
             found
 
-        let line = SnapshotPointUtil.GetContainingLine point
-        let lineText = SnapshotLineUtil.GetText line
-        let column = point.Position - line.Start.Position
+        let line, column = 
+            let data = SnapshotColumn(point)
+            let line = data.Line
+
+            // The search should normalize caret's in the line break back to the last valid 
+            // point of the line. 
+            let column = 
+                if data.IsInsideLineBreak then
+                    max 0 (line.End.Position - line.Start.Position - 1)
+                else
+                    data.Column
+            (line, column)
+
         let found = 
+            let lineText = SnapshotLineUtil.GetText line
             match x.FindMatchingTokenKindCore lineText column with
             | None -> None
             | Some (column, kind) ->
@@ -719,12 +734,12 @@ type MatchingTokenUtil() =
         let snapshot = SnapshotPointUtil.GetSnapshot point
         let charSeq = 
             match path with
-            | Path.Forward -> 
+            | SearchPath.Forward -> 
                 let span = SnapshotSpan(point, SnapshotUtil.GetEndPoint snapshot)
-                span |> SnapshotSpanUtil.GetPoints Path.Forward |> SeqUtil.skipMax 1
-            | Path.Backward ->
+                span |> SnapshotSpanUtil.GetPoints SearchPath.Forward |> SeqUtil.skipMax 1
+            | SearchPath.Backward ->
                 let span = SnapshotSpan(SnapshotUtil.GetStartPoint snapshot, point)
-                span |> SnapshotSpanUtil.GetPoints Path.Backward
+                span |> SnapshotSpanUtil.GetPoints SearchPath.Backward
 
         // Determine the characters that will a new depth to be entered and 
         // left.  Going forward ( is up and ) is down.  
@@ -734,8 +749,8 @@ type MatchingTokenUtil() =
                 | UnmatchedTokenKind.Paren -> '(', ')'
                 | UnmatchedTokenKind.CurlyBracket -> '{', '}'
             match path with
-            | Path.Forward -> startChar, endChar
-            | Path.Backward -> endChar, startChar
+            | SearchPath.Forward -> startChar, endChar
+            | SearchPath.Backward -> endChar, startChar
 
         let mutable depth = 0
         let mutable count = count
@@ -1059,7 +1074,13 @@ type internal MotionUtil
             | None -> false
             | Some point -> SnapshotPointUtil.GetChar point = '\\'
 
-        let isChar c point = SnapshotPointUtil.GetChar point = c && not (isEscaped point) 
+        let isDoubleEscaped point = 
+            match SnapshotPointUtil.TrySubtract point 2, SnapshotPointUtil.TrySubtract point 2 with
+            | None, _
+            | _, None -> false
+            | Some point1, Some point2 -> SnapshotPointUtil.GetChar point1 = '\\' && SnapshotPointUtil.GetChar point2 = '\\'
+
+        let isChar c point = SnapshotPointUtil.GetChar point = c && (not (isEscaped point) || isDoubleEscaped point)
 
         let findMatched plusChar minusChar = 
             let inner point count = 
@@ -1079,7 +1100,7 @@ type internal MotionUtil
 
         let startPoint = 
             SnapshotSpan(SnapshotPoint(snapshot, 0), endPoint)
-            |> SnapshotSpanUtil.GetPoints Path.Backward
+            |> SnapshotSpanUtil.GetPoints SearchPath.Backward
             |> SeqUtil.tryFind 1 (findMatched endChar startChar)
 
         let lastPoint = 
@@ -1087,7 +1108,7 @@ type internal MotionUtil
             | None -> None
             | Some startPoint ->
                 SnapshotSpan(startPoint, SnapshotUtil.GetEndPoint snapshot)
-                |> SnapshotSpanUtil.GetPoints Path.Forward
+                |> SnapshotSpanUtil.GetPoints SearchPath.Forward
                 |> SeqUtil.tryFind 0 (findMatched startChar endChar)
 
         match startPoint, lastPoint with
@@ -1348,7 +1369,7 @@ type internal MotionUtil
     /// yank line 1
     member x.AllParagraph count = 
 
-        let all = x.GetParagraphs Path.Forward x.CaretPoint |> Seq.truncate count |> List.ofSeq
+        let all = x.GetParagraphs SearchPath.Forward x.CaretPoint |> Seq.truncate count |> List.ofSeq
         match all with
         | [] ->
             // No paragraphs forward so return nothing
@@ -1373,7 +1394,7 @@ type internal MotionUtil
                 if isWhiteSpace span.End then
                     let endPoint = 
                         span.End
-                        |> SnapshotPointUtil.GetPoints Path.Forward 
+                        |> SnapshotPointUtil.GetPoints SearchPath.Forward 
                         |> Seq.skipWhile isWhiteSpace
                         |> SeqUtil.headOrDefault (SnapshotUtil.GetEndPoint x.CurrentSnapshot) 
 
@@ -1387,7 +1408,7 @@ type internal MotionUtil
             let includePrecedingWhiteSpace () =
                 let startPoint = 
                     span.Start 
-                    |> SnapshotPointUtil.GetPointsIncludingLineBreak Path.Backward
+                    |> SnapshotPointUtil.GetPointsIncludingLineBreak SearchPath.Backward
                     |> Seq.skipWhile (fun point -> 
                         // Skip while the previous point is white space
                         match SnapshotPointUtil.TrySubtractOne point with
@@ -1408,7 +1429,7 @@ type internal MotionUtil
             // doesn't count as a successful motion
             let spanHasContent = 
                 span
-                |> SnapshotSpanUtil.GetPoints Path.Forward
+                |> SnapshotSpanUtil.GetPoints SearchPath.Forward
                 |> Seq.filter (fun point -> not (SnapshotPointUtil.IsWhiteSpaceOrInsideLineBreak point))
                 |> SeqUtil.isNotEmpty
 
@@ -1422,7 +1443,7 @@ type internal MotionUtil
     /// corner cases to consider due to the line based nature
     member x.AllTextObjectCommon getObjects count = 
 
-        let all = getObjects Path.Forward x.CaretPoint
+        let all = getObjects SearchPath.Forward x.CaretPoint
         let firstSpan = all |> SeqUtil.tryHeadOnly
         match firstSpan with
         | None ->
@@ -1461,7 +1482,7 @@ type internal MotionUtil
                         firstSpan.Start
                     else
                         let point = firstSpan.Start |> SnapshotPointUtil.SubtractOne
-                        getObjects Path.Backward point
+                        getObjects SearchPath.Backward point
                         |> Seq.map SnapshotSpanUtil.GetEndPoint
                         |> SeqUtil.headOrDefault (SnapshotUtil.GetStartPoint x.CurrentSnapshot)
                 SnapshotSpan(startPoint, endPoint)
@@ -1489,7 +1510,7 @@ type internal MotionUtil
                 column <- column.Add 1
             column.Point
 
-        let sentences = x.GetSentences sentenceKind Path.Forward searchPoint |> Seq.truncate count |> List.ofSeq
+        let sentences = x.GetSentences sentenceKind SearchPath.Forward searchPoint |> Seq.truncate count |> List.ofSeq
 
         let span = 
             match sentences with
@@ -1551,7 +1572,7 @@ type internal MotionUtil
 
         // Get all of the words on this line going forward
         let all = 
-            _wordUtil.GetWords kind Path.Forward contextPoint
+            _wordUtil.GetWords kind SearchPath.Forward contextPoint
             |> Seq.takeWhile isOnSameLine
             |> Seq.truncate count
             |> List.ofSeq
@@ -1573,7 +1594,7 @@ type internal MotionUtil
             let whiteSpaceAfter = 
                 let endPoint = 
                     span.End
-                    |> SnapshotPointUtil.GetPoints Path.Forward
+                    |> SnapshotPointUtil.GetPoints SearchPath.Forward
                     |> Seq.filter (fun point -> point.Position <= contextLine.End.Position)
                     |> Seq.skipWhile SnapshotPointUtil.IsWhiteSpace
                     |> SeqUtil.headOrDefault contextLine.End
@@ -1590,7 +1611,7 @@ type internal MotionUtil
                     // up until the start of the line or the next non-white space character.  
                     let startPoint = 
                         span.Start
-                        |> SnapshotPointUtil.GetPoints Path.Backward
+                        |> SnapshotPointUtil.GetPoints SearchPath.Backward
                         |> SeqUtil.skipMax 1
                         |> Seq.filter (fun point -> point.Position >= contextLine.Start.Position)
                         |> Seq.skipWhile (fun point -> 
@@ -1605,7 +1626,7 @@ type internal MotionUtil
                     // though they are not called out in the documentation.  We should only include
                     // white space here if there is a word on the same line before this one.  
                     let startPoint = 
-                        _wordUtil.GetWords kind Path.Backward span.Start
+                        _wordUtil.GetWords kind SearchPath.Backward span.Start
                         |> Seq.filter isOnSameLine
                         |> Seq.map SnapshotSpanUtil.GetEndPoint
                         |> SeqUtil.headOrDefault span.Start
@@ -1636,7 +1657,7 @@ type internal MotionUtil
             if x.CaretPoint.Position < x.CaretLine.End.Position then
                 let start = SnapshotPointUtil.AddOneOrCurrent x.CaretPoint
                 SnapshotSpan(start, x.CaretLine.End)
-                |> SnapshotSpanUtil.GetPoints Path.Forward
+                |> SnapshotSpanUtil.GetPoints SearchPath.Forward
                 |> Seq.filter (SnapshotPointUtil.IsChar c)
                 |> SeqUtil.skipMax (count - 1)
                 |> SeqUtil.tryHeadOnly
@@ -1645,27 +1666,27 @@ type internal MotionUtil
 
         let backward () = 
             SnapshotSpan(x.CaretLine.Start, x.CaretPoint)
-            |> SnapshotSpanUtil.GetPoints Path.Backward
+            |> SnapshotSpanUtil.GetPoints SearchPath.Backward
             |> Seq.filter (SnapshotPointUtil.IsChar c)
             |> SeqUtil.skipMax (count - 1)
             |> SeqUtil.tryHeadOnly
 
         let option = 
             match charSearch, direction with
-            | CharSearchKind.ToChar, Path.Forward -> 
+            | CharSearchKind.ToChar, SearchPath.Forward -> 
                 forward () |> Option.map (fun point ->
                     let endPoint = SnapshotPointUtil.AddOneOrCurrent point
                     let span = SnapshotSpan(x.CaretPoint, endPoint)
                     span, MotionKind.CharacterWiseInclusive)
-            | CharSearchKind.TillChar, Path.Forward -> 
+            | CharSearchKind.TillChar, SearchPath.Forward -> 
                 forward () |> Option.map (fun point ->
                     let span = SnapshotSpan(x.CaretPoint, point)
                     span, MotionKind.CharacterWiseInclusive)
-            | CharSearchKind.ToChar, Path.Backward ->
+            | CharSearchKind.ToChar, SearchPath.Backward ->
                 backward () |> Option.map (fun point ->
                     let span = SnapshotSpan(point, x.CaretPoint)
                     span, MotionKind.CharacterWiseExclusive)
-            | CharSearchKind.TillChar, Path.Backward ->
+            | CharSearchKind.TillChar, SearchPath.Backward ->
                 backward () |> Option.map (fun point ->
                     let point = SnapshotPointUtil.AddOne point
                     let span = SnapshotSpan(point, x.CaretPoint)
@@ -1674,7 +1695,7 @@ type internal MotionUtil
         match option with 
         | None -> None
         | Some (span, motionKind) -> 
-            let isForward = match direction with | Path.Forward -> true | Path.Backward -> false
+            let isForward = match direction with | SearchPath.Forward -> true | SearchPath.Backward -> false
             MotionResult.Create span isForward motionKind |> Some
 
     /// Repeat the last f, F, t or T search pattern.
@@ -1690,8 +1711,8 @@ type internal MotionUtil
         | Some (kind, direction, c) -> 
             let direction = 
                 match direction with
-                | Path.Forward -> Path.Backward
-                | Path.Backward -> Path.Forward
+                | SearchPath.Forward -> SearchPath.Backward
+                | SearchPath.Backward -> SearchPath.Forward
             x.CharSearchCore c 1 kind direction
 
     member x.WordForward kind count motionContext =
@@ -1706,7 +1727,7 @@ type internal MotionUtil
                 count
 
         let endPoint = 
-            _wordUtil.GetWords kind Path.Forward x.CaretPoint
+            _wordUtil.GetWords kind SearchPath.Forward x.CaretPoint
             |> SeqUtil.skipMax count
             |> Seq.map SnapshotSpanUtil.GetStartPoint
             |> SeqUtil.headOrDefault (SnapshotUtil.GetEndPoint x.CurrentSnapshot)
@@ -1723,7 +1744,7 @@ type internal MotionUtil
 
                 if isFirstNonBlank && endLine.LineNumber > x.CaretLine.LineNumber then
                     let previousLine = 
-                        SnapshotUtil.GetLines x.CurrentSnapshot (endLine.LineNumber - 1) Path.Backward
+                        SnapshotUtil.GetLines x.CurrentSnapshot (endLine.LineNumber - 1) SearchPath.Backward
                         |> Seq.skipWhile (fun textLine -> SnapshotLineUtil.IsBlank textLine && textLine.LineNumber > x.CaretLine.LineNumber)
                         |> SeqUtil.tryHeadOnly
                     let previousLine = 
@@ -1744,7 +1765,7 @@ type internal MotionUtil
     member x.WordBackward kind count =
 
         let startPoint = 
-            _wordUtil.GetWords kind Path.Backward x.CaretPoint
+            _wordUtil.GetWords kind SearchPath.Backward x.CaretPoint
             |> SeqUtil.skipMax (count - 1)
             |> Seq.map SnapshotSpanUtil.GetStartPoint
             |> SeqUtil.headOrDefault (SnapshotUtil.GetStartPoint x.CurrentSnapshot)
@@ -1757,11 +1778,11 @@ type internal MotionUtil
         // If the caret is currently at the end of the word then we start searching one character
         // back from that point 
         let searchPoint = 
-            match _wordUtil.GetWords kind Path.Forward x.CaretPoint |> SeqUtil.tryHeadOnly with
+            match _wordUtil.GetWords kind SearchPath.Forward x.CaretPoint |> SeqUtil.tryHeadOnly with
             | None -> x.CaretPoint
             | Some span -> span.Start
 
-        let words = _wordUtil.GetWords kind Path.Backward searchPoint 
+        let words = _wordUtil.GetWords kind SearchPath.Backward searchPoint 
         let startPoint = 
             match words |> Seq.skip (count - 1) |> SeqUtil.tryHeadOnly with
             | None -> SnapshotPoint(x.CurrentSnapshot, 0)
@@ -1778,7 +1799,7 @@ type internal MotionUtil
         // on the last point inside a word then we calculate the next word starting at
         // the end of the first word.
         let searchPoint = 
-            match _wordUtil.GetWords kind Path.Forward x.CaretPoint |> SeqUtil.tryHeadOnly with
+            match _wordUtil.GetWords kind SearchPath.Forward x.CaretPoint |> SeqUtil.tryHeadOnly with
             | None -> 
                 x.CaretPoint
             | Some span -> 
@@ -1789,7 +1810,7 @@ type internal MotionUtil
 
         let endPoint = 
             searchPoint
-            |> _wordUtil.GetWords kind Path.Forward
+            |> _wordUtil.GetWords kind SearchPath.Forward
             |> Seq.filter (fun span ->
                 // The typical word motion includes blank lines as part of the word. The one 
                 // exception is end of word which doesn't count blank lines as words.  Filter
@@ -1819,7 +1840,7 @@ type internal MotionUtil
         let start = x.CaretPoint
         let target = 
             span 
-            |> SnapshotSpanUtil.GetPoints Path.Forward
+            |> SnapshotSpanUtil.GetPoints SearchPath.Forward
             |> Seq.tryFind (fun x -> not (CharUtil.IsBlank (x.GetChar())) )
             |> OptionUtil.getOrDefault span.End
         let startPoint, endPoint, isForward = 
@@ -1891,7 +1912,7 @@ type internal MotionUtil
             let isOpenLineWise = openPoint.Position + 1 = openLine.End.Position 
             let isCloseLineWise = 
                 SnapshotSpan(closeLine.Start, closePoint)
-                |> SnapshotSpanUtil.GetPoints Path.Forward
+                |> SnapshotSpanUtil.GetPoints SearchPath.Forward
                 |> Seq.forall SnapshotPointUtil.IsBlank
 
             let (span, motionKind) =
@@ -1934,7 +1955,7 @@ type internal MotionUtil
             let line = SnapshotPointUtil.GetContainingLine point
             let startPoint = 
                 SnapshotSpan(line.Start, point)
-                |> SnapshotSpanUtil.GetPoints Path.Backward
+                |> SnapshotSpanUtil.GetPoints SearchPath.Backward
                 |> Seq.skipWhile SnapshotPointUtil.IsBlank
                 |> SeqUtil.headOrDefault line.Start
 
@@ -1989,7 +2010,7 @@ type internal MotionUtil
             // number of words at 'count'.  Since the 'count' includes the white space between
             // the words 'count' is a definite max on the number of words we need to consider
             let words = 
-                _wordUtil.GetWords wordKind Path.Forward point
+                _wordUtil.GetWords wordKind SearchPath.Forward point
                 |> Seq.truncate count
                 |> List.ofSeq
 
@@ -2051,6 +2072,42 @@ type internal MotionUtil
         match span with
         | None -> None
         | Some span -> MotionResult.CreateEx span true MotionKind.CharacterWiseInclusive MotionResultFlags.AnyWord |> Some
+
+    /// Implementation of the 'ip' motion. Blank and empty lines are counted together.
+    member x.InnerParagraph count =
+        let isWhiteSpace point =
+            let line = SnapshotPointUtil.GetContainingLine point
+            System.String.IsNullOrWhiteSpace(line.GetText())
+
+        let startPoint =
+            x.CaretPoint
+            |> SnapshotPointUtil.GetPointsIncludingLineBreak SearchPath.Backward
+            |> Seq.takeWhile (fun point -> isWhiteSpace x.CaretPoint = isWhiteSpace point)
+            |> SeqUtil.lastOrDefault (SnapshotUtil.GetStartPoint x.CurrentSnapshot)
+
+        let endPoint =
+            let rec ep pt counter =
+                let lastCount = counter = count
+                let isEnd point = SnapshotPointUtil.IsEndPoint point
+                let point =
+                    pt
+                    |> SnapshotPointUtil.GetPointsIncludingLineBreak SearchPath.Forward
+                    |> (fun s -> Seq.concat [s; (Seq.singleton (SnapshotUtil.GetEndPoint pt.Snapshot))] )
+                    |> Seq.skipWhile (fun point -> isWhiteSpace pt = isWhiteSpace point && not (lastCount && isEnd point))
+                    |> SeqUtil.tryHeadOnly
+                if point.IsNone then None
+                elif lastCount then Some point.Value
+                else
+                    let nextStartPoint = if SnapshotPointUtil.IsInsideLineBreak point.Value then point.Value
+                                         else SnapshotPointUtil.AddOneOrCurrent point.Value
+                    ep nextStartPoint (counter + 1)
+            ep x.CaretPoint 1
+
+        match endPoint with
+        | None -> None
+        | Some endPoint ->
+            let snapshot = SnapshotSpan(startPoint, endPoint)
+            MotionResult.Create snapshot true MotionKind.CharacterWiseExclusive |> Some
 
     /// Implements the '+', '<CR>', 'CTRL-M' motions. 
     ///
@@ -2242,7 +2299,7 @@ type internal MotionUtil
                 // to move 1 past the character in order to include it in the line
                 let endPoint = 
                     endLine.Extent
-                    |> SnapshotSpanUtil.GetPoints Path.Backward
+                    |> SnapshotSpanUtil.GetPoints SearchPath.Backward
                     |> Seq.skipWhile SnapshotPointUtil.IsBlankOrEnd
                     |> SeqUtil.tryHeadOnly
                 match endPoint with
@@ -2329,7 +2386,7 @@ type internal MotionUtil
 
         let startPoint = 
             x.CaretPoint
-            |> x.GetSections sectionKind Path.Backward
+            |> x.GetSections sectionKind SearchPath.Backward
             |> SeqUtil.skipMax (count - 1)
             |> Seq.map SnapshotSpanUtil.GetStartPoint
             |> SeqUtil.headOrDefault (SnapshotUtil.GetStartPoint x.CurrentSnapshot)
@@ -2351,7 +2408,7 @@ type internal MotionUtil
 
         let endPoint = 
             x.CaretPoint
-            |> x.GetSections sectionKind Path.Forward
+            |> x.GetSections sectionKind SearchPath.Forward
             |> SeqUtil.skipMax count
             |> Seq.map SnapshotSpanUtil.GetStartPoint
             |> SeqUtil.headOrDefault (SnapshotUtil.GetEndPoint x.CurrentSnapshot)
@@ -2398,7 +2455,7 @@ type internal MotionUtil
     member x.SentenceForward count = 
         _jumpList.Add x.CaretPoint
         let endPoint =
-            x.GetSentences SentenceKind.Default Path.Forward x.CaretPoint
+            x.GetSentences SentenceKind.Default SearchPath.Forward x.CaretPoint
             |> SeqUtil.skipMax count
             |> Seq.map SnapshotSpanUtil.GetStartPoint
             |> SeqUtil.headOrDefault (SnapshotUtil.GetEndPoint x.CurrentSnapshot)
@@ -2408,7 +2465,7 @@ type internal MotionUtil
     member x.SentenceBackward count = 
         _jumpList.Add x.CaretPoint
         let startPoint = 
-            x.GetSentences SentenceKind.Default Path.Backward x.CaretPoint
+            x.GetSentences SentenceKind.Default SearchPath.Backward x.CaretPoint
             |> SeqUtil.skipMax (count - 1)
             |> Seq.map SnapshotSpanUtil.GetStartPoint
             |> SeqUtil.headOrDefault (SnapshotUtil.GetStartPoint x.CurrentSnapshot)
@@ -2420,7 +2477,7 @@ type internal MotionUtil
         _jumpList.Add x.CaretPoint
 
         let endPoint = 
-            x.GetParagraphs Path.Forward x.CaretPoint
+            x.GetParagraphs SearchPath.Forward x.CaretPoint
             |> SeqUtil.skipMax count
             |> Seq.map SnapshotSpanUtil.GetStartPoint
             |> SeqUtil.headOrDefault (SnapshotUtil.GetEndPoint x.CurrentSnapshot)
@@ -2432,7 +2489,7 @@ type internal MotionUtil
         _jumpList.Add x.CaretPoint
 
         let startPoint = 
-            x.GetParagraphs Path.Backward x.CaretPoint
+            x.GetParagraphs SearchPath.Backward x.CaretPoint
             |> SeqUtil.skipMax (count - 1)
             |> Seq.map SnapshotSpanUtil.GetStartPoint
             |> SeqUtil.headOrDefault (SnapshotUtil.GetStartPoint x.CurrentSnapshot)
@@ -2450,11 +2507,24 @@ type internal MotionUtil
                     SnapshotSpanUtil.Create data.LeadingWhiteSpace.Start data.TrailingWhiteSpace.Start
             MotionResult.Create span true MotionKind.CharacterWiseInclusive |> Some
 
-    member x.QuotedStringContents quoteChar = 
+    member x.QuotedStringContentsWithCount quoteChar count = 
+        let QuotedStringContents quoteChar = 
+            match x.GetQuotedStringData quoteChar with
+            | None -> None 
+            | Some data ->
+                let span = data.Contents
+                MotionResult.Create span true MotionKind.CharacterWiseInclusive |> Some
+
+        if count > 1 then
+          x.QuotedStringWithoutSpaces quoteChar
+        else
+          QuotedStringContents quoteChar
+
+    member x.QuotedStringWithoutSpaces quoteChar = 
         match x.GetQuotedStringData quoteChar with
         | None -> None 
-        | Some data ->
-            let span = data.Contents
+        | Some data -> 
+            let span = SnapshotSpanUtil.Create data.LeadingQuote data.TrailingWhiteSpace.Start
             MotionResult.Create span true MotionKind.CharacterWiseInclusive |> Some
 
     /// Get the motion for a search command.  Used to implement the '/' and '?' motions
@@ -2537,7 +2607,7 @@ type internal MotionUtil
             None
         else
             let path = 
-                if isReverse then Path.Reverse last.Path
+                if isReverse then SearchPath.Reverse last.Path
                 else last.Path
             let searchKind = SearchKind.OfPathAndWrap path _globalSettings.WrapScan
             let searchData = SearchData(last.Pattern, last.Offset, searchKind, last.Options)
@@ -2691,6 +2761,7 @@ type internal MotionUtil
             | Motion.FirstNonBlankOnLine -> x.FirstNonBlankOnLine motionArgument.Count |> Some
             | Motion.InnerBlock blockKind -> x.InnerBlock x.CaretPoint blockKind motionArgument.Count
             | Motion.InnerWord wordKind -> x.InnerWord wordKind motionArgument.Count x.CaretPoint
+            | Motion.InnerParagraph -> x.InnerParagraph motionArgument.Count
             | Motion.LastNonBlankOnLine -> x.LastNonBlankOnLine motionArgument.Count |> Some
             | Motion.LastSearch isReverse -> x.LastSearch isReverse motionArgument.Count
             | Motion.LineDown -> x.LineDown motionArgument.Count
@@ -2710,7 +2781,7 @@ type internal MotionUtil
             | Motion.ParagraphBackward -> x.ParagraphBackward motionArgument.Count |> Some
             | Motion.ParagraphForward -> x.ParagraphForward motionArgument.Count |> Some
             | Motion.QuotedString quoteChar -> x.QuotedString quoteChar
-            | Motion.QuotedStringContents quoteChar -> x.QuotedStringContents quoteChar
+            | Motion.QuotedStringContents quoteChar -> x.QuotedStringContentsWithCount quoteChar motionArgument.Count
             | Motion.RepeatLastCharSearch -> x.RepeatLastCharSearch()
             | Motion.RepeatLastCharSearchOpposite -> x.RepeatLastCharSearchOpposite()
             | Motion.Search searchData-> x.Search searchData motionArgument.Count
@@ -2742,6 +2813,7 @@ type internal MotionUtil
         | Motion.TagBlock kind -> x.TagBlock 1 point kind
         | Motion.InnerWord wordKind -> x.InnerWord wordKind 1 point 
         | Motion.InnerBlock blockKind -> x.InnerBlock point blockKind 1
+        | Motion.QuotedStringContents quote -> x.QuotedStringWithoutSpaces quote
         | _ -> None
 
     interface IMotionUtil with

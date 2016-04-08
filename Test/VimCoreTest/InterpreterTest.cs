@@ -10,6 +10,7 @@ using Vim.Extensions;
 using Vim.Interpreter;
 using Vim.UnitTest.Mock;
 using Xunit;
+using Microsoft.FSharp.Core;
 
 namespace Vim.UnitTest
 {
@@ -170,6 +171,22 @@ namespace Vim.UnitTest
                     _textBuffer.GetLines().ToArray());
                 Assert.Equal(_textBuffer.GetLine(1).Start, _textView.GetCaretPoint());
             }
+
+            /// <summary>
+            /// Copy to the first line
+            /// </summary>
+            [Fact]
+            public void ToFirstLine() {
+                Create("cat", "dog", "fish", "bear", "tree");
+                _textView.MoveCaretToLine(3);
+                ParseAndRun("co -4");
+
+                Assert.Equal(
+                    new [] {"bear","cat", "dog", "fish", "bear", "tree"},
+                    _textBuffer.GetLines().ToArray());
+
+                Assert.Equal(_textBuffer.GetLine(0).Start, _textView.GetCaretPoint());
+            }
         }
 
         public sealed class DisplayMarkTest : InterpreterTest
@@ -188,7 +205,7 @@ namespace Vim.UnitTest
 
             public void Verify(char mark, int line, int column, int index = 1)
             {
-                var msg = String.Format(" {0}   {1,5}{2,5} test.txt", mark, line, column);
+                var msg = String.Format(" {0}  {1,5}{2,5} test.txt", mark, line, column);
                 Assert.Equal(msg, _statusUtil.LastStatusLong[index]);
             }
 
@@ -198,7 +215,7 @@ namespace Vim.UnitTest
                 Create("cat dog");
                 _vimTextBuffer.SetLocalMark(LocalMark.NewLetter(Letter.C), 0, 1);
                 _interpreter.RunDisplayMarks(s_emptyList);
-                Verify('c', 1, 1);
+                Verify('c', 1, 1, 2);
             }
 
             /// <summary>
@@ -211,8 +228,8 @@ namespace Vim.UnitTest
                 _vimTextBuffer.SetLocalMark(LocalMark.NewLetter(Letter.B), 0, 1);
                 _vimTextBuffer.SetLocalMark(LocalMark.NewLetter(Letter.A), 0, 2);
                 _interpreter.RunDisplayMarks(s_emptyList);
-                Verify('a', line: 1, column: 2, index: 1);
-                Verify('b', line: 1, column: 1, index: 2);
+                Verify('a', line: 1, column: 2, index: 2);
+                Verify('b', line: 1, column: 1, index: 3);
             }
         }
 
@@ -261,19 +278,19 @@ namespace Vim.UnitTest
 
         public sealed class SourceTest : InterpreterTest
         {
-            private readonly Mock<IFileSystem> _fileSysetm;
+            private readonly Mock<IFileSystem> _fileSystem;
 
             public SourceTest()
             {
                 Create();
-                _fileSysetm = new Mock<IFileSystem>(MockBehavior.Strict);
-                _interpreter._fileSystem = _fileSysetm.Object;
-                ((Vim)Vim).FileSystem = _fileSysetm.Object;
+                _fileSystem = new Mock<IFileSystem>(MockBehavior.Strict);
+                _interpreter._fileSystem = _fileSystem.Object;
+                ((Vim)Vim).FileSystem = _fileSystem.Object;
             }
 
             private void SetText(string fileName, params string[] lines)
             {
-                _fileSysetm
+                _fileSystem
                     .Setup(x => x.ReadAllLines(fileName))
                     .Returns(FSharpOption.Create(lines));
             }
@@ -293,6 +310,17 @@ namespace Vim.UnitTest
                 ParseAndRun(":source test.txt\t\"several windows key bindings");
                 Assert.Equal(12, _vimBuffer.LocalSettings.TabStop);
             }
+
+            [Fact]
+            public void Issue1699()
+            {
+                var filePath = "file<name>.txt";
+                _fileSystem
+                    .Setup(x => x.ReadAllLines(filePath))
+                    .Returns(FSharpOption<string[]>.None);
+                ParseAndRun(string.Format(":source {0}", filePath));
+                Assert.Equal(Resources.CommandMode_CouldNotOpenFile(filePath), _statusUtil.LastError);
+            }
         }
 
         public sealed class SubstituteTest : InterpreterTest
@@ -305,7 +333,7 @@ namespace Vim.UnitTest
             public void EmptySearchUsesLastSearch()
             {
                 Create("cat tree");
-                Vim.VimData.LastSearchData = new SearchData("cat", new Path(0));
+                Vim.VimData.LastSearchData = new SearchData("cat", new SearchPath(0));
                 ParseAndRun("s//dog/");
                 Assert.Equal("dog tree", _textBuffer.GetLine(0).GetText());
             }
@@ -459,7 +487,7 @@ namespace Vim.UnitTest
                 Create("cat", "dog");
                 ParseAndRun(":/dog");
                 Assert.Equal("dog", _vimData.LastSearchData.Pattern);
-                Assert.Equal(Path.Forward, _vimData.LastSearchData.Path);
+                Assert.Equal(SearchPath.Forward, _vimData.LastSearchData.Path);
             }
 
             [Fact]
@@ -468,7 +496,7 @@ namespace Vim.UnitTest
                 Create("cat", "dog");
                 ParseAndRun(":?dog");
                 Assert.Equal("dog", _vimData.LastSearchData.Pattern);
-                Assert.Equal(Path.Backward, _vimData.LastSearchData.Path);
+                Assert.Equal(SearchPath.Backward, _vimData.LastSearchData.Path);
             }
         }
 
@@ -1138,6 +1166,23 @@ namespace Vim.UnitTest
                 Assert.Same(_textBuffer, VimHost.LastSaved);
                 Assert.Null(_filePath);
             }
+
+            [Fact]
+            public void InvalidCharacters()
+            {
+                Create("cat");
+                var filePath = "file<name>.txt";
+                VimHost.RunSaveTextAs = delegate { return false; };
+                ParseAndRun(string.Format("w {0}", filePath));
+            }
+
+            [Fact]
+            public void Issue1699()
+            {
+                Create("cat");
+                VimHost.RunSaveTextAs = delegate { return false; };
+                ParseAndRun("w'");
+            }
         }
 
         public sealed class QuickFixTest : InterpreterTest
@@ -1269,7 +1314,7 @@ namespace Vim.UnitTest
             public void LastSearch_ViaLastPattern()
             {
                 Create("");
-                _vimData.LastSearchData = new SearchData("test", Path.Forward);
+                _vimData.LastSearchData = new SearchData("test", SearchPath.Forward);
                 ParseAndRun("reg");
                 AssertLine(@"""/   test");
             }
@@ -1738,6 +1783,78 @@ namespace Vim.UnitTest
                 Assert.Equal("fash", _textBuffer.GetLine(3).GetText());
                 Assert.Equal("bat", _textBuffer.GetLine(4).GetText());
                 Assert.Equal(_textView.GetPointInLine(4, 0), _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// Test out the :global command delete until double quote character
+            /// </summary>
+            [Fact]
+            public void Global_Normal_DeleteUntilDoubleQuote()
+            {
+                Create("cat\"dog");
+                ParseAndRun("norm df\"");
+                Assert.Equal("dog", _textBuffer.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// Test out the :global command with normal command deleting after search pattern
+            /// </summary>
+            [Fact]
+            public void Global_Normal_Search_Delete()
+            {
+                Create("cat,dog");
+                ParseAndRun("g/,/norm nD");
+                Assert.Equal("cat", _textBuffer.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// Test out the :normal command with delete line (dd) and put (p) key strokes
+            /// </summary>
+            [Fact]
+            public void Normal_DeletePut()
+            {
+                Create("cat", "dog", "fish");
+                ParseAndRun("norm ddp");
+                Assert.Equal("dog", _textBuffer.GetLine(0).GetText());
+                Assert.Equal("cat", _textBuffer.GetLine(1).GetText());
+                Assert.Equal("fish", _textBuffer.GetLine(2).GetText());
+
+            }
+
+            /// <summary>
+            /// Test out the :normal command with remove (x) with extra leading spaces
+            /// </summary>
+            [Fact]
+            public void Normal_RemoveWithSpaces()
+            {
+                Create("ccat");
+                ParseAndRun("norm  x");
+                Assert.Equal("cat", _textBuffer.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// Test out the :normal command insert text in the middle of a line
+            /// </summary>
+            [Fact]
+            public void Normal_InsertInMiddleOfLine()
+            {
+                Create("cat dog");
+                ParseAndRun("norm w");
+                ParseAndRun("norm iand ");
+                Assert.Equal("cat and dog", _textBuffer.GetLine(0).GetText());
+            }
+            /// <summary>
+            /// Test out the :normal command insert text in the middle of a line
+            /// </summary>
+            [Fact]
+            public void Normal_InsertWithLineRange()
+            {
+                Create("cat", "dog", "fish", "whale");
+                ParseAndRun("2,3norm i.");
+                Assert.Equal("cat", _textBuffer.GetLine(0).GetText());
+                Assert.Equal(".dog", _textBuffer.GetLine(1).GetText());
+                Assert.Equal(".fish", _textBuffer.GetLine(2).GetText());
+                Assert.Equal("whale", _textBuffer.GetLine(3).GetText());
             }
 
             /// <summary>

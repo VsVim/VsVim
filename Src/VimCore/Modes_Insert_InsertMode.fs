@@ -61,7 +61,7 @@ type WordCompletionUtil
         let snapshot = wordSpan.Snapshot
         let wordsBefore = 
             let startPoint = SnapshotUtil.GetStartPoint snapshot
-            _wordUtil.GetWords WordKind.NormalWord Path.Forward startPoint
+            _wordUtil.GetWords WordKind.NormalWord SearchPath.Forward startPoint
             |> Seq.filter (fun span -> span.End.Position <= wordSpan.Start.Position)
 
         // Get the sequence of words after the completion word 
@@ -70,13 +70,13 @@ type WordCompletionUtil
             // The provided SnapshotSpan can be a subset of an entire word.  If so then
             // we want to consider the text to the right of the caret as a full word
             match _wordUtil.GetFullWordSpan WordKind.NormalWord wordSpan.Start with
-            | None -> _wordUtil.GetWords WordKind.NormalWord Path.Forward wordSpan.End
+            | None -> _wordUtil.GetWords WordKind.NormalWord SearchPath.Forward wordSpan.End
             | Some fullWordSpan ->
                 if fullWordSpan = wordSpan then
-                    _wordUtil.GetWords WordKind.NormalWord Path.Forward wordSpan.End
+                    _wordUtil.GetWords WordKind.NormalWord SearchPath.Forward wordSpan.End
                 else
                     let remaining = SnapshotSpan(wordSpan.End, fullWordSpan.End)
-                    let after = _wordUtil.GetWords WordKind.NormalWord Path.Forward fullWordSpan.End
+                    let after = _wordUtil.GetWords WordKind.NormalWord SearchPath.Forward fullWordSpan.End
                     Seq.append (Seq.singleton remaining) after
 
         let filterText = wordSpan.GetText()
@@ -85,7 +85,6 @@ type WordCompletionUtil
         // Combine the collections
         Seq.append wordsAfter wordsBefore
         |> Seq.filter filterFunc
-        |> Seq.map SnapshotSpanUtil.GetText
 
     /// Get the word completion entries in the specified ITextSnapshot.  If the token is cancelled the 
     /// exception will be propagated out of this method.  This method will return duplicate words too
@@ -93,9 +92,8 @@ type WordCompletionUtil
         let filterFunc = WordCompletionUtil.GetFilterFunc filterText comparer
         let startPoint = SnapshotPoint(snapshot, 0) 
         startPoint
-        |> _wordUtil.GetWords WordKind.NormalWord Path.Forward
+        |> _wordUtil.GetWords WordKind.NormalWord SearchPath.Forward
         |> Seq.filter filterFunc
-        |> Seq.map (fun wordSpan -> wordSpan.GetText())
 
     member x.GetWordCompletions (wordSpan : SnapshotSpan) =
         let comparer = if _globalSettings.IgnoreCase then CharComparer.IgnoreCase else CharComparer.Exact
@@ -109,11 +107,30 @@ type WordCompletionUtil
             |> Seq.filter (fun snapshot -> snapshot.TextBuffer <> fileTextBuffer)
             |> Seq.collect (fun snapshot -> x.GetWordCompletionsInFile filterText comparer snapshot)
 
+        let wordSpanStart = wordSpan.Start.Position
+        let sortComparer (x : SnapshotSpan) (y : SnapshotSpan) = 
+            let xPos = x.Start.Position
+            let yPos = y.Start.Position
+            if x.Snapshot.TextBuffer = fileTextBuffer && y.Snapshot.TextBuffer = fileTextBuffer then
+                let xPos = if xPos < wordSpanStart then xPos + wordSpan.Snapshot.Length else xPos
+                let yPos = if yPos < wordSpanStart then yPos + wordSpan.Snapshot.Length else yPos
+                xPos.CompareTo(yPos)
+            elif x.Snapshot.TextBuffer = fileTextBuffer then
+                -1
+            elif y.Snapshot.TextBuffer = fileTextBuffer then
+                1
+            else
+                xPos.CompareTo(yPos)
+
         fileCompletions
         |> Seq.append otherFileCompletions  
-        |> Seq.filter (fun word -> word.Length > 1)
+        |> Seq.filter (fun span -> span.Length > 1)
+        |> List.ofSeq
+        |> List.sortWith sortComparer
+        |> Seq.map SnapshotSpanUtil.GetText
         |> Seq.distinct
         |> List.ofSeq
+
 
 [<RequireQualifiedAccess>]
 type InsertKind =
@@ -157,6 +174,9 @@ type ActiveEditItem =
     /// In the middle of one of the special paste operations.  The provided flags should 
     /// be passed along to the final Paste operation
     | PasteSpecial of PasteFlags
+
+    /// In Replace mode, will overwrite using the selected Register
+    | OverwriteReplace
 
     /// No active items
     | None
@@ -693,6 +713,7 @@ type internal InsertMode
     /// that can be done now
     member x.Paste (keyInput : KeyInput) (flags : PasteFlags) = 
 
+        let isOverwrite = _sessionData.ActiveEditItem = ActiveEditItem.OverwriteReplace
         _sessionData <- { _sessionData with ActiveEditItem = ActiveEditItem.None }
 
         if keyInput = KeyInputUtil.EscapeKey then
@@ -720,7 +741,7 @@ type internal InsertMode
                     EditUtil.NormalizeNewLines text newLine
 
                 let keyInputSet = KeyInputSet.OneKeyInput keyInput
-                let insertCommand = InsertCommand.Insert text
+                let insertCommand = if isOverwrite then InsertCommand.Overwrite text else InsertCommand.Insert text
                 x.RunInsertCommand insertCommand keyInputSet CommandFlags.InsertEdit
 
     /// Try and process the KeyInput by considering the current text edit in Insert Mode
@@ -787,7 +808,7 @@ type internal InsertMode
     /// Start a paste session in insert mode
     member x.ProcessPasteStart keyInput =
         x.CancelWordCompletionSession()
-        _sessionData <- { _sessionData with ActiveEditItem = ActiveEditItem.Paste }
+        _sessionData <- { _sessionData with ActiveEditItem = if _isReplace then ActiveEditItem.OverwriteReplace else ActiveEditItem.Paste }
         ProcessResult.Handled ModeSwitch.NoSwitch
 
     /// Process the second key of a paste operation.  
@@ -827,6 +848,8 @@ type internal InsertMode
             x.ProcessPaste keyInput
         | ActiveEditItem.PasteSpecial pasteFlags ->
             x.Paste keyInput pasteFlags
+        | ActiveEditItem.OverwriteReplace ->
+            x.Paste keyInput PasteFlags.None
         | ActiveEditItem.None -> 
 
             // Next try and process by examining the current change

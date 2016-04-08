@@ -33,7 +33,7 @@ type LastSearchRegisterValueBacking (_vimData : IVimData) =
     interface IRegisterValueBacking with
         member x.RegisterValue 
             with get () = RegisterValue(_vimData.LastSearchData.Pattern, OperationKind.CharacterWise)
-            and set value = _vimData.LastSearchData <- SearchData(value.StringValue, Path.Forward, false)
+            and set value = _vimData.LastSearchData <- SearchData(value.StringValue, SearchPath.Forward, false)
 
 type CommandLineBacking (_vimData : IVimData) = 
     interface IRegisterValueBacking  with

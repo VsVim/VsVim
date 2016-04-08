@@ -19,7 +19,7 @@ type IncrementalSearchData = {
     member x.SearchData = x.SearchResult.SearchData
 
     static member Default = 
-        let searchData = SearchData("", Path.Forward, false)
+        let searchData = SearchData("", SearchPath.Forward, false)
         let searchResult = SearchResult.NotFound (searchData, false)
         {
             SearchResult = searchResult
@@ -133,7 +133,7 @@ type internal IncrementalSearch
                 member this.Cancelled (data : ITrackingPoint) = runActive (fun session -> x.RunCancelled session) ()
             }
 
-        let historySession = HistoryUtil.CreateHistorySession historyClient startPoint StringUtil.Empty
+        let historySession = HistoryUtil.CreateHistorySession historyClient startPoint StringUtil.Empty None
         _incrementalSearchSession <- Some (IncrementalSearchSession(key, historySession, incrementalSearchData))
 
         // Raise the event

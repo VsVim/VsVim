@@ -49,6 +49,7 @@ namespace Vim.VisualStudio.Implementation.ReSharper
                 }
                 return ReSharperVersion.Unknown;
             }
+
             if (assembly.FullName.StartsWith(ResharperPlatform6AssemblyName))
             {
                 FileVersionInfo fvi = FileVersionInfo.GetVersionInfo(assembly.Location);
@@ -63,10 +64,13 @@ namespace Vim.VisualStudio.Implementation.ReSharper
                         return ReSharperVersion.Version91;
                     case 103:
                         return ReSharperVersion.Version92;
+                    case 104:
+                        return ReSharperVersion.Version10;
                     default:
-                        return ReSharperVersion.Version9;
+                        return ReSharperVersion.Version10;
                 }
             }
+
             if (assembly.FullName.StartsWith(ResharperAssemblyName2010) ||
                 assembly.FullName.StartsWith(ResharperAssemblyName2012))
             {

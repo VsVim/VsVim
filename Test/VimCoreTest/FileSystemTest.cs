@@ -4,7 +4,6 @@ using System.Linq;
 using System.IO;
 using System.Text;
 using Xunit;
-using Path = System.IO.Path;
 
 namespace Vim.UnitTest
 {
@@ -55,7 +54,7 @@ namespace Vim.UnitTest
 
             public EncodingTest()
             {
-                _tempFilePath = System.IO.Path.GetTempFileName();
+                _tempFilePath = Path.GetTempFileName();
             }
 
             public override void Dispose()

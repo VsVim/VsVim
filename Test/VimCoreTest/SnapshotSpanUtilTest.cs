@@ -34,7 +34,7 @@ namespace Vim.UnitTest
             var points =
                 _buffer.CurrentSnapshot.Lines
                 .Select(x => x.Extent)
-                .SelectMany(x => SnapshotSpanUtil.GetPoints(Path.Forward, x));
+                .SelectMany(x => SnapshotSpanUtil.GetPoints(SearchPath.Forward, x));
             foreach (var point in points)
             {
                 var notUsed = point.GetChar();
@@ -51,7 +51,7 @@ namespace Vim.UnitTest
             var points =
                 _buffer.CurrentSnapshot.Lines
                 .Select(x => x.ExtentIncludingLineBreak)
-                .SelectMany(x => SnapshotSpanUtil.GetPoints(Path.Forward, x));
+                .SelectMany(x => SnapshotSpanUtil.GetPoints(SearchPath.Forward, x));
             foreach (var point in points)
             {
                 var notUsed = point.GetChar();
@@ -65,7 +65,7 @@ namespace Vim.UnitTest
             var points =
                 _buffer.CurrentSnapshot.Lines
                 .Select(x => x.Extent)
-                .SelectMany(x => SnapshotSpanUtil.GetPoints(Path.Forward, x))
+                .SelectMany(x => SnapshotSpanUtil.GetPoints(SearchPath.Forward, x))
                 .ToList();
             Assert.Equal(3, points.Count);
             Assert.Equal('f', points[0].GetChar());
@@ -77,7 +77,7 @@ namespace Vim.UnitTest
         public void GetPoints4()
         {
             Create("foo", "bar");
-            var points = SnapshotSpanUtil.GetPoints(Path.Forward, _buffer.GetLine(0).Extent);
+            var points = SnapshotSpanUtil.GetPoints(SearchPath.Forward, _buffer.GetLine(0).Extent);
             var chars = points.Select(x => x.GetChar()).ToList();
             Assert.Equal(new char[] { 'f', 'o', 'o' }, chars);
         }
@@ -86,7 +86,7 @@ namespace Vim.UnitTest
         public void GetPoints5()
         {
             Create("foo bar");
-            var points = SnapshotSpanUtil.GetPoints(Path.Forward, new SnapshotSpan(_buffer.CurrentSnapshot, 0, 0));
+            var points = SnapshotSpanUtil.GetPoints(SearchPath.Forward, new SnapshotSpan(_buffer.CurrentSnapshot, 0, 0));
             Assert.Equal(0, points.Count());
         }
 
@@ -95,7 +95,7 @@ namespace Vim.UnitTest
         {
             Create("foo");
             var span = _buffer.GetLine(0).Extent;
-            var points = SnapshotSpanUtil.GetPoints(Path.Backward, span).ToList();
+            var points = SnapshotSpanUtil.GetPoints(SearchPath.Backward, span).ToList();
             Assert.Equal(3, points.Count);
             Assert.Equal('o', points[0].GetChar());
             Assert.Equal('o', points[1].GetChar());
@@ -107,7 +107,7 @@ namespace Vim.UnitTest
         {
             Create("foo", "bar");
             var span = _buffer.GetLine(1).Extent;
-            var points = SnapshotSpanUtil.GetPoints(Path.Backward, span).ToList();
+            var points = SnapshotSpanUtil.GetPoints(SearchPath.Backward, span).ToList();
             Assert.Equal(3, points.Count);
             Assert.Equal('r', points[0].GetChar());
             Assert.Equal('a', points[1].GetChar());
@@ -119,7 +119,7 @@ namespace Vim.UnitTest
         {
             Create("foo", "bar");
             var span = new SnapshotSpan(_buffer.CurrentSnapshot, 0, 1);
-            var point = SnapshotSpanUtil.GetPoints(Path.Backward, span).Single();
+            var point = SnapshotSpanUtil.GetPoints(SearchPath.Backward, span).Single();
             Assert.Equal('f', point.GetChar());
         }
 
@@ -128,7 +128,7 @@ namespace Vim.UnitTest
         {
             Create("foo", "bar");
             var span = new SnapshotSpan(_buffer.CurrentSnapshot, 0, 2);
-            var points = SnapshotSpanUtil.GetPoints(Path.Backward, span).Select(x => x.GetChar()).ToList();
+            var points = SnapshotSpanUtil.GetPoints(SearchPath.Backward, span).Select(x => x.GetChar()).ToList();
             Assert.Equal(new char[] { 'o', 'f' }, points);
         }
 
@@ -137,7 +137,7 @@ namespace Vim.UnitTest
         {
             Create("foo", "bar");
             var span = _buffer.GetLine(0).Extent;
-            var points = SnapshotSpanUtil.GetPoints(Path.Backward, span).ToList();
+            var points = SnapshotSpanUtil.GetPoints(SearchPath.Backward, span).ToList();
             Assert.Equal(3, points.Count);
             Assert.Equal('o', points[0].GetChar());
             Assert.Equal('o', points[1].GetChar());
@@ -148,7 +148,7 @@ namespace Vim.UnitTest
         public void GetPoints_Backward6()
         {
             Create("foo bar");
-            var points = SnapshotSpanUtil.GetPoints(Path.Backward, new SnapshotSpan(_buffer.CurrentSnapshot, 0, 0));
+            var points = SnapshotSpanUtil.GetPoints(SearchPath.Backward, new SnapshotSpan(_buffer.CurrentSnapshot, 0, 0));
             Assert.Equal(0, points.Count());
         }
 

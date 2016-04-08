@@ -36,9 +36,18 @@
         <Edition>Pro</Edition>
         <Edition>IntegratedShell</Edition>
       </VisualStudio>
+      <VisualStudio Version="15.0">
+        <Edition>Ultimate</Edition>
+        <Edition>Premium</Edition>
+        <Edition>Pro</Edition>
+        <Edition>Community</Edition>
+        <Edition>Enterprise</Edition>
+        <Edition>IntegratedShell</Edition>
+      </VisualStudio>
       <IsolatedShell Version="6.0">AtmelStudio</IsolatedShell>
       <IsolatedShell Version="6.1">AtmelStudio</IsolatedShell>
       <IsolatedShell Version="6.2">AtmelStudio</IsolatedShell>
+      <IsolatedShell Version="7.0">AtmelStudio</IsolatedShell>
     </SupportedProducts>
     <SupportedFrameworkRuntimeEdition MinVersion="4.0" MaxVersion="5.0" />
   </Identifier>

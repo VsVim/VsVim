@@ -49,8 +49,8 @@ type internal MotionCapture
                 yield ("g$", MotionFlags.CaretMovement, Motion.DisplayLineEnd)
                 yield ("g^", MotionFlags.CaretMovement, Motion.DisplayLineFirstNonBlank)
                 yield ("g_", MotionFlags.CaretMovement, Motion.LastNonBlankOnLine)
-                yield ("g*", MotionFlags.CaretMovement, Motion.NextPartialWord Path.Forward)
-                yield ("g#", MotionFlags.CaretMovement, Motion.NextPartialWord Path.Backward)
+                yield ("g*", MotionFlags.CaretMovement, Motion.NextPartialWord SearchPath.Forward)
+                yield ("g#", MotionFlags.CaretMovement, Motion.NextPartialWord SearchPath.Backward)
                 yield ("g<Home>", MotionFlags.CaretMovement, Motion.DisplayLineStart)
                 yield ("g<End>", MotionFlags.CaretMovement, Motion.DisplayLineEnd)
                 yield ("G", MotionFlags.CaretMovement, Motion.LineOrLastToFirstNonBlank)
@@ -59,6 +59,7 @@ type internal MotionCapture
                 yield ("ib", MotionFlags.TextObject ||| MotionFlags.TextObjectWithAlwaysCharacter, Motion.InnerBlock BlockKind.Paren)
                 yield ("iB", MotionFlags.TextObject ||| MotionFlags.TextObjectWithAlwaysCharacter, Motion.InnerBlock BlockKind.CurlyBracket)
                 yield ("it", MotionFlags.TextObject ||| MotionFlags.TextObjectWithAlwaysCharacter, Motion.TagBlock TagBlockKind.Inner)
+                yield ("ip", MotionFlags.TextObject ||| MotionFlags.TextObjectWithAlwaysCharacter, Motion.InnerParagraph)
                 yield ("iw", MotionFlags.TextObject ||| MotionFlags.TextObjectWithLineToCharacter, Motion.InnerWord WordKind.NormalWord)
                 yield ("iW", MotionFlags.TextObject ||| MotionFlags.TextObjectWithLineToCharacter, Motion.InnerWord WordKind.BigWord)
                 yield ("i\"", MotionFlags.TextObject ||| MotionFlags.TextObjectWithAlwaysCharacter, Motion.QuotedStringContents '"')
@@ -113,17 +114,17 @@ type internal MotionCapture
                 yield ("}", MotionFlags.CaretMovement, Motion.ParagraphForward)
                 yield ("[[", MotionFlags.CaretMovement, Motion.SectionBackwardOrOpenBrace)
                 yield ("[]", MotionFlags.CaretMovement, Motion.SectionBackwardOrCloseBrace)
-                yield ("[(", MotionFlags.CaretMovement, Motion.UnmatchedToken (Path.Backward, UnmatchedTokenKind.Paren))
-                yield ("[{", MotionFlags.CaretMovement, Motion.UnmatchedToken (Path.Backward, UnmatchedTokenKind.CurlyBracket))
+                yield ("[(", MotionFlags.CaretMovement, Motion.UnmatchedToken (SearchPath.Backward, UnmatchedTokenKind.Paren))
+                yield ("[{", MotionFlags.CaretMovement, Motion.UnmatchedToken (SearchPath.Backward, UnmatchedTokenKind.CurlyBracket))
                 yield ("]]", MotionFlags.CaretMovement, Motion.SectionForward)
                 yield ("][", MotionFlags.CaretMovement, Motion.SectionForwardOrCloseBrace)
-                yield ("])", MotionFlags.CaretMovement, Motion.UnmatchedToken (Path.Forward, UnmatchedTokenKind.Paren))
-                yield ("]}", MotionFlags.CaretMovement, Motion.UnmatchedToken (Path.Forward, UnmatchedTokenKind.CurlyBracket))
+                yield ("])", MotionFlags.CaretMovement, Motion.UnmatchedToken (SearchPath.Forward, UnmatchedTokenKind.Paren))
+                yield ("]}", MotionFlags.CaretMovement, Motion.UnmatchedToken (SearchPath.Forward, UnmatchedTokenKind.CurlyBracket))
                 yield (";", MotionFlags.CaretMovement, Motion.RepeatLastCharSearch)
                 yield ("%", MotionFlags.CaretMovement, Motion.MatchingTokenOrDocumentPercent)
                 yield (",", MotionFlags.CaretMovement, Motion.RepeatLastCharSearchOpposite)
-                yield ("*", MotionFlags.CaretMovement, Motion.NextWord Path.Forward)
-                yield ("#", MotionFlags.CaretMovement, Motion.NextWord Path.Backward)
+                yield ("*", MotionFlags.CaretMovement, Motion.NextWord SearchPath.Forward)
+                yield ("#", MotionFlags.CaretMovement, Motion.NextWord SearchPath.Backward)
             } 
             
         motionSeq 
@@ -174,19 +175,19 @@ type internal MotionCapture
                 yield (
                     "f", 
                     MotionFlags.CaretMovement,
-                    GetChar (fun c -> Motion.CharSearch (CharSearchKind.ToChar, Path.Forward, c)))
+                    GetChar (fun c -> Motion.CharSearch (CharSearchKind.ToChar, SearchPath.Forward, c)))
                 yield (
                     "t", 
                     MotionFlags.CaretMovement,
-                    GetChar (fun c -> Motion.CharSearch (CharSearchKind.TillChar, Path.Forward, c)))
+                    GetChar (fun c -> Motion.CharSearch (CharSearchKind.TillChar, SearchPath.Forward, c)))
                 yield (
                     "F", 
                     MotionFlags.CaretMovement,
-                    GetChar (fun c -> Motion.CharSearch (CharSearchKind.ToChar, Path.Backward, c)))
+                    GetChar (fun c -> Motion.CharSearch (CharSearchKind.ToChar, SearchPath.Backward, c)))
                 yield (
                     "T", 
                     MotionFlags.CaretMovement,
-                    GetChar (fun c -> Motion.CharSearch (CharSearchKind.TillChar, Path.Backward, c)))
+                    GetChar (fun c -> Motion.CharSearch (CharSearchKind.TillChar, SearchPath.Backward, c)))
                 yield (
                     "'",
                     MotionFlags.None,   // Cursor movement has different semantics than the motion
@@ -198,11 +199,11 @@ type internal MotionCapture
                 yield (
                     "/",
                     MotionFlags.CaretMovement ||| MotionFlags.HandlesEscape,
-                    IncrementalSearch Path.Forward)
+                    IncrementalSearch SearchPath.Forward)
                 yield (
                     "?",
                     MotionFlags.CaretMovement ||| MotionFlags.HandlesEscape,
-                    IncrementalSearch Path.Backward)
+                    IncrementalSearch SearchPath.Backward)
             } 
         motionSeq
         |> Seq.map (fun (str, flags, bindDataStorage) -> 

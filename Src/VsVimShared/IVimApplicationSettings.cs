@@ -70,6 +70,11 @@ namespace Vim.VisualStudio
         bool UseEditorCommandMargin { get; set; }
 
         /// <summary>
+        /// Do we keep macro recording clean by disabling intellisense, auto formatting, etc ... 
+        /// </summary>
+        bool CleanMacros { get; set; }
+
+        /// <summary>
         /// Controls how vimrc files are loaded
         /// </summary>
         VimRcLoadSetting VimRcLoadSetting { get; set; }

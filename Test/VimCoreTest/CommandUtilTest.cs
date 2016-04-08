@@ -498,8 +498,8 @@ namespace Vim.UnitTest
             public void GoToNextTab_ForwardNoCount()
             {
                 Create("");
-                _commonOperations.Setup(x => x.GoToNextTab(Path.Forward, 1)).Verifiable();
-                _commandUtil.GoToNextTab(Path.Forward, FSharpOption<int>.None);
+                _commonOperations.Setup(x => x.GoToNextTab(SearchPath.Forward, 1)).Verifiable();
+                _commandUtil.GoToNextTab(SearchPath.Forward, FSharpOption<int>.None);
                 _commonOperations.Verify();
             }
 
@@ -507,8 +507,8 @@ namespace Vim.UnitTest
             public void GoToNextTab_BackwardNoCount()
             {
                 Create("");
-                _commonOperations.Setup(x => x.GoToNextTab(Path.Backward, 1)).Verifiable();
-                _commandUtil.GoToNextTab(Path.Backward, FSharpOption<int>.None);
+                _commonOperations.Setup(x => x.GoToNextTab(SearchPath.Backward, 1)).Verifiable();
+                _commandUtil.GoToNextTab(SearchPath.Backward, FSharpOption<int>.None);
                 _commonOperations.Verify();
             }
 
@@ -517,7 +517,7 @@ namespace Vim.UnitTest
             {
                 Create("");
                 _commonOperations.Setup(x => x.GoToTab(2)).Verifiable();
-                _commandUtil.GoToNextTab(Path.Forward, FSharpOption.Create(2));
+                _commandUtil.GoToNextTab(SearchPath.Forward, FSharpOption.Create(2));
                 _commonOperations.Verify();
             }
 

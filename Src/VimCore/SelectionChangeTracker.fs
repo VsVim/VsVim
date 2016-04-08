@@ -87,7 +87,7 @@ type internal SelectionChangeTracker
     /// adjusting the screen to account for 'scrolloff'
     member x.OnPositionChanged() = 
         if not _vimBuffer.IsProcessingInput then
-            _commonOperations.EnsureAtCaret ViewFlags.ScrollOffset
+            _commonOperations.EnsureAtCaret (ViewFlags.ScrollOffset ||| ViewFlags.VirtualEdit)
 
     member x.OnBufferClosed() = 
         _bag.DisposeAll()
@@ -213,7 +213,7 @@ type internal SelectionChangeTracker
             | Some textViewLines, Some wpfPoint ->
                 let x = wpfPoint.X
                 let y = wpfPoint.Y
-                let textViewLine = textViewLines.GetTextViewLineContainingYCoordinate y
+                let textViewLine = textViewLines.GetTextViewLineContainingYCoordinate (y + _textView.ViewportTop)
                 if textViewLine <> null then
                     let point = textViewLine.GetBufferPositionFromXCoordinate x 
                     VimTrace.TraceInfo("Caret {0} Point = {1}", x, if point.HasValue then point.Value.GetChar() else ' ')

@@ -368,7 +368,7 @@ namespace Vim.UnitTest
             public void UpdateLastSearch()
             {
                 Create("cat", "dog", "cattle");
-                _vimBuffer.VimData.LastSearchData = new SearchData("cat", Path.Forward);
+                _vimBuffer.VimData.LastSearchData = new SearchData("cat", SearchPath.Forward);
                 _vimBuffer.ProcessNotation(":g/cat/echo", enter: true);
                 Assert.Equal("cat", _vimBuffer.VimData.LastSearchData.Pattern);
             }
@@ -377,7 +377,7 @@ namespace Vim.UnitTest
             public void SpaceDoesntUseLastSearch()
             {
                 Create("cat", "dog", "cattle", "big dog");
-                _vimBuffer.VimData.LastSearchData = new SearchData("cat", Path.Forward);
+                _vimBuffer.VimData.LastSearchData = new SearchData("cat", SearchPath.Forward);
                 _vimBuffer.ProcessNotation(":g/ /d", enter: true);
                 Assert.Equal(new[] { "cat", "dog", "cattle" }, _vimBuffer.TextBuffer.GetLines());
             }
@@ -389,7 +389,7 @@ namespace Vim.UnitTest
             public void Issue1626()
             {
                 Create("cat", "dog", "cattle");
-                _vimBuffer.VimData.LastSearchData = new SearchData("cat", Path.Forward);
+                _vimBuffer.VimData.LastSearchData = new SearchData("cat", SearchPath.Forward);
                 _vimBuffer.ProcessNotation(":g//d", enter: true);
                 Assert.Equal(new[] { "dog" }, _vimBuffer.TextBuffer.GetLines());
             }
@@ -578,6 +578,22 @@ namespace Vim.UnitTest
                 Assert.Equal(_textBuffer.GetLine(1).GetText(), "bear");
                 Assert.Equal(_textBuffer.GetLine(2).GetText(), "cat");
             }
+
+
+            /// <summary>
+            /// Specifying "line 0" should move to before the first line.
+            /// </summary>
+            [Fact]
+            public void MoveToBeforeFirstLineInFile() {
+                Create("cat", "dog", "bear");
+
+                _textView.MoveCaretToLine(2);
+                RunCommand("m0");
+
+                Assert.Equal(_textBuffer.GetLine(0).GetText(), "bear");
+                Assert.Equal(_textBuffer.GetLine(1).GetText(), "cat");
+                Assert.Equal(_textBuffer.GetLine(2).GetText(), "dog");
+            }
         }
 
         public sealed class PasteTest : CommandModeIntegrationTest
@@ -601,6 +617,36 @@ namespace Vim.UnitTest
                 _vimBuffer.ProcessNotation("c");
                 Assert.Equal("htest", _commandMode.Command);
                 Assert.False(_commandMode.InPasteWait);
+            }
+
+            [Fact]
+            public void InsertWordUnderCursor()
+            {
+                // :help c_CTRL-R_CTRL-W
+                Create("dog-bark", "cat-meow", "bear-growl");
+                _textView.MoveCaretToLine(1);
+                var initialCaret = _textView.Caret;
+                var initialSelection = _textView.Selection;
+                _vimBuffer.ProcessNotation(":<C-r><C-w>");
+                Assert.Equal("cat", _commandMode.Command);
+                Assert.False(_commandMode.InPasteWait);
+                Assert.Equal(initialCaret, _textView.Caret);
+                Assert.Equal(initialSelection, _textView.Selection);
+            }
+
+            [Fact]
+            public void InsertAllWordUnderCursor()
+            {
+                // :help c_CTRL-R_CTRL-A
+                Create("dog-bark", "cat-meow", "bear-growl");
+                _textView.MoveCaretToLine(1);
+                var initialCaret = _textView.Caret;
+                var initialSelection = _textView.Selection;
+                _vimBuffer.ProcessNotation(":<C-r><C-a>");
+                Assert.Equal("cat-meow", _commandMode.Command);
+                Assert.False(_commandMode.InPasteWait);
+                Assert.Equal(initialCaret, _textView.Caret);
+                Assert.Equal(initialSelection, _textView.Selection);
             }
         }
 
