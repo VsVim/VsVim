@@ -3486,7 +3486,7 @@ type IMacroRecorder =
 
     /// Start recording a macro into the specified Register.  Will fail if the recorder
     /// is already recording
-    abstract StartRecording : Register -> isAppend : bool -> unit
+    abstract StartRecording : register : Register -> isAppend : bool -> unit
 
     /// Stop recording a macro.  Will fail if it's not actually recording
     abstract StopRecording : unit -> unit
