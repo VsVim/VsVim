@@ -5,6 +5,7 @@ open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Operations
 open Microsoft.VisualStudio.Text.Editor
 open System.ComponentModel.Composition
+open System.Collections.Generic
 open StringBuilderExtensions
 open Vim
 open Vim.Interpreter
@@ -28,19 +29,53 @@ type internal AutoCommandRunner
         |> Observable.add this.OnActiveTextViewChanged
 
     /// Create the Regex for the specified pattern.  The allowed items are specified in ':help autocmd-patterns'
-    static let CreateFilePatternRegex (pattern : string) = 
+    static let CreateFilePatternRegex (pattern : string) =
+        let isFileChar c =
+            System.Char.IsLetterOrDigit c &&
+            System.IO.Path.GetInvalidFileNameChars() |> Array.forall(fun i -> i <> c)
         let builder = System.Text.StringBuilder()
-        let mutable i = 0 
-        while i < pattern.Length do 
+        let mutable i = 0
+        let mutable nested = 0
+        while i < pattern.Length do
             match pattern.[i] with
             | '*' -> builder.AppendString ".*"
             | '.' -> builder.AppendString "\."
+            | '?' -> builder.AppendChar '.'
+            | '/' -> builder.AppendString "[\\/]"
             | '\\' ->
                 if i + 1 < pattern.Length then
-                    builder.AppendChar pattern.[i + 1]
-                    i <- i + 1
+                    let p = pattern.[i]
+                    let p1 = pattern.[i + 1]
+                    if p1 = '(' || p1 = ')' || p1 = '|' then
+                        builder.AppendChar p1
+                        i <- i + 1
+                    elif p1 = '?' then
+                        builder.AppendChar p
+                        builder.AppendChar p1
+                        i <- i + 1
+                    elif p1 = ',' || p1 = '}' || p1 = '{' || p1 = '%' || p1 = '#' then
+                        builder.AppendChar p1
+                        i <- i + 1
+                    elif p1 = '\\' && i + 2 <= pattern.Length && pattern.[i + 2] = '{' then
+                        builder.AppendChar '{'
+                        i <- i + 2
+                    elif p1 <> '+' && (isFileChar p1 || p1 = '*' || p1 = '?') then
+                        builder.AppendString "[\\/]"
+                    else
+                        builder.AppendChar p
+                        builder.AppendChar p1
+                        i <- i + 1
                 else
                     builder.AppendChar '\\'
+            | '{' ->
+                builder.AppendChar '('
+                nested <- nested + 1
+            | '}' ->
+                builder.AppendChar ')'
+                nested <- nested - 1
+            | ',' ->
+                if nested > 0 then builder.AppendChar '|'
+                else builder.AppendChar ','
             | _ ->
                 builder.AppendChar pattern.[i]
             i <- i + 1
@@ -50,12 +85,40 @@ type internal AutoCommandRunner
         let bclPattern = builder.ToString()
         VimRegexFactory.CreateBcl bclPattern RegexOptions.None
 
-    static let FileNameEndsWithPattern fileName pattern = 
+    static let splitPattern (pattern:string) =
+        let builder = System.Text.StringBuilder()
+        let mutable i = 0
+        let mutable nested = 0
+        let xs = List<string>()
+        while i < pattern.Length do
+            match pattern.[i] with
+            | '{' ->
+                builder.AppendChar '{'
+                nested <- nested + 1
+            | '}' ->
+                builder.AppendChar '}'
+                nested <- nested - 1
+            | ',' ->
+                if nested > 0 then builder.AppendChar ','
+                else
+                    xs.Add(builder.ToString())
+                    builder.Clear() |> ignore
+            | _ as x ->
+                builder.AppendChar x
+            i <- i + 1
+        xs.Add(builder.ToString())
+        xs
+
+    static let FileNameEndsWithPattern (fileName:string) pattern =
         try
-            let regex = CreateFilePatternRegex pattern
-            match regex with 
-            | None -> false
-            | Some regex -> regex.IsMatch fileName
+            let isMatch p =
+                let regex = CreateFilePatternRegex p
+                match regex with
+                | None -> false
+                | Some regex -> regex.IsMatch (fileName.Replace("\\","/"))
+
+            splitPattern pattern
+            |> Seq.exists isMatch
         with
             _ -> false
 
