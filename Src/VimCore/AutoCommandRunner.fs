@@ -56,9 +56,9 @@ type internal AutoCommandRunner
                     elif p1 = ',' || p1 = '}' || p1 = '{' || p1 = '%' || p1 = '#' then
                         builder.AppendChar p1
                         i <- i + 1
-                    elif p1 = '\\' && i + 2 <= pattern.Length && pattern.[i + 2] = '{' then
+                    elif p1 = '\\' && i + 3 <= pattern.Length && pattern.[i + 2] = '\\' && pattern.[i + 3] = '{' then
                         builder.AppendChar '{'
-                        i <- i + 2
+                        i <- i + 3
                     elif p1 <> '+' && (isFileChar p1 || p1 = '*' || p1 = '?') then
                         builder.AppendString "[\\/]"
                     else

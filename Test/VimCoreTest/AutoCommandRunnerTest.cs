@@ -118,6 +118,7 @@ namespace Vim.UnitTest
                 AssertMatch("{", @"\{");
                 AssertMatch("a", @"[az]");
                 AssertMatch("b", @"[^az]");
+                AssertMatch("aBc42", @"[a-zA-Z0-9]\\\{5,6\}");
             }
 
             [Fact]
