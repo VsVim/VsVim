@@ -10,14 +10,16 @@ open System.Text
 type internal FileSystem() =
 
     /// The environment variables considered when loading a .vimrc
-    static let VimRcDirectoryCandidates = ["~"; "$VIM"; "$USERPROFILE"]
+    static let VimRcDirectoryCandidates = ["~"; "~\\vimfiles"; "$VIM"; "$USERPROFILE"]
 
     static let FileNames = 
         [
             (".vsvimrc", VimRcKind.VsVimRc)
             ("_vsvimrc", VimRcKind.VsVimRc)
+            ("vsvimrc", VimRcKind.VsVimRc)
             (".vimrc", VimRcKind.VimRc)
             ("_vimrc", VimRcKind.VimRc)
+            ("vimrc", VimRcKind.VimRc)
         ]
 
     /// Read all of the lines from the given StreamReader.  This will return whether or not 
