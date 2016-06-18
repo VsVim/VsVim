@@ -133,9 +133,11 @@ namespace Vim.VisualStudio
         /// OnGotAggregateFocus.  Once focus is achieved we schedule a background item to then connect to IOleCommandTarget. 
         /// This is very reliable in getting us in front of them.  
         /// 
-        /// Long term we need to find a better solution here 
+        /// Long term we need to find a better solution here. 
+        /// 
+        /// This also applies to other items like HTMLXProjection.
         /// </summary>
-        private void ConnectJavaScriptToOleCommandTarget(IVimBuffer vimBuffer, ITextView textView, IVsTextView vsTextView)
+        private void ConnectToOleCommandTargetDelayed(IVimBuffer vimBuffer, ITextView textView, IVsTextView vsTextView)
         {
             Action connectInBackground = () => _protectedOperations.BeginInvoke(
                 () => ConnectToOleCommandTarget(vimBuffer, textView, vsTextView),
@@ -231,9 +233,9 @@ namespace Vim.VisualStudio
             BeginSettingSynchronization(vimBuffer);
 
             var contentType = textView.TextBuffer.ContentType;
-            if (contentType.IsJavaScript() || contentType.IsResJSON())
+            if (contentType.IsJavaScript() || contentType.IsResJSON() || contentType.IsHTMLXProjection();
             {
-                ConnectJavaScriptToOleCommandTarget(vimBuffer, textView, vsView);
+                ConnectToOleCommandTargetDelayed(vimBuffer, textView, vsView);
             }
             else
             {
