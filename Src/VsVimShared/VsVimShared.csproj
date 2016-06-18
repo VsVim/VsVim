@@ -77,6 +77,7 @@
     <Compile Include="CommandKeyBindingSnapshot.cs" />
     <Compile Include="CommandListSnapshot.cs" />
     <Compile Include="Constants.cs" />
+    <Compile Include="DebugUtil.cs" />
     <Compile Include="EditCommand.cs" />
     <Compile Include="EditCommandKind.cs" />
     <Compile Include="Extensions.cs" />
