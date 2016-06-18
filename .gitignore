@@ -12,6 +12,7 @@
 *.ncb 
 *.swp 
 *.snk 
+*.sdf
 *.pdb 
 *.msi 
 *.vspx
