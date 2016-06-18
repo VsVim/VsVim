@@ -19,8 +19,8 @@ namespace Vim.VisualStudio
     [TextViewRole(PredefinedTextViewRoles.Editable)]
     internal sealed class DebugUtil : IWpfTextViewCreationListener
     {
+        private readonly object _trackedKey = new object();
         private readonly ICompletionBroker _completionBroker;
-        private readonly HashSet<ICompletionSession> _trackedSessions = new HashSet<ICompletionSession>();
         private readonly HashSet<IWpfTextView> _trackedTextViews = new HashSet<IWpfTextView>();
 
         [ImportingConstructor]
@@ -36,47 +36,21 @@ namespace Vim.VisualStudio
                 return;
             }
 
-            EventHandler<TextContentChangedEventArgs> textViewChanged = delegate { OnTextViewChanged(textView); };
-            EventHandler textViewClosed = null;
-
-            textViewClosed = delegate
-            {
-                textView.Closed -= textViewClosed;
-                textView.TextBuffer.Changed -= textViewChanged;
-                _trackedTextViews.Remove(textView);
-            };
-
-            textView.TextBuffer.Changed += textViewChanged;
-            textView.Closed += textViewClosed;
+            textView.TextBuffer.Changed += delegate { OnTextViewChanged(textView); };
+            textView.Closed += delegate { _trackedTextViews.Remove(textView); };
         }
 
         private void OnTextViewChanged(IWpfTextView textView)
         {
             foreach (var session in _completionBroker.GetSessions(textView))
             {
-                if (!_trackedSessions.Add(session))
+                if (session.Properties.ContainsProperty(_trackedKey))
                 {
                     continue;
                 }
 
-                EventHandler dismissed = null;
-                EventHandler committed = null;
-
-                committed = delegate
-                {
-                    _trackedSessions.Remove(session);
-                    session.Dismissed -= dismissed;
-                    session.Committed -= committed;
-                };
-                
-                dismissed = delegate 
-                {
-                    OnCompletionSessionDismissed(session);
-                    committed(this, EventArgs.Empty);
-                };
-
-                session.Dismissed += dismissed;
-                session.Committed += committed;
+                session.Properties.AddProperty(_trackedKey, null);
+                session.Dismissed += delegate { OnCompletionSessionDismissed(session); };
             }
         }
 
