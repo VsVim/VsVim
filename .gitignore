@@ -18,6 +18,7 @@
 *.vspx
 *.mdf
 *.ldf
+*.opendb
 Thumbs.db
 
 # Project Files
