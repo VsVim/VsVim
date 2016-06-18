@@ -233,7 +233,7 @@ namespace Vim.VisualStudio
             BeginSettingSynchronization(vimBuffer);
 
             var contentType = textView.TextBuffer.ContentType;
-            if (contentType.IsJavaScript() || contentType.IsResJSON() || contentType.IsHTMLXProjection();
+            if (contentType.IsJavaScript() || contentType.IsResJSON() || contentType.IsHTMLXProjection())
             {
                 ConnectToOleCommandTargetDelayed(vimBuffer, textView, vsView);
             }

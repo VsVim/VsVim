@@ -43,6 +43,7 @@ namespace Vim.VisualStudio
             {
                 textView.Closed -= textViewClosed;
                 textView.TextBuffer.Changed -= textViewChanged;
+                _trackedTextViews.Remove(textView);
             };
 
             textView.TextBuffer.Changed += textViewChanged;
