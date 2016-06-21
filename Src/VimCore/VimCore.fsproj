@@ -12,7 +12,6 @@
     <AssemblyName>Vim.Core</AssemblyName>
     <FileAlignment>512</FileAlignment>
     <Name>VimCore</Name>
-    <RestorePackages>true</RestorePackages>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\..\</SolutionDir>
     <OtherFlags>--standalone</OtherFlags>
@@ -52,7 +51,6 @@
     </Otherwise>
   </Choose>
   <Import Project="$(FSharpTargetsPath)" />
-  <Import Project="$(SolutionDir)\.nuget\nuget.targets" />
   <ItemGroup>
     <Compile Include="Resources.fs" />
     <Compile Include="Constants.fs" />
