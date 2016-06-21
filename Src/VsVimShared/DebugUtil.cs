@@ -36,6 +36,7 @@ namespace Vim.VisualStudio
                 return;
             }
 
+            textView.Selection.SelectionChanged += delegate { OnSelectionChanged(textView); };
             textView.TextBuffer.Changed += delegate { OnTextViewChanged(textView); };
             textView.Closed += delegate { _trackedTextViews.Remove(textView); };
         }
@@ -52,6 +53,11 @@ namespace Vim.VisualStudio
                 session.Properties.AddProperty(_trackedKey, null);
                 session.Dismissed += delegate { OnCompletionSessionDismissed(session); };
             }
+        }
+
+        private void OnSelectionChanged(IWpfTextView textView)
+        {
+
         }
 
         private void OnCompletionSessionDismissed(ICompletionSession session)
