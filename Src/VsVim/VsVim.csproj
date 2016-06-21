@@ -234,24 +234,4 @@
   <Target Name="BeforeBuild">
   </Target>
         -->
-  <Target Name="BeforeBuild">
-    <!-- 
-        When building on a machin ewithout the 4.5 framework installed the 2012 and 2013 components
-        won't build.  This in turn causes the MsBuild task to create the VSIX to fail.  Work around 
-        this by just creating dummy files.  This only happens on a machine with 2010 installed.  The
-        work around is to allow for smooth development there 
-
-       -->
-    <PropertyGroup>
-      <Vim2012FilePath>..\VsSpecific\Vs2012\obj\$(Configuration)\Vim.VisualStudio.Vs2012</Vim2012FilePath>
-      <Vim2013FilePath>..\VsSpecific\Vs2013\obj\$(Configuration)\Vim.VisualStudio.Vs2013</Vim2013FilePath>
-      <Vim2015FilePath>..\VsSpecific\Vs2015\obj\$(Configuration)\Vim.VisualStudio.Vs2015</Vim2015FilePath>
-    </PropertyGroup>
-    <WriteLinesToFile File="$(Vim2012FilePath).dll" Condition="!Exists('$(Vim2012FilePath).dll') And !Exists('..\VsSpecific\Vs2012\obj\$(Configuration)')" Lines="Dummy file contents" />
-    <WriteLinesToFile File="$(Vim2012FilePath).pdb" Condition="!Exists('$(Vim2012FilePath).pdb') And !Exists('..\VsSpecific\Vs2012\obj\$(Configuration)')" Lines="Dummy file contents" />
-    <WriteLinesToFile File="$(Vim2013FilePath).dll" Condition="!Exists('$(Vim2013FilePath).dll') And !Exists('..\VsSpecific\Vs2013\obj\$(Configuration)')" Lines="Dummy file contents" />
-    <WriteLinesToFile File="$(Vim2013FilePath).pdb" Condition="!Exists('$(Vim2013FilePath).pdb') And !Exists('..\VsSpecific\Vs2013\obj\$(Configuration)')" Lines="Dummy file contents" />
-    <WriteLinesToFile File="$(Vim2015FilePath).dll" Condition="!Exists('$(Vim2015FilePath).dll') And !Exists('..\VsSpecific\Vs2015\obj\$(Configuration)')" Lines="Dummy file contents" />
-    <WriteLinesToFile File="$(Vim2015FilePath).pdb" Condition="!Exists('$(Vim2015FilePath).pdb') And !Exists('..\VsSpecific\Vs2015\obj\$(Configuration)')" Lines="Dummy file contents" />
-  </Target>
 </Project>
