@@ -10,6 +10,7 @@ install:
 
 before_build: 
   # Updates the version number in the .vsixmanifest and updates the AppVeyor build number to match
+  - nuget restore
   - ps: Vsix-IncrementVsixVersion | Vsix-UpdateBuildVersion
 
 build:
