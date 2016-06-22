@@ -86,7 +86,10 @@ type internal SelectionChangeTracker
     /// If the caret changes position and it wasn't initiated by VsVim then we should be 
     /// adjusting the screen to account for 'scrolloff'
     member x.OnPositionChanged() = 
-        if not _vimBuffer.IsProcessingInput && _vimBuffer.ModeKind <> ModeKind.ExternalEdit && _vimBuffer.ModeKind <> ModeKind.Disabled then
+        // Don't update the caret if a selection is occuring.  This could be a user double clicking, 
+        // dragging, etc ...  Don't want to update the caret in that case, let the mode change handle
+        // that.
+        if not _vimBuffer.IsProcessingInput && _vimBuffer.ModeKind <> ModeKind.ExternalEdit && _vimBuffer.ModeKind <> ModeKind.Disabled && _textView.Selection.StreamSelectionSpan.Length <= 1 then
             _commonOperations.EnsureAtCaret (ViewFlags.ScrollOffset ||| ViewFlags.VirtualEdit)
 
     member x.OnBufferClosed() = 

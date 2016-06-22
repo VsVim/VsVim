@@ -55,9 +55,16 @@ namespace Vim.VisualStudio
             }
         }
 
-        private void OnSelectionChanged(IWpfTextView textView)
+        private void Use<T>(T p)
         {
 
+        }
+
+        private void OnSelectionChanged(IWpfTextView textView)
+        {
+            var span = textView.Selection.StreamSelectionSpan;
+            var text = span.GetText();
+            Use(text);
         }
 
         private void OnCompletionSessionDismissed(ICompletionSession session)
