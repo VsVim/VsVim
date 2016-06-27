@@ -7,6 +7,7 @@ using Vim.Extensions;
 using Xunit.Extensions;
 using Microsoft.FSharp.Core;
 using Vim.UnitTest.Mock;
+using EditorUtils;
 
 namespace Vim.UnitTest
 {
@@ -95,6 +96,24 @@ namespace Vim.UnitTest
                 var vimBuffer = CreateVimBuffer("hello world");
                 vimBuffer.ProcessNotation("3i<Esc>");
                 vimBuffer.Close();
+            }
+
+            /// <summary>
+            /// Make sure external selection events that include end of line function even if VE
+            /// prevents it. 
+            /// </summary>
+            [Fact]
+            public void EndOfLineSelection()
+            {
+                var vimBuffer = CreateVimBuffer("cat", "dog", "tree");
+                vimBuffer.GlobalSettings.VirtualEdit = "";
+                var textBuffer = vimBuffer.TextBuffer;
+                var textSnapshot = textBuffer.CurrentSnapshot;
+                var selection = vimBuffer.TextView.Selection;
+                var span = textBuffer.GetLineRange(0);
+                selection.Select(span.ExtentIncludingLineBreak);
+                Assert.Equal(span.ExtentIncludingLineBreak, selection.StreamSelectionSpan.SnapshotSpan);
+                Assert.Equal(textSnapshot.Version.VersionNumber, textBuffer.CurrentSnapshot.Version.VersionNumber);
             }
         }
 
