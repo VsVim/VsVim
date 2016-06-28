@@ -11,5 +11,7 @@ namespace Vim.VisualStudio
         internal const uint DumpKeyboard = 0x101;
         internal const uint ClearTSQLBindings = 0x102;
         internal const uint ToggleEnabled = 0x103;
+        internal const uint SetEnabled = 0x104;
+        internal const uint SetDisabled = 0x105;
     };
 }
