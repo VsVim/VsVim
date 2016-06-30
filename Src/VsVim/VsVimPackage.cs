@@ -163,6 +163,12 @@ namespace Vim.VisualStudio
                     case CommandIds.ToggleEnabled:
                         ToggleEnabled();
                         break;
+                    case CommandIds.SetEnabled:
+                        _vim.IsDisabled = false;
+                        break;
+                    case CommandIds.SetDisabled:
+                        _vim.IsDisabled = true;
+                        break;
                     default:
                         Debug.Assert(false);
                         break;
