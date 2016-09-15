@@ -66,7 +66,7 @@ namespace Vim.UnitTest
                 public void AtEndOfBuffer()
                 {
                     Create("cat");
-                    _textView.MoveCaretTo(3);
+                    _textView.MoveCaretTo(2);
                     _insertUtilRaw.ApplyTextChange(TextChange.NewDeleteRight(4), addNewLines: false);
                     Assert.Equal("ca", _textBuffer.GetLine(0).GetText());
                     Assert.Equal(2, _textView.GetCaretPoint().Position);
@@ -261,7 +261,7 @@ namespace Vim.UnitTest
             {
                 Create("dog bear cat");
                 _globalSettings.Backspace = "start";
-                _textView.MoveCaretTo(12);
+                _textView.MoveCaretTo(11);
                 _insertUtilRaw.DeleteLineBeforeCursor();
                 Assert.Equal("t", _textView.GetLine(0).GetText());
                 Assert.Equal(0, _textView.GetCaretPoint().Position);
@@ -382,12 +382,12 @@ namespace Vim.UnitTest
             {
                 Create("", "dog");
                 _vimBuffer.LocalSettings.ShiftWidth = 4;
-                _textView.MoveCaretTo(0, 8);
+                _textView.MoveCaretTo(0, virtualSpaces: 8);
 
                 _insertUtilRaw.ShiftLineLeft();
 
                 Assert.Equal("    ", _textView.GetLine(0).GetText());
-                Assert.Equal(3, _insertUtilRaw.CaretColumn.Column);
+                Assert.Equal(4, _insertUtilRaw.CaretColumn.Column);
                 Assert.False(_textView.Caret.InVirtualSpace);
                 // probably redundant, but we just want to be sure...
                 Assert.Equal(0, _textView.Caret.Position.VirtualSpaces);
@@ -427,7 +427,7 @@ namespace Vim.UnitTest
                 _insertUtilRaw.ShiftLineRight();
 
                 Assert.Equal("            ", _textView.GetLine(0).GetText());
-                Assert.Equal(11, _insertUtilRaw.CaretColumn.Column);
+                Assert.Equal(12, _insertUtilRaw.CaretColumn.Column);
                 Assert.False(_textView.Caret.InVirtualSpace);
                 // probably redundant, but we just want to be sure...
                 Assert.Equal(0, _textView.Caret.Position.VirtualSpaces);
@@ -443,11 +443,14 @@ namespace Vim.UnitTest
                 Create("    ", "dog");
                 _vimBuffer.LocalSettings.ShiftWidth = 4;
                 _vimBuffer.LocalSettings.ExpandTab = true;
-                _textView.MoveCaretTo(4, 4);
+                _textView.MoveCaretTo(3, virtualSpaces: 4);
 
                 _insertUtilRaw.ShiftLineRight();
 
-                Assert.Equal("        ", _textView.GetLine(0).GetText());
+                var indent = "        ";
+                var text = _textView.GetLine(0).GetText();
+                Assert.Equal(indent.Length, text.Length);
+                Assert.Equal(indent, text);
                 Assert.Equal(8, _insertUtilRaw.CaretColumn.Column);
                 Assert.False(_textView.Caret.InVirtualSpace);
                 // probably redundant, but we just want to be sure...
@@ -464,12 +467,12 @@ namespace Vim.UnitTest
             {
                 Create("", "dog");
                 _vimBuffer.LocalSettings.ShiftWidth = 4;
-                _textView.MoveCaretTo(0, 8);
+                _textView.MoveCaretTo(0, virtualSpaces: 8);
 
                 _insertUtilRaw.ShiftLineRight();
 
                 Assert.Equal("\t    ", _textView.GetLine(0).GetText());
-                Assert.Equal(4, _insertUtilRaw.CaretColumn.Column);
+                Assert.Equal(5, _insertUtilRaw.CaretColumn.Column);
                 Assert.False(_textView.Caret.InVirtualSpace);
                 // probably redundant, but we just want to be sure...
                 Assert.Equal(0, _textView.Caret.Position.VirtualSpaces);

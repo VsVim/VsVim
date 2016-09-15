@@ -2590,7 +2590,7 @@ namespace Vim.UnitTest
                     _localSettings.ExpandTab = true;
                     _vimBuffer.ProcessNotation("<Tab> <Esc>");
                     _textView.MoveCaretTo(0);
-                    _textView.MoveCaretTo(5);
+                    _textView.MoveCaretTo(4);
                     _vimBuffer.ProcessNotation("i<BS><BS>");
                     Assert.Equal(" ", _textBuffer.GetLine(0).GetText());
                 }
