@@ -96,14 +96,17 @@ namespace Vim.UnitTest
             public void GetVimRcDirectories1()
             {
                 // "~" is always valid, even if HOME, etc. are undefined.
-                Assert.Equal(1, _fileSystem.GetVimRcDirectories().Count());
+                // "~\\vimfiles" is always valid, even if HOME, etc. are undefined.
+                Assert.Equal(2, _fileSystem.GetVimRcDirectories().Count());
             }
 
             [Fact]
             public void GetVimRcDirectories2()
             {
                 Environment.SetEnvironmentVariable("HOME", @"c:\temp");
-                Assert.Equal(@"c:\temp", _fileSystem.GetVimRcDirectories().Single());
+                var list = _fileSystem.GetVimRcDirectories().ToList();
+                Assert.Equal(@"c:\temp", list[0]);
+                Assert.Equal(@"c:\temp\vimfiles", list[1]);
             }
 
             [Fact]
@@ -113,8 +116,17 @@ namespace Vim.UnitTest
                 var list = _fileSystemRaw.GetVimRcFilePaths().Select(x => x.FilePath).ToList();
                 Assert.Equal(@"c:\temp\.vsvimrc", list[0]);
                 Assert.Equal(@"c:\temp\_vsvimrc", list[1]);
-                Assert.Equal(@"c:\temp\.vimrc", list[2]);
-                Assert.Equal(@"c:\temp\_vimrc", list[3]);
+                Assert.Equal(@"c:\temp\vsvimrc", list[2]);
+                Assert.Equal(@"c:\temp\.vimrc", list[3]);
+                Assert.Equal(@"c:\temp\_vimrc", list[4]);
+                Assert.Equal(@"c:\temp\vimrc", list[5]);
+                Assert.Equal(@"c:\temp\vimfiles\.vsvimrc", list[6]);
+                Assert.Equal(@"c:\temp\vimfiles\_vsvimrc", list[7]);
+                Assert.Equal(@"c:\temp\vimfiles\vsvimrc", list[8]);
+                Assert.Equal(@"c:\temp\vimfiles\.vimrc", list[9]);
+                Assert.Equal(@"c:\temp\vimfiles\_vimrc", list[10]);
+                Assert.Equal(@"c:\temp\vimfiles\vimrc", list[11]);
+                Assert.Equal(12, list.Count);
             }
 
             /// <summary>
@@ -139,8 +151,10 @@ namespace Vim.UnitTest
                 var list = _fileSystemRaw.GetVimRcFilePaths().Select(x => x.FilePath).ToList();
                 Assert.Equal(@"c:\temp\.vsvimrc", list[0]);
                 Assert.Equal(@"c:\temp\_vsvimrc", list[1]);
-                Assert.Equal(@"c:\temp\.vimrc", list[2]);
-                Assert.Equal(@"c:\temp\_vimrc", list[3]);
+                Assert.Equal(@"c:\temp\vsvimrc", list[2]);
+                Assert.Equal(@"c:\temp\.vimrc", list[3]);
+                Assert.Equal(@"c:\temp\_vimrc", list[4]);
+                Assert.Equal(@"c:\temp\vimrc", list[5]);
             }
         }
     }

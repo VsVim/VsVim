@@ -1392,6 +1392,10 @@ type internal CommandUtil
             match _jumpList.LastJumpLocation with
             | None -> markNotSet()
             | Some point -> jumpLocal point
+        | Mark.LastExitedPosition ->
+            match _vimTextBuffer.Vim.MarkMap.GetMark Mark.LastExitedPosition _vimBufferData with
+            | None -> markNotSet()
+            | Some point -> jumpLocal point
 
     /// Jump to the specified mark
     member x.JumpToMark mark = 

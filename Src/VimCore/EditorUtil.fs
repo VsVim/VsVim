@@ -1501,6 +1501,9 @@ module TextViewUtil =
     let GetCaretPointAndLine textView = (GetCaretPoint textView),(GetCaretLine textView)
 
     /// Get the set of ITextViewLines for the ITextView
+    ///
+    /// Be aware when using GetTextViewLineContainingYCoordinate, may need to add the
+    /// _textView.ViewportTop to the y coordinate
     let GetTextViewLines (textView : ITextView) =
         try
             textView.TextViewLines |> Some

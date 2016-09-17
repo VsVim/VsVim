@@ -8,6 +8,7 @@ using Microsoft.VisualStudio.Text.Editor;
 using Vim.Extensions;
 using Vim.UnitTest.Mock;
 using Xunit;
+using Xunit.Extensions;
 
 namespace Vim.UnitTest
 {
@@ -67,6 +68,22 @@ namespace Vim.UnitTest
         {
             EnterMode(span);
             _vimBuffer.SwitchMode(kind, ModeArgument.None);
+        }
+
+        /// <summary>
+        /// Switches mode, then sets the visual selection. The order is reversed from EnterMode(ModeKind, SnapshotSpan).
+        /// </summary>
+        /// <param name="kind"></param>
+        /// <param name="span"></param>
+        protected void SwitchEnterMode(ModeKind kind, SnapshotSpan span)
+        {
+            _vimBuffer.SwitchMode(kind, ModeArgument.None);
+            var characterSpan = new CharacterSpan(span);
+            var visualSelection = VisualSelection.NewCharacter(characterSpan, SearchPath.Forward);
+            visualSelection.SelectAndMoveCaret(_textView);
+            // skipping check: context.IsEmpty == false
+            _context.RunAll();
+            Assert.True(_context.IsEmpty);
         }
 
         protected void EnterBlock(BlockSpan blockSpan)
@@ -1380,11 +1397,13 @@ namespace Vim.UnitTest
             /// <summary>
             /// When changing a line wise selection one blank line should be left remaining in the ITextBuffer
             /// </summary>
-            [Fact]
-            public void Change_LineWise()
+            [Theory]
+            [PropertyData("VirtualEditOptions")]
+            public void Change_LineWise(string virtualEdit)
             {
                 Create("cat", "  dog", "  bear", "tree");
-                EnterMode(ModeKind.VisualLine, _textView.GetLineRange(1, 2).ExtentIncludingLineBreak);
+                _globalSettings.VirtualEdit = virtualEdit;
+                SwitchEnterMode(ModeKind.VisualLine, _textView.GetLineRange(1, 2).ExtentIncludingLineBreak);
                 _vimBuffer.LocalSettings.AutoIndent = true;
                 _vimBuffer.Process("c");
                 Assert.Equal("cat", _textView.GetLine(0).GetText());
@@ -1456,21 +1475,25 @@ namespace Vim.UnitTest
                 Assert.Equal(new[] { "catdog", "tree" }, _textBuffer.GetLines());
             }
 
-            [Fact]
-            public void Repeat1()
+            [Theory]
+            [PropertyData("VirtualEditOptions")]
+            public void Repeat1(string virtualEdit)
             {
                 Create("dog again", "cat again", "chicken");
-                EnterMode(ModeKind.VisualLine, _textView.GetLineRange(0, 1).ExtentIncludingLineBreak);
+                _globalSettings.VirtualEdit = virtualEdit;
+                SwitchEnterMode(ModeKind.VisualLine, _textView.GetLineRange(0, 1).ExtentIncludingLineBreak);
                 _vimBuffer.LocalSettings.ShiftWidth = 2;
                 _vimBuffer.Process(">.");
                 Assert.Equal("    dog again", _textView.GetLine(0).GetText());
             }
 
-            [Fact]
-            public void Repeat2()
+            [Theory]
+            [PropertyData("VirtualEditOptions")]
+            public void Repeat2(string virtualEdit)
             {
                 Create("dog again", "cat again", "chicken");
-                EnterMode(ModeKind.VisualLine, _textView.GetLineRange(0, 1).ExtentIncludingLineBreak);
+                _globalSettings.VirtualEdit = virtualEdit;
+                SwitchEnterMode(ModeKind.VisualLine, _textView.GetLineRange(0, 1).ExtentIncludingLineBreak);
                 _vimBuffer.LocalSettings.ShiftWidth = 2;
                 _vimBuffer.Process(">..");
                 Assert.Equal("      dog again", _textView.GetLine(0).GetText());
@@ -1642,11 +1665,13 @@ namespace Vim.UnitTest
                 Assert.Equal("c", _textView.GetLine(1).GetText());
             }
 
-            [Fact]
-            public void IncrementalSearch_LineModeShouldSelectFullLine()
+            [Theory]
+            [PropertyData("VirtualEditOptions")]
+            public void IncrementalSearch_LineModeShouldSelectFullLine(string virtualEdit)
             {
                 Create("dog", "cat", "tree");
-                EnterMode(ModeKind.VisualLine, _textView.GetLineRange(0, 1).ExtentIncludingLineBreak);
+                _globalSettings.VirtualEdit = virtualEdit;
+                SwitchEnterMode(ModeKind.VisualLine, _textView.GetLineRange(0, 1).ExtentIncludingLineBreak);
                 _vimBuffer.Process("/c");
                 Assert.Equal(_textView.GetLineRange(0, 1).ExtentIncludingLineBreak, _textView.GetSelectionSpan());
             }
@@ -2689,15 +2714,33 @@ namespace Vim.UnitTest
                 /// maintained for LastVisualSelection.  It should be the selection before the command
                 /// was executed
                 /// </summary>
-                [Fact]
-                public void LastVisualSelection()
+                [Theory]
+                [PropertyData("VirtualEditOptions")]
+                public void LastVisualSelectionWithVeOnemore(string virtualEdit)
                 {
                     Create("cat", "dog", "fish");
                     var span = _textView.GetLineRange(0, 1).ExtentIncludingLineBreak;
-                    EnterMode(ModeKind.VisualLine, span);
+                    _globalSettings.VirtualEdit = virtualEdit;
+                    SwitchEnterMode(ModeKind.VisualLine, span);
                     _vimBuffer.Process('y');
                     Assert.True(_vimTextBuffer.LastVisualSelection.IsSome());
                     Assert.Equal(span, _vimTextBuffer.LastVisualSelection.Value.VisualSpan.EditSpan.OverarchingSpan);
+                }
+
+                [Theory]
+                [PropertyData("VirtualEditOptions")]
+                public void ReselectLastVisual(string virtualEdit)
+                {
+                    Create("cat", "dog", "fish");
+                    _globalSettings.VirtualEdit = virtualEdit;
+                    _vimBuffer.Process("Vj");
+                    var expected = _textView.GetSelectionSpan();
+                    Assert.Equal(10, _textView.Selection.Start.Position.Difference(_textView.Selection.End.Position));
+                    _vimBuffer.Process("y");
+                    Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
+                    _vimBuffer.Process("gv");
+                    Assert.Equal(ModeKind.VisualLine, _vimBuffer.ModeKind);
+                    Assert.Equal(expected, _textView.GetSelectionSpan());
                 }
 
                 /// <summary>

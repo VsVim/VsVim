@@ -171,16 +171,31 @@ module internal SeqUtil =
         | Some h -> h
         | None -> defaultValue
 
-    /// Get the last element in the sequence.  Throws an ArgumentException if 
+    /// Get the last element in the sequence.  Returns the None if
     /// the sequence is empty
-    let last (s:'a seq) = 
+    let tryLast (s:'a seq) =
         use e = s.GetEnumerator()
-        if not (e.MoveNext()) then invalidArg "s" "Sequence must not be empty"
+        if not (e.MoveNext()) then
+            None
+        else
+            let mutable value = e.Current
+            while e.MoveNext() do
+                value <- e.Current
+            Some value
 
-        let mutable value = e.Current
-        while e.MoveNext() do
-            value <- e.Current
-        value
+    /// Get the last element in the sequence.  Throws an ArgumentException if
+    /// the sequence is empty
+    let last (s:'a seq) =
+        match tryLast s with
+        | Some h -> h
+        | None ->  invalidArg "s" "Sequence must not be empty"
+
+    /// Get the last element in the sequence.  Returns the default value if
+    /// the sequence is empty
+    let lastOrDefault defaultValue (s:'a seq) =
+        match tryLast s with
+        | Some h -> h
+        | None -> defaultValue
 
     /// Return if the sequence is not empty
     let isNotEmpty s = not (s |> Seq.isEmpty)

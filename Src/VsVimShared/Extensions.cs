@@ -758,6 +758,11 @@ namespace Vim.VisualStudio
             return contentType.IsOfType("ResJSON");
         }
 
+        public static bool IsHTMLXProjection(this IContentType contentType)
+        {
+            return contentType.IsOfType("HTMLXProjection");
+        }
+
         /// <summary>
         /// Is this IContentType of any of the specified types
         /// </summary>

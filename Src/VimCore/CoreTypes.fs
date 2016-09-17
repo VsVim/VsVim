@@ -312,9 +312,10 @@ type LocalMark =
                 yield LocalMark.Letter letter
             for number in NumberMark.All do
                 yield LocalMark.Number number
+            yield LocalMark.LastInsertExit
+            yield LocalMark.LastEdit
             yield LocalMark.LastSelectionStart
             yield LocalMark.LastSelectionEnd
-            yield LocalMark.LastEdit
         }
 
     static member OfChar c =
@@ -345,6 +346,9 @@ type Mark =
     /// The last jump which is specific to a window
     | LastJump 
 
+    // The position when the current buffer was last exited
+    | LastExitedPosition
+
     with
 
     member x.Char =
@@ -352,15 +356,18 @@ type Mark =
         | LocalMark localMark -> localMark.Char
         | GlobalMark letter -> CharUtil.ToUpper letter.Char
         | LastJump -> '\''
+        | LastExitedPosition -> '"'
 
     static member OfChar c =
         if CharUtil.IsUpper c then 
             c |> CharUtil.ToLower |> Letter.OfChar |> Option.map GlobalMark
         elif c = '\'' || c = '`' then
             Some LastJump
+        elif c = '"' then
+            Some LastExitedPosition
         else
             LocalMark.OfChar c |> Option.map LocalMark
-    
+
 type Direction =
     | Up        = 1
     | Down      = 2

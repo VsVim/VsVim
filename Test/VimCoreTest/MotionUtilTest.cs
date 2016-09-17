@@ -593,7 +593,6 @@ more";
                 Assert.Equal("cat (dog)(blah)(again(deep))", motionResult.Span.GetText());
             }
 
-
             /// <summary>
             /// Single line inner block test should use inner block behavior
             /// </summary>
@@ -647,6 +646,14 @@ more";
                 Create("[ ", "  cat", "  dog ] ");
                 var lines = _motionUtil.InnerBlock(_textBuffer.GetPointInLine(1, 1), BlockKind.Bracket, 1).Value.Span.GetText();
                 Assert.Equal(" " + Environment.NewLine + "  cat" + Environment.NewLine + "  dog ", lines);
+            }
+
+            [Fact]
+            public void DisregardDoubleCommentedMatchType()
+            {
+                Create(@"OutlineFileNameRegex(DuplicateBackslash(L""^OutlineFileName:(.*\\.*\\\\).* $""));");
+                var motion = _motionUtil.InnerBlock(_textBuffer.GetPoint(22), BlockKind.Paren, 1);
+                Assert.Equal(@"DuplicateBackslash(L""^OutlineFileName:(.*\\.*\\\\).* $"")", motion.Value.Span.GetText());
             }
         }
 
@@ -1267,6 +1274,139 @@ more";
                     _textBuffer.GetPointInLine(line: 1, column: 1));
                 Assert.Equal(span, data.Span);
                 Assert.Equal(MotionKind.CharacterWiseInclusive, data.MotionKind);
+            }
+        }
+
+        public sealed class InnerParagraph : MotionUtilTest
+        {
+            [Fact]
+            public void Empty()
+            {
+                Create("");
+                var span = _motionUtil.InnerParagraph(1).Value.Span;
+                Assert.Equal(_snapshot.GetLineRange(0).ExtentIncludingLineBreak, span);
+            }
+
+            [Fact]
+            public void OneLiner()
+            {
+                Create("a");
+                var span = _motionUtil.InnerParagraph(1).Value.Span;
+                Assert.Equal(_snapshot.GetLineRange(0).ExtentIncludingLineBreak, span);
+            }
+
+            [Fact]
+            public void SelectConsecutiveFilledLinesUntilEnd()
+            {
+                Create("a", "b", "c");
+                var span = _motionUtil.InnerParagraph(1).Value.Span;
+                Assert.Equal(_snapshot.GetLineRange(0, 2).ExtentIncludingLineBreak, span);
+            }
+
+            [Fact]
+            public void SelectConsecutiveCount2FilledLinesUntilEndIsInvalid()
+            {
+                Create("a", "b", "c");
+                Assert.True(_motionUtil.InnerParagraph(2).IsNone());
+            }
+
+            [Fact]
+            public void SelectConsecutiveFilledLinesUntilBlank()
+            {
+                Create("a", "b", "");
+                var span = _motionUtil.InnerParagraph(1).Value.Span;
+                Assert.Equal(_snapshot.GetLineRange(0, 1).ExtentIncludingLineBreak, span);
+            }
+
+            [Fact]
+            public void SelectConsecutiveFilledLinesUntilBlankFromMiddle()
+            {
+                Create("a", "b", "");
+                _textView.MoveCaretToLine(1);
+                var span = _motionUtil.InnerParagraph(1).Value.Span;
+                Assert.Equal(_snapshot.GetLineRange(0, 1).ExtentIncludingLineBreak, span);
+            }
+
+            [Fact]
+            public void StartingAfterFirstBlockSelectFilledLinesUntilEnd()
+            {
+                Create("a", "b", "", "c", "d", "e");
+                _textView.MoveCaretToLine(4);
+                var span = _motionUtil.InnerParagraph(1).Value.Span;
+                Assert.Equal(_snapshot.GetLineRange(3, 5).ExtentIncludingLineBreak, span);
+            }
+
+            [Fact]
+            public void StartingAfterFirstBlockSelectFilledLinesUntilBlankFromMiddle()
+            {
+                Create("a", "b", "", "c", "d", "e", " ");
+                _textView.MoveCaretToLine(4);
+                var span = _motionUtil.InnerParagraph(1).Value.Span;
+                Assert.Equal(_snapshot.GetLineRange(3, 5).ExtentIncludingLineBreak, span);
+            }
+
+            [Fact]
+            public void SelectConsecutiveFilledLinesUntilBlankOrWhitespace()
+            {
+                Create("a", " ", "");
+                var span = _motionUtil.InnerParagraph(1).Value.Span;
+                Assert.Equal(_snapshot.GetLineRange(0).ExtentIncludingLineBreak, span);
+            }
+
+            [Fact]
+            public void SelectConsecutiveBlankLinesUntilFilled()
+            {
+                Create("", "", "a");
+                var span = _motionUtil.InnerParagraph(1).Value.Span;
+                Assert.Equal(_snapshot.GetLineRange(0, 1).ExtentIncludingLineBreak, span);
+            }
+
+            [Fact]
+            public void SelectConsecutiveBlankLinesUntilFilledFromMiddle()
+            {
+                Create("", "", "a");
+                _textView.MoveCaretToLine(1);
+                var span = _motionUtil.InnerParagraph(1).Value.Span;
+                Assert.Equal(_snapshot.GetLineRange(0, 1).ExtentIncludingLineBreak, span);
+            }
+
+            [Fact]
+            public void SelectConsecutiveBlankLinesOrWhitespaceUntilFilled()
+            {
+                Create("", " ", "a");
+                var span = _motionUtil.InnerParagraph(1).Value.Span;
+                Assert.Equal(_snapshot.GetLineRange(0, 1).ExtentIncludingLineBreak, span);
+            }
+
+            [Fact]
+            public void SelectConsecutiveBlankLinesWithWhitespaceOrTab()
+            {
+                Create("", "\t", " ");
+                var span = _motionUtil.InnerParagraph(1).Value.Span;
+                Assert.Equal(_snapshot.GetLineRange(0, 2).ExtentIncludingLineBreak, span);
+            }
+
+            [Fact]
+            public void SelectMultiple()
+            {
+                Create("a", "b", "", "c");
+                var span = _motionUtil.InnerParagraph(2).Value.Span;
+                Assert.Equal(_snapshot.GetLineRange(0, 2).ExtentIncludingLineBreak, span);
+            }
+
+            [Fact]
+            public void SelectMultipleStartingWithBlanks()
+            {
+                Create("", "", "a", "");
+                var span = _motionUtil.InnerParagraph(2).Value.Span;
+                Assert.Equal(_snapshot.GetLineRange(0, 2).ExtentIncludingLineBreak, span);
+            }
+
+            [Fact]
+            public void CountTooHigh()
+            {
+                Create("a", "b", "", "c");
+                Assert.True(_motionUtil.InnerParagraph(5).IsNone());
             }
         }
 

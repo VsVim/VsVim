@@ -1,5 +1,6 @@
 ﻿using System.Linq;
 using Xunit;
+using EditorUtils;
 
 namespace Vim.UnitTest
 {
@@ -155,6 +156,18 @@ namespace Vim.UnitTest
                 Vim.IsDisabled = false;
                 Assert.Equal(ModeKind.Normal, _vimBuffer2.ModeKind);
                 Assert.Equal(ModeKind.Insert, _vimBuffer1.ModeKind);
+            }
+
+            [Fact]
+            public void Issue1791()
+            {
+                _vimBuffer1.TextBuffer.SetText("cat", "dog");
+                _vimBuffer1.SwitchMode(ModeKind.Disabled, ModeArgument.None);
+                _vimBuffer1.TextView.MoveCaretTo(3);
+                Assert.Equal(3, _vimBuffer1.TextView.GetCaretPoint().Position);
+                _vimBuffer1.SwitchMode(ModeKind.Normal, ModeArgument.None);
+                _vimBuffer1.TextView.MoveCaretTo(2);
+                Assert.Equal(2, _vimBuffer1.TextView.GetCaretPoint().Position);
             }
         }
     }

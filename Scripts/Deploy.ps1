@@ -17,7 +17,12 @@ $zip = join-path $rootPath "Tools\7za920\7za.exe"
 function test-vsinstall() { 
     param ([string]$version = $(throw "Need a version"))
 
-    $path = "hklm:\Software\Microsoft\VisualStudio\{0}" -f $version
+    if ([IntPtr].Size -eq 4) {
+        $path = "hklm:\Software\Microsoft\VisualStudio\{0}" -f $version
+    }
+    else {
+        $path = "hklm:\Software\Wow6432Node\Microsoft\VisualStudio\{0}" -f $version
+    }
     $i = get-itemproperty $path InstallDir -ea SilentlyContinue | %{ $_.InstallDir }
     return $i -ne $null
 }
@@ -73,6 +78,13 @@ function test-vsixcontents() {
     foreach ($item in $expected) {
         if (-not ($files -contains $item)) { 
             write-error "Didn't found $item in the zip file ($target)"
+        }
+
+        # Look for dummy files that made it into the VSIX instead of the 
+        # actual DLL 
+        $itemPath = join-path $target $item
+        if ($item.EndsWith("dll") -and ((get-item $itemPath).Length -lt 5kb)) {
+            write-error "Small file detected $item in the zip file ($target)"
         }
     }
 }

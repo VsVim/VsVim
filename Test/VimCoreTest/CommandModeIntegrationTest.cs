@@ -618,6 +618,36 @@ namespace Vim.UnitTest
                 Assert.Equal("htest", _commandMode.Command);
                 Assert.False(_commandMode.InPasteWait);
             }
+
+            [Fact]
+            public void InsertWordUnderCursor()
+            {
+                // :help c_CTRL-R_CTRL-W
+                Create("dog-bark", "cat-meow", "bear-growl");
+                _textView.MoveCaretToLine(1);
+                var initialCaret = _textView.Caret;
+                var initialSelection = _textView.Selection;
+                _vimBuffer.ProcessNotation(":<C-r><C-w>");
+                Assert.Equal("cat", _commandMode.Command);
+                Assert.False(_commandMode.InPasteWait);
+                Assert.Equal(initialCaret, _textView.Caret);
+                Assert.Equal(initialSelection, _textView.Selection);
+            }
+
+            [Fact]
+            public void InsertAllWordUnderCursor()
+            {
+                // :help c_CTRL-R_CTRL-A
+                Create("dog-bark", "cat-meow", "bear-growl");
+                _textView.MoveCaretToLine(1);
+                var initialCaret = _textView.Caret;
+                var initialSelection = _textView.Selection;
+                _vimBuffer.ProcessNotation(":<C-r><C-a>");
+                Assert.Equal("cat-meow", _commandMode.Command);
+                Assert.False(_commandMode.InPasteWait);
+                Assert.Equal(initialCaret, _textView.Caret);
+                Assert.Equal(initialSelection, _textView.Selection);
+            }
         }
 
         public abstract class SubstituteTest : CommandModeIntegrationTest

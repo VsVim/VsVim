@@ -175,6 +175,9 @@ type ActiveEditItem =
     /// be passed along to the final Paste operation
     | PasteSpecial of PasteFlags
 
+    /// In Replace mode, will overwrite using the selected Register
+    | OverwriteReplace
+
     /// No active items
     | None
 
@@ -710,6 +713,7 @@ type internal InsertMode
     /// that can be done now
     member x.Paste (keyInput : KeyInput) (flags : PasteFlags) = 
 
+        let isOverwrite = _sessionData.ActiveEditItem = ActiveEditItem.OverwriteReplace
         _sessionData <- { _sessionData with ActiveEditItem = ActiveEditItem.None }
 
         if keyInput = KeyInputUtil.EscapeKey then
@@ -737,7 +741,7 @@ type internal InsertMode
                     EditUtil.NormalizeNewLines text newLine
 
                 let keyInputSet = KeyInputSet.OneKeyInput keyInput
-                let insertCommand = InsertCommand.Insert text
+                let insertCommand = if isOverwrite then InsertCommand.Overwrite text else InsertCommand.Insert text
                 x.RunInsertCommand insertCommand keyInputSet CommandFlags.InsertEdit
 
     /// Try and process the KeyInput by considering the current text edit in Insert Mode
@@ -804,7 +808,7 @@ type internal InsertMode
     /// Start a paste session in insert mode
     member x.ProcessPasteStart keyInput =
         x.CancelWordCompletionSession()
-        _sessionData <- { _sessionData with ActiveEditItem = ActiveEditItem.Paste }
+        _sessionData <- { _sessionData with ActiveEditItem = if _isReplace then ActiveEditItem.OverwriteReplace else ActiveEditItem.Paste }
         ProcessResult.Handled ModeSwitch.NoSwitch
 
     /// Process the second key of a paste operation.  
@@ -844,6 +848,8 @@ type internal InsertMode
             x.ProcessPaste keyInput
         | ActiveEditItem.PasteSpecial pasteFlags ->
             x.Paste keyInput pasteFlags
+        | ActiveEditItem.OverwriteReplace ->
+            x.Paste keyInput PasteFlags.None
         | ActiveEditItem.None -> 
 
             // Next try and process by examining the current change

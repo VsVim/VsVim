@@ -73,6 +73,15 @@ namespace Vim.VisualStudio.UnitTest
                 .Verifiable();
         }
 
+        private void ExpectNotRaise(CommandId commandId, Action isCalled)
+        {
+            object p1 = null;
+            object p2 = null;
+            _commands
+                .Setup(x => x.Raise(commandId.Group.ToString(), (int)commandId.Id, ref p1, ref p2))
+                .Callback(isCalled);
+        }
+
         public sealed class VimBufferTest : FallbackKeyProcessorTest
         {
             public VimBufferTest() : base(useVimBuffer: true)
@@ -95,6 +104,87 @@ namespace Vim.VisualStudio.UnitTest
                 var commandId = AddRemovedBinding("Global::ctrl+k");
                 _vimBuffer.SwitchMode(ModeKind.Disabled, ModeArgument.None);
                 _keyProcessor.KeyDown(_keyboardDevice.CreateKeyEventArgs(Key.C, ModifierKeys.Control));
+                _commands.Verify();
+            }
+        }
+
+        public sealed class VimBufferDisabledTest : FallbackKeyProcessorTest
+        {
+            public VimBufferDisabledTest() : base(useVimBuffer: true)
+            {
+            }
+
+            [Fact]
+            public void CapitalC()
+            {
+                var commandId = AddRemovedBinding("Text Editor::Ctrl+Shift+Alt+C", "Edit.CopyParameterTip");
+                _vimBuffer.SwitchMode(ModeKind.Disabled, ModeArgument.None);
+                var isCalled = false;
+                ExpectNotRaise(commandId, () => isCalled = true);
+
+                _keyProcessor.KeyDown(_keyboardDevice.CreateKeyEventArgs(Key.C, ModifierKeys.Shift));
+
+                Assert.False(isCalled, "this command should not be called");
+            }
+
+            [Fact]
+            public void ShiftAltCtrlCWorks()
+            {
+                var commandId = AddRemovedBinding("Text Editor::Ctrl+Shift+Alt+C", "Edit.CopyParameterTip");
+                _vimBuffer.SwitchMode(ModeKind.Disabled, ModeArgument.None);
+                ExpectRaise(commandId);
+
+                _keyProcessor.KeyDown(_keyboardDevice.CreateKeyEventArgs(Key.C, ModifierKeys.Control | ModifierKeys.Shift | ModifierKeys.Alt));
+
+                _commands.Verify();
+            }
+
+            [Fact]
+            public void KeyChordsWorkWhenVsVimIsDisabled()
+            {
+                var commandId = AddRemovedBinding("Text Editor::Ctrl+K, Ctrl+U", "Uncomment Selection");
+                _vimBuffer.SwitchMode(ModeKind.Disabled, ModeArgument.None);
+                ExpectRaise(commandId);
+
+                _keyProcessor.KeyDown(_keyboardDevice.CreateKeyEventArgs(Key.K, ModifierKeys.Control));
+                _keyProcessor.KeyDown(_keyboardDevice.CreateKeyEventArgs(Key.U, ModifierKeys.Control));
+
+                _commands.Verify();
+            }
+
+            [Fact]
+            public void InvalidChordFollowedByGoodChordWorks()
+            {
+                var commandId = AddRemovedBinding("Text Editor::Ctrl+K, Ctrl+U", "Uncomment Selection");
+                _vimBuffer.SwitchMode(ModeKind.Disabled, ModeArgument.None);
+                ExpectRaise(commandId);
+                var isCalled = false;
+                ExpectNotRaise(commandId, () => isCalled = true);
+
+                _keyProcessor.KeyDown(_keyboardDevice.CreateKeyEventArgs(Key.K, ModifierKeys.Control));
+                _keyProcessor.KeyDown(_keyboardDevice.CreateKeyEventArgs(Key.G, ModifierKeys.Control));
+                Assert.False(isCalled, "the command should not be called yet");
+
+                _keyProcessor.KeyDown(_keyboardDevice.CreateKeyEventArgs(Key.K, ModifierKeys.Control));
+                _keyProcessor.KeyDown(_keyboardDevice.CreateKeyEventArgs(Key.U, ModifierKeys.Control));
+                _commands.Verify();
+            }
+
+            [Fact]
+            public void TestEditorScopeCommandsAreBeforeGlobal()
+            {
+                var commandId = AddRemovedBinding("Text Editor::Ctrl+K, Ctrl+U", "Uncomment Selection");
+                var commandIdGlobal = AddRemovedBinding("Global::Ctrl+K, Ctrl+U", "DoSomethingElse");
+                _vimBuffer.SwitchMode(ModeKind.Disabled, ModeArgument.None);
+                ExpectRaise(commandId);
+                var isCalled = false;
+                ExpectNotRaise(commandIdGlobal, () => isCalled = true);
+
+                _keyProcessor.KeyDown(_keyboardDevice.CreateKeyEventArgs(Key.K, ModifierKeys.Control));
+                _keyProcessor.KeyDown(_keyboardDevice.CreateKeyEventArgs(Key.U, ModifierKeys.Control));
+
+                Assert.False(isCalled, "the global command should not be called");
+                _commands.Verify();
             }
         }
 

@@ -205,7 +205,7 @@ namespace Vim.UnitTest
 
             public void Verify(char mark, int line, int column, int index = 1)
             {
-                var msg = String.Format(" {0}   {1,5}{2,5} test.txt", mark, line, column);
+                var msg = String.Format(" {0}  {1,5}{2,5} test.txt", mark, line, column);
                 Assert.Equal(msg, _statusUtil.LastStatusLong[index]);
             }
 
@@ -215,7 +215,7 @@ namespace Vim.UnitTest
                 Create("cat dog");
                 _vimTextBuffer.SetLocalMark(LocalMark.NewLetter(Letter.C), 0, 1);
                 _interpreter.RunDisplayMarks(s_emptyList);
-                Verify('c', 1, 1);
+                Verify('c', 1, 1, 2);
             }
 
             /// <summary>
@@ -228,8 +228,8 @@ namespace Vim.UnitTest
                 _vimTextBuffer.SetLocalMark(LocalMark.NewLetter(Letter.B), 0, 1);
                 _vimTextBuffer.SetLocalMark(LocalMark.NewLetter(Letter.A), 0, 2);
                 _interpreter.RunDisplayMarks(s_emptyList);
-                Verify('a', line: 1, column: 2, index: 1);
-                Verify('b', line: 1, column: 1, index: 2);
+                Verify('a', line: 1, column: 2, index: 2);
+                Verify('b', line: 1, column: 1, index: 3);
             }
         }
 

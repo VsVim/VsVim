@@ -86,6 +86,9 @@ type internal SelectionChangeTracker
     /// If the caret changes position and it wasn't initiated by VsVim then we should be 
     /// adjusting the screen to account for 'scrolloff'
     member x.OnPositionChanged() = 
+        // Don't update the caret if a selection is occuring.  This could be a user double clicking, 
+        // dragging, etc ...  Don't want to update the caret in that case, let the mode change handle
+        // that.
         if not _vimBuffer.IsProcessingInput then
             _commonOperations.EnsureAtCaret ViewFlags.ScrollOffset
 
@@ -213,7 +216,7 @@ type internal SelectionChangeTracker
             | Some textViewLines, Some wpfPoint ->
                 let x = wpfPoint.X
                 let y = wpfPoint.Y
-                let textViewLine = textViewLines.GetTextViewLineContainingYCoordinate y
+                let textViewLine = textViewLines.GetTextViewLineContainingYCoordinate (y + _textView.ViewportTop)
                 if textViewLine <> null then
                     let point = textViewLine.GetBufferPositionFromXCoordinate x 
                     VimTrace.TraceInfo("Caret {0} Point = {1}", x, if point.HasValue then point.Value.GetChar() else ' ')

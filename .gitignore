@@ -12,11 +12,13 @@
 *.ncb 
 *.swp 
 *.snk 
+*.sdf
 *.pdb 
 *.msi 
 *.vspx
 *.mdf
 *.ldf
+*.opendb
 Thumbs.db
 
 # Project Files

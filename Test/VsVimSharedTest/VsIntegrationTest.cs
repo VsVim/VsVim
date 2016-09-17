@@ -397,6 +397,20 @@ namespace Vim.VisualStudio.UnitTest
                     }
                 }
 
+                [Fact]
+                public void AcrossEntireLineWithVeOneMore()
+                {
+                    Create("hello();", "world");
+                    _vimBuffer.GlobalSettings.VirtualEdit = "onemore";
+                    _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
+                    _textView.MoveCaretTo(8);
+                    for (int i = 0; i < 8; i++)
+                    {
+                        _vsSimulation.Run(VimKey.Back);
+                        Assert.Equal(8 - (i + 1), _textView.GetCaretPoint().Position);
+                    }
+                }
+
                 /// <summary>
                 /// Ensure the repeating of the Back command is done properly for Resharper.  We special case
                 /// the initial handling of the command.  But this shouldn't affect the repeat as it should

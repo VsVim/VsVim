@@ -2582,8 +2582,25 @@ namespace Vim.UnitTest
                 [Fact]
                 public void TypingSpaceThenCaretMoveRestoresSoftTabStop()
                 {
+                    // handling is different without VirtualEdit=onemore
                     Create("");
                     _globalSettings.Backspace = "start,eol,indent";
+                    _localSettings.SoftTabStop = 4;
+                    _localSettings.TabStop = 4;
+                    _localSettings.ExpandTab = true;
+                    _vimBuffer.ProcessNotation("<Tab> <Esc>");
+                    _textView.MoveCaretTo(0);
+                    _textView.MoveCaretTo(4);
+                    _vimBuffer.ProcessNotation("i<BS><BS>");
+                    Assert.Equal(" ", _textBuffer.GetLine(0).GetText());
+                }
+
+                [Fact]
+                public void TypingSpaceThenCaretMoveRestoresSoftTabStopWithVeOneMore()
+                {
+                    Create("");
+                    _globalSettings.Backspace = "start,eol,indent";
+                    _globalSettings.VirtualEdit = "onemore";
                     _localSettings.SoftTabStop = 4;
                     _localSettings.TabStop = 4;
                     _localSettings.ExpandTab = true;
@@ -2598,7 +2615,6 @@ namespace Vim.UnitTest
 
         public sealed class AtomicInsertTests : InsertModeIntegrationTest
         {
-            
             protected override void Create(ModeArgument argument, params string[] lines)
             {
                 base.Create(argument, lines);

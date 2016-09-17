@@ -1017,6 +1017,9 @@ type Motion =
     /// Inner word motion
     | InnerWord of WordKind
 
+    /// Inner paragraph motion
+    | InnerParagraph
+
     /// Inner block motion
     | InnerBlock of BlockKind
 
@@ -2819,6 +2822,9 @@ type InsertCommand  =
     /// Replace the character under the caret with the specified value
     | Replace of char
 
+    /// Overwrite the characters under the caret with the specified string
+    | Overwrite of string
+
     /// Shift the current line one indent width to the left
     | ShiftLineLeft 
 
@@ -2873,6 +2879,7 @@ type InsertCommand  =
         | InsertCommand.MoveCaretWithArrow _ -> None
         | InsertCommand.MoveCaretByWord _ -> None
         | InsertCommand.Replace c -> Some (TextChange.Combination ((TextChange.DeleteRight 1), (TextChange.Insert (c.ToString()))))
+        | InsertCommand.Overwrite s -> Some (TextChange.Replace s)
         | InsertCommand.ShiftLineLeft -> None
         | InsertCommand.ShiftLineRight -> None
         | InsertCommand.DeleteLineBeforeCursor -> None
@@ -3479,7 +3486,7 @@ type IMacroRecorder =
 
     /// Start recording a macro into the specified Register.  Will fail if the recorder
     /// is already recording
-    abstract StartRecording : Register -> isAppend : bool -> unit
+    abstract StartRecording : register : Register -> isAppend : bool -> unit
 
     /// Stop recording a macro.  Will fail if it's not actually recording
     abstract StopRecording : unit -> unit
@@ -4186,6 +4193,9 @@ and IMarkMap =
 
     /// Set the mark for the given char for the IVimTextBuffer
     abstract SetMark : mark : Mark -> vimBufferData : IVimBufferData -> line : int -> column : int -> bool
+
+    /// Set the last exited position before the window is closed
+    abstract SetLastExitedPosition : bufferName : string -> line : int -> column : int -> bool
 
     /// Remove the specified mark and return whether or not a mark was actually
     /// removed
