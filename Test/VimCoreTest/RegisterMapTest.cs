@@ -1,5 +1,6 @@
-﻿using System;
-using Moq;
+﻿using Moq;
+using System;
+using Microsoft.FSharp.Core;
 using Vim.UnitTest.Mock;
 using Xunit;
 
@@ -47,7 +48,7 @@ namespace Vim.UnitTest
             public void DeleteSingleLine()
             {
                 var reg = _map.GetRegister('c');
-                _map.SetRegisterValue(reg, RegisterOperation.Delete, new RegisterValue("foo bar\n", OperationKind.CharacterWise));
+                _map.SetRegisterValue(reg.ToOption(), RegisterOperation.Delete, new RegisterValue("foo bar\n", OperationKind.CharacterWise), ClipboardOptions.None);
                 AssertRegister(reg, "foo bar\n", OperationKind.CharacterWise);
                 AssertRegister(RegisterName.Unnamed, "foo bar\n", OperationKind.CharacterWise);
                 AssertRegister('1', "foo bar\n", OperationKind.CharacterWise);
@@ -60,7 +61,7 @@ namespace Vim.UnitTest
             public void DeletePartialLine()
             {
                 var reg = _map.GetRegister('c');
-                _map.SetRegisterValue(reg, RegisterOperation.Delete, new RegisterValue("foo bar", OperationKind.CharacterWise));
+                _map.SetRegisterValue(reg.ToOption(), RegisterOperation.Delete, new RegisterValue("foo bar", OperationKind.CharacterWise), ClipboardOptions.None);
                 AssertRegister(reg, "foo bar", OperationKind.CharacterWise);
                 AssertRegister(RegisterName.Unnamed, "foo bar", OperationKind.CharacterWise);
                 AssertRegister(RegisterName.SmallDelete, "", OperationKind.CharacterWise);
@@ -75,7 +76,7 @@ namespace Vim.UnitTest
             {
                 var reg = _map.GetRegister('c');
                 _map.GetRegister(RegisterName.SmallDelete).UpdateValue("", OperationKind.CharacterWise);
-                _map.SetRegisterValue(reg, RegisterOperation.Yank, new RegisterValue("foo bar", OperationKind.CharacterWise));
+                _map.SetRegisterValue(reg.ToOption(), RegisterOperation.Yank, new RegisterValue("foo bar", OperationKind.CharacterWise), ClipboardOptions.None);
                 AssertRegister(reg, "foo bar", OperationKind.CharacterWise);
                 AssertRegister(RegisterName.Unnamed, "foo bar", OperationKind.CharacterWise);
                 AssertRegister(RegisterName.SmallDelete, "", OperationKind.CharacterWise);
@@ -88,8 +89,8 @@ namespace Vim.UnitTest
             public void Numbered()
             {
                 var reg = _map.GetRegister('c');
-                _map.SetRegisterValue(reg, RegisterOperation.Delete, new RegisterValue("f\n", OperationKind.CharacterWise));
-                _map.SetRegisterValue(reg, RegisterOperation.Delete, new RegisterValue("o\n", OperationKind.CharacterWise));
+                _map.SetRegisterValue(reg.ToOption(), RegisterOperation.Delete, new RegisterValue("f\n", OperationKind.CharacterWise), ClipboardOptions.None);
+                _map.SetRegisterValue(reg.ToOption(), RegisterOperation.Delete, new RegisterValue("o\n", OperationKind.CharacterWise), ClipboardOptions.None);
                 AssertRegister(reg, "o\n", OperationKind.CharacterWise);
                 AssertRegister(RegisterName.Unnamed, "o\n", OperationKind.CharacterWise);
                 AssertRegister('1', "o\n", OperationKind.CharacterWise);
@@ -103,7 +104,7 @@ namespace Vim.UnitTest
             public void IgnoreSmallDelete()
             {
                 var reg = _map.GetRegister('c');
-                _map.SetRegisterValue(reg, RegisterOperation.Delete, new RegisterValue("foo", OperationKind.CharacterWise));
+                _map.SetRegisterValue(reg.ToOption(), RegisterOperation.Delete, new RegisterValue("foo", OperationKind.CharacterWise), ClipboardOptions.None);
                 AssertRegister(RegisterName.SmallDelete, "", OperationKind.CharacterWise);
             }
 
@@ -114,7 +115,7 @@ namespace Vim.UnitTest
             public void UpdateSmallDelete()
             {
                 var reg = _map.GetRegister(RegisterName.Unnamed);
-                _map.SetRegisterValue(reg, RegisterOperation.Delete, new RegisterValue("foo", OperationKind.CharacterWise));
+                _map.SetRegisterValue(reg.ToOption(), RegisterOperation.Delete, new RegisterValue("foo", OperationKind.CharacterWise), ClipboardOptions.None);
                 AssertRegister(RegisterName.SmallDelete, "foo", OperationKind.CharacterWise);
             }
 
@@ -127,7 +128,7 @@ namespace Vim.UnitTest
                 _map.GetRegister(RegisterName.SmallDelete).UpdateValue("", OperationKind.CharacterWise);
                 var reg = _map.GetRegister('c');
                 var text = "cat" + Environment.NewLine + "dog";
-                _map.SetRegisterValue(reg, RegisterOperation.Delete, new RegisterValue(text, OperationKind.CharacterWise));
+                _map.SetRegisterValue(reg.ToOption(), RegisterOperation.Delete, new RegisterValue(text, OperationKind.CharacterWise), ClipboardOptions.None);
                 AssertRegister(RegisterName.SmallDelete, "", OperationKind.CharacterWise);
             }
 
@@ -140,8 +141,8 @@ namespace Vim.UnitTest
                 _map.GetRegister(RegisterName.Blackhole).UpdateValue("", OperationKind.CharacterWise);
                 _map.GetRegister(RegisterName.NewNumbered(NumberedRegister.Number1)).UpdateValue("hey", OperationKind.CharacterWise);
                 var namedReg = _map.GetRegister('c');
-                _map.SetRegisterValue(namedReg, RegisterOperation.Yank, new RegisterValue("foo bar", OperationKind.CharacterWise));
-                _map.SetRegisterValue(_map.GetRegister(RegisterName.Blackhole), RegisterOperation.Delete, new RegisterValue("foo bar", OperationKind.CharacterWise));
+                _map.SetRegisterValue(namedReg.ToOption(), RegisterOperation.Yank, new RegisterValue("foo bar", OperationKind.CharacterWise), ClipboardOptions.None);
+                _map.SetRegisterValue(_map.GetRegister(RegisterName.Blackhole).ToOption(), RegisterOperation.Delete, new RegisterValue("foo bar", OperationKind.CharacterWise), ClipboardOptions.None);
                 AssertRegister(namedReg, "foo bar", OperationKind.CharacterWise);
                 AssertRegister(RegisterName.Unnamed, "foo bar", OperationKind.CharacterWise);
                 AssertRegister(RegisterName.NewNumbered(NumberedRegister.Number1), "hey", OperationKind.CharacterWise);

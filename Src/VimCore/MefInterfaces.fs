@@ -321,7 +321,7 @@ type ICommonOperations =
     /// the start point.
     ///
     /// This operation is performed against the visual buffer.  
-    abstract DeleteLines : startLine : ITextSnapshotLine -> maxCount : int -> register : Register -> unit
+    abstract DeleteLines : startLine : ITextSnapshotLine -> maxCount : int -> register : Option<Register> -> unit
 
     /// Ensure the view properties are met at the caret
     abstract EnsureAtCaret : viewFlags : ViewFlags -> unit

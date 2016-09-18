@@ -91,6 +91,7 @@
     <Compile Include="Exports\OutlinerTaggerProvider.cs" />
     <Compile Include="HistoryListTest.cs" />
     <Compile Include="HistorySessionTest.cs" />
+    <Compile Include="RegisterHelper.cs" />
     <Compile Include="WordCompletionUtilTest.cs" />
     <Compile Include="MatchingTokenUtilTest.cs" />
     <Compile Include="ModeMapTest.cs" />

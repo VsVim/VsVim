@@ -944,14 +944,19 @@ type internal CommandUtil
 
     /// Get the appropriate register for the CommandData
     member x.GetRegister (commandData : CommandData) =
-        let name = 
+            match commandData.RegisterName with
+            | Some name -> Some (_registerMap.GetRegister name)
+            | None -> None
 
+    /// Get the appropriate register for the CommandData
+    member x.GetRegisterForPut (commandData : CommandData) =
+        let name = 
             match commandData.RegisterName with
             | Some name -> name
             | None ->
-                //if Util.IsFlagSet _globalSettings.ClipboardOptions ClipboardOptions.Unnamed then
-                //    RegisterName.SelectionAndDrop SelectionAndDropRegister.Star
-                //else
+                if Util.IsFlagSet _globalSettings.ClipboardOptions ClipboardOptions.Unnamed then
+                    RegisterName.SelectionAndDrop SelectionAndDropRegister.Star
+                else
                     RegisterName.Unnamed
 
         _registerMap.GetRegister name
@@ -1924,7 +1929,7 @@ type internal CommandUtil
 
         // Update the unnamed register with the deleted text
         let value = x.CreateRegisterValue (StringData.OfEditSpan deletedSpan) operationKind
-        let unnamedRegister = _registerMap.GetRegister RegisterName.Unnamed
+        let unnamedRegister = Some (_registerMap.GetRegister RegisterName.Unnamed)
         _registerMap.SetRegisterValue unnamedRegister RegisterOperation.Delete value  _globalSettings.ClipboardOptions
 
         CommandResult.Completed ModeSwitch.SwitchPreviousMode
@@ -2318,6 +2323,7 @@ type internal CommandUtil
     /// Run a NormalCommand against the buffer
     member x.RunNormalCommand command (data : CommandData) =
         let register = x.GetRegister data
+        let putRegister = x.GetRegisterForPut data
         let count = data.CountOrDefault
         match command with
         | NormalCommand.AddToWord -> x.AddToWord count
@@ -2367,11 +2373,11 @@ type internal CommandUtil
         | NormalCommand.OpenAllFoldsUnderCaret -> x.OpenAllFoldsUnderCaret()
         | NormalCommand.OpenFoldUnderCaret -> x.OpenFoldUnderCaret data.CountOrDefault
         | NormalCommand.Ping pingData -> x.Ping pingData data
-        | NormalCommand.PutAfterCaret moveCaretAfterText -> x.PutAfterCaret register count moveCaretAfterText
-        | NormalCommand.PutAfterCaretWithIndent -> x.PutAfterCaretWithIndent register count
+        | NormalCommand.PutAfterCaret moveCaretAfterText -> x.PutAfterCaret putRegister count moveCaretAfterText
+        | NormalCommand.PutAfterCaretWithIndent -> x.PutAfterCaretWithIndent putRegister count
         | NormalCommand.PutAfterCaretMouse -> x.PutAfterCaretMouse()
-        | NormalCommand.PutBeforeCaret moveCaretBeforeText -> x.PutBeforeCaret register count moveCaretBeforeText
-        | NormalCommand.PutBeforeCaretWithIndent -> x.PutBeforeCaretWithIndent register count
+        | NormalCommand.PutBeforeCaret moveCaretBeforeText -> x.PutBeforeCaret putRegister count moveCaretBeforeText
+        | NormalCommand.PutBeforeCaretWithIndent -> x.PutBeforeCaretWithIndent putRegister count
         | NormalCommand.PrintFileInformation -> x.PrintFileInformation()
         | NormalCommand.RecordMacroStart c -> x.RecordMacroStart c
         | NormalCommand.RecordMacroStop -> x.RecordMacroStop()
@@ -2420,6 +2426,7 @@ type internal CommandUtil
         _textView.Selection.Clear()
 
         let register = x.GetRegister data
+        let putRegister = x.GetRegisterForPut data
         let count = data.CountOrDefault
         match command with
         | VisualCommand.ChangeCase kind -> x.ChangeCaseVisual kind visualSpan
@@ -2439,7 +2446,7 @@ type internal CommandUtil
         | VisualCommand.MoveCaretToTextObject (motion, textObjectKind)-> x.MoveCaretToTextObject count motion textObjectKind visualSpan
         | VisualCommand.OpenFoldInSelection -> x.OpenFoldInSelection visualSpan
         | VisualCommand.OpenAllFoldsInSelection -> x.OpenAllFoldsInSelection visualSpan
-        | VisualCommand.PutOverSelection moveCaretAfterText -> x.PutOverSelection register count moveCaretAfterText visualSpan 
+        | VisualCommand.PutOverSelection moveCaretAfterText -> x.PutOverSelection putRegister count moveCaretAfterText visualSpan 
         | VisualCommand.ReplaceSelection keyInput -> x.ReplaceSelection keyInput visualSpan
         | VisualCommand.ShiftLinesLeft -> x.ShiftLinesLeftVisual count visualSpan
         | VisualCommand.ShiftLinesRight -> x.ShiftLinesRightVisual count visualSpan

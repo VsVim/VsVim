@@ -20,6 +20,7 @@ using System.Windows;
 using Microsoft.VisualStudio.Text.Projection;
 using Microsoft.VisualStudio.Text.Outlining;
 using Microsoft.VisualStudio.Utilities;
+using Vim.Extensions;
 
 namespace Vim.UnitTest
 {

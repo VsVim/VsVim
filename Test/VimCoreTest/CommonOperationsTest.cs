@@ -109,7 +109,7 @@ namespace Vim.UnitTest
         public void DeleteLines_Multiple()
         {
             Create("cat", "dog", "bear");
-            _operations.DeleteLines(_textBuffer.GetLine(0), 2, UnnamedRegister);
+            _operations.DeleteLines(_textBuffer.GetLine(0), 2, UnnamedRegister.ToOption());
             Assert.Equal(CreateLinesWithLineBreak("cat", "dog"), UnnamedRegister.StringValue);
             Assert.Equal("bear", _textView.GetLine(0).GetText());
             Assert.Equal(OperationKind.LineWise, UnnamedRegister.OperationKind);
@@ -124,7 +124,7 @@ namespace Vim.UnitTest
         {
             Create("cat", "dog", "bear", "fish", "tree");
             _foldManager.CreateFold(_textView.GetLineRange(1, 2));
-            _operations.DeleteLines(_textBuffer.GetLine(0), 3, UnnamedRegister);
+            _operations.DeleteLines(_textBuffer.GetLine(0), 3, UnnamedRegister.ToOption());
             Assert.Equal(CreateLinesWithLineBreak("cat", "dog", "bear", "fish"), UnnamedRegister.StringValue);
             Assert.Equal("tree", _textView.GetLine(0).GetText());
             Assert.Equal(OperationKind.LineWise, UnnamedRegister.OperationKind);
@@ -139,7 +139,7 @@ namespace Vim.UnitTest
         {
             Create("cat", "dog", "bear", "fish", "tree");
             _foldManager.CreateFold(_textView.GetLineRange(0, 1));
-            _operations.DeleteLines(_textBuffer.GetLine(0), 2, UnnamedRegister);
+            _operations.DeleteLines(_textBuffer.GetLine(0), 2, UnnamedRegister.ToOption());
             Assert.Equal(CreateLinesWithLineBreak("cat", "dog", "bear"), UnnamedRegister.StringValue);
             Assert.Equal("fish", _textView.GetLine(0).GetText());
             Assert.Equal(OperationKind.LineWise, UnnamedRegister.OperationKind);
@@ -149,7 +149,7 @@ namespace Vim.UnitTest
         public void DeleteLines_Simple()
         {
             Create("foo", "bar", "baz", "jaz");
-            _operations.DeleteLines(_textBuffer.GetLine(0), 1, UnnamedRegister);
+            _operations.DeleteLines(_textBuffer.GetLine(0), 1, UnnamedRegister.ToOption());
             Assert.Equal("bar", _textView.GetLine(0).GetText());
             Assert.Equal("foo" + Environment.NewLine, UnnamedRegister.StringValue);
             Assert.Equal(0, _textView.GetCaretPoint().Position);
@@ -159,7 +159,7 @@ namespace Vim.UnitTest
         public void DeleteLines_WithCount()
         {
             Create("foo", "bar", "baz", "jaz");
-            _operations.DeleteLines(_textBuffer.GetLine(0), 2, UnnamedRegister);
+            _operations.DeleteLines(_textBuffer.GetLine(0), 2, UnnamedRegister.ToOption());
             Assert.Equal("baz", _textView.GetLine(0).GetText());
             Assert.Equal("foo" + Environment.NewLine + "bar" + Environment.NewLine, UnnamedRegister.StringValue);
             Assert.Equal(0, _textView.GetCaretPoint().Position);
@@ -172,7 +172,7 @@ namespace Vim.UnitTest
         public void DeleteLines_LastLine()
         {
             Create("foo", "bar");
-            _operations.DeleteLines(_textBuffer.GetLine(1), 1, UnnamedRegister);
+            _operations.DeleteLines(_textBuffer.GetLine(1), 1, UnnamedRegister.ToOption());
             Assert.Equal("bar" + Environment.NewLine, UnnamedRegister.StringValue);
             Assert.Equal(1, _textView.TextSnapshot.LineCount);
             Assert.Equal("foo", _textView.GetLine(0).GetText());
