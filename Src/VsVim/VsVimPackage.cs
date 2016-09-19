@@ -165,8 +165,14 @@ namespace Vim.VisualStudio
             commandWindow.Print(text);
         }
 
-        private int SetMode(IntPtr variantIn)
+        private int SetMode(IntPtr variantIn, IntPtr variantOut, uint commandExecOpt)
         {
+            if (IsQueryParameterList(variantIn, variantOut, commandExecOpt))
+            {
+                Marshal.GetNativeVariantForObject("mode", variantOut);
+                return VSConstants.S_OK;
+            }
+
             var name = GetStringArgument(variantIn) ?? "";
 
             ModeKind mode;
@@ -201,6 +207,27 @@ namespace Vim.VisualStudio
             return obj as string;
         }
 
+        /// <summary>
+        /// Used to determine if the shell is querying for the parameter list of our command.
+        /// </summary>
+        private static bool IsQueryParameterList(IntPtr variantIn, IntPtr variantOut, uint nCmdexecopt)
+        {
+            ushort lo = (ushort)(nCmdexecopt & (uint)0xffff);
+            ushort hi = (ushort)(nCmdexecopt >> 16);
+            if (lo == (ushort)OLECMDEXECOPT.OLECMDEXECOPT_SHOWHELP)
+            {
+                if (hi == VsMenus.VSCmdOptQueryParameterList)
+                {
+                    if (variantOut != IntPtr.Zero)
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
         #region IOleCommandTarget
 
         int IOleCommandTarget.Exec(ref Guid commandGroup, uint commandId, uint commandExecOpt, IntPtr variantIn, IntPtr variantOut)
@@ -232,7 +259,7 @@ namespace Vim.VisualStudio
                     _vim.IsDisabled = true;
                     break;
                 case CommandIds.SetMode:
-                    hr = SetMode(variantIn);
+                    hr = SetMode(variantIn, variantOut, commandExecOpt);
                     break;
                 default:
                     Debug.Assert(false);
