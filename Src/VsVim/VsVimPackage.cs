@@ -73,6 +73,9 @@ namespace Vim.VisualStudio
             {
                 keyBindingService.DumpKeyboard(streamWriter);
             }
+
+            var message = string.Format("Keyboard data dumped to: {0}", filePath);
+            PrintToCommandWindow(message);
         }
 
         /// <summary>
@@ -141,6 +144,17 @@ namespace Vim.VisualStudio
         private void ToggleEnabled()
         {
             _vim.IsDisabled = !_vim.IsDisabled;
+        }
+
+        private void PrintToCommandWindow(string text)
+        {
+            var commandWindow = (IVsCommandWindow)GetService(typeof(SVsCommandWindow));
+            if (commandWindow == null)
+            {
+                return;
+            }
+
+            commandWindow.Print(text);
         }
 
         #region IOleCommandTarget
