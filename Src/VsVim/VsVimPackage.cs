@@ -154,44 +154,92 @@ namespace Vim.VisualStudio
                 return;
             }
 
+            // Only print the text if a command is being run in the command window.  If it's being run via another extension
+            // then don't print any output.
+            int running;
+            if (VSConstants.S_OK != commandWindow.RunningCommandWindowCommand(out running) || running == 0)
+            {
+                return;
+            }
+
             commandWindow.Print(text);
+        }
+
+        private int SetMode(IntPtr variantIn)
+        {
+            var name = GetStringArgument(variantIn) ?? "";
+
+            ModeKind mode;
+            if (!Enum.TryParse(name, out mode))
+            {
+                PrintToCommandWindow(string.Format("Invalid mode name: {0}", name));
+
+                var all = string.Join(", ", Enum.GetNames(typeof(ModeKind)));
+                PrintToCommandWindow(string.Format("Valid names: {0}", all));
+                return VSConstants.E_INVALIDARG;
+            }
+
+            var option = _vim.ActiveBuffer;
+            if (option.IsNone())
+            {
+                PrintToCommandWindow("Could not detect an active vim buffer");
+                return VSConstants.E_FAIL;
+            }
+
+            option.Value.SwitchMode(mode, ModeArgument.None);
+            return VSConstants.S_OK;
+        }
+
+        private string GetStringArgument(IntPtr variantIn)
+        {
+            if (variantIn == IntPtr.Zero)
+            {
+                return null;
+            }
+
+            var obj = Marshal.GetObjectForNativeVariant(variantIn);
+            return obj as string;
         }
 
         #region IOleCommandTarget
 
         int IOleCommandTarget.Exec(ref Guid commandGroup, uint commandId, uint commandExecOpt, IntPtr variantIn, IntPtr variantOut)
         {
-            if (commandGroup == GuidList.VsVimCommandSet)
+            if (commandGroup != GuidList.VsVimCommandSet)
             {
-                switch (commandId)
-                {
-                    case CommandIds.Options:
-                        ShowOptionPage(typeof(Vim.VisualStudio.Implementation.OptionPages.KeyboardOptionPage));
-                        break;
-                    case CommandIds.DumpKeyboard:
-                        DumpKeyboard();
-                        break;
-                    case CommandIds.ClearTSQLBindings:
-                        ClearTSQLBindings();
-                        break;
-                    case CommandIds.ToggleEnabled:
-                        ToggleEnabled();
-                        break;
-                    case CommandIds.SetEnabled:
-                        _vim.IsDisabled = false;
-                        break;
-                    case CommandIds.SetDisabled:
-                        _vim.IsDisabled = true;
-                        break;
-                    default:
-                        Debug.Assert(false);
-                        break;
-                }
-
-                return VSConstants.S_OK;
+                return VSConstants.E_FAIL;
             }
 
-            return VSConstants.E_FAIL;
+            var hr = VSConstants.S_OK;
+            switch (commandId)
+            {
+                case CommandIds.Options:
+                    ShowOptionPage(typeof(Vim.VisualStudio.Implementation.OptionPages.KeyboardOptionPage));
+                    break;
+                case CommandIds.DumpKeyboard:
+                    DumpKeyboard();
+                    break;
+                case CommandIds.ClearTSQLBindings:
+                    ClearTSQLBindings();
+                    break;
+                case CommandIds.ToggleEnabled:
+                    ToggleEnabled();
+                    break;
+                case CommandIds.SetEnabled:
+                    _vim.IsDisabled = false;
+                    break;
+                case CommandIds.SetDisabled:
+                    _vim.IsDisabled = true;
+                    break;
+                case CommandIds.SetMode:
+                    hr = SetMode(variantIn);
+                    break;
+                default:
+                    Debug.Assert(false);
+                    break;
+            }
+
+            return hr;
         }
 
         int IOleCommandTarget.QueryStatus(ref Guid commandGroup, uint commandsCount, OLECMD[] commands, IntPtr pCmdText)

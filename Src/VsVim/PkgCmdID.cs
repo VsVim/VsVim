@@ -13,5 +13,6 @@ namespace Vim.VisualStudio
         internal const uint ToggleEnabled = 0x103;
         internal const uint SetEnabled = 0x104;
         internal const uint SetDisabled = 0x105;
+        internal const uint SetMode = 0x106;
     };
 }
