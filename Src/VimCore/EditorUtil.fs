@@ -1678,10 +1678,13 @@ module TrackingPointUtil =
         with
             | :? System.ArgumentException -> None
 
-    let GetPointInSnapshot point mode newSnapshot =
+    let GetPointInSnapshot point mode (newSnapshot : ITextSnapshot) =
         let oldSnapshot = SnapshotPointUtil.GetSnapshot point
-        let trackingPoint = oldSnapshot.CreateTrackingPoint(point.Position, mode)
-        GetPoint newSnapshot trackingPoint
+        if oldSnapshot.Version.VersionNumber = newSnapshot.Version.VersionNumber then
+            Some point
+        else
+            let trackingPoint = oldSnapshot.CreateTrackingPoint(point.Position, mode)
+            GetPoint newSnapshot trackingPoint
 
 module TrackingSpanUtil =
 

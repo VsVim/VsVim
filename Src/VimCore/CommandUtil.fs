@@ -149,6 +149,25 @@ type internal CommandUtil
 
         CommandResult.Completed ModeSwitch.NoSwitch
 
+    /// Apply the ITextEdit and returned the mapped position value from the resulting 
+    /// ITextSnapshot into the current ITextSnapshot.
+    ///
+    /// A number of commands will edit the text and calculate the position of the caret
+    /// based on the edits about to be made.  It's possible for other extensions to listen
+    /// to the events fired by an edit and make fix up edits.  This code accounts for that 
+    /// and returns the position mapped into the current ITextSnapshot
+    member x.ApplyEditAndMapPoint (textEdit : ITextEdit) position = 
+        let editSnapshot = textEdit.Apply()
+        let editPoint = SnapshotPoint(editSnapshot, position)
+        let currentSnapshot = x.CurrentSnapshot
+        match TrackingPointUtil.GetPointInSnapshot editPoint PointTrackingMode.Negative currentSnapshot with
+        | None -> SnapshotPoint(currentSnapshot, 0)
+        | Some point -> point
+
+    member x.ApplyEditAndMapPosition (textEdit : ITextEdit) position = 
+        let point = x.ApplyEditAndMapPoint textEdit position
+        point.Position
+
     /// Calculate the new RegisterValue for the provided one for put with indent
     /// operations.
     member x.CalculateIdentStringData (registerValue : RegisterValue) =
@@ -465,9 +484,8 @@ type internal CommandUtil
             let commandResult = x.EditWithLinkedChange "ChangeLines" (fun () ->
                 let edit = _textBuffer.CreateEdit()
                 col |> Seq.iter (fun span -> edit.Delete(span) |> ignore)
-                edit.Apply() |> ignore
-
-                TextViewUtil.MoveCaretToPosition _textView col.Head.Start.Point.Position)
+                let position = x.ApplyEditAndMapPosition edit col.Head.Start.Point.Position
+                TextViewUtil.MoveCaretToPosition _textView position)
 
             (EditSpan.Block col, commandResult)
 
@@ -696,13 +714,7 @@ type internal CommandUtil
 
                         EditSpan.Block collection
     
-                edit.Apply() |> ignore
-    
-                // Now position the cursor back at the start of the VisualSpan
-                //
-                // Possible for a block mode to deletion to cause the start to now be in the line 
-                // break so we need to account for the 'virtualedit' setting
-                let point = SnapshotPoint(x.CurrentSnapshot, visualSpan.Start.Position)
+                let point = x.ApplyEditAndMapPoint edit visualSpan.Start.Position
                 _commonOperations.MoveCaretToPoint point ViewFlags.VirtualEdit
 
                 editSpan)
@@ -744,8 +756,8 @@ type internal CommandUtil
 
                 edit.Delete(overlapSpan) |> ignore)
 
-            let snapshot = TextEditUtil.ApplyAndGetLatest edit
-            TextViewUtil.MoveCaretToPosition _textView startPoint.Position)
+            let position = x.ApplyEditAndMapPosition edit startPoint.Position
+            TextViewUtil.MoveCaretToPosition _textView position)
 
         // BTODO: The wrong text is being put into the register here.  It should include the overlap data
         let operationKind = visualSpan.OperationKind
@@ -2200,10 +2212,8 @@ type internal CommandUtil
                 |> Seq.filter (fun point -> not (SnapshotPointUtil.IsInsideLineBreak point))
                 |> Seq.iter (fun point -> edit.Replace(Span(point.Position, 1), replaceText) |> ignore)
 
-            let snapshot = TextEditUtil.ApplyAndGetLatest edit
-
             // Reposition the caret at the start of the edit
-            let editPoint = SnapshotPoint(snapshot, visualSpan.Start.Position)
+            let editPoint = x.ApplyEditAndMapPoint edit visualSpan.Start.Position
             TextViewUtil.MoveCaretToPoint _textView editPoint)
 
         CommandResult.Completed (ModeSwitch.SwitchMode ModeKind.Normal)
