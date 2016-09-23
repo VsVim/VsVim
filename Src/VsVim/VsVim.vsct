@@ -123,6 +123,16 @@
         </Strings>
       </Button>
    
+      <Button guid="guidVsVimCmdSet" id="cmdidVsVimSetMode" priority="0x0100" type="Button">
+        <Parent guid="guidVsVimCmdSet" id="VsVimMenuGroup" />
+        <CommandFlag>AllowParams</CommandFlag>
+        <Strings>
+          <CommandName>cmdidVsVimSetMode</CommandName>
+          <ButtonText>VsVim Set mode</ButtonText>
+          <CanonicalName>.VsVim.SetMode</CanonicalName>
+          <LocCanonicalName>.VsVim.SetMode</LocCanonicalName>
+        </Strings>
+      </Button>
     </Buttons>
 
     <!--The bitmaps section is used to define the bitmaps that are used for the commands.-->
@@ -151,6 +161,7 @@
       <IDSymbol name="cmdidVsVimToggleEnabled" value="0x0103" />
       <IDSymbol name="cmdidVsVimSetEnabled" value="0x0104" />
       <IDSymbol name="cmdidVsVimSetDisabled" value="0x0105" />
+      <IDSymbol name="cmdidVsVimSetMode" value="0x0106" />
     </GuidSymbol>
     
     <GuidSymbol name="guidImages" value="{b83708de-165c-4166-bc93-05f4efaebdf2}">

@@ -4,6 +4,7 @@ using Microsoft.VisualStudio.ComponentModelHost;
 using Microsoft.VisualStudio.OLE.Interop;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
+using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.Win32;
 using System;
 using System.ComponentModel.Composition.Hosting;
@@ -31,6 +32,7 @@ namespace Vim.VisualStudio
         private IComponentModel _componentModel;
         private ExportProvider _exportProvider;
         private IVim _vim;
+        private IVsAdapter _vsAdapter;
 
         public VsVimPackage()
         {
@@ -43,6 +45,7 @@ namespace Vim.VisualStudio
             _componentModel = (IComponentModel)GetService(typeof(SComponentModel));
             _exportProvider = _componentModel.DefaultExportProvider;
             _vim = _exportProvider.GetExportedValue<IVim>();
+            _vsAdapter = _exportProvider.GetExportedValue<IVsAdapter>();
         }
 
         protected override void Dispose(bool disposing)
@@ -73,6 +76,9 @@ namespace Vim.VisualStudio
             {
                 keyBindingService.DumpKeyboard(streamWriter);
             }
+
+            var message = string.Format("Keyboard data dumped to: {0}", filePath);
+            PrintToCommandWindow(message);
         }
 
         /// <summary>
@@ -143,41 +149,134 @@ namespace Vim.VisualStudio
             _vim.IsDisabled = !_vim.IsDisabled;
         }
 
+        private void PrintToCommandWindow(string text)
+        {
+            var commandWindow = (IVsCommandWindow)GetService(typeof(SVsCommandWindow));
+            if (commandWindow == null)
+            {
+                return;
+            }
+
+            // Only print the text if a command is being run in the command window.  If it's being run via another extension
+            // then don't print any output.
+            int running;
+            if (VSConstants.S_OK != commandWindow.RunningCommandWindowCommand(out running) || running == 0)
+            {
+                return;
+            }
+
+            commandWindow.Print(text);
+        }
+
+        private int SetMode(IntPtr variantIn, IntPtr variantOut, uint commandExecOpt)
+        {
+            if (IsQueryParameterList(variantIn, variantOut, commandExecOpt))
+            {
+                Marshal.GetNativeVariantForObject("mode", variantOut);
+                return VSConstants.S_OK;
+            }
+
+            var name = GetStringArgument(variantIn) ?? "";
+
+            ModeKind mode;
+            if (!Enum.TryParse(name, out mode))
+            {
+                PrintToCommandWindow(string.Format("Invalid mode name: {0}", name));
+
+                var all = string.Join(", ", Enum.GetNames(typeof(ModeKind)));
+                PrintToCommandWindow(string.Format("Valid names: {0}", all));
+                return VSConstants.E_INVALIDARG;
+            }
+
+            IWpfTextView activeTextView;
+            if (!_vsAdapter.TryGetActiveTextView(out activeTextView))
+            {
+                PrintToCommandWindow("Could not detect an active vim buffer");
+                return VSConstants.E_FAIL;
+            }
+
+            IVimBuffer vimBuffer;
+            if (!_vim.TryGetVimBuffer(activeTextView, out vimBuffer))
+            {
+                PrintToCommandWindow("Active view isn't a vim buffer");
+                return VSConstants.E_FAIL;
+            }
+
+            vimBuffer.SwitchMode(mode, ModeArgument.None);
+            return VSConstants.S_OK;
+        }
+
+        private string GetStringArgument(IntPtr variantIn)
+        {
+            if (variantIn == IntPtr.Zero)
+            {
+                return null;
+            }
+
+            var obj = Marshal.GetObjectForNativeVariant(variantIn);
+            return obj as string;
+        }
+
+        /// <summary>
+        /// Used to determine if the shell is querying for the parameter list of our command.
+        /// </summary>
+        private static bool IsQueryParameterList(IntPtr variantIn, IntPtr variantOut, uint nCmdexecopt)
+        {
+            ushort lo = (ushort)(nCmdexecopt & (uint)0xffff);
+            ushort hi = (ushort)(nCmdexecopt >> 16);
+            if (lo == (ushort)OLECMDEXECOPT.OLECMDEXECOPT_SHOWHELP)
+            {
+                if (hi == VsMenus.VSCmdOptQueryParameterList)
+                {
+                    if (variantOut != IntPtr.Zero)
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
         #region IOleCommandTarget
 
         int IOleCommandTarget.Exec(ref Guid commandGroup, uint commandId, uint commandExecOpt, IntPtr variantIn, IntPtr variantOut)
         {
-            if (commandGroup == GuidList.VsVimCommandSet)
+            if (commandGroup != GuidList.VsVimCommandSet)
             {
-                switch (commandId)
-                {
-                    case CommandIds.Options:
-                        ShowOptionPage(typeof(Vim.VisualStudio.Implementation.OptionPages.KeyboardOptionPage));
-                        break;
-                    case CommandIds.DumpKeyboard:
-                        DumpKeyboard();
-                        break;
-                    case CommandIds.ClearTSQLBindings:
-                        ClearTSQLBindings();
-                        break;
-                    case CommandIds.ToggleEnabled:
-                        ToggleEnabled();
-                        break;
-                    case CommandIds.SetEnabled:
-                        _vim.IsDisabled = false;
-                        break;
-                    case CommandIds.SetDisabled:
-                        _vim.IsDisabled = true;
-                        break;
-                    default:
-                        Debug.Assert(false);
-                        break;
-                }
-
-                return VSConstants.S_OK;
+                return VSConstants.E_FAIL;
             }
 
-            return VSConstants.E_FAIL;
+            var hr = VSConstants.S_OK;
+            switch (commandId)
+            {
+                case CommandIds.Options:
+                    ShowOptionPage(typeof(Vim.VisualStudio.Implementation.OptionPages.KeyboardOptionPage));
+                    break;
+                case CommandIds.DumpKeyboard:
+                    DumpKeyboard();
+                    break;
+                case CommandIds.ClearTSQLBindings:
+                    ClearTSQLBindings();
+                    break;
+                case CommandIds.ToggleEnabled:
+                    ToggleEnabled();
+                    break;
+                case CommandIds.SetEnabled:
+                    _vim.IsDisabled = false;
+                    break;
+                case CommandIds.SetDisabled:
+                    _vim.IsDisabled = true;
+                    break;
+                case CommandIds.SetMode:
+                    hr = SetMode(variantIn, variantOut, commandExecOpt);
+                    break;
+                default:
+                    Debug.Assert(false);
+                    break;
+            }
+
+            return hr;
         }
 
         int IOleCommandTarget.QueryStatus(ref Guid commandGroup, uint commandsCount, OLECMD[] commands, IntPtr pCmdText)

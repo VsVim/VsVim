@@ -461,6 +461,27 @@ namespace Vim.VisualStudio.Implementation.Misc
             }
         }
 
+        private bool TryGetActiveTextView(out IWpfTextView textView)
+        {
+            var textManager = _serviceProvider.GetService<SVsTextManager, IVsTextManager2>();
+            if (textManager == null)
+            {
+                textView = null;
+                return false;
+            }
+
+            IVsTextView vsTextView;
+            var hr = textManager.GetActiveView2(fMustHaveFocus: 0, pBuffer: null, grfIncludeViewFrameType: (uint)_VIEWFRAMETYPE.vftCodeWindow, ppView: out vsTextView);
+            if (ErrorHandler.Failed(hr))
+            {
+                textView = null;
+                return false;
+            }
+
+            textView = _editorAdaptersFactoryService.GetWpfTextView(vsTextView);
+            return textView != null;
+        }
+
         #region IVsAdapter
 
         bool IVsAdapter.InAutomationFunction
@@ -561,6 +582,11 @@ namespace Vim.VisualStudio.Implementation.Misc
         void IVsAdapter.OpenFile(string filePath)
         {
             OpenFile(filePath);
+        }
+
+        bool IVsAdapter.TryGetActiveTextView(out IWpfTextView textView)
+        {
+            return TryGetActiveTextView(out textView);
         }
 
         #endregion
