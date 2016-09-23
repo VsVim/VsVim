@@ -4,6 +4,7 @@ using Microsoft.VisualStudio.ComponentModelHost;
 using Microsoft.VisualStudio.OLE.Interop;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
+using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.Win32;
 using System;
 using System.ComponentModel.Composition.Hosting;
@@ -31,6 +32,7 @@ namespace Vim.VisualStudio
         private IComponentModel _componentModel;
         private ExportProvider _exportProvider;
         private IVim _vim;
+        private IVsAdapter _vsAdapter;
 
         public VsVimPackage()
         {
@@ -43,6 +45,7 @@ namespace Vim.VisualStudio
             _componentModel = (IComponentModel)GetService(typeof(SComponentModel));
             _exportProvider = _componentModel.DefaultExportProvider;
             _vim = _exportProvider.GetExportedValue<IVim>();
+            _vsAdapter = _exportProvider.GetExportedValue<IVsAdapter>();
         }
 
         protected override void Dispose(bool disposing)
@@ -185,14 +188,21 @@ namespace Vim.VisualStudio
                 return VSConstants.E_INVALIDARG;
             }
 
-            var option = _vim.ActiveBuffer;
-            if (option.IsNone())
+            IWpfTextView activeTextView;
+            if (!_vsAdapter.TryGetActiveTextView(out activeTextView))
             {
                 PrintToCommandWindow("Could not detect an active vim buffer");
                 return VSConstants.E_FAIL;
             }
 
-            option.Value.SwitchMode(mode, ModeArgument.None);
+            IVimBuffer vimBuffer;
+            if (!_vim.TryGetVimBuffer(activeTextView, out vimBuffer))
+            {
+                PrintToCommandWindow("Active view isn't a vim buffer");
+                return VSConstants.E_FAIL;
+            }
+
+            vimBuffer.SwitchMode(mode, ModeArgument.None);
             return VSConstants.S_OK;
         }
 

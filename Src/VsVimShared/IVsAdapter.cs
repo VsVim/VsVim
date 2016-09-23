@@ -118,6 +118,12 @@ namespace Vim.VisualStudio
         Result<ITextBuffer> GetTextBufferForDocCookie(uint cookie);
 
         /// <summary>
+        /// Get the <see cref="IWpfTextView"/>  which has focus.
+        /// </summary>
+        /// <returns></returns>
+        bool TryGetActiveTextView(out IWpfTextView textView);
+
+        /// <summary>
         /// Open a file with the specified name in Visual Studio
         /// </summary>
         void OpenFile(string filePath);
