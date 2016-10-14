@@ -2375,8 +2375,9 @@ more";
             public void LineOrFirstToFirstNonBlank4()
             {
                 Create("foo", "  bar", "baz");
+                _textView.MoveCaretTo(_textBuffer.GetLine(1).Start);
                 var data = _motionUtil.LineOrFirstToFirstNonBlank(FSharpOption.Create(500));
-                Assert.Equal(_textBuffer.GetLineRange(0, 0).ExtentIncludingLineBreak, data.Span);
+                Assert.Equal(_textBuffer.GetLineRange(1, 2).ExtentIncludingLineBreak, data.Span);
                 Assert.True(data.IsForward);
                 Assert.True(data.MotionKind.IsLineWise);
                 Assert.Equal(0, data.CaretColumn.AsInLastLine().Item);
