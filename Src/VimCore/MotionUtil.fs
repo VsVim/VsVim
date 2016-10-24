@@ -2271,7 +2271,7 @@ type internal MotionUtil
 
         let endLine = 
             match numberOpt with
-            | Some number ->  SnapshotUtil.GetLineOrFirst x.CurrentSnapshot (Util.VimLineToTssLine number)
+            | Some number ->  SnapshotUtil.GetLineOrLast x.CurrentSnapshot (Util.VimLineToTssLine number)
             | None -> SnapshotUtil.GetFirstLine x.CurrentSnapshot
         x.LineToLineFirstNonBlankMotion x.CaretLine endLine
 
