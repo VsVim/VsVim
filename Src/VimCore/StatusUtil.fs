@@ -47,11 +47,11 @@ type StatusUtilFactory () =
 
     /// Get or create an PropagatingStatusUtil instance for the ITextBuffer
     member x.GetStatusUtilForBuffer (textBuffer : ITextBuffer) =
-        textBuffer.Properties.GetOrCreateSingletonProperty(_key, (fun _ -> PropagatingStatusUtil()))
+        textBuffer.Properties.GetOrCreateSingletonProperty(_key, (fun unused -> PropagatingStatusUtil()))
 
     /// Get or create an StatusUtil instance for the ITextView
     member x.GetStatusUtilForView (textView : ITextView) =
-        textView.Properties.GetOrCreateSingletonProperty(_key, (fun _ -> StatusUtil()))
+        textView.Properties.GetOrCreateSingletonProperty(_key, (fun unused -> StatusUtil()))
 
     /// When an IVimBuffer is created go ahead and update the backing VimBuffer value for
     /// the status util
