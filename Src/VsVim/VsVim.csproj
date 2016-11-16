@@ -127,6 +127,7 @@
     </Content>
     <Content Include="Colors.pkgdef">
       <IncludeInVSIX>true</IncludeInVSIX>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="License.rtf">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
@@ -175,7 +176,7 @@
     <ProjectReference Include="..\VimCore\VimCore.fsproj">
       <Project>{06BE08E7-8626-40BD-877B-8D2DCA6BA451}</Project>
       <Name>VimCore</Name>
-      <IncludeOutputGroupsInVSIX>BuiltProjectOutputGroup%3bBuiltProjectOutputGroupDependencies%3bGetCopyToOutputDirectoryItems%3b</IncludeOutputGroupsInVSIX>
+      <IncludeOutputGroupsInVSIX>BuiltProjectOutputGroup%3bBuiltProjectOutputGroupDependencies%3bGetCopyToOutputDirectoryItems%3bSatelliteDllsProjectOutputGroup%3b</IncludeOutputGroupsInVSIX>
       <IncludeOutputGroupsInVSIXLocalOnly>DebugSymbolsProjectOutputGroup%3b</IncludeOutputGroupsInVSIXLocalOnly>
     </ProjectReference>
     <ProjectReference Include="..\VimWpf\VimWpf.csproj">
