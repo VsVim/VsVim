@@ -27,6 +27,7 @@
     -->
     <DeployExtension Condition="'$(AppVeyor)' != ''">False</DeployExtension>
     <VsVimTelemetryFilePath>$(MSBuildThisFileDirectory)..\..\..\telemetry.txt</VsVimTelemetryFilePath>
+    <DeployExtension Condition="'$(VisualStudioVersion)' != '15.0'">False</DeployExtension>
   </PropertyGroup>
   <!-- This is needed to prevent forced migrations when opening the project in Vs2012 -->
   <PropertyGroup Condition=" '$(VisualStudioVersion)' == '11.0' ">
