@@ -152,7 +152,7 @@ namespace Vim.VisualStudio.UnitTest
                 _commands.Verify();
             }
 
-            [Fact]
+            [Fact(Skip = "https://github.com/jaredpar/VsVim/issues/1863")]
             public void InvalidChordFollowedByGoodChordWorks()
             {
                 var commandId = AddRemovedBinding("Text Editor::Ctrl+K, Ctrl+U", "Uncomment Selection");

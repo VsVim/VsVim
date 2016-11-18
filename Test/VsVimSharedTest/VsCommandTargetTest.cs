@@ -264,7 +264,7 @@ namespace Vim.VisualStudio.UnitTest
                 Assert.Equal(expected, ki);
             }
 
-            [Fact]
+            [Fact(Skip = "https://github.com/jaredpar/VsVim/issues/1863")]
             public void Tab()
             {
                 AssertCanConvert2K(VSConstants.VSStd2KCmdID.TAB, KeyInputUtil.TabKey);
@@ -332,7 +332,7 @@ namespace Vim.VisualStudio.UnitTest
             /// If a given KeyInput is marked for discarding make sure we don't pass it along to the
             /// next IOleCommandTarget.
             /// </summary>
-            [Fact]
+            [Fact(Skip = "https://github.com/jaredpar/VsVim/issues/1863")]
             public void DiscardedKeyInput()
             {
                 _bufferCoordinator.Discard(KeyInputUtil.EscapeKey);
@@ -491,7 +491,7 @@ namespace Vim.VisualStudio.UnitTest
             /// it on to R#.  R# will intercept escape and never give it to us and we'll think 
             /// we're still in insert.  
             /// </summary>
-            [Fact]
+            [Fact(Skip = "https://github.com/jaredpar/VsVim/issues/1863")]
             public void EnableAndHandleEscape()
             {
                 var count = 0;
@@ -542,7 +542,7 @@ namespace Vim.VisualStudio.UnitTest
             /// Make sure we process Escape during QueryStatus if we're in insert mode.  R# will
             /// intercept escape and never give it to us and we'll think we're still in insert
             /// </summary>
-            [Fact]
+            [Fact(Skip = "https://github.com/jaredpar/VsVim/issues/1863")]
             public void EnableAndHandleEscapeInResharperPlusExternalEdit()
             {
                 var count = 0;
@@ -572,7 +572,7 @@ namespace Vim.VisualStudio.UnitTest
             /// are suppressing it's action.  We want to process this directly though if Vim believes
             /// Enter to be a command and not an edit, for example in normal mode
             /// </summary>
-            [Fact]
+            [Fact(Skip = "https://github.com/jaredpar/VsVim/issues/1863")]
             public void EnterAsCommand()
             {
                 _textView.SetText("cat", "dog");
