@@ -27,6 +27,7 @@
          will fail and trigger a bulid error 
     -->
     <DeployExtension Condition="'$(AppVeyor)' != ''">False</DeployExtension>
+    <VsVimTelemetryFilePath>$(MSBuildThisFileDirectory)..\..\..\telemetry.txt</VsVimTelemetryFilePath>
   </PropertyGroup>
   <!-- This is needed to prevent forced migrations when opening the project in Vs2012 -->
   <PropertyGroup Condition=" '$(VisualStudioVersion)' == '11.0' ">
@@ -138,6 +139,12 @@
     <None Include="source.extension.vsixmanifest">
       <SubType>Designer</SubType>
     </None>
+  </ItemGroup>
+  <ItemGroup Condition="Exists($(VsVimTelemetryFilePath))">
+    <Content Include="$(VsVimTelemetryFilePath)">
+      <IncludeInVsix>true</IncludeInVsix>
+      <Link>telemetry.txt</Link>
+    </Content>
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Resources.resx">

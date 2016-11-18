@@ -26,21 +26,28 @@ namespace Vim.VisualStudio.Implementation.Misc
         internal Telemetry(SVsServiceProvider serviceProvider)
         {
             var dte = serviceProvider.GetService<SDTE, _DTE>();
-            _client = CreateClient(dte);
-            _dteEvents = dte.Events.DTEEvents;
-            _dteEvents.OnBeginShutdown += OnBeginShutdown;
+            var key = TryReadInstrumentationKey();
+            if (key != null)
+            {
+                _client = CreateClient(dte, key);
+                _dteEvents = dte.Events.DTEEvents;
+                _dteEvents.OnBeginShutdown += OnBeginShutdown;
+            }
         }
 
         internal void WriteEvent(string eventName)
         {
-            _client.TrackEvent(new EventTelemetry(eventName));
+            if (_client != null)
+            {
+                _client.TrackEvent(new EventTelemetry(eventName));
+            }
         }
 
-        private static TelemetryClient CreateClient(_DTE dte)
+        private static TelemetryClient CreateClient(_DTE dte, string instrumentationKey)
         {
             var config = TelemetryConfiguration.CreateDefault();
             var client = new TelemetryClient(config);
-            client.InstrumentationKey = "..";
+            client.InstrumentationKey = instrumentationKey;
             client.Context.User.Id = GetUserId();
             client.Context.Session.Id = Guid.NewGuid().ToString();
             client.Context.Properties.Add("Host", dte.Application.Edition);
@@ -58,6 +65,21 @@ namespace Vim.VisualStudio.Implementation.Misc
             {
                 _client.Flush();
             }
+        }
+
+        private string TryReadInstrumentationKey()
+        {
+            try
+            {
+                var dir = Path.GetDirectoryName(typeof(Telemetry).Assembly.CodeBase);
+                var filePath = Path.Combine(dir, "telemetry.txt");
+                return File.ReadAllText(filePath).Trim();
+            }
+            catch
+            {
+                return null;
+            }
+
         }
 
         private static string GetUserId()
