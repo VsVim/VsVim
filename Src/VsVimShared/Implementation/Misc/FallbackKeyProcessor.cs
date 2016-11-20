@@ -30,6 +30,7 @@ namespace Vim.VisualStudio.Implementation.Misc
                 _char = c;
                 _keyModifiers = keyModifiers;
             }
+
             internal char Char { get { return _char; } }
             internal VimKeyModifiers KeyModifiers { get { return _keyModifiers; } }
 
