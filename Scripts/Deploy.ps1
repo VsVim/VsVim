@@ -2,22 +2,18 @@ param (
     [switch]$fast = $false, 
     [string]$vsVersion = "")
 
+set-strictmode -version 2.0
+$ErrorActionPreference="Stop"
+
 [string]$script:rootPath = split-path -parent $MyInvocation.MyCommand.Definition 
 [string]$script:rootPath = resolve-path (join-path $rootPath "..")
-cd $rootPath
-
-$msbuild = join-path ${env:SystemRoot} "microsoft.net\framework\v4.0.30319\msbuild.exe"
-if (-not (test-path $msbuild)) {
-    write-error "Can't find msbuild.exe"
-}
-
-$zip = join-path $rootPath "Tools\7za920\7za.exe"
+[string]$script:zip = join-path $rootPath "Tools\7za920\7za.exe"
 
 # Check to see if the given version of Visual Studio is installed
 function test-vsinstall() { 
     param ([string]$version = $(throw "Need a version"))
 
-    if ([IntPtr].Size -eq 4) {
+    if ([IntPtr]::Size -eq 4) {
         $path = "hklm:\Software\Microsoft\VisualStudio\{0}" -f $version
     }
     else {
@@ -47,13 +43,14 @@ function test-vsixcontents() {
     & $zip x "-o$target" $vsixPath | out-null
 
     $files = gci $target | %{ $_.Name }
-    if ($files.Count -ne 17) { 
+    $expected = 19
+    if ($files.Count -ne $expected) { 
         write-host "Wrong number of files in VSIX. Found ..."
         foreach ($file in $files) {
             write-host "`t$file"
         }
         write-host "Location: $target"
-        write-error "Found $($files.Count) but expected 16"
+        write-error "Found $($files.Count) but expected $expected"
     }
 
     # The set of important files that are easy to miss 
@@ -73,7 +70,9 @@ function test-vsixcontents() {
         "Vim.VisualStudio.Shared.dll",
         "VsVim.dll",
         "Colors.pkgdef",
-        "VsVim.pkgdef"
+        "VsVim.pkgdef",
+        "Microsoft.ApplicationInsights.dll",
+        "telemetry.txt"
 
     foreach ($item in $expected) {
         if (-not ($files -contains $item)) { 
@@ -180,7 +179,9 @@ function clean-vsixcontents() {
 }
 
 function build-vsix() {
-    mkdir Deploy 2>&1 | out-null
+    if (-not (test-path Deploy)) {
+        mkdir Deploy 2>&1 | out-null
+    }
     rm Deploy\VsVim* 
     copy "Src\VsVim\bin\Release\VsVim.vsix" "Deploy\VsVim.orig.vsix"
     copy "Deploy\VsVim.orig.vsix" "Deploy\VsVim.vsix"
@@ -188,56 +189,74 @@ function build-vsix() {
     copy "Deploy\VsVim.vsix" "Deploy\VsVim.zip"
 } 
 
-# First step is to calculate the version of Visual Studio we will be 
-# using to build VsVim.  The default used by MsBuild may be referring
-# to a version not installed on the machine.   
-if ($vsVersion -eq "") { 
-    for ($i = 9; $i -lt 30; $i++) { 
-        $str = "{0}.0" -f $i
-        if (test-vsinstall $str) { 
-            $vsVersion = $str
-            break
+pushd $rootPath
+try {
+
+    $msbuild = join-path ${env:SystemRoot} "microsoft.net\framework\v4.0.30319\msbuild.exe"
+    if (-not (test-path $msbuild)) {
+        write-error "Can't find msbuild.exe"
+    }
+
+
+    # First step is to calculate the version of Visual Studio we will be 
+    # using to build VsVim.  The default used by MsBuild may be referring
+    # to a version not installed on the machine.   
+    if ($vsVersion -eq "") { 
+        for ($i = 9; $i -lt 30; $i++) { 
+            $str = "{0}.0" -f $i
+            if (test-vsinstall $str) { 
+                $vsVersion = $str
+                break
+            }
         }
     }
-}
 
-write-host "Using Visual Studio $vsVersion to build"
+    write-host "Using Visual Studio $vsVersion to build"
 
-if (($vsVersion -eq $null) -or -not (test-vsinstall $vsVersion)) { 
-    write-host "Could not detect a version of Visual Studio"
-    return
-}
+    if (($vsVersion -eq $null) -or -not (test-vsinstall $vsVersion)) { 
+        write-host "Could not detect a version of Visual Studio"
+        return
+    }
 
-# Next step is to clean out all of the projects 
-if (-not $fast) { 
-    write-host "Cleaning Projects"
-    build-clean Src\VsSpecific\Vs2010\Vs2010.csproj
-    build-clean Src\VsSpecific\Vs2012\Vs2012.csproj
-    build-clean Src\VsSpecific\Vs2013\Vs2013.csproj
-    build-clean Src\VsSpecific\Vs2015\Vs2015.csproj
-    build-clean Src\VsVim\VsVim.csproj
-}
+    # Next step is to clean out all of the projects 
+    if (-not $fast) { 
+        write-host "Cleaning Projects"
+        build-clean Src\VsSpecific\Vs2010\Vs2010.csproj
+        build-clean Src\VsSpecific\Vs2012\Vs2012.csproj
+        build-clean Src\VsSpecific\Vs2013\Vs2013.csproj
+        build-clean Src\VsSpecific\Vs2015\Vs2015.csproj
+        build-clean Src\VsVim\VsVim.csproj
+    }
 
-# Before building make sure the version number is consistent in all 
-# locations
-test-version
+    # Before building make sure the version number is consistent in all 
+    # locations
+    test-version
 
-# Build all of the relevant projects.  Both the deployment binaries and the 
-# test infrastructure
-write-host "Building Projects"
-build-release Test\VimCoreTest\VimCoreTest.csproj
-build-release Test\VimWpfTest\VimWpfTest.csproj
-build-release Test\VsVimSharedTest\VsVimSharedTest.csproj
+    # Build all of the relevant projects.  Both the deployment binaries and the 
+    # test infrastructure
+    write-host "Building Projects"
+    build-release Test\VimCoreTest\VimCoreTest.csproj
+    build-release Test\VimWpfTest\VimWpfTest.csproj
+    build-release Test\VsVimSharedTest\VsVimSharedTest.csproj
 
-# Now build the main output project
-build-release Src\VsVim\VsVim.csproj
-build-vsix
+    # Now build the main output project
+    build-release Src\VsVim\VsVim.csproj
+    build-vsix
 
-write-host "Verifying the Vsix Contents"
-
-if (-not $fast) {
+    write-host "Verifying the Vsix Contents"
     test-vsixcontents 
-    test-unittests
+
+    if (-not $fast) {
+        write-host "Running unit tests"
+        test-unittests
+    }
+}
+catch {
+    write-host "Error: $($_.Exception.Message)"
+    exit 1
+}
+finally {
+    popd
 }
 
-popd
+

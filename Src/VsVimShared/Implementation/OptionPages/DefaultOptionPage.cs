@@ -213,6 +213,11 @@ namespace Vim.VisualStudio.Implementation.OptionPages
         [Category(CategoryGeneral)]
         public bool EnableExternalEditMonitoring { get; set; }
 
+        [DisplayName("Telemetry")]
+        [Description("Whether or not to collect telemetry data for this instance.")]
+        [Category(CategoryGeneral)]
+        public bool EnableTelemetry { get; set; }
+
         [DisplayName("Use Visual Studio Tab / Backspace")]
         [Description("Let Visual Studio control tab and backspace in insert mode.  This will cause VsVim to ignore settings like 'softtabstop', 'tabstop', 'backspace', etc ...")]
         [Category(CategoryEditing)]
@@ -313,6 +318,7 @@ namespace Vim.VisualStudio.Implementation.OptionPages
             {
                 DefaultSettings = vimApplicationSettings.DefaultSettings;
                 EnableExternalEditMonitoring = vimApplicationSettings.EnableExternalEditMonitoring;
+                EnableTelemetry = vimApplicationSettings.EnableTelemetry;
                 UseEditorDefaults = vimApplicationSettings.UseEditorDefaults;
                 UseEditorIndent = vimApplicationSettings.UseEditorIndent;
                 UseEditorTabAndBackspace = vimApplicationSettings.UseEditorTabAndBackspace;
@@ -336,6 +342,7 @@ namespace Vim.VisualStudio.Implementation.OptionPages
             {
                 vimApplicationSettings.DefaultSettings = DefaultSettings;
                 vimApplicationSettings.EnableExternalEditMonitoring = EnableExternalEditMonitoring;
+                vimApplicationSettings.EnableExternalEditMonitoring = EnableTelemetry;
                 vimApplicationSettings.UseEditorDefaults = UseEditorDefaults;
                 vimApplicationSettings.UseEditorIndent = UseEditorIndent;
                 vimApplicationSettings.UseEditorTabAndBackspace = UseEditorTabAndBackspace;
