@@ -1378,7 +1378,7 @@ type internal MotionUtil
 
             // Get the span of the all motion
             let span = 
-                let last = List.nth all (all.Length - 1)
+                let last = List.item (all.Length - 1) all
                 SnapshotSpan (head.Start, last.End)
 
             // The 'ap' motion considers blank lines to be white space
@@ -1521,7 +1521,7 @@ type internal MotionUtil
             | head :: tail ->
 
                 let span = 
-                    let last = List.nth sentences (sentences.Length - 1)
+                    let last = List.item (sentences.Length - 1) sentences
                     SnapshotSpan(head.Start, last.End)
 
                 // The 'as' motion considers anything between the SnapshotSpan of a sentence to
@@ -1586,7 +1586,7 @@ type internal MotionUtil
 
             // Get the span of the text object
             let span =
-                let last = List.nth all (all.Length - 1)
+                let last = List.item (all.Length - 1) all
                 SnapshotSpan(firstSpan.Start, last.End)
 
             // Calculate the white space after the last item.  Line breaks shouldn't be included
