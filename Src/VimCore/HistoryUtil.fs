@@ -126,7 +126,7 @@ type internal HistorySession<'TData, 'TResult>
             _historyClient.Beep()
         else
             // Update the search to be this specific item
-            _command <- List.nth historyList index
+            _command <- List.item index historyList
             _clientData <- _historyClient.ProcessCommand _clientData _command
             _historyState <- HistoryState.Index (historyList, index)
 

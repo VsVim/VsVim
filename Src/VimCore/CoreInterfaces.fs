@@ -1359,8 +1359,8 @@ module KeyInputSetUtil =
     let OfSeq sequence = 
         match Seq.length sequence with
         | 0 -> KeyInputSet.Empty
-        | 1 -> KeyInputSet.OneKeyInput (Seq.nth 0 sequence)
-        | 2 -> KeyInputSet.TwoKeyInputs ((Seq.nth 0 sequence),(Seq.nth 1 sequence))
+        | 1 -> KeyInputSet.OneKeyInput (Seq.item 0 sequence)
+        | 2 -> KeyInputSet.TwoKeyInputs ((Seq.item 0 sequence),(Seq.item 1 sequence))
         | _ -> sequence |> List.ofSeq |> KeyInputSet.ManyKeyInputs 
 
     let OfList list = 
@@ -1369,7 +1369,7 @@ module KeyInputSetUtil =
         | [ki] -> KeyInputSet.OneKeyInput ki
         | _ -> 
             match list.Length with
-            | 2 -> KeyInputSet.TwoKeyInputs ((List.nth list 0),(List.nth list 1))
+            | 2 -> KeyInputSet.TwoKeyInputs ((List.item 0 list),(List.item 1 list))
             | _ -> KeyInputSet.ManyKeyInputs list
 
     let OfChar c = c |> KeyInputUtil.CharToKeyInput |> KeyInputSet.OneKeyInput

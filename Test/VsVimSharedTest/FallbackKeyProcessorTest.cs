@@ -157,7 +157,6 @@ namespace Vim.VisualStudio.UnitTest
             {
                 var commandId = AddRemovedBinding("Text Editor::Ctrl+K, Ctrl+U", "Uncomment Selection");
                 _vimBuffer.SwitchMode(ModeKind.Disabled, ModeArgument.None);
-                ExpectRaise(commandId);
                 var isCalled = false;
                 ExpectNotRaise(commandId, () => isCalled = true);
 
@@ -165,6 +164,7 @@ namespace Vim.VisualStudio.UnitTest
                 _keyProcessor.KeyDown(_keyboardDevice.CreateKeyEventArgs(Key.G, ModifierKeys.Control));
                 Assert.False(isCalled, "the command should not be called yet");
 
+                ExpectRaise(commandId);
                 _keyProcessor.KeyDown(_keyboardDevice.CreateKeyEventArgs(Key.K, ModifierKeys.Control));
                 _keyProcessor.KeyDown(_keyboardDevice.CreateKeyEventArgs(Key.U, ModifierKeys.Control));
                 _commands.Verify();
