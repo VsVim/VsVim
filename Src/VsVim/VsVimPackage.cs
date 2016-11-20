@@ -46,7 +46,6 @@ namespace Vim.VisualStudio
             _exportProvider = _componentModel.DefaultExportProvider;
             _vim = _exportProvider.GetExportedValue<IVim>();
             _vsAdapter = _exportProvider.GetExportedValue<IVsAdapter>();
-            NoteStarted();
         }
 
         protected override void Dispose(bool disposing)
@@ -56,19 +55,6 @@ namespace Vim.VisualStudio
             if (disposing)
             {
                 _vim.SaveSessionData();
-            }
-        }
-
-        private void NoteStarted()
-        {
-            try
-            {
-                var telemetry = _exportProvider.GetExportedValue<ITelemetry>();
-                telemetry.WriteEvent("VsVim started");
-            }
-            catch
-            {
-                Debug.Assert(false);
             }
         }
 

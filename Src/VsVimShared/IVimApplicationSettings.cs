@@ -49,6 +49,11 @@ namespace Vim.VisualStudio
         bool EnableExternalEditMonitoring { get; set; }
 
         /// <summary>
+        /// Do we track telemetry for this instance?
+        /// </summary>
+        bool EnableTelemetry { get; set; }
+
+        /// <summary>
         /// Do we want to enable vim style processing of tab and backspace
         /// </summary>
         bool UseEditorTabAndBackspace { get; set; }

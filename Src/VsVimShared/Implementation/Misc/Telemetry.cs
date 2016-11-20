@@ -21,10 +21,15 @@ namespace Vim.VisualStudio.Implementation.Misc
     {
         private readonly TelemetryClient _client;
         private readonly DTEEvents _dteEvents;
+        private readonly IVimApplicationSettings _vimApplicationSettings;
+
+        internal bool Enabled { get { return _client != null && _vimApplicationSettings.EnableTelemetry; } }
 
         [ImportingConstructor]
-        internal Telemetry(SVsServiceProvider serviceProvider)
+        internal Telemetry(IVimApplicationSettings applicationSettings, SVsServiceProvider serviceProvider)
         {
+            _vimApplicationSettings = applicationSettings;
+
             var dte = serviceProvider.GetService<SDTE, _DTE>();
             var key = TryReadInstrumentationKey();
             if (key != null)
@@ -37,7 +42,7 @@ namespace Vim.VisualStudio.Implementation.Misc
 
         internal void WriteEvent(string eventName)
         {
-            if (_client != null)
+            if (Enabled)
             {
                 _client.TrackEvent(new EventTelemetry(eventName));
             }
@@ -61,7 +66,7 @@ namespace Vim.VisualStudio.Implementation.Misc
 
         private void OnBeginShutdown()
         {
-            if (_client != null)
+            if (Enabled)
             {
                 _client.Flush();
             }
@@ -71,7 +76,7 @@ namespace Vim.VisualStudio.Implementation.Misc
         {
             try
             {
-                var dir = Path.GetDirectoryName(typeof(Telemetry).Assembly.CodeBase);
+                var dir = Path.GetDirectoryName(typeof(Telemetry).Assembly.Location);
                 var filePath = Path.Combine(dir, "telemetry.txt");
                 return File.ReadAllText(filePath).Trim();
             }
