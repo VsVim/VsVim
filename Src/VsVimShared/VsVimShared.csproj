@@ -41,6 +41,10 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\packages\EditorUtils2010.1.4.1.0\lib\net40\EditorUtils2010.dll</HintPath>
     </Reference>
+    <Reference Include="Microsoft.ApplicationInsights, Version=2.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Microsoft.ApplicationInsights.2.0.0\lib\net45\Microsoft.ApplicationInsights.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="Microsoft.VisualStudio.Text.Data, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
     <Reference Include="Microsoft.VisualStudio.Text.Logic, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
     <Reference Include="Microsoft.VisualStudio.Text.UI, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
@@ -96,6 +100,7 @@
     <Compile Include="Implementation\Misc\ScopeData.cs" />
     <Compile Include="Implementation\Misc\StandardCommandTarget.cs" />
     <Compile Include="Implementation\Misc\StatusBarAdapter.cs" />
+    <Compile Include="Implementation\Misc\Telemetry.cs" />
     <Compile Include="Implementation\OptionPages\ComboBoxTemplateSelector.cs" />
     <Compile Include="Implementation\OptionPages\DefaultOptionPage.cs">
       <SubType>Component</SubType>
@@ -152,6 +157,7 @@
     </Compile>
     <Compile Include="Implementation\UpgradeNotification\VimRcLoadNotificationMarginProvider.cs" />
     <Compile Include="Implementation\VisualAssist\VisualAssistExtensionAdapter.cs" />
+    <Compile Include="ITelemetry.cs" />
     <Compile Include="IToastNotifaction.cs" />
     <Compile Include="Implementation\VisualAssist\IVisualAssistUtil.cs" />
     <Compile Include="Implementation\VisualAssist\VisualAssistKeyProcessor.cs" />
