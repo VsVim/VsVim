@@ -30,6 +30,7 @@ namespace Vim.VisualStudio.Implementation.Settings
         internal const string UseEditorTabAndBackspaceName = "UseEditorTabAndBackspace";
         internal const string UseEditorCommandMarginName = "UseEditorCommandMargin";
         internal const string CleanMacrosName = "CleanMacros";
+        internal const string LastVersionUsedName = "LastVersionUsed";
         internal const string WordWrapDisplayName = "WordWrapDisplay";
         internal const string ErrorGetFormat = "Cannot get setting {0}";
         internal const string ErrorSetFormat = "Cannot set setting {0}";
@@ -287,6 +288,12 @@ namespace Vim.VisualStudio.Implementation.Settings
         {
             get { return GetRemovedBindings(); }
             set { SetRemovedBindings(value); }
+        }
+
+        string IVimApplicationSettings.LastVersionUsed
+        {
+            get { return GetString(LastVersionUsedName, null); }
+            set { SetString(LastVersionUsedName, value); }
         }
 
         event EventHandler<ApplicationSettingsEventArgs> IVimApplicationSettings.SettingsChanged
