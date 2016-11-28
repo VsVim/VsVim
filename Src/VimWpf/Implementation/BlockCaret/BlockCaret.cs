@@ -133,14 +133,7 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
             _textView.Caret.PositionChanged += OnCaretPositionChanged;
             _textView.Closed += OnTextViewClosed;
 
-            var caretBlinkTime = GetCaretBlinkTime();
-            var caretBlinkTimeSpan = new TimeSpan(0, 0, 0, 0, caretBlinkTime ?? Int32.MaxValue);
-            _blinkTimer = new DispatcherTimer(
-                caretBlinkTimeSpan,
-                DispatcherPriority.Normal,
-                _protectedOperations.GetProtectedEventHandler(OnCaretBlinkTimer),
-                Dispatcher.CurrentDispatcher);
-            _blinkTimer.IsEnabled = caretBlinkTime != null;
+            _blinkTimer = CreateBlinkTimer(protectedOperations, OnCaretBlinkTimer);
         }
 
         internal BlockCaret(IWpfTextView textView, string adornmentLayerName, IClassificationFormatMap classificationFormatMap, IEditorFormatMap formatMap, IControlCharUtil controlCharUtil, IProtectedOperations protectedOperations) :
@@ -152,7 +145,7 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
         /// Get the number of milliseconds for the caret blink time.  Null is returned if the 
         /// caret should not blink
         /// </summary>
-        private int? GetCaretBlinkTime()
+        private static int? GetCaretBlinkTime()
         {
             var blinkTime = NativeMethods.GetCaretBlinkTime();
 
@@ -169,7 +162,52 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
             }
             catch (Exception)
             {
-                return Int32.MaxValue;
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// This helper is used to work around a reported, but unreproducable, bug. The constructor
+        /// of DispatcherTimer is throwing an exception claiming a millisecond time greater 
+        /// than int.MaxValue is being passed to the constructor.
+        /// 
+        /// This is clearly not possible given the input is an int value.  However after multiple user
+        /// reports it's clear the exception is getting triggered.
+        ///
+        /// The only semi-plausible idea I can come up with is a floating point conversion issue.  Given
+        /// that the input to Timespan is int and the compared value is double it's possible that a 
+        /// conversion / rounding issue is causing int.MaxValue to become int.MaxValue + 1.  
+        ///
+        /// Either way though need to guard against this case to unblock users.
+        /// 
+        /// https://github.com/jaredpar/VsVim/issues/631
+        /// https://github.com/jaredpar/VsVim/issues/1860
+        /// </summary>
+        private static DispatcherTimer CreateBlinkTimer(IProtectedOperations protectedOperations, EventHandler onCaretBlinkTimer)
+        {
+            var caretBlinkTime = GetCaretBlinkTime();
+            var caretBlinkTimeSpan = new TimeSpan(0, 0, 0, 0, caretBlinkTime ?? int.MaxValue);
+            try
+            {
+                var blinkTimer = new DispatcherTimer(
+                    caretBlinkTimeSpan,
+                    DispatcherPriority.Normal,
+                    protectedOperations.GetProtectedEventHandler(onCaretBlinkTimer),
+                    Dispatcher.CurrentDispatcher);
+                blinkTimer.IsEnabled = caretBlinkTime != null;
+                return blinkTimer;
+            }
+            catch (ArgumentOutOfRangeException)
+            {
+                // Hit the bug ... just create a simple timer with a default interval.
+                VimTrace.TraceError("Error creating BlockCaret DispatcherTimer");
+                var blinkTimer = new DispatcherTimer(
+                    TimeSpan.FromSeconds(2),
+                    DispatcherPriority.Normal,
+                    protectedOperations.GetProtectedEventHandler(onCaretBlinkTimer),
+                    Dispatcher.CurrentDispatcher);
+                blinkTimer.IsEnabled = true;
+                return blinkTimer;
             }
         }
 
