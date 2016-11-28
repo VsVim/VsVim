@@ -115,6 +115,11 @@ namespace Vim.VisualStudio
         bool KeyMappingIssueFixed { get; set; }
 
         /// <summary>
+        /// The last version of VsVim used on this instance.
+        /// </summary>
+        string LastVersionUsed { get; set; }
+
+        /// <summary>
         /// The set of CommandKeyBinding that VsVim unbound in the conflicting key dialog
         /// </summary>
         ReadOnlyCollection<CommandKeyBinding> RemovedBindings { get; set; }
