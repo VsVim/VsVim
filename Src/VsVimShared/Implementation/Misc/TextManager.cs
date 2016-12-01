@@ -174,21 +174,18 @@ namespace Vim.VisualStudio.Implementation.Misc
 
         internal bool CloseView(ITextView textView)
         {
-            IVsCodeWindow vsCodeWindow;
-            if (!_vsAdapter.GetCodeWindow(textView).TryGetValue(out vsCodeWindow))
-            {
-                return false;
-            }
-
-            if (vsCodeWindow.IsSplit())
-            {
-                return SendSplit(vsCodeWindow);
-            }
-
             IVsWindowFrame vsWindowFrame;
             if (!_vsAdapter.GetContainingWindowFrame(textView).TryGetValue(out vsWindowFrame))
             {
                 return false;
+            }
+
+            // In the case this is a split view then close should close on of the views vs. closing the 
+            // entire frame
+            IVsCodeWindow vsCodeWindow;
+            if (vsWindowFrame.GetCodeWindow().TryGetValue(out vsCodeWindow) && vsCodeWindow.IsSplit())
+            {
+                return SendSplit(vsCodeWindow);
             }
 
             // It's possible for IVsWindowFrame elements to nest within each other.  When closing we want to 

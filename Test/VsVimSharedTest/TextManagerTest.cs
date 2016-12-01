@@ -85,25 +85,6 @@ namespace Vim.VisualStudio.UnitTest
         }
 
         /// <summary>
-        /// If the frame is split then close should just remove the split
-        /// </summary>
-        [Fact]
-        public void CloseView_Split()
-        {
-            var view = _factory.Create<IWpfTextView>().Object;
-            var tuple = _adapter.MakeCodeWindowAndCommandTarget(view, _factory);
-            tuple.Item1.MakeSplit(_adapter, _factory);
-            var commandTarget = tuple.Item2;
-            var id = VSConstants.GUID_VSStandardCommandSet97;
-            commandTarget
-                .Setup(x => x.Exec(ref id, It.IsAny<uint>(), It.IsAny<uint>(), IntPtr.Zero, IntPtr.Zero))
-                .Returns(VSConstants.S_OK)
-                .Verifiable();
-            Assert.True(_manager.CloseView(view));
-            _factory.Verify();
-        }
-
-        /// <summary>
         /// The CloseView method shouldn't cause a save.  It should simply force close the
         /// ITextView
         /// </summary>
