@@ -1284,6 +1284,17 @@ namespace Vim.UnitTest
                 _textView.MoveCaretTo(3);
                 RunCommand("wq");
             }
+
+            [Fact]
+            public void Issue1794()
+            {
+                Create("cat", "dog", "tree");
+                _vimBuffer.LocalSettings.ShiftWidth = 2;
+                _vimBuffer.MarkMap.SetLocalMark('a', _vimBuffer.VimBufferData, line: 0, column: 0);
+                _vimBuffer.MarkMap.SetLocalMark('b', _vimBuffer.VimBufferData, line: 1, column: 0);
+                RunCommandRaw(":'a,'b >");
+                Assert.Equal(new[] { "  cat", "  dog", "tree" }, _textBuffer.GetLines());
+            }
         }
     }
 }

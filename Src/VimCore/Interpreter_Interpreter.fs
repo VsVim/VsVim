@@ -405,16 +405,13 @@ type VimInterpreter
 
             // WithEndCount should create for a single line which is 'count' lines below the
             // end of the specified range
-            match count with
-            | None -> x.GetLineRangeOrDefault lineRange defaultLineRange
-            | Some count -> 
-                match x.GetLineRangeOrDefault lineRange defaultLineRange with
-                | None -> None
-                | Some lineRange -> SnapshotLineRangeUtil.CreateForLineAndMaxCount lineRange.LastLine count |> Some
+            match x.GetLineRangeOrDefault lineRange defaultLineRange with
+            | None -> None
+            | Some lineRange -> SnapshotLineRangeUtil.CreateForLineAndMaxCount lineRange.LastLine count |> Some
 
         | LineRangeSpecifier.Join (lineRange, count)->
-            match lineRange with 
-            | LineRangeSpecifier.None ->
+            match lineRange, count with 
+            | LineRangeSpecifier.None, _ ->
                 // Count is the only thing important when there is no explicit range is the
                 // count.  It is special cased when there is no line range
                 let count = 
@@ -423,8 +420,8 @@ type VimInterpreter
                     | Some 1 -> 2
                     | Some count -> count
                 SnapshotLineRangeUtil.CreateForLineAndMaxCount x.CaretLine count |> Some
-            | _ ->
-                x.GetLineRangeOrDefault (LineRangeSpecifier.WithEndCount (lineRange, count)) defaultLineRange
+            | _, Some count -> x.GetLineRangeOrDefault (LineRangeSpecifier.WithEndCount (lineRange, count)) defaultLineRange
+            | _, None -> x.GetLineRangeOrDefault lineRange defaultLineRange
 
     member x.GetLineRange lineRange =
         x.GetLineRangeOrDefault lineRange DefaultLineRange.None

@@ -1537,6 +1537,40 @@ let x = 42
             }
         }
 
+        public sealed class ShiftTest : ParserTest
+        {
+            [Fact]
+            public void ShiftLeft()
+            {
+                var command = ParseLineCommand("<");
+                Assert.True(command.IsShiftLeft);
+            }
+
+            [Fact]
+            public void ShiftRight()
+            {
+                var command = ParseLineCommand(">");
+                Assert.True(command.IsShiftRight);
+            }
+
+            [Fact]
+            public void ShiftRightWithRange()
+            {
+                var command = ParseLineCommand("'a,'b>");
+                Assert.True(command.IsShiftRight);
+                var shift = (LineCommand.ShiftRight)command;
+                Assert.True(shift.Item.IsRange);
+            }
+
+            public void ShiftRightWithRangeAndSpace()
+            {
+                var command = ParseLineCommand("'a,'b >");
+                Assert.True(command.IsShiftRight);
+                var shift = (LineCommand.ShiftRight)command;
+                Assert.True(shift.Item.IsRange);
+            }
+        }
+
         public sealed class Misc : ParserTest
         {
             /// <summary>
@@ -1658,7 +1692,7 @@ let x = 42
             {
                 var lineCommand = ParseLineCommand("delete 2");
                 var lineRange = lineCommand.AsDelete().Item1;
-                Assert.Equal(2, lineRange.AsWithEndCount().Item2.Value);
+                Assert.Equal(2, lineRange.AsWithEndCount().Item2);
             }
 
             [Fact]
@@ -1680,20 +1714,6 @@ let x = 42
             {
                 var command = ParseLineCommand("read test.txt").AsReadFile();
                 Assert.Equal("test.txt", command.Item3);
-            }
-
-            [Fact]
-            public void Parse_Shift_Left()
-            {
-                var command = ParseLineCommand("<");
-                Assert.True(command.IsShiftLeft);
-            }
-
-            [Fact]
-            public void Parse_Shift_Right()
-            {
-                var command = ParseLineCommand(">");
-                Assert.True(command.IsShiftRight);
             }
 
             /// <summary>
