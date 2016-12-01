@@ -233,6 +233,7 @@ type internal InsertMode
         let rawCommands =
             [
                 ("<Del>", InsertCommand.Delete, CommandFlags.Repeatable ||| CommandFlags.InsertEdit)
+                ("<End>", InsertCommand.MoveCaretToEndOfLine, CommandFlags.Movement)
                 ("<Enter>", InsertCommand.InsertNewLine, CommandFlags.Repeatable ||| CommandFlags.InsertEdit)
                 ("<Left>", InsertCommand.MoveCaretWithArrow Direction.Left, CommandFlags.Movement)
                 ("<Down>", InsertCommand.MoveCaret Direction.Down, CommandFlags.Movement)

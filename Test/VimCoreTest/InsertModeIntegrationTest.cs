@@ -245,6 +245,16 @@ namespace Vim.UnitTest
                 _vimBuffer.Process("i/v");
                 Assert.Equal(@"VARCHAR(MAX) = '<%= ""test"" %>'", _textBuffer.GetLine(0).GetText());
             }
+
+            [Fact]
+            public void Issue1812()
+            {
+                Create("dog");
+                _vimBuffer.Process(VimKey.Escape);
+                _vimBuffer.Process(@":imap ;; <end>;<cr>", enter: true);
+                _vimBuffer.Process("i;;");
+                Assert.Equal(new[] { "dog;", "" }, _textBuffer.GetLines());
+            }
         }
 
         public sealed class PasteTest : InsertModeIntegrationTest

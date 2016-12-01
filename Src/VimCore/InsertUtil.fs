@@ -433,6 +433,11 @@ type internal InsertUtil
 
         CommandResult.Completed ModeSwitch.NoSwitch
 
+    member x.MoveCaretToEndOfLine () =
+        let line = TextViewUtil.GetCaretLine _textView
+        _operations.MoveCaretToPoint line.End ViewFlags.None
+        CommandResult.Completed ModeSwitch.NoSwitch
+
     /// Move the caret in the given direction
     member x.MoveCaret direction = 
         let caretMovement = CaretMovement.OfDirection direction
@@ -549,6 +554,7 @@ type internal InsertUtil
             | InsertCommand.MoveCaret direction -> x.MoveCaret direction
             | InsertCommand.MoveCaretWithArrow direction -> x.MoveCaretWithArrow direction
             | InsertCommand.MoveCaretByWord direction -> x.MoveCaretByWord direction
+            | InsertCommand.MoveCaretToEndOfLine -> x.MoveCaretToEndOfLine();
             | InsertCommand.Replace c -> x.Replace c
             | InsertCommand.Overwrite s -> x.Replace s
             | InsertCommand.ShiftLineLeft -> x.ShiftLineLeft ()

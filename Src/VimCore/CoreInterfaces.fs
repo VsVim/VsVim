@@ -2819,6 +2819,9 @@ type InsertCommand  =
     /// Move the caret in the given direction by a whole word
     | MoveCaretByWord of Direction
 
+    /// Move the caret to the end of the line
+    | MoveCaretToEndOfLine
+
     /// Replace the character under the caret with the specified value
     | Replace of char
 
@@ -2878,6 +2881,7 @@ type InsertCommand  =
         | InsertCommand.MoveCaret _ -> None
         | InsertCommand.MoveCaretWithArrow _ -> None
         | InsertCommand.MoveCaretByWord _ -> None
+        | InsertCommand.MoveCaretToEndOfLine -> None
         | InsertCommand.Replace c -> Some (TextChange.Combination ((TextChange.DeleteRight 1), (TextChange.Insert (c.ToString()))))
         | InsertCommand.Overwrite s -> Some (TextChange.Replace s)
         | InsertCommand.ShiftLineLeft -> None
