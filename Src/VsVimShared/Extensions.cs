@@ -1107,6 +1107,19 @@ namespace Vim.VisualStudio
             return QueryStatus(oleCommandTarget, oleCommandData, out OLECMD command);
         }
 
+        internal static bool QueryStatus(this IOleCommandTarget oleCommandTarget, OleCommandData oleCommandData, OLECMDF status)
+        {
+            OLECMD command;
+            var hr = QueryStatus(oleCommandTarget, oleCommandData, out command);
+            if (hr != VSConstants.S_OK)
+            {
+                return false;
+            }
+
+            var ret = (OLECMDF)command.cmdf;
+            return status == (ret & status);
+        }
+
         internal static int QueryStatus(this IOleCommandTarget oleCommandTarget, OleCommandData oleCommandData, out OLECMD command)
         {
             var commandGroup = oleCommandData.Group;

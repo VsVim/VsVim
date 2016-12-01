@@ -87,6 +87,8 @@ namespace Vim.VisualStudio
                 return false;
             }
 
+            VimTrace.TraceInfo($"TryCustomProcess {command} and completion {_broker.IsCompletionActive}");
+
             var oleCommandData = OleCommandData.Empty;
             try
             {

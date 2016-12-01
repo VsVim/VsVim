@@ -17,6 +17,7 @@ using Vim.UI.Wpf;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio;
 using Microsoft.FSharp.Core;
+using Microsoft.VisualStudio.OLE.Interop;
 
 namespace Vim.VisualStudio
 {
@@ -458,7 +459,36 @@ namespace Vim.VisualStudio
 
         public override bool Save(ITextBuffer textBuffer)
         {
+            // The best way to save a buffer from an extensbility stand point is to use the DTE command 
+            // system.  This means save goes through IOleCommandTarget and hits the maximum number of 
+            // places other extension could be listening for save events.
+            //
+            // This only works though when we are saving the buffer which currently has focus.  If it's 
+            // not in focus then we need to resort to saving via the ITextDocument.
+            var activeSave = SaveActiveTextView(textBuffer);
+            if (activeSave != null)
+            {
+                return activeSave.Value;
+            }
+
             return _textManager.Save(textBuffer).IsSuccess;
+        }
+
+        /// <summary>
+        /// Do a save operation using the <see cref="IOleCommandTarget"/> approach if this is a buffer
+        /// for the active text view.  Returns null when this operation couldn't be performed and a 
+        /// non-null value when the operation was actually executed.
+        /// </summary>
+        private bool? SaveActiveTextView(ITextBuffer textBuffer)
+        {
+            IWpfTextView activeTextView;
+            if (!_vsAdapter.TryGetActiveTextView(out activeTextView) ||
+                !activeTextView.TextBuffer.GetSourceBuffersRecursive().Contains(textBuffer))
+            {
+                return null;
+            }
+
+            return SafeExecuteCommand(activeTextView, "File.SaveSelectedItems");
         }
 
         public override bool SaveTextAs(string text, string fileName)
