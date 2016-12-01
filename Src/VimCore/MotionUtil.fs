@@ -1543,7 +1543,9 @@ type internal MotionUtil
                 // Include the preceding white space in the Span
                 let includePrecedingWhiteSpace () =
                     let mutable column = SnapshotColumn(span.Start)
-                    let mutable before = column.Subtract 1
+                    let mutable before = 
+                        if SnapshotPointUtil.IsStartPoint column.Point then column
+                        else column.Subtract 1
                     while column.Point.Position > 0 && _textObjectUtil.IsSentenceWhiteSpace sentenceKind before do
                         column <- before
                         before <- column.Subtract 1
