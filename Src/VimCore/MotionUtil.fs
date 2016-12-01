@@ -1044,7 +1044,7 @@ type internal MotionUtil
     /// Get the motion between the provided two lines.  The motion will be linewise
     /// and have a column of the first non-whitespace character.  If the 'startofline'
     /// option is not set it will keep the original column
-    member x.LineToLineFirstNonBlankMotion (startLine : ITextSnapshotLine) (endLine : ITextSnapshotLine) = 
+    member x.LineToLineFirstNonBlankMotion (flags : MotionResultFlags) (startLine : ITextSnapshotLine) (endLine : ITextSnapshotLine) = 
 
         // Get the column based on the 'startofline' option
         let column = 
@@ -1061,7 +1061,7 @@ type internal MotionUtil
                 if startLine.LineNumber <= endLine.LineNumber then startLine, endLine, true 
                 else endLine, startLine, false
             (SnapshotLineRangeUtil.CreateForLineRange startLine endLine, isForward)
-        MotionResult.CreateExEx range.ExtentIncludingLineBreak isForward MotionKind.LineWise MotionResultFlags.None column
+        MotionResult.CreateExEx range.ExtentIncludingLineBreak isForward MotionKind.LineWise flags column
 
     /// Get the block span for the specified char at the given context point
     member x.GetBlock (blockKind : BlockKind) contextPoint = 
@@ -1306,7 +1306,7 @@ type internal MotionUtil
             line
             |> Util.VimLineToTssLine
             |> x.CurrentSnapshot.GetLineFromLineNumber
-            |> x.LineToLineFirstNonBlankMotion x.CaretLine
+            |> x.LineToLineFirstNonBlankMotion MotionResultFlags.None x.CaretLine
             |> Some
         | None -> x.MatchingToken()
 
@@ -2273,7 +2273,7 @@ type internal MotionUtil
             match numberOpt with
             | Some number ->  SnapshotUtil.GetLineOrLast x.CurrentSnapshot (Util.VimLineToTssLine number)
             | None -> SnapshotUtil.GetFirstLine x.CurrentSnapshot
-        x.LineToLineFirstNonBlankMotion x.CaretLine endLine
+        x.LineToLineFirstNonBlankMotion MotionResultFlags.MaintainCaretColumn x.CaretLine endLine
 
     /// Implements the 'G' motion
     ///
@@ -2286,7 +2286,7 @@ type internal MotionUtil
             match numberOpt with
             | Some number ->  SnapshotUtil.GetLineOrLast x.CurrentSnapshot (Util.VimLineToTssLine number)
             | None -> SnapshotUtil.GetLastLine x.CurrentSnapshot 
-        x.LineToLineFirstNonBlankMotion x.CaretLine endLine
+        x.LineToLineFirstNonBlankMotion MotionResultFlags.MaintainCaretColumn x.CaretLine endLine
 
     /// Go to the last non-blank character on the 'count - 1' line
     member x.LastNonBlankOnLine count = 
