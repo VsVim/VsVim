@@ -884,6 +884,22 @@ namespace Vim.UnitTest
                     Assert.Equal("cat", _textBuffer.GetLine(0).GetText());
                 }
 
+                [Fact]
+                public void AsteriskReplace()
+                {
+                    Create("dog");
+                    RunCommandRaw(":s/o/*");
+                    Assert.Equal("d*g", _textBuffer.GetLine(0).GetText());
+                }
+
+                [Fact]
+                public void AsteriskAndExtraReplace()
+                {
+                    Create("dog");
+                    RunCommandRaw(":s/o/*8");
+                    Assert.Equal("d*8g", _textBuffer.GetLine(0).GetText());
+                }
+
                 /// <summary>
                 /// Integration test for issue #973.  The key problem here is that the regex built
                 /// from the substitute was ignoring the ignorecase and smartcase options.  It was 

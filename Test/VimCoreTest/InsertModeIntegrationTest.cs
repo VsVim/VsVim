@@ -254,6 +254,7 @@ namespace Vim.UnitTest
                 _vimBuffer.Process(@":imap ;; <end>;<cr>", enter: true);
                 _vimBuffer.Process("i;;");
                 Assert.Equal(new[] { "dog;", "" }, _textBuffer.GetLines());
+                Assert.Equal(_textBuffer.GetLine(1).Start, _textView.GetCaretPoint());
             }
         }
 
