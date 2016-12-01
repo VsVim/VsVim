@@ -30,7 +30,7 @@ namespace Vim.VisualStudio
         IEnumerable<ITextView> GetDocumentTextViews(DocumentLoad documentLoad);
 
         /// <summary>
-        /// Get the ITextView instances which are attachked to this ITextBuffer
+        /// Get the ITextView instances which are attached to this ITextBuffer
         /// </summary>
         IEnumerable<ITextView> GetDocumentTextViews(ITextBuffer textBuffer);
 
