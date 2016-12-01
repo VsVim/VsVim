@@ -1089,6 +1089,27 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class RangeTest : CommandModeIntegrationTest
+        {
+            [Fact]
+            public void CurrentLineWithEndCount()
+            {
+                Create("dog", "cat");
+                _vimBuffer.LocalSettings.ShiftWidth = 2;
+                RunCommand(".1>");
+                Assert.Equal(new[] { "dog", "  cat" }, _textBuffer.GetLines());
+            }
+
+            [Fact]
+            public void CurrentLineWithEndCountRange()
+            {
+                Create("dog", "cat", "tree");
+                _vimBuffer.LocalSettings.ShiftWidth = 2;
+                RunCommand(".,.1>");
+                Assert.Equal(new[] { "  dog", "  cat", "tree" }, _textBuffer.GetLines());
+            }
+        }
+
         public sealed class MiscTest : CommandModeIntegrationTest
         {
             [Fact]

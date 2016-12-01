@@ -1210,7 +1210,14 @@ type Parser
         let lineSpecifier = 
             if _tokenizer.CurrentChar = '.' then
                 _tokenizer.MoveNextToken()
-                Some LineSpecifier.CurrentLine
+                match _tokenizer.CurrentTokenKind with
+                | TokenKind.Number _ ->
+                    x.ParseNumber() |> Option.map (LineSpecifier.CurrentLineWithEndCount)
+                | TokenKind.Character '+' ->
+                    _tokenizer.MoveNextToken()
+                    x.ParseNumber() |> Option.map (LineSpecifier.CurrentLineWithEndCount)
+                | _ ->
+                    Some LineSpecifier.CurrentLine
             elif _tokenizer.CurrentChar = '\'' then
                 let mark = _tokenizer.Mark
                 _tokenizer.MoveNextToken()

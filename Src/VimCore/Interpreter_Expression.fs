@@ -190,6 +190,9 @@ type LineSpecifier =
     /// The current line: '.'
     | CurrentLine
 
+    /// The current line with and end count 
+    | CurrentLineWithEndCount of int
+
     /// The last line: '$'
     | LastLine
 

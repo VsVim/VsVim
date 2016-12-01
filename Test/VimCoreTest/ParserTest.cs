@@ -667,6 +667,80 @@ let x = 42
             }
         }
 
+        public sealed class LineRangeTest : ParserTest
+        {
+            private LineRangeSpecifier ParseLineRange(string range)
+            {
+                var command = ParseLineCommand(range + ">");
+                Assert.True(command.IsShiftRight);
+                var shift = (LineCommand.ShiftRight)command;
+                return shift.Item;
+            }
+
+            [Fact]
+            public void EntireBuffer()
+            {
+                var range = ParseLineRange("%");
+                Assert.True(range.IsEntireBuffer);
+            }
+
+            [Fact]
+            public void CurrentLine()
+            {
+                var range = ParseLineRange(".");
+                Assert.True(range.IsSingleLine);
+                Assert.True(range.AsSingleLine().Item.IsCurrentLine);
+            }
+
+            [Fact]
+            public void CurrentLineWithEndCount()
+            {
+                var range = ParseLineRange(".2");
+                Assert.True(range.IsSingleLine);
+                Assert.True(range.AsSingleLine().Item.IsCurrentLineWithEndCount(2));
+            }
+
+            [Fact]
+            public void CurrentLineWithEndCountUsingPlus()
+            {
+                var range = ParseLineRange(".+3");
+                Assert.True(range.IsSingleLine);
+                Assert.True(range.AsSingleLine().Item.IsCurrentLineWithEndCount(3));
+            }
+
+            [Fact]
+            public void CurrentLineWithEndCountRange()
+            {
+                var range = ParseLineRange(".2,.3").AsRange();
+                Assert.True(range.Item1.IsCurrentLineWithEndCount(2));
+                Assert.True(range.Item2.IsCurrentLineWithEndCount(3));
+            }
+
+            [Fact]
+            public void CurrentLineWithEndCountRangeUsingPlus()
+            {
+                var range = ParseLineRange(".+2,.+3").AsRange();
+                Assert.True(range.Item1.IsCurrentLineWithEndCount(2));
+                Assert.True(range.Item2.IsCurrentLineWithEndCount(3));
+            }
+
+            [Fact]
+            public void CurrentLineAndCurrentLine()
+            {
+                var range = ParseLineRange(".,.").AsRange();
+                Assert.True(range.Item1.IsCurrentLine);
+                Assert.True(range.Item2.IsCurrentLine);
+            }
+
+            [Fact]
+            public void CurrentLineAndFixed()
+            {
+                var range = ParseLineRange(".,5").AsRange();
+                Assert.True(range.Item1.IsCurrentLine);
+                Assert.True(range.Item2.IsNumber(5));
+            }
+        }
+
         public sealed class ListTest : ParserTest
         {
             private FSharpList<Expression> ParseList(string text)

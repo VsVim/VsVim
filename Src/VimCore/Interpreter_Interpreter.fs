@@ -316,6 +316,11 @@ type VimInterpreter
         | LineSpecifier.CurrentLine -> 
             x.CaretLine |> getLineAndNumber |> Some
 
+        | LineSpecifier.CurrentLineWithEndCount count ->
+            let lineNumber = x.CaretLineNumber + count
+            let line = SnapshotUtil.GetLineOrLast x.CurrentSnapshot lineNumber
+            line |> getLineAndNumber |> Some
+
         | LineSpecifier.LastLine ->
             let line = SnapshotUtil.GetLastLine x.CurrentSnapshot
             line |> getLineAndNumber |> Some
