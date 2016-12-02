@@ -6829,6 +6829,16 @@ namespace Vim.UnitTest
             }
 
             [Fact]
+            public void Issue1738()
+            {
+                Create("dog", "tree");
+                _globalSettings.ClipboardOptions = ClipboardOptions.Unnamed;
+                _vimBuffer.Process("yy");
+                Assert.Equal("dog" + Environment.NewLine, RegisterMap.GetRegister(0).StringValue);
+                Assert.Equal("dog" + Environment.NewLine, RegisterMap.GetRegister(RegisterName.NewSelectionAndDrop(SelectionAndDropRegister.Star)).StringValue);
+            }
+
+            [Fact]
             public void Issue1827()
             {
                 Create("penny", "dog");

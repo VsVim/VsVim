@@ -599,9 +599,9 @@ type VimInterpreter
 
     /// Run the delete command.  Delete the specified range of text and set it to 
     /// the given Register
-    member x.RunDelete lineRange register = 
+    member x.RunDelete lineRange registerName = 
         x.RunWithLineRangeOrDefault lineRange DefaultLineRange.CurrentLine (fun lineRange ->
-            _commonOperations.DeleteLines lineRange.StartLine lineRange.Count register)
+            _commonOperations.DeleteLines lineRange.StartLine lineRange.Count registerName)
 
     member x.RunDeleteMarkCore mark = 
         match mark with 
@@ -1061,7 +1061,7 @@ type VimInterpreter
     member x.RunLetRegister (name : RegisterName) expr =
         let setRegister (value : string) =
             let registerValue = RegisterValue(value, OperationKind.CharacterWise)
-            _commonOperations.SetRegisterValue name RegisterOperation.Yank registerValue
+            _commonOperations.SetRegisterValue (Some name) RegisterOperation.Yank registerValue
         match _exprInterpreter.GetExpressionAsString expr with
         | Some value -> setRegister value
         | None -> ()
@@ -1115,8 +1115,9 @@ type VimInterpreter
         _statusUtil.OnStatus x.CurrentDirectory
 
     /// Put the register after the last line in the given range
-    member x.RunPut lineRange (register : Register) putAfter = 
+    member x.RunPut lineRange registerName putAfter = 
 
+        let register = _commonOperations.GetRegister registerName
         x.RunWithLineRangeOrDefault lineRange DefaultLineRange.CurrentLine (fun lineRange ->
             // Need to get the cursor position correct for undo / redo so start an undo 
             // transaction 
@@ -1671,7 +1672,7 @@ type VimInterpreter
 
     /// Yank the specified line range into the register.  This is done in a 
     /// linewise fashion
-    member x.RunYank (register : Register) lineRange count =
+    member x.RunYank registerName lineRange count =
         x.RunWithLineRangeOrDefault lineRange DefaultLineRange.CurrentLine (fun lineRange ->
 
             // If the user specified a count then that count is applied to the end
@@ -1683,20 +1684,11 @@ type VimInterpreter
 
             let stringData = StringData.OfSpan lineRange.ExtentIncludingLineBreak
             let value = _commonOperations.CreateRegisterValue x.CaretPoint stringData OperationKind.LineWise
-            _commonOperations.SetRegisterValue register.Name RegisterOperation.Yank value)
+            _commonOperations.SetRegisterValue registerName RegisterOperation.Yank value)
 
     /// Run the specified LineCommand
     member x.RunLineCommand lineCommand = 
-
-        // Get the register with the specified name or Unnamed if no name is 
-        // provided
-        let getRegister name = 
-            name 
-            |> OptionUtil.getOrDefault RegisterName.Unnamed
-            |> _registerMap.GetRegister
-
-        let cantRun () =    
-            _statusUtil.OnError Resources.Interpreter_Error
+        let cantRun () = _statusUtil.OnError Resources.Interpreter_Error
 
         match lineCommand with
         | LineCommand.AddAutoCommand autoCommandDefinition -> x.RunAddAutoCommand autoCommandDefinition
@@ -1707,7 +1699,7 @@ type VimInterpreter
         | LineCommand.CopyTo (sourceLineRange, destLineRange, count) -> x.RunCopyTo sourceLineRange destLineRange count
         | LineCommand.ClearKeyMap (keyRemapModes, mapArgumentList) -> x.RunClearKeyMap keyRemapModes mapArgumentList
         | LineCommand.Close hasBang -> x.RunClose hasBang
-        | LineCommand.Delete (lineRange, registerName) -> x.RunDelete lineRange (getRegister registerName)
+        | LineCommand.Delete (lineRange, registerName) -> x.RunDelete lineRange registerName
         | LineCommand.DeleteMarks marks -> x.RunDeleteMarks marks
         | LineCommand.DeleteAllMarks -> x.RunDeleteAllMarks()
         | LineCommand.Echo expression -> x.RunEcho expression
@@ -1750,8 +1742,8 @@ type VimInterpreter
         | LineCommand.ParseError msg -> x.RunParseError msg
         | LineCommand.Print (lineRange, lineCommandFlags)-> x.RunPrint lineRange lineCommandFlags
         | LineCommand.PrintCurrentDirectory -> x.RunPrintCurrentDirectory()
-        | LineCommand.PutAfter (lineRange, registerName) -> x.RunPut lineRange (getRegister registerName) true
-        | LineCommand.PutBefore (lineRange, registerName) -> x.RunPut lineRange (getRegister registerName) false
+        | LineCommand.PutAfter (lineRange, registerName) -> x.RunPut lineRange registerName true
+        | LineCommand.PutBefore (lineRange, registerName) -> x.RunPut lineRange registerName false
         | LineCommand.QuickFixNext (count, hasBang) -> x.RunQuickFixNext count hasBang
         | LineCommand.QuickFixPrevious (count, hasBang) -> x.RunQuickFixPrevious count hasBang
         | LineCommand.Quit hasBang -> x.RunQuit hasBang
@@ -1779,7 +1771,7 @@ type VimInterpreter
         | LineCommand.VerticalSplit (lineRange, fileOptions, commandOptions) -> x.RunSplit _vimHost.SplitViewVertically fileOptions commandOptions
         | LineCommand.Write (lineRange, hasBang, fileOptionList, filePath) -> x.RunWrite lineRange hasBang fileOptionList filePath
         | LineCommand.WriteAll hasBang -> x.RunWriteAll hasBang
-        | LineCommand.Yank (lineRange, registerName, count) -> x.RunYank (getRegister registerName) lineRange count
+        | LineCommand.Yank (lineRange, registerName, count) -> x.RunYank registerName lineRange count
 
     member x.RunWithLineRange lineRangeSpecifier (func : SnapshotLineRange -> unit) = 
         x.RunWithLineRangeOrDefault lineRangeSpecifier DefaultLineRange.None func

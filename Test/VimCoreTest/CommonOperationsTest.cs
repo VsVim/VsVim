@@ -23,6 +23,7 @@ namespace Vim.UnitTest
         private Mock<IVimHost> _vimHost;
         private Mock<IJumpList> _jumpList;
         private Mock<IVimLocalSettings> _localSettings;
+        // RTODO: delete this
         private Mock<IVimGlobalSettings> _globalSettings;
         private Mock<IOutliningManager> _outlining;
         private Mock<IStatusUtil> _statusUtil;
@@ -113,7 +114,7 @@ namespace Vim.UnitTest
             public void DeleteLines_Multiple()
             {
                 Create("cat", "dog", "bear");
-                _operations.DeleteLines(_textBuffer.GetLine(0), 2, UnnamedRegister);
+                _operations.DeleteLines(_textBuffer.GetLine(0), 2, VimUtil.MissingRegisterName);
                 Assert.Equal(CreateLinesWithLineBreak("cat", "dog"), UnnamedRegister.StringValue);
                 Assert.Equal("bear", _textView.GetLine(0).GetText());
                 Assert.Equal(OperationKind.LineWise, UnnamedRegister.OperationKind);
@@ -128,7 +129,7 @@ namespace Vim.UnitTest
             {
                 Create("cat", "dog", "bear", "fish", "tree");
                 _foldManager.CreateFold(_textView.GetLineRange(1, 2));
-                _operations.DeleteLines(_textBuffer.GetLine(0), 3, UnnamedRegister);
+                _operations.DeleteLines(_textBuffer.GetLine(0), 3, VimUtil.MissingRegisterName);
                 Assert.Equal(CreateLinesWithLineBreak("cat", "dog", "bear", "fish"), UnnamedRegister.StringValue);
                 Assert.Equal("tree", _textView.GetLine(0).GetText());
                 Assert.Equal(OperationKind.LineWise, UnnamedRegister.OperationKind);
@@ -143,7 +144,7 @@ namespace Vim.UnitTest
             {
                 Create("cat", "dog", "bear", "fish", "tree");
                 _foldManager.CreateFold(_textView.GetLineRange(0, 1));
-                _operations.DeleteLines(_textBuffer.GetLine(0), 2, UnnamedRegister);
+                _operations.DeleteLines(_textBuffer.GetLine(0), 2, VimUtil.MissingRegisterName);
                 Assert.Equal(CreateLinesWithLineBreak("cat", "dog", "bear"), UnnamedRegister.StringValue);
                 Assert.Equal("fish", _textView.GetLine(0).GetText());
                 Assert.Equal(OperationKind.LineWise, UnnamedRegister.OperationKind);
@@ -153,7 +154,7 @@ namespace Vim.UnitTest
             public void DeleteLines_Simple()
             {
                 Create("foo", "bar", "baz", "jaz");
-                _operations.DeleteLines(_textBuffer.GetLine(0), 1, UnnamedRegister);
+                _operations.DeleteLines(_textBuffer.GetLine(0), 1, VimUtil.MissingRegisterName);
                 Assert.Equal("bar", _textView.GetLine(0).GetText());
                 Assert.Equal("foo" + Environment.NewLine, UnnamedRegister.StringValue);
                 Assert.Equal(0, _textView.GetCaretPoint().Position);
@@ -163,7 +164,7 @@ namespace Vim.UnitTest
             public void DeleteLines_WithCount()
             {
                 Create("foo", "bar", "baz", "jaz");
-                _operations.DeleteLines(_textBuffer.GetLine(0), 2, UnnamedRegister);
+                _operations.DeleteLines(_textBuffer.GetLine(0), 2, VimUtil.MissingRegisterName);
                 Assert.Equal("baz", _textView.GetLine(0).GetText());
                 Assert.Equal("foo" + Environment.NewLine + "bar" + Environment.NewLine, UnnamedRegister.StringValue);
                 Assert.Equal(0, _textView.GetCaretPoint().Position);
@@ -176,7 +177,7 @@ namespace Vim.UnitTest
             public void DeleteLines_LastLine()
             {
                 Create("foo", "bar");
-                _operations.DeleteLines(_textBuffer.GetLine(1), 1, UnnamedRegister);
+                _operations.DeleteLines(_textBuffer.GetLine(1), 1, VimUtil.MissingRegisterName);
                 Assert.Equal("bar" + Environment.NewLine, UnnamedRegister.StringValue);
                 Assert.Equal(1, _textView.TextSnapshot.LineCount);
                 Assert.Equal("foo", _textView.GetLine(0).GetText());
@@ -1645,6 +1646,42 @@ namespace Vim.UnitTest
                 AssertRegister(RegisterName.Unnamed, "foo bar", OperationKind.CharacterWise);
                 AssertRegister(RegisterName.NewNumbered(NumberedRegister.Number1), "hey", OperationKind.CharacterWise);
                 AssertRegister(RegisterName.Blackhole, "", OperationKind.CharacterWise);
+            }
+
+            [Fact]
+            public void MissingRegisterNameUpdatedUnamedEvenWithClipboardUnnamed()
+            {
+                _globalSettings.SetupGet(x => x.ClipboardOptions).Returns(ClipboardOptions.Unnamed);
+                _operations.SetRegisterValue(VimUtil.MissingRegisterName, RegisterOperation.Yank, new RegisterValue("dog", OperationKind.CharacterWise));
+                Assert.Equal("dog", RegisterMap.GetRegister(RegisterName.Unnamed).StringValue);
+                Assert.Equal("dog", RegisterMap.GetRegister(0).StringValue);
+                Assert.Equal("dog", RegisterMap.GetRegister(RegisterName.NewSelectionAndDrop(SelectionAndDropRegister.Star)).StringValue);
+            }
+
+            [Fact]
+            public void ExplicitUnnamedRegisterWithClipboardUnnamed()
+            {
+                _globalSettings.SetupGet(x => x.ClipboardOptions).Returns(ClipboardOptions.Unnamed);
+                Vim.GlobalSettings.ClipboardOptions = ClipboardOptions.Unnamed;
+                var clipboardName = RegisterName.NewSelectionAndDrop(SelectionAndDropRegister.Star);
+                RegisterMap.GetRegister(clipboardName).UpdateValue("cat");
+                _operations.SetRegisterValue(FSharpOption.Create(RegisterName.Unnamed), RegisterOperation.Yank, new RegisterValue("dog", OperationKind.CharacterWise));
+                Assert.Equal("dog", RegisterMap.GetRegister(RegisterName.Unnamed).StringValue);
+                Assert.Equal("dog", RegisterMap.GetRegister(0).StringValue);
+                Assert.Equal("cat", RegisterMap.GetRegister(RegisterName.NewSelectionAndDrop(SelectionAndDropRegister.Star)).StringValue);
+            }
+
+            [Fact]
+            public void ExplicitStarRegisterWithClipboardUnnamed()
+            {
+                _globalSettings.SetupGet(x => x.ClipboardOptions).Returns(ClipboardOptions.Unnamed);
+                Vim.GlobalSettings.ClipboardOptions = ClipboardOptions.Unnamed;
+                var clipboardName = RegisterName.NewSelectionAndDrop(SelectionAndDropRegister.Star);
+                RegisterMap.GetRegister(0).UpdateValue("cat");
+                _operations.SetRegisterValue(clipboardName, RegisterOperation.Yank, new RegisterValue("dog", OperationKind.CharacterWise));
+                Assert.Equal("dog", RegisterMap.GetRegister(RegisterName.Unnamed).StringValue);
+                Assert.Equal("cat", RegisterMap.GetRegister(0).StringValue);
+                Assert.Equal("dog", RegisterMap.GetRegister(clipboardName).StringValue);
             }
         }
     }

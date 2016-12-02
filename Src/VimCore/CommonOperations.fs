@@ -338,7 +338,7 @@ type internal CommonOperations
 
     /// Delete count lines from the cursor.  The caret should be positioned at the start
     /// of the first line for both undo / redo
-    member x.DeleteLines (startLine : ITextSnapshotLine) count (register : Register) = 
+    member x.DeleteLines (startLine : ITextSnapshotLine) count registerName =
 
         // Function to actually perform the delete
         let doDelete spanOnVisualSnapshot caretPointOnVisualSnapshot includesLastLine =  
@@ -372,7 +372,7 @@ type internal CommonOperations
 
                 // Now update the register after the delete completes
                 let value = x.CreateRegisterValue x.CaretPoint stringData OperationKind.LineWise
-                x.SetRegisterValue register.Name RegisterOperation.Delete value
+                x.SetRegisterValue registerName RegisterOperation.Delete value
 
             | _ ->
                 // If we couldn't map back down raise an error
@@ -1321,10 +1321,28 @@ type internal CommonOperations
         else
             _vimHost.EnsureVisible _textView point  
 
+    member x.GetRegisterName name =
+        match name with
+        | Some name -> name
+        | None ->
+            if Util.IsFlagSet _globalSettings.ClipboardOptions ClipboardOptions.Unnamed then
+                RegisterName.SelectionAndDrop SelectionAndDropRegister.Star
+            else
+                RegisterName.Unnamed
+
+    member x.GetRegister name = 
+        let name = x.GetRegisterName name
+        _registerMap.GetRegister name
+
     /// Updates the given register with the specified value.  This will also update 
     /// other registers based on the type of update that is being performed.  See 
     /// :help registers for the full details
-    member x.SetRegisterValue (name : RegisterName) operation (value : RegisterValue) = 
+    member x.SetRegisterValue (name : RegisterName option) operation (value : RegisterValue) = 
+        let name, isUnnamedOrMissing = 
+            match name with 
+            | None -> x.GetRegisterName None, true
+            | Some name -> name, name = RegisterName.Unnamed
+
         if name <> RegisterName.Blackhole then
 
             _registerMap.SetRegisterValue name value
@@ -1366,9 +1384,9 @@ type internal CommonOperations
                 if not hasNewLine && name = RegisterName.Unnamed then
                     _registerMap.SetRegisterValue RegisterName.SmallDelete value
             | RegisterOperation.Yank ->
-                // If the yank occurs to the unnamed register then update register 0 with the 
-                // value
-                if name = RegisterName.Unnamed then
+                // If the register name was missing or explicitly the unnamed register then it needs 
+                // to update register 0.
+                if isUnnamedOrMissing then
                     _registerMap.SetRegisterValue (RegisterName.Numbered NumberedRegister.Number0) value
 
     interface ICommonOperations with
@@ -1384,11 +1402,12 @@ type internal CommonOperations
         member x.Beep() = x.Beep()
         member x.CloseWindowUnlessDirty() = x.CloseWindowUnlessDirty()
         member x.CreateRegisterValue point stringData operationKind = x.CreateRegisterValue point stringData operationKind
-        member x.DeleteLines startLine count register = x.DeleteLines startLine count register
+        member x.DeleteLines startLine count registerName = x.DeleteLines startLine count registerName
         member x.EnsureAtCaret viewFlags = x.EnsureAtPoint x.CaretPoint viewFlags
         member x.EnsureAtPoint point viewFlags = x.EnsureAtPoint point viewFlags
         member x.FillInVirtualSpace() = x.FillInVirtualSpace()
         member x.FormatLines range = _vimHost.FormatLines _textView range
+        member x.GetRegister registerName = x.GetRegister registerName
         member x.GetNewLineText point = x.GetNewLineText point
         member x.GetNewLineIndent contextLine newLine = x.GetNewLineIndent contextLine newLine
         member x.GetReplaceData point = x.GetReplaceData point
