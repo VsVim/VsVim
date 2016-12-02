@@ -6827,6 +6827,16 @@ namespace Vim.UnitTest
                 _vimBuffer.ProcessNotation(">i{");
                 Assert.Equal("    statement;", _textBuffer.GetLine(2).GetText());
             }
+
+            [Fact]
+            public void Issue1827()
+            {
+                Create("penny", "dog");
+                RegisterMap.SetRegisterValue(0, "cat");
+                _vimBuffer.Process("dd");
+                Assert.Equal("cat", RegisterMap.GetRegister(0).StringValue);
+                Assert.Equal("penny" + Environment.NewLine, RegisterMap.GetRegister(1).StringValue);
+            }
         }
     }
 }
