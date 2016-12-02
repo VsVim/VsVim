@@ -41,6 +41,13 @@ type CommandLineBacking (_vimData : IVimData) =
             with get() = RegisterValue(_vimData.LastCommandLine, OperationKind.CharacterWise)
             and set value = ()
 
+type internal BlackholeRegisterValueBacking() = 
+    let mutable _value = RegisterValue(StringUtil.Empty, OperationKind.CharacterWise)
+    interface IRegisterValueBacking with
+        member x.RegisterValue
+            with get() = _value
+            and set value = ()
+
 type internal RegisterMap (_map : Map<RegisterName, Register>) =
     new(vimData : IVimData, clipboard : IClipboardDevice, currentFileNameFunc : unit -> string option) = 
         let clipboardBacking = ClipboardRegisterValueBacking(clipboard) :> IRegisterValueBacking
@@ -64,6 +71,7 @@ type internal RegisterMap (_map : Map<RegisterName, Register>) =
             | RegisterName.SelectionAndDrop SelectionAndDropRegister.Star  -> clipboardBacking
             | RegisterName.ReadOnly ReadOnlyRegister.Percent -> fileNameBacking
             | RegisterName.ReadOnly ReadOnlyRegister.Colon -> commandLineBacking
+            | RegisterName.Blackhole -> BlackholeRegisterValueBacking() :> IRegisterValueBacking
             | RegisterName.LastSearchPattern -> LastSearchRegisterValueBacking(vimData) :> IRegisterValueBacking
             | _ -> DefaultRegisterValueBacking() :> IRegisterValueBacking
 
@@ -98,10 +106,8 @@ type internal RegisterMap (_map : Map<RegisterName, Register>) =
     member x.GetRegister name = Map.find name _map
 
     member x.SetRegisterValue name value =
-        // RTODO: won't need this when we have a proper BlackHole backing
-        if name <> RegisterName.Blackhole then
-            let register = x.GetRegister name
-            register.RegisterValue <- value
+        let register = x.GetRegister name
+        register.RegisterValue <- value
 
     interface IRegisterMap with
         member x.RegisterNames = _map |> Seq.map (fun pair -> pair.Key)
