@@ -390,7 +390,7 @@ namespace Vim.UnitTest
             [Fact]
             public void SingleLineWiseWithCount()
             {
-                var text = 
+                var text =
 @"if (true)
 {
   s1;
@@ -511,7 +511,7 @@ more";
             [Fact]
             public void SingleLineWiseWithCount()
             {
-                var text = 
+                var text =
 @"if (true)
 {
   s1;
@@ -1407,6 +1407,59 @@ more";
             {
                 Create("a", "b", "", "c");
                 Assert.True(_motionUtil.InnerParagraph(5).IsNone());
+            }
+        }
+
+        /// <summary>
+        /// Tests for the 'G' motion
+        /// </summary>
+        public sealed class LineOrLast : MotionUtilTest
+        {
+            [Fact]
+            public void ToFirstNonBlank1()
+            {
+                Create("foo", "bar", "baz");
+                var data = _motionUtil.LineOrLastToFirstNonBlank(FSharpOption.Create(2));
+                Assert.Equal(_textBuffer.GetLineRange(0, 1).ExtentIncludingLineBreak, data.Span);
+                Assert.True(data.IsForward);
+                Assert.True(data.MotionKind.IsLineWise);
+                Assert.Equal(0, data.CaretColumn.AsInLastLine().Item);
+            }
+
+            [Fact]
+            public void ToFirstNonBlank2()
+            {
+                Create("foo", "bar", "baz");
+                _textView.MoveCaretTo(_textBuffer.GetLine(1).Start);
+                var data = _motionUtil.LineOrLastToFirstNonBlank(FSharpOption.Create(0));
+                Assert.Equal(_textBuffer.GetLineRange(0, 1).ExtentIncludingLineBreak, data.Span);
+                Assert.False(data.IsForward);
+                Assert.True(data.MotionKind.IsLineWise);
+                Assert.Equal(0, data.CaretColumn.AsInLastLine().Item);
+            }
+
+            [Fact]
+            public void ToFirstNonBlank3()
+            {
+                Create("foo", "bar", "baz");
+                _textView.MoveCaretTo(_textBuffer.GetLine(1).Start);
+                var data = _motionUtil.LineOrLastToFirstNonBlank(FSharpOption.Create(500));
+                Assert.Equal(_textBuffer.GetLineRange(1, 2).ExtentIncludingLineBreak, data.Span);
+                Assert.True(data.IsForward);
+                Assert.True(data.MotionKind.IsLineWise);
+                Assert.Equal(0, data.CaretColumn.AsInLastLine().Item);
+            }
+
+            [Fact]
+            public void ToFirstNonBlank4()
+            {
+                Create("foo", "bar", "baz");
+                var data = _motionUtil.LineOrLastToFirstNonBlank(FSharpOption<int>.None);
+                var span = new SnapshotSpan(_textBuffer.CurrentSnapshot, 0, _textBuffer.CurrentSnapshot.Length);
+                Assert.Equal(span, data.Span);
+                Assert.True(data.IsForward);
+                Assert.True(data.MotionKind.IsLineWise);
+                Assert.Equal(0, data.CaretColumn.AsInLastLine().Item);
             }
         }
 
@@ -2392,53 +2445,6 @@ more";
                 Assert.Equal(0, data.Span.Start.Position);
                 Assert.Equal(2, data.CaretColumn.AsInLastLine().Item);
                 Assert.False(data.IsForward);
-            }
-
-            [Fact]
-            public void LineOrLastToFirstNonBlank1()
-            {
-                Create("foo", "bar", "baz");
-                var data = _motionUtil.LineOrLastToFirstNonBlank(FSharpOption.Create(2));
-                Assert.Equal(_textBuffer.GetLineRange(0, 1).ExtentIncludingLineBreak, data.Span);
-                Assert.True(data.IsForward);
-                Assert.True(data.MotionKind.IsLineWise);
-                Assert.Equal(0, data.CaretColumn.AsInLastLine().Item);
-            }
-
-            [Fact]
-            public void LineOrLastToFirstNonBlank2()
-            {
-                Create("foo", "bar", "baz");
-                _textView.MoveCaretTo(_textBuffer.GetLine(1).Start);
-                var data = _motionUtil.LineOrLastToFirstNonBlank(FSharpOption.Create(0));
-                Assert.Equal(_textBuffer.GetLineRange(0, 1).ExtentIncludingLineBreak, data.Span);
-                Assert.False(data.IsForward);
-                Assert.True(data.MotionKind.IsLineWise);
-                Assert.Equal(0, data.CaretColumn.AsInLastLine().Item);
-            }
-
-            [Fact]
-            public void LineOrLastToFirstNonBlank3()
-            {
-                Create("foo", "bar", "baz");
-                _textView.MoveCaretTo(_textBuffer.GetLine(1).Start);
-                var data = _motionUtil.LineOrLastToFirstNonBlank(FSharpOption.Create(500));
-                Assert.Equal(_textBuffer.GetLineRange(1, 2).ExtentIncludingLineBreak, data.Span);
-                Assert.True(data.IsForward);
-                Assert.True(data.MotionKind.IsLineWise);
-                Assert.Equal(0, data.CaretColumn.AsInLastLine().Item);
-            }
-
-            [Fact]
-            public void LineOrLastToFirstNonBlank4()
-            {
-                Create("foo", "bar", "baz");
-                var data = _motionUtil.LineOrLastToFirstNonBlank(FSharpOption<int>.None);
-                var span = new SnapshotSpan(_textBuffer.CurrentSnapshot, 0, _textBuffer.CurrentSnapshot.Length);
-                Assert.Equal(span, data.Span);
-                Assert.True(data.IsForward);
-                Assert.True(data.MotionKind.IsLineWise);
-                Assert.Equal(0, data.CaretColumn.AsInLastLine().Item);
             }
 
             [Fact]

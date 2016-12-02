@@ -190,6 +190,9 @@ type LineSpecifier =
     /// The current line: '.'
     | CurrentLine
 
+    /// The current line with and end count 
+    | CurrentLineWithEndCount of int
+
     /// The last line: '$'
     | LastLine
 
@@ -238,7 +241,7 @@ type LineRangeSpecifier =
 
     /// The range is an end count on top of another LineRange value.  It's possible for the 
     /// end count to exist in the abscence a range
-    | WithEndCount of LineRangeSpecifier * int option
+    | WithEndCount of LineRangeSpecifier * int
 
     /// The LineRange value for Join is heavily special cased
     | Join of LineRangeSpecifier * int option

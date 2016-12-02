@@ -305,7 +305,7 @@ namespace Vim.UnitTest
 
         #endregion
 
-        #region LineRange
+        #region LineRangeSpecifier
 
         /// <summary>
         /// LineRange as SingleLine
@@ -335,36 +335,34 @@ namespace Vim.UnitTest
 
         #region LineSpecifier
 
-        /// <summary>
-        /// LineSpecifier as Number
-        /// </summary>
         public static LineSpecifier.Number AsNumber(this LineSpecifier lineSpecifier)
         {
             return (LineSpecifier.Number)lineSpecifier;
         }
 
-        /// <summary>
-        /// Is thise a Number with the specified value
-        /// </summary>
         public static bool IsNumber(this LineSpecifier lineSpecifier, int number)
         {
             return lineSpecifier.IsNumber && lineSpecifier.AsNumber().Item == number;
         }
 
-        /// <summary>
-        /// LineSpecifier as NextLineWithPattern
-        /// </summary>
         public static LineSpecifier.NextLineWithPattern AsNextLineWithPattern(this LineSpecifier lineSpecifier)
         {
             return (LineSpecifier.NextLineWithPattern)lineSpecifier;
         }
 
-        /// <summary>
-        /// LineSpecifier as PreviousLineWithPattern
-        /// </summary>
         public static LineSpecifier.PreviousLineWithPattern AsPreviousLineWithPattern(this LineSpecifier lineSpecifier)
         {
             return (LineSpecifier.PreviousLineWithPattern)lineSpecifier;
+        }
+
+        public static LineSpecifier.CurrentLineWithEndCount AsCurrentLineWithEndCount(this LineSpecifier lineSpecifier)
+        {
+            return (LineSpecifier.CurrentLineWithEndCount)lineSpecifier;
+        }
+
+        public static bool IsCurrentLineWithEndCount(this LineSpecifier lineSpecifier, int count)
+        {
+            return lineSpecifier.IsCurrentLineWithEndCount && lineSpecifier.AsCurrentLineWithEndCount().Item == count;
         }
 
         #endregion

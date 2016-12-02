@@ -1033,6 +1033,14 @@ namespace Vim.UnitTest
                 _vimBuffer.Process("Vlll");
                 Assert.Equal(3, _textView.GetCaretPoint().Position);
             }
+
+            [Fact]
+            public void Issue1790()
+            {
+                Create(" the");
+                _vimBuffer.Process("vas");
+                Assert.Equal(_textBuffer.GetSpan(start: 0, length: 4), _textView.GetSelectionSpan());
+            }
         }
 
         public abstract class TagBlockTest : VisualModeIntegrationTest

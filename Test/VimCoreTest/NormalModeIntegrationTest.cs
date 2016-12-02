@@ -2075,6 +2075,33 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class LineToLineMotionTest : NormalModeIntegrationTest
+        {
+            [Fact]
+            public void ColumnShorter()
+            {
+                Create("the dog", "the", "cat");
+                Vim.GlobalSettings.StartOfLine = false;
+                _textView.MoveCaretToLine(lineNumber: 0, column: 4);
+                _vimBuffer.Process("2G");
+                Assert.Equal(_textBuffer.GetPointInLine(line: 1, column: 2), _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// Issue 1854
+            /// </summary>
+            [Fact]
+            public void MaintainCaretColumn()
+            {
+                Create("the dog", "the", "cat");
+                Vim.GlobalSettings.StartOfLine = false;
+                var point = _textBuffer.GetPointInLine(line: 0, column: 4);
+                _textView.MoveCaretTo(point);
+                _vimBuffer.Process("2Gk");
+                Assert.Equal(point, _textView.GetCaretPoint());
+            }
+        }
+
         public sealed class LastSearchTest : NormalModeIntegrationTest
         {
             /// <summary>

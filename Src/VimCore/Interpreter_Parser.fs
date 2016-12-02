@@ -474,6 +474,12 @@ type Parser
             Some number
         | _ -> None
 
+
+    member x.ParseLineRangeSpecifierEndCount lineRange = 
+        match x.ParseNumber() with
+        | Some count -> LineRangeSpecifier.WithEndCount (lineRange, count)
+        | None -> lineRange
+
     /// Parse out a key notation argument.  Different than a word because it can accept items
     /// which are not letters such as numbers, <, >, etc ...
     member x.ParseKeyNotation() = 
@@ -932,7 +938,7 @@ type Parser
         x.SkipBlanks()
         let name = x.ParseRegisterName ParseRegisterName.NoNumbered
         x.SkipBlanks()
-        let lineRange = LineRangeSpecifier.WithEndCount (lineRange, x.ParseNumber())
+        let lineRange = x.ParseLineRangeSpecifierEndCount lineRange
         LineCommand.Delete (lineRange, name)
 
     /// Parse out the :delmarks command
@@ -1204,7 +1210,14 @@ type Parser
         let lineSpecifier = 
             if _tokenizer.CurrentChar = '.' then
                 _tokenizer.MoveNextToken()
-                Some LineSpecifier.CurrentLine
+                match _tokenizer.CurrentTokenKind with
+                | TokenKind.Number _ ->
+                    x.ParseNumber() |> Option.map (LineSpecifier.CurrentLineWithEndCount)
+                | TokenKind.Character '+' ->
+                    _tokenizer.MoveNextToken()
+                    x.ParseNumber() |> Option.map (LineSpecifier.CurrentLineWithEndCount)
+                | _ ->
+                    Some LineSpecifier.CurrentLine
             elif _tokenizer.CurrentChar = '\'' then
                 let mark = _tokenizer.Mark
                 _tokenizer.MoveNextToken()
@@ -1363,8 +1376,7 @@ type Parser
                     | ParseResult.Succeeded flags ->
                         let flags = processFlags flags
                         x.SkipBlanks()
-                        let count = x.ParseNumber()
-                        let lineRange = LineRangeSpecifier.WithEndCount (lineRange, count)
+                        let lineRange = x.ParseLineRangeSpecifierEndCount lineRange
                         LineCommand.Substitute (lineRange, pattern, replace, flags)
             else
                 // Without a delimiter it's the repeat variety of the substitute command
@@ -1395,8 +1407,7 @@ type Parser
 
             // Parses out the optional trailing count
             x.SkipBlanks()
-            let count = x.ParseNumber()
-            let lineRange = LineRangeSpecifier.WithEndCount (lineRange, count)
+            let lineRange = x.ParseLineRangeSpecifierEndCount lineRange
             LineCommand.SubstituteRepeat (lineRange, flags)
 
     /// Parse out the repeat variety of the substitute command which is initiated
@@ -1412,13 +1423,13 @@ type Parser
     /// Parse out the shift left pattern
     member x.ParseShiftLeft lineRange = 
         x.SkipBlanks()
-        let lineRange = LineRangeSpecifier.WithEndCount (lineRange, x.ParseNumber())
+        let lineRange = x.ParseLineRangeSpecifierEndCount lineRange
         LineCommand.ShiftLeft (lineRange)
 
     /// Parse out the shift right pattern
     member x.ParseShiftRight lineRange = 
         x.SkipBlanks()
-        let lineRange = LineRangeSpecifier.WithEndCount (lineRange, x.ParseNumber())
+        let lineRange = x.ParseLineRangeSpecifierEndCount lineRange
         LineCommand.ShiftRight (lineRange)
 
     /// Parse out the shell command
@@ -1814,7 +1825,7 @@ type Parser
 
     member x.ParsePrint lineRange =
         x.SkipBlanks()
-        let lineRange = LineRangeSpecifier.WithEndCount (lineRange, x.ParseNumber())
+        let lineRange = x.ParseLineRangeSpecifierEndCount lineRange
         x.SkipBlanks()
         _lineCommandBuilder { 
             let! flags = x.ParseLineCommandFlags()
@@ -2019,6 +2030,11 @@ type Parser
             _tokenizer.MoveNextChar()
 
         let lineRange = x.ParseLineRange()
+
+        // Skip the white space after a valid line range.
+        match lineRange with
+        | LineRangeSpecifier.None -> ()
+        | _ -> x.SkipBlanks()
 
         let noRange parseFunc = 
             match lineRange with

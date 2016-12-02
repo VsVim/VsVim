@@ -884,6 +884,22 @@ namespace Vim.UnitTest
                     Assert.Equal("cat", _textBuffer.GetLine(0).GetText());
                 }
 
+                [Fact]
+                public void AsteriskReplace()
+                {
+                    Create("dog");
+                    RunCommandRaw(":s/o/*");
+                    Assert.Equal("d*g", _textBuffer.GetLine(0).GetText());
+                }
+
+                [Fact]
+                public void AsteriskAndExtraReplace()
+                {
+                    Create("dog");
+                    RunCommandRaw(":s/o/*8");
+                    Assert.Equal("d*8g", _textBuffer.GetLine(0).GetText());
+                }
+
                 /// <summary>
                 /// Integration test for issue #973.  The key problem here is that the regex built
                 /// from the substitute was ignoring the ignorecase and smartcase options.  It was 
@@ -1070,6 +1086,27 @@ namespace Vim.UnitTest
                 _textView.MoveCaretToLine(1);
                 RunCommand("y2");
                 Assert.True(UnnamedRegister.StringValue.EndsWith(Environment.NewLine));
+            }
+        }
+
+        public sealed class RangeTest : CommandModeIntegrationTest
+        {
+            [Fact]
+            public void CurrentLineWithEndCount()
+            {
+                Create("dog", "cat");
+                _vimBuffer.LocalSettings.ShiftWidth = 2;
+                RunCommand(".1>");
+                Assert.Equal(new[] { "dog", "  cat" }, _textBuffer.GetLines());
+            }
+
+            [Fact]
+            public void CurrentLineWithEndCountRange()
+            {
+                Create("dog", "cat", "tree");
+                _vimBuffer.LocalSettings.ShiftWidth = 2;
+                RunCommand(".,.1>");
+                Assert.Equal(new[] { "  dog", "  cat", "tree" }, _textBuffer.GetLines());
             }
         }
 
@@ -1267,6 +1304,17 @@ namespace Vim.UnitTest
                 Create("cat", "dog");
                 _textView.MoveCaretTo(3);
                 RunCommand("wq");
+            }
+
+            [Fact]
+            public void Issue1794()
+            {
+                Create("cat", "dog", "tree");
+                _vimBuffer.LocalSettings.ShiftWidth = 2;
+                _vimBuffer.MarkMap.SetLocalMark('a', _vimBuffer.VimBufferData, line: 0, column: 0);
+                _vimBuffer.MarkMap.SetLocalMark('b', _vimBuffer.VimBufferData, line: 1, column: 0);
+                RunCommandRaw(":'a,'b >");
+                Assert.Equal(new[] { "  cat", "  dog", "tree" }, _textBuffer.GetLines());
             }
         }
     }
