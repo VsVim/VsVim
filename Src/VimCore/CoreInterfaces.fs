@@ -739,6 +739,9 @@ type MotionResultFlags =
     /// is maintained
     | EndOfLine = 0x10
 
+    /// When used as a delete argument force a big delete
+    | BigDelete = 0x20
+
 /// Information about the type of the motion this was.
 [<RequireQualifiedAccess>]
 [<NoComparison>]

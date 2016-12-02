@@ -4874,6 +4874,17 @@ namespace Vim.UnitTest
             }
 
             [Fact]
+            public void ChangeSmallWithSearchMotion()
+            {
+                Create("dog");
+                RegisterMap.GetRegister(1).UpdateValue("g");
+                _vimBuffer.Process(@"c/o", enter: true);
+                Assert.Equal("d", RegisterMap.GetRegister(1).StringValue);
+                Assert.Equal("g", RegisterMap.GetRegister(2).StringValue);
+                Assert.Equal("d", RegisterMap.GetRegister(RegisterName.SmallDelete).StringValue);
+            }
+
+            [Fact]
             public void Issue1436()
             {
                 Create("cat", "dog", "fish", "tree");

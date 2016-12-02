@@ -860,6 +860,10 @@ type internal MotionUtil
                 MotionKind = MotionKind.LineWise 
                 DesiredColumn = column }
 
+    member x.ApplyBigDelete (result : MotionResult) =
+        let flags = result.MotionResultFlags ||| MotionResultFlags.BigDelete
+        { result with MotionResultFlags = flags }
+
     /// Linewise motions often need to deal with the VisualSnapshot of the ITextView because
     /// they see folded regions as single lines vs. the many of which are actually represented
     /// within the fold.  
@@ -1265,7 +1269,7 @@ type internal MotionUtil
             let column = SnapshotPointUtil.GetColumn virtualPoint.Position
             let span = SnapshotSpan(startPoint, endPoint)
             let isForward = caretPoint = startPoint
-            MotionResult.Create span isForward MotionKind.CharacterWiseExclusive |> Some
+            MotionResult.CreateEx span isForward MotionKind.CharacterWiseExclusive MotionResultFlags.BigDelete |> Some
 
     /// Motion from the caret to the given mark within the ITextBuffer.  Because this uses
     /// absolute positions and not counts we can operate on the edit buffer and don't need
@@ -1307,8 +1311,9 @@ type internal MotionUtil
             |> Util.VimLineToTssLine
             |> x.CurrentSnapshot.GetLineFromLineNumber
             |> x.LineToLineFirstNonBlankMotion MotionResultFlags.None x.CaretLine
+            |> x.ApplyBigDelete
             |> Some
-        | None -> x.MatchingToken()
+        | None -> x.MatchingToken() |> Option.map x.ApplyBigDelete
 
     /// Find the matching token for the next token on the current line 
     member x.MatchingToken() = 
@@ -2462,7 +2467,7 @@ type internal MotionUtil
             |> Seq.map SnapshotSpanUtil.GetStartPoint
             |> SeqUtil.headOrDefault (SnapshotUtil.GetEndPoint x.CurrentSnapshot)
         let span = SnapshotSpan(x.CaretPoint, endPoint)
-        MotionResult.Create span true MotionKind.CharacterWiseExclusive
+        MotionResult.CreateEx span true MotionKind.CharacterWiseExclusive MotionResultFlags.BigDelete
 
     member x.SentenceBackward count = 
         _jumpList.Add x.CaretPoint
@@ -2472,7 +2477,7 @@ type internal MotionUtil
             |> Seq.map SnapshotSpanUtil.GetStartPoint
             |> SeqUtil.headOrDefault (SnapshotUtil.GetStartPoint x.CurrentSnapshot)
         let span = SnapshotSpan(startPoint, x.CaretPoint)
-        MotionResult.Create span false MotionKind.CharacterWiseExclusive
+        MotionResult.CreateEx span false MotionKind.CharacterWiseExclusive MotionResultFlags.BigDelete
 
     /// Implements the '}' motion
     member x.ParagraphForward count = 
@@ -2484,7 +2489,7 @@ type internal MotionUtil
             |> Seq.map SnapshotSpanUtil.GetStartPoint
             |> SeqUtil.headOrDefault (SnapshotUtil.GetEndPoint x.CurrentSnapshot)
         let span = SnapshotSpan(x.CaretPoint, endPoint)
-        MotionResult.Create span true MotionKind.CharacterWiseExclusive 
+        MotionResult.CreateEx span true MotionKind.CharacterWiseExclusive MotionResultFlags.BigDelete
 
     /// Implements the '{' motion
     member x.ParagraphBackward count = 
@@ -2496,7 +2501,7 @@ type internal MotionUtil
             |> Seq.map SnapshotSpanUtil.GetStartPoint
             |> SeqUtil.headOrDefault (SnapshotUtil.GetStartPoint x.CurrentSnapshot)
         let span = SnapshotSpan(startPoint, x.CaretPoint)
-        MotionResult.Create span false MotionKind.CharacterWiseExclusive
+        MotionResult.CreateEx span false MotionKind.CharacterWiseExclusive MotionResultFlags.BigDelete
 
     member x.QuotedString quoteChar = 
         match x.GetQuotedStringData quoteChar with
@@ -2596,7 +2601,7 @@ type internal MotionUtil
                     None
                 else
                     let span = SnapshotSpan(startPoint, endPoint)
-                    MotionResult.CreateExEx span isForward motionKind MotionResultFlags.None caretColumn |> Some
+                    MotionResult.CreateExEx span isForward motionKind MotionResultFlags.BigDelete caretColumn |> Some
 
         _vimData.ResumeDisplayPattern()
         motionResult
