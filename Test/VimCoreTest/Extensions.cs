@@ -1615,6 +1615,12 @@ namespace Vim.UnitTest
             return map.GetRegister(name);
         }
 
+        public static Register GetRegister(this IRegisterMap map, int number)
+        {
+            var name = RegisterNameUtil.NumberToRegister(number).Value;
+            return map.GetRegister(name);
+        }
+
         public static void Clear(this IRegisterMap map)
         {
             foreach (var name in NamedRegister.All)

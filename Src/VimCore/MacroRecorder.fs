@@ -45,7 +45,7 @@ type internal MacroRecorder (_registerMap : IRegisterMap) =
         // Need to reverse the list as we stored it backwards
         let list = List.rev list
         let value = RegisterValue(list)
-        _registerMap.SetRegisterValue register RegisterOperation.Yank value
+        _registerMap.SetRegisterValue register.Name value
         _recordData <- None
         _recordingStoppedEvent.Trigger x
 

@@ -176,13 +176,14 @@ namespace Vim.UnitTest
             /// Copy to the first line
             /// </summary>
             [Fact]
-            public void ToFirstLine() {
+            public void ToFirstLine()
+            {
                 Create("cat", "dog", "fish", "bear", "tree");
                 _textView.MoveCaretToLine(3);
                 ParseAndRun("co -4");
 
                 Assert.Equal(
-                    new [] {"bear","cat", "dog", "fish", "bear", "tree"},
+                    new[] { "bear", "cat", "dog", "fish", "bear", "tree" },
                     _textBuffer.GetLines().ToArray());
 
                 Assert.Equal(_textBuffer.GetLine(0).Start, _textView.GetCaretPoint());
@@ -1182,6 +1183,59 @@ namespace Vim.UnitTest
                 Create("cat");
                 VimHost.RunSaveTextAs = delegate { return false; };
                 ParseAndRun("w'");
+            }
+        }
+
+
+        public sealed class YankTest : InterpreterTest
+        {
+            [Fact]
+            public void Yank1()
+            {
+                Create("foo", "bar");
+                ParseAndRun("y");
+                Assert.Equal("foo" + Environment.NewLine, UnnamedRegister.StringValue);
+                Assert.Equal(OperationKind.LineWise, UnnamedRegister.OperationKind);
+            }
+
+            [Fact]
+            public void Yank2()
+            {
+                Create("foo", "bar", "baz");
+                ParseAndRun("1,2y");
+                var text = _textView.GetLineRange(0, 1).ExtentIncludingLineBreak.GetText();
+                Assert.Equal(text, UnnamedRegister.StringValue);
+            }
+
+            [Fact]
+            public void Yank3()
+            {
+                Create("foo", "bar");
+                ParseAndRun("y c");
+                Assert.Equal(_textView.GetLine(0).ExtentIncludingLineBreak.GetText(), RegisterMap.GetRegister('c').StringValue);
+            }
+
+            /// <summary>
+            /// Ensure that an invalid line number still registers an error with commands line yank vs. chosing
+            /// the last line in the ITextBuffer as it does for jump commands
+            /// </summary>
+            [Fact]
+            public void Yank_InvalidLineNumber()
+            {
+                Create("hello", "world");
+                ParseAndRun("300y");
+                Assert.Equal(Resources.Range_Invalid, _statusUtil.LastError);
+            }
+
+            /// <summary>
+            /// The count should be applied to the specified line number for yank
+            /// </summary>
+            [Fact]
+            public void Yank_WithRangeAndCount()
+            {
+                Create("cat", "dog", "rabbit", "tree");
+                ParseAndRun("2y 1");
+                Assert.Equal("dog" + Environment.NewLine, UnnamedRegister.StringValue);
             }
         }
 

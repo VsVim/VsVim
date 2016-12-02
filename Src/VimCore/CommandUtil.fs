@@ -332,7 +332,7 @@ type internal CommandUtil
         CommandResult.Completed ModeSwitch.SwitchPreviousMode
 
     /// Delete the specified motion and enter insert mode
-    member x.ChangeMotion register (result : MotionResult) = 
+    member x.ChangeMotion (register : Register) (result : MotionResult) = 
 
         // This command has legacy / special case behavior for forward word motions.  It will 
         // not delete any trailing whitespace in the span if the motion is created for a forward 
@@ -391,7 +391,7 @@ type internal CommandUtil
 
         // Now that the delete is complete update the register
         let value = x.CreateRegisterValue (StringData.OfSpan span) result.OperationKind
-        _registerMap.SetRegisterValue register RegisterOperation.Delete value
+        _commonOperations.SetRegisterValue register.Name RegisterOperation.Delete value
 
         commandResult
 
@@ -406,7 +406,7 @@ type internal CommandUtil
 
     /// Core routine for changing a set of lines in the ITextBuffer.  This is the backing function
     /// for changing lines in both normal and visual mode
-    member x.ChangeLinesCore (range : SnapshotLineRange) register = 
+    member x.ChangeLinesCore (range : SnapshotLineRange) (register : Register) = 
 
         // Caret position for the undo operation depends on the number of lines which are in
         // range being deleted.  If there is a single line then we position it before the first
@@ -441,12 +441,12 @@ type internal CommandUtil
             // operation.  
             let stringData = range.Extent.GetText() |> StringData.Simple
             let value = x.CreateRegisterValue stringData OperationKind.LineWise
-            _registerMap.SetRegisterValue register RegisterOperation.Delete value)
+            _commonOperations.SetRegisterValue register.Name RegisterOperation.Delete value)
 
     /// Delete the selected lines and begin insert mode (implements the 'S', 'C' and 'R' visual
     /// mode commands.  This is very similar to DeleteLineSelection except that block deletion
     /// can be special cased depending on the command it's used in
-    member x.ChangeLineSelection register (visualSpan : VisualSpan) specialCaseBlock =
+    member x.ChangeLineSelection (register : Register) (visualSpan : VisualSpan) specialCaseBlock =
 
         // The majority of cases simply delete a SnapshotLineRange directly.  Handle that here
         let deleteRange (range : SnapshotLineRange) = 
@@ -501,7 +501,7 @@ type internal CommandUtil
                 else visualSpan.EditSpan.OverarchingSpan |> SnapshotLineRangeUtil.CreateForSpan |> deleteRange
 
         let value = x.CreateRegisterValue (StringData.OfEditSpan editSpan) OperationKind.LineWise
-        _registerMap.SetRegisterValue register RegisterOperation.Delete value
+        _commonOperations.SetRegisterValue register.Name RegisterOperation.Delete value
 
         commandResult
 
@@ -601,7 +601,7 @@ type internal CommandUtil
 
     /// Delete 'count' characters after the cursor on the current line.  Caret should 
     /// remain at it's original position 
-    member x.DeleteCharacterAtCaret count register =
+    member x.DeleteCharacterAtCaret count (register : Register) =
 
         // Check for the case where the caret is past the end of the line.  Can happen
         // when 've=onemore'
@@ -622,13 +622,13 @@ type internal CommandUtil
 
             // Put the deleted text into the specified register
             let value = RegisterValue(StringData.OfSpan span, OperationKind.CharacterWise)
-            _registerMap.SetRegisterValue register RegisterOperation.Delete value
+            _commonOperations.SetRegisterValue register.Name RegisterOperation.Delete value
 
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Delete 'count' characters before the cursor on the current line.  Caret should be
     /// positioned at the begining of the span for undo / redo
-    member x.DeleteCharacterBeforeCaret count register = 
+    member x.DeleteCharacterBeforeCaret count (register : Register) = 
 
         let startPoint = 
             let position = x.CaretPoint.Position - count
@@ -645,7 +645,7 @@ type internal CommandUtil
 
         // Put the deleted text into the specified register once the delete completes
         let value = RegisterValue(StringData.OfSpan span, OperationKind.CharacterWise)
-        _registerMap.SetRegisterValue register RegisterOperation.Delete value
+        _commonOperations.SetRegisterValue register.Name RegisterOperation.Delete value
 
         CommandResult.Completed ModeSwitch.NoSwitch
 
@@ -674,7 +674,7 @@ type internal CommandUtil
 
     /// Delete the selected text from the buffer and put it into the specified 
     /// register. 
-    member x.DeleteLineSelection register (visualSpan : VisualSpan) =
+    member x.DeleteLineSelection (register : Register) (visualSpan : VisualSpan) =
 
         // For each of the 3 cases the caret should begin at the start of the 
         // VisualSpan during undo so move the caret now. 
@@ -720,7 +720,7 @@ type internal CommandUtil
                 editSpan)
 
         let value = x.CreateRegisterValue (StringData.OfEditSpan editSpan) OperationKind.LineWise
-        _registerMap.SetRegisterValue register RegisterOperation.Delete value
+        _commonOperations.SetRegisterValue register.Name RegisterOperation.Delete value
 
         CommandResult.Completed ModeSwitch.SwitchPreviousMode
 
@@ -762,7 +762,7 @@ type internal CommandUtil
         // BTODO: The wrong text is being put into the register here.  It should include the overlap data
         let operationKind = visualSpan.OperationKind
         let value = x.CreateRegisterValue (StringData.OfEditSpan visualSpan.EditSpan) operationKind
-        _registerMap.SetRegisterValue register RegisterOperation.Delete value
+        _commonOperations.SetRegisterValue register.Name RegisterOperation.Delete value
 
         CommandResult.Completed ModeSwitch.SwitchPreviousMode
 
@@ -773,7 +773,7 @@ type internal CommandUtil
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Delete the specified motion of text
-    member x.DeleteMotion register (result : MotionResult) = 
+    member x.DeleteMotion (register : Register) (result : MotionResult) = 
 
         // The d{motion} command has an exception listed which is visible by typing ':help d' in 
         // gVim.  In summary, if the motion is characterwise, begins and ends on different
@@ -826,13 +826,13 @@ type internal CommandUtil
         // from the buffer
         if not span.IsEmpty then
             let value = x.CreateRegisterValue (StringData.OfSpan span) operationKind
-            _registerMap.SetRegisterValue register RegisterOperation.Delete value
+            _commonOperations.SetRegisterValue register.Name RegisterOperation.Delete value
 
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Delete from the cursor to the end of the line and then 'count - 1' more lines into
     /// the buffer.  This is the implementation of the 'D' command
-    member x.DeleteTillEndOfLine count register =
+    member x.DeleteTillEndOfLine count (register : Register) =
 
         let caretPosition = x.CaretPoint.Position
 
@@ -864,7 +864,7 @@ type internal CommandUtil
         // Delete is complete so update the register.  Strangely enough this is a character wise
         // operation even though it involves line deletion
         let value = RegisterValue(StringData.OfSpan span, OperationKind.CharacterWise)
-        _registerMap.SetRegisterValue register RegisterOperation.Delete value
+        _commonOperations.SetRegisterValue register.Name RegisterOperation.Delete value
 
     /// Run the specified action with a wrapped undo transaction.  This is often necessary when
     /// an edit command manipulates the caret
@@ -1936,8 +1936,7 @@ type internal CommandUtil
 
         // Update the unnamed register with the deleted text
         let value = x.CreateRegisterValue (StringData.OfEditSpan deletedSpan) operationKind
-        let unnamedRegister = _registerMap.GetRegister RegisterName.Unnamed
-        _registerMap.SetRegisterValue unnamedRegister RegisterOperation.Delete value 
+        _commonOperations.SetRegisterValue RegisterName.Unnamed RegisterOperation.Delete value 
 
         CommandResult.Completed ModeSwitch.SwitchPreviousMode
 
@@ -2834,7 +2833,7 @@ type internal CommandUtil
     
                 // Put the deleted text into the specified register
                 let value = RegisterValue(StringData.OfSpan span, OperationKind.CharacterWise)
-                _registerMap.SetRegisterValue register RegisterOperation.Delete value)
+                _commonOperations.SetRegisterValue register.Name RegisterOperation.Delete value)
 
     /// Subtract 'count' values from the word under the caret
     member x.SubtractFromWord count =
@@ -2997,14 +2996,14 @@ type internal CommandUtil
 
             let data = StringData.OfSpan span
             let value = x.CreateRegisterValue data OperationKind.LineWise
-            _registerMap.SetRegisterValue register RegisterOperation.Yank value
+            _commonOperations.SetRegisterValue register.Name RegisterOperation.Yank value
 
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Yank the contents of the motion into the specified register
     member x.YankMotion register (result: MotionResult) = 
         let value = x.CreateRegisterValue (StringData.OfSpan result.Span) result.OperationKind
-        _registerMap.SetRegisterValue register RegisterOperation.Yank value
+        _commonOperations.SetRegisterValue register.Name RegisterOperation.Yank value
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Yank the lines in the specified selection
@@ -3024,14 +3023,14 @@ type internal CommandUtil
 
         let data = StringData.OfEditSpan editSpan
         let value = x.CreateRegisterValue data operationKind
-        _registerMap.SetRegisterValue register RegisterOperation.Yank value
+        _commonOperations.SetRegisterValue register.Name RegisterOperation.Yank value
         CommandResult.Completed ModeSwitch.SwitchPreviousMode
 
     /// Yank the selection into the specified register
     member x.YankSelection register (visualSpan : VisualSpan) = 
         let data = StringData.OfEditSpan visualSpan.EditSpan
         let value = x.CreateRegisterValue data visualSpan.OperationKind
-        _registerMap.SetRegisterValue register RegisterOperation.Yank value
+        _commonOperations.SetRegisterValue register.Name RegisterOperation.Yank value
         CommandResult.Completed ModeSwitch.SwitchPreviousMode
 
     /// Cut selection
