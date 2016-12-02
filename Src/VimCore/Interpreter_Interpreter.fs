@@ -1060,9 +1060,8 @@ type VimInterpreter
     /// Run the let command for registers
     member x.RunLetRegister (name : RegisterName) expr =
         let setRegister (value : string) =
-            let register = _registerMap.GetRegister name
             let registerValue = RegisterValue(value, OperationKind.CharacterWise)
-            _registerMap.SetRegisterValue register RegisterOperation.Yank registerValue
+            _commonOperations.SetRegisterValue name RegisterOperation.Yank registerValue
         match _exprInterpreter.GetExpressionAsString expr with
         | Some value -> setRegister value
         | None -> ()
@@ -1672,7 +1671,7 @@ type VimInterpreter
 
     /// Yank the specified line range into the register.  This is done in a 
     /// linewise fashion
-    member x.RunYank register lineRange count =
+    member x.RunYank (register : Register) lineRange count =
         x.RunWithLineRangeOrDefault lineRange DefaultLineRange.CurrentLine (fun lineRange ->
 
             // If the user specified a count then that count is applied to the end
@@ -1684,7 +1683,7 @@ type VimInterpreter
 
             let stringData = StringData.OfSpan lineRange.ExtentIncludingLineBreak
             let value = _commonOperations.CreateRegisterValue x.CaretPoint stringData OperationKind.LineWise
-            _registerMap.SetRegisterValue register RegisterOperation.Yank value)
+            _commonOperations.SetRegisterValue register.Name RegisterOperation.Yank value)
 
     /// Run the specified LineCommand
     member x.RunLineCommand lineCommand = 

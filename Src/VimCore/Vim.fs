@@ -766,11 +766,11 @@ type internal Vim
         let sessionData = x.ReadSessionData (x.GetSessionDataFilePath())
         let registers = if sessionData.Registers = null then [| |] else sessionData.Registers
         for sessionReg in registers do
-            match sessionReg.Name |> RegisterName.OfChar |> Option.map _registerMap.GetRegister with
-            | Some register -> 
+            match sessionReg.Name |> RegisterName.OfChar with
+            | Some name -> 
                 let kind = if sessionReg.IsCharacterWise then OperationKind.CharacterWise else OperationKind.LineWise
                 let registerValue = RegisterValue(sessionReg.Value, kind)
-                _registerMap.SetRegisterValue register RegisterOperation.Yank registerValue
+                _registerMap.SetRegisterValue name registerValue
             | None -> ()
 
     member x.LoadSessionData() =

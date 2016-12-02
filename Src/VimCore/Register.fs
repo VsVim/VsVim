@@ -95,6 +95,20 @@ type NumberedRegister =
         | '9' -> Some Number9
         | _ -> None
 
+    static member OfNumber n = 
+        match n with
+        | 0 -> Some Number0
+        | 1 -> Some Number1
+        | 2 -> Some Number2
+        | 3 -> Some Number3
+        | 4 -> Some Number4
+        | 5 -> Some Number5
+        | 6 -> Some Number6
+        | 7 -> Some Number7
+        | 8 -> Some Number8
+        | 9 -> Some Number9
+        | _ -> None
+
     static member All = 
         ['0'..'9']
         |> Seq.map NumberedRegister.OfChar
@@ -419,20 +433,10 @@ module RegisterNameUtil =
         |> Map.ofSeq
 
     let CharToRegister c = Map.tryFind c RegisterMap 
-
-[<DebuggerDisplay("{ToString(),nq}")>]
-[<RequireQualifiedAccess>]
-[<NoComparison>]
-type RegisterOperation = 
-    | Delete
-    | Yank
-
-    with
-
-    override x.ToString() =
-        match x with
-        | Delete -> "Delete"
-        | Yank -> "Yank"
+    let NumberToRegister n = 
+        match NumberedRegister.OfNumber n with
+        | None -> None
+        | Some numberedName -> RegisterName.Numbered numberedName |> Some
 
 /// Represents the data stored in a Register.  Registers need to store both string values 
 /// for cut and paste operations and KeyInput sequences for Macro recording.  There is not 
@@ -520,6 +524,8 @@ type RegisterValue
             let keyInputs = _keyInputs @ value.KeyInputs
             RegisterValue(keyInputs)
 
+    override x.ToString() = x.StringValue
+
 /// Backing of a register value
 type internal IRegisterValueBacking = 
 
@@ -566,6 +572,6 @@ type IRegisterMap =
     abstract GetRegister : registerName : RegisterName -> Register
 
     /// Update the register with the specified value
-    abstract SetRegisterValue : register : Register -> operation : RegisterOperation -> value : RegisterValue -> unit
+    abstract SetRegisterValue : registerName : RegisterName -> value : RegisterValue -> unit
 
 

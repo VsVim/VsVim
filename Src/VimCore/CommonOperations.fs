@@ -338,7 +338,7 @@ type internal CommonOperations
 
     /// Delete count lines from the cursor.  The caret should be positioned at the start
     /// of the first line for both undo / redo
-    member x.DeleteLines (startLine : ITextSnapshotLine) count register = 
+    member x.DeleteLines (startLine : ITextSnapshotLine) count (register : Register) = 
 
         // Function to actually perform the delete
         let doDelete spanOnVisualSnapshot caretPointOnVisualSnapshot includesLastLine =  
@@ -372,7 +372,7 @@ type internal CommonOperations
 
                 // Now update the register after the delete completes
                 let value = x.CreateRegisterValue x.CaretPoint stringData OperationKind.LineWise
-                _registerMap.SetRegisterValue register RegisterOperation.Delete value
+                x.SetRegisterValue register.Name RegisterOperation.Delete value
 
             | _ ->
                 // If we couldn't map back down raise an error
@@ -1320,7 +1320,57 @@ type internal CommonOperations
             TextViewUtil.EnsureCaretOnScreen _textView
         else
             _vimHost.EnsureVisible _textView point  
-        
+
+    /// Updates the given register with the specified value.  This will also update 
+    /// other registers based on the type of update that is being performed.  See 
+    /// :help registers for the full details
+    member x.SetRegisterValue (name : RegisterName) operation (value : RegisterValue) = 
+        if name <> RegisterName.Blackhole then
+
+            _registerMap.SetRegisterValue name value
+
+            // If this is not the unnamed register then the unnamed register needs to 
+            // be updated 
+            if name <> RegisterName.Unnamed then
+                _registerMap.SetRegisterValue RegisterName.Unnamed value
+
+            let hasNewLine = 
+                match value.StringData with 
+                | StringData.Block col -> Seq.exists EditUtil.HasNewLine col 
+                | StringData.Simple str -> EditUtil.HasNewLine str
+
+            // Performs a numbered delete.  Shifts all of the values down and puts 
+            // the new value into register 1
+            //
+            // The documentation for registers 1-9 says this doesn't occur when a named
+            // register is used.  Actual behavior shows this is not the case.
+            let doNumberedDelete () = 
+                for i in [9;8;7;6;5;4;3;2] do
+                    let cur = RegisterNameUtil.NumberToRegister i |> Option.get 
+                    let prev = RegisterNameUtil.NumberToRegister (i - 1) |> Option.get
+                    let prevRegister = _registerMap.GetRegister prev
+                    _registerMap.SetRegisterValue cur prevRegister.RegisterValue
+
+                _registerMap.SetRegisterValue (RegisterName.Numbered NumberedRegister.Number1) value
+
+            // Update the numbered register based on the type of the operation
+            match operation with
+            | RegisterOperation.Delete ->
+                if hasNewLine then
+                    doNumberedDelete()
+                else if name = RegisterName.Unnamed then
+                    _registerMap.SetRegisterValue RegisterName.SmallDelete value
+
+            | RegisterOperation.BigDelete ->
+                doNumberedDelete()
+                if not hasNewLine && name = RegisterName.Unnamed then
+                    _registerMap.SetRegisterValue RegisterName.SmallDelete value
+            | RegisterOperation.Yank ->
+                // If the yank occurs to the unnamed register then update register 0 with the 
+                // value
+                if name = RegisterName.Unnamed then
+                    _registerMap.SetRegisterValue (RegisterName.Numbered NumberedRegister.Number0) value
+
     interface ICommonOperations with
         member x.VimBufferData = _vimBufferData
         member x.TextView = _textView 
@@ -1365,6 +1415,7 @@ type internal CommonOperations
         member x.Put point stringData opKind = x.Put point stringData opKind
         member x.RaiseSearchResultMessage searchResult = x.RaiseSearchResultMessage searchResult
         member x.Redo count = x.Redo count
+        member x.SetRegisterValue name operation value = x.SetRegisterValue name operation value
         member x.ScrollLines dir count = x.ScrollLines dir count
         member x.ShiftLineBlockLeft col multiplier = x.ShiftLineBlockLeft col multiplier
         member x.ShiftLineBlockRight col multiplier = x.ShiftLineBlockRight col multiplier

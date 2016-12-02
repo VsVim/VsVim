@@ -4858,6 +4858,21 @@ namespace Vim.UnitTest
                 Assert.Equal("otg", _textBuffer.GetLine(0).GetText());
             }
 
+            /// <summary>
+            /// The search motion should always cause the 1-9 registers to be updated irrespective of the text of the 
+            /// delete.
+            /// </summary>
+            [Fact]
+            public void DeleteSmallWithSearchMotion()
+            {
+                Create("dog");
+                RegisterMap.GetRegister(1).UpdateValue("g");
+                _vimBuffer.Process(@"d/o", enter: true);
+                Assert.Equal("d", RegisterMap.GetRegister(1).StringValue);
+                Assert.Equal("g", RegisterMap.GetRegister(2).StringValue);
+                Assert.Equal("d", RegisterMap.GetRegister(RegisterName.SmallDelete).StringValue);
+            }
+
             [Fact]
             public void Issue1436()
             {

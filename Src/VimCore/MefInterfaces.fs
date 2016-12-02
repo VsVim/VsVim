@@ -280,6 +280,15 @@ type MaintainCaretColumn =
     /// the line 
     | EndOfLine
 
+[<RequireQualifiedAccess>]
+[<NoComparison>]
+type RegisterOperation = 
+    | Yank
+    | Delete
+
+    /// Force the operation to be treated like a big delete even if it's a small one.
+    | BigDelete
+
 /// This class abstracts out the operations that are common to normal, visual and 
 /// command mode.  It usually contains common edit and movement operations and very
 /// rarely will deal with caret operations.  That is the responsibility of the 
@@ -429,6 +438,9 @@ type ICommonOperations =
 
     /// Scrolls the number of lines given and keeps the caret in the view
     abstract ScrollLines : ScrollDirection -> count:int -> unit
+
+    /// Update the register with the specified value
+    abstract SetRegisterValue : name : RegisterName -> operation : RegisterOperation -> value : RegisterValue -> unit
 
     /// Shift the block of lines to the left by shiftwidth * 'multiplier'
     abstract ShiftLineBlockLeft : SnapshotSpan seq -> multiplier : int -> unit
