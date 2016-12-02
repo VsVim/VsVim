@@ -1263,6 +1263,12 @@ namespace Vim.UnitTest
 
         #region ICommonOperations
 
+        public static void SetRegisterValue(this ICommonOperations operations, RegisterName name, RegisterOperation operation, RegisterValue value)
+        {
+            var opt = FSharpOption.Create(name);
+            operations.SetRegisterValue(opt, operation, value);
+        }
+
         public static void ShiftLineRangeLeft(this ICommonOperations operations, int count)
         {
             var number = operations.TextView.GetCaretLine().LineNumber;

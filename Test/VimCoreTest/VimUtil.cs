@@ -14,6 +14,8 @@ namespace Vim.UnitTest
 {
     internal static class VimUtil
     {
+        internal static readonly FSharpOption<RegisterName> MissingRegisterName = FSharpOption<RegisterName>.None;
+
         internal static RegisterMap CreateRegisterMap(IClipboardDevice device)
         {
             return CreateRegisterMap(device, () => null);
