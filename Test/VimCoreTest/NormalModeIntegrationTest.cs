@@ -1152,6 +1152,23 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
+            /// Make sure we properly update register 0 during a yank
+            /// </summary>
+            [Fact]
+            public void Register0_clipboartIsUnnamed()
+            {
+                Create("dog", "cat", "fish");
+                _vimBuffer.GlobalSettings.Clipboard = "unnamed";
+                _vimBuffer.Process("yaw");
+                _textView.MoveCaretToLine(1);
+                _vimBuffer.Process("\"cyaw");
+                _textView.MoveCaretToLine(2);
+                _vimBuffer.Process("dw");
+                _vimBuffer.Process("\"0p");
+                Assert.Equal("dog", _textView.GetLine(2).GetText());
+            }
+
+            /// <summary>
             /// Where there are not section boundaries between the caret and the end of the 
             /// ITextBuffer the entire ITextBuffer should be yanked when section forward 
             /// is used
@@ -1168,6 +1185,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Yanking with an append register should concatenate the values
             /// </summary>
+
             [Fact]
             public void Append()
             {

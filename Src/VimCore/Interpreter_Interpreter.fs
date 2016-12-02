@@ -1060,9 +1060,9 @@ type VimInterpreter
     /// Run the let command for registers
     member x.RunLetRegister (name : RegisterName) expr =
         let setRegister (value : string) =
-            let register = _registerMap.GetRegister name
+            let register = Some(_registerMap.GetRegister name)
             let registerValue = RegisterValue(value, OperationKind.CharacterWise)
-            _registerMap.SetRegisterValue register RegisterOperation.Yank registerValue
+            _registerMap.SetRegisterValue register RegisterOperation.Yank registerValue _globalSettings.ClipboardOptions
         match _exprInterpreter.GetExpressionAsString expr with
         | Some value -> setRegister value
         | None -> ()
@@ -1684,17 +1684,21 @@ type VimInterpreter
 
             let stringData = StringData.OfSpan lineRange.ExtentIncludingLineBreak
             let value = _commonOperations.CreateRegisterValue x.CaretPoint stringData OperationKind.LineWise
-            _registerMap.SetRegisterValue register RegisterOperation.Yank value)
+            _registerMap.SetRegisterValue register RegisterOperation.Yank value _globalSettings.ClipboardOptions)
 
     /// Run the specified LineCommand
     member x.RunLineCommand lineCommand = 
 
         // Get the register with the specified name or Unnamed if no name is 
         // provided
-        let getRegister name = 
+        let getRegisterForPut name = 
             name 
             |> OptionUtil.getOrDefault RegisterName.Unnamed
             |> _registerMap.GetRegister
+
+        let getRegister name = 
+            getRegisterForPut name
+            |> Some
 
         let cantRun () =    
             _statusUtil.OnError Resources.Interpreter_Error
@@ -1751,8 +1755,8 @@ type VimInterpreter
         | LineCommand.ParseError msg -> x.RunParseError msg
         | LineCommand.Print (lineRange, lineCommandFlags)-> x.RunPrint lineRange lineCommandFlags
         | LineCommand.PrintCurrentDirectory -> x.RunPrintCurrentDirectory()
-        | LineCommand.PutAfter (lineRange, registerName) -> x.RunPut lineRange (getRegister registerName) true
-        | LineCommand.PutBefore (lineRange, registerName) -> x.RunPut lineRange (getRegister registerName) false
+        | LineCommand.PutAfter (lineRange, registerName) -> x.RunPut lineRange (getRegisterForPut registerName) true
+        | LineCommand.PutBefore (lineRange, registerName) -> x.RunPut lineRange (getRegisterForPut registerName) false
         | LineCommand.QuickFixNext (count, hasBang) -> x.RunQuickFixNext count hasBang
         | LineCommand.QuickFixPrevious (count, hasBang) -> x.RunQuickFixPrevious count hasBang
         | LineCommand.Quit hasBang -> x.RunQuit hasBang

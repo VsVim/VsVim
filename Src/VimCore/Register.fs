@@ -566,6 +566,6 @@ type IRegisterMap =
     abstract GetRegister : registerName : RegisterName -> Register
 
     /// Update the register with the specified value
-    abstract SetRegisterValue : register : Register -> operation : RegisterOperation -> value : RegisterValue -> unit
+    abstract SetRegisterValue : register : Option<Register> -> operation : RegisterOperation -> value : RegisterValue -> clipboardOptions : Vim.ClipboardOptions -> unit
 
 

@@ -767,11 +767,11 @@ type internal Vim
         let registers = if sessionData.Registers = null then [| |] else sessionData.Registers
         for sessionReg in registers do
             match sessionReg.Name |> RegisterName.OfChar |> Option.map _registerMap.GetRegister with
-            | Some register -> 
+            | None -> ()
+            | register -> 
                 let kind = if sessionReg.IsCharacterWise then OperationKind.CharacterWise else OperationKind.LineWise
                 let registerValue = RegisterValue(sessionReg.Value, kind)
-                _registerMap.SetRegisterValue register RegisterOperation.Yank registerValue
-            | None -> ()
+                _registerMap.SetRegisterValue register RegisterOperation.Yank registerValue _globalSettings.ClipboardOptions
 
     member x.LoadSessionData() =
         x.LoadSessionDataCore (x.GetSessionDataFilePath())
