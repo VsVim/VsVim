@@ -23,8 +23,6 @@ namespace Vim.UnitTest
         private Mock<IVimHost> _vimHost;
         private Mock<IJumpList> _jumpList;
         private Mock<IVimLocalSettings> _localSettings;
-        // RTODO: delete this
-        private Mock<IVimGlobalSettings> _globalSettings;
         private Mock<IOutliningManager> _outlining;
         private Mock<IStatusUtil> _statusUtil;
         private Mock<IVimTextBuffer> _vimTextBuffer;
@@ -45,27 +43,26 @@ namespace Vim.UnitTest
             // Create the Vim instance with our Mock'd services
             _registerMap = Vim.RegisterMap;
             _vimHost = _factory.Create<IVimHost>();
-            _globalSettings = _factory.Create<IVimGlobalSettings>(MockBehavior.Loose);
-            _globalSettings.SetupGet(x => x.Magic).Returns(true);
-            _globalSettings.SetupGet(x => x.SmartCase).Returns(false);
-            _globalSettings.SetupGet(x => x.IgnoreCase).Returns(true);
-            _globalSettings.SetupGet(x => x.IsVirtualEditOneMore).Returns(false);
-            _globalSettings.SetupGet(x => x.SelectionKind).Returns(SelectionKind.Inclusive);
-            _globalSettings.SetupGet(x => x.VirtualEdit).Returns(String.Empty);
-            _globalSettings.SetupGet(x => x.WrapScan).Returns(true);
-            _vimData = new VimData(_globalSettings.Object);
-            _searchService = new SearchService(TextSearchService, _globalSettings.Object);
+            var globalSettings = Vim.GlobalSettings;
+            globalSettings.Magic = true;
+            globalSettings.SmartCase = false;
+            globalSettings.IgnoreCase = true;
+            globalSettings.VirtualEdit = "onemore";
+            globalSettings.Selection = "inclusive";
+            globalSettings.WrapScan = true;
+            _vimData = new VimData(globalSettings);
+            _searchService = new SearchService(TextSearchService, globalSettings);
             var vim = MockObjectFactory.CreateVim(
                 registerMap: _registerMap,
                 host: _vimHost.Object,
-                settings: _globalSettings.Object,
+                settings: globalSettings,
                 searchService: _searchService,
                 factory: _factory);
 
             // Create the IVimTextBuffer instance with our Mock'd services
-            _localSettings = MockObjectFactory.CreateLocalSettings(_globalSettings.Object, _factory);
+            _localSettings = MockObjectFactory.CreateLocalSettings(globalSettings, _factory);
             _localSettings.SetupGet(x => x.AutoIndent).Returns(false);
-            _localSettings.SetupGet(x => x.GlobalSettings).Returns(_globalSettings.Object);
+            _localSettings.SetupGet(x => x.GlobalSettings).Returns(globalSettings);
             _localSettings.SetupGet(x => x.ExpandTab).Returns(true);
             _localSettings.SetupGet(x => x.TabStop).Returns(4);
             _localSettings.SetupGet(x => x.ShiftWidth).Returns(2);
@@ -1011,6 +1008,7 @@ namespace Vim.UnitTest
             public void MoveCaretToMotionResult9()
             {
                 Create("foo", "bar", "");
+                Vim.GlobalSettings.VirtualEdit = "";
                 var data = VimUtil.CreateMotionResult(
                     _textBuffer.GetLineRange(0, 1).Extent,
                     true,
@@ -1123,6 +1121,7 @@ namespace Vim.UnitTest
             public void MoveCaretToMotionResult_InVirtualSpaceWithNoVirtualEdit()
             {
                 Create("foo", "bar", "baz");
+                Vim.GlobalSettings.VirtualEdit = "";
                 var data = VimUtil.CreateMotionResult(
                     new SnapshotSpan(_textBuffer.CurrentSnapshot, 1, 2),
                     true,
@@ -1139,7 +1138,7 @@ namespace Vim.UnitTest
             public void MoveCaretToMotionResult_InclusiveWithExclusiveSelection()
             {
                 Create("the dog");
-                _globalSettings.SetupGet(x => x.SelectionKind).Returns(SelectionKind.Exclusive);
+                Vim.GlobalSettings.Selection = "exclusive";
                 _vimTextBuffer.SetupGet(x => x.ModeKind).Returns(ModeKind.VisualBlock);
                 var data = VimUtil.CreateMotionResult(_textBuffer.GetSpan(0, 3), motionKind: MotionKind.CharacterWiseInclusive);
                 _operations.MoveCaretToMotionResult(data);
@@ -1176,8 +1175,8 @@ namespace Vim.UnitTest
             [Fact]
             public void Beep1()
             {
-                Create(String.Empty);
-                _globalSettings.Setup(x => x.VisualBell).Returns(false).Verifiable();
+                Create(string.Empty);
+                Vim.GlobalSettings.VisualBell = false;
                 _vimHost.Setup(x => x.Beep()).Verifiable();
                 _operations.Beep();
                 _factory.Verify();
@@ -1186,8 +1185,8 @@ namespace Vim.UnitTest
             [Fact]
             public void Beep2()
             {
-                Create(String.Empty);
-                _globalSettings.Setup(x => x.VisualBell).Returns(true).Verifiable();
+                Create(string.Empty);
+                Vim.GlobalSettings.VisualBell = true;
                 _operations.Beep();
                 _factory.Verify();
             }
@@ -1343,7 +1342,7 @@ namespace Vim.UnitTest
             public void Substitute12()
             {
                 Create("cat", "bat");
-                _globalSettings.SetupGet(x => x.Magic).Returns(false);
+                Vim.GlobalSettings.Magic = false;
                 _operations.Substitute(".", "b", _textView.GetLineRange(0, 0), SubstituteFlags.Magic);
                 Assert.Equal("bat", _textView.GetLine(0).GetText());
             }
@@ -1355,7 +1354,7 @@ namespace Vim.UnitTest
             public void Substitute13()
             {
                 Create("cat.", "bat");
-                _globalSettings.SetupGet(x => x.Magic).Returns(true);
+                Vim.GlobalSettings.Magic = true;
                 _operations.Substitute(".", "s", _textView.GetLineRange(0, 0), SubstituteFlags.Nomagic);
                 Assert.Equal("cats", _textView.GetLine(0).GetText());
             }
@@ -1651,7 +1650,7 @@ namespace Vim.UnitTest
             [Fact]
             public void MissingRegisterNameUpdatedUnamedEvenWithClipboardUnnamed()
             {
-                _globalSettings.SetupGet(x => x.ClipboardOptions).Returns(ClipboardOptions.Unnamed);
+                Vim.GlobalSettings.ClipboardOptions = ClipboardOptions.Unnamed;
                 _operations.SetRegisterValue(VimUtil.MissingRegisterName, RegisterOperation.Yank, new RegisterValue("dog", OperationKind.CharacterWise));
                 Assert.Equal("dog", RegisterMap.GetRegister(RegisterName.Unnamed).StringValue);
                 Assert.Equal("dog", RegisterMap.GetRegister(0).StringValue);
@@ -1661,7 +1660,6 @@ namespace Vim.UnitTest
             [Fact]
             public void ExplicitUnnamedRegisterWithClipboardUnnamed()
             {
-                _globalSettings.SetupGet(x => x.ClipboardOptions).Returns(ClipboardOptions.Unnamed);
                 Vim.GlobalSettings.ClipboardOptions = ClipboardOptions.Unnamed;
                 var clipboardName = RegisterName.NewSelectionAndDrop(SelectionAndDropRegister.Star);
                 RegisterMap.GetRegister(clipboardName).UpdateValue("cat");
@@ -1674,7 +1672,6 @@ namespace Vim.UnitTest
             [Fact]
             public void ExplicitStarRegisterWithClipboardUnnamed()
             {
-                _globalSettings.SetupGet(x => x.ClipboardOptions).Returns(ClipboardOptions.Unnamed);
                 Vim.GlobalSettings.ClipboardOptions = ClipboardOptions.Unnamed;
                 var clipboardName = RegisterName.NewSelectionAndDrop(SelectionAndDropRegister.Star);
                 RegisterMap.GetRegister(0).UpdateValue("cat");

@@ -129,6 +129,13 @@ namespace Vim.UnitTest
                 Assert.Equal("dogcat", _map.GetRegister('C').StringValue);
                 Assert.Equal("dogcat", _map.GetRegister('c').StringValue);
             }
+
+            [Fact]
+            public void BlackHoleValue()
+            {
+                _map.GetRegister(RegisterName.Blackhole).UpdateValue("dog");
+                Assert.Equal("", _map.GetRegister(RegisterName.Blackhole).StringValue);
+            }
         }
     }
 }
