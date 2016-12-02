@@ -159,7 +159,6 @@ namespace Vim.VisualStudio.Implementation.Misc
             KeyInput mapped;
             if (!TryGetSingleMapping(keyInput, out mapped))
             {
-                _broker.DismissDisplayWindows();
                 return _vimBuffer.Process(keyInput).IsAnyHandled;
             }
 
