@@ -1635,6 +1635,12 @@ namespace Vim.UnitTest
             register.UpdateValue(value);
         }
 
+        public static void SetRegisterValue(this IRegisterMap map, int n, string value)
+        {
+            var register = GetRegister(map, n);
+            register.UpdateValue(value);
+        }
+
         public static bool IsSome<T>(this FSharpOption<T> option, T value)
         {
             Assert.True(option.IsSome(), "Option is None");
