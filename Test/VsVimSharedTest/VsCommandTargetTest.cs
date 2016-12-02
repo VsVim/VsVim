@@ -437,11 +437,75 @@ namespace Vim.VisualStudio.UnitTest
             }
 
             /// <summary>
-            /// If the Comment command creates a selection then we should be turning it off 
+            /// The IOleCommandTarget code has logic for allowing intellisense control keys to go directly
+            /// to the next IOleCommandTarget.  For instance if completion is active let Left, Right, etc 
+            /// go to the next target.
+            ///
+            /// This logic only works though when we know what the mapped key is.  That is if the user typed
+            /// 'j' but it mapped to Left then Left is what needs to be considered, not 'j'.  In the case the 
+            /// mapping is incomplete or doesn't mapp to a single key then there isn't really anything we can
+            /// do other than forward directly to the <see cref="IVimBuffer"/> instance.
+            /// 
+            /// Issue 1855
             /// </summary>
             [Fact]
-            public void CommentShouldClearSelection()
+            public void NonSingleKeyMapShouldNotDismissIntellisense()
             {
+                _vimBuffer.Vim.KeyMap.MapWithRemap("jj", "<ESC>", KeyRemapMode.Insert);
+                _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
+                _vimBuffer.Process("j");
+                Assert.Equal(1, _vimBuffer.BufferedKeyInputs.Length);
+
+                var didDismiss = false;
+                _broker.Setup(x => x.IsCompletionActive).Returns(true);
+                _broker.Setup(x => x.DismissDisplayWindows()).Callback(() => didDismiss = true);
+
+                RunExec('k');
+                Assert.False(didDismiss);
+                Assert.Equal(ModeKind.Insert, _vimBuffer.ModeKind);
+                Assert.Equal("jk", _textBuffer.GetLine(0).GetText());
+            }
+
+            [Fact]
+            public void EnsureTabPassedToCustomProcessorInComplexKeyMapping()
+            {
+                _vimBuffer.Vim.KeyMap.MapWithRemap("jj", "<ESC>", KeyRemapMode.Insert);
+                _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
+                _vimBuffer.Process("j");
+                Assert.Equal(1, _vimBuffer.BufferedKeyInputs.Length);
+
+                var didDismiss = false;
+                _broker.Setup(x => x.IsCompletionActive).Returns(true);
+                _broker.Setup(x => x.DismissDisplayWindows()).Callback(() => didDismiss = true);
+
+                var sawChar1 = false;
+                var sawChar2 = false;
+                VimHost.TryCustomProcessFunc += (textView, command) =>
+                {
+                    if (!sawChar1 && !sawChar2)
+                    {
+                        Assert.True(command.IsInsert('j'));
+                        sawChar1 = true;
+                    }
+                    else if (sawChar1 && !sawChar2)
+                    {
+                        Assert.True(command.IsInsertTab);
+                        sawChar2 = true;
+                    }
+                    else
+                    {
+                        Assert.True(false, "Unexpected character");
+                    }
+
+                    return false;
+                };
+
+                RunExec(KeyInputUtil.TabKey);
+
+                Assert.False(didDismiss);
+                Assert.Equal(ModeKind.Insert, _vimBuffer.ModeKind);
+                Assert.Equal("j\t", _textBuffer.GetLine(0).GetText());
+                Assert.True(sawChar1 && sawChar2);
             }
         }
 
