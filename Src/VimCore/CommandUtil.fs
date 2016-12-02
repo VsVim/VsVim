@@ -238,6 +238,10 @@ type internal CommandUtil
             let blockSpan = BlockSpan(x.CaretPoint, _localSettings.TabStop, width, height)
             VisualSpan.Block blockSpan
 
+    member x.CalculateDeleteOperation (result : MotionResult) =
+        if Util.IsFlagSet result.MotionResultFlags MotionResultFlags.BigDelete then RegisterOperation.BigDelete
+        else RegisterOperation.Delete
+
     /// Change the characters in the given span via the specified change kind
     member x.ChangeCaseSpanCore kind (editSpan : EditSpan) =
 
@@ -391,7 +395,8 @@ type internal CommandUtil
 
         // Now that the delete is complete update the register
         let value = x.CreateRegisterValue (StringData.OfSpan span) result.OperationKind
-        _commonOperations.SetRegisterValue register.Name RegisterOperation.Delete value
+        let operation = x.CalculateDeleteOperation result
+        _commonOperations.SetRegisterValue register.Name operation value
 
         commandResult
 
@@ -826,7 +831,8 @@ type internal CommandUtil
         // from the buffer
         if not span.IsEmpty then
             let value = x.CreateRegisterValue (StringData.OfSpan span) operationKind
-            _commonOperations.SetRegisterValue register.Name RegisterOperation.Delete value
+            let operation = x.CalculateDeleteOperation result
+            _commonOperations.SetRegisterValue register.Name operation value
 
         CommandResult.Completed ModeSwitch.NoSwitch
 
