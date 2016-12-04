@@ -16,7 +16,6 @@ using System.Threading.Tasks;
 
 namespace Vim.VisualStudio.Implementation.Misc
 {
-    [Export(typeof(ITelemetry))]
     internal sealed class Telemetry : ITelemetry
     {
         private readonly TelemetryClient _client;
@@ -25,12 +24,10 @@ namespace Vim.VisualStudio.Implementation.Misc
 
         internal bool Enabled { get { return _client != null && _vimApplicationSettings.EnableTelemetry; } }
 
-        [ImportingConstructor]
-        internal Telemetry(IVimApplicationSettings applicationSettings, SVsServiceProvider serviceProvider)
+        internal Telemetry(IVimApplicationSettings applicationSettings, _DTE dte)
         {
             _vimApplicationSettings = applicationSettings;
 
-            var dte = serviceProvider.GetService<SDTE, _DTE>();
             var key = TryReadInstrumentationKey();
             if (key != null)
             {
@@ -116,6 +113,22 @@ namespace Vim.VisualStudio.Implementation.Misc
         void ITelemetry.WriteEvent(string eventName)
         {
             WriteEvent(eventName);
+        }
+    }
+
+    [Export(typeof(ITelemetryProvider))]
+    internal sealed class TelemetryProvider : ITelemetryProvider
+    {
+        private Telemetry _telemetry;
+
+        ITelemetry ITelemetryProvider.GetOrCreate(IVimApplicationSettings vimApplicationSettings, _DTE dte)
+        {
+            if (_telemetry == null)
+            {
+                _telemetry = new Telemetry(vimApplicationSettings, dte);
+            }
+
+            return _telemetry;
         }
     }
 }

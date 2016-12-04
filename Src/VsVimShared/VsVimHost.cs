@@ -197,7 +197,7 @@ namespace Vim.VisualStudio
             IVimApplicationSettings vimApplicationSettings,
             IExtensionAdapterBroker extensionAdapterBroker,
             SVsServiceProvider serviceProvider,
-            ITelemetry telemetry)
+            ITelemetryProvider telemetryProvider)
             : base(textBufferFactoryService, textEditorFactoryService, textDocumentFactoryService, editorOperationsFactoryService)
         {
             _vsAdapter = adapter;
@@ -214,7 +214,7 @@ namespace Vim.VisualStudio
             uint cookie;
             _vsMonitorSelection.AdviseSelectionEvents(this, out cookie);
 
-            InitTelemetry(telemetry, vimApplicationSettings);
+            InitTelemetry(telemetryProvider.GetOrCreate(vimApplicationSettings, _dte), vimApplicationSettings);
         }
 
         private static void InitTelemetry(ITelemetry telemetry, IVimApplicationSettings vimApplicationSettings)
