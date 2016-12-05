@@ -85,6 +85,15 @@ function test-vsixcontents() {
         if ($item.EndsWith("dll") -and ((get-item $itemPath).Length -lt 5kb)) {
             write-error "Small file detected $item in the zip file ($target)"
         }
+
+        # Make sure the telemetry key was properly deployed.
+        $name = split-path -leaf $item
+        if ($name -eq "telemetry.txt") {
+            [string]$content = gc -raw $itemPath
+            if ($content.Trim() -eq "") {
+                write-error "Telemetry file is empty"
+            }
+        }
     }
 }
 

@@ -47,7 +47,8 @@ namespace CleanVsix
                 var fileName = Path.GetFileName(filePath);
                 if (fileName.StartsWith("Microsoft.VisualStudio.") ||
                     fileName.StartsWith("FSharp.Core") || 
-                    fileName.StartsWith("System.Xml"))
+                    fileName.StartsWith("System.Xml") ||
+                    fileName.StartsWith("Newtonsoft.Json"))
                 {
                     File.Delete(filePath);
                 }
