@@ -566,6 +566,21 @@ namespace Vim.UnitTest
                 Assert.Equal(_textBuffer.GetPointInLine(3, 0), _textView.GetCaretPoint());
             }
 
+            [Fact]
+            public void Issue603()
+            {
+                Create(
+                    "const ExampleType*\tpObject = __super::operator[](ii);",
+                    "const char*\t\tpcszPath = \"<unknown path>\";");
+                _vimBuffer.LocalSettings.ExpandTab = false;
+                _vimBuffer.LocalSettings.TabStop = 4;
+                _vimBuffer.LocalSettings.ShiftWidth = 8;
+                _textView.MoveCaretTo(22);
+                Assert.Equal('j', _textView.GetCaretPoint().GetChar());
+                _vimBuffer.Process('j');
+                Assert.Equal('h', _textView.GetCaretPoint().GetChar());
+            }
+
             /// <summary>
             /// Don't consider 'smartcase' when doing a * operation 
             /// </summary>
