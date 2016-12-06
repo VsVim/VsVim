@@ -2014,6 +2014,15 @@ namespace Vim.UnitTest
                 Assert.Equal(_textBuffer.GetLine(1).Start, _textView.GetCaretPoint());
                 Assert.Equal(0, _vimBuffer.VimTextBuffer.InsertStartPoint.Value.Position);
             }
+
+            [Fact]
+            public void Issue498()
+            {
+                Create("helloworld");
+                _textView.MoveCaretTo(5);
+                _vimBuffer.ProcessNotation("<c-j>");
+                Assert.Equal(new[] { "hello", "world" }, _textBuffer.GetLines());
+            }
         }
 
         public abstract class TabSettingsTest : InsertModeIntegrationTest

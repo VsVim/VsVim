@@ -243,6 +243,7 @@ type internal InsertMode
                 ("<C-i>", InsertCommand.InsertTab, CommandFlags.Repeatable ||| CommandFlags.InsertEdit)
                 ("<C-d>", InsertCommand.ShiftLineLeft, CommandFlags.Repeatable)
                 ("<C-e>", InsertCommand.InsertCharacterBelowCaret, CommandFlags.Repeatable)
+                ("<C-j>", InsertCommand.InsertNewLine, CommandFlags.Repeatable ||| CommandFlags.InsertEdit)
                 ("<C-m>", InsertCommand.InsertNewLine, CommandFlags.Repeatable ||| CommandFlags.InsertEdit)
                 ("<C-t>", InsertCommand.ShiftLineRight, CommandFlags.Repeatable)
                 ("<C-y>", InsertCommand.InsertCharacterAboveCaret, CommandFlags.Repeatable)
