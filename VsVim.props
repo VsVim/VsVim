@@ -42,10 +42,10 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <ReferencePath>$(ReferencePath);$(MSBuildThisFileDirectory)References\Vs2010</ReferencePath>
-    <ReferencePath>$(ReferencePath);$(MSBuildThisFileDirectory)References\Vs2012</ReferencePath>
-    <ReferencePath>$(ReferencePath);$(MSBuildThisFileDirectory)References\Vs2013</ReferencePath>
-    <ReferencePath>$(ReferencePath);$(MSBuildThisFileDirectory)References\Vs2015</ReferencePath>
+    <VsVimReferencePath>$(MSBuildThisFileDirectory)References\Vs2010</VsVimReferencePath>
+    <VsVimReferencePath>$(VsVimReferencePath);$(MSBuildThisFileDirectory)References\Vs2012</VsVimReferencePath>
+    <VsVimReferencePath>$(VsVimReferencePath);$(MSBuildThisFileDirectory)References\Vs2013</VsVimReferencePath>
+    <VsVimReferencePath>$(VsVimReferencePath);$(MSBuildThisFileDirectory)References\Vs2015</VsVimReferencePath>
     <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">$(MSBuildThisFileDirectory)</SolutionDir>
 
     <!-- This controls the places MSBuild will consult to resolve assembly references.  This is 
@@ -56,7 +56,7 @@
       {TargetFrameworkDirectory};
       {RawFileName};
       {HintPathFromItem};
-      $(ReferencePath);  
+      $(VsVimReferencePath);  
     </AssemblySearchPaths>
   </PropertyGroup>
 

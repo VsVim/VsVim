@@ -226,7 +226,6 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <None Include="app.config" />
     <None Include="packages.config" />
     <None Include="Resources\VsCommands.txt" />
   </ItemGroup>
