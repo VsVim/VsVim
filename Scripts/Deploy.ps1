@@ -100,9 +100,9 @@ function test-vsixcontents() {
 # Run all of the unit tests
 function test-unittests() { 
     $all = 
-        "Test\VimCoreTest\bin\Release\Vim.Core.UnitTest.dll",
-        "Test\VimWpfTest\bin\Release\Vim.UI.Wpf.UnitTest.dll",
-        "Test\VsVimSharedTest\bin\Release\Vim.VisualStudio.Shared.UnitTest.dll"
+        "Binaries\Release\VimCoreTest\Vim.Core.UnitTest.dll",
+        "Binaries\Release\VimWpfTest\Vim.UI.Wpf.UnitTest.dll",
+        "Binaries\Release\VsVimSharedTest\Vim.VisualStudio.Shared.UnitTest.dll"
     $xunit = join-path $rootPath "Tools\xunit.console.clr4.x86.exe"
 
     write-host "Running Unit Tests"
@@ -184,7 +184,7 @@ function clean-vsixcontents() {
     build-release "Src\CleanVsix\CleanVsix.csproj"
 
     write-host "`tCleaning contents"
-    & Src\CleanVsix\bin\Release\CleanVsix.exe "$vsixPath"
+    & Binaries\Release\CleanVsix\CleanVsix.exe "$vsixPath"
 }
 
 function build-vsix() {
@@ -192,7 +192,7 @@ function build-vsix() {
         mkdir Deploy 2>&1 | out-null
     }
     rm Deploy\VsVim* 
-    copy "Src\VsVim\bin\Release\VsVim.vsix" "Deploy\VsVim.orig.vsix"
+    copy "Binaries\Release\VsVim\VsVim.vsix" "Deploy\VsVim.orig.vsix"
     copy "Deploy\VsVim.orig.vsix" "Deploy\VsVim.vsix"
     clean-vsixcontents (resolve-path "Deploy\VsVim.vsix")
     copy "Deploy\VsVim.vsix" "Deploy\VsVim.zip"
@@ -205,7 +205,6 @@ try {
     if (-not (test-path $msbuild)) {
         write-error "Can't find msbuild.exe"
     }
-
 
     # First step is to calculate the version of Visual Studio we will be 
     # using to build VsVim.  The default used by MsBuild may be referring

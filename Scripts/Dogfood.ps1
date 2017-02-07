@@ -1,40 +1,42 @@
 param ([string]$rootSuffix)
 
-[string]$script:rootPath = split-path -parent $MyInvocation.MyCommand.Definition 
-[string]$script:rootPath = resolve-path (join-path $rootPath "..")
+set-strictmode -version 2.0
+$ErrorActionPreference="Stop"
 
-$msbuild = join-path ${env:SystemRoot} "microsoft.net\framework\v4.0.30319\msbuild.exe"
-$nuget = join-path $rootPath ".nuget\NuGet.exe"
+try {
+    [string]$rootPath= [IO.Path]::GetFullPath((join-path $PSScriptRoot ".."))
 
-function build-project() {
-    param ([string]$fileName = $(throw "Need a project file name"))
-    $name = split-path -leaf $fileName
-    write-host "Building $name"
-    & $msbuild /nologo /verbosity:m /p:Configuration=Debug /p:VisualStudioVersion=12.0 $fileName
-}
+    & (join-path $PSScriptRoot "Download-NuGet.ps1")
+    $nuget = join-path $rootPath "Binaries\Tools\NuGet.exe"
+    $dogfoodDir = join-path $rootPath "Binaries\Dogfood"
 
-function test-return() {
-    if ($LASTEXITCODE -ne 0) {
-        write-error "Command failed with code $LASTEXITCODE"
+    function build-project() {
+        param ([string]$fileName = $(throw "Need a project file name"))
+        $name = split-path -leaf $fileName
+        write-host "Building $name"
+        & msbuild /nologo /verbosity:m /p:Configuration=Debug /p:DeployExtension=false /p:VisualStudioVersion=14.0 $fileName
     }
+
+    build-project (join-path $rootPath "Src\VsVim\VsVim.csproj")
+
+    pushd $rootPath
+    mkdir $dogfoodDir -ErrorAction SilentlyContinue | out-null
+    rm -re -fo "$dogfoodDir\*"
+    copy Binaries\Debug\VsVim\* $dogfoodDir
+
+    write-host "Installing VsixUtil"
+    & $nuget install VsixUtil -OutputDirectory $dogfoodDir -ExcludeVersion
+
+    write-host "Installing VsVim"
+    if ($rootSuffix -eq "") {
+        & "$dogfoodDir\VsixUtil\tools\VsixUtil.exe" /install "$dogfoodDir\VsVim.vsix" 
+    } else {
+        & "$dogfoodDir\VsixUtil\tools\VsixUtil.exe" /rootSuffix $rootSuffix /install "$dogfoodDir\VsVim.vsix" 
+    }
+
+    popd
 }
-
-build-project (join-path $rootPath "Src\VsVim\VsVim.csproj")
-
-
-pushd $rootPath
-mkdir "Dogfood" -ErrorAction SilentlyContinue | out-null
-rm -re -fo "Dogfood\*"
-copy Src\VsVim\bin\Debug\* "Dogfood"
-
-write-host "Installing VsixUtil"
-& $nuget install VsixUtil -OutputDirectory "Dogfood" -ExcludeVersion
-
-write-host "Installing VsVim"
-if ($rootSuffix -eq "") {
-    & ".\Dogfood\VsixUtil\tools\VsixUtil.exe" /install "Dogfood\VsVim.vsix" 
-} else {
-    & ".\Dogfood\VsixUtil\tools\VsixUtil.exe" /rootSuffix $rootSuffix /install "Dogfood\VsVim.vsix" 
+catch {
+    write-host "Error: $($_.Exception.Message)"
+    exit 1
 }
-
-popd
