@@ -70,6 +70,7 @@ Release/
 bin/
 obj/
 TestsResults/
+Binaries/
 
 # Copied into a source directory for ease of build
 VsVim.Vs2012.dll
