@@ -10,7 +10,7 @@ function build-project() {
     param ([string]$fileName = $(throw "Need a project file name"))
     $name = split-path -leaf $fileName
     write-host "Building $name"
-    & $msbuild /nologo /verbosity:m /p:Configuration=Debug /p:VisualStudioVersion=12.0 $fileName
+    & $msbuild /nologo /verbosity:m /p:Configuration=Debug /p:VisualStudioVersion=14.0 $fileName
 }
 
 function test-return() {
@@ -21,11 +21,10 @@ function test-return() {
 
 build-project (join-path $rootPath "Src\VsVim\VsVim.csproj")
 
-
 pushd $rootPath
 mkdir "Dogfood" -ErrorAction SilentlyContinue | out-null
 rm -re -fo "Dogfood\*"
-copy Src\VsVim\bin\Debug\* "Dogfood"
+copy Binaries\Debug\VsVim\* "Dogfood"
 
 write-host "Installing VsixUtil"
 & $nuget install VsixUtil -OutputDirectory "Dogfood" -ExcludeVersion

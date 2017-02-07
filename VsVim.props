@@ -5,6 +5,9 @@
     <VsVimEmptyAppConfig>$(MSBuildThisFileDirectory)References\Vs2010\App.config</VsVimEmptyAppConfig>
     <Is32Bit>False</Is32Bit>
     <Is32Bit Condition="'$(PROCESSOR_ARCHITECTURE)' == 'x86'">True</Is32Bit>
+    <RepoPath>$(MSBuildThisFileDirectory)</RepoPath>
+    <BinariesPath>$(RepoPath)Binaries\</BinariesPath>
+    <BaseIntermediateOutputPath>$(BinariesPath)obj\$(MSBuildProjectName)\</BaseIntermediateOutputPath>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Is32Bit)' == 'True'">
