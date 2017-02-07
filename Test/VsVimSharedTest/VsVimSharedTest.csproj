@@ -95,6 +95,7 @@
     <Compile Include="HostFactoryTest.cs" />
     <Compile Include="MindScapeTest.cs" />
     <Compile Include="ReadOnlyCollection.cs" />
+    <Compile Include="ReferenceTest.cs" />
     <Compile Include="ReportDesignerUtilTest.cs" />
     <Compile Include="ReSharperExtensionAdapterTest.cs" />
     <Compile Include="ResultTest.cs" />
