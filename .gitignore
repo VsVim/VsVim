@@ -81,3 +81,6 @@ VsVim.Vs2013.pdb
 # Profiling Output
 *.vsp
 
+# MSBuild logs are frequently produced for diagnostic reasons.  Don't include 
+# them by accident in a build.
+msbuild.log
