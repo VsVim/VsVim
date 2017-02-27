@@ -37,9 +37,13 @@
   <PropertyGroup Condition=" '$(VisualStudioVersion)' == '12.0' ">
     <MinimumVisualStudioVersion>12.0</MinimumVisualStudioVersion>
   </PropertyGroup>
-  <!-- This is needed to prevent forced migrations when opening the project in Vs2014 -->
+  <!-- This is needed to prevent forced migrations when opening the project in Vs2015 -->
   <PropertyGroup Condition=" '$(VisualStudioVersion)' == '14.0' ">
     <MinimumVisualStudioVersion>14.0</MinimumVisualStudioVersion>
+  </PropertyGroup>
+  <!-- This is needed to prevent forced migrations when opening the project in Vs2017 -->
+  <PropertyGroup Condition=" '$(VisualStudioVersion)' == '15.0' ">
+    <MinimumVisualStudioVersion>15.0</MinimumVisualStudioVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
