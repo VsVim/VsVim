@@ -1,8 +1,14 @@
-﻿<PackageManifest Version="2.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011" xmlns:d="http://schemas.microsoft.com/developer/vsx-schema-design/2011">
+﻿<?xml version="1.0" encoding="utf-8"?>
+<PackageManifest Version="2.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011" xmlns:d="http://schemas.microsoft.com/developer/vsx-schema-design/2011">
   <Metadata>
-    <Identifier Id="VsVim.Microsoft.e214908b-0458-4ae2-a583-4310f29687c3" Version="2.2.0" Language="en-US" Publisher="Jared Parsons" />
+    <Identity Publisher="Jared Parsons" Version="2.2.0" Id="VsVim.Microsoft.e214908b-0458-4ae2-a583-4310f29687c3" Language="en-US" />
     <DisplayName>VsVim</DisplayName>
     <Description>VIM emulation layer for Visual Studio</Description>
+    <MoreInfo>https://github.com/jaredpar/VsVim</MoreInfo>
+    <License>License.rtf</License>
+    <Icon>VsVim_large.png</Icon>
+    <PreviewImage>VsVim_small.png</PreviewImage>
+    <Tags>vsvim</Tags>
   </Metadata>
   <Installation>
     <InstallationTarget Id="Microsoft.VisualStudio.Community" Version="[15.0,16.0)" />
