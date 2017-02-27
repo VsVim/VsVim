@@ -240,10 +240,10 @@ type FoldManagerFactory
     let _managerKey = new System.Object()
 
     member x.GetFoldData (textBuffer : ITextBuffer) = 
-        textBuffer.Properties.GetOrCreateSingletonProperty(_dataKey, (fun _ -> FoldData(textBuffer)))
+        textBuffer.Properties.GetOrCreateSingletonProperty(_dataKey, (fun unused -> FoldData(textBuffer)))
 
     member x.GetFoldManager (textView : ITextView) = 
-        textView.Properties.GetOrCreateSingletonProperty(_managerKey, (fun _ ->
+        textView.Properties.GetOrCreateSingletonProperty(_managerKey, (fun unused ->
             let outliningManager = 
                 let outliningManager = _outliningManagerService.GetOutliningManager textView
                 if outliningManager = null then
