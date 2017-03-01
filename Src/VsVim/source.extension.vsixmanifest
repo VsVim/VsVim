@@ -1,36 +1,18 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Vsix xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" Version="1.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2010">
-  <Identifier Id="VsVim.Microsoft.e214908b-0458-4ae2-a583-4310f29687c3">
-    <Name>VsVim</Name>
+  <Identifier Id="VsVim.Microsoft.8e2140b9-f2b0-41bd-bd1a-3e73057a32ec">
+    <Name>VsVim 2010</Name>
     <Author>Jared Parsons</Author>
     <Version>2.2.0.0</Version>
-    <Description xml:space="preserve">VIM emulation layer for Visual Studio</Description>
+    <Description xml:space="preserve">VIM emulation layer for Visual Studio 2010</Description>
     <Locale>1033</Locale>
-    <MoreInfoUrl>http://blogs.msdn.com/b/jaredpar</MoreInfoUrl>
+    <MoreInfoUrl>https://github.com/jaredpar/VsVim</MoreInfoUrl>
     <License>License.rtf</License>
     <GettingStartedGuide>https://github.com/jaredpar/VsVim/wiki/Release-Notes</GettingStartedGuide>
     <Icon>VsVim_small.png</Icon>
     <PreviewImage>VsVim_large.png</PreviewImage>
     <SupportedProducts>
       <VisualStudio Version="10.0">
-        <Edition>Ultimate</Edition>
-        <Edition>Premium</Edition>
-        <Edition>Pro</Edition>
-        <Edition>IntegratedShell</Edition>
-      </VisualStudio>
-      <VisualStudio Version="11.0">
-        <Edition>Ultimate</Edition>
-        <Edition>Premium</Edition>
-        <Edition>Pro</Edition>
-        <Edition>IntegratedShell</Edition>
-      </VisualStudio>
-      <VisualStudio Version="12.0">
-        <Edition>Ultimate</Edition>
-        <Edition>Premium</Edition>
-        <Edition>Pro</Edition>
-        <Edition>IntegratedShell</Edition>
-      </VisualStudio>
-      <VisualStudio Version="14.0">
         <Edition>Ultimate</Edition>
         <Edition>Premium</Edition>
         <Edition>Pro</Edition>
