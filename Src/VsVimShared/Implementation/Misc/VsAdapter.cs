@@ -361,12 +361,9 @@ namespace Vim.VisualStudio.Implementation.Misc
                 return true;
             }
 
-            if (_visualStudioVersion != VisualStudioVersion.Vs2010)
+            if (IsIncrementalSearchActiveScreenScrape(textView))
             {
-                if (IsIncrementalSearchActiveScreenScrape(textView))
-                {
-                    return true;
-                }
+                return true;
             }
 
             return _extensionAdapterBroker.IsIncrementalSearchActive(textView) ?? false;

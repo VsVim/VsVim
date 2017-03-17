@@ -1,6 +1,6 @@
 param (
     [switch]$fast = $false, 
-    [string]$vsDir = "")
+    [string]$vsDir = "C:\Program Files (x86)\Microsoft Visual Studio\2017\Enterprise")
 
 set-strictmode -version 2.0
 $ErrorActionPreference="Stop"
@@ -48,7 +48,6 @@ function test-vsixcontents() {
         "Vim.UI.Wpf.dll",
         "Vim.VisualStudio.Interfaces.dll",
         "Vim.VisualStudio.Shared.dll",
-        "Vim.VisualStudio.Vs2010.dll",
         "Vim.VisualStudio.Vs2012.dll",
         "Vim.VisualStudio.Vs2013.dll",
         "Vim.VisualStudio.Vs2015.dll",
@@ -232,7 +231,6 @@ try {
     # Next step is to clean out all of the projects 
     if (-not $fast) { 
         write-host "Cleaning Projects"
-        build-clean Src\VsSpecific\Vs2010\Vs2010.csproj
         build-clean Src\VsSpecific\Vs2012\Vs2012.csproj
         build-clean Src\VsSpecific\Vs2013\Vs2013.csproj
         build-clean Src\VsSpecific\Vs2015\Vs2015.csproj
