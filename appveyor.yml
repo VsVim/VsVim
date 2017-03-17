@@ -10,11 +10,11 @@ install:
 
 before_build: 
   # Updates the version number in the .vsixmanifest and updates the AppVeyor build number to match
-  - nuget restore VimAll.sln
+  - nuget restore VsVim.sln
   - ps: Vsix-IncrementVsixVersion | Vsix-UpdateBuildVersion
 
 build:
-  project: VimAll.sln
+  project: VsVim.sln
   verbosity: minimal
 
 after_build:
