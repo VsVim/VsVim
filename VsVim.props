@@ -45,6 +45,7 @@
     <ReferencePath>$(ReferencePath);$(MSBuildThisFileDirectory)References\Vs2012</ReferencePath>
     <ReferencePath>$(ReferencePath);$(MSBuildThisFileDirectory)References\Vs2013</ReferencePath>
     <ReferencePath>$(ReferencePath);$(MSBuildThisFileDirectory)References\Vs2015</ReferencePath>
+    <ReferencePath>$(ReferencePath);$(MSBuildThisFileDirectory)References\Vs2017</ReferencePath>
     <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">$(MSBuildThisFileDirectory)</SolutionDir>
   </PropertyGroup>
 

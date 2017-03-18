@@ -9,7 +9,7 @@ using Microsoft.VisualStudio.PlatformUI.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Shell;
 
-namespace Vim.VisualStudio.Vs2013
+namespace Vim.VisualStudio.Vs2017
 {
     internal partial class SharedService 
     {
@@ -50,7 +50,7 @@ namespace Vim.VisualStudio.Vs2013
 
         VisualStudioVersion ISharedServiceVersionFactory.Version
         {
-            get { return VisualStudioVersion.Vs2013; }
+            get { return VisualStudioVersion.Vs2017; }
         }
 
         ISharedService ISharedServiceVersionFactory.Create()
