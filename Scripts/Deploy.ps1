@@ -51,6 +51,7 @@ function test-vsixcontents() {
         "Vim.VisualStudio.Vs2012.dll",
         "Vim.VisualStudio.Vs2013.dll",
         "Vim.VisualStudio.Vs2015.dll",
+        "Vim.VisualStudio.Vs2017.dll",
         "VsVim.dll",
         "VsVim.pkgdef",
         "VsVim_large.png",
@@ -234,6 +235,7 @@ try {
         build-clean Src\VsSpecific\Vs2012\Vs2012.csproj
         build-clean Src\VsSpecific\Vs2013\Vs2013.csproj
         build-clean Src\VsSpecific\Vs2015\Vs2015.csproj
+        build-clean Src\VsSpecific\Vs2017\Vs2017.csproj
         build-clean Src\VsVim\VsVim.csproj
     }
 

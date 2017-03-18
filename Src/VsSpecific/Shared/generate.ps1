@@ -19,14 +19,12 @@ function generateSharedService() {
     sc $destPath $lines
 }
 
-$script:allVersions = @("Vs2010", "Vs2012", "Vs2013")
-
-generateSharedService "Vs2010" "SharedService.cs"
-generateSharedService "Vs2010" "SharedService.NoLazy.cs"
 generateSharedService "Vs2012" "SharedService.cs"
 generateSharedService "Vs2012" "SharedService.NoLazy.cs"
 generateSharedService "Vs2013" "SharedService.cs"
 generateSharedService "Vs2013" "SharedService.Lazy.cs"
 generateSharedService "Vs2015" "SharedService.cs"
 generateSharedService "Vs2015" "SharedService.Lazy.cs"
+generateSharedService "Vs2017" "SharedService.cs"
+generateSharedService "Vs2017" "SharedService.Lazy.cs"
 popd
