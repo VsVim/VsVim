@@ -150,9 +150,8 @@ namespace Vim.UI.Wpf.UnitTest
         [Fact]
         public void VisualMode2()
         {
-            _settings.SetupGet(x => x.IsSelectionInclusive).Returns(true);
             _buffer.SetupGet(x => x.ModeKind).Returns(ModeKind.VisualCharacter);
-            _caret.SetupSet(x => x.CaretDisplay = CaretDisplay.Block);
+            _caret.SetupSet(x => x.CaretDisplay = CaretDisplay.Select);
             _controller.Update();
         }
 
