@@ -11,10 +11,6 @@ AppVeyor Status: [![Build status](https://ci.appveyor.com/api/projects/status/gf
 
 VsVim.sln will work with any version of Visual Studio since 2010.  The SKU must be professional or higher due to the use of VSIX projects.  
 
-### Branching Structure
+### Latest Builds
 
- - master: Stable branch 
- - staging: Used for releasing new versions
- - fixes*: Both short and long term fixes
- - dead*: Branches which will never integrate with master again.  
-
+The build representing the latest source code can be downloaded from the [Open Vsix Gallery](http://vsixgallery.com/extension/VsVim.Microsoft.e214908b-0458-4ae2-a583-4310f29687c3/).  
