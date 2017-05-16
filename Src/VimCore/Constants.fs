@@ -33,10 +33,10 @@ module VimConstants =
 
 #if DEBUG
     [<Literal>]
-    let VersionNumber = "2.3.99.99 Debug"
+    let VersionNumber = "2.4.99.99 Debug"
 #else
     [<Literal>]
-    let VersionNumber = "2.3.0.0"
+    let VersionNumber = "2.4.0.0"
 #endif
 
 

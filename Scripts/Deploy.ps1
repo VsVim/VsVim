@@ -114,12 +114,14 @@ function test-unittests() {
         "Binaries\Release\VsVimSharedTest\Vim.VisualStudio.Shared.UnitTest.dll"
     $xunit = join-path $rootPath "Tools\xunit.console.clr4.x86.exe"
 
-    write-host "Running Unit Tests"
     foreach ($file in $all) { 
         $name = split-path -leaf $file
         write-host -NoNewLine ("`t{0}: " -f $name)
         $output = & $xunit $file /silent
-        test-return
+        if ($LASTEXITCODE -ne 0) {
+            write-host "& $xunit $file /silent"
+            write-error "Command failed with code $LASTEXITCODE"
+        }
         $last = $output[$output.Count - 1] 
         write-host $last
     }

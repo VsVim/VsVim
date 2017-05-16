@@ -1,5 +1,12 @@
 # Release Notes
 
+### Version 2.4.0
+[Issues closed in milestone 2.4.0](https://github.com/jaredpar/VsVim/milestone/46?closed=1)
+
+Primary Issues Addressed
+* `gt` and `gT` support in VS 2017
+* Exception opening files in VS 2017
+
 ### Version 2.2.0
 [Issues closed in milestone 2.2.0](https://github.com/jaredpar/VsVim/milestone/44?closed=1)
 
