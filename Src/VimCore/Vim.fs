@@ -322,10 +322,16 @@ type internal VimBufferFactory
             // event to avoid memory leaks
             let bag = DisposableBag()
 
+            // LayoutChanged is a good trigger event here but we can't actually initialize our
+            // modes within this event.  The editor is not fully usable until a layout is complete. If 
+            // any operation were to trigger a layout while in the LayoutChanged handler an 
+            // exception would be thrown.
             textView.LayoutChanged
             |> Observable.subscribe (fun _ -> 
                 if isReady () then
-                    runInit ()
+                    let context = System.Threading.SynchronizationContext.Current
+                    if context <> null then context.Post( (fun _ -> runInit()), null)
+                    else runInit()
                     bag.DisposeAll())
             |> bag.Add
 
