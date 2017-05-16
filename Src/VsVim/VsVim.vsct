@@ -125,6 +125,7 @@
    
       <Button guid="guidVsVimCmdSet" id="cmdidVsVimSetMode" priority="0x0100" type="Button">
         <Parent guid="guidVsVimCmdSet" id="VsVimMenuGroup" />
+        <CommandFlag>CommandWellOnly</CommandFlag>
         <CommandFlag>AllowParams</CommandFlag>
         <Strings>
           <CommandName>cmdidVsVimSetMode</CommandName>
