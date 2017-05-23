@@ -602,7 +602,7 @@ namespace Vim.VisualStudio
         {
             // Thanks to https://github.com/mrdooz/TabGroupJumper/blob/master/TabGroupJumper/Connect.cs
             var topLevelWindows = _dte.Windows.Cast<Window>()
-                .Where(window => window.Kind == "Document" && (window.Left > 0))
+                .Where(window => window.Kind == "Document" && (window.Left != 0))
                 .ToList();
             topLevelWindows.Sort((a, b) => a.Left < b.Left ? -1 : 1);
             var indexOfActiveDoc = topLevelWindows.FindIndex(win => win == _dte.ActiveWindow);
