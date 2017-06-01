@@ -342,7 +342,7 @@ namespace Vim.VisualStudio.Implementation.OptionPages
             {
                 vimApplicationSettings.DefaultSettings = DefaultSettings;
                 vimApplicationSettings.EnableExternalEditMonitoring = EnableExternalEditMonitoring;
-                vimApplicationSettings.EnableExternalEditMonitoring = EnableTelemetry;
+                vimApplicationSettings.EnableTelemetry = EnableTelemetry;
                 vimApplicationSettings.UseEditorDefaults = UseEditorDefaults;
                 vimApplicationSettings.UseEditorIndent = UseEditorIndent;
                 vimApplicationSettings.UseEditorTabAndBackspace = UseEditorTabAndBackspace;
