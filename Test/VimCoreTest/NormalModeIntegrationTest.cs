@@ -3425,6 +3425,26 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
+            /// Make sure the EndOfLine motion is respected for several down motions in a 
+            /// row.
+            /// </summary>
+            [Fact]
+            public void EndOfLineDownTwice()
+            {
+                Create("a", "to", "cat", "food");
+                _vimBuffer.Process("$jj");
+                Assert.Equal(_textBuffer.GetPointInLine(2, 2), _textView.GetCaretPoint());
+            }
+
+            [Fact]
+            public void EndOfLineUpDownMix()
+            {
+                Create("a", "to", "cat", "food");
+                _vimBuffer.Process("$jjkj");
+                Assert.Equal(_textBuffer.GetPointInLine(2, 2), _textView.GetCaretPoint());
+            }
+
+            /// <summary>
             /// The ve=onemore setting shouldn't play a role here.  The $ motion won't go past
             /// the end of the line even if ve=onemore and the movement down and up shoudn't affect
             /// that
