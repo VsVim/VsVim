@@ -34,6 +34,7 @@ namespace Vim.UnitTest.Mock
         public ICommandUtil CommandUtilImpl;
         public IMode ExternalEditModeImpl;
         public bool IsProcessingInputImpl;
+        public bool IsSwitchingModeImpl;
         public PropertyCollection PropertiesImpl;
         public IVimData VimDataImpl;
         public IVim VimImpl;
@@ -93,6 +94,11 @@ namespace Vim.UnitTest.Mock
         public bool IsProcessingInput
         {
             get { return IsProcessingInputImpl; }
+        }
+
+        public bool IsSwitchingMode
+        {
+            get { return IsSwitchingModeImpl; }
         }
 
         public IJumpList JumpList
