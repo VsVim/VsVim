@@ -1178,6 +1178,67 @@ namespace Vim.UnitTest
                 _vimBuffer.SimulateProcessed(KeyInputUtil.CharToKeyInput('a'));
                 Assert.True(_vimBuffer.BufferedKeyInputs.IsEmpty);
             }
+
+            /// <summary>
+            /// When creating an <see cref="IVimBuffer"/> over an existing <see cref="IVimTextBuffer"/> instance,
+            /// the initial mode of the newly created instance will be that of the existing one.  Hence it's possible
+            /// to transition directly from <see cref="ModeKind.Uninitialized"/> to say <see cref="ModeKind.VisualCharacter" />. 
+            /// Need to ensure that is handled correctly.
+            /// </summary>
+            [Fact]
+            public void InitialModeIsVisual()
+            {
+                _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
+                _vimBuffer.Process("v");
+                Assert.Equal(ModeKind.VisualCharacter, _vimBuffer.ModeKind);
+                var altTextView = VimEditorHost.TextEditorFactoryService.CreateTextView(_vimBuffer.TextBuffer);
+                var altVimBuffer = VimEditorHost.VimBufferFactory.CreateVimBuffer(altTextView, _vimBuffer.VimTextBuffer);
+                try
+                {
+                    for (var i = 0; i < 5; i++)
+                    {
+                        altVimBuffer.Process(VimKey.Escape);
+                        Assert.Equal(ModeKind.Normal, altVimBuffer.ModeKind);
+                        altVimBuffer.Process("v");
+                        Assert.Equal(ModeKind.VisualCharacter, altVimBuffer.ModeKind);
+                    }
+                }
+                finally
+                {
+                    altTextView.Close();
+                    altVimBuffer.Close();
+                }
+            }
+
+            /// <summary>
+            /// Make sure that we properly transition to normal mode when leaving visual mode 
+            /// </summary>
+            [Fact]
+            public void Issue1170()
+            {
+                _vimBuffer.ProcessNotation(@"i<Esc>v<Esc>");
+                Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
+            }
+
+            [Fact]
+            public void Issue1955()
+            {
+                _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
+                _vimBuffer.Process("v");
+                var altTextView = VimEditorHost.TextEditorFactoryService.CreateTextView(_vimBuffer.TextBuffer);
+                var altVimBuffer = VimEditorHost.VimBufferFactory.CreateVimBuffer(altTextView, _vimBuffer.VimTextBuffer);
+                try
+                {
+                    altVimBuffer.SwitchMode(ModeKind.Command, ModeArgument.None);
+                    altVimBuffer.SwitchMode(ModeKind.VisualCharacter, ModeArgument.None);
+                    Assert.Equal(ModeKind.Command, ((VimBuffer)altVimBuffer).ModeMap.PreviousMode.Value.ModeKind);
+                }
+                finally
+                {
+                    altTextView.Close();
+                    altVimBuffer.Close();
+                }
+            }
         }
     }
 }

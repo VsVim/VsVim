@@ -66,7 +66,7 @@ type internal ModeMap
 
     let mutable _modeMap : Map<ModeKind, IMode> = Map.empty
     let mutable _mode = UninitializedMode(_vimTextBuffer) :> IMode
-    let mutable _previousMode = _mode
+    let mutable _previousMode = None
     let _modeSwitchedEvent = StandardEvent<SwitchModeEventArgs>()
 
     member x.SwitchedEvent = _modeSwitchedEvent
@@ -74,34 +74,42 @@ type internal ModeMap
     member x.PreviousMode = _previousMode
     member x.Modes = _modeMap |> Map.toSeq |> Seq.map (fun (k,m) -> m)
     member x.SwitchMode kind arg =
-        let currentMode = _mode
+        let oldMode = _mode
         let newMode = _modeMap.Item kind
-        _mode <- newMode
 
-        currentMode.OnLeave()
+        // Need to update all of our internal state before calling out to external 
+        // code.  This ensures all consumers see the final state vs. an intermediate
+        // state.
+        _mode <- newMode
+        _previousMode <-
+            if oldMode.ModeKind = ModeKind.Disabled || oldMode.ModeKind = ModeKind.Uninitialized then
+                if VisualKind.IsAnyVisualOrSelect newMode.ModeKind then
+                    // Visual Mode always needs a mode to fall back on when it is exited.  The switch 
+                    // previous must perform some action. 
+                    _modeMap.Item ModeKind.Normal |> Some
+                else
+                    // Otherwise transitioning out of disabled / uninitialized should have no 
+                    // mode to fall back on.  
+                    None
+            elif (VisualKind.IsAnyVisualOrSelect oldMode.ModeKind) && (VisualKind.IsAnyVisualOrSelect newMode.ModeKind) then
+                // When switching between different visual modes we don't want to lose
+                // the previous non-visual mode value.  Commands executing in Visual mode
+                // which return a SwitchPrevious mode value expected to actually leave 
+                // Visual Mode 
+                _previousMode
+            else
+                Some oldMode
+
+        oldMode.OnLeave()
 
         // Incremental search should not persist between mode changes.  
         if _incrementalSearch.InSearch then
             _incrementalSearch.Cancel()
 
-        // Make sure to update the underlying IVimTextBuffer to the given mode.  Do this after
-        // we switch so that we can avoid the redundant mode switch in the event handler
-        // event which will cause us to actually switch
         _vimTextBuffer.SwitchMode kind arg
 
-        // When switching between different visual modes we don't want to lose
-        // the previous non-visual mode value.  Commands executing in Visual mode
-        // which return a SwitchPrevious mode value expected to actually leave 
-        // Visual Mode 
-        if currentMode.ModeKind = ModeKind.Disabled then
-            _previousMode <- _modeMap.Item ModeKind.Normal
-        elif not (VisualKind.IsAnyVisualOrSelect currentMode.ModeKind) && not (VisualKind.IsAnyVisualOrSelect _previousMode.ModeKind) then
-            _previousMode <- currentMode
-        elif _previousMode.ModeKind = ModeKind.Uninitialized then
-            _previousMode <- currentMode
-
         newMode.OnEnter arg
-        _modeSwitchedEvent.Trigger x (SwitchModeEventArgs(currentMode, newMode))
+        _modeSwitchedEvent.Trigger x (SwitchModeEventArgs(oldMode, newMode))
         newMode
 
     member x.GetMode kind = Map.find kind _modeMap
@@ -111,6 +119,10 @@ type internal ModeMap
 
     member x.RemoveMode (mode : IMode) = 
         _modeMap <- Map.remove mode.ModeKind _modeMap
+
+    member x.Reset (mode : IMode) =
+        _mode <- mode
+        _previousMode <- None
 
 type internal VimBuffer 
     (
@@ -580,7 +592,9 @@ type internal VimBuffer
         _modeMap.SwitchMode modeKind modeArgument
 
     member x.SwitchPreviousMode () =
-        x.SwitchMode _modeMap.PreviousMode.ModeKind ModeArgument.None
+        match _modeMap.PreviousMode with
+        | None -> _modeMap.Mode
+        | Some mode -> x.SwitchMode mode.ModeKind ModeArgument.None
 
     /// Simulate the KeyInput being processed.  Should not go through remapping because the caller
     /// is responsible for doing the mapping.  They are indicating the literal key was processed
