@@ -80,6 +80,10 @@ type internal SelectionChangeTracker
                 _selectionDirty <- false
             else 
                 _selectionDirty <- true
+        elif _vimBuffer.IsSwitchingMode then
+            // Selection is frequently updated while switching between modes.  It's the responsibility
+            // of the mode switching logic to properly update the mode here. 
+            ()
         else
             x.SetModeForSelection()
 

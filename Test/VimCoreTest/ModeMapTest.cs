@@ -1,6 +1,7 @@
 ﻿using Moq;
 using Xunit;
 using Vim.Extensions;
+using System;
 
 namespace Vim.UnitTest
 {
@@ -79,6 +80,33 @@ namespace Vim.UnitTest
                 _modeMap.SwitchMode(visualMode.VisualModeKind, ModeArgument.None);
                 Assert.Equal(ModeKind.Normal, _modeMap.PreviousMode.value.ModeKind);
             }
+        }
+
+        [Fact]
+        public void RecursiveSwitch()
+        {
+            var mode = new Mock<IMode>(MockBehavior.Loose);
+            mode
+                .Setup(x => x.OnEnter(ModeArgument.None))
+                .Callback(() => _modeMap.SwitchMode(ModeKind.Command, ModeArgument.None));
+            mode.SetupGet(x => x.ModeKind).Returns(ModeKind.VisualCharacter);
+            _modeMap.RemoveMode(_vimBuffer.VisualCharacterMode);
+            _modeMap.AddMode(mode.Object);
+            Assert.Throws<InvalidOperationException>(() => _modeMap.SwitchMode(ModeKind.VisualCharacter, ModeArgument.None));
+        }
+
+        /// <summary>
+        /// The mode switch is not complete until the event listeners have processed the change.
+        /// </summary>
+        [Fact]
+        public void IsSwitchingModeInEvent()
+        {
+            _vimBuffer.SwitchedMode += (o, e) =>
+            {
+                Assert.True(_modeMap.IsSwitchingMode);
+                Assert.True(_vimBuffer.IsSwitchingMode);
+            };
+            _modeMap.SwitchMode(ModeKind.Command, ModeArgument.None);
         }
     }
 }

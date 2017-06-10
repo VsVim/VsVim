@@ -2,6 +2,7 @@
 
 namespace Vim
 
+open System
 open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Editor
 open Microsoft.VisualStudio.Text.Operations
@@ -67,13 +68,24 @@ type internal ModeMap
     let mutable _modeMap : Map<ModeKind, IMode> = Map.empty
     let mutable _mode = UninitializedMode(_vimTextBuffer) :> IMode
     let mutable _previousMode = None
+    let mutable _isSwitchingMode = false
     let _modeSwitchedEvent = StandardEvent<SwitchModeEventArgs>()
 
     member x.SwitchedEvent = _modeSwitchedEvent
     member x.Mode = _mode
     member x.PreviousMode = _previousMode
     member x.Modes = _modeMap |> Map.toSeq |> Seq.map (fun (k,m) -> m)
+    member x.IsSwitchingMode = _isSwitchingMode
     member x.SwitchMode kind arg =
+        if _isSwitchingMode then raise (InvalidOperationException("Recursive mode switch detected"))
+
+        _isSwitchingMode <- true
+        try
+            x.SwitchModeCore kind arg
+        finally
+            _isSwitchingMode <-false
+
+    member private x.SwitchModeCore kind arg =
         let oldMode = _mode
         let newMode = _modeMap.Item kind
 
@@ -91,12 +103,17 @@ type internal ModeMap
                     // Otherwise transitioning out of disabled / uninitialized should have no 
                     // mode to fall back on.  
                     None
-            elif (VisualKind.IsAnyVisualOrSelect oldMode.ModeKind) && (VisualKind.IsAnyVisualOrSelect newMode.ModeKind) then
-                // When switching between different visual modes we don't want to lose
-                // the previous non-visual mode value.  Commands executing in Visual mode
-                // which return a SwitchPrevious mode value expected to actually leave 
-                // Visual Mode 
-                _previousMode
+            elif VisualKind.IsAnyVisualOrSelect oldMode.ModeKind then
+                if VisualKind.IsAnyVisualOrSelect newMode.ModeKind then
+                    // When switching between different visual modes we don't want to lose
+                    // the previous non-visual mode value.  Commands executing in Visual mode
+                    // which return a SwitchPrevious mode value expected to actually leave 
+                    // Visual Mode 
+                    _previousMode
+                elif newMode.ModeKind = ModeKind.Normal then
+                    None
+                else
+                    Some oldMode
             else
                 Some oldMode
 
@@ -632,6 +649,7 @@ type internal VimBuffer
         member x.InOneTimeCommand = x.InOneTimeCommand
         member x.IsClosed = _isClosed
         member x.IsProcessingInput = _processingInputCount > 0
+        member x.IsSwitchingMode = _modeMap.IsSwitchingMode
         member x.Name = _vim.VimHost.GetName _textView.TextBuffer
         member x.MarkMap = _vim.MarkMap
         member x.JumpList = _jumpList

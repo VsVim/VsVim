@@ -4310,6 +4310,9 @@ and IVimBuffer =
     /// Whether or not the IVimBuffer is currently processing a KeyInput value
     abstract IsProcessingInput : bool
 
+    /// Whether or not the IVimBuffer is currently switching modes
+    abstract IsSwitchingMode : bool
+
     /// Is this IVimBuffer instance closed
     abstract IsClosed : bool
 
