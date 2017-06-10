@@ -79,53 +79,56 @@ type internal ModeMap
     member x.SwitchMode kind arg =
         if _isSwitchingMode then raise (InvalidOperationException("Recursive mode switch detected"))
 
-        _isSwitchingMode <- true
-        try
-            x.SwitchModeCore kind arg
-        finally
-            _isSwitchingMode <-false
+        let switchModeCore () =
+            let oldMode = _mode
+            let newMode = _modeMap.Item kind
 
-    member private x.SwitchModeCore kind arg =
-        let oldMode = _mode
-        let newMode = _modeMap.Item kind
-
-        // Need to update all of our internal state before calling out to external 
-        // code.  This ensures all consumers see the final state vs. an intermediate
-        // state.
-        _mode <- newMode
-        _previousMode <-
-            if oldMode.ModeKind = ModeKind.Disabled || oldMode.ModeKind = ModeKind.Uninitialized then
-                if VisualKind.IsAnyVisualOrSelect newMode.ModeKind then
-                    // Visual Mode always needs a mode to fall back on when it is exited.  The switch 
-                    // previous must perform some action. 
-                    _modeMap.Item ModeKind.Normal |> Some
-                else
-                    // Otherwise transitioning out of disabled / uninitialized should have no 
-                    // mode to fall back on.  
-                    None
-            elif VisualKind.IsAnyVisualOrSelect oldMode.ModeKind then
-                if VisualKind.IsAnyVisualOrSelect newMode.ModeKind then
-                    // When switching between different visual modes we don't want to lose
-                    // the previous non-visual mode value.  Commands executing in Visual mode
-                    // which return a SwitchPrevious mode value expected to actually leave 
-                    // Visual Mode 
-                    _previousMode
-                elif newMode.ModeKind = ModeKind.Normal then
-                    None
+            // Need to update all of our internal state before calling out to external 
+            // code.  This ensures all consumers see the final state vs. an intermediate
+            // state.
+            _mode <- newMode
+            _previousMode <-
+                if oldMode.ModeKind = ModeKind.Disabled || oldMode.ModeKind = ModeKind.Uninitialized then
+                    if VisualKind.IsAnyVisualOrSelect newMode.ModeKind then
+                        // Visual Mode always needs a mode to fall back on when it is exited.  The switch 
+                        // previous must perform some action. 
+                        _modeMap.Item ModeKind.Normal |> Some
+                    else
+                        // Otherwise transitioning out of disabled / uninitialized should have no 
+                        // mode to fall back on.  
+                        None
+                elif VisualKind.IsAnyVisualOrSelect oldMode.ModeKind then
+                    if VisualKind.IsAnyVisualOrSelect newMode.ModeKind then
+                        // When switching between different visual modes we don't want to lose
+                        // the previous non-visual mode value.  Commands executing in Visual mode
+                        // which return a SwitchPrevious mode value expected to actually leave 
+                        // Visual Mode 
+                        _previousMode
+                    elif newMode.ModeKind = ModeKind.Normal then
+                        None
+                    else
+                        Some oldMode
                 else
                     Some oldMode
-            else
-                Some oldMode
 
-        oldMode.OnLeave()
+            oldMode.OnLeave()
 
-        // Incremental search should not persist between mode changes.  
-        if _incrementalSearch.InSearch then
-            _incrementalSearch.Cancel()
+            // Incremental search should not persist between mode changes.  
+            if _incrementalSearch.InSearch then
+                _incrementalSearch.Cancel()
 
-        _vimTextBuffer.SwitchMode kind arg
+            _vimTextBuffer.SwitchMode kind arg
 
-        newMode.OnEnter arg
+            newMode.OnEnter arg
+            (oldMode, newMode)
+
+        let (oldMode, newMode) = 
+            try
+                _isSwitchingMode <- true
+                switchModeCore ()
+            finally
+                _isSwitchingMode <-false
+
         _modeSwitchedEvent.Trigger x (SwitchModeEventArgs(oldMode, newMode))
         newMode
 

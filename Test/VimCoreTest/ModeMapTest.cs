@@ -96,15 +96,15 @@ namespace Vim.UnitTest
         }
 
         /// <summary>
-        /// The mode switch is not complete until the event listeners have processed the change.
+        /// The mode switch is complete when the <see cref="IVimBuffer.SwitchedMode"/> event is raised.
         /// </summary>
         [Fact]
         public void IsSwitchingModeInEvent()
         {
             _vimBuffer.SwitchedMode += (o, e) =>
             {
-                Assert.True(_modeMap.IsSwitchingMode);
-                Assert.True(_vimBuffer.IsSwitchingMode);
+                Assert.False(_modeMap.IsSwitchingMode);
+                Assert.False(_vimBuffer.IsSwitchingMode);
             };
             _modeMap.SwitchMode(ModeKind.Command, ModeArgument.None);
         }
