@@ -1,15 +1,19 @@
-### Welcome to VsVim
-All code in this project is covered under the Apache 2 license a copy of which is available in the same directory under the name License.txt.
+VsVim
+===
+
+VsVim is a free vim emulator for Visual Studio 2012 through 2017.  
 
 AppVeyor Status: [![Build status](https://ci.appveyor.com/api/projects/status/gf5rlu19syrja9lr)](https://ci.appveyor.com/project/jaredpar/vsvim)
 
-### Building
+## Developing
 
-1. Install the Visual Studio SDK 
-2. Open the Solution VsVim.sln
-3. Build
+This project requires Visual Studio 2017 to be editted.  Make sure to install the F# and Visual Studio extension work load.  
 
-VsVim.sln will work with any version of Visual Studio since 2010.  The SKU must be professional or higher due to the use of VSIX projects.  
+When developing please make sure to follow the [coding guidelines](https://github.com/jaredpar/VsVim/blob/master/Documentation/CodingGuidelines.md)
+
+## License
+
+All code in this project is covered under the Apache 2 license a copy of which is available in the same directory under the name License.txt.
 
 ### Latest Builds
 
