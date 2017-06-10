@@ -1,5 +1,0 @@
-For settings
-    - The 'backspace' toast warning needs to be updated
-    - All of the vsvim_ settings need a UI option 
-    - Remove IVimApplicationSettings from VsCommandTarget
-    - Don't hard code the defaults in both IVimGlobalSetttings and IVimApplicationSettings for the shared settings.  Need a common way of setting them
