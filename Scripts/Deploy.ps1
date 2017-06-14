@@ -41,7 +41,7 @@ function test-vsixcontents() {
         "Colors.pkgdef",
         "EditorUtils2010.dll",
         "extension.vsixmanifest",
-        "License.rtf",
+        "License.txt",
         "Microsoft.ApplicationInsights.dll",
         "telemetry.txt",
         "Vim.Core.dll",

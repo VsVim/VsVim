@@ -5,7 +5,7 @@
     <DisplayName>VsVim</DisplayName>
     <Description>VIM emulation layer for Visual Studio</Description>
     <MoreInfo>https://github.com/jaredpar/VsVim</MoreInfo>
-    <License>License.rtf</License>
+    <License>License.txt</License>
     <Icon>VsVim_large.png</Icon>
     <PreviewImage>VsVim_small.png</PreviewImage>
     <Tags>vsvim</Tags>
