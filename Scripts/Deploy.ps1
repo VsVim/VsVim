@@ -67,7 +67,7 @@ function test-vsixcontents() {
 
     $foundFiles = gci $target | %{ $_.Name }
     if ($foundFiles.Count -ne $expectedFiles.Count) { 
-        write-host "Found $($foundFiles.Count) but expected $(expectedFiles.Count)"
+        write-host "Found $($foundFiles.Count) but expected $($expectedFiles.Count)"
         write-host "Wrong number of foundFiles in VSIX." 
         write-host "Extra foundFiles"
         foreach ($file in $foundFiles) {
@@ -84,7 +84,6 @@ function test-vsixcontents() {
         }
 
         write-host "Location: $target"
-        write-error "Found $($foundFiles.Count) but expected $expected"
     }
 
     foreach ($item in $expectedFiles) {
@@ -231,15 +230,12 @@ try {
 
     write-host "Using MSBuild $msbuild"
 
-    # Next step is to clean out all of the projects 
-    if (-not $fast) { 
-        write-host "Cleaning Projects"
-        build-clean Src\VsSpecific\Vs2012\Vs2012.csproj
-        build-clean Src\VsSpecific\Vs2013\Vs2013.csproj
-        build-clean Src\VsSpecific\Vs2015\Vs2015.csproj
-        build-clean Src\VsSpecific\Vs2017\Vs2017.csproj
-        build-clean Src\VsVim\VsVim.csproj
-    }
+    write-host "Cleaning Projects"
+    build-clean Src\VsSpecific\Vs2012\Vs2012.csproj
+    build-clean Src\VsSpecific\Vs2013\Vs2013.csproj
+    build-clean Src\VsSpecific\Vs2015\Vs2015.csproj
+    build-clean Src\VsSpecific\Vs2017\Vs2017.csproj
+    build-clean Src\VsVim\VsVim.csproj
 
     # Before building make sure the version number is consistent in all 
     # locations
@@ -266,6 +262,7 @@ try {
 }
 catch {
     write-host "Error: $($_.Exception.Message)"
+    write-host $_.ScriptStackTrace
     exit 1
 }
 finally {

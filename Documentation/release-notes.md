@@ -1,5 +1,12 @@
 # Release Notes
 
+### Version 2.4.1
+[Issues closed in milestone 2.4.1](https://github.com/jaredpar/VsVim/milestone/47?closed=1)
+
+Primary Issues Addressed
+* `Escape` not leaving Visual Mode
+* License file changed to txt from rtf
+
 ### Version 2.4.0
 [Issues closed in milestone 2.4.0](https://github.com/jaredpar/VsVim/milestone/46?closed=1)
 
