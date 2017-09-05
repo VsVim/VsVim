@@ -1779,6 +1779,9 @@ type Parser
         match _tokenizer.CurrentTokenKind with
         | TokenKind.Character '@' ->
             _tokenizer.MoveNextToken()
+            match _tokenizer.CurrentChar with
+            | TokenKind.Character ':' ->
+                //Execute last executed Ex command
             match x.ParseRegisterName ParseRegisterName.All with
             | Some registerName ->
                 if _tokenizer.CurrentChar = '=' then
@@ -1788,7 +1791,7 @@ type Parser
                     | ParseResult.Failed msg -> LineCommand.ParseError msg
                 else
                     LineCommand.ParseError Resources.Parser_Error
-            | None -> LineCommand.ParseError "Invalid register name"
+            | None -> LineCommand.ParseError "Invalid register name"            
         | TokenKind.Word name ->
             match x.ParseVariableName() with
             | ParseResult.Succeeded name ->
@@ -2275,6 +2278,8 @@ type Parser
             x.ParseDictionary()
         | TokenKind.Character '@' ->
             _tokenizer.MoveNextToken()
+            match _tokenizer.CurrentChar with
+            | TokenKind.Character ':' -> ParseResult.Succeeded
             match x.ParseRegisterName ParseRegisterName.All with
             | Some name -> Expression.RegisterName name |>  ParseResult.Succeeded
             | None -> ParseResult.Failed "Unrecognized register name"
