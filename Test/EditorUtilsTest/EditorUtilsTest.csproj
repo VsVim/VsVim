@@ -95,8 +95,8 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
-    <None Include="app.config">
-      <Link>$(VsVimAppConfig)</Link> 
+    <None Include="$(VsVimAppConfig)">
+      <Link>app.config</Link> 
     </None>
   </ItemGroup>
   <Import Project="..\..\VsVim.targets" />

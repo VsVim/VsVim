@@ -160,11 +160,10 @@
   <ItemGroup>
     <None Include="packages.config" />
     <None Include="Resources\VsCommands.txt" />
+    <None Include="$(VsVimAppConfig)">
+      <Link>app.config</Link> 
+    </None>
   </ItemGroup>
   <Import Project="..\..\VsVim.targets" />
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
-  <!-- Add the appropriate app.config to the created binaries -->
-  <Target Name="AfterBuild">
-    <Copy SourceFiles="$(VsVimAppConfig)" DestinationFiles="$(OutputPath)\$(AssemblyName).dll.config" />
-  </Target>
 </Project>
