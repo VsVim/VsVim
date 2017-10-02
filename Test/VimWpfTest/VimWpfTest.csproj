@@ -39,10 +39,6 @@
       <HintPath>..\..\packages\Castle.Core.4.0.0-beta002\lib\net45\Castle.Core.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="EditorUtils2010, Version=1.4.0.0, Culture=neutral, PublicKeyToken=3d1514c4742e0252, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\packages\EditorUtils2010.1.4.1.0\lib\net40\EditorUtils2010.dll</HintPath>
-    </Reference>
     <Reference Include="Microsoft.VisualStudio.CoreUtility, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
     <Reference Include="Microsoft.VisualStudio.Language.Intellisense, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
     <Reference Include="Microsoft.VisualStudio.Language.StandardClassification, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
@@ -88,6 +84,14 @@
     <Compile Include="VimHostTests.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\Src\EditorUtils.Host\EditorUtils.Host.csproj">
+      <Project>{863a0141-59c5-481d-a3fc-a5812d973feb}</Project>
+      <Name>EditorUtils.Host</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Src\EditorUtils\EditorUtils.csproj">
+      <Project>{fb418222-c105-4942-8eeb-832ddcffd89d}</Project>
+      <Name>EditorUtils</Name>
+    </ProjectReference>
     <ProjectReference Include="..\VimCoreTest\VimCoreTest.csproj">
       <Project>{B4FC7C81-E500-47C8-A884-2DBB7CA77123}</Project>
       <Name>VimCoreTest</Name>
@@ -104,7 +108,7 @@
   <ItemGroup>
     <None Include="packages.config" />
     <None Include="$(VsVimAppConfig)">
-      <Link>app.config</Link> 
+      <Link>app.config</Link>
     </None>
   </ItemGroup>
   <ItemGroup>
