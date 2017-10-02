@@ -10,8 +10,6 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>EditorUtils.Host</RootNamespace>
     <AssemblyName>EditorUtils.Host</AssemblyName>
-    <FileAlignment>512</FileAlignment>
-    <OutputPath>$(OutputPath)\$(EditorVersion)</OutputPath>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
