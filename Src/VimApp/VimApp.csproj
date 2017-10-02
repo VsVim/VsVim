@@ -38,10 +38,6 @@
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="EditorUtils2010, Version=1.4.0.0, Culture=neutral, PublicKeyToken=3d1514c4742e0252, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\packages\EditorUtils2010.1.4.1.0\lib\net40\EditorUtils2010.dll</HintPath>
-    </Reference>
     <Reference Include="Microsoft.VisualStudio.CoreUtility, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
     <Reference Include="Microsoft.VisualStudio.Language.Intellisense, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
     <Reference Include="Microsoft.VisualStudio.Language.StandardClassification, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
@@ -113,6 +109,14 @@
     <AppDesigner Include="Properties\" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\EditorUtils.Host\EditorUtils.Host.csproj">
+      <Project>{863a0141-59c5-481d-a3fc-a5812d973feb}</Project>
+      <Name>EditorUtils.Host</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\EditorUtils\EditorUtils.csproj">
+      <Project>{fb418222-c105-4942-8eeb-832ddcffd89d}</Project>
+      <Name>EditorUtils</Name>
+    </ProjectReference>
     <ProjectReference Include="..\VimCore\VimCore.fsproj">
       <Project>{06be08e7-8626-40bd-877b-8d2dca6ba451}</Project>
       <Name>VimCore</Name>
@@ -124,7 +128,6 @@
   </ItemGroup>
   <Import Project="..\..\VsVim.targets" />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-
   <!-- Add the appropriate app.config to the created binaries -->
   <Target Name="AfterBuild">
     <Copy SourceFiles="$(VsVimAppConfig)" DestinationFiles="$(OutputPath)\$(AssemblyName).exe.config" />

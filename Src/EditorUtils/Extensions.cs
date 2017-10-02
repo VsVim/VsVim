@@ -41,16 +41,6 @@ namespace EditorUtils
         /// </summary>
         public static ITextSnapshotLine GetLastLine(this SnapshotSpan span)
         {
-           var snapshot = span.Snapshot;
-            var snapshotEndPoint = new SnapshotPoint(snapshot, snapshot.Length);
-            if (snapshotEndPoint == span.End)
-            {
-                var line = span.End.GetContainingLine();
-                if (line.Length == 0)
-                {
-                    return line;
-                }
-            }
             return span.Length > 0
                 ? span.End.Subtract(1).GetContainingLine()
                 : GetStartLine(span);

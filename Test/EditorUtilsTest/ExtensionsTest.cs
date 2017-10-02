@@ -78,26 +78,5 @@ namespace EditorUtils.UnitTest
             string value;
             Assert.False(col.TryGetPropertySafe(key, out value));
         }
-
-        [Fact]
-        public void GetLastLine_WithNonEmptyLastLine_ReturnsCorrectLastLine()
-        {
-            var textBuffer = CreateTextBuffer("hello","World", "Foo");
-            var lastLine = textBuffer.GetSpan(0, textBuffer.CurrentSnapshot.Length).GetLastLine();
-
-            Assert.True(lastLine.LineNumber == 2);
-        }
-
-        [Fact]
-        public void GetLastLine_WithEmptyLastLine_ReturnsCorrectLastLine()
-        {
-            var textBuffer = CreateTextBuffer("hello","World", "");
-            var lastLine = textBuffer.GetSpan(0, textBuffer.CurrentSnapshot.Length).GetLastLine();
-
-            Assert.True(lastLine.LineNumber == 2);
-        }
-
-
-
     }
 }

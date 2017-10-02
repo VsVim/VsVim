@@ -35,10 +35,6 @@
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="EditorUtils2010, Version=1.4.0.0, Culture=neutral, PublicKeyToken=3d1514c4742e0252, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\packages\EditorUtils2010.1.4.1.0\lib\net40\EditorUtils2010.dll</HintPath>
-    </Reference>
     <Reference Include="Microsoft.ApplicationInsights, Version=2.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <HintPath>..\..\packages\Microsoft.ApplicationInsights.2.0.0\lib\net45\Microsoft.ApplicationInsights.dll</HintPath>
       <Private>True</Private>
@@ -188,6 +184,10 @@
     <Compile Include="VsVimHost.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\EditorUtils\EditorUtils.csproj">
+      <Project>{fb418222-c105-4942-8eeb-832ddcffd89d}</Project>
+      <Name>EditorUtils</Name>
+    </ProjectReference>
     <ProjectReference Include="..\VimCore\VimCore.fsproj">
       <Project>{06BE08E7-8626-40BD-877B-8D2DCA6BA451}</Project>
       <Name>VimCore</Name>
