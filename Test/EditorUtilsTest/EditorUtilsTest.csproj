@@ -1,0 +1,104 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="..\..\VsVim.props" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProductVersion>8.0.30703</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{BAED09B7-25D9-4DD8-8558-BAC9730BA3F3}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>EditorUtils.UnitTest</RootNamespace>
+    <AssemblyName>EditorUtils.UnitTest</AssemblyName>
+    <FileAlignment>512</FileAlignment>
+    <RestorePackages>true</RestorePackages>
+    <OutputPath>$(OutputPath)\$(EditorVersion)</OutputPath>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <DefineConstants>$(DefineConstants);DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <DefineConstants>$(DefineConstants);TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="Microsoft.VisualStudio.CoreUtility, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
+    <Reference Include="Microsoft.VisualStudio.Text.Data, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
+    <Reference Include="Microsoft.VisualStudio.Text.Logic, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
+    <Reference Include="Microsoft.VisualStudio.Text.UI, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
+    <Reference Include="Microsoft.VisualStudio.Text.UI.Wpf, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
+    <Reference Include="Microsoft.VisualStudio.Language.Intellisense, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
+    <Reference Include="Microsoft.VisualStudio.Language.StandardClassification, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
+    <Reference Include="Moq">
+      <HintPath>..\..\packages\Moq.4.0.10827\lib\NET40\Moq.dll</HintPath>
+    </Reference>
+    <Reference Include="PresentationCore" />
+    <Reference Include="PresentationFramework" />
+    <Reference Include="System" />
+    <Reference Include="System.ComponentModel.Composition" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Xaml" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Xml" />
+    <Reference Include="WindowsBase" />
+    <Reference Include="xunit">
+      <HintPath>..\..\packages\xunit.1.9.1\lib\net20\xunit.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="AdhocOutlinerTest.cs" />
+    <Compile Include="AsyncTaggerTest.cs" />
+    <Compile Include="BasicTaggerTest.cs" />
+    <Compile Include="BasicUndoHistoryTest.cs" />
+    <Compile Include="ChannelTest.cs" />
+    <Compile Include="ClassifierTest.cs" />
+    <Compile Include="CountedClassifierTest.cs" />
+    <Compile Include="CountedTaggerTest.cs" />
+    <Compile Include="EditorVersionUtilTest.cs" />
+    <Compile Include="EditorHostTest.cs" />
+    <Compile Include="Extensions.cs" />
+    <Compile Include="EqualityUtil.cs" />
+    <Compile Include="ExtensionsTest.cs" />
+    <Compile Include="LineRangeTest.cs" />
+    <Compile Include="MockFactory.cs" />
+    <Compile Include="NormalizedLineRangeCollectionTest.cs" />
+    <Compile Include="MemoryLeakTest.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="ProtectedOperationsTest.cs" />
+    <Compile Include="ReadOnlyStackTest.cs" />
+    <Compile Include="SnapshotLineRangeTest.cs" />
+    <Compile Include="TaggerCommonTest.cs" />
+    <Compile Include="TaggerUtilTest.cs" />
+    <Compile Include="TestUtils.cs" />
+    <Compile Include="TestableSynchronizationContext.cs" />
+    <Compile Include="TextTaggerSource.cs" />
+    <Compile Include="VersioningTest.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\Src\EditorUtils.Host\EditorUtils.Host.csproj">
+      <Project>{863a0141-59c5-481d-a3fc-a5812d973feb}</Project>
+      <Name>EditorUtils.Host</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Src\EditorUtils\EditorUtils.csproj">
+      <Project>{FB418222-C105-4942-8EEB-832DDCFFD89D}</Project>
+      <Name>EditorUtils</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+    <None Include="app.config">
+      <Link>$(VsVimAppConfig)</Link> 
+    </None>
+  </ItemGroup>
+  <Import Project="..\..\VsVim.targets" />
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+</Project>

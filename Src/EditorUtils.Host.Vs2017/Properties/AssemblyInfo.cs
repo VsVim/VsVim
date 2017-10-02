@@ -33,5 +33,10 @@ using EditorUtils;
 // [assembly: AssemblyVersion("1.0.*")]
 [assembly: AssemblyVersion(Constants.AssemblyVersion)]
 [assembly: AssemblyFileVersion(Constants.AssemblyVersion)]
-[assembly: InternalsVisibleTo("EditorUtils.UnitTest")]
+[assembly: InternalsVisibleTo("EditorUtils.UnitTest, PublicKey=" +
+    "0024000004800000940000000602000000240000525341310004000001000100c90913d9ce09ec" +
+    "960c03fe50c463b3a5f214fdebdcd9c33b1f5f8cddd3e82bc4ba2bf3846bbb4ddd5cd8a322a40a" +
+    "dc41311155ebf6a1789c66c77345923153e49003049cb798836053198008405812d4e5ff468369" +
+    "1e25db5930f79a1d206b864a852e1653ddf8d2bc73e085a98ef023681bf8453dc3bd29577b1ad3" +
+    "55f863e7")]
 
