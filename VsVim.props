@@ -8,7 +8,6 @@
     <RepoPath>$(MSBuildThisFileDirectory)</RepoPath>
     <BinariesPath>$(RepoPath)Binaries\</BinariesPath>
     <BaseIntermediateOutputPath>$(BinariesPath)obj\$(MSBuildProjectName)\</BaseIntermediateOutputPath>
-
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Is32Bit)' == 'True'">
