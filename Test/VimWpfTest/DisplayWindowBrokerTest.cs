@@ -6,6 +6,7 @@ using Moq;
 using Xunit;
 using Vim.UI.Wpf.Implementation.Misc;
 
+#pragma warning disable CS0618 
 namespace Vim.UI.Wpf.UnitTest
 {
     public class DisplayWindowBrokerTest
