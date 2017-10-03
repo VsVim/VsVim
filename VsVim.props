@@ -26,23 +26,28 @@
 
   <PropertyGroup Condition=" '$(VisualStudioVersion)' == '10.0' ">
     <VsVimAppConfig>$(MSBuildThisFileDirectory)References\Vs2010\App.config</VsVimAppConfig>
+    <VsEditorAssemblyVersion>10.0.0.0</VsEditorAssemblyVersion>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(VisualStudioVersion)' == '11.0' ">
     <VsVimAppConfig>$(MSBuildThisFileDirectory)References\Vs2012\App.config</VsVimAppConfig>
+    <VsEditorAssemblyVersion>11.0.0.0</VsEditorAssemblyVersion>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(VisualStudioVersion)' == '12.0' ">
     <VsVimAppConfig>$(MSBuildThisFileDirectory)References\Vs2013\App.config</VsVimAppConfig>
+    <VsEditorAssemblyVersion>12.0.0.0</VsEditorAssemblyVersion>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(VisualStudioVersion)' == '14.0' ">
     <VsVimAppConfig>$(MSBuildThisFileDirectory)References\Vs2015\App.config</VsVimAppConfig>
+    <VsEditorAssemblyVersion>14.0.0.0</VsEditorAssemblyVersion>
   </PropertyGroup>
 
   <!-- TODO: delete once 2017 testing is fixed -->
   <PropertyGroup Condition=" '$(VisualStudioVersion)' == '15.0' ">
     <VsVimAppConfig>$(MSBuildThisFileDirectory)References\Vs2015\App.config</VsVimAppConfig>
+    <VsEditorAssemblyVersion>14.0.0.0</VsEditorAssemblyVersion>
   </PropertyGroup>
 
   <PropertyGroup>
