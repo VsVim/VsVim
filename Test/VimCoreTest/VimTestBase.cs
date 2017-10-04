@@ -20,6 +20,7 @@ using System.Windows;
 using Microsoft.VisualStudio.Text.Projection;
 using Microsoft.VisualStudio.Text.Outlining;
 using Microsoft.VisualStudio.Utilities;
+using System.Threading;
 
 namespace Vim.UnitTest
 {
@@ -299,6 +300,12 @@ namespace Vim.UnitTest
             }
 
             VariableMap.Clear();
+
+            var context = SynchronizationContext.Current;
+            if (context != null && context.GetType() != typeof(SynchronizationContext))
+            {
+                throw new Exception("Bad SynchronizationContext detected");
+            }
         }
 
         public ITextBuffer CreateTextBuffer(params string[] lines)

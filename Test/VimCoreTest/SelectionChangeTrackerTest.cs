@@ -233,17 +233,25 @@ namespace Vim.UnitTest
         [Fact]
         public void BadSynchronizationContext()
         {
-            SynchronizationContext.SetSynchronizationContext(null);
-            _vimBuffer.SetupGet(x => x.IsProcessingInput).Returns(false).Verifiable();
-            _vimBuffer.SetupGet(x => x.ModeKind).Returns(ModeKind.Normal).Verifiable();
-            _vimBuffer
-                .Setup(x => x.SwitchMode(ModeKind.VisualCharacter, ModeArgument.None))
-                .Returns(_factory.Create<IMode>().Object)
-                .Verifiable();
-            _selection.SetupGet(x => x.IsEmpty).Returns(false).Verifiable();
-            _selection.Raise(x => x.SelectionChanged += null, null, EventArgs.Empty);
-            _factory.Verify();
-            Assert.True(_context.IsEmpty);     // Shouldn't be accessible
+            var old = SynchronizationContext.Current;
+            try
+            {
+                SynchronizationContext.SetSynchronizationContext(null);
+                _vimBuffer.SetupGet(x => x.IsProcessingInput).Returns(false).Verifiable();
+                _vimBuffer.SetupGet(x => x.ModeKind).Returns(ModeKind.Normal).Verifiable();
+                _vimBuffer
+                    .Setup(x => x.SwitchMode(ModeKind.VisualCharacter, ModeArgument.None))
+                    .Returns(_factory.Create<IMode>().Object)
+                    .Verifiable();
+                _selection.SetupGet(x => x.IsEmpty).Returns(false).Verifiable();
+                _selection.Raise(x => x.SelectionChanged += null, null, EventArgs.Empty);
+                _factory.Verify();
+                Assert.True(_context.IsEmpty);     // Shouldn't be accessible
+            }
+            finally
+            {
+                SynchronizationContext.SetSynchronizationContext(old);
+            }
         }
 
         /// <summary>

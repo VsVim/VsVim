@@ -1073,10 +1073,19 @@ namespace EditorUtils.UnitTest
             public void BadSynchronizationContext()
             {
                 Create("cat dog");
-                _asyncTaggerSource.SetBackgroundFunc(span => TestUtils.GetDogTags(span));
-                SynchronizationContext.SetSynchronizationContext(null);
-                var tags = _asyncTagger.GetTags(_textBuffer.GetExtent());
-                Assert.Equal(0, tags.Count());
+                var old = SynchronizationContext.Current;
+                try
+                {
+                    _asyncTaggerSource.SetBackgroundFunc(span => TestUtils.GetDogTags(span));
+                    SynchronizationContext.SetSynchronizationContext(null);
+                    var tags = _asyncTagger.GetTags(_textBuffer.GetExtent());
+                    Assert.Equal(0, tags.Count());
+                }
+                finally
+                {
+
+                    SynchronizationContext.SetSynchronizationContext(old);
+                }
             }
         }
     }

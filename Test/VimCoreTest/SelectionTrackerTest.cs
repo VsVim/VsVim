@@ -19,19 +19,17 @@ namespace Vim.UnitTest
         private SelectionTracker _tracker;
         private Mock<IIncrementalSearch> _incrementalSearch;
         private TestableSynchronizationContext _context;
-        private SynchronizationContext _before;
 
         public SelectionTrackerTest()
         {
-            _before = SynchronizationContext.Current;
             _context = new TestableSynchronizationContext();
-            SynchronizationContext.SetSynchronizationContext(_context);
+            _context.Install();
         }
 
         public override void Dispose()
         {
+            _context.Uninstall();
             base.Dispose();
-            SynchronizationContext.SetSynchronizationContext(_before);
         }
 
         private void Create(VisualKind kind, params string[] lines)
