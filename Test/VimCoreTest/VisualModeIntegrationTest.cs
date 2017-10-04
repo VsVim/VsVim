@@ -31,7 +31,7 @@ namespace Vim.UnitTest
         protected virtual void Create(params string[] lines)
         {
             _context = new TestableSynchronizationContext();
-            SynchronizationContext.SetSynchronizationContext(_context);
+            _context.Install();
             _textView = CreateTextView(lines);
             _textBuffer = _textView.TextBuffer;
             _vimBuffer = Vim.CreateVimBuffer(_textView);
@@ -44,6 +44,12 @@ namespace Vim.UnitTest
 
             // Need to make sure it's focused so macro recording will work
             ((MockVimHost)_vimBuffer.Vim.VimHost).FocusedTextView = _textView;
+        }
+
+        public override void Dispose()
+        {
+            _context.Uninstall();
+            base.Dispose();
         }
 
         protected virtual void Create(int tabStop, params string[] lines)

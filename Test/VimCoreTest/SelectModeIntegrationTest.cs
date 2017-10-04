@@ -33,8 +33,9 @@ namespace Vim.UnitTest
 
         public override void Dispose()
         {
-            base.Dispose();
             _testableMouseDevice.IsLeftButtonPressed = false;
+            _context.Uninstall();
+            base.Dispose();
         }
 
         protected void EnterSelect(int start, int length)
