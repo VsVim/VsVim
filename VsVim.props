@@ -8,6 +8,12 @@
     <RepoPath>$(MSBuildThisFileDirectory)</RepoPath>
     <BinariesPath>$(RepoPath)Binaries\</BinariesPath>
     <BaseIntermediateOutputPath>$(BinariesPath)obj\$(MSBuildProjectName)\</BaseIntermediateOutputPath>
+
+    <!-- The version of VS that should be targetted for testing. Prefer the
+         current VS version but allow it to be changed via environment 
+         variable for testing other versions --> 
+    <VsVimTargetVersion Condition="'$(VsVimTargetVersion)' == ''">$(VisualStudioVersion)</VsVimTargetVersion>
+    <VsVimTargetVersion Condition="'$(VsVimTargetVersion)' == ''">15.0</VsVimTargetVersion>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Is32Bit)' == 'True'">
@@ -27,27 +33,31 @@
   <PropertyGroup Condition=" '$(VisualStudioVersion)' == '10.0' ">
     <VsVimAppConfig>$(MSBuildThisFileDirectory)References\Vs2010\App.config</VsVimAppConfig>
     <VsEditorAssemblyVersion>10.0.0.0</VsEditorAssemblyVersion>
+    <DefineConstants>$(DefineConstants);VS2010</DefineConstants>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(VisualStudioVersion)' == '11.0' ">
     <VsVimAppConfig>$(MSBuildThisFileDirectory)References\Vs2012\App.config</VsVimAppConfig>
     <VsEditorAssemblyVersion>11.0.0.0</VsEditorAssemblyVersion>
+    <DefineConstants>$(DefineConstants);VS2011</DefineConstants>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(VisualStudioVersion)' == '12.0' ">
     <VsVimAppConfig>$(MSBuildThisFileDirectory)References\Vs2013\App.config</VsVimAppConfig>
     <VsEditorAssemblyVersion>12.0.0.0</VsEditorAssemblyVersion>
+    <DefineConstants>$(DefineConstants);VS2012</DefineConstants>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(VisualStudioVersion)' == '14.0' ">
     <VsVimAppConfig>$(MSBuildThisFileDirectory)References\Vs2015\App.config</VsVimAppConfig>
     <VsEditorAssemblyVersion>14.0.0.0</VsEditorAssemblyVersion>
+    <DefineConstants>$(DefineConstants);VS2015</DefineConstants>
   </PropertyGroup>
 
-  <!-- TODO: delete once 2017 testing is fixed -->
   <PropertyGroup Condition=" '$(VisualStudioVersion)' == '15.0' ">
-    <VsVimAppConfig>$(MSBuildThisFileDirectory)References\Vs2015\App.config</VsVimAppConfig>
-    <VsEditorAssemblyVersion>14.0.0.0</VsEditorAssemblyVersion>
+    <VsVimAppConfig>$(MSBuildThisFileDirectory)References\Vs2017\App.config</VsVimAppConfig>
+    <VsEditorAssemblyVersion>15.0.0.0</VsEditorAssemblyVersion>
+    <DefineConstants>$(DefineConstants);VS2017</DefineConstants>
   </PropertyGroup>
 
   <PropertyGroup>
