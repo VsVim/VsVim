@@ -34,34 +34,27 @@
 
   <PropertyGroup Condition=" '$(VsVimTargetVersion)' == '10.0' ">
     <VsVimAppConfig>$(MSBuildThisFileDirectory)References\Vs2010\App.config</VsVimAppConfig>
-    <VsEditorAssemblyVersion>10.0.0.0</VsEditorAssemblyVersion>
     <DefineConstants>$(DefineConstants);VS2010</DefineConstants>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(VsVimTargetVersion)' == '11.0' ">
     <VsVimAppConfig>$(MSBuildThisFileDirectory)References\Vs2012\App.config</VsVimAppConfig>
-    <VsEditorAssemblyVersion>11.0.0.0</VsEditorAssemblyVersion>
     <DefineConstants>$(DefineConstants);VS2011</DefineConstants>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(VsVimTargetVersion)' == '12.0' ">
     <VsVimAppConfig>$(MSBuildThisFileDirectory)References\Vs2013\App.config</VsVimAppConfig>
-    <VsEditorAssemblyVersion>12.0.0.0</VsEditorAssemblyVersion>
     <DefineConstants>$(DefineConstants);VS2012</DefineConstants>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(VsVimTargetVersion)' == '14.0' ">
     <VsVimAppConfig>$(MSBuildThisFileDirectory)References\Vs2015\App.config</VsVimAppConfig>
-    <VsEditorAssemblyVersion>14.0.0.0</VsEditorAssemblyVersion>
+    <VsRunnablePropsFilePath>$(MSBuildThisFileDirectory)References\VS2015\Runnable.props</VsRunnablePropsFilePath>
     <DefineConstants>$(DefineConstants);VS2015</DefineConstants>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(VsVimTargetVersion)' == '15.0' ">
     <VsVimAppConfig>$(MSBuildThisFileDirectory)References\Vs2017\App.config</VsVimAppConfig>
-    <VsEditorAssemblyVersion>15.0.0.0</VsEditorAssemblyVersion>
-    <VsThreadingAssemblyVersion>15.3.0.0</VsThreadingAssemblyVersion>
-    <VsImmutableAssemblyVersion>1.2.1.0</VsImmutableAssemblyVersion>
-    <VsJsonAssemblyVersion>9.0.0.0</VsJsonAssemblyVersion>
     <VsRunnablePropsFilePath>$(MSBuildThisFileDirectory)References\VS2017\Runnable.props</VsRunnablePropsFilePath>
     <DefineConstants>$(DefineConstants);VS2017</DefineConstants>
   </PropertyGroup>

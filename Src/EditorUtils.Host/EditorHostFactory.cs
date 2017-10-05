@@ -74,11 +74,13 @@ namespace EditorUtils
             var editorAssemblyVersion = new Version(vsVersion.Major, 0);
             AppendEditorAssemblies(editorAssemblyVersion);
 
+#if VS2017
             if (vsVersion.Major >= 15)
             {
                 AppendEditorAssembly("Microsoft.VisualStudio.Threading", new Version(15, 3));
                 _exportProviderList.Add(new JoinableTaskContextExportProvider());
             }
+#endif
 
             _composablePartCatalogList.Add(new AssemblyCatalog(typeof(EditorHostFactory).Assembly));
             _exportProviderList.Add(new UndoExportProvider());
