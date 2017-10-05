@@ -11,6 +11,7 @@
     <AssemblyName>EditorUtils.UnitTest</AssemblyName>
     <RestorePackages>true</RestorePackages>
     <VsVimIsRunnable>true</VsVimIsRunnable>
+    <PlatformTarget>x86</PlatformTarget>
     <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
     <TargetFrameworkProfile />
   </PropertyGroup>
@@ -22,7 +23,6 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <Prefer32Bit>false</Prefer32Bit>
-    <PlatformTarget>x86</PlatformTarget>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
