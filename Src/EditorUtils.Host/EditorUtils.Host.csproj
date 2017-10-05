@@ -54,6 +54,7 @@
     <Compile Include="EditorHostFactory.JoinableTaskContextExportProvider.cs" />
     <Compile Include="EditorHostFactory.UndoExportProvider.cs" />
     <Compile Include="EditorLocatorUtil.cs" />
+    <Compile Include="Extensions.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
