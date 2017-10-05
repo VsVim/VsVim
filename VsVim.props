@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
+  <Import Project="$(MSBuildThisFileDirectory)\Binaries\User.props" Condition="Exists('$(MSBuildThisFileDirectory)\Binaries\User.props')" />
+
   <PropertyGroup>
     <VsVimEmptyAppConfig>$(MSBuildThisFileDirectory)References\Vs2010\App.config</VsVimEmptyAppConfig>
     <Is32Bit>False</Is32Bit>
@@ -30,33 +32,37 @@
     <Vs2015InstallDir>$(registry:HKEY_LOCAL_MACHINE\Software\Wow6432Node\Microsoft\VisualStudio\14.0@InstallDir)</Vs2015InstallDir>
   </PropertyGroup>
 
-  <PropertyGroup Condition=" '$(VisualStudioVersion)' == '10.0' ">
+  <PropertyGroup Condition=" '$(VsVimTargetVersion)' == '10.0' ">
     <VsVimAppConfig>$(MSBuildThisFileDirectory)References\Vs2010\App.config</VsVimAppConfig>
     <VsEditorAssemblyVersion>10.0.0.0</VsEditorAssemblyVersion>
     <DefineConstants>$(DefineConstants);VS2010</DefineConstants>
   </PropertyGroup>
 
-  <PropertyGroup Condition=" '$(VisualStudioVersion)' == '11.0' ">
+  <PropertyGroup Condition=" '$(VsVimTargetVersion)' == '11.0' ">
     <VsVimAppConfig>$(MSBuildThisFileDirectory)References\Vs2012\App.config</VsVimAppConfig>
     <VsEditorAssemblyVersion>11.0.0.0</VsEditorAssemblyVersion>
     <DefineConstants>$(DefineConstants);VS2011</DefineConstants>
   </PropertyGroup>
 
-  <PropertyGroup Condition=" '$(VisualStudioVersion)' == '12.0' ">
+  <PropertyGroup Condition=" '$(VsVimTargetVersion)' == '12.0' ">
     <VsVimAppConfig>$(MSBuildThisFileDirectory)References\Vs2013\App.config</VsVimAppConfig>
     <VsEditorAssemblyVersion>12.0.0.0</VsEditorAssemblyVersion>
     <DefineConstants>$(DefineConstants);VS2012</DefineConstants>
   </PropertyGroup>
 
-  <PropertyGroup Condition=" '$(VisualStudioVersion)' == '14.0' ">
+  <PropertyGroup Condition=" '$(VsVimTargetVersion)' == '14.0' ">
     <VsVimAppConfig>$(MSBuildThisFileDirectory)References\Vs2015\App.config</VsVimAppConfig>
     <VsEditorAssemblyVersion>14.0.0.0</VsEditorAssemblyVersion>
     <DefineConstants>$(DefineConstants);VS2015</DefineConstants>
   </PropertyGroup>
 
-  <PropertyGroup Condition=" '$(VisualStudioVersion)' == '15.0' ">
+  <PropertyGroup Condition=" '$(VsVimTargetVersion)' == '15.0' ">
     <VsVimAppConfig>$(MSBuildThisFileDirectory)References\Vs2017\App.config</VsVimAppConfig>
     <VsEditorAssemblyVersion>15.0.0.0</VsEditorAssemblyVersion>
+    <VsThreadingAssemblyVersion>15.3.0.0</VsThreadingAssemblyVersion>
+    <VsImmutableAssemblyVersion>1.2.1.0</VsImmutableAssemblyVersion>
+    <VsJsonAssemblyVersion>9.0.0.0</VsJsonAssemblyVersion>
+    <VsRunnablePropsFilePath>$(MSBuildThisFileDirectory)References\VS2017\Runnable.props</VsRunnablePropsFilePath>
     <DefineConstants>$(DefineConstants);VS2017</DefineConstants>
   </PropertyGroup>
 

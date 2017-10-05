@@ -3,4 +3,6 @@
   <PropertyGroup>
     <OutputPath>$(BinariesPath)$(Configuration)\$(MSBuildProjectName)</OutputPath>
   </PropertyGroup>
+
+  <Import Project="$(VsRunnablePropsFilePath)" Condition="'$(VsVimIsRunnable)' == 'true'" />
 </Project>
