@@ -4,6 +4,7 @@ using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Xunit;
 using Vim.UnitTest.Exports;
+using EditorUtils.UnitTest;
 
 namespace Vim.UnitTest
 {

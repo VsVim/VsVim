@@ -132,6 +132,10 @@
       <Project>{e27dbbf1-6116-4e32-8fa5-07dce5e62bb6}</Project>
       <Name>VsInterfaces</Name>
     </ProjectReference>
+    <ProjectReference Include="..\EditorUtilsTest\EditorUtilsTest.csproj">
+      <Project>{baed09b7-25d9-4dd8-8558-bac9730ba3f3}</Project>
+      <Name>EditorUtilsTest</Name>
+    </ProjectReference>
     <ProjectReference Include="..\VimCoreTest\VimCoreTest.csproj">
       <Project>{B4FC7C81-E500-47C8-A884-2DBB7CA77123}</Project>
       <Name>VimCoreTest</Name>
