@@ -39,7 +39,7 @@ function test-vsixcontents() {
 
     $expectedFiles = @(
         "Colors.pkgdef",
-        "EditorUtils2010.dll",
+        "EditorUtils.dll",
         "extension.vsixmanifest",
         "License.txt",
         "Microsoft.ApplicationInsights.dll",
@@ -108,6 +108,7 @@ function test-vsixcontents() {
 # Run all of the unit tests
 function test-unittests() { 
     $all = 
+        "Binaries\Release\EditorUtilsTest\EditorUtils.UnitTest.dll",
         "Binaries\Release\VimCoreTest\Vim.Core.UnitTest.dll",
         "Binaries\Release\VimWpfTest\Vim.UI.Wpf.UnitTest.dll",
         "Binaries\Release\VsVimSharedTest\Vim.VisualStudio.Shared.UnitTest.dll"
@@ -244,6 +245,7 @@ try {
     # Build all of the relevant projects.  Both the deployment binaries and the 
     # test infrastructure
     write-host "Building Projects"
+    build-release Test\EditorUtilsTest\EditorUtilsTest.csproj
     build-release Test\VimCoreTest\VimCoreTest.csproj
     build-release Test\VimWpfTest\VimWpfTest.csproj
     build-release Test\VsVimSharedTest\VsVimSharedTest.csproj
