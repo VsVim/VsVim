@@ -1,4 +1,5 @@
-﻿using Microsoft.VisualStudio.Text.Editor;
+﻿#if VS2017
+using Microsoft.VisualStudio.Text.Editor;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
@@ -20,3 +21,4 @@ namespace EditorUtils.Host
         }
     }
 }
+#endif

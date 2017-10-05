@@ -1,4 +1,5 @@
-﻿using System;
+﻿#if VS2017
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.ComponentModel.Composition.Hosting;
@@ -10,6 +11,7 @@ using System.Text;
 using Microsoft.VisualStudio.Text.Operations;
 using Microsoft.Win32;
 using Microsoft.VisualStudio.Threading;
+using System.Threading;
 
 namespace EditorUtils
 {
@@ -28,7 +30,7 @@ namespace EditorUtils
             internal JoinableTaskContextExportProvider()
             {
                 _export = new Export(TypeFullName, GetValue);
-                _context = new JoinableTaskContext();
+                _context = new JoinableTaskContext(Thread.CurrentThread);
             }
 
             protected override IEnumerable<Export> GetExportsCore(ImportDefinition definition, AtomicComposition atomicComposition)
@@ -43,3 +45,4 @@ namespace EditorUtils
         }
     }
 }
+#endif
