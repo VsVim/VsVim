@@ -304,7 +304,7 @@ namespace Vim.UnitTest
             var context = SynchronizationContext.Current;
             if (context != null && context.GetType() != typeof(SynchronizationContext))
             {
-                throw new Exception("Bad SynchronizationContext detected");
+                throw new Exception("Bad SynchronizationContext detected: " + context.GetType());
             }
         }
 
