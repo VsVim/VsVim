@@ -2,7 +2,9 @@
 using Moq;
 using Xunit;
 using Vim.UnitTest.Mock;
+using EditorUtils;
 using System;
+using System.Windows.Threading;
 
 namespace Vim.UnitTest
 {
@@ -85,6 +87,7 @@ namespace Vim.UnitTest
 
                 textView.SetupGet(x => x.TextViewLines).Returns(new Mock<ITextViewLineCollection>().Object);
                 textView.Raise(x => x.LayoutChanged += null, (TextViewLayoutChangedEventArgs)null);
+                Dispatcher.CurrentDispatcher.DoEvents();
 
                 Assert.Equal(ModeKind.Normal, vimBuffer.ModeKind);
             }
@@ -120,6 +123,7 @@ namespace Vim.UnitTest
                 textView.SetupGet(x => x.TextViewLines).Returns(_factory.Create<ITextViewLineCollection>().Object);
                 textView.SetupGet(x => x.InLayout).Returns(false);
                 textView.Raise(x => x.LayoutChanged += null, (TextViewLayoutChangedEventArgs)null);
+                Dispatcher.CurrentDispatcher.DoEvents();
                 Assert.Equal(ModeKind.Normal, vimBuffer.ModeKind);
             }
 

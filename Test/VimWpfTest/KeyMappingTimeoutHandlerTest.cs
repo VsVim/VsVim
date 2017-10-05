@@ -2,6 +2,7 @@
 using System.Threading;
 using System.Windows.Threading;
 using Xunit;
+using EditorUtils;
 using Vim.UI.Wpf.Implementation.Misc;
 using Vim.UnitTest;
 
