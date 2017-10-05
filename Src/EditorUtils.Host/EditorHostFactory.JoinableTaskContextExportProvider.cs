@@ -12,6 +12,7 @@ using Microsoft.VisualStudio.Text.Operations;
 using Microsoft.Win32;
 using Microsoft.VisualStudio.Threading;
 using System.Threading;
+using System.Windows.Threading;
 
 namespace EditorUtils
 {
@@ -30,7 +31,7 @@ namespace EditorUtils
             internal JoinableTaskContextExportProvider()
             {
                 _export = new Export(TypeFullName, GetValue);
-                _context = new JoinableTaskContext(Thread.CurrentThread);
+                _context = new JoinableTaskContext(Thread.CurrentThread, new DispatcherSynchronizationContext());
             }
 
             protected override IEnumerable<Export> GetExportsCore(ImportDefinition definition, AtomicComposition atomicComposition)
