@@ -107,7 +107,6 @@
     <Compile Include="SelectModeIntegrationTest.cs" />
     <Compile Include="SystemUtilTest.cs" />
     <Compile Include="TestableBulkOperations.cs" />
-    <Compile Include="TestableSynchronizationContext.cs" />
     <Compile Include="TextChangeTest.cs" />
     <Compile Include="TokenizerTest.cs" />
     <Compile Include="VimEditorHost.cs" />
@@ -232,6 +231,10 @@
     <ProjectReference Include="..\..\Src\VimWpf\VimWpf.csproj">
       <Project>{65A749E0-F1B1-4E43-BE73-25072EE398C6}</Project>
       <Name>VimWpf</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\EditorUtilsTest\EditorUtilsTest.csproj">
+      <Project>{baed09b7-25d9-4dd8-8558-bac9730ba3f3}</Project>
+      <Name>EditorUtilsTest</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

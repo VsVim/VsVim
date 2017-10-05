@@ -1,13 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading;
+using EditorUtils;
 
 namespace EditorUtils.UnitTest
 {
     public sealed class TestableSynchronizationContext : SynchronizationContext
     {
         private SynchronizationContext _oldSynchronizationContext;
-        private List<Action> _list = new List<Action>();
+        private bool _isSet;
+        private readonly List<Action> _list = new List<Action>();
+
         public bool IsEmpty
         {
             get { return 0 == _list.Count; }
@@ -22,18 +25,11 @@ namespace EditorUtils.UnitTest
         {
             if (_list.Count == 0)
             {
-                return;
+                throw new InvalidOperationException();
             }
 
-            try
-            {
-                _list[0]();
-                _list.RemoveAt(0);
-            }
-            catch
-            {
-
-            }
+            _list[0]();
+            _list.RemoveAt(0);
         }
 
         public void RunAll()
@@ -46,17 +42,26 @@ namespace EditorUtils.UnitTest
 
         public void Install()
         {
+            if (_isSet)
+            {
+                throw new InvalidOperationException();
+            }
+
             _oldSynchronizationContext = SynchronizationContext.Current;
             SynchronizationContext.SetSynchronizationContext(this);
+            _isSet = true;
         }
 
         public void Uninstall()
         {
-            if (_oldSynchronizationContext != null)
+            if (!_isSet)
             {
-                SynchronizationContext.SetSynchronizationContext(_oldSynchronizationContext);
-                _oldSynchronizationContext = null;
+                throw new InvalidOperationException();
             }
+
+            SynchronizationContext.SetSynchronizationContext(_oldSynchronizationContext);
+            _oldSynchronizationContext = null;
+            _isSet = false;
         }
     }
 }
