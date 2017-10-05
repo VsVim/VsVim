@@ -30,23 +30,20 @@ namespace EditorUtils
                 "VBExpress",
             };
 
-        internal static bool TryGetEditorInfo(EditorVersion? editorVersion, out Version vsVersion, out string vsvsInstallDirectory)
+        internal static bool TryGetEditorInfo(out EditorVersion editorVersion, out Version vsVersion, out string vsvsInstallDirectory)
         {
-            if (editorVersion.HasValue)
-            {
-                return TryGetEditorInfo(editorVersion.Value, out vsVersion, out vsvsInstallDirectory);
-            }
-
             foreach (var e in EditorVersionUtil.All)
             {
                 if (TryGetEditorInfo(e, out vsVersion, out vsvsInstallDirectory))
                 {
+                    editorVersion = e;
                     return true;
                 }
             }
 
             vsVersion = default(Version);
             vsvsInstallDirectory = null;
+            editorVersion = default(EditorVersion);
             return false;
         }
 

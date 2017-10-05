@@ -9,6 +9,7 @@ using System.Reflection;
 using System.Text;
 using Microsoft.VisualStudio.Text.Operations;
 using Microsoft.Win32;
+using Microsoft.VisualStudio.Threading;
 
 namespace EditorUtils
 {
@@ -20,15 +21,14 @@ namespace EditorUtils
         /// </summary>
         private sealed class JoinableTaskContextExportProvider : ExportProvider
         {
-            internal const string AssemblyName = "Microsoft.VisualStudio.Threading";
-            internal const string TypeShortName = "JoinableTaskContext";
-            internal const string TypeFullName = AssemblyName + "." + TypeShortName;
+            internal static string TypeFullName => typeof(JoinableTaskContext).FullName;
             private readonly Export _export;
-            private object _instance;
+            private readonly JoinableTaskContext _context;
 
             internal JoinableTaskContextExportProvider()
             {
                 _export = new Export(TypeFullName, GetValue);
+                _context = new JoinableTaskContext();
             }
 
             protected override IEnumerable<Export> GetExportsCore(ImportDefinition definition, AtomicComposition atomicComposition)
@@ -39,18 +39,7 @@ namespace EditorUtils
                 }
             }
 
-            private object GetValue()
-            {
-                if (_instance == null)
-                {
-                    var assembly = AppDomain.CurrentDomain.GetAssemblies().Single(x => x.GetName().Name == AssemblyName);
-                    var type = assembly.GetType(TypeFullName);
-                    var ctor = type.GetConstructor(new Type[0] { });
-                    _instance = ctor.Invoke(null);
-                }
-
-                return _instance;
-            }
+            private object GetValue() => _context;
         }
     }
 }

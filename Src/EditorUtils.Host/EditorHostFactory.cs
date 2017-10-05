@@ -14,6 +14,15 @@ namespace EditorUtils
 {
     public sealed partial class EditorHostFactory
     {
+        internal static EditorVersion DefaultEditorVersion =>
+#if VS2015
+            EditorVersion.Vs2015;
+#elif VS2017
+            EditorVersion.Vs2017;
+#else
+#error Bad version
+#endif
+
         internal static string[] CoreEditorComponents =
             new[]
             {
@@ -29,8 +38,7 @@ namespace EditorUtils
 
         public EditorHostFactory(EditorVersion? editorVersion = null)
         {
-            BuildBaseCatalog(editorVersion);
-            _exportProviderList.Add(new UndoExportProvider());
+            BuildCatalog(editorVersion ?? DefaultEditorVersion);
         }
 
         public void Add(ComposablePartCatalog composablePartCatalog)
@@ -54,21 +62,29 @@ namespace EditorUtils
             return new EditorHost(CreateCompositionContainer());
         }
 
-        private void BuildBaseCatalog(EditorVersion? editorVersion)
+        private void BuildCatalog(EditorVersion editorVersion)
         {
             Version vsVersion;
             GetEditorInfoAndHookResolve(editorVersion, out vsVersion);
-            BuildBaseCatalog(vsVersion);
+            BuildCatalog(vsVersion);
         }
 
-        private void BuildBaseCatalog(Version vsVersion)
+        private void BuildCatalog(Version vsVersion)
         {
             var editorAssemblyVersion = new Version(vsVersion.Major, 0);
             AppendEditorAssemblies(editorAssemblyVersion);
-            AppendSpecificComponents(vsVersion, editorAssemblyVersion);
+
+            if (vsVersion.Major >= 15)
+            {
+                AppendEditorAssembly("Microsoft.VisualStudio.Threading", new Version(15, 3));
+                _exportProviderList.Add(new JoinableTaskContextExportProvider());
+            }
+
+            _composablePartCatalogList.Add(new AssemblyCatalog(typeof(EditorHostFactory).Assembly));
+            _exportProviderList.Add(new UndoExportProvider());
         }
 
-        private static void GetEditorInfoAndHookResolve(EditorVersion? editorVersion, out Version vsVersion)
+        private static void GetEditorInfoAndHookResolve(EditorVersion editorVersion, out Version vsVersion)
         {
             string vsInstallDirectory;
             if (!EditorLocatorUtil.TryGetEditorInfo(editorVersion, out vsVersion, out vsInstallDirectory))
@@ -76,7 +92,10 @@ namespace EditorUtils
                 throw new Exception("Unable to calculate the version of Visual Studio installed on the machine");
             }
 
-            HookResolve(vsInstallDirectory);
+            if (vsVersion.Major <= 14)
+            {
+                HookResolve(vsInstallDirectory);
+            }
         }
 
         /// <summary>
@@ -115,21 +134,14 @@ namespace EditorUtils
             foreach (var name in CoreEditorComponents)
             {
                 var simpleName = Path.GetFileNameWithoutExtension(name);
-                var assembly = GetEditorAssembly(simpleName, editorAssemblyVersion);
-                _composablePartCatalogList.Add(new AssemblyCatalog(assembly));
+                AppendEditorAssembly(simpleName, editorAssemblyVersion);
             }
         }
 
-        private void AppendSpecificComponents(Version vsVersion, Version editorAssemblyVersion)
+        private void AppendEditorAssembly(string name, Version version)
         {
-            if (vsVersion.Major >= 15)
-            {
-                var qualifiedName = string.Format("EditorUtils.Host.Vs2017, Version={0}, Culture=neutral, PublicKeyToken={1}, processorArchitecture=MSIL", Constants.AssemblyVersion, Constants.PublicKeyToken);
-                var assembly = Assembly.Load(qualifiedName);
-                _composablePartCatalogList.Add(new AssemblyCatalog(assembly));
-
-                _exportProviderList.Add(new JoinableTaskContextExportProvider());
-            }
+            var assembly = GetEditorAssembly(name, version);
+            _composablePartCatalogList.Add(new AssemblyCatalog(assembly));
         }
 
         private static Assembly GetEditorAssembly(string assemblyName, Version version)
