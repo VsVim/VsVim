@@ -5,7 +5,7 @@ using System.ComponentModel.Composition.Primitives;
 using Microsoft.VisualStudio.Language.Intellisense.Utilities;
 using System.Threading;
 
-namespace EditorUtils
+namespace EditorUtils.Implementation.Misc
 {
     [Export(typeof(IWaitIndicator))]
     internal sealed class BasicWaitIndicator : IWaitIndicator

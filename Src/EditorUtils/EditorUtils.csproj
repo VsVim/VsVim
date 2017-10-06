@@ -74,9 +74,6 @@
     <Compile Include="SnapshotLineRange.cs" />
     <Compile Include="UsedInBackgroundThreadAttribute.cs" />
   </ItemGroup>
-  <ItemGroup>
-    <None Include="app.config" />
-  </ItemGroup>
   <Import Project="..\..\VsVim.targets" />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

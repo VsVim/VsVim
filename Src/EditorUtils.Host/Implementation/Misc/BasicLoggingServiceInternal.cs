@@ -8,7 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace EditorUtils
+namespace EditorUtils.Implementation.Misc
 {
     [Export(typeof(ILoggingServiceInternal))]
     internal sealed class BasicLoggingServiceInternal : ILoggingServiceInternal

@@ -7,7 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace EditorUtils.Host
+namespace EditorUtils.Implementation.Misc
 {
     [Export(typeof(IObscuringTipManager))]
     internal sealed class BasicObscuringTipManager : IObscuringTipManager
