@@ -46,9 +46,9 @@
     <Compile Include="..\EditorUtils\Constants.cs">
       <Link>Constants.cs</Link>
     </Compile>
-    <Compile Include="BasicLoggingServiceInternal.cs" />
-    <Compile Include="BasicObscuringTipManager.cs" />
-    <Compile Include="BasicWaitIndicator.cs" />
+    <Compile Include="Implementation\Misc\BasicLoggingServiceInternal.cs" />
+    <Compile Include="Implementation\Misc\BasicObscuringTipManager.cs" />
+    <Compile Include="Implementation\Misc\BasicWaitIndicator.cs" />
     <Compile Include="EditorHost.cs" />
     <Compile Include="EditorHostFactory.cs" />
     <Compile Include="EditorHostFactory.JoinableTaskContextExportProvider.cs" />
