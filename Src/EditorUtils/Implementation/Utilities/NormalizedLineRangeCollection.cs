@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using Vim;
 
 namespace EditorUtils.Implementation.Utilities
 {
@@ -31,7 +32,7 @@ namespace EditorUtils.Implementation.Utilities
 
                 var startLine = _list[0].StartLineNumber;
                 var lastLine = _list[_list.Count - 1].LastLineNumber;
-                return EditorUtils.LineRange.CreateFromBounds(startLine, lastLine);
+                return LineRange.CreateFromBounds(startLine, lastLine);
             }
         }
 
@@ -120,14 +121,14 @@ namespace EditorUtils.Implementation.Utilities
                 // is the range below
                 if (current.StartLineNumber <= lineRange.StartLineNumber)
                 {
-                    return EditorUtils.LineRange.CreateFromBounds(current.LastLineNumber + 1, lineRange.LastLineNumber);
+                    return LineRange.CreateFromBounds(current.LastLineNumber + 1, lineRange.LastLineNumber);
                 }
 
                 // The found range starts below and intersects.  The unvisited section 
                 // is the line range above
                 if (current.StartLineNumber > lineRange.StartLineNumber)
                 {
-                    return EditorUtils.LineRange.CreateFromBounds(lineRange.StartLineNumber, current.StartLineNumber - 1);
+                    return LineRange.CreateFromBounds(lineRange.StartLineNumber, current.StartLineNumber - 1);
                 }
             }
 
