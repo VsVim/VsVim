@@ -548,7 +548,7 @@ namespace Vim.UnitTest
             protected void AssertPosition(int lineNumber, int column, FSharpOption<VirtualSnapshotPoint> option)
             {
                 Assert.True(option.IsSome());
-                var line = VirtualSnapshotPointUtil.GetPoint(option.value).GetColumn();
+                var line = VirtualSnapshotPointUtil.GetPoint(option.Value).GetColumn();
                 Assert.Equal(lineNumber, line.LineNumber);
                 Assert.Equal(column, line.Column);
             }

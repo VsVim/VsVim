@@ -374,7 +374,7 @@ type internal CharSpan
 
     member x.Length = _length
 
-    member x.CharAt index = 
+    member x.CharAt index : char = 
         let index = _index + index
         _value.[index]
 

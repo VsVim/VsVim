@@ -45,7 +45,6 @@
   <ItemGroup>
     <Compile Include="AsyncTaggerSource.cs" />
     <Compile Include="Constants.cs" />
-    <Compile Include="Contract.cs" />
     <Compile Include="EditorUtilsTrace.cs" />
     <Compile Include="EditorVersion.cs" />
     <Compile Include="EditorVersionUtil.cs" />
