@@ -90,6 +90,10 @@
       <Project>{FB418222-C105-4942-8EEB-832DDCFFD89D}</Project>
       <Name>EditorUtils</Name>
     </ProjectReference>
+    <ProjectReference Include="..\..\Src\VimCorePort\VimCorePort.fsproj">
+      <Project>{a5aa1d42-18ab-4c26-b5e5-b63d89d289b5}</Project>
+      <Name>VimCorePort</Name>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config">

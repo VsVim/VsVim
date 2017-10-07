@@ -806,7 +806,7 @@ more";
                 _textView.MoveCaretTo(3);
                 var data = _motionUtil.QuotedStringContentsWithCount('\'', 1);
                 Assert.True(data.IsSome());
-                Assert.Equal("cat", data.value.Span.GetText());
+                Assert.Equal("cat", data.Value.Span.GetText());
             }
 
             [Fact]
@@ -816,7 +816,7 @@ more";
                 _textView.MoveCaretTo(8);
                 var data = _motionUtil.QuotedStringContentsWithCount('\'', 1);
                 Assert.True(data.IsSome());
-                Assert.Equal("dog", data.value.Span.GetText());
+                Assert.Equal("dog", data.Value.Span.GetText());
             }
 
             /// <summary>
@@ -831,7 +831,7 @@ more";
                 Assert.Equal('\'', _textView.GetCaretPoint().GetChar());
                 var data = _motionUtil.QuotedStringContentsWithCount('\'', 1);
                 Assert.True(data.IsSome());
-                Assert.Equal("cat", data.value.Span.GetText());
+                Assert.Equal("cat", data.Value.Span.GetText());
             }
 
             /// <summary>
@@ -845,7 +845,7 @@ more";
                 Assert.Equal('\'', _textView.GetCaretPoint().GetChar());
                 var data = _motionUtil.QuotedStringContentsWithCount('\'', 1);
                 Assert.True(data.IsSome());
-                Assert.Equal("fish", data.value.Span.GetText());
+                Assert.Equal("fish", data.Value.Span.GetText());
             }
 
             [Fact]

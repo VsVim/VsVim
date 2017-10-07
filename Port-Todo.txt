@@ -1,0 +1,2 @@
+- Make VimCore standalone again
+- Remove the FSharp.Core references in the C# projects

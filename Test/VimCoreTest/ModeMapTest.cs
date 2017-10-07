@@ -78,7 +78,7 @@ namespace Vim.UnitTest
             {
                 _modeMap.Reset((new UninitializedMode(_vimBuffer.VimTextBuffer)));
                 _modeMap.SwitchMode(visualMode.VisualModeKind, ModeArgument.None);
-                Assert.Equal(ModeKind.Normal, _modeMap.PreviousMode.value.ModeKind);
+                Assert.Equal(ModeKind.Normal, _modeMap.PreviousMode.Value.ModeKind);
             }
         }
 
