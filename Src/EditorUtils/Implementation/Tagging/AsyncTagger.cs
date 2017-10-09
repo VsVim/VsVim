@@ -411,7 +411,7 @@ namespace EditorUtils.Implementation.Tagging
                 return GetTags(col[0]);
             }
 
-            EditorUtilsTrace.TraceInfo("AsyncTagger::GetTags Count {0}", col.Count);
+            VimTrace.TraceInfo("AsyncTagger::GetTags Count {0}", col.Count);
             IEnumerable<ITagSpan<TTag>> all = null;
             foreach (var span in col)
             {
@@ -427,7 +427,7 @@ namespace EditorUtils.Implementation.Tagging
         private IEnumerable<ITagSpan<TTag>> GetTags(SnapshotSpan span)
         {
             var lineRange = SnapshotLineRange.CreateForSpan(span);
-            EditorUtilsTrace.TraceInfo("AsyncTagger::GetTags {0} - {1}", lineRange.StartLineNumber, lineRange.LastLineNumber);
+            VimTrace.TraceInfo("AsyncTagger::GetTags {0} - {1}", lineRange.StartLineNumber, lineRange.LastLineNumber);
 
             // First try and see if the tagger can provide prompt data.  We want to avoid 
             // creating Task<T> instances if possible.  
@@ -551,7 +551,7 @@ namespace EditorUtils.Implementation.Tagging
                 if (asyncBackgroundRequest.Snapshot == snapshot)
                 {
                     Contract.Requires(asyncBackgroundRequest.Snapshot == snapshot);
-                    EditorUtilsTrace.TraceInfo("AsyncTagger Background Existing {0} - {1}", lineRange.StartLineNumber, lineRange.LastLineNumber);
+                    VimTrace.TraceInfo("AsyncTagger Background Existing {0} - {1}", lineRange.StartLineNumber, lineRange.LastLineNumber);
                     asyncBackgroundRequest.Channel.WriteNormal(lineRange);
                     return;
                 }
@@ -560,7 +560,7 @@ namespace EditorUtils.Implementation.Tagging
             }
 
             Contract.Assert(!_asyncBackgroundRequest.HasValue);
-            EditorUtilsTrace.TraceInfo("AsyncTagger Background New {0} - {1}", lineRange.StartLineNumber, lineRange.LastLineNumber);
+            VimTrace.TraceInfo("AsyncTagger Background New {0} - {1}", lineRange.StartLineNumber, lineRange.LastLineNumber);
 
             // Create the data which is needed by the background request
             var data = _asyncTaggerSource.GetDataForSnapshot(snapshot);
@@ -708,7 +708,7 @@ namespace EditorUtils.Implementation.Tagging
                                 // It's important that we register some value here.  If we register nothing then the foreground will
                                 // never see this slot as fulfilled and later requests for this span will eventually queue up another
                                 // background request
-                                EditorUtilsTrace.TraceInfo("AsyncTagger source exception in background processing {0}", e);
+                                VimTrace.TraceInfo("AsyncTagger source exception in background processing {0}", e);
                             }
                             visited.Add(tagLineRange.LineRange);
                             onProgress(tagLineRange, tagList);
@@ -757,7 +757,7 @@ namespace EditorUtils.Implementation.Tagging
             {
                 // Handle cancellation exceptions and everything else.  Don't want an errant 
                 // exception thrown by the IAsyncTaggerSource to crash the process
-                EditorUtilsTrace.TraceInfo("AsyncTagger Exception in background processing {0}", e);
+                VimTrace.TraceInfo("AsyncTagger Exception in background processing {0}", e);
                 completeReason = CompleteReason.Error;
             }
 
@@ -829,7 +829,7 @@ namespace EditorUtils.Implementation.Tagging
         private void RaiseTagsChanged(SnapshotSpan span)
         {
             var lineRange = SnapshotLineRange.CreateForSpan(span);
-            EditorUtilsTrace.TraceInfo("AsyncTagger::RaiseTagsChanged {0} - {1}", lineRange.StartLineNumber, lineRange.LastLineNumber);
+            VimTrace.TraceInfo("AsyncTagger::RaiseTagsChanged {0} - {1}", lineRange.StartLineNumber, lineRange.LastLineNumber);
 
             if (_tagsChanged != null)
             {
