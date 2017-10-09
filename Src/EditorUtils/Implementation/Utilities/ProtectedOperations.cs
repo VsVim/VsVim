@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Windows.Threading;
 using Microsoft.VisualStudio.Text;
+using Vim;
 
 namespace EditorUtils.Implementation.Utilities
 {

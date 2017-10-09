@@ -46,6 +46,8 @@
     <Compile Include="..\EditorUtils\Constants.cs">
       <Link>Constants.cs</Link>
     </Compile>
+    <Compile Include="EditorVersion.cs" />
+    <Compile Include="EditorVersionUtil.cs" />
     <Compile Include="Implementation\Misc\BasicLoggingServiceInternal.cs" />
     <Compile Include="Implementation\Misc\BasicObscuringTipManager.cs" />
     <Compile Include="Implementation\Misc\BasicWaitIndicator.cs" />
@@ -65,6 +67,10 @@
     <ProjectReference Include="..\EditorUtils\EditorUtils.csproj">
       <Project>{fb418222-c105-4942-8eeb-832ddcffd89d}</Project>
       <Name>EditorUtils</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\VimCorePort\VimCorePort.fsproj">
+      <Project>{a5aa1d42-18ab-4c26-b5e5-b63d89d289b5}</Project>
+      <Name>VimCorePort</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="..\..\VsVim.targets" />

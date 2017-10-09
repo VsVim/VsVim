@@ -4,6 +4,7 @@ using EditorUtils.Implementation.Utilities;
 using Microsoft.VisualStudio.Text;
 using Moq;
 using Xunit;
+using Vim;
 
 namespace EditorUtils.UnitTest
 {
