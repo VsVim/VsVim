@@ -56,6 +56,7 @@
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="ToDelete.fs" />
+    <Compile Include="VimTrace.fs" />
     <Compile Include="EditorUtilPort.fs" />
     <Compile Include="CoreInterfacesPort.fs" />
   </ItemGroup>

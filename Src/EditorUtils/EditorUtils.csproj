@@ -45,7 +45,6 @@
   <ItemGroup>
     <Compile Include="AsyncTaggerSource.cs" />
     <Compile Include="Constants.cs" />
-    <Compile Include="EditorUtilsTrace.cs" />
     <Compile Include="Extensions.cs" />
     <Compile Include="IAdhocOutliner.cs" />
     <Compile Include="IAsyncTaggerSource.cs" />

@@ -41,7 +41,6 @@
   <ItemGroup>
     <Compile Include="Resources.fs" />
     <Compile Include="Constants.fs" />
-    <Compile Include="VimTrace.fs" />
     <Compile Include="FSharpUtil.fs" />
     <Compile Include="StringUtil.fs" />
     <Compile Include="Util.fs" />
