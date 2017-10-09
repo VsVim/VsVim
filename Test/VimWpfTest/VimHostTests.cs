@@ -34,7 +34,7 @@ namespace Vim.UI.Wpf.UnitTest
                 throw new NotImplementedException();
             }
 
-            public override void FormatLines(ITextView textView, EditorUtils.SnapshotLineRange range)
+            public override void FormatLines(ITextView textView, SnapshotLineRange range)
             {
                 throw new NotImplementedException();
             }

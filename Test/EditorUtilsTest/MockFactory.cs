@@ -2,6 +2,7 @@
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Formatting;
 using Moq;
+using Vim;
 
 namespace EditorUtils.UnitTest
 {

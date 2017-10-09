@@ -10,6 +10,7 @@ using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Tagging;
 using Moq;
 using Xunit;
+using Vim;
 using AsyncTaggerType = EditorUtils.Implementation.Tagging.AsyncTagger<string, Microsoft.VisualStudio.Text.Tagging.TextMarkerTag>;
 
 namespace EditorUtils.UnitTest
