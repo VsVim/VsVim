@@ -1,6 +1,7 @@
 ﻿using System;
 using Microsoft.VisualStudio.Text;
 using Xunit;
+using Vim;
 
 namespace EditorUtils.UnitTest
 {

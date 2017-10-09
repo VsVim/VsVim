@@ -1,6 +1,7 @@
 ﻿
 using System.Threading;
 using EditorUtils.Implementation.Utilities;
+using Vim;
 namespace EditorUtils.Implementation.Tagging
 {
     internal sealed partial class AsyncTagger<TData, TTag>

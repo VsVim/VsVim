@@ -1324,7 +1324,7 @@ module SnapshotLineRangeUtil =
     /// length.  If count pushes the range past the end of the buffer then the 
     /// span will go to the end of the buffer
     let CreateForLineAndMaxCount (line:ITextSnapshotLine) count = 
-        SnapshotLineRange.CreateForLineAndMaxCount(line, count)
+        SnapshotLineRange.CreateForLineAndMaxCount line count
 
     /// Create a line range which covers the start and end line of the provided span
     let CreateForSpan span = 
@@ -1349,7 +1349,7 @@ module SnapshotLineRangeUtil =
 
     /// Create a line range for the provided start and end line 
     let CreateForLineRange (startLine : ITextSnapshotLine) (endLine : ITextSnapshotLine) = 
-        SnapshotLineRange.CreateForLineRange(startLine, endLine)
+        SnapshotLineRange.CreateForLineRange startLine endLine
 
     /// Create a line range for the provided start and end line 
     let CreateForLineNumberRange (snapshot:ITextSnapshot) startNumber lastNumber = 

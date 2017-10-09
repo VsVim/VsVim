@@ -7,6 +7,7 @@ using Microsoft.VisualStudio.Text.Tagging;
 using EditorUtils.Implementation.Tagging;
 using Microsoft.VisualStudio.Text.Classification;
 using System.Threading;
+using Vim;
 
 namespace EditorUtils.UnitTest
 {
