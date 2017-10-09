@@ -46,8 +46,6 @@
     <Compile Include="AsyncTaggerSource.cs" />
     <Compile Include="Constants.cs" />
     <Compile Include="EditorUtilsTrace.cs" />
-    <Compile Include="EditorVersion.cs" />
-    <Compile Include="EditorVersionUtil.cs" />
     <Compile Include="Extensions.cs" />
     <Compile Include="IAdhocOutliner.cs" />
     <Compile Include="IAsyncTaggerSource.cs" />
@@ -69,7 +67,6 @@
     <Compile Include="Implementation\Utilities\EqualityUtility.cs" />
     <Compile Include="Implementation\Utilities\NormalizedLineRangeCollection.cs" />
     <Compile Include="Implementation\Utilities\ProtectedOperations.cs" />
-    <Compile Include="IProtectedOperations.cs" />
     <Compile Include="EditorUtilsFactory.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="EditorUtilsResources.cs" />

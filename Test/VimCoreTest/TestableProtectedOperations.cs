@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Windows.Threading;
+using Vim;
 using Vim.UI.Wpf;
 
 namespace Vim.UnitTest

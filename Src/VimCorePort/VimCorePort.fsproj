@@ -57,6 +57,7 @@
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="ToDelete.fs" />
     <Compile Include="EditorUtilPort.fs" />
+    <Compile Include="CoreInterfacesPort.fs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="mscorlib" />
@@ -71,6 +72,7 @@
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Numerics" />
+    <Reference Include="WindowsBase" />
   </ItemGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

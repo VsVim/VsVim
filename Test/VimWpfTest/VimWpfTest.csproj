@@ -91,6 +91,10 @@
       <Project>{fb418222-c105-4942-8eeb-832ddcffd89d}</Project>
       <Name>EditorUtils</Name>
     </ProjectReference>
+    <ProjectReference Include="..\..\Src\VimCorePort\VimCorePort.fsproj">
+      <Project>{a5aa1d42-18ab-4c26-b5e5-b63d89d289b5}</Project>
+      <Name>VimCorePort</Name>
+    </ProjectReference>
     <ProjectReference Include="..\VimCoreTest\VimCoreTest.csproj">
       <Project>{B4FC7C81-E500-47C8-A884-2DBB7CA77123}</Project>
       <Name>VimCoreTest</Name>
