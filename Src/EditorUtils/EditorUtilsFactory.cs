@@ -2,7 +2,6 @@
 using System;
 using System.Linq;
 using EditorUtils.Implementation.Tagging;
-using EditorUtils.Implementation.BasicUndo;
 using Microsoft.VisualStudio.Text.Tagging;
 using Microsoft.VisualStudio.Utilities;
 using Microsoft.VisualStudio.Text;
@@ -86,11 +85,6 @@ namespace EditorUtils
                 propertyCollection,
                 key,
                 () => CreateClassifierRaw(createFunc()));
-        }
-
-        public static IBasicUndoHistoryRegistry CreateBasicUndoHistoryRegistry()
-        {
-            return new BasicTextUndoHistoryRegistry();
         }
 
         public static IProtectedOperations CreateProtectedOperations(IEnumerable<Lazy<IExtensionErrorHandler>> errorHandlers)

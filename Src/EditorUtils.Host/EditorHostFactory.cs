@@ -83,7 +83,6 @@ namespace EditorUtils
 #endif
 
             _composablePartCatalogList.Add(new AssemblyCatalog(typeof(EditorHostFactory).Assembly));
-            _exportProviderList.Add(new UndoExportProvider());
         }
 
         private static void GetEditorInfoAndHookResolve(EditorVersion editorVersion, out Version vsVersion)

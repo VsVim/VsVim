@@ -9,10 +9,13 @@ namespace EditorUtils.Implementation.BasicUndo
     /// This class is intended to be a very simple ITextUndoHistoryRegistry implementation for hosts that
     /// don't have a built-in undo mechanism
     /// </summary>
+    [Export(typeof(ITextUndoHistoryRegistry))]
+    [Export(typeof(IBasicUndoHistoryRegistry))]
     internal sealed class BasicTextUndoHistoryRegistry : ITextUndoHistoryRegistry, IBasicUndoHistoryRegistry
     {
         private readonly ConditionalWeakTable<object, IBasicUndoHistory> _map = new ConditionalWeakTable<object, IBasicUndoHistory>();
 
+        [ImportingConstructor]
         internal BasicTextUndoHistoryRegistry()
         {
 
