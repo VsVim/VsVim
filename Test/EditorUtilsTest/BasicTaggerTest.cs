@@ -6,6 +6,7 @@ using EditorUtils.Implementation.Tagging;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Tagging;
 using Xunit;
+using Vim;
 
 namespace EditorUtils.UnitTest
 {

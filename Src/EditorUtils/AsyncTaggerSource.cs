@@ -5,7 +5,7 @@ using System.Threading;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Tagging;
-using Vim.ToDelete; 
+using Vim;
 
 namespace EditorUtils
 {

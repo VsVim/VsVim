@@ -7,7 +7,6 @@ using System.Threading.Tasks;
 using EditorUtils.Implementation.Utilities;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Tagging;
-using Vim.ToDelete;
 using Vim;
 
 namespace EditorUtils.Implementation.Tagging

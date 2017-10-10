@@ -7,7 +7,6 @@ using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Projection;
 using Microsoft.VisualStudio.Utilities;
 using Vim;
-using Vim.ToDelete;
 
 namespace EditorUtils
 {

@@ -1,7 +1,6 @@
 ﻿#light
 
 namespace Vim
-open Vim.ToDelete
 open System
 open System.Diagnostics;
 open System.Linq;

@@ -7,6 +7,7 @@ using Microsoft.VisualStudio.Text;
 using System.Collections.ObjectModel;
 using Microsoft.VisualStudio.Text.Editor;
 using System.Threading;
+using Vim;
 
 namespace EditorUtils.UnitTest
 {
