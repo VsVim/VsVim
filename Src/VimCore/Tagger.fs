@@ -259,7 +259,7 @@ type HighlightSearchTaggerSource
         member x.TextSnapshot = _textBuffer.CurrentSnapshot
         member x.TextViewOptional = _textView
         member x.GetDataForSnapshot _ = x.GetDataForSnapshot()
-        member x.GetTagsInBackground(highlightSearchData, span, cancellationToken) = HighlightSearchTaggerSource.GetTagsInBackground highlightSearchData span cancellationToken
+        member x.GetTagsInBackground highlightSearchData span cancellationToken = HighlightSearchTaggerSource.GetTagsInBackground highlightSearchData span cancellationToken
         member x.TryGetTagsPrompt(_, value : byref<ITagSpan<TextMarkerTag> seq>) =
             match x.GetTagsPrompt() with
             | None -> 

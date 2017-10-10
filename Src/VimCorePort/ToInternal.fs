@@ -1,8 +1,9 @@
 ﻿#light
 
-// Types that are shared between Vim and EditorUtils that need a temporary home
-// while we are porting.
-namespace Vim.ToDelete
+// Types which need a temporary home as public until we can merge the VimCore and 
+// VimCorePort assemblies.
+namespace Vim
+open System
 
 type Contract = 
 
@@ -22,3 +23,6 @@ type Contract =
     static member FailEnumValue<'T> (value : 'T) : unit = 
         raise (Contract.GetInvalidEnumException value)
 
+[<AttributeUsage(AttributeTargets.Class ||| AttributeTargets.Method ||| AttributeTargets.Interface)>]
+type UsedInBackgroundThread() =
+    inherit Attribute()
