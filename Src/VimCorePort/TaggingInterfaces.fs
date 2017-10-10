@@ -101,3 +101,45 @@ type IAdhocOutliner =
     /// Raised when any outlining regions change
     [<CLIEvent>]
     abstract Changed : IDelegateEvent<System.EventHandler>
+
+[<AbstractClass>]
+type AsyncTaggerSource<'TData, 'TTag when 'TTag :> ITag> 
+    (
+        _textBuffer : ITextBuffer,
+        _textViewOptional : ITextView
+    ) =
+
+    let _changed = StandardEvent()
+
+    /// Standard delay for asynchronous taggers
+    static member DefaultAsyncDelay = 100
+
+    member x.TextViewOptional = _textViewOptional
+
+    member x.TextBuffer = _textBuffer
+
+    member x.RaiseChanged() = _changed.Trigger x
+
+    abstract TryGetTagsPrompt : span : SnapshotSpan * [<Out>] tags : byref<IEnumerable<ITagSpan<'TTag>>> -> bool
+    default x.TryGetTagsPrompt (span : SnapshotSpan, [<Out>] tags : byref<IEnumerable<ITagSpan<'TTag>>>) : bool =
+        tags <- null
+        false
+
+    /// Get the data needed in the background thread from the specified SnapshotSpan.  This is called on
+    /// the main thread
+    abstract GetDataForSnapshot : snapshot : ITextSnapshot -> 'TData
+
+    /// Get the tags for the specified span.  This is called on the background thread
+    abstract GetTagsInBackground : data : 'TData -> span : SnapshotSpan -> cancellationToken : CancellationToken -> ReadOnlyCollection<ITagSpan<'TTag>> 
+
+    interface IAsyncTaggerSource<'TData, 'TTag> with
+        member x.Delay = Nullable<int>(AsyncTaggerSource<'TData, 'TTag>.DefaultAsyncDelay)
+        member x.TextSnapshot = _textBuffer.CurrentSnapshot
+        member x.TextViewOptional = _textViewOptional
+        member x.GetDataForSnapshot snapshot = x.GetDataForSnapshot snapshot
+        member x.GetTagsInBackground data span cancellationToken = x.GetTagsInBackground data span cancellationToken
+        member x.TryGetTagsPrompt (span, tags) = x.TryGetTagsPrompt(span, &tags)
+        [<CLIEvent>]
+        member x.Changed = _changed.Publish
+
+

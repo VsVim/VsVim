@@ -218,7 +218,6 @@ namespace VimApp
 
         private Grid BuildGrid(ReadOnlyCollection<IVimViewInfo> viewInfoList)
         {
-            Contract.Requires(viewInfoList.Count > 1);
             var grid = BuildGridCore(viewInfoList);
             var row = 0;
             for (int i = 0; i < viewInfoList.Count; i++)

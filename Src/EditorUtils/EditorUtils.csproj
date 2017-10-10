@@ -43,7 +43,6 @@
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AsyncTaggerSource.cs" />
     <Compile Include="Constants.cs" />
     <Compile Include="Extensions.cs" />
     <Compile Include="Implementation\Tagging\Classifier.cs" />
