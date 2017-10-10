@@ -57,17 +57,17 @@ namespace EditorUtils.UnitTest
             internal sealed class Tagger : AsyncTaggerSource<string, TextMarkerTag>
             {
                 internal Tagger(ITextBuffer textBuffer)
-                    : base(textBuffer)
+                    : base(textBuffer, null)
                 {
 
                 }
 
-                protected override string GetDataForSnapshot(ITextSnapshot snapshot)
+                public override string GetDataForSnapshot(ITextSnapshot snapshot)
                 {
                     return string.Empty;
                 }
 
-                protected override ReadOnlyCollection<ITagSpan<TextMarkerTag>> GetTagsInBackground(string data, SnapshotSpan span, CancellationToken cancellationToken)
+                public override ReadOnlyCollection<ITagSpan<TextMarkerTag>> GetTagsInBackground(string data, SnapshotSpan span, CancellationToken cancellationToken)
                 {
                     return TestUtils.GetDogTags(span);
                 }
@@ -91,22 +91,22 @@ namespace EditorUtils.UnitTest
             internal sealed class Tagger : AsyncTaggerSource<string, TextMarkerTag>
             {
                 internal Tagger(ITextBuffer textBuffer)
-                    : base(textBuffer)
+                    : base(textBuffer, null)
                 {
 
                 }
 
-                protected override string GetDataForSnapshot(ITextSnapshot snapshot)
+                public override string GetDataForSnapshot(ITextSnapshot snapshot)
                 {
                     return string.Empty;
                 }
 
-                protected override ReadOnlyCollection<ITagSpan<TextMarkerTag>> GetTagsInBackground(string data, SnapshotSpan span, CancellationToken cancellationToken)
+                public override ReadOnlyCollection<ITagSpan<TextMarkerTag>> GetTagsInBackground(string data, SnapshotSpan span, CancellationToken cancellationToken)
                 {
                     return TestUtils.GetDogTags(span);
                 }
 
-                protected override bool TryGetTagsPrompt(SnapshotSpan span, out IEnumerable<ITagSpan<TextMarkerTag>> tags)
+                public override bool TryGetTagsPrompt(SnapshotSpan span, out IEnumerable<ITagSpan<TextMarkerTag>> tags)
                 {
                     if (span.Start.Position % 2 == 0)
                     {

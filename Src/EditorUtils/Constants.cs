@@ -14,10 +14,5 @@ namespace EditorUtils
 #endif
 
         internal const string PublicKeyToken = "3d1514c4742e0252";
-
-        /// <summary>
-        /// Standard delay for asynchronous taggers
-        /// </summary>
-        internal const int DefaultAsyncDelay = 100;
     }
 }
