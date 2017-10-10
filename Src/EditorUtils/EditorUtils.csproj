@@ -49,10 +49,6 @@
     <Compile Include="IAdhocOutliner.cs" />
     <Compile Include="IAsyncTaggerSource.cs" />
     <Compile Include="IBasicTaggerSource.cs" />
-    <Compile Include="IBasicUndoHistoryRegistry.cs" />
-    <Compile Include="Implementation\BasicUndo\BasicUndoHistory.cs" />
-    <Compile Include="Implementation\BasicUndo\BasicUndoHistoryRegistry.cs" />
-    <Compile Include="Implementation\BasicUndo\BasicUndoTransaction.cs" />
     <Compile Include="Implementation\Tagging\Classifier.cs" />
     <Compile Include="Implementation\Tagging\CountedClassifier.cs" />
     <Compile Include="Implementation\Tagging\CountedValue.cs" />

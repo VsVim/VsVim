@@ -48,13 +48,16 @@
     </Compile>
     <Compile Include="EditorVersion.cs" />
     <Compile Include="EditorVersionUtil.cs" />
+    <Compile Include="IBasicUndoHistoryRegistry.cs" />
+    <Compile Include="Implementation\BasicUndo\BasicUndoHistory.cs" />
+    <Compile Include="Implementation\BasicUndo\BasicUndoHistoryRegistry.cs" />
+    <Compile Include="Implementation\BasicUndo\BasicUndoTransaction.cs" />
     <Compile Include="Implementation\Misc\BasicLoggingServiceInternal.cs" />
     <Compile Include="Implementation\Misc\BasicObscuringTipManager.cs" />
     <Compile Include="Implementation\Misc\BasicWaitIndicator.cs" />
     <Compile Include="EditorHost.cs" />
     <Compile Include="EditorHostFactory.cs" />
     <Compile Include="EditorHostFactory.JoinableTaskContextExportProvider.cs" />
-    <Compile Include="EditorHostFactory.UndoExportProvider.cs" />
     <Compile Include="EditorLocatorUtil.cs" />
     <Compile Include="Extensions.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
