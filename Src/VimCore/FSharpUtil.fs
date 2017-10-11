@@ -658,26 +658,6 @@ module internal CollectionExtensions =
             else
                 None
 
-module internal NullableUtil = 
-
-    let (|HasValue|Null|) (x : System.Nullable<_>) =
-        if x.HasValue then
-            HasValue (x.Value)
-        else
-            Null 
-
-    let Create (x : 'T) =
-        System.Nullable<'T>(x)
-
-    let CreateNull<'T when 'T : (new : unit -> 'T) and 'T : struct and 'T :> System.ValueType> () =
-        System.Nullable<'T>()
-
-    let ToOption (x : System.Nullable<_>) =
-        if x.HasValue then
-            Some x.Value
-        else
-            None
-
 module internal OptionUtil =
 
     /// Collapse an option of an option to just an option

@@ -39,6 +39,7 @@ open System.Runtime.InteropServices
 [<assembly:InternalsVisibleTo("Vim.Core")>]
 [<assembly:InternalsVisibleTo("Vim.Core.UnitTest")>]
 [<assembly:InternalsVisibleTo("Vim.UI.Wpf")>]
+[<assembly:InternalsVisibleTo("EditorUtils.UnitTest")>]
 [<assembly:InternalsVisibleTo("Vim.UnitTest.Utils")>]
 [<assembly:InternalsVisibleTo("EditorUtils")>]
 [<assembly:InternalsVisibleTo("DynamicProxyGenAssembly2")>] // Moq

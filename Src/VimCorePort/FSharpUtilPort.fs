@@ -56,3 +56,23 @@ type internal DisposableBag() =
         _toDispose <- List.empty
     member x.Add d = _toDispose <- d :: _toDispose 
 
+module internal NullableUtil = 
+
+    let (|HasValue|Null|) (x : System.Nullable<_>) =
+        if x.HasValue then
+            HasValue (x.Value)
+        else
+            Null 
+
+    let Create (x : 'T) =
+        System.Nullable<'T>(x)
+
+    let CreateNull<'T when 'T : (new : unit -> 'T) and 'T : struct and 'T :> System.ValueType> () =
+        System.Nullable<'T>()
+
+    let ToOption (x : System.Nullable<_>) =
+        if x.HasValue then
+            Some x.Value
+        else
+            None
+

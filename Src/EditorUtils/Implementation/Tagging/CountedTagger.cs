@@ -4,6 +4,8 @@ using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Tagging;
 using Microsoft.VisualStudio.Utilities;
 using EditorUtils;
+using Vim;
+using Vim.Extensions;
 
 namespace EditorUtils.Implementation.Tagging
 {
@@ -32,7 +34,7 @@ namespace EditorUtils.Implementation.Tagging
             object key, 
             Func<ITagger<TTag>> createFunc)
         {
-            _countedValue = CountedValue<ITagger<TTag>>.GetOrCreate(propertyCollection, key, createFunc);
+            _countedValue = CountedValue<ITagger<TTag>>.GetOrCreate(propertyCollection, key, createFunc.ToFSharpFunc());
         }
 
         internal void Dispose()
