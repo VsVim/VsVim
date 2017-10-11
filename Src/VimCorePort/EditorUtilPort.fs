@@ -5,6 +5,35 @@ open System
 open System.Diagnostics;
 open System.Linq;
 open Microsoft.VisualStudio.Text
+open Microsoft.VisualStudio.Utilities
+
+module TrackingSpanUtil =
+
+    let Create (span : SnapshotSpan) spanTrackingMode =
+        span.Snapshot.CreateTrackingSpan(span.Span, spanTrackingMode)
+
+    let GetSpan (snapshot : ITextSnapshot) (span : ITrackingSpan) =
+        try 
+            span.GetSpan(snapshot) |> Some
+        with
+            | :? System.ArgumentException -> None
+
+module PropertyCollectionUtil = 
+
+    /// Get the property value for the givne key
+    let GetValue<'T> (key : obj) (propertyCollection : PropertyCollection) = 
+        try
+            let succeeded, value = propertyCollection.TryGetProperty<'T>(key)
+            if succeeded then
+                Some value
+            else
+                None
+        with 
+            // If the value exists but is not convertible to the provided type then
+            // an exception will be thrown.  Collapse this into an empty option.  
+            // Helps guard against cases where other extensions override our values
+            // with ones of unexpected types
+            | _ -> None
 
 [<StructuralEquality>]
 [<NoComparison>]

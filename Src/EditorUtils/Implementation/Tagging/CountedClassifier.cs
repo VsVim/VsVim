@@ -5,6 +5,8 @@ using Microsoft.VisualStudio.Text.Tagging;
 using Microsoft.VisualStudio.Utilities;
 using EditorUtils;
 using Microsoft.VisualStudio.Text.Classification;
+using Vim;
+using Vim.Extensions;
 
 namespace EditorUtils.Implementation.Tagging
 {
@@ -25,7 +27,7 @@ namespace EditorUtils.Implementation.Tagging
             object key,
             Func<IClassifier> createFunc)
         {
-            _countedValue = CountedValue<IClassifier>.GetOrCreate(propertyCollection, key, createFunc);
+            _countedValue = CountedValue<IClassifier>.GetOrCreate(propertyCollection, key, createFunc.ToFSharpFunc());
         }
 
         internal void Dispose()
