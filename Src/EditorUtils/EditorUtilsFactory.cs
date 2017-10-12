@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using EditorUtils.Implementation.Utilities;
 using Microsoft.VisualStudio.Text.Classification;
 using Vim;
+using Vim.Extensions;
 
 namespace EditorUtils
 {
@@ -42,10 +43,11 @@ namespace EditorUtils
         public static ITagger<TTag> CreateTagger<TData, TTag>(PropertyCollection propertyCollection, object key, Func<IAsyncTaggerSource<TData, TTag>> createFunc)
             where TTag : ITag
         {
+            Func<ITagger<TTag>> func = () => new AsyncTagger<TData, TTag>(createFunc());
             return new CountedTagger<TTag>(
                 propertyCollection,
                 key,
-                () => new AsyncTagger<TData, TTag>(createFunc()));
+                func.ToFSharpFunc());
         }
 
         /// <summary>
@@ -55,10 +57,11 @@ namespace EditorUtils
         public static ITagger<TTag> CreateTagger<TTag>(PropertyCollection propertyCollection, object key, Func<IBasicTaggerSource<TTag>> createFunc)
             where TTag : ITag
         {
+            Func<ITagger<TTag>> func = () => new BasicTagger<TTag>(createFunc());
             return new CountedTagger<TTag>(
                 propertyCollection,
                 key,
-                () => new BasicTagger<TTag>(createFunc()));
+                func.ToFSharpFunc());
         }
 
         public static IClassifier CreateClassifierRaw(IBasicTaggerSource<IClassificationTag> basicTaggerSource)
@@ -73,18 +76,20 @@ namespace EditorUtils
 
         public static IClassifier CreateClassifier(PropertyCollection propertyCollection, object key, Func<IBasicTaggerSource<IClassificationTag>> createFunc)
         {
+            Func<IClassifier> func = () => CreateClassifierRaw(createFunc());
             return new CountedClassifier(
                 propertyCollection,
                 key,
-                () => CreateClassifierRaw(createFunc()));
+                func.ToFSharpFunc());
         }
 
         public static IClassifier CreateClassifier<TData>(PropertyCollection propertyCollection, object key, Func<IAsyncTaggerSource<TData, IClassificationTag>> createFunc)
         {
+            Func<IClassifier> func = () => CreateClassifierRaw(createFunc());
             return new CountedClassifier(
                 propertyCollection,
                 key,
-                () => CreateClassifierRaw(createFunc()));
+                func.ToFSharpFunc());
         }
 
         public static IProtectedOperations CreateProtectedOperations(IEnumerable<Lazy<IExtensionErrorHandler>> errorHandlers)

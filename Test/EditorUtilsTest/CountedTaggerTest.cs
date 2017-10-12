@@ -4,6 +4,8 @@ using Microsoft.VisualStudio.Text.Tagging;
 using Microsoft.VisualStudio.Utilities;
 using Moq;
 using Xunit;
+using Vim;
+using Vim.Extensions;
 
 namespace EditorUtils.UnitTest
 {
@@ -22,7 +24,7 @@ namespace EditorUtils.UnitTest
 
         private CountedTagger<TextMarkerTag> Create(object key, PropertyCollection propertyCollection, Func<ITagger<TextMarkerTag>> func)
         {
-            return new CountedTagger<TextMarkerTag>(propertyCollection, key, func);
+            return new CountedTagger<TextMarkerTag>(propertyCollection, key, func.ToFSharpFunc());
         }
 
         /// <summary>

@@ -8,6 +8,7 @@ using EditorUtils.Implementation.Utilities;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Tagging;
 using Vim;
+using Vim.Extensions;
 
 namespace EditorUtils.Implementation.Tagging
 {
@@ -795,7 +796,7 @@ namespace EditorUtils.Implementation.Tagging
                 // Note that we only use the overarching span to track what data we are responsible 
                 // for in a
                 var requestSpan = col.GetOverarchingSpan();
-                _cachedOverarchingRequestSpan = TaggerUtil.AdjustRequestedSpan(_cachedOverarchingRequestSpan, requestSpan);
+                _cachedOverarchingRequestSpan = TaggerUtil.AdjustRequestedSpan(FSharpOption.CreateForNullable(_cachedOverarchingRequestSpan), requestSpan);
             }
         }
 
