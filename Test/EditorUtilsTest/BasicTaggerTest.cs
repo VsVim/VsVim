@@ -7,6 +7,7 @@ using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Tagging;
 using Xunit;
 using Vim;
+using Vim.Extensions;
 
 namespace EditorUtils.UnitTest
 {
@@ -153,7 +154,7 @@ namespace EditorUtils.UnitTest
             {
                 Create("cat", "dog");
                 var span = _textBuffer.GetSpan(0, 2);
-                _basicTagger.CachedRequestSpan = span;
+                _basicTagger.CachedRequestSpan = FSharpOption.Create(span);
 
                 var didRun = false;
                 _basicTaggerInterface.TagsChanged += (e, args) =>

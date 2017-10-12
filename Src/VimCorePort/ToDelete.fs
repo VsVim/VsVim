@@ -68,4 +68,21 @@ module SnapshotUtil =
     /// Is the Line Number valid
     let IsLineNumberValid (tss:ITextSnapshot) lineNumber = lineNumber >= 0 && lineNumber < tss.LineCount
 
+module NormalizedSnapshotSpanCollectionUtil =
 
+    /// Get the first item 
+    let GetFirst (col:NormalizedSnapshotSpanCollection) = col.[0]
+
+    /// Get the first item 
+    let GetLast (col:NormalizedSnapshotSpanCollection) = col.[col.Count-1]
+
+    /// Get the inclusive span 
+    let GetOverarchingSpan col =
+        let first = GetFirst col
+        let last = GetLast col
+        SnapshotSpan(first.Start,last.End) 
+
+    /// Get the first item 
+    let TryGetFirst (col : NormalizedSnapshotSpanCollection) = if col.Count = 0 then None else Some (col.[0])
+
+    let OfSeq (s:SnapshotSpan seq) = new NormalizedSnapshotSpanCollection(s)
