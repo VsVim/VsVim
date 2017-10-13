@@ -4,14 +4,15 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using EditorUtils.Implementation.Tagging;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Tagging;
 using Moq;
 using Xunit;
 using Vim;
-using AsyncTaggerType = EditorUtils.Implementation.Tagging.AsyncTagger<string, Microsoft.VisualStudio.Text.Tagging.TextMarkerTag>;
+using Vim.Extensions;
+using AsyncTaggerType = Vim.AsyncTagger<string, Microsoft.VisualStudio.Text.Tagging.TextMarkerTag>;
+using Microsoft.FSharp.Core;
 
 namespace EditorUtils.UnitTest
 {
@@ -132,17 +133,10 @@ namespace EditorUtils.UnitTest
                 throw new Exception("Couldn't get background tags");
             }
 
-            bool IAsyncTaggerSource<string, TextMarkerTag>.TryGetTagsPrompt(SnapshotSpan span, out IEnumerable<ITagSpan<TextMarkerTag>> tagList)
+            FSharpOption<IEnumerable<ITagSpan<TextMarkerTag>>> IAsyncTaggerSource<string, TextMarkerTag>.TryGetTagsPrompt(SnapshotSpan span)
             {
                 Assert.True(InMainThread);
-                if (_promptTags != null)
-                {
-                    tagList = _promptTags;
-                    return true;
-                }
-
-                tagList = null;
-                return false;
+                return FSharpOption.CreateForReference<IEnumerable<ITagSpan<TextMarkerTag>>>(_promptTags);
             }
 
             event EventHandler IAsyncTaggerSource<string, TextMarkerTag>.Changed
@@ -206,14 +200,14 @@ namespace EditorUtils.UnitTest
             return tagSpans.Select(CreateTagSpan).ToReadOnlyCollection();
         }
 
-        internal AsyncTaggerType.BackgroundCacheData CreateBackgroundCacheData(SnapshotSpan source, params SnapshotSpan[] tagSpans)
+        internal BackgroundCacheData<TextMarkerTag> CreateBackgroundCacheData(SnapshotSpan source, params SnapshotSpan[] tagSpans)
         {
-            return new AsyncTaggerType.BackgroundCacheData(
+            return new BackgroundCacheData<TextMarkerTag>(
                 SnapshotLineRange.CreateForSpan(source),
                 tagSpans.Select(CreateTagSpan).ToReadOnlyCollection());
         }
 
-        internal AsyncTaggerType.TrackingCacheData CreateTrackingCacheData(SnapshotSpan source, params SnapshotSpan[] tagSpans)
+        internal TrackingCacheData<TextMarkerTag> CreateTrackingCacheData(SnapshotSpan source, params SnapshotSpan[] tagSpans)
         {
             var snapshot = source.Snapshot;
             var trackingSpan = snapshot.CreateTrackingSpan(source, SpanTrackingMode.EdgeInclusive);
@@ -221,15 +215,17 @@ namespace EditorUtils.UnitTest
             var all = tagSpans
                 .Select(span => Tuple.Create(snapshot.CreateTrackingSpan(span, SpanTrackingMode.EdgeInclusive), tag))
                 .ToReadOnlyCollection();
-            return new AsyncTaggerType.TrackingCacheData(
+            return new TrackingCacheData<TextMarkerTag>(
                 trackingSpan,
                 all);
         }
 
-        internal AsyncTaggerType.TagCache CreateTagCache(SnapshotSpan source, params SnapshotSpan[] tagSpans)
+        internal FSharpOption<TrackingCacheData<TextMarkerTag>> CreateTrackingCacheDataSome(SnapshotSpan source, params SnapshotSpan[] tagSpans) => FSharpOption.Create(CreateTrackingCacheData(source, tagSpans));
+
+        internal TagCache<TextMarkerTag> CreateTagCache(SnapshotSpan source, params SnapshotSpan[] tagSpans)
         {
             var backgroundCacheData = CreateBackgroundCacheData(source, tagSpans);
-            return new AsyncTaggerType.TagCache(backgroundCacheData, null);
+            return new TagCache<TextMarkerTag>(FSharpOption.Create(backgroundCacheData), null);
         }
 
         protected List<ITagSpan<TextMarkerTag>> GetTagsFull(SnapshotSpan span)
@@ -252,11 +248,11 @@ namespace EditorUtils.UnitTest
 
         protected List<ITagSpan<TextMarkerTag>> GetTagsFull(NormalizedSnapshotSpanCollection col, out bool wasAsync)
         {
-            Assert.False(_asyncTagger.AsyncBackgroundRequestData.HasValue);
+            Assert.False(_asyncTagger.AsyncBackgroundRequestData.IsSome());
             wasAsync = false;
             var tags = _asyncTagger.GetTags(col).ToList();
 
-            if (_asyncTagger.AsyncBackgroundRequestData.HasValue)
+            if (_asyncTagger.AsyncBackgroundRequestData.IsSome())
             {
                 WaitForBackgroundToComplete();
                 tags = _asyncTagger.GetTags(col).ToList();
@@ -271,25 +267,30 @@ namespace EditorUtils.UnitTest
             _asyncTagger.WaitForBackgroundToComplete(TestableSynchronizationContext);
         }
 
-        internal AsyncTaggerType.AsyncBackgroundRequest CreateAsyncBackgroundRequest(
+        internal AsyncBackgroundRequest CreateAsyncBackgroundRequest(
             SnapshotSpan span,
             CancellationTokenSource cancellationTokenSource,
             Task task = null)
         {
-            var channel = new AsyncTagger<string, TextMarkerTag>.Channel();
+            var channel = new Channel();
             channel.WriteNormal(SnapshotLineRange.CreateForSpan(span));
 
             task = task ?? new Task(() => { });
-            return new AsyncTaggerType.AsyncBackgroundRequest(
+            return new AsyncBackgroundRequest(
                 span.Snapshot,
                 channel,
                 task,
                 cancellationTokenSource);
         }
 
-        internal void SetTagCache(AsyncTaggerType.TrackingCacheData trackingCacheData)
+        internal FSharpOption<AsyncBackgroundRequest> CreateAsyncBackgroundRequestSome(
+            SnapshotSpan span,
+            CancellationTokenSource cancellationTokenSource,
+            Task task = null) => FSharpOption.Create(CreateAsyncBackgroundRequest(span, cancellationTokenSource, task));
+
+        internal void SetTagCache(TrackingCacheData<TextMarkerTag> trackingCacheData)
         {
-            _asyncTagger.TagCacheData = new AsyncTaggerType.TagCache(null, trackingCacheData);
+            _asyncTagger.TagCacheData = new TagCache<TextMarkerTag>(null, FSharpOption.Create(trackingCacheData));
         }
 
         public sealed class DidTagsChangeTest : AsyncTaggerTest
@@ -404,7 +405,7 @@ namespace EditorUtils.UnitTest
                 Create("hello world");
                 var tags = _asyncTagger.GetTags(EntireBufferSpan).ToList();
                 Assert.Equal(0, tags.Count);
-                Assert.True(_asyncTagger.AsyncBackgroundRequestData.HasValue);
+                Assert.True(_asyncTagger.AsyncBackgroundRequestData.IsSome());
             }
 
             /// <summary>
@@ -467,15 +468,15 @@ namespace EditorUtils.UnitTest
                 Create("cat", "dog", "bear");
 
                 var cancellationTokenSource = new CancellationTokenSource();
-                _asyncTagger.AsyncBackgroundRequestData = CreateAsyncBackgroundRequest(
+                _asyncTagger.AsyncBackgroundRequestData = CreateAsyncBackgroundRequestSome(
                     _textBuffer.GetLineRange(0).Extent,
                     cancellationTokenSource,
                     new Task(() => { }));
                 var channel = _asyncTagger.AsyncBackgroundRequestData.Value.Channel;
-                Assert.Equal(1, channel.CurrentStack.Count);
+                Assert.Equal(1, channel.CurrentStack.Length);
 
                 var tags = _asyncTagger.GetTags(_textBuffer.GetLineRange(1).Extent).ToList();
-                Assert.Equal(2, channel.CurrentStack.Count);
+                Assert.Equal(2, channel.CurrentStack.Length);
                 Assert.Same(cancellationTokenSource, _asyncTagger.AsyncBackgroundRequestData.Value.CancellationTokenSource);
             }
 
@@ -489,7 +490,7 @@ namespace EditorUtils.UnitTest
                 Create("cat", "dog", "bear");
 
                 var cancellationTokenSource = new CancellationTokenSource();
-                _asyncTagger.AsyncBackgroundRequestData = CreateAsyncBackgroundRequest(
+                _asyncTagger.AsyncBackgroundRequestData = CreateAsyncBackgroundRequestSome(
                     _textBuffer.GetLine(0).Extent,
                     cancellationTokenSource,
                     new Task(() => { }));
@@ -511,7 +512,7 @@ namespace EditorUtils.UnitTest
                 Create("cat", "dog", "bear");
 
                 var cancellationTokenSource = new CancellationTokenSource();
-                _asyncTagger.AsyncBackgroundRequestData = CreateAsyncBackgroundRequest(
+                _asyncTagger.AsyncBackgroundRequestData = CreateAsyncBackgroundRequestSome(
                     _textBuffer.GetExtent(),
                     cancellationTokenSource,
                     new Task(() => { }));
@@ -557,7 +558,7 @@ namespace EditorUtils.UnitTest
                     _textBuffer.GetSpan(0, 1));
                 var tags = _asyncTagger.GetTags(_textBuffer.GetLineRange(0, 1).ExtentIncludingLineBreak).ToList();
                 Assert.Equal(1, tags.Count);
-                Assert.True(_asyncTagger.AsyncBackgroundRequestData.HasValue);
+                Assert.True(_asyncTagger.AsyncBackgroundRequestData.IsSome());
             }
 
             /// <summary>
@@ -574,7 +575,7 @@ namespace EditorUtils.UnitTest
                 _textBuffer.Replace(new Span(0, 3), "cot");
                 var tags = _asyncTagger.GetTags(_textBuffer.GetLineRange(0, 1).ExtentIncludingLineBreak).ToList();
                 Assert.Equal(1, tags.Count);
-                Assert.True(_asyncTagger.AsyncBackgroundRequestData.HasValue);
+                Assert.True(_asyncTagger.AsyncBackgroundRequestData.IsSome());
             }
 
             /// <summary>
@@ -600,7 +601,7 @@ namespace EditorUtils.UnitTest
                 Create("cat", "dog", "bear", "pig");
                 var backgroundData = CreateBackgroundCacheData(_textBuffer.GetLine(0).Extent, _textBuffer.GetLineSpan(0, 1));
                 var trackingData = CreateTrackingCacheData(_textBuffer.GetLine(1).Extent, _textBuffer.GetLineSpan(1, 1));
-                _asyncTagger.TagCacheData = new AsyncTaggerType.TagCache(backgroundData, trackingData);
+                _asyncTagger.TagCacheData = new TagCache<TextMarkerTag>(FSharpOption.Create(backgroundData), FSharpOption.Create(trackingData));
                 var tags = _asyncTagger.GetTags(_textBuffer.GetLineRange(0, 2).ExtentIncludingLineBreak);
                 Assert.Equal(2, tags.Count());
             }
@@ -711,12 +712,12 @@ namespace EditorUtils.UnitTest
             {
                 Create("hello world");
                 var cancellationTokenSource = new CancellationTokenSource();
-                _asyncTagger.AsyncBackgroundRequestData = CreateAsyncBackgroundRequest(
+                _asyncTagger.AsyncBackgroundRequestData = CreateAsyncBackgroundRequestSome(
                     _textBuffer.GetExtent(),
                     cancellationTokenSource,
                     new Task(() => { }));
                 _asyncTaggerSource.RaiseChanged(null);
-                Assert.False(_asyncTagger.AsyncBackgroundRequestData.HasValue);
+                Assert.False(_asyncTagger.AsyncBackgroundRequestData.IsSome());
                 Assert.True(cancellationTokenSource.IsCancellationRequested);
             }
 
@@ -727,7 +728,7 @@ namespace EditorUtils.UnitTest
             public void RaiseEvent()
             {
                 Create("hello world");
-                _asyncTagger.CachedOverarchingRequestSpan = _textBuffer.GetLine(0).Extent;
+                _asyncTagger.CachedOverarchingRequestSpan = FSharpOption.Create(_textBuffer.GetLine(0).Extent);
                 var didRun = false;
                 _asyncTaggerInterface.TagsChanged += delegate
                 {
@@ -792,7 +793,7 @@ namespace EditorUtils.UnitTest
                 _asyncTaggerInterface.TagsChanged += (sender, e) => { tagsChanged = e.Span; };
 
                 // Setup the previous background cache
-                _asyncTagger.TagCacheData = new AsyncTaggerType.TagCache(null, CreateTrackingCacheData(
+                _asyncTagger.TagCacheData = new TagCache<TextMarkerTag>(null, CreateTrackingCacheDataSome(
                     _textBuffer.GetLineRange(0, 1).ExtentIncludingLineBreak,
                     _textBuffer.GetSpan(0, 1)));
 
@@ -817,7 +818,7 @@ namespace EditorUtils.UnitTest
                 _asyncTaggerInterface.TagsChanged += (sender, e) => { tagsChanged = e.Span; };
 
                 // Setup the previous background cache
-                _asyncTagger.TagCacheData = new AsyncTaggerType.TagCache(null, CreateTrackingCacheData(
+                _asyncTagger.TagCacheData = new TagCache<TextMarkerTag>(null, CreateTrackingCacheDataSome(
                     _textBuffer.GetLineRange(0, 1).ExtentIncludingLineBreak,
                     _textBuffer.GetSpan(0, 1)));
 
@@ -850,17 +851,17 @@ namespace EditorUtils.UnitTest
                 Create("dog", "cat", "fish", "dog");
                 _asyncTaggerSource.SetBackgroundFunc(span => TestUtils.GetDogTags(span));
                 _asyncTagger.GetTags(_textBuffer.GetLineRange(0).Extent);
-                Assert.True(_asyncTagger.AsyncBackgroundRequestData.HasValue);
+                Assert.True(_asyncTagger.AsyncBackgroundRequestData.IsSome());
 
                 // Background is done.  Because we control the synchronization context though the foreground 
                 // thread still sees it as active and hence will continue to queue data on it 
                 _asyncTagger.AsyncBackgroundRequestData.Value.Task.Wait();
-                Assert.True(_asyncTagger.AsyncBackgroundRequestData.HasValue);
+                Assert.True(_asyncTagger.AsyncBackgroundRequestData.IsSome());
                 _asyncTagger.GetTags(_textBuffer.GetLineRange(3).Extent);
 
                 // Clear the queue, the missing work will be seen and immedieatly requeued
                 TestableSynchronizationContext.RunAll();
-                Assert.True(_asyncTagger.AsyncBackgroundRequestData.HasValue);
+                Assert.True(_asyncTagger.AsyncBackgroundRequestData.IsSome());
                 WaitForBackgroundToComplete();
 
                 var tags = _asyncTagger.GetTags(_textBuffer.GetExtent());
@@ -886,14 +887,14 @@ namespace EditorUtils.UnitTest
                 // new request on a new snapshot.  This will supercede the existing request
                 _textBuffer.Replace(new Span(0, 0), "big ");
                 _asyncTagger.GetTags(_textBuffer.GetLineRange(0).Extent);
-                Assert.True(_asyncTagger.AsyncBackgroundRequestData.HasValue);
+                Assert.True(_asyncTagger.AsyncBackgroundRequestData.IsSome());
                 var tokenSource = _asyncTagger.AsyncBackgroundRequestData.Value.CancellationTokenSource;
 
                 // The background will try to post twice (once for progress and the other for complete)
                 for (int i = 0; i < 2; i++)
                 {
                     TestableSynchronizationContext.RunOne();
-                    Assert.True(_asyncTagger.AsyncBackgroundRequestData.HasValue);
+                    Assert.True(_asyncTagger.AsyncBackgroundRequestData.IsSome());
                     Assert.Equal(tokenSource, _asyncTagger.AsyncBackgroundRequestData.Value.CancellationTokenSource);
                 }
             }
@@ -1002,7 +1003,7 @@ namespace EditorUtils.UnitTest
                 _asyncTagger.GetTags(lineRange.Extent);
                 WaitForBackgroundToComplete();
 
-                Assert.True(_asyncTagger.TagCacheData.BackgroundCacheData.HasValue);
+                Assert.True(_asyncTagger.TagCacheData.BackgroundCacheData.IsSome());
                 Assert.True(_asyncTagger.TagCacheData.BackgroundCacheData.Value.VisitedCollection.Contains(lineRange.LineRange));
             }
 
@@ -1047,9 +1048,9 @@ namespace EditorUtils.UnitTest
                 Create("dog", "cat", "fish");
                 _asyncTaggerSource.SetBackgroundFunc(span => TestUtils.GetDogTags(span));
                 GetTagsFull(_textBuffer.GetExtent());
-                _asyncTagger.TagCacheData = new AsyncTaggerType.TagCache(
+                _asyncTagger.TagCacheData = new TagCache<TextMarkerTag>(
                     _asyncTagger.TagCacheData.BackgroundCacheData,
-                    CreateTrackingCacheData(_textBuffer.GetSpan(0, 1), _textBuffer.GetSpan(0, 2)));
+                    CreateTrackingCacheDataSome(_textBuffer.GetSpan(0, 1), _textBuffer.GetSpan(0, 2)));
                 _textBuffer.Replace(new Span(0, 0), "hello world ");
                 var tags = GetTagsFull(_textBuffer.GetExtent());
                 Assert.Equal(

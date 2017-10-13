@@ -1,18 +1,19 @@
-﻿using EditorUtils.Implementation.Tagging;
-using Microsoft.VisualStudio.Text;
+﻿using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Tagging;
 using Xunit;
+using Vim;
+using Vim.Extensions;
 
 namespace EditorUtils.UnitTest
 {
     public abstract class ChannelTest : EditorHostTest
     {
-        private readonly AsyncTagger<string, TextMarkerTag>.Channel _channel;
+        private readonly Channel _channel;
         private ITextBuffer _textBuffer;
 
         protected ChannelTest()
         {
-            _channel = new AsyncTagger<string, TextMarkerTag>.Channel();
+            _channel = new Channel();
         }
 
         protected void Create(params string[] lines)
@@ -49,7 +50,7 @@ namespace EditorUtils.UnitTest
                 for (int i = 0; i < 10; i++)
                 {
                     _channel.WriteNormal(_textBuffer.GetLineRange(0));
-                    Assert.Equal(i + 1, _channel.CurrentStack.Count);
+                    Assert.Equal(i + 1, _channel.CurrentStack.Length);
                 }
             }
 
@@ -63,7 +64,7 @@ namespace EditorUtils.UnitTest
                     var lineRange = _textBuffer.GetLineRange(i);
                     _channel.WriteNormal(lineRange);
                     var found = _channel.Read();
-                    Assert.True(found.HasValue);
+                    Assert.True(found.IsSome());
                     Assert.Equal(found.Value, lineRange);
                 }
             }
@@ -83,7 +84,7 @@ namespace EditorUtils.UnitTest
 
                 var number = 3;
                 var lineRange = _channel.Read();
-                while (lineRange.HasValue)
+                while (lineRange.IsSome())
                 {
                     Assert.Equal(number, lineRange.Value.StartLineNumber);
                     lineRange = _channel.Read();
@@ -124,7 +125,7 @@ namespace EditorUtils.UnitTest
                 for (int i = 0; i < 10; i++)
                 {
                     _channel.WriteVisibleLines(_textBuffer.GetLineRange(0));
-                    Assert.Equal(0, _channel.CurrentStack.Count);
+                    Assert.Equal(0, _channel.CurrentStack.Length);
                 }
             }
 
@@ -138,7 +139,7 @@ namespace EditorUtils.UnitTest
                     var lineRange = _textBuffer.GetLineRange(i);
                     _channel.WriteVisibleLines(lineRange);
                     var found = _channel.Read();
-                    Assert.True(found.HasValue);
+                    Assert.True(found.IsSome());
                     Assert.Equal(found.Value, lineRange);
                 }
             }

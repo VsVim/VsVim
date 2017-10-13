@@ -1,7 +1,6 @@
 ﻿
 using System;
 using System.Linq;
-using EditorUtils.Implementation.Tagging;
 using Microsoft.VisualStudio.Text.Tagging;
 using Microsoft.VisualStudio.Utilities;
 using Microsoft.VisualStudio.Text;

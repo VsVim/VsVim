@@ -7,6 +7,7 @@ using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Tagging;
 using Xunit;
 using Vim;
+using Vim.Extensions;
 
 namespace Vim.UnitTest
 {
@@ -37,9 +38,9 @@ namespace Vim.UnitTest
 
         protected List<ITagSpan<TextMarkerTag>> TryGetTagsPrompt(SnapshotSpan span)
         {
-            IEnumerable<ITagSpan<TextMarkerTag>> tagList;
-            Assert.True(_asyncTaggerSource.TryGetTagsPrompt(span, out tagList));
-            return tagList.ToList();
+            var tagList = _asyncTaggerSource.TryGetTagsPrompt(span);
+            Assert.True(tagList.IsSome());
+            return tagList.Value.ToList();
         }
 
         protected List<ITagSpan<TextMarkerTag>> GetTags(SnapshotSpan span)

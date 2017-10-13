@@ -8,7 +8,7 @@ namespace EditorUtils.UnitTest
     {
         internal NormalizedLineRangeCollection Create(params LineRange[] lineRanges)
         {
-            return new NormalizedLineRangeCollection(lineRanges);
+            return NormalizedLineRangeCollection.Create(lineRanges);
         }
 
         public sealed class AddTest : NormalizedLineRangeCollectionTest

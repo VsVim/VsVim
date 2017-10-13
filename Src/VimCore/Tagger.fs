@@ -22,6 +22,8 @@ type IncrementalSearchTaggerSource (_vimBuffer : IVimBuffer) as this =
     let _changed = StandardEvent()
     let mutable _searchSpan : ITrackingSpan option = None
 
+    static let EmptyTagList = ReadOnlyCollection<ITagSpan<TextMarkerTag>>([| |])
+
     do 
         let raiseChanged () = _changed.Trigger this 
 
@@ -72,17 +74,16 @@ type IncrementalSearchTaggerSource (_vimBuffer : IVimBuffer) as this =
         |> _eventHandlers.Add
 
     member x.GetTags span =
-
         if VisualKind.IsAnyVisualOrSelect _vimBuffer.ModeKind || not _globalSettings.IncrementalSearch then 
             // If any of these are true then we shouldn't be displaying any tags
-            ReadOnlyCollectionUtil.Empty
+            EmptyTagList
         else
             let snapshot = SnapshotSpanUtil.GetSnapshot span
             match _searchSpan |> Option.map (TrackingSpanUtil.GetSpan snapshot) |> OptionUtil.collapse with
             | None -> 
                 // No search span or the search span doesn't map into the current ITextSnapshot so there
                 // is nothing to return
-                ReadOnlyCollectionUtil.Empty
+                EmptyTagList
             | Some span -> 
                 // We have a span so return the tag
                 let tag = TextMarkerTag(VimConstants.IncrementalSearchTagName)
@@ -140,6 +141,8 @@ type HighlightSearchTaggerSource
     let _changed = StandardEvent()
     let _eventHandlers = DisposableBag()
 
+    static let EmptyTagList = ReadOnlyCollection<ITagSpan<TextMarkerTag>>([| |])
+
     /// Whether or not the ITextView is visible.  There is one setting which controls the tags for
     /// all ITextView's in the system.  It's very wasteful to raise tags changed when we are not 
     /// visible.  Many components call immediately back into GetTags even if the ITextView is not
@@ -192,10 +195,10 @@ type HighlightSearchTaggerSource
         let searchData = x.GetDataForSnapshot()
         if not x.IsProvidingTags then
             // Not currently providing any tags.  Return an empty set here for any requests
-            Some List.empty
+            Some Seq.empty
         elif StringUtil.IsNullOrEmpty searchData.Pattern then
             // Nothing to give if there is no pattern
-            Some List.empty
+            Some Seq.empty
         else
             // There is a search pattern and we can't provide the data promptly because it would
             // negatively impact performance.  Let the request migrate to the background
@@ -205,7 +208,7 @@ type HighlightSearchTaggerSource
     static member GetTagsInBackground (highlightSearchData : HighlightSearchData) span (cancellationToken : CancellationToken) = 
 
         if StringUtil.IsNullOrEmpty highlightSearchData.Pattern then
-            ReadOnlyCollectionUtil.Empty
+            EmptyTagList
         else
 
             // Note: We specifically avoid using ITextSearchService here.  It's a very inefficient search and 
@@ -260,14 +263,7 @@ type HighlightSearchTaggerSource
         member x.TextViewOptional = _textView
         member x.GetDataForSnapshot _ = x.GetDataForSnapshot()
         member x.GetTagsInBackground highlightSearchData span cancellationToken = HighlightSearchTaggerSource.GetTagsInBackground highlightSearchData span cancellationToken
-        member x.TryGetTagsPrompt(_, value : byref<ITagSpan<TextMarkerTag> seq>) =
-            match x.GetTagsPrompt() with
-            | None -> 
-                value <- Seq.empty
-                false
-            | Some tagList ->
-                value <- tagList
-                true
+        member x.TryGetTagsPrompt _ = x.GetTagsPrompt()
         [<CLIEvent>]
         member x.Changed = _changed.Publish
 
@@ -311,6 +307,8 @@ type SubstituteConfirmTaggerSource
     let _eventHandlers = DisposableBag()
     let mutable _currentMatch : SnapshotSpan option = None
 
+    static let EmptyTagList = ReadOnlyCollection<ITagSpan<TextMarkerTag>>([| |])
+
     do 
         let raiseChanged () = _changed.Trigger this
 
@@ -327,7 +325,7 @@ type SubstituteConfirmTaggerSource
             let tagSpan = TagSpan(currentMatch, tag) :> ITagSpan<TextMarkerTag>
             ReadOnlyCollectionUtil.Single tagSpan
         | None -> 
-            ReadOnlyCollectionUtil.Empty
+            EmptyTagList
 
     interface IBasicTaggerSource<TextMarkerTag> with
         member x.GetTags span = x.GetTags span
