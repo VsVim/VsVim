@@ -50,10 +50,8 @@
     <Compile Include="Constants.cs" />
     <Compile Include="Extensions.cs" />
     <Compile Include="Implementation\Tagging\AsyncTagger.cs" />
-    <Compile Include="Implementation\Tagging\AsyncTagger.Channel.cs" />
     <Compile Include="Implementation\Utilities\ReadOnlyStack.cs" />
     <Compile Include="Implementation\Utilities\EqualityUtility.cs" />
-    <Compile Include="Implementation\Utilities\NormalizedLineRangeCollection.cs" />
     <Compile Include="Implementation\Utilities\ProtectedOperations.cs" />
     <Compile Include="EditorUtilsFactory.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

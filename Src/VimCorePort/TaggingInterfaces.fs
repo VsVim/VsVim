@@ -23,6 +23,7 @@ type IAsyncTaggerSource<'TData, 'TTag when 'TTag :> ITag> =
 
     /// Delay in milliseconds which should occur between the call to GetTags and the kicking off
     /// of a background task
+    /// PTODO: make an option
     abstract Delay : Nullable<int>
 
     /// The current Snapshot.  
@@ -34,6 +35,7 @@ type IAsyncTaggerSource<'TData, 'TTag when 'TTag :> ITag> =
     /// value
     ///
     /// Called from the main thread only
+    /// PTODO: make this an option
     abstract TextViewOptional : ITextView
 
     /// This method is called to gather data on the UI thread which will then be passed
@@ -54,7 +56,7 @@ type IAsyncTaggerSource<'TData, 'TTag when 'TTag :> ITag> =
     /// of the tokens requires no calculation.
     ///
     /// Called from the main thread only
-    abstract TryGetTagsPrompt : span : SnapshotSpan * [<Out>] tags : byref<IEnumerable<ITagSpan<'TTag>>> -> bool
+    abstract TryGetTagsPrompt : span : SnapshotSpan -> IEnumerable<ITagSpan<'TTag>> option
 
     /// <summary>
     /// Raised by the source when the underlying source has changed.  All previously
@@ -120,10 +122,11 @@ type AsyncTaggerSource<'TData, 'TTag when 'TTag :> ITag>
 
     member x.RaiseChanged() = _changed.Trigger x
 
-    abstract TryGetTagsPrompt : span : SnapshotSpan * [<Out>] tags : byref<IEnumerable<ITagSpan<'TTag>>> -> bool
-    default x.TryGetTagsPrompt (span : SnapshotSpan, [<Out>] tags : byref<IEnumerable<ITagSpan<'TTag>>>) : bool =
-        tags <- null
-        false
+    [<CLIEvent>]
+    member x.Changed = _changed.Publish
+
+    abstract TryGetTagsPrompt : span : SnapshotSpan -> IEnumerable<ITagSpan<'TTag>> option
+    default x.TryGetTagsPrompt (span : SnapshotSpan) : IEnumerable<ITagSpan<'TTag>> option = None
 
     /// Get the data needed in the background thread from the specified SnapshotSpan.  This is called on
     /// the main thread
@@ -138,7 +141,7 @@ type AsyncTaggerSource<'TData, 'TTag when 'TTag :> ITag>
         member x.TextViewOptional = _textViewOptional
         member x.GetDataForSnapshot snapshot = x.GetDataForSnapshot snapshot
         member x.GetTagsInBackground data span cancellationToken = x.GetTagsInBackground data span cancellationToken
-        member x.TryGetTagsPrompt (span, tags) = x.TryGetTagsPrompt(span, &tags)
+        member x.TryGetTagsPrompt span = x.TryGetTagsPrompt span
         [<CLIEvent>]
         member x.Changed = _changed.Publish
 

@@ -56,10 +56,10 @@
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="FSharpUtilPort.fs" />
-    <Compile Include="ToDelete.fs" />
     <Compile Include="TaggingInterfaces.fs" />
     <Compile Include="VimTrace.fs" />
     <Compile Include="EditorUtilPort.fs" />
+    <Compile Include="ToDelete.fs" />
     <Compile Include="CoreInterfacesPort.fs" />
     <Compile Include="TaggerUtil.fsi" />
     <Compile Include="TaggerUtil.fs" />
