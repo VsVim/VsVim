@@ -21,6 +21,8 @@ module TrackingSpanUtil =
 
 module PropertyCollectionUtil = 
 
+    let ContainsKey (key : obj)  (propertyCollection : PropertyCollection) = propertyCollection.ContainsProperty(key)
+
     /// Get the property value for the givne key
     let GetValue<'T> (key : obj) (propertyCollection : PropertyCollection) = 
         try
