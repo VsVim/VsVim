@@ -1,5 +1,4 @@
 ﻿using System;
-using EditorUtils.Implementation.Tagging;
 using Microsoft.VisualStudio.Text.Tagging;
 using Microsoft.VisualStudio.Utilities;
 using Moq;

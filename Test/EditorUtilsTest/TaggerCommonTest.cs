@@ -3,12 +3,13 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading;
-using EditorUtils.Implementation.Tagging;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Tagging;
 using Xunit;
 using Vim;
+using Vim.Extensions;
+using Microsoft.FSharp.Core;
 
 namespace EditorUtils.UnitTest
 {
@@ -33,12 +34,12 @@ namespace EditorUtils.UnitTest
 
             protected override bool IsComplete()
             {
-                return !_asyncTagger.AsyncBackgroundRequestData.HasValue;
+                return !_asyncTagger.AsyncBackgroundRequestData.IsSome();
             }
 
             protected override void WaitUntilCompleted()
             {
-                while (_asyncTagger.AsyncBackgroundRequestData.HasValue)
+                while (_asyncTagger.AsyncBackgroundRequestData.IsSome())
                 {
                     Thread.Yield();
                     _synchronizationContext.RunAll();
@@ -106,16 +107,14 @@ namespace EditorUtils.UnitTest
                     return TestUtils.GetDogTags(span);
                 }
 
-                public override bool TryGetTagsPrompt(SnapshotSpan span, out IEnumerable<ITagSpan<TextMarkerTag>> tags)
+                public override FSharpOption<IEnumerable<ITagSpan<TextMarkerTag>>> TryGetTagsPrompt(SnapshotSpan span)
                 {
                     if (span.Start.Position % 2 == 0)
                     {
-                        tags = TestUtils.GetDogTags(span);
-                        return true;
+                        return FSharpOption.Create<IEnumerable<ITagSpan<TextMarkerTag>>>(TestUtils.GetDogTags(span));
                     }
 
-                    tags = null;
-                    return false;
+                    return null;
                 }
             }
 

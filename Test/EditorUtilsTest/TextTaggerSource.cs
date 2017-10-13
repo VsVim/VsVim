@@ -8,6 +8,7 @@ using System.Collections.ObjectModel;
 using Microsoft.VisualStudio.Text.Editor;
 using System.Threading;
 using Vim;
+using Microsoft.FSharp.Core;
 
 namespace EditorUtils.UnitTest
 {
@@ -167,10 +168,6 @@ namespace EditorUtils.UnitTest
             return GetTags(data.Item1, data.Item2, span);
         }
 
-        bool IAsyncTaggerSource<Tuple<string, T>, T>.TryGetTagsPrompt(SnapshotSpan span, out IEnumerable<ITagSpan<T>> tags)
-        {
-            tags = null;
-            return false;
-        }
+        FSharpOption<IEnumerable<ITagSpan<T>>> IAsyncTaggerSource<Tuple<string, T>, T>.TryGetTagsPrompt(SnapshotSpan span) => null;
     }
 }

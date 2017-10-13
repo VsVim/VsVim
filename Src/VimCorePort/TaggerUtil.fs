@@ -14,6 +14,7 @@ open System.Diagnostics
 open System.IO
 open System.Runtime.CompilerServices
 open System.Runtime.InteropServices
+open System.Collections
 open System.Collections.Generic
 open System.Threading
 open Vim.ToDelete
@@ -412,7 +413,8 @@ type internal NormalizedLineRangeCollection() =
             let lastLine = _list.[_list.Count - 1].LastLineNumber
             LineRange.CreateFromBounds startLine lastLine |> Some
     member x.Count = _list.Count    
-    member x.Item(index) = _list.[index]
+    member x.Item
+        with get(index) = _list.[index]
        
     member x.Add (lineRange : LineRange) = 
         match x.FindInsertionPoint lineRange.StartLineNumber with
@@ -500,11 +502,17 @@ type internal NormalizedLineRangeCollection() =
                 index <- _list.Count
         value
 
-    static member Create collection = 
+    static member Create (collection : LineRange seq) = 
         let range = NormalizedLineRangeCollection()
         for r in collection do
             range.Add r
         range
+
+    interface IEnumerable<LineRange> with
+        member x.GetEnumerator() = _list.GetEnumerator() :> IEnumerator<LineRange>
+
+    interface IEnumerable with
+        member x.GetEnumerator() = (_list :> IEnumerable).GetEnumerator()
 
 [<RequireQualifiedAccess>]
 [<NoComparison>]

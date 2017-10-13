@@ -1,5 +1,4 @@
-﻿using EditorUtils.Implementation.Tagging;
-using Microsoft.VisualStudio.Text;
+﻿using Microsoft.VisualStudio.Text;
 using Xunit;
 using Vim;
 using Vim.Extensions;

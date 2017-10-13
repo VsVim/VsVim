@@ -4,10 +4,10 @@ using System.Windows.Threading;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Tagging;
-using EditorUtils.Implementation.Tagging;
 using Microsoft.VisualStudio.Text.Classification;
 using System.Threading;
 using Vim;
+using Vim.Extensions;
 
 namespace EditorUtils.UnitTest
 {
@@ -186,7 +186,7 @@ namespace EditorUtils.UnitTest
         internal static void WaitForBackgroundToComplete<TData, TTag>(this AsyncTagger<TData, TTag> asyncTagger, TestableSynchronizationContext synchronizationContext)
             where TTag : ITag
         {
-            while (asyncTagger.AsyncBackgroundRequestData.HasValue)
+            while (asyncTagger.AsyncBackgroundRequestData.IsSome())
             {
                 synchronizationContext.RunAll();
                 Thread.Yield();
