@@ -837,22 +837,20 @@ module NonEmptyCollectionUtil =
         let rest = List.map mapFunc col.Rest
         NonEmptyCollection<_>(head, rest)
 
-type internal ReadOnlyCollectionUtil<'T>() = 
+module internal ReadOnlyCollectionUtil = 
 
-    static let s_empty = 
-        let list = System.Collections.Generic.List<'T>()
-        ReadOnlyCollection<'T>(list)
-
-    static member Empty = s_empty
-
-    static member Single (item : 'T) = 
+    let Single (item : 'T) = 
         let list = System.Collections.Generic.List<'T>()
         list.Add(item)
         ReadOnlyCollection<'T>(list)
 
-    static member OfSeq (collection : 'T seq) = 
+    let OfSeq (collection : 'T seq) = 
         let list = System.Collections.Generic.List<'T>(collection)
         ReadOnlyCollection<'T>(list)
+
+module internal HashSetUtil = 
+
+    let OfSeq (collection : 'T seq) = System.Collections.Generic.HashSet<'T>(collection)
 
 module internal SystemUtil =
 

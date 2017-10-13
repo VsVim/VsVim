@@ -5,6 +5,7 @@ open System
 open System.Diagnostics;
 open System.Linq;
 open Microsoft.VisualStudio.Text
+open Microsoft.VisualStudio.Text.Editor
 open Microsoft.VisualStudio.Utilities
 
 module TrackingSpanUtil =
@@ -181,3 +182,16 @@ type SnapshotLineRange  =
         else
             let range = SnapshotLineRange(snapshot, startLine, (lastLine - startLine) + 1)
             Nullable<SnapshotLineRange>(range)
+
+// PTODO: move to the correct modules in EditorUtil.fs
+module EditorUtilPort = 
+
+    let GetVisibleSnapshotLineRange (textView : ITextView) =
+        if textView.InLayout then
+            None
+        else 
+            let snapshot = textView.TextSnapshot
+            let lines = textView.TextViewLines
+            let startLine = lines.FirstVisibleLine.Start.GetContainingLine().LineNumber
+            let lastLine = lines.LastVisibleLine.End.GetContainingLine().LineNumber
+            SnapshotLineRange.CreateForLineNumberRange textView.TextSnapshot startLine lastLine |> NullableUtil.ToOption
