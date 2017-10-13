@@ -18,6 +18,11 @@ namespace EditorUtils.UnitTest
 
         public override void Post(SendOrPostCallback d, object state)
         {
+            if (d == null)
+            {
+                throw new ArgumentException(nameof(d));
+            }
+
             _list.Add(() => d(state));
         }
 

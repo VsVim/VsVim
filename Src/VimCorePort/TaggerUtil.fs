@@ -168,15 +168,18 @@ type internal AdhocOutliner
     let mutable _counter = 0 
     let _changed = StandardEvent()
 
-    static member OutlinerKey = new obj();
-    static member OutlinerTaggerKey = new obj();
-    static member EmptyCollection = new ReadOnlyCollection<OutliningRegion>([| |])
+    static let OutlinerKey = new obj();
+    static let OutlinerTaggerKey = new obj();
+    static let EmptyCollection = new ReadOnlyCollection<OutliningRegion>([| |])
+
+    // PTODO: delete this, use the let
+    static member OutlinerKeyTemp = OutlinerKey
 
     /// The outlining implementation is worthless unless it is also registered as an ITagger 
     /// component.  If this hasn't happened by the time the APIs are being queried then it is
     /// a bug and we need to notify the developer
     member x.EnsureTagger() = 
-        if not (_textBuffer.Properties.ContainsProperty(AdhocOutliner.OutlinerTaggerKey)) then
+        if not (PropertyCollectionUtil.ContainsKey OutlinerTaggerKey _textBuffer.Properties) then
             let msg = "In order to use IAdhocOutliner you must also export an ITagger implementation for the buffer which return CreateOutliningTagger";
             raise (new Exception(msg))
 
@@ -184,7 +187,7 @@ type internal AdhocOutliner
     member private x.GetOutliningRegions (span : SnapshotSpan) =
         // Avoid allocating a map or new collection if we are simply empty
         if _map.Count = 0 then
-            AdhocOutliner.EmptyCollection
+            EmptyCollection
         else 
             let snapshot = span.Snapshot
             let list = new List<OutliningRegion>()
@@ -355,6 +358,7 @@ type internal Channel() =
             let newStack = lineRange :: oldStack
             if oldStack = Interlocked.CompareExchange(& _stack, newStack, oldStack) then
                 success <- true
+        Interlocked.Increment(& _version) |> ignore
 
     member private x.ReadNormal() = 
         let mutable value : SnapshotLineRange option = None
@@ -500,6 +504,8 @@ type internal NormalizedLineRangeCollection() =
             if startLineNumber <= _list.[index].StartLineNumber then
                 value <- Some index
                 index <- _list.Count
+            else
+                index <- index + 1
         value
 
     static member Create (collection : LineRange seq) = 
@@ -764,7 +770,7 @@ type internal AsyncTagger<'TData, 'TTag when 'TTag :> ITag>
                         |> Seq.map (fun x -> x.Span) 
                         |> HashSetUtil.OfSeq
 
-                    trackingSet |> Seq.exists (fun x -> trackingSet.Contains x)
+                    tagList |> Seq.exists (fun x -> not (trackingSet.Contains x.Span))
 
     /// Get the tags for the specified NormalizedSnapshotSpanCollection.  Use the cache if 
     /// possible and possibly go to the background if necessary

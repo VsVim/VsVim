@@ -125,7 +125,7 @@ namespace EditorUtils
 
         private static AdhocOutliner GetOrCreateOutlinerCore(ITextBuffer textBuffer)
         {
-            return textBuffer.Properties.GetOrCreateSingletonProperty(AdhocOutliner.OutlinerKey, () => new AdhocOutliner(textBuffer));
+            return textBuffer.Properties.GetOrCreateSingletonProperty(AdhocOutliner.OutlinerKeyTemp, () => new AdhocOutliner(textBuffer));
         }
     }
 }
