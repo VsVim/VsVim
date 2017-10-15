@@ -124,10 +124,6 @@
       <Project>{863a0141-59c5-481d-a3fc-a5812d973feb}</Project>
       <Name>EditorUtils.Host</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\Src\EditorUtils\EditorUtils.csproj">
-      <Project>{fb418222-c105-4942-8eeb-832ddcffd89d}</Project>
-      <Name>EditorUtils</Name>
-    </ProjectReference>
     <ProjectReference Include="..\..\Src\VsInterfaces\VsInterfaces.csproj">
       <Project>{e27dbbf1-6116-4e32-8fa5-07dce5e62bb6}</Project>
       <Name>VsInterfaces</Name>

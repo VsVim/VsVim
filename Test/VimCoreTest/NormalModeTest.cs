@@ -8,6 +8,7 @@ using Vim.Extensions;
 using Vim.Modes.Normal;
 using Vim.UnitTest.Mock;
 using Xunit;
+using EditorUtils;
 
 namespace Vim.UnitTest
 {

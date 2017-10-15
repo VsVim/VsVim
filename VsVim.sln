@@ -38,8 +38,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Vs2015", "Src\VsSpecific\Vs
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Vs2017", "Src\VsSpecific\Vs2017\Vs2017.csproj", "{4BBEC6CF-089E-4F22-8649-5144388C655D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EditorUtils", "Src\EditorUtils\EditorUtils.csproj", "{FB418222-C105-4942-8EEB-832DDCFFD89D}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EditorUtils.Host", "Src\EditorUtils.Host\EditorUtils.Host.csproj", "{863A0141-59C5-481D-A3FC-A5812D973FEB}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EditorUtilsTest", "Test\EditorUtilsTest\EditorUtilsTest.csproj", "{BAED09B7-25D9-4DD8-8558-BAC9730BA3F3}"
@@ -198,18 +196,6 @@ Global
 		{4BBEC6CF-089E-4F22-8649-5144388C655D}.Release|Mixed Platforms.Build.0 = Release|Any CPU
 		{4BBEC6CF-089E-4F22-8649-5144388C655D}.Release|x86.ActiveCfg = Release|Any CPU
 		{4BBEC6CF-089E-4F22-8649-5144388C655D}.Release|x86.Build.0 = Release|Any CPU
-		{FB418222-C105-4942-8EEB-832DDCFFD89D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{FB418222-C105-4942-8EEB-832DDCFFD89D}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{FB418222-C105-4942-8EEB-832DDCFFD89D}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
-		{FB418222-C105-4942-8EEB-832DDCFFD89D}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
-		{FB418222-C105-4942-8EEB-832DDCFFD89D}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{FB418222-C105-4942-8EEB-832DDCFFD89D}.Debug|x86.Build.0 = Debug|Any CPU
-		{FB418222-C105-4942-8EEB-832DDCFFD89D}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{FB418222-C105-4942-8EEB-832DDCFFD89D}.Release|Any CPU.Build.0 = Release|Any CPU
-		{FB418222-C105-4942-8EEB-832DDCFFD89D}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
-		{FB418222-C105-4942-8EEB-832DDCFFD89D}.Release|Mixed Platforms.Build.0 = Release|Any CPU
-		{FB418222-C105-4942-8EEB-832DDCFFD89D}.Release|x86.ActiveCfg = Release|Any CPU
-		{FB418222-C105-4942-8EEB-832DDCFFD89D}.Release|x86.Build.0 = Release|Any CPU
 		{863A0141-59C5-481D-A3FC-A5812D973FEB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{863A0141-59C5-481D-A3FC-A5812D973FEB}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{863A0141-59C5-481D-A3FC-A5812D973FEB}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU

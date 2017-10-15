@@ -220,10 +220,6 @@
       <Project>{863a0141-59c5-481d-a3fc-a5812d973feb}</Project>
       <Name>EditorUtils.Host</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\Src\EditorUtils\EditorUtils.csproj">
-      <Project>{fb418222-c105-4942-8eeb-832ddcffd89d}</Project>
-      <Name>EditorUtils</Name>
-    </ProjectReference>
     <ProjectReference Include="..\..\Src\VimCore\VimCore.fsproj">
       <Project>{06BE08E7-8626-40BD-877B-8D2DCA6BA451}</Project>
       <Name>VimCore</Name>
