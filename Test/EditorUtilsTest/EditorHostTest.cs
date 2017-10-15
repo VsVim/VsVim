@@ -75,11 +75,6 @@ namespace EditorUtils.UnitTest
             get { return _editorHost.ContentTypeRegistryService; }
         }
 
-        public IProtectedOperations ProtectedOperations
-        {
-            get { return _editorHost.ProtectedOperations; }
-        }
-
         public IBasicUndoHistoryRegistry BasicUndoHistoryRegistry
         {
             get { return _editorHost.BasicUndoHistoryRegistry; }
