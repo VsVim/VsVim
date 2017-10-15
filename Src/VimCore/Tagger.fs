@@ -1,7 +1,6 @@
 ﻿namespace Vim
 
 open Vim
-open EditorUtils
 open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Tagging
 open Microsoft.VisualStudio.Text.Editor

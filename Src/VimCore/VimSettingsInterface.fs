@@ -1,6 +1,5 @@
 ﻿namespace Vim
 
-open EditorUtils
 open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Editor
 open Microsoft.VisualStudio.Text.Operations

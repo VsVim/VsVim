@@ -1,5 +1,4 @@
 ﻿namespace Vim
-open EditorUtils
 open Microsoft.VisualStudio.Text
 open System.Diagnostics
 

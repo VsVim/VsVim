@@ -8,7 +8,6 @@ open System.Collections.Generic
 open Vim.Modes
 open Vim.StringBuilderExtensions
 open Vim.Interpreter
-open EditorUtils
 
 [<RequireQualifiedAccess>]
 [<NoComparison>]

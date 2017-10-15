@@ -171,11 +171,6 @@
     <Reference Include="PresentationFramework" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\EditorUtils\EditorUtils.csproj">
-      <Name>EditorUtils</Name>
-      <Project>{fb418222-c105-4942-8eeb-832ddcffd89d}</Project>
-      <Private>True</Private>
-    </ProjectReference>
     <ProjectReference Include="..\VimCorePort\VimCorePort.fsproj">
       <Name>VimCorePort</Name>
       <Project>{a5aa1d42-18ab-4c26-b5e5-b63d89d289b5}</Project>

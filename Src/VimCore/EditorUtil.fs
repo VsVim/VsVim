@@ -1,7 +1,6 @@
 ﻿#light
 
 namespace Vim
-open EditorUtils
 open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Projection
 open Microsoft.VisualStudio.Text.Editor
@@ -427,7 +426,8 @@ module SnapshotSpanUtil =
     /// but instead the first point after the Span.  This is important when the Span is 
     /// ITextSnapshotLine.ExtentIncludingLineBreak as it is in Visual Mode
     let GetLastLine (span : SnapshotSpan) = 
-        EditorUtils.Extensions.GetLastLine(span);
+        if span.Length > 0 then span.End.Subtract(1).GetContainingLine()
+        else GetStartLine(span)
 
     /// Get the start and end line of the SnapshotSpan.  Remember that End is not a part of
     /// the span but instead the first point after the span
@@ -1520,20 +1520,27 @@ module TextViewUtil =
 
     /// Return the overarching SnapshotLineRange for the visible lines in the ITextView
     let GetVisibleSnapshotLineRange (textView : ITextView) =
-        Extensions.GetVisibleSnapshotLineRange(textView)
+        if textView.InLayout then
+            None
+        else 
+            let snapshot = textView.TextSnapshot
+            let lines = textView.TextViewLines
+            let startLine = lines.FirstVisibleLine.Start.GetContainingLine().LineNumber
+            let lastLine = lines.LastVisibleLine.End.GetContainingLine().LineNumber
+            SnapshotLineRange.CreateForLineNumberRange textView.TextSnapshot startLine lastLine |> NullableUtil.ToOption
 
     /// Returns a sequence of ITextSnapshotLine values representing the visible lines in the buffer
     let GetVisibleSnapshotLines (textView : ITextView) =
         match GetVisibleSnapshotLineRange textView with
-        | NullableUtil.HasValue lineRange -> lineRange.Lines
-        | NullableUtil.Null -> Seq.empty
+        | Some lineRange -> lineRange.Lines
+        | None -> Seq.empty
 
     /// Returns the overarching SnapshotLineRange for the visible lines in the ITextView on the
     /// Visual snapshot.
     let GetVisibleVisualSnapshotLineRange (textView : ITextView) = 
         match GetVisibleSnapshotLineRange textView with
-        | NullableUtil.Null -> NullableUtil.CreateNull<SnapshotLineRange>()
-        | NullableUtil.HasValue range ->
+        | None -> NullableUtil.CreateNull<SnapshotLineRange>()
+        | Some range ->
             match BufferGraphUtil.MapSpanUpToSnapshot textView.BufferGraph range.ExtentIncludingLineBreak SpanTrackingMode.EdgeInclusive textView.TextViewModel.VisualBuffer.CurrentSnapshot with
             | Some collection -> 
                 collection 
