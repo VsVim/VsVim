@@ -7,6 +7,7 @@ using EditorUtils;
 using Microsoft.VisualStudio.Text.Classification;
 using Vim.UI.Wpf;
 using Vim.UnitTest.Mock;
+using Microsoft.VisualStudio.Text;
 
 namespace Vim.UnitTest
 {
@@ -135,7 +136,7 @@ namespace Vim.UnitTest
             _foldManagerFactory = CompositionContainer.GetExportedValue<IFoldManagerFactory>();
             _bulkOperations = CompositionContainer.GetExportedValue<IBulkOperations>();
             _keyUtil = CompositionContainer.GetExportedValue<IKeyUtil>();
-            _protectedOperations = CompositionContainer.GetExportedValue<IProtectedOperations>();
+            _protectedOperations = EditorUtilsFactory.CreateProtectedOperations(new List<Lazy<IExtensionErrorHandler>>());
             _vimProtectedOperations = CompositionContainer.GetExportedValue<IVimProtectedOperations>();
 
             _keyboardDevice = CompositionContainer.GetExportedValue<IKeyboardDevice>();
