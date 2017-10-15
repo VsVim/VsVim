@@ -4,7 +4,6 @@ using System.ComponentModel.Composition;
 using System.Linq;
 using System.Text;
 using System.Windows.Threading;
-using EditorUtils;
 using Microsoft.VisualStudio.Text;
 
 namespace Vim.UI.Wpf.Implementation.Misc

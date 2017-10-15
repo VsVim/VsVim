@@ -3,7 +3,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using EnvDTE;
 using Vim;
-using EditorUtils;
+using Vim.Extensions;
 
 namespace Vim.VisualStudio
 {

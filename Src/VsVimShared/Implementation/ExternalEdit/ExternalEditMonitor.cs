@@ -9,7 +9,6 @@ using Microsoft.VisualStudio.Text.Tagging;
 using Microsoft.VisualStudio.TextManager.Interop;
 using Vim;
 using Vim.Extensions;
-using EditorUtils;
 
 namespace Vim.VisualStudio.Implementation.ExternalEdit
 {

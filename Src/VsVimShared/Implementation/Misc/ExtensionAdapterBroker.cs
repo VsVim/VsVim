@@ -4,8 +4,8 @@ using System.Collections.ObjectModel;
 using System.ComponentModel.Composition;
 using System.Linq;
 using System.Text;
-using EditorUtils;
 using Microsoft.VisualStudio.Text.Editor;
+using Vim.Extensions;
 
 namespace Vim.VisualStudio.Implementation.Misc
 {

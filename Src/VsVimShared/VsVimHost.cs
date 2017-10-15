@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.IO;
 using System.Linq;
-using EditorUtils;
 using EnvDTE;
 using Microsoft.VisualStudio.Editor;
 using Microsoft.VisualStudio.Shell;

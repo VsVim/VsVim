@@ -5,7 +5,6 @@ using System.IO;
 using System.Linq;
 using System.Media;
 using System.Windows;
-using EditorUtils;
 using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
@@ -170,7 +169,7 @@ namespace Vim.UI.Wpf
         {
             // If this is an IProjectionBuffer then we need to dig into the actual ITextBuffer values
             // which make it up.  
-            foreach (var sourceTextBuffer in textBuffer.GetSourceBuffersRecursive())
+            foreach (var sourceTextBuffer in TextBufferUtil.GetSourceBuffersRecursive(textBuffer))
             {
                 // The inert buffer doesn't need to be considered.  It's used as a fake buffer by web applications
                 // in order to render projected content

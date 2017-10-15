@@ -5,6 +5,7 @@ using System.Text;
 using System.Collections.ObjectModel;
 using Microsoft.VisualStudio.Text.Tagging;
 using Microsoft.VisualStudio.Text;
+using Vim.Extensions;
 
 namespace EditorUtils.UnitTest
 {

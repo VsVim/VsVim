@@ -4,7 +4,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
 using Vim;
-using EditorUtils;
+using Vim.Extensions;
 
 namespace Vim.VisualStudio
 {

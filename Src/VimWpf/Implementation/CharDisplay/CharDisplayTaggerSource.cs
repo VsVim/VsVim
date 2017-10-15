@@ -1,5 +1,4 @@
-﻿using EditorUtils;
-using Microsoft.VisualStudio.Text;
+﻿using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Tagging;
 using System;
@@ -9,6 +8,7 @@ using System.Windows;
 using System.Windows.Controls;
 using Microsoft.VisualStudio.Text.Classification;
 using System.Windows.Media;
+using Vim.Extensions;
 
 namespace Vim.UI.Wpf.Implementation.CharDisplay
 {

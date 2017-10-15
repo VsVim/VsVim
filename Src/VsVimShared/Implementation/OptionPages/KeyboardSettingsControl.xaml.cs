@@ -1,5 +1,4 @@
-﻿using EditorUtils;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -16,6 +15,7 @@ using System.Windows.Navigation;
 using System.Windows.Shapes;
 using Vim;
 using Vim.VisualStudio;
+using Vim.Extensions;
 
 namespace Vim.VisualStudio.Implementation.OptionPages
 {

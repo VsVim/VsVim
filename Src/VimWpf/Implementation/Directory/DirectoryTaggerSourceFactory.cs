@@ -6,7 +6,6 @@ using System.Text;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Utilities;
 using Microsoft.VisualStudio.Text.Editor;
-using EditorUtils;
 using System.ComponentModel.Composition;
 using Microsoft.VisualStudio.Text.Classification;
 

@@ -5,7 +5,6 @@ using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Windows.Media;
-using EditorUtils;
 using EnvDTE;
 using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio;

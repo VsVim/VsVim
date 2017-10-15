@@ -1,7 +1,6 @@
 ﻿using System;
 using System.ComponentModel.Composition;
 using System.Windows.Threading;
-using EditorUtils;
 
 namespace Vim.UI.Wpf.Implementation.Misc
 {

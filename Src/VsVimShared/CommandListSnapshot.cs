@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using EnvDTE;
-using EditorUtils;
 using DteCommand = EnvDTE.Command;
+using Vim.Extensions;
 
 namespace Vim.VisualStudio
 {

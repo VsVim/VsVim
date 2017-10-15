@@ -1,7 +1,6 @@
 ﻿using System;
 using Microsoft.VisualStudio.Text.Classification;
 using Microsoft.VisualStudio.Text.Editor;
-using EditorUtils;
 
 namespace Vim.UI.Wpf.Implementation.Paste
 {

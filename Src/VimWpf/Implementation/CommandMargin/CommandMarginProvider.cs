@@ -7,7 +7,6 @@ using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Utilities;
 using Microsoft.VisualStudio.Text.Classification;
 using Vim.Extensions;
-using EditorUtils;
 
 namespace Vim.UI.Wpf.Implementation.CommandMargin
 {
