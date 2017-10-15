@@ -25,6 +25,7 @@ namespace Vim.UnitTest
         private readonly IMouseDevice _mouseDevice;
         private readonly IClipboardDevice _clipboardDevice;
         private readonly IVimProtectedOperations _vimProtectedOperations;
+        private readonly IProtectedOperations _protectedOperations;
         private readonly IEditorFormatMapService _editorFormatMapService;
         private readonly IClassificationFormatMapService _classificationFormatMapService;
 
@@ -93,6 +94,11 @@ namespace Vim.UnitTest
             get { return _keyboardDevice; }
         }
 
+        public IProtectedOperations ProtectedOperations
+        {
+            get { return _protectedOperations; }
+        }
+
         public IVimProtectedOperations VimProtectedOperations
         {
             get { return _vimProtectedOperations; }
@@ -129,6 +135,7 @@ namespace Vim.UnitTest
             _foldManagerFactory = CompositionContainer.GetExportedValue<IFoldManagerFactory>();
             _bulkOperations = CompositionContainer.GetExportedValue<IBulkOperations>();
             _keyUtil = CompositionContainer.GetExportedValue<IKeyUtil>();
+            _protectedOperations = CompositionContainer.GetExportedValue<IProtectedOperations>();
             _vimProtectedOperations = CompositionContainer.GetExportedValue<IVimProtectedOperations>();
 
             _keyboardDevice = CompositionContainer.GetExportedValue<IKeyboardDevice>();

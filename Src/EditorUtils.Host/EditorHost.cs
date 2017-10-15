@@ -15,7 +15,6 @@ using Microsoft.VisualStudio.Utilities;
 using Microsoft.Win32;
 using System.IO;
 using Microsoft.VisualStudio.Text.Classification;
-using Vim;
 
 namespace EditorUtils
 {
@@ -37,7 +36,6 @@ namespace EditorUtils
         private ITextSearchService _textSearchService;
         private ITextBufferUndoManagerProvider _textBufferUndoManagerProvider;
         private IContentTypeRegistryService _contentTypeRegistryService;
-        private IProtectedOperations _protectedOperations;
         private IBasicUndoHistoryRegistry _basicUndoHistoryRegistry;
         private IClassificationTypeRegistryService _classificationTypeRegistryService;
 
@@ -96,11 +94,6 @@ namespace EditorUtils
             get { return _contentTypeRegistryService; }
         }
 
-        public IProtectedOperations ProtectedOperations
-        {
-            get { return _protectedOperations; }
-        }
-
         public IBasicUndoHistoryRegistry BasicUndoHistoryRegistry
         {
             get { return _basicUndoHistoryRegistry; }
@@ -127,7 +120,6 @@ namespace EditorUtils
             _classificationTypeRegistryService = _compositionContainer.GetExportedValue<IClassificationTypeRegistryService>();
 
             var errorHandlers = _compositionContainer.GetExportedValues<IExtensionErrorHandler>();
-            _protectedOperations = EditorUtilsFactory.CreateProtectedOperations(errorHandlers.Select(x => new Lazy<IExtensionErrorHandler>(() => x)));
             _basicUndoHistoryRegistry = _compositionContainer.GetExportedValue<IBasicUndoHistoryRegistry>();
         }
 

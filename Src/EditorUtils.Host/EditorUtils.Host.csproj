@@ -66,16 +66,6 @@
     <None Include="app.config" />
     <None Include="packages.config" />
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\EditorUtils\EditorUtils.csproj">
-      <Project>{fb418222-c105-4942-8eeb-832ddcffd89d}</Project>
-      <Name>EditorUtils</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\VimCore\VimCore.fsproj">
-      <Project>{06be08e7-8626-40bd-877b-8d2dca6ba451}</Project>
-      <Name>VimCore</Name>
-    </ProjectReference>
-  </ItemGroup>
   <Import Project="..\..\VsVim.targets" />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
