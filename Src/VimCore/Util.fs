@@ -4,10 +4,6 @@ namespace Vim
 open Microsoft.VisualStudio.Text
 open System
 
-[<AttributeUsage(AttributeTargets.Class ||| AttributeTargets.Method ||| AttributeTargets.Interface)>]
-type internal UsedInBackgroundThread() =
-    inherit Attribute()
-
 module internal Util =
 
     let IsFlagSet value flag = 

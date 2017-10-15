@@ -52,9 +52,9 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\VimCorePort\VimCorePort.fsproj">
-      <Project>{a5aa1d42-18ab-4c26-b5e5-b63d89d289b5}</Project>
-      <Name>VimCorePort</Name>
+    <ProjectReference Include="..\VimCore\VimCore.fsproj">
+      <Project>{06be08e7-8626-40bd-877b-8d2dca6ba451}</Project>
+      <Name>VimCore</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="..\..\VsVim.targets" />
