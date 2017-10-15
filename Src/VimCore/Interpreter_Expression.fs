@@ -1,7 +1,6 @@
 ﻿#light
 
 namespace Vim.Interpreter
-open EditorUtils
 open Microsoft.VisualStudio.Text
 open Vim
 

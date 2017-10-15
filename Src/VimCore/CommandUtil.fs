@@ -1,7 +1,6 @@
 ﻿#light
 
 namespace Vim
-open EditorUtils
 open Vim.Modes
 open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Operations
@@ -2141,7 +2140,8 @@ type internal CommandUtil
                     // The caret goes one character to the left of whereever it ended up
                     _textBuffer.Delete(span) |> ignore
                     _insertUtil.RunInsertCommand(InsertCommand.InsertNewLine) |> ignore
-                    _textView.GetCaretPoint().Position - 1
+                    let caretPoint = TextViewUtil.GetCaretPoint _textView
+                    caretPoint.Position - 1
                 else
                     // The caret should move to the end of the replace operation which is 
                     // 'count - 1' characters from the original position 
@@ -3052,7 +3052,8 @@ type internal CommandUtil
 
     /// Select the whole document
     member x.SelectAll () =
-        _textView.Selection.Select(_textBuffer.CurrentSnapshot.GetExtent(), false)
+        let extent = SnapshotUtil.GetExtent _textBuffer.CurrentSnapshot
+        _textView.Selection.Select(extent, false)
         CommandResult.Completed ModeSwitch.NoSwitch
 
     interface ICommandUtil with
