@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.Linq;
-using EditorUtils;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.OLE.Interop;
 using Microsoft.VisualStudio.Shell;
@@ -132,7 +131,7 @@ namespace Vim.VisualStudio.Implementation.Misc
             // .aspx, etc ...) this mapping breaks down.  To get it back we must visit all of the 
             // source buffers for a projection and individually save them
             var result = Result.Success;
-            foreach (var sourceBuffer in textBuffer.GetSourceBuffersRecursive())
+            foreach (var sourceBuffer in TextBufferUtil.GetSourceBuffersRecursive(textBuffer))
             {
                 // The inert buffer doesn't need to be saved.  It's used as a fake buffer by web applications
                 // in order to render projected content

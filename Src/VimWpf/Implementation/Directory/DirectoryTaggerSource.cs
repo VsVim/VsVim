@@ -1,5 +1,4 @@
-﻿using EditorUtils;
-using Microsoft.VisualStudio.Text.Tagging;
+﻿using Microsoft.VisualStudio.Text.Tagging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,6 +6,7 @@ using System.Text;
 using Microsoft.VisualStudio.Text;
 using System.Collections.ObjectModel;
 using Microsoft.VisualStudio.Text.Classification;
+using Vim.Extensions;
 
 namespace Vim.UI.Wpf.Implementation.Directory
 {

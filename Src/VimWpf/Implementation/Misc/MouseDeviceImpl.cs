@@ -3,7 +3,7 @@ using Microsoft.VisualStudio.Utilities;
 using System.ComponentModel.Composition;
 using System.Windows;
 using System.Windows.Input;
-using EditorUtils;
+using Vim.Extensions;
 
 namespace Vim.UI.Wpf.Implementation.Misc
 {

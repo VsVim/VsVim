@@ -8,6 +8,7 @@ using System.Collections.ObjectModel;
 using Microsoft.VisualStudio.Text.Editor;
 using System.Threading;
 using Vim;
+using Vim.Extensions;
 using Microsoft.FSharp.Core;
 
 namespace EditorUtils.UnitTest

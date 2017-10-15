@@ -260,27 +260,6 @@ namespace EditorUtils
 
         #endregion
 
-        #region PropertyCollection
-
-        public static bool TryGetPropertySafe<TProperty>(this PropertyCollection propertyCollection, object key, out TProperty value)
-        {
-            try
-            {
-                return propertyCollection.TryGetProperty<TProperty>(key, out value);
-            }
-            catch (Exception)
-            {
-                // If the value exists but is not convertible to the provided type then
-                // an exception will be thrown.  Collapse this into an empty option.  
-                // Helps guard against cases where other extensions override our values
-                // with ones of unexpected types
-                value = default(TProperty);
-                return false;
-            }
-        }
-
-        #endregion
-
         #region ITrackingSpan
 
         public static SnapshotSpan? GetSpanSafe(this ITrackingSpan trackingSpan, ITextSnapshot snapshot)
@@ -309,16 +288,6 @@ namespace EditorUtils
         #endregion
 
         #region Collections
-
-        public static ReadOnlyCollection<T> ToReadOnlyCollection<T>(this IEnumerable<T> enumerable)
-        {
-            return new ReadOnlyCollection<T>(enumerable.ToList());
-        }
-
-        public static ReadOnlyCollection<T> ToReadOnlyCollectionShallow<T>(this List<T> list)
-        {
-            return new ReadOnlyCollection<T>(list);
-        }
 
         public static HashSet<T> ToHashSet<T>(this IEnumerable<T> enumerable)
         {

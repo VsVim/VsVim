@@ -1,9 +1,9 @@
 ﻿using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.Linq;
-using EditorUtils;
 using Microsoft.VisualStudio.Text.Tagging;
 using Vim;
+using Vim.Extensions;
 using Vim.UI.Wpf;
 
 namespace Vim.VisualStudio.Implementation.ExternalEdit

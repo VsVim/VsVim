@@ -6,7 +6,6 @@ using System.ComponentModel.Composition;
 using System.Linq;
 using System.Text;
 using Vim.Extensions;
-using EditorUtils;
 
 namespace Vim.UI.Wpf.Implementation.Directory
 {

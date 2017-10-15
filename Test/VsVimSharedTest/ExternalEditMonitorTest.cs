@@ -10,6 +10,7 @@ using Microsoft.VisualStudio.TextManager.Interop;
 using Moq;
 using Xunit;
 using Vim;
+using Vim.Extensions;
 using Vim.UI.Wpf;
 using Vim.UnitTest;
 using Vim.VisualStudio.Implementation.ExternalEdit;

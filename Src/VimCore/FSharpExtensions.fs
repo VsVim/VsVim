@@ -1,6 +1,10 @@
 ﻿namespace Vim.Extensions
 
+open System.Collections.ObjectModel
+open System.Collections.Generic
 open System.Runtime.CompilerServices
+open Microsoft.VisualStudio.Utilities
+open Vim
 
 [<Extension>]
 module public OptionExtensions =
@@ -67,7 +71,7 @@ type public FSharpFuncUtil =
     static member Create<'a,'b,'c,'d> (func : System.Func<'a,'b,'c,'d>) = FSharpFuncUtil.ToFSharpFunc func
 
 [<Extension>]
-module public SeqExtensions =
+module public CollectionExtensions =
 
     [<Extension>]
     let ToFSharpList sequence = List.ofSeq sequence
@@ -80,3 +84,25 @@ module public SeqExtensions =
             |> List.rev
             |> Seq.iter historyList.Add
         historyList
+
+    [<Extension>] 
+    let ToReadOnlyCollectionShallow (list : List<'T>) = ReadOnlyCollection<'T>(list)
+
+    [<Extension>]
+    let ToReadOnlyCollection (e : 'T seq) = 
+        let list = List<'T>(e)
+        ReadOnlyCollection<'T>(list)
+
+[<Extension>]
+module public EditorExtensions =
+    open System.Runtime.InteropServices
+
+    [<Extension>]
+    let TryGetPropertySafe<'T> propertyCollection (key : obj) ([<Out>] value : byref<'T>) =
+        match PropertyCollectionUtil.GetValue<'T> key propertyCollection with
+        | Some v ->
+            value <- v
+            true
+        | None ->
+            value <- Unchecked.defaultof<'T>
+            false

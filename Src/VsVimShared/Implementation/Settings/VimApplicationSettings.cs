@@ -2,11 +2,11 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel.Composition;
-using EditorUtils;
 using Microsoft.VisualStudio.Settings;
 using Microsoft.VisualStudio.Shell;
 using Vim.UI.Wpf;
 using Vim;
+using Vim.Extensions;
 
 namespace Vim.VisualStudio.Implementation.Settings
 {

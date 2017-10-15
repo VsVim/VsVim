@@ -1,6 +1,7 @@
 ﻿using System.Linq;
 using Microsoft.VisualStudio.Utilities;
 using Xunit;
+using Vim.Extensions;
 
 namespace EditorUtils.UnitTest
 {

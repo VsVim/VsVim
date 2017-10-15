@@ -9,6 +9,7 @@ open Microsoft.VisualStudio.Text.Operations
 open Microsoft.VisualStudio.Text.Outlining
 open Microsoft.VisualStudio.Utilities
 open System
+open System.Collections.Generic
 open System.Diagnostics
 open System.Text
 open StringBuilderExtensions
@@ -1640,6 +1641,24 @@ module EditorOptionsUtil =
     let SetOptionValue (opts : IEditorOptions) (key : EditorOptionKey<'a>) value =
         opts.SetOptionValue(key, value)
 
+module ProjectionBufferUtil =
+
+    let GetSourceBuffersRecursive (projectionBuffer : IProjectionBuffer) =
+        let toVisit = new Queue<IProjectionBuffer>()
+        toVisit.Enqueue projectionBuffer
+
+        let found = new HashSet<ITextBuffer>()
+        while toVisit.Count > 0 do
+            let current = toVisit.Dequeue()
+            if found.Add current then
+                for sourceBuffer in current.SourceBuffers do 
+                    match sourceBuffer with
+                    | :? IProjectionBuffer as p -> toVisit.Enqueue p
+                    | _ -> found.Add sourceBuffer |> ignore
+
+        found 
+        |> Seq.filter (fun x -> match x with | :? IProjectionBuffer -> false | _ -> true)
+
 module TextBufferUtil =
     
     /// Delete the specified span and return the latest ITextSnapshot after the
@@ -1648,6 +1667,14 @@ module TextBufferUtil =
     let DeleteAndGetLatest (textBuffer : ITextBuffer) (deleteSpan : Span) = 
         textBuffer.Delete(deleteSpan) |> ignore
         textBuffer.CurrentSnapshot
+
+    /// Any ITextBuffer instance is possibly an IProjectionBuffer (which is a text buffer composed 
+    /// of parts of other ITextBuffers).  This will return all of the real ITextBuffer buffers 
+    /// composing the provided ITextBuffer
+    let GetSourceBuffersRecursive (textBuffer : ITextBuffer) =
+        match textBuffer with
+        | :? IProjectionBuffer as p -> ProjectionBufferUtil.GetSourceBuffersRecursive p
+        | _ -> Seq.singleton textBuffer
 
 module TextEditUtil = 
 

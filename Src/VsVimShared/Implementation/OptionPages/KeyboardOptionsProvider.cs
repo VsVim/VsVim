@@ -1,6 +1,5 @@
 ﻿using System;
 using System.ComponentModel.Composition;
-using EditorUtils;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using Vim;
