@@ -364,6 +364,10 @@ module internal MapUtil =
     /// Get the set of keys in the Map
     let keys (map:Map<'TKey,'TValue>) = map |> Seq.map (fun pair -> pair.Key)
 
+module internal GenericListUtil = 
+
+    let OfSeq (col : 'T seq) = System.Collections.Generic.List<'T>(col)
+
 [<RequireQualifiedAccess>]
 type internal CharComparer =
     | Exact

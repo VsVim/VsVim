@@ -127,7 +127,7 @@ namespace EditorUtils
             _classificationTypeRegistryService = _compositionContainer.GetExportedValue<IClassificationTypeRegistryService>();
 
             var errorHandlers = _compositionContainer.GetExportedValues<IExtensionErrorHandler>();
-            _protectedOperations = EditorUtilsFactory.CreateProtectedOperations(errorHandlers);
+            _protectedOperations = EditorUtilsFactory.CreateProtectedOperations(errorHandlers.Select(x => new Lazy<IExtensionErrorHandler>(() => x)));
             _basicUndoHistoryRegistry = _compositionContainer.GetExportedValue<IBasicUndoHistoryRegistry>();
         }
 

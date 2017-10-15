@@ -1,5 +1,4 @@
-﻿using EditorUtils.Implementation.Utilities;
-using Xunit;
+﻿using Xunit;
 using Vim;
 
 namespace EditorUtils.UnitTest

@@ -29,7 +29,7 @@ namespace Vim.UI.Wpf.Implementation.Directory
         IClassifier IClassifierProvider.GetClassifier(ITextBuffer textBuffer)
         {
             var classificationType = _classificationTypeRegistryService.GetClassificationType(DirectoryFormatDefinition.Name);
-            return EditorUtilsFactory.CreateClassifier(
+            return EditorUtilsFactory.CreateBasicClassifier(
                 textBuffer.Properties,
                 s_key,
                 () => new DirectoryTaggerSource(textBuffer, classificationType));

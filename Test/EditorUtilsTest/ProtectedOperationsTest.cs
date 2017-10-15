@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Windows.Threading;
-using EditorUtils.Implementation.Utilities;
 using Microsoft.VisualStudio.Text;
 using Moq;
 using Xunit;
