@@ -43,9 +43,6 @@
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\EditorUtils\Constants.cs">
-      <Link>Constants.cs</Link>
-    </Compile>
     <Compile Include="EditorVersion.cs" />
     <Compile Include="EditorVersionUtil.cs" />
     <Compile Include="IBasicUndoHistoryRegistry.cs" />

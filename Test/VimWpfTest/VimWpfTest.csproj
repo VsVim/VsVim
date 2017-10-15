@@ -83,9 +83,9 @@
       <Project>{863a0141-59c5-481d-a3fc-a5812d973feb}</Project>
       <Name>EditorUtils.Host</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\Src\EditorUtils\EditorUtils.csproj">
-      <Project>{fb418222-c105-4942-8eeb-832ddcffd89d}</Project>
-      <Name>EditorUtils</Name>
+    <ProjectReference Include="..\EditorUtilsTest\EditorUtilsTest.csproj">
+      <Project>{baed09b7-25d9-4dd8-8558-bac9730ba3f3}</Project>
+      <Name>EditorUtilsTest</Name>
     </ProjectReference>
     <ProjectReference Include="..\VimCoreTest\VimCoreTest.csproj">
       <Project>{B4FC7C81-E500-47C8-A884-2DBB7CA77123}</Project>

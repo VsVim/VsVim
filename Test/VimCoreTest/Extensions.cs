@@ -941,11 +941,6 @@ namespace Vim.UnitTest
             return buffer.CurrentSnapshot.GetLineFromLineNumber(line);
         }
 
-        public static ITextSnapshotLine GetLine(this ITextBuffer textBuffer, int lineNumber)
-        {
-            return textBuffer.CurrentSnapshot.GetLineFromLineNumber(lineNumber);
-        }
-
         public static BlockSpan GetBlockSpan(this ITextBuffer textBuffer, int column, int length, int startLine = 0, int lineCount = 1, int tabStop = 4)
         {
             var line = textBuffer.GetLine(startLine);
@@ -970,11 +965,6 @@ namespace Vim.UnitTest
             {
                 yield return line.GetText();
             }
-        }
-
-        public static SnapshotSpan GetLineSpan(this ITextBuffer buffer, int lineNumber, int length)
-        {
-            return GetLineSpan(buffer, lineNumber, 0, length);
         }
 
         public static SnapshotSpan GetLineSpan(this ITextBuffer buffer, int lineNumber, int column, int length)
@@ -1010,11 +1000,6 @@ namespace Vim.UnitTest
         public static SnapshotLineRange GetLineRange(this ITextView textView, int startLine, int endLine = -1)
         {
             return textView.TextBuffer.GetLineRange(startLine, endLine);
-        }
-
-        public static ITextSnapshotLine GetLine(this ITextView textView, int lineNumber)
-        {
-            return textView.TextBuffer.GetLine(lineNumber);
         }
 
         public static SnapshotSpan GetLineSpan(this ITextView textView, int lineNumber, int length)

@@ -1,4 +1,5 @@
-﻿using Microsoft.VisualStudio.Text;
+﻿using EditorUtils;
+using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Moq;
 using Vim.UnitTest;

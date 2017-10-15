@@ -7,7 +7,7 @@ using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Utilities;
 using System.Linq;
 
-namespace EditorUtils
+namespace EditorUtils.Host
 {
     public static class Extensions
     {
