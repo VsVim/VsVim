@@ -1198,6 +1198,7 @@ type internal AsyncTagger<'TData, 'TTag when 'TTag :> ITag>
 
 /// Implements the safe dispatching interface which prevents application crashes for 
 /// exceptions reaching the dispatcher loop
+/// PTODO: can this just merge with VimProtectedOperations? 
 type internal ProtectedOperations =
 
     val _errorHandlers : List<Lazy<IExtensionErrorHandler>>
