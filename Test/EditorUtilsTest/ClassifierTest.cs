@@ -24,7 +24,7 @@ namespace EditorUtils.UnitTest
 
                 var classificationType = EditorHost.ClassificationTypeRegistryService.GetOrCreateClassificationType("classifier test");
                 _source = new TextBasicTaggerSource<IClassificationTag>(new ClassificationTag(classificationType));
-                _classifier = EditorUtilsFactory.CreateClassifierRaw(_source);
+                _classifier = EditorUtilsFactory.CreateBasicClassifierRaw(_source);
             }
 
             [Fact]

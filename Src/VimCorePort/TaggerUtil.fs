@@ -20,6 +20,7 @@ open System.Threading
 open Vim.ToDelete
 open System.Net
 open System.Threading.Tasks
+open System.Windows.Threading
 
 module TaggerUtil = 
 
@@ -172,8 +173,8 @@ type internal AdhocOutliner
     static let OutlinerTaggerKey = new obj();
     static let EmptyCollection = new ReadOnlyCollection<OutliningRegion>([| |])
 
-    // PTODO: delete this, use the let
-    static member OutlinerKeyTemp = OutlinerKey
+    // PTODO fix this temp
+    static member OutlinerTaggerKeyTemp = OutlinerTaggerKey
 
     /// The outlining implementation is worthless unless it is also registered as an ITagger 
     /// component.  If this hasn't happened by the time the APIs are being queried then it is
@@ -206,6 +207,10 @@ type internal AdhocOutliner
         _counter <- _counter + 1
         _changed.Trigger x
         { Tag = tag; Span = span; Cookie = data.Cookie }
+
+    static member GetOrCreate (textBuffer : ITextBuffer) = 
+        let propertyCollection = textBuffer.Properties
+        propertyCollection.GetOrCreateSingletonProperty(OutlinerKey, (fun _ -> AdhocOutliner(textBuffer)))
 
     interface IAdhocOutliner with 
         member x.TextBuffer = _textBuffer 
@@ -1191,3 +1196,122 @@ type internal AsyncTagger<'TData, 'TTag when 'TTag :> ITag>
 
     interface IDisposable with
         member x.Dispose() = x.Dispose()
+
+/// Implements the safe dispatching interface which prevents application crashes for 
+/// exceptions reaching the dispatcher loop
+type internal ProtectedOperations =
+
+    val _errorHandlers : List<Lazy<IExtensionErrorHandler>>
+
+    new (errorHandlers : Lazy<IExtensionErrorHandler> seq) = 
+        { _errorHandlers = errorHandlers |> GenericListUtil.OfSeq }
+
+    new (errorHandler : IExtensionErrorHandler) = 
+        let l = Lazy<IExtensionErrorHandler>(fun _ -> errorHandler)
+        let list = l |> Seq.singleton |> GenericListUtil.OfSeq
+        { _errorHandlers = list }
+
+    new () =
+        { _errorHandlers = Seq.empty |> GenericListUtil.OfSeq }
+
+    /// Produce a delegate that can safely execute the given action.  If it throws an exception 
+    /// then make sure to alert the error handlers
+    member private x.GetProtectedAction (action  : Action) : Action =
+        let a () = 
+            try
+                action.Invoke()
+            with
+            | e -> x.AlertAll e
+        Action(a)
+
+    member private x.GetProtectedEventHandler (eventHandler : EventHandler) : EventHandler = 
+        let a sender e = 
+            try
+                eventHandler.Invoke(sender, e)
+            with
+            | e -> x.AlertAll e
+        EventHandler(a)
+
+    /// Alert all of the IExtensionErrorHandlers that the given Exception occurred.  Be careful to guard
+    /// against them for Exceptions as we are still on the dispatcher loop here and exceptions would be
+    /// fatal
+    member x.AlertAll e = 
+        for handler in x._errorHandlers do
+            try
+                handler.Value.HandleError(x, e)
+            with 
+            | e -> Debug.Fail((sprintf "Error handler threw: %O" e))
+
+    interface IProtectedOperations with
+        member x.BeginInvoke action =
+            let action = x.GetProtectedAction action
+            Dispatcher.CurrentDispatcher.BeginInvoke(action, null) |> ignore
+        member x.BeginInvoke(action, dispatcherPriority) = 
+            let action = x.GetProtectedAction action
+            Dispatcher.CurrentDispatcher.BeginInvoke(action, dispatcherPriority, null) |> ignore
+        member x.GetProtectedAction action = x.GetProtectedAction action
+        member x.GetProtectedEventHandler eventHandler = x.GetProtectedEventHandler eventHandler
+        member x.Report ex = x.AlertAll ex
+
+module EditorUtilsFactory =
+
+    let CreateAsyncTaggerRaw (asyncTaggerSource : IAsyncTaggerSource<'TData, 'TTag>) =
+        let tagger = new AsyncTagger<'TData, 'TTag>(asyncTaggerSource)
+        tagger :> ITagger<'TTag>
+
+    let CreateAsyncTagger propertyCollection (key : obj) (createFunc : Func<IAsyncTaggerSource<'TData, 'TTag>>) =
+        let createTagger () = 
+            let source = createFunc.Invoke()
+            CreateAsyncTaggerRaw source
+        let countedTagger = new CountedTagger<'TTag>(propertyCollection, key, createTagger)
+        countedTagger :> ITagger<'TTag>
+
+    let CreateAsyncClassifierRaw (asyncTaggerSource : IAsyncTaggerSource<'TData, IClassificationTag>) =
+        let tagger = CreateAsyncTaggerRaw asyncTaggerSource
+        let classifier = new Classifier(tagger)
+        classifier :> IClassifier
+
+    let CreateAsyncClassifier propertyCollection (key : obj) (createFunc : Func<IAsyncTaggerSource<'TData, IClassificationTag>>) =
+        let createClassifier () = 
+            let source = createFunc.Invoke()
+            CreateAsyncClassifierRaw source
+        let countedClassifier = new CountedClassifier(propertyCollection, key, createClassifier)
+        countedClassifier :> IClassifier
+
+    let CreateBasicTaggerRaw (basicTaggerSource : IBasicTaggerSource<'TTag>) =
+        let tagger = new BasicTagger<'TTag>(basicTaggerSource)
+        tagger :> ITagger<'TTag>
+
+    let CreateBasicTagger propertyCollection (key : obj) (createFunc : Func<IBasicTaggerSource<'TTag>>) =
+        let createTagger () = 
+            let source = createFunc.Invoke()
+            CreateBasicTaggerRaw source
+        let countedTagger = new CountedTagger<'TTag>(propertyCollection, key, createTagger)
+        countedTagger :> ITagger<'TTag>
+
+    let CreateBasicClassifierRaw (basicTaggerSource : IBasicTaggerSource<IClassificationTag>) =
+        let tagger = CreateBasicTaggerRaw basicTaggerSource
+        let classifier = new Classifier(tagger)
+        classifier :> IClassifier
+
+    let CreateBasicClassifier propertyCollection (key : obj) (createFunc : Func<IBasicTaggerSource<IClassificationTag>>) =
+        let createClassifier () = 
+            let source = createFunc.Invoke()
+            CreateBasicClassifierRaw source
+        let countedClassifier = new CountedClassifier(propertyCollection, key, createClassifier)
+        countedClassifier :> IClassifier
+
+    let CreateProtectedOperations (errorHandlers : Lazy<IExtensionErrorHandler> seq) =
+        let protectedOperations = ProtectedOperations(errorHandlers)
+        protectedOperations :> IProtectedOperations
+
+    let GetOrCreateOutliner (textBuffer : ITextBuffer) =
+        let outliner = AdhocOutliner.GetOrCreate textBuffer
+        outliner :> IAdhocOutliner
+
+    let CreateOutlinerTagger textBuffer = 
+        let createSource () =
+            let source = AdhocOutliner.GetOrCreate textBuffer
+            source :> IBasicTaggerSource<OutliningRegionTag>
+        let key = AdhocOutliner.GetOrCreate
+        CreateBasicTagger textBuffer.Properties AdhocOutliner.OutlinerTaggerKeyTemp (Func<IBasicTaggerSource<OutliningRegionTag>>(createSource))

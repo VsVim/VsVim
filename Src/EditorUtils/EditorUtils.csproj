@@ -49,10 +49,6 @@
   <ItemGroup>
     <Compile Include="Constants.cs" />
     <Compile Include="Extensions.cs" />
-    <Compile Include="Implementation\Utilities\ReadOnlyStack.cs" />
-    <Compile Include="Implementation\Utilities\EqualityUtility.cs" />
-    <Compile Include="Implementation\Utilities\ProtectedOperations.cs" />
-    <Compile Include="EditorUtilsFactory.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

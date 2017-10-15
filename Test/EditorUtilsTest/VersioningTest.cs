@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using Xunit;
 using System.Reflection;
 using System.ComponentModel.Composition;
+using Vim;
 
 namespace EditorUtils.UnitTest
 {

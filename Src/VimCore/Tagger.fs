@@ -9,6 +9,7 @@ open Microsoft.VisualStudio.Text.Operations
 open Microsoft.VisualStudio.Utilities
 open System.ComponentModel.Composition
 open System.Collections.ObjectModel
+open System
 open System.Threading
 open VimCoreExtensions
 
@@ -116,9 +117,10 @@ type internal IncrementalSearchTaggerProvider
                 match _vim.GetOrCreateVimBufferForHost textView with
                 | None -> null
                 | Some vimBuffer ->
-                    let tagger = EditorUtilsFactory.CreateTagger(textView.Properties, _key, fun () -> 
+                    let func () = 
                         let taggerSource = new IncrementalSearchTaggerSource(vimBuffer)
-                        taggerSource :> IBasicTaggerSource<TextMarkerTag>)
+                        taggerSource :> IBasicTaggerSource<TextMarkerTag>
+                    let tagger = EditorUtilsFactory.CreateBasicTagger textView.Properties _key (Func<IBasicTaggerSource<TextMarkerTag>>(func))
                     tagger :> obj :?> ITagger<'T>
             else
                 null
@@ -288,10 +290,11 @@ type HighlightIncrementalSearchTaggerProvider
                 match _vim.GetOrCreateVimBufferForHost textView with
                 | None -> null
                 | Some vimBuffer ->
-                    let tagger = EditorUtilsFactory.CreateTagger(textView.Properties, _key, fun () ->
+                    let func () = 
                         let wordNavigator = vimBuffer.WordNavigator
                         let taggerSource = new HighlightSearchTaggerSource(textView, vimBuffer.GlobalSettings, _vim.VimData, _vim.VimHost)
-                        taggerSource :> IAsyncTaggerSource<HighlightSearchData , TextMarkerTag>)
+                        taggerSource :> IAsyncTaggerSource<HighlightSearchData , TextMarkerTag>
+                    let tagger = EditorUtilsFactory.CreateAsyncTagger textView.Properties _key (Func<IAsyncTaggerSource<HighlightSearchData, TextMarkerTag>>(func))
                     tagger :> obj :?> ITagger<'T>
             else
                 null
@@ -353,9 +356,10 @@ type SubstituteConfirmTaggerProvider
                 match _vim.GetOrCreateVimBufferForHost textView with
                 | None -> null
                 | Some vimBuffer ->
-                    let tagger = EditorUtilsFactory.CreateTagger(textView.Properties, _key, fun () ->
+                    let func () =
                         let taggerSource = new SubstituteConfirmTaggerSource(textBuffer, vimBuffer.SubstituteConfirmMode)
-                        taggerSource :> IBasicTaggerSource<TextMarkerTag>)
+                        taggerSource :> IBasicTaggerSource<TextMarkerTag>
+                    let tagger = EditorUtilsFactory.CreateBasicTagger textView.Properties _key (Func<IBasicTaggerSource<TextMarkerTag>>(func))
                     tagger :> obj :?> ITagger<'T>
             else
                 null
@@ -412,10 +416,11 @@ type FoldTaggerProvider
 
     interface ITaggerProvider with 
         member x.CreateTagger<'T when 'T :> ITag> textBuffer =
-            let tagger = EditorUtilsFactory.CreateTagger(textBuffer.Properties, _key, fun() ->
+            let func () =
                 let foldData = _factory.GetFoldData textBuffer
                 let taggerSource = new FoldTaggerSource(foldData)
-                taggerSource :> IBasicTaggerSource<OutliningRegionTag>)
+                taggerSource :> IBasicTaggerSource<OutliningRegionTag>
+            let tagger = EditorUtilsFactory.CreateBasicTagger textBuffer.Properties _key (Func<IBasicTaggerSource<OutliningRegionTag>>(func))
             tagger :> obj :?> ITagger<'T>
 
 
