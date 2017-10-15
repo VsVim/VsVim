@@ -27,7 +27,6 @@ namespace EditorUtils
 
         public static SnapshotSpan CreateOverarching(this SnapshotSpan left, SnapshotSpan right)
         {
-            Contract.Requires(left.Snapshot == right.Snapshot);
             var span = left.Span.CreateOverarching(right.Span);
             return new SnapshotSpan(left.Snapshot, span);
         }

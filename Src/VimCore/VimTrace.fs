@@ -39,4 +39,3 @@ type VimTrace() =
         let msg = _prefixError + msg
         Trace.WriteLineIf(VimTrace.TraceSwitch.TraceError, msg)
 
-

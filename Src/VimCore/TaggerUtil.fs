@@ -17,7 +17,6 @@ open System.Runtime.InteropServices
 open System.Collections
 open System.Collections.Generic
 open System.Threading
-open Vim.ToDelete
 open System.Net
 open System.Threading.Tasks
 open System.Windows.Threading
@@ -47,13 +46,13 @@ module TaggerUtil =
             let requestSnapshot = requestSpan.Snapshot
             if cachedSnapshot = requestSnapshot then
                 // Same snapshot so we just need the overarching SnapshotSpan
-                EditorUtil.CreateOverarching cachedRequestSpan requestSpan
+                SnapshotSpanUtil.CreateOverarching cachedRequestSpan requestSpan
             elif cachedSnapshot.Version.VersionNumber < requestSnapshot.Version.VersionNumber then
                 // Request for a span on a new ITextSnapshot.  Translate the old SnapshotSpan
                 // to the new ITextSnapshot and get the overarching value 
                 let trackingSpan = cachedSnapshot.CreateTrackingSpan(cachedRequestSpan.Span, SpanTrackingMode.EdgeInclusive)
                 match TrackingSpanUtil.GetSpan requestSnapshot trackingSpan with
-                | Some s -> EditorUtil.CreateOverarching s requestSpan
+                | Some s -> SnapshotSpanUtil.CreateOverarching s requestSpan
                 | None ->
                     // If we can't translate the previous SnapshotSpan forward then simply use the 
                     // entire ITextSnapshot.  This is a correct value, it just has the potential for
@@ -548,7 +547,7 @@ type internal TrackingCacheData<'TTag when 'TTag :> ITag>
         let right = TrackingSpanUtil.GetSpan snapshot trackingCacheData.TrackingSpan
         let span = 
             match (left, right) with
-            | Some left, Some right -> EditorUtil.CreateOverarching left right
+            | Some left, Some right -> SnapshotSpanUtil.CreateOverarching left right
             | Some left, None -> left
             | None, Some right -> right
             | None, None -> SnapshotSpan(snapshot, 0, 0)
@@ -887,7 +886,7 @@ type internal AsyncTagger<'TData, 'TTag when 'TTag :> ITag>
                 // If there is an ITextView then make sure it is requested as well.  If the source provides an 
                 // ITextView then it is always prioritized on requests for a new snapshot
                 if _asyncTaggerSource.TextViewOptional <> null then
-                    match EditorUtilPort.GetVisibleSnapshotLineRange _asyncTaggerSource.TextViewOptional with
+                    match TextViewUtil.GetVisibleSnapshotLineRange _asyncTaggerSource.TextViewOptional with
                     | Some r -> channel.WriteVisibleLines r
                     | None -> ()
 
@@ -1116,7 +1115,7 @@ type internal AsyncTagger<'TData, 'TTag when 'TTag :> ITag>
             match _asyncBackgroundRequest with
             | None -> ()
             | Some asyncBackgroundRequest ->
-                match EditorUtilPort.GetVisibleSnapshotLineRange _asyncTaggerSource.TextViewOptional with
+                match TextViewUtil.GetVisibleSnapshotLineRange _asyncTaggerSource.TextViewOptional with
                 | None -> ()
                 | Some visibleLineRange ->
                     if visibleLineRange.Snapshot = asyncBackgroundRequest.Snapshot then

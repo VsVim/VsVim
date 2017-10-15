@@ -40,6 +40,7 @@
   <Import Project="$(FSharpTargetsPath)" />
   <ItemGroup>
     <Compile Include="Resources.fs" />
+    <Compile Include="VimTrace.fs" />
     <Compile Include="Constants.fs" />
     <Compile Include="FSharpUtil.fs" />
     <Compile Include="StringUtil.fs" />
@@ -52,6 +53,7 @@
     <Compile Include="Register.fs" />
     <Compile Include="VimSettingsInterface.fs" />
     <Compile Include="Interpreter_Expression.fs" />
+    <Compile Include="TaggingInterfaces.fs" />
     <Compile Include="CoreInterfaces.fs" />
     <Compile Include="CoreInternalInterfaces.fs" />
     <Compile Include="TextUtil.fsi" />
@@ -100,6 +102,8 @@
     <Compile Include="CommandUtil.fs" />
     <Compile Include="InsertUtil.fsi" />
     <Compile Include="InsertUtil.fs" />
+    <Compile Include="TaggerUtil.fsi" />
+    <Compile Include="TaggerUtil.fs" />
     <Compile Include="Tagger.fsi" />
     <Compile Include="Tagger.fs" />
     <Compile Include="SelectionChangeTracker.fsi" />
@@ -169,12 +173,5 @@
     <Reference Include="WindowsBase" />
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\VimCorePort\VimCorePort.fsproj">
-      <Name>VimCorePort</Name>
-      <Project>{a5aa1d42-18ab-4c26-b5e5-b63d89d289b5}</Project>
-      <Private>True</Private>
-    </ProjectReference>
   </ItemGroup>
 </Project>
