@@ -4,7 +4,7 @@ using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Operations;
 using Vim;
-using EditorUtils;
+using Vim.EditorHost;
 using System;
 using System.Windows.Input;
 using Microsoft.VisualStudio.Utilities;

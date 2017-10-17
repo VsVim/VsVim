@@ -16,7 +16,7 @@ using Microsoft.Win32;
 using System.IO;
 using Microsoft.VisualStudio.Text.Classification;
 
-namespace EditorUtils
+namespace Vim.EditorHost
 {
     /// <summary>
     /// Base class for hosting editor components.  This is primarily used for unit 

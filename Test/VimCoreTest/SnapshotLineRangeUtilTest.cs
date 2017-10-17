@@ -2,7 +2,7 @@
 using Microsoft.VisualStudio.Text;
 using Vim.Extensions;
 using Xunit;
-using EditorUtils;
+using Vim.EditorHost;
 
 namespace Vim.UnitTest
 {

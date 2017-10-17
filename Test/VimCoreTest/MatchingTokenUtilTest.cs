@@ -1,5 +1,5 @@
 ﻿using System.Collections.Generic;
-using EditorUtils;
+using Vim.EditorHost;
 using Microsoft.VisualStudio.Text;
 using Vim.Extensions;
 using Xunit;

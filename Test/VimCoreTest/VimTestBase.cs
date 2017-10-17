@@ -4,7 +4,7 @@ using System.ComponentModel.Composition.Hosting;
 using System.ComponentModel.Composition.Primitives;
 using System.Diagnostics;
 using System.Linq;
-using EditorUtils;
+using Vim.EditorHost;
 using Microsoft.FSharp.Collections;
 using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text;
@@ -230,6 +230,12 @@ namespace Vim.UnitTest
             // Don't show trace information in the unit tests.  It really clutters the output in an
             // xUnit run
             VimTrace.TraceSwitch.Level = TraceLevel.Off;
+
+            var context = SynchronizationContext.Current;
+            if (context != null && context.GetType() != typeof(SynchronizationContext))
+            {
+                throw new Exception("Bad SynchronizationContext detected on test start: " + context.GetType());
+            }
         }
 
         public virtual void Dispose()
@@ -299,7 +305,7 @@ namespace Vim.UnitTest
             var context = SynchronizationContext.Current;
             if (context != null && context.GetType() != typeof(SynchronizationContext))
             {
-                throw new Exception("Bad SynchronizationContext detected: " + context.GetType());
+                throw new Exception("Bad SynchronizationContext detected on test end: " + context.GetType());
             }
         }
 

@@ -4,7 +4,7 @@ using System.Linq;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Input;
-using EditorUtils;
+using Vim.EditorHost;
 using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;

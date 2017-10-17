@@ -35,23 +35,5 @@ namespace Vim.UnitTest
 
             return list;
         }
-
-        /// <summary>
-        /// Make sure there are no Import values in the system.  EditorUtils does not use MEF hence 
-        /// there can be no [ImportingConstructors]
-        /// </summary>
-        [Fact]
-        public void EnsureNoImportingConstructors()
-        {
-            var assembly = typeof(TaggerUtil).Assembly;
-            foreach (var cur in GetAllTypes())
-            {
-                foreach (var constructorInfo in cur.GetConstructors(BindingFlags.Public | BindingFlags.NonPublic))
-                {
-                    var all = constructorInfo.GetCustomAttributes(typeof(ImportingConstructorAttribute), false);
-                    Assert.Equal(0, all.Count());
-                }
-            }
-        }
     }
 }

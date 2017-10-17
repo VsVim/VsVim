@@ -1,10 +1,11 @@
-﻿using System;
+﻿#if VS2017
+using System;
 using System.ComponentModel.Composition;
 using System.ComponentModel.Composition.Primitives;
 using Microsoft.VisualStudio.Language.Intellisense.Utilities;
 using System.Threading;
 
-namespace EditorUtils
+namespace Vim.EditorHost.Implementation.Misc
 {
     [Export(typeof(IWaitIndicator))]
     internal sealed class BasicWaitIndicator : IWaitIndicator
@@ -72,3 +73,4 @@ namespace EditorUtils
         }
     }
 }
+#endif

@@ -3,7 +3,7 @@ using System.ComponentModel.Composition;
 using System.Runtime.CompilerServices;
 using Microsoft.VisualStudio.Text.Operations;
 
-namespace EditorUtils.Implementation.BasicUndo
+namespace Vim.EditorHost.Implementation.BasicUndo
 {
     /// <summary>
     /// This class is intended to be a very simple ITextUndoHistoryRegistry implementation for hosts that

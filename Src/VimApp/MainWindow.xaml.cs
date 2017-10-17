@@ -18,7 +18,7 @@ using System.Collections.ObjectModel;
 using Microsoft.Win32;
 using Microsoft.VisualStudio.Utilities;
 using IOPath = System.IO.Path;
-using EditorUtils;
+using Vim.EditorHost;
 using Microsoft.VisualStudio.Text.Operations;
 
 namespace VimApp

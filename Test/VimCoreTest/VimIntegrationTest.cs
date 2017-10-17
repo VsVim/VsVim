@@ -7,7 +7,7 @@ using Vim.Extensions;
 using Xunit.Extensions;
 using Microsoft.FSharp.Core;
 using Vim.UnitTest.Mock;
-using EditorUtils;
+using Vim.EditorHost;
 
 namespace Vim.UnitTest
 {

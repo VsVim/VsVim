@@ -10,18 +10,19 @@ using Microsoft.VisualStudio.Text.Projection;
 using Microsoft.VisualStudio.Utilities;
 using System.Reflection;
 using Vim;
-using EditorUtils;
+using Vim.EditorHost;
+using EditorHost = global::Vim.EditorHost.EditorHost;
 
 namespace Vim.UnitTest
 {
     public abstract class EditorHostTest : IDisposable
     {
-        private static EditorHost EditorHostCache;
+        private static EditorHost.EditorHost EditorHostCache;
 
-        private readonly EditorHost _editorHost;
+        private readonly EditorHost.EditorHost _editorHost;
         private readonly TestableSynchronizationContext _synchronizationContext;
 
-        public EditorHost EditorHost
+        public EditorHost.EditorHost EditorHost
         {
             get { return _editorHost; }
         }
@@ -108,12 +109,12 @@ namespace Vim.UnitTest
             _synchronizationContext.Install();
         }
 
-        protected virtual void Dispose()
+        protected void Dispose()
         {
             _synchronizationContext.Uninstall();
         }
 
-        private EditorHost GetOrCreateEditorHost()
+        private EditorHost.EditorHost GetOrCreateEditorHost()
         {
             if (EditorHostCache != null)
             {

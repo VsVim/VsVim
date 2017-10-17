@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using Microsoft.VisualStudio.Text.Operations;
 
-namespace EditorUtils.Implementation.BasicUndo
+namespace Vim.EditorHost.Implementation.BasicUndo
 {
     internal sealed class BasicUndoTransaction : ITextUndoTransaction
     {

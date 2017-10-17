@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Linq;
 using EnvDTE;
-using EditorUtils;
+using Vim.EditorHost;
 using Microsoft.VisualStudio.Editor;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;

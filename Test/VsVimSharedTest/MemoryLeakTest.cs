@@ -4,7 +4,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel.Composition;
 using System.ComponentModel.Composition.Hosting;
 using System.Windows.Threading;
-using EditorUtils;
+using Vim.EditorHost;
 using EnvDTE;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.Editor;

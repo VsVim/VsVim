@@ -5,7 +5,7 @@ using System.Text;
 using Microsoft.VisualStudio.OLE.Interop;
 using Microsoft.VisualStudio.Text.Editor;
 using Vim;
-using EditorUtils;
+using Vim.EditorHost;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.Text;
 

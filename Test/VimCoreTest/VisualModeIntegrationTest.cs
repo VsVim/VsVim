@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Threading;
-using EditorUtils;
+using Vim.EditorHost;
 using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;

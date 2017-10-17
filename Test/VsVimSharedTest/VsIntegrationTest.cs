@@ -1,4 +1,4 @@
-﻿using EditorUtils;
+﻿using Vim.EditorHost;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Vim;

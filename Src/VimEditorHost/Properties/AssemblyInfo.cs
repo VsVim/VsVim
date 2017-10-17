@@ -1,15 +1,15 @@
 ﻿using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using EditorUtils;
+using Vim.EditorHost;
 
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("EditorUtils")]
+[assembly: AssemblyTitle("EditorHost")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyProduct("EditorUtils")]
+[assembly: AssemblyProduct("EditorHost")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
@@ -33,6 +33,5 @@ using EditorUtils;
 // [assembly: AssemblyVersion("1.0.*")]
 [assembly: AssemblyVersion("1.0.0.0")]
 [assembly: AssemblyFileVersion("1.0.0.0")]
-[assembly: InternalsVisibleTo("EditorUtils.UnitTest")]
 [assembly: InternalsVisibleTo("Vim.Core.UnitTest")]
 

@@ -13,7 +13,7 @@ using Vim;
 using Vim.Extensions;
 using AsyncTaggerType = Vim.AsyncTagger<string, Microsoft.VisualStudio.Text.Tagging.TextMarkerTag>;
 using Microsoft.FSharp.Core;
-using EditorUtils;
+using Vim.EditorHost;
 
 namespace Vim.UnitTest
 {

@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.ComponentModel.Composition.Hosting;
 using System.ComponentModel.Composition.Primitives;
-using EditorUtils;
+using Vim.EditorHost;
 using Microsoft.VisualStudio.Text;
 using Vim;
 using Vim.UI.Wpf;

@@ -6,7 +6,7 @@ using Xunit;
 using Vim;
 using Vim.UnitTest;
 using Vim.VisualStudio.Implementation.Misc;
-using EditorUtils;
+using Vim.EditorHost;
 
 namespace Vim.VisualStudio.UnitTest
 {

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel.Composition.Hosting;
 using System.Linq;
 using System.Text;
-using EditorUtils;
+using Vim.EditorHost;
 using Microsoft.VisualStudio.Text.Classification;
 using Vim.UI.Wpf;
 using Vim.UnitTest.Mock;
@@ -11,7 +11,7 @@ using Microsoft.VisualStudio.Text;
 
 namespace Vim.UnitTest
 {
-    public sealed class VimEditorHost : EditorHost
+    public sealed class VimEditorHost : EditorHost.EditorHost
     {
         private readonly IVim _vim;
         private readonly IVimBufferFactory _vimBufferFactory;
