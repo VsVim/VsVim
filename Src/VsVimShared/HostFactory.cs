@@ -39,7 +39,7 @@ namespace Vim.VisualStudio
         private readonly IVsEditorAdaptersFactoryService _adaptersFactory;
         private readonly ITextManager _textManager;
         private readonly IVsAdapter _adapter;
-        private readonly IVimProtectedOperations _protectedOperations;
+        private readonly IProtectedOperations _protectedOperations;
         private readonly IVimBufferCoordinatorFactory _bufferCoordinatorFactory;
         private readonly IKeyUtil _keyUtil;
         private readonly IEditorToSettingsSynchronizer _editorToSettingSynchronizer;
@@ -52,7 +52,7 @@ namespace Vim.VisualStudio
             IDisplayWindowBrokerFactoryService displayWindowBrokerFactoryService,
             ITextManager textManager,
             IVsAdapter adapter,
-            IVimProtectedOperations protectedOperations,
+            IProtectedOperations protectedOperations,
             IVimBufferCoordinatorFactory bufferCoordinatorFactory,
             IKeyUtil keyUtil,
             IEditorToSettingsSynchronizer editorToSettingSynchronizer,

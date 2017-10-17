@@ -12,7 +12,7 @@ namespace Vim.VisualStudio.Implementation.ExternalEdit
     internal sealed class ExternalEditorManager : IVimBufferCreationListener
     {
         private readonly IVimApplicationSettings _vimApplicationSettings;
-        private readonly IVimProtectedOperations _protectedOperations;
+        private readonly IProtectedOperations _protectedOperations;
         private readonly IVsAdapter _vsAdapter;
         private readonly List<IExternalEditAdapter> _adapterList = new List<IExternalEditAdapter>();
         private readonly Dictionary<IVimBuffer, ExternalEditMonitor> _monitorMap = new Dictionary<IVimBuffer, ExternalEditMonitor>();
@@ -21,7 +21,7 @@ namespace Vim.VisualStudio.Implementation.ExternalEdit
         internal ExternalEditorManager(
             IVimApplicationSettings vimApplicationSettings,
             IVsAdapter vsAdapter,
-            IVimProtectedOperations protectedOperations,
+            IProtectedOperations protectedOperations,
             [ImportMany] IEnumerable<IExternalEditAdapter> adapters)
         {
             _vimApplicationSettings = vimApplicationSettings;

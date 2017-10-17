@@ -197,11 +197,6 @@ namespace Vim.UnitTest
             get { return Vim.VariableMap; }
         }
 
-        public IVimProtectedOperations VimProtectedOperations
-        {
-            get { return _vimEditorHost.VimProtectedOperations; }
-        }
-
         public IVimErrorDetector VimErrorDetector
         {
             get { return _vimEditorHost.VimErrorDetector; }
@@ -471,7 +466,6 @@ namespace Vim.UnitTest
                     typeof(DisplayWindowBrokerFactoryService),
                     typeof(WordCompletionSessionFactoryService),
                     typeof(AlternateKeyUtil),
-                    typeof(VimProtectedOperations),
                     typeof(OutlinerTaggerProvider)));
 
                 var compositionContainer = editorHostFactory.CreateCompositionContainer();

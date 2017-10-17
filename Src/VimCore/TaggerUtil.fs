@@ -725,8 +725,10 @@ type internal AsyncTagger<'TData, 'TTag when 'TTag :> ITag>
         // If there is an ITextView associated with the IAsyncTaggerSource then we want to 
         // listen to LayoutChanges.  If the layout changes while we are getting tags we want
         // to prioritize the visible lines
-        if _asyncTaggerSource.TextViewOptional <> null then
-            _asyncTaggerSource.TextViewOptional.LayoutChanged
+        match _asyncTaggerSource.TextView with
+        | None -> ()
+        | Some textView ->
+            textView.LayoutChanged
             |> Observable.subscribe (fun _ -> this.OnLayoutChanged())
             |> _eventHandlers.Add
 
@@ -854,7 +856,6 @@ type internal AsyncTagger<'TData, 'TTag when 'TTag :> ITag>
 
     /// Get the tags for the specified SnapshotSpan in a background task.  If there are outstanding
     /// requests for SnapshotSpan values then this one will take priority over those 
-    /// PTODO just take a SnapshotLineRange here 
     member x.GetTagsInBackground (span : SnapshotSpan) =
         let synchronizationContext = SynchronizationContext.Current
         if synchronizationContext <> null then
@@ -885,8 +886,10 @@ type internal AsyncTagger<'TData, 'TTag when 'TTag :> ITag>
 
                 // If there is an ITextView then make sure it is requested as well.  If the source provides an 
                 // ITextView then it is always prioritized on requests for a new snapshot
-                if _asyncTaggerSource.TextViewOptional <> null then
-                    match TextViewUtil.GetVisibleSnapshotLineRange _asyncTaggerSource.TextViewOptional with
+                match _asyncTaggerSource.TextView with 
+                | None -> ()
+                | Some textView ->
+                    match TextViewUtil.GetVisibleSnapshotLineRange textView with
                     | Some r -> channel.WriteVisibleLines r
                     | None -> ()
 
@@ -918,8 +921,9 @@ type internal AsyncTagger<'TData, 'TTag when 'TTag :> ITag>
                 // specified use it
                 let localDelay = _asyncTaggerSource.Delay;
                 let taskAction () =
-                    if localDelay.HasValue then
-                        Thread.Sleep localDelay.Value
+                    match localDelay with
+                    | Some delay -> Thread.Sleep delay
+                    | None -> ()
 
                     getTags();
 
@@ -1023,7 +1027,6 @@ type internal AsyncTagger<'TData, 'TTag when 'TTag :> ITag>
                         // priority over the old ones
                         while toProcess.Count > 0 && versionNumber = channel.CurrentVersion do
 
-                            // PTODO: doesnt seem right to throw here 
                             cancellationToken.ThrowIfCancellationRequested();
                             let lineRange = toProcess.Dequeue()
                             getTags lineRange
@@ -1111,15 +1114,14 @@ type internal AsyncTagger<'TData, 'TTag when 'TTag :> ITag>
     /// If the Layout changes while we are in the middle of getting tags we want to 
     /// prioritize the new set of visible lines.
     member private x.OnLayoutChanged() =
-        if _asyncTaggerSource.TextViewOptional <> null then
-            match _asyncBackgroundRequest with
+        match _asyncTaggerSource.TextView, _asyncBackgroundRequest with
+        | Some textView, Some asyncBackgroundRequest ->
+            match TextViewUtil.GetVisibleSnapshotLineRange textView with
             | None -> ()
-            | Some asyncBackgroundRequest ->
-                match TextViewUtil.GetVisibleSnapshotLineRange _asyncTaggerSource.TextViewOptional with
-                | None -> ()
-                | Some visibleLineRange ->
-                    if visibleLineRange.Snapshot = asyncBackgroundRequest.Snapshot then
-                        asyncBackgroundRequest.Channel.WriteVisibleLines visibleLineRange
+            | Some visibleLineRange ->
+                if visibleLineRange.Snapshot = asyncBackgroundRequest.Snapshot then
+                    asyncBackgroundRequest.Channel.WriteVisibleLines visibleLineRange
+        | _ -> ()
 
     /// Is the async operation with the specified CancellationTokenSource the active 
     /// background request
@@ -1196,63 +1198,6 @@ type internal AsyncTagger<'TData, 'TTag when 'TTag :> ITag>
     interface IDisposable with
         member x.Dispose() = x.Dispose()
 
-/// Implements the safe dispatching interface which prevents application crashes for 
-/// exceptions reaching the dispatcher loop
-/// PTODO: can this just merge with VimProtectedOperations? 
-type internal ProtectedOperations =
-
-    val _errorHandlers : List<Lazy<IExtensionErrorHandler>>
-
-    new (errorHandlers : Lazy<IExtensionErrorHandler> seq) = 
-        { _errorHandlers = errorHandlers |> GenericListUtil.OfSeq }
-
-    new (errorHandler : IExtensionErrorHandler) = 
-        let l = Lazy<IExtensionErrorHandler>(fun _ -> errorHandler)
-        let list = l |> Seq.singleton |> GenericListUtil.OfSeq
-        { _errorHandlers = list }
-
-    new () =
-        { _errorHandlers = Seq.empty |> GenericListUtil.OfSeq }
-
-    /// Produce a delegate that can safely execute the given action.  If it throws an exception 
-    /// then make sure to alert the error handlers
-    member private x.GetProtectedAction (action  : Action) : Action =
-        let a () = 
-            try
-                action.Invoke()
-            with
-            | e -> x.AlertAll e
-        Action(a)
-
-    member private x.GetProtectedEventHandler (eventHandler : EventHandler) : EventHandler = 
-        let a sender e = 
-            try
-                eventHandler.Invoke(sender, e)
-            with
-            | e -> x.AlertAll e
-        EventHandler(a)
-
-    /// Alert all of the IExtensionErrorHandlers that the given Exception occurred.  Be careful to guard
-    /// against them for Exceptions as we are still on the dispatcher loop here and exceptions would be
-    /// fatal
-    member x.AlertAll e = 
-        for handler in x._errorHandlers do
-            try
-                handler.Value.HandleError(x, e)
-            with 
-            | e -> Debug.Fail((sprintf "Error handler threw: %O" e))
-
-    interface IProtectedOperations with
-        member x.BeginInvoke action =
-            let action = x.GetProtectedAction action
-            Dispatcher.CurrentDispatcher.BeginInvoke(action, null) |> ignore
-        member x.BeginInvoke(action, dispatcherPriority) = 
-            let action = x.GetProtectedAction action
-            Dispatcher.CurrentDispatcher.BeginInvoke(action, dispatcherPriority, null) |> ignore
-        member x.GetProtectedAction action = x.GetProtectedAction action
-        member x.GetProtectedEventHandler eventHandler = x.GetProtectedEventHandler eventHandler
-        member x.Report ex = x.AlertAll ex
-
 module EditorUtilsFactory =
 
     let CreateAsyncTaggerRaw (asyncTaggerSource : IAsyncTaggerSource<'TData, 'TTag>) =
@@ -1300,10 +1245,6 @@ module EditorUtilsFactory =
             CreateBasicClassifierRaw source
         let countedClassifier = new CountedClassifier(propertyCollection, key, createClassifier)
         countedClassifier :> IClassifier
-
-    let CreateProtectedOperations (errorHandlers : Lazy<IExtensionErrorHandler> seq) =
-        let protectedOperations = ProtectedOperations(errorHandlers)
-        protectedOperations :> IProtectedOperations
 
     let GetOrCreateOutliner (textBuffer : ITextBuffer) =
         let outliner = AdhocOutliner.GetOrCreate textBuffer

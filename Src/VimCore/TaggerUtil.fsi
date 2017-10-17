@@ -38,9 +38,6 @@ module EditorUtilsFactory =
     /// Create an IClassifieer implementation for the IBasicTaggerSource.
     val CreateBasicClassifier : PropertyCollection -> obj -> Func<IBasicTaggerSource<IClassificationTag>> -> IClassifier
 
-    /// Create an IProtectedOperations instance 
-    val CreateProtectedOperations : Lazy<IExtensionErrorHandler> seq -> IProtectedOperations
-
     /// Get or create the IAdhocOutliner instance for the given ITextBuffer.  This return will be useless 
     /// unless the code which calls this method exports an ITaggerProvider which proxies the return 
     /// of GetOrCreateOutlinerTagger

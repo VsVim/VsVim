@@ -36,7 +36,7 @@ namespace Vim.VisualStudio.Implementation.Settings
         internal const string ErrorSetFormat = "Cannot set setting {0}";
 
         private readonly WritableSettingsStore _settingsStore;
-        private readonly IVimProtectedOperations _protectedOperations;
+        private readonly IProtectedOperations _protectedOperations;
 
         internal event EventHandler<ApplicationSettingsEventArgs> SettingsChanged;
 
@@ -52,12 +52,12 @@ namespace Vim.VisualStudio.Implementation.Settings
         [ImportingConstructor]
         internal VimApplicationSettings(
             SVsServiceProvider vsServiceProvider,
-            IVimProtectedOperations protectedOperations)
+            IProtectedOperations protectedOperations)
             : this(vsServiceProvider.GetVisualStudioVersion(), vsServiceProvider.GetWritableSettingsStore(), protectedOperations)
         {
         }
 
-        internal VimApplicationSettings(VisualStudioVersion visualStudioVersion, WritableSettingsStore settingsStore, IVimProtectedOperations protectedOperations)
+        internal VimApplicationSettings(VisualStudioVersion visualStudioVersion, WritableSettingsStore settingsStore, IProtectedOperations protectedOperations)
         {
             _settingsStore = settingsStore;
             _protectedOperations = protectedOperations;

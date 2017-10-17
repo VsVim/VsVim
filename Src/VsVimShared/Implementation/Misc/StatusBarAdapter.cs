@@ -20,13 +20,13 @@ namespace Vim.VisualStudio.Implementation.Misc
     {
         private readonly ICommandMarginUtil _commandMarginUtil;
         private readonly IVsStatusbar _vsStatusbar;
-        private readonly IVimProtectedOperations _vimProtectedOperations;
+        private readonly IProtectedOperations _vimProtectedOperations;
         private readonly IVim _vim;
         private readonly IVimApplicationSettings _vimApplicationSettings;
         private readonly DispatcherTimer _timer;
 
         [ImportingConstructor]
-        internal StatusBarAdapter(IVim vim, IVimProtectedOperations vimProtectedOperations, ICommandMarginUtil commandMarginUtil, IVimApplicationSettings vimApplicationSettings, SVsServiceProvider vsServiceProvider)
+        internal StatusBarAdapter(IVim vim, IProtectedOperations vimProtectedOperations, ICommandMarginUtil commandMarginUtil, IVimApplicationSettings vimApplicationSettings, SVsServiceProvider vsServiceProvider)
         {
             _vim = vim;
             _vimProtectedOperations = vimProtectedOperations;

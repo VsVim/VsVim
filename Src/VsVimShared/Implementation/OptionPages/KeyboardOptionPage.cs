@@ -54,7 +54,7 @@ namespace Vim.VisualStudio.Implementation.OptionPages
             var vim = exportProvider.GetExportedValue<IVim>();
             var keyBindingService = exportProvider.GetExportedValue<IKeyBindingService>();
 
-            return new KeyboardSettingsControl(vim, keyBindingService, exportProvider.GetExportedValue<IVimApplicationSettings>(), exportProvider.GetExportedValue<IVimProtectedOperations>());
+            return new KeyboardSettingsControl(vim, keyBindingService, exportProvider.GetExportedValue<IVimApplicationSettings>(), exportProvider.GetExportedValue<IProtectedOperations>());
         }
     }
 }

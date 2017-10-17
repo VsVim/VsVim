@@ -217,7 +217,7 @@ namespace Vim.VisualStudio.UnitTest
         #endregion
 
         private readonly MockRepository _factory;
-        private readonly Mock<IVimProtectedOperations> _protectedOperations;
+        private readonly Mock<IProtectedOperations> _protectedOperations;
         private readonly IVimApplicationSettings _vimApplicationSettings;
         private readonly VimApplicationSettings _vimApplicationSettingsRaw;
         private readonly WritableSettingsStore _writableSettingsStore;
@@ -226,7 +226,7 @@ namespace Vim.VisualStudio.UnitTest
         {
             settingsStore = settingsStore ?? new SimpleWritableSettingsStore();
             _factory = new MockRepository(MockBehavior.Strict);
-            _protectedOperations = _factory.Create<IVimProtectedOperations>();
+            _protectedOperations = _factory.Create<IProtectedOperations>();
             _vimApplicationSettingsRaw = new VimApplicationSettings(visualStudioVersion, settingsStore, _protectedOperations.Object);
             _vimApplicationSettings = _vimApplicationSettingsRaw;
             _writableSettingsStore = settingsStore;

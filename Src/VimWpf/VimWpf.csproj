@@ -72,7 +72,6 @@
     <Compile Include="Implementation\BlockCaret\BlockCaretController.cs" />
     <Compile Include="Implementation\BlockCaret\BlockCaretFormatDefinition.cs" />
     <Compile Include="Implementation\CommandMargin\CommandMarginFormatDefinition.cs" />
-    <Compile Include="Implementation\Misc\VimProtectedOperations.cs" />
     <Compile Include="Implementation\Mouse\VimMouseProcessor.cs" />
     <Compile Include="Implementation\Mouse\VimMouseProcessorProvider.cs" />
     <Compile Include="Implementation\Paste\PasteAdornment.cs" />
@@ -98,7 +97,6 @@
     <Compile Include="Implementation\Misc\MouseDeviceImpl.cs" />
     <Compile Include="Implementation\WordCompletion\WordCompletionSession.cs" />
     <Compile Include="Implementation\WordCompletion\WordCompletionSet.cs" />
-    <Compile Include="IVimProtectedOperations.cs" />
     <Compile Include="VimKeyProcessor.cs" />
     <Compile Include="NativeMethods.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

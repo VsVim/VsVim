@@ -93,14 +93,14 @@ namespace EditorUtils.UnitTest
 
             #region IAsyncTaggerSource
 
-            int? IAsyncTaggerSource<string, TextMarkerTag>.Delay
+            FSharpOption<int> IAsyncTaggerSource<string, TextMarkerTag>.Delay
             {
-                get { return Delay; }
+                get { return FSharpOption.CreateForNullable(Delay); }
             }
 
-            ITextView IAsyncTaggerSource<string, TextMarkerTag>.TextViewOptional
+            FSharpOption<ITextView> IAsyncTaggerSource<string, TextMarkerTag>.TextView
             {
-                get { return TextView; }
+                get { return FSharpOption.CreateForReference(TextView); }
             }
 
             string IAsyncTaggerSource<string, TextMarkerTag>.GetDataForSnapshot(ITextSnapshot snapshot)
