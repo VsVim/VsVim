@@ -10,8 +10,9 @@ using Microsoft.VisualStudio.Text.Projection;
 using Microsoft.VisualStudio.Utilities;
 using System.Reflection;
 using Vim;
+using EditorUtils;
 
-namespace EditorUtils.UnitTest
+namespace Vim.UnitTest
 {
     public abstract class EditorHostTest : IDisposable
     {

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Threading;
 using EditorUtils;
 
-namespace EditorUtils.UnitTest
+namespace Vim.UnitTest
 {
     public sealed class TestableSynchronizationContext : SynchronizationContext
     {

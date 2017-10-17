@@ -15,7 +15,6 @@ using Microsoft.VisualStudio.Utilities;
 using Microsoft.Win32;
 using System.IO;
 using Microsoft.VisualStudio.Text.Classification;
-using EditorUtils.Host;
 
 namespace EditorUtils
 {

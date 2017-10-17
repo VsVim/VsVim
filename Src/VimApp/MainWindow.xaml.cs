@@ -20,7 +20,6 @@ using Microsoft.VisualStudio.Utilities;
 using IOPath = System.IO.Path;
 using EditorUtils;
 using Microsoft.VisualStudio.Text.Operations;
-using EditorUtils.Host;
 
 namespace VimApp
 {

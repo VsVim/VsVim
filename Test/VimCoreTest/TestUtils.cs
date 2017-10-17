@@ -7,7 +7,7 @@ using Microsoft.VisualStudio.Text.Tagging;
 using Microsoft.VisualStudio.Text;
 using Vim.Extensions;
 
-namespace EditorUtils.UnitTest
+namespace Vim.UnitTest
 {
     internal static class TestUtils
     {

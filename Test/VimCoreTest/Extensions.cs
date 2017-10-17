@@ -13,6 +13,8 @@ using Vim.Interpreter;
 using Xunit;
 using Expression = Vim.Interpreter.Expression;
 using Size = System.Windows.Size;
+using Microsoft.VisualStudio.Text.Tagging;
+using System.Threading;
 
 namespace Vim.UnitTest
 {
@@ -1649,6 +1651,43 @@ namespace Vim.UnitTest
         public static SnapshotColumn GetColumn(this SnapshotPoint point)
         {
             return new SnapshotColumn(point);
+        }
+
+        /// <summary>
+        /// Return the overaching SnapshotLineRange for the visible lines in the ITextView
+        /// </summary>
+        public static SnapshotLineRange? GetVisibleSnapshotLineRange(this ITextView textView)
+        {
+            if (textView.InLayout)
+            {
+                return null;
+            }
+            var snapshot = textView.TextSnapshot;
+            var lines = textView.TextViewLines;
+            var startLine = lines.FirstVisibleLine.Start.GetContainingLine().LineNumber;
+            var lastLine = lines.LastVisibleLine.End.GetContainingLine().LineNumber;
+            return SnapshotLineRange.CreateForLineNumberRange(textView.TextSnapshot, startLine, lastLine);
+        }
+
+        public static SnapshotLineRange GetLineRange(this ITextBuffer textBuffer, int startLine, int endLine = -1)
+        {
+            return textBuffer.CurrentSnapshot.GetLineRange(startLine, endLine);
+        }
+
+        internal static void WaitForBackgroundToComplete<TData, TTag>(this AsyncTagger<TData, TTag> asyncTagger, TestableSynchronizationContext synchronizationContext)
+            where TTag : ITag
+        {
+            while (asyncTagger.AsyncBackgroundRequestData.IsSome())
+            {
+                synchronizationContext.RunAll();
+                Thread.Yield();
+            }
+        }
+
+        public static SnapshotLineRange GetLineRange(this ITextSnapshot snapshot, int startLine, int endLine = -1)
+        {
+            endLine = endLine >= 0 ? endLine : startLine;
+            return SnapshotLineRange.CreateForLineNumberRange(snapshot, startLine, endLine).Value;
         }
     }
 }

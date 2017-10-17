@@ -2,7 +2,7 @@
 using System;
 using Vim;
 
-namespace EditorUtils.UnitTest
+namespace Vim.UnitTest
 {
     public abstract class LineRangeTest
     {

@@ -6,7 +6,7 @@ using System.Reflection;
 using System.ComponentModel.Composition;
 using Vim;
 
-namespace EditorUtils.UnitTest
+namespace Vim.UnitTest
 {
     public sealed class VersioningTest
     {

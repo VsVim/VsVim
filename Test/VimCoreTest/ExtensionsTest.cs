@@ -2,8 +2,9 @@
 using Microsoft.VisualStudio.Utilities;
 using Xunit;
 using Vim.Extensions;
+using EditorUtils;
 
-namespace EditorUtils.UnitTest
+namespace Vim.UnitTest
 {
     public sealed class ExtensionsTest : EditorHostTest
     {

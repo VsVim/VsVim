@@ -10,8 +10,9 @@ using Xunit;
 using Vim;
 using Vim.Extensions;
 using Microsoft.FSharp.Core;
+using EditorUtils;
 
-namespace EditorUtils.UnitTest
+namespace Vim.UnitTest
 {
     /// <summary>
     /// This class is intended to encompass rules that should be true for any implementation of 
