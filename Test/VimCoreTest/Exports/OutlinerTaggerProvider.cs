@@ -19,7 +19,7 @@ namespace Vim.UnitTest.Exports
     {
         ITagger<T> ITaggerProvider.CreateTagger<T>(ITextBuffer textBuffer)
         {
-            var tagger = EditorUtilsFactory.CreateOutlinerTagger(textBuffer);
+            var tagger = TaggerUtil.CreateOutlinerTagger(textBuffer);
             return (ITagger<T>)(object)tagger;
         }
     }

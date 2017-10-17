@@ -119,7 +119,7 @@ type internal IncrementalSearchTaggerProvider
                     let func () = 
                         let taggerSource = new IncrementalSearchTaggerSource(vimBuffer)
                         taggerSource :> IBasicTaggerSource<TextMarkerTag>
-                    let tagger = EditorUtilsFactory.CreateBasicTagger textView.Properties _key (Func<IBasicTaggerSource<TextMarkerTag>>(func))
+                    let tagger = TaggerUtil.CreateBasicTagger textView.Properties _key (Func<IBasicTaggerSource<TextMarkerTag>>(func))
                     tagger :> obj :?> ITagger<'T>
             else
                 null
@@ -293,7 +293,7 @@ type HighlightIncrementalSearchTaggerProvider
                         let wordNavigator = vimBuffer.WordNavigator
                         let taggerSource = new HighlightSearchTaggerSource(textView, vimBuffer.GlobalSettings, _vim.VimData, _vim.VimHost)
                         taggerSource :> IAsyncTaggerSource<HighlightSearchData , TextMarkerTag>
-                    let tagger = EditorUtilsFactory.CreateAsyncTagger textView.Properties _key (Func<IAsyncTaggerSource<HighlightSearchData, TextMarkerTag>>(func))
+                    let tagger = TaggerUtil.CreateAsyncTagger textView.Properties _key (Func<IAsyncTaggerSource<HighlightSearchData, TextMarkerTag>>(func))
                     tagger :> obj :?> ITagger<'T>
             else
                 null
@@ -358,7 +358,7 @@ type SubstituteConfirmTaggerProvider
                     let func () =
                         let taggerSource = new SubstituteConfirmTaggerSource(textBuffer, vimBuffer.SubstituteConfirmMode)
                         taggerSource :> IBasicTaggerSource<TextMarkerTag>
-                    let tagger = EditorUtilsFactory.CreateBasicTagger textView.Properties _key (Func<IBasicTaggerSource<TextMarkerTag>>(func))
+                    let tagger = TaggerUtil.CreateBasicTagger textView.Properties _key (Func<IBasicTaggerSource<TextMarkerTag>>(func))
                     tagger :> obj :?> ITagger<'T>
             else
                 null
@@ -419,7 +419,7 @@ type FoldTaggerProvider
                 let foldData = _factory.GetFoldData textBuffer
                 let taggerSource = new FoldTaggerSource(foldData)
                 taggerSource :> IBasicTaggerSource<OutliningRegionTag>
-            let tagger = EditorUtilsFactory.CreateBasicTagger textBuffer.Properties _key (Func<IBasicTaggerSource<OutliningRegionTag>>(func))
+            let tagger = TaggerUtil.CreateBasicTagger textBuffer.Properties _key (Func<IBasicTaggerSource<OutliningRegionTag>>(func))
             tagger :> obj :?> ITagger<'T>
 
 

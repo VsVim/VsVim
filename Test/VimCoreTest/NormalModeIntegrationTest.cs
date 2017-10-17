@@ -619,7 +619,7 @@ namespace Vim.UnitTest
                     _textBuffer.GetLine(2).End);
 
                 // Collapse the region specified above
-                var adhocOutliner = EditorUtilsFactory.GetOrCreateOutliner(_textBuffer);
+                var adhocOutliner = TaggerUtil.GetOrCreateOutliner(_textBuffer);
                 adhocOutliner.CreateOutliningRegion(span, SpanTrackingMode.EdgeInclusive, "test", "test");
                 OutliningManagerService.GetOutliningManager(_textView).CollapseAll(span, _ => true);
 
@@ -4907,7 +4907,7 @@ namespace Vim.UnitTest
                 var span = new SnapshotSpan(
                     _textBuffer.GetLine(1).Start.Add(2),
                     _textBuffer.GetLine(2).End);
-                var adhocOutliner = EditorUtilsFactory.GetOrCreateOutliner(_textBuffer);
+                var adhocOutliner = TaggerUtil.GetOrCreateOutliner(_textBuffer);
                 adhocOutliner.CreateOutliningRegion(span, SpanTrackingMode.EdgeInclusive, "test", "test");
                 OutliningManagerService.GetOutliningManager(_textView).CollapseAll(span, _ => true);
 

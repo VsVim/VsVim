@@ -24,7 +24,7 @@ namespace EditorUtils.UnitTest
             {
                 Create("cat dog");
                 var span = _textBuffer.GetSpan(0, 3);
-                Assert.Equal(span, TaggerUtil.AdjustRequestedSpan(null, span));
+                Assert.Equal(span, TaggerUtilCore.AdjustRequestedSpan(null, span));
             }
 
             [Fact]
@@ -34,7 +34,7 @@ namespace EditorUtils.UnitTest
                 var span1 = _textBuffer.GetSpan(0, 1);
                 var span2 = _textBuffer.GetSpan(3, 1);
                 var overarching = span1.CreateOverarching(span2);
-                Assert.Equal(overarching, TaggerUtil.AdjustRequestedSpan(FSharpOption.Create(span1), span2));
+                Assert.Equal(overarching, TaggerUtilCore.AdjustRequestedSpan(FSharpOption.Create(span1), span2));
             }
 
             [Fact]
@@ -44,7 +44,7 @@ namespace EditorUtils.UnitTest
                 var span1 = _textBuffer.GetSpan(3, 1);
                 var span2 = _textBuffer.GetSpan(0, 1);
                 var overarching = span1.CreateOverarching(span2);
-                Assert.Equal(overarching, TaggerUtil.AdjustRequestedSpan(FSharpOption.Create(span1), span2));
+                Assert.Equal(overarching, TaggerUtilCore.AdjustRequestedSpan(FSharpOption.Create(span1), span2));
             }
 
             /// <summary>
@@ -59,7 +59,7 @@ namespace EditorUtils.UnitTest
                 _textBuffer.Insert(4, "fish ");
                 var span2 = _textBuffer.GetSpan(4, 4);
                 var overarching = _textBuffer.GetSpan(0, 8);
-                Assert.Equal(overarching, TaggerUtil.AdjustRequestedSpan(FSharpOption.Create(span1), span2));
+                Assert.Equal(overarching, TaggerUtilCore.AdjustRequestedSpan(FSharpOption.Create(span1), span2));
             }
 
             /// <summary>
@@ -76,7 +76,7 @@ namespace EditorUtils.UnitTest
                 var oldAll = _textBuffer.CurrentSnapshot.GetExtent();
                 _textBuffer.Insert(4, "fish ");
                 var newSpan = _textBuffer.GetSpan(4, 4);
-                Assert.Equal(oldAll, TaggerUtil.AdjustRequestedSpan(FSharpOption.Create(newSpan), oldSpan));
+                Assert.Equal(oldAll, TaggerUtilCore.AdjustRequestedSpan(FSharpOption.Create(newSpan), oldSpan));
             }
         }
     }
