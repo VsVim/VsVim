@@ -8,7 +8,7 @@ namespace Vim.UI.Wpf.Implementation.Misc
     [Export(typeof(IClipboardDevice))]
     internal sealed class ClipboardDevice : IClipboardDevice
     {
-        private readonly IVimProtectedOperations _protectedOperations;
+        private readonly IProtectedOperations _protectedOperations;
 
         /// <summary>
         /// The WPF clipboard can get into a bad state which causes it to throw on every
@@ -17,7 +17,7 @@ namespace Vim.UI.Wpf.Implementation.Misc
         private bool _useTextMethods;
 
         [ImportingConstructor]
-        internal ClipboardDevice(IVimProtectedOperations protectedOperations)
+        internal ClipboardDevice(IProtectedOperations protectedOperations)
         {
             _protectedOperations = protectedOperations;
             _useTextMethods = true;

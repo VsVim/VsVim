@@ -22,7 +22,7 @@ namespace Vim.VisualStudio.Implementation.Misc
     {
         private readonly _DTE _dte;
         private readonly IKeyboardOptionsProvider _keyboardOptionsProvider;
-        private readonly IVimProtectedOperations _protectedOperations;
+        private readonly IProtectedOperations _protectedOperations;
         private readonly IVimApplicationSettings _vimApplicationSettings;
         private readonly ScopeData _scopeData;
         private bool _includeAllScopes;
@@ -66,12 +66,12 @@ namespace Vim.VisualStudio.Implementation.Misc
         }
 
         [ImportingConstructor]
-        internal KeyBindingService(SVsServiceProvider serviceProvider, IKeyboardOptionsProvider keyboardOptionsProvider, IVimProtectedOperations protectedOperations, IVimApplicationSettings vimApplicationSettings)
+        internal KeyBindingService(SVsServiceProvider serviceProvider, IKeyboardOptionsProvider keyboardOptionsProvider, IProtectedOperations protectedOperations, IVimApplicationSettings vimApplicationSettings)
             : this(serviceProvider.GetService<SDTE, _DTE>(), keyboardOptionsProvider, protectedOperations, vimApplicationSettings, new ScopeData(serviceProvider.GetService<SVsShell, IVsShell>()))
         {
         }
 
-        internal KeyBindingService(_DTE dte, IKeyboardOptionsProvider keyboardOptionsProvider, IVimProtectedOperations protectedOperations, IVimApplicationSettings vimApplicationSettings, ScopeData scopeData)
+        internal KeyBindingService(_DTE dte, IKeyboardOptionsProvider keyboardOptionsProvider, IProtectedOperations protectedOperations, IVimApplicationSettings vimApplicationSettings, ScopeData scopeData)
         {
             _dte = dte;
             _keyboardOptionsProvider = keyboardOptionsProvider;

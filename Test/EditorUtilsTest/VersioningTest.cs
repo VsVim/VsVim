@@ -37,23 +37,6 @@ namespace EditorUtils.UnitTest
         }
 
         /// <summary>
-        /// Make sure that there are no Export values in the system.  EditorUtils does not use MEF to 
-        /// provide parts to consumers
-        /// </summary>
-        [Fact]
-        public void EnsureNoExports()
-        {
-            var assembly = typeof(EditorUtilsFactory).Assembly;
-            foreach (var cur in GetAllTypes())
-            {
-                var all = cur
-                    .GetCustomAttributes(typeof(ExportAttribute), false)
-                    .Cast<ExportAttribute>();
-                Assert.Equal(0, all.Count());
-            }
-        }
-
-        /// <summary>
         /// Make sure there are no Import values in the system.  EditorUtils does not use MEF hence 
         /// there can be no [ImportingConstructors]
         /// </summary>

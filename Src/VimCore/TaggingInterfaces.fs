@@ -23,8 +23,7 @@ type IAsyncTaggerSource<'TData, 'TTag when 'TTag :> ITag> =
 
     /// Delay in milliseconds which should occur between the call to GetTags and the kicking off
     /// of a background task
-    /// PTODO: make an option
-    abstract Delay : Nullable<int>
+    abstract Delay : int option
 
     /// The current Snapshot.  
     ///
@@ -35,8 +34,7 @@ type IAsyncTaggerSource<'TData, 'TTag when 'TTag :> ITag> =
     /// value
     ///
     /// Called from the main thread only
-    /// PTODO: make this an option
-    abstract TextViewOptional : ITextView
+    abstract TextView : ITextView option
 
     /// This method is called to gather data on the UI thread which will then be passed
     /// down to the background thread for processing
@@ -108,15 +106,15 @@ type IAdhocOutliner =
 type AsyncTaggerSource<'TData, 'TTag when 'TTag :> ITag> 
     (
         _textBuffer : ITextBuffer,
-        _textViewOptional : ITextView
+        _textView : ITextView option
     ) =
 
     let _changed = StandardEvent()
 
     /// Standard delay for asynchronous taggers
-    static member DefaultAsyncDelay = 100
+    static let DefaultAsyncDelay = 100
 
-    member x.TextViewOptional = _textViewOptional
+    member x.TextView = _textView
 
     member x.TextBuffer = _textBuffer
 
@@ -136,9 +134,9 @@ type AsyncTaggerSource<'TData, 'TTag when 'TTag :> ITag>
     abstract GetTagsInBackground : data : 'TData -> span : SnapshotSpan -> cancellationToken : CancellationToken -> ReadOnlyCollection<ITagSpan<'TTag>> 
 
     interface IAsyncTaggerSource<'TData, 'TTag> with
-        member x.Delay = Nullable<int>(AsyncTaggerSource<'TData, 'TTag>.DefaultAsyncDelay)
+        member x.Delay = Option.Some DefaultAsyncDelay
         member x.TextSnapshot = _textBuffer.CurrentSnapshot
-        member x.TextViewOptional = _textViewOptional
+        member x.TextView = _textView
         member x.GetDataForSnapshot snapshot = x.GetDataForSnapshot snapshot
         member x.GetTagsInBackground data span cancellationToken = x.GetTagsInBackground data span cancellationToken
         member x.TryGetTagsPrompt span = x.TryGetTagsPrompt span

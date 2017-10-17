@@ -138,9 +138,9 @@ namespace EditorUtils.UnitTest
             _textBuffer = textView.TextBuffer;
         }
 
-        int? IAsyncTaggerSource<Tuple<string, T>, T>.Delay
+        FSharpOption<int> IAsyncTaggerSource<Tuple<string, T>, T>.Delay
         {
-            get { return 100; }
+            get { return FSharpOption.Create(100); }
         }
 
         ITextSnapshot IAsyncTaggerSource<Tuple<string, T>, T>.TextSnapshot
@@ -148,9 +148,9 @@ namespace EditorUtils.UnitTest
             get { return _textBuffer.CurrentSnapshot; }
         }
 
-        ITextView IAsyncTaggerSource<Tuple<string, T>, T>.TextViewOptional
+        FSharpOption<ITextView> IAsyncTaggerSource<Tuple<string, T>, T>.TextView
         {
-            get { return _textView; }
+            get { return FSharpOption.CreateForReference(_textView); }
         }
 
         event EventHandler IAsyncTaggerSource<Tuple<string, T>, T>.Changed

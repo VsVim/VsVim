@@ -9,7 +9,7 @@ using Vim.UI.Wpf;
 
 namespace Vim.UnitTest
 {
-    public sealed class TestableProtectedOperations : IVimProtectedOperations
+    public sealed class TestableProtectedOperations : IProtectedOperations
     {
         private readonly List<Action> _postedActionList = new List<Action>();
 
