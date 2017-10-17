@@ -125,6 +125,11 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             InitializeComponent();
         }
 
+        internal bool IsCaretAtStart()
+        {
+            return _commandLineInput.CaretIndex == 1;
+        }
+
         internal void UpdateCaretPosition(EditPosition editPosition)
         {
             if (IsEditReadOnly)
