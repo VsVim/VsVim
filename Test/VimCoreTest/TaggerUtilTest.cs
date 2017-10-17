@@ -2,7 +2,7 @@
 using Xunit;
 using Vim;
 using Vim.Extensions;
-using EditorUtils;
+using Vim.EditorHost;
 
 namespace Vim.UnitTest
 {

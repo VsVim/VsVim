@@ -1,6 +1,6 @@
 ﻿using Microsoft.VisualStudio.Text.Operations;
 
-namespace EditorUtils
+namespace Vim.EditorHost
 {
     /// <summary>
     /// In certain hosted scenarios the default ITextUndoHistoryRegistry won't be 

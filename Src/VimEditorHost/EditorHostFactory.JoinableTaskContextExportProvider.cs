@@ -14,7 +14,7 @@ using Microsoft.VisualStudio.Threading;
 using System.Threading;
 using System.Windows.Threading;
 
-namespace EditorUtils
+namespace Vim.EditorHost
 {
     public sealed partial class EditorHostFactory
     {

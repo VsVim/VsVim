@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace EditorUtils
+namespace Vim.EditorHost
 {
     /// <summary>
     /// The supported list of editor versions 

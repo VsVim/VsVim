@@ -9,8 +9,8 @@
     <ProjectGuid>{863A0141-59C5-481D-A3FC-A5812D973FEB}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>EditorUtils.Host</RootNamespace>
-    <AssemblyName>EditorUtils.Host</AssemblyName>
+    <RootNamespace>Vim.EditorHost</RootNamespace>
+    <AssemblyName>Vim.EditorHost</AssemblyName>
     <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
     <TargetFrameworkProfile />
     <VsVimIsRunnable>true</VsVimIsRunnable>

@@ -10,7 +10,7 @@ using Xunit;
 using Vim;
 using Vim.Extensions;
 using Microsoft.FSharp.Core;
-using EditorUtils;
+using Vim.EditorHost;
 
 namespace Vim.UnitTest
 {
@@ -43,7 +43,7 @@ namespace Vim.UnitTest
                 while (_asyncTagger.AsyncBackgroundRequestData.IsSome())
                 {
                     Thread.Yield();
-                    _synchronizationContext.RunAll();
+                    TestableSynchronizationContext.RunAll();
                 }
             }
 
@@ -243,22 +243,13 @@ namespace Vim.UnitTest
 
         #endregion
 
-        protected readonly TestableSynchronizationContext _synchronizationContext;
         protected ITagger<TextMarkerTag> _tagger;
         protected ITextBuffer _textBuffer;
         protected ITextView _textView;
         protected List<SnapshotSpan> _tagsChangedList;
 
-        protected override void Dispose()
-        {
-            base.Dispose();
-            _synchronizationContext.Uninstall();
-        }
-
         public TaggerCommonTest()
         {
-            _synchronizationContext = new TestableSynchronizationContext();
-            _synchronizationContext.Install();
         }
 
         /// <summary>

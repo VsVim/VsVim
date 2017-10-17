@@ -9,7 +9,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace EditorUtils
+namespace Vim.EditorHost
 {
     /// <summary>
     /// Utility for locating instances of Visual Studio on the machine. 

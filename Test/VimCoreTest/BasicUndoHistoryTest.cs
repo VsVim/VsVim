@@ -1,10 +1,10 @@
 ﻿using Xunit;
 using Microsoft.VisualStudio.Text.Editor;
 using System;
-using EditorUtils.Implementation.BasicUndo;
+using Vim.EditorHost.Implementation.BasicUndo;
 using Moq;
 using Microsoft.VisualStudio.Text.Operations;
-using EditorUtils;
+using Vim.EditorHost;
 
 namespace Vim.UnitTest
 {

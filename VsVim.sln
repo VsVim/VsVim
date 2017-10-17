@@ -38,7 +38,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Vs2015", "Src\VsSpecific\Vs
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Vs2017", "Src\VsSpecific\Vs2017\Vs2017.csproj", "{4BBEC6CF-089E-4F22-8649-5144388C655D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EditorUtils.Host", "Src\EditorUtils.Host\EditorUtils.Host.csproj", "{863A0141-59C5-481D-A3FC-A5812D973FEB}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VimEditorHost", "Src\VimEditorHost\VimEditorHost.csproj", "{863A0141-59C5-481D-A3FC-A5812D973FEB}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

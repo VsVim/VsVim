@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading;
-using EditorUtils;
+using Vim.EditorHost;
 
 namespace Vim.UnitTest
 {

@@ -7,7 +7,7 @@ using Microsoft.VisualStudio.Text.Editor;
 using Vim.UI.Wpf.Implementation.CharDisplay;
 using Vim.UnitTest;
 using Xunit;
-using EditorUtils;
+using Vim.EditorHost;
 using Microsoft.VisualStudio.Text.Classification;
 using Moq;
 

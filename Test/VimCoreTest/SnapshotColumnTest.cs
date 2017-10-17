@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using Xunit;
-using EditorUtils;
+using Vim.EditorHost;
 
 namespace Vim.UnitTest
 {

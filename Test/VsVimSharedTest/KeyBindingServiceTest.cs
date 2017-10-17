@@ -11,7 +11,7 @@ using Vim.VisualStudio.Implementation;
 using Vim.VisualStudio.UnitTest.Mock;
 using Vim.UnitTest;
 using Vim.VisualStudio.Implementation.Misc;
-using EditorUtils;
+using Vim.EditorHost;
 using Microsoft.VisualStudio;
 
 namespace Vim.VisualStudio.UnitTest

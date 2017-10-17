@@ -5,7 +5,7 @@ using Moq;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Vim.UnitTest;
-using EditorUtils;
+using Vim.EditorHost;
 
 namespace Vim.UI.Wpf.UnitTest
 {

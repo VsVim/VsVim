@@ -5,7 +5,7 @@ using Microsoft.VisualStudio.Text.Operations;
 using Moq;
 using Xunit;
 using Vim.Extensions;
-using EditorUtils;
+using Vim.EditorHost;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 

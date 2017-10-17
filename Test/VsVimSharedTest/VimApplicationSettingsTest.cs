@@ -4,7 +4,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.IO;
 using System.Text;
-using EditorUtils;
+using Vim.EditorHost;
 using EnvDTE;
 using Microsoft.VisualStudio.Settings;
 using Moq;

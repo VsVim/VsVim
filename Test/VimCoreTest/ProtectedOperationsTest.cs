@@ -4,7 +4,7 @@ using Microsoft.VisualStudio.Text;
 using Moq;
 using Xunit;
 using Vim;
-using EditorUtils;
+using Vim.EditorHost;
 
 namespace Vim.UnitTest
 {

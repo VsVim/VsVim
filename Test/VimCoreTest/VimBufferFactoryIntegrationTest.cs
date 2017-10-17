@@ -2,7 +2,7 @@
 using Moq;
 using Xunit;
 using Vim.UnitTest.Mock;
-using EditorUtils;
+using Vim.EditorHost;
 using System;
 using System.Windows.Threading;
 

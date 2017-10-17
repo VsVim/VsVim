@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace EditorUtils
+namespace Vim.EditorHost
 {
     public static class EditorVersionUtil
     {

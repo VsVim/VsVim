@@ -10,7 +10,7 @@ using System.Text;
 using Microsoft.VisualStudio.Text.Operations;
 using Microsoft.Win32;
 
-namespace EditorUtils
+namespace Vim.EditorHost
 {
     public sealed partial class EditorHostFactory
     {

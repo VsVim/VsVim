@@ -120,9 +120,9 @@
     <Compile Include="VsVimHostTest.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\Src\EditorUtils.Host\EditorUtils.Host.csproj">
+    <ProjectReference Include="..\..\Src\VimEditorHost\VimEditorHost.csproj">
       <Project>{863a0141-59c5-481d-a3fc-a5812d973feb}</Project>
-      <Name>EditorUtils.Host</Name>
+      <Name>VimEditorHost</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\Src\VsInterfaces\VsInterfaces.csproj">
       <Project>{e27dbbf1-6116-4e32-8fa5-07dce5e62bb6}</Project>
