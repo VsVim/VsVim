@@ -34,7 +34,7 @@ namespace Vim.UnitTest
             _textView = CreateTextView(lines);
             _textBuffer = _textView.TextBuffer;
             _visualBuffer = _textView.TextViewModel.VisualBuffer;
-            _adhocOutliner = EditorUtilsFactory.GetOrCreateOutliner(_textView.TextBuffer);
+            _adhocOutliner = TaggerUtil.GetOrCreateOutliner(_textView.TextBuffer);
             _outliningeManager = OutliningManagerService.GetOutliningManager(_textView);
             _statusUtil = new Mock<IStatusUtil>(MockBehavior.Strict);
             _foldData = FoldManagerFactory.GetFoldData(_textView.TextBuffer);

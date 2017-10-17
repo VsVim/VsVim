@@ -17,7 +17,7 @@ namespace EditorUtils.UnitTest
         {
             var list = new List<Type>();
             var seen = new HashSet<Type>();
-            var toVisit = new Stack<Type>(typeof(EditorUtilsFactory).Assembly.GetTypes());
+            var toVisit = new Stack<Type>(typeof(TaggerUtil).Assembly.GetTypes());
             while (toVisit.Count > 0)
             {
                 var current = toVisit.Pop();
@@ -43,7 +43,7 @@ namespace EditorUtils.UnitTest
         [Fact]
         public void EnsureNoImportingConstructors()
         {
-            var assembly = typeof(EditorUtilsFactory).Assembly;
+            var assembly = typeof(TaggerUtil).Assembly;
             foreach (var cur in GetAllTypes())
             {
                 foreach (var constructorInfo in cur.GetConstructors(BindingFlags.Public | BindingFlags.NonPublic))

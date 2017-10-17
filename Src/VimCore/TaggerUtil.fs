@@ -21,7 +21,7 @@ open System.Net
 open System.Threading.Tasks
 open System.Windows.Threading
 
-module TaggerUtil = 
+module TaggerUtilCore = 
 
     /// The simple taggers when changed need to provide an initial SnapshotSpan 
     /// for the TagsChanged event.  It's important that this SnapshotSpan be kept as
@@ -303,7 +303,7 @@ type internal BasicTagger<'TTag when 'TTag :> ITag>
     member x.GetTags (col : NormalizedSnapshotSpanCollection) = 
         if col.Count > 0 then
             let span = NormalizedSnapshotSpanCollectionUtil.GetOverarchingSpan col
-            _cachedRequestSpan <- Some (TaggerUtil.AdjustRequestedSpan _cachedRequestSpan span)
+            _cachedRequestSpan <- Some (TaggerUtilCore.AdjustRequestedSpan _cachedRequestSpan span)
 
         match col.Count with
         | 0 -> Seq.empty
@@ -1065,7 +1065,7 @@ type internal AsyncTagger<'TData, 'TTag when 'TTag :> ITag>
             // Note that we only use the overarching span to track what data we are responsible 
             // for in a
             let requestSpan = NormalizedSnapshotSpanCollectionUtil.GetOverarchingSpan col
-            _cachedOverarchingRequestSpan <- TaggerUtil.AdjustRequestedSpan _cachedOverarchingRequestSpan requestSpan |> Some
+            _cachedOverarchingRequestSpan <- TaggerUtilCore.AdjustRequestedSpan _cachedOverarchingRequestSpan requestSpan |> Some
 
     /// The background processing is now focussed on the given ITextSnapshot.  If anything is 
     /// focused on the old ITextSnapshot move it to the specified one.
@@ -1198,7 +1198,7 @@ type internal AsyncTagger<'TData, 'TTag when 'TTag :> ITag>
     interface IDisposable with
         member x.Dispose() = x.Dispose()
 
-module EditorUtilsFactory =
+module TaggerUtil =
 
     let CreateAsyncTaggerRaw (asyncTaggerSource : IAsyncTaggerSource<'TData, 'TTag>) =
         let tagger = new AsyncTagger<'TData, 'TTag>(asyncTaggerSource)

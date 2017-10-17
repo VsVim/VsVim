@@ -8,9 +8,8 @@ open Microsoft.VisualStudio.Text.Tagging
 open System
 
 /// Importable interface which produces ITagger implementations based on sources
-/// PTODO change this type name to TaggerUtil 
 /// PTODO use F# func types and not delegates 
-module EditorUtilsFactory =
+module TaggerUtil =
 
     /// Create an ITagger implementation for the IAsyncTaggerSource.
     val CreateAsyncTaggerRaw<'TData, 'TTag when 'TTag :> ITag> : IAsyncTaggerSource<'TData, 'TTag> -> ITagger<'TTag>
