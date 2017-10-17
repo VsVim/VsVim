@@ -39,7 +39,6 @@ function test-vsixcontents() {
 
     $expectedFiles = @(
         "Colors.pkgdef",
-        "EditorUtils.dll",
         "extension.vsixmanifest",
         "License.txt",
         "Microsoft.ApplicationInsights.dll",
