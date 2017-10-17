@@ -3,23 +3,27 @@ using Microsoft.VisualStudio.Text.Tagging;
 using Microsoft.VisualStudio.Utilities;
 using Moq;
 using Xunit;
-using Microsoft.VisualStudio.Text.Classification;
 using Vim;
 using Vim.Extensions;
 
-namespace EditorUtils.UnitTest
+namespace Vim.UnitTest
 {
-    public sealed class CountedClassifierTest : EditorHostTest
+    public sealed class CountedTaggerTest : EditorHostTest
     {
         private readonly MockRepository _factory;
         private readonly object _key;
         private readonly PropertyCollection _propertyCollection;
 
-        public CountedClassifierTest()
+        public CountedTaggerTest()
         {
             _factory = new MockRepository(MockBehavior.Strict);
             _key = new object();
             _propertyCollection = new PropertyCollection();
+        }
+
+        private CountedTagger<TextMarkerTag> Create(object key, PropertyCollection propertyCollection, Func<ITagger<TextMarkerTag>> func)
+        {
+            return new CountedTagger<TextMarkerTag>(propertyCollection, key, func.ToFSharpFunc());
         }
 
         /// <summary>
@@ -29,16 +33,14 @@ namespace EditorUtils.UnitTest
         public void Create_DoCreate()
         {
             var didRun = false;
-            Func<IClassifier> func = 
+            var result = Create(
+               _key, 
+               _propertyCollection, 
                 () =>
                 {
                     didRun = true;
-                    return _factory.Create<IClassifier>().Object;
-                };
-            var result = new CountedClassifier(
-               _propertyCollection,
-               _key,
-               func.ToFSharpFunc());
+                    return _factory.Create<ITagger<TextMarkerTag>>().Object;
+                });
             Assert.True(didRun);
         }
 
@@ -49,16 +51,17 @@ namespace EditorUtils.UnitTest
         public void Create_GetFromCache()
         {
             var runCount = 0;
-            Func<IClassifier> func =
+            Func<ITagger<TextMarkerTag>> func =
                 () =>
                 {
                     runCount++;
-                    return _factory.Create<IClassifier>().Object;
+                    return _factory.Create<ITagger<TextMarkerTag>>().Object;
                 };
-            var result1 = new CountedClassifier(_propertyCollection, _key, func.ToFSharpFunc());
-            var result2 = new CountedClassifier(_propertyCollection, _key, func.ToFSharpFunc());
+            var result1 = Create(_key, _propertyCollection, func);
+            var result2 = Create(_key, _propertyCollection, func);
             Assert.Equal(1, runCount);
-            Assert.Same(result1.Classifier, result2.Classifier);
+            Assert.NotSame(result1, result2);
+            Assert.Same(result1.Tagger, result2.Tagger);
         }
 
         /// <summary>
@@ -67,10 +70,9 @@ namespace EditorUtils.UnitTest
         [Fact]
         public void Dispose_OneInstance()
         {
-            var tagger = _factory.Create<IClassifier>();
+            var tagger = _factory.Create<ITagger<TextMarkerTag>>();
             var disposable = tagger.As<IDisposable>();
-            Func<IClassifier> func = () => tagger.Object;
-            var result = new CountedClassifier(_propertyCollection, _key, func.ToFSharpFunc());
+            var result = Create(_key, _propertyCollection, () => tagger.Object);
 
             disposable.Setup(x => x.Dispose()).Verifiable();
             result.Dispose();
@@ -83,11 +85,10 @@ namespace EditorUtils.UnitTest
         [Fact]
         public void Dispose_ManyInstance()
         {
-            var tagger = _factory.Create<IClassifier>();
+            var tagger = _factory.Create<ITagger<TextMarkerTag>>();
             var disposable = tagger.As<IDisposable>();
-            Func<IClassifier> func = () => tagger.Object;
-            var result1 = new CountedClassifier(_propertyCollection, _key, func.ToFSharpFunc());
-            var result2 = new CountedClassifier(_propertyCollection, _key, func.ToFSharpFunc());
+            var result1 = Create(_key, _propertyCollection, () => tagger.Object);
+            var result2 = Create(_key, _propertyCollection, () => tagger.Object);
 
             result1.Dispose();
             disposable.Setup(x => x.Dispose()).Verifiable();

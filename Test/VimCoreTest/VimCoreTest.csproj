@@ -67,15 +67,21 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AdhocOutlinerTest.cs" />
+    <Compile Include="AsyncTaggerTest.cs" />
     <Compile Include="AutoCommandRunnerIntegrationTest.cs" />
     <Compile Include="AutoCommandRunnerTest.cs" />
+    <Compile Include="BasicTaggerTest.cs" />
+    <Compile Include="BasicUndoHistoryTest.cs" />
     <Compile Include="BlockSpanTest.cs" />
     <Compile Include="BuiltinFunctionsTest.cs" />
     <Compile Include="BulkOperationsTest.cs" />
     <Compile Include="ChangeTrackerTest.cs" />
+    <Compile Include="ChannelTest.cs" />
     <Compile Include="CharacterSpanTest.cs" />
     <Compile Include="CharSpanTest.cs" />
     <Compile Include="CharUtilTest.cs" />
+    <Compile Include="ClassifierTest.cs" />
     <Compile Include="ClipboardRegisterValueBackingTest.cs" />
     <Compile Include="CodeHygieneTest.cs" />
     <Compile Include="CommandModeIntegrationTest.cs" />
@@ -85,10 +91,27 @@
     <Compile Include="CommandRunnerTest.cs" />
     <Compile Include="CommandUtilTest.cs" />
     <Compile Include="CommonOperationsIntegrationTest.cs" />
+    <Compile Include="CountedClassifierTest.cs" />
+    <Compile Include="CountedTaggerTest.cs" />
+    <Compile Include="EditorHostTest.cs" />
+    <Compile Include="EditorVersionUtilTest.cs" />
     <Compile Include="EditUtilTest.cs" />
     <Compile Include="Exports\OutlinerTaggerProvider.cs" />
+    <Compile Include="ExtensionsTest.cs" />
     <Compile Include="HistoryListTest.cs" />
     <Compile Include="HistorySessionTest.cs" />
+    <Compile Include="LineRangeTest.cs" />
+    <Compile Include="MemoryLeakTest.cs" />
+    <Compile Include="MockFactory.cs" />
+    <Compile Include="NormalizedLineRangeCollectionTest.cs" />
+    <Compile Include="ProtectedOperationsTest.cs" />
+    <Compile Include="SnapshotLineRangeTest.cs" />
+    <Compile Include="TaggerCommonTest.cs" />
+    <Compile Include="TaggerUtilTest.cs" />
+    <Compile Include="TestableSynchronizationContext.cs" />
+    <Compile Include="TestUtils.cs" />
+    <Compile Include="TextTaggerSource.cs" />
+    <Compile Include="VersioningTest.cs" />
     <Compile Include="WordCompletionUtilTest.cs" />
     <Compile Include="MatchingTokenUtilTest.cs" />
     <Compile Include="ModeMapTest.cs" />
@@ -227,10 +250,6 @@
     <ProjectReference Include="..\..\Src\VimWpf\VimWpf.csproj">
       <Project>{65A749E0-F1B1-4E43-BE73-25072EE398C6}</Project>
       <Name>VimWpf</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\EditorUtilsTest\EditorUtilsTest.csproj">
-      <Project>{baed09b7-25d9-4dd8-8558-bac9730ba3f3}</Project>
-      <Name>EditorUtilsTest</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

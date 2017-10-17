@@ -5,7 +5,7 @@ using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text;
 using EditorUtils;
 
-namespace EditorUtils.UnitTest
+namespace Vim.UnitTest
 {
     /// <summary>
     /// Used for detecting leaks in our components

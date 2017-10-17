@@ -5,8 +5,9 @@ using System.Linq;
 using System.Text;
 using Xunit;
 using Vim;
+using EditorUtils;
 
-namespace EditorUtils.UnitTest
+namespace Vim.UnitTest
 {
     public sealed class AdhocOutlinerTest : EditorHostTest
     {

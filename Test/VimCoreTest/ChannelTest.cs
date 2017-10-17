@@ -4,7 +4,7 @@ using Xunit;
 using Vim;
 using Vim.Extensions;
 
-namespace EditorUtils.UnitTest
+namespace Vim.UnitTest
 {
     public abstract class ChannelTest : EditorHostTest
     {

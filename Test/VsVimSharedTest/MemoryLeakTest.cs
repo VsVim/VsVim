@@ -21,7 +21,6 @@ using Vim.UnitTest;
 using Vim.UnitTest.Exports;
 using Vim.VisualStudio.UnitTest.Mock;
 using Xunit;
-using EditorUtils.UnitTest;
 
 namespace Vim.VisualStudio.UnitTest
 {

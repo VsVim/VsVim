@@ -11,7 +11,7 @@ using Vim;
 using Vim.Extensions;
 using Microsoft.FSharp.Core;
 
-namespace EditorUtils.UnitTest
+namespace Vim.UnitTest
 {
     /// <summary>
     /// Tags all occurences of the specified text in the buffer 

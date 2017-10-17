@@ -7,8 +7,9 @@ using Microsoft.VisualStudio.Text.Tagging;
 using Xunit;
 using Vim;
 using Vim.Extensions;
+using EditorUtils;
 
-namespace EditorUtils.UnitTest
+namespace Vim.UnitTest
 {
     public abstract class BasicTaggerTest : EditorHostTest
     {

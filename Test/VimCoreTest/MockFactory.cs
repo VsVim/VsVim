@@ -4,7 +4,7 @@ using Microsoft.VisualStudio.Text.Formatting;
 using Moq;
 using Vim;
 
-namespace EditorUtils.UnitTest
+namespace Vim.UnitTest
 {
     internal sealed class MockFactory
     {

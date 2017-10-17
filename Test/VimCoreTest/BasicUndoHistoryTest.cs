@@ -4,8 +4,9 @@ using System;
 using EditorUtils.Implementation.BasicUndo;
 using Moq;
 using Microsoft.VisualStudio.Text.Operations;
+using EditorUtils;
 
-namespace EditorUtils.UnitTest
+namespace Vim.UnitTest
 {
     public abstract class BasicUndoHistoryTest
     {

@@ -4,8 +4,9 @@ using Microsoft.VisualStudio.Text;
 using Moq;
 using Xunit;
 using Vim;
+using EditorUtils;
 
-namespace EditorUtils.UnitTest
+namespace Vim.UnitTest
 {
     public sealed class ProtectedOperationsTest
     {
