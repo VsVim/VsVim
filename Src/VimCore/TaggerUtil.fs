@@ -168,18 +168,17 @@ type internal AdhocOutliner
     let mutable _counter = 0 
     let _changed = StandardEvent()
 
-    static let OutlinerKey = new obj();
-    static let OutlinerTaggerKey = new obj();
-    static let EmptyCollection = new ReadOnlyCollection<OutliningRegion>([| |])
+    static let s_outlinerKey = new obj();
+    static let s_outlinerTaggerKey = new obj();
+    static let s_emptyCollection = new ReadOnlyCollection<OutliningRegion>([| |])
 
-    // PTODO fix this temp
-    static member OutlinerTaggerKeyTemp = OutlinerTaggerKey
+    static member OutlinerTaggerKey = s_outlinerTaggerKey
 
     /// The outlining implementation is worthless unless it is also registered as an ITagger 
     /// component.  If this hasn't happened by the time the APIs are being queried then it is
     /// a bug and we need to notify the developer
     member x.EnsureTagger() = 
-        if not (PropertyCollectionUtil.ContainsKey OutlinerTaggerKey _textBuffer.Properties) then
+        if not (PropertyCollectionUtil.ContainsKey s_outlinerTaggerKey _textBuffer.Properties) then
             let msg = "In order to use IAdhocOutliner you must also export an ITagger implementation for the buffer which return CreateOutliningTagger";
             raise (new Exception(msg))
 
@@ -187,7 +186,7 @@ type internal AdhocOutliner
     member private x.GetOutliningRegions (span : SnapshotSpan) =
         // Avoid allocating a map or new collection if we are simply empty
         if _map.Count = 0 then
-            EmptyCollection
+            s_emptyCollection
         else 
             let snapshot = span.Snapshot
             let list = new List<OutliningRegion>()
@@ -209,7 +208,7 @@ type internal AdhocOutliner
 
     static member GetOrCreate (textBuffer : ITextBuffer) = 
         let propertyCollection = textBuffer.Properties
-        propertyCollection.GetOrCreateSingletonProperty(OutlinerKey, (fun _ -> AdhocOutliner(textBuffer)))
+        propertyCollection.GetOrCreateSingletonProperty(s_outlinerKey, (fun _ -> AdhocOutliner(textBuffer)))
 
     interface IAdhocOutliner with 
         member x.TextBuffer = _textBuffer 
@@ -1204,9 +1203,9 @@ module TaggerUtil =
         let tagger = new AsyncTagger<'TData, 'TTag>(asyncTaggerSource)
         tagger :> ITagger<'TTag>
 
-    let CreateAsyncTagger propertyCollection (key : obj) (createFunc : Func<IAsyncTaggerSource<'TData, 'TTag>>) =
+    let CreateAsyncTagger propertyCollection (key : obj) (createFunc : unit -> IAsyncTaggerSource<'TData, 'TTag>) =
         let createTagger () = 
-            let source = createFunc.Invoke()
+            let source = createFunc ()
             CreateAsyncTaggerRaw source
         let countedTagger = new CountedTagger<'TTag>(propertyCollection, key, createTagger)
         countedTagger :> ITagger<'TTag>
@@ -1216,9 +1215,9 @@ module TaggerUtil =
         let classifier = new Classifier(tagger)
         classifier :> IClassifier
 
-    let CreateAsyncClassifier propertyCollection (key : obj) (createFunc : Func<IAsyncTaggerSource<'TData, IClassificationTag>>) =
+    let CreateAsyncClassifier propertyCollection (key : obj) (createFunc : unit -> IAsyncTaggerSource<'TData, IClassificationTag>) =
         let createClassifier () = 
-            let source = createFunc.Invoke()
+            let source = createFunc ()
             CreateAsyncClassifierRaw source
         let countedClassifier = new CountedClassifier(propertyCollection, key, createClassifier)
         countedClassifier :> IClassifier
@@ -1227,9 +1226,9 @@ module TaggerUtil =
         let tagger = new BasicTagger<'TTag>(basicTaggerSource)
         tagger :> ITagger<'TTag>
 
-    let CreateBasicTagger propertyCollection (key : obj) (createFunc : Func<IBasicTaggerSource<'TTag>>) =
+    let CreateBasicTagger propertyCollection (key : obj) (createFunc : unit -> IBasicTaggerSource<'TTag>) =
         let createTagger () = 
-            let source = createFunc.Invoke()
+            let source = createFunc ()
             CreateBasicTaggerRaw source
         let countedTagger = new CountedTagger<'TTag>(propertyCollection, key, createTagger)
         countedTagger :> ITagger<'TTag>
@@ -1239,9 +1238,9 @@ module TaggerUtil =
         let classifier = new Classifier(tagger)
         classifier :> IClassifier
 
-    let CreateBasicClassifier propertyCollection (key : obj) (createFunc : Func<IBasicTaggerSource<IClassificationTag>>) =
+    let CreateBasicClassifier propertyCollection (key : obj) (createFunc : unit -> IBasicTaggerSource<IClassificationTag>) =
         let createClassifier () = 
-            let source = createFunc.Invoke()
+            let source = createFunc ()
             CreateBasicClassifierRaw source
         let countedClassifier = new CountedClassifier(propertyCollection, key, createClassifier)
         countedClassifier :> IClassifier
@@ -1255,4 +1254,4 @@ module TaggerUtil =
             let source = AdhocOutliner.GetOrCreate textBuffer
             source :> IBasicTaggerSource<OutliningRegionTag>
         let key = AdhocOutliner.GetOrCreate
-        CreateBasicTagger textBuffer.Properties AdhocOutliner.OutlinerTaggerKeyTemp (Func<IBasicTaggerSource<OutliningRegionTag>>(createSource))
+        CreateBasicTagger textBuffer.Properties AdhocOutliner.OutlinerTaggerKey createSource

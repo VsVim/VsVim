@@ -8,6 +8,7 @@ using Microsoft.VisualStudio.Utilities;
 using Microsoft.VisualStudio.Text.Editor;
 using System.ComponentModel.Composition;
 using Microsoft.VisualStudio.Text.Classification;
+using Vim.Extensions;
 
 namespace Vim.UI.Wpf.Implementation.Directory
 {
@@ -28,10 +29,11 @@ namespace Vim.UI.Wpf.Implementation.Directory
         IClassifier IClassifierProvider.GetClassifier(ITextBuffer textBuffer)
         {
             var classificationType = _classificationTypeRegistryService.GetClassificationType(DirectoryFormatDefinition.Name);
+            Func<IBasicTaggerSource<IClassificationTag>> func = () => new DirectoryTaggerSource(textBuffer, classificationType);
             return TaggerUtil.CreateBasicClassifier(
                 textBuffer.Properties,
                 s_key,
-                () => new DirectoryTaggerSource(textBuffer, classificationType));
+                func.ToFSharpFunc());
         }
     }
 }

@@ -4,6 +4,8 @@ using Microsoft.VisualStudio.Text.Tagging;
 using Microsoft.VisualStudio.Utilities;
 using System.ComponentModel.Composition;
 using Microsoft.VisualStudio.Text.Classification;
+using System;
+using Vim.Extensions;
 
 namespace Vim.UI.Wpf.Implementation.CharDisplay
 {
@@ -41,10 +43,11 @@ namespace Vim.UI.Wpf.Implementation.CharDisplay
                 return null;
             }
 
+            Func<IBasicTaggerSource<IntraTextAdornmentTag>> func = () => CreateCharDisplayTaggerSource(textView);
             return TaggerUtil.CreateBasicTagger(
                 textView.Properties,
                 _key,
-                () => CreateCharDisplayTaggerSource(textView)) as ITagger<T>;
+                func.ToFSharpFunc()) as ITagger<T>;
         }
 
         #endregion
