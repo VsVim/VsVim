@@ -19,6 +19,7 @@
 *.mdf
 *.ldf
 *.opendb
+*.binlog
 Thumbs.db
 telemetry.txt
 
