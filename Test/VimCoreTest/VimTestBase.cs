@@ -21,6 +21,8 @@ using Microsoft.VisualStudio.Text.Projection;
 using Microsoft.VisualStudio.Text.Outlining;
 using Microsoft.VisualStudio.Utilities;
 using System.Threading;
+using System.ComponentModel.Composition;
+using System.Text;
 
 namespace Vim.UnitTest
 {
@@ -240,18 +242,13 @@ namespace Vim.UnitTest
 
         public virtual void Dispose()
         {
+            ResetState();
+            CheckForErrors();
+        }
+
+        private void ResetState()
+        {
             Vim.MarkMap.Clear();
-
-            if (VimErrorDetector.HasErrors())
-            {
-                var msg = String.Format("Extension Exception: {0}", VimErrorDetector.GetErrors().First().Message);
-
-                // Need to clear before we throw or every subsequent test will fail with the same error
-                VimErrorDetector.Clear();
-
-                throw new Exception(msg);
-            }
-            VimErrorDetector.Clear();
 
             Vim.VimData.SearchHistory.Reset();
             Vim.VimData.CommandHistory.Reset();
@@ -301,12 +298,66 @@ namespace Vim.UnitTest
             }
 
             VariableMap.Clear();
+        }
 
-            var context = SynchronizationContext.Current;
-            if (context != null && context.GetType() != typeof(SynchronizationContext))
+        private void CheckForErrors()
+        {
+            try
             {
-                throw new Exception("Bad SynchronizationContext detected on test end: " + context.GetType());
+                if (VimErrorDetector.HasErrors())
+                {
+                    var message = FormatException(VimErrorDetector.GetErrors());
+                    throw new Exception(message);
+                }
+
+                var context = SynchronizationContext.Current;
+                if (context != null && context.GetType() != typeof(SynchronizationContext))
+                {
+                    throw new Exception("Bad SynchronizationContext detected on test end: " + context.GetType());
+                }
             }
+            finally
+            {
+                VimErrorDetector.Clear();
+            }
+        }
+
+        private static string FormatException(IEnumerable<Exception> exceptions)
+        {
+            var builder = new StringBuilder();
+            void appendException(Exception ex)
+            {
+                builder.AppendLine(ex.Message);
+                builder.AppendLine(ex.StackTrace);
+
+                if (ex.InnerException != null)
+                {
+                    builder.AppendLine("Begin inner exception");
+                    appendException(ex.InnerException); 
+                    builder.AppendLine("End inner exception");
+                }
+
+                switch (ex)
+                {
+                    case AggregateException aggregate:
+                        builder.AppendLine("Begin aggregate exceptions");
+                        foreach (var inner in aggregate.InnerExceptions)
+                        {
+                            appendException(inner);
+                        }
+                        builder.AppendLine("End aggregate exceptions");
+                        break;
+                }
+            }
+
+            var all = exceptions.ToList();
+            builder.AppendLine($"Exception count {all.Count}");
+            foreach (var exception in exceptions)
+            {
+                appendException(exception);
+            }
+
+            return builder.ToString();
         }
 
         public ITextBuffer CreateTextBuffer(params string[] lines)
