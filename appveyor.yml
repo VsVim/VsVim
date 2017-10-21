@@ -18,7 +18,7 @@ before_build:
 
 build:
   project: VsVim.sln
-  verbosity: minimal
+  verbosity: normal
 
 after_build:
   - Binaries\Debug\CleanVsix\CleanVsix.exe Binaries\Debug\VsVim\VsVim.vsix
