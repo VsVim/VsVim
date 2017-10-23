@@ -242,8 +242,14 @@ namespace Vim.UnitTest
 
         public virtual void Dispose()
         {
-            ResetState();
-            CheckForErrors();
+            try
+            {
+                CheckForErrors();
+            }
+            finally
+            {
+                ResetState();
+            }
         }
 
         private void ResetState()
@@ -298,27 +304,21 @@ namespace Vim.UnitTest
             }
 
             VariableMap.Clear();
+            VimErrorDetector.Clear();
         }
 
         private void CheckForErrors()
         {
-            try
+            if (VimErrorDetector.HasErrors())
             {
-                if (VimErrorDetector.HasErrors())
-                {
-                    var message = FormatException(VimErrorDetector.GetErrors());
-                    throw new Exception(message);
-                }
-
-                var context = SynchronizationContext.Current;
-                if (context != null && context.GetType() != typeof(SynchronizationContext))
-                {
-                    throw new Exception("Bad SynchronizationContext detected on test end: " + context.GetType());
-                }
+                var message = FormatException(VimErrorDetector.GetErrors());
+                throw new Exception(message);
             }
-            finally
+
+            var context = SynchronizationContext.Current;
+            if (context != null && context.GetType() != typeof(SynchronizationContext))
             {
-                VimErrorDetector.Clear();
+                throw new Exception("Bad SynchronizationContext detected on test end: " + context.GetType());
             }
         }
 
