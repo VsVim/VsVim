@@ -242,6 +242,7 @@ namespace Vim.UnitTest
 
         public virtual void Dispose()
         {
+            Vim.MarkMap.Clear();
             try
             {
                 CheckForErrors();
