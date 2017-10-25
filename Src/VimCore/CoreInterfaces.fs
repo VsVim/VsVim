@@ -13,7 +13,6 @@ open System.Runtime.InteropServices
 open System.Collections.Generic
 open Vim.Interpreter
 open System
-open System.Windows.Threading
 
 [<RequireQualifiedAccess>]
 [<NoComparison>]
@@ -4696,14 +4695,6 @@ type IProtectedOperations =
     /// thrown Exceptions by passing them off the the available IExtensionErrorHandler
     /// values
     abstract member GetProtectedEventHandler : eventHandler : EventHandler -> EventHandler
-
-    /// Dispatch the given delegate for action.  If it fails the editor error
-    /// handling system will be notified
-    abstract member BeginInvoke : Action -> unit
-
-    /// Dispatch the given delegate for action.  If it fails the editor error
-    /// handling system will be notified
-    abstract member BeginInvoke : Action * DispatcherPriority -> unit
 
     /// Report an Exception to the IExtensionErrorHandlers
     abstract member Report : ex : Exception -> unit

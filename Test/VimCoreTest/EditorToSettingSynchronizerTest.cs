@@ -82,19 +82,6 @@ namespace Vim.UnitTest
                 Assert.Equal(13, _localSettings.ShiftWidth);
             }
 
-            /// <summary>
-            /// Make sure we synchronize the cursorline setting in both directions
-            /// </summary>
-            [Fact]
-            public void CursorLine()
-            {
-                _windowSettings.CursorLine = true;
-                Assert.True(_editorOptions.GetOptionValue(DefaultWpfViewOptions.EnableHighlightCurrentLineId));
-
-                _editorOptions.SetOptionValue(DefaultWpfViewOptions.EnableHighlightCurrentLineId, false);
-                Assert.False(_windowSettings.CursorLine);
-            }
-
             [Fact]
             public void WordWrapSimple()
             {

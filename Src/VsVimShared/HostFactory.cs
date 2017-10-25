@@ -74,6 +74,14 @@ namespace Vim.VisualStudio
 #if DEBUG
             VimTrace.TraceSwitch.Level = TraceLevel.Info;
 #endif
+
+            // Make sure that for this 
+            _editorToSettingSynchronizer.SyncSetting(SettingSyncData.Create(
+                DefaultWpfViewOptions.EnableHighlightCurrentLineId,
+                WindowSettingNames.CursorLineName,
+                false,
+                x => SettingValue.NewToggle(x),
+                s => s.GetToggle()));
         }
 
         /// <summary>

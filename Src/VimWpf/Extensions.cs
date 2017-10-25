@@ -49,5 +49,21 @@ namespace Vim.UI.Wpf
         }
 
         #endregion
+
+        #region IProtectedOperations
+
+        public static void BeginInvoke(this IProtectedOperations protectedOperations, Action action)
+        {
+            var protectedAction = protectedOperations.GetProtectedAction(action);
+            Dispatcher.CurrentDispatcher.BeginInvoke(protectedAction, null);
+        }
+
+        public static void BeginInvoke(this IProtectedOperations protectedOperations, Action action, DispatcherPriority dispatcherPriority)
+        {
+            var protectedAction = protectedOperations.GetProtectedAction(action);
+            Dispatcher.CurrentDispatcher.BeginInvoke(protectedAction, dispatcherPriority, null);
+        }
+
+        #endregion
     }
 }

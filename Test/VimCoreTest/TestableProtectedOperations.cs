@@ -29,16 +29,6 @@ namespace Vim.UnitTest
 
         #region IProtectedOperations
 
-        void IProtectedOperations.BeginInvoke(Action action, DispatcherPriority dispatcherPriority)
-        {
-            _postedActionList.Add(action);
-        }
-
-        void IProtectedOperations.BeginInvoke(Action action)
-        {
-            _postedActionList.Add(action);
-        }
-
         Action IProtectedOperations.GetProtectedAction(Action action)
         {
             return action;

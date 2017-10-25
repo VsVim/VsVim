@@ -32,6 +32,7 @@ namespace Vim.VisualStudio.UnitTest
             _protectedOperations = new TestableProtectedOperations();
             _mockFactory = new MockRepository(MockBehavior.Strict);
             _synchronizer = _mockFactory.Create<IEditorToSettingsSynchronizer>(MockBehavior.Strict);
+            _synchronizer.Setup(x => x.SyncSetting(It.IsAny<SettingSyncData>()));
             _vsEditorAdaptersFactoryService = _mockFactory.Create<IVsEditorAdaptersFactoryService>();
             _vimApplicationSettings = _mockFactory.Create<IVimApplicationSettings>(MockBehavior.Loose);
 

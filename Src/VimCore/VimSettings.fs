@@ -641,7 +641,68 @@ type internal EditorToSettingSynchronizer
     () = 
 
     let _syncronizingSet = System.Collections.Generic.HashSet<IVimLocalSettings>()
+    let _settingList = System.Collections.Generic.List<SettingSyncData>()
     let _key = obj()
+
+    do
+        _settingList.Add(
+            {
+                EditorOptionKey = DefaultOptions.TabSizeOptionId.Name
+                GetEditorValue = SettingSyncData.GetNumberValueFunc DefaultOptions.TabSizeOptionId
+                VimSettingName = LocalSettingNames.TabStopName
+                GetVimSettingValue = SettingSyncData.GetSettingValueFunc LocalSettingNames.TabStopName true
+                IsLocal = true
+            })
+
+        _settingList.Add(
+            {
+                EditorOptionKey = DefaultOptions.IndentSizeOptionId.Name
+                GetEditorValue = SettingSyncData.GetNumberValueFunc DefaultOptions.IndentSizeOptionId
+                VimSettingName = LocalSettingNames.ShiftWidthName
+                GetVimSettingValue = SettingSyncData.GetSettingValueFunc LocalSettingNames.ShiftWidthName true
+                IsLocal = true
+            })
+
+        _settingList.Add(
+            {
+                EditorOptionKey = DefaultOptions.ConvertTabsToSpacesOptionId.Name
+                GetEditorValue = SettingSyncData.GetBoolValueFunc DefaultOptions.ConvertTabsToSpacesOptionId
+                VimSettingName = LocalSettingNames.ExpandTabName
+                GetVimSettingValue = SettingSyncData.GetSettingValueFunc LocalSettingNames.ExpandTabName true
+                IsLocal = true
+            })
+           
+        _settingList.Add(
+            {
+                EditorOptionKey = DefaultTextViewHostOptions.LineNumberMarginId.Name
+                GetEditorValue = SettingSyncData.GetBoolValueFunc DefaultTextViewHostOptions.LineNumberMarginId
+                VimSettingName = LocalSettingNames.NumberName
+                GetVimSettingValue = SettingSyncData.GetSettingValueFunc LocalSettingNames.NumberName true
+                IsLocal = true
+            })
+
+        _settingList.Add(
+            {
+                EditorOptionKey = DefaultTextViewOptions.WordWrapStyleId.Name
+                GetEditorValue = (fun editorOptions ->
+                    match EditorOptionsUtil.GetOptionValue editorOptions DefaultTextViewOptions.WordWrapStyleId with
+                    | None -> None
+                    | Some s -> Util.IsFlagSet s WordWrapStyles.WordWrap |> SettingValue.Toggle |> Option.Some)
+                VimSettingName = WindowSettingNames.WrapName
+                GetVimSettingValue = (fun vimBuffer ->
+                    let windowSettings = vimBuffer.WindowSettings
+                    // Wrap is a difficult option because vim has wrap as on / off while the core editor has
+                    // 3 different kinds of wrapping.  If we default to only one of them then we will constantly
+                    // be undoing user settings.  Hence we consider anything but off to be on and hence won't change it 
+                    let wordWrap = 
+                        if windowSettings.Wrap then
+                            let vimHost = vimBuffer.Vim.VimHost
+                            vimHost.GetWordWrapStyle vimBuffer.TextView
+                        else
+                            WordWrapStyles.None
+                    box wordWrap)
+                IsLocal = false
+            })
 
     member x.StartSynchronizing (vimBuffer : IVimBuffer) settingSyncSource = 
         let properties = vimBuffer.TextView.Properties
@@ -696,42 +757,15 @@ type internal EditorToSettingSynchronizer
 
     /// Is this a local setting of note
     member x.IsTrackedLocalSetting (setting : Setting) = 
-        if setting.Name = LocalSettingNames.TabStopName then
-            true
-        elif setting.Name = LocalSettingNames.ShiftWidthName then
-            true
-        elif setting.Name = LocalSettingNames.ExpandTabName then
-            true
-        elif setting.Name = LocalSettingNames.NumberName then
-            true
-        else
-            false
+        _settingList |> Seq.exists (fun x -> x.IsLocal && x.VimSettingName = setting.Name)
 
     /// Is this a window setting of note
     member x.IsTrackedWindowSetting (setting : Setting) = 
-        if setting.Name = WindowSettingNames.CursorLineName then
-            true
-        elif setting.Name = WindowSettingNames.WrapName then
-            true
-        else 
-            false
+        _settingList |> Seq.exists (fun x -> not x.IsLocal && x.VimSettingName = setting.Name)
 
     /// Is this an editor setting of note
     member x.IsTrackedEditorSetting optionId =
-        if optionId = DefaultOptions.TabSizeOptionId.Name then
-            true
-        elif optionId = DefaultOptions.IndentSizeOptionId.Name then
-            true
-        elif optionId = DefaultOptions.ConvertTabsToSpacesOptionId.Name then
-            true
-        elif optionId = DefaultTextViewHostOptions.LineNumberMarginId.Name then
-            true
-        elif optionId = DefaultWpfViewOptions.EnableHighlightCurrentLineId.Name then
-            true
-        elif optionId = DefaultTextViewOptions.WordWrapStyleId.Name then
-            true
-        else
-            false
+        _settingList |> Seq.exists (fun x -> x.EditorOptionKey = optionId) 
 
     /// Synchronize the settings if needed.  Prevent recursive sync's here
     member x.TrySync (vimBuffer : IVimBuffer) syncFunc = 
@@ -740,53 +774,30 @@ type internal EditorToSettingSynchronizer
             let localSettings = vimBuffer.LocalSettings
             if _syncronizingSet.Add(localSettings) then
                 try
-                    syncFunc localSettings vimBuffer.WindowSettings editorOptions
+                    syncFunc vimBuffer editorOptions
                 finally
                     _syncronizingSet.Remove(localSettings) |> ignore
 
     /// Synchronize the settings from the editor to the local settings.  Do not
     /// call this directly but instead call through SynchronizeSettings
-    member x.CopyVimToEditorSettings (vimBuffer : IVimBuffer) = 
-        x.TrySync vimBuffer (fun localSettings windowSettings editorOptions ->
-            EditorOptionsUtil.SetOptionValue editorOptions DefaultOptions.TabSizeOptionId localSettings.TabStop
-            EditorOptionsUtil.SetOptionValue editorOptions DefaultOptions.IndentSizeOptionId localSettings.ShiftWidth
-            EditorOptionsUtil.SetOptionValue editorOptions DefaultOptions.ConvertTabsToSpacesOptionId localSettings.ExpandTab
-            EditorOptionsUtil.SetOptionValue editorOptions DefaultTextViewHostOptions.LineNumberMarginId localSettings.Number
-            EditorOptionsUtil.SetOptionValue editorOptions DefaultWpfViewOptions.EnableHighlightCurrentLineId windowSettings.CursorLine
-
-            // Wrap is a difficult option because vim has wrap as on / off while the core editor has
-            // 3 different kinds of wrapping.  If we default to only one of them then we will constantly
-            // be undoing user settings.  Hence we consider anything but off to be on and hence won't change it 
-            let wordWrapStyle = 
-                if windowSettings.Wrap then
-                    let vimHost = vimBuffer.Vim.VimHost
-                    vimHost.GetWordWrapStyle vimBuffer.TextView
-                else
-                    WordWrapStyles.None
-            EditorOptionsUtil.SetOptionValue editorOptions DefaultTextViewOptions.WordWrapStyleId wordWrapStyle)
+    member x.CopyVimToEditorSettings vimBuffer =
+        x.TrySync vimBuffer (fun vimBuffer editorOptions ->
+            for data in _settingList do 
+                let value = data.GetVimSettingValue vimBuffer 
+                if value <> null then 
+                    editorOptions.SetOptionValue(data.EditorOptionKey, value))
 
     /// Synchronize the settings from the local settings to the editor.  Do not
     /// call this directly but instead call through SynchronizeSettings
     member x.CopyEditorToVimSettings (vimBuffer : IVimBuffer) = 
-        x.TrySync vimBuffer (fun localSettings windowSettings editorOptions ->
-            match EditorOptionsUtil.GetOptionValue editorOptions DefaultOptions.TabSizeOptionId with
-            | None -> ()
-            | Some tabSize -> localSettings.TabStop <- tabSize
-            match EditorOptionsUtil.GetOptionValue editorOptions DefaultOptions.IndentSizeOptionId with
-            | None -> ()
-            | Some shiftWidth -> localSettings.ShiftWidth <- shiftWidth
-            match EditorOptionsUtil.GetOptionValue editorOptions DefaultOptions.ConvertTabsToSpacesOptionId with
-            | None -> ()
-            | Some convertTabToSpace -> localSettings.ExpandTab <- convertTabToSpace
-            match EditorOptionsUtil.GetOptionValue editorOptions DefaultTextViewOptions.WordWrapStyleId with
-            | None -> ()
-            | Some wordWrapStyle -> windowSettings.Wrap <- Util.IsFlagSet wordWrapStyle WordWrapStyles.WordWrap
-            match EditorOptionsUtil.GetOptionValue editorOptions DefaultTextViewHostOptions.LineNumberMarginId with
-            | None -> ()
-            | Some show -> localSettings.Number <- show
-            match EditorOptionsUtil.GetOptionValue editorOptions DefaultWpfViewOptions.EnableHighlightCurrentLineId with
-            | None -> ()
-            | Some show -> windowSettings.CursorLine <- show)
+        x.TrySync vimBuffer (fun vimBuffer editorOptions ->
+            for data in _settingList do 
+                match data.GetEditorValue editorOptions with
+                | None -> ()
+                | Some value -> 
+                    let settings = data.GetSettings vimBuffer
+                    settings.TrySetValue data.VimSettingName value |> ignore)
 
     interface IEditorToSettingsSynchronizer with
         member x.StartSynchronizing vimBuffer settingSyncSource = x.StartSynchronizing vimBuffer settingSyncSource
+        member x.SyncSetting data = _settingList.Add data

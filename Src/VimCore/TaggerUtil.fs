@@ -19,7 +19,6 @@ open System.Collections.Generic
 open System.Threading
 open System.Net
 open System.Threading.Tasks
-open System.Windows.Threading
 
 module TaggerUtilCore = 
 

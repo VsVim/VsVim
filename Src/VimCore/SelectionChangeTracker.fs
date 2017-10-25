@@ -216,10 +216,10 @@ type internal SelectionChangeTracker
             not _textView.Selection.IsReversed && 
             (_vimBuffer.ModeKind = ModeKind.VisualCharacter || _vimBuffer.ModeKind = ModeKind.SelectCharacter)) then
 
-            match TextViewUtil.GetTextViewLines _textView, _mouseDevice.GetPosition _textView |> NullableUtil.ToOption with
-            | Some textViewLines, Some wpfPoint ->
-                let x = wpfPoint.X
-                let y = wpfPoint.Y
+            match TextViewUtil.GetTextViewLines _textView, _mouseDevice.GetPosition _textView with
+            | Some textViewLines, Some vimPoint ->
+                let x = vimPoint.X
+                let y = vimPoint.Y
                 let textViewLine = textViewLines.GetTextViewLineContainingYCoordinate (y + _textView.ViewportTop)
                 if textViewLine <> null then
                     let point = textViewLine.GetBufferPositionFromXCoordinate x 

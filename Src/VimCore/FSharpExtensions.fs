@@ -106,3 +106,24 @@ module public EditorExtensions =
         | None ->
             value <- Unchecked.defaultof<'T>
             false
+
+[<Extension>]
+module public DiscriminatedUnionExtensions =
+
+    [<Extension>]
+    let GetToggle settingValue = 
+        match settingValue with
+        | SettingValue.Toggle v -> v
+        | _ -> failwith "Not a toggle"
+
+    [<Extension>]
+    let GetNumber settingValue = 
+        match settingValue with
+        | SettingValue.Number v -> v
+        | _ -> failwith "Not a number"
+
+    [<Extension>]
+    let GetString settingValue =
+        match settingValue with 
+        | SettingValue.String v -> v
+        | _ -> failwith "Not a string"
