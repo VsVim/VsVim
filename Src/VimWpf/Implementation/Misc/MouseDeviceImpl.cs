@@ -1,4 +1,5 @@
-﻿using Microsoft.VisualStudio.Text.Editor;
+﻿using Microsoft.FSharp.Core;
+using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Utilities;
 using System.ComponentModel.Composition;
 using System.Windows;
@@ -73,12 +74,13 @@ namespace Vim.UI.Wpf.Implementation.Misc
             return false;
         }
 
-        public Point? GetPosition(ITextView textView)
+        public FSharpOption<VimPoint> GetPosition(ITextView textView)
         {
             var wpfTextView = textView as IWpfTextView;
             if (wpfTextView != null)
             {
-                return _mouseDevice.GetPosition(wpfTextView.VisualElement);
+                var position = _mouseDevice.GetPosition(wpfTextView.VisualElement);
+                return FSharpOption.Create(new VimPoint(x: position.X, y: position.Y));
             }
 
             return null;

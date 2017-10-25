@@ -6,6 +6,7 @@ open Microsoft.VisualStudio.Text.Editor
 open Microsoft.VisualStudio.Text.Operations
 open Microsoft.VisualStudio.Text.Tagging
 open System
+open System.Configuration
 
 /// Used to determine if a completion window is active for a given view
 type IDisplayWindowBroker =
@@ -190,6 +191,13 @@ type IFoldManagerFactory =
     /// Get the IFoldManager for this ITextView.
     abstract GetFoldManager : textView : ITextView -> IFoldManager
 
+/// Used because the actual Point class is in WPF which isn't available at this layer.
+[<Struct>]
+type VimPoint = {
+    X: double
+    Y: double
+}
+
 /// Abstract representation of the mouse
 type IMouseDevice = 
     
@@ -197,7 +205,7 @@ type IMouseDevice =
     abstract IsLeftButtonPressed : bool
 
     /// Get the position of the mouse position within the ITextView
-    abstract GetPosition : textView : ITextView -> Nullable<System.Windows.Point>
+    abstract GetPosition : textView : ITextView -> VimPoint option
 
     /// Is the given ITextView in the middle fo a drag operation?
     abstract InDragOperation : textView : ITextView -> bool
@@ -485,6 +493,69 @@ type SettingSyncSource =
     | Editor
     | Vim 
 
+ [<Struct>]
+ type SettingSyncData = {
+    EditorOptionKey : string 
+    GetEditorValue: IEditorOptions -> SettingValue option
+    VimSettingName : string
+    GetVimSettingValue : IVimBuffer -> obj
+    IsLocal : bool
+} with
+
+    member x.IsWindow = not x.IsLocal
+
+    member x.GetSettings vimBuffer = SettingSyncData.GetSettingsCore vimBuffer x.IsLocal
+
+    static member private GetSettingsCore (vimBuffer : IVimBuffer) isLocal = 
+        if isLocal then vimBuffer.LocalSettings :> IVimSettings
+        else vimBuffer.WindowSettings :> IVimSettings
+
+    static member GetBoolValueFunc (editorOptionKey : EditorOptionKey<bool>) = 
+        (fun editorOptions -> 
+            match EditorOptionsUtil.GetOptionValue editorOptions editorOptionKey with
+            | None -> None
+            | Some value -> SettingValue.Toggle value |> Some)
+
+    static member GetNumberValueFunc (editorOptionKey : EditorOptionKey<int>) = 
+        (fun editorOptions -> 
+            match EditorOptionsUtil.GetOptionValue editorOptions editorOptionKey with
+            | None -> None
+            | Some value -> SettingValue.Number value |> Some)
+
+    static member GetStringValue (editorOptionKey : EditorOptionKey<string>) = 
+        (fun editorOptions -> 
+            match EditorOptionsUtil.GetOptionValue editorOptions editorOptionKey with
+            | None -> None
+            | Some value -> SettingValue.String value |> Some)
+
+    static member GetSettingValueFunc name isLocal =
+        (fun (vimBuffer : IVimBuffer) ->
+            let settings = SettingSyncData.GetSettingsCore vimBuffer isLocal
+            match settings.GetSetting name with
+            | None -> null
+            | Some setting -> 
+                match setting.Value with 
+                | SettingValue.String value -> value :> obj
+                | SettingValue.Toggle value -> box value
+                | SettingValue.Number value -> box value)
+
+    static member Create (key : EditorOptionKey<'T>) (settingName : string) (isLocal : bool) (convertEditorValue : Func<'T, SettingValue>) (convertSettingValue : Func<SettingValue, obj>) =
+        {
+            EditorOptionKey = key.Name
+            GetEditorValue = (fun editorOptions ->
+                match EditorOptionsUtil.GetOptionValue editorOptions key with
+                | None -> None
+                | Some value -> convertEditorValue.Invoke value |> Some)
+            VimSettingName = settingName
+            GetVimSettingValue = (fun vimBuffer -> 
+                let settings = SettingSyncData.GetSettingsCore vimBuffer isLocal 
+                match settings.GetSetting settingName with
+                | None -> null
+                | Some setting -> convertSettingValue.Invoke setting.Value)
+            IsLocal = isLocal
+        }
+
+
 /// This interface is used to synchronize settings between vim settings and the 
 /// editor settings
 type IEditorToSettingsSynchronizer = 
@@ -495,4 +566,6 @@ type IEditorToSettingsSynchronizer =
     /// This method can be called multiple times for the same IVimBuffer and it 
     /// will only synchronize once 
     abstract StartSynchronizing : vimBuffer : IVimBuffer -> source : SettingSyncSource -> unit
+
+    abstract SyncSetting : data : SettingSyncData -> unit
 

@@ -1724,8 +1724,8 @@ type internal CommandUtil
     member x.PutAfterCaretMouse() = 
         try
             match _mouseDevice.GetPosition _textView with
-            | NullableUtil.Null -> ()
-            | NullableUtil.HasValue position ->
+            | None -> ()
+            | Some position ->
 
                 // First move the caret to the current mouse position
                 let textViewLine = _textView.TextViewLines.GetTextViewLineContainingYCoordinate(position.Y + _textView.ViewportTop)

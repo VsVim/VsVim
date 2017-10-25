@@ -5,6 +5,7 @@ using Moq;
 using Xunit;
 using Vim;
 using Vim.EditorHost;
+using Vim.UI.Wpf;
 
 namespace Vim.UnitTest
 {

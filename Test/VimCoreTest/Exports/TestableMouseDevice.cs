@@ -1,4 +1,5 @@
-﻿using Microsoft.VisualStudio.Text.Editor;
+﻿using Microsoft.FSharp.Core;
+using Microsoft.VisualStudio.Text.Editor;
 using System.ComponentModel.Composition;
 using System.Windows;
 using Vim;
@@ -16,7 +17,7 @@ namespace Vim.UnitTest.Exports
             get { return IsLeftButtonPressed; }
         }
 
-        public Point? GetPosition(ITextView textView)
+        public FSharpOption<VimPoint> GetPosition(ITextView textView)
         {
             return null;
         }

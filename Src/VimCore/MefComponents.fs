@@ -10,7 +10,6 @@ open System.ComponentModel.Composition
 open System.Collections.Generic
 open System.Diagnostics
 open System
-open System.Windows.Threading
 
 /// This is the type responsible for tracking a line + column across edits to the
 /// underlying ITextBuffer.  In a perfect world this would be implemented as an 
@@ -470,12 +469,6 @@ type internal ProtectedOperations =
             | e -> Debug.Fail((sprintf "Error handler threw: %O" e))
 
     interface IProtectedOperations with
-        member x.BeginInvoke action =
-            let action = x.GetProtectedAction action
-            Dispatcher.CurrentDispatcher.BeginInvoke(action, null) |> ignore
-        member x.BeginInvoke(action, dispatcherPriority) = 
-            let action = x.GetProtectedAction action
-            Dispatcher.CurrentDispatcher.BeginInvoke(action, dispatcherPriority, null) |> ignore
         member x.GetProtectedAction action = x.GetProtectedAction action
         member x.GetProtectedEventHandler eventHandler = x.GetProtectedEventHandler eventHandler
         member x.Report ex = x.AlertAll ex
