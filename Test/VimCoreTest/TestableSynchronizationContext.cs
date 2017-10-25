@@ -11,10 +11,8 @@ namespace Vim.UnitTest
         private bool _isSet;
         private readonly List<Action> _list = new List<Action>();
 
-        public bool IsEmpty
-        {
-            get { return 0 == _list.Count; }
-        }
+        public bool IsEmpty => 0 == _list.Count;
+        public int PostedActionCount => _list.Count;
 
         public override void Post(SendOrPostCallback d, object state)
         {

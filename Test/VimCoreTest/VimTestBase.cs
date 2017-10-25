@@ -36,7 +36,11 @@ namespace Vim.UnitTest
     {
         private readonly VimEditorHost _vimEditorHost;
 
-        private static VimEditorHost s_cachedVimEditorHost;
+        /// <summary>
+        /// Cache of composition containers. This is indexed on thread id as the underlying objects in the container
+        /// can, and often do, have thread affinity. 
+        /// </summary>
+        private static readonly Dictionary<int, VimEditorHost> s_cachedVimEditorHostMap = new Dictionary<int, VimEditorHost>();
 
         public CompositionContainer CompositionContainer
         {
@@ -509,7 +513,9 @@ namespace Vim.UnitTest
 
         private static VimEditorHost GetOrCreateVimEditorHost()
         {
-            if (s_cachedVimEditorHost == null)
+            var key = Thread.CurrentThread.ManagedThreadId;
+            VimEditorHost host;
+            if (!s_cachedVimEditorHostMap.TryGetValue(key, out host))
             {
                 var editorHostFactory = new EditorHostFactory();
                 editorHostFactory.Add(new AssemblyCatalog(typeof(IVim).Assembly));
@@ -527,10 +533,11 @@ namespace Vim.UnitTest
                     typeof(OutlinerTaggerProvider)));
 
                 var compositionContainer = editorHostFactory.CreateCompositionContainer();
-                s_cachedVimEditorHost = new VimEditorHost(compositionContainer);
+                host = new VimEditorHost(compositionContainer);
+                s_cachedVimEditorHostMap[key] = host;
             }
 
-            return s_cachedVimEditorHost;
+            return host;
         }
 
         protected void UpdateTabStop(IVimBuffer vimBuffer, int tabStop)
