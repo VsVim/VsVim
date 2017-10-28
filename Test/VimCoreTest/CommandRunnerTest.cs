@@ -171,7 +171,7 @@ namespace Vim.UnitTest
             }
 
             [Fact]
-            public void ResetState()
+            public void ResetState4()
             {
                 _runner.Run('1');
                 _runner.ResetState();
@@ -228,7 +228,7 @@ namespace Vim.UnitTest
             }
 
             [Fact]
-            public void ResetState()
+            public void ResetState3()
             {
                 _runner.Run(@"""a");
                 _runner.ResetState();

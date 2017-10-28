@@ -99,6 +99,10 @@
     <Compile Include="TestableSynchronizationContext.cs" />
     <Compile Include="TestUtils.cs" />
     <Compile Include="TextTaggerSource.cs" />
+    <Compile Include="Utilities\StaTaskScheduler.cs" />
+    <Compile Include="Utilities\WpfFactDiscoverer.cs" />
+    <Compile Include="Utilities\WpfTestCase.cs" />
+    <Compile Include="WpfFactAttribute.cs" />
     <Compile Include="VersioningTest.cs" />
     <Compile Include="WordCompletionUtilTest.cs" />
     <Compile Include="MatchingTokenUtilTest.cs" />
