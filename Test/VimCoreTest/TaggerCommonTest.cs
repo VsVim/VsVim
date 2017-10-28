@@ -271,7 +271,7 @@ namespace Vim.UnitTest
             _tagger.TagsChanged += (sender, e) => _tagsChangedList.Add(e.Span);
         }
 
-        [Fact]
+        [WpfFact]
         public void SimpleSingle()
         {
             Create("cat dog", "fish");
@@ -297,7 +297,7 @@ namespace Vim.UnitTest
             Assert.Equal(expected, tags.Select(x => x.Span));
         }
 
-        [Fact]
+        [WpfFact]
         public void SimpleMultipleSameLine()
         {
             Create("cat dog dog", "fish");
@@ -331,7 +331,7 @@ namespace Vim.UnitTest
         /// should let the editor drive the decision.  After all until the editor asks for a particular
         /// Span nothing has "changed" in its view
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void IgnoreTextBufferChanged()
         {
             Create("cat dog");
@@ -343,7 +343,7 @@ namespace Vim.UnitTest
         /// The editor will never send down an empty NormalizedSnapshotSpan collection but there is no 
         /// stopping other components from doing so.  Must protect against it
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void SourceSpansNone()
         {
             Create("cat dog");

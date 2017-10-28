@@ -38,13 +38,13 @@ namespace Vim.UnitTest
             _mode.Raise(x => x.CurrentMatchChanged += null, null, option);
         }
 
-        [Fact]
+        [WpfFact]
         public void GetTags_Initial()
         {
             Assert.False(_taggerSourceRaw.GetTags(new NormalizedSnapshotSpanCollection()).Any());
         }
 
-        [Fact]
+        [WpfFact]
         public void GetTags_WithCurrent()
         {
             var span = _textBuffer.GetLine(0).Extent;
@@ -54,7 +54,7 @@ namespace Vim.UnitTest
             Assert.Equal(span, tagSpan.Span);
         }
 
-        [Fact]
+        [WpfFact]
         public void GetTags_WithCurrentReset()
         {
             SetAndRaiseCurrentMatch(_textBuffer.GetLine(0).Extent);
@@ -62,7 +62,7 @@ namespace Vim.UnitTest
             Assert.False(_taggerSourceRaw.GetTags(new NormalizedSnapshotSpanCollection()).Any());
         }
 
-        [Fact]
+        [WpfFact]
         public void Changed_OnCurrentChanged()
         {
             var didSee = false;
@@ -71,7 +71,7 @@ namespace Vim.UnitTest
             Assert.True(didSee);
         }
 
-        [Fact]
+        [WpfFact]
         public void Changed_OnCurrentReset()
         {
             var didSee = false;

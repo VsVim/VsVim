@@ -49,7 +49,7 @@ namespace Vim.UI.Wpf.UnitTest
         /// A timeout after a single key stroke should cause the keystroke to 
         /// be processed
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void Timeout_Single()
         {
             _vimBuffer.Vim.KeyMap.MapWithNoRemap("cat", "chase the cat", KeyRemapMode.Insert);
@@ -64,7 +64,7 @@ namespace Vim.UI.Wpf.UnitTest
         /// A timeout after a double key stroke should cause the buffered keystrokes to 
         /// be processed
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void Timeout_Double()
         {
             _vimBuffer.Vim.KeyMap.MapWithNoRemap("cat", "chase the cat", KeyRemapMode.Insert);
@@ -77,7 +77,7 @@ namespace Vim.UI.Wpf.UnitTest
             Assert.Equal("ca", _vimBuffer.TextBuffer.GetLine(0).GetText());
         }
 
-        [Fact]
+        [WpfFact]
         public void NoTimeout()
         {
             _vimBuffer.Vim.GlobalSettings.TimeoutLength = 1000;

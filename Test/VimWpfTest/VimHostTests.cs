@@ -137,7 +137,7 @@ namespace Vim.UI.Wpf.UnitTest
 
         public sealed class RunCommandTests : VimHostTest
         {
-            [Fact]
+            [WpfFact]
             public void ItUsesWorkingDirectoryFromVimData()
             {
                 const string cwd = @"C:\Windows";
@@ -169,14 +169,14 @@ namespace Vim.UI.Wpf.UnitTest
                 return _textDocumentFactoryService.CreateTextDocument(textBuffer, name);
             }
 
-            [Fact]
+            [WpfFact]
             public void NormalBufferSaved()
             {
                 var textDocument = CreateTextDocument("");
                 Assert.False(_vimHost.IsDirty(textDocument.TextBuffer));
             }
 
-            [Fact]
+            [WpfFact]
             public void NormalBufferDirty()
             {
                 var textDocument = CreateTextDocument("");
@@ -184,7 +184,7 @@ namespace Vim.UI.Wpf.UnitTest
                 Assert.True(_vimHost.IsDirty(textDocument.TextBuffer));
             }
 
-            [Fact]
+            [WpfFact]
             public void NormalProjectionSaved()
             {
                 var textDocument1 = CreateTextDocument("hello world");
@@ -193,7 +193,7 @@ namespace Vim.UI.Wpf.UnitTest
                 Assert.False(_vimHost.IsDirty(projectionBuffer));
             }
 
-            [Fact]
+            [WpfFact]
             public void NormalProjectionFirstDirty()
             {
                 var textDocument1 = CreateTextDocument("hello world");
@@ -203,7 +203,7 @@ namespace Vim.UI.Wpf.UnitTest
                 Assert.True(_vimHost.IsDirty(projectionBuffer));
             }
 
-            [Fact]
+            [WpfFact]
             public void NormalProjectionSecondDirty()
             {
                 var textDocument1 = CreateTextDocument("hello world");
@@ -218,7 +218,7 @@ namespace Vim.UI.Wpf.UnitTest
             /// make it up have backing ITextDocument values.  Those need to be checked for dirty, not the 
             /// IProjectionBuffer itself
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Issue1143()
             {
                 var textDocument1 = CreateTextDocument("hello world");

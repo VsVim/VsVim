@@ -37,14 +37,14 @@ namespace Vim.VisualStudio.UnitTest
                 return CreateTextView(contentType);
             }
 
-            [Fact]
+            [WpfFact]
             public void CSharpContent()
             {
                 var textView = Create("csharp", "code");
                 Assert.False(_reportDesignerUtil.IsExpressionView(textView));
             }
 
-            [Fact]
+            [WpfFact]
             public void RdlContent()
             {
                 var textView = Create(ReportDesignerUtil.RdlContentTypeName, "code");
@@ -66,7 +66,7 @@ namespace Vim.VisualStudio.UnitTest
                 Assert.True(_reportDesignerUtil.IsSpecialHandled(keyInput));
             }
 
-            [Fact]
+            [WpfFact]
             public void AlphaKeysUpper()
             {
                 foreach (var c in TestConstants.LowerCaseLetters)
@@ -76,7 +76,7 @@ namespace Vim.VisualStudio.UnitTest
                 }
             }
 
-            [Fact]
+            [WpfFact]
             public void AlphaKeysLower()
             {
                 foreach (var c in TestConstants.UpperCaseLetters)
@@ -86,19 +86,19 @@ namespace Vim.VisualStudio.UnitTest
                 }
             }
 
-            [Fact]
+            [WpfFact]
             public void BackKey()
             {
                 VerifySpecial(VimKey.Back);
             }
 
-            [Fact]
+            [WpfFact]
             public void DeleteKey()
             {
                 VerifySpecial(VimKey.Delete);
             }
 
-            [Fact]
+            [WpfFact]
             public void ArrowKeys()
             {
                 VerifySpecial(VimKey.Left);

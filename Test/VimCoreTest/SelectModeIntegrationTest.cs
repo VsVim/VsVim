@@ -48,7 +48,7 @@ namespace Vim.UnitTest
 
         public sealed class Enter : SelectModeIntegrationTest
         {
-            [Fact]
+            [WpfFact]
             public void SelectOfText()
             {
                 Create("cat dog");
@@ -60,7 +60,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Extending the selection should just ask select mode to reset it's information
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void ExtendSelection()
             {
                 Create("cat dog");
@@ -73,7 +73,7 @@ namespace Vim.UnitTest
                 Assert.Equal(ModeKind.SelectCharacter, _vimBuffer.ModeKind);
             }
 
-            [Fact]
+            [WpfFact]
             public void CommandToCharacter()
             {
                 Create("cat");
@@ -81,7 +81,7 @@ namespace Vim.UnitTest
                 Assert.Equal(ModeKind.SelectCharacter, _vimBuffer.ModeKind);
             }
 
-            [Fact]
+            [WpfFact]
             public void CommandToLine()
             {
                 Create("cat");
@@ -89,7 +89,7 @@ namespace Vim.UnitTest
                 Assert.Equal(ModeKind.SelectLine, _vimBuffer.ModeKind);
             }
 
-            [Fact]
+            [WpfFact]
             public void CommandToBlock()
             {
                 Create("cat");
@@ -100,7 +100,7 @@ namespace Vim.UnitTest
 
         public sealed class SpecialKeysFromNormal : SelectModeIntegrationTest
         {
-            [Fact]
+            [WpfFact]
             public void ShiftRightToSelect_NormalInclusive()
             {
                 Create("cat");
@@ -115,7 +115,7 @@ namespace Vim.UnitTest
                 Assert.Equal(1, _textView.GetCaretPoint().Position);
             }
 
-            [Fact]
+            [WpfFact]
             public void ShiftRightToSelect_NormalExclusive()
             {
                 Create("cat");
@@ -131,7 +131,7 @@ namespace Vim.UnitTest
                 Assert.Equal(1, _textView.GetCaretPoint().Position);
             }
 
-            [Fact]
+            [WpfFact]
             public void ControlShiftRightToSelect_NormalInclusive()
             {
                 Create("cat dog");
@@ -146,7 +146,7 @@ namespace Vim.UnitTest
                 Assert.Equal(4, _textView.GetCaretPoint().Position);
             }
 
-            [Fact]
+            [WpfFact]
             public void ControlShiftRightToSelect_NormalExclusive()
             {
                 Create("cat dog");
@@ -162,7 +162,7 @@ namespace Vim.UnitTest
                 Assert.Equal(4, _textView.GetCaretPoint().Position);
             }
 
-            [Fact]
+            [WpfFact]
             public void ShiftLeftToSelect_NormalInclusive()
             {
                 Create("cat dog");
@@ -178,7 +178,7 @@ namespace Vim.UnitTest
                 Assert.Equal(3, _textView.GetCaretPoint().Position);
             }
 
-            [Fact]
+            [WpfFact]
             public void ShiftLeftToSelect_NormalExclusive()
             {
                 Create("cat dog");
@@ -195,7 +195,7 @@ namespace Vim.UnitTest
                 Assert.Equal(3, _textView.GetCaretPoint().Position);
             }
 
-            [Fact]
+            [WpfFact]
             public void ControlShiftLeftToSelect_NormalInclusive()
             {
                 Create("cat dog fish");
@@ -211,7 +211,7 @@ namespace Vim.UnitTest
                 Assert.Equal(4, _textView.GetCaretPoint().Position);
             }
 
-            [Fact]
+            [WpfFact]
             public void ControlShiftLeftToSelect_NormalExclusive()
             {
                 Create("cat dog fish");
@@ -228,7 +228,7 @@ namespace Vim.UnitTest
                 Assert.Equal(4, _textView.GetCaretPoint().Position);
             }
 
-            [Fact]
+            [WpfFact]
             public void ControlShiftEndToSelect_NormalInclusiveFinalLineBreak()
             {
                 Create("cat dog fish", "");
@@ -244,7 +244,7 @@ namespace Vim.UnitTest
                 Assert.Equal(11, _textView.GetCaretPoint().Position);
             }
 
-            [Fact]
+            [WpfFact]
             public void ControlShiftEndToSelect_NormalExclusiveFinalLineBreak()
             {
                 Create("cat dog fish", "");
@@ -261,7 +261,7 @@ namespace Vim.UnitTest
                 Assert.Equal(14, _textView.GetCaretPoint().Position);
             }
 
-            [Fact]
+            [WpfFact]
             public void ControlShiftEndToSelect_NormalInclusiveNoFinalLineBreak()
             {
                 Create("cat dog fish");
@@ -277,7 +277,7 @@ namespace Vim.UnitTest
                 Assert.Equal(11, _textView.GetCaretPoint().Position);
             }
 
-            [Fact]
+            [WpfFact]
             public void ControlShiftEndToSelect_NormalExclusiveNoFinalLineBreak()
             {
                 Create("cat dog fish");
@@ -294,7 +294,7 @@ namespace Vim.UnitTest
                 Assert.Equal(11, _textView.GetCaretPoint().Position);
             }
 
-            [Fact]
+            [WpfFact]
             public void ShiftRightToVisual_Normal()
             {
                 Create("cat");
@@ -306,7 +306,7 @@ namespace Vim.UnitTest
                 Assert.Equal(1, _textView.GetCaretPoint().Position);
             }
 
-            [Fact]
+            [WpfFact]
             public void ShiftRightToNothing_Normal()
             {
                 Create("cat dog");
@@ -315,7 +315,7 @@ namespace Vim.UnitTest
                 Assert.Equal(4, _textView.GetCaretPoint().Position);
             }
 
-            [Fact]
+            [WpfFact]
             public void ShiftLeftToSelect_Normal()
             {
                 Create("cat");
@@ -328,7 +328,7 @@ namespace Vim.UnitTest
                 Assert.Equal(0, _textView.GetCaretPoint().Position);
             }
 
-            [Fact]
+            [WpfFact]
             public void ShiftLeftToVisual_Normal()
             {
                 Create("cat");
@@ -341,7 +341,7 @@ namespace Vim.UnitTest
                 Assert.Equal(0, _textView.GetCaretPoint().Position);
             }
 
-            [Fact]
+            [WpfFact]
             public void ShiftLeftToNothing_Normal()
             {
                 Create("cat dog");
@@ -351,7 +351,7 @@ namespace Vim.UnitTest
                 Assert.Equal(0, _textView.GetCaretPoint().Position);
             }
 
-            [Fact]
+            [WpfFact]
             public void ShiftLeftToFromLastCharacter_NormalInclusive()
             {
                 Create("cat", "dog");
@@ -364,7 +364,7 @@ namespace Vim.UnitTest
                 Assert.Equal(1, _textView.GetCaretPoint().Position);
             }
 
-            [Fact]
+            [WpfFact]
             public void ShiftLeftToFromLastCharacter_NormalExclusive()
             {
                 Create("cat", "dog");
@@ -381,7 +381,7 @@ namespace Vim.UnitTest
 
         public sealed class SpecialKeysFromInsert : SelectModeIntegrationTest
         {
-            [Fact]
+            [WpfFact]
             public void ShiftRightToSelect_InsertInclusive()
             {
                 Create("cat");
@@ -397,7 +397,7 @@ namespace Vim.UnitTest
                 Assert.Equal(1, _textView.GetCaretPoint().Position);
             }
 
-            [Fact]
+            [WpfFact]
             public void ShiftRightToSelect_InsertExclusive()
             {
                 Create("cat");
@@ -414,7 +414,7 @@ namespace Vim.UnitTest
                 Assert.Equal(1, _textView.GetCaretPoint().Position);
             }
 
-            [Fact]
+            [WpfFact]
             public void ControlShiftRightToSelect_InsertInclusive()
             {
                 Create("cat dog");
@@ -430,7 +430,7 @@ namespace Vim.UnitTest
                 Assert.Equal(4, _textView.GetCaretPoint().Position);
             }
 
-            [Fact]
+            [WpfFact]
             public void ControlShiftRightToSelect_InsertExclusive()
             {
                 Create("cat dog");
@@ -447,7 +447,7 @@ namespace Vim.UnitTest
                 Assert.Equal(4, _textView.GetCaretPoint().Position);
             }
 
-            [Fact]
+            [WpfFact]
             public void ShiftLeftToSelect_InsertInclusive()
             {
                 Create("cat dog");
@@ -464,7 +464,7 @@ namespace Vim.UnitTest
                 Assert.Equal(3, _textView.GetCaretPoint().Position);
             }
 
-            [Fact]
+            [WpfFact]
             public void ShiftLeftToSelect_InsertExclusive()
             {
                 Create("cat dog");
@@ -482,7 +482,7 @@ namespace Vim.UnitTest
                 Assert.Equal(3, _textView.GetCaretPoint().Position);
             }
 
-            [Fact]
+            [WpfFact]
             public void ControlShiftLeftToSelect_InsertInclusive()
             {
                 Create("cat dog fish");
@@ -499,7 +499,7 @@ namespace Vim.UnitTest
                 Assert.Equal(4, _textView.GetCaretPoint().Position);
             }
 
-            [Fact]
+            [WpfFact]
             public void ControlShiftLeftToSelect_InsertExclusive()
             {
                 Create("cat dog fish");
@@ -517,7 +517,7 @@ namespace Vim.UnitTest
                 Assert.Equal(4, _textView.GetCaretPoint().Position);
             }
 
-            [Fact]
+            [WpfFact]
             public void ControlShiftEndToSelect_InsertInclusiveFinalLineBreak()
             {
                 Create("cat dog fish", "");
@@ -534,7 +534,7 @@ namespace Vim.UnitTest
                 Assert.Equal(12, _textView.GetCaretPoint().Position);
             }
 
-            [Fact]
+            [WpfFact]
             public void ControlShiftEndToSelect_InsertExclusiveFinalLineBreak()
             {
                 Create("cat dog fish", "");
@@ -552,7 +552,7 @@ namespace Vim.UnitTest
                 Assert.Equal(14, _textView.GetCaretPoint().Position);
             }
 
-            [Fact]
+            [WpfFact]
             public void ControlShiftEndToSelect_InsertInclusiveNoFinalLineBreak()
             {
                 Create("cat dog fish");
@@ -569,7 +569,7 @@ namespace Vim.UnitTest
                 Assert.Equal(11, _textView.GetCaretPoint().Position);
             }
 
-            [Fact]
+            [WpfFact]
             public void ControlShiftEndToSelect_InsertExclusiveNoFinalLineBreak()
             {
                 Create("cat dog fish");
@@ -587,7 +587,7 @@ namespace Vim.UnitTest
                 Assert.Equal(12, _textView.GetCaretPoint().Position);
             }
 
-            [Fact]
+            [WpfFact]
             public void ShiftRightToVisual_Insert()
             {
                 Create("cat");
@@ -600,7 +600,7 @@ namespace Vim.UnitTest
                 Assert.Equal(1, _textView.GetCaretPoint().Position);
             }
 
-            [Fact]
+            [WpfFact]
             public void ShiftRightToNothing_Insert()
             {
                 Create("cat dog");
@@ -610,7 +610,7 @@ namespace Vim.UnitTest
                 Assert.Equal(4, _textView.GetCaretPoint().Position);
             }
 
-            [Fact]
+            [WpfFact]
             public void ShiftLeftToSelect_Insert()
             {
                 Create("cat");
@@ -624,7 +624,7 @@ namespace Vim.UnitTest
                 Assert.Equal(0, _textView.GetCaretPoint().Position);
             }
 
-            [Fact]
+            [WpfFact]
             public void ShiftLeftToVisual_Insert()
             {
                 Create("cat");
@@ -638,7 +638,7 @@ namespace Vim.UnitTest
                 Assert.Equal(0, _textView.GetCaretPoint().Position);
             }
 
-            [Fact]
+            [WpfFact]
             public void ShiftLeftToNothing_Insert()
             {
                 Create("cat dog");
@@ -652,7 +652,7 @@ namespace Vim.UnitTest
 
         public sealed class Edit : SelectModeIntegrationTest
         {
-            [Fact]
+            [WpfFact]
             public void SimpleAlpha()
             {
                 Create("Test time");
@@ -663,7 +663,7 @@ namespace Vim.UnitTest
                 Assert.Equal(2, _textView.GetCaretPoint().Position);
             }
 
-            [Fact]
+            [WpfFact]
             public void SimpleNumeric()
             {
                 Create("Test time");
@@ -674,7 +674,7 @@ namespace Vim.UnitTest
                 Assert.Equal(2, _textView.GetCaretPoint().Position);
             }
 
-            [Fact]
+            [WpfFact]
             public void SimpleEnter()
             {
                 Create("dog go time");
@@ -691,7 +691,7 @@ namespace Vim.UnitTest
             ///
             /// issue #911
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void DeleteKey()
             {
                 Create("dog cat bear");
@@ -706,7 +706,7 @@ namespace Vim.UnitTest
             /// The backspace key should delete the selection and not insert any text into the 
             /// line
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void BackspaceKey()
             {
                 Create("dog cat bear");
@@ -721,7 +721,7 @@ namespace Vim.UnitTest
             /// The initial replacement and any subsequent insert mode input should be linked
             /// into a single undo
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void UndoAfterMultipleInputChars()
             {
                 Create("dog cat bear");
@@ -735,7 +735,7 @@ namespace Vim.UnitTest
 
         public sealed class KeyMovementCharacter : SelectModeIntegrationTest
         {
-            [Fact]
+            [WpfFact]
             public void Right()
             {
                 Create("cat");
@@ -744,7 +744,7 @@ namespace Vim.UnitTest
                 Assert.Equal(1, _textView.GetCaretPoint().Position);
             }
 
-            [Fact]
+            [WpfFact]
             public void Left()
             {
                 Create("cat");
@@ -753,7 +753,7 @@ namespace Vim.UnitTest
                 Assert.Equal(0, _textView.GetCaretPoint().Position);
             }
 
-            [Fact]
+            [WpfFact]
             public void Down()
             {
                 Create("cat", "dog");
@@ -771,7 +771,7 @@ namespace Vim.UnitTest
                 _globalSettings.KeyModelOptions = KeyModelOptions.StopSelection;
             }
 
-            [Fact]
+            [WpfFact]
             public void Right()
             {
                 Create("cat");
@@ -781,7 +781,7 @@ namespace Vim.UnitTest
                 Assert.True(_textView.Selection.IsEmpty);
             }
 
-            [Fact]
+            [WpfFact]
             public void Left()
             {
                 Create("cat");
@@ -791,7 +791,7 @@ namespace Vim.UnitTest
                 Assert.True(_textView.Selection.IsEmpty);
             }
 
-            [Fact]
+            [WpfFact]
             public void Down()
             {
                 Create("cat", "dog");
@@ -804,7 +804,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Even when we have stopsel set the shifted keys should be extending the selection
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void ShiftRight()
             {
                 Create("cat");
@@ -813,7 +813,7 @@ namespace Vim.UnitTest
                 Assert.Equal(1, _textView.GetCaretPoint().Position);
             }
 
-            [Fact]
+            [WpfFact]
             public void ShiftLeft()
             {
                 Create("cat");
@@ -828,7 +828,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Make sure that escape will leave select mode
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Escape()
             {
                 Create("cat dog");
@@ -841,7 +841,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Make sure 'v' with 'selectmode=cmd' enters select mode
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void SelectCharacterModeWithSelectModeCommand()
             {
                 Create("cat dog");
@@ -853,7 +853,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Make sure 'V' with 'selectmode=cmd' enters select mode
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void SelectLineModeWithSelectModeCommand()
             {
                 Create("cat dog");
@@ -865,7 +865,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Make sure 'C-v' with 'selectmode=cmd' enters select mode
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void SelectBlockModeWithSelectModeCommand()
             {
                 Create("cat dog");
@@ -877,7 +877,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Make sure 'C-q' with 'selectmode=cmd' enters select mode
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void SelectBlockModeAlternateWithSelectModeCommand()
             {
                 Create("cat dog");
@@ -889,7 +889,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Make sure 'C-o' works from select mode
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void SelectOneTimeCommand()
             {
                 Create("cat dog eel");
@@ -908,7 +908,7 @@ namespace Vim.UnitTest
                 Assert.Equal("cat bear eel", _textBuffer.GetLine(0).GetText());
             }
 
-            [Fact]
+            [WpfFact]
             public void Issue1317()
             {
                 Create("hello world");

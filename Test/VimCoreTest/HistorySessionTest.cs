@@ -85,14 +85,14 @@ namespace Vim.UnitTest
 
         public sealed class PasteTest : HistorySessionTest
         {
-            [Fact]
+            [WpfFact]
             public void InPasteWait()
             {
                 ProcessNotation("<C-R>");
                 Assert.True(_historySession.InPasteWait);
             }
 
-            [Fact]
+            [WpfFact]
             public void PasteComplete()
             {
                 Vim.RegisterMap.GetRegister('c').UpdateValue("test");
@@ -100,7 +100,7 @@ namespace Vim.UnitTest
                 Assert.Equal("test", _client.ProcessValue.Item2);
             }
 
-            [Fact]
+            [WpfFact]
             public void ResetCommandCancelsPaste()
             {
                 ProcessNotation("<C-R>");
@@ -112,7 +112,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Enter has no register hence it implicitly cancels the paste
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void EnterCancels()
             {
                 ProcessNotation("cat<C-r>");
@@ -123,7 +123,7 @@ namespace Vim.UnitTest
                 Assert.Equal("cat", _client.ProcessValue.Item2);
             }
 
-            [Fact]
+            [WpfFact]
             public void CantUsePasteSpecialFirst()
             {
                 ProcessNotation("cat<C-w>");
@@ -134,7 +134,7 @@ namespace Vim.UnitTest
 
         public sealed class ClearCommandLineTest : HistorySessionTest
         {
-            [Fact]
+            [WpfFact]
             public void Simple()
             {
                 ProcessNotation("cat");

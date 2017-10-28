@@ -17,7 +17,7 @@ namespace Vim.UnitTest
 
         public sealed class CreateTest : SnapshotLineRangeTest
         {
-            [Fact]
+            [WpfFact]
             public void ForExtent()
             {
                 Create("cat", "dog");
@@ -26,7 +26,7 @@ namespace Vim.UnitTest
                 Assert.Equal(_textBuffer.CurrentSnapshot.Length, lineRange.ExtentIncludingLineBreak.Length);
             }
 
-            [Fact]
+            [WpfFact]
             public void ForLine()
             {
                 Create("cat", "dog");
@@ -40,21 +40,21 @@ namespace Vim.UnitTest
 
         public sealed class MiscTest : SnapshotLineRangeTest
         {
-            [Fact]
+            [WpfFact]
             public void GetText()
             {
                 Create("cat", "dog");
                 Assert.Equal("dog", _textBuffer.GetLineRange(1).GetText());
             }
 
-            [Fact]
+            [WpfFact]
             public void GetTextIncludingLineBreak()
             {
                 Create("cat", "dog");
                 Assert.Equal("cat" + Environment.NewLine, _textBuffer.GetLineRange(0).GetTextIncludingLineBreak());
             }
 
-            [Fact]
+            [WpfFact]
             public void Lines1()
             {
                 Create("a", "b");
@@ -73,7 +73,7 @@ namespace Vim.UnitTest
                     equalityUnit);
             }
 
-            [Fact]
+            [WpfFact]
             public void Simple()
             {
                 Create("cat", "dog", "fish");
@@ -84,7 +84,7 @@ namespace Vim.UnitTest
                 Run(equalityUnit);
             }
 
-            [Fact]
+            [WpfFact]
             public void DifferentSnapshots()
             {
                 Create("cat", "dog", "fish");

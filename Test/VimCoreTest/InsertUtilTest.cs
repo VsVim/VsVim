@@ -44,7 +44,7 @@ namespace Vim.UnitTest
         {
             public sealed class DeleteRightTest : ApplyTextChangeTest
             {
-                [Fact]
+                [WpfFact]
                 public void PastEndOfBuffer()
                 {
                     Create("cat dog");
@@ -53,7 +53,7 @@ namespace Vim.UnitTest
                     Assert.Equal("cat", _textBuffer.GetLine(0).GetText());
                 }
 
-                [Fact]
+                [WpfFact]
                 public void Normal()
                 {
                     Create("cat dog");
@@ -62,7 +62,7 @@ namespace Vim.UnitTest
                     Assert.Equal(0, _textView.GetCaretPoint().Position);
                 }
 
-                [Fact]
+                [WpfFact]
                 public void AtEndOfBuffer()
                 {
                     Create("cat");
@@ -72,7 +72,7 @@ namespace Vim.UnitTest
                     Assert.Equal(2, _textView.GetCaretPoint().Position);
                 }
 
-                [Fact]
+                [WpfFact]
                 public void AtEndOfBufferWithVeOnemore()
                 {
                     Create("cat");
@@ -92,7 +92,7 @@ namespace Vim.UnitTest
                 /// off the end of the ITextBuffer.  Need to make sure that the delete happens on 
                 /// the original ITextBuffer position, not the caret position 
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void InsertThenDeletePastEndOfOriginalBuffer()
                 {
                     Create("cat");
@@ -108,7 +108,7 @@ namespace Vim.UnitTest
                 /// <summary>
                 /// Use delete right and insert to replace some text 
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void ReplaceSimple()
                 {
                     Create("cat");
@@ -123,7 +123,7 @@ namespace Vim.UnitTest
                 /// <summary>
                 /// Use delete right and insert to replace some text 
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void ReplaceBig()
                 {
                     Create("cat");
@@ -155,7 +155,7 @@ namespace Vim.UnitTest
             ///  - Escape
             /// Now the caret is at position 0 on a blank line 
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void CaretInVirtualSpace()
             {
                 Create("", "hello world");
@@ -168,7 +168,7 @@ namespace Vim.UnitTest
             /// By default it needs to move the caret one to the left as insert mode does
             /// upon completion
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Standard()
             {
                 Create("cat dog");
@@ -183,7 +183,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Run the command from the beginning of a word
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void DeleteWordBeforeCursor_Simple()
             {
                 Create("dog bear cat");
@@ -197,7 +197,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Run the command from the middle of a word
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void DeleteWordBeforeCursor_MiddleOfWord()
             {
                 Create("dog bear cat");
@@ -211,7 +211,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Before the first word this should delete the indent on the line
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void DeleteWordBeforeCursor_BeforeFirstWord()
             {
                 Create("   dog cat");
@@ -225,7 +225,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Don't delete a line break if the eol suboption isn't set 
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void DeleteWordBeforeCursor_LineNoOption()
             {
                 Create("dog", "cat");
@@ -239,7 +239,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// If the eol option is set then delete the line break and move the caret back a line
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void LineWithOption()
             {
                 Create("dog", "cat");
@@ -256,7 +256,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Run the command from the end of the line
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void DeleteLineBeforeCursor_EndOfLine()
             {
                 Create("dog bear cat");
@@ -267,7 +267,7 @@ namespace Vim.UnitTest
                 Assert.Equal(0, _textView.GetCaretPoint().Position);
             }
 
-            [Fact]
+            [WpfFact]
             public void DeleteLineBeforeCursorWithVeOnemore_EndOfLine()
             {
                 Create("dog bear cat");
@@ -282,7 +282,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Run the command from the middle of a line
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void DeleteLineBeforeCursor_MiddleOfLine()
             {
                 Create("dog bear cat");
@@ -296,7 +296,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Before the first non-blank this should delete the indent on the line
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void DeleteLineBeforeCursor_BeforeFirstNonBlank()
             {
                 Create("   dog cat");
@@ -310,7 +310,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Don't delete a line break if the eol suboption isn't set 
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void DeleteLineBeforeCursor_LineNoOption()
             {
                 Create("dog", "cat");
@@ -324,7 +324,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// If the eol option is set then delete the line break and move the caret back a line
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void DeleteLineBeforeCursor_LineWithOption()
             {
                 Create("dog", "cat");
@@ -341,7 +341,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Make sure the caret position is correct when inserting in the middle of a word
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void MiddleOfText()
             {
                 Create("hello");
@@ -357,7 +357,7 @@ namespace Vim.UnitTest
             /// Make sure that when a tab is inserted with 'et' on a 'non-tabstop' multiple that
             /// we move it to the 'tabstop' offset
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void MiddleOfText_NonEvenOffset()
             {
                 Create("static LPTSTRpValue");
@@ -377,7 +377,7 @@ namespace Vim.UnitTest
             /// space.  The virtual space should just be converted to spaces and processed
             /// as such
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Left_FromVirtualSpace()
             {
                 Create("", "dog");
@@ -397,7 +397,7 @@ namespace Vim.UnitTest
             /// This is actually non-vim behavior. Vim would leave the caret where it started, just
             /// dedented 2 columns. I think we're opting for VS-ish behavior instead here.
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Left_CaretIsMovedToBeginningOfLineIfInVirtualSpaceAfterEndOfLine()
             {
                 Create("    foo");
@@ -416,7 +416,7 @@ namespace Vim.UnitTest
             /// space.  The virtual space should just be converted to spaces and processed
             /// as such
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Right_FromVirtualSpace()
             {
                 Create("", "dog");
@@ -437,7 +437,7 @@ namespace Vim.UnitTest
             /// Make sure that shift right functions correctly when the caret is in virtual
             /// space with leading spaces.
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Right_FromVirtualSpaceWithLeadingSpaces()
             {
                 Create("    ", "dog");
@@ -462,7 +462,7 @@ namespace Vim.UnitTest
             /// when the 'shiftwidth' is smaller than the 'tabstop'
             /// as such
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Right_ToTabsAndSpaces()
             {
                 Create("", "dog");
@@ -481,7 +481,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Make sure that shift right functions correctly on blank lines
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Right_FromBlankLine()
             {
                 Create("");
@@ -496,7 +496,7 @@ namespace Vim.UnitTest
             /// Make sure that shift right functions correctly on lines with
             /// leading blanks not equivalent to a multiple of the shift wdith
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Right_WithIrregularLeadingBlanks()
             {
                 Create("   abc");
@@ -522,7 +522,7 @@ namespace Vim.UnitTest
             /// space.  The virtual space should just be converted to spaces and processed
             /// as such
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Left_FromVirtualSpaceWithVeOneMore()
             {
                 Create("", "dog");
@@ -542,7 +542,7 @@ namespace Vim.UnitTest
             /// This is actually non-vim behavior. Vim would leave the caret where it started, just
             /// dedented 2 columns. I think we're opting for VS-ish behavior instead here.
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Left_CaretIsMovedToBeginningOfLineIfInVirtualSpaceAfterEndOfLine()
             {
                 Create("    foo");
@@ -561,7 +561,7 @@ namespace Vim.UnitTest
             /// space.  The virtual space should just be converted to spaces and processed
             /// as such
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Right_FromVirtualSpace()
             {
                 Create("", "dog");
@@ -582,7 +582,7 @@ namespace Vim.UnitTest
             /// Make sure that shift right functions correctly when the caret is in virtual
             /// space with leading spaces.
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Right_FromVirtualSpaceWithLeadingSpaces()
             {
                 Create("    ", "dog");
@@ -604,7 +604,7 @@ namespace Vim.UnitTest
             /// when the 'shiftwidth' is smaller than the 'tabstop'
             /// as such
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Right_ToTabsAndSpaces()
             {
                 Create("", "dog");
@@ -623,7 +623,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Make sure that shift right functions correctly on blank lines
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Right_FromBlankLine()
             {
                 Create("");
@@ -638,7 +638,7 @@ namespace Vim.UnitTest
             /// Make sure that shift right functions correctly on lines with
             /// leading blanks not equivalent to a multiple of the shift wdith
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Right_WithIrregularLeadingBlanks()
             {
                 Create("   abc");
@@ -653,7 +653,7 @@ namespace Vim.UnitTest
 
         public sealed class MoveCaretByWordTest : InsertUtilTest
         {
-            [Fact]
+            [WpfFact]
             public void Backward_FromMiddleOfWord()
             {
                 Create("dogs look bad with greasy fur");
@@ -664,7 +664,7 @@ namespace Vim.UnitTest
                 Assert.Equal(5, _insertUtilRaw.CaretColumn.Column);
             }
 
-            [Fact]
+            [WpfFact]
             public void Backward_Twice()
             {
                 Create("dogs look bad with greasy fur");
@@ -676,7 +676,7 @@ namespace Vim.UnitTest
                 Assert.Equal(0, _insertUtilRaw.CaretColumn.Column);
             }
 
-            [Fact]
+            [WpfFact]
             public void Forward_FromMiddleOfWord_ItLandsAtBeginningOfNextWord()
             {
                 Create("dogs look bad with greasy fur");
@@ -687,7 +687,7 @@ namespace Vim.UnitTest
                 Assert.Equal(10, _insertUtilRaw.CaretColumn.Column);
             }
 
-            [Fact]
+            [WpfFact]
             public void Forward_Twice()
             {
                 Create("dogs look bad with greasy fur");
@@ -699,7 +699,7 @@ namespace Vim.UnitTest
                 Assert.Equal(14, _insertUtilRaw.CaretColumn.Column);
             }
 
-            [Fact]
+            [WpfFact]
             public void Forward_NextLine()
             {
                 Create("dogs", "look bad with greasy fur");
@@ -713,7 +713,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Issue #1269 - part I
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Forward_NextLineFromBlankLine()
             {
                 Create("", "dogs look bad with greasy fur");
@@ -751,7 +751,7 @@ namespace Vim.UnitTest
             /// Arrow left at beginning of line without 'whichwrap=['
             /// should stay put
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Without_IsWhichWrapArrowLeftInsert()
             {
                 Create("dog", "cat");

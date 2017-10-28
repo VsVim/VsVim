@@ -15,7 +15,7 @@ namespace Vim.UnitTest
             _snapshot = _buffer.CurrentSnapshot;
         }
 
-        [Fact]
+        [WpfFact]
         public void AddOneOnSameLine1()
         {
             Create("dog cat");
@@ -25,7 +25,7 @@ namespace Vim.UnitTest
             Assert.False(point.IsInVirtualSpace);
         }
 
-        [Fact]
+        [WpfFact]
         public void AddOneOnSameLine2()
         {
             Create("dog");
@@ -36,7 +36,7 @@ namespace Vim.UnitTest
             Assert.Equal(1, point.VirtualSpaces);
         }
 
-        [Fact]
+        [WpfFact]
         public void AddOneOnSameLine3()
         {
             Create("dog");

@@ -34,7 +34,7 @@ namespace Vim.UI.Wpf.UnitTest
         /// If the host won't create an IVimBuffer then the command margin shouldn't force one
         /// to be created
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void HostWontCreateVimBuffer()
         {
             var textView = CreateTextView();

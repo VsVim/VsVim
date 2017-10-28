@@ -24,6 +24,8 @@ using System.Threading;
 using System.ComponentModel.Composition;
 using System.Text;
 using Vim.UnitTest.Utilities;
+using System.Windows.Threading;
+using Xunit.Sdk;
 
 namespace Vim.UnitTest
 {
@@ -221,7 +223,7 @@ namespace Vim.UnitTest
 
             if (!StaTaskScheduler.DefaultSta.IsRunningInScheduler)
             {
-                throw new Exception($"Need to apply {nameof(WpfFactAttributeAttribute)} to this test case");
+                throw new Exception($"Need to apply {nameof(WpfFactAttribute)} to this test case");
             }
 
             _vimEditorHost = GetOrCreateVimEditorHost();
@@ -243,11 +245,7 @@ namespace Vim.UnitTest
             // xUnit run
             VimTrace.TraceSwitch.Level = TraceLevel.Off;
 
-            var context = SynchronizationContext.Current;
-            if (context != null && context.GetType() != typeof(SynchronizationContext))
-            {
-                throw new Exception("Bad SynchronizationContext detected on test start: " + context.GetType());
-            }
+            CheckForBadSyncContext();
         }
 
         public virtual void Dispose()
@@ -326,8 +324,19 @@ namespace Vim.UnitTest
                 throw new Exception(message);
             }
 
+            CheckForBadSyncContext();
+        }
+
+        private void CheckForBadSyncContext()
+        {
             var context = SynchronizationContext.Current;
-            if (context != null && context.GetType() != typeof(SynchronizationContext))
+            if (context == null)
+            {
+                throw new Exception("Bad SynchronizationContext detected: null");
+            }
+
+            var type = context.GetType();
+            if (type != typeof(DispatcherSynchronizationContext) && type != typeof(AsyncTestSyncContext))
             {
                 throw new Exception("Bad SynchronizationContext detected on test end: " + context.GetType());
             }
@@ -344,7 +353,7 @@ namespace Vim.UnitTest
                 if (ex.InnerException != null)
                 {
                     builder.AppendLine("Begin inner exception");
-                    appendException(ex.InnerException); 
+                    appendException(ex.InnerException);
                     builder.AppendLine("End inner exception");
                 }
 

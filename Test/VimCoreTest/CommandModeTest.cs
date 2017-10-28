@@ -37,7 +37,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Entering command mode should update the status
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void StatusOnColon1()
         {
             _mode.OnEnter(ModeArgument.None);
@@ -47,21 +47,21 @@ namespace Vim.UnitTest
         /// <summary>
         /// When leaving command mode we should not clear the status because it will remove error messages
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void StatusOnLeave()
         {
             _mode.OnLeave();
             Assert.Equal("", _mode.Command);
         }
 
-        [Fact]
+        [WpfFact]
         public void Input1()
         {
             _mode.Process("fo");
             Assert.Equal("fo", _modeRaw.Command);
         }
 
-        [Fact]
+        [WpfFact]
         public void Input3()
         {
             _mode.Process("foo");
@@ -69,7 +69,7 @@ namespace Vim.UnitTest
             Assert.Equal("fo", _modeRaw.Command);
         }
 
-        [Fact]
+        [WpfFact]
         public void Input4()
         {
             _mode.Process("foo");
@@ -80,7 +80,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Delete past the start of the command string
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void Input5()
         {
             _mode.Process('c');
@@ -92,35 +92,35 @@ namespace Vim.UnitTest
         /// <summary>
         /// Upper case letter
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void Input6()
         {
             _mode.Process("BACK");
             Assert.Equal("BACK", _modeRaw.Command);
         }
 
-        [Fact]
+        [WpfFact]
         public void Input7()
         {
             _mode.Process("_bar");
             Assert.Equal("_bar", _modeRaw.Command);
         }
 
-        [Fact]
+        [WpfFact]
         public void OnEnter1()
         {
             _mode.OnEnter(ModeArgument.None);
             Assert.Equal(String.Empty, _modeRaw.Command);
         }
 
-        [Fact]
+        [WpfFact]
         public void OnEnter2()
         {
             _mode.OnEnter(ModeArgument.FromVisual);
             Assert.Equal(CommandMode.FromVisualModeString, _modeRaw.Command);
         }
 
-        [Fact]
+        [WpfFact]
         public void ClearSelectionOnComplete1()
         {
             _textView.SetText("hello world");
@@ -129,7 +129,7 @@ namespace Vim.UnitTest
             Assert.True(_textView.Selection.IsEmpty);
         }
 
-        [Fact]
+        [WpfFact]
         public void ClearSelectionOnComplete2()
         {
             _textView.SetText("hello world");

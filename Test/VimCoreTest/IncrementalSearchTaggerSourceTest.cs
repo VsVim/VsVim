@@ -37,7 +37,7 @@ namespace Vim.UnitTest
         /// Need to raise tags changed when switching modes as we don't display any tags in 
         /// visual modes
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void Changed_RaiseOnSwitchMode()
         {
             Create();
@@ -50,7 +50,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// After the search is completed we shouldn't be returning any results
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void GetTags_AfterSearchCompleted()
         {
             Create("dog cat bar");
@@ -61,7 +61,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Get tags should return the current match while searching
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void GetTags_InSearchWithMatch()
         {
             Create("dog cat bar");
@@ -73,7 +73,7 @@ namespace Vim.UnitTest
         /// Don't return any tags in Visual Mode.  We don't want to confuse these tags with the
         /// visual mode values.  
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void GetTags_NoneInVisualMode()
         {
             Create("dog cat bar");
@@ -85,7 +85,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Don't return any tags if we're currently disabled
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void GetTags_NoneIfDisabled()
         {
             Create("dog cat bar");

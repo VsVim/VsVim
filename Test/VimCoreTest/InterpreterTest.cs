@@ -84,7 +84,7 @@ namespace Vim.UnitTest
 
         public sealed class CallTest : InterpreterTest
         {
-            [Fact]
+            [WpfFact]
             public void NoArguments()
             {
                 Create();
@@ -92,7 +92,7 @@ namespace Vim.UnitTest
                 Assert.Equal(Resources.Interpreter_CallNotSupported("target"), _statusUtil.LastError);
             }
 
-            [Fact]
+            [WpfFact]
             public void OneArguments()
             {
                 Create();
@@ -100,7 +100,7 @@ namespace Vim.UnitTest
                 Assert.Equal(Resources.Interpreter_CallNotSupported("target"), _statusUtil.LastError);
             }
 
-            [Fact]
+            [WpfFact]
             public void TwoArguments()
             {
                 Create();
@@ -114,7 +114,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Copy to a single line
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void ToSingleLine()
             {
                 Create("cat", "dog", "fish", "tree");
@@ -130,7 +130,7 @@ namespace Vim.UnitTest
             /// When copying to a line range the paste should come after the first line and
             /// not the last as is common with other commands
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void ToLineRange()
             {
                 Create("cat", "dog", "fish", "tree");
@@ -145,7 +145,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Copy to a single line plus a count should be copied to line + count 
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void ToSingleLineAndCount()
             {
                 Create("cat", "dog", "fish", "bear", "tree");
@@ -160,7 +160,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// When copying to a line range and a count the count is simply ignored
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void ToLineRangeAndCount()
             {
                 Create("cat", "dog", "fish", "bear", "tree");
@@ -175,7 +175,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Copy to the first line
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void ToFirstLine()
             {
                 Create("cat", "dog", "fish", "bear", "tree");
@@ -210,7 +210,7 @@ namespace Vim.UnitTest
                 Assert.Equal(msg, _statusUtil.LastStatusLong[index]);
             }
 
-            [Fact]
+            [WpfFact]
             public void SingleLocalMark()
             {
                 Create("cat dog");
@@ -222,7 +222,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// The local marks should be displayed in alphabetical order 
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void MultipleLocalMarks()
             {
                 Create("cat dog");
@@ -249,7 +249,7 @@ namespace Vim.UnitTest
                 };
             }
 
-            [Fact]
+            [WpfFact]
             public void ReloadNonDirty()
             {
                 _textBuffer.SetText("cat dog");
@@ -258,7 +258,7 @@ namespace Vim.UnitTest
                 Assert.True(_didReloadRun);
             }
 
-            [Fact]
+            [WpfFact]
             public void ReloadDirty()
             {
                 _textBuffer.SetText("cat dog");
@@ -267,7 +267,7 @@ namespace Vim.UnitTest
                 Assert.False(_didReloadRun);
             }
 
-            [Fact]
+            [WpfFact]
             public void ReloadDirtyForce()
             {
                 _textBuffer.SetText("cat dog");
@@ -296,7 +296,7 @@ namespace Vim.UnitTest
                     .Returns(FSharpOption.Create(lines));
             }
 
-            [Fact]
+            [WpfFact]
             public void Simple()
             {
                 SetText("test.txt", ":set ts=12");
@@ -304,7 +304,7 @@ namespace Vim.UnitTest
                 Assert.Equal(12, _vimBuffer.LocalSettings.TabStop);
             }
 
-            [Fact]
+            [WpfFact]
             public void Issue1595()
             {
                 SetText("test.txt", ":set ts=12");
@@ -312,7 +312,7 @@ namespace Vim.UnitTest
                 Assert.Equal(12, _vimBuffer.LocalSettings.TabStop);
             }
 
-            [Fact]
+            [WpfFact]
             public void Issue1699()
             {
                 var filePath = "file<name>.txt";
@@ -330,7 +330,7 @@ namespace Vim.UnitTest
             /// When an empty string is provided for the pattern string then the pattern from the last
             /// substitute
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void EmptySearchUsesLastSearch()
             {
                 Create("cat tree");
@@ -342,7 +342,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Make sure that back slashes are properly handled in the replace 
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Backslashes()
             {
                 Create("cat");
@@ -350,7 +350,7 @@ namespace Vim.UnitTest
                 Assert.Equal(@"c\\t", _textBuffer.GetLine(0).GetText());
             }
 
-            [Fact]
+            [WpfFact]
             public void DoubleQuotesPattern()
             {
                 Create(@"""cat""");
@@ -358,7 +358,7 @@ namespace Vim.UnitTest
                 Assert.Equal("dog", _textBuffer.GetLine(0).GetText());
             }
 
-            [Fact]
+            [WpfFact]
             public void DoubleQuotesReplace()
             {
                 Create(@"cat");
@@ -370,7 +370,7 @@ namespace Vim.UnitTest
             /// This is a bit of a special case around the escape sequence for a new line.  The escape
             /// actually escapes the backslash and doesn't add a new line
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void EscapedLooksLikeNewLine()
             {
                 Create("cat", "dog");
@@ -383,7 +383,7 @@ namespace Vim.UnitTest
             /// The $ marker needs to be treated as a zero width assertion.  Don't replace the new line
             /// just the rest of the string
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void WordAndEndOfLine()
             {
                 Create("cat cat", "fish");
@@ -396,7 +396,7 @@ namespace Vim.UnitTest
             /// Matching $ as part of the regex is a zero width match.  It can't be used to delete the 
             /// end of the line
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void EndOfLineIsZeroWidth()
             {
                 Create("cat", "dog", "fish");
@@ -407,7 +407,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Make sure a replace here at the end of the line happens after
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void EndOfLineIsZeroWidth2()
             {
                 Create("cat", "dog", "fish");
@@ -417,7 +417,7 @@ namespace Vim.UnitTest
                     _textBuffer.GetLines().ToArray());
             }
 
-            [Fact]
+            [WpfFact]
             public void EndOfLineWithGroupReplace()
             {
                 Create(
@@ -434,7 +434,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// The \n character is not zero width and can be used to delete the new line
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void NewLineIsNotZeroWidth()
             {
                 Create("cat", "dog", "fish");
@@ -461,7 +461,7 @@ namespace Vim.UnitTest
                 Create();
             }
 
-            [Fact]
+            [WpfFact]
             public void SimpleArgument()
             {
                 ParseAndRun(":!echo test");
@@ -472,7 +472,7 @@ namespace Vim.UnitTest
             /// Quotes should not be interpreted as comments when parsing out the arguments of 
             /// a shell command
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void QuotedArgument()
             {
                 ParseAndRun(@":!echo ""test""");
@@ -482,7 +482,7 @@ namespace Vim.UnitTest
 
         public sealed class RunSearhTest : InterpreterTest
         {
-            [Fact]
+            [WpfFact]
             public void ForwardSearchUpdatesLastPattern()
             {
                 Create("cat", "dog");
@@ -491,7 +491,7 @@ namespace Vim.UnitTest
                 Assert.Equal(SearchPath.Forward, _vimData.LastSearchData.Path);
             }
 
-            [Fact]
+            [WpfFact]
             public void BackwardSearchUpdatesLastPattern()
             {
                 Create("cat", "dog");
@@ -508,7 +508,7 @@ namespace Vim.UnitTest
                 _interpreter.RunScript(lines);
             }
 
-            [Fact]
+            [WpfFact]
             public void Simple()
             {
                 Create("");
@@ -519,7 +519,7 @@ namespace Vim.UnitTest
                 Assert.Equal(4, _localSettings.TabStop);
             }
 
-            [Fact]
+            [WpfFact]
             public void SimpleWithoutColons()
             {
                 Create("");
@@ -533,7 +533,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Make sure we handle blank lines in the script just fine
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void HasBlankLine()
             {
                 Create("");
@@ -545,7 +545,7 @@ namespace Vim.UnitTest
                 Assert.Equal(4, _localSettings.TabStop);
             }
 
-            [Fact]
+            [WpfFact]
             public void SyntaxError()
             {
                 Create("");
@@ -563,7 +563,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Print out the modified settings
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void PrintModifiedSettings()
             {
                 Create("");
@@ -575,7 +575,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Test the assignment of a string value
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Assign_StringValue_Global()
             {
                 Create("");
@@ -586,7 +586,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Test the assignment of a local string value
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Assign_StringValue_Local()
             {
                 Create("");
@@ -597,7 +597,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Make sure we can use set for a numbered value setting
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Assign_NumberValue()
             {
                 Create("");
@@ -608,7 +608,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Assign multiple values and verify it works
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Assign_Many()
             {
                 Create("");
@@ -624,7 +624,7 @@ namespace Vim.UnitTest
             /// 
             /// Raised in issue #764
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Assign_ManyUnsupported()
             {
                 Create("");
@@ -635,7 +635,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Toggle a toggle option off
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Toggle_Off()
             {
                 Create("");
@@ -647,7 +647,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Invert a toggle setting to on
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Toggle_InvertOn()
             {
                 Create("");
@@ -659,7 +659,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Make sure we can deal with a trailing comment
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Toggle_TrailingComment()
             {
                 Create("");
@@ -671,7 +671,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Invert a toggle setting to off
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Toggle_InvertOff()
             {
                 Create("");
@@ -683,7 +683,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Make sure that we can handle window settings as well in the interpreter
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Toggle_WindowSetting()
             {
                 Create("");
@@ -691,7 +691,7 @@ namespace Vim.UnitTest
                 Assert.True(_windowSettings.CursorLine);
             }
 
-            [Fact]
+            [WpfFact]
             public void DisplaySingleToggleOn()
             {
                 Create("");
@@ -700,7 +700,7 @@ namespace Vim.UnitTest
                 Assert.Equal("expandtab", _statusUtil.LastStatus);
             }
 
-            [Fact]
+            [WpfFact]
             public void DisplaySingleToggleOff()
             {
                 Create("");
@@ -712,7 +712,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Check that we don't throw on an invalid setting name
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void DisplaySettingFake()
             {
                 Create("");
@@ -721,7 +721,7 @@ namespace Vim.UnitTest
                 Assert.Equal(Resources.CommandMode_UnknownOption("blah"), _statusUtil.LastError);
             }
 
-            [Fact]
+            [WpfFact]
             public void CommaSettingSingle()
             {
                 Create("");
@@ -729,7 +729,7 @@ namespace Vim.UnitTest
                 Assert.Equal(SelectModeOptions.Mouse, _globalSettings.SelectModeOptions);
             }
 
-            [Fact]
+            [WpfFact]
             public void CommaSettingMultiple()
             {
                 Create("");
@@ -740,7 +740,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// In this scenario the quotes should be interpreted as a comment
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void CommaSettingWithQuotes()
             {
                 Create("");
@@ -748,7 +748,7 @@ namespace Vim.UnitTest
                 Assert.Equal(SelectModeOptions.None, _globalSettings.SelectModeOptions);
             }
 
-            [Fact]
+            [WpfFact]
             public void NumberValue()
             {
                 Create("");
@@ -759,7 +759,7 @@ namespace Vim.UnitTest
 
         public sealed class HelpTest : InterpreterTest
         {
-            [Fact]
+            [WpfFact]
             public void LinksToWikiWhenNoTopicSpecified()
             {
                 Create("");
@@ -767,7 +767,7 @@ namespace Vim.UnitTest
                 Assert.Contains("https://github.com/jaredpar/VsVim/wiki", _statusUtil.LastStatus);
             }
 
-            [Fact]
+            [WpfFact]
             public void LinksToWikiWhenTopicIsSpecified()
             {
                 Create("");
@@ -782,7 +782,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Pedantically measure the spaces that are involved in the history command. 
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void PedanticSimple()
             {
                 Create("");
@@ -801,7 +801,7 @@ namespace Vim.UnitTest
             /// When there are more than 1 entries the number of columns for the count shouldn't 
             /// expand.  Instead the number should start taking up columns to the left
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void PedanticMoreThan10()
             {
                 Create("");
@@ -826,7 +826,7 @@ namespace Vim.UnitTest
             /// Once the maximum number of items in the list is completed the list will begin to 
             /// truncate items.  The index though should still reflect the running count of items
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void TruncatedList()
             {
                 Create();
@@ -845,7 +845,7 @@ namespace Vim.UnitTest
 
         public sealed class EchoTest : InterpreterTest
         {
-            [Fact]
+            [WpfFact]
             public void WhenCalledWithNoArgsDoesNothing()
             {
                 Create("");
@@ -853,7 +853,7 @@ namespace Vim.UnitTest
                 Assert.Equal(null, _statusUtil.LastStatus);
             }
 
-            [Fact]
+            [WpfFact]
             public void WhenPassedIntegerEchoesItOnStatusLine()
             {
                 Create("");
@@ -861,7 +861,7 @@ namespace Vim.UnitTest
                 Assert.Equal("2", _statusUtil.LastStatus);
             }
 
-            [Fact]
+            [WpfFact]
             public void WhenPassedStringLiteralEchoesItOnStatusLine()
             {
                 Create("");
@@ -869,7 +869,7 @@ namespace Vim.UnitTest
                 Assert.Equal("foo", _statusUtil.LastStatus);
             }
 
-            [Fact]
+            [WpfFact]
             public void WhenPassedStringConstantEchoesItOnStatusLine()
             {
                 Create("");
@@ -877,7 +877,7 @@ namespace Vim.UnitTest
                 Assert.Equal("foo", _statusUtil.LastStatus);
             }
 
-            [Fact]
+            [WpfFact]
             public void WhenPassedEmptyListEchoesItOnStatusLine()
             {
                 Create("");
@@ -885,7 +885,7 @@ namespace Vim.UnitTest
                 Assert.Equal("[]", _statusUtil.LastStatus);
             }
 
-            [Fact]
+            [WpfFact]
             public void WhenPassedNonEmptyListEchoesItOnStatusLine()
             {
                 Create("");
@@ -893,7 +893,7 @@ namespace Vim.UnitTest
                 Assert.Equal("[1, 'two', 3]", _statusUtil.LastStatus);
             }
 
-            [Fact]
+            [WpfFact]
             public void WhenPassedEmptyDictionaryEchoesItOnStatusLine()
             {
                 Create("");
@@ -901,7 +901,7 @@ namespace Vim.UnitTest
                 Assert.Equal("{}", _statusUtil.LastStatus);
             }
 
-            [Fact]
+            [WpfFact]
             public void WhenPassedBooleanSettingWhichIsOffEchoes0OnStatusLine()
             {
                 Create("");
@@ -910,7 +910,7 @@ namespace Vim.UnitTest
                 Assert.Equal("0", _statusUtil.LastStatus);
             }
 
-            [Fact]
+            [WpfFact]
             public void WhenPassedBooleanSettingWhichIsOnEchoes1OnStatusLine()
             {
                 Create("");
@@ -919,7 +919,7 @@ namespace Vim.UnitTest
                 Assert.Equal("1", _statusUtil.LastStatus);
             }
 
-            [Fact]
+            [WpfFact]
             public void WhenPassedIntegerSettingsEchoesIntegerOnStatusLine()
             {
                 Create("");
@@ -928,7 +928,7 @@ namespace Vim.UnitTest
                 Assert.Equal("4", _statusUtil.LastStatus);
             }
 
-            [Fact]
+            [WpfFact]
             public void WhenPassedStringSettingsEchoesStringOnStatusLine()
             {
                 Create("");
@@ -937,7 +937,7 @@ namespace Vim.UnitTest
                 Assert.Equal("eol", _statusUtil.LastStatus);
             }
 
-            [Fact]
+            [WpfFact]
             public void WhenPassedWindowSettingsEchoesItOnStatusLine()
             {
                 Create("");
@@ -946,7 +946,7 @@ namespace Vim.UnitTest
                 Assert.Equal("12", _statusUtil.LastStatus);
             }
 
-            [Fact]
+            [WpfFact]
             public void WhenPassedVariableEchoesItOnStatusLine()
             {
                 Create("");
@@ -955,7 +955,7 @@ namespace Vim.UnitTest
                 Assert.Equal("bar", _statusUtil.LastStatus);
             }
 
-            [Fact]
+            [WpfFact]
             public void WhenPassedRegisterEchoesItOnStatusLine()
             {
                 Create("");
@@ -967,14 +967,14 @@ namespace Vim.UnitTest
 
         public sealed class ExecuteTest : InterpreterTest
         {
-            [Fact]
+            [WpfFact]
             public void ExecuteWithNoArgumentsDoesNothing()
             {
                 Create("");
                 ParseAndRun("execute");
                 Assert.Equal(null, _statusUtil.LastStatus);
             }
-            [Fact]
+            [WpfFact]
             public void ExecuteString()
             {
                 Create("");
@@ -1007,7 +1007,7 @@ namespace Vim.UnitTest
                 Assert.Equal(value, _variableMap[name]);
             }
 
-            [Fact]
+            [WpfFact]
             public void Simple()
             {
                 Create("");
@@ -1015,7 +1015,7 @@ namespace Vim.UnitTest
                 AssertValue("x", 42);
             }
 
-            [Fact]
+            [WpfFact]
             public void SpaceBeforeNumber()
             {
                 Create("");
@@ -1023,7 +1023,7 @@ namespace Vim.UnitTest
                 AssertValue("x", 42);
             }
 
-            [Fact]
+            [WpfFact]
             public void SpaceBeforeString()
             {
                 Create("");
@@ -1031,7 +1031,7 @@ namespace Vim.UnitTest
                 AssertValue("x", "oo");
             }
 
-            [Fact]
+            [WpfFact]
             public void SpaceBeforeEquals()
             {
                 Create("");
@@ -1039,7 +1039,7 @@ namespace Vim.UnitTest
                 AssertValue("x", 42);
             }
 
-            [Fact]
+            [WpfFact]
             public void SpaceInAllLocations()
             {
                 Create("");
@@ -1047,7 +1047,7 @@ namespace Vim.UnitTest
                 AssertValue("x", 42);
             }
 
-            [Fact]
+            [WpfFact]
             public void RHSCanBeArbitraryExpression()
             {
                 Create("");
@@ -1056,7 +1056,7 @@ namespace Vim.UnitTest
                 AssertValue("x", "Hello, world!");
             }
 
-            [Fact]
+            [WpfFact]
             public void RHSCanBeBinaryExpression()
             {
                 Create("");
@@ -1064,7 +1064,7 @@ namespace Vim.UnitTest
                 AssertValue("x", 3);
             }
 
-            [Fact]
+            [WpfFact]
             public void LHSCanBeRegisterName()
             {
                 Create("");
@@ -1073,7 +1073,7 @@ namespace Vim.UnitTest
                 Assert.Equal("copy by assign", register.StringValue);
             }
 
-            [Fact]
+            [WpfFact]
             public void CannotSetVariableToErrorValue()
             {
                 Create("");
@@ -1090,7 +1090,7 @@ namespace Vim.UnitTest
                 Assert.False(VariableMap.ContainsKey(name));
             }
 
-            [Fact]
+            [WpfFact]
             public void Simple()
             {
                 Create();
@@ -1099,7 +1099,7 @@ namespace Vim.UnitTest
                 AssertGone("x");
             }
 
-            [Fact]
+            [WpfFact]
             public void NotPresent()
             {
                 Create();
@@ -1111,7 +1111,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// The ! modifier should cause us to ignore the missing variable during an unlet
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void NotPresentAndIgnored()
             {
                 Create();
@@ -1119,7 +1119,7 @@ namespace Vim.UnitTest
                 Assert.True(String.IsNullOrEmpty(_statusUtil.LastError));
             }
 
-            [Fact]
+            [WpfFact]
             public void Multiple()
             {
                 Create();
@@ -1150,7 +1150,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Make sure the file path option is supported
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void FilePath()
             {
                 Create("cat");
@@ -1159,7 +1159,7 @@ namespace Vim.UnitTest
                 Assert.Equal("foo.txt", _filePath);
             }
 
-            [Fact]
+            [WpfFact]
             public void NoPath()
             {
                 Create("cat");
@@ -1168,7 +1168,7 @@ namespace Vim.UnitTest
                 Assert.Null(_filePath);
             }
 
-            [Fact]
+            [WpfFact]
             public void InvalidCharacters()
             {
                 Create("cat");
@@ -1177,7 +1177,7 @@ namespace Vim.UnitTest
                 ParseAndRun(string.Format("w {0}", filePath));
             }
 
-            [Fact]
+            [WpfFact]
             public void Issue1699()
             {
                 Create("cat");
@@ -1189,7 +1189,7 @@ namespace Vim.UnitTest
 
         public sealed class YankTest : InterpreterTest
         {
-            [Fact]
+            [WpfFact]
             public void Yank1()
             {
                 Create("foo", "bar");
@@ -1198,7 +1198,7 @@ namespace Vim.UnitTest
                 Assert.Equal(OperationKind.LineWise, UnnamedRegister.OperationKind);
             }
 
-            [Fact]
+            [WpfFact]
             public void Yank2()
             {
                 Create("foo", "bar", "baz");
@@ -1207,7 +1207,7 @@ namespace Vim.UnitTest
                 Assert.Equal(text, UnnamedRegister.StringValue);
             }
 
-            [Fact]
+            [WpfFact]
             public void Yank3()
             {
                 Create("foo", "bar");
@@ -1219,7 +1219,7 @@ namespace Vim.UnitTest
             /// Ensure that an invalid line number still registers an error with commands line yank vs. chosing
             /// the last line in the ITextBuffer as it does for jump commands
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Yank_InvalidLineNumber()
             {
                 Create("hello", "world");
@@ -1230,7 +1230,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// The count should be applied to the specified line number for yank
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Yank_WithRangeAndCount()
             {
                 Create("cat", "dog", "rabbit", "tree");
@@ -1257,7 +1257,7 @@ namespace Vim.UnitTest
                 Assert.True(didRun);
             }
 
-            [Fact]
+            [WpfFact]
             public void Next()
             {
                 AssertQuickFix("cn", QuickFix.Next, 1, hasBang: false);
@@ -1266,7 +1266,7 @@ namespace Vim.UnitTest
                 AssertQuickFix("2cn!", QuickFix.Next, 2, hasBang: true);
             }
 
-            [Fact]
+            [WpfFact]
             public void Previous()
             {
                 AssertQuickFix("cp", QuickFix.Previous, 1, hasBang: false);
@@ -1307,7 +1307,7 @@ namespace Vim.UnitTest
             /// Ensure the unnamed register is displayed if the clipboard has a value 
             /// when the clipboard has text
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Unnamed()
             {
                 Create("");
@@ -1319,7 +1319,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// The clipboard register should not be displayed via the + register
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Unnamed_ViaStar()
             {
                 Create("");
@@ -1331,7 +1331,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Deleting a line should cause register 1 to be filled with the contents
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Register1_DeleteLine()
             {
                 Create("cat", "dog");
@@ -1343,7 +1343,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Yanking a line should cause register 0 to be filled with the contents
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Register0_YankLine()
             {
                 Create("cat", "dog");
@@ -1352,7 +1352,7 @@ namespace Vim.UnitTest
                 AssertLine(@"""0   cat^J");
             }
 
-            [Fact]
+            [WpfFact]
             public void LastSearch()
             {
                 Create("");
@@ -1364,7 +1364,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// The last search register should be binding to the LastSearchData member
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void LastSearch_ViaLastPattern()
             {
                 Create("");
@@ -1376,7 +1376,7 @@ namespace Vim.UnitTest
 
         public sealed class AutoCommandTest : InterpreterTest
         {
-            [Fact]
+            [WpfFact]
             public void SimpleCommand()
             {
                 Create();
@@ -1385,7 +1385,7 @@ namespace Vim.UnitTest
                 Assert.Equal("*.html", autoCommand.Pattern);
             }
 
-            [Fact]
+            [WpfFact]
             public void MultipleCommands()
             {
                 Create();
@@ -1396,7 +1396,7 @@ namespace Vim.UnitTest
                 Assert.Equal(all[1].Pattern, "*.cs");
             }
 
-            [Fact]
+            [WpfFact]
             public void RemoveAll()
             {
                 Create();
@@ -1405,7 +1405,7 @@ namespace Vim.UnitTest
                 Assert.Equal(0, _vimData.AutoCommands.Length);
             }
 
-            [Fact]
+            [WpfFact]
             public void RemoveAllInEventKind()
             {
                 Create();
@@ -1415,7 +1415,7 @@ namespace Vim.UnitTest
                 Assert.Equal(EventKind.BufWinEnter, _vimData.AutoCommands.Single().EventKind);
             }
 
-            [Fact]
+            [WpfFact]
             public void RemoveAllWithPattern()
             {
                 Create();
@@ -1424,7 +1424,7 @@ namespace Vim.UnitTest
                 Assert.Equal(0, _vimData.AutoCommands.Length);
             }
 
-            [Fact]
+            [WpfFact]
             public void RemoveAllWithPattern2()
             {
                 Create();
@@ -1434,7 +1434,7 @@ namespace Vim.UnitTest
                 Assert.Equal(2, _vimData.AutoCommands.Length);
             }
 
-            [Fact]
+            [WpfFact]
             public void RemoveAllWithEventAndPattern()
             {
                 Create();
@@ -1455,7 +1455,7 @@ namespace Vim.UnitTest
                 _interpreter.RunLineCommand(lineCommand);
             }
 
-            [Fact]
+            [WpfFact]
             public void If()
             {
                 Create();
@@ -1463,7 +1463,7 @@ namespace Vim.UnitTest
                 Assert.Equal(13, _localSettings.TabStop);
             }
 
-            [Fact]
+            [WpfFact]
             public void IfElse()
             {
                 Create();
@@ -1471,7 +1471,7 @@ namespace Vim.UnitTest
                 Assert.Equal(13, _localSettings.TabStop);
             }
 
-            [Fact]
+            [WpfFact]
             public void IfElse2()
             {
                 Create();
@@ -1479,7 +1479,7 @@ namespace Vim.UnitTest
                 Assert.Equal(12, _localSettings.TabStop);
             }
 
-            [Fact]
+            [WpfFact]
             public void IfElseIf()
             {
                 Create();
@@ -1487,7 +1487,7 @@ namespace Vim.UnitTest
                 Assert.Equal(13, _localSettings.TabStop);
             }
 
-            [Fact]
+            [WpfFact]
             public void IfElseIf2()
             {
                 Create();
@@ -1495,7 +1495,7 @@ namespace Vim.UnitTest
                 Assert.Equal(12, _localSettings.TabStop);
             }
 
-            [Fact]
+            [WpfFact]
             public void IfElseIf3()
             {
                 Create();
@@ -1522,7 +1522,7 @@ namespace Vim.UnitTest
                 return _interpreter.GetLineRange(lineRange).Value;
             }
 
-            [Fact]
+            [WpfFact]
             public void Behave_Mswin()
             {
                 Create("");
@@ -1533,7 +1533,7 @@ namespace Vim.UnitTest
                 Assert.Equal("exclusive", _globalSettings.Selection);
             }
 
-            [Fact]
+            [WpfFact]
             public void Behave_Xterm()
             {
                 Create("");
@@ -1547,7 +1547,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Don't execute a line that starts with a comment
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void CommentLine_Set()
             {
                 Create("");
@@ -1559,7 +1559,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Don't execute a line that starts with a comment
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void CommentLine_Delete()
             {
                 Create("dog", "cat");
@@ -1571,7 +1571,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// The delete of the last line in the ITextBuffer should reduce the line count
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Delete_LastLine()
             {
                 Create("cat", "dog");
@@ -1585,7 +1585,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// The delete of the first line in the ITextBuffer should reduce the line count
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Delete_FirstLine()
             {
                 Create("cat", "dog");
@@ -1599,7 +1599,7 @@ namespace Vim.UnitTest
             /// Running :del on a single line should cause the line contents to be deleted
             /// but not crash
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Delete_OneLine()
             {
                 Create("cat");
@@ -1612,7 +1612,7 @@ namespace Vim.UnitTest
             /// The delete of the multiple lines including the last line should reduce by the 
             /// appropriate number of lines
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Delete_MultipleLastLine()
             {
                 Create("cat", "dog", "fish", "tree");
@@ -1626,7 +1626,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// No arguments means delete the current line
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Delete_CurrentLine()
             {
                 Create("foo", "bar");
@@ -1638,7 +1638,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// When count is in back it's a range of lines
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Delete_SeveralLines()
             {
                 Create("foo", "bar", "baz");
@@ -1650,7 +1650,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Delete only the specified line when count is in front
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Delete_SpecificLineNumber()
             {
                 Create("foo", "bar", "baz");
@@ -1663,7 +1663,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Handle the case where the adjustment simply occurs on the current line 
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void GetLine_AdjustmentOnCurrent()
             {
                 Create("cat", "dog", "bear");
@@ -1671,7 +1671,7 @@ namespace Vim.UnitTest
                 Assert.Equal(_textBuffer.GetLine(1).LineNumber, range.Value.LineNumber);
             }
 
-            [Fact]
+            [WpfFact]
             public void LineRange_FullFile()
             {
                 Create("foo", "bar");
@@ -1680,7 +1680,7 @@ namespace Vim.UnitTest
                 Assert.Equal(new SnapshotSpan(tss, 0, tss.Length), lineRange.ExtentIncludingLineBreak);
             }
 
-            [Fact]
+            [WpfFact]
             public void LineRange_CurrentLine()
             {
                 Create("foo", "bar");
@@ -1688,7 +1688,7 @@ namespace Vim.UnitTest
                 Assert.Equal(_textBuffer.GetLineRange(0), lineRange);
             }
 
-            [Fact]
+            [WpfFact]
             public void LineRange_CurrentLineWithCurrentLine()
             {
                 Create("foo", "bar");
@@ -1696,7 +1696,7 @@ namespace Vim.UnitTest
                 Assert.Equal(_textBuffer.GetLineRange(0), lineRange);
             }
 
-            [Fact]
+            [WpfFact]
             public void LineRange_LineNumberRange()
             {
                 Create("a", "b", "c");
@@ -1704,7 +1704,7 @@ namespace Vim.UnitTest
                 Assert.Equal(_textBuffer.GetLineRange(0, 1), lineRange);
             }
 
-            [Fact]
+            [WpfFact]
             public void LineRange_SingleLine1()
             {
                 Create("foo", "bar");
@@ -1713,7 +1713,7 @@ namespace Vim.UnitTest
                 Assert.Equal(1, lineRange.Count);
             }
 
-            [Fact]
+            [WpfFact]
             public void LineRange_MarkWithLineNumber()
             {
                 Create("foo", "bar", "tree");
@@ -1722,7 +1722,7 @@ namespace Vim.UnitTest
                 Assert.Equal(_textBuffer.GetLineRange(0, 1), lineRange);
             }
 
-            [Fact]
+            [WpfFact]
             public void LineRange_MarkWithMark()
             {
                 Create("foo", "bar");
@@ -1737,7 +1737,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Combine a global mark with a line number
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void LineRange_GlobalMarkAndLineNumber()
             {
                 Create("foo bar", "bar", "baz");
@@ -1749,7 +1749,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Change the directory to a valid directory
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void ChangeDirectory_Valid()
             {
                 Create("");
@@ -1760,7 +1760,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Change the global directory should invalidate the local directory
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void ChangeDirectory_InvalidateLocal()
             {
                 Create("");
@@ -1773,7 +1773,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Change the local directory to a valid directory
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void ChangeLocalDirectory_Valid()
             {
                 Create("");
@@ -1786,7 +1786,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Test the use of the "del" command with global
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Global_Delete()
             {
                 Create("cat", "dog", "fish");
@@ -1799,7 +1799,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Test the use of the "del" command with global for a negative match
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Global_Delete_NotMatch()
             {
                 Create("cat", "dog", "fish");
@@ -1812,7 +1812,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Test the use of the "del" command with global and alternate separators
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Global_Delete_AlternateSeparators()
             {
                 Create("cat", "dog", "fish");
@@ -1825,7 +1825,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Test out the :global command with put
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Global_Put()
             {
                 Create("cat", "dog", "fash");
@@ -1842,7 +1842,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Test out the :global command delete until double quote character
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Global_Normal_DeleteUntilDoubleQuote()
             {
                 Create("cat\"dog");
@@ -1853,7 +1853,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Test out the :global command with normal command deleting after search pattern
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Global_Normal_Search_Delete()
             {
                 Create("cat,dog");
@@ -1864,7 +1864,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Test out the :normal command with delete line (dd) and put (p) key strokes
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Normal_DeletePut()
             {
                 Create("cat", "dog", "fish");
@@ -1878,7 +1878,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Test out the :normal command with remove (x) with extra leading spaces
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Normal_RemoveWithSpaces()
             {
                 Create("ccat");
@@ -1889,7 +1889,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Test out the :normal command insert text in the middle of a line
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Normal_InsertInMiddleOfLine()
             {
                 Create("cat dog");
@@ -1900,7 +1900,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Test out the :normal command insert text in the middle of a line
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Normal_InsertWithLineRange()
             {
                 Create("cat", "dog", "fish", "whale");
@@ -1914,7 +1914,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Can't get the range for a mark that doesn't exist
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void LineRange_BadMark()
             {
                 Create("foo bar", "baz");
@@ -1922,7 +1922,7 @@ namespace Vim.UnitTest
                 Assert.True(lineRange.IsNone());
             }
 
-            [Fact]
+            [WpfFact]
             public void LineRange_LineNumberWithPlus()
             {
                 Create("foo", "bar", "baz", "jaz");
@@ -1934,7 +1934,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Make sure that we treat a plus with no trailing value as a + 1
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void LineRange_LineNumberWithPlusAndNoValue()
             {
                 Create("foo", "bar", "baz");
@@ -1946,7 +1946,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Test the + with a range
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void LineRange_LineNumberWithPlusInRange()
             {
                 Create("foo", "bar", "baz", "jaz", "aoeu", "za,.p");
@@ -1955,7 +1955,7 @@ namespace Vim.UnitTest
                 Assert.Equal(2, lineRange.LastLineNumber);
             }
 
-            [Fact]
+            [WpfFact]
             public void LineRange_LineNumberWithMinus()
             {
                 Create("foo", "bar", "baz", "jaz", "aoeu", "za,.p");
@@ -1963,7 +1963,7 @@ namespace Vim.UnitTest
                 Assert.Equal(_textBuffer.GetLineRange(0), lineRange);
             }
 
-            [Fact]
+            [WpfFact]
             public void LineRange_LineNumberWithMinusAndNoValue()
             {
                 Create("foo", "bar", "baz", "jaz", "aoeu", "za,.p");
@@ -1971,7 +1971,7 @@ namespace Vim.UnitTest
                 Assert.Equal(_textBuffer.GetLineRange(0), lineRange);
             }
 
-            [Fact]
+            [WpfFact]
             public void LineRange_LineNumberWithMinus2()
             {
                 Create("foo", "bar", "baz", "jaz", "aoeu", "za,.p");
@@ -1979,7 +1979,7 @@ namespace Vim.UnitTest
                 Assert.Equal(_textBuffer.GetLineRange(1), lineRange);
             }
 
-            [Fact]
+            [WpfFact]
             public void LineRange_LineNumberWithMinusInRange()
             {
                 Create("foo", "bar", "baz", "jaz", "aoeu", "za,.p");
@@ -1987,7 +1987,7 @@ namespace Vim.UnitTest
                 Assert.Equal(_textBuffer.GetLineRange(0, 2), lineRange);
             }
 
-            [Fact]
+            [WpfFact]
             public void LineRange_LastLine()
             {
                 Create("cat", "tree", "dog");
@@ -1995,7 +1995,7 @@ namespace Vim.UnitTest
                 Assert.Equal(_textBuffer.GetLineRange(2), lineRange);
             }
 
-            [Fact]
+            [WpfFact]
             public void LineRange_LastLine_OneLineBuffer()
             {
                 Create("cat");
@@ -2003,7 +2003,7 @@ namespace Vim.UnitTest
                 Assert.Equal(_textBuffer.GetLineRange(0), lineRange);
             }
 
-            [Fact]
+            [WpfFact]
             public void LineRange_CurrentToEnd()
             {
                 Create("cat", "tree", "dog");
@@ -2011,7 +2011,7 @@ namespace Vim.UnitTest
                 Assert.Equal(_textBuffer.GetLineRange(0, 2), lineRange);
             }
 
-            [Fact]
+            [WpfFact]
             public void LineRange_RightSideIncrementsLeft()
             {
                 Create("cat", "dog", "bear", "frog", "tree");
@@ -2019,7 +2019,7 @@ namespace Vim.UnitTest
                 Assert.Equal(_textBuffer.GetLineRange(0, 2), lineRange);
             }
 
-            [Fact]
+            [WpfFact]
             public void LineRange_LeftSideIncrementsCurrent()
             {
                 Create("cat", "dog", "bear", "frog", "tree");
@@ -2030,7 +2030,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Make sure we can clear out key mappings with the "mapc" command
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void MapKeys_Clear()
             {
                 Create("");
@@ -2056,7 +2056,7 @@ namespace Vim.UnitTest
                 testMapClear("cmapc", new[] { KeyRemapMode.Command });
             }
 
-            [Fact]
+            [WpfFact]
             public void Move_BackOneLine()
             {
                 Create("fish", "cat", "dog", "tree");
@@ -2068,7 +2068,7 @@ namespace Vim.UnitTest
                 Assert.Equal("tree", _textView.GetLine(3).GetText());
             }
 
-            [Fact]
+            [WpfFact]
             public void PrintCurrentDirectory_Global()
             {
                 Create();
@@ -2080,7 +2080,7 @@ namespace Vim.UnitTest
             /// The print current directory command should prefer the window directory
             /// over the global one
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void PrintCurrentDirectory_Local()
             {
                 Create();
@@ -2092,7 +2092,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Ensure the Put command is linewise even if the register is marked as characterwise
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Put_ShouldBeLinewise()
             {
                 Create("foo", "bar");
@@ -2105,7 +2105,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Ensure that when the ! is present that the appropriate option is passed along
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Put_BangShouldPutTextBefore()
             {
                 Create("foo", "bar");
@@ -2119,7 +2119,7 @@ namespace Vim.UnitTest
             /// By default the retab command should affect the entire ITextBuffer and not include
             /// space strings
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Retab_Default()
             {
                 Create("   cat", "\tdog");
@@ -2133,7 +2133,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// The ! operator should force the command to include spaces
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Retab_WithBang()
             {
                 Create("  cat", "  dog");
@@ -2147,7 +2147,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Make sure the basic command is passed down to the func
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void ShellCommand_Simple()
             {
                 Create("");
@@ -2166,7 +2166,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Do a simple replacement of a ! in the shell command
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void ShellCommand_BangReplacement()
             {
                 Create("");
@@ -2186,7 +2186,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Don't replace a ! which occurs after a \
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void ShellCommand_BangNoReplace()
             {
                 Create("");
@@ -2206,7 +2206,7 @@ namespace Vim.UnitTest
             /// Raise an error message if there is no previous command and a bang relpacement
             /// isr requested.  Shouldn't run any command in this case
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void ShellCommand_BangReplacementFails()
             {
                 Create("");
@@ -2220,7 +2220,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Simple visual studio command
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void HostCommand_Simple()
             {
                 Create("");
@@ -2239,7 +2239,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Simple visual studio command with an argument
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void HostCommand_WithArgument()
             {
                 Create("");
@@ -2259,7 +2259,7 @@ namespace Vim.UnitTest
             /// This came up as a part of Issue 1038.  Numbers should be considered as part of the host 
             /// command name
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void HostCommand_WithNumber()
             {
                 Create("");
@@ -2285,7 +2285,7 @@ namespace Vim.UnitTest
 
         public sealed class RunTabOnlyTest : InterpreterTest
         {
-            [Fact]
+            [WpfFact]
             public void TabonlyClosesOtherWindows()
             {
                 Create();
@@ -2296,7 +2296,7 @@ namespace Vim.UnitTest
 
         public sealed class RunOnlyTest : InterpreterTest
         {
-            [Fact]
+            [WpfFact]
             public void TabonlyClosesOtherWindows()
             {
                 Create();
@@ -2307,7 +2307,7 @@ namespace Vim.UnitTest
 
         public sealed class GoToTabTest : InterpreterTest
         {
-            [Fact]
+            [WpfFact]
             public void TabFirstGoesToFirstTab()
             {
                 Create();
@@ -2315,7 +2315,7 @@ namespace Vim.UnitTest
                 Assert.Equal(0, VimHost.GoToTabData);
             }
 
-            [Fact]
+            [WpfFact]
             public void TabLastGoesToLastTab()
             {
                 Create();

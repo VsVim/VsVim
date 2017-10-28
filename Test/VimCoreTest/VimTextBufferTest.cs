@@ -20,7 +20,7 @@ namespace Vim.UnitTest
 
         public sealed class LastInsertExitPoint : VimTextBufferTest
         {
-            [Fact]
+            [WpfFact]
             public void Simple()
             {
                 Create("cat", "dog");
@@ -32,7 +32,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// The point should track edits
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void TracksEdits()
             {
                 Create("cat", "dog");
@@ -45,7 +45,7 @@ namespace Vim.UnitTest
             /// A delete of the line that contains that LastInsertExitPoint should cause it to be 
             /// cleared
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void DeleteShouldClear()
             {
                 Create("cat", "dog", "fish");
@@ -60,7 +60,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Requesting a LocalMark which isn't set should produce an empty option
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void GetLocalMark_NotSet()
             {
                 Create("");
@@ -70,7 +70,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Sanity check to ensure we can get and set a local mark 
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void SetLocalMark_FirstLine()
             {
                 Create("hello world");
@@ -81,7 +81,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Sanity check to ensure we can get and set a local mark 
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void SetLocalMark_SecondLine()
             {
                 Create("hello", "world");
@@ -92,7 +92,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Attempting to set a read only mark should return false and not update the mark
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void SetLocalMark_ReadOnlyMark()
             {
                 Create("hello", "world");
@@ -102,14 +102,14 @@ namespace Vim.UnitTest
                 Assert.Equal(0, _vimTextBuffer.GetLocalMark(LocalMark.LastSelectionStart).Value.Position.Position);
             }
 
-            [Fact]
+            [WpfFact]
             public void RemoveLocalMark_NotFound()
             {
                 Create("dog");
                 Assert.False(_vimTextBuffer.RemoveLocalMark(LocalMark.NewLetter(Letter.A)));
             }
 
-            [Fact]
+            [WpfFact]
             public void RemoveLocalMark_Found()
             {
                 Create("dog");
@@ -120,7 +120,7 @@ namespace Vim.UnitTest
 
         public sealed class ClearTest : VimTextBufferTest
         {
-            [Fact]
+            [WpfFact]
             public void ShouldRemoveLocalMarks()
             {
                 Create("cat");
@@ -139,7 +139,7 @@ namespace Vim.UnitTest
                 }
             }
 
-            [Fact]
+            [WpfFact]
             public void ShouldClearFields()
             {
                 Create("cat");

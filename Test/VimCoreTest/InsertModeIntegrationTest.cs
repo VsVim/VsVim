@@ -38,7 +38,7 @@ namespace Vim.UnitTest
 
         public sealed class InsertCharacterAboveTest : InsertModeIntegrationTest
         {
-            [Fact]
+            [WpfFact]
             public void Simple()
             {
                 Create("cat", "dog");
@@ -47,7 +47,7 @@ namespace Vim.UnitTest
                 Assert.Equal("cdog", _textBuffer.GetLine(1).GetText());
             }
 
-            [Fact]
+            [WpfFact]
             public void Multiple()
             {
                 Create("cat", "dog");
@@ -59,7 +59,7 @@ namespace Vim.UnitTest
                 Assert.Equal("catdog", _textBuffer.GetLine(1).GetText());
             }
 
-            [Fact]
+            [WpfFact]
             public void NothingAbove()
             {
                 Create("", "dog");
@@ -68,7 +68,7 @@ namespace Vim.UnitTest
                 Assert.Equal(1, VimHost.BeepCount);
             }
 
-            [Fact]
+            [WpfFact]
             public void FirstLine()
             {
                 Create("", "dog");
@@ -79,7 +79,7 @@ namespace Vim.UnitTest
 
         public sealed class InsertCharacterBelowTest : InsertModeIntegrationTest
         {
-            [Fact]
+            [WpfFact]
             public void Simple()
             {
                 Create("cat", "dog");
@@ -87,7 +87,7 @@ namespace Vim.UnitTest
                 Assert.Equal("dcat", _textBuffer.GetLine(0).GetText());
             }
 
-            [Fact]
+            [WpfFact]
             public void Multiple()
             {
                 Create("cat", "dog");
@@ -98,7 +98,7 @@ namespace Vim.UnitTest
                 Assert.Equal("dogcat", _textBuffer.GetLine(0).GetText());
             }
 
-            [Fact]
+            [WpfFact]
             public void NothingBelow()
             {
                 Create("cat", "");
@@ -106,7 +106,7 @@ namespace Vim.UnitTest
                 Assert.Equal(1, VimHost.BeepCount);
             }
 
-            [Fact]
+            [WpfFact]
             public void LastLine()
             {
                 Create("cat", "");
@@ -122,7 +122,7 @@ namespace Vim.UnitTest
             /// Make sure that in the case where there is buffered input and we fail at the mapping 
             /// that both values are inserted into the ITextBuffer
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void BufferedInputFailsMapping()
             {
                 Create("");
@@ -136,7 +136,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Ensure we can use a double keystroke to escape
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void TwoKeysToEscape()
             {
                 Create(ModeArgument.NewInsertWithCount(2), "hello");
@@ -148,7 +148,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// The Escape should end a multiple key mapping and exit insert mode
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void TwoKeys_EscapeToEndSequence()
             {
                 Create("hello world", "");
@@ -163,7 +163,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// The CTRL-[ should end a multiple key mapping the same as normal Escape
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void TwoKeys_AlternateEscapeToEndSequence()
             {
                 Create("hello world", "");
@@ -178,7 +178,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Spaces need to be allowed in the target mapping
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void SpacesInTarget()
             {
                 Create("");
@@ -188,7 +188,7 @@ namespace Vim.UnitTest
                 Assert.Equal("hello world", _textBuffer.GetLine(0).GetText());
             }
 
-            [Fact]
+            [WpfFact]
             public void DoubleQuotesInRight()
             {
                 Create("");
@@ -202,7 +202,7 @@ namespace Vim.UnitTest
             /// Make sure that we properly don't cause recursion in the scenario where a 
             /// noremap mapping refers back to itself in the non-0 position 
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void RecursiveInNoRemap()
             {
                 Create("");
@@ -216,7 +216,7 @@ namespace Vim.UnitTest
             /// When a &lt; or &gt; tag is not a special name it should be interpreted character
             /// by character 
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void TagNotASpecialName()
             {
                 Create("");
@@ -226,7 +226,7 @@ namespace Vim.UnitTest
                 Assert.Equal("<dest>", _textBuffer.GetLine(0).GetText());
             }
 
-            [Fact]
+            [WpfFact]
             public void UnmatchedLessThan()
             {
                 Create("");
@@ -236,7 +236,7 @@ namespace Vim.UnitTest
                 Assert.Equal("<A", _textBuffer.GetLine(0).GetText());
             }
 
-            [Fact]
+            [WpfFact]
             public void Issue1059()
             {
                 Create("");
@@ -246,7 +246,7 @@ namespace Vim.UnitTest
                 Assert.Equal(@"VARCHAR(MAX) = '<%= ""test"" %>'", _textBuffer.GetLine(0).GetText());
             }
 
-            [Fact]
+            [WpfFact]
             public void Issue1812()
             {
                 Create("dog");
@@ -260,7 +260,7 @@ namespace Vim.UnitTest
 
         public sealed class PasteTest : InsertModeIntegrationTest
         {
-            [Fact]
+            [WpfFact]
             public void Simple()
             {
                 Create("world");
@@ -273,7 +273,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Test out the literal pasting with RR 
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void SpecialLiteralAndFormatting()
             {
                 Create("world");
@@ -286,7 +286,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Test out the literal + no indent pasting with RO
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void SpecialLiteralAndNoIndent()
             {
                 Create("world");
@@ -299,7 +299,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Test out the literal + indent pasting with RO
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void SpecialLiteralAndIndent()
             {
                 Create("world");
@@ -314,7 +314,7 @@ namespace Vim.UnitTest
             /// inserted before the text.  Instead it's inserted after which is exactly how it's stored
             /// in the register
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Linewise()
             {
                 Create("dog");
@@ -330,7 +330,7 @@ namespace Vim.UnitTest
             /// The Esc key should only leave the paste part of the operation and not leave insert 
             /// mode itself
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void EscapeShouldStayInInsert()
             {
                 Create("dog");
@@ -341,7 +341,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Make sure that the line endings are normalized on the paste operation
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void NormalizeLineEndings()
             {
                 Create("cat", "dog");
@@ -362,7 +362,7 @@ namespace Vim.UnitTest
         /// </summary>
         public sealed class LastCaretEditMarkTest : InsertModeIntegrationTest
         {
-            [Fact]
+            [WpfFact]
             public void Simple()
             {
                 Create("cat", "dog", "fish");
@@ -378,7 +378,7 @@ namespace Vim.UnitTest
             /// last edit.  This is the position before insert mode moved it one to the left
             /// as a result of hitting Esc
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void SimpleExact()
             {
                 Create("cat", "dog", "fish");
@@ -393,7 +393,7 @@ namespace Vim.UnitTest
             /// When a line is added above the '^ marker needs to move down a line and follow
             /// it
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void AddLineAbove()
             {
                 Create("cat", "dog", "fish");
@@ -410,7 +410,7 @@ namespace Vim.UnitTest
             /// Adding a line below the '^ mark shouldn't be affected by a line that is added below
             /// it
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void AddLineBelow()
             {
                 Create("cat", "dog", "fish");
@@ -427,7 +427,7 @@ namespace Vim.UnitTest
             /// When an edit occurs to the last edit line the column position should be unaffected.  This
             /// stands in contracts to editting lines which does pay attention to tracking the offsets
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void EditTheEditLine()
             {
                 Create("cat", "dog", "fish");
@@ -445,7 +445,7 @@ namespace Vim.UnitTest
             /// When the edit line is shrunk so that the tracked caret position isn't possible on that line
             /// anymore it should just put it in the last possible position
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void ClearTheEditLine()
             {
                 Create("cat", "dog", "fish");
@@ -461,7 +461,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// The last edit line is shared across different IVimBuffer instances
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void SharedAcrossBuffers()
             {
                 Create("cat", "dog", "fish");
@@ -483,7 +483,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// The ^ mark doesn't survive deletes of the line that contains it
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void DoesntSurviveDeletes()
             {
                 Create("cat", "dog", "fish");
@@ -503,7 +503,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// The `. mark should go to the last edit position on the last edit line
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void GoToLastEditPosition()
             {
                 Create("cat", "dog");
@@ -526,7 +526,7 @@ namespace Vim.UnitTest
             /// When text is inserted into the buffer then the last edit point should be the
             /// last character that was inserted
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void InsertText()
             {
                 Create("cat");
@@ -539,7 +539,7 @@ namespace Vim.UnitTest
             /// to interpret it as a normal insert of text and update the LastEditPoint as if it
             /// were a Vim based edit
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void InsertNonVim()
             {
                 Create("big");
@@ -551,7 +551,7 @@ namespace Vim.UnitTest
             /// When there is a deletion of text then the LastEditPoint should point to the start
             /// of the deleted text
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void DeleteText()
             {
                 Create("dog tree");
@@ -563,7 +563,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// As we do with insert we treat a non-Vim delete as a Vim delete
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void DeleteNonVim()
             {
                 Create("a big dog");
@@ -571,7 +571,7 @@ namespace Vim.UnitTest
                 Assert.Equal(2, LastEditPoint.Value);
             }
 
-            [Fact]
+            [WpfFact]
             public void MiddleOfLine()
             {
                 Create("cat", "dg", "fish");
@@ -582,7 +582,7 @@ namespace Vim.UnitTest
                 Assert.Equal(_textBuffer.GetPointInLine(1, 1), _textView.GetCaretPoint());
             }
 
-            [Fact]
+            [WpfFact]
             public void BeginningOfLine()
             {
                 Create("cat", "og", "fish");
@@ -593,7 +593,7 @@ namespace Vim.UnitTest
                 Assert.Equal(_textBuffer.GetPointInLine(1, 0), _textView.GetCaretPoint());
             }
 
-            [Fact]
+            [WpfFact]
             public void TypingCompleteWord()
             {
                 Create("cat", "", "fish");
@@ -604,7 +604,7 @@ namespace Vim.UnitTest
                 Assert.Equal(_textBuffer.GetPointInLine(1, 2), _textView.GetCaretPoint());
             }
 
-            [Fact]
+            [WpfFact]
             public void DeleteLineContainingLastEditPoint()
             {
                 Create("cat", "", "fish");
@@ -613,7 +613,7 @@ namespace Vim.UnitTest
                 Assert.Equal(_textBuffer.GetPointInLine(1, 0), _textView.GetCaretPoint());
             }
 
-            [Fact]
+            [WpfFact]
             public void DeleteManyLineContainingLastEditPoint()
             {
                 Create("pig", "cat", "", "fish", "tree");
@@ -625,7 +625,7 @@ namespace Vim.UnitTest
 
         public sealed class ShiftLineRight : InsertModeIntegrationTest
         {
-            [Fact]
+            [WpfFact]
             public void Simple()
             {
                 Create("cat", "dog");
@@ -635,7 +635,7 @@ namespace Vim.UnitTest
                 Assert.Equal(4, _textView.GetCaretPoint().Position);
             }
 
-            [Fact]
+            [WpfFact]
             public void CustomShift()
             {
                 Create("cat", "dog");
@@ -654,7 +654,7 @@ namespace Vim.UnitTest
                 /// Make sure backspace over char at start without
                 /// 'backspace=start' works
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void NoStart()
                 {
                     Create("cat dog");
@@ -668,7 +668,7 @@ namespace Vim.UnitTest
                 /// Make sure backspace over char at start with 'backspace=start'
                 /// works
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void Start()
                 {
                     Create("cat dog");
@@ -682,7 +682,7 @@ namespace Vim.UnitTest
                 /// Make sure backspace over char at indent without
                 /// 'backspace=indent' works
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void NoIndent()
                 {
                     Create("    dog");
@@ -696,7 +696,7 @@ namespace Vim.UnitTest
                 /// Make sure backspace over char at indent with
                 /// 'backspace=indent' works
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void Indent()
                 {
                     Create("    dog");
@@ -710,7 +710,7 @@ namespace Vim.UnitTest
                 /// Make sure backspace over char at beginning of line without
                 /// 'backspace=eol' works
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void NoEol()
                 {
                     Create("cat", "dog");
@@ -724,7 +724,7 @@ namespace Vim.UnitTest
                 /// Make sure backspace over char at beginning of line with
                 /// 'backspace=eol' works
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void Eol()
                 {
                     Create("cat", "dog");
@@ -738,7 +738,7 @@ namespace Vim.UnitTest
                 /// Make sure backspace over char from virtual space works
                 /// 'backspace=eol' works
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void FromVirtualSpace()
                 {
                     Create("  hello", "world");
@@ -753,7 +753,7 @@ namespace Vim.UnitTest
                 /// <summary>
                 /// A repeat of a backspace operation will perform a check on the 'backspace' option
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void RepeatRechecksBackspaceOption()
                 {
                     Create("cats");
@@ -774,7 +774,7 @@ namespace Vim.UnitTest
                 ///
                 /// Issue #1532
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void RepeatRechecksBackspaceOptionWithExtraInsert()
                 {
                     Create("cat", "cat");
@@ -793,7 +793,7 @@ namespace Vim.UnitTest
                 /// If the caret moves from anything other than an edit operation in insert mode it resets the 
                 /// start point to the new position of the caret 
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void CaretChangeSameLine()
                 {
                     Create("");
@@ -807,7 +807,7 @@ namespace Vim.UnitTest
                     Assert.Equal(1, VimHost.BeepCount);
                 }
 
-                [Fact]
+                [WpfFact]
                 public void EnterDoesntChangeStartPoint()
                 {
                     Create("cat");
@@ -824,7 +824,7 @@ namespace Vim.UnitTest
                 /// Virtual space is the VsVim equivalent of autoindent.  When indent option is not 
                 /// specified a backspace operation shouldn't change the autoindent
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void NoIndentShouldntRemoveVirtualSpace()
                 {
                     Create("cat", "");
@@ -838,7 +838,7 @@ namespace Vim.UnitTest
                 /// <summary>
                 /// A backspace over virtual space should replace it with the appropriate tabs / spaces
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void IndentShouldRemoveVirtualSpace()
                 {
                     Create("cat", "");
@@ -856,7 +856,7 @@ namespace Vim.UnitTest
                 /// <summary>
                 /// Don't treat virtual space on a non-blank line as indent
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void VirtualSpaceInNonBlankLineIsntIndent()
                 {
                     Create("cat", "");
@@ -876,7 +876,7 @@ namespace Vim.UnitTest
                 /// Make sure backspace over word at start without
                 /// 'backspace=start' works
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void NoStart()
                 {
                     Create("cat dog elk");
@@ -890,7 +890,7 @@ namespace Vim.UnitTest
                 /// Make sure backspace over word at start with 'backspace=start'
                 /// works
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void Start()
                 {
                     Create("cat dog elk");
@@ -904,7 +904,7 @@ namespace Vim.UnitTest
                 /// Make sure backspace over word at indent without
                 /// 'backspace=indent' works
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void NoIndent()
                 {
                     Create("    dog");
@@ -918,7 +918,7 @@ namespace Vim.UnitTest
                 /// Make sure backspace over word at indent with
                 /// 'backspace=indent' works
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void Indent()
                 {
                     Create("    dog");
@@ -932,7 +932,7 @@ namespace Vim.UnitTest
                 /// Make sure backspace over word at beginning of line without
                 /// 'backspace=eol' works
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void NoEol()
                 {
                     Create("cat", "dog");
@@ -946,7 +946,7 @@ namespace Vim.UnitTest
                 /// Make sure backspace over word at beginning of line with
                 /// 'backspace=eol' works
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void Eol()
                 {
                     Create("cat", "dog");
@@ -963,7 +963,7 @@ namespace Vim.UnitTest
                 /// Make sure backspacing over line starting from an empty line
                 /// works
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void FromEmptyLine()
                 {
                     Create("");
@@ -977,7 +977,7 @@ namespace Vim.UnitTest
                 /// Make sure backspacing over line from the start of a non-empty
                 /// line works
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void FromStarrtOfNonEmpyLine()
                 {
                     Create("cat");
@@ -992,7 +992,7 @@ namespace Vim.UnitTest
                 /// Make sure backspacing over line from the end of a non-empty
                 /// line works
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void FromEndOfNonEmpyLine()
                 {
                     Create("cat");
@@ -1007,7 +1007,7 @@ namespace Vim.UnitTest
                 /// Make sure backspacing over line from the middle of a non-empty
                 /// line works
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void FromMiddleOfNonEmpyLine()
                 {
                     Create("cat dog");
@@ -1022,7 +1022,7 @@ namespace Vim.UnitTest
                 /// Make sure backspacing over line from the start position stays
                 /// put
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void AtStart_NoBackspaceStart()
                 {
                     Create("cat dog");
@@ -1035,7 +1035,7 @@ namespace Vim.UnitTest
                 /// Make sure backspacing over line and then doing it again from
                 /// the start position stays put
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void AgainAtStart_NoBackspaceStart()
                 {
                     Create("cat dog");
@@ -1052,7 +1052,7 @@ namespace Vim.UnitTest
                 /// Make sure backspacing over line from the start position with
                 /// 'backspace=start' performs delete line before cursor
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void AtStart_BackspaceStart()
                 {
                     Create("cat dog");
@@ -1067,7 +1067,7 @@ namespace Vim.UnitTest
                 /// the start position with 'backspace=start' performs delete
                 /// line before cursor
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void AgainAtStart_BackspaceStart()
                 {
                     Create("cat dog");
@@ -1086,7 +1086,7 @@ namespace Vim.UnitTest
                 /// of an insert without 'backspace=eol' does nothing
                 /// 
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void FromStartOfNextLine_NoBackspaceEol()
                 {
                     Create("cat dog");
@@ -1106,7 +1106,7 @@ namespace Vim.UnitTest
                 /// of an insert without 'backspace=eol' wraps to previous line
                 /// 
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void FromStartOfNextLine_BackspaceEol()
                 {
                     Create("cat dog");
@@ -1124,7 +1124,7 @@ namespace Vim.UnitTest
                 /// <summary>
                 /// Make sure backspacing over line twice from the same edit
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void TwiceFromSameEdit()
                 {
                     Create("cat dog");
@@ -1142,7 +1142,7 @@ namespace Vim.UnitTest
                 /// <summary>
                 /// Make sure a redo after an undo in insert works
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void WithRedo()
                 {
                     Create("cat dog");
@@ -1162,7 +1162,7 @@ namespace Vim.UnitTest
                 /// Make sure backspacing over word hits all the right "pause"
                 /// points in a multi-line edit
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void BackspaceOverWord_RepeatedOverMultiLine()
                 {
                     Create("aaa bbb");
@@ -1204,7 +1204,7 @@ namespace Vim.UnitTest
                 /// Make sure backspacing over line hits all the right "pause"
                 /// points in a multi-line edit
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void RepeatedOverMultiLine()
                 {
                     Create("aaa bbb");
@@ -1241,14 +1241,14 @@ namespace Vim.UnitTest
             /// Make sure that the ITextView isn't accessed in insert mode if it's active and the 
             /// ITextView is closed
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void CloseInInsertMode()
             {
                 Create("foo", "bar");
                 _textView.Close();
             }
 
-            [Fact]
+            [WpfFact]
             public void Leave_WithControlC()
             {
                 Create("hello world");
@@ -1259,7 +1259,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Ensure that normal typing gets passed to TryCustomProcess
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void TryCustomProcess_DirectInsert()
             {
                 Create("world");
@@ -1282,7 +1282,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Ensure that other commands go through TryCustomProcess
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void TryCustomProcess_Enter()
             {
                 Create("world");
@@ -1305,7 +1305,7 @@ namespace Vim.UnitTest
             /// Repeat of a TryCustomProcess should recall that function vs. repeating the
             /// inserted text
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void TryCustomProcess_Repeat()
             {
                 Create("world");
@@ -1337,7 +1337,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// KeyInput values which are custom processed should still end up in the macro recorder
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void TryCustomProcess_Macro()
             {
                 Create("world");
@@ -1363,7 +1363,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Ensure that delete all indent both deletes the indent and preserves the caret position
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void DeleteAllIndent()
             {
                 Create("       hello");
@@ -1377,7 +1377,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// The delete key when combined with shift should still cause a standard delete
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Delete_WithShift()
             {
                 Create("cat dog");
@@ -1391,7 +1391,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// The delete key when combined with shift should still participate in key mapping
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Delete_WithShift_KeyMapping()
             {
                 Create(" world");
@@ -1405,7 +1405,7 @@ namespace Vim.UnitTest
             /// Verify that inserting tab with a count and inserting tab "count" times is an exchangable
             /// operation
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Insert_Tab()
             {
                 Create("int Member", "int Member");
@@ -1425,7 +1425,7 @@ namespace Vim.UnitTest
             /// Make sure that indentation is still done even when enter occurs with a non-standard mapping
             /// of enter
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Insert_NewLine_IndentWithAltMapping()
             {
                 Create("  hello", "world");
@@ -1441,7 +1441,7 @@ namespace Vim.UnitTest
             /// At the end of the line the caret should just move into virtual space.  No need for actual
             /// white space to be inserted
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Insert_NewLine_AtEndOfLine()
             {
                 Create("  hello", "world");
@@ -1456,7 +1456,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Make sure executing the one time command correctly sets the buffer state
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void OneTimeCommand_BufferState()
             {
                 Create("");
@@ -1467,7 +1467,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Execute a one time command of delete word
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void OneTimeCommand_DeleteWord()
             {
                 Create("hello world");
@@ -1483,7 +1483,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Execute a one time command of delete word
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void OneTimeCommand_CommandMode_Put()
             {
                 Create("hello world");
@@ -1501,7 +1501,7 @@ namespace Vim.UnitTest
             /// Normal mode usually doesn't handle the Escape key but it must during a 
             /// one time command
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void OneTimeCommand_Normal_Escape()
             {
                 Create("");
@@ -1515,7 +1515,7 @@ namespace Vim.UnitTest
             /// Ensure the single backspace is repeated properly.  It is tricky because it has to both 
             /// backspace and then jump a caret space to the left.
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Repeat_Backspace_Single()
             {
                 Create("dog toy", "fish chips");
@@ -1533,7 +1533,7 @@ namespace Vim.UnitTest
             /// Ensure when the mode is entered with a count that the escape will cause the 
             /// text to be repeated
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Repeat_Insert()
             {
                 Create(ModeArgument.NewInsertWithCount(2), "the cat");
@@ -1549,7 +1549,7 @@ namespace Vim.UnitTest
             /// key strokes which were used.  This can be demonstrated by repeating an insert after 
             /// introducing a key remapping
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Repeat_Insert_WithKeyMap()
             {
                 Create("", "", "hello world");
@@ -1565,7 +1565,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Verify that we properly repeat an insert which is a tab count 
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Repeat_Insert_TabCount()
             {
                 Create("int Member", "int Member");
@@ -1585,7 +1585,7 @@ namespace Vim.UnitTest
             /// When repeating a tab the repeat needs to be wary of maintainin the 'tabstop' modulus
             /// of the new line
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Repeat_Insert_TabNonEvenOffset()
             {
                 Create("hello world", "static LPTSTR pValue");
@@ -1602,7 +1602,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Repeat a simple text insertion with a count
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Repeat_InsertWithCount()
             {
                 Create("", "");
@@ -1620,7 +1620,7 @@ namespace Vim.UnitTest
             /// is correct.  Added text ensures the end of line doesn't save us by moving the caret
             /// backwards
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Repeat_InsertWithCountOverOtherText()
             {
                 Create("", "a");
@@ -1637,7 +1637,7 @@ namespace Vim.UnitTest
             /// Ensure when the mode is entered with a count that the escape will cause the
             /// deleted text to be repeated
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Repeat_Delete()
             {
                 Create(ModeArgument.NewInsertWithCount(2), "doggie");
@@ -1651,7 +1651,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Repeated white space change to tabs should only repeat the normalized change
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Repeat_WhiteSpaceChange()
             {
                 Create(ModeArgument.NewInsertWithCount(2), "blue\t\t    dog");
@@ -1668,7 +1668,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Ensure that multi-line changes are properly recorded and repeated in the ITextBuffer
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Repeat_MultilineChange()
             {
                 Create("cat", "dog");
@@ -1689,7 +1689,7 @@ namespace Vim.UnitTest
             /// Verify that we can repeat the DeleteAllIndent command.  Make sure that the command repeats
             /// and not the literal change of the text
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Repeat_DeleteAllIndent()
             {
                 Create("     hello", "          world");
@@ -1705,7 +1705,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Make sure that the tab operation can be properly repeated
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Repeat_InsertTab()
             {
                 Create("cat", "dog");
@@ -1721,7 +1721,7 @@ namespace Vim.UnitTest
             /// repeat of a text change.  This can be verified by altering the settings between the initial
             /// insert and the repeat
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Repeat_InsertTab_ChangedSettings()
             {
                 Create("cat", "dog");
@@ -1739,7 +1739,7 @@ namespace Vim.UnitTest
             /// as a separate command and not straight text.  This can be verified by changing the tab insertion
             /// settings between the initial insert and the repeat
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Repeat_InsertTab_CombinedWithText()
             {
                 Create("", "");
@@ -1759,7 +1759,7 @@ namespace Vim.UnitTest
             /// items.  This may seem like a trivial action, and really it is, but the behavior being right
             /// is core to us being able to correctly repeat insert mode actions
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Repeat_NoChange()
             {
                 Create("cat");
@@ -1774,7 +1774,7 @@ namespace Vim.UnitTest
             /// Make sure we don't accidentally link the move caret left action with a command coming
             /// from normal mode
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Repeat_NoChange_DontLinkWithNormalCommand()
             {
                 Create("cat dog");
@@ -1794,7 +1794,7 @@ namespace Vim.UnitTest
             /// move the cursor, and then enter the insert mode again. Therefore only the text written after
             /// the move will be repeated.
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Repeat_With_Arrow_Right()
             {
                 Create("cat dog");
@@ -1815,7 +1815,7 @@ namespace Vim.UnitTest
             /// move the cursor, and then enter the insert mode again. Therefore only the text written after
             /// the move will be repeated.
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Repeat_With_Arrow_Left()
             {
                 Create("cat dog");
@@ -1836,7 +1836,7 @@ namespace Vim.UnitTest
             /// move the cursor, and then enter the insert mode again. Therefore only the text written after
             /// the move will be repeated.
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Repeat_With_Mouse_Move()
             {
                 Create("cat dog");
@@ -1855,7 +1855,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// This test is mainly a regression test against the selection change logic
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void SelectionChange1()
             {
                 Create("foo", "bar");
@@ -1866,7 +1866,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Make sure that shift left does a round up before it shifts to the left.
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void ShiftLeft_RoundUp()
             {
                 Create("     hello");
@@ -1879,7 +1879,7 @@ namespace Vim.UnitTest
             /// Make sure that when the text is properly rounded to a shift width that the 
             /// shift left just deletes a shift width
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void ShiftLeft_Normal()
             {
                 Create("        hello");
@@ -1891,7 +1891,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Simple word completion action which accepts the first match
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void WordCompletion_Simple()
             {
                 Create("c dog", "cat");
@@ -1903,7 +1903,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Simulate choosing the second possibility in the completion list
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void WordCompletion_ChooseNext()
             {
                 Create("c dog", "cat copter");
@@ -1917,7 +1917,7 @@ namespace Vim.UnitTest
             /// Typing a char while the completion list is up should cancel it out and 
             /// cause the char to be added to the IVimBuffer
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void WordCompletion_TypeAfter()
             {
                 Create("c dog", "cat");
@@ -1931,7 +1931,7 @@ namespace Vim.UnitTest
             /// Esacpe should cancel both word completion and insert mode.  It's just
             /// like normal intellisense in that respect
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void WordCompletion_Escape()
             {
                 Create("c dog", "cat");
@@ -1946,7 +1946,7 @@ namespace Vim.UnitTest
             /// When there are no matches then no active IWordCompletion should be created and 
             /// it should continue in insert mode
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void WordCompletion_NoMatches()
             {
                 Create("c dog");
@@ -1957,7 +1957,7 @@ namespace Vim.UnitTest
                 Assert.True(_vimBuffer.InsertMode.ActiveWordCompletionSession.IsNone());
             }
 
-            [Fact]
+            [WpfFact]
             public void EscapeInColumnZero()
             {
                 Create("cat", "dog");
@@ -1972,7 +1972,7 @@ namespace Vim.UnitTest
             /// If 'cw' is issued on an indented line consisting of a single
             /// word, the caret shouldn't move
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void ChangeWord_OneIndentedWord()
             {
                 Create("    cat", "dog");
@@ -1989,7 +1989,7 @@ namespace Vim.UnitTest
             /// word, and the line is followed by a blank line, the caret
             /// still shouldn't move
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void ChangeWord_OneIndentedWordBeforeBlankLine()
             {
                 Create("    cat", "", "dog");
@@ -2005,7 +2005,7 @@ namespace Vim.UnitTest
             /// In general when the caret moves between lines this changes the 'start' point of the
             /// insert mode edit to be the new caret point.  This is not the case when Enter is used
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void EnterDoesntChangeEditStartPoint()
             {
                 Create("");
@@ -2015,7 +2015,7 @@ namespace Vim.UnitTest
                 Assert.Equal(0, _vimBuffer.VimTextBuffer.InsertStartPoint.Value.Position);
             }
 
-            [Fact]
+            [WpfFact]
             public void Issue498()
             {
                 Create("helloworld");
@@ -2040,28 +2040,28 @@ namespace Vim.UnitTest
                     _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
                 }
 
-                [Fact]
+                [WpfFact]
                 public void SimpleIndent()
                 {
                     _vimBuffer.Process("\t");
                     Assert.Equal("\t ", _textBuffer.GetLine(0).GetText());
                 }
 
-                [Fact]
+                [WpfFact]
                 public void SimpleIndentAndType()
                 {
                     _vimBuffer.Process("\th");
                     Assert.Equal("\t h", _textBuffer.GetLine(0).GetText());
                 }
 
-                [Fact]
+                [WpfFact]
                 public void DeleteSimpleIndent()
                 {
                     _vimBuffer.Process(VimKey.Tab, VimKey.Back);
                     Assert.Equal("", _textBuffer.GetLine(0).GetText());
                 }
 
-                [Fact]
+                [WpfFact]
                 public void DeleteIndentWithChanges()
                 {
                     _textBuffer.SetText("\t cat");
@@ -2085,35 +2085,35 @@ namespace Vim.UnitTest
                     _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
                 }
 
-                [Fact]
+                [WpfFact]
                 public void SimpleIndent()
                 {
                     _vimBuffer.Process(VimKey.Tab);
                     Assert.Equal("\t", _textBuffer.GetLine(0).GetText());
                 }
 
-                [Fact]
+                [WpfFact]
                 public void DoubleIndent()
                 {
                     _vimBuffer.Process(VimKey.Tab, VimKey.Tab);
                     Assert.Equal("\t\t", _textBuffer.GetLine(0).GetText());
                 }
 
-                [Fact]
+                [WpfFact]
                 public void SimpleIndentAndType()
                 {
                     _vimBuffer.Process("\ta");
                     Assert.Equal("\ta", _textBuffer.GetLine(0).GetText());
                 }
 
-                [Fact]
+                [WpfFact]
                 public void DeleteSimpleIndent()
                 {
                     _vimBuffer.Process(VimKey.Tab, VimKey.Back);
                     Assert.Equal("", _textBuffer.GetLine(0).GetText());
                 }
 
-                [Fact]
+                [WpfFact]
                 public void DeleteDoubleIndent()
                 {
                     _vimBuffer.Process(VimKey.Tab, VimKey.Tab, VimKey.Back);
@@ -2122,7 +2122,7 @@ namespace Vim.UnitTest
                     Assert.Equal("", _textBuffer.GetLine(0).GetText());
                 }
 
-                [Fact]
+                [WpfFact]
                 public void DeleteIndentWithContent()
                 {
                     _textBuffer.SetText("\tcat");
@@ -2145,21 +2145,21 @@ namespace Vim.UnitTest
                     _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
                 }
 
-                [Fact]
+                [WpfFact]
                 public void SimpleIndent()
                 {
                     _vimBuffer.Process(VimKey.Tab);
                     Assert.Equal("    ", _textBuffer.GetLine(0).GetText());
                 }
 
-                [Fact]
+                [WpfFact]
                 public void DoubleIndent()
                 {
                     _vimBuffer.Process(VimKey.Tab, VimKey.Tab);
                     Assert.Equal("        ", _textBuffer.GetLine(0).GetText());
                 }
 
-                [Fact]
+                [WpfFact]
                 public void SimpleIndentAndType()
                 {
                     _vimBuffer.Process("\ta");
@@ -2170,21 +2170,21 @@ namespace Vim.UnitTest
                 /// 'sts' isn't set here hence the backspace is just interpretted as deleting a single
                 /// character 
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void DeleteSimpleIndent()
                 {
                     _vimBuffer.Process(VimKey.Tab, VimKey.Back);
                     Assert.Equal("   ", _textBuffer.GetLine(0).GetText());
                 }
 
-                [Fact]
+                [WpfFact]
                 public void DeleteDoubleIndent()
                 {
                     _vimBuffer.Process(VimKey.Tab, VimKey.Tab, VimKey.Back, VimKey.Back);
                     Assert.Equal("      ", _textBuffer.GetLine(0).GetText());
                 }
 
-                [Fact]
+                [WpfFact]
                 public void DeleteIndentWithContent()
                 {
                     _textBuffer.SetText("    cat");
@@ -2207,28 +2207,28 @@ namespace Vim.UnitTest
                     _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
                 }
 
-                [Fact]
+                [WpfFact]
                 public void SimpleIndent()
                 {
                     _vimBuffer.Process(VimKey.Tab);
                     Assert.Equal("    ", _textBuffer.GetLine(0).GetText());
                 }
 
-                [Fact]
+                [WpfFact]
                 public void DoubleIndent()
                 {
                     _vimBuffer.Process(VimKey.Tab, VimKey.Tab);
                     Assert.Equal("        ", _textBuffer.GetLine(0).GetText());
                 }
 
-                [Fact]
+                [WpfFact]
                 public void SimpleIndentAndType()
                 {
                     _vimBuffer.Process("\ta");
                     Assert.Equal("    a", _textBuffer.GetLine(0).GetText());
                 }
 
-                [Fact]
+                [WpfFact]
                 public void IndentMixed()
                 {
                     _textBuffer.SetText("c\t");
@@ -2241,14 +2241,14 @@ namespace Vim.UnitTest
                 /// 'sts' isn't set here hence the backspace is just interpretted as deleting a single
                 /// character 
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void DeleteSimpleIndent()
                 {
                     _vimBuffer.Process(VimKey.Tab, VimKey.Back);
                     Assert.Equal("", _textBuffer.GetLine(0).GetText());
                 }
 
-                [Fact]
+                [WpfFact]
                 public void DeleteDoubleIndent()
                 {
                     _vimBuffer.Process(VimKey.Tab, VimKey.Tab, VimKey.Back);
@@ -2257,7 +2257,7 @@ namespace Vim.UnitTest
                     Assert.Equal("", _textBuffer.GetLine(0).GetText());
                 }
 
-                [Fact]
+                [WpfFact]
                 public void DeleteIndentWithContent()
                 {
                     _textBuffer.SetText("    cat");
@@ -2266,7 +2266,7 @@ namespace Vim.UnitTest
                     Assert.Equal("cat", _textBuffer.GetLine(0).GetText());
                 }
 
-                [Fact]
+                [WpfFact]
                 public void DeleteMixedIndentWithContent()
                 {
                     _textBuffer.SetText("     cat");
@@ -2277,7 +2277,7 @@ namespace Vim.UnitTest
                     Assert.Equal("cat", _textBuffer.GetLine(0).GetText());
                 }
 
-                [Fact]
+                [WpfFact]
                 public void DeleteRealTabWithContent()
                 {
                     _textBuffer.SetText("\tcat");
@@ -2290,7 +2290,7 @@ namespace Vim.UnitTest
                 /// When the caret is in virtual space the tab command should fill in the 
                 /// virtual spaces on the blank line
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void TabFillInVirtualSpacesBlankLine()
                 {
                     _textView.MoveCaretTo(0, virtualSpaces: 4);
@@ -2303,7 +2303,7 @@ namespace Vim.UnitTest
                 /// When the caret is in virtual space the tab command should fill in the 
                 /// virtual spaces on the blank line
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void TabFillInVirtualSpacesNonBlankLine()
                 {
                     _textBuffer.SetText("ba");
@@ -2330,35 +2330,35 @@ namespace Vim.UnitTest
                 /// <summary>
                 /// 'sts' has precedence over 'ts' here 
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void SimpleIndent()
                 {
                     _vimBuffer.Process(VimKey.Tab);
                     Assert.Equal("    ", _textBuffer.GetLine(0).GetText());
                 }
 
-                [Fact]
+                [WpfFact]
                 public void DoubleIndent()
                 {
                     _vimBuffer.Process(VimKey.Tab, VimKey.Tab);
                     Assert.Equal("\t", _textBuffer.GetLine(0).GetText());
                 }
 
-                [Fact]
+                [WpfFact]
                 public void SimpleIndentAndType()
                 {
                     _vimBuffer.Process("\ta");
                     Assert.Equal("    a", _textBuffer.GetLine(0).GetText());
                 }
 
-                [Fact]
+                [WpfFact]
                 public void DeleteSimpleIndent()
                 {
                     _vimBuffer.Process(VimKey.Tab, VimKey.Back);
                     Assert.Equal("", _textBuffer.GetLine(0).GetText());
                 }
 
-                [Fact]
+                [WpfFact]
                 public void DeleteDoubleIndent()
                 {
                     _vimBuffer.Process(VimKey.Tab, VimKey.Tab);
@@ -2369,7 +2369,7 @@ namespace Vim.UnitTest
                     Assert.Equal("", _textBuffer.GetLine(0).GetText());
                 }
 
-                [Fact]
+                [WpfFact]
                 public void DeleteIndentWithContent()
                 {
                     _textBuffer.SetText("    cat");
@@ -2378,7 +2378,7 @@ namespace Vim.UnitTest
                     Assert.Equal("cat", _textBuffer.GetLine(0).GetText());
                 }
 
-                [Fact]
+                [WpfFact]
                 public void DeleteMixedIndentWithContent()
                 {
                     _textBuffer.SetText("     cat");
@@ -2389,7 +2389,7 @@ namespace Vim.UnitTest
                     Assert.Equal("cat", _textBuffer.GetLine(0).GetText());
                 }
 
-                [Fact]
+                [WpfFact]
                 public void DeleteRealTabWithContent()
                 {
                     _textBuffer.SetText("\tcat");
@@ -2398,7 +2398,7 @@ namespace Vim.UnitTest
                     Assert.Equal("    cat", _textBuffer.GetLine(0).GetText());
                 }
 
-                [Fact]
+                [WpfFact]
                 public void DeleteRealTabWithContentTwitce()
                 {
                     _textBuffer.SetText("\tcat");
@@ -2411,7 +2411,7 @@ namespace Vim.UnitTest
                 /// When deleting indent we don't convert spaces to tabs even if it lines up correctly
                 /// with the tabstop setting
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void DeleteTripleIndentWithContent()
                 {
                     _vimBuffer.Process("\t\t\tcat");
@@ -2442,21 +2442,21 @@ namespace Vim.UnitTest
                 /// <summary>
                 /// 'sts' has precedence over 'ts' here 
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void SimpleIndent()
                 {
                     _vimBuffer.Process(VimKey.Tab);
                     Assert.Equal("\t", _textBuffer.GetLine(0).GetText());
                 }
 
-                [Fact]
+                [WpfFact]
                 public void DoubleIndent()
                 {
                     _vimBuffer.Process(VimKey.Tab, VimKey.Tab);
                     Assert.Equal("\t\t", _textBuffer.GetLine(0).GetText());
                 }
 
-                [Fact]
+                [WpfFact]
                 public void IndentOverSpaces()
                 {
                     _textBuffer.Insert(0, " ");
@@ -2464,7 +2464,7 @@ namespace Vim.UnitTest
                     Assert.Equal("\t", _textBuffer.GetLine(0).GetText());
                 }
 
-                [Fact]
+                [WpfFact]
                 public void IndentOverText()
                 {
                     _textBuffer.Insert(0, "c");
@@ -2472,7 +2472,7 @@ namespace Vim.UnitTest
                     Assert.Equal("c\t", _textBuffer.GetLine(0).GetText());
                 }
 
-                [Fact]
+                [WpfFact]
                 public void IndentBetweenText()
                 {
                     _textBuffer.SetText("c m");
@@ -2484,28 +2484,28 @@ namespace Vim.UnitTest
                     Assert.Equal("c\t\t m", _textBuffer.GetLine(0).GetText());
                 }
 
-                [Fact]
+                [WpfFact]
                 public void SimpleIndentAndType()
                 {
                     _vimBuffer.Process("\ta");
                     Assert.Equal("\ta", _textBuffer.GetLine(0).GetText());
                 }
 
-                [Fact]
+                [WpfFact]
                 public void IndentNormalizesTabsSpaces()
                 {
                     _vimBuffer.Process("c   \t");
                     Assert.Equal("c\t\t", _textBuffer.GetLine(0).GetText());
                 }
 
-                [Fact]
+                [WpfFact]
                 public void DeleteSimpleIndent()
                 {
                     _vimBuffer.Process(VimKey.Tab, VimKey.Back);
                     Assert.Equal("", _textBuffer.GetLine(0).GetText());
                 }
 
-                [Fact]
+                [WpfFact]
                 public void DeleteDoubleIndent()
                 {
                     _vimBuffer.Process(VimKey.Tab, VimKey.Tab);
@@ -2516,7 +2516,7 @@ namespace Vim.UnitTest
                     Assert.Equal("", _textBuffer.GetLine(0).GetText());
                 }
 
-                [Fact]
+                [WpfFact]
                 public void DeleteIndentSpacesWithContent()
                 {
                     _textBuffer.SetText("    cat");
@@ -2525,7 +2525,7 @@ namespace Vim.UnitTest
                     Assert.Equal("cat", _textBuffer.GetLine(0).GetText());
                 }
 
-                [Fact]
+                [WpfFact]
                 public void DeleteMixedIndentWithContent()
                 {
                     _textBuffer.SetText("\t cat");
@@ -2536,7 +2536,7 @@ namespace Vim.UnitTest
                     Assert.Equal("cat", _textBuffer.GetLine(0).GetText());
                 }
 
-                [Fact]
+                [WpfFact]
                 public void DeleteRealTabWithContent()
                 {
                     _textBuffer.SetText("\tcat");
@@ -2549,7 +2549,7 @@ namespace Vim.UnitTest
                 /// When deleting indent we don't convert spaces to tabs even if it lines up correctly
                 /// with the tabstop setting
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void DeleteTripleIndentWithContent()
                 {
                     _vimBuffer.Process("\t\t\tcat");
@@ -2569,7 +2569,7 @@ namespace Vim.UnitTest
                 /// <summary>
                 /// Typing a space while editting will disable 'sts' for that line
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void TypingSpaceDisablesSoftTabStop()
                 {
                     Create("");
@@ -2584,7 +2584,7 @@ namespace Vim.UnitTest
                 /// <summary>
                 /// Once insert mode is left and re-entered 'sts' is restored 
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void TypingSpaceThenEscapeRestoresSoftTabStop()
                 {
                     Create("");
@@ -2599,7 +2599,7 @@ namespace Vim.UnitTest
                 /// <summary>
                 /// A caret movement also restores 'sts'
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void TypingSpaceThenCaretMoveRestoresSoftTabStop()
                 {
                     // handling is different without VirtualEdit=onemore
@@ -2615,7 +2615,7 @@ namespace Vim.UnitTest
                     Assert.Equal(" ", _textBuffer.GetLine(0).GetText());
                 }
 
-                [Fact]
+                [WpfFact]
                 public void TypingSpaceThenCaretMoveRestoresSoftTabStopWithVeOneMore()
                 {
                     Create("");
@@ -2644,7 +2644,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Just a sanity check that insert works normally when atomic inserts are enabled
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void SimpleInsert()
             {
                 Create("");
@@ -2659,7 +2659,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Simulate a typo, followed by the left arrow key to correct
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void InsertWithArrowLeft()
             {
                 Create("");
@@ -2678,7 +2678,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Simulate a typo, followed by two left arrow keys to correct
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void InsertWithArrowLeftTwice()
             {
                 Create("");
@@ -2697,7 +2697,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Simulate entering the insert mode at the wrong position, and use the arrow keys to navigate
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void InsertWithArrowRight()
             {
                 Create("cat dog");
@@ -2718,7 +2718,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Simulate entering the insert mode, add some text, and then use the arrow keys to change text on the next line as well
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void InsertWithArrowDown()
             {
                 Create("cat dog", "rabbit mouse");
@@ -2738,7 +2738,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Move a word to the right in insert mode, and repeat from the beginning of word
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void MoveWordForward()
             {
                 Create("cat dog");
@@ -2755,7 +2755,7 @@ namespace Vim.UnitTest
             /// Move the cursor forward on the same line and then edit some more
             /// The movements should be converted to relative ones
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void MoveCursorForwardSameLine()
             {
                 Create("cat dog mouse");
@@ -2773,7 +2773,7 @@ namespace Vim.UnitTest
             /// Move the cursor backwards on the same line and then edit some more
             /// The movements should be converted to relative ones
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void MoveCursorBackwardSameLine()
             {
                 Create("cat dog mouse");
@@ -2794,7 +2794,7 @@ namespace Vim.UnitTest
             /// Move the cursor backards to a new line, but the same column, and edit some more
             /// The movements should be converted to relative ones
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void MoveCursorBackwardPrevLineSameColumn()
             {
                 Create("");
@@ -2817,7 +2817,7 @@ namespace Vim.UnitTest
             /// Move the cursor forward to a new line, but the same column, and edit some more
             /// The movements should be converted to relative ones
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void MoveCursorForwardNextLineSameColumn()
             {
                 Create("cat dog mouse");
@@ -2840,7 +2840,7 @@ namespace Vim.UnitTest
             /// Let there be one short line between the two lines
             /// The movements should be converted to relative ones
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void MoveCursorForwardNextLineLonger()
             {
                 Create("cat", "cat dog rat mouse");
@@ -2865,7 +2865,7 @@ namespace Vim.UnitTest
             /// Let there be one short line between the two lines
             /// The movements should be converted to relative ones
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void MoveCursorForwardNextLineShorter()
             {
                 Create("cat", "cat dog");
@@ -2889,7 +2889,7 @@ namespace Vim.UnitTest
             /// Move the cursor forward to a new shorter line containing a tab
             /// The movements should be converted to relative ones
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void MoveCursorForwardNextLineShorterContainingTab()
             {
                 Create("\tcat dog");

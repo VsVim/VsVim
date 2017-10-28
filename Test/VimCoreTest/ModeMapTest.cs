@@ -21,7 +21,7 @@ namespace Vim.UnitTest
         /// Make sure that "normal" mode is properly logged as the previous mode when 
         /// transitioning between normal -> insert -> visual 
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void InsertToNormalToVisualCharacter()
         {
             _modeMap.SwitchMode(ModeKind.Insert, ModeArgument.None);
@@ -36,7 +36,7 @@ namespace Vim.UnitTest
         /// insert -> visual character -> visual block, escape should go back to insert, not
         /// visual character. 
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void SwitchBetweenVisualModes()
         {
             foreach (var baseMode in new[] { ModeKind.Normal, ModeKind.Command, ModeKind.Insert })
@@ -51,7 +51,7 @@ namespace Vim.UnitTest
             }
         }
 
-        [Fact]
+        [WpfFact]
         public void NormalToInsertToNormal()
         {
             _modeMap.SwitchMode(ModeKind.Insert, ModeArgument.None);
@@ -59,7 +59,7 @@ namespace Vim.UnitTest
             Assert.Equal(ModeKind.Insert, _modeMap.PreviousMode.Value.ModeKind);
         }
 
-        [Fact]
+        [WpfFact]
         public void InitialNormalHasNoPrevious()
         {
             Assert.Equal(ModeKind.Uninitialized, _modeMap.Mode.ModeKind);
@@ -71,7 +71,7 @@ namespace Vim.UnitTest
         /// Visual mode always needs a mode to fall back.  Make sure there is one available 
         /// if it's the very first mode and hence would otherwise have an uninitialized mode
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void InitialVisualHasNormalModeBackup()
         {
             foreach (var visualMode in VisualKind.All)
@@ -82,7 +82,7 @@ namespace Vim.UnitTest
             }
         }
 
-        [Fact]
+        [WpfFact]
         public void RecursiveSwitch()
         {
             var mode = new Mock<IMode>(MockBehavior.Loose);
@@ -98,7 +98,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// The mode switch is complete when the <see cref="IVimBuffer.SwitchedMode"/> event is raised.
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void IsSwitchingModeInEvent()
         {
             _vimBuffer.SwitchedMode += (o, e) =>

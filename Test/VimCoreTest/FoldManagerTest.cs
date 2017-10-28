@@ -49,7 +49,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Creating a new fold in the ITextView should automatically close it
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void CreateFold_ShouldClose()
         {
             Create("cat", "dog", "bear", "fish");
@@ -63,7 +63,7 @@ namespace Vim.UnitTest
         /// Creating a fold with a range of 1 line should have no affect.  Vim doesn't supporting
         /// folding of 1 line as it makes no sense since it only supports line based folds
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void CreateFold_OneLine()
         {
             Create("cat", "dog", "bear");
@@ -75,7 +75,7 @@ namespace Vim.UnitTest
         /// When dealing with a non-vim outline which does not stretch the span of the line, we should 
         /// still be able to open it from any point on the line
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void OpenFold_AdhocPartialLine()
         {
             Create("cat dog", "fish tree");
@@ -89,7 +89,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// When there are multiple collapsed folds the first fold should be preferred when opening
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void OpenFold_PreferFirstFold()
         {
             Create("dog", "cat", "fish", "bear", "tree", "pig");
@@ -105,7 +105,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// When there are multiple collapsed folds the first fold should be preferred when toggling
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void ToggleFold_PreferFirstFold()
         {
             Create("dog", "cat", "fish", "bear", "tree", "pig");
@@ -121,7 +121,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// When there is an open fold
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void ToggleFold_CloseFold()
         {
             Create("cat", "dog", "bear", "fish");
@@ -140,7 +140,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// When there is a closed fold
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void ToggleFold_OpenFold()
         {
             Create("cat", "dog", "bear", "fish");
@@ -157,7 +157,7 @@ namespace Vim.UnitTest
         /// When dealing with a non-vim outline which does not stretch the span of the line, we should 
         /// still be able to close it from any point on the line
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void CloseFold_AdhocPartialLine()
         {
             Create("cat dog", "fish tree");

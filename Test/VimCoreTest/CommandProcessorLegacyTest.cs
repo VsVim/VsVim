@@ -94,7 +94,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Ensure the '$' / move to last line command is implemented properly
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void LastLine()
         {
             Create("foo", "bar", "baz");
@@ -109,7 +109,7 @@ namespace Vim.UnitTest
         /// Entering just a line number should jump to the corresponding Vim line number.  Note that Vim
         /// and ITextBuffer line numbers differ as Vim begins at 1
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void Jump_UseVimLineNumber()
         {
             Create("cat", "dog", "tree");
@@ -122,7 +122,7 @@ namespace Vim.UnitTest
         /// Even though Vim line numbers begin at 1, 0 is still a valid jump to the first line number 
         /// in Vim
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void Jump_FirstLineSpecial()
         {
             Create("cat", "dog", "tree");
@@ -135,7 +135,7 @@ namespace Vim.UnitTest
         /// When the line number exceeds the number of lines in the ITextBuffer it should just go to the
         /// last line number
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void Jump_LineNumberTooBig()
         {
             Create("cat", "dog", "tree");
@@ -148,7 +148,7 @@ namespace Vim.UnitTest
         /// Whichever line is targeted the point it jumps to should be the first non space / tab character on
         /// that line
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void Jump_Indent()
         {
             Create("cat", "  dog", "tree");
@@ -157,7 +157,7 @@ namespace Vim.UnitTest
             _operations.Verify();
         }
 
-        [Fact]
+        [WpfFact]
         public void Redo1()
         {
             Create("foo bar");
@@ -166,7 +166,7 @@ namespace Vim.UnitTest
             _operations.Verify();
         }
 
-        [Fact]
+        [WpfFact]
         public void Redo2()
         {
             Create("foo bar");
@@ -175,7 +175,7 @@ namespace Vim.UnitTest
             _operations.Verify();
         }
 
-        [Fact]
+        [WpfFact]
         public void Undo1()
         {
             Create("foo");
@@ -184,7 +184,7 @@ namespace Vim.UnitTest
             _operations.Verify();
         }
 
-        [Fact]
+        [WpfFact]
         public void Undo2()
         {
             Create("foo");
@@ -193,7 +193,7 @@ namespace Vim.UnitTest
             _operations.Verify();
         }
 
-        [Fact]
+        [WpfFact]
         public void Edit_NoArgumentsShouldReload()
         {
             Create("foo");
@@ -206,7 +206,7 @@ namespace Vim.UnitTest
             _factory.Verify();
         }
 
-        [Fact]
+        [WpfFact]
         public void Edit_NoArgumentsButDirtyShouldError()
         {
             Create("");
@@ -216,7 +216,7 @@ namespace Vim.UnitTest
             _factory.Verify();
         }
 
-        [Fact]
+        [WpfFact]
         public void Edit_FilePathButDirtyShouldError()
         {
             Create("foo");
@@ -229,7 +229,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Can't figure out how to make this fail so just beeping now
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void Edit_NoArgumentsReloadFailsShouldBeep()
         {
             Create("foo");
@@ -240,7 +240,7 @@ namespace Vim.UnitTest
             _factory.Verify();
         }
 
-        [Fact]
+        [WpfFact]
         public void Edit_FilePathShouldLoadIntoExisting()
         {
             Create("");
@@ -250,7 +250,7 @@ namespace Vim.UnitTest
             _factory.Verify();
         }
 
-        [Fact]
+        [WpfFact]
         public void WriteQuit_NoArguments()
         {
             Create("");
@@ -260,7 +260,7 @@ namespace Vim.UnitTest
             _factory.Verify();
         }
 
-        [Fact]
+        [WpfFact]
         public void WriteQuit_WithBang()
         {
             Create("");
@@ -270,7 +270,7 @@ namespace Vim.UnitTest
             _factory.Verify();
         }
 
-        [Fact]
+        [WpfFact]
         public void WriteQuit_FileName()
         {
             Create("bar");
@@ -280,7 +280,7 @@ namespace Vim.UnitTest
             _factory.Verify();
         }
 
-        [Fact]
+        [WpfFact]
         public void WriteQuit_Range()
         {
             Create("dog", "cat", "bear");
@@ -290,7 +290,7 @@ namespace Vim.UnitTest
             _factory.Verify();
         }
 
-        [Fact]
+        [WpfFact]
         public void Quit1()
         {
             Create("");
@@ -299,7 +299,7 @@ namespace Vim.UnitTest
             _factory.Verify();
         }
 
-        [Fact]
+        [WpfFact]
         public void Quit2()
         {
             Create("");
@@ -308,7 +308,7 @@ namespace Vim.UnitTest
             _factory.Verify();
         }
 
-        [Fact]
+        [WpfFact]
         public void Quit3()
         {
             Create("");
@@ -320,7 +320,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// When provided the ! bang option the application should just rudely exit
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void QuitAll_WithBang()
         {
             Create("");
@@ -332,7 +332,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// If there are no dirty files then we should just be exiting and not raising any messages
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void QuitAll_WithNoDirty()
         {
             Create("");
@@ -349,7 +349,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// If there are dirty buffers and the ! option is missing then an error needs to be raised
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void QuitAll_WithDirty()
         {
             Create("");
@@ -363,7 +363,7 @@ namespace Vim.UnitTest
             _factory.Verify();
         }
 
-        [Fact]
+        [WpfFact]
         public void Split1()
         {
             Create("");
@@ -372,7 +372,7 @@ namespace Vim.UnitTest
             _factory.Verify();
         }
 
-        [Fact]
+        [WpfFact]
         public void Split2()
         {
             Create("");
@@ -381,7 +381,7 @@ namespace Vim.UnitTest
             _factory.Verify();
         }
 
-        [Fact]
+        [WpfFact]
         public void Close1()
         {
             Create("");
@@ -390,7 +390,7 @@ namespace Vim.UnitTest
             _factory.Verify();
         }
 
-        [Fact]
+        [WpfFact]
         public void Close2()
         {
             Create("");
@@ -399,7 +399,7 @@ namespace Vim.UnitTest
             _factory.Verify();
         }
 
-        [Fact]
+        [WpfFact]
         public void Close3()
         {
             Create("");
@@ -408,7 +408,7 @@ namespace Vim.UnitTest
             _factory.Verify();
         }
 
-        [Fact]
+        [WpfFact]
         public void Join_NoArguments()
         {
             Create("dog", "cat", "tree", "rabbit");
@@ -419,7 +419,7 @@ namespace Vim.UnitTest
             _factory.Verify();
         }
 
-        [Fact]
+        [WpfFact]
         public void Join_WithBang()
         {
             Create("dog", "cat", "tree", "rabbit");
@@ -430,7 +430,7 @@ namespace Vim.UnitTest
             _factory.Verify();
         }
 
-        [Fact]
+        [WpfFact]
         public void Join_WithCount()
         {
             Create("dog", "cat", "tree", "rabbit");
@@ -441,7 +441,7 @@ namespace Vim.UnitTest
             _factory.Verify();
         }
 
-        [Fact]
+        [WpfFact]
         public void Join_WithRangeAndCount()
         {
             Create("dog", "cat", "tree", "rabbit");
@@ -455,7 +455,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Final count overrides the range and in case of 1 does nothing
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void Join_WithRangeAndCountOfOne()
         {
             Create("dog", "cat", "tree", "rabbit");
@@ -466,7 +466,7 @@ namespace Vim.UnitTest
             _factory.Verify();
         }
 
-        [Fact]
+        [WpfFact]
         public void Range_CurrentLineWithIncrement()
         {
             Create("dog", "cat", "bear", "fish", "tree");

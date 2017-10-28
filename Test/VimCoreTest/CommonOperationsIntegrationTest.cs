@@ -56,7 +56,7 @@ namespace Vim.UnitTest
 
             public sealed class TopTest : ScrollOffsetTest
             {
-                [Fact]
+                [WpfFact]
                 public void Disabled()
                 {
                     _globalSettings.ScrollOffset = 0;
@@ -65,7 +65,7 @@ namespace Vim.UnitTest
                     AssertFirstLine(0);
                 }
 
-                [Fact]
+                [WpfFact]
                 public void Simple()
                 {
                     _globalSettings.ScrollOffset = 1;
@@ -79,7 +79,7 @@ namespace Vim.UnitTest
                 /// <summary>
                 /// Handle the case where the scroll would be to the top of the screen
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void ScrollToTop()
                 {
                     _globalSettings.ScrollOffset = 2;
@@ -94,7 +94,7 @@ namespace Vim.UnitTest
                 /// Handle the case where the correct scroll offset would be above the first line
                 /// in the view.  Should just stop at the first line 
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void ScrollAboveTop()
                 {
                     _globalSettings.ScrollOffset = 3;
@@ -109,7 +109,7 @@ namespace Vim.UnitTest
                 /// Handle the case where the 'scrolloff' value is larger than half the lines in the 
                 /// visible screen.  At that point the scroll should just center the caret 
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void OffsetTooBig()
                 {
                     _globalSettings.ScrollOffset = 100;
@@ -123,7 +123,7 @@ namespace Vim.UnitTest
                 /// <summary>
                 /// Folded text should count as a single line 
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void OverFold()
                 {
                     _globalSettings.ScrollOffset = 2;
@@ -138,7 +138,7 @@ namespace Vim.UnitTest
 
             public sealed class BottomTest : ScrollOffsetTest
             {
-                [Fact]
+                [WpfFact]
                 public void Disabled()
                 {
                     _globalSettings.ScrollOffset = 0;
@@ -149,7 +149,7 @@ namespace Vim.UnitTest
                     AssertLastLine(4);
                 }
 
-                [Fact]
+                [WpfFact]
                 public void Simple()
                 {
                     _globalSettings.ScrollOffset = 1;
@@ -160,7 +160,7 @@ namespace Vim.UnitTest
                     AssertLastLine(5);
                 }
 
-                [Fact]
+                [WpfFact]
                 public void ScrollToBottom()
                 {
                     _globalSettings.ScrollOffset = 1;
@@ -171,7 +171,7 @@ namespace Vim.UnitTest
                     AssertLastLine(_lastLineNumber);
                 }
 
-                [Fact]
+                [WpfFact]
                 public void ScrollBelowBottom()
                 {
                     _globalSettings.ScrollOffset = 2;
@@ -182,7 +182,7 @@ namespace Vim.UnitTest
                     AssertLastLine(_lastLineNumber);
                 }
 
-                [Fact]
+                [WpfFact]
                 public void OverFold()
                 {
                     _globalSettings.ScrollOffset = 2;
@@ -198,7 +198,7 @@ namespace Vim.UnitTest
 
             public sealed class MiscScrollOffsetTest : ScrollOffsetTest
             {
-                [Fact]
+                [WpfFact]
                 public void SingleLineSingleOffset()
                 {
                     _textBuffer.SetText("");
@@ -208,7 +208,7 @@ namespace Vim.UnitTest
                     AssertFirstLine(0);
                 }
 
-                [Fact]
+                [WpfFact]
                 public void SingleLineBigOffset()
                 {
                     _textBuffer.SetText("");
@@ -225,7 +225,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// If the caret is in the virtualedit=onemore the caret should remain in the line break
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void VirtualEditOneMore()
             {
                 Create("cat", "dog");
@@ -239,7 +239,7 @@ namespace Vim.UnitTest
             /// If the caret is in default virtual edit then we should be putting the caret back in the 
             /// line
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void VirtualEditNormal()
             {
                 Create("cat", "dog");
@@ -253,7 +253,7 @@ namespace Vim.UnitTest
             /// the caret in the line break.  It's needed to let motions like v$ get the appropriate 
             /// selection
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void ExclusiveSelectionAndVisual()
             {
                 Create("cat", "dog");
@@ -272,7 +272,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// In a non-visual mode setting the exclusive selection setting shouldn't be a factor
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void ExclusiveSelectionOnly()
             {
                 Create("cat", "dog");
@@ -295,21 +295,21 @@ namespace Vim.UnitTest
                     _vimBuffer.LocalSettings.TabStop = 4;
                 }
 
-                [Fact]
+                [WpfFact]
                 public void Simple()
                 {
                     var text = _commonOperations.NormalizeBlanksAtColumn(new string(' ', 8), _textBuffer.GetColumn(0));
                     Assert.Equal("\t\t", text);
                 }
 
-                [Fact]
+                [WpfFact]
                 public void ExtraSpacesAtEnd()
                 {
                     var text = _commonOperations.NormalizeBlanksAtColumn(new string(' ', 6), _textBuffer.GetColumn(0));
                     Assert.Equal("\t  ", text);
                 }
 
-                [Fact]
+                [WpfFact]
                 public void NonTabBoundary()
                 {
                     _textBuffer.SetText("a");
@@ -317,7 +317,7 @@ namespace Vim.UnitTest
                     Assert.Equal("\t\t ", text);
                 }
 
-                [Fact]
+                [WpfFact]
                 public void NonTabBoundaryExactTabPlusTab()
                 {
                     _textBuffer.SetText("a");
@@ -325,7 +325,7 @@ namespace Vim.UnitTest
                     Assert.Equal("\t\t", text);
                 }
 
-                [Fact]
+                [WpfFact]
                 public void NonTabBoundaryExactTab()
                 {
                     _textBuffer.SetText("a");
@@ -333,14 +333,14 @@ namespace Vim.UnitTest
                     Assert.Equal("\t", text);
                 }
 
-                [Fact]
+                [WpfFact]
                 public void NotEnoughSpaces()
                 {
                     var text = _commonOperations.NormalizeBlanksAtColumn(new string(' ', 3), _textBuffer.GetColumn(0));
                     Assert.Equal("   ", text);
                 }
 
-                [Fact]
+                [WpfFact]
                 public void NonTabBoundaryWithTabs()
                 {
                     _textBuffer.SetText("a");
@@ -358,7 +358,7 @@ namespace Vim.UnitTest
                     _vimBuffer.LocalSettings.TabStop = 4;
                 }
 
-                [Fact]
+                [WpfFact]
                 public void ExactToTabBoundary()
                 {
                     _textBuffer.SetText("a");
@@ -366,7 +366,7 @@ namespace Vim.UnitTest
                     Assert.Equal(new string(' ', 3), text);
                 }
 
-                [Fact]
+                [WpfFact]
                 public void OneOverTabBoundary()
                 {
                     _textBuffer.SetText("a");
@@ -378,7 +378,7 @@ namespace Vim.UnitTest
 
         public sealed class GetSpacesToPointTest : CommonOperationsIntegrationTest
         {
-            [Fact]
+            [WpfFact]
             public void Simple()
             {
                 Create("cat");
@@ -388,7 +388,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Tabs on a 'tabstop' boundary are equivalent to 'tabstop' spaces
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void AfterTab()
             {
                 Create("\tcat");
@@ -400,7 +400,7 @@ namespace Vim.UnitTest
             /// A tab which exists on a non-tabstop boundary only counts for the number of spaces remaining
             /// until the next tabstop boundary
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void AfterMixedTab()
             {
                 Create("a\tcat");
@@ -411,7 +411,7 @@ namespace Vim.UnitTest
 
         public sealed class MiscTest : CommonOperationsIntegrationTest
         {
-            [Fact]
+            [WpfFact]
             public void ViewFlagsValues()
             {
                 Assert.Equal(ViewFlags.Standard, ViewFlags.Visible | ViewFlags.TextExpanded | ViewFlags.ScrollOffset);

@@ -28,7 +28,7 @@ namespace Vim.VisualStudio.UnitTest
             /// <summary>
             /// If there is no selection then nothing to override
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void NoSelection()
             {
                 var textView = CreateCSharpTextView();
@@ -38,7 +38,7 @@ namespace Vim.VisualStudio.UnitTest
             /// <summary>
             /// Set of patterns which should match
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void EventPattern_Is()
             {
                 var all = new[]
@@ -66,7 +66,7 @@ namespace Vim.VisualStudio.UnitTest
             /// <summary>
             /// Set of patterns which shouldn't match
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void EventPattern_Not()
             {
                 var all = new[]
@@ -91,7 +91,7 @@ namespace Vim.VisualStudio.UnitTest
             /// In Visual Studio 2012 the event add pattern has a different default that we need to 
             /// recognize 
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void VisualStudio2012EventPattern()
             {
                 var textView = CreateCSharpTextView();

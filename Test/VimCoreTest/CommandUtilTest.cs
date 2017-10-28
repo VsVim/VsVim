@@ -137,7 +137,7 @@ namespace Vim.UnitTest
 
         public sealed class CreateRegisterValueTest : CommandUtilTest
         {
-            [Fact]
+            [WpfFact]
             public void Simple()
             {
                 Create("");
@@ -149,7 +149,7 @@ namespace Vim.UnitTest
             /// The function should only normalize line wise values.  Character wise values don't need 
             /// any transformations
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void IgnoreCharacterWise()
             {
                 Create("");
@@ -157,7 +157,7 @@ namespace Vim.UnitTest
                 Assert.Equal("cat", value.StringValue);
             }
 
-            [Fact]
+            [WpfFact]
             public void IgnoreBlockValues()
             {
                 Create("");
@@ -180,7 +180,7 @@ namespace Vim.UnitTest
                 return _foldManager.Object;
             }
 
-            [Fact]
+            [WpfFact]
             public void CloseAllFolds()
             {
                 Create("");
@@ -190,7 +190,7 @@ namespace Vim.UnitTest
                 _foldManager.Verify();
             }
 
-            [Fact]
+            [WpfFact]
             public void CloseAllFoldsInSelection()
             {
                 Create("cat", "dog", "tree");
@@ -201,7 +201,7 @@ namespace Vim.UnitTest
                 _foldManager.Verify();
             }
 
-            [Fact]
+            [WpfFact]
             public void CloseAllFoldsUnderCaret()
             {
                 Create("cat", "dog", "tree");
@@ -215,7 +215,7 @@ namespace Vim.UnitTest
             /// Implementation of the zc command should close a fold for every line in the 
             /// visual selection
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void CloseFoldInSelection()
             {
                 Create("cat", "dog", "tree");
@@ -229,7 +229,7 @@ namespace Vim.UnitTest
                 _foldManager.Verify();
             }
 
-            [Fact]
+            [WpfFact]
             public void CloseFoldUnderCaret()
             {
                 Create("cat", "dog", "tree");
@@ -240,7 +240,7 @@ namespace Vim.UnitTest
                 _foldManager.Verify();
             }
 
-            [Fact]
+            [WpfFact]
             public void DeleteFoldUnderCaret()
             {
                 Create("cat", "dog");
@@ -250,7 +250,7 @@ namespace Vim.UnitTest
                 _foldManager.Verify();
             }
 
-            [Fact]
+            [WpfFact]
             public void DeleteAllFoldsInBuffer()
             {
                 Create("cat", "dog", "tree");
@@ -260,7 +260,7 @@ namespace Vim.UnitTest
                 _foldManager.Verify();
             }
 
-            [Fact]
+            [WpfFact]
             public void DeleteAllFoldsUnderCaret()
             {
                 Create("cat", "dog", "tree");
@@ -270,7 +270,7 @@ namespace Vim.UnitTest
                 _foldManager.Verify();
             }
 
-            [Fact]
+            [WpfFact]
             public void DeleteAllFoldsInSelection()
             {
                 Create("cat", "dog", "tree");
@@ -281,13 +281,13 @@ namespace Vim.UnitTest
                 _foldManager.Verify();
             }
 
-            [Fact]
+            [WpfFact]
             public void DeleteFoldInSelection()
             {
                 Create("cat", "dog", "tree");
             }
 
-            [Fact]
+            [WpfFact]
             public void FoldLines()
             {
                 Create("cat", "dog", "tree");
@@ -297,7 +297,7 @@ namespace Vim.UnitTest
                 _foldManager.Verify();
             }
 
-            [Fact]
+            [WpfFact]
             public void FoldMotion()
             {
                 Create("cat", "dog", "tree");
@@ -308,7 +308,7 @@ namespace Vim.UnitTest
                 _foldManager.Verify();
             }
 
-            [Fact]
+            [WpfFact]
             public void FoldSelection()
             {
                 Create("cat", "dog", "tree");
@@ -336,7 +336,7 @@ namespace Vim.UnitTest
                 return _commonOperations.Object;
             }
 
-            [Fact]
+            [WpfFact]
             public void FormatLines()
             {
                 Create("cat", "dog", "tree");
@@ -346,7 +346,7 @@ namespace Vim.UnitTest
                 _commonOperations.Verify();
             }
 
-            [Fact]
+            [WpfFact]
             public void FormatLinesVisual()
             {
                 Create("cat", "dog", "tree");
@@ -357,7 +357,7 @@ namespace Vim.UnitTest
                 _commonOperations.Verify();
             }
 
-            [Fact]
+            [WpfFact]
             public void FormatLinesMotion()
             {
                 Create("cat", "dog", "tree");
@@ -368,7 +368,7 @@ namespace Vim.UnitTest
                 _commonOperations.Verify();
             }
 
-            [Fact]
+            [WpfFact]
             public void JumpToMark_Global_NotSet()
             {
                 Create("cat", "dog");
@@ -377,7 +377,7 @@ namespace Vim.UnitTest
                 _statusUtil.Verify();
             }
 
-            [Fact]
+            [WpfFact]
             public void JumpToMark_Global_InBuffer()
             {
                 Create("cat", "dog");
@@ -388,7 +388,7 @@ namespace Vim.UnitTest
                 _commonOperations.Verify();
             }
 
-            [Fact]
+            [WpfFact]
             public void JumpToMark_Global_InOtherBuffer()
             {
                 Create("cat", "dog");
@@ -401,7 +401,7 @@ namespace Vim.UnitTest
                 _commonOperations.Verify();
             }
 
-            [Fact]
+            [WpfFact]
             public void JumpToMark_Global_NotSetInOtherBuffer()
             {
                 Create("cat", "dog");
@@ -416,7 +416,7 @@ namespace Vim.UnitTest
                 _statusUtil.Verify();
             }
 
-            [Fact]
+            [WpfFact]
             public void GoToDefinition_Succeeded()
             {
                 Create("cat", "dog", "tree");
@@ -425,7 +425,7 @@ namespace Vim.UnitTest
                 _commonOperations.Verify();
             }
 
-            [Fact]
+            [WpfFact]
             public void GoToDefinition_Failed()
             {
                 Create("cat", "dog", "tree");
@@ -437,7 +437,7 @@ namespace Vim.UnitTest
                 _statusUtil.Verify();
             }
 
-            [Fact]
+            [WpfFact]
             public void GoToFileUnderCaret_NewWindow()
             {
                 Create("");
@@ -446,7 +446,7 @@ namespace Vim.UnitTest
                 _commonOperations.Verify();
             }
 
-            [Fact]
+            [WpfFact]
             public void GoToFileUnderCaret_SameWindow()
             {
                 Create("");
@@ -455,7 +455,7 @@ namespace Vim.UnitTest
                 _commonOperations.Verify();
             }
 
-            [Fact]
+            [WpfFact]
             public void GoToFileInSelection_LinewiseSpan_NewWindow()
             {
                 Create("relative/file/path.js", "foo");
@@ -464,7 +464,7 @@ namespace Vim.UnitTest
                 _commonOperations.Verify();
             }
 
-            [Fact]
+            [WpfFact]
             public void GoToFileInSelection_CharacterWiseSpan_NewWindow()
             {
                 Create("relative/file/path.js");
@@ -474,7 +474,7 @@ namespace Vim.UnitTest
                 _commonOperations.Verify();
             }
 
-            [Fact]
+            [WpfFact]
             public void GoToFileInSelection_LinewiseSpan_SameWindow()
             {
                 Create("relative/file/path.js", "foo");
@@ -484,7 +484,7 @@ namespace Vim.UnitTest
                 _commonOperations.Verify();
             }
 
-            [Fact]
+            [WpfFact]
             public void GoToFileInSelection_CharacterWiseSpan_SameWindow()
             {
                 Create("relative/file/path.js");
@@ -494,7 +494,7 @@ namespace Vim.UnitTest
                 _commonOperations.Verify();
             }
 
-            [Fact]
+            [WpfFact]
             public void GoToNextTab_ForwardNoCount()
             {
                 Create("");
@@ -503,7 +503,7 @@ namespace Vim.UnitTest
                 _commonOperations.Verify();
             }
 
-            [Fact]
+            [WpfFact]
             public void GoToNextTab_BackwardNoCount()
             {
                 Create("");
@@ -512,7 +512,7 @@ namespace Vim.UnitTest
                 _commonOperations.Verify();
             }
 
-            [Fact]
+            [WpfFact]
             public void GoToNextTab_ForwardCount()
             {
                 Create("");
@@ -521,7 +521,7 @@ namespace Vim.UnitTest
                 _commonOperations.Verify();
             }
 
-            [Fact]
+            [WpfFact]
             public void CloseWindow()
             {
                 Create("");
@@ -548,7 +548,7 @@ namespace Vim.UnitTest
             /// throws an exception.  It's critical that these get disposed else they leave open
             /// giant undo transactions
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void EditWithLinkedChange_Throw()
             {
                 Create("cat", "dog");
@@ -584,7 +584,7 @@ namespace Vim.UnitTest
             /// throws an exception.  It's critical that these get disposed else they leave open
             /// giant undo transactions
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void EditBlockSpanWithLinkedChange_Throw()
             {
                 Create("cat", "dog");
@@ -623,7 +623,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Test the special case linewise promotion which occurs for d{motion} operations
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void SpecialCaseLinewisePromotion()
             {
                 Create(" cat", " dog    ", "fish");
@@ -639,7 +639,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// The linewise special case scenario requires the line count be greater than 1
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void SpecialCaseLineWisePromotionMustBeMoreThanOneLine()
             {
                 Create(" cat   ", " dog    ", "fish");
@@ -657,7 +657,7 @@ namespace Vim.UnitTest
 
         public sealed class RepeatLastSubstituteTest : CommandUtilTest
         {
-            [Fact]
+            [WpfFact]
             public void Simple()
             {
                 Create("cat dog fish");
@@ -666,7 +666,7 @@ namespace Vim.UnitTest
                 Assert.Equal("bat dog fish", _textBuffer.GetLine(0).GetText());
             }
 
-            [Fact]
+            [WpfFact]
             public void NoLastData()
             {
                 Create("cat dog fish");
@@ -675,7 +675,7 @@ namespace Vim.UnitTest
                 Assert.Equal(1, VimHost.BeepCount);
             }
 
-            [Fact]
+            [WpfFact]
             public void UseSameFlagsTrue()
             {
                 Create("cat cat fish");
@@ -684,7 +684,7 @@ namespace Vim.UnitTest
                 Assert.Equal("bat bat fish", _textBuffer.GetLine(0).GetText());
             }
 
-            [Fact]
+            [WpfFact]
             public void UseSameFlagsFalse()
             {
                 Create("cat cat fish");
@@ -693,7 +693,7 @@ namespace Vim.UnitTest
                 Assert.Equal("bat cat fish", _textBuffer.GetLine(0).GetText());
             }
 
-            [Fact]
+            [WpfFact]
             public void AsCommand()
             {
                 Create("cat dog fish");
@@ -708,7 +708,7 @@ namespace Vim.UnitTest
             /// If the count is too big then an error needs to occur.  This is necessary to break 
             /// macro execution
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void CountTooBig()
             {
                 Create("cat");
@@ -717,7 +717,7 @@ namespace Vim.UnitTest
                 Assert.Equal(1, _vimHost.BeepCount);
             }
 
-            [Fact]
+            [WpfFact]
             public void Simple1()
             {
                 Create("foo");
@@ -725,7 +725,7 @@ namespace Vim.UnitTest
                 Assert.Equal("boo", _textView.TextSnapshot.GetLineFromLineNumber(0).GetText());
             }
 
-            [Fact]
+            [WpfFact]
             public void Simple2()
             {
                 Create("foo");
@@ -733,7 +733,7 @@ namespace Vim.UnitTest
                 Assert.Equal("bbo", _textView.TextSnapshot.GetLineFromLineNumber(0).GetText());
             }
 
-            [Fact]
+            [WpfFact]
             public void Simple3()
             {
                 Create("foo");
@@ -745,7 +745,7 @@ namespace Vim.UnitTest
                 Assert.Equal("o", tss.GetLineFromLineNumber(1).GetText());
             }
 
-            [Fact]
+            [WpfFact]
             public void Simple4()
             {
                 Create("food");
@@ -757,7 +757,7 @@ namespace Vim.UnitTest
                 Assert.Equal("d", tss.GetLineFromLineNumber(1).GetText());
             }
 
-            [Fact]
+            [WpfFact]
             public void EnterShouldIndentNextLine()
             {
                 Create("    the food is especially good today");
@@ -774,7 +774,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Caret should not move as a result of a single ReplaceChar operation
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void DontMoveCaret()
             {
                 Create("foo");
@@ -785,7 +785,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Caret should move for a multiple replace
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void MoveCaretForMultiple()
             {
                 Create("foo");
@@ -809,7 +809,7 @@ namespace Vim.UnitTest
                 /// <summary>
                 /// Should be beeping at the last line in the ITextBuffer
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void BeepAtLastLine()
                 {
                     Create("dog", "cat");
@@ -821,7 +821,7 @@ namespace Vim.UnitTest
                 /// <summary>
                 /// Make sure the scroll lines down will hit the bottom of the screen
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void ToBottom()
                 {
                     Create("a", "b", "c", "d");
@@ -836,7 +836,7 @@ namespace Vim.UnitTest
                 /// <summary>
                 /// Make sure the scroll option is used if it's one of the parameters
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void UseScrollOption()
                 {
                     Create("a", "b", "c", "d", "e");
@@ -850,7 +850,7 @@ namespace Vim.UnitTest
                 /// If the scroll option is set to be consulted an an explicit count is given then that
                 /// count should be used and the scroll option should be set to that value
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void ScrollOptionWithCount()
                 {
                     Create("a", "b", "c", "d", "e");
@@ -865,7 +865,7 @@ namespace Vim.UnitTest
                 /// With no scroll or count then the value of 1 should be used and the scroll option
                 /// shouldn't be updated
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void NoScrollOrCount()
                 {
                     Create("a", "b", "c", "d", "e");
@@ -879,7 +879,7 @@ namespace Vim.UnitTest
                 /// <summary>
                 /// Make sure that scroll lines down handles a fold as a single line
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void OverFold()
                 {
                     Create("a", "b", "c", "d", "e");
@@ -895,7 +895,7 @@ namespace Vim.UnitTest
                 /// <summary>
                 /// Should be beeping at the first line in the ITextBuffer
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void BeepAtFirstLine()
                 {
                     Create("dog", "cat");
@@ -913,14 +913,14 @@ namespace Vim.UnitTest
                 _textView.SetTextViewLineCount(count: 2);
             }
 
-            [Fact]
+            [WpfFact]
             public void SimpleDown()
             {
                 _commandUtil.ScrollPages(ScrollDirection.Down, count: 1);
                 Assert.Equal(1, _textView.GetCaretLine().LineNumber);
             }
 
-            [Fact]
+            [WpfFact]
             public void SimpleUp()
             {
                 _commandUtil.ScrollPages(ScrollDirection.Down, count: 2);
@@ -928,14 +928,14 @@ namespace Vim.UnitTest
                 Assert.Equal(1, _textView.GetCaretLine().LineNumber);
             }
 
-            [Fact]
+            [WpfFact]
             public void FromCommand()
             {
                 RunNormalCommand(NormalCommand.NewScrollPages(ScrollDirection.Down));
                 Assert.Equal(1, _textView.GetCaretLine().LineNumber);
             }
 
-            [Fact]
+            [WpfFact]
             public void BadDirection()
             {
                 _commandUtil.ScrollPages((ScrollDirection)int.MaxValue, 1);
@@ -956,7 +956,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Make sure we can do a very simple word add here
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void AddToWord_Decimal_Simple()
             {
                 Create(" 1");
@@ -968,7 +968,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Add with a count
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void AddToWord_Decimal_WithCount()
             {
                 Create(" 1");
@@ -980,7 +980,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// When alpha is not supported we should be jumping past words to add to the numbers
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void AddToWord_Decimal_PastWord()
             {
                 Create("dog 1");
@@ -993,7 +993,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// When alpha is not supported we should be jumping past words to add to the numbers
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void AddToWord_Hex_PastWord()
             {
                 Create("dog0x1");
@@ -1006,7 +1006,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Use add to word on an alpha
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void AddToWord_Alpha_Simple()
             {
                 Create("cog");
@@ -1016,7 +1016,7 @@ namespace Vim.UnitTest
                 Assert.Equal(0, _textView.GetCaretPoint().Position);
             }
 
-            [Fact]
+            [WpfFact]
             public void AddToWord_NonNumber()
             {
                 Create("dog");
@@ -1027,7 +1027,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Don't save the buffer on a close command even if it's dirty
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void CloseBuffer_Dirty()
             {
                 Create("");
@@ -1040,7 +1040,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Saving a non-dirty buffer is the same as saving a dirty one
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void CloseBuffer_NotDirty()
             {
                 Create("");
@@ -1050,7 +1050,7 @@ namespace Vim.UnitTest
                 Assert.Equal(_textView, _vimHost.LastClosed);
             }
 
-            [Fact]
+            [WpfFact]
             public void SetMarkToCaret_StartOfBuffer()
             {
                 Create("the cat chased the dog");
@@ -1061,7 +1061,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Beep and pass the error message onto IStatusUtil if there is an error
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void SetMarkToCaret_BeepOnFailure()
             {
                 Create("the cat chased the dog");
@@ -1074,7 +1074,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Attempting to write to a read only mark should cause the host to beep
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void SetMarkToCaret_ReadOnlyMark()
             {
                 Create("hello world");
@@ -1082,7 +1082,7 @@ namespace Vim.UnitTest
                 Assert.Equal(1, _vimHost.BeepCount);
             }
 
-            [Fact]
+            [WpfFact]
             public void JumpToMark_Simple()
             {
                 Create("the cat chased the dog");
@@ -1094,7 +1094,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Pass the error message onto IStatusUtil if there is an error
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void JumpToMark_OnFailure()
             {
                 Create("the cat chased the dog");
@@ -1106,7 +1106,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// If there is no command to repeat then just beep
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void RepeatLastCommand_NoCommandToRepeat()
             {
                 Create("foo");
@@ -1117,7 +1117,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Repeat a simple text insert
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void RepeatLastCommand_InsertText()
             {
                 Create("");
@@ -1131,7 +1131,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Repeat a simple text insert with a new count
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void RepeatLastCommand_InsertTextNewCount()
             {
                 Create("");
@@ -1145,7 +1145,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Repeat a simple command
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void RepeatLastCommand_SimpleCommand()
             {
                 Create("");
@@ -1165,7 +1165,7 @@ namespace Vim.UnitTest
             /// Repeat a simple command but give it a new count.  This should override the previous
             /// count
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void RepeatLastCommand_SimpleCommandNewCount()
             {
                 Create("");
@@ -1184,7 +1184,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Repeating a command should not clear the last command
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void RepeatLastCommand_DontClearPrevious()
             {
                 Create("");
@@ -1206,7 +1206,7 @@ namespace Vim.UnitTest
             /// Guard against the possiblitity of creating a StackOverflow by having the repeat
             /// last command recursively call itself
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void RepeatLastCommand_GuardAgainstStacOverflow()
             {
                 Create();
@@ -1227,7 +1227,7 @@ namespace Vim.UnitTest
             /// When dealing with a repeat of a linked command where a new count is provided, only
             /// the first command gets the new count.  The linked command gets the original count
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void RepeatLastCommand_OnlyFirstCommandGetsNewCount()
             {
                 Create("");
@@ -1258,7 +1258,7 @@ namespace Vim.UnitTest
             /// but instead should remain in the current Normal mode.  This is best illustrated by 
             /// trying to repeat the 'o' command
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void RepeatLastCommand_DontSwitchModes()
             {
                 var command1 = VimUtil.CreatePing(
@@ -1271,7 +1271,7 @@ namespace Vim.UnitTest
             /// Make sure the RepeatLastCommand properly registers as a bulk operation.  Ensure it also
             /// behaves correctly in the face of an exception
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void RepeatLastCommand_CallBulkOperations()
             {
                 Create();
@@ -1297,7 +1297,7 @@ namespace Vim.UnitTest
             /// Pass a barrage of spans and verify they map back and forth within the same 
             /// ITextBuffer
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void CalculateVisualSpan_CharacterBackAndForth()
             {
                 Create("the dog kicked the ball", "into the tree");
@@ -1320,7 +1320,7 @@ namespace Vim.UnitTest
             /// When repeating a multi-line characterwise span where the caret moves left,
             /// we need to use the caret to the end of the line on the first line
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void CalculateVisualSpan_CharacterMultilineMoveCaretLeft()
             {
                 Create("the dog", "ball");
@@ -1337,7 +1337,7 @@ namespace Vim.UnitTest
             /// When restoring for a single line maintain the length but do it from the caret
             /// point and not the original
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void CalculateVisualSpan_Character_SingleLine()
             {
                 Create("the dog kicked the cat", "and ball");
@@ -1353,7 +1353,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Make sure that this can handle an empty last line
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void CalculateVisualSpan_Character_EmptyLastLine()
             {
                 Create("dog", "", "cat");
@@ -1366,7 +1366,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Restore a Linewise span from the same offset
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void CalculateVisualSpan_Linewise()
             {
                 Create("a", "b", "c", "d");
@@ -1379,7 +1379,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Restore a Linewise span from a different offset
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void CalculateVisualSpan_LinewiseDifferentOffset()
             {
                 Create("a", "b", "c", "d");
@@ -1394,7 +1394,7 @@ namespace Vim.UnitTest
             /// Restore a Linewise span from a different offset which causes the count
             /// to be invalid
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void CalculateVisualSpan_LinewiseCountPastEndOfBuffer()
             {
                 Create("a", "b", "c", "d");
@@ -1408,7 +1408,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Restore of Block span at the same offset.  
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void CalculateVisualSpan_Block()
             {
                 Create("the", "dog", "kicked", "the", "ball");
@@ -1423,7 +1423,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Restore of Block span at one character to the right
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void CalculateVisualSpan_BlockOneCharecterRight()
             {
                 Create("the", "dog", "kicked", "the", "ball");
@@ -1442,7 +1442,7 @@ namespace Vim.UnitTest
                     restored.AsBlock().Item.BlockSpans);
             }
 
-            [Fact]
+            [WpfFact]
             public void DeleteCharacterAtCaret_Simple()
             {
                 Create("foo", "bar");
@@ -1455,7 +1455,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Delete several characters
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void DeleteCharacterAtCaret_TwoCharacters()
             {
                 Create("foo", "bar");
@@ -1467,7 +1467,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Delete at a different offset and make sure the cursor is positioned correctly
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void DeleteCharacterAtCaret_NonZeroOffset()
             {
                 Create("the cat", "bar");
@@ -1482,7 +1482,7 @@ namespace Vim.UnitTest
             /// When the count exceeds the length of the line it should delete to the end of the 
             /// line
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void DeleteCharacterAtCaret_CountExceedsLine()
             {
                 Create("the cat", "bar");
@@ -1494,7 +1494,7 @@ namespace Vim.UnitTest
                 Assert.Equal(1, _textView.GetCaretPoint().Position);
             }
 
-            [Fact]
+            [WpfFact]
             public void DeleteCharacterBeforeCaret_Simple()
             {
                 Create("foo");
@@ -1508,7 +1508,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// When the count exceeds the line just delete to the start of the line
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void DeleteCharacterBeforeCaret_CountExceedsLine()
             {
                 Create("foo");
@@ -1522,7 +1522,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Caret should be moved to the start of the shift
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void ShiftLinesRightVisual_BlockShouldPutCaretAtStart()
             {
                 Create("cat", "dog");
@@ -1535,7 +1535,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Caret should be moved to the start of the shift
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void ShiftLinesLeftVisual_BlockShouldPutCaretAtStart()
             {
                 Create("c  at", "d  og");
@@ -1548,7 +1548,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Block selections must take character width into consideration
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void DeleteSelection_WideCharacters()
             {
                 Create("abcdefgh",
@@ -1565,7 +1565,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Block deletions should change half selected wide characters to spaces
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void DeleteSelection_WideCharactersAreHalfRemoved()
             {
                 Create("abcdefgh",
@@ -1582,7 +1582,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Changing a word based motion forward should not delete trailing whitespace
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void ChangeMotion_WordSpan()
             {
                 Create("foo  bar");
@@ -1600,7 +1600,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Changing a word based motion forward should not delete trailing whitespace
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void ChangeMotion_WordShouldSaveTrailingWhitespace()
             {
                 Create("foo  bar");
@@ -1619,7 +1619,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Delete trailing whitespace in a non-word motion
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void ChangeMotion_NonWordShouldDeleteTrailingWhitespace()
             {
                 Create("foo  bar");
@@ -1635,7 +1635,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Leave whitespace in a backward word motion
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void ChangeMotion_LeaveWhitespaceIfBackward()
             {
                 Create("cat dog tree");
@@ -1652,7 +1652,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Caret should be positioned at the end of the first line
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void JoinLines_Caret()
             {
                 Create("dog", "cat", "bear");
@@ -1664,7 +1664,7 @@ namespace Vim.UnitTest
             /// Should beep when the count specified causes the range to exceed the 
             /// length of the ITextBuffer
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void JoinLines_CountExceedsBuffer()
             {
                 Create("dog", "cat", "bear");
@@ -1675,7 +1675,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// A count of 2 is the same as 1 for JoinLines
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void JoinLines_CountOfTwoIsSameAsOne()
             {
                 Create("dog", "cat", "bear");
@@ -1688,7 +1688,7 @@ namespace Vim.UnitTest
             /// but comes down to a very simple behavior.  The caret should be placed 1 past
             /// the last character in the second to last line joined
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void JoinLines_CaretWithBlankAtEnd()
             {
                 Create("a ", "b", "c");
@@ -1700,7 +1700,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// If only a single line is selected it should extend down to 2 lines
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void JoinSelection_ExtendDown()
             {
                 Create("cat", "dog", "tree");
@@ -1712,7 +1712,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Simple extend of 2 lines
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void JoinSelection_Simple()
             {
                 Create("cat", "dog", "tree");
@@ -1724,7 +1724,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Can't join a single line and can't extend if you're on the last line
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void JoinSelection_NotPossible()
             {
                 Create("cat", "dog", "tree");
@@ -1734,7 +1734,7 @@ namespace Vim.UnitTest
                 Assert.Equal(new[] { "cat", "dog", "tree" }, _textBuffer.GetLines());
             }
 
-            [Fact]
+            [WpfFact]
             public void ChangeCaseCaretPoint_Simple()
             {
                 Create("bar", "baz");
@@ -1743,7 +1743,7 @@ namespace Vim.UnitTest
                 Assert.Equal(1, _textView.GetCaretPoint().Position);
             }
 
-            [Fact]
+            [WpfFact]
             public void ChangeCaseCaretPoint_WithCount()
             {
                 Create("bar", "baz");
@@ -1755,7 +1755,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// If the count exceeds the line then just do the rest of the line
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void ChangeCaseCaretPoint_CountExceedsLine()
             {
                 Create("bar", "baz");
@@ -1766,7 +1766,7 @@ namespace Vim.UnitTest
                 Assert.Equal(3, _textView.GetCaretPoint().Position);
             }
 
-            [Fact]
+            [WpfFact]
             public void ChangeCaseCaretLine_Simple()
             {
                 Create("foo", "bar");
@@ -1779,7 +1779,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Make sure the caret moves past the whitespace when changing case
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void ChangeCaseCaretLine_WhiteSpaceStart()
             {
                 Create("  foo", "bar");
@@ -1792,7 +1792,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Don't change anything but letters
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void ChangeCaseCaretLine_ExcludeNumbers()
             {
                 Create("foo123", "bar");
@@ -1805,7 +1805,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Change the caret line with the rot13 encoding
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void ChangeCaseCaretLine_Rot13()
             {
                 Create("hello", "bar");
@@ -1818,7 +1818,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// An invalid motion should produce an error and not call the passed in function
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void RunWithMotion_InvalidMotionShouldError()
             {
                 Create("");
@@ -1836,7 +1836,7 @@ namespace Vim.UnitTest
             /// Do a put before operation on an empty buffer and make sure
             /// the buffer contains what we put
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void PutBefore_EmptyBuffer()
             {
                 Create("");
@@ -1851,7 +1851,7 @@ namespace Vim.UnitTest
             /// the buffer contains what we put with the final line break
             /// moved to the beginning of the buffer
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void PutAfter_EmptyBuffer()
             {
                 Create("");
@@ -1865,7 +1865,7 @@ namespace Vim.UnitTest
             /// Do a put operation on an empty line and ensure we don't accidentaly move off 
             /// of the end of the line and insert the text in the middle of the line break
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void PutAfter_EmptyLine()
             {
                 Create("", "dog");
@@ -1879,7 +1879,7 @@ namespace Vim.UnitTest
             /// PutAfter with a block value should position the cursor on the first character
             /// of the first string in the block
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void PutAfter_Block()
             {
                 Create("dog", "cat");
@@ -1894,7 +1894,7 @@ namespace Vim.UnitTest
             /// PutAfter with a block value with the moveCaret option should put the caret after
             /// the last inserted text from the last item in the block
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void PutAfter_Block_WithMoveCaret()
             {
                 Create("dog", "cat");
@@ -1909,7 +1909,7 @@ namespace Vim.UnitTest
             /// Do a put before operation on an empty line and ensure we don't accidentally
             /// move up to the previous line break and insert there
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void PutBefore_EmptyLine()
             {
                 Create("dog", "", "cat");
@@ -1924,7 +1924,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Replace the text and put the caret at the end of the selection
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void PutOverSelection_Character()
             {
                 Create("hello world");
@@ -1938,7 +1938,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Replace the text and put the caret after the selection span
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void PutOverSelection_Character_WithCaretMove()
             {
                 Create("hello world");
@@ -1953,7 +1953,7 @@ namespace Vim.UnitTest
             /// Put a linewise paste over a character visual span.  Make sure that we 
             /// put the appropriate text and OperationKind into the source register
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void PutOverSelection_Character_WithLine()
             {
                 Create("dog");
@@ -1971,7 +1971,7 @@ namespace Vim.UnitTest
             /// Make sure it removes both lines and inserts the text at the start 
             /// of the line range span.  Should position the caret at the start as well
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void PutOverSelection_Line()
             {
                 Create("the cat", "chased", "the dog");
@@ -1987,7 +1987,7 @@ namespace Vim.UnitTest
             /// Caret should be moved to the start of the next line if the 'moveCaretAfterText' 
             /// option is specified
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void PutOverSelection_Line_WithCaretMove()
             {
                 Create("the cat", "chased", "the dog");
@@ -2003,7 +2003,7 @@ namespace Vim.UnitTest
             /// Ensure that we have the correct OperationKind for a put over a line selection.  It
             /// should be LineWise even if the put source is CharacterWise
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void PutOverSelection_Line_WithCharacter()
             {
                 Create("dog", "cat");
@@ -2018,7 +2018,7 @@ namespace Vim.UnitTest
             /// Make sure caret is positioned on the last inserted character on the first
             /// inserted line
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void PutOverSelection_Block()
             {
                 Create("cat", "dog");
@@ -2033,7 +2033,7 @@ namespace Vim.UnitTest
             /// Should delete the entire line range encompasing the selection and position the 
             /// caret at the start of the range for undo / redo
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void DeleteLineSelection_Character()
             {
                 Create("cat", "dog");
@@ -2048,7 +2048,7 @@ namespace Vim.UnitTest
             /// Should delete the entire line range encompasing the selection and position the 
             /// caret at the start of the range for undo / redo
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void DeleteLineSelection_Line()
             {
                 Create("cat", "dog");
@@ -2065,7 +2065,7 @@ namespace Vim.UnitTest
             /// but backed off a single space due to 'virtualedit='.  This will be properly
             /// handled by the moveCaretForVirtualEdit function.  Ensure it's called
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void DeleteLineSelection_Block()
             {
                 Create("cat", "dog", "fish");
@@ -2081,7 +2081,7 @@ namespace Vim.UnitTest
             /// Should delete the contents of the line excluding the break and preserve the 
             /// original line indent
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void ChangeLineSelection_Character()
             {
                 Create("  cat", "dog");
@@ -2096,7 +2096,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Don't preserve the original indent if the 'autoindent' flag is not set
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void ChangeLineSelection_Character_NoAutoIndent()
             {
                 Create("  cat", "dog");
@@ -2112,7 +2112,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Delete everything except the line break and preserve the original indent
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void ChangeLineSelection_Line()
             {
                 Create("  cat", " dog", "bear", "fish");
@@ -2130,7 +2130,7 @@ namespace Vim.UnitTest
             /// When not special casing block this should behave like the other forms of 
             /// ChangeLineSelection
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void ChangeLineSelection_Block_NoSpecialCase()
             {
                 Create("  cat", "  dog", "bear", "fish");
@@ -2146,7 +2146,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// When special casing block this turns into a simple delete till the end of the line
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void ChangeLineSelection_Block_SpecialCase()
             {
                 Create("  cat", "  dog", "bear", "fish");
@@ -2162,7 +2162,7 @@ namespace Vim.UnitTest
             /// Delete the text on the line and start insert mode.  Needs to pass a transaction onto
             /// insert mode to get the proper undo behavior
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void ChangeLines_OneLine()
             {
                 Create("cat", "dog");
@@ -2175,7 +2175,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Make sure we use a transaction here to ensure the undo behavior is correct
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void ChangeTillEndOfLine_MiddleOfLine()
             {
                 Create("cat");
@@ -2190,7 +2190,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Make sure we create a linked change for ChangeSelection
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void ChangeSelection_Character()
             {
                 Create("the dog chased the ball");
@@ -2206,7 +2206,7 @@ namespace Vim.UnitTest
             /// Make sure the character deletion positions the caret at the start of the span and
             /// updates the register
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void DeleteSelection_Character()
             {
                 Create("the dog chased the ball");
@@ -2221,7 +2221,7 @@ namespace Vim.UnitTest
             /// When a full line is selected make sure that it doesn't include the line break
             /// in the deletion
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void DeleteSelection_Character_FullLine()
             {
                 Create("cat", "dog");
@@ -2235,7 +2235,7 @@ namespace Vim.UnitTest
             /// When a full line is selected and the selection extents into the line break 
             /// then the deletion should include the entire line including the line break
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void DeleteSelection_Character_FullLineFromLineBreak()
             {
                 Create("cat", "dog");
@@ -2247,7 +2247,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Simple decimal value that we have to jump over whitespace to get to
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void GetNumberValueAtCaret_Decimal_Simple()
             {
                 Create(" 400");
@@ -2257,7 +2257,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Get the decimal number from the back of the value
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void GetNumberValueAtCaret_Decimal_FromBack()
             {
                 Create(" 400");
@@ -2268,7 +2268,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Get the decimal number when there are mulitple choices
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void GetNumberValueAtCaret_Decimal_MultipleChoices()
             {
                 Create(" 400 42");
@@ -2280,7 +2280,7 @@ namespace Vim.UnitTest
             /// When hex is not supported and we are at the end of the hex number then we should
             /// be looking at the trailing hex as a non-hex number
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void GetNumberValueAtCaret_Decimal_TrailingPortionOfHex()
             {
                 Create(" 400 0x42");
@@ -2293,7 +2293,7 @@ namespace Vim.UnitTest
             /// When alpha is not one of the supported formats we should be jumping past letters
             /// to get to number values
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void GetNumberValueAtCaret_Decimal_GoPastWord()
             {
                 Create("dog13");
@@ -2305,7 +2305,7 @@ namespace Vim.UnitTest
             /// Get the hex number when there are mulitple choices.  Hex should win over
             /// decimal when both are supported
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void GetNumberValueAtCaret_Hex_MultipleChoices()
             {
                 Create(" 400 0x42");
@@ -2317,7 +2317,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Jump past the blanks to get the alpha value
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void GetNumbeValueAtCaret_Alpha_Simple()
             {
                 Create(" hello");
@@ -2328,7 +2328,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Make sure caret starts at the begining of the line when there is no auto-indent
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void InsertLineAbove_KeepCaretAtStartWithNoAutoIndent()
             {
                 Create("foo");
@@ -2341,7 +2341,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Make sure the ending is placed correctly when done from the middle of the line
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void InsertLineAbove_MiddleOfLine()
             {
                 Create("foo", "bar");
@@ -2356,7 +2356,7 @@ namespace Vim.UnitTest
             /// Make sure we properly handle edits in the middle of our edit.  This happens 
             /// when the language service does a format for a new line
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void InsertLineAbove_EditInTheMiddle()
             {
                 Create("foo bar", "baz");
@@ -2386,7 +2386,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Maintain current indent when 'autoindent' is set but do so in virtual space
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void InsertLineAbove_ShouldKeepIndentWhenAutoIndentSet()
             {
                 Create("  cat", "dog");
@@ -2398,7 +2398,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Insert from middle of line and enure it works out
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void InsertLineBelow_InMiddleOfLine()
             {
                 Create("foo", "bar", "baz");
@@ -2411,7 +2411,7 @@ namespace Vim.UnitTest
             /// Insert a new line at the end of the buffer and ensure it works.  Bit of a corner
             /// case since it won't have a line break
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void InsertLineBelow_AtEndOfBuffer()
             {
                 Create("foo", "bar");
@@ -2423,7 +2423,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Deeply verify the contents of an insert below
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void InsertLineBelow_Misc()
             {
                 Create("foo bar", "baz");
@@ -2452,7 +2452,7 @@ namespace Vim.UnitTest
             /// Nested edits occur when the language service formats our new line.  Make
             /// sure we can handle it.
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void InsertLineBelow_EditsInTheMiddle()
             {
                 Create("foo bar", "baz");
@@ -2482,7 +2482,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Maintain indent when using autoindent
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void InsertLineBelow_KeepIndentWhenAutoIndentSet()
             {
                 Create("  cat", "dog");
@@ -2495,7 +2495,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Make sure it beeps on a bad register name
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void RecordMacroStart_BadRegisterName()
             {
                 Create("");
@@ -2506,7 +2506,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Upper case registers should cause an append to occur
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void RecordMacroStart_AppendRegisters()
             {
                 Create("");
@@ -2519,7 +2519,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Standard case where no append is needed
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void RecordMacroStart_NormalRegister()
             {
                 Create("");
@@ -2532,7 +2532,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Make sure it beeps on a bad register name
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void RunMacro_BadRegisterName()
             {
                 Create("");
@@ -2555,7 +2555,7 @@ namespace Vim.UnitTest
             /// When jumping from a location not in the jump list and we're not in the middle 
             /// of a traversal the location should be added to the list
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void JumpToOlderPosition_FromLocationNotInList()
             {
                 Create("cat", "dog", "fish");
@@ -2570,7 +2570,7 @@ namespace Vim.UnitTest
             /// When jumping from a location in the jump list and it's the start of the traversal
             /// then move the location back to the head of the class
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void JumpToOlderPosition_FromLocationInList()
             {
                 Create("cat", "dog", "fish");
@@ -2595,7 +2595,7 @@ namespace Vim.UnitTest
             /// When jumping from a location not in the jump list and we in the middle of a 
             /// traversal don't add the location to the list
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void JumpToOlderPosition_FromLocationNotInListDuringTraversal()
             {
                 Create("cat", "dog", "fish");
@@ -2613,7 +2613,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Jump to the next position should not add the current position 
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void JumpToNextPosition_FromMiddle()
             {
                 Create("cat", "dog", "fish");
@@ -2638,7 +2638,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// When alpha is not supported we should be jumping past words to subtract to the numbers
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void SubtractFromWord_Hex_PastWord()
             {
                 Create("dog0x2");
@@ -2651,7 +2651,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Make sure that we write out the buffer and close if it's dirty
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void WriteBufferAndQuit_Dirty()
             {
                 Create("");
@@ -2665,7 +2665,7 @@ namespace Vim.UnitTest
             /// Make sure that we don't write out the buffer and simply close when the buffer
             /// isn't dirty
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void WriteBufferAndQuit_NotDirty()
             {
                 Create("");
@@ -2679,7 +2679,7 @@ namespace Vim.UnitTest
             /// Ensure that yank lines does a line wise yank of the 'count' lines
             /// from the caret
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void YankLines_Normal()
             {
                 Create("cat", "dog", "bear");
@@ -2692,7 +2692,7 @@ namespace Vim.UnitTest
             /// Ensure that yank lines operates against the visual buffer and will yank 
             /// the folded text
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void YankLines_StartOfFold()
             {
                 Create("cat", "dog", "bear", "fish", "pig");
@@ -2706,7 +2706,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Ensure that yanking over a fold will count the fold as one line
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void YankLines_OverFold()
             {
                 Create("cat", "dog", "bear", "fish", "pig");
@@ -2729,7 +2729,7 @@ namespace Vim.UnitTest
                 return _foldManager;
             }
 
-            [Fact]
+            [WpfFact]
             public void Simple()
             {
                 Create("cat", "dog", "bear", "fish", "pig");
@@ -2738,7 +2738,7 @@ namespace Vim.UnitTest
                 Assert.True(_outliningManager.GetAllRegions(_textBuffer.GetExtent()).All((c) => !c.IsCollapsed));
             }
 
-            [Fact]
+            [WpfFact]
             public void AsCommand()
             {
                 Create("cat", "dog", "bear", "fish", "pig");

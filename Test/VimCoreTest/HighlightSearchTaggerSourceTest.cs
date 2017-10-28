@@ -56,7 +56,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Do nothing if the search pattern is empty
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void PatternEmpty()
             {
                 Create("dog cat");
@@ -68,7 +68,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Make sure the matches are returned
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void WithMatch()
             {
                 Create("foo is the bar");
@@ -81,7 +81,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Don't return tags outside the requested span
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void OutSideSpan()
             {
                 Create("foo is the bar");
@@ -97,7 +97,7 @@ namespace Vim.UnitTest
             /// When they are grouped thuogh return a single overarching span to avoid overloading the 
             /// editor
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void ZeroLengthResults()
             {
                 Create("cat");
@@ -118,7 +118,7 @@ namespace Vim.UnitTest
                 _vimData.LastSearchData = new SearchData("cat", SearchPath.Forward);
             }
 
-            [Fact]
+            [WpfFact]
             public void Standard()
             {
                 _globalSettings.HighlightSearch = true;
@@ -126,7 +126,7 @@ namespace Vim.UnitTest
                 Assert.True(_asyncTaggerSourceRaw.IsProvidingTags);
             }
 
-            [Fact]
+            [WpfFact]
             public void DisplayPatternSuspended()
             {
                 _vimData.SuspendDisplayPattern();
@@ -137,7 +137,7 @@ namespace Vim.UnitTest
             /// Make sure that new instances respect the existing suppression of DisplayPattern
             /// 
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Issue1164()
             {
                 _vimData.SuspendDisplayPattern();
@@ -152,7 +152,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// We can promptly say nothing when highlight is disabled
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void HighlightDisabled()
             {
                 Create("dog cat");
@@ -165,7 +165,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// We can promptly say nothing when display of tags is suspended
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void OneTimeDisabled()
             {
                 Create("dog cat");
@@ -182,7 +182,7 @@ namespace Vim.UnitTest
             /// If the ITextView is not considered visible then we shouldn't be returning any
             /// tags
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void NotVisible()
             {
                 Create("dog cat");
@@ -208,7 +208,7 @@ namespace Vim.UnitTest
             /// The SuspendDisplayPattern method should cause the Changed event to be raised
             /// and stop the display of tags
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void SuspendDisplayPattern()
             {
                 Assert.True(_asyncTaggerSourceRaw.IsProvidingTags);
@@ -220,7 +220,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// The search ran should cause a Changed event if we were previously disabled
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void ResumeDisplayPattern()
             {
                 _vimData.SuspendDisplayPattern();
@@ -235,7 +235,7 @@ namespace Vim.UnitTest
             /// When the display pattern changes it should cause the Changed event to be 
             /// raised
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void DisplayPatternChanged()
             {
                 _vimData.LastSearchData = new SearchData("hello", SearchPath.Forward);
@@ -245,7 +245,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// If the visibility of the ITextView changes it should cause a Changed event to be raised
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void IsVisibleChanged()
             {
                 Assert.True(_asyncTaggerSourceRaw._isVisible);
@@ -258,7 +258,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// The setting of the 'hlsearch' option should raise the changed event
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void RaiseChanged()
             {
                 _globalSettings.HighlightSearch = false;
@@ -271,7 +271,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// The setting of the 'hlsearch' option should reset the one time disabled flag
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void ResetOneTimeDisabled()
             {
                 _vimData.LastSearchData = new SearchData("cat", SearchPath.Forward);

@@ -21,7 +21,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// The startup value for CurrentDirectory should be a non-empty string
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Initial()
             {
                 Assert.False(String.IsNullOrEmpty(_vimData.CurrentDirectory));
@@ -30,7 +30,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Setting the current directory should move the previous value to PreviousCurrentDirectory
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void SetUpdatePrevious()
             {
                 var old = _vimData.CurrentDirectory;
@@ -52,7 +52,7 @@ namespace Vim.UnitTest
                     _vimData.DisplayPatternChanged += delegate { _runCount++; };
                 }
 
-                [Fact]
+                [WpfFact]
                 public void PatternChanged()
                 {
                     _vimData.LastSearchData = new SearchData("dog", SearchPath.Forward);
@@ -63,7 +63,7 @@ namespace Vim.UnitTest
                 /// If the pattern is the same then nothing actually changed.  No need to 
                 /// raise the event
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void PatternDataSame()
                 {
                     _vimData.LastSearchData = _vimData.LastSearchData;
@@ -74,7 +74,7 @@ namespace Vim.UnitTest
                 /// The path is not a part of the DisplayPattern and hence if it changes then
                 /// it shouldn't effect the DisplayPattern valueh
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void PathChanged()
                 {
                     _vimData.LastSearchData = new SearchData("dog", SearchPath.Forward);
@@ -86,7 +86,7 @@ namespace Vim.UnitTest
                 /// <summary>
                 /// Nothing changed if the highlight is disabled 
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void PatternChangedHighlightDisabled()
                 {
                     _globalSettings.HighlightSearch = false;
@@ -102,14 +102,14 @@ namespace Vim.UnitTest
                     _globalSettings.HighlightSearch = true;
                 }
 
-                [Fact]
+                [WpfFact]
                 public void Standard()
                 {
                     _vimData.LastSearchData = new SearchData("dog", SearchPath.Forward);
                     Assert.Equal("dog", _vimData.DisplayPattern);
                 }
 
-                [Fact]
+                [WpfFact]
                 public void HighlightDisabled()
                 {
                     _globalSettings.HighlightSearch = false;
@@ -132,7 +132,7 @@ namespace Vim.UnitTest
                     _vimData.DisplayPatternChanged += delegate { _runCount++; };
                 }
 
-                [Fact]
+                [WpfFact]
                 public void Suspend()
                 {
                     _vimData.SuspendDisplayPattern();
@@ -143,7 +143,7 @@ namespace Vim.UnitTest
                 /// Multiple suspends should have no effect.  Once it's suspended it's suspended until 
                 /// it's resumed
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void SuspendRedundant()
                 {
                     _vimData.SuspendDisplayPattern();
@@ -151,7 +151,7 @@ namespace Vim.UnitTest
                     Assert.Equal(1, _runCount);
                 }
 
-                [Fact]
+                [WpfFact]
                 public void SupsendHighlightDisabled()
                 {
                     _globalSettings.HighlightSearch = false;
@@ -160,7 +160,7 @@ namespace Vim.UnitTest
                     Assert.Equal(0, _runCount);
                 }
 
-                [Fact]
+                [WpfFact]
                 public void Resume()
                 {
                     _vimData.SuspendDisplayPattern();
@@ -172,14 +172,14 @@ namespace Vim.UnitTest
                 /// <summary>
                 /// If it is already displaying then another call to display has no effect
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void ResumeRedundant()
                 {
                     _vimData.ResumeDisplayPattern();
                     Assert.Equal(0, _runCount);
                 }
 
-                [Fact]
+                [WpfFact]
                 public void ResumeHighlightDisabled()
                 {
                     _globalSettings.HighlightSearch = false;
@@ -198,14 +198,14 @@ namespace Vim.UnitTest
                     _vimData.LastSearchData = new SearchData("cat", SearchPath.Forward);
                 }
 
-                [Fact]
+                [WpfFact]
                 public void Suspend()
                 {
                     _vimData.SuspendDisplayPattern();
                     Assert.True(String.IsNullOrEmpty(_vimData.DisplayPattern));
                 }
 
-                [Fact]
+                [WpfFact]
                 public void Resume()
                 {
                     _vimData.SuspendDisplayPattern();
@@ -213,7 +213,7 @@ namespace Vim.UnitTest
                     Assert.Equal("cat", _vimData.DisplayPattern);
                 }
 
-                [Fact]
+                [WpfFact]
                 public void ResumeHighlightDisabled()
                 {
                     _globalSettings.HighlightSearch = false;

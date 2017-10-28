@@ -78,7 +78,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// The GetTags call should just get data from the source
             /// </summary>
-            [WpfFactAttribute]
+            [WpfFact]
             public void GoToSource()
             {
                 Create("cat", "dog");
@@ -91,7 +91,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Make sure the GetTags call will cache the request
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void CacheRequest()
             {
                 Create("cat", "dog");
@@ -106,7 +106,7 @@ namespace Vim.UnitTest
             /// Make sure the GetTags call will cache the overarching request for a 
             /// series of requests
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void CacheMultipleRequest()
             {
                 Create("cat", "dog", "bear");
@@ -129,7 +129,7 @@ namespace Vim.UnitTest
             /// maintain the CachedSpan over the previously produced tags because we are still 
             /// responsible for them
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void ExtendCacheAfterEdit()
             {
                 Create("cat", "dog", "bear");
@@ -149,7 +149,7 @@ namespace Vim.UnitTest
             /// When the Changed event is raised the cached request span should be used
             /// in tags changed
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void UseRequestSpan()
             {
                 Create("cat", "dog");

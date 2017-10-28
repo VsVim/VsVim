@@ -31,13 +31,13 @@ namespace Vim.UnitTest
 
         #region Misc
 
-        [Fact]
+        [WpfFact]
         public void Sanity()
         {
             Assert.Equal(ModeKind.Normal, _buffer.ModeKind);
         }
 
-        [Fact]
+        [WpfFact]
         public void TestChar_h_1()
         {
             _textView.Caret.MoveTo(new SnapshotPoint(_textView.TextSnapshot, 2));
@@ -48,7 +48,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Use a count command to move the cursor
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void TestChar_h_2()
         {
             _textView.Caret.MoveTo(new SnapshotPoint(_textView.TextSnapshot, 2));
@@ -57,7 +57,7 @@ namespace Vim.UnitTest
             Assert.Equal(0, _textView.Caret.Position.BufferPosition.Position);
         }
 
-        [Fact]
+        [WpfFact]
         public void TestChar_l_1()
         {
             _textView.Caret.MoveTo(new SnapshotPoint(_textView.TextSnapshot, 1));
@@ -65,7 +65,7 @@ namespace Vim.UnitTest
             Assert.Equal(2, _textView.Caret.Position.BufferPosition.Position);
         }
 
-        [Fact]
+        [WpfFact]
         public void TestChar_w_1()
         {
             _textView.Caret.MoveTo(new SnapshotPoint(_textView.TextSnapshot, 1));
@@ -76,7 +76,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// w with a count
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void TestChar_w_2()
         {
             _textView.Caret.MoveTo(new SnapshotPoint(_textView.TextSnapshot, 1));
@@ -85,14 +85,14 @@ namespace Vim.UnitTest
             Assert.Equal(20, _textView.Caret.Position.BufferPosition.Position);
         }
 
-        [Fact]
+        [WpfFact]
         public void TestChar_i_1()
         {
             _buffer.Process('i');
             Assert.Equal(ModeKind.Insert, _buffer.ModeKind);
         }
 
-        [Fact]
+        [WpfFact]
         public void TestChar_yy_1()
         {
             _buffer.Process("yy");
@@ -104,7 +104,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Yank mulptiple lines
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void TestChar_yy_2()
         {
             _buffer.Process("2yy");
@@ -120,7 +120,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Yank off the end of the buffer
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void TestChar_yy_3()
         {
             var tss = _textView.TextSnapshot;
@@ -134,7 +134,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Yank with a word motion
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void TestChar_yw_1()
         {
             _textView.Caret.MoveTo(new SnapshotPoint(_textView.TextSnapshot, 0));
@@ -146,7 +146,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Yank into a different register
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void TestChar_yw_2()
         {
             _textView.Caret.MoveTo(new SnapshotPoint(_textView.TextSnapshot, 0));
@@ -158,7 +158,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Yank with a double word motion
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void TestChar_y2w_1()
         {
             _textView.Caret.MoveTo(new SnapshotPoint(_textView.TextSnapshot, 0));
@@ -170,7 +170,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// The order count shouldn't matter
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void TestChar_2yw_1()
         {
             _textView.Caret.MoveTo(new SnapshotPoint(_textView.TextSnapshot, 0));
@@ -179,7 +179,7 @@ namespace Vim.UnitTest
             Assert.Equal("summary description ", reg.StringValue);
         }
 
-        [Fact]
+        [WpfFact]
         public void TestChar_dd_1()
         {
             CreateBuffer(s_defaultLines);
@@ -193,7 +193,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Delete a particular word from the file
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void TestChar_dw_1()
         {
             CreateBuffer(s_defaultLines);
@@ -206,7 +206,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Delete into a different regisetr
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void TestChar_dw_2()
         {
             CreateBuffer(s_defaultLines);
@@ -219,7 +219,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Paste text into the buffer
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void TestChar_p_1()
         {
             CreateBuffer("how is", "it going");
@@ -229,7 +229,7 @@ namespace Vim.UnitTest
             Assert.Equal("hheyow is", _textView.TextSnapshot.GetLineFromLineNumber(0).GetText());
         }
 
-        [Fact]
+        [WpfFact]
         public void TestChar_P_1()
         {
             CreateBuffer("how is", "it going");
@@ -239,7 +239,7 @@ namespace Vim.UnitTest
             Assert.Equal("heyhow is", _textView.TextSnapshot.GetLineFromLineNumber(0).GetText());
         }
 
-        [Fact]
+        [WpfFact]
         public void TestChar_2P_1()
         {
             CreateBuffer("how is", "it going");
@@ -249,7 +249,7 @@ namespace Vim.UnitTest
             Assert.Equal("heyheyhow is", _textView.TextSnapshot.GetLineFromLineNumber(0).GetText());
         }
 
-        [Fact]
+        [WpfFact]
         public void TestChar_A_1()
         {
             CreateBuffer("how is", "foo");
@@ -259,7 +259,7 @@ namespace Vim.UnitTest
             Assert.Equal(_textView.TextSnapshot.GetLineFromLineNumber(0).End, _textView.Caret.Position.BufferPosition);
         }
 
-        [Fact]
+        [WpfFact]
         public void TestChar_o_1()
         {
             CreateBuffer("how is", "foo");
@@ -276,7 +276,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Use o at end of buffer
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void TestChar_o_2()
         {
             CreateBuffer("foo", "bar");
@@ -285,7 +285,7 @@ namespace Vim.UnitTest
             _buffer.Process("o");
         }
 
-        [Fact]
+        [WpfFact]
         public void TestChar_x_1()
         {
             CreateBuffer("how is");
@@ -298,7 +298,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Test out the n command 
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void Next1()
         {
             _textView.Caret.MoveTo(new SnapshotPoint(_textView.TextSnapshot, 0));
@@ -312,7 +312,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Next should not start from the current cursor position
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void Next3()
         {
             _buffer.Process("/s", enter: true);
@@ -324,7 +324,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Make sure that we provide status when there is no next search
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void Next4()
         {
             _buffer.Process("n");
@@ -342,7 +342,7 @@ namespace Vim.UnitTest
                 "for summary other"
             };
 
-        [Fact]
+        [WpfFact]
         public void NextWordUnderCursor1()
         {
             CreateBuffer(s_lines2);

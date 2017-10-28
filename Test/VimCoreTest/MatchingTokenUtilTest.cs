@@ -31,7 +31,7 @@ namespace Vim.UnitTest
                 Assert.False(found.IsSome());
             }
 
-            [Fact]
+            [WpfFact]
             public void ConditionalSimple()
             {
                 AssertKind(MatchingTokenKind.Directive, "#if");
@@ -42,49 +42,49 @@ namespace Vim.UnitTest
             /// <summary>
             /// The span of an #if is the entire line.  
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void ConditionalPastToken()
             {
                 AssertKind(MatchingTokenKind.Directive, "#if rabbit dog", 10);
                 AssertKind(MatchingTokenKind.Directive, "#if rabbit dog", 7);
             }
 
-            [Fact]
+            [WpfFact]
             public void ParensSimple()
             {
                 AssertKind(MatchingTokenKind.Parens, "()");
                 AssertKind(MatchingTokenKind.Parens, "()", column: 1);
             }
 
-            [Fact]
+            [WpfFact]
             public void BracesSimple()
             {
                 AssertKind(MatchingTokenKind.Braces, "{}");
                 AssertKind(MatchingTokenKind.Braces, "{}", column: 1);
             }
 
-            [Fact]
+            [WpfFact]
             public void BracketsSimple()
             {
                 AssertKind(MatchingTokenKind.Brackets, "[]");
                 AssertKind(MatchingTokenKind.Brackets, "[]", column: 1);
             }
 
-            [Fact]
+            [WpfFact]
             public void CloserWinsConditional()
             {
                 AssertKind(MatchingTokenKind.Directive, "#if (");
                 AssertKind(MatchingTokenKind.Parens, "#if (", column: 4);
             }
 
-            [Fact]
+            [WpfFact]
             public void CloserWinsParens()
             {
                 AssertKind(MatchingTokenKind.Parens, "( [");
                 AssertKind(MatchingTokenKind.Brackets, "( [", column: 1);
             }
 
-            [Fact]
+            [WpfFact]
             public void CloserParensPastIfConditional()
             {
                 var lineText = "#if foo ()";
@@ -95,7 +95,7 @@ namespace Vim.UnitTest
                 }
             }
 
-            [Fact]
+            [WpfFact]
             public void CommentEnd()
             {
                 AssertKind(MatchingTokenKind.Comment, "*/", 0);
@@ -121,7 +121,7 @@ namespace Vim.UnitTest
                 Assert.Equal(matchLength, result.Value.Length);
             }
 
-            [Fact]
+            [WpfFact]
             public void ParenSimple()
             {
                 Create("()");
@@ -129,7 +129,7 @@ namespace Vim.UnitTest
                 AssertMatch(1, 0, 1);
             }
 
-            [Fact]
+            [WpfFact]
             public void ParenMultiline()
             {
                 Create("(", ")");
@@ -137,7 +137,7 @@ namespace Vim.UnitTest
                 AssertMatch(_textBuffer.GetPointInLine(1, 0).Position, 0, 1);
             }
 
-            [Fact]
+            [WpfFact]
             public void ParenNested()
             {
                 Create("(((a)))");
@@ -149,7 +149,7 @@ namespace Vim.UnitTest
                 AssertMatch(4, 2, 1);
             }
 
-            [Fact]
+            [WpfFact]
             public void ParenConsequtive()
             {
                 Create("()()");
@@ -159,7 +159,7 @@ namespace Vim.UnitTest
                 AssertMatch(3, 2, 1);
             }
 
-            [Fact]
+            [WpfFact]
             public void CommentSimple()
             {
                 Create("/* */");
@@ -168,7 +168,7 @@ namespace Vim.UnitTest
                 AssertMatch(4, 0, 1);
             }
 
-            [Fact]
+            [WpfFact]
             public void CommentMultiline()
             {
                 Create("/*", "*/");
@@ -176,7 +176,7 @@ namespace Vim.UnitTest
                 AssertMatch(_textBuffer.GetPointInLine(1, 0).Position, 0, 1);
             }
 
-            [Fact]
+            [WpfFact]
             public void CommentWrongNesting()
             {
                 Create("/* /* */");
@@ -186,7 +186,7 @@ namespace Vim.UnitTest
                 AssertMatch(3, 7, 1);
             }
 
-            [Fact]
+            [WpfFact]
             public void ConditionalSimple()
             {
                 Create("#if", "#endif");
@@ -194,14 +194,14 @@ namespace Vim.UnitTest
                 AssertMatch(_textBuffer.GetPointInLine(1, 0).Position, 0, 3);
             }
 
-            [Fact]
+            [WpfFact]
             public void ConditionalFromElse()
             {
                 Create("#if", "#else", "#endif");
                 AssertMatch(_textBuffer.GetPointInLine(1, 0).Position, _textBuffer.GetPointInLine(2, 0).Position, 6);
             }
 
-            [Fact]
+            [WpfFact]
             public void ConditionalCaretInMiddleOfToken()
             {
                 Create("#if", "#endif");
@@ -209,7 +209,7 @@ namespace Vim.UnitTest
                 AssertMatch(_textBuffer.GetPointInLine(1, 3).Position, 0, 3);
             }
 
-            [Fact]
+            [WpfFact]
             public void Mixed()
             {
                 Create("{ { (( } /* a /*) b */ })");
@@ -231,19 +231,19 @@ namespace Vim.UnitTest
                 Assert.Equal(length, result.Value.Span.Length);
             }
 
-            [Fact]
+            [WpfFact]
             public void SimpleIf()
             {
                 AssertParsed("#if", 0, 3);
             }
 
-            [Fact]
+            [WpfFact]
             public void SpaceBeforePoundIf()
             {
                 AssertParsed(" #if", 1, 3);
             }
 
-            [Fact]
+            [WpfFact]
             public void SpaceAfterPoundIf()
             {
                 AssertParsed("# if", 0, 4);
@@ -282,7 +282,7 @@ namespace Vim.UnitTest
                 AssertBlock(blocks[0], spans);
             }
 
-            [Fact]
+            [WpfFact]
             public void Simple()
             {
                 Create("#if", "#endif");
@@ -291,7 +291,7 @@ namespace Vim.UnitTest
                     _textBuffer.GetLineSpan(1, 6));
             }
 
-            [Fact]
+            [WpfFact]
             public void SimpleWithElse()
             {
                 Create("#if", "#else", "#endif");
@@ -301,7 +301,7 @@ namespace Vim.UnitTest
                     _textBuffer.GetLineSpan(2, 6));
             }
 
-            [Fact]
+            [WpfFact]
             public void SimpleWithElif()
             {
                 Create("#if", "#elif", "#endif");
@@ -311,7 +311,7 @@ namespace Vim.UnitTest
                     _textBuffer.GetLineSpan(2, 6));
             }
 
-            [Fact]
+            [WpfFact]
             public void NestedSingleInIf()
             {
                 Create("#if", "#if", "#endif", "#endif");
@@ -326,7 +326,7 @@ namespace Vim.UnitTest
                     _textBuffer.GetLineSpan(2, 6));
             }
 
-            [Fact]
+            [WpfFact]
             public void NestedSingleInIfWithElse()
             {
                 Create("#if", "#if", "#endif", "#else", "#endif");
@@ -342,7 +342,7 @@ namespace Vim.UnitTest
                     _textBuffer.GetLineSpan(2, 6));
             }
 
-            [Fact]
+            [WpfFact]
             public void NestedSingleInElse()
             {
                 Create("#if", "#else", "#if", "#endif", "#endif");
@@ -358,7 +358,7 @@ namespace Vim.UnitTest
                     _textBuffer.GetLineSpan(3, 6));
             }
 
-            [Fact]
+            [WpfFact]
             public void InSequence()
             {
                 Create("#if", "#endif", "#if", "#endif");
@@ -391,7 +391,7 @@ namespace Vim.UnitTest
                 return found.Value;
             }
 
-            [Fact]
+            [WpfFact]
             public void BraceForward()
             {
                 Create(" {}}");
@@ -399,7 +399,7 @@ namespace Vim.UnitTest
                 Assert.Equal(3, point.Position);
             }
 
-            [Fact]
+            [WpfFact]
             public void BraceBackward()
             {
                 Create("{{}  ");
@@ -421,7 +421,7 @@ namespace Vim.UnitTest
             /// Make sure that the caching logic will recognize the buffer change and actually
             /// parse the new snapshot
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Caching()
             {
                 Create("#if", "#endif", "#if", "#endif");
@@ -436,7 +436,7 @@ namespace Vim.UnitTest
             /// This addresses issue 1366.  Essentially ensure absolutely that the cache is being
             /// used 
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void EnsureCacheUsed()
             {
                 Create("#if", "#endif", "#if", "#endif");

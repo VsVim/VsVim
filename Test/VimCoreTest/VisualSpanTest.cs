@@ -25,7 +25,7 @@ namespace Vim.UnitTest
         {
             public sealed class CharacterTest : CreateForSelectionTest
             {
-                [Fact]
+                [WpfFact]
                 public void IncludeLineBreak()
                 {
                     Create("cat", "dog");
@@ -36,7 +36,7 @@ namespace Vim.UnitTest
                     Assert.Equal(1, characterSpan.LineCount);
                 }
 
-                [Fact]
+                [WpfFact]
                 public void EndsInEmptyLineCase()
                 {
                     Create("cat", "", "dog");
@@ -51,7 +51,7 @@ namespace Vim.UnitTest
                 /// <summary>
                 /// An empty selection should produce an empty VisualSpan for character
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void Empty()
                 {
                     Create("hello world");
@@ -65,7 +65,7 @@ namespace Vim.UnitTest
                 /// <summary>
                 /// An empty selection should still produce a complete line selection for line
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void Empty()
                 {
                     Create("hello world");
@@ -80,7 +80,7 @@ namespace Vim.UnitTest
                 /// Visual Span respects vim semantics here and hence will change an empty selection
                 /// into one with at least a single space 
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void Empty()
                 {
                     Create("hello world");
@@ -99,7 +99,7 @@ namespace Vim.UnitTest
                 /// Ensure creating a VisualSpan for an empty points results in an a 1 space block 
                 /// selection
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void Empty()
                 {
                     Create("dog cat");
@@ -109,7 +109,7 @@ namespace Vim.UnitTest
                     Assert.Equal(blockSpan, visualSpan.AsBlock().Item);
                 }
 
-                [Fact]
+                [WpfFact]
                 public void Backwards()
                 {
                     Create("big cat", "big dog");
@@ -122,7 +122,7 @@ namespace Vim.UnitTest
                 /// Make sure that we properly handle the backward block selection which spans 
                 /// multiple lines
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void BackwardsMultipleLines()
                 {
                     Create("big cat", "big dog");
@@ -135,7 +135,7 @@ namespace Vim.UnitTest
                 /// Make sure that we properly handle the forward block selection which spans 
                 /// multiple lines
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void ForwardsMultipleLines()
                 {
                     Create("big cat", "big dog");
@@ -150,7 +150,7 @@ namespace Vim.UnitTest
                 /// <summary>
                 /// Ensure creating a VisualSpan for an empty points results in an empty selection
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void Empty()
                 {
                     Create("dog cat");
@@ -168,7 +168,7 @@ namespace Vim.UnitTest
                 /// start of the line.  The code should return the single line range for the line 
                 /// containing the points
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void SamePoint()
                 {
                     Create("cat", "dog", "tree");
@@ -181,7 +181,7 @@ namespace Vim.UnitTest
                 /// Make sure the code handles the case where the caret is positioned at the end of the
                 /// ITextSnapshot.  Should return the last line
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void EndOfSnapshot()
                 {
                     Create("cat", "dog");
@@ -218,7 +218,7 @@ namespace Vim.UnitTest
                 ///     trucker
                 ///       cat
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void SimpleCaretPastTab()
                 {
                     Create("trucker", "\tcat");
@@ -238,7 +238,7 @@ namespace Vim.UnitTest
                         _textView.Selection.SelectedSpans);
                 }
 
-                [Fact]
+                [WpfFact]
                 public void SimpleCaretPastTab2()
                 {
                     Create("trucker", "\tcat");
@@ -258,7 +258,7 @@ namespace Vim.UnitTest
                 /// When the caret is in in the tab and the anchor is visually above the tab.  Then the 
                 /// anchor is visually moved to encompass the entire tab
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void CaretInTabAnchorAboveTab()
                 {
                     Create(4, "trucker", "\tcat");
@@ -280,7 +280,7 @@ namespace Vim.UnitTest
                 /// <summary>
                 /// The selection of a reverse character span should cause a reversed selection
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void Backward()
                 {
                     Create("big dog", "big cat", "big tree", "big fish");
@@ -291,7 +291,7 @@ namespace Vim.UnitTest
                     Assert.Equal(characterSpan.Span, _textView.GetSelectionSpan());
                 }
 
-                [Fact]
+                [WpfFact]
                 public void BackwardIntoLineBreak()
                 {
                     Create("cat", "dog");
@@ -305,7 +305,7 @@ namespace Vim.UnitTest
                 /// <summary>
                 /// The selection of a forward character span should cause a forward selection
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void Forward()
                 {
                     Create("big dog", "big cat", "big tree", "big fish");
@@ -316,7 +316,7 @@ namespace Vim.UnitTest
                     Assert.Equal(characterSpan.Span, _textView.GetSelectionSpan());
                 }
 
-                [Fact]
+                [WpfFact]
                 public void ForwardIntoLineBreak()
                 {
                     Create("cat", "dog");
@@ -333,7 +333,7 @@ namespace Vim.UnitTest
                 /// <summary>
                 /// The selection of a reverse line span should cause a reversed selection
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void Backwards()
                 {
                     Create("big dog", "big cat", "big tree", "big fish");
@@ -347,7 +347,7 @@ namespace Vim.UnitTest
                 /// <summary>
                 /// The selection of a forward line span should cause a forward selection
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void Forward()
                 {
                     Create("big dog", "big cat", "big tree", "big fish");
@@ -364,7 +364,7 @@ namespace Vim.UnitTest
                 /// <summary>
                 /// Simple selection of a block 
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void Simple()
                 {
                     Create("big dog", "big cat", "big tree", "big fish");
@@ -381,7 +381,7 @@ namespace Vim.UnitTest
                 /// <summary>
                 /// Overlap of simple selection of a block with plain (non wide) characters should be 0
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void Simple()
                 {
                     Create("big dog", "big cat", "big tree", "big fish");
@@ -397,7 +397,7 @@ namespace Vim.UnitTest
                 /// <summary>
                 /// Block selection can completely overlaps wide characters
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void Full()
                 {
                     Create("big dog", "b\u3042 cat", "b\u3044 tree", "b\u3046 fish");
@@ -418,7 +418,7 @@ namespace Vim.UnitTest
                 /// <summary>
                 /// Block selection can partly overlaps wide characters
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void Partial()
                 {
                     Create("aiueo", "\u3042\u3044\u3046\u3048\u304A");
@@ -438,7 +438,7 @@ namespace Vim.UnitTest
                 /// <summary>
                 /// Block selection should include all non spacing characters
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void NonSpacing()
                 {
                     string[] lines = new string[] { "hello", "h\u0327e\u0301\u200bllo\u030a\u0305" };
@@ -455,7 +455,7 @@ namespace Vim.UnitTest
                 /// <summary>
                 /// Overlap of simple selection of a block that partly overlaps a tab character
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void VeryWideCharacter()
                 {
                     Create("aiueo", "\t");

@@ -25,7 +25,7 @@ namespace Vim.UnitTest
             _textBuffer = CreateTextBuffer();
         }
 
-        [Fact]
+        [WpfFact]
         public void SingleResult()
         {
             _textBuffer.SetText("d", "dog", "test", "cat");
@@ -35,7 +35,7 @@ namespace Vim.UnitTest
                 list);
         }
 
-        [Fact]
+        [WpfFact]
         public void DoubleResult()
         {
             _textBuffer.SetText("d", "dog", "test", "cat", "deck");
@@ -45,7 +45,7 @@ namespace Vim.UnitTest
                 list);
         }
 
-        [Fact]
+        [WpfFact]
         public void Multifile()
         {
             var vimBuffer1 = CreateVimBuffer("d", "dog", "cat");
@@ -60,7 +60,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Within a file the order is distance from the span.
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void SortOrder()
         {
             _textBuffer.SetText("dog", "d", "test", "cat", "deck");
@@ -70,7 +70,7 @@ namespace Vim.UnitTest
                 list);
         }
 
-        [Fact]
+        [WpfFact]
         public void SortOrderMany()
         {
             _textBuffer.SetText("dog", "dish", "d", "test", "cat", "deck", "dock");
@@ -83,7 +83,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Other files come in top to bottom order.
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void SortOdrerMultifile()
         {
             var vimBuffer1 = CreateVimBuffer("deck", "d", "dog", "cat");

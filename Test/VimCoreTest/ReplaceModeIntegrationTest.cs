@@ -23,7 +23,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Repeat of a replace mode edit should result in a replacement not an insert
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Simple()
             {
                 Create("cat", "dog");
@@ -41,7 +41,7 @@ namespace Vim.UnitTest
             /// Repeat of a replace mode edit on a shorter line should extend the line to encompass
             /// the value
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void ShorterLine()
             {
                 Create("cat", "d");
@@ -61,7 +61,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Replace mode should respect the insert count 
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void InsertTextAsCommand()
             {
                 Create("dog");
@@ -72,7 +72,7 @@ namespace Vim.UnitTest
                 Assert.Equal(5, _textView.GetCaretPoint().Position);
             }
 
-            [Fact]
+            [WpfFact]
             public void InsertOver()
             {
                 Create("fish tree");
@@ -84,7 +84,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// When repeating the insert it should write over the remaining text vs. inserting
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void InsertOverAsCommand()
             {
                 Create("fish tree");
@@ -101,7 +101,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Typing forward in replace mode should overwrite 
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void TypeForwardShouldReplace()
             {
                 Create("hello world");
@@ -114,7 +114,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Typing past the end of the line should extend it
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void TypePastEndOfLine()
             {
                 Create("cat", "dog");
@@ -124,7 +124,7 @@ namespace Vim.UnitTest
                 Assert.Equal("dog", _textBuffer.GetLine(1).GetText());
             }
 
-            [Fact]
+            [WpfFact]
             public void PasteOverwritesFullLengthOfRegister()
             {
                 Create("12345 world");
@@ -137,7 +137,7 @@ namespace Vim.UnitTest
                 Assert.Equal("hello", UnnamedRegister.StringValue);
             }
 
-            [Fact]
+            [WpfFact]
             public void PasteOverwritesFullLengthOfRegisterPastEndOfLine()
             {
                 Create("123");

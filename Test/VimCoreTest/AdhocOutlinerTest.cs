@@ -23,7 +23,7 @@ namespace Vim.UnitTest
             _textBuffer.Properties.AddProperty(AdhocOutliner.OutlinerTaggerKey, null);
         }
 
-        [Fact]
+        [WpfFact]
         public void CreateDeleteSequence()
         {
             _textBuffer.SetText("hello world");
@@ -33,7 +33,7 @@ namespace Vim.UnitTest
             Assert.Equal(0, _outliner.GetOutliningRegions(_textBuffer.GetExtent()).Count);
         }
 
-        [Fact]
+        [WpfFact]
         public void Properties()
         {
             _textBuffer.SetText("hello world");
@@ -42,7 +42,7 @@ namespace Vim.UnitTest
             Assert.Equal("hint", region.Tag.CollapsedHintForm);
         }
 
-        [Fact]
+        [WpfFact]
         public void CheckTagger()
         {
             _textBuffer.Properties.RemoveProperty(AdhocOutliner.OutlinerTaggerKey);

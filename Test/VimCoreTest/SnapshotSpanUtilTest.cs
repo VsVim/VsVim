@@ -27,7 +27,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Make sure all points valid
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void GetPoints1()
         {
             Create(s_lines);
@@ -44,7 +44,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Make sure all points valid
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void GetPoints2()
         {
             Create(s_lines);
@@ -58,7 +58,7 @@ namespace Vim.UnitTest
             }
         }
 
-        [Fact]
+        [WpfFact]
         public void GetPoints3()
         {
             Create("foo");
@@ -73,7 +73,7 @@ namespace Vim.UnitTest
             Assert.Equal('o', points[2].GetChar());
         }
 
-        [Fact]
+        [WpfFact]
         public void GetPoints4()
         {
             Create("foo", "bar");
@@ -82,7 +82,7 @@ namespace Vim.UnitTest
             Assert.Equal(new char[] { 'f', 'o', 'o' }, chars);
         }
 
-        [Fact]
+        [WpfFact]
         public void GetPoints5()
         {
             Create("foo bar");
@@ -90,7 +90,7 @@ namespace Vim.UnitTest
             Assert.Equal(0, points.Count());
         }
 
-        [Fact]
+        [WpfFact]
         public void GetPoints_Backward1()
         {
             Create("foo");
@@ -102,7 +102,7 @@ namespace Vim.UnitTest
             Assert.Equal('f', points[2].GetChar());
         }
 
-        [Fact]
+        [WpfFact]
         public void GetPoints_Backward2()
         {
             Create("foo", "bar");
@@ -114,7 +114,7 @@ namespace Vim.UnitTest
             Assert.Equal('b', points[2].GetChar());
         }
 
-        [Fact]
+        [WpfFact]
         public void GetPoints_Backward3()
         {
             Create("foo", "bar");
@@ -123,7 +123,7 @@ namespace Vim.UnitTest
             Assert.Equal('f', point.GetChar());
         }
 
-        [Fact]
+        [WpfFact]
         public void GetPoints_Backward4()
         {
             Create("foo", "bar");
@@ -132,7 +132,7 @@ namespace Vim.UnitTest
             Assert.Equal(new char[] { 'o', 'f' }, points);
         }
 
-        [Fact]
+        [WpfFact]
         public void GetPoints_Backward5()
         {
             Create("foo", "bar");
@@ -144,7 +144,7 @@ namespace Vim.UnitTest
             Assert.Equal('f', points[2].GetChar());
         }
 
-        [Fact]
+        [WpfFact]
         public void GetPoints_Backward6()
         {
             Create("foo bar");
@@ -152,7 +152,7 @@ namespace Vim.UnitTest
             Assert.Equal(0, points.Count());
         }
 
-        [Fact]
+        [WpfFact]
         public void GetLastLine1()
         {
             Create("a", "b", "c");
@@ -161,7 +161,7 @@ namespace Vim.UnitTest
             Assert.Equal(0, endLine.LineNumber);
         }
 
-        [Fact]
+        [WpfFact]
         public void GetLastLine2()
         {
             Create("a", "b", "c");
@@ -170,7 +170,7 @@ namespace Vim.UnitTest
             Assert.Equal(2, endLine.LineNumber);
         }
 
-        [Fact]
+        [WpfFact]
         public void GetLastLine3()
         {
             Create("", "b", "c");
@@ -184,7 +184,7 @@ namespace Vim.UnitTest
         /// above.  In the majority of cases you don't want the last line to be the empty
         /// one.  Those few places can special case the movement
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void GetLastLine4()
         {
             Create("a", "");
@@ -193,7 +193,7 @@ namespace Vim.UnitTest
             Assert.Equal(0, endLine.LineNumber);
         }
 
-        [Fact]
+        [WpfFact]
         public void ExtendToFullLine1()
         {
             Create("dog", "cat", "chicken", "pig");
@@ -202,7 +202,7 @@ namespace Vim.UnitTest
             Assert.Equal(_buffer.GetLineRange(0).Extent, span);
         }
 
-        [Fact]
+        [WpfFact]
         public void ExtendToFullLine2()
         {
             Create("dog", "cat", "chicken", "pig");
@@ -211,7 +211,7 @@ namespace Vim.UnitTest
             Assert.Equal(_buffer.GetLineRange(1).Extent, span);
         }
 
-        [Fact]
+        [WpfFact]
         public void ExtendToFullLineIncludingLineBreak1()
         {
             Create("dog", "cat", "chicken", "pig");
@@ -220,7 +220,7 @@ namespace Vim.UnitTest
             Assert.Equal(_buffer.GetLineRange(0).ExtentIncludingLineBreak, span);
         }
 
-        [Fact]
+        [WpfFact]
         public void ExtendToFullLineIncludingLineBreak2()
         {
             Create("dog", "cat", "chicken", "pig");
@@ -229,7 +229,7 @@ namespace Vim.UnitTest
             Assert.Equal(_buffer.GetLineRange(1).ExtentIncludingLineBreak, span);
         }
 
-        [Fact]
+        [WpfFact]
         public void GetLinesAndEdges1()
         {
             Create("dog", "cat", "pig", "fox");
@@ -240,7 +240,7 @@ namespace Vim.UnitTest
             Assert.True(tuple.Item3.IsNone());
         }
 
-        [Fact]
+        [WpfFact]
         public void GetLinesAndEdges2()
         {
             Create("dog", "cat", "pig", "fox");
@@ -253,7 +253,7 @@ namespace Vim.UnitTest
             Assert.True(tuple.Item3.IsNone());
         }
 
-        [Fact]
+        [WpfFact]
         public void GetLinesAndEdges3()
         {
             Create("dog", "cat", "pig", "fox");
@@ -266,7 +266,7 @@ namespace Vim.UnitTest
             Assert.True(tuple.Item2.IsNone());
         }
 
-        [Fact]
+        [WpfFact]
         public void GetLinesAndEdges4()
         {
             Create("dog", "cat", "pig", "fox");
@@ -279,7 +279,7 @@ namespace Vim.UnitTest
             Assert.True(tuple.Item2.IsSome(x => x.Count == 1));
         }
 
-        [Fact]
+        [WpfFact]
         public void GetLinesAndEdges5()
         {
             Create("dog", "cat", "pig", "fox");
@@ -295,7 +295,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Last point before end of buffer
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void GetLinesAndEdges6()
         {
             Create("dog", "cat", "pig", "fox");
@@ -312,7 +312,7 @@ namespace Vim.UnitTest
         /// Make sure we continue the tradition of not returning the Snapshot end point
         /// for requests even if it was the input
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void GetLinesAndEdges7()
         {
             Create("dog", "cat", "pig", "fox");
@@ -328,7 +328,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Regression test for issue 311
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void GetLinesAndEdges8()
         {
             Create("long first line", "ab", "c");
@@ -345,7 +345,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Simple exhaustive test to make sure the function works for every point in a buffer
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void GetLinesAndEdges9()
         {
             Create(s_lines);

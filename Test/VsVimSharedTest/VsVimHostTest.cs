@@ -85,7 +85,7 @@ namespace Vim.VisualStudio.UnitTest
         {
             public sealed class NormalTest : GoToDefinitionTest
             {
-                [Fact]
+                [WpfFact]
                 public void GotoDefinition1()
                 {
                     Create();
@@ -94,7 +94,7 @@ namespace Vim.VisualStudio.UnitTest
                     Assert.False(_host.GoToDefinition());
                 }
 
-                [Fact]
+                [WpfFact]
                 public void GotoDefinition2()
                 {
                     Create();
@@ -104,7 +104,7 @@ namespace Vim.VisualStudio.UnitTest
                     Assert.False(_host.GoToDefinition());
                 }
 
-                [Fact]
+                [WpfFact]
                 public void GotoDefinition3()
                 {
                     Create();
@@ -118,7 +118,7 @@ namespace Vim.VisualStudio.UnitTest
                 /// For most languages the word which is targeted should not be included in the 
                 /// command
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void Normal()
                 {
                     Create();
@@ -147,7 +147,7 @@ namespace Vim.VisualStudio.UnitTest
                 /// The C++ implementation of the goto definition command requires that the word which 
                 /// it should target be passed along as an argument to the command
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void Simple()
                 {
                     CreateWithText("hello world");
@@ -156,7 +156,7 @@ namespace Vim.VisualStudio.UnitTest
                     _dte.Verify();
                 }
 
-                [Fact]
+                [WpfFact]
                 public void MiddleOfIdentifier()
                 {
                     CreateWithText("cat; dog");
@@ -166,7 +166,7 @@ namespace Vim.VisualStudio.UnitTest
                     _dte.Verify();
                 }
 
-                [Fact]
+                [WpfFact]
                 public void MiddleOfLongIdentifier()
                 {
                     CreateWithText("big_cat; dog");
@@ -180,7 +180,7 @@ namespace Vim.VisualStudio.UnitTest
                 /// The code should pass valid C++ identifiers to the GoToDefinition command.  It should not be 
                 /// using a full vim word (:help WORD) as it can include many non-legal C++ identifiers
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void Issue1122()
                 {
                     CreateWithText("cat; dog");
@@ -193,7 +193,7 @@ namespace Vim.VisualStudio.UnitTest
 
         public sealed class NavigateToTest : VsVimHostTest
         {
-            [Fact]
+            [WpfFact]
             public void Simple()
             {
                 Create();
@@ -232,42 +232,42 @@ namespace Vim.VisualStudio.UnitTest
             /// Don't create IVimBuffer instances for interactive windows.  This would cause the NuGet
             /// window to have instances of vim created inside of it 
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Interactive()
             {
                 var textView = CreateWithRoles(PredefinedTextViewRoles.Editable, PredefinedTextViewRoles.Interactive);
                 Assert.False(_host.ShouldCreateVimBuffer(textView));
             }
 
-            [Fact]
+            [WpfFact]
             public void EmbeddedPeekTextView()
             {
                 var textView = CreateWithRoles(PredefinedTextViewRoles.Editable, Constants.TextViewRoleEmbeddedPeekTextView);
                 Assert.True(_host.ShouldCreateVimBuffer(textView));
             }
 
-            [Fact]
+            [WpfFact]
             public void StandardDocument()
             {
                 var textView = CreateWithRoles(PredefinedTextViewRoles.Editable, PredefinedTextViewRoles.Document, PredefinedTextViewRoles.Structured, PredefinedTextViewRoles.Zoomable, PredefinedTextViewRoles.Debuggable);
                 Assert.True(_host.ShouldCreateVimBuffer(textView));
             }
 
-            [Fact]
+            [WpfFact]
             public void StandardPrimaryDocument()
             {
                 var textView = CreateWithRoles(PredefinedTextViewRoles.Editable, PredefinedTextViewRoles.PrimaryDocument, PredefinedTextViewRoles.Structured, PredefinedTextViewRoles.Zoomable, PredefinedTextViewRoles.Debuggable);
                 Assert.True(_host.ShouldCreateVimBuffer(textView));
             }
 
-            [Fact]
+            [WpfFact]
             public void StandardCSharpDocument()
             {
                 var textView = CreateWithMajorRoles();
                 Assert.True(_host.ShouldCreateVimBuffer(textView));
             }
 
-            [Fact]
+            [WpfFact]
             public void StandardCSharpEmbeddedTextView()
             {
                 var textView = CreateWithRoles(
@@ -279,7 +279,7 @@ namespace Vim.VisualStudio.UnitTest
                 Assert.True(_host.ShouldCreateVimBuffer(textView));
             }
 
-            [Fact]
+            [WpfFact]
             public void NuGetManagerConsole()
             {
                 var textView = CreateWithRoles(
@@ -294,7 +294,7 @@ namespace Vim.VisualStudio.UnitTest
             /// Allow hosts like R# to opt out of creating the <see cref="IVimBuffer>"/>
             /// Issue 1498
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void ExtensionReject()
             {
                 var textView = CreateWithMajorRoles();
@@ -302,7 +302,7 @@ namespace Vim.VisualStudio.UnitTest
                 Assert.False(_host.ShouldCreateVimBuffer(textView));
             }
 
-            [Fact]
+            [WpfFact]
             public void ExtensionAccept()
             {
                 var textView = CreateWithMajorRoles();
@@ -313,7 +313,7 @@ namespace Vim.VisualStudio.UnitTest
             /// <summary>
             /// Default behavior should occur when the extension ignores the <see cref="ITextView"/>
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void ExtensionIgnore()
             {
                 var textView = CreateWithMajorRoles();
@@ -324,7 +324,7 @@ namespace Vim.VisualStudio.UnitTest
 
         public sealed class MiscTest : VsVimHostTest
         {
-            [Fact]
+            [WpfFact]
             public void GetName1()
             {
                 Create();
@@ -333,7 +333,7 @@ namespace Vim.VisualStudio.UnitTest
                 Assert.Equal("", _host.GetName(buffer.Object));
             }
 
-            [Fact]
+            [WpfFact]
             public void GetName2()
             {
                 Create();
@@ -351,14 +351,14 @@ namespace Vim.VisualStudio.UnitTest
             /// Settings shouldn't be automatically synchronized for new IVimBuffer instances in the
             /// code base.  They are custom handled by HostFactory
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void AutoSynchronizeSettings()
             {
                 Create();
                 Assert.False(_host.AutoSynchronizeSettings);
             }
 
-            [Fact]
+            [WpfFact]
             public void DefaultSettingsTiedToApplicationSettings()
             {
                 Create();

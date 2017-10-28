@@ -18,19 +18,19 @@ namespace Vim.UnitTest
                 _mode = _modeRaw;
             }
 
-            [Fact]
+            [WpfFact]
             public void CanProcess1()
             {
                 Assert.True(_mode.CanProcess(GlobalSettings.DisableAllCommand));
             }
 
-            [Fact]
+            [WpfFact]
             public void Commands1()
             {
                 Assert.True(_mode.CommandNames.First().KeyInputs.First().Equals(GlobalSettings.DisableAllCommand));
             }
 
-            [Fact]
+            [WpfFact]
             public void Process1()
             {
                 var res = _mode.Process(GlobalSettings.DisableAllCommand);
@@ -53,7 +53,7 @@ namespace Vim.UnitTest
             /// When one vim buffer is disabled then it should be disabling all IVimBuffer instances
             /// that are currently enabled
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void DisableAll()
             {
                 _vimBuffer1.Process(GlobalSettings.DisableAllCommand);
@@ -66,7 +66,7 @@ namespace Vim.UnitTest
             /// Setting the IsDisabled api to true should disable all of the active buffers exactly
             /// as if the command were processed
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void DisableViaApi()
             {
                 Vim.IsDisabled = true;
@@ -79,7 +79,7 @@ namespace Vim.UnitTest
             /// Disabled mode is a global state in addition to a local one.  Once it's turned on then all newly
             /// created IVimBuffer instances should also go into disabled mode
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void DisableNewBuffers()
             {
                 _vimBuffer1.Process(GlobalSettings.DisableAllCommand);
@@ -90,7 +90,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Make sure that IVimTextBuffer instances have the correct mode as well
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void DisableNewTextBuffers()
             {
                 Vim.IsDisabled = true;
@@ -102,7 +102,7 @@ namespace Vim.UnitTest
             /// Even though disabled is a global state we still allow the switching of modes via direct calls
             /// to the API.  
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void SwitchWhenDisabled()
             {
                 _vimBuffer1.Process(GlobalSettings.DisableAllCommand);
@@ -115,7 +115,7 @@ namespace Vim.UnitTest
             /// Re-enabling with an active selection and 'selectmode='
             /// should enable visual mode and return to normal mode
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void ReenableActiveSelectionNoSelectModeMouse()
             {
                 _vimBuffer1.Process(GlobalSettings.DisableAllCommand);
@@ -131,7 +131,7 @@ namespace Vim.UnitTest
             /// Re-enabling with an active selection and 'selectmode=mouse'
             /// should enable select mode and return to normal mode
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void ReenableActiveSelectionSelectModeMouse()
             {
                 _vimBuffer1.GlobalSettings.SelectMode = "mouse";
@@ -148,7 +148,7 @@ namespace Vim.UnitTest
             /// When we re-enable Vim they buffers which are already out of Disabled Mode should remain in 
             /// whatever mode they are in 
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void SwitchWhenUndisabled()
             {
                 Vim.IsDisabled = true;
@@ -158,7 +158,7 @@ namespace Vim.UnitTest
                 Assert.Equal(ModeKind.Insert, _vimBuffer1.ModeKind);
             }
 
-            [Fact]
+            [WpfFact]
             public void Issue1791()
             {
                 _vimBuffer1.TextBuffer.SetText("cat", "dog");

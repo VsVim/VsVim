@@ -13,7 +13,7 @@ namespace Vim.UnitTest
         /// Make sure that we respect the host policy on whether or not an IVimBuffer should be created for a given
         /// ITextView
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void RespectHostCreationPolicy()
         {
             VimHost.ShouldCreateVimBufferImpl = false;

@@ -18,7 +18,7 @@ namespace Vim.UnitTest
                 return parser.ParseTagBlocks();
             }
 
-            [Fact]
+            [WpfFact]
             public void SimpleMatching()
             {
                 var tagBlock = Parse("<a></a>").Single();
@@ -26,7 +26,7 @@ namespace Vim.UnitTest
                 Assert.Equal(0, tagBlock.Children.Count);
             }
 
-            [Fact]
+            [WpfFact]
             public void SimpleMatchingWithText()
             {
                 var tagBlock = Parse("<a>cat</a>").Single();
@@ -34,7 +34,7 @@ namespace Vim.UnitTest
                 Assert.Equal(0, tagBlock.Children.Count);
             }
 
-            [Fact]
+            [WpfFact]
             public void SimpleNested()
             {
                 var tagBlock = Parse("<a><b></b></a>").Single();
@@ -42,7 +42,7 @@ namespace Vim.UnitTest
                 Assert.Equal("b", tagBlock.Children.Single().Text);
             }
 
-            [Fact]
+            [WpfFact]
             public void SimpleNested2()
             {
                 var tagBlock = Parse("<a><b></b><c></c></a>").Single();
@@ -51,21 +51,21 @@ namespace Vim.UnitTest
                 Assert.Equal("c", tagBlock.Children[1].Text);
             }
 
-            [Fact]
+            [WpfFact]
             public void IgnoreBr()
             {
                 var tagBlock = Parse("<a><br></a>").Single();
                 Assert.Equal(0, tagBlock.Children.Count);
             }
 
-            [Fact]
+            [WpfFact]
             public void IgnoreMeta()
             {
                 var tagBlock = Parse("<a><meta></a>").Single();
                 Assert.Equal(0, tagBlock.Children.Count);
             }
 
-            [Fact]
+            [WpfFact]
             public void MultipleRoot()
             {
                 var items = Parse("<a>cat</a><b>dog</b>");
@@ -73,14 +73,14 @@ namespace Vim.UnitTest
                 Assert.Equal("b", items[1].Text);
             }
 
-            [Fact]
+            [WpfFact]
             public void Issue1439()
             {
                 var tagBlock = Parse("<h2>cat</h2>").Single();
                 Assert.Equal("h2", tagBlock.Text);
                 Assert.Equal(0, tagBlock.Children.Count);
             }
-            [Fact]
+            [WpfFact]
             public void OtherNameCharacters()
             {
                 var tagBlock = Parse("<ns:some.tag_name>cat</ns:some.tag_name>").Single();
@@ -98,7 +98,7 @@ namespace Vim.UnitTest
                 return parser.ParseTagBlocks();
             }
 
-            [Fact]
+            [WpfFact]
             public void Simple()
             {
                 var text = @"<a> cat </a>";
@@ -107,7 +107,7 @@ namespace Vim.UnitTest
                 Assert.Equal(new Span(3, text.Length - 7), item.InnerSpan);
             }
 
-            [Fact]
+            [WpfFact]
             public void SimpleEmpty()
             {
                 var text = @"<a></a>";
@@ -116,7 +116,7 @@ namespace Vim.UnitTest
                 Assert.Equal(new Span(3, 0), item.InnerSpan);
             }
 
-            [Fact]
+            [WpfFact]
             public void Nested()
             {
                 var text = @"<a><b></b></a>";
@@ -129,7 +129,7 @@ namespace Vim.UnitTest
                 Assert.Equal(new Span(6, 0), item.InnerSpan);
             }
 
-            [Fact]
+            [WpfFact]
             public void DoubleRoot()
             {
                 var text = @"<a> </a><b> </b>";
@@ -149,7 +149,7 @@ namespace Vim.UnitTest
                 return parser.ParseTagBlocks();
             }
 
-            [Fact]
+            [WpfFact]
             public void SimpleMatching()
             {
                 var tagBlock = Parse("<a name='foo'></a>").Single();
@@ -157,7 +157,7 @@ namespace Vim.UnitTest
                 Assert.Equal(0, tagBlock.Children.Count);
             }
 
-            [Fact]
+            [WpfFact]
             public void SimpleMatching2()
             {
                 var tagBlock = Parse("<a name=\"foo\"></a>").Single();
@@ -165,7 +165,7 @@ namespace Vim.UnitTest
                 Assert.Equal(0, tagBlock.Children.Count);
             }
 
-            [Fact]
+            [WpfFact]
             public void MultipleAttributes()
             {
                 var tagBlock = Parse("<a name1='foo' name2='bar' name-dash='abc' novalue></a>").Single();
@@ -173,7 +173,7 @@ namespace Vim.UnitTest
                 Assert.Equal(0, tagBlock.Children.Count);
             }
 
-            [Fact]
+            [WpfFact]
             public void OtherAttributeNameCharacters()
             {
                 var tagBlock = Parse("<a ns:some.attr_name=\"1\">cat</a>").Single();
@@ -181,7 +181,7 @@ namespace Vim.UnitTest
                 Assert.Equal(0, tagBlock.Children.Count);
             }
 
-            [Fact]
+            [WpfFact]
             public void BadAttributes()
             {
                 Action<string> action = text =>
@@ -198,7 +198,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Issue 1644
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void NamesWithDashes()
             {
                 var tagBlock = Parse(@"<a name-dash=""1"">cat</a>").Single();
@@ -206,7 +206,7 @@ namespace Vim.UnitTest
                 Assert.Equal(0, tagBlock.Children.Count);
             }
 
-            [Fact]
+            [WpfFact]
             public void NoValue()
             {
                 var tagBlock = Parse(@"<button disabled>search</button>").Single();

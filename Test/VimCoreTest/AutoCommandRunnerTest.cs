@@ -21,7 +21,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// When disabled don't run any commands
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void IgnoreWhenDisabled()
             {
                 VimHost.IsAutoCommandEnabled = false;
@@ -31,7 +31,7 @@ namespace Vim.UnitTest
                 Assert.Equal(8, vimBuffer.LocalSettings.TabStop);
             }
 
-            [Fact]
+            [WpfFact]
             public void WrongPattern()
             {
                 VimData.AddAutoCommand(EventKind.FileType, "xml", "set ts=12");
@@ -40,7 +40,7 @@ namespace Vim.UnitTest
                 Assert.Equal(8, vimBuffer.LocalSettings.TabStop);
             }
 
-            [Fact]
+            [WpfFact]
             public void Simple()
             {
                 VimData.AddAutoCommand(EventKind.FileType, "xml", "set ts=12");
@@ -49,7 +49,7 @@ namespace Vim.UnitTest
                 Assert.Equal(12, vimBuffer.LocalSettings.TabStop);
             }
 
-            [Fact]
+            [WpfFact]
             public void SimpleWithAltPattern()
             {
                 VimData.AddAutoCommand(EventKind.FileType, "*xml", "set ts=12");
@@ -71,7 +71,7 @@ namespace Vim.UnitTest
                 Assert.False(AutoCommandRunner.FileNameEndsWithPattern(fileName, pattern));
             }
 
-            [Fact]
+            [WpfFact]
             public void SimpleWildCard()
             {
                 AssertMatch("foo.html", "*.html");
@@ -81,7 +81,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Matches implicitly must match the end of the string
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void NotAtEnd()
             {
                 AssertNotMatch("foo.html", "*.ht");
@@ -89,7 +89,7 @@ namespace Vim.UnitTest
                 AssertNotMatch("bar.txt.html", "*.txt");
             }
 
-            [Fact]
+            [WpfFact]
             public void OrPattern()
             {
                 AssertMatch("test.h", @"*.\(c\|cpp\|h\)");

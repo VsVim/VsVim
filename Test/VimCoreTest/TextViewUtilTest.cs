@@ -10,7 +10,7 @@ namespace Vim.UnitTest
 {
     public sealed class TextViewUtilTest : VimTestBase
     {
-        [Fact]
+        [WpfFact]
         public void MoveCaretToVirtualPoint()
         {
             var buffer = CreateTextBuffer("foo", "bar");
@@ -33,7 +33,7 @@ namespace Vim.UnitTest
             factory.Verify();
         }
 
-        [Fact]
+        [WpfFact]
         public void GetVisibleSnapshotLines1()
         {
             var buffer = CreateTextBuffer("foo", "bar", "dog", "jazz");
@@ -42,7 +42,7 @@ namespace Vim.UnitTest
             Assert.Equal(new int[] { 0, 1, 2 }, lines.Select(x => x.LineNumber));
         }
 
-        [Fact]
+        [WpfFact]
         public void GetVisibleSnapshotLines2()
         {
             var buffer = CreateTextBuffer("foo", "bar", "dog", "jazz");
@@ -54,7 +54,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// During a layout just return an empty sequence
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void GetVisibleSnapshotLines3()
         {
             var buffer = CreateTextBuffer("foo", "bar", "dog", "jazz");

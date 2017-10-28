@@ -108,7 +108,7 @@ namespace Vim.VisualStudio.UnitTest
             /// If we only see an ITextView instance, and no IVsTextView, then the settings should
             /// be synchronized once the post sets up 
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void TextViewOnlyNoVimRc()
             {
                 VimRcState = VimRcState.LoadFailed;
@@ -120,7 +120,7 @@ namespace Vim.VisualStudio.UnitTest
                 _synchronizer.Verify();
             }
 
-            [Fact]
+            [WpfFact]
             public void TextViewOnlyUseVim()
             {
                 _vimApplicationSettings.SetupGet(x => x.UseEditorDefaults).Returns(false);
@@ -133,7 +133,7 @@ namespace Vim.VisualStudio.UnitTest
                 _synchronizer.Verify();
             }
 
-            [Fact]
+            [WpfFact]
             public void TextViewOnlyWithVimRcAndEditorDefaults()
             {
                 VimRcState = VimRcState.NewLoadSucceeded(new VimRcPath(VimRcKind.VimRc, "test"), new string[] { });
@@ -150,7 +150,7 @@ namespace Vim.VisualStudio.UnitTest
             /// The settings sync code needs to account for the case that the IVimBuffer is closed before
             /// the post runs
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void CloseBeforePost()
             {
                 RaiseTextViewCreated(_textView);
@@ -163,7 +163,7 @@ namespace Vim.VisualStudio.UnitTest
             /// When the IVsTextView is created we should immediately synchronize settings as the load 
             /// process is complete at this point
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void BothViewsUseEditor()
             {
                 _vimApplicationSettings.SetupGet(x => x.UseEditorDefaults).Returns(true);
@@ -178,7 +178,7 @@ namespace Vim.VisualStudio.UnitTest
                 _context.RunAll();
             }
 
-            [Fact]
+            [WpfFact]
             public void BothViewsUseVim()
             {
                 _vimApplicationSettings.SetupGet(x => x.UseEditorDefaults).Returns(false);
@@ -194,7 +194,7 @@ namespace Vim.VisualStudio.UnitTest
                 _context.RunAll();
             }
 
-            [Fact]
+            [WpfFact]
             public void BothViewsWithVimRcAndEditorDefaults()
             {
                 VimRcState = VimRcState.NewLoadSucceeded(new VimRcPath(VimRcKind.VimRc, "test"), new string[] { });

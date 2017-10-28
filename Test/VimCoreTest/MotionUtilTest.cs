@@ -82,7 +82,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Inclusive motion values shouldn't be adjusted
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Inclusive()
             {
                 Create("cat", "dog");
@@ -94,7 +94,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Make sure adjusted ones become line wise if it meets the criteria
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void FullLine()
             {
                 Create("  cat", "dog");
@@ -110,7 +110,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Don't make it full line if it doesn't start before the first real character
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void NotFullLine()
             {
                 Create("  cat", "dog");
@@ -127,7 +127,7 @@ namespace Vim.UnitTest
             /// space should be included (basically the exclusive adjustment shouldn't leave
             /// it in)
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void WordWithSpaceBeforeEndOfLine()
             {
                 Create("cat ", " dog");
@@ -141,7 +141,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Should take the trailing white space
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Simple()
             {
                 Create("dog. cat. bear.");
@@ -153,7 +153,7 @@ namespace Vim.UnitTest
             /// Take the leading white space when there is a preceding sentence and no trailing 
             /// white space
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void NoTrailingWhiteSpace()
             {
                 Create("dog. cat.");
@@ -166,7 +166,7 @@ namespace Vim.UnitTest
             /// When starting in the white space include it in the motion instead of the trailing
             /// white space
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void FromWhiteSpace()
             {
                 Create("dog. cat. bear.");
@@ -179,7 +179,7 @@ namespace Vim.UnitTest
             /// When the trailing white space goes across new lines then we should still be including
             /// that 
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void WhiteSpaceAcrossNewLine()
             {
                 Create("dog.  ", "  cat");
@@ -192,7 +192,7 @@ namespace Vim.UnitTest
             /// operation.  Even though it technically extends into the next line ':help exclusive-linewise'
             /// dictates it should be changed into a line wise motion
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void OneSentencePerLine()
             {
                 Create("dog.", "cat.");
@@ -205,7 +205,7 @@ namespace Vim.UnitTest
             /// Blank lines are sentences so don't include them as white space.  The gap between the '.'
             /// and the blank line is white space though and should be included in the motion
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void DontJumpBlankLinesAsWhiteSpace()
             {
                 Create("dog.", "", "cat.");
@@ -220,7 +220,7 @@ namespace Vim.UnitTest
             /// rules around motion adjustments spelled out in ':help exclusive'.  Namely if an exclusive motion
             /// ends in column 0 then it gets moved back to the end of the previous line and becomes inclusive
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void BlankLinesAreSentences()
             {
                 Create("dog.  ", "", "cat.");
@@ -247,7 +247,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Simple matched bracket test
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Simple()
             {
                 Create("[cat] dog");
@@ -258,7 +258,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Simple matched bracket test from the middle
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Simple_FromMiddle()
             {
                 Create("[cat] dog");
@@ -269,7 +269,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Make sure that we can process the nested block when the caret is before it
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Nested_Before()
             {
                 Create("cat (fo(a)od) dog");
@@ -280,7 +280,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Make sure that we can process the nested block when the caret is after it
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Nested_After()
             {
                 Create("cat (fo(a)od) dog");
@@ -291,7 +291,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Make sure that we can process the nested block when the caret is at the end
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Nested_FromLastChar()
             {
                 Create("cat (fo(a)od) dog");
@@ -302,7 +302,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Make sure that we can process the nested block when the caret is at the start
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Nested_FromFirstChar()
             {
                 Create("cat (fo(a)od) dog");
@@ -312,7 +312,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Bad match because of no start char
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Bad_NoStartChar()
             {
                 Create("cat] dog");
@@ -323,7 +323,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Bad match because of no end char
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Bad_NoEndChar()
             {
                 Create("[cat dog");
@@ -331,7 +331,7 @@ namespace Vim.UnitTest
                 Assert.True(span.IsNone());
             }
 
-            [Fact]
+            [WpfFact]
             public void Bad_EscapedStartChar()
             {
                 Create(@"\[cat] dog");
@@ -345,7 +345,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// If there is not text after the { then that is simply excluded from the span.
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void SingleNoTextAfterOpenBrace()
             {
                 Create("if (true)", "{", "  statement;", "}", "// after");
@@ -357,7 +357,7 @@ namespace Vim.UnitTest
                 Assert.Equal(OperationKind.CharacterWise, motionResult.OperationKind);
             }
 
-            [Fact]
+            [WpfFact]
             public void SingleTextBeforeOpenBrace()
             {
                 // The key to this test is the text before the open brace
@@ -372,7 +372,7 @@ namespace Vim.UnitTest
                 Assert.Equal(OperationKind.CharacterWise, motionResult.OperationKind);
             }
 
-            [Fact]
+            [WpfFact]
             public void SingleTextAfterCloseBrace()
             {
                 // The key to this test is the text after the close brace
@@ -387,7 +387,7 @@ namespace Vim.UnitTest
                 Assert.Equal(OperationKind.CharacterWise, motionResult.OperationKind);
             }
 
-            [Fact]
+            [WpfFact]
             public void SingleLineWiseWithCount()
             {
                 var text =
@@ -409,7 +409,7 @@ more";
                 Assert.Equal(OperationKind.CharacterWise, motionResult.OperationKind);
             }
 
-            [Fact]
+            [WpfFact]
             public void ValidCount()
             {
                 Create("a (cat (dog)) fish");
@@ -421,7 +421,7 @@ more";
                 Assert.Equal("(cat (dog))", motionResult.Span.GetText());
             }
 
-            [Fact]
+            [WpfFact]
             public void InvalidCount()
             {
                 Create("a (cat (dog)) fish");
@@ -438,7 +438,7 @@ more";
             /// <summary>
             /// If there is not text after the { then that is simply excluded from the span.
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void SingleNoTextAfterOpenBrace()
             {
                 Create("if (true)", "{", "  statement;", "}", "// after");
@@ -452,7 +452,7 @@ more";
                 Assert.Equal(OperationKind.LineWise, motionResult.OperationKind);
             }
 
-            [Fact]
+            [WpfFact]
             public void SingleNoTextAfterOpenBraceSpaceBeforeClose()
             {
                 // The key to this test is the space before the close brace. 
@@ -464,7 +464,7 @@ more";
                 Assert.Equal(OperationKind.LineWise, motionResult.OperationKind);
             }
 
-            [Fact]
+            [WpfFact]
             public void SingleSpaceAfterOpenBrace()
             {
                 // The key to this test is the space after the { 
@@ -479,7 +479,7 @@ more";
                 Assert.Equal(OperationKind.CharacterWise, motionResult.OperationKind);
             }
 
-            [Fact]
+            [WpfFact]
             public void SingleTextAfterOpenBrace()
             {
                 Create("if (true)", "{ // test", "  statement;", "}", "// after");
@@ -493,7 +493,7 @@ more";
                 Assert.Equal(OperationKind.CharacterWise, motionResult.OperationKind);
             }
 
-            [Fact]
+            [WpfFact]
             public void SingleTextBeforeCloseBrace()
             {
                 Create("if (true)", "{", "  statement;", "dog }", "// after");
@@ -508,7 +508,7 @@ more";
                 Assert.Equal(OperationKind.CharacterWise, motionResult.OperationKind);
             }
 
-            [Fact]
+            [WpfFact]
             public void SingleLineWiseWithCount()
             {
                 var text =
@@ -534,7 +534,7 @@ more";
                 Assert.Equal(OperationKind.LineWise, motionResult.OperationKind);
             }
 
-            [Fact]
+            [WpfFact]
             public void ValidCount()
             {
                 Create("a (cat (dog)) fish");
@@ -546,7 +546,7 @@ more";
                 Assert.Equal("cat (dog)", motionResult.Span.GetText());
             }
 
-            [Fact]
+            [WpfFact]
             public void InvalidCount()
             {
                 Create("a (cat (dog)) fish");
@@ -557,7 +557,7 @@ more";
                 Assert.True(motionResult.IsNone());
             }
 
-            [Fact]
+            [WpfFact]
             public void CountWithSideBySideBlocks()
             {
                 Create("a (cat (dog)(blah)) fish");
@@ -569,7 +569,7 @@ more";
                 Assert.Equal("cat (dog)(blah)", motionResult.Span.GetText());
             }
 
-            [Fact]
+            [WpfFact]
             public void CountWithSideBySideBlocksAlt()
             {
                 Create("a (cat (dog)(blah)) fish");
@@ -581,7 +581,7 @@ more";
                 Assert.Equal("cat (dog)(blah)", motionResult.Span.GetText());
             }
 
-            [Fact]
+            [WpfFact]
             public void CountWithSideBySideBlocksHarder()
             {
                 Create("a (cat (dog)(blah)(again(deep))) fish");
@@ -596,7 +596,7 @@ more";
             /// <summary>
             /// Single line inner block test should use inner block behavior
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Simple()
             {
                 Create("[cat]");
@@ -607,7 +607,7 @@ more";
             /// <summary>
             /// Multiline inner block test should use inner block behavior
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Lines()
             {
                 Create("[", "cat", "]");
@@ -618,7 +618,7 @@ more";
             /// <summary>
             /// Lines with whitespace inner block test
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void LinesAndWhitespace()
             {
                 Create("", "    [", "      cat", "     ] ", "");
@@ -629,7 +629,7 @@ more";
             /// <summary>
             /// Inner block with content on line with start bracket
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void ContentOnLineWithOpeningBracket()
             {
                 Create("[ dog", "  cat", "  ] ");
@@ -640,7 +640,7 @@ more";
             /// <summary>
             /// Inner block with content on line with start bracket
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void ContentOnLineWithClosingBracket()
             {
                 Create("[ ", "  cat", "  dog ] ");
@@ -648,7 +648,7 @@ more";
                 Assert.Equal(" " + Environment.NewLine + "  cat" + Environment.NewLine + "  dog ", lines);
             }
 
-            [Fact]
+            [WpfFact]
             public void DisregardDoubleCommentedMatchType()
             {
                 Create(@"OutlineFileNameRegex(DuplicateBackslash(L""^OutlineFileName:(.*\\.*\\\\).* $""));");
@@ -659,7 +659,7 @@ more";
 
         public sealed class QuotedStringTest : MotionUtilTest
         {
-            [Fact]
+            [WpfFact]
             public void ItSelectsQuotesAlongWithInnerText()
             {
                 Create(@"""foo""");
@@ -671,7 +671,7 @@ more";
             /// <summary>
             /// Include the leading whitespace
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void ItIncludesTheLeadingWhitespace()
             {
                 Create(@"  ""foo""");
@@ -683,7 +683,7 @@ more";
             /// <summary>
             /// Include the trailing whitespace
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void ItIncludesTheTrailingWhitespace()
             {
                 Create(@"""foo""  ");
@@ -695,7 +695,7 @@ more";
             /// <summary>
             /// Favor the trailing whitespace over leading
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void ItFavorsTrailingWhitespaceOverLeading()
             {
                 Create(@"  ""foo""  ");
@@ -707,7 +707,7 @@ more";
                 Assert.Equal(data.Value.Span.GetText(), @"""foo""  ");
             }
 
-            [Fact]
+            [WpfFact]
             public void WhenFavoringTrailingSpace_ItActuallyLooksAtTheFirstCharAfterTheEndQuote()
             {
                 Create(@"  ""foo""X ");
@@ -719,7 +719,7 @@ more";
                 Assert.Equal(data.Value.Span.GetText(), @"  ""foo""");
             }
 
-            [Fact]
+            [WpfFact]
             public void ItFavorsTrailingWhitespaceOverLeading_WithOnlyOneTrailingSpace()
             {
                 Create(@"  ""foo"" ");
@@ -734,7 +734,7 @@ more";
             /// <summary>
             /// Ignore the escaped quotes
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void ItIgnoresEscapedQuotes()
             {
                 Create(@"""foo\""""");
@@ -748,7 +748,7 @@ more";
             /// <summary>
             /// Ignore the escaped quotes
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void ItIgnoresEscapedQuotes_AlternateEscape()
             {
                 Create(@"""foo(""""");
@@ -758,7 +758,7 @@ more";
                 AssertData(data.Value, new SnapshotSpan(_snapshot, 0, 7), MotionKind.CharacterWiseInclusive);
             }
 
-            [Fact]
+            [WpfFact]
             public void NothingIsSelectedWhenThereAreNoQuotes()
             {
                 Create(@"foo");
@@ -766,7 +766,7 @@ more";
                 Assert.True(data.IsNone());
             }
 
-            [Fact]
+            [WpfFact]
             public void ItSelectsTheInsideOfTheSecondQuotedWord()
             {
                 Create(@"""foo"" ""bar""");
@@ -777,7 +777,7 @@ more";
                 AssertData(data.Value, new SnapshotSpan(_snapshot, start - 2, 6), MotionKind.CharacterWiseInclusive);
             }
 
-            [Fact]
+            [WpfFact]
             public void SingleQuotesWork()
             {
                 Create(@"""foo"" 'bar'");
@@ -788,7 +788,7 @@ more";
                 AssertData(data.Value, new SnapshotSpan(_snapshot, start - 2, 6), MotionKind.CharacterWiseInclusive);
             }
 
-            [Fact]
+            [WpfFact]
             public void BackquotesWork()
             {
                 Create(@"""foo"" `bar`");
@@ -799,7 +799,7 @@ more";
                 AssertData(data.Value, new SnapshotSpan(_snapshot, start - 2, 6), MotionKind.CharacterWiseInclusive);
             }
 
-            [Fact]
+            [WpfFact]
             public void UnmatchedQuotesFirst()
             {
                 Create(@"x 'cat'dog'");
@@ -809,7 +809,7 @@ more";
                 Assert.Equal("cat", data.Value.Span.GetText());
             }
 
-            [Fact]
+            [WpfFact]
             public void UnmatchedQuotesSecond()
             {
                 Create(@"x 'cat'dog'");
@@ -823,7 +823,7 @@ more";
             /// When landing directly on a quote that has a preceding quote it is always considered the 
             /// second quote in a string
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void UnmatchedQuotesMiddleQuote()
             {
                 Create(@"x 'cat'dog'");
@@ -837,7 +837,7 @@ more";
             /// <summary>
             /// Border between valid string pairs
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Border()
             {
                 Create(@"x 'cat'dog'fish'");
@@ -848,7 +848,7 @@ more";
                 Assert.Equal("fish", data.Value.Span.GetText());
             }
 
-            [Fact]
+            [WpfFact]
             public void Issue1454()
             {
                 Create(@"let x = '\\'");
@@ -865,7 +865,7 @@ more";
             /// If the word motion crosses a new line and it's a moveement then we keep it. The 
             /// caret should move to the next line
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void AcrossLineBreakMovement()
             {
                 Create("cat", " dog");
@@ -877,7 +877,7 @@ more";
             /// If the word motion crosses a line rbeak and it's an operator then we back it up 
             /// because we don't want the new line in the operator
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void AcrossLineBreakOperator()
             {
                 Create("cat  ", " dog");
@@ -888,7 +888,7 @@ more";
             /// <summary>
             /// Blank lines don't factor into an operator.  Make sure we back up over it completel
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void AcrossBlankLineOperator()
             {
                 Create("dog", "cat", " ", " ", "  fish");
@@ -900,7 +900,7 @@ more";
             /// <summary>
             /// Empty lines are different because they are actual words so we don't back over them
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void AcrossEmptyLineOperator()
             {
                 Create("dog", "cat", "", "  fish");
@@ -909,7 +909,7 @@ more";
                 Assert.Equal("cat" + Environment.NewLine + Environment.NewLine, motionResult.Span.GetText());
             }
 
-            [Fact]
+            [WpfFact]
             public void Forward1()
             {
                 Create("foo bar");
@@ -923,7 +923,7 @@ more";
                 Assert.True(res.IsAnyWordMotion);
             }
 
-            [Fact]
+            [WpfFact]
             public void Forward2()
             {
                 Create("foo bar");
@@ -937,7 +937,7 @@ more";
             /// <summary>
             /// Word motion with a count
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Forward3()
             {
                 Create("foo bar baz");
@@ -949,7 +949,7 @@ more";
             /// <summary>
             /// Count across lines
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Forward4()
             {
                 Create("foo bar", "baz jaz");
@@ -960,7 +960,7 @@ more";
             /// <summary>
             /// Count off the end of the buffer
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Forward5()
             {
                 Create("foo bar");
@@ -968,7 +968,7 @@ more";
                 Assert.Equal("foo bar", res.Span.GetText());
             }
 
-            [Fact]
+            [WpfFact]
             public void ForwardBigWordIsAnyWord()
             {
                 Create("foo bar");
@@ -976,7 +976,7 @@ more";
                 Assert.True(res.IsAnyWordMotion);
             }
 
-            [Fact]
+            [WpfFact]
             public void BackwardBothAreAnyWord()
             {
                 Create("foo bar");
@@ -988,7 +988,7 @@ more";
             /// Make sure we handle the case where the motion ends on the start of the next line
             /// but also begins in a blank line
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void ForwardFromBlankLineEnd()
             {
                 Create("cat", "   ", "dog");
@@ -997,7 +997,7 @@ more";
                 Assert.Equal(" ", result.Span.GetText());
             }
 
-            [Fact]
+            [WpfFact]
             public void ForwardFromBlankLineMiddle()
             {
                 Create("cat", "   ", "dog");
@@ -1006,7 +1006,7 @@ more";
                 Assert.Equal("  ", result.Span.GetText());
             }
 
-            [Fact]
+            [WpfFact]
             public void ForwardFromDoubleBlankLineEnd()
             {
                 Create("cat", "   ", "   ", "dog");
@@ -1018,7 +1018,7 @@ more";
 
         public sealed class VisibleWindow : MotionUtilTest
         {
-            [Fact]
+            [WpfFact]
             public void LineFromTopOfVisibleWindow1()
             {
                 Create("foo", "bar", "baz");
@@ -1029,7 +1029,7 @@ more";
                 Assert.True(data.IsForward);
             }
 
-            [Fact]
+            [WpfFact]
             public void LineFromTopOfVisibleWindow2()
             {
                 Create("foo", "bar", "baz", "jazz");
@@ -1043,7 +1043,7 @@ more";
             /// <summary>
             /// From visible line not caret point
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void LineFromTopOfVisibleWindow3()
             {
                 Create("foo", "bar", "baz", "jazz");
@@ -1055,7 +1055,7 @@ more";
                 Assert.True(data.IsForward);
             }
 
-            [Fact]
+            [WpfFact]
             public void LineFromTopOfVisibleWindow4()
             {
                 Create("  foo", "bar");
@@ -1065,7 +1065,7 @@ more";
                 Assert.Equal(2, data.CaretColumn.AsInLastLine().Item);
             }
 
-            [Fact]
+            [WpfFact]
             public void LineFromTopOfVisibleWindow5()
             {
                 Create("  foo", "bar");
@@ -1076,7 +1076,7 @@ more";
                 Assert.True(data.CaretColumn.IsNone);
             }
 
-            [Fact]
+            [WpfFact]
             public void LineFromBottomOfVisibleWindow1()
             {
                 Create("a", "b", "c", "d");
@@ -1087,7 +1087,7 @@ more";
                 Assert.Equal(OperationKind.LineWise, data.OperationKind);
             }
 
-            [Fact]
+            [WpfFact]
             public void LineFromBottomOfVisibleWindow2()
             {
                 Create("a", "b", "c", "d");
@@ -1098,7 +1098,7 @@ more";
                 Assert.Equal(OperationKind.LineWise, data.OperationKind);
             }
 
-            [Fact]
+            [WpfFact]
             public void LineFromBottomOfVisibleWindow3()
             {
                 Create("a", "b", "c", "d");
@@ -1110,7 +1110,7 @@ more";
                 Assert.Equal(OperationKind.LineWise, data.OperationKind);
             }
 
-            [Fact]
+            [WpfFact]
             public void LineFromBottomOfVisibleWindow4()
             {
                 Create("a", "b", "  c", "d");
@@ -1119,7 +1119,7 @@ more";
                 Assert.Equal(2, data.CaretColumn.AsInLastLine().Item);
             }
 
-            [Fact]
+            [WpfFact]
             public void LineFromBottomOfVisibleWindow5()
             {
                 Create("a", "b", "  c", "d");
@@ -1129,7 +1129,7 @@ more";
                 Assert.True(data.CaretColumn.IsNone);
             }
 
-            [Fact]
+            [WpfFact]
             public void LineFromMiddleOfWindow1()
             {
                 Create("a", "b", "c", "d");
@@ -1142,7 +1142,7 @@ more";
 
         public sealed class MatchingTokenTest : MotionUtilTest
         {
-            [Fact]
+            [WpfFact]
             public void SimpleParens()
             {
                 Create("( )");
@@ -1153,7 +1153,7 @@ more";
                 Assert.Equal(OperationKind.CharacterWise, data.OperationKind);
             }
 
-            [Fact]
+            [WpfFact]
             public void SimpleParensWithPrefix()
             {
                 Create("cat( )");
@@ -1162,14 +1162,14 @@ more";
                 Assert.True(data.IsForward);
             }
 
-            [Fact]
+            [WpfFact]
             public void TooManyOpenOnSameLine()
             {
                 Create("cat(( )");
                 Assert.True(_motionUtil.MatchingToken().IsNone());
             }
 
-            [Fact]
+            [WpfFact]
             public void AcrossLines()
             {
                 Create("cat(", ")");
@@ -1181,7 +1181,7 @@ more";
                 Assert.True(data.IsForward);
             }
 
-            [Fact]
+            [WpfFact]
             public void ParensFromEnd()
             {
                 Create("cat( )");
@@ -1191,7 +1191,7 @@ more";
                 Assert.False(data.IsForward);
             }
 
-            [Fact]
+            [WpfFact]
             public void ParensFromMiddle()
             {
                 Create("cat( )");
@@ -1204,7 +1204,7 @@ more";
             /// <summary>
             /// Make sure we function properly with nested parens.
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void ParensNestedFromEnd()
             {
                 Create("(((a)))");
@@ -1217,7 +1217,7 @@ more";
             /// <summary>
             /// Make sure we function properly with consecutive sets of parens
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void ParensConsecutiveSetsFromEnd()
             {
                 Create("((a)) /* ((b))");
@@ -1230,7 +1230,7 @@ more";
             /// <summary>
             /// Make sure we function properly with consecutive sets of parens
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void ParensConsecutiveSetsFromEnd2()
             {
                 Create("((a)) /* ((b))");
@@ -1240,7 +1240,7 @@ more";
                 Assert.False(data.IsForward);
             }
 
-            [Fact]
+            [WpfFact]
             public void CommentStartDoesNotNest()
             {
                 Create("/* /* */");
@@ -1249,7 +1249,7 @@ more";
                 Assert.True(data.IsForward);
             }
 
-            [Fact]
+            [WpfFact]
             public void IfElsePreProc()
             {
                 Create("#if foo #endif", "again", "#endif");
@@ -1263,7 +1263,7 @@ more";
             /// In the case the caret is on the end position of a line the search should actually start
             /// on the last valid column. Yet the returned span should not include the start token.
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void EndOfLine()
             {
                 Create("{", "}  ");
@@ -1279,7 +1279,7 @@ more";
 
         public sealed class InnerParagraph : MotionUtilTest
         {
-            [Fact]
+            [WpfFact]
             public void Empty()
             {
                 Create("");
@@ -1287,7 +1287,7 @@ more";
                 Assert.Equal(_snapshot.GetLineRange(0).ExtentIncludingLineBreak, span);
             }
 
-            [Fact]
+            [WpfFact]
             public void OneLiner()
             {
                 Create("a");
@@ -1295,7 +1295,7 @@ more";
                 Assert.Equal(_snapshot.GetLineRange(0).ExtentIncludingLineBreak, span);
             }
 
-            [Fact]
+            [WpfFact]
             public void SelectConsecutiveFilledLinesUntilEnd()
             {
                 Create("a", "b", "c");
@@ -1303,14 +1303,14 @@ more";
                 Assert.Equal(_snapshot.GetLineRange(0, 2).ExtentIncludingLineBreak, span);
             }
 
-            [Fact]
+            [WpfFact]
             public void SelectConsecutiveCount2FilledLinesUntilEndIsInvalid()
             {
                 Create("a", "b", "c");
                 Assert.True(_motionUtil.InnerParagraph(2).IsNone());
             }
 
-            [Fact]
+            [WpfFact]
             public void SelectConsecutiveFilledLinesUntilBlank()
             {
                 Create("a", "b", "");
@@ -1318,7 +1318,7 @@ more";
                 Assert.Equal(_snapshot.GetLineRange(0, 1).ExtentIncludingLineBreak, span);
             }
 
-            [Fact]
+            [WpfFact]
             public void SelectConsecutiveFilledLinesUntilBlankFromMiddle()
             {
                 Create("a", "b", "");
@@ -1327,7 +1327,7 @@ more";
                 Assert.Equal(_snapshot.GetLineRange(0, 1).ExtentIncludingLineBreak, span);
             }
 
-            [Fact]
+            [WpfFact]
             public void StartingAfterFirstBlockSelectFilledLinesUntilEnd()
             {
                 Create("a", "b", "", "c", "d", "e");
@@ -1336,7 +1336,7 @@ more";
                 Assert.Equal(_snapshot.GetLineRange(3, 5).ExtentIncludingLineBreak, span);
             }
 
-            [Fact]
+            [WpfFact]
             public void StartingAfterFirstBlockSelectFilledLinesUntilBlankFromMiddle()
             {
                 Create("a", "b", "", "c", "d", "e", " ");
@@ -1345,7 +1345,7 @@ more";
                 Assert.Equal(_snapshot.GetLineRange(3, 5).ExtentIncludingLineBreak, span);
             }
 
-            [Fact]
+            [WpfFact]
             public void SelectConsecutiveFilledLinesUntilBlankOrWhitespace()
             {
                 Create("a", " ", "");
@@ -1353,7 +1353,7 @@ more";
                 Assert.Equal(_snapshot.GetLineRange(0).ExtentIncludingLineBreak, span);
             }
 
-            [Fact]
+            [WpfFact]
             public void SelectConsecutiveBlankLinesUntilFilled()
             {
                 Create("", "", "a");
@@ -1361,7 +1361,7 @@ more";
                 Assert.Equal(_snapshot.GetLineRange(0, 1).ExtentIncludingLineBreak, span);
             }
 
-            [Fact]
+            [WpfFact]
             public void SelectConsecutiveBlankLinesUntilFilledFromMiddle()
             {
                 Create("", "", "a");
@@ -1370,7 +1370,7 @@ more";
                 Assert.Equal(_snapshot.GetLineRange(0, 1).ExtentIncludingLineBreak, span);
             }
 
-            [Fact]
+            [WpfFact]
             public void SelectConsecutiveBlankLinesOrWhitespaceUntilFilled()
             {
                 Create("", " ", "a");
@@ -1378,7 +1378,7 @@ more";
                 Assert.Equal(_snapshot.GetLineRange(0, 1).ExtentIncludingLineBreak, span);
             }
 
-            [Fact]
+            [WpfFact]
             public void SelectConsecutiveBlankLinesWithWhitespaceOrTab()
             {
                 Create("", "\t", " ");
@@ -1386,7 +1386,7 @@ more";
                 Assert.Equal(_snapshot.GetLineRange(0, 2).ExtentIncludingLineBreak, span);
             }
 
-            [Fact]
+            [WpfFact]
             public void SelectMultiple()
             {
                 Create("a", "b", "", "c");
@@ -1394,7 +1394,7 @@ more";
                 Assert.Equal(_snapshot.GetLineRange(0, 2).ExtentIncludingLineBreak, span);
             }
 
-            [Fact]
+            [WpfFact]
             public void SelectMultipleStartingWithBlanks()
             {
                 Create("", "", "a", "");
@@ -1402,7 +1402,7 @@ more";
                 Assert.Equal(_snapshot.GetLineRange(0, 2).ExtentIncludingLineBreak, span);
             }
 
-            [Fact]
+            [WpfFact]
             public void CountTooHigh()
             {
                 Create("a", "b", "", "c");
@@ -1415,7 +1415,7 @@ more";
         /// </summary>
         public sealed class LineOrLast : MotionUtilTest
         {
-            [Fact]
+            [WpfFact]
             public void ToFirstNonBlank1()
             {
                 Create("foo", "bar", "baz");
@@ -1426,7 +1426,7 @@ more";
                 Assert.Equal(0, data.CaretColumn.AsInLastLine().Item);
             }
 
-            [Fact]
+            [WpfFact]
             public void ToFirstNonBlank2()
             {
                 Create("foo", "bar", "baz");
@@ -1438,7 +1438,7 @@ more";
                 Assert.Equal(0, data.CaretColumn.AsInLastLine().Item);
             }
 
-            [Fact]
+            [WpfFact]
             public void ToFirstNonBlank3()
             {
                 Create("foo", "bar", "baz");
@@ -1450,7 +1450,7 @@ more";
                 Assert.Equal(0, data.CaretColumn.AsInLastLine().Item);
             }
 
-            [Fact]
+            [WpfFact]
             public void ToFirstNonBlank4()
             {
                 Create("foo", "bar", "baz");
@@ -1465,7 +1465,7 @@ more";
 
         public sealed class Misc : MotionUtilTest
         {
-            [Fact]
+            [WpfFact]
             public void EndOfLine1()
             {
                 Create("foo bar", "baz");
@@ -1476,7 +1476,7 @@ more";
                 Assert.Equal(OperationKind.CharacterWise, res.OperationKind);
             }
 
-            [Fact]
+            [WpfFact]
             public void EndOfLine2()
             {
                 Create("foo bar", "baz");
@@ -1485,7 +1485,7 @@ more";
                 Assert.Equal("oo bar", res.Span.GetText());
             }
 
-            [Fact]
+            [WpfFact]
             public void EndOfLine3()
             {
                 Create("foo", "bar", "baz");
@@ -1495,7 +1495,7 @@ more";
                 Assert.Equal(OperationKind.CharacterWise, res.OperationKind);
             }
 
-            [Fact]
+            [WpfFact]
             public void EndOfLine4()
             {
                 Create("foo", "bar", "baz", "jar");
@@ -1509,7 +1509,7 @@ more";
             /// <summary>
             /// Make sure counts past the end of the buffer don't crash
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void EndOfLine5()
             {
                 Create("foo");
@@ -1517,7 +1517,7 @@ more";
                 Assert.Equal("foo", res.Span.GetText());
             }
 
-            [Fact]
+            [WpfFact]
             public void BeginingOfLine1()
             {
                 Create("foo");
@@ -1529,7 +1529,7 @@ more";
                 Assert.False(data.IsForward);
             }
 
-            [Fact]
+            [WpfFact]
             public void BeginingOfLine2()
             {
                 Create("foo");
@@ -1544,7 +1544,7 @@ more";
             /// <summary>
             /// Go to begining even if there is whitespace
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void BeginingOfLine3()
             {
                 Create("  foo");
@@ -1556,7 +1556,7 @@ more";
                 Assert.False(data.IsForward);
             }
 
-            [Fact]
+            [WpfFact]
             public void FirstNonBlankOnCurrentLine1()
             {
                 Create("foo");
@@ -1570,7 +1570,7 @@ more";
             /// <summary>
             /// Make sure it goes to the first non-whitespace character
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void FirstNonBlankOnCurrentLine2()
             {
                 Create("  foo");
@@ -1584,7 +1584,7 @@ more";
             /// <summary>
             /// Make sure to ignore tabs
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void FirstNonBlankOnCurrentLine3()
             {
                 var text = "\tfoo";
@@ -1598,7 +1598,7 @@ more";
             /// <summary>
             /// Make sure to move forward to the first non-whitespace
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void FirstNonBlankOnCurrentLine4()
             {
                 Create(0, "   bar");
@@ -1609,7 +1609,7 @@ more";
             /// <summary>
             /// Empty line case
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void FirstNonBlankOnCurrentLine5()
             {
                 Create(0, "");
@@ -1620,7 +1620,7 @@ more";
             /// <summary>
             /// Backwards case
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void FirstNonBlankOnCurrentLine6()
             {
                 Create(3, "bar");
@@ -1632,7 +1632,7 @@ more";
             /// <summary>
             /// A count of 1 should return a single line 
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void FirstNonBlankOnLine_Single()
             {
                 Create(0, "cat", "dog");
@@ -1647,7 +1647,7 @@ more";
             /// A count of 2 should return 2 lines and the column should be on the last
             /// line
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void FirstNonBlankOnLine_Double()
             {
                 Create(0, "cat", " dog");
@@ -1659,7 +1659,7 @@ more";
             /// <summary>
             /// Make sure to include the trailing white space
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void AllWord_Simple()
             {
                 Create("foo bar");
@@ -1670,7 +1670,7 @@ more";
             /// <summary>
             /// Grab the entire word even if starting in the middle
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void AllWord_FromMiddle()
             {
                 Create("foo bar");
@@ -1682,7 +1682,7 @@ more";
             /// <summary>
             /// All word with a count motion
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void AllWord_WithCount()
             {
                 Create("foo bar baz");
@@ -1695,7 +1695,7 @@ more";
             /// When starting in white space the space before the word should be included instead
             /// of the white space after it
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void AllWord_StartInWhiteSpace()
             {
                 Create("dog cat tree");
@@ -1708,7 +1708,7 @@ more";
             /// When there is no trailing white space and a preceding word then the preceding white
             /// space should be included
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void AllWord_NoTrailingWhiteSpace()
             {
                 Create("dog cat");
@@ -1721,7 +1721,7 @@ more";
             /// If there is no trailing white space nor is their a preceding word on the same line
             /// then it shouldn't include the preceding white space
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void AllWord_NoTrailingWhiteSpaceOrPrecedingWordOnSameLine()
             {
                 Create("dog", "  cat");
@@ -1734,7 +1734,7 @@ more";
             /// If there is no trailing white space nor is their a preceding word on the same line
             /// but it is the start of the buffer then do include the white space
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void AllWord_NoTrailingWhiteSpaceOrPrecedingWordAtStartOfBuffer()
             {
                 Create("  cat");
@@ -1747,7 +1747,7 @@ more";
             /// Make sure we include the full preceding white space if the motion starts in any 
             /// part of it
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void AllWord_FromMiddleOfPrecedingWhiteSpace()
             {
                 Create("cat   dog");
@@ -1760,7 +1760,7 @@ more";
             /// On a one word line don't go into the previous line break looking for preceding
             /// white space
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void AllWord_DontGoIntoPreviousLineBreak()
             {
                 Create("dog", "cat", "fish");
@@ -1769,7 +1769,7 @@ more";
                 Assert.Equal("cat", data.Span.GetText());
             }
 
-            [Fact]
+            [WpfFact]
             public void CharLeft_Simple()
             {
                 Create("foo bar");
@@ -1782,7 +1782,7 @@ more";
             /// The char left operation should produce an empty span if it's at the start 
             /// of a line 
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void CharLeft_FailAtStartOfLine()
             {
                 Create("dog", "cat");
@@ -1795,7 +1795,7 @@ more";
             /// When the count is to high but the caret is not at the start then the 
             /// caret should just move to the start of the line
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void CharLeft_CountTooHigh()
             {
                 Create("dog", "cat");
@@ -1804,7 +1804,7 @@ more";
                 Assert.Equal("c", data.Span.GetText());
             }
 
-            [Fact]
+            [WpfFact]
             public void CharRight_Simple()
             {
                 Create("foo");
@@ -1821,7 +1821,7 @@ more";
             /// line fails to move the caret which gives the appearance of failure.  In
             /// fact it succeeded but the caret move is not legal
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void CharRight_LastPointOnLine()
             {
                 Create("cat", "dog", "tree");
@@ -1833,7 +1833,7 @@ more";
             /// <summary>
             /// The char right should produce an empty span at the end of the line
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void CharRight_EndOfLine()
             {
                 Create("cat", "dog");
@@ -1846,7 +1846,7 @@ more";
             /// Space right on the last character of the line should produce a
             /// span to the beginning of the next line
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void SpaceRight_LastCharacter()
             {
                 Create("cat", "dog");
@@ -1859,7 +1859,7 @@ more";
             /// Space right after the last character of the line should produce a
             /// span containing just the line break
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void SpaceRight_EndOfLine()
             {
                 Create("cat", "dog");
@@ -1873,7 +1873,7 @@ more";
             /// 'virtualedit=onemore' should produce a span containing
             /// just that character
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void SpaceRight_LastCharacterVirtualEdit()
             {
                 Create("cat", "dog");
@@ -1888,7 +1888,7 @@ more";
             /// 'virtualedit=onemore' should produce a span containing
             /// just the line break
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void SpaceRight_EndOfLineVirtualEdit()
             {
                 Create("cat", "dog");
@@ -1902,7 +1902,7 @@ more";
             /// Space right before a blank line should produce a span to the
             /// beginning of the next line
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void SpaceRight_ToBlankLine()
             {
                 Create("cat", "", "dog");
@@ -1915,7 +1915,7 @@ more";
             /// Space right on a blank line should produce a span to the
             /// beginning of the next line
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void SpaceRight_FromBlankLine()
             {
                 Create("cat", "", "dog");
@@ -1928,7 +1928,7 @@ more";
             /// Space left on the first character of the line should produce a
             /// span to the last character of the previous line
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void SpaceLeft_FirstCharacter()
             {
                 Create("cat", "dog");
@@ -1941,7 +1941,7 @@ more";
             /// Space left after the last character of the line should produce a
             /// span containing just the last character of the line
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void SpaceLeft_EndOfLine()
             {
                 Create("cat", "dog");
@@ -1955,7 +1955,7 @@ more";
             /// 'virtualedit=onemore' should produce a
             /// span to the end of the previous line
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void SpaceLeft_FirstCharacterVirtualEdit()
             {
                 Create("cat", "dog");
@@ -1970,7 +1970,7 @@ more";
             /// 'virtualedit=onemore' should produce a span containing
             /// just the last character of the line
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void SpaceLeft_EndOfLineVirtualEdit()
             {
                 Create("cat", "dog");
@@ -1984,7 +1984,7 @@ more";
             /// Space left before a blank line should produce a span to the
             /// end of the previous line
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void SpaceLeft_ToBlankLine()
             {
                 Create("cat", "", "dog");
@@ -1997,7 +1997,7 @@ more";
             /// Space left on a blank line should produce a span to the
             /// last character of the previous line
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void SpaceLeft_FromBlankLine()
             {
                 Create("cat", "", "dog");
@@ -2006,7 +2006,7 @@ more";
                 Assert.Equal("t\r\n", data.Span.GetText());
             }
 
-            [Fact]
+            [WpfFact]
             public void EndOfWord1()
             {
                 Create("foo bar");
@@ -2019,7 +2019,7 @@ more";
             /// <summary>
             /// Needs to cross the end of the line
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void EndOfWord2()
             {
                 Create("foo   ", "bar");
@@ -2033,7 +2033,7 @@ more";
                 Assert.Equal(OperationKind.CharacterWise, res.OperationKind);
             }
 
-            [Fact]
+            [WpfFact]
             public void EndOfWord3()
             {
                 Create("foo bar baz jaz");
@@ -2047,7 +2047,7 @@ more";
             /// <summary>
             /// Work across blank lines
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void EndOfWord4()
             {
                 Create("foo   ", "", "bar");
@@ -2064,7 +2064,7 @@ more";
             /// <summary>
             /// Go off the end of the buffer
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void EndOfWord5()
             {
                 Create("foo   ", "", "bar");
@@ -2079,7 +2079,7 @@ more";
             /// <summary>
             /// On the last char of a word motion should proceed forward
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void EndOfWord6()
             {
                 Create("foo bar baz");
@@ -2088,7 +2088,7 @@ more";
                 Assert.Equal("o bar", res.Span.GetText());
             }
 
-            [Fact]
+            [WpfFact]
             public void EndOfWord7()
             {
                 Create("foo", "bar");
@@ -2100,7 +2100,7 @@ more";
             /// <summary>
             /// Second to last character
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void EndOfWord8()
             {
                 Create("the dog goes around the house");
@@ -2110,7 +2110,7 @@ more";
                 Assert.Equal("he", res.Span.GetText());
             }
 
-            [Fact]
+            [WpfFact]
             public void EndOfWord_DontStopOnPunctuation()
             {
                 Create("A. the ball");
@@ -2119,7 +2119,7 @@ more";
                 Assert.Equal(". the", data.Span.GetText());
             }
 
-            [Fact]
+            [WpfFact]
             public void EndOfWord_DoublePunctuation()
             {
                 Create("A.. the ball");
@@ -2128,7 +2128,7 @@ more";
                 Assert.Equal("..", data.Span.GetText());
             }
 
-            [Fact]
+            [WpfFact]
             public void EndOfWord_DoublePunctuationWithCount()
             {
                 Create("A.. the ball");
@@ -2137,7 +2137,7 @@ more";
                 Assert.Equal(".. the", data.Span.GetText());
             }
 
-            [Fact]
+            [WpfFact]
             public void EndOfWord_DoublePunctuationIsAWord()
             {
                 Create("A.. the ball");
@@ -2146,7 +2146,7 @@ more";
                 Assert.Equal("A..", data.Span.GetText());
             }
 
-            [Fact]
+            [WpfFact]
             public void EndOfWord_DontStopOnEndOfLine()
             {
                 Create("A. ", "the ball");
@@ -2155,7 +2155,7 @@ more";
                 Assert.Equal(". " + Environment.NewLine + "the", data.Span.GetText());
             }
 
-            [Fact]
+            [WpfFact]
             public void ForwardChar1()
             {
                 Create("foo bar baz");
@@ -2166,7 +2166,7 @@ more";
                 Assert.Equal("oo b", _motionUtil.CharSearch('b', 1, CharSearchKind.ToChar, SearchPath.Forward).Value.Span.GetText());
             }
 
-            [Fact]
+            [WpfFact]
             public void ForwardChar2()
             {
                 Create("foo bar baz");
@@ -2174,7 +2174,7 @@ more";
                 Assert.True(data.IsNone());
             }
 
-            [Fact]
+            [WpfFact]
             public void ForwardChar3()
             {
                 Create("foo bar baz");
@@ -2186,7 +2186,7 @@ more";
             /// <summary>
             /// Bad count gets nothing in gVim"
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void ForwardChar4()
             {
                 Create("foo bar baz");
@@ -2198,7 +2198,7 @@ more";
             /// A forward char search on an empty line shouldn't produce a result.  It's also a corner
             /// case prone to produce exceptions
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void ForwardChar_EmptyLine()
             {
                 Create("cat", "", "dog");
@@ -2207,7 +2207,7 @@ more";
                 Assert.True(data.IsNone());
             }
 
-            [Fact]
+            [WpfFact]
             public void ForwardTillChar1()
             {
                 Create("foo bar baz");
@@ -2215,14 +2215,14 @@ more";
                 Assert.Equal("foo ", _motionUtil.CharSearch('b', 1, CharSearchKind.TillChar, SearchPath.Forward).Value.Span.GetText());
             }
 
-            [Fact]
+            [WpfFact]
             public void ForwardTillChar2()
             {
                 Create("foo bar baz");
                 Assert.True(_motionUtil.CharSearch('q', 1, CharSearchKind.TillChar, SearchPath.Forward).IsNone());
             }
 
-            [Fact]
+            [WpfFact]
             public void ForwardTillChar3()
             {
                 Create("foo bar baz");
@@ -2232,14 +2232,14 @@ more";
             /// <summary>
             /// Bad count gets nothing in gVim
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void ForwardTillChar4()
             {
                 Create("foo bar baz");
                 Assert.True(_motionUtil.CharSearch('o', 300, CharSearchKind.TillChar, SearchPath.Forward).IsNone());
             }
 
-            [Fact]
+            [WpfFact]
             public void BackwardCharMotion1()
             {
                 Create("the boy kicked the ball");
@@ -2250,7 +2250,7 @@ more";
                 Assert.Equal(OperationKind.CharacterWise, data.OperationKind);
             }
 
-            [Fact]
+            [WpfFact]
             public void BackwardCharMotion2()
             {
                 Create("the boy kicked the ball");
@@ -2264,7 +2264,7 @@ more";
             /// <summary>
             /// Doing a backward char search on an empty line should produce no data
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void BackwardChar_OnEmptyLine()
             {
                 Create("cat", "", "dog");
@@ -2273,7 +2273,7 @@ more";
                 Assert.True(data.IsNone());
             }
 
-            [Fact]
+            [WpfFact]
             public void BackwardTillCharMotion1()
             {
                 Create("the boy kicked the ball");
@@ -2284,7 +2284,7 @@ more";
                 Assert.Equal(OperationKind.CharacterWise, data.OperationKind);
             }
 
-            [Fact]
+            [WpfFact]
             public void BackwardTillCharMotion2()
             {
                 Create("the boy kicked the ball");
@@ -2298,7 +2298,7 @@ more";
             /// <summary>
             /// Inner word from the middle of a word
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void InnerWord_Simple()
             {
                 Create("the dog");
@@ -2313,7 +2313,7 @@ more";
             /// An inner word motion which begins in space should include the full space span
             /// in the return
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void InnerWord_FromSpace()
             {
                 Create("   the dog");
@@ -2325,7 +2325,7 @@ more";
             /// <summary>
             /// The count should apply equally to white space and the following words
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void InnerWord_FromSpaceWithCount()
             {
                 Create("   the dog");
@@ -2338,7 +2338,7 @@ more";
             /// Including a case where the count gives us white space on both ends of the 
             /// returned span
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void InnerWord_FromSpaceWithOddCount()
             {
                 Create("   the dog");
@@ -2352,7 +2352,7 @@ more";
             /// line and there is a count of 1 then we just grab the last character of the
             /// previous word
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void InnerWord_FromLineBreakWthPrecedingWord()
             {
                 Create("cat", "dog");
@@ -2366,7 +2366,7 @@ more";
             /// When the caret is in the line break and there is a space at the end of the 
             /// line and there is a count of 1 then we just grab the entire preceding space
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void InnerWord_FromLineBreakWthPrecedingSpace()
             {
                 Create("cat  ", "dog");
@@ -2380,7 +2380,7 @@ more";
             /// When in the line break and given a count the line break counts as our first
             /// and other wise proceed as a normal inner word motion
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void InnerWord_FromLineBreakWthCount()
             {
                 Create("cat", "fish dog");
@@ -2390,7 +2390,7 @@ more";
                 Assert.True(data.IsForward);
             }
 
-            [Fact]
+            [WpfFact]
             public void LineOrFirstToFirstNonBlank1()
             {
                 Create("foo", "bar", "baz");
@@ -2402,7 +2402,7 @@ more";
                 Assert.Equal(0, data.CaretColumn.AsInLastLine().Item);
             }
 
-            [Fact]
+            [WpfFact]
             public void LineOrFirstToFirstNonBlank2()
             {
                 Create("foo", "bar", "baz");
@@ -2413,7 +2413,7 @@ more";
                 Assert.Equal(0, data.CaretColumn.AsInLastLine().Item);
             }
 
-            [Fact]
+            [WpfFact]
             public void LineOrFirstToFirstNonBlank3()
             {
                 Create("foo", "  bar", "baz");
@@ -2424,7 +2424,7 @@ more";
                 Assert.Equal(2, data.CaretColumn.AsInLastLine().Item);
             }
 
-            [Fact]
+            [WpfFact]
             public void LineOrFirstToFirstNonBlank4()
             {
                 Create("foo", "  bar", "baz");
@@ -2436,7 +2436,7 @@ more";
                 Assert.Equal(0, data.CaretColumn.AsInLastLine().Item);
             }
 
-            [Fact]
+            [WpfFact]
             public void LineOrFirstToFirstNonBlank5()
             {
                 Create("  the", "dog", "jumped");
@@ -2447,7 +2447,7 @@ more";
                 Assert.False(data.IsForward);
             }
 
-            [Fact]
+            [WpfFact]
             public void LastNonBlankOnLine1()
             {
                 Create("foo", "bar ");
@@ -2459,7 +2459,7 @@ more";
                 Assert.Equal(MotionKind.CharacterWiseInclusive, data.MotionKind);
             }
 
-            [Fact]
+            [WpfFact]
             public void LastNonBlankOnLine2()
             {
                 Create("foo", "bar ", "jaz");
@@ -2470,7 +2470,7 @@ more";
                 Assert.Equal(MotionKind.CharacterWiseInclusive, data.MotionKind);
             }
 
-            [Fact]
+            [WpfFact]
             public void LastNonBlankOnLine3()
             {
                 Create("foo", "bar ", "jaz", "");
@@ -2481,7 +2481,7 @@ more";
                 Assert.Equal(MotionKind.CharacterWiseInclusive, data.MotionKind);
             }
 
-            [Fact]
+            [WpfFact]
             public void LineDownToFirstNonBlank1()
             {
                 Create("a", "b", "c", "d");
@@ -2491,7 +2491,7 @@ more";
                 Assert.True(data.IsForward);
             }
 
-            [Fact]
+            [WpfFact]
             public void LineDownToFirstNonBlank2()
             {
                 Create("a", "b", "c", "d");
@@ -2504,7 +2504,7 @@ more";
             /// <summary>
             /// Count of 0 is valid for this motion
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void LineDownToFirstNonBlank3()
             {
                 Create("a", "b", "c", "d");
@@ -2517,7 +2517,7 @@ more";
             /// <summary>
             /// This is a linewise motion and should return line spans
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void LineDownToFirstNonBlank4()
             {
                 Create("cat", "dog", "bird");
@@ -2527,7 +2527,7 @@ more";
                 Assert.Equal(span, data.Span);
             }
 
-            [Fact]
+            [WpfFact]
             public void LineDownToFirstNonBlank5()
             {
                 Create("cat", "  dog", "bird");
@@ -2537,7 +2537,7 @@ more";
                 Assert.Equal(2, data.CaretColumn.AsInLastLine().Item);
             }
 
-            [Fact]
+            [WpfFact]
             public void LineDownToFirstNonBlank6()
             {
                 Create("cat", "  dog and again", "bird");
@@ -2547,7 +2547,7 @@ more";
                 Assert.Equal(2, data.CaretColumn.AsInLastLine().Item);
             }
 
-            [Fact]
+            [WpfFact]
             public void LineDownToFirstNonBlankg()
             {
                 Create("cat", "  dog and again", " here bird again");
@@ -2557,7 +2557,7 @@ more";
                 Assert.Equal(1, data.CaretColumn.AsInLastLine().Item);
             }
 
-            [Fact]
+            [WpfFact]
             public void LineDown1()
             {
                 Create("dog", "cat", "bird");
@@ -2569,7 +2569,7 @@ more";
                     CaretColumn.NewInLastLine(0));
             }
 
-            [Fact]
+            [WpfFact]
             public void LineDown2()
             {
                 Create("dog", "cat", "bird");
@@ -2581,7 +2581,7 @@ more";
                     CaretColumn.NewInLastLine(0));
             }
 
-            [Fact]
+            [WpfFact]
             public void LineUp1()
             {
                 Create("dog", "cat", "bird", "horse");
@@ -2594,7 +2594,7 @@ more";
                     CaretColumn.NewInLastLine(0));
             }
 
-            [Fact]
+            [WpfFact]
             public void LineUp2()
             {
                 Create("dog", "cat", "bird", "horse");
@@ -2607,7 +2607,7 @@ more";
                     CaretColumn.NewInLastLine(0));
             }
 
-            [Fact]
+            [WpfFact]
             public void LineUp3()
             {
                 Create("foo", "bar");
@@ -2621,7 +2621,7 @@ more";
             /// Make sure that section forward stops on a formfeed and doesn't 
             /// include it in the SnapshotSpan
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void SectionForward_FormFeedInFirstColumn()
             {
                 Create(0, "dog", "\fpig", "{fox");
@@ -2634,7 +2634,7 @@ more";
             /// that we don't count it as a blank when doing a last line adjustment for
             /// a movement
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void SectionForward_FormFeedOnLastLine()
             {
                 Create(0, "dog", "cat", "\bbear");
@@ -2647,7 +2647,7 @@ more";
             /// Doing a movement on the last line the movement should be backwards when the
             /// caret is positioned after the first non-blank on the line
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void SectionForward_BackwardsOnLastLine()
             {
                 Create(0, "dog", "  cat");
@@ -2658,7 +2658,7 @@ more";
             }
 
 
-            [Fact]
+            [WpfFact]
             public void SectionForward2()
             {
                 Create(0, "dog", "\fpig", "fox");
@@ -2666,7 +2666,7 @@ more";
                 Assert.Equal(new SnapshotSpan(_snapshot, 0, _snapshot.Length), data.Span);
             }
 
-            [Fact]
+            [WpfFact]
             public void SectionForward3()
             {
                 Create(0, "dog", "{pig", "fox");
@@ -2674,7 +2674,7 @@ more";
                 Assert.Equal(new SnapshotSpan(_snapshot, 0, _snapshot.Length), data.Span);
             }
 
-            [Fact]
+            [WpfFact]
             public void SectionForward4()
             {
                 Create(0, "dog", "{pig", "{fox");
@@ -2682,7 +2682,7 @@ more";
                 Assert.Equal(_textView.GetLineRange(0).ExtentIncludingLineBreak, data.Span);
             }
 
-            [Fact]
+            [WpfFact]
             public void SectionForward5()
             {
                 Create(0, "dog", "}pig", "fox");
@@ -2693,7 +2693,7 @@ more";
             /// <summary>
             /// Only look for } after an operator
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void SectionForward6()
             {
                 Create(0, "dog", "}pig", "fox");
@@ -2701,7 +2701,7 @@ more";
                 Assert.Equal(_textView.GetLineRange(0, 1).ExtentIncludingLineBreak, data.Span);
             }
 
-            [Fact]
+            [WpfFact]
             public void SectionBackwardOrOpenBrace1()
             {
                 Create(0, "dog", "{brace", "pig", "}fox");
@@ -2709,7 +2709,7 @@ more";
                 Assert.True(data.Span.IsEmpty);
             }
 
-            [Fact]
+            [WpfFact]
             public void SectionBackwardOrOpenBrace2()
             {
                 Create("dog", "{brace", "pig", "}fox");
@@ -2718,7 +2718,7 @@ more";
                 Assert.Equal(_textView.GetLineRange(1).ExtentIncludingLineBreak, data.Span);
             }
 
-            [Fact]
+            [WpfFact]
             public void SectionBackwardOrOpenBrace3()
             {
                 Create("dog", "{brace", "pig", "}fox");
@@ -2727,7 +2727,7 @@ more";
                 Assert.Equal(_textView.GetLineRange(0, 1).ExtentIncludingLineBreak, data.Span);
             }
 
-            [Fact]
+            [WpfFact]
             public void SectionBackwardOrOpenBrace4()
             {
                 Create(0, "dog", "\fbrace", "pig", "}fox");
@@ -2735,7 +2735,7 @@ more";
                 Assert.True(data.Span.IsEmpty);
             }
 
-            [Fact]
+            [WpfFact]
             public void SectionBackwardOrOpenBrace5()
             {
                 Create("dog", "\fbrace", "pig", "}fox");
@@ -2744,7 +2744,7 @@ more";
                 Assert.Equal(_textView.GetLineRange(1).ExtentIncludingLineBreak, data.Span);
             }
 
-            [Fact]
+            [WpfFact]
             public void SectionBackwardOrOpenBrace6()
             {
                 Create("dog", "\fbrace", "pig", "}fox");
@@ -2756,7 +2756,7 @@ more";
             /// <summary>
             /// Ignore the brace not on first column
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void SectionBackwardOrOpenBrace7()
             {
                 Create("dog", "\f{brace", "pig", "}fox");
@@ -2765,7 +2765,7 @@ more";
                 Assert.Equal(_textView.GetLineRange(0, 1).ExtentIncludingLineBreak, data.Span);
             }
 
-            [Fact]
+            [WpfFact]
             public void SectionBackwardOrOpenBrace8()
             {
                 Create("dog", "{{foo", "{bar", "hello");
@@ -2778,7 +2778,7 @@ more";
                     data.Span);
             }
 
-            [Fact]
+            [WpfFact]
             public void SectionBackwardOrCloseBrace1()
             {
                 Create(0, "dog", "}brace", "pig", "}fox");
@@ -2786,7 +2786,7 @@ more";
                 Assert.True(data.Span.IsEmpty);
             }
 
-            [Fact]
+            [WpfFact]
             public void SectionBackwardOrCloseBrace2()
             {
                 Create("dog", "}brace", "pig", "}fox");
@@ -2795,7 +2795,7 @@ more";
                 Assert.Equal(_textView.GetLineRange(1).ExtentIncludingLineBreak, data.Span);
             }
 
-            [Fact]
+            [WpfFact]
             public void SectionBackwardOrCloseBrace3()
             {
                 Create("dog", "}brace", "pig", "}fox");
@@ -2804,7 +2804,7 @@ more";
                 Assert.Equal(_textView.GetLineRange(0, 1).ExtentIncludingLineBreak, data.Span);
             }
 
-            [Fact]
+            [WpfFact]
             public void SectionBackwardOrCloseBrace4()
             {
                 Create(0, "dog", "\fbrace", "pig", "}fox");
@@ -2812,7 +2812,7 @@ more";
                 Assert.True(data.Span.IsEmpty);
             }
 
-            [Fact]
+            [WpfFact]
             public void SectionBackwardOrCloseBrace5()
             {
                 Create("dog", "\fbrace", "pig", "}fox");
@@ -2821,7 +2821,7 @@ more";
                 Assert.Equal(_textView.GetLineRange(1).ExtentIncludingLineBreak, data.Span);
             }
 
-            [Fact]
+            [WpfFact]
             public void SectionBackwardOrCloseBrace6()
             {
                 Create("dog", "\fbrace", "pig", "}fox");
@@ -2833,7 +2833,7 @@ more";
             /// <summary>
             /// Ignore the brace not on first column
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void SectionBackwardOrCloseBrace7()
             {
                 Create("dog", "\f}brace", "pig", "}fox");
@@ -2847,7 +2847,7 @@ more";
             /// repro'd be setting ve=onemore and trying a 'y(' operation past the last character
             /// in the buffer
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void ParagraphForward_EndPoint()
             {
                 Create("dog", "pig", "cat");
@@ -2859,7 +2859,7 @@ more";
             /// <summary>
             /// A forward paragraph from the last character should return the char
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void ParagraphForward_LastChar()
             {
                 Create("dog", "pig", "cat");
@@ -2868,7 +2868,7 @@ more";
                 Assert.Equal("t", data.Span.GetText());
             }
 
-            [Fact]
+            [WpfFact]
             public void QuotedStringContents1()
             {
                 Create(@"""foo""");
@@ -2877,7 +2877,7 @@ more";
                 AssertData(data.Value, new SnapshotSpan(_snapshot, 1, 3), MotionKind.CharacterWiseInclusive);
             }
 
-            [Fact]
+            [WpfFact]
             public void QuotedStringContents2()
             {
                 Create(@" ""bar""");
@@ -2886,7 +2886,7 @@ more";
                 AssertData(data.Value, new SnapshotSpan(_snapshot, 2, 3), MotionKind.CharacterWiseInclusive);
             }
 
-            [Fact]
+            [WpfFact]
             public void QuotedStringContents3()
             {
                 Create(@"""foo"" ""bar""");
@@ -2900,7 +2900,7 @@ more";
             /// <summary>
             /// Ensure that the space after the sentence is included
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void SentencesForward_SpaceAfter()
             {
                 Create("a! b");
@@ -2911,7 +2911,7 @@ more";
             /// <summary>
             /// At the end of the ITextBuffer there isn't a next sentence
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void SentencesForward_EndOfBuffer()
             {
                 Create("a! b");
@@ -2920,7 +2920,7 @@ more";
                 AssertData(data, new SnapshotSpan(_snapshot, _snapshot.Length, 0));
             }
 
-            [Fact]
+            [WpfFact]
             public void Mark_Forward()
             {
                 Create("the dog chased the ball");
@@ -2935,7 +2935,7 @@ more";
             /// <summary>
             /// If a Mark is not set then the Mark motion should fail
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Mark_DoesNotExist()
             {
                 Create("the dog chased the ball");
@@ -2945,7 +2945,7 @@ more";
             /// <summary>
             /// Ensure that a backwards mark produces a backwards span
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Mark_Backward()
             {
                 Create("the dog chased the ball");
@@ -2958,14 +2958,14 @@ more";
                 Assert.False(data.IsForward);
             }
 
-            [Fact]
+            [WpfFact]
             public void MarkLine_DoesNotExist()
             {
                 Create("the dog chased the ball");
                 Assert.True(_motionUtil.MarkLine(_localMarkA).IsNone());
             }
 
-            [Fact]
+            [WpfFact]
             public void MarkLine_Forward()
             {
                 Create("cat", "dog", "pig", "tree");
@@ -2976,7 +2976,7 @@ more";
                 Assert.True(data.MotionKind.IsLineWise);
             }
 
-            [Fact]
+            [WpfFact]
             public void MarkLine_Backward()
             {
                 Create("cat", "dog", "pig", "tree");
@@ -2988,7 +2988,7 @@ more";
                 Assert.True(data.MotionKind.IsLineWise);
             }
 
-            [Fact]
+            [WpfFact]
             public void LineUpToFirstNonBlank_UseColumnNotPosition()
             {
                 Create("the", "  dog", "cat");
@@ -3002,7 +3002,7 @@ more";
             /// <summary>
             /// Make sure find the full paragraph from a point in the middle.
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void AllParagraph_FromMiddle()
             {
                 Create("a", "b", "", "c");
@@ -3014,7 +3014,7 @@ more";
             /// <summary>
             /// Get a paragraph motion from the start of the ITextBuffer
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void AllParagraph_FromStart()
             {
                 Create("a", "b", "", "c");
@@ -3026,7 +3026,7 @@ more";
             /// A full paragraph should not include the preceding blanks when starting on
             /// an actual portion of the paragraph
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void AllParagraph_FromStartWithPreceedingBlank()
             {
                 Create("a", "b", "", "c");
@@ -3039,7 +3039,7 @@ more";
             /// Make sure the preceding blanks are included when starting on a blank
             /// line but not the trailing ones
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void AllParagraph_FromBlankLine()
             {
                 Create("", "dog", "cat", "", "pig", "");
@@ -3051,7 +3051,7 @@ more";
             /// <summary>
             /// If the span consists of only blank lines then it results in a failed motion.
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void AllParagraph_InBlankLinesAtEnd()
             {
                 Create("", "dog", "", "");
@@ -3063,7 +3063,7 @@ more";
             /// Make sure we raise an error if there is no word under the caret and that it 
             /// doesn't update LastSearchText
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void NextWord_NoWordUnderCaret()
             {
                 Create("  ", "foo bar baz");
@@ -3077,7 +3077,7 @@ more";
             /// <summary>
             /// Simple match should update LastSearchData and return the appropriate span
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void NextWord_Simple()
             {
                 Create("hello world", "hello");
@@ -3091,7 +3091,7 @@ more";
             /// word.  This is true if we are searching forward or backward.  The original
             /// point though should be included in the search
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void NextWord_BackwardGoPastBlanks()
             {
                 Create("dog   cat", "cat");
@@ -3106,7 +3106,7 @@ more";
             /// Make sure that searching backward from the middle of a word starts at the 
             /// beginning of the word
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void NextWord_BackwardFromMiddleOfWord()
             {
                 Create("cat cat cat");
@@ -3118,7 +3118,7 @@ more";
             /// <summary>
             /// A non-word shouldn't require whole word
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void NextWord_Nonword()
             {
                 Create("{", "dog", "{", "cat");
@@ -3130,7 +3130,7 @@ more";
             /// Make sure we pass the LastSearch value to the method and move the caret
             /// for the provided SearchResult
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void LastSearch_UsePattern()
             {
                 Create("foo bar", "foo");
@@ -3144,7 +3144,7 @@ more";
             /// Make sure that this doesn't update the LastSearh field.  Only way to check this is 
             /// when we reverse the polarity of the search
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void LastSearch_DontUpdateLastSearch()
             {
                 Create("dog cat", "dog", "dog");
@@ -3159,7 +3159,7 @@ more";
             /// <summary>
             /// Break on section macros
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void GetSections_WithMacroAndCloseSplit()
             {
                 Create("dog.", ".HH", "cat.");
@@ -3173,7 +3173,7 @@ more";
             /// <summary>
             /// Break on section macros
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void GetSections_WithMacroBackwardAndCloseSplit()
             {
                 Create("dog.", ".HH", "cat.");
@@ -3187,7 +3187,7 @@ more";
             /// <summary>
             /// Going forward we should include the brace line
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void GetSectionsWithSplit_FromBraceLine()
             {
                 Create("dog.", "}", "cat");
@@ -3205,7 +3205,7 @@ more";
             /// <summary>
             /// Going backward we should not include the brace line
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void GetSectionsWithSplit_FromBraceLineBackward()
             {
                 Create("dog.", "}", "cat");
@@ -3220,7 +3220,7 @@ more";
                     ret.Select(x => x.GetText()).ToList());
             }
 
-            [Fact]
+            [WpfFact]
             public void GetSentences1()
             {
                 Create("a. b.");
@@ -3230,7 +3230,7 @@ more";
                     ret.Select(x => x.GetText()).ToList());
             }
 
-            [Fact]
+            [WpfFact]
             public void GetSentences2()
             {
                 Create("a! b.");
@@ -3240,7 +3240,7 @@ more";
                     ret.Select(x => x.GetText()).ToList());
             }
 
-            [Fact]
+            [WpfFact]
             public void GetSentences3()
             {
                 Create("a? b.");
@@ -3250,7 +3250,7 @@ more";
                     ret.Select(x => x.GetText()).ToList());
             }
 
-            [Fact]
+            [WpfFact]
             public void GetSentences4()
             {
                 Create("a? b.");
@@ -3263,7 +3263,7 @@ more";
             /// <summary>
             /// Make sure the return doesn't include an empty span for the end point
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void GetSentences_BackwardFromEndOfBuffer()
             {
                 Create("a? b.");
@@ -3277,7 +3277,7 @@ more";
             /// Sentences are an exclusive motion and hence backward from a single whitespace 
             /// to a sentence boundary should not include the whitespace
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void GetSentences_BackwardFromSingleWhitespace()
             {
                 Create("a? b.");
@@ -3290,7 +3290,7 @@ more";
             /// <summary>
             /// Make sure we include many legal trailing characters
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void GetSentences_ManyTrailingChars()
             {
                 Create("a?)]' b.");
@@ -3303,7 +3303,7 @@ more";
             /// <summary>
             /// The character should go on the previous sentence
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void GetSentences_BackwardWithCharBetween()
             {
                 Create("a?) b.");
@@ -3316,7 +3316,7 @@ more";
             /// <summary>
             /// Not a sentence unless the end character is followed by a space / tab / newline
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void GetSentences_NeedSpaceAfterEndCharacter()
             {
                 Create("a!b. c");
@@ -3330,7 +3330,7 @@ more";
             /// Only a valid boundary if the end character is followed by one of the 
             /// legal follow up characters (spaces, tabs, end of line after trailing chars)
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void GetSentences_IncompleteBoundary()
             {
                 Create("a!b. c");
@@ -3345,7 +3345,7 @@ more";
             /// of lines is actually a sentence.  Every following blank is just white space in between the blank line
             /// sentence and the start of the next sentence
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void GetSentences_ForwardBlankLinesAreBoundaries()
             {
                 Create("a", "", "", "b");
@@ -3363,7 +3363,7 @@ more";
             /// <summary>
             /// Get a sentence from the middle of the word
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void GetSentences_FromMiddleOfWord()
             {
                 Create("dog", "cat", "bear");
@@ -3377,7 +3377,7 @@ more";
             /// Don't include a sentence if we go backward from the first character of
             /// the sentence
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void GetSentences_BackwardFromStartOfSentence()
             {
                 Create("dog. cat");
@@ -3390,7 +3390,7 @@ more";
             /// <summary>
             /// A blank line is a sentence
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void GetSentences_BlankLinesAreSentences()
             {
                 Create("dog.  ", "", "cat.");
@@ -3400,7 +3400,7 @@ more";
                     ret.Select(x => x.GetText()).ToList());
             }
 
-            [Fact]
+            [WpfFact]
             public void GetParagraphs_SingleBreak()
             {
                 Create("a", "b", "", "c");
@@ -3418,7 +3418,7 @@ more";
             /// Consecutive breaks should not produce separate paragraphs.  They are treated as 
             /// part of the same paragraph
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void GetParagraphs_ConsequtiveBreaks()
             {
                 Create("a", "b", "", "", "c");
@@ -3435,7 +3435,7 @@ more";
             /// <summary>
             /// Form feed is a section and hence a paragraph boundary
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void GetParagraphs_FormFeedShouldBeBoundary()
             {
                 Create("a", "b", "\f", "", "c");
@@ -3454,7 +3454,7 @@ more";
             /// A form feed is a section boundary and should not count as a consecutive paragraph
             /// boundary
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void GetParagraphs_FormFeedIsNotConsequtive()
             {
                 Create("a", "b", "\f", "", "c");
@@ -3472,7 +3472,7 @@ more";
             /// <summary>
             /// Make sure we respect macro breaks
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void GetParagraphs_MacroBreak()
             {
                 Create("a", ".hh", "bear");
@@ -3490,7 +3490,7 @@ more";
             /// <summary>
             /// Make sure we respect macro breaks of length 1
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void GetParagraphs_MacroBreakLengthOne()
             {
                 Create("a", ".j", "bear");
@@ -3508,7 +3508,7 @@ more";
             /// <summary>
             /// Make sure that the bar motion goes to the specified column
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Bar_Simple()
             {
                 Create("The quick brown fox jumps over the lazy dog.");
@@ -3524,7 +3524,7 @@ more";
             /// <summary>
             /// Make sure that the bar motion handles backward moves properly
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Bar_Backward()
             {
                 Create("The quick brown fox jumps over the lazy dog.");
@@ -3540,7 +3540,7 @@ more";
             /// <summary>
             /// Make sure that the bar motion can handle ending up in the same column
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Bar_NoMove()
             {
                 Create("The quick brown fox jumps over the lazy dog.");
@@ -3555,7 +3555,7 @@ more";
             /// <summary>
             /// Make sure that the bar motion goes to the tab that spans over the given column
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Bar_OverTabs()
             {
                 Create("\t\t\tThe quick brown fox jumps over the lazy dog.");
@@ -3574,7 +3574,7 @@ more";
             /// <summary>
             /// Make sure that the bar motion knows where it wanted to end up, even past the end of line.
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Bar_PastEnd()
             {
                 Create("Teh");

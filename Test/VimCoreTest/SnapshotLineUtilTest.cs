@@ -24,7 +24,7 @@ namespace Vim.UnitTest
             _snapshot = _buffer.CurrentSnapshot;
         }
 
-        [Fact]
+        [WpfFact]
         public void GetPoints1()
         {
             Create("foo");
@@ -33,7 +33,7 @@ namespace Vim.UnitTest
             Assert.Equal("foo", text);
         }
 
-        [Fact]
+        [WpfFact]
         public void GetExtent1()
         {
             Create("foo");
@@ -41,7 +41,7 @@ namespace Vim.UnitTest
             Assert.Equal("foo", span.GetText());
         }
 
-        [Fact]
+        [WpfFact]
         public void GetExtentIncludingLineBreak1()
         {
             Create("foo", "baz");

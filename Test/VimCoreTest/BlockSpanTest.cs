@@ -17,7 +17,7 @@ namespace Vim.UnitTest
 
         public sealed class ColumnSpacesTest : BlockSpanTest
         {
-            [Fact]
+            [WpfFact]
             public void StartOfLine()
             {
                 Create("cat dog");
@@ -25,7 +25,7 @@ namespace Vim.UnitTest
                 Assert.Equal(0, blockSpan.ColumnSpaces);
             }
 
-            [Fact]
+            [WpfFact]
             public void InsideLine()
             {
                 Create("cat dog");
@@ -33,7 +33,7 @@ namespace Vim.UnitTest
                 Assert.Equal(1, blockSpan.ColumnSpaces);
             }
 
-            [Fact]
+            [WpfFact]
             public void TabStart()
             {
                 Create("\tcat dog");
@@ -47,7 +47,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Make sure the end point is correct for a single line BlockSpanData
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void SingleLine()
             {
                 Create("cat", "dog");
@@ -58,7 +58,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Make sure the end point is correct for a multiline BlockSpanData
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void MultiLine()
             {
                 Create("cat", "dog", "fish");
@@ -71,7 +71,7 @@ namespace Vim.UnitTest
             /// point after the SnapshotPoint it is partially through.  Selection
             /// depends on this
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void EndPartiallyThroughTab()
             {
                 Create("cat", "\tdog");
@@ -85,7 +85,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Make sure operator equality functions as expected
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Equality_Operator()
             {
                 Create("cat", "dog");
@@ -105,7 +105,7 @@ namespace Vim.UnitTest
             /// Make sure we don't screw up the trick to get the correct number of fields
             /// in the type
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void FieldCount()
             {
                 var type = typeof(BlockSpan);
@@ -115,7 +115,7 @@ namespace Vim.UnitTest
 
         public sealed class TabTest : BlockSpanTest
         {
-            [Fact]
+            [WpfFact]
             public void PartialTab()
             {
                 Create("trucker", "\tdog");

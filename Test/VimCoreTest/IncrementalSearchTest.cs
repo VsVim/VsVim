@@ -56,7 +56,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Should continue to need more until Enter or Escape is processed
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void NeedMoreUntilEndKey()
             {
                 Create("foo bar");
@@ -67,7 +67,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Enter should terminate the search
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void EnterShouldComplete()
             {
                 Create("foo bar");
@@ -79,7 +79,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Escape should cancel the search
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void EscapeShouldCancel()
             {
                 Create("foo bar");
@@ -89,7 +89,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Completing a search should update the LastSearch value
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void LastSearch1()
             {
                 Create(" foo bar");
@@ -99,7 +99,7 @@ namespace Vim.UnitTest
                 _factory.Verify();
             }
 
-            [Fact]
+            [WpfFact]
             public void EmptyShouldUseLast()
             {
                 Create("foo bar");
@@ -111,7 +111,7 @@ namespace Vim.UnitTest
 
         public sealed class MiscTest : IncrementalSearchTest
         {
-            [Fact]
+            [WpfFact]
             public void LastSearch2()
             {
                 Create(" foo bar");
@@ -126,7 +126,7 @@ namespace Vim.UnitTest
                 _factory.Verify();
             }
 
-            [Fact]
+            [WpfFact]
             public void CurrentSearchUpdated_FireOnBegin()
             {
                 Create("foo");
@@ -144,7 +144,7 @@ namespace Vim.UnitTest
             /// Make sure the CurrentSearchUpdated fires even if the character in question is
             /// not found
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void CurrentSearchUpdated_FireOnSearhCharNotFound()
             {
                 Create("foo bar");
@@ -161,7 +161,7 @@ namespace Vim.UnitTest
                 Assert.True(didRun);
             }
 
-            [Fact]
+            [WpfFact]
             public void CurrentSearchComplete_FireWhenDone()
             {
                 Create("cat foo bar");
@@ -179,7 +179,7 @@ namespace Vim.UnitTest
                 Assert.Equal(new SearchData("foo", SearchPath.Forward), _vimData.LastSearchData);
             }
 
-            [Fact]
+            [WpfFact]
             public void CurrentSearch1()
             {
                 Create("foo bar");
@@ -187,7 +187,7 @@ namespace Vim.UnitTest
                 Assert.Equal("B", _search.CurrentSearchData.Pattern);
             }
 
-            [Fact]
+            [WpfFact]
             public void CurrentSearch3()
             {
                 Create("foo bar");
@@ -195,7 +195,7 @@ namespace Vim.UnitTest
                 Assert.Equal("ab", _search.CurrentSearchData.Pattern);
             }
 
-            [Fact]
+            [WpfFact]
             public void InSearch1()
             {
                 Create("foo bar");
@@ -203,7 +203,7 @@ namespace Vim.UnitTest
                 Assert.True(_search.InSearch);
             }
 
-            [Fact]
+            [WpfFact]
             public void InSearch2()
             {
                 Create("foo bar");
@@ -215,7 +215,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Cancelling should remove the CurrentSearch value
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void InSearch3()
             {
                 Create("foo bar");
@@ -226,7 +226,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Backspace on a blank search should cancel
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Backspace_NoText()
             {
                 Create("foo bar");
@@ -237,7 +237,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Don't crash when backspacing with a textual value
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Backspace_WithText()
             {
                 Create("foo bar");
@@ -249,7 +249,7 @@ namespace Vim.UnitTest
             /// Make sure we don't match the caret position when going forward.  Search starts
             /// after the caret
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Search_ShouldStartAfterCaretWhenForward()
             {
                 Create("foo bar");
@@ -263,7 +263,7 @@ namespace Vim.UnitTest
             /// Make sure we don't match the caret position when going backward.  Search starts
             /// before the caret
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Search_ShouldStartBeforeCaretWhenBackward()
             {
                 Create("cat bar");
@@ -279,7 +279,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Make sure we update the search history on every search found or not
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void UpdateOnComplete()
             {
                 Create("cat bear");
@@ -293,7 +293,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Cancelled searches should go into the history list oddly enough
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void UpdateOnCancel()
             {
                 Create("cat bear");
@@ -307,7 +307,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// A completed search should not create a duplicate entry in the history list. 
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void UpdateShouldNotDuplicate()
             {
                 Create("cat bear");
@@ -322,7 +322,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// The up key should scroll the history list
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void UpShouldScroll()
             {
                 Create("cat bear");
@@ -334,7 +334,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// The up key should scroll the history list repeatedly
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void UpShouldScrollAgain()
             {
                 Create("dog cat");
@@ -347,7 +347,7 @@ namespace Vim.UnitTest
             /// The down key should scroll the history list in the opposite order.  When it 
             /// reaches the end it should go back to a blank
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void DownShouldScrollBack()
             {
                 Create("dog cat");
@@ -359,7 +359,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// The down key should scroll the history list in the opposite order
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void DownShouldScrollBackAfterUp()
             {
                 Create("dog cat");
@@ -371,7 +371,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Beep if the down key goes off the end of the list
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void DownOffEndOfList()
             {
                 Create("dog cat");
@@ -383,7 +383,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Search through the history for a single item
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void OneMatch()
             {
                 Create("");
@@ -395,7 +395,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Search through the history for an item which has several matches
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void TwoMatches()
             {
                 Create("");
@@ -407,7 +407,7 @@ namespace Vim.UnitTest
 
         public sealed class CancelTest : IncrementalSearchTest
         {
-            [Fact]
+            [WpfFact]
             public void InSearchProperty()
             {
                 Create("hello world");
@@ -420,7 +420,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Make sure we can repeat the cancel many times and get the same result
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void ManyTimes()
             {
                 Create("hello world");

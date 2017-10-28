@@ -21,7 +21,7 @@ namespace Vim.UnitTest
             _snapshot = _buffer.CurrentSnapshot;
         }
 
-        [Fact]
+        [WpfFact]
         public void GetStartPoint()
         {
             Create("foo bar");
@@ -30,7 +30,7 @@ namespace Vim.UnitTest
             Assert.Equal(line.Start, start);
         }
 
-        [Fact]
+        [WpfFact]
         public void GetEndPoint()
         {
             Create("foo bar");
