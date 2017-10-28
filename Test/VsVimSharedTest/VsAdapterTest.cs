@@ -58,7 +58,7 @@ namespace Vim.VisualStudio.UnitTest
                 _vsTextBuffer = _editorAdapterFactory.MakeBufferAdapter(_textView.TextBuffer, _factory);
             }
 
-            [Fact]
+            [WpfFact]
             public void IsSetViewProhibitUserInput()
             {
                 _textView.Options.SetOptionValue(DefaultTextViewOptions.ViewProhibitUserInputId, true);
@@ -66,7 +66,7 @@ namespace Vim.VisualStudio.UnitTest
                 _factory.Verify();
             }
 
-            [Fact]
+            [WpfFact]
             public void IsNotSetViewProhibitUserInput()
             {
                 _textView.Options.SetOptionValue(DefaultTextViewOptions.ViewProhibitUserInputId, false);
@@ -74,7 +74,7 @@ namespace Vim.VisualStudio.UnitTest
                 _factory.Verify();
             }
 
-            [Fact]
+            [WpfFact]
             public void BufferReadOnlyCheckFails()
             {
                 uint flags;
@@ -86,7 +86,7 @@ namespace Vim.VisualStudio.UnitTest
                 _factory.Verify();
             }
 
-            [Fact]
+            [WpfFact]
             public void BufferIsntReadOnly()
             {
                 var flags = 0u;
@@ -98,7 +98,7 @@ namespace Vim.VisualStudio.UnitTest
                 _factory.Verify();
             }
 
-            [Fact]
+            [WpfFact]
             public void BufferIsReadOnly()
             {
                 var flags = (uint)BUFFERSTATEFLAGS.BSF_USER_READONLY;
@@ -117,14 +117,14 @@ namespace Vim.VisualStudio.UnitTest
             /// Test the case where the ITextView doesn't have the FindUILayer adornment layer and hence
             /// it's possible that the query will fail 
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Simple()
             {
                 var textView = CreateTextView();
                 Assert.False(_adapterRaw.IsIncrementalSearchActive(textView));
             }
 
-            [Fact]
+            [WpfFact]
             public void ExtensionBroker()
             {
                 var textView = CreateTextView();
@@ -132,7 +132,7 @@ namespace Vim.VisualStudio.UnitTest
                 Assert.True(_adapterRaw.IsIncrementalSearchActive(textView));
             }
 
-            [Fact]
+            [WpfFact]
             public void ExtensionBrokerFalse()
             {
                 var textView = CreateTextView();
@@ -146,7 +146,7 @@ namespace Vim.VisualStudio.UnitTest
             /// <summary>
             /// The power tools quick find is considered an incremental search 
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void IsIncrementalSearchActive_Extension()
             {
                 var textView = _factory.Create<ITextView>().Object;

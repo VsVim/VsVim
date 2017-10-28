@@ -51,7 +51,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// RunMacro a text insert back from a particular register
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void InsertText()
             {
                 Create("world");
@@ -64,7 +64,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Replay a text insert back from a particular register which also contains an Escape key
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void InsertTextWithEsacpe()
             {
                 Create("world");
@@ -77,7 +77,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// When running a macro make sure that we properly repeat the last command
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void RepeatLastCommand_DeleteWord()
             {
                 Create("hello world again");
@@ -90,7 +90,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// When running the last macro with a count it should do the macro 'count' times
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void WithCount()
             {
                 Create("cat", "dog", "bear");
@@ -104,7 +104,7 @@ namespace Vim.UnitTest
             /// This is actually a macro scenario called out in the Vim documentation.  Namely the ability
             /// to build a numbered list by using a macro
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void NumberedList()
             {
                 Create("1. Heading");
@@ -121,7 +121,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// If there is no focussed IVimBuffer then the macro playback should use the original IVimBuffer
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void NoFocusedView()
             {
                 Create("world");
@@ -135,7 +135,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Record a a text insert sequence followed by escape and play it back
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void InsertTextAndEscape()
             {
                 Create("");
@@ -154,7 +154,7 @@ namespace Vim.UnitTest
             /// When using an upper case register notation make sure the information is appended to
             /// the existing value.  This can and will cause different behavior to occur
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void AppendValues()
             {
                 Create("");
@@ -175,7 +175,7 @@ namespace Vim.UnitTest
             /// The ^ motion shouldn't register as an error at the start of the line and hence shouldn't
             /// cancel macro playback
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void StartOfLineAndChange()
             {
                 Create("  cat dog");
@@ -194,7 +194,7 @@ namespace Vim.UnitTest
             /// When the word completion command is run and there are no completions this shouldn't
             /// register as an error and macro processing should continue
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void WordCompletionWithNoCompletion()
             {
                 Create("z ");
@@ -211,7 +211,7 @@ namespace Vim.UnitTest
             /// The @@ command should just read the char on the LastMacroRun value and replay 
             /// that macro
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void ReadTheRegister()
             {
                 Create("");
@@ -228,7 +228,7 @@ namespace Vim.UnitTest
             /// Any command which produces an error should cause the macro to stop playback.  One
             /// such command is trying to move right past the end of a line in insert mode
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void RightMove()
             {
                 Create("cat", "cat");
@@ -248,7 +248,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Recursive macros which move to the end of the line shouldn't recurse infinitely
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void RecursiveRightMove()
             {
                 Create("cat", "dog");
@@ -263,7 +263,7 @@ namespace Vim.UnitTest
             /// a macro execution.  But the results of the macro before the error should be 
             /// still visible
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void UpMove()
             {
                 Create("dog cat tree", "dog cat tree");
@@ -277,7 +277,7 @@ namespace Vim.UnitTest
             /// Attempting to move left before the beginining of the line should register as an error
             /// and hence kill macro playbakc
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void LeftMoveBeforeLine()
             {
                 Create("dog cat tree");
@@ -293,7 +293,7 @@ namespace Vim.UnitTest
             /// Attempting to move right after the end of the line should register as an error and
             /// hence kill macro playback
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void RightMoveAfterLine()
             {
                 Create("dog cat");
@@ -313,7 +313,7 @@ namespace Vim.UnitTest
             /// processed by the buffer.  If the user types 'h' but it is mapped to 'u' then 'h' should
             /// be recorded
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void RecordTyped()
             {
                 Create("cat dog");
@@ -329,7 +329,7 @@ namespace Vim.UnitTest
             /// change after a record occurs then the behavior of the replay should demonstrate that
             /// change 
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void ConsiderMappingDuringReplay()
             {
                 Create("cat");
@@ -338,7 +338,7 @@ namespace Vim.UnitTest
                 Assert.Equal("big cat", _textBuffer.GetLine(0).GetText());
             }
 
-            [Fact]
+            [WpfFact]
             public void Issue1117()
             {
                 Create("cat", "dog", "fish", "hello", "world", "ok");
@@ -356,7 +356,7 @@ namespace Vim.UnitTest
             /// Running a macro which consists of several commands should cause only the last
             /// command to be the last command for the purpose of a 'repeat' operation
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void RepeatCommandAfterRunMacro()
             {
                 Create("hello world", "kick tree");
@@ -371,7 +371,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// A macro run with a count should execute as a single action.  This includes undo behavior
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void UndoMacroWithCount()
             {
                 Create("cat", "dog", "bear");
@@ -383,7 +383,7 @@ namespace Vim.UnitTest
                 Assert.Equal("dog", _textView.GetLine(1).GetText());
             }
 
-            [Fact]
+            [WpfFact]
             public void RepeatLinked()
             {
                 Create("cat", "dog", "bear");

@@ -86,84 +86,84 @@ namespace Vim.UnitTest
             return FSharpOption.Create(CreateMotionResult());
         }
 
-        [Fact]
+        [WpfFact]
         public void Word()
         {
             AssertMotion("w", Motion.NewWordForward(WordKind.NormalWord));
             AssertMotion("W", Motion.NewWordForward(WordKind.BigWord));
         }
 
-        [Fact]
+        [WpfFact]
         public void BadInput()
         {
             var res = Process("z");
             Assert.True(res.IsError);
         }
 
-        [Fact]
+        [WpfFact]
         public void EndOfLine()
         {
             AssertMotion("$", Motion.EndOfLine);
             AssertMotion(VimKey.End, Motion.EndOfLine);
         }
 
-        [Fact]
+        [WpfFact]
         public void BeginingOfLine()
         {
             AssertMotion("0", Motion.BeginingOfLine);
         }
 
-        [Fact]
+        [WpfFact]
         public void AllWord()
         {
             AssertMotion("aw", Motion.NewAllWord(WordKind.NormalWord));
             AssertMotion("aW", Motion.NewAllWord(WordKind.BigWord));
         }
 
-        [Fact]
+        [WpfFact]
         public void LineFromTopOfWindow()
         {
             AssertMotion("H", Motion.LineFromTopOfVisibleWindow);
         }
 
-        [Fact]
+        [WpfFact]
         public void CharLeft()
         {
             AssertMotion("h", Motion.CharLeft);
         }
 
-        [Fact]
+        [WpfFact]
         public void CharRight()
         {
             AssertMotion("l", Motion.CharRight);
         }
 
-        [Fact]
+        [WpfFact]
         public void SpaceLeft()
         {
             AssertMotion(VimKey.Back, Motion.SpaceLeft);
             AssertMotion(KeyNotationUtil.StringToKeyInput("<C-h>"), Motion.SpaceLeft);
         }
 
-        [Fact]
+        [WpfFact]
         public void SpaceRight()
         {
             AssertMotion(" ", Motion.SpaceRight);
         }
 
-        [Fact]
+        [WpfFact]
         public void ArrowLeft()
         {
             AssertMotion(VimKey.Left, Motion.ArrowLeft);
         }
 
-        [Fact]
+        [WpfFact]
         public void ArrowRight()
         {
             AssertMotion(VimKey.Right, Motion.ArrowRight);
         }
 
-        [Fact]
+        [WpfFact]
         public void LineUp()
         {
             AssertMotion("k", Motion.LineUp);
@@ -171,159 +171,159 @@ namespace Vim.UnitTest
             AssertMotion(KeyNotationUtil.StringToKeyInput("<C-p>"), Motion.LineUp);
         }
 
-        [Fact]
+        [WpfFact]
         public void EndOfWord()
         {
             AssertMotion("e", Motion.NewEndOfWord(WordKind.NormalWord));
             AssertMotion("E", Motion.NewEndOfWord(WordKind.BigWord));
         }
 
-        [Fact]
+        [WpfFact]
         public void CharSearch_ToCharForward()
         {
             AssertMotion("fc", Motion.NewCharSearch(CharSearchKind.ToChar, SearchPath.Forward, 'c'));
         }
 
-        [Fact]
+        [WpfFact]
         public void CharSearch_TillCharForward()
         {
             AssertMotion("tc", Motion.NewCharSearch(CharSearchKind.TillChar, SearchPath.Forward, 'c'));
         }
 
-        [Fact]
+        [WpfFact]
         public void CharSearch_ToCharBackward()
         {
             AssertMotion("Fc", Motion.NewCharSearch(CharSearchKind.ToChar, SearchPath.Backward, 'c'));
         }
 
-        [Fact]
+        [WpfFact]
         public void CharSearch_TillCharBackward()
         {
             AssertMotion("Tc", Motion.NewCharSearch(CharSearchKind.TillChar, SearchPath.Backward, 'c'));
         }
 
-        [Fact]
+        [WpfFact]
         public void LineOrLastToFirstNonBlank()
         {
             AssertMotion("G", Motion.LineOrLastToFirstNonBlank);
         }
 
-        [Fact]
+        [WpfFact]
         public void LineOrFirstToFirstNonBlank()
         {
             AssertMotion("gg", Motion.LineOrFirstToFirstNonBlank);
         }
 
-        [Fact]
+        [WpfFact]
         public void LastNonBlankOnLine()
         {
             AssertMotion("g_", Motion.LastNonBlankOnLine);
         }
 
-        [Fact]
+        [WpfFact]
         public void LineInMiddleOfVisibleWindow()
         {
             AssertMotion("M", Motion.LineInMiddleOfVisibleWindow);
         }
 
-        [Fact]
+        [WpfFact]
         public void LineFromBottomOfVisibleWindow()
         {
             AssertMotion("L", Motion.LineFromBottomOfVisibleWindow);
         }
 
-        [Fact]
+        [WpfFact]
         public void FirstNonBlankOnLine()
         {
             AssertMotion("_", Motion.FirstNonBlankOnLine);
         }
 
-        [Fact]
+        [WpfFact]
         public void FirstNonBlankOnLineOnCurrentLine()
         {
             AssertMotion("^", Motion.FirstNonBlankOnCurrentLine);
         }
 
-        [Fact]
+        [WpfFact]
         public void RepeatLastCharSearch()
         {
             AssertMotion(";", Motion.RepeatLastCharSearch);
             AssertMotion(",", Motion.RepeatLastCharSearchOpposite);
         }
 
-        [Fact]
+        [WpfFact]
         public void SentenceForward()
         {
             AssertMotion(")", Motion.SentenceForward);
         }
 
-        [Fact]
+        [WpfFact]
         public void SentenceBackward()
         {
             AssertMotion("(", Motion.SentenceBackward);
         }
 
-        [Fact]
+        [WpfFact]
         public void AllSentence()
         {
             AssertMotion("as", Motion.AllSentence);
         }
 
-        [Fact]
+        [WpfFact]
         public void AllParagraph()
         {
             AssertMotion("ap", Motion.AllParagraph);
         }
 
-        [Fact]
+        [WpfFact]
         public void InnerParagraph()
         {
             AssertMotion("ip", Motion.InnerParagraph);
         }
 
-        [Fact]
+        [WpfFact]
         public void ParagraphForward()
         {
             AssertMotion("}", Motion.ParagraphForward);
         }
 
-        [Fact]
+        [WpfFact]
         public void ParagraphBackward()
         {
             AssertMotion("{", Motion.ParagraphBackward);
         }
 
-        [Fact]
+        [WpfFact]
         public void SectionForwardOrOpenBrace()
         {
             AssertMotion("]]", Motion.SectionForward);
         }
 
-        [Fact]
+        [WpfFact]
         public void SectionForwardOrCloseBrace()
         {
             AssertMotion("][", Motion.SectionForwardOrCloseBrace);
         }
 
-        [Fact]
+        [WpfFact]
         public void SectionBackwardOrOpenBrace()
         {
             AssertMotion("[[", Motion.SectionBackwardOrOpenBrace);
         }
 
-        [Fact]
+        [WpfFact]
         public void SectionBackwardOrCloseBrace()
         {
             AssertMotion("[]", Motion.SectionBackwardOrCloseBrace);
         }
 
-        [Fact]
+        [WpfFact]
         public void ScreenColumn()
         {
             AssertMotion("|", Motion.ScreenColumn);
         }
 
-        [Fact]
+        [WpfFact]
         public void QuotedString()
         {
             AssertMotion(@"a""", Motion.NewQuotedString('"'));
@@ -331,7 +331,7 @@ namespace Vim.UnitTest
             AssertMotion("a`", Motion.NewQuotedString('`'));
         }
 
-        [Fact]
+        [WpfFact]
         public void QuotedStringContents1()
         {
             AssertMotion(@"i""", Motion.NewQuotedStringContents('"'));
@@ -339,7 +339,7 @@ namespace Vim.UnitTest
             AssertMotion("i`", Motion.NewQuotedStringContents('`'));
         }
 
-        [Fact]
+        [WpfFact]
         public void IncrementalSearch_Reverse()
         {
             _textView.TextBuffer.SetText("hello world");
@@ -351,7 +351,7 @@ namespace Vim.UnitTest
             Assert.True(searchData.Kind.IsBackwardWithWrap);
         }
 
-        [Fact]
+        [WpfFact]
         public void IncrementalSearch_Forward()
         {
             _textView.SetText("hello world", caret: 0);
@@ -362,7 +362,7 @@ namespace Vim.UnitTest
             Assert.True(searchData.Kind.IsForwardWithWrap);
         }
 
-        [Fact]
+        [WpfFact]
         public void IncrementalSearch_ForwardShouldRespectWrapScan()
         {
             _textView.SetText("cat dog");
@@ -376,7 +376,7 @@ namespace Vim.UnitTest
             Assert.True(didRun);
         }
 
-        [Fact]
+        [WpfFact]
         public void IncrementalSearch_ForwardShouldRespectNoWrapScan()
         {
             _textView.SetText("cat dog");
@@ -391,7 +391,7 @@ namespace Vim.UnitTest
             Assert.True(didRun);
         }
 
-        [Fact]
+        [WpfFact]
         public void IncrementalSearch_BackwardShouldRespectWrapScan()
         {
             _textView.SetText("cat dog");
@@ -405,7 +405,7 @@ namespace Vim.UnitTest
             Assert.True(didRun);
         }
 
-        [Fact]
+        [WpfFact]
         public void IncrementalSearch_BackwardShouldRespectNoWrapScan()
         {
             _textView.SetText("cat dog");
@@ -424,7 +424,7 @@ namespace Vim.UnitTest
         /// Incremental search input should be mapped via the command mapping.  Documentation
         /// specifies language mapping but implementation dictates command mapping
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void IncrementalSearch_ShouldUseCommandMapping()
         {
             _textView.SetText("cat dog");
@@ -437,7 +437,7 @@ namespace Vim.UnitTest
         /// Incremental search input should be mapped via the command mapping.  Documentation
         /// specifies language mapping but implementation dictates command mapping
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void IncrementalSearch_ShouldUseCommandMappingForAll()
         {
             _textView.SetText("cat dog");
@@ -447,14 +447,14 @@ namespace Vim.UnitTest
             Assert.Equal(result.AsNeedMoreInput().Item.KeyRemapMode, KeyRemapMode.Command);
         }
 
-        [Fact]
+        [WpfFact]
         public void LineDownToFirstNonBlank_ShouldAcceptBothEnters()
         {
             _textView.SetText("cat\ndog\nbear");
             Assert.True(_capture.GetMotionAndCount(KeyInputUtil.EnterKey).IsComplete);
         }
 
-        [Fact]
+        [WpfFact]
         public void LineDown()
         {
             AssertMotion(KeyNotationUtil.StringToKeyInput("<c-j>"), Motion.LineDown);
@@ -464,20 +464,20 @@ namespace Vim.UnitTest
             AssertMotion(VimKey.LineFeed, Motion.LineDown);
         }
 
-        [Fact]
+        [WpfFact]
         public void CommandMapSupportsAlternateKeys()
         {
             Assert.True(MapModule.TryFind(KeyInputSet.NewOneKeyInput(KeyInputUtil.EnterKey), _captureRaw.MotionBindingsMap).IsSome());
         }
 
-        [Fact]
+        [WpfFact]
         public void Mark()
         {
             AssertMotion("`a", Motion.NewMark(LocalMark.OfChar('a').Value));
             AssertMotion("`b", Motion.NewMark(LocalMark.OfChar('b').Value));
         }
 
-        [Fact]
+        [WpfFact]
         public void MarkLine()
         {
             AssertMotion("'a", Motion.NewMarkLine(LocalMark.OfChar('a').Value));
@@ -488,7 +488,7 @@ namespace Vim.UnitTest
         /// Make sure the bindings aren't incorrectly structured such that the incremental search
         /// begins on MotionCapture startup.  It should only begin during the processing of a motion
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void Search_EnsureIncrementalSearchNotStarted()
         {
             Assert.False(_incrementalSearch.InSearch);
@@ -497,7 +497,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Search should begin once the '/' is processed
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void Search_EnsureStartedOnSlash()
         {
             _capture.GetMotionAndCount('/');
@@ -507,7 +507,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Escape should end the search operation
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void Search_EscapeShouldEndTheSearch()
         {
             var result = _capture.GetMotionAndCount('/');

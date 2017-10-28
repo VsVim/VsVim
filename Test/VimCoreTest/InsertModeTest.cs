@@ -138,7 +138,7 @@ namespace Vim.UnitTest
 
         public sealed class Paste : InsertModeTest
         {
-            [Fact]
+            [WpfFact]
             public void IsInPaste_Normal()
             {
                 Create("");
@@ -146,7 +146,7 @@ namespace Vim.UnitTest
                 Assert.True(_mode.IsInPaste);
             }
 
-            [Fact]
+            [WpfFact]
             public void IsInPaste_Special()
             {
                 var all = new[] { "R", "O", "P" };
@@ -166,7 +166,7 @@ namespace Vim.UnitTest
             /// If the active IWordCompletionSession is dismissed via the API it should cause the 
             /// ActiveWordCompletionSession value to be reset as well
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void ActiveWordCompletionSession_Dismissed()
             {
                 Create("");
@@ -178,7 +178,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Make sure we can process escape
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void CanProcess_Escape()
             {
                 Assert.True(_mode.CanProcess(KeyInputUtil.EscapeKey));
@@ -189,7 +189,7 @@ namespace Vim.UnitTest
             /// the word completion session can only process a limited set of key strokes.  The extra key 
             /// strokes are used to cancel the session and then be processed as normal
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void CanProcess_ActiveWordCompletion()
             {
                 Create("");
@@ -200,7 +200,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// After a word should return the entire word 
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void GetWordCompletionSpan_AfterWord()
             {
                 Create("cat dog");
@@ -212,7 +212,7 @@ namespace Vim.UnitTest
             /// In the middle of the word should only consider the word up till the caret for the 
             /// completion section
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void GetWordCompletionSpan_MiddleOfWord()
             {
                 Create("cat dog");
@@ -224,7 +224,7 @@ namespace Vim.UnitTest
             /// When the caret is on a closing paren and after a word the completion should be for the
             /// word and not for the paren
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void GetWordCompletionSpan_OnParen()
             {
                 Create("m(arg)");
@@ -238,7 +238,7 @@ namespace Vim.UnitTest
             /// test should be for the character immediately preceding the caret position.  Here it's 
             /// a blank and there should be nothing returned
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void GetWordCompletionSpan_OnParenWithBlankBefore()
             {
                 Create("m(arg )");
@@ -251,7 +251,7 @@ namespace Vim.UnitTest
             /// When provided an empty SnapshotSpan the words should be returned in order from the given
             /// point
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void GetWordCompletions_All()
             {
                 Create("cat dog tree");
@@ -264,7 +264,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Don't include any comments or non-words when getting the words from the buffer
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void GetWordCompletions_All_JustWords()
             {
                 Create("cat dog // tree &&");
@@ -277,7 +277,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// When given a word span only include strings which start with the given prefix
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void GetWordCompletions_Prefix()
             {
                 Create("c cat dog // tree && copter");
@@ -291,7 +291,7 @@ namespace Vim.UnitTest
             /// Starting from the middle of a word should consider the part of the word to the right of 
             /// the caret as a word
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void GetWordCompletions_MiddleOfWord()
             {
                 Create("test", "ccrook cat caturday");
@@ -304,7 +304,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Don't include any one length values in the return because Vim doesn't include them
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void GetWordCompletions_ExcludeOneLengthValues()
             {
                 Create("c cat dog // tree && copter a b c");
@@ -318,7 +318,7 @@ namespace Vim.UnitTest
             /// Ensure that all known character values are considered direct input.  They cause direct
             /// edits to the buffer.  They are not commands.
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void IsDirectInput_Chars()
             {
                 foreach (var cur in KeyInputUtilTest.CharAll)
@@ -334,7 +334,7 @@ namespace Vim.UnitTest
             /// and given specific values based on settings.  While they cause edits the values passed down
             /// don't directly go to the buffer
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void IsDirectInput_SpecialKeys()
             {
                 Assert.False(_mode.IsDirectInsert(KeyInputUtil.EnterKey));
@@ -344,7 +344,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Make sure to move the caret left when exiting insert mode
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Escape_MoveCaretLeftOnExit()
             {
                 _textView.SetText("hello world", 3);
@@ -362,7 +362,7 @@ namespace Vim.UnitTest
             /// Make sure that Escape in insert mode runs a command even if the caret is in virtual 
             /// space
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Escape_RunCommand()
             {
                 _textView.SetText("hello world", "", "again");
@@ -379,7 +379,7 @@ namespace Vim.UnitTest
             /// to presambly normal mode.  The unanimous user feedback is that Escape should leave 
             /// insert mode no matter what.  
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Escape_DismissCompletionWindows()
             {
                 _textView.SetText("hello world", 1);
@@ -396,7 +396,7 @@ namespace Vim.UnitTest
                 _factory.Verify();
             }
 
-            [Fact]
+            [WpfFact]
             public void Control_OpenBracket1()
             {
                 var ki = KeyInputUtil.CharWithControlToKeyInput('[');
@@ -404,7 +404,7 @@ namespace Vim.UnitTest
                 Assert.True(_mode.CommandNames.Contains(name));
             }
 
-            [Fact]
+            [WpfFact]
             public void Control_OpenBracket2()
             {
                 _broker
@@ -424,7 +424,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Make sure we bind the shift left command
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Command_ShiftLeft()
             {
                 _textView.SetText("hello world");
@@ -437,7 +437,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Make sure we bind the shift right command
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Command_ShiftRight()
             {
                 Create(insertMode: true, lines: "");
@@ -447,7 +447,7 @@ namespace Vim.UnitTest
                 _factory.Verify();
             }
 
-            [Fact]
+            [WpfFact]
             public void OnLeave1()
             {
                 _mode.OnLeave();
@@ -457,21 +457,21 @@ namespace Vim.UnitTest
             /// <summary>
             /// The CTRL-O command should bind to a one time command for normal mode
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void OneTimeCommand()
             {
                 var res = _mode.Process(KeyNotationUtil.StringToKeyInput("<C-o>"));
                 Assert.True(res.IsSwitchModeOneTimeCommand());
             }
 
-            [Fact]
+            [WpfFact]
             public void ReplaceMode1()
             {
                 Create(insertMode: false);
                 Assert.Equal(ModeKind.Replace, _mode.ModeKind);
             }
 
-            [Fact]
+            [WpfFact]
             public void ReplaceMode2()
             {
                 Create(insertMode: false);
@@ -485,7 +485,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// When the caret moves while insert mode is active, it should complete the current text change
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void TextChange_CaretMoveFromClickShouldComplete()
             {
                 Create("the quick brown fox");
@@ -499,7 +499,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// When the caret moves when insert mode is not active, it shouldn't cause the change to complete
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void TextChange_CaretMoveFromEdit()
             {
                 Create("the quick brown fox");
@@ -512,7 +512,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Ensure that CTRL-N is mapped to MoveNext in the IWordCompletionSession
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Process_WordCompletion_CtrlN()
             {
                 Create("hello world");
@@ -525,7 +525,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Ensure that down is mapped to MoveeNext in the IWordCompletionSession
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Process_WordCompletion_Down()
             {
                 Create("hello world");
@@ -538,7 +538,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Ensure that CTRL-N is mapped to MovePrevious in the IWordCompletionSession
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Process_WordCompletion_CtrlP()
             {
                 Create("hello world");
@@ -551,7 +551,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Ensure that up is mapped to MovePrevious in the IWordCompletionSession
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Process_WordCompletion_Up()
             {
                 Create("hello world");
@@ -565,7 +565,7 @@ namespace Vim.UnitTest
             /// Typing any character should cause the IWordCompletionSession to be dismissed and 
             /// be processed as a normal char
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Process_WordCompletion_Char()
             {
                 Create("hello world");
@@ -583,7 +583,7 @@ namespace Vim.UnitTest
             /// Ensure that Enter maps to the appropriate InsertCommand and shows up as the LastCommand
             /// after processing
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Process_InsertNewLine()
             {
                 Create("");
@@ -598,7 +598,7 @@ namespace Vim.UnitTest
             /// Ensure that a character maps to the DirectInsert and shows up as the LastCommand
             /// after processing
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Process_DirectInsert()
             {
                 Create("");

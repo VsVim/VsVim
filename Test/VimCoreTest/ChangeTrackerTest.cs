@@ -45,7 +45,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Make sure a commands which are marked as LinkWithNextCommand do link with the next command
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void LinkedWithNextChange_Simple()
         {
             Create("hello");
@@ -60,7 +60,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Don't track commands which are not repeatable
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void OnCommand_NotRepetable()
         {
             Create("hello");
@@ -72,7 +72,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Definitely track repeatable changes
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void OnCommand_Repeatable()
         {
             Create("hello");
@@ -84,7 +84,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Don't track movement commands.  They don't get repeated
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void OnCommand_DontTrackMovement()
         {
             Create("hello");
@@ -96,7 +96,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Don't track special commands.  They don't get repeated
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void OnCommand_DontTrackSpecial()
         {
             Create("hello");

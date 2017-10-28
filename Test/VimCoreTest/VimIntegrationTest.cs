@@ -15,14 +15,14 @@ namespace Vim.UnitTest
     {
         public sealed class MiscTest : VimIntegrationTest
         {
-            [Fact]
+            [WpfFact]
             public void RemoveBuffer1()
             {
                 var view = new Mock<IWpfTextView>(MockBehavior.Strict);
                 Assert.False(Vim.RemoveVimBuffer(view.Object));
             }
 
-            [Fact]
+            [WpfFact]
             public void RemoveBuffer2()
             {
                 var view = CreateTextView("foo bar");
@@ -32,7 +32,7 @@ namespace Vim.UnitTest
                 Assert.False(Vim.TryGetVimBuffer(view, out vimBuffer));
             }
 
-            [Fact]
+            [WpfFact]
             public void CreateVimBuffer1()
             {
                 var view = CreateTextView("foo bar");
@@ -43,7 +43,7 @@ namespace Vim.UnitTest
                 Assert.Same(view, found.TextView);
             }
 
-            [Fact]
+            [WpfFact]
             public void CreateVimBuffer2()
             {
                 var view = CreateTextView("foo bar");
@@ -55,7 +55,7 @@ namespace Vim.UnitTest
             /// If we are in the middle of an incremental search and the mode changes the search should be
             /// cancelled 
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void ModeSwitchResetIncrementalSearch()
             {
                 var vimBuffer = CreateVimBuffer("hello world");
@@ -68,7 +68,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Make sure this doesn't leave a hanging empty linked undo transaction
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void CloseSimpleAppend()
             {
                 var vimBuffer = CreateVimBuffer("hello world");
@@ -79,7 +79,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Make sure this doesn't leave a hanging empty linked undo transaction
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void LeaveSimpleAppend()
             {
                 var vimBuffer = CreateVimBuffer("hello world");
@@ -90,7 +90,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Make sure this doesn't leave a hanging empty linked undo transaction
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void LeaveCountedInsert()
             {
                 var vimBuffer = CreateVimBuffer("hello world");
@@ -102,7 +102,7 @@ namespace Vim.UnitTest
             /// Make sure external selection events that include end of line function even if VE
             /// prevents it. 
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void EndOfLineSelection()
             {
                 var vimBuffer = CreateVimBuffer("cat", "dog", "tree");
@@ -122,7 +122,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Check disable with a single IVimBuffer
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void One()
             {
                 var vimBuffer = CreateVimBuffer("hello world");
@@ -133,7 +133,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Check disable with multiple IVimBuffer instances
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Multiple()
             {
                 var vimBuffer1 = CreateVimBuffer("hello world");
@@ -146,7 +146,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Check re-enable with multiple IVimBuffer instances
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void MultipleReenable()
             {
                 var vimBuffer1 = CreateVimBuffer("hello world");
@@ -224,7 +224,7 @@ namespace Vim.UnitTest
                 Assert.Equal(expected, _globalSettings.Shell);
             }
 
-            [Fact]
+            [WpfFact]
             public void Simple()
             {
                 Assert.False(_globalSettings.HighlightSearch);
@@ -235,7 +235,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Don't run the contents of a function body.  They should only be parsed here 
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void FunctionContents()
             {
                 var text = @"
@@ -254,7 +254,7 @@ let x = 42
             /// lines.  Introduced a bug during the development of 1.4.0 that regressed this because of a 
             /// combination of other features
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void HasColons()
             {
                 var text = @"
@@ -271,7 +271,7 @@ let x = 42
             /// <summary>
             /// Make sure that we handle autocmd correctly when it comes from the _vimrc file 
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void SimpleAutoCommand()
             {
                 var text = @"
@@ -282,7 +282,7 @@ autocmd BufEnter *.html set ts=12
                 Assert.Equal(12, vimBuffer.LocalSettings.TabStop);
             }
 
-            [Fact]
+            [WpfFact]
             public void SpacesBeforeCommands()
             {
                 var text = @"
@@ -292,7 +292,7 @@ autocmd BufEnter *.html set ts=12
                 Assert.True(_globalSettings.HighlightSearch);
             }
 
-            [Fact]
+            [WpfFact]
             public void Errors()
             {
                 var text = @"
@@ -305,7 +305,7 @@ autocmd BufEnter *.html set ts=12
                 Assert.Equal(Resources.Interpreter_UnknownOption("foo"), errorArray[0]);
             }
 
-            [Fact]
+            [WpfFact]
             public void DefaultSettings73()
             {
                 VimHost.DefaultSettings = DefaultSettings.GVim73;
@@ -314,7 +314,7 @@ autocmd BufEnter *.html set ts=12
                 Assert.Equal("", _globalSettings.SelectMode);
             }
 
-            [Fact]
+            [WpfFact]
             public void DefaultSettings7g()
             {
                 VimHost.DefaultSettings = DefaultSettings.GVim74;
@@ -339,7 +339,7 @@ autocmd BufEnter *.html set ts=12
             /// <summary>
             /// The repeat last search should cause the display of tags to be resumed
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void RepeatLastSearch()
             {
                 var vimBuffer = CreateVimBuffer("hello world");
@@ -353,7 +353,7 @@ autocmd BufEnter *.html set ts=12
             /// <summary>
             /// The next word under cursor command '*' should cause the SearhRan event to fire
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void NextWordUnderCaret()
             {
                 var vimBuffer = CreateVimBuffer("hello world");
@@ -364,7 +364,7 @@ autocmd BufEnter *.html set ts=12
             /// <summary>
             /// The '/' command should register a search change after the Enter key
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void IncrementalSerach()
             {
                 var vimBuffer = CreateVimBuffer("hello world");
@@ -377,7 +377,7 @@ autocmd BufEnter *.html set ts=12
             /// <summary>
             /// The :s command should cause tags to be resumed
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void SubstituteCommand()
             {
                 var vimBuffer = CreateVimBuffer("hello world");
@@ -390,7 +390,7 @@ autocmd BufEnter *.html set ts=12
             /// <summary>
             /// Don't raise the SearchRan command for simple commands
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void DontRaiseForSimpleCommands()
             {
                 var vimBuffer = CreateVimBuffer("hello world");

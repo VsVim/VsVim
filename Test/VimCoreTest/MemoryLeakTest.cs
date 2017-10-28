@@ -38,7 +38,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Ensure the undo history doesn't keep the ITextView alive due to a simple transaction
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void UndoTransactionSimple()
         {
             var textBuffer = CreateTextBuffer("");
@@ -65,7 +65,7 @@ namespace Vim.UnitTest
         /// Ensure the undo history doesn't keep the ITextView alive after an undo primitive
         /// surrounding the caret is added to the undo stack 
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void UndoTransactionWithCaretPrimitive()
         {
             var textBuffer = CreateTextBuffer("");

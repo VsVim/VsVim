@@ -27,7 +27,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Move older should fail if there is nothing in the jump list
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Empty()
             {
                 Create("");
@@ -39,7 +39,7 @@ namespace Vim.UnitTest
             /// Move older should fail if the count is too big and it should not change
             /// the position in the list
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void CountTooBig()
             {
                 Create("cat", "dog");
@@ -53,7 +53,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Simple move next with a valid count
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Valid()
             {
                 Create("cat", "dog");
@@ -69,7 +69,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Moving to an older position in the jump list shoudn't affect the last jump location
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void DontChangeLastJumpLocation()
             {
                 Create("dog", "cat", "fish", "bear");
@@ -88,7 +88,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Move to a newer on an empty list should fail
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Empty()
             {
                 Create("");
@@ -99,7 +99,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Move previous when the count is too big should fail
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void CountTooBig()
             {
                 Create("cat", "dog");
@@ -114,7 +114,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Move previous when the count is too big should fail
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void CountValid()
             {
                 Create("cat", "dog");
@@ -129,7 +129,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Moving to an newer position in the jump list shoudn't affect the last jump location
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void DontChangeLastJumpLocation()
             {
                 Create("dog", "cat", "fish", "bear");
@@ -149,7 +149,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// First add shouldn't affect the Current or CurrentIndex properties
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void First()
             {
                 Create("");
@@ -161,7 +161,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Add multiple should keep updating the Current and CurrentIndex properties
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Several()
             {
                 Create("a", "b", "c", "d", "e");
@@ -179,7 +179,7 @@ namespace Vim.UnitTest
             /// Adding in the same line shouldn't add a new entry.  It should just reorder
             /// the list
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void SameLine()
             {
                 Create("a", "b", "c", "d", "e");
@@ -194,7 +194,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Adding a value to the jump list should update the last jump location
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void UpdateLastJumpLocation()
             {
                 Create("cat", "dog", "fish");
@@ -209,7 +209,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Sanity check the default state is an empty jump list
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Jumps_Empty()
             {
                 Create("");

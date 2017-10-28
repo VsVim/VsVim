@@ -299,7 +299,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// If the tracking data is empty and we have now tags then it didn't chaneg
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void EmptyTrackingData()
             {
                 Create("cat", "dog", "bear");
@@ -312,7 +312,7 @@ namespace Vim.UnitTest
             /// If the tracking data is empty and there are no new tags for the same SnapshotSpan then
             /// nothing changed
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void EmptyTrackingData_NoNewTags()
             {
                 Create("cat", "dog", "bear");
@@ -324,7 +324,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// They didn't change if we can map forward to the same values
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void MapsToSame()
             {
                 Create("cat", "dog", "bear", "tree");
@@ -337,7 +337,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// They changed if the edit moved them to different places
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void MapsToDifferent()
             {
                 Create("cat", "dog", "bear", "tree");
@@ -350,7 +350,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// They changed if they are simply different
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Different()
             {
                 Create("cat", "dog", "bear", "tree");
@@ -368,7 +368,7 @@ namespace Vim.UnitTest
             /// First choice should be to go through the prompt code.  This shouldn't create
             /// any cache
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void UsePrompt()
             {
                 Create("hello world");
@@ -384,7 +384,7 @@ namespace Vim.UnitTest
             /// If the source can't provide prompt data then the tagger needs to go through
             /// the cache next
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void UseCache()
             {
                 Create("hello world");
@@ -400,7 +400,7 @@ namespace Vim.UnitTest
             /// When there are no prompt sources available for tags we should schedule this
             /// for the background thread
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void UseBackground()
             {
                 Create("hello world");
@@ -412,7 +412,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Full test going through the background
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void UseBackgroundUpdateCache()
             {
                 Create("cat", "dog", "bear");
@@ -429,7 +429,7 @@ namespace Vim.UnitTest
             /// Make sure that we can get the tags when there is an explicit delay from
             /// the source
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Delay()
             {
                 Create("cat", "dog", "bear");
@@ -444,7 +444,7 @@ namespace Vim.UnitTest
             /// The completion of the background operation should cause the TagsChanged
             /// event to be run
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void BackgroundShouldRaiseTagsChanged()
             {
                 Create("cat", "dog", "bear");
@@ -463,7 +463,7 @@ namespace Vim.UnitTest
             /// If there is an existing request out and a new one comes in then just append to that
             /// request instead of creating a new one
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void AppendExistingRequest()
             {
                 Create("cat", "dog", "bear");
@@ -485,7 +485,7 @@ namespace Vim.UnitTest
             /// If the existing requset is on a different snapshot then it needs to be replaced when a new
             /// request comes in 
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void ReplaceWorseRequest()
             {
                 Create("cat", "dog", "bear");
@@ -507,7 +507,7 @@ namespace Vim.UnitTest
             /// The same Span on different snapshots should cause a different request to be queued
             /// up
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void ReplaceWhenSnapshotChanges()
             {
                 Create("cat", "dog", "bear");
@@ -529,7 +529,7 @@ namespace Vim.UnitTest
             /// If the background request throws (for any reason including cancellation) then it should
             /// be handled and treated just like an empty return
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void BackgroundThrows()
             {
                 Create("cat", "dog", "bat");
@@ -550,7 +550,7 @@ namespace Vim.UnitTest
             /// Even if the cache doesn't completely match the information in the cache we should at
             /// least the partial information we have and schedule the rest
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void PartialMatchInCache()
             {
                 Create("cat", "dog", "bat");
@@ -566,7 +566,7 @@ namespace Vim.UnitTest
             /// If there is a forward edit we should still return cache data as best as possible promptly
             /// and schedule a background task for the correct data
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void ForwardEdit()
             {
                 Create("cat", "dog", "bat");
@@ -582,7 +582,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Make sure that a prompt call updates the request span
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void PromptUpdateRequestSpan()
             {
                 Create("hello world", "cat chased the dog");
@@ -596,7 +596,7 @@ namespace Vim.UnitTest
             /// If we have tags which are mixed between background and tracking we need to pull 
             /// from both sources
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void BackgroundAndTracking()
             {
                 Create("cat", "dog", "bear", "pig");
@@ -612,7 +612,7 @@ namespace Vim.UnitTest
             /// incorrect ITextSnapshot.  If we use a Span against the wrong ITextSnapshot it should 
             /// cause an exception
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void ToEmptyBuffer()
             {
                 Create("cat", "dog", "bear", "pig");
@@ -625,7 +625,7 @@ namespace Vim.UnitTest
                 Assert.NotNull(list);
             }
 
-            [Fact]
+            [WpfFact]
             public void SourceSpansMultiple_AllRelevant()
             {
                 Create("cat", "dog", "fish", "tree dog");
@@ -641,7 +641,7 @@ namespace Vim.UnitTest
                     tags.Select(x => x.Span));
             }
 
-            [Fact]
+            [WpfFact]
             public void SourceSpansMultiple_OneRelevant()
             {
                 Create("cat", "dog", "fish", "tree dog");
@@ -660,7 +660,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// This should never happen in the reald world but this is an API so treat it like one
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void SourceSpansNone()
             {
                 Create("cat", "dog", "fish", "tree dog");
@@ -674,7 +674,7 @@ namespace Vim.UnitTest
             /// Once the cache is built for a portion of the buffer ask for a Span that is not in the 
             /// cache yet
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void AfterCompleteNotInCache()
             {
                 Create("cat", "dog", "fish", "tree dog");
@@ -693,7 +693,7 @@ namespace Vim.UnitTest
             /// If the IAsyncTaggerSource raises a TagsChanged event then the tagger must clear 
             /// out it's cache.  Anything it's stored up until this point is now invalid
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void ClearCache()
             {
                 Create("hello world");
@@ -708,7 +708,7 @@ namespace Vim.UnitTest
             /// If the IAsyncTaggerSource raises a TagsChanged event then any existing tagger
             /// requests are invalid
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void ClearBackgroundRequest()
             {
                 Create("hello world");
@@ -725,7 +725,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// When the IAsyncTaggerSource raises it's event the tagger must as well
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void RaiseEvent()
             {
                 Create("hello world");
@@ -744,7 +744,7 @@ namespace Vim.UnitTest
             /// If we've not recieved a GetTags request then don't raise a TagsChanged event when
             /// we get a Changed event.  
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void DontRaiseEventIfNoRequests()
             {
                 Create("hello world");
@@ -765,7 +765,7 @@ namespace Vim.UnitTest
             /// When the initial background request completes make sure that a TagsChanged is raised for the
             /// expected SnapshotSpan
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void BackgroundComplete()
             {
                 Create("cat", "dog", "bear");
@@ -785,7 +785,7 @@ namespace Vim.UnitTest
             /// TagsChanged again for the same SnapshotSpan.  Doing so causes needless work and results in items
             /// like screen flickering
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void TrackingPredictedBackgroundResult()
             {
                 Create("cat", "dog", "bear", "tree");
@@ -810,7 +810,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// An edit followed by different tags should raise the TagsChanged event
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void TrackingDidNotPredictBackgroundResult()
             {
                 Create("cat", "dog", "bear", "tree");
@@ -846,7 +846,7 @@ namespace Vim.UnitTest
             /// The code works around this by seein the unfinished work after we get back to the UI thread
             /// and reschedules the request automatically
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void GetTags()
             {
                 Create("dog", "cat", "fish", "dog");
@@ -876,7 +876,7 @@ namespace Vim.UnitTest
             /// and when it can make it back to the UI thread that another request comes in.  At that
             /// point it is no loner the active request and shouldn't be updating any data 
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void BackgroundCompleted()
             {
                 Create("dog", "cat", "fish", "dog");
@@ -917,7 +917,7 @@ namespace Vim.UnitTest
             /// When the ITextView is in a layout the ITextViewLines collection isn't accessible and will throw
             /// when accessed.  Make sure we don't access it 
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void InLayout()
             {
                 CreateWithView("dogs cat bears");
@@ -929,7 +929,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Make sure that visible lines are prioritized over the requested spans.  
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void PrioritizeVisibleLines()
             {
                 CreateWithView("dog", "cat", "dog", "bear");
@@ -952,7 +952,7 @@ namespace Vim.UnitTest
             /// When the editor makes consequitive requests for various spans we need to eventually fulfill
             /// all of those requests even if we prioritize the more recent ones
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void FulfillOutstandingRequests()
             {
                 Create("cat", "dog", "fish", "tree");
@@ -994,7 +994,7 @@ namespace Vim.UnitTest
             /// the foreground will consider it unfulfilled and will later request again for the 
             /// value
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void SourceThrows()
             {
                 Create("cat", "dog", "fish", "tree");
@@ -1012,7 +1012,7 @@ namespace Vim.UnitTest
             /// Send a request that is much bigger than the standard chunk size.  Ensure that we get all 
             /// of the values back
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void ChunkedData()
             {
                 var list = new List<String>();
@@ -1043,7 +1043,7 @@ namespace Vim.UnitTest
                 }
             }
 
-            [Fact]
+            [WpfFact]
             public void AfterEditWithTrackingData()
             {
                 Create("dog", "cat", "fish");
@@ -1060,7 +1060,7 @@ namespace Vim.UnitTest
             
             }
 
-            [Fact]
+            [WpfFact]
             public void ChunkCountDefault()
             {
                 Create("");
@@ -1072,7 +1072,7 @@ namespace Vim.UnitTest
             /// when the WPF designer is active.  Make sure that we handle this gracefully and don't 
             /// crash
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void BadSynchronizationContext()
             {
                 Create("cat dog");

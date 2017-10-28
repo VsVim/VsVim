@@ -30,7 +30,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Break up the buffer into simple words
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void GetWords_Normal()
         {
             Create("dog ca$$t $b");
@@ -43,7 +43,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// A blank line should be a word 
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void GetWords_BlankLine()
         {
             Create("dog cat", "", "bear");
@@ -56,7 +56,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// From the middle of a word should return the span of the entire word
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void GetWords_FromMiddleOfWord()
         {
             Create("dog cat");
@@ -69,7 +69,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// From the end of a word should return the span of the entire word
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void GetWords_FromEndOfWord()
         {
             Create("dog cat");
@@ -82,7 +82,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// From the middle of a word backward
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void GetWords_BackwardFromMiddle()
         {
             Create("dog cat");
@@ -95,7 +95,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// From the start of a word backward should not include that particular word 
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void GetWords_BackwardFromStart()
         {
             Create("dog cat");
@@ -108,7 +108,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Make sure that blank lines are counted as words when
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void GetWords_BackwardBlankLine()
         {
             Create("dog", "", "cat");

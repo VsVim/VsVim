@@ -58,14 +58,14 @@ namespace Vim.UnitTest
 
         public sealed class KeyRemapModeTest : CommandRunnerTest
         {
-            [Fact]
+            [WpfFact]
             public void DefaultIsNone()
             {
                 Create("hello world");
                 Assert.Equal(_runner.KeyRemapMode, KeyRemapMode.None);
             }
 
-            [Fact]
+            [WpfFact]
             public void NoneWhileFindingCommand()
             {
                 Create("hello world");
@@ -74,7 +74,7 @@ namespace Vim.UnitTest
                 Assert.Equal(_runner.KeyRemapMode, KeyRemapMode.None);
             }
 
-            [Fact]
+            [WpfFact]
             public void OperatorPendingWhenWaitingForMotionLegacy()
             {
                 Create("hello world");
@@ -83,7 +83,7 @@ namespace Vim.UnitTest
                 Assert.Equal(_runner.KeyRemapMode, KeyRemapMode.OperatorPending);
             }
 
-            [Fact]
+            [WpfFact]
             public void OperatorPendingWhenWaitingForMotion()
             {
                 Create("hello world");
@@ -92,7 +92,7 @@ namespace Vim.UnitTest
                 Assert.Equal(_runner.KeyRemapMode, KeyRemapMode.OperatorPending);
             }
 
-            [Fact]
+            [WpfFact]
             public void OperatorPendingWhenAmbiguousBetweenMotionAndCommand()
             {
                 Create("hello world");
@@ -102,7 +102,7 @@ namespace Vim.UnitTest
                 Assert.Equal(_runner.KeyRemapMode, KeyRemapMode.OperatorPending);
             }
 
-            [Fact]
+            [WpfFact]
             public void LanguageInToArgument()
             {
                 Create("hello world");
@@ -115,7 +115,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// In a complex binding we need to use the KeyRemapMode specified in that binding
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void LongCommandPropagateMode()
             {
                 Create("hello world");
@@ -126,7 +126,7 @@ namespace Vim.UnitTest
                 Assert.Equal(_runner.KeyRemapMode, KeyRemapMode.Language);
             }
 
-            [Fact]
+            [WpfFact]
             public void AfterCount()
             {
                 Create(KeyRemapMode.Language, "");
@@ -137,7 +137,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Even though there is a KeyRemapMode for after count there is not one for after register
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void AfterRegister()
             {
                 Create(KeyRemapMode.Language, "");
@@ -154,13 +154,13 @@ namespace Vim.UnitTest
                 _runner.Add(VimUtil.CreateNormalBinding("dd"));
             }
 
-            [Fact]
+            [WpfFact]
             public void Default()
             {
                 Assert.False(_runner.InCount);
             }
 
-            [Fact]
+            [WpfFact]
             public void Simple()
             {
                 _runner.Run('1');
@@ -170,7 +170,7 @@ namespace Vim.UnitTest
                 Assert.True(_runner.IsWaitingForMoreInput);
             }
 
-            [Fact]
+            [WpfFact]
             public void ResetState4()
             {
                 _runner.Run('1');
@@ -178,7 +178,7 @@ namespace Vim.UnitTest
                 Assert.False(_runner.InCount);
             }
 
-            [Fact]
+            [WpfFact]
             public void ResetState2()
             {
                 _runner.Run("3d");
@@ -186,7 +186,7 @@ namespace Vim.UnitTest
                 Assert.False(_runner.HasCount);
             }
 
-            [Fact]
+            [WpfFact]
             public void Count()
             {
                 _runner.Run("3d");
@@ -203,7 +203,7 @@ namespace Vim.UnitTest
                 _runner.Add(VimUtil.CreateNormalBinding("dd"));
             }
 
-            [Fact]
+            [WpfFact]
             public void AfterRegister()
             {
                 _runner.Run("\"a");
@@ -211,7 +211,7 @@ namespace Vim.UnitTest
                 Assert.Equal(KeyRemapMode.Normal, _runner.KeyRemapMode);
             }
 
-            [Fact]
+            [WpfFact]
             public void InRegister()
             {
                 _runner.Run("\"");
@@ -219,7 +219,7 @@ namespace Vim.UnitTest
                 Assert.Equal(KeyRemapMode.None, _runner.KeyRemapMode);
             }
 
-            [Fact]
+            [WpfFact]
             public void Register()
             {
                 _runner.Run(@"""a");
@@ -227,7 +227,7 @@ namespace Vim.UnitTest
                 Assert.Equal(RegisterName.OfChar('a').Value, _runner.RegisterName);
             }
 
-            [Fact]
+            [WpfFact]
             public void ResetState3()
             {
                 _runner.Run(@"""a");
@@ -238,7 +238,7 @@ namespace Vim.UnitTest
 
         public sealed class RunTest : CommandRunnerTest
         {
-            [Fact]
+            [WpfFact]
             public void CommandMatch1()
             {
                 Create(String.Empty);
@@ -248,7 +248,7 @@ namespace Vim.UnitTest
                 Assert.Equal(1, count1);
             }
 
-            [Fact]
+            [WpfFact]
             public void CommandMatch2()
             {
                 Create(String.Empty);
@@ -258,7 +258,7 @@ namespace Vim.UnitTest
                 Assert.Equal(0, count1);
             }
 
-            [Fact]
+            [WpfFact]
             public void CommandMatch3()
             {
                 Create(String.Empty);
@@ -271,7 +271,7 @@ namespace Vim.UnitTest
                 Assert.Equal(1, count2);
             }
 
-            [Fact]
+            [WpfFact]
             public void CommandMatch4()
             {
                 Create(String.Empty);
@@ -287,7 +287,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Prefix is ambiguous and neither should match
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void CommandMatch5()
             {
                 Create(String.Empty);
@@ -300,7 +300,7 @@ namespace Vim.UnitTest
                 Assert.Equal(0, count2);
             }
 
-            [Fact]
+            [WpfFact]
             public void CommandMatch6()
             {
                 Create(String.Empty);
@@ -313,7 +313,7 @@ namespace Vim.UnitTest
                 Assert.Equal(1, count2);
             }
 
-            [Fact]
+            [WpfFact]
             public void CommandMatch7()
             {
                 Create("foo bar");
@@ -326,7 +326,7 @@ namespace Vim.UnitTest
                 Assert.Equal(0, count2);
             }
 
-            [Fact]
+            [WpfFact]
             public void Count1()
             {
                 Create(String.Empty);
@@ -341,7 +341,7 @@ namespace Vim.UnitTest
                 Assert.True(didRun);
             }
 
-            [Fact]
+            [WpfFact]
             public void Count2()
             {
                 Create(String.Empty);
@@ -357,7 +357,7 @@ namespace Vim.UnitTest
                 Assert.True(didRun);
             }
 
-            [Fact]
+            [WpfFact]
             public void Count3()
             {
                 Create(String.Empty);
@@ -376,7 +376,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// 0 is not a valid command
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Count4()
             {
                 Create(string.Empty);
@@ -386,7 +386,7 @@ namespace Vim.UnitTest
                 Assert.False(didRun);
             }
 
-            [Fact]
+            [WpfFact]
             public void Register1()
             {
                 Create(String.Empty);
@@ -401,7 +401,7 @@ namespace Vim.UnitTest
                 Assert.True(didRun);
             }
 
-            [Fact]
+            [WpfFact]
             public void Register2()
             {
                 Create(String.Empty);
@@ -416,7 +416,7 @@ namespace Vim.UnitTest
                 Assert.True(didRun);
             }
 
-            [Fact]
+            [WpfFact]
             public void Register3()
             {
                 Create(String.Empty);
@@ -431,7 +431,7 @@ namespace Vim.UnitTest
                 Assert.True(didRun);
             }
 
-            [Fact]
+            [WpfFact]
             public void CountAndRegister1()
             {
                 Create(String.Empty);
@@ -448,7 +448,7 @@ namespace Vim.UnitTest
                 Assert.True(didRun);
             }
 
-            [Fact]
+            [WpfFact]
             public void CountAndRegister2()
             {
                 Create(String.Empty);
@@ -465,7 +465,7 @@ namespace Vim.UnitTest
                 Assert.True(didRun);
             }
 
-            [Fact]
+            [WpfFact]
             public void NoMatchingCommand1()
             {
                 Create("hello world");
@@ -473,7 +473,7 @@ namespace Vim.UnitTest
                 Assert.True(_runner.Run('b').IsError);
             }
 
-            [Fact]
+            [WpfFact]
             public void NoMatchingCommand2()
             {
                 Create("hello world");
@@ -482,7 +482,7 @@ namespace Vim.UnitTest
                 Assert.True(_runner.Run('b').IsError);
             }
 
-            [Fact]
+            [WpfFact]
             public void NoMatchingCommand3()
             {
                 Create("hello world");
@@ -497,7 +497,7 @@ namespace Vim.UnitTest
             /// A BindData should be passed an Escape if it does set the handle
             /// escape flag
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void RespectDontHandleEscapeFlag()
             {
                 Create("hello world");
@@ -520,7 +520,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// A BindData shouldn be passed an Escape if it set the handle escape falg
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void RespectHandleEscapeFlag()
             {
                 Create("hello world");
@@ -543,7 +543,7 @@ namespace Vim.UnitTest
 
         public sealed class MiscTest : CommandRunnerTest
         {
-            [Fact]
+            [WpfFact]
             public void Add1()
             {
                 Create(String.Empty);
@@ -552,7 +552,7 @@ namespace Vim.UnitTest
                 Assert.Same(command1, _runner.Commands.Single());
             }
 
-            [Fact]
+            [WpfFact]
             public void Add2()
             {
                 Create(String.Empty);
@@ -565,7 +565,7 @@ namespace Vim.UnitTest
                 Assert.True(_runner.Commands.Contains(command2));
             }
 
-            [Fact]
+            [WpfFact]
             public void Add3()
             {
                 Create(String.Empty);
@@ -574,7 +574,7 @@ namespace Vim.UnitTest
                 Assert.Throws<ArgumentException>(() => _runner.Add(command1));
             }
 
-            [Fact]
+            [WpfFact]
             public void Add4()
             {
                 Create(String.Empty);
@@ -584,7 +584,7 @@ namespace Vim.UnitTest
                 Assert.Throws<ArgumentException>(() => _runner.Add(command2));
             }
 
-            [Fact]
+            [WpfFact]
             public void Remove1()
             {
                 Create(String.Empty);
@@ -597,7 +597,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Don't throw when removing a command that's not present
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Remove2()
             {
                 Create(String.Empty);
@@ -605,7 +605,7 @@ namespace Vim.UnitTest
                 Assert.Equal(0, _runner.Commands.Count());
             }
 
-            [Fact]
+            [WpfFact]
             public void IsWaitingForMoreInput1()
             {
                 Create("hello world");
@@ -614,7 +614,7 @@ namespace Vim.UnitTest
                 Assert.True(_runner.IsWaitingForMoreInput);
             }
 
-            [Fact]
+            [WpfFact]
             public void IsWaitingForMoreInput2()
             {
                 Create("hello world");
@@ -623,7 +623,7 @@ namespace Vim.UnitTest
                 Assert.True(_runner.IsWaitingForMoreInput);
             }
 
-            [Fact]
+            [WpfFact]
             public void IsWaitingForMoreInput3()
             {
                 Create("hello world");
@@ -632,7 +632,7 @@ namespace Vim.UnitTest
                 Assert.False(_runner.IsWaitingForMoreInput);
             }
 
-            [Fact]
+            [WpfFact]
             public void IsWaitingForMoreInput4()
             {
                 Create("hello world");
@@ -645,7 +645,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Cancel in a motion
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void IsWaitingForMoreInput5()
             {
                 Create("hello world");
@@ -659,7 +659,7 @@ namespace Vim.UnitTest
             /// Make sure we are properly able to distinguish between motion and non-motion commands
             /// which have similar prefix matches
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Run_MotionMixedWithNonMotion()
             {
                 Create("the dog chased the ball");
@@ -690,7 +690,7 @@ namespace Vim.UnitTest
                 }
             }
 
-            [Fact]
+            [WpfFact]
             public void Reset1()
             {
                 Create("hello world");
@@ -701,7 +701,7 @@ namespace Vim.UnitTest
                 Assert.False(_runner.IsWaitingForMoreInput);
             }
 
-            [Fact]
+            [WpfFact]
             public void ComplexCommand_EnsureItLoops()
             {
                 Create("hello world");
@@ -720,7 +720,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Disallow Run calls during a bind operation
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void NestedRun_DontAllowRunDuringBind()
             {
                 Create("hello world");
@@ -741,7 +741,7 @@ namespace Vim.UnitTest
             /// It's OK for a Command to call back into the ICommandRunner::Run which ran it
             /// so long as the binding is complete.  This is necessary for Macros
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void NestedRun_AllowMultipleRuns()
             {
                 Create("");
@@ -763,7 +763,7 @@ namespace Vim.UnitTest
                 Assert.True(ran2);
             }
 
-            [Fact]
+            [WpfFact]
             public void CommandRan1()
             {
                 Create("hello world");
@@ -780,7 +780,7 @@ namespace Vim.UnitTest
                 Assert.True(didSee);
             }
 
-            [Fact]
+            [WpfFact]
             public void CommandRan2()
             {
                 Create("hello world");
@@ -797,7 +797,7 @@ namespace Vim.UnitTest
                 Assert.True(didSee);
             }
 
-            [Fact]
+            [WpfFact]
             public void CommandRan3()
             {
                 Create("hello world");

@@ -28,7 +28,7 @@ namespace Vim.UnitTest
                 _classifier = TaggerUtil.CreateBasicClassifierRaw(_source);
             }
 
-            [Fact]
+            [WpfFact]
             public void SimpleGet()
             {
                 _source.Text = "cat";
@@ -40,7 +40,7 @@ namespace Vim.UnitTest
                     list.Select(x => x.Span.Span));
             }
 
-            [Fact]
+            [WpfFact]
             public void ChangeEvent()
             {
                 int count = 0;
@@ -77,7 +77,7 @@ namespace Vim.UnitTest
                 return _classifier.GetClassificationSpans(span);
             }
 
-            [Fact]
+            [WpfFact]
             public void SimpleGet()
             {
                 _source.Text = "cat";
@@ -90,7 +90,7 @@ namespace Vim.UnitTest
                     list.Select(x => x.Span.Span));
             }
 
-            [Fact]
+            [WpfFact]
             public void ChangeFromComplete()
             {
                 _source.Text = "cat";

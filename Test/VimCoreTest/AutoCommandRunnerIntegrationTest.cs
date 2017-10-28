@@ -19,7 +19,7 @@ namespace Vim.UnitTest
 
         public sealed class BufEnterTest : AutoCommandRunnerIntegrationTest
         {
-            [Fact]
+            [WpfFact]
             public void SimpleMatching()
             {
                 VimData.AddAutoCommand(EventKind.BufEnter, "*.html", "set ts=14");
@@ -30,7 +30,7 @@ namespace Vim.UnitTest
 
         public sealed class FileTypeTest : AutoCommandRunnerIntegrationTest
         {
-            [Fact]
+            [WpfFact]
             public void Simple()
             {
                 VimData.AddAutoCommand(EventKind.FileType, "html", "set ts=14");
@@ -41,7 +41,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// This event shouldn't fire on close.  Just on buffer creation
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void NotOnClose()
             {
                 VimData.AddAutoCommand(EventKind.FileType, "html", "set ts=14");
@@ -54,7 +54,7 @@ namespace Vim.UnitTest
 
         public sealed class EnabledTest : AutoCommandRunnerIntegrationTest
         {
-            [Fact]
+            [WpfFact]
             public void NoEventsOnDisable()
             {
                 VimData.AddAutoCommand(EventKind.BufEnter, "*.html", "set ts=12");
@@ -63,7 +63,7 @@ namespace Vim.UnitTest
                 Assert.Equal(8, vimBuffer.LocalSettings.TabStop);
             }
 
-            [Fact]
+            [WpfFact]
             public void NoEventsOnDisableClose()
             {
                 VimHost.IsAutoCommandEnabled = false;
@@ -73,7 +73,7 @@ namespace Vim.UnitTest
                 Assert.Equal(8, vimBuffer.LocalSettings.TabStop);
             }
 
-            [Fact]
+            [WpfFact]
             public void DisableChange()
             {
                 VimHost.IsAutoCommandEnabled = false;

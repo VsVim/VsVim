@@ -29,7 +29,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// A single space after a '.' should make the '.' the sentence end
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void SingleSpace()
             {
                 Create("a!b. c");
@@ -39,7 +39,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// The last portion of many trailing characters is the end of a sentence
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void ManyTrailingCharacters()
             {
                 Create("a?)]' b.");
@@ -49,7 +49,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Don't report the start of a buffer as being the end of a sentence
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void StartOfBuffer()
             {
                 Create("dog. cat");
@@ -59,14 +59,14 @@ namespace Vim.UnitTest
             /// <summary>
             /// A Empty line is a complete sentence so the EndLine value is the end of the sentence
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void EmptyLine()
             {
                 Create("dog", "", "bear");
                 Assert.True(_textObjectUtil.IsSentenceEnd(SentenceKind.Default, _textBuffer.GetLine(1).Start.GetColumn()));
             }
 
-            [Fact]
+            [WpfFact]
             public void Thorough()
             {
                 Create("dog", "cat", "bear");
@@ -83,7 +83,7 @@ namespace Vim.UnitTest
             /// A blank line is a sentence hence the first point after a blank line is the end of a
             /// sentence
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void BlankAfterBlank()
             {
                 Create("", "  test");
@@ -99,7 +99,7 @@ namespace Vim.UnitTest
                 return _textObjectUtil.IsSentenceStartOnly(SentenceKind.Default, column);
             }
 
-            [Fact]
+            [WpfFact]
             public void AfterTrailingChars()
             {
                 Create("a?)]' b.");
@@ -109,7 +109,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Make sure we don't report the second char as the start due to a math error
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void SecondChar()
             {
                 Create("dog. cat");
@@ -120,7 +120,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// A Empty line is a sentence start
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void EmptyLine()
             {
                 Create("dog.  ", "", "");
@@ -130,21 +130,21 @@ namespace Vim.UnitTest
             /// <summary>
             /// The second Empty line isn't a sentence start
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void DoubleEmptyLine()
             {
                 Create("d. ", "", "");
                 Assert.False(IsSentenceStartOnly(_textBuffer.GetPointInLine(2, 0)));
             }
 
-            [Fact]
+            [WpfFact]
             public void AfterDoubleEmptyLine()
             {
                 Create("a", "", "", "b");
                 Assert.True(IsSentenceStartOnly(_textBuffer.GetPointInLine(3, 0)));
             }
 
-            [Fact]
+            [WpfFact]
             public void StartOfLineAfterSentence()
             {
                 Create("a!", "b.");
@@ -160,7 +160,7 @@ namespace Vim.UnitTest
                 return _textObjectUtil.IsSentenceStart(SentenceKind.Default, column);
             }
 
-            [Fact]
+            [WpfFact]
             public void DoubleEmptyLine()
             {
                 Create("a", "", "", "b");
@@ -168,14 +168,14 @@ namespace Vim.UnitTest
                 Assert.False(IsSentenceStart(_textBuffer.GetPointInLine(2, 0)));
             }
 
-            [Fact]
+            [WpfFact]
             public void AfterDoubleEmptyLine()
             {
                 Create("a", "", "", "b");
                 Assert.True(IsSentenceStart(_textBuffer.GetPointInLine(3, 0)));
             }
 
-            [Fact]
+            [WpfFact]
             public void Complex()
             {
                 Create(" f", "", " c", "", " d");
@@ -186,21 +186,21 @@ namespace Vim.UnitTest
             /// The 'test' here is the start of a sentence.  The first sentence in the ITextBuffer
             /// in fact
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void WhiteSpaceStartOfBuffer()
             {
                 Create("  test");
                 Assert.True(IsSentenceStart(_textBuffer.GetPointInLine(0, 2)));
             }
 
-            [Fact]
+            [WpfFact]
             public void WhiteSpaceAfterEmptyLine()
             {
                 Create("", "  test");
                 Assert.True(IsSentenceStart(_textBuffer.GetPointInLine(1, 2)));
             }
 
-            [Fact]
+            [WpfFact]
             public void EmptyAtStartOfBuffer()
             {
                 Create("", "  test");
@@ -216,7 +216,7 @@ namespace Vim.UnitTest
                 return _textObjectUtil.IsEmptyLineWithNoEmptyAbove(line);
             }
 
-            [Fact]
+            [WpfFact]
             public void FirstLineIsEmpty()
             {
                 Create("", "  test");
@@ -224,7 +224,7 @@ namespace Vim.UnitTest
                 Assert.False(IsEmptyLineWithNoEmptyAbove(1));
             }
 
-            [Fact]
+            [WpfFact]
             public void SecondLineIsEmpty()
             {
                 Create("cat", "", "  test");
@@ -234,14 +234,14 @@ namespace Vim.UnitTest
             /// <summary>
             /// A blank line is not an empty one.  It must have length 0 
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void BlankLineIsNotEmpty()
             {
                 Create("cat", " ");
                 Assert.False(IsEmptyLineWithNoEmptyAbove(1));
             }
 
-            [Fact]
+            [WpfFact]
             public void DoubleEmpty()
             {
                 Create("", "", "cat");
@@ -249,7 +249,7 @@ namespace Vim.UnitTest
                 Assert.False(IsEmptyLineWithNoEmptyAbove(1));
             }
 
-            [Fact]
+            [WpfFact]
             public void BlankAndEmptyLines()
             {
                 Create("", " ", "", "cat");
@@ -265,7 +265,7 @@ namespace Vim.UnitTest
                 return _textObjectUtil.IsSentenceWhiteSpace(SentenceKind.Default, point.GetColumn());
             }
 
-            [Fact]
+            [WpfFact]
             public void Simple()
             {
                 Create("cat. dog");
@@ -276,7 +276,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Ignore the spaces which occur in the middle of sentences
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void IgnoreWhiteSpaceInMiddle()
             {
                 Create("cat dog.");
@@ -286,7 +286,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// An empty line is a sentence and hence isn't white space between a sentence
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void EmptyLineIsNotWhiteSpace()
             {
                 Create("d.", "", "c");

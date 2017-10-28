@@ -28,7 +28,7 @@ namespace Vim.UnitTest
         {
             public sealed class TabTest : GetTextTest
             {
-                [Fact]
+                [WpfFact]
                 public void BeforeComplete()
                 {
                     Create("\tcat\t");
@@ -38,7 +38,7 @@ namespace Vim.UnitTest
                     Assert.Equal("\tc", span.GetText());
                 }
 
-                [Fact]
+                [WpfFact]
                 public void BeforePartial()
                 {
                     Create("\tcat\t");
@@ -48,7 +48,7 @@ namespace Vim.UnitTest
                     Assert.Equal("   c", span.GetText());
                 }
 
-                [Fact]
+                [WpfFact]
                 public void AfterComplete()
                 {
                     Create("\tcat\t");
@@ -58,7 +58,7 @@ namespace Vim.UnitTest
                     Assert.Equal("t\t", span.GetText());
                 }
 
-                [Fact]
+                [WpfFact]
                 public void AfterPartial()
                 {
                     Create("\tcat\t");
@@ -72,7 +72,7 @@ namespace Vim.UnitTest
                 /// Make sure the text calculation is correct when the Start and End are within the 
                 /// same point 
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void WithinSingle()
                 {
                     Create("\tcat");
@@ -83,7 +83,7 @@ namespace Vim.UnitTest
 
             public sealed class WideCharacterTest : GetTextTest
             {
-                [Fact]
+                [WpfFact]
                 public void Complete()
                 {
                     Create("\u3042\u3044\u3046\u3048\u304A");
@@ -91,7 +91,7 @@ namespace Vim.UnitTest
                     Assert.Equal("\u3042\u3044", span.GetText());
                 }
 
-                [Fact]
+                [WpfFact]
                 public void Partial()
                 {
                     Create("\u3042\u3044\u3046\u3048\u304A");
@@ -103,7 +103,7 @@ namespace Vim.UnitTest
 
         public sealed class OverarchingEndTest : SnapshotOverlapSpanTest
         {
-            [Fact]
+            [WpfFact]
             public void Simple()
             {
                 Create("cat");
@@ -118,7 +118,7 @@ namespace Vim.UnitTest
             /// overarching end is the next SnapshotPoint.  It must be so to encompass the 
             /// partial text
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void EndPartial()
             {
                 Create("c\tt");
@@ -135,7 +135,7 @@ namespace Vim.UnitTest
             /// When the Start and End are in the same SnapshotPoint then the overarching span should 
             /// be a single character
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Single()
             {
                 Create("\tcat");
@@ -152,7 +152,7 @@ namespace Vim.UnitTest
             /// When the Start and End are in the same SnapshotPoint then the InnerSpan should be 
             /// empty 
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Empty()
             {
                 Create("\t");
@@ -167,7 +167,7 @@ namespace Vim.UnitTest
         {
             public sealed class WideCharacterTest : HasOverlapTest
             {
-                [Fact]
+                [WpfFact]
                 public void Complete()
                 {
                     Create("\u3042\u3044\u3046\u3048\u304A");
@@ -179,7 +179,7 @@ namespace Vim.UnitTest
                 /// <summary>
                 /// This will overlap partially through the い character
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void PartialInEnd()
                 {
                     Create("\u3042\u3044\u3046\u3048\u304A");
@@ -190,7 +190,7 @@ namespace Vim.UnitTest
                 /// <summary>
                 /// This will overlap partially through the あ character
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void PartialInStart()
                 {
                     Create("\u3042\u3044\u3046\u3048\u304A");
@@ -205,7 +205,7 @@ namespace Vim.UnitTest
                 /// When the span is completely within a single character then there is definitely an 
                 /// overlap 
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void WithinSingleCharacter()
                 {
                     Create("\tcat");

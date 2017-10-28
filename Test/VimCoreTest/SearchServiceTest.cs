@@ -52,7 +52,7 @@ namespace Vim.UnitTest
 
         public sealed class CreateFindOptionsTest : SearchServiceTest
         {
-            [Fact]
+            [WpfFact]
             public void CreateFindOptions1()
             {
                 Create("");
@@ -60,7 +60,7 @@ namespace Vim.UnitTest
                 Assert.Equal(FindOptions.UseRegularExpressions | FindOptions.MatchCase, options);
             }
 
-            [Fact]
+            [WpfFact]
             public void CreateFindOptions2()
             {
                 Create("");
@@ -68,7 +68,7 @@ namespace Vim.UnitTest
                 Assert.Equal(FindOptions.UseRegularExpressions | FindOptions.MatchCase, options);
             }
 
-            [Fact]
+            [WpfFact]
             public void CreateFindOptions3()
             {
                 Create("");
@@ -76,7 +76,7 @@ namespace Vim.UnitTest
                 Assert.Equal(FindOptions.WholeWord | FindOptions.MatchCase, options);
             }
 
-            [Fact]
+            [WpfFact]
             public void CreateFindOptions4()
             {
                 Create("");
@@ -85,7 +85,7 @@ namespace Vim.UnitTest
                 Assert.Equal(FindOptions.UseRegularExpressions | FindOptions.MatchCase, options);
             }
 
-            [Fact]
+            [WpfFact]
             public void CreateFindOptions5()
             {
                 Create("");
@@ -94,7 +94,7 @@ namespace Vim.UnitTest
                 Assert.Equal(FindOptions.UseRegularExpressions, options);
             }
 
-            [Fact]
+            [WpfFact]
             public void CreateFindOptions6()
             {
                 Create("");
@@ -104,7 +104,7 @@ namespace Vim.UnitTest
                 Assert.Equal(FindOptions.UseRegularExpressions, options);
             }
 
-            [Fact]
+            [WpfFact]
             public void CreateFindOptions7()
             {
                 Create("");
@@ -114,7 +114,7 @@ namespace Vim.UnitTest
                 Assert.Equal(FindOptions.UseRegularExpressions, options);
             }
 
-            [Fact]
+            [WpfFact]
             public void CreateFindOptions8()
             {
                 Create("");
@@ -124,7 +124,7 @@ namespace Vim.UnitTest
                 Assert.Equal(FindOptions.UseRegularExpressions, options);
             }
 
-            [Fact]
+            [WpfFact]
             public void CreateFindOptions9()
             {
                 Create("");
@@ -134,7 +134,7 @@ namespace Vim.UnitTest
                 Assert.Equal(FindOptions.UseRegularExpressions | FindOptions.MatchCase, options);
             }
 
-            [Fact]
+            [WpfFact]
             public void CreateFindOptions10()
             {
                 Create("");
@@ -145,7 +145,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Make sure the conversion to FindOptions respects the case specifier over normal options
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void RespectCaseSensitiveSpecifier()
             {
                 Create("");
@@ -157,7 +157,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Make sure the conversion to FindOptions respects the case specifier over normal options
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void RespectCaseInsensitiveSpecifier()
             {
                 Create("");
@@ -172,7 +172,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Needs to respect the 'ignorecase' option if 'ConsiderIgnoreCase' is specified
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void ConsiderIgnoreCase()
             {
                 Create("cat dog FISH");
@@ -185,7 +185,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Respect the 'noignorecase' when 'ConsiderIgnoreCase' is specified
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void IgnoreCaseConflictiong()
             {
                 Create("cat dog FISH");
@@ -198,7 +198,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Verify it's actually doing a regular expression search when appropriate
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void UseRegularExpression()
             {
                 Create(@"cat bthe thedog");
@@ -211,7 +211,7 @@ namespace Vim.UnitTest
             /// Bad regular expressions can cause the FindNext API call to throw internally.  Make
             /// sure we wrap it and return a NotFound
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void BadRegex()
             {
                 Create("");
@@ -223,7 +223,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Make sure we handle the 'nomagic' modifier
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void BadRegex_NoMagicSpecifierShouldBeHandled()
             {
                 Create("");
@@ -235,7 +235,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Make sure we find the count occurrence of the item
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void FindNextPattern_Count()
             {
                 Create(" cat dog cat");
@@ -250,7 +250,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Make sure the count is taken into consideration
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void WithCount()
             {
                 Create("cat dog cat", "cat");
@@ -263,7 +263,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Don't make a partial match when using a whole word pattern
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void DontMatchPartialForWholeWord()
             {
                 Create("dog doggy dog");
@@ -274,7 +274,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Do a backward search with 'wrapscan' enabled should go backwards
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Backward()
             {
                 Create("cat dog", "cat");
@@ -288,7 +288,7 @@ namespace Vim.UnitTest
             /// than the first character make sure we don't jump over an extra 
             /// word when searching for a whole word
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void StartOnSecondChar()
             {
                 Create("cat cat cat");
@@ -300,7 +300,7 @@ namespace Vim.UnitTest
             /// Make sure that searching backward from the first char in a word doesn't
             /// count that word as an occurrence
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void BackwardFromFirstChar()
             {
                 Create("cat cat cat");
@@ -312,7 +312,7 @@ namespace Vim.UnitTest
             /// Don't start the search on the current word start.  It should start afterwards
             /// so we don't match the current word
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void DontStartOnPointForward()
             {
                 Create("foo bar", "foo");
@@ -324,7 +324,7 @@ namespace Vim.UnitTest
             /// Don't start the search on the current word start.  It should before the character
             /// when doing a backward search so we don't match the current word
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void DontStartOnPointBackward()
             {
                 Create("foo bar", "foo");
@@ -335,7 +335,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Make sure that this takes into account the 'wrapscan' option going forward
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void ConsiderWrapScanForward()
             {
                 Create("dog", "cat");
@@ -348,7 +348,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Make sure that this takes into account the 'wrapscan' option going forward
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void ConsiderWrapScanBackward()
             {
                 Create("dog", "cat");
@@ -374,7 +374,7 @@ namespace Vim.UnitTest
             /// Our implementation of ITextSearchService works around this issue.  Make sure we don't
             /// regress the behavior
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Regression_InfiniteLoop()
             {
                 Create("i", "int foo()", "cat");
@@ -395,7 +395,7 @@ namespace Vim.UnitTest
 
             public sealed class LineTest : ApplySearchOffsetDataTest
             {
-                [Fact]
+                [WpfFact]
                 public void OneLineDown()
                 {
                     Create("cat", "dog", "fish");
@@ -403,7 +403,7 @@ namespace Vim.UnitTest
                     Assert.Equal(_textBuffer.GetLineSpan(1, 1), span);
                 }
 
-                [Fact]
+                [WpfFact]
                 public void TooManyLinesDown()
                 {
                     Create("cat", "dog", "fish");
@@ -411,7 +411,7 @@ namespace Vim.UnitTest
                     Assert.Equal(_textBuffer.GetLineSpan(2, 1), span);
                 }
 
-                [Fact]
+                [WpfFact]
                 public void OneLineAbove()
                 {
                     Create("cat", "dog", "fish");
@@ -422,7 +422,7 @@ namespace Vim.UnitTest
 
             public sealed class EndTest : ApplySearchOffsetDataTest
             {
-                [Fact]
+                [WpfFact]
                 public void ZeroCase()
                 {
                     Create("cat", "dog", "fish");
@@ -430,7 +430,7 @@ namespace Vim.UnitTest
                     Assert.Equal(_textBuffer.GetLineSpan(0, 2, 1), span);
                 }
 
-                [Fact]
+                [WpfFact]
                 public void After()
                 {
                     Create("cat", "dog", "fish");
@@ -438,7 +438,7 @@ namespace Vim.UnitTest
                     Assert.Equal(_textBuffer.GetLineSpan(0, 2, 1), span);
                 }
 
-                [Fact]
+                [WpfFact]
                 public void AfterAcrossLines()
                 {
                     Create("cat", "dog", "fish");
@@ -446,7 +446,7 @@ namespace Vim.UnitTest
                     Assert.Equal(_textBuffer.GetLineSpan(1, 1), span);
                 }
 
-                [Fact]
+                [WpfFact]
                 public void Before()
                 {
                     Create("cat", "dog", "fish");
@@ -457,7 +457,7 @@ namespace Vim.UnitTest
 
             public sealed class SearchTest : ApplySearchOffsetDataTest
             {
-                [Fact]
+                [WpfFact]
                 public void SimpleCase()
                 {
                     Create("big", "cat", "dog", "fish");
@@ -497,7 +497,7 @@ namespace Vim.UnitTest
                 _search.FindNext(point, new SearchData(text, path, isWrap), navigator);
             }
 
-            [Fact]
+            [WpfFact]
             public void SameText()
             {
                 Create("cat dog");
@@ -508,7 +508,7 @@ namespace Vim.UnitTest
                 }
             }
 
-            [Fact]
+            [WpfFact]
             public void DifferentTextSameSnapshot()
             {
                 Create("big cat dog");
@@ -520,7 +520,7 @@ namespace Vim.UnitTest
                 Assert.Equal(2, _searchCount);
             }
 
-            [Fact]
+            [WpfFact]
             public void SameTextDifferentSnapshot()
             {
                 Create("cat dog");
@@ -531,7 +531,7 @@ namespace Vim.UnitTest
                 Assert.Equal(2, _searchCount);
             }
 
-            [Fact]
+            [WpfFact]
             public void SameTextDifferentStartPoint()
             {
                 Create("cat dog");

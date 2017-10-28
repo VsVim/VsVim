@@ -15,7 +15,7 @@ namespace Vim.UnitTest
             _buffer = CreateTextBuffer(lines);
         }
 
-        [Fact]
+        [WpfFact]
         public void CreateForLine()
         {
             Create("hello", "world");
@@ -26,7 +26,7 @@ namespace Vim.UnitTest
             Assert.Equal(0, range.LastLineNumber);
         }
 
-        [Fact]
+        [WpfFact]
         public void CreateForLineNumberAndCount1()
         {
             Create("hello", "world");
@@ -37,7 +37,7 @@ namespace Vim.UnitTest
             Assert.Equal(0, range.LastLineNumber);
         }
 
-        [Fact]
+        [WpfFact]
         public void CreateForLineNumberAndCount2()
         {
             Create("hello", "world");
@@ -51,7 +51,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Guard against a high count
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void CreateForLineNumberAndCount3()
         {
             Create("hello", "world");
@@ -59,7 +59,7 @@ namespace Vim.UnitTest
             Assert.True(opt.IsNone());
         }
 
-        [Fact]
+        [WpfFact]
         public void CreateForLineNumberRange1()
         {
             Create("hello", "world");
@@ -70,7 +70,7 @@ namespace Vim.UnitTest
             Assert.Equal(0, range.LastLineNumber);
         }
 
-        [Fact]
+        [WpfFact]
         public void CreateForLineNumberRange2()
         {
             Create("hello", "world");
@@ -84,7 +84,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Sanity check for valid count
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void CreateForLineAndMaxCount1()
         {
             Create("a", "b");
@@ -97,7 +97,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Very high count
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void CreateForLineAndMaxCount2()
         {
             Create("a", "b");
@@ -110,7 +110,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Count exactly at the max
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void CreateForLineAndMaxCount3()
         {
             Create("a", "b");

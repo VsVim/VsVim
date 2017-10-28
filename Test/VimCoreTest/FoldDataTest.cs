@@ -25,7 +25,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// The default behavior of the Folds property is to have no folds
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void Folds_DefaultIsEmpty()
         {
             Create(string.Empty);
@@ -36,7 +36,7 @@ namespace Vim.UnitTest
         /// Verify the expected behavior that creating a fold will result in the value
         /// being available in the collection
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void Folds_Simple()
         {
             Create("the quick brown", "fox jumped", " over the dog");
@@ -49,7 +49,7 @@ namespace Vim.UnitTest
         /// Don't create a fold unless it's at least 2 lines.  Vim doesn't suppor the notion
         /// of single line folds
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void CreateFold_OneLine()
         {
             Create("the quick brown", "fox jumped", " over the dog");
@@ -61,7 +61,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Standard fold creation case
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void CreateFold_Standard()
         {
             Create("the quick brown", "fox jumped", " over the dog");
@@ -73,7 +73,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Sanity check that the API supports multiple folds
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void CreateFold_MultipleFolds()
         {
             Create("the quick brown", "fox jumped", " over the dog");
@@ -85,7 +85,7 @@ namespace Vim.UnitTest
             Assert.True(_foldData.Folds.Contains(range2.Extent));
         }
 
-        [Fact]
+        [WpfFact]
         public void DeleteFold1()
         {
             Create("the quick brown", "fox jumped", " over the dog");
@@ -94,7 +94,7 @@ namespace Vim.UnitTest
             Assert.False(_foldData.DeleteFold(_textBuffer.GetLine(2).Start));
         }
 
-        [Fact]
+        [WpfFact]
         public void DeleteFold2()
         {
             Create("the quick brown", "fox jumped", " over the dog");
@@ -104,7 +104,7 @@ namespace Vim.UnitTest
             Assert.Equal(0, _foldData.Folds.Count());
         }
 
-        [Fact]
+        [WpfFact]
         public void DeleteAllFolds1()
         {
             Create("the quick brown", "fox jumped", " over the dog");

@@ -20,7 +20,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// No selection should equal no span
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void GetOverarchingSpan1()
         {
             _selection.SetupGet(x => x.IsEmpty).Returns(true).Verifiable();
@@ -31,7 +31,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// No spans should have no overarching
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void GetOverarchingSpan2()
         {
             var spans = new NormalizedSnapshotSpanCollection();
@@ -40,7 +40,7 @@ namespace Vim.UnitTest
             _selection.Verify();
         }
 
-        [Fact]
+        [WpfFact]
         public void GetOverarchingSpan3()
         {
             var buffer = CreateTextBuffer("foo bar");
@@ -51,7 +51,7 @@ namespace Vim.UnitTest
             _selection.Verify();
         }
 
-        [Fact]
+        [WpfFact]
         public void GetOverarchingSpan4()
         {
             var buffer = CreateTextBuffer("foo", "baz", "bar");

@@ -26,7 +26,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Ensure that CreateVimBuffer actually creates an IVimBuffer instance
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Simple()
             {
                 var textView = CreateTextView("");
@@ -41,7 +41,7 @@ namespace Vim.UnitTest
             /// The IVimBufferFactory should be stateless and happily create multiple IVimBuffer instances for a 
             /// given ITextView (even though at an application level that will be illegal)
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Stateless()
             {
                 var textView = CreateTextView("");
@@ -56,7 +56,7 @@ namespace Vim.UnitTest
             /// Create the IVimBuffer for an uninitialized ITextView instance.  This should create an 
             /// IVimBuffer in the uninitialized state 
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void UninitializedTextView()
             {
                 var textBuffer = CreateTextBuffer("");
@@ -72,7 +72,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Once an ITextView state is initialized the IVimBuffer should move to the appropriate state
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void TextViewDelayInitialize()
             {
                 var textBuffer = CreateTextBuffer("");
@@ -98,7 +98,7 @@ namespace Vim.UnitTest
             /// 
             /// This is the scenario which produced the stack trace in issue 1376
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void TextViewInLayoutInsideLayoutEvent()
             {
                 var textBuffer = CreateTextBuffer("");
@@ -127,7 +127,7 @@ namespace Vim.UnitTest
                 Assert.Equal(ModeKind.Normal, vimBuffer.ModeKind);
             }
 
-            [Fact]
+            [WpfFact]
             public void TextViewClosedInsideLayoutEvent()
             {
                 var textBuffer = CreateTextBuffer("");

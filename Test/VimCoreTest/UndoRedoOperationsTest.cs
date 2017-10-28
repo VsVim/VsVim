@@ -102,7 +102,7 @@ namespace Vim.UnitTest
             /// Make sure the implementation correctly handles a close of a linked transaction that has 
             /// been orphaned by a ResetState call
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void ClosedBrokenChain()
             {
                 Create();
@@ -116,7 +116,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Make sure an orphaned linked transaction doesn't upset any state after it 
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void ClosedBrokenChainWithNewOpen()
             {
                 Create(HistoryKind.None);
@@ -133,7 +133,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Make sure the count is properly managed here
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Count()
             {
                 Create(HistoryKind.Basic);
@@ -157,7 +157,7 @@ namespace Vim.UnitTest
                 Assert.Equal(0, _undoRedoOperationsRaw.LinkedUndoTransactionStack.Count);
             }
 
-            [Fact]
+            [WpfFact]
             public void UndoGroup()
             {
                 Create();
@@ -170,7 +170,7 @@ namespace Vim.UnitTest
                 Assert.Equal(3, _undoCount);
             }
 
-            [Fact]
+            [WpfFact]
             public void RedoGroup()
             {
                 Create();
@@ -185,7 +185,7 @@ namespace Vim.UnitTest
                 Assert.Equal(3, _redoCount);
             }
 
-            [Fact]
+            [WpfFact]
             public void UnexpectedUndoRedoMustClearLinkedState()
             {
                 Create();
@@ -201,7 +201,7 @@ namespace Vim.UnitTest
             /// events only occur when they are outer transactions.  Hence opening a linked undo with an already
             /// open outer transaction is pointless
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void BadOpenError()
             {
                 Create(HistoryKind.Basic);
@@ -218,7 +218,7 @@ namespace Vim.UnitTest
             ///  2. coding error
             /// Either way it is a bug and needs to be mentioned to the suer 
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void BadClose()
             {
                 Create(HistoryKind.Basic);
@@ -232,7 +232,7 @@ namespace Vim.UnitTest
             /// If the flags permit the bad close then just let it happen.  The undo transaction is just 
             /// removed on close
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void BadCloseExpected()
             {
                 Create(HistoryKind.Basic);
@@ -246,7 +246,7 @@ namespace Vim.UnitTest
             /// Two linked undo transactions which happen back to back should create new linked undo
             /// transactions in the undo stack
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void BackToBack()
             {
                 Create(HistoryKind.Basic);
@@ -260,7 +260,7 @@ namespace Vim.UnitTest
                 }
             }
 
-            [Fact]
+            [WpfFact]
             public void AfterNormal()
             {
                 Create(HistoryKind.Basic);
@@ -273,7 +273,7 @@ namespace Vim.UnitTest
                 Assert.Equal(2, _undoRedoOperationsRaw.UndoStack.Length);
             }
 
-            [Fact]
+            [WpfFact]
             public void LinkedEmptyNormal()
             {
                 Create(HistoryKind.Basic);
@@ -300,7 +300,7 @@ namespace Vim.UnitTest
             /// 
             /// Don't let linked transactions persist across this event
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Issue672()
             {
                 Create();
@@ -321,7 +321,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Undo without history should raise an error message saying it's not supported
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void WithoutHistory()
             {
                 Create(HistoryKind.None);
@@ -333,7 +333,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Very possible for undo to throw.  Make sure we handle it 
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Throws()
             {
                 Create();
@@ -347,7 +347,7 @@ namespace Vim.UnitTest
             /// If there is no undo stack then just pass on the undo's to the 
             /// ITextUndoHistory value
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void NoStack()
             {
                 Create();
@@ -359,7 +359,7 @@ namespace Vim.UnitTest
             /// If there is a Linked item on the top of the undo stack make sure that 
             /// the appropriate number is passed to the ITextUndoHistory instance
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void StackWithLinked()
             {
                 Create();
@@ -377,7 +377,7 @@ namespace Vim.UnitTest
             /// If there is a Normal item on the top of the undo stack make sure that 
             /// just a single item is passed to undo.  It's a simple undo
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void StackWithNormal()
             {
                 Create();
@@ -394,7 +394,7 @@ namespace Vim.UnitTest
             /// If an undo occurs with a linked undo transaction open we should default back to Visual 
             /// Studio undo
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void WithLinkedTransactionOpen()
             {
                 Create();
@@ -420,7 +420,7 @@ namespace Vim.UnitTest
             /// If there is no ITextUndoHistory associated with the operations then raise the
             /// appropriate error message
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void NoHistory()
             {
                 Create(HistoryKind.None);
@@ -432,7 +432,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Make sure that redo can also handle a throws
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Throws()
             {
                 Create();
@@ -446,7 +446,7 @@ namespace Vim.UnitTest
             /// With no stack the undo's should just go straight to the ITextUndoHistory one at 
             /// a time
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void NoStack()
             {
                 Create();
@@ -459,7 +459,7 @@ namespace Vim.UnitTest
             /// If there is a Linked item on the top of the redo stack make sure that 
             /// the appropriate number is passed to the ITextUndoHistory instance
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void StackWithLinked()
             {
                 Create();
@@ -478,7 +478,7 @@ namespace Vim.UnitTest
             /// If there is a Normal item on the top of the undo stack make sure that 
             /// just a single item is passed to undo.  It's a simple undo
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void StackWithNormal()
             {
                 Create();
@@ -496,7 +496,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// An undo transaction completing should empty the redo stack.
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void EmptyRedo()
             {
                 Create();
@@ -512,7 +512,7 @@ namespace Vim.UnitTest
 
         public sealed class MiscTest : UndoRedoOperationsTest
         {
-            [Fact]
+            [WpfFact]
             public void CreateUndoTransaction1()
             {
                 Create(HistoryKind.None);
@@ -521,7 +521,7 @@ namespace Vim.UnitTest
                 _factory.Verify();
             }
 
-            [Fact]
+            [WpfFact]
             public void CreateUndoTransaction2()
             {
                 Create();
@@ -535,7 +535,7 @@ namespace Vim.UnitTest
 
         public sealed class NormalTest : UndoRedoOperationsTest
         {
-            [Fact]
+            [WpfFact]
             public void BadOrder()
             {
                 Create(HistoryKind.Basic);
@@ -573,7 +573,7 @@ namespace Vim.UnitTest
             /// though this is just fine.  We never get any transaction events in a history situation hence
             /// it's actually expected to have an empty stack 
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void EmptyLinkedUndoTransaction()
             {
                 var linkedUndoTransaction = _undoRedoOperations.CreateLinkedUndoTransaction("other");
@@ -584,7 +584,7 @@ namespace Vim.UnitTest
             /// There should be no undo / redo stack tracking when there is no history.  There is simply 
             /// no point in doing it 
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Linked()
             {
                 Create(HistoryKind.None);
@@ -594,7 +594,7 @@ namespace Vim.UnitTest
                 AssertEmpty();
             }
 
-            [Fact]
+            [WpfFact]
             public void Normal()
             {
                 Create(HistoryKind.None);
@@ -604,7 +604,7 @@ namespace Vim.UnitTest
                 AssertEmpty();
             }
 
-            [Fact]
+            [WpfFact]
             public void View()
             {
                 Create(HistoryKind.None);

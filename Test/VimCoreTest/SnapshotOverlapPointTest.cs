@@ -21,7 +21,7 @@ namespace Vim.UnitTest
         {
             public sealed class TabTest : CtorTest
             {
-                [Fact]
+                [WpfFact]
                 public void TabStart()
                 {
                     Create("\t");
@@ -30,7 +30,7 @@ namespace Vim.UnitTest
                     Assert.Equal(3, point.SpacesAfter);
                 }
 
-                [Fact]
+                [WpfFact]
                 public void TabEnd()
                 {
                     Create("\t");
@@ -39,7 +39,7 @@ namespace Vim.UnitTest
                     Assert.Equal(0, point.SpacesAfter);
                 }
 
-                [Fact]
+                [WpfFact]
                 public void TabMiddle()
                 {
                     Create("\t");
@@ -52,7 +52,7 @@ namespace Vim.UnitTest
 
             public sealed class NormalTest : CtorTest
             {
-                [Fact]
+                [WpfFact]
                 public void Simple()
                 {
                     Create("cat");
@@ -61,7 +61,7 @@ namespace Vim.UnitTest
                     Assert.Equal(0, point.SpacesAfter);
                 }
 
-                [Fact]
+                [WpfFact]
                 public void SimpleNonColumnZero()
                 {
                     Create("cat");
@@ -73,7 +73,7 @@ namespace Vim.UnitTest
 
             public sealed class EndTest : CtorTest
             {
-                [Fact]
+                [WpfFact]
                 public void EndOfBuffer()
                 {
                     Create("cat");
@@ -98,7 +98,7 @@ namespace Vim.UnitTest
                     Assert.Equal(c, point.Point.GetChar());
                 }
 
-                [Fact]
+                [WpfFact]
                 public void Tab()
                 {
                     Create("\tcat");
@@ -106,7 +106,7 @@ namespace Vim.UnitTest
                     AssertPoint(point, '\t');
                 }
 
-                [Fact]
+                [WpfFact]
                 public void Normal()
                 {
                     Create("\tcat");
@@ -114,7 +114,7 @@ namespace Vim.UnitTest
                     AssertPoint(point, 'c');
                 }
 
-                [Fact]
+                [WpfFact]
                 public void Wide()
                 {
                     Create("\t\u3042cat");
@@ -122,7 +122,7 @@ namespace Vim.UnitTest
                     AssertPoint(point, '\u3042');
                 }
 
-                [Fact]
+                [WpfFact]
                 public void EndOfBuffer()
                 {
                     Create("\t\u3042cat");
@@ -136,7 +136,7 @@ namespace Vim.UnitTest
 
         public sealed class GetSpaceWithOverlapOrEndTest :  SnapshotOverlapPointTest
         {
-            [Fact]
+            [WpfFact]
             public void BeforeTab()
             {
                 Create("d\tog", "extra");
@@ -144,7 +144,7 @@ namespace Vim.UnitTest
                 Assert.Equal(_textBuffer.GetPoint(position: 0), point.Point);
             }
 
-            [Fact]
+            [WpfFact]
             public void PartialTab()
             {
                 Create("d\tog", "extra");
@@ -156,7 +156,7 @@ namespace Vim.UnitTest
             /// The number of spaces should be the same no matter where into the SnapshotPoint we end up 
             /// indexing.  The only values that should change are SpacesBefore and SpacesAfter
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void PartialTab2()
             {
                 Create("d\tog", "extra");
@@ -166,7 +166,7 @@ namespace Vim.UnitTest
                 Assert.Equal(_textBuffer.GetPoint(position: 1), point.Point);
             }
 
-            [Fact]
+            [WpfFact]
             public void AfterTab()
             {
                 Create("d\tog", "extra");

@@ -57,14 +57,14 @@ namespace Vim.UnitTest
                 _vimBuffer.LocalSettings.AutoIndent = false;
             }
 
-            [Fact]
+            [WpfFact]
             public void SimpleSet()
             {
                 _commandMode.Command = "set ai";
                 Assert.Equal(1, _commandChangedCount);
             }
 
-            [Fact]
+            [WpfFact]
             public void EnterShouldChange()
             {
                 _vimBuffer.Process("set ai");
@@ -73,7 +73,7 @@ namespace Vim.UnitTest
                 Assert.Equal(1, _commandChangedCount);
             }
 
-            [Fact]
+            [WpfFact]
             public void EscapeShouldChange()
             {
                 _vimBuffer.Process("set ai");
@@ -92,14 +92,14 @@ namespace Vim.UnitTest
                 _vimBuffer.LocalSettings.AutoIndent = false;
             }
 
-            [Fact]
+            [WpfFact]
             public void TypeAndCheck()
             {
                 _vimBuffer.Process("set");
                 Assert.Equal("set", _commandMode.Command);
             }
 
-            [Fact]
+            [WpfFact]
             public void SimpleSet()
             {
                 _commandMode.Command = "set ai";
@@ -108,7 +108,7 @@ namespace Vim.UnitTest
                 Assert.True(_vimBuffer.LocalSettings.AutoIndent);
             }
 
-            [Fact]
+            [WpfFact]
             public void SetAndUse()
             {
                 _commandMode.Command = "set ai";
@@ -122,7 +122,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Copying a line to a given line should put it at that given line
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void ItDisplacesToTheLineBelowWhenTargetedAtCurrentLine()
             {
                 Create("cat", "dog", "bear");
@@ -133,7 +133,7 @@ namespace Vim.UnitTest
                 Assert.Equal(_textBuffer.GetLine(1).Start, _textView.GetCaretPoint());
             }
 
-            [Fact]
+            [WpfFact]
             public void ItCanJumpLongRanges()
             {
                 Create("cat", "dog", "bear");
@@ -147,7 +147,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Check the copy command via the 't' synonym
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void The_t_SynonymWorksAlso()
             {
                 Create("cat", "dog", "bear");
@@ -162,7 +162,7 @@ namespace Vim.UnitTest
             /// Copying a line to a range should cause it to copy to the first line 
             /// in the range
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void CopyingASingleLineToARangeDuplicatesTheLine()
             {
                 Create("cat", "dog", "bear");
@@ -172,7 +172,7 @@ namespace Vim.UnitTest
                 Assert.Equal("dog", _textBuffer.GetLine(2).GetText());
             }
 
-            [Fact]
+            [WpfFact]
             public void PositiveRelativeReferencesUsingDotWork()
             {
                 Create("cat", "dog", "bear");
@@ -184,7 +184,7 @@ namespace Vim.UnitTest
                 Assert.Equal("bear", _textBuffer.GetLine(3).GetText());
             }
 
-            [Fact]
+            [WpfFact]
             public void PositiveRelativeReferencesWork()
             {
                 Create("cat", "dog", "bear");
@@ -195,7 +195,7 @@ namespace Vim.UnitTest
                 Assert.Equal("bear", _textBuffer.GetLine(3).GetText());
             }
 
-            [Fact]
+            [WpfFact]
             public void NegativeRelativeReferencesWork()
             {
                 // Added goose to simplify this test case. Look further for an issue with last line endlines 
@@ -208,7 +208,7 @@ namespace Vim.UnitTest
                 Assert.Equal("bear", _textBuffer.GetLine(3).GetText());
             }
 
-            [Fact]
+            [WpfFact]
             public void CopyingPastLastLineInsertsAnImplicitNewline()
             {
                 Create("cat", "dog", "bear");
@@ -237,7 +237,7 @@ namespace Vim.UnitTest
                 return HasLocalMark(LocalMark.NewLetter(letter));
             }
 
-            [Fact]
+            [WpfFact]
             public void DeleteGlobal()
             {
                 Create("cat", "dog");
@@ -247,7 +247,7 @@ namespace Vim.UnitTest
                 Assert.False(HasGlobalMark(Letter.A));
             }
 
-            [Fact]
+            [WpfFact]
             public void DeleteGlobalMany()
             {
                 Create("cat", "dog");
@@ -259,7 +259,7 @@ namespace Vim.UnitTest
                 Assert.False(HasGlobalMark(Letter.B));
             }
 
-            [Fact]
+            [WpfFact]
             public void DeleteGlobalRange()
             {
                 Create("cat", "dog");
@@ -275,7 +275,7 @@ namespace Vim.UnitTest
             /// Normal delete range operation but include some invalid marks here.  No errors
             /// should be issued
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void DeleteGlobalRangeWithInvalid()
             {
                 Create("cat", "dog");
@@ -288,7 +288,7 @@ namespace Vim.UnitTest
                 Assert.False(HasGlobalMark(Letter.C));
             }
 
-            [Fact]
+            [WpfFact]
             public void DeleteLocalMark()
             {
                 Create("cat", "dog");
@@ -301,7 +301,7 @@ namespace Vim.UnitTest
                 Assert.True(HasLocalMark(Letter.B));
             }
 
-            [Fact]
+            [WpfFact]
             public void DeleteLocalMarkMany()
             {
                 Create("cat", "dog");
@@ -314,7 +314,7 @@ namespace Vim.UnitTest
                 Assert.False(HasLocalMark(Letter.B));
             }
 
-            [Fact]
+            [WpfFact]
             public void DeleteLocalMarkRange()
             {
                 Create("cat", "dog");
@@ -327,7 +327,7 @@ namespace Vim.UnitTest
                 Assert.False(HasLocalMark(Letter.B));
             }
 
-            [Fact]
+            [WpfFact]
             public void DeleteLocalMarkNumber()
             {
                 Create("cat", "dog");
@@ -340,7 +340,7 @@ namespace Vim.UnitTest
                 Assert.False(HasLocalMark(Letter.B));
             }
 
-            [Fact]
+            [WpfFact]
             public void DeleteAllMarks()
             {
                 Create("cat", "dog");
@@ -356,7 +356,7 @@ namespace Vim.UnitTest
 
         public sealed class GlobalTest : CommandModeIntegrationTest
         {
-            [Fact]
+            [WpfFact]
             public void DeleteSelected()
             {
                 Create("cat", "dog", "cattle");
@@ -364,7 +364,7 @@ namespace Vim.UnitTest
                 Assert.Equal(new[] { "dog" }, _vimBuffer.TextBuffer.GetLines());
             }
 
-            [Fact]
+            [WpfFact]
             public void UpdateLastSearch()
             {
                 Create("cat", "dog", "cattle");
@@ -373,7 +373,7 @@ namespace Vim.UnitTest
                 Assert.Equal("cat", _vimBuffer.VimData.LastSearchData.Pattern);
             }
 
-            [Fact]
+            [WpfFact]
             public void SpaceDoesntUseLastSearch()
             {
                 Create("cat", "dog", "cattle", "big dog");
@@ -385,7 +385,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// By default the global command should use the last search pattern
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Issue1626()
             {
                 Create("cat", "dog", "cattle");
@@ -401,7 +401,7 @@ namespace Vim.UnitTest
             /// Make sure that we can handle the incremental search command from the command line 
             /// Issue 1034
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void ForwardSimple()
             {
                 Create("cat", "dog", "fish");
@@ -412,7 +412,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Make sure that we can handle the incremental search command from the command line 
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void BackwardSimple()
             {
                 Create("cat", "dog", "fish");
@@ -424,7 +424,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Make sure the match goes to the first non-whitespace character on the line 
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void MatchNotOnColumnZero()
             {
                 Create("cat", " dog", "fish");
@@ -436,7 +436,7 @@ namespace Vim.UnitTest
             /// The caret should not move to the word but instead to the first non-blank character
             /// of the line
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void MatchNotStartOfLine()
             {
                 Create("cat", " big dog", "fish");
@@ -448,7 +448,7 @@ namespace Vim.UnitTest
             /// Executing an incremental search from the command line needs to update the last searched
             /// for term
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Issue1146()
             {
                 Create("cat", " dog", "dog");
@@ -460,7 +460,7 @@ namespace Vim.UnitTest
 
         public sealed class LastCommandLineTest : CommandModeIntegrationTest
         {
-            [Fact]
+            [WpfFact]
             public void Simple()
             {
                 Create();
@@ -468,7 +468,7 @@ namespace Vim.UnitTest
                 Assert.Equal("/dog", VimData.LastCommandLine);
             }
 
-            [Fact]
+            [WpfFact]
             public void Error()
             {
                 Create();
@@ -490,7 +490,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// An empty command shouldn't be store in the command history 
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void EmptyCommandsNotStored()
             {
                 Create("");
@@ -498,7 +498,7 @@ namespace Vim.UnitTest
                 Assert.Equal(0, VimData.CommandHistory.Count());
             }
 
-            [Fact]
+            [WpfFact]
             public void PreviousCommand()
             {
                 Create("");
@@ -507,7 +507,7 @@ namespace Vim.UnitTest
                 Assert.Equal("dog", _commandMode.Command);
             }
 
-            [Fact]
+            [WpfFact]
             public void PreviousCommandAlternateKeystroke()
             {
                 Create("");
@@ -516,7 +516,7 @@ namespace Vim.UnitTest
                 Assert.Equal("dog", _commandMode.Command);
             }
 
-            [Fact]
+            [WpfFact]
             public void NextCommand()
             {
                 Create("");
@@ -525,7 +525,7 @@ namespace Vim.UnitTest
                 Assert.Equal("cat", _commandMode.Command);
             }
 
-            [Fact]
+            [WpfFact]
             public void NextCommandAlternateKeystroke()
             {
                 Create("");
@@ -534,7 +534,7 @@ namespace Vim.UnitTest
                 Assert.Equal("cat", _commandMode.Command);
             }
 
-            [Fact]
+            [WpfFact]
             public void Backspace()
             {
                 Create("");
@@ -542,7 +542,7 @@ namespace Vim.UnitTest
                 Assert.Equal("dog", _commandMode.Command);
             }
 
-            [Fact]
+            [WpfFact]
             public void BackspaceWithShift()
             {
                 Create("");
@@ -553,7 +553,7 @@ namespace Vim.UnitTest
 
         public sealed class MoveToTests : CommandModeIntegrationTest
         {
-            [Fact]
+            [WpfFact]
             public void SimpleCaseOfMovingLineOneBelow()
             {
                 Create("cat", "dog", "bear");
@@ -568,7 +568,7 @@ namespace Vim.UnitTest
             /// The last line in the file seems to be an exception because it doesn't have a 
             /// newline at the end
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void MoveToLastLineInFile()
             {
                 Create("cat", "dog", "bear");
@@ -583,7 +583,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Specifying "line 0" should move to before the first line.
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void MoveToBeforeFirstLineInFile() {
                 Create("cat", "dog", "bear");
 
@@ -598,7 +598,7 @@ namespace Vim.UnitTest
 
         public sealed class PasteTest : CommandModeIntegrationTest
         {
-            [Fact]
+            [WpfFact]
             public void Simple()
             {
                 Create("");
@@ -607,7 +607,7 @@ namespace Vim.UnitTest
                 Assert.Equal("test", _commandMode.Command);
             }
 
-            [Fact]
+            [WpfFact]
             public void InPasteWait()
             {
                 Create("");
@@ -619,7 +619,7 @@ namespace Vim.UnitTest
                 Assert.False(_commandMode.InPasteWait);
             }
 
-            [Fact]
+            [WpfFact]
             public void InsertWordUnderCursor()
             {
                 // :help c_CTRL-R_CTRL-W
@@ -634,7 +634,7 @@ namespace Vim.UnitTest
                 Assert.Equal(initialSelection, _textView.Selection);
             }
 
-            [Fact]
+            [WpfFact]
             public void InsertAllWordUnderCursor()
             {
                 // :help c_CTRL-R_CTRL-A
@@ -660,7 +660,7 @@ namespace Vim.UnitTest
                     _vimBuffer.Vim.GlobalSettings.GlobalDefault = true;
                 }
 
-                [Fact]
+                [WpfFact]
                 public void Simple()
                 {
                     Create("cat bat");
@@ -668,7 +668,7 @@ namespace Vim.UnitTest
                     Assert.Equal("cot bot", _textBuffer.GetLine(0).GetText());
                 }
 
-                [Fact]
+                [WpfFact]
                 public void Invert()
                 {
                     Create("cat bat");
@@ -676,7 +676,7 @@ namespace Vim.UnitTest
                     Assert.Equal("cot bat", _textBuffer.GetLine(0).GetText());
                 }
 
-                [Fact]
+                [WpfFact]
                 public void Repeat()
                 {
                     Create("cat bat", "cat bat");
@@ -692,7 +692,7 @@ namespace Vim.UnitTest
                 /// <summary>
                 /// Suppress errors shouldn't print anything
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void Substitute1()
                 {
                     Create("cat", "dog");
@@ -705,7 +705,7 @@ namespace Vim.UnitTest
                 /// <summary>
                 /// Simple search and replace
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void Substitute2()
                 {
                     Create("cat bat", "dag");
@@ -717,7 +717,7 @@ namespace Vim.UnitTest
                 /// <summary>
                 /// Repeat of the last search with a new flag
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void Substitute3()
                 {
                     Create("cat bat", "dag");
@@ -730,7 +730,7 @@ namespace Vim.UnitTest
                 /// <summary>
                 /// Testing the print option
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void Substitute4()
                 {
                     Create("cat bat", "dag");
@@ -743,7 +743,7 @@ namespace Vim.UnitTest
                 /// <summary>
                 /// Testing the print number option
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void Substitute6()
                 {
                     Create("cat bat", "dag");
@@ -756,7 +756,7 @@ namespace Vim.UnitTest
                 /// <summary>
                 /// Testing the print list option
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void Substitute7()
                 {
                     Create("cat bat", "dag");
@@ -769,7 +769,7 @@ namespace Vim.UnitTest
                 /// <summary>
                 /// Verify we handle escaped back slashes correctly
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void WithBackslashes()
                 {
                     Create(@"\\\\abc\\\\def");
@@ -780,7 +780,7 @@ namespace Vim.UnitTest
                 /// <summary>
                 /// Convert a set of spaces into tabs with the '\t' replacement
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void TabsForSpaces()
                 {
                     Create("    ");
@@ -791,7 +791,7 @@ namespace Vim.UnitTest
                 /// <summary>
                 /// Convert spaces into new lines with the '\r' replacement
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void SpacesToNewLine()
                 {
                     Create("dog chases cat");
@@ -801,7 +801,7 @@ namespace Vim.UnitTest
                     Assert.Equal("cat", _textBuffer.GetLine(2).GetText());
                 }
 
-                [Fact]
+                [WpfFact]
                 public void DefaultsToMagicMode()
                 {
                     Create("a.c", "abc");
@@ -813,7 +813,7 @@ namespace Vim.UnitTest
                 /// <summary>
                 /// Make sure the "\1" does a group substitution instead of pushing in the literal 1
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void ReplaceWithGroup()
                 {
                     Create(@"cat (dog)");
@@ -821,7 +821,7 @@ namespace Vim.UnitTest
                     Assert.Equal(@"cat dog", _textBuffer.GetLine(0).GetText());
                 }
 
-                [Fact]
+                [WpfFact]
                 public void NewlinesCanBeReplaced()
                 {
                     Create("foo", "bar");
@@ -833,7 +833,7 @@ namespace Vim.UnitTest
                 /// Covers #763 where the default search for substitute uses the last substitute
                 /// instead of the last search
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void SubstituteThenSearchThenUsesPatternFromLastSearch()
                 {
                     Create("foo", "bar");
@@ -845,7 +845,7 @@ namespace Vim.UnitTest
                     Assert.Equal(_textBuffer.GetLine(1).Extent.GetText(), "baz");
                 }
 
-                [Fact]
+                [WpfFact]
                 public void SubstituteThenSearchThenUsesPatternFromLastSubstitute()
                 {
                     Create("foo foo foo");
@@ -861,7 +861,7 @@ namespace Vim.UnitTest
                 /// <summary>
                 /// Baseline to make sure I don't break anything while fixing #763
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void SubstituteThenUsesPatternFromLastSubstitute()
                 {
                     Create("foo", "bar");
@@ -876,7 +876,7 @@ namespace Vim.UnitTest
                 /// Make sure that we can handle a space between the :substitute command name 
                 /// and the pattern
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void SpaceAfterCommandName()
                 {
                     Create("ca t");
@@ -884,7 +884,7 @@ namespace Vim.UnitTest
                     Assert.Equal("cat", _textBuffer.GetLine(0).GetText());
                 }
 
-                [Fact]
+                [WpfFact]
                 public void AsteriskReplace()
                 {
                     Create("dog");
@@ -892,7 +892,7 @@ namespace Vim.UnitTest
                     Assert.Equal("d*g", _textBuffer.GetLine(0).GetText());
                 }
 
-                [Fact]
+                [WpfFact]
                 public void AsteriskAndExtraReplace()
                 {
                     Create("dog");
@@ -905,7 +905,7 @@ namespace Vim.UnitTest
                 /// from the substitute was ignoring the ignorecase and smartcase options.  It was 
                 /// instead creating literally from the substitute flags
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void Issue973()
                 {
                     Create("vols.First()");
@@ -917,7 +917,7 @@ namespace Vim.UnitTest
                 /// <summary>
                 /// Make sure that we can handle a space before the substitute command 
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void Issue1057()
                 {
                     Create("ca t");
@@ -928,7 +928,7 @@ namespace Vim.UnitTest
                 /// <summary>
                 /// Even a failed substitution should update the last pattern
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void Issue1244()
                 {
                     Create("cat", "dog", "fish");
@@ -942,7 +942,7 @@ namespace Vim.UnitTest
 
         public sealed class RunHostCommandTest : CommandModeIntegrationTest
         {
-            [Fact]
+            [WpfFact]
             public void SimpleCommand()
             {
                 Create("");
@@ -960,7 +960,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// It is legal for visual studio commands to have underscores in the name
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void NameWithUnderscore()
             {
                 Create("");
@@ -981,7 +981,7 @@ namespace Vim.UnitTest
             /// : will always prefix a range if there is a selection we should support the range to make
             /// key mappings easier to use
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Range()
             {
                 Create("cat", "dog");
@@ -1007,7 +1007,7 @@ namespace Vim.UnitTest
                 Assert.Equal(text, UnnamedRegister.StringValue);
             }
 
-            [Fact]
+            [WpfFact]
             public void Multiple()
             {
                 Create("cat", "dog", "tree");
@@ -1015,7 +1015,7 @@ namespace Vim.UnitTest
                 AssertLines("cat", "dog");
             }
 
-            [Fact]
+            [WpfFact]
             public void MultipleThree()
             {
                 Create("cat", "dog", "tree", "fish");
@@ -1023,7 +1023,7 @@ namespace Vim.UnitTest
                 AssertLines("cat", "dog", "tree");
             }
 
-            [Fact]
+            [WpfFact]
             public void Single()
             {
                 Create("cat", "dog", "tree");
@@ -1034,7 +1034,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// The first count is the range 
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void RangeSingleLine()
             {
                 Create("cat", "dog", "tree");
@@ -1042,7 +1042,7 @@ namespace Vim.UnitTest
                 AssertLines("dog");
             }
 
-            [Fact]
+            [WpfFact]
             public void RangeMultiLine()
             {
                 Create("cat", "dog", "tree", "fish");
@@ -1053,7 +1053,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Yank a count from the specified line range
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void RangeSingleLineWithCount()
             {
                 Create("cat", "dog", "tree", "fish");
@@ -1064,7 +1064,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Yank a count from the end of the specified line range
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void RangeMultiLineWithCount()
             {
                 Create("cat", "dog", "tree", "fish", "rock");
@@ -1079,7 +1079,7 @@ namespace Vim.UnitTest
             ///
             /// Issue 1526
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void YankIncludesLastLine()
             {
                 Create("foo", "bar", "baz");
@@ -1091,7 +1091,7 @@ namespace Vim.UnitTest
 
         public sealed class RangeTest : CommandModeIntegrationTest
         {
-            [Fact]
+            [WpfFact]
             public void CurrentLineWithEndCount()
             {
                 Create("dog", "cat");
@@ -1100,7 +1100,7 @@ namespace Vim.UnitTest
                 Assert.Equal(new[] { "dog", "  cat" }, _textBuffer.GetLines());
             }
 
-            [Fact]
+            [WpfFact]
             public void CurrentLineWithEndCountRange()
             {
                 Create("dog", "cat", "tree");
@@ -1112,7 +1112,7 @@ namespace Vim.UnitTest
 
         public sealed class MiscTest : CommandModeIntegrationTest
         {
-            [Fact]
+            [WpfFact]
             public void JumpLine1()
             {
                 Create("a", "b", "c", "d");
@@ -1125,7 +1125,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Non-first line
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void JumpLine2()
             {
                 Create("a", "b", "c", "d");
@@ -1133,7 +1133,7 @@ namespace Vim.UnitTest
                 Assert.Equal(_textView.TextSnapshot.GetLineFromLineNumber(1).Start, _textView.Caret.Position.BufferPosition);
             }
 
-            [Fact]
+            [WpfFact]
             public void JumpLineLastWithNoWhiteSpace()
             {
                 Create("dog", "cat", "tree");
@@ -1143,7 +1143,7 @@ namespace Vim.UnitTest
                 Assert.Equal(last.Start, _textView.GetCaretPoint());
             }
 
-            [Fact]
+            [WpfFact]
             public void JumpLineLastWithWhiteSpace()
             {
                 Create("dog", "cat", "  tree");
@@ -1156,7 +1156,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Make sure that we don't crash or print anything when :map is run with no mappings
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void KeyMap_NoMappings()
             {
                 Create("");
@@ -1167,7 +1167,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// In Vim it's legal to unmap a key command with the expansion
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void KeyMap_UnmapByExpansion()
             {
                 Create("");
@@ -1181,7 +1181,7 @@ namespace Vim.UnitTest
             /// The ! in unmap should cause it to umap command and insert commands.  Make sure it
             /// works for unmap by expansion as well
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void KeyMap_UnmapByExpansionUsingBang()
             {
                 Create("");
@@ -1195,7 +1195,7 @@ namespace Vim.UnitTest
             /// Using the search forward feature which hits a match.  Search should start after the range
             /// so the first match will be after it 
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Search_ForwardWithMatch()
             {
                 Create("cat", "dog", "cat", "fish");
@@ -1207,7 +1207,7 @@ namespace Vim.UnitTest
             /// Using the search forward feature which doesn't hit a match in the specified path.  Should 
             /// raise a warning
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Search_ForwardWithNoMatchInPath()
             {
                 Create("cat", "dog", "cat", "fish");
@@ -1226,7 +1226,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// No match in the buffer should raise a different message
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Search_ForwardWithNoMatchInBuffer()
             {
                 Create("cat", "dog", "cat", "fish");
@@ -1241,7 +1241,7 @@ namespace Vim.UnitTest
                 Assert.True(didHit);
             }
 
-            [Fact]
+            [WpfFact]
             public void SwitchTo()
             {
                 Create("");
@@ -1249,7 +1249,7 @@ namespace Vim.UnitTest
                 Assert.Equal(ModeKind.Command, _vimBuffer.ModeKind);
             }
 
-            [Fact]
+            [WpfFact]
             public void SwitchOut()
             {
                 Create("");
@@ -1257,7 +1257,7 @@ namespace Vim.UnitTest
                 Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
             }
 
-            [Fact]
+            [WpfFact]
             public void SwitchOutFromBackspace()
             {
                 Create("");
@@ -1266,7 +1266,7 @@ namespace Vim.UnitTest
                 Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
             }
 
-            [Fact]
+            [WpfFact]
             public void Yank_WithRange()
             {
                 Create("cat", "dog", "fish");
@@ -1279,7 +1279,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// The `. mark should go to the last edit position on the last edit line
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Replace_GoToLastEditPosition()
             {
                 Create("cat", "dog");
@@ -1298,7 +1298,7 @@ namespace Vim.UnitTest
                 Assert.Equal(1, _textView.GetCaretLine().LineNumber);
             }
 
-            [Fact]
+            [WpfFact]
             public void Issue1327()
             {
                 Create("cat", "dog");
@@ -1306,7 +1306,7 @@ namespace Vim.UnitTest
                 RunCommand("wq");
             }
 
-            [Fact]
+            [WpfFact]
             public void Issue1794()
             {
                 Create("cat", "dog", "tree");

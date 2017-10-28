@@ -76,7 +76,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Make sure the processed event is raised during a key process
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void ProcessedFires()
             {
                 _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
@@ -91,7 +91,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Make sure the events are raised in order
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void EventOrderForNormal()
             {
                 _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
@@ -129,7 +129,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Start and End events should fire even if there is an exception thrown
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void ExceptionDuringProcessing()
             {
                 var normal = CreateAndAddNormalMode(MockBehavior.Loose);
@@ -169,7 +169,7 @@ namespace Vim.UnitTest
             /// Start, Buffered and End should fire if the KeyInput is buffered due to 
             /// a mapping
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void BufferedInput()
             {
                 _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
@@ -210,7 +210,7 @@ namespace Vim.UnitTest
             /// When KeyInputStart is handled we still need to fire the other 3 events (Processing, Processed and End) in the 
             /// proper order.  The naiive consumer should see this is a normal event sequence
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void KeyInputStartHandled()
             {
                 var count = 0;
@@ -252,7 +252,7 @@ namespace Vim.UnitTest
             /// When KeyInputProcessing is handled we still need to fire the other 2 events (Processed and End) in the 
             /// proper order.  The naiive consumer should see this is a normal event sequence
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void KeyInputProcessingHandled()
             {
                 var count = 0;
@@ -286,7 +286,7 @@ namespace Vim.UnitTest
             /// The start and end events shouldn't consider any mappings.  They should display the key
             /// which was actually pressed.  The Processing events though should consider the mappings
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Mappings()
             {
                 var seen = 0;
@@ -325,7 +325,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Close should call OnLeave and OnClose for the active IMode
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void ShouldCallLeaveAndClose()
             {
                 var normal = CreateAndAddNormalMode(MockBehavior.Loose);
@@ -340,7 +340,7 @@ namespace Vim.UnitTest
             /// Close should call IMode::Close for every IMode even the ones which
             /// are not active
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void CallCloseOnAll()
             {
                 var insert = CreateAndAddInsertMode();
@@ -352,7 +352,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// The IVimBuffer should be removed from IVim on close
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void BufferShouldBeRemoved()
             {
                 var didSee = false;
@@ -364,14 +364,14 @@ namespace Vim.UnitTest
             /// <summary>
             /// Double close should throw
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void DoubleClose()
             {
                 _vimBuffer.Close();
                 Assert.Throws<InvalidOperationException>(() => _vimBuffer.Close());
             }
 
-            [Fact]
+            [WpfFact]
             public void CloseEventOrder()
             {
                 var count = 0;
@@ -395,7 +395,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// An exception in closing should be ignored.  
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void ExceptionInClosing()
             {
                 var count = 0;
@@ -420,7 +420,7 @@ namespace Vim.UnitTest
         
         public class SpecialMarks : ClosingSetsLastEditedPositionMark
         {
-            [Fact]
+            [WpfFact]
             public void SpecialMarksAreSet()
             {
                 var s_emptyList = FSharpList<Mark>.Empty;
@@ -553,14 +553,14 @@ namespace Vim.UnitTest
                 Assert.Equal(column, line.Column);
             }
 
-            [Fact]
+            [WpfFact]
             public void FirstTimeBufferIsZeroZero()
             {
                 var option = Vim.MarkMap.GetMark(Mark.LastExitedPosition, _vimBuffer.VimBufferData);
                 AssertPosition(0, 0, option);
             }
 
-            [Fact]
+            [WpfFact]
             public void ReopeningTheWindow()
             {
                 _textView.MoveCaretToLine(1, 2);
@@ -573,7 +573,7 @@ namespace Vim.UnitTest
                 AssertPosition(1, 2, option);
             }
 
-            [Fact]
+            [WpfFact]
             public void ReopeningTheWindowLastColumn()
             {
                 _vimBuffer.MarkMap.SetLastExitedPosition("VimBufferTest.cs", 0, 5);
@@ -583,7 +583,7 @@ namespace Vim.UnitTest
                 AssertPosition(0, 5, option);
             }
 
-            [Fact]
+            [WpfFact]
             public void ReopeningTheWindowLastColumnAfterFirstLine()
             {
                 _vimBuffer.MarkMap.SetLastExitedPosition("VimBufferTest.cs", 1, 6);
@@ -593,7 +593,7 @@ namespace Vim.UnitTest
                 AssertPosition(1, 6, option);
             }
 
-            [Fact]
+            [WpfFact]
             public void ReopeningTheWindowLastPositionAtColumnZeroWithLenZeroIsOk()
             {
                 _textView.SetText("Hello", "", "World!");
@@ -607,7 +607,7 @@ namespace Vim.UnitTest
                 AssertPosition(1, 0, option);
             }
 
-            [Fact]
+            [WpfFact]
             public void ReopeningTheWindowWithInvalidColumnLastPositionGoesToZeroZero()
             {
                 _textView.MoveCaretToLine(1, 2);
@@ -620,7 +620,7 @@ namespace Vim.UnitTest
                 AssertPosition(0, 0, option);
             }
 
-            [Fact]
+            [WpfFact]
             public void ReopeningTheWindowWithInvalidLineLastPositionGoesToZeroZero()
             {
                 _textView.MoveCaretToLine(1, 2);
@@ -639,7 +639,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Make sure the SwitchdMode event fires when switching modes.
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void SwitchedMode_Event()
             {
                 var ran = false;
@@ -652,7 +652,7 @@ namespace Vim.UnitTest
             /// Make sure the SwitchdMode event fires even when switching to the
             /// same mode
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void SwitchedMode_SameModeEvent()
             {
                 var ran = false;
@@ -665,7 +665,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Ensure switching to the previous mode operates correctly
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void SwitchPreviousMode_EnterLeaveOrder()
             {
                 var normal = CreateAndAddNormalMode();
@@ -693,7 +693,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// SwitchPreviousMode should raise the SwitchedMode event
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void SwitchPreviousMode_RaiseSwitchedMode()
             {
                 _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
@@ -707,7 +707,7 @@ namespace Vim.UnitTest
             /// When a mode returns the SwitchModeOneTimeCommand value it should cause the 
             /// InOneTimeCommand value to be set
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void SwitchModeOneTimeCommand_SetProperty()
             {
                 var mode = CreateAndAddInsertMode(MockBehavior.Loose);
@@ -720,7 +720,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Process should handle the return value correctly
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Process_HandleSwitchPreviousMode()
             {
                 var normal = CreateAndAddNormalMode(MockBehavior.Loose);
@@ -733,7 +733,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// The nop key shouldn't have any effects
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Process_Nop()
             {
                 var old = _vimBuffer.TextSnapshot;
@@ -749,7 +749,7 @@ namespace Vim.UnitTest
             /// When we are InOneTimeCommand the HandledNeedMoreInput should not cause us to 
             /// do anything with respect to one time command
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Process_OneTimeCommand_NeedMoreInputDoesNothing()
             {
                 var mode = CreateAndAddNormalMode(MockBehavior.Loose);
@@ -764,7 +764,7 @@ namespace Vim.UnitTest
             /// Escape should go back to the original mode even if the current IMode doesn't
             /// support the escape key when we are in a one time command
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Process_OneTimeCommand_Escape()
             {
                 var mode = CreateAndAddNormalMode(MockBehavior.Loose);
@@ -781,7 +781,7 @@ namespace Vim.UnitTest
             /// When a command is completed in visual mode we shouldn't exit.  Else commands like
             /// 'l' would cause it to exit which is not the Vim behavior
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Process_OneTimeCommand_VisualMode_Handled()
             {
                 var mode = CreateAndAddVisualLineMode(MockBehavior.Loose);
@@ -796,7 +796,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Switch previous mode should still cause it to go back to the original though
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Process_OneTimeCommand_VisualMode_SwitchPreviousMode()
             {
                 var mode = CreateAndAddVisualLineMode(MockBehavior.Loose);
@@ -811,7 +811,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Processing the buffered key inputs when there are none should have no effect
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void ProcessBufferedKeyInputs_Nothing()
             {
                 var runCount = 0;
@@ -823,7 +823,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Processing the buffered key inputs should raise the processed event 
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void ProcessBufferedKeyInputs_RaiseProcessed()
             {
                 var runCount = 0;
@@ -841,7 +841,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Ensure the mode sees the mapped KeyInput value
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Remap_OneToOne()
             {
                 _keyMap.MapWithNoRemap("a", "l", KeyRemapMode.Normal);
@@ -855,7 +855,7 @@ namespace Vim.UnitTest
             /// When a single key is mapped to multiple both need to be passed onto the 
             /// IMode instance
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Remap_OneToMany()
             {
                 _keyMap.MapWithNoRemap("a", "dw", KeyRemapMode.Normal);
@@ -868,7 +868,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Don't use mappings for the wrong IMode
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Remap_WrongMode()
             {
                 _keyMap.MapWithNoRemap("l", "dw", KeyRemapMode.Insert);
@@ -882,7 +882,7 @@ namespace Vim.UnitTest
             /// When INormalMode is in OperatorPending we need to use operating pending 
             /// remapping
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Remap_OperatorPending()
             {
                 _keyMap.MapWithNoRemap("z", "w", KeyRemapMode.OperatorPending);
@@ -897,7 +897,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Recursive mappings should print out an error message when used
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Remap_Recursive()
             {
                 _keyMap.MapWithRemap("a", "b", KeyRemapMode.Normal);
@@ -918,7 +918,7 @@ namespace Vim.UnitTest
             /// When we buffer input and fail to find a mapping every KeyInput value
             /// should be passed to the IMode
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Remap_BufferedFailed()
             {
                 _keyMap.MapWithNoRemap("do", "cat", KeyRemapMode.Normal);
@@ -933,7 +933,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Make sure the KeyInput is passed down to the IMode
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void CanProcess_Simple()
             {
                 var keyInput = KeyInputUtil.CharToKeyInput('c');
@@ -947,7 +947,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Make sure the mapped KeyInput is passed down to the IMode
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void CanProcess_Mapped()
             {
                 _keyMap.MapWithRemap("a", "c", KeyRemapMode.Normal);
@@ -964,7 +964,7 @@ namespace Vim.UnitTest
             /// we consider the final mapped input for processing and not the immediate
             /// KeyInput value
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void CanProcess_BufferedInput()
             {
                 _keyMap.MapWithRemap("la", "iexample", KeyRemapMode.Normal);
@@ -985,7 +985,7 @@ namespace Vim.UnitTest
             /// The buffer can always process a nop key and should take no action when it's
             /// encountered
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void CanProcess_Nop()
             {
                 foreach (var mode in _vimBuffer.AllModes)
@@ -999,7 +999,7 @@ namespace Vim.UnitTest
             /// Make sure that we can handle keypad divide in normal mode as it's simply 
             /// processed as a divide 
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void CanProcess_KeypadDivide()
             {
                 _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
@@ -1010,7 +1010,7 @@ namespace Vim.UnitTest
             /// Make sure that the underlying mode doesn't see Keypad divide but instead sees 
             /// divide as this is how Vim handles keys post mapping
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void CanProcess_KeypadDivideAsForwardSlash()
             {
                 var normalMode = CreateAndAddNormalMode();
@@ -1024,7 +1024,7 @@ namespace Vim.UnitTest
             /// Make sure that we can handle keypad divide in normal mode as it's simply 
             /// processed as a divide 
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void CanProcessAsCommand_KeypadDivide()
             {
                 _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
@@ -1035,7 +1035,7 @@ namespace Vim.UnitTest
             /// Make sure that the underlying mode doesn't see Keypad divide but instead sees 
             /// divide as this is how Vim handles keys post mapping
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void CanProcessAsCommand_KeypadDivideAsForwardSlash()
             {
                 var normalMode = CreateAndAddNormalMode();
@@ -1049,7 +1049,7 @@ namespace Vim.UnitTest
             /// Make sure that commands like 'a' are still considered commands when the
             /// IVimBuffer is in normal mode
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void CanProcessAsCommand_Command()
             {
                 _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
@@ -1060,7 +1060,7 @@ namespace Vim.UnitTest
             /// Make sure that commands like 'a' are not considered commands when in 
             /// insert mode
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void CanProcessAsCommand_InsertMode()
             {
                 _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
@@ -1071,7 +1071,7 @@ namespace Vim.UnitTest
             /// Make sure that commands like 'a' are not considered commands when in 
             /// replace mode
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void CanProcessAsCommand_ReplaceMode()
             {
                 _vimBuffer.SwitchMode(ModeKind.Replace, ModeArgument.None);
@@ -1081,7 +1081,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Make sure the event is true while processing input
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void IsProcessing_Basic()
             {
                 var didRun = false;
@@ -1102,7 +1102,7 @@ namespace Vim.UnitTest
             /// Make sure the event properly resets while recursively processing 
             /// input
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void IsProcessing_Recursive()
             {
                 var didRun = false;
@@ -1128,7 +1128,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Ensure the key simulation raises the appropriate key APIs
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void SimulateProcessed_RaiseEvent()
             {
                 var ranStart = false;
@@ -1147,7 +1147,7 @@ namespace Vim.UnitTest
             /// Ensure the SimulateProcessed API doesn't go through key remapping.  The caller
             /// who wants the simulated input is declaring the literal KeyInput was processed
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void SimulateProcessed_DontMap()
             {
                 _vimBuffer.Vim.KeyMap.MapWithNoRemap("a", "b", KeyRemapMode.Normal);
@@ -1168,7 +1168,7 @@ namespace Vim.UnitTest
             /// values.  The caller who simulates the input is responsible for understanding
             /// and ignoring buffered input values
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void SimulateProcessed_ClearBufferedInput()
             {
                 _vimBuffer.Vim.KeyMap.MapWithNoRemap("jj", "b", KeyRemapMode.Normal);
@@ -1185,7 +1185,7 @@ namespace Vim.UnitTest
             /// to transition directly from <see cref="ModeKind.Uninitialized"/> to say <see cref="ModeKind.VisualCharacter" />. 
             /// Need to ensure that is handled correctly.
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void InitialModeIsVisual()
             {
                 _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
@@ -1213,14 +1213,14 @@ namespace Vim.UnitTest
             /// <summary>
             /// Make sure that we properly transition to normal mode when leaving visual mode 
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Issue1170()
             {
                 _vimBuffer.ProcessNotation(@"i<Esc>v<Esc>");
                 Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
             }
 
-            [Fact]
+            [WpfFact]
             public void Issue1955()
             {
                 _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);

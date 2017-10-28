@@ -20,7 +20,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// When there is a new request it becomes the entire request that we are looking at
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void NewRequest()
             {
                 Create("cat dog");
@@ -28,7 +28,7 @@ namespace Vim.UnitTest
                 Assert.Equal(span, TaggerUtilCore.AdjustRequestedSpan(null, span));
             }
 
-            [Fact]
+            [WpfFact]
             public void BiggerAtEnd()
             {
                 Create("cat dog");
@@ -38,7 +38,7 @@ namespace Vim.UnitTest
                 Assert.Equal(overarching, TaggerUtilCore.AdjustRequestedSpan(FSharpOption.Create(span1), span2));
             }
 
-            [Fact]
+            [WpfFact]
             public void BiggerAtStart()
             {
                 Create("cat dog");
@@ -52,7 +52,7 @@ namespace Vim.UnitTest
             /// For a forward edit we need to move the old span forward and then get the overarching
             /// value
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void ForwardEditSpan()
             {
                 Create("cat dog");
@@ -69,7 +69,7 @@ namespace Vim.UnitTest
             /// case just default back to the entire buffer.  This value isn't used for any of our caching
             /// but instead is just the value we provide to the editor when we raise a changed event
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void BackwardEditSpan()
             {
                 Create("cat dog");

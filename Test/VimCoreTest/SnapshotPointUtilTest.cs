@@ -25,7 +25,7 @@ namespace Vim.UnitTest
             _snapshot = _textBuffer.CurrentSnapshot;
         }
 
-        [Fact]
+        [WpfFact]
         public void GetLineRangeSpan1()
         {
             Create(s_lines);
@@ -37,7 +37,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Multi-line range
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void GetLineRangeSpan2()
         {
             Create(s_lines);
@@ -48,7 +48,7 @@ namespace Vim.UnitTest
             Assert.Equal(span.Span, expected);
         }
 
-        [Fact]
+        [WpfFact]
         public void GetLineRangeSpanIncludingLineBreak1()
         {
             Create("foo", "bar");
@@ -56,7 +56,7 @@ namespace Vim.UnitTest
             Assert.Equal(_snapshot.GetLineFromLineNumber(0).ExtentIncludingLineBreak, span);
         }
 
-        [Fact]
+        [WpfFact]
         public void GetCharacterSpan1()
         {
             Create("foo");
@@ -68,7 +68,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Empty line shtould have a character span of the entire line
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void GetCharacterSpan2()
         {
             Create("foo", String.Empty, "baz");
@@ -80,7 +80,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// End of line should have the span of the line break
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void GetCharacterSpan3()
         {
             Create("foo", "bar");
@@ -89,7 +89,7 @@ namespace Vim.UnitTest
             Assert.Equal(span, new SnapshotSpan(line.End, line.EndIncludingLineBreak));
         }
 
-        [Fact]
+        [WpfFact]
         public void GetNextPointWithWrap1()
         {
             Create("foo", "baz");
@@ -101,7 +101,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// End of line should wrap
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void GetNextPointWithWrap2()
         {
             Create("foo", "bar");
@@ -114,7 +114,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Wrap around the buffer
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void GetNextPointWithWrap3()
         {
             Create("foo", "bar");
@@ -122,7 +122,7 @@ namespace Vim.UnitTest
             Assert.Equal(_textBuffer.CurrentSnapshot.GetLineFromLineNumber(0).Start, next);
         }
 
-        [Fact]
+        [WpfFact]
         public void GetPreviousPointWithWrap1()
         {
             Create("foo", "bar");
@@ -130,7 +130,7 @@ namespace Vim.UnitTest
             Assert.Equal(_textBuffer.CurrentSnapshot.GetLineFromLineNumber(0).Start, prev);
         }
 
-        [Fact]
+        [WpfFact]
         public void GetPreviousPointWithWrap2()
         {
             Create("foo", "bar");
@@ -138,7 +138,7 @@ namespace Vim.UnitTest
             Assert.Equal(_textBuffer.CurrentSnapshot.GetLineFromLineNumber(0).End, prev);
         }
 
-        [Fact]
+        [WpfFact]
         public void GetPreviousPointWithWrap3()
         {
             Create("foo", "bar");
@@ -146,7 +146,7 @@ namespace Vim.UnitTest
             Assert.Equal(SnapshotUtil.GetEndPoint(_textBuffer.CurrentSnapshot), prev);
         }
 
-        [Fact]
+        [WpfFact]
         public void GetLines1()
         {
             Create("foo", "bar");
@@ -158,7 +158,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Check forward wraping
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void GetLines2()
         {
             Create("foo", "bar", "baz");
@@ -169,7 +169,7 @@ namespace Vim.UnitTest
             Assert.Equal("barbaz", agg);
         }
 
-        [Fact]
+        [WpfFact]
         public void GetLines3()
         {
             Create("foo bar", "baz");
@@ -178,7 +178,7 @@ namespace Vim.UnitTest
             Assert.Equal(1, list.Count());
         }
 
-        [Fact]
+        [WpfFact]
         public void GetLines4()
         {
             Create("abcde".Select(x => x.ToString()).ToArray());
@@ -187,7 +187,7 @@ namespace Vim.UnitTest
             Assert.Equal("cba", msg);
         }
 
-        [Fact]
+        [WpfFact]
         public void GetLines5()
         {
             Create("abcde".Select(x => x.ToString()).ToArray());
@@ -199,7 +199,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// If going forward and starting from the end don't return any spans
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void GetSpans_FromEnd()
         {
             Create("foo");
@@ -211,7 +211,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Don't wrap backwards if we don't say wrap
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void GetSpans5()
         {
             Create("foo");
@@ -223,7 +223,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Multi lack of wrap
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void GetSpans6()
         {
             Create("foo", "bar", "baz");
@@ -235,7 +235,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Don't include the provided point when getting spans backward
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void GetSpans_DontIncludePointGoingBackward()
         {
             Create("foo bar", "baz");
@@ -244,7 +244,7 @@ namespace Vim.UnitTest
             Assert.Equal(new[] { "foo bar" }, list);
         }
 
-        [Fact]
+        [WpfFact]
         public void GetSpans8()
         {
             Create("foo bar", "baz");
@@ -253,7 +253,7 @@ namespace Vim.UnitTest
             Assert.Equal(1, list.Count());
         }
 
-        [Fact]
+        [WpfFact]
         public void GetCharOrDefault1()
         {
             Create("foo", "bar");
@@ -261,7 +261,7 @@ namespace Vim.UnitTest
             Assert.Equal('f', SnapshotPointUtil.GetCharOrDefault(point, 'g'));
         }
 
-        [Fact]
+        [WpfFact]
         public void GetCharOrDefault2()
         {
             Create("foo", "bar");
@@ -282,7 +282,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// All points should be valid
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void GetPoints1()
         {
             Create("foo", "bar");
@@ -293,7 +293,7 @@ namespace Vim.UnitTest
             }
         }
 
-        [Fact]
+        [WpfFact]
         public void GetPoints2()
         {
             Create("foo bar");
@@ -302,7 +302,7 @@ namespace Vim.UnitTest
             Assert.Equal('o', first.GetChar());
         }
 
-        [Fact]
+        [WpfFact]
         public void GetPoints3()
         {
             Create("foo bar");
@@ -315,7 +315,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// All points should be valid
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void GetPoints4()
         {
             Create("foo", "bar");
@@ -326,7 +326,7 @@ namespace Vim.UnitTest
             }
         }
 
-        [Fact]
+        [WpfFact]
         public void GetPoints5()
         {
             Create("foo bar");
@@ -335,7 +335,7 @@ namespace Vim.UnitTest
             Assert.Equal('o', first.GetChar());
         }
 
-        [Fact]
+        [WpfFact]
         public void GetPoints6()
         {
             Create("foo bar");
@@ -345,7 +345,7 @@ namespace Vim.UnitTest
             Assert.Equal("rab oof", str);
         }
 
-        [Fact]
+        [WpfFact]
         public void GetPoints7()
         {
             Create("foo bar");
@@ -355,7 +355,7 @@ namespace Vim.UnitTest
             Assert.Equal("rab oof", str);
         }
 
-        [Fact]
+        [WpfFact]
         public void TryGetNextPointOnLine1()
         {
             Create("foo", "bar");
@@ -365,7 +365,7 @@ namespace Vim.UnitTest
             Assert.Equal(point.Add(1), res.Value);
         }
 
-        [Fact]
+        [WpfFact]
         public void TryGetNextPointOnLine2()
         {
             Create("foo", "bar");
@@ -374,7 +374,7 @@ namespace Vim.UnitTest
             Assert.False(res.IsSome());
         }
 
-        [Fact]
+        [WpfFact]
         public void TryGetNextPointOnLine3()
         {
             Create("foo", "bar");
@@ -384,7 +384,7 @@ namespace Vim.UnitTest
             Assert.Equal(point.Add(1), res.Value);
         }
 
-        [Fact]
+        [WpfFact]
         public void TryGetPreviousPointOnLine1()
         {
             Create("foo", "bar");
@@ -394,7 +394,7 @@ namespace Vim.UnitTest
             Assert.Equal(point.Subtract(1), res.Value);
         }
 
-        [Fact]
+        [WpfFact]
         public void TryGetPreviousPointOnLine2()
         {
             Create("foo", "bar");
@@ -404,7 +404,7 @@ namespace Vim.UnitTest
             Assert.Equal(_textBuffer.GetLine(0).Start, res.Value);
         }
 
-        [Fact]
+        [WpfFact]
         public void TryGetPreviousPointOnLine3()
         {
             Create("foo", "bar");
@@ -413,7 +413,7 @@ namespace Vim.UnitTest
             Assert.False(res.IsSome());
         }
 
-        [Fact]
+        [WpfFact]
         public void GetPointsOnContainingLineFrom1()
         {
             Create("foo", "bar", "baz");
@@ -421,7 +421,7 @@ namespace Vim.UnitTest
             Assert.Equal("foo", points);
         }
 
-        [Fact]
+        [WpfFact]
         public void GetPointsOnContainingLineFrom2()
         {
             Create("foo", "bar", "baz");
@@ -429,7 +429,7 @@ namespace Vim.UnitTest
             Assert.Equal("oo", points);
         }
 
-        [Fact]
+        [WpfFact]
         public void GetPointsOnContainingLineBackwardsFrom1()
         {
             Create("foo", "bar", "baz");
@@ -437,7 +437,7 @@ namespace Vim.UnitTest
             Assert.Equal("oof", points);
         }
 
-        [Fact]
+        [WpfFact]
         public void GetPointsOnContainingLineBackwardsFrom2()
         {
             Create("foo", "bar", "baz");
@@ -445,7 +445,7 @@ namespace Vim.UnitTest
             Assert.Equal("rab", points);
         }
 
-        [Fact]
+        [WpfFact]
         public void GetPointsOnContainingLineBackwardsFrom3()
         {
             Create("foo", "bar", "baz");

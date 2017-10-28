@@ -65,7 +65,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Movement commands
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void Commands1()
         {
             Create("foo");
@@ -87,7 +87,7 @@ namespace Vim.UnitTest
             }
         }
 
-        [Fact]
+        [WpfFact]
         public void Process1()
         {
             Create("foo");
@@ -98,7 +98,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Escape should always escape even if we're processing an inner key sequence
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void Process2()
         {
             Create("foo");
@@ -107,7 +107,7 @@ namespace Vim.UnitTest
             Assert.True(res.IsSwitchPreviousMode());
         }
 
-        [Fact]
+        [WpfFact]
         public void OnLeave1()
         {
             Create();
@@ -119,7 +119,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Must handle arbitrary input to prevent changes but don't list it as a command
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void PreventInput1()
         {
             Create(lines: "foo");
@@ -132,7 +132,7 @@ namespace Vim.UnitTest
             _operations.Verify();
         }
 
-        [Fact]
+        [WpfFact]
         public void Bind_YankSelection()
         {
             Create("");
@@ -141,7 +141,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Fact]
+        [WpfFact]
         public void Bind_YankLineSelection()
         {
             Create("");
@@ -150,7 +150,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Fact]
+        [WpfFact]
         public void Bind_DeleteSelectedText()
         {
             Create("");
@@ -159,7 +159,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Fact]
+        [WpfFact]
         public void Bind_DeleteSelectedText_ViaDelete()
         {
             Create("");
@@ -168,7 +168,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Fact]
+        [WpfFact]
         public void Bind_DeleteSelectedText_ViaX()
         {
             Create("");
@@ -177,7 +177,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Fact]
+        [WpfFact]
         public void Bind_Join_RemoveEmptySpaces()
         {
             Create("");
@@ -186,7 +186,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Fact]
+        [WpfFact]
         public void Bind_Join_KeepEmptySpaces()
         {
             Create("");
@@ -195,7 +195,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Fact]
+        [WpfFact]
         public void Bind_ChangeSelection()
         {
             Create("");
@@ -204,7 +204,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Fact]
+        [WpfFact]
         public void Bind_ChangeSelection_ViaS()
         {
             Create("");
@@ -213,7 +213,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Fact]
+        [WpfFact]
         public void Bind_ChangeLineSelection()
         {
             Create("");
@@ -222,7 +222,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Fact]
+        [WpfFact]
         public void Bind_ChangeLineSelection_ViaS()
         {
             Create("");
@@ -231,7 +231,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Fact]
+        [WpfFact]
         public void Bind_ChangeLineSelection_ViaR()
         {
             Create("");
@@ -240,7 +240,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Fact]
+        [WpfFact]
         public void Bind_ChangeCase_Tilde()
         {
             Create("foo bar", "baz");
@@ -249,7 +249,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Fact]
+        [WpfFact]
         public void Bind_ShiftLeft()
         {
             Create("foo bar baz");
@@ -258,7 +258,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Fact]
+        [WpfFact]
         public void Bind_ShiftRight()
         {
             Create("foo bar baz");
@@ -267,7 +267,7 @@ namespace Vim.UnitTest
             _operations.Verify();
         }
 
-        [Fact]
+        [WpfFact]
         public void Bind_DeleteLineSelection()
         {
             Create("cat", "tree", "dog");
@@ -276,7 +276,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Fact]
+        [WpfFact]
         public void Bind_PutOverSelection()
         {
             Create("");
@@ -285,7 +285,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Fact]
+        [WpfFact]
         public void Bind_PutOverCaret_WithCaretMove()
         {
             Create("");
@@ -294,7 +294,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Fact]
+        [WpfFact]
         public void Bind_PutOverSelection_ViaP()
         {
             Create("");
@@ -303,7 +303,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Fact]
+        [WpfFact]
         public void Bind_GoToFileUnderCaret()
         {
             Create("");
@@ -312,7 +312,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Fact]
+        [WpfFact]
         public void Bind_PutPutOverSelection_WithCaretMoveViaP()
         {
             Create("");
@@ -321,7 +321,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Fact]
+        [WpfFact]
         public void Bind_ReplaceSelection()
         {
             Create("");
@@ -331,7 +331,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Fact]
+        [WpfFact]
         public void Bind_DeleteLineSelection_ViaX()
         {
             Create("cat", "tree", "dog");
@@ -340,7 +340,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Fact]
+        [WpfFact]
         public void Bind_OpenFoldInSelection()
         {
             Create("");
@@ -349,7 +349,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Fact]
+        [WpfFact]
         public void Bind_OpenAllFoldsInSelection()
         {
             Create("");
@@ -358,7 +358,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Fact]
+        [WpfFact]
         public void Bind_CloseAllFoldsInSelection()
         {
             Create("");
@@ -367,7 +367,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Fact]
+        [WpfFact]
         public void Bind_ToggleFoldInSelection()
         {
             Create("");
@@ -376,7 +376,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Fact]
+        [WpfFact]
         public void Bind_ToggleAllFoldsInSelection()
         {
             Create("");
@@ -385,7 +385,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Fact]
+        [WpfFact]
         public void Bind_FoldSelection()
         {
             Create("foo bar");
@@ -394,7 +394,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Fact]
+        [WpfFact]
         public void Bind_DeleteFoldInSelection()
         {
             Create("");
@@ -403,7 +403,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Fact]
+        [WpfFact]
         public void Bind_DeleteAlLFoldsInSelection()
         {
             Create("");
@@ -412,7 +412,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Fact]
+        [WpfFact]
         public void Bind_DeleteAllFoldsInBuffer()
         {
             Create("");
@@ -421,7 +421,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Fact]
+        [WpfFact]
         public void Bind_SwitchMode_Command()
         {
             Create("");
@@ -430,7 +430,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Fact]
+        [WpfFact]
         public void Bind_ScrollPages_Up()
         {
             Create("");
@@ -439,7 +439,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Fact]
+        [WpfFact]
         public void Bind_ScrollPages_Down()
         {
             Create("");
@@ -448,7 +448,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Fact]
+        [WpfFact]
         public void Bind_FormatLines()
         {
             Create("");
@@ -457,7 +457,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Fact]
+        [WpfFact]
         public void Bind_Motion_LastSearch()
         {
             Create("");
@@ -466,7 +466,7 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
-        [Fact]
+        [WpfFact]
         public void Bind_Motion_LastSearchReverse()
         {
             Create("");

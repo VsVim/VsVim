@@ -19,7 +19,7 @@ namespace Vim.UnitTest
 
         public sealed class AddSubtractTest : SnapshotColumnTest
         {
-            [Fact]
+            [WpfFact]
             public void AddSameLine()
             {
                 Create("cat", "dog", "fish");
@@ -29,7 +29,7 @@ namespace Vim.UnitTest
                 Assert.Equal(0, column.LineNumber);
             }
 
-            [Fact]
+            [WpfFact]
             public void AddNextLine()
             {
                 Create("cat", "dog", "fish");
@@ -39,7 +39,7 @@ namespace Vim.UnitTest
                 Assert.Equal(1, column.LineNumber);
             }
 
-            [Fact]
+            [WpfFact]
             public void AddBeforeLine()
             {
                 Create("cat", "dog", "fish");
@@ -49,7 +49,7 @@ namespace Vim.UnitTest
                 Assert.Equal(0, column.LineNumber);
             }
 
-            [Fact]
+            [WpfFact]
             public void SubtractSameLine()
             {
                 Create("cat", "dog", "fish");
@@ -59,7 +59,7 @@ namespace Vim.UnitTest
                 Assert.Equal(0, column.LineNumber);
             }
 
-            [Fact]
+            [WpfFact]
             public void SubtractBeforeLine()
             {
                 Create("cat", "dog", "fish");
@@ -72,7 +72,7 @@ namespace Vim.UnitTest
 
         public sealed class Ctor : SnapshotColumnTest
         {
-            [Fact]
+            [WpfFact]
             public void PointSimple()
             {
                 Create("cat", "dog");
@@ -83,7 +83,7 @@ namespace Vim.UnitTest
                 Assert.False(column.IsInsideLineBreak);
             }
 
-            [Fact]
+            [WpfFact]
             public void PointInsideLineBreak()
             {
                 Create("cat", "dog");

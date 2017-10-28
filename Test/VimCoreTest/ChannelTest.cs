@@ -27,7 +27,7 @@ namespace Vim.UnitTest
             /// From the point of view of the writing thread the current version should update 
             /// on every write
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void CurrentVersionIncrement()
             {
                 Create("cat", "fish", "dog");
@@ -42,7 +42,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// The underlying stack should represent the "current" state of the channel.  
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void CurrentStackChanges()
             {
                 Create("cat", "fish", "dog");
@@ -54,7 +54,7 @@ namespace Vim.UnitTest
                 }
             }
 
-            [Fact]
+            [WpfFact]
             public void WriteThenRead()
             {
                 Create("cat", "fish", "dog", "tree");
@@ -72,7 +72,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// The write order to the channel for normal lines is first in last out 
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void FirstInLastOut()
             {
                 Create("cat", "fish", "dog", "tree");
@@ -101,7 +101,7 @@ namespace Vim.UnitTest
             /// From the point of view of the writing thread the current version should update 
             /// on every write
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void CurrentVersionIncrement()
             {
                 Create("cat", "fish", "dog");
@@ -117,7 +117,7 @@ namespace Vim.UnitTest
             /// The underlying stack should represent the "current" state of normal writes.  It has nothing
             /// to do with visible line writes
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void CurrentStackDoesntChanges()
             {
                 Create("cat", "fish", "dog");
@@ -129,7 +129,7 @@ namespace Vim.UnitTest
                 }
             }
 
-            [Fact]
+            [WpfFact]
             public void WriteThenRead()
             {
                 Create("cat", "fish", "dog", "tree");
@@ -147,7 +147,7 @@ namespace Vim.UnitTest
 
         public sealed class ComplexTest : ChannelTest
         {
-            [Fact]
+            [WpfFact]
             public void VisibleHasPriority_Normal()
             {
                 Create("cat", "fish", "dog", "tree");
@@ -157,7 +157,7 @@ namespace Vim.UnitTest
                 Assert.Equal(1, lineRange.StartLineNumber);
             }
 
-            [Fact]
+            [WpfFact]
             public void VisibleHasPriority_Reverse()
             {
                 Create("cat", "fish", "dog", "tree");

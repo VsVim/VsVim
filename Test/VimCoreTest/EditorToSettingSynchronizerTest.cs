@@ -46,7 +46,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Verify that it's synchronizing 'tabstop' between the two places
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void TabStop()
             {
                 _localSettings.TabStop = 42;
@@ -59,7 +59,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Verify that it's synchronizing 'expandtab' between the two places
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void ExpandTab()
             {
                 _localSettings.ExpandTab = true;
@@ -72,7 +72,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Verify that it's synchronizing 'shiftwidth' between the two places
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void ShiftWidth()
             {
                 _localSettings.ShiftWidth = 42;
@@ -82,7 +82,7 @@ namespace Vim.UnitTest
                 Assert.Equal(13, _localSettings.ShiftWidth);
             }
 
-            [Fact]
+            [WpfFact]
             public void WordWrapSimple()
             {
                 VimHost.WordWrapStyle = WordWrapStyles.WordWrap;
@@ -93,7 +93,7 @@ namespace Vim.UnitTest
                 Assert.Equal(WordWrapStyles.None, _editorOptions.GetOptionValue(DefaultTextViewOptions.WordWrapStyleId));
             }
 
-            [Fact]
+            [WpfFact]
             public void WordWrapReverse()
             {
                 _editorOptions.SetOptionValue(DefaultTextViewOptions.WordWrapStyleId, WordWrapStyles.WordWrap);
@@ -106,7 +106,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Word wraps that don't line up with our definition is still a word wrap 
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void WordWrapAutoIndent()
             {
                 VimHost.WordWrapStyle = WordWrapStyles.WordWrap;
@@ -122,7 +122,7 @@ namespace Vim.UnitTest
 
         public sealed class CopyTest : EditorToSettingSynchronizerTest
         {
-            [Fact]
+            [WpfFact]
             public void CopyVimToEditorSettingsTest()
             {
                 _localSettings.TabStop = 10;
@@ -132,7 +132,7 @@ namespace Vim.UnitTest
                 Assert.Equal(11, _editorOptions.GetOptionValue(DefaultOptions.IndentSizeOptionId));
             }
 
-            [Fact]
+            [WpfFact]
             public void CopyEditorToVimSettingsTest()
             {
                 _editorOptions.SetOptionValue(DefaultOptions.TabSizeOptionId, 12);

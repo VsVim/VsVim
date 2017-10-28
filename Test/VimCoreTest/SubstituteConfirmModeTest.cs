@@ -61,7 +61,7 @@ namespace Vim.UnitTest
             Assert.Equal(expectedOption, _mode.CurrentMatch);
         }
 
-        [Fact]
+        [WpfFact]
         public void ModeKind_IsCorrect()
         {
             Create();
@@ -71,7 +71,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// In practice this shouldn't happen but guard against a coding error here
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void OnEnter_NoArgument()
         {
             Create();
@@ -80,7 +80,7 @@ namespace Vim.UnitTest
             Assert.True(_mode.CurrentSubstitute.IsNone());
         }
 
-        [Fact]
+        [WpfFact]
         public void OnEnter_StandardArgument()
         {
             Create("cat", "dog", "rabbit", "tree");
@@ -88,7 +88,7 @@ namespace Vim.UnitTest
             Assert.Equal(_textBuffer.GetLine(0).Extent, _mode.CurrentMatch.Value);
         }
 
-        [Fact]
+        [WpfFact]
         public void InputYes_OnlyOneMatchInBuffer()
         {
             Create("cat", "dog", "rabbit", "tree");
@@ -97,7 +97,7 @@ namespace Vim.UnitTest
             Assert.Equal("bird", _textBuffer.GetLine(0).GetText());
         }
 
-        [Fact]
+        [WpfFact]
         public void InputYes_OnlyOneMatchInRange()
         {
             Create("cat", "cat", "rabbit", "tree");
@@ -107,7 +107,7 @@ namespace Vim.UnitTest
             Assert.Equal("cat", _textBuffer.GetLine(1).GetText());
         }
 
-        [Fact]
+        [WpfFact]
         public void InputYes_TwoMatchesOnLineButNotReplaceAll()
         {
             Create("cat cat", "dog", "rabbit", "tree");
@@ -119,7 +119,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Should replace and move to next match
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void InputYes_TwoMatchesOnLineAndReplaceAll()
         {
             Create("cat cat", "dog", "rabbit", "tree");
@@ -134,7 +134,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Should replace and move to next match
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void InputYes_TwoMatchesInRange()
         {
             Create("cat", "cat", "rabbit", "tree");
@@ -144,7 +144,7 @@ namespace Vim.UnitTest
             Assert.Equal(_textBuffer.GetLine(1).Extent, _mode.CurrentMatch.Value);
         }
 
-        [Fact]
+        [WpfFact]
         public void InputEscape_InMatch()
         {
             Create("cat", "dog", "rabbit", "tree");
@@ -152,7 +152,7 @@ namespace Vim.UnitTest
             Assert.True(_mode.Process(KeyInputUtil.EscapeKey).IsSwitchMode(ModeKind.Normal));
         }
 
-        [Fact]
+        [WpfFact]
         public void InputQuit_InMatch()
         {
             Create("cat", "dog", "rabbit", "tree");
@@ -160,7 +160,7 @@ namespace Vim.UnitTest
             Assert.True(_mode.Process('q').IsSwitchMode(ModeKind.Normal));
         }
 
-        [Fact]
+        [WpfFact]
         public void InputLast_OnlyOneMatch()
         {
             Create("cat", "dog", "rabbit", "tree");
@@ -169,7 +169,7 @@ namespace Vim.UnitTest
             Assert.Equal("bird", _textBuffer.GetLine(0).GetText());
         }
 
-        [Fact]
+        [WpfFact]
         public void InputLast_TwoMatchesInRange()
         {
             Create("cat", "cat", "rabbit", "tree");
@@ -179,7 +179,7 @@ namespace Vim.UnitTest
             Assert.Equal("cat", _textBuffer.GetLine(1).GetText());
         }
 
-        [Fact]
+        [WpfFact]
         public void InputNo_OnlyOneMatch()
         {
             Create("cat", "dog", "rabbit", "tree");
@@ -189,7 +189,7 @@ namespace Vim.UnitTest
             Assert.Equal("dog", _textBuffer.GetLine(1).GetText());
         }
 
-        [Fact]
+        [WpfFact]
         public void InputNo_TwoMatchesInRange()
         {
             Create("cat", "cat", "rabbit", "tree");
@@ -200,7 +200,7 @@ namespace Vim.UnitTest
             Assert.Equal("cat", _textBuffer.GetLine(1).GetText());
         }
 
-        [Fact]
+        [WpfFact]
         public void InputAll_OnlyOneMatch()
         {
             Create("cat", "dog", "rabbit", "tree");
@@ -210,7 +210,7 @@ namespace Vim.UnitTest
             Assert.Equal("dog", _textBuffer.GetLine(1).GetText());
         }
 
-        [Fact]
+        [WpfFact]
         public void InputAll_TwoMatchesInRange()
         {
             Create("cat", "cat", "rabbit", "tree");
@@ -220,7 +220,7 @@ namespace Vim.UnitTest
             Assert.Equal("bird", _textBuffer.GetLine(1).GetText());
         }
 
-        [Fact]
+        [WpfFact]
         public void CurrentMatchChanged_OnEnter()
         {
             Create("cat", "cat", "rabbit", "tree");
@@ -229,7 +229,7 @@ namespace Vim.UnitTest
                 _textBuffer.GetLine(0).Extent);
         }
 
-        [Fact]
+        [WpfFact]
         public void CurrentMatchChanged_OnYesEnds()
         {
             Create("cat", "dog", "rabbit", "tree");
@@ -239,7 +239,7 @@ namespace Vim.UnitTest
                 expected: null);
         }
 
-        [Fact]
+        [WpfFact]
         public void CurrentMatchChanged_OnYesGoesToNext()
         {
             Create("cat", "cat", "rabbit", "tree");
@@ -249,7 +249,7 @@ namespace Vim.UnitTest
                 () => _textBuffer.GetLine(1).Extent);
         }
 
-        [Fact]
+        [WpfFact]
         public void CurrentMatchChanged_OnNoEnds()
         {
             Create("cat", "dog", "rabbit", "tree");
@@ -257,7 +257,7 @@ namespace Vim.UnitTest
             VeriyCurrentMatchChanged(() => { _mode.Process('n'); });
         }
 
-        [Fact]
+        [WpfFact]
         public void CurrentMatchChanged_OnNoGoesToNext()
         {
             Create("cat", "cat", "rabbit", "tree");
@@ -265,7 +265,7 @@ namespace Vim.UnitTest
             VeriyCurrentMatchChanged(() => { _mode.Process('n'); }, _textBuffer.GetLine(1).Extent);
         }
 
-        [Fact]
+        [WpfFact]
         public void CurrentMatchChanged_OnAll()
         {
             Create("cat", "cat", "rabbit", "tree");

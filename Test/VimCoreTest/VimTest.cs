@@ -122,7 +122,7 @@ namespace Vim.UnitTest
                     .Verifiable();
             }
 
-            [Fact]
+            [WpfFact]
             public void BadLoadClearGlobalSettings()
             {
                 _globalSettings.VimRc = "invalid";
@@ -134,7 +134,7 @@ namespace Vim.UnitTest
                 _fileSystem.Verify();
             }
 
-            [Fact]
+            [WpfFact]
             public void BadLoadStillChangeGlobal()
             {
                 _fileSystem.Setup(x => x.GetVimRcDirectories()).Returns(new string[] { "foo" }).Verifiable();
@@ -145,7 +145,7 @@ namespace Vim.UnitTest
                 _fileSystem.Verify();
             }
 
-            [Fact]
+            [WpfFact]
             public void LoadUpdateSettings()
             {
                 // Setup the VimRc contents
@@ -160,7 +160,7 @@ namespace Vim.UnitTest
             /// Part of loading the vimrc file includes creating an IVimBuffer under the hood.  This creation
             /// shouldn't show up in IVimBufferCreationListener instances.  It's designed to be transparent
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void LoadShouldntNotify()
             {
                 SetRcContents("");
@@ -171,7 +171,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// The same is true for an automatic load of the VimRc file
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void AutoLoadShouldntNotify()
             {
                 SetRcContents("");
@@ -241,7 +241,7 @@ namespace Vim.UnitTest
                 Assert.Equal(value, register.StringValue);
             }
 
-            [Fact]
+            [WpfFact]
             public void SimpleLoad()
             {
                 WriteData("acdog", "blcat\n");
@@ -250,7 +250,7 @@ namespace Vim.UnitTest
                 AssertRegister('b', OperationKind.LineWise, "cat\n");
             }
 
-            [Fact]
+            [WpfFact]
             public void DoubleLoad()
             {
                 WriteData("acdog", "blcat\n");
@@ -263,7 +263,7 @@ namespace Vim.UnitTest
                 AssertRegister('a', OperationKind.CharacterWise, "dog");
             }
 
-            [Fact]
+            [WpfFact]
             public void SimpleSave()
             {
                 _vim.RegisterMap.SetRegisterValue('h', "dog");
@@ -276,7 +276,7 @@ namespace Vim.UnitTest
                 AssertRegister('i', OperationKind.CharacterWise, "cat");
             }
 
-            [Fact]
+            [WpfFact]
             public void SaveDontSerializeAppendRegisters()
             {
                 _vim.RegisterMap.SetRegisterValue('h', "dog");
@@ -296,7 +296,7 @@ namespace Vim.UnitTest
             /// If the ITextView doesn't have an IVimBuffer associated with it then it should still 
             /// return None
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void UnknownTextView()
             {
                 var textView = _factory.Create<ITextView>().Object;
@@ -311,7 +311,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// If the host allows it then the IVimBuffer should be created 
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void GetOrCreateVimBufferForHost_Simple()
             {
                 VimHost.ShouldCreateVimBufferImpl = true;
@@ -325,7 +325,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// If the host doesn't allows it then the IVimBuffer shouldn't be created 
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void GetOrCreateVimBufferForHost_Disallow()
             {
                 VimHost.ShouldCreateVimBufferImpl = false;
@@ -339,7 +339,7 @@ namespace Vim.UnitTest
             /// If it's already created then what the host says this time is irrelevant.  It's
             /// already created so the Get portion takes precedence
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void GetOrCreateVimBufferForHost_AlreadyCreated()
             {
                 VimHost.ShouldCreateVimBufferImpl = false;
@@ -356,7 +356,7 @@ namespace Vim.UnitTest
             /// make sure we don't run into a conflict trying to create the IVimBuffer
             /// layer on top of it 
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void GetOrCreateVimBufferForHost_VimTextBufferAlreadyCreated()
             {
                 VimHost.ShouldCreateVimBufferImpl = true;
@@ -376,7 +376,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Make sure that we can close multiple IVimBuffer instances
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void CloseAllVimBuffers_Multiple()
             {
                 const int count = 5;
@@ -390,7 +390,7 @@ namespace Vim.UnitTest
                 Assert.Equal(0, _vim.VimBuffers.Length);
             }
 
-            [Fact]
+            [WpfFact]
             public void Create_SimpleTextView()
             {
                 var textView = CreateTextView();
@@ -399,7 +399,7 @@ namespace Vim.UnitTest
                 Assert.Same(textView, ret.TextView);
             }
 
-            [Fact]
+            [WpfFact]
             public void Create_CreateTwiceForSameViewShouldFail()
             {
                 var textView = CreateTextView();
@@ -407,7 +407,7 @@ namespace Vim.UnitTest
                 Assert.Throws<ArgumentException>(() => _vim.CreateVimBuffer(textView));
             }
 
-            [Fact]
+            [WpfFact]
             public void GetVimBuffer_ReturnNoneForViewThatHasNoBuffer()
             {
                 var textView = CreateTextView();
@@ -417,7 +417,7 @@ namespace Vim.UnitTest
                 Assert.Null(vimBuffer);
             }
 
-            [Fact]
+            [WpfFact]
             public void GetVimBuffer_ReturnBufferForCachedCreated()
             {
                 var textView = CreateTextView();
@@ -428,7 +428,7 @@ namespace Vim.UnitTest
                 Assert.Same(bufferFromCreate, bufferFromGet);
             }
 
-            [Fact]
+            [WpfFact]
             public void GetOrCreateVimBuffer_CreateForNewView()
             {
                 var textView = CreateTextView();
@@ -436,7 +436,7 @@ namespace Vim.UnitTest
                 Assert.Same(textView, buffer.TextView);
             }
 
-            [Fact]
+            [WpfFact]
             public void GetOrCreateVimBuffer_SecondCallShouldReturnAlreadyCreatedVimBuffer()
             {
                 var textView = CreateTextView();
@@ -445,14 +445,14 @@ namespace Vim.UnitTest
                 Assert.Same(buffer1, buffer2);
             }
 
-            [Fact]
+            [WpfFact]
             public void RemoveBuffer_ReturnFalseForNonAssociatedTextView()
             {
                 var textView = CreateTextView();
                 Assert.False(_vim.RemoveVimBuffer(textView));
             }
 
-            [Fact]
+            [WpfFact]
             public void GetOrCreateVimBuffer_ApplyActiveBufferLocalSettings()
             {
                 var textView = CreateTextView();
@@ -477,7 +477,7 @@ namespace Vim.UnitTest
             /// Make sure window settings are applied from the current IVimBuffer to the newly 
             /// created one
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void GetOrCreateVimBuffer_ApplyActiveBufferWindowSettings()
             {
                 var textView = CreateTextView();
@@ -500,7 +500,7 @@ namespace Vim.UnitTest
             /// When creating an IVimBuffer instance, if there is an existing IVimTextBuffer then
             /// the mode should be taken from that
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void GetOrCreateVimBuffer_InitialMode()
             {
                 var textView = CreateTextView("");
@@ -513,7 +513,7 @@ namespace Vim.UnitTest
             /// Make sure the result of this call is cached and that only one is ever created
             /// for a given ITextBuffer
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void GetOrCreateVimTextBuffer_Cache()
             {
                 var textBuffer = CreateTextBuffer("");
@@ -525,7 +525,7 @@ namespace Vim.UnitTest
             /// Sanity check to ensure we create different IVimTextBuffer for different ITextBuffer 
             /// instances
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void GetOrCreateVimTextBuffer_Multiple()
             {
                 var textBuffer1 = CreateTextBuffer("");
@@ -538,7 +538,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// The IVimTextBuffer should outlive an associated ITextView and IVimBuffer
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void GetOrCreateVimTextBuffer_LiveLongerThanTextView()
             {
                 var textView = CreateTextView("");
@@ -548,7 +548,7 @@ namespace Vim.UnitTest
                 Assert.Same(buffer.VimTextBuffer, _vim.GetOrCreateVimTextBuffer(textView.TextBuffer));
             }
 
-            [Fact]
+            [WpfFact]
             public void RemoveBuffer_AssociatedTextView()
             {
                 var textView = CreateTextView();
@@ -559,13 +559,13 @@ namespace Vim.UnitTest
                 Assert.False(_vim.TryGetVimBuffer(textView, out vimBuffer));
             }
 
-            [Fact]
+            [WpfFact]
             public void ActiveBuffer1()
             {
                 Assert.True(_vim.ActiveBuffer.IsNone());
             }
 
-            [Fact]
+            [WpfFact]
             public void ActiveBuffer2()
             {
                 var textView = CreateTextView();
@@ -583,7 +583,7 @@ namespace Vim.UnitTest
                 Assert.True(didRun);
             }
 
-            [Fact]
+            [WpfFact]
             public void ActiveBuffer3()
             {
                 var textView = CreateTextView();
@@ -600,7 +600,7 @@ namespace Vim.UnitTest
             {
             }
 
-            [Fact]
+            [WpfFact]
             public void Simple()
             {
                 Assert.False(_globalSettings.HighlightSearch);

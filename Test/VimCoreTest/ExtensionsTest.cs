@@ -8,7 +8,7 @@ namespace Vim.UnitTest
 {
     public sealed class ExtensionsTest : EditorHostTest
     {
-        [Fact]
+        [WpfFact]
         public void GetSourceBuffersRecursive_Simple()
         {
             var textBuffer1 = CreateTextBuffer("hello");
@@ -24,7 +24,7 @@ namespace Vim.UnitTest
             Assert.True(all.Contains(textBuffer2));
         }
 
-        [Fact]
+        [WpfFact]
         public void GetSourceBuffersRecursive_Nested()
         {
             var textBuffer1 = CreateTextBuffer("hello");
@@ -45,7 +45,7 @@ namespace Vim.UnitTest
             Assert.True(all.Contains(textBuffer3));
         }
 
-        [Fact]
+        [WpfFact]
         public void TryGetPropertySafe_Found()
         {
             var col = new PropertyCollection();
@@ -57,7 +57,7 @@ namespace Vim.UnitTest
             Assert.Equal("target", value);
         }
 
-        [Fact]
+        [WpfFact]
         public void TryGetPropertySafe_NotFound()
         {
             var col = new PropertyCollection();
@@ -70,7 +70,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Make sure it doesn't throw if the value is the wrong type
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void TryGetPropertySafe_WrongType()
         {
             var col = new PropertyCollection();

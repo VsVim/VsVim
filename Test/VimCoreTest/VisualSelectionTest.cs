@@ -26,7 +26,7 @@ namespace Vim.UnitTest
                 /// top caret locations here as for a single line we will never give back a bottom one since
                 /// it's just one line
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void SingleLine()
                 {
                     Create("cats", "dogs", "fish");
@@ -44,7 +44,7 @@ namespace Vim.UnitTest
                 /// <summary>
                 /// Make sure we get parity when going back and forth between block selection
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void MultiLine()
                 {
                     Create("cats", "dogs", "fish");
@@ -65,7 +65,7 @@ namespace Vim.UnitTest
                 /// <summary>
                 /// Make sure we get parity when going back and forth between character selection
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void SingleLine()
                 {
                     Create("cats", "dogs");
@@ -83,7 +83,7 @@ namespace Vim.UnitTest
                 /// <summary>
                 /// Make sure we get parity when going back and forth between character selection
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void MultiLine()
                 {
                     Create("cats", "dogs", "fish");
@@ -105,7 +105,7 @@ namespace Vim.UnitTest
                 /// Make sure we get parity when going back and forth between line selection.  Don't check 
                 /// forward / back on single line as they're the same
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void SingleLine()
                 {
                     Create("cats", "dogs", "fish");
@@ -123,7 +123,7 @@ namespace Vim.UnitTest
                 /// <summary>
                 /// Make sure we get parity when going back and forth between line selection
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void MultiLine()
                 {
                     Create("cats", "dogs", "fish");
@@ -151,7 +151,7 @@ namespace Vim.UnitTest
                 /// <summary>
                 /// Get the appropriate Caret SnapshotPoint for a forward character span
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void Forward()
                 {
                     Create("cats", "dogs");
@@ -164,7 +164,7 @@ namespace Vim.UnitTest
                 /// <summary>
                 /// Get the appropriate Caret SnapshotPoint for a backward character span
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void Backward()
                 {
                     Create("cats", "dogs");
@@ -179,7 +179,7 @@ namespace Vim.UnitTest
                 /// shouldn't be applied to the End location.  Else we'd end up in the line
                 /// break instead of the start of the line
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void EmptyLastLine()
                 {
                     Create("cat", "", "dog");
@@ -189,7 +189,7 @@ namespace Vim.UnitTest
                     Assert.Equal(_textBuffer.GetLine(1).Start, visualSelection.GetCaretPoint(SelectionKind.Inclusive));
                 }
 
-                [Fact]
+                [WpfFact]
                 public void InLineBreakForward()
                 {
                     Create("cat", "dog");
@@ -199,7 +199,7 @@ namespace Vim.UnitTest
                     Assert.Equal(4, visualSelection.GetCaretPoint(SelectionKind.Inclusive));
                 }
 
-                [Fact]
+                [WpfFact]
                 public void InLineBreakForwardDeep()
                 {
                     Create("cat", "dog");
@@ -209,7 +209,7 @@ namespace Vim.UnitTest
                     Assert.Equal(4, visualSelection.GetCaretPoint(SelectionKind.Inclusive));
                 }
 
-                [Fact]
+                [WpfFact]
                 public void InLineBreakBackward()
                 {
                     Create("cat", "dog");
@@ -225,7 +225,7 @@ namespace Vim.UnitTest
                 /// <summary>
                 /// Get the appropriate Caret SnapshotPoint for a top right block selection
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void TopRight()
                 {
                     Create("cats", "dogs", "fish");
@@ -237,7 +237,7 @@ namespace Vim.UnitTest
                 /// <summary>
                 /// Ensure the caret point is appropriately on the bottom right for a block selection
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void BottomRight()
                 {
                     Create("big dog", "big cat", "big tree", "big fish");
@@ -253,7 +253,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Make sure we properly create from a forward selection
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Create_Character()
             {
                 Create("hello world");
@@ -268,7 +268,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Create from a Block VisualSpan and make sure we get the appropriate CaretPoint
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void CreateForVisualSpan_Block()
             {
                 Create("cat", "dog");
@@ -286,7 +286,7 @@ namespace Vim.UnitTest
                 /// <summary>
                 /// Ensure that a backwards character span includes the caret point in the span
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void Backwards()
                 {
                     Create("cats dogs");
@@ -297,7 +297,7 @@ namespace Vim.UnitTest
                 /// <summary>
                 /// The further point should be included in the selection even when it's the anchor point 
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void BackwardsInlcudeAnchor()
                 {
                     Create("cats dogs");
@@ -308,7 +308,7 @@ namespace Vim.UnitTest
                     Assert.Equal(4, characterSpan.End.Position);
                 }
 
-                [Fact]
+                [WpfFact]
                 public void BackwardIntoLineBreak()
                 {
                     Create("cat", "dog");
@@ -318,7 +318,7 @@ namespace Vim.UnitTest
                     Assert.Equal(SearchPath.Backward, character.Item2);
                 }
 
-                [Fact]
+                [WpfFact]
                 public void ForwardIntoLineBreak()
                 {
                     Create("cat", "dog");
@@ -331,7 +331,7 @@ namespace Vim.UnitTest
                 /// <summary>
                 /// Go into the second character of the line break here
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void ForwardIntoLineBreak2()
                 {
                     Create("cat", "dog");
@@ -347,7 +347,7 @@ namespace Vim.UnitTest
                 /// <summary>
                 /// Ensure that a backwards line span includes the entire line
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void Backwards()
                 {
                     Create("cats dogs");
@@ -360,7 +360,7 @@ namespace Vim.UnitTest
                 /// selection.  This is different than the activePoint which wouldn't cause the line to 
                 /// be included because it's past the selection
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void CaretAtStart()
                 {
                     Create("cat", "dog", "bear");
@@ -386,7 +386,7 @@ namespace Vim.UnitTest
                 /// <summary>
                 /// Ensure that a backwards block span includes the entire line
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void Backwards()
                 {
                     Create("cats dogs");
@@ -403,7 +403,7 @@ namespace Vim.UnitTest
                 /// point is actually ahead of the anchor point in the position sense but the selection is 
                 /// still backwards
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void BackwardSeveralLines()
                 {
                     Create("big cat", "big dog");
@@ -420,7 +420,7 @@ namespace Vim.UnitTest
                 /// 'end' and hence not included causing the line count to be off.  Make sure that it is 
                 /// included 
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void BackwardsCaretOnColumnZero()
                 {
                     Create("cat", "dog");
@@ -437,7 +437,7 @@ namespace Vim.UnitTest
                 /// Make sure the API is correctly using spaces and not columns.  Otherwise selections like the 
                 /// following look backwards.  Column wise it is backwards but spaces wise it is forwards
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void EnsureUsingSpaces()
                 {
                     Create(4, "cat", "\tdog");
@@ -450,7 +450,7 @@ namespace Vim.UnitTest
                     Assert.Equal(blockSpan, visualSelection.AsBlock().Item1);
                 }
 
-                [Fact]
+                [WpfFact]
                 public void ForwardSimple()
                 {
                     Create("cats", "dogs");
@@ -463,7 +463,7 @@ namespace Vim.UnitTest
                     Assert.Equal(blockSpan, visualSelection.AsBlock().Item1);
                 }
 
-                [Fact]
+                [WpfFact]
                 public void AfterTab()
                 {
                     Create("cat", "d\tog");
@@ -485,7 +485,7 @@ namespace Vim.UnitTest
         {
             public sealed class CharacterTest : CreateInitialTest
             {
-                [Fact]
+                [WpfFact]
                 public void SelectionExclusive()
                 {
                     Create("hello world");
@@ -493,7 +493,7 @@ namespace Vim.UnitTest
                     Assert.Equal(0, visualSelection.AsCharacter().Item1.Length);
                 }
 
-                [Fact]
+                [WpfFact]
                 public void SelectionInclusive()
                 {
                     Create("hello world");
@@ -509,7 +509,7 @@ namespace Vim.UnitTest
             /// Block selection of width 1 with exclusive selection should still have a single
             /// column.  Even though normal block selections are shrunk by a column
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Block_SingleColumnExclusive()
             {
                 Create("cats", "dogs", "trees");
@@ -522,7 +522,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Block selection should lose a column in Exclusive
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Block_MultiColumnExclusive()
             {
                 Create("cats", "dogs", "trees");
@@ -539,7 +539,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// A character span should lose one if we adjust it for exclusive 
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Character_Forward()
             {
                 Create("cat dog bear");

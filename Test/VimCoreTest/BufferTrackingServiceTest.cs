@@ -38,7 +38,7 @@ namespace Vim.UnitTest
                 Assert.Equal(column, point.Position - line.Start.Position);
             }
 
-            [Fact]
+            [WpfFact]
             public void SimpleEdit1()
             {
                 var buffer = CreateTextBuffer("foo bar", "baz");
@@ -50,7 +50,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Replace the line, shouldn't affect the column tracking
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void SimpleEdit2()
             {
                 var buffer = CreateTextBuffer("foo bar", "baz");
@@ -62,7 +62,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Edit at the end of the line
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void SimpleEdit3()
             {
                 var buffer = CreateTextBuffer("foo bar", "baz");
@@ -74,7 +74,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Edit a different line
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void SimpleEdit4()
             {
                 var buffer = CreateTextBuffer("foo bar", "baz");
@@ -86,7 +86,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Deleting the line containing the tracking item should cause it to be deleted
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Edit_DeleteLine()
             {
                 var buffer = CreateTextBuffer("foo", "bar");
@@ -99,7 +99,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Deleting the line below shouldn't affect it
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Edit_DeleteLineBelow()
             {
                 var buffer = CreateTextBuffer("foo", "bar");
@@ -111,7 +111,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Deleting the line above should just adjust it
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Edit_DeleteLineAbove()
             {
                 var buffer = CreateTextBuffer("foo", "bar", "baz");
@@ -120,7 +120,7 @@ namespace Vim.UnitTest
                 AssertPoint(tlc, 0, 2);
             }
 
-            [Fact]
+            [WpfFact]
             public void TruncatingEdit1()
             {
                 var buffer = CreateTextBuffer("foo bar baz");
@@ -132,7 +132,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Make it 0 width
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void TruncatingEdit2()
             {
                 var buffer = CreateTextBuffer("foo bar baz");
@@ -144,7 +144,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Adding a line at the start of a block should shift the block down
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void VisualSelection_Block_AddLineAbove()
             {
                 var textBuffer = CreateTextBuffer("cats", "dogs", "fish");
@@ -163,7 +163,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Adding a line at the start of a block should shift the block down
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void VisualSpan_Block_AddLineAbove()
             {
                 var textBuffer = CreateTextBuffer("cats", "dogs", "fish");
@@ -179,7 +179,7 @@ namespace Vim.UnitTest
             /// When tracking a Visual Character span an edit before the point should not move the
             /// start of the selection to the right
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void VisualSpan_Character_EditBefore()
             {
                 var textBuffer = CreateTextBuffer("cat", "dog");
@@ -195,7 +195,7 @@ namespace Vim.UnitTest
             /// When tracking a Visual Character span which spans multiple lines an edit before 
             /// the point should not move the start of the selection to the right
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void VisualSpan_Character_EditBeforeMultiLine()
             {
                 var textBuffer = CreateTextBuffer("cat", "dog");
@@ -213,7 +213,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Ensure that Close properly disposes of the underlying data 
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void VisualSpanAll()
             {
                 var textBuffer = CreateTextBuffer("cat");
@@ -227,7 +227,7 @@ namespace Vim.UnitTest
                 }
             }
 
-            [Fact]
+            [WpfFact]
             public void VisualSelectionAll()
             {
                 var textBuffer = CreateTextBuffer("cat");
@@ -242,7 +242,7 @@ namespace Vim.UnitTest
                 }
             }
 
-            [Fact]
+            [WpfFact]
             public void LineColumn()
             {
                 var textBuffer = CreateTextBuffer("cat");

@@ -30,14 +30,14 @@ namespace Vim.UnitTest
             _transaction = _transactionRaw;
         }
 
-        [Fact]
+        [WpfFact]
         public void Complete1()
         {
             Create(haveRealTransaction: false);
             _transaction.Complete();
         }
 
-        [Fact]
+        [WpfFact]
         public void Complete2()
         {
             Create();
@@ -46,14 +46,14 @@ namespace Vim.UnitTest
             _factory.Verify();
         }
 
-        [Fact]
+        [WpfFact]
         public void Cancel1()
         {
             Create(haveRealTransaction: false);
             _transaction.Cancel();
         }
 
-        [Fact]
+        [WpfFact]
         public void Cancel2()
         {
             Create();

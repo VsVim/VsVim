@@ -159,7 +159,7 @@ namespace Vim.VisualStudio.UnitTest
             /// Ensure that ITag values which aren't interesting to us aren't returned 
             /// as an external edit span
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Tags_NoiseValues()
             {
                 Create("cat", "tree", "dog");
@@ -171,7 +171,7 @@ namespace Vim.VisualStudio.UnitTest
             /// <summary>
             /// Ensure edit tags register as such
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Tags_EditTag()
             {
                 Create("cat", "tree", "dog");
@@ -185,7 +185,7 @@ namespace Vim.VisualStudio.UnitTest
             /// <summary>
             /// When we aren't passed the Tags check flag don't actually check tags
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Tags_WrongFlag()
             {
                 Create("cat", "tree", "dog");
@@ -202,7 +202,7 @@ namespace Vim.VisualStudio.UnitTest
             /// Verify we don't do anything special like saving external edit tags when switching
             /// out of a mode other than external edit
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void NoActionOutsideExternalEdit()
             {
                 Create("cat", "tree", "dog");
@@ -220,7 +220,7 @@ namespace Vim.VisualStudio.UnitTest
             /// This is a very important test because we often see the transition to visual mode
             /// before the layout and hence would ignore valid edit tags
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void OldModeIsExternalThenSaveIgnoreTags()
             {
                 Create("cat", "tree", "dog");
@@ -238,7 +238,7 @@ namespace Vim.VisualStudio.UnitTest
             /// If we perform the check for external edit starts and there are indeed tags 
             /// then transition into external edit
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void TagsWithExternalEditTags()
             {
                 Create("cat", "tree", "dog");
@@ -253,7 +253,7 @@ namespace Vim.VisualStudio.UnitTest
             /// If we run the check and there are no more external edit tags we should transition 
             /// out of external edit mode and back into insert
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void TagsNoMoreExternalEdits()
             {
                 Create("cat", "tree", "dog");
@@ -266,7 +266,7 @@ namespace Vim.VisualStudio.UnitTest
                 Assert.Equal(ModeKind.Insert, _buffer.ModeKind);
             }
 
-            [Fact]
+            [WpfFact]
             public void TagsWithExternalEditTagsAndDisabled()
             {
                 Create("cat", "tree", "dog");
@@ -282,7 +282,7 @@ namespace Vim.VisualStudio.UnitTest
             /// If we perform the check for external edit starts and there are indeed tags 
             /// but we're only looking for markers then don't take any action
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void MarksWithExternalEditTags()
             {
                 Create("cat", "tree", "dog");
@@ -296,7 +296,7 @@ namespace Vim.VisualStudio.UnitTest
 
         public sealed class ControlExternalEditTest : ExternalEditMonitorTest
         {
-            [Fact]
+            [WpfFact]
             public void ControlledByOther()
             {
                 Create("cat");
@@ -304,7 +304,7 @@ namespace Vim.VisualStudio.UnitTest
                 Assert.False(_monitor.ControlExternalEdit);
             }
 
-            [Fact]
+            [WpfFact]
             public void ControlledByMonitor()
             {
                 Create("cat", "tree", "dog");
@@ -316,7 +316,7 @@ namespace Vim.VisualStudio.UnitTest
                 Assert.True(_monitor.ControlExternalEdit);
             }
 
-            [Fact]
+            [WpfFact]
             public void PerformCheckWhenControlledByOthers()
             {
                 Create("cat");
@@ -329,7 +329,7 @@ namespace Vim.VisualStudio.UnitTest
 
         public sealed class IsExternalEditActiveTest : ExternalEditMonitorTest
         {
-            [Fact]
+            [WpfFact]
             public void OnOffTest()
             {
                 Create("cat");
@@ -346,7 +346,7 @@ namespace Vim.VisualStudio.UnitTest
             /// <summary>
             /// If at least one thinks an external edit is active then it's active
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void AdapterDisagree()
             {
                 Create("cat");

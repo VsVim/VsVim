@@ -36,7 +36,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Make sure that no tracking occurs when we are disabled
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void DontTrackWhenDisabled()
         {
             Create("");
@@ -50,7 +50,7 @@ namespace Vim.UnitTest
         /// Make sure we clear out the text when disabling.  Don't want a change to persist across
         /// several enabled sessions
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void DisableShouldClearCurrentChange()
         {
             Create("");
@@ -60,7 +60,7 @@ namespace Vim.UnitTest
             Assert.True(_tracker.CurrentChange.IsNone());
         }
 
-        [Fact]
+        [WpfFact]
         public void TypeForward1()
         {
             Create("the quick brown fox");
@@ -69,7 +69,7 @@ namespace Vim.UnitTest
             Assert.Equal(TextChange.NewInsert("a"), _tracker.CurrentChange.Value);
         }
 
-        [Fact]
+        [WpfFact]
         public void TypeForward2()
         {
             Create("the quick brown fox");
@@ -79,7 +79,7 @@ namespace Vim.UnitTest
             Assert.Equal(TextChange.NewInsert("ab"), _tracker.CurrentChange.Value);
         }
 
-        [Fact]
+        [WpfFact]
         public void TypeForward3()
         {
             Create("the quick brown fox");
@@ -90,7 +90,7 @@ namespace Vim.UnitTest
             Assert.Equal(TextChange.NewInsert("abc"), _tracker.CurrentChange.Value);
         }
 
-        [Fact]
+        [WpfFact]
         public void TypeForward_AddMany1()
         {
             Create("the quick brown fox");
@@ -100,7 +100,7 @@ namespace Vim.UnitTest
             Assert.Equal(TextChange.NewInsert("abcd"), _tracker.CurrentChange.Value);
         }
 
-        [Fact]
+        [WpfFact]
         public void TypeForward_AddMany2()
         {
             Create("the quick brown fox");
@@ -110,7 +110,7 @@ namespace Vim.UnitTest
             Assert.Equal(TextChange.NewInsert("abcde"), _tracker.CurrentChange.Value);
         }
 
-        [Fact]
+        [WpfFact]
         public void Delete1()
         {
             Create("the quick brown fox");
@@ -120,7 +120,7 @@ namespace Vim.UnitTest
             Assert.Equal(TextChange.NewInsert("a"), _tracker.CurrentChange.Value);
         }
 
-        [Fact]
+        [WpfFact]
         public void Delete2()
         {
             Create("the quick brown fox");
@@ -131,7 +131,7 @@ namespace Vim.UnitTest
             Assert.Equal(TextChange.NewInsert("a"), _tracker.CurrentChange.Value);
         }
 
-        [Fact]
+        [WpfFact]
         public void Delete3()
         {
             Create("the quick brown fox");
@@ -141,7 +141,7 @@ namespace Vim.UnitTest
             Assert.Equal(TextChange.NewInsert("ab"), _tracker.CurrentChange.Value);
         }
 
-        [Fact]
+        [WpfFact]
         public void Delete4()
         {
             Create("the quick brown fox");
@@ -150,7 +150,7 @@ namespace Vim.UnitTest
             Assert.Equal(TextChange.NewDeleteLeft(1), _tracker.CurrentChange.Value);
         }
 
-        [Fact]
+        [WpfFact]
         public void Delete5()
         {
             Create("the quick brown fox");
@@ -162,7 +162,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Deleting backwards should join the deletes
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void Delete6()
         {
             Create("the quick brown fox");
@@ -175,7 +175,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Make sure that it can detect a delete right vs. a delete left
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void DeleteRight_Simple()
         {
             Create("cat dog");
@@ -186,7 +186,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Don't treat a caret to the right of the start as a delete right
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void DeleteRight_FromMiddle()
         {
             Create("cat dog");
@@ -201,7 +201,7 @@ namespace Vim.UnitTest
         /// tabs are inserted when really it's just a conversion and should show up as a single tab
         /// insert
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void Special_SpaceToTab()
         {
             Create("    hello");
@@ -214,7 +214,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Make sure a straight forward replace is handled properly 
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void Replace_Complete()
         {
             Create("cat");
@@ -229,7 +229,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Replace a set of text with a smaller set of text
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void Replace_Small()
         {
             Create("house");
@@ -244,7 +244,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Replace a set of text with a bigger set of text
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void Replace_Big()
         {
             Create("dog");
@@ -259,7 +259,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// A replace which occurs after an insert should be merged
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void Merge_ReplaceAfterInsert()
         {
             Create("dog");

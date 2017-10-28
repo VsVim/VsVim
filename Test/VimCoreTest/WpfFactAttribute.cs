@@ -11,5 +11,9 @@ namespace Vim.UnitTest
 {
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
     [XunitTestCaseDiscoverer("Vim.UnitTest.Utilities.WpfFactDiscoverer", "Vim.Core.UnitTest")]
-    public class WpfFactAttributeAttribute : FactAttribute { }
+    public class WpfFactAttribute : FactAttribute { }
+
+    [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
+    [XunitTestCaseDiscoverer("Vim.UnitTest.Utilities.WpfTheoryDiscoverer", "Vim.Core.UnitTest")]
+    public class WpfTheoryAttribute : TheoryAttribute { }
 }

@@ -50,7 +50,7 @@ namespace Vim.UnitTest
             _tracker.Start();
         }
 
-        [Fact]
+        [WpfFact]
         public void AnchorPoint1()
         {
             Create(VisualKind.Character, "foo");
@@ -62,7 +62,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Tracking shouldn't happen if we're stopped
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void AnchorPoint2()
         {
             Create(VisualKind.Character, "foo");
@@ -71,14 +71,14 @@ namespace Vim.UnitTest
             Assert.True(_tracker._anchorPoint.IsNone());
         }
 
-        [Fact]
+        [WpfFact]
         public void Start1()
         {
             Create(VisualKind.Character, "foo");
             Assert.Throws<InvalidOperationException>(() => _tracker.Start());
         }
 
-        [Fact]
+        [WpfFact]
         public void Start2()
         {
             Create(VisualKind.Character, "foo");
@@ -88,7 +88,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Don't reset the selection if there already is one.  Breaks actions like CTRL+A")]
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void Start_DontResetSelection()
         {
             Create(VisualKind.Character, "");
@@ -114,7 +114,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// In a selection it should take the anchor point of the selection
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void Start4()
         {
             Create(VisualKind.Character);
@@ -131,7 +131,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Start in line mode should select the entire line
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void Start_LineShouldSelectWholeLine()
         {
             Create(VisualKind.Line, "foo", "bar");
@@ -140,7 +140,7 @@ namespace Vim.UnitTest
             Assert.Equal(_textView.TextBuffer.GetLineFromLineNumber(0).EndIncludingLineBreak, _textView.Selection.End.Position);
         }
 
-        [Fact]
+        [WpfFact]
         public void Stop1()
         {
             Create(VisualKind.Character, "foo");
@@ -148,7 +148,7 @@ namespace Vim.UnitTest
             Assert.Throws<InvalidOperationException>(() => _tracker.Stop());
         }
 
-        [Fact]
+        [WpfFact]
         public void HasAggregateFocus1()
         {
             var caret = new Mock<ITextCaret>();
@@ -158,7 +158,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Test an inclusive forward selecion
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void UpdateSelection1()
         {
             Create(VisualKind.Character, 0, "dog", "chicken");
@@ -170,7 +170,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Test an exclusive forward selecion
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void UpdateSelection2()
         {
             Create(VisualKind.Character, 0, "dog", "chicken");
@@ -183,7 +183,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Test an inclusive forward selecion
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void UpdateSelection3()
         {
             Create(VisualKind.Character, 0, "dog", "chicken");
@@ -195,7 +195,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Test an inclusive backwards selecion
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void UpdateSelection4()
         {
             Create(VisualKind.Character, 3, "dogs", "chicken");
@@ -207,7 +207,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Past the end of the line
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void UpdateSelection5()
         {
             Create(VisualKind.Character, 5, "dogs", "chicken");

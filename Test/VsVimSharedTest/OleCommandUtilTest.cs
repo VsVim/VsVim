@@ -88,7 +88,7 @@ namespace Vim.VisualStudio.UnitTest
         ///
         /// Issue 961
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void TypeChar_WithModifiers()
         {
             var source = @"@£$€{[]}\";
@@ -104,7 +104,7 @@ namespace Vim.VisualStudio.UnitTest
             }
         }
 
-        [Fact]
+        [WpfFact]
         public void ArrowKeys()
         {
             VerifyConvert(VSConstants.VSStd2KCmdID.LEFT, VimKey.Left, EditCommandKind.UserInput);
@@ -113,7 +113,7 @@ namespace Vim.VisualStudio.UnitTest
             VerifyConvert(VSConstants.VSStd2KCmdID.DOWN, VimKey.Down, EditCommandKind.UserInput);
         }
 
-        [Fact]
+        [WpfFact]
         public void ArrowKey_WithModifiers()
         {
             var modifiers = VimKeyModifiers.Alt | VimKeyModifiers.Control;
@@ -126,7 +126,7 @@ namespace Vim.VisualStudio.UnitTest
         /// The selection extender versions of the arrow keys should register as commands.  Something we 
         /// shouldn't be processing
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void Selectors_ArrowKeys()
         {
             VerifyConvertWithShift(VSConstants.VSStd2KCmdID.LEFT_EXT, VimKey.Left, EditCommandKind.VisualStudioCommand);
@@ -139,7 +139,7 @@ namespace Vim.VisualStudio.UnitTest
             VerifyConvertWithShift(VSConstants.VSStd2KCmdID.DOWN_EXT_COL, VimKey.Down, EditCommandKind.VisualStudioCommand);
         }
 
-        [Fact]
+        [WpfFact]
         public void Selectors_Others()
         {
             VerifyConvertWithShift(VSConstants.VSStd2KCmdID.PAGEUP_EXT, VimKey.PageUp, EditCommandKind.VisualStudioCommand);
@@ -150,13 +150,13 @@ namespace Vim.VisualStudio.UnitTest
             VerifyConvertWithShift(VSConstants.VSStd2KCmdID.BOL_EXT_COL, VimKey.Home, EditCommandKind.VisualStudioCommand);
         }
 
-        [Fact]
+        [WpfFact]
         public void Tab()
         {
             VerifyConvert(VSConstants.VSStd2KCmdID.TAB, KeyInputUtil.TabKey, EditCommandKind.UserInput);
         }
 
-        [Fact]
+        [WpfFact]
         public void BackTab()
         {
             VerifyConvert(VSConstants.VSStd2KCmdID.BACKTAB, KeyInputUtil.ApplyKeyModifiers(KeyInputUtil.TabKey, VimKeyModifiers.Shift), EditCommandKind.UserInput);
@@ -165,7 +165,7 @@ namespace Vim.VisualStudio.UnitTest
         /// <summary>
         /// Verify that the shift modifier is properly applied to a tab
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void Tab_WithShift()
         {
             var keyInput = KeyInputUtil.ApplyKeyModifiers(KeyInputUtil.TabKey, VimKeyModifiers.Shift);
@@ -173,32 +173,32 @@ namespace Vim.VisualStudio.UnitTest
             VerifyConvert(VSConstants.VSStd2KCmdID.TAB, VimKeyModifiers.Shift, keyInput, EditCommandKind.UserInput);
         }
 
-        [Fact]
+        [WpfFact]
         public void F1Help1()
         {
             VerifyConvert(VSConstants.VSStd97CmdID.F1Help, VimKey.F1, EditCommandKind.UserInput);
         }
 
-        [Fact]
+        [WpfFact]
         public void Escape()
         {
             VerifyConvert(VSConstants.VSStd97CmdID.Escape, KeyInputUtil.EscapeKey, EditCommandKind.UserInput);
             VerifyConvert(VSConstants.VSStd2KCmdID.CANCEL, KeyInputUtil.EscapeKey, EditCommandKind.UserInput);
         }
 
-        [Fact]
+        [WpfFact]
         public void PageUp()
         {
             VerifyConvert(VSConstants.VSStd2KCmdID.PAGEUP, VimKey.PageUp, EditCommandKind.UserInput);
         }
 
-        [Fact]
+        [WpfFact]
         public void PageDown()
         {
             VerifyConvert(VSConstants.VSStd2KCmdID.PAGEDN, VimKey.PageDown, EditCommandKind.UserInput);
         }
 
-        [Fact]
+        [WpfFact]
         public void Backspace()
         {
             VerifyConvert(VSConstants.VSStd2KCmdID.BACKSPACE, VimKey.Back, EditCommandKind.UserInput);
@@ -208,7 +208,7 @@ namespace Vim.VisualStudio.UnitTest
         /// Ensure we can map back and forth every KeyInput value which is considered t obe
         /// text input.  This is important for intercepting commands
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void TryConvert_TextInputToOleCommandData()
         {
             var textView = CreateTextView("");
@@ -249,7 +249,7 @@ namespace Vim.VisualStudio.UnitTest
         /// Even though the VSStd2KCmdID enumeration defines an END value, it appears to use EOL when
         /// the End key is hit.
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void TryConvert_End()
         {
             VerifyConvert(VSConstants.VSStd2KCmdID.EOL, VimKey.End, EditCommandKind.UserInput);
@@ -261,7 +261,7 @@ namespace Vim.VisualStudio.UnitTest
         /// Even though the VSStd2KCmdID enumeration defines an HOME value, it appears to use BOL when
         /// the Home key is hit.
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void TryConvert_Home()
         {
             VerifyConvert(VSConstants.VSStd2KCmdID.BOL, VimKey.Home, EditCommandKind.UserInput);
@@ -270,7 +270,7 @@ namespace Vim.VisualStudio.UnitTest
         /// <summary>
         /// Verify we can convert the Insert key in both directions
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void TryConvert_Insert()
         {
             VerifyBothWays(VSConstants.VSStd2KCmdID.TOGGLE_OVERTYPE_MODE, VimKey.Insert);

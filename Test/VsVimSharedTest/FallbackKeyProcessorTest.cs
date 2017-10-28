@@ -88,7 +88,7 @@ namespace Vim.VisualStudio.UnitTest
             {
             }
 
-            [Fact]
+            [WpfFact]
             public void SimpleInDisabled()
             {
                 var commandId = AddRemovedBinding("Global::ctrl+k");
@@ -98,7 +98,7 @@ namespace Vim.VisualStudio.UnitTest
                 _commands.Verify();
             }
 
-            [Fact]
+            [WpfFact]
             public void SimpleInNormal()
             {
                 var commandId = AddRemovedBinding("Global::ctrl+k");
@@ -114,7 +114,7 @@ namespace Vim.VisualStudio.UnitTest
             {
             }
 
-            [Fact]
+            [WpfFact]
             public void CapitalC()
             {
                 var commandId = AddRemovedBinding("Text Editor::Ctrl+Shift+Alt+C", "Edit.CopyParameterTip");
@@ -127,7 +127,7 @@ namespace Vim.VisualStudio.UnitTest
                 Assert.False(isCalled, "this command should not be called");
             }
 
-            [Fact]
+            [WpfFact]
             public void ShiftAltCtrlCWorks()
             {
                 var commandId = AddRemovedBinding("Text Editor::Ctrl+Shift+Alt+C", "Edit.CopyParameterTip");
@@ -139,7 +139,7 @@ namespace Vim.VisualStudio.UnitTest
                 _commands.Verify();
             }
 
-            [Fact]
+            [WpfFact]
             public void KeyChordsWorkWhenVsVimIsDisabled()
             {
                 var commandId = AddRemovedBinding("Text Editor::Ctrl+K, Ctrl+U", "Uncomment Selection");
@@ -152,7 +152,7 @@ namespace Vim.VisualStudio.UnitTest
                 _commands.Verify();
             }
 
-            [Fact]
+            [WpfFact]
             public void InvalidChordFollowedByGoodChordWorks()
             {
                 var commandId = AddRemovedBinding("Text Editor::Ctrl+K, Ctrl+U", "Uncomment Selection");
@@ -170,7 +170,7 @@ namespace Vim.VisualStudio.UnitTest
                 _commands.Verify();
             }
 
-            [Fact]
+            [WpfFact]
             public void TestEditorScopeCommandsAreBeforeGlobal()
             {
                 var commandId = AddRemovedBinding("Text Editor::Ctrl+K, Ctrl+U", "Uncomment Selection");
@@ -194,7 +194,7 @@ namespace Vim.VisualStudio.UnitTest
             {
             }
 
-            [Fact]
+            [WpfFact]
             public void SimpleRemoved()
             {
                 var commandId = AddRemovedBinding("Global::ctrl+k");
@@ -203,7 +203,7 @@ namespace Vim.VisualStudio.UnitTest
                 _commands.Verify();
             }
 
-            [Fact]
+            [WpfFact]
             public void SimpleNotRemoved()
             {
                 var commandId = AddRemovedBinding("Global::ctrl+k");

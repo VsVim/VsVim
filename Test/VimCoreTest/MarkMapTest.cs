@@ -25,7 +25,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Set a simple mark and ensure we can retrieve it
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void SetMark_Local_Simple()
         {
             var vimBufferData = CreateVimBufferData("dog", "cat");
@@ -38,7 +38,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Set a simple mark in virtual space and ensure that it works 
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void SetMark_Local_VirtualSpace()
         {
             var vimBufferData = CreateVimBufferData("dog", "cat");
@@ -52,7 +52,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Querying for a mark which is not set should produce an empty option
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void GetMark_Local_NotSet()
         {
             var vimBufferData = CreateVimBufferData("dog", "cat");
@@ -63,7 +63,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Querying for a global mark which is not set should produce an empty option
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void GetMark_Global_NotSet()
         {
             var vimBufferData = CreateVimBufferData("dog", "cat");
@@ -76,7 +76,7 @@ namespace Vim.UnitTest
         /// provided IVimBuffer.  If the Global mark exists in another ITextBuffer it should not
         /// be returned
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void GetMark_Global_CrossBuffer()
         {
             var vimBufferData1 = CreateVimBufferData("dog", "cat");
@@ -91,7 +91,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Simple insertion after shouldn't invalidate the mark
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void Track_SimpleInsertAfter()
         {
             var vimBufferData = CreateVimBufferData("dog", "cat");
@@ -105,7 +105,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Insertion elsewhere in the ITextBuffer shouldn't affect the mark
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void Track_ReplaceInbuffer()
         {
             var vimBufferData = CreateVimBufferData("foo");
@@ -120,7 +120,7 @@ namespace Vim.UnitTest
         /// When shrinking a line where we are tracking a line column then we should just
         /// return the point in virtual space
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void Track_ShrinkLineBelowMark()
         {
             var vimBufferData = CreateVimBufferData("foo");
@@ -137,7 +137,7 @@ namespace Vim.UnitTest
         /// Deleting the line above the mark shouldn't affect it other than to move it up 
         /// a line
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void Track_DeleteLineAbove()
         {
             var vimBufferData = CreateVimBufferData("foo", "bar");
@@ -152,7 +152,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Deleting the line the mark is on should cause the mark to be invalidated
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void Track_DeleteLine()
         {
             var vimBufferData = CreateVimBufferData("cat", "dog");
@@ -168,7 +168,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Clearing out all global marks should work on an empty map
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void ClearGlobalMarks_Empty()
         {
             _markMap.Clear();
@@ -177,7 +177,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Clearing out the global marks shouldn't affect any local marks
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void ClearGlobalMarks_NoAffectOnLocal()
         {
             var vimBufferData = CreateVimBufferData("hello world");
@@ -186,7 +186,7 @@ namespace Vim.UnitTest
             Assert.True(_markMap.GetMark(_localMarkD, vimBufferData).IsSome());
         }
 
-        [Fact]
+        [WpfFact]
         public void LocalMark_BackAndForth()
         {
             foreach (var localMark in LocalMark.All)
@@ -197,7 +197,7 @@ namespace Vim.UnitTest
             }
         }
 
-        [Fact]
+        [WpfFact]
         public void Mark_BackAndForth()
         {
             var all = new List<Mark>();
@@ -213,7 +213,7 @@ namespace Vim.UnitTest
             }
         }
 
-        [Fact]
+        [WpfFact]
         public void NewBufferHasLastJump()
         {
             var vimBufferData = CreateVimBufferData("foo");
@@ -221,7 +221,7 @@ namespace Vim.UnitTest
             Assert.True(_markMap.GetMark(Mark.LastJump, vimBufferData).IsSome());
         }
 
-        [Fact]
+        [WpfFact]
         public void NewBufferHasLastExitedPosition()
         {
             var vimBufferData = CreateVimBufferData("foo");

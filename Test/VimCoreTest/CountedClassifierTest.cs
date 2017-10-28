@@ -25,7 +25,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// First create on an key should actually call the create function
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void Create_DoCreate()
         {
             var didRun = false;
@@ -45,7 +45,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Second create should just grab the value from the property collection
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void Create_GetFromCache()
         {
             var runCount = 0;
@@ -64,7 +64,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Disposing the one containing CountedTagger should dispose the underlying instance
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void Dispose_OneInstance()
         {
             var tagger = _factory.Create<IClassifier>();
@@ -80,7 +80,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Must dispose all of the outer CountedTagger instances before the inner ITagger is disposed
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void Dispose_ManyInstance()
         {
             var tagger = _factory.Create<IClassifier>();

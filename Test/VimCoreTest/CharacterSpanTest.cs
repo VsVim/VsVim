@@ -19,7 +19,7 @@ namespace Vim.UnitTest
         {
             public sealed class StandardTest : ConstructionTest
             {
-                [Fact]
+                [WpfFact]
                 public void SingleLineWhichIsEmpty()
                 {
                     Create("cat", "", "dog");
@@ -31,7 +31,7 @@ namespace Vim.UnitTest
                 /// <summary>
                 /// A character span can't extend into the line break
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void IntoLineBreak()
                 {
                     Create("cat", "", "dog");
@@ -39,7 +39,7 @@ namespace Vim.UnitTest
                     Assert.Equal(3, characterSpan.LastLineLength);
                 }
 
-                [Fact]
+                [WpfFact]
                 public void IntoLineBreakDeep()
                 {
                     Create("cat", "", "dog");
@@ -51,7 +51,7 @@ namespace Vim.UnitTest
                 /// If the last line is empty it should still be included in the CharacterSpan.  This is
                 /// an odd special case we have to handle
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void LastLineEmpty()
                 {
                     Create("cat", "", "dog");
@@ -69,7 +69,7 @@ namespace Vim.UnitTest
                 /// break of the empty line.  The last line must be included but it shouldn't
                 /// have any length
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void LastLineEmpty()
                 {
                     Create("cat", "", "dog");
@@ -87,7 +87,7 @@ namespace Vim.UnitTest
                 /// Make sure we don't include the next line when including line break and the next
                 /// line is empty
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void IncludeLineBreakNextLineEmpty()
                 {
                     Create("cat", "", "dog");
@@ -100,7 +100,7 @@ namespace Vim.UnitTest
                 /// <summary>
                 /// Similar case to the last line empty is column 0 in the last line is included
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void LastLineLengthOfOne()
                 {
                     Create("cat", "dog", "fish");
@@ -115,7 +115,7 @@ namespace Vim.UnitTest
 
         public sealed class IncludeLastLineLineBreakTest : CharacterSpanTest
         {
-            [Fact]
+            [WpfFact]
             public void EmptyLastLine()
             {
                 Create("cat", "", "dog");
@@ -123,7 +123,7 @@ namespace Vim.UnitTest
                 Assert.True(characterSpan.IncludeLastLineLineBreak);
             }
 
-            [Fact]
+            [WpfFact]
             public void EmptyLine()
             {
                 Create("cat", "", "dog");
@@ -131,7 +131,7 @@ namespace Vim.UnitTest
                 Assert.True(characterSpan.IncludeLastLineLineBreak);
             }
 
-            [Fact]
+            [WpfFact]
             public void EndOfNonEmptyLine()
             {
                 Create("cat", "", "dog");
@@ -139,7 +139,7 @@ namespace Vim.UnitTest
                 Assert.True(characterSpan.IncludeLastLineLineBreak);
             }
 
-            [Fact]
+            [WpfFact]
             public void UpToLineBreak()
             {
                 Create("cat", "", "dog");
@@ -153,7 +153,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Verify End is correct for a single line
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void End_SingleLine()
             {
                 Create("cats", "dog");
@@ -164,7 +164,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Verify End is correct for multiple lines
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void End_MultiLine()
             {
                 Create("cats", "dogs");
@@ -175,7 +175,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// The last point should be the last included point in the CharacterSpan
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Last_Simple()
             {
                 Create("cats", "dogs");
@@ -187,7 +187,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Zero length spans should have no Last value
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Last_ZeroLength()
             {
                 Create("cats", "dogs");
@@ -198,7 +198,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Make sure operator equality functions as expected
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Equality_Operator()
             {
                 Create("cat", "dog");
@@ -225,7 +225,7 @@ namespace Vim.UnitTest
             /// but nothing of the second line and one which includes the second line.  Here is the code 
             /// to differentiate the two 
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void EmptyLineDifferentiationTest()
             {
                 Create("dog", "", "cat");

@@ -22,7 +22,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Be wary the 0 length last line
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void MoveCaretDown1()
         {
             CreateLines("foo", String.Empty);
@@ -35,7 +35,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Move caret down should maintain column
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void MoveCaretDown2()
         {
             CreateLines("foo", "bar");
