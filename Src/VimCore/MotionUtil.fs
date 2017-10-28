@@ -1706,13 +1706,13 @@ type internal MotionUtil
             MotionResult.Create span isForward motionKind |> Some
 
     /// Repeat the last f, F, t or T search pattern.
-    member x.RepeatLastCharSearch () =
+    member x.RepeatLastCharSearch count =
         match _vimData.LastCharSearch with 
         | None -> None
-        | Some (kind, direction, c) -> x.CharSearchCore c 1 kind direction
+        | Some (kind, direction, c) -> x.CharSearchCore c count kind direction
 
     /// Repeat the last f, F, t or T search pattern in the opposite direction
-    member x.RepeatLastCharSearchOpposite () =
+    member x.RepeatLastCharSearchOpposite count =
         match _vimData.LastCharSearch with 
         | None -> None
         | Some (kind, direction, c) -> 
@@ -1720,7 +1720,7 @@ type internal MotionUtil
                 match direction with
                 | SearchPath.Forward -> SearchPath.Backward
                 | SearchPath.Backward -> SearchPath.Forward
-            x.CharSearchCore c 1 kind direction
+            x.CharSearchCore c count kind direction
 
     member x.WordForward kind count motionContext =
 
@@ -2789,8 +2789,8 @@ type internal MotionUtil
             | Motion.ParagraphForward -> x.ParagraphForward motionArgument.Count |> Some
             | Motion.QuotedString quoteChar -> x.QuotedString quoteChar
             | Motion.QuotedStringContents quoteChar -> x.QuotedStringContentsWithCount quoteChar motionArgument.Count
-            | Motion.RepeatLastCharSearch -> x.RepeatLastCharSearch()
-            | Motion.RepeatLastCharSearchOpposite -> x.RepeatLastCharSearchOpposite()
+            | Motion.RepeatLastCharSearch -> x.RepeatLastCharSearch motionArgument.Count
+            | Motion.RepeatLastCharSearchOpposite -> x.RepeatLastCharSearchOpposite motionArgument.Count
             | Motion.Search searchData-> x.Search searchData motionArgument.Count
             | Motion.SectionBackwardOrCloseBrace -> x.SectionBackwardOrCloseBrace motionArgument.Count |> Some
             | Motion.SectionBackwardOrOpenBrace -> x.SectionBackwardOrOpenBrace motionArgument.Count |> Some

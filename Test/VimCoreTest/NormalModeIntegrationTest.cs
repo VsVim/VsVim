@@ -6375,6 +6375,22 @@ namespace Vim.UnitTest
                 Assert.Equal(_textView.GetLine(1).Start.Add(2), _textView.GetCaretPoint());
             }
 
+            [Fact]
+            public void RepeatLastCharSearch_ForwardCount()
+            {
+                Create("boot boot");
+                _vimBuffer.Process("fo3;");
+                Assert.Equal(7, _textView.GetCaretPoint().Position);
+            }
+
+            [Fact]
+            public void RepeatLastCharSearch_BackwardCount()
+            {
+                Create("boot boot");
+                _vimBuffer.Process("fo3;3,");
+                Assert.Equal(1, _textView.GetCaretPoint().Position);
+            }
+
             /// <summary>
             /// The repeat last char search command shouldn't toggle itself.  Or in short it should be
             /// possible to scan an entire line in one direction
