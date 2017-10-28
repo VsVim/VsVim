@@ -78,7 +78,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// The GetTags call should just get data from the source
             /// </summary>
-            [Fact]
+            [WpfFactAttribute]
             public void GoToSource()
             {
                 Create("cat", "dog");

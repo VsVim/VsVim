@@ -1412,7 +1412,7 @@ namespace Vim.UnitTest
             /// When changing a line wise selection one blank line should be left remaining in the ITextBuffer
             /// </summary>
             [Theory]
-            [PropertyData("VirtualEditOptions")]
+            [InlineData("VirtualEditOptions")]
             public void Change_LineWise(string virtualEdit)
             {
                 Create("cat", "  dog", "  bear", "tree");
@@ -1490,7 +1490,7 @@ namespace Vim.UnitTest
             }
 
             [Theory]
-            [PropertyData("VirtualEditOptions")]
+            [InlineData("VirtualEditOptions")]
             public void Repeat1(string virtualEdit)
             {
                 Create("dog again", "cat again", "chicken");
@@ -1502,7 +1502,7 @@ namespace Vim.UnitTest
             }
 
             [Theory]
-            [PropertyData("VirtualEditOptions")]
+            [InlineData("VirtualEditOptions")]
             public void Repeat2(string virtualEdit)
             {
                 Create("dog again", "cat again", "chicken");
@@ -1680,7 +1680,7 @@ namespace Vim.UnitTest
             }
 
             [Theory]
-            [PropertyData("VirtualEditOptions")]
+            [InlineData("VirtualEditOptions")]
             public void IncrementalSearch_LineModeShouldSelectFullLine(string virtualEdit)
             {
                 Create("dog", "cat", "tree");
@@ -2729,7 +2729,7 @@ namespace Vim.UnitTest
                 /// was executed
                 /// </summary>
                 [Theory]
-                [PropertyData("VirtualEditOptions")]
+                [InlineData("VirtualEditOptions")]
                 public void LastVisualSelectionWithVeOnemore(string virtualEdit)
                 {
                     Create("cat", "dog", "fish");
@@ -2742,7 +2742,7 @@ namespace Vim.UnitTest
                 }
 
                 [Theory]
-                [PropertyData("VirtualEditOptions")]
+                [InlineData("VirtualEditOptions")]
                 public void ReselectLastVisual(string virtualEdit)
                 {
                     Create("cat", "dog", "fish");

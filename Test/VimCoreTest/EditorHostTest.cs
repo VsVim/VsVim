@@ -12,6 +12,7 @@ using System.Reflection;
 using Vim;
 using Vim.EditorHost;
 using EditorHost = global::Vim.EditorHost.EditorHost;
+using Vim.UnitTest.Utilities;
 
 namespace Vim.UnitTest
 {
@@ -89,6 +90,11 @@ namespace Vim.UnitTest
 
         public EditorHostTest()
         {
+            if (!StaTaskScheduler.DefaultSta.IsRunningInScheduler)
+            {
+                throw new Exception($"Need to apply {nameof(WpfFactAttributeAttribute)} to this test case");
+            }
+
             try
             {
                 _editorHost = GetOrCreateEditorHost();

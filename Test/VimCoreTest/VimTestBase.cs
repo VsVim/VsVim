@@ -23,6 +23,7 @@ using Microsoft.VisualStudio.Utilities;
 using System.Threading;
 using System.ComponentModel.Composition;
 using System.Text;
+using Vim.UnitTest.Utilities;
 
 namespace Vim.UnitTest
 {
@@ -216,6 +217,11 @@ namespace Vim.UnitTest
             if (Application.Current == null)
             {
                 new Application();
+            }
+
+            if (!StaTaskScheduler.DefaultSta.IsRunningInScheduler)
+            {
+                throw new Exception($"Need to apply {nameof(WpfFactAttributeAttribute)} to this test case");
             }
 
             _vimEditorHost = GetOrCreateVimEditorHost();

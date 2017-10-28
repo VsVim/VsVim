@@ -15,6 +15,7 @@ using Expression = Vim.Interpreter.Expression;
 using Size = System.Windows.Size;
 using Microsoft.VisualStudio.Text.Tagging;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace Vim.UnitTest
 {
@@ -1482,6 +1483,53 @@ namespace Vim.UnitTest
                 command,
                 pattern);
             vimData.AutoCommands = vimData.AutoCommands.Concat(new[] { autoCommand }).ToFSharpList();
+        }
+
+        #endregion
+
+        #region Semaphore
+
+        internal static SemaphoreDisposer DisposableWait(this Semaphore semaphore, CancellationToken cancellationToken)
+        {
+            if (cancellationToken.CanBeCanceled)
+            {
+                int signalledIndex = WaitHandle.WaitAny(new[] { semaphore, cancellationToken.WaitHandle });
+                if (signalledIndex != 0)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    throw new Exception("Unreacheable");
+                }
+            }
+            else
+            {
+                semaphore.WaitOne();
+            }
+ 
+            return new SemaphoreDisposer(semaphore);
+        }
+ 
+        internal static Task<SemaphoreDisposer> DisposableWaitAsync(this Semaphore semaphore, CancellationToken cancellationToken)
+        {
+            return Task.Factory.StartNew(
+                () => DisposableWait(semaphore, cancellationToken),
+                cancellationToken,
+                TaskCreationOptions.LongRunning,
+                TaskScheduler.Default);
+        }
+ 
+        internal struct SemaphoreDisposer : IDisposable
+        {
+            private readonly Semaphore _semaphore;
+ 
+            public SemaphoreDisposer(Semaphore semaphore)
+            {
+                _semaphore = semaphore;
+            }
+ 
+            public void Dispose()
+            {
+                _semaphore.Release();
+            }
         }
 
         #endregion

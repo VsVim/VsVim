@@ -728,7 +728,7 @@ namespace Vim.UnitTest
             /// Issue #1269 - part II
             /// </summary>
             [Theory]
-            [PropertyData("VirtualEditOptions")]
+            [InlineData("VirtualEditOptions")]
             public void Forward_FromLastWordOfLastLine(string virtualEdit)
             {
                 Create("cat", "dog");
@@ -766,7 +766,7 @@ namespace Vim.UnitTest
             /// should move the end of the previous line
             /// </summary>
             [Theory]
-            [PropertyData("VirtualEditOptions")]
+            [InlineData("VirtualEditOptions")]
             public void With_IsWhichWrapArrowLeftInsert(string virtualEdit)
             {
                 Create("dog", "cat");
@@ -783,7 +783,7 @@ namespace Vim.UnitTest
             /// should stay put
             /// </summary>
             [Theory]
-            [PropertyData("VirtualEditOptions")]
+            [InlineData("VirtualEditOptions")]
             public void Without_IsWhichWrapArrowRightInsert(string virtualEdit)
             {
                 Create("dog", "cat");
@@ -800,7 +800,7 @@ namespace Vim.UnitTest
             /// should move the beginning of the next line
             /// </summary>
             [Theory]
-            [PropertyData("VirtualEditOptions")]
+            [InlineData("VirtualEditOptions")]
             public void With_IsWhichWrapArrowRightInsert(string virtualEdit)
             {
                 Create("dog", "cat");

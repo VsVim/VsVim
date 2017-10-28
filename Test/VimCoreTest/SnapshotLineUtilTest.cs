@@ -18,7 +18,7 @@ namespace Vim.UnitTest
         private ITextBuffer _buffer = null;
         private ITextSnapshot _snapshot = null;
 
-        public void Create(params string[] lines)
+        private void Create(params string[] lines)
         {
             _buffer = CreateTextBuffer(lines);
             _snapshot = _buffer.CurrentSnapshot;
