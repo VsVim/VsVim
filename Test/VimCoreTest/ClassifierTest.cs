@@ -70,37 +70,43 @@ namespace Vim.UnitTest
                 _classifier = new Classifier(_asyncTagger);
             }
 
-            IList<ClassificationSpan> GetClassificationSpansFull(SnapshotSpan span)
+            IList<ClassificationSpan> GetClassificationSpansFull(SnapshotSpan span, TestableSynchronizationContext context)
             {
                 _classifier.GetClassificationSpans(span);
-                _asyncTagger.WaitForBackgroundToComplete(TestableSynchronizationContext);
+                _asyncTagger.WaitForBackgroundToComplete(context);
                 return _classifier.GetClassificationSpans(span);
             }
 
             [WpfFact]
             public void SimpleGet()
             {
-                _source.Text = "cat";
-                _textBuffer.SetText("cat a cat");
+                using (var context = new TestableSynchronizationContext())
+                {
+                    _source.Text = "cat";
+                    _textBuffer.SetText("cat a cat");
 
-                var list = GetClassificationSpansFull(_textBuffer.GetExtent());
-                Assert.Equal(2, list.Count);
-                Assert.Equal(
-                    new [] { new Span(0, 3), new Span(6, 3) },
-                    list.Select(x => x.Span.Span));
+                    var list = GetClassificationSpansFull(_textBuffer.GetExtent(), context);
+                    Assert.Equal(2, list.Count);
+                    Assert.Equal(
+                        new[] { new Span(0, 3), new Span(6, 3) },
+                        list.Select(x => x.Span.Span));
+                }
             }
 
             [WpfFact]
             public void ChangeFromComplete()
             {
-                _source.Text = "cat";
-                _textBuffer.SetText("cat a cat");
+                using (var context = new TestableSynchronizationContext())
+                {
+                    _source.Text = "cat";
+                    _textBuffer.SetText("cat a cat");
 
-                _classifier.GetClassificationSpans(_textBuffer.GetExtent());
-                var count = 0;
-                _classifier.ClassificationChanged += delegate { count++; };
-                _asyncTagger.WaitForBackgroundToComplete(TestableSynchronizationContext);
-                Assert.Equal(1, count);
+                    _classifier.GetClassificationSpans(_textBuffer.GetExtent());
+                    var count = 0;
+                    _classifier.ClassificationChanged += delegate { count++; };
+                    _asyncTagger.WaitForBackgroundToComplete(context);
+                    Assert.Equal(1, count);
+                }
             }
         }
     }

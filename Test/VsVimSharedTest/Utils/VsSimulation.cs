@@ -305,7 +305,7 @@ namespace Vim.VisualStudio.UnitTest.Utils
             _wpfTextView = (IWpfTextView)bufferCoordinator.VimBuffer.TextView;
             _factory = new MockRepository(MockBehavior.Strict);
             _vsKeyboardInputSimulation = new VsKeyboardInputSimulation(this, _wpfTextView);
-            _testableSynchronizationContext = new TestableSynchronizationContext();
+            _testableSynchronizationContext = new TestableSynchronizationContext(install: false);
             _simulateStandardKeyMappings = simulateStandardKeyMappings;
 
             // Create the IVsAdapter and pick reasonable defaults here.  Consumers can modify 

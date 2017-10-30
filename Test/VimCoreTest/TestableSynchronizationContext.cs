@@ -5,7 +5,7 @@ using Vim.EditorHost;
 
 namespace Vim.UnitTest
 {
-    public sealed class TestableSynchronizationContext : SynchronizationContext
+    public sealed class TestableSynchronizationContext : SynchronizationContext, IDisposable
     {
         private SynchronizationContext _oldSynchronizationContext;
         private bool _isSet;
@@ -13,6 +13,22 @@ namespace Vim.UnitTest
 
         public bool IsEmpty => 0 == _list.Count;
         public int PostedActionCount => _list.Count;
+
+        public TestableSynchronizationContext(bool install = true)
+        {
+            if (install)
+            {
+                Install();
+            }
+        }
+
+        public void Dispose()
+        {
+            if (_isSet)
+            {
+                Uninstall();
+            }
+        }
 
         public override void Post(SendOrPostCallback d, object state)
         {

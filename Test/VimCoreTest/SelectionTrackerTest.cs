@@ -22,7 +22,7 @@ namespace Vim.UnitTest
 
         public SelectionTrackerTest()
         {
-            _context = new TestableSynchronizationContext();
+            _context = new TestableSynchronizationContext(install: false);
             _context.Install();
         }
 

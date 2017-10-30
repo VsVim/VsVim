@@ -38,12 +38,13 @@ namespace Vim.UnitTest
                 return !_asyncTagger.AsyncBackgroundRequestData.IsSome();
             }
 
-            protected override void WaitUntilCompleted()
+            protected override void WaitUntilCompleted(TestableSynchronizationContext context)
             {
+                Assert.NotNull(context);
                 while (_asyncTagger.AsyncBackgroundRequestData.IsSome())
                 {
                     Thread.Yield();
-                    TestableSynchronizationContext.RunAll();
+                    context.RunAll();
                 }
             }
 
@@ -165,7 +166,7 @@ namespace Vim.UnitTest
                 return true;
             }
 
-            protected override void WaitUntilCompleted()
+            protected override void WaitUntilCompleted(TestableSynchronizationContext context)
             {
                 
             }
@@ -235,7 +236,7 @@ namespace Vim.UnitTest
                 return _basicTagger.Enabled;
             }
 
-            protected override void WaitUntilCompleted()
+            protected override void WaitUntilCompleted(TestableSynchronizationContext context)
             {
                 _basicTagger.Enabled = true; 
             }
@@ -260,7 +261,7 @@ namespace Vim.UnitTest
 
         protected abstract bool IsComplete();
 
-        protected abstract void WaitUntilCompleted();
+        protected abstract void WaitUntilCompleted(TestableSynchronizationContext context = null);
 
         protected void Create(params string[] lines)
         {

@@ -16,6 +16,7 @@ using Size = System.Windows.Size;
 using Microsoft.VisualStudio.Text.Tagging;
 using System.Threading;
 using System.Threading.Tasks;
+using Vim.UnitTest.Utilities;
 
 namespace Vim.UnitTest
 {
