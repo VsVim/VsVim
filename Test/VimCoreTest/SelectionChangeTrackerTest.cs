@@ -42,7 +42,7 @@ namespace Vim.UnitTest
             var selectionList = new List<IVisualModeSelectionOverride>();
             selectionList.Add(_selectionOverride.Object);
 
-            _context = new TestableSynchronizationContext();
+            _context = new TestableSynchronizationContext(install: false);
             _context.Install();
             _tracker = new SelectionChangeTracker(_vimBuffer.Object, _factory.Create<ICommonOperations>(MockBehavior.Loose).Object, selectionList.ToFSharpList(), _mouseDevice.Object);
         }

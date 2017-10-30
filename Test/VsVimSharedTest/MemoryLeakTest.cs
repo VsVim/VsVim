@@ -180,7 +180,7 @@ namespace Vim.VisualStudio.UnitTest
         public MemoryLeakTest()
         {
             _vimEditorHost = CreateVimEditorHost();
-            _synchronizationContext = new TestableSynchronizationContext();
+            _synchronizationContext = new TestableSynchronizationContext(install: false);
             _synchronizationContext.Install();
         }
 

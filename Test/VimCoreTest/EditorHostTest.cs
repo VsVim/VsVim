@@ -21,7 +21,6 @@ namespace Vim.UnitTest
         private static EditorHost.EditorHost EditorHostCache;
 
         private readonly EditorHost.EditorHost _editorHost;
-        private readonly TestableSynchronizationContext _synchronizationContext;
 
         public EditorHost.EditorHost EditorHost
         {
@@ -83,11 +82,6 @@ namespace Vim.UnitTest
             get { return _editorHost.BasicUndoHistoryRegistry; }
         }
 
-        public TestableSynchronizationContext TestableSynchronizationContext
-        {
-            get { return _synchronizationContext; }
-        }
-
         public EditorHostTest()
         {
             if (!StaTaskScheduler.DefaultSta.IsRunningInScheduler)
@@ -111,13 +105,11 @@ namespace Vim.UnitTest
                 }
                 throw new Exception(builder.ToString(), e);
             }
-            _synchronizationContext = new TestableSynchronizationContext();
-            _synchronizationContext.Install();
         }
 
         protected void Dispose()
         {
-            _synchronizationContext.Uninstall();
+
         }
 
         private EditorHost.EditorHost GetOrCreateEditorHost()

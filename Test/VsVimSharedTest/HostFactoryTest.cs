@@ -38,7 +38,7 @@ namespace Vim.VisualStudio.UnitTest
 
             var vsAdapter = _mockFactory.Create<IVsAdapter>();
             vsAdapter.SetupGet(x => x.EditorAdapter).Returns(_vsEditorAdaptersFactoryService.Object);
-            _context = new TestableSynchronizationContext();
+            _context = new TestableSynchronizationContext(install: false);
             _context.Install();
 
             _hostFactory = new HostFactory(

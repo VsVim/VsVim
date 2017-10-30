@@ -30,7 +30,7 @@ namespace Vim.UnitTest
 
         protected virtual void Create(params string[] lines)
         {
-            _context = new TestableSynchronizationContext();
+            _context = new TestableSynchronizationContext(install: false);
             _context.Install();
             _textView = CreateTextView(lines);
             _textBuffer = _textView.TextBuffer;
