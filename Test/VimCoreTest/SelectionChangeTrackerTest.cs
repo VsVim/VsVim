@@ -9,7 +9,7 @@ using Xunit;
 
 namespace Vim.UnitTest
 {
-    public sealed class SelectionChangeTrackerTest : IDisposable
+    public sealed class SelectionChangeTrackerTest
     {
         private readonly MockRepository _factory;
         private readonly Mock<IVimBuffer> _vimBuffer;
@@ -18,7 +18,7 @@ namespace Vim.UnitTest
         private readonly Mock<ITextView> _textView;
         private readonly Mock<IVisualModeSelectionOverride> _selectionOverride;
         private readonly Mock<IMouseDevice> _mouseDevice;
-        private readonly TestableSynchronizationContext _context;
+        private readonly TestableSynchronizationContext TestableSynchronizationContext;
         private readonly SelectionChangeTracker _tracker;
 
         public SelectionChangeTrackerTest()
@@ -42,14 +42,7 @@ namespace Vim.UnitTest
             var selectionList = new List<IVisualModeSelectionOverride>();
             selectionList.Add(_selectionOverride.Object);
 
-            _context = new TestableSynchronizationContext(install: false);
-            _context.Install();
             _tracker = new SelectionChangeTracker(_vimBuffer.Object, _factory.Create<ICommonOperations>(MockBehavior.Loose).Object, selectionList.ToFSharpList(), _mouseDevice.Object);
-        }
-
-        public void Dispose()
-        {
-            _context.Uninstall();
         }
 
         /// <summary>
@@ -65,7 +58,7 @@ namespace Vim.UnitTest
             _vimBuffer.SetupGet(x => x.Mode).Returns(mode.Object).Verifiable();
             _selection.SetupGet(x => x.Mode).Returns(TextSelectionMode.Stream).Verifiable();
             _selection.Raise(x => x.SelectionChanged += null, (object)null, EventArgs.Empty);
-            Assert.True(_context.IsEmpty);
+            Assert.True(TestableSynchronizationContext.IsEmpty);
             _factory.Verify();
         }
 
@@ -79,7 +72,7 @@ namespace Vim.UnitTest
             _vimBuffer.SetupGet(x => x.ModeKind).Returns(ModeKind.Normal).Verifiable();
             _selection.SetupGet(x => x.IsEmpty).Returns(true).Verifiable();
             _selection.Raise(x => x.SelectionChanged += null, null, EventArgs.Empty);
-            Assert.True(_context.IsEmpty);
+            Assert.True(TestableSynchronizationContext.IsEmpty);
             _factory.Verify();
         }
 
@@ -90,14 +83,14 @@ namespace Vim.UnitTest
             _vimBuffer.SetupGet(x => x.ModeKind).Returns(ModeKind.Normal).Verifiable();
             _selection.SetupGet(x => x.IsEmpty).Returns(false).Verifiable();
             _selection.Raise(x => x.SelectionChanged += null, null, EventArgs.Empty);
-            Assert.False(_context.IsEmpty);
+            Assert.False(TestableSynchronizationContext.IsEmpty);
             _factory.Verify();
 
             _vimBuffer
                 .Setup(x => x.SwitchMode(ModeKind.VisualCharacter, ModeArgument.None))
                 .Returns(_factory.Create<IMode>().Object)
                 .Verifiable();
-            _context.RunAll();
+            TestableSynchronizationContext.RunAll();
             _factory.Verify();
         }
 
@@ -112,14 +105,14 @@ namespace Vim.UnitTest
             _vimBuffer.SetupGet(x => x.ModeKind).Returns(ModeKind.Normal).Verifiable();
             _selection.SetupGet(x => x.IsEmpty).Returns(false).Verifiable();
             _selection.Raise(x => x.SelectionChanged += null, null, EventArgs.Empty);
-            Assert.False(_context.IsEmpty);
+            Assert.False(TestableSynchronizationContext.IsEmpty);
             _factory.Verify();
 
             _selection.SetupGet(x => x.IsEmpty).Returns(true).Verifiable();
             _vimBuffer
                 .Setup(x => x.SwitchMode(ModeKind.VisualCharacter, ModeArgument.None))
                 .Throws(new Exception());
-            _context.RunAll();
+            TestableSynchronizationContext.RunAll();
             _factory.Verify();
         }
 
@@ -138,7 +131,7 @@ namespace Vim.UnitTest
             _selection.SetupGet(x => x.IsEmpty).Returns(false).Verifiable();
             _selection.SetupGet(x => x.Mode).Returns(TextSelectionMode.Stream).Verifiable();
             _selection.Raise(x => x.SelectionChanged += null, null, EventArgs.Empty);
-            Assert.True(_context.IsEmpty);
+            Assert.True(TestableSynchronizationContext.IsEmpty);
             _factory.Verify();
         }
 
@@ -147,7 +140,7 @@ namespace Vim.UnitTest
         {
             _vimBuffer.SetupGet(x => x.IsProcessingInput).Returns(false).Verifiable();
             _selection.Raise(x => x.SelectionChanged += null, null, EventArgs.Empty);
-            Assert.False(_context.IsEmpty);
+            Assert.False(TestableSynchronizationContext.IsEmpty);
             _factory.Verify();
 
             _selection.SetupGet(x => x.IsEmpty).Returns(false).Verifiable();
@@ -155,7 +148,7 @@ namespace Vim.UnitTest
                 .Setup(x => x.SwitchMode(ModeKind.VisualCharacter, ModeArgument.None))
                 .Returns(_factory.Create<IMode>().Object)
                 .Verifiable();
-            _context.RunAll();
+            TestableSynchronizationContext.RunAll();
             _factory.Verify();
         }
 
@@ -169,7 +162,7 @@ namespace Vim.UnitTest
             _vimBuffer.SetupGet(x => x.ModeKind).Returns(ModeKind.Insert).Verifiable();
             _selection.SetupGet(x => x.IsEmpty).Returns(true).Verifiable();
             _selection.Raise(x => x.SelectionChanged += null, null, EventArgs.Empty);
-            Assert.True(_context.IsEmpty);
+            Assert.True(TestableSynchronizationContext.IsEmpty);
             _factory.Verify();
         }
 
@@ -222,7 +215,7 @@ namespace Vim.UnitTest
 
             _vimBuffer.SetupGet(x => x.IsClosed).Returns(true).Verifiable();
             _vimBuffer.Setup(x => x.SwitchMode(It.IsAny<ModeKind>(), It.IsAny<ModeArgument>())).Throws(new Exception());
-            _context.RunAll();
+            TestableSynchronizationContext.RunAll();
             _factory.Verify();
         }
 
@@ -246,7 +239,7 @@ namespace Vim.UnitTest
                 _selection.SetupGet(x => x.IsEmpty).Returns(false).Verifiable();
                 _selection.Raise(x => x.SelectionChanged += null, null, EventArgs.Empty);
                 _factory.Verify();
-                Assert.True(_context.IsEmpty);     // Shouldn't be accessible
+                Assert.True(TestableSynchronizationContext.IsEmpty);     // Shouldn't be accessible
             }
             finally
             {
@@ -266,7 +259,7 @@ namespace Vim.UnitTest
             _selectionOverride.Setup(x => x.IsInsertModePreferred(_textView.Object)).Returns(true);
             _selection.SetupGet(x => x.IsEmpty).Returns(false).Verifiable();
             _selection.Raise(x => x.SelectionChanged += null, null, EventArgs.Empty);
-            Assert.True(_context.IsEmpty);
+            Assert.True(TestableSynchronizationContext.IsEmpty);
         }
 
         /// <summary>
@@ -281,7 +274,7 @@ namespace Vim.UnitTest
             _selectionOverride.Setup(x => x.IsInsertModePreferred(_textView.Object)).Returns(true);
             _selection.SetupGet(x => x.IsEmpty).Returns(false).Verifiable();
             _selection.Raise(x => x.SelectionChanged += null, null, EventArgs.Empty);
-            Assert.False(_context.IsEmpty);
+            Assert.False(TestableSynchronizationContext.IsEmpty);
         }
 
         /// <summary>
@@ -295,7 +288,7 @@ namespace Vim.UnitTest
         {
             _vimHost.Setup(x => x.IsFocused(_textView.Object)).Returns(false);
             _selection.Raise(x => x.SelectionChanged += null, (object)null, EventArgs.Empty);
-            Assert.True(_context.IsEmpty);
+            Assert.True(TestableSynchronizationContext.IsEmpty);
         }
     }
 }

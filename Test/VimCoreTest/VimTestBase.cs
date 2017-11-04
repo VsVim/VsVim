@@ -211,6 +211,8 @@ namespace Vim.UnitTest
             get { return _vimEditorHost.VimErrorDetector; }
         }
 
+        public TestableSynchronizationContext TestableSynchronizationContext {get; private set;}
+
         protected VimTestBase()
         {
             // Parts of the core editor in Vs2012 depend on there being an Application.Current value else
@@ -245,7 +247,7 @@ namespace Vim.UnitTest
             // xUnit run
             VimTrace.TraceSwitch.Level = TraceLevel.Off;
 
-            CheckForBadSyncContext();
+            TestableSynchronizationContext = new TestableSynchronizationContext();
         }
 
         public virtual void Dispose()
@@ -314,6 +316,8 @@ namespace Vim.UnitTest
 
             VariableMap.Clear();
             VimErrorDetector.Clear();
+            TestableSynchronizationContext?.Dispose();
+            TestableSynchronizationContext = null;
         }
 
         private void CheckForErrors()
@@ -324,21 +328,9 @@ namespace Vim.UnitTest
                 throw new Exception(message);
             }
 
-            CheckForBadSyncContext();
-        }
-
-        private void CheckForBadSyncContext()
-        {
-            var context = SynchronizationContext.Current;
-            if (context == null)
+            if (TestableSynchronizationContext.PostedActionCount != 0)
             {
-                throw new Exception("Bad SynchronizationContext detected: null");
-            }
-
-            var type = context.GetType();
-            if (type != typeof(DispatcherSynchronizationContext) && type != typeof(AsyncTestSyncContext))
-            {
-                throw new Exception("Bad SynchronizationContext detected on test end: " + context.GetType());
+                throw new Exception("Posted items that did not finish");
             }
         }
 

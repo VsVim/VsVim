@@ -14,7 +14,6 @@ namespace Vim.UnitTest
         protected ITextBuffer _textBuffer;
         protected ITextSelection _textSelection;
         protected IVimGlobalSettings _globalSettings;
-        protected TestableSynchronizationContext _context;
         protected TestableMouseDevice _testableMouseDevice;
 
         protected virtual void Create(params string[] lines)
@@ -25,8 +24,6 @@ namespace Vim.UnitTest
             _globalSettings = _vimBuffer.GlobalSettings;
             _globalSettings.SelectModeOptions = SelectModeOptions.Mouse | SelectModeOptions.Keyboard;
             _textSelection = _textView.Selection;
-            _context = new TestableSynchronizationContext(install: false);
-            _context.Install();
             _testableMouseDevice = (TestableMouseDevice)MouseDevice;
             _testableMouseDevice.IsLeftButtonPressed = true;
         }
@@ -34,7 +31,7 @@ namespace Vim.UnitTest
         public override void Dispose()
         {
             _testableMouseDevice.IsLeftButtonPressed = false;
-            _context.Uninstall();
+            TestableSynchronizationContext.Uninstall();
             base.Dispose();
         }
 
@@ -42,7 +39,7 @@ namespace Vim.UnitTest
         {
             var span = new SnapshotSpan(_textBuffer.CurrentSnapshot, start, length);
             _textView.SelectAndMoveCaret(span);
-            _context.RunAll();
+            TestableSynchronizationContext.RunAll();
             Assert.Equal(ModeKind.SelectCharacter, _vimBuffer.ModeKind);
         }
 
@@ -53,7 +50,7 @@ namespace Vim.UnitTest
             {
                 Create("cat dog");
                 _textSelection.Select(0, 3);
-                _context.RunAll();
+                TestableSynchronizationContext.RunAll();
                 Assert.Equal(ModeKind.SelectCharacter, _vimBuffer.ModeKind);
             }
 
@@ -65,11 +62,11 @@ namespace Vim.UnitTest
             {
                 Create("cat dog");
                 _textSelection.Select(0, 3);
-                _context.RunAll();
+                TestableSynchronizationContext.RunAll();
                 Assert.Equal(ModeKind.SelectCharacter, _vimBuffer.ModeKind);
                 _textSelection.Select(0, 5);
-                Assert.False(_context.IsEmpty);
-                _context.RunAll();
+                Assert.False(TestableSynchronizationContext.IsEmpty);
+                TestableSynchronizationContext.RunAll();
                 Assert.Equal(ModeKind.SelectCharacter, _vimBuffer.ModeKind);
             }
 

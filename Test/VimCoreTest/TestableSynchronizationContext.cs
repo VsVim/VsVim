@@ -67,6 +67,11 @@ namespace Vim.UnitTest
             }
 
             _oldSynchronizationContext = SynchronizationContext.Current;
+            if (_oldSynchronizationContext != null && _oldSynchronizationContext.GetType() == typeof(TestableSynchronizationContext))
+            {
+                throw new InvalidOperationException();
+            }
+
             SynchronizationContext.SetSynchronizationContext(this);
             _isSet = true;
         }
