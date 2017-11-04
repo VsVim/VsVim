@@ -21,7 +21,6 @@ namespace Vim.UnitTest
         private ITextBuffer _textBuffer;
         private IRegisterMap _registerMap;
         private IVimGlobalSettings _globalSettings;
-        private TestableSynchronizationContext _context;
 
         internal Register TestRegister
         {
@@ -30,8 +29,6 @@ namespace Vim.UnitTest
 
         protected virtual void Create(params string[] lines)
         {
-            _context = new TestableSynchronizationContext(install: false);
-            _context.Install();
             _textView = CreateTextView(lines);
             _textBuffer = _textView.TextBuffer;
             _vimBuffer = Vim.CreateVimBuffer(_textView);
@@ -40,16 +37,9 @@ namespace Vim.UnitTest
             _vimTextBuffer = _vimBuffer.VimTextBuffer;
             _registerMap = _vimBuffer.RegisterMap;
             _globalSettings = _vimBuffer.LocalSettings.GlobalSettings;
-            Assert.True(_context.IsEmpty);
 
             // Need to make sure it's focused so macro recording will work
             ((MockVimHost)_vimBuffer.Vim.VimHost).FocusedTextView = _textView;
-        }
-
-        public override void Dispose()
-        {
-            _context.Uninstall();
-            base.Dispose();
         }
 
         protected virtual void Create(int tabStop, params string[] lines)
@@ -65,9 +55,9 @@ namespace Vim.UnitTest
             var characterSpan = new CharacterSpan(span);
             var visualSelection = VisualSelection.NewCharacter(characterSpan, SearchPath.Forward);
             visualSelection.SelectAndMoveCaret(_textView);
-            Assert.False(_context.IsEmpty);
-            _context.RunAll();
-            Assert.True(_context.IsEmpty);
+            Assert.False(TestableSynchronizationContext.IsEmpty);
+            TestableSynchronizationContext.RunAll();
+            Assert.True(TestableSynchronizationContext.IsEmpty);
         }
 
         protected void EnterMode(ModeKind kind, SnapshotSpan span)
@@ -88,8 +78,8 @@ namespace Vim.UnitTest
             var visualSelection = VisualSelection.NewCharacter(characterSpan, SearchPath.Forward);
             visualSelection.SelectAndMoveCaret(_textView);
             // skipping check: context.IsEmpty == false
-            _context.RunAll();
-            Assert.True(_context.IsEmpty);
+            TestableSynchronizationContext.RunAll();
+            Assert.True(TestableSynchronizationContext.IsEmpty);
         }
 
         protected void EnterBlock(BlockSpan blockSpan)
@@ -97,9 +87,9 @@ namespace Vim.UnitTest
             var visualSpan = VisualSpan.NewBlock(blockSpan);
             var visualSelection = VisualSelection.CreateForward(visualSpan);
             visualSelection.SelectAndMoveCaret(_textView);
-            Assert.False(_context.IsEmpty);
-            _context.RunAll();
-            Assert.True(_context.IsEmpty);
+            Assert.False(TestableSynchronizationContext.IsEmpty);
+            TestableSynchronizationContext.RunAll();
+            Assert.True(TestableSynchronizationContext.IsEmpty);
             _vimBuffer.SwitchMode(ModeKind.VisualBlock, ModeArgument.None);
         }
 
@@ -1552,7 +1542,7 @@ namespace Vim.UnitTest
                 _textView.Selection.Select(
                     new SnapshotSpan(_textView.GetLine(1).Start, 0),
                     false);
-                _context.RunAll();
+                TestableSynchronizationContext.RunAll();
                 Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
             }
 
@@ -1568,7 +1558,7 @@ namespace Vim.UnitTest
                 _textView.Selection.Select(
                     new SnapshotSpan(_textView.GetLine(1).Start, 1),
                     false);
-                _context.RunAll();
+                TestableSynchronizationContext.RunAll();
                 Assert.Equal(ModeKind.VisualCharacter, _vimBuffer.ModeKind);
             }
 
@@ -1583,7 +1573,7 @@ namespace Vim.UnitTest
                 Assert.Equal(ModeKind.VisualCharacter, _vimBuffer.ModeKind);
                 _textView.Selection.Select(_textView.GetLine(1).Extent, false);
                 _vimBuffer.Process(KeyInputUtil.CharToKeyInput('y'));
-                _context.RunAll();
+                TestableSynchronizationContext.RunAll();
                 Assert.Equal("  world", _vimBuffer.RegisterMap.GetRegister(RegisterName.Unnamed).StringValue);
             }
 
@@ -1597,7 +1587,7 @@ namespace Vim.UnitTest
                 EnterMode(_textView.GetLine(0).Extent);
                 Assert.Equal(ModeKind.VisualCharacter, _vimBuffer.ModeKind);
                 _textView.SelectAndMoveCaret(new SnapshotSpan(_textView.GetLine(1).Start, 3));
-                _context.RunAll();
+                TestableSynchronizationContext.RunAll();
                 _vimBuffer.Process("ly");
                 Assert.Equal("  wo", _vimBuffer.RegisterMap.GetRegister(RegisterName.Unnamed).StringValue);
             }
@@ -1758,7 +1748,7 @@ namespace Vim.UnitTest
                 var visualSpan = VimUtil.CreateVisualSpanCharacter(_textBuffer.GetSpan(1, 2));
                 var visualSelection = VisualSelection.CreateForward(visualSpan);
                 _vimBuffer.SwitchMode(ModeKind.VisualCharacter, ModeArgument.NewInitialVisualSelection(visualSelection, FSharpOption<SnapshotPoint>.None));
-                _context.RunAll();
+                TestableSynchronizationContext.RunAll();
                 Assert.Equal(visualSelection, VisualSelection.CreateForSelection(_textView, VisualKind.Character, SelectionKind.Inclusive, tabStop: 4));
             }
 
@@ -1773,7 +1763,7 @@ namespace Vim.UnitTest
                 var lineRange = _textView.GetLineRange(0, 1);
                 var visualSelection = VisualSelection.NewLine(lineRange, SearchPath.Forward, 1);
                 _vimBuffer.SwitchMode(ModeKind.VisualLine, ModeArgument.NewInitialVisualSelection(visualSelection, FSharpOption<SnapshotPoint>.None));
-                _context.RunAll();
+                TestableSynchronizationContext.RunAll();
                 Assert.Equal(visualSelection, VisualSelection.CreateForSelection(_textView, VisualKind.Line, SelectionKind.Inclusive, tabStop: 4));
             }
 
@@ -1788,7 +1778,7 @@ namespace Vim.UnitTest
                 var blockSpan = _textView.GetBlockSpan(1, 2, 0, 2);
                 var visualSelection = VisualSelection.NewBlock(blockSpan, BlockCaretLocation.BottomLeft);
                 _vimBuffer.SwitchMode(ModeKind.VisualBlock, ModeArgument.NewInitialVisualSelection(visualSelection, FSharpOption<SnapshotPoint>.None));
-                _context.RunAll();
+                TestableSynchronizationContext.RunAll();
                 Assert.Equal(visualSelection, VisualSelection.CreateForSelection(_textView, VisualKind.Block, SelectionKind.Inclusive, tabStop: 4));
             }
 

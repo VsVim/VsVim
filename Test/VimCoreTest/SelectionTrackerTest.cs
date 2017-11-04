@@ -18,19 +18,6 @@ namespace Vim.UnitTest
         private IVimBufferData _vimBufferData;
         private SelectionTracker _tracker;
         private Mock<IIncrementalSearch> _incrementalSearch;
-        private TestableSynchronizationContext _context;
-
-        public SelectionTrackerTest()
-        {
-            _context = new TestableSynchronizationContext(install: false);
-            _context.Install();
-        }
-
-        public override void Dispose()
-        {
-            _context.Uninstall();
-            base.Dispose();
-        }
 
         private void Create(VisualKind kind, params string[] lines)
         {
@@ -135,7 +122,7 @@ namespace Vim.UnitTest
         public void Start_LineShouldSelectWholeLine()
         {
             Create(VisualKind.Line, "foo", "bar");
-            _context.RunAll();
+            TestableSynchronizationContext.RunAll();
             Assert.Equal(_textView.TextBuffer.GetLineFromLineNumber(0).Start, _textView.Selection.Start.Position);
             Assert.Equal(_textView.TextBuffer.GetLineFromLineNumber(0).EndIncludingLineBreak, _textView.Selection.End.Position);
         }
