@@ -928,7 +928,7 @@ type internal AsyncTagger<'TData, 'TTag when 'TTag :> ITag>
                 let task = new Task((fun _ -> taskAction()), cancellationToken)
                 _asyncBackgroundRequest <- { Snapshot = span.Snapshot; Channel = channel; Task = task; CancellationTokenSource = cancellationTokenSource } |> Some
 
-                task.Start();
+                task.Start(TaskScheduler.Default)
 
             // If we already have a background task running for this ITextSnapshot then just enqueue this 
             // request onto that existing one.  By this point if the request exists it must be tuned to 
