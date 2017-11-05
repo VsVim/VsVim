@@ -910,6 +910,7 @@ namespace Vim.UnitTest
                     Assert.Equal(
                         new[] { _textBuffer.GetLineSpan(0, 3), _textBuffer.GetLineSpan(3, 3) },
                         tags.Select(x => x.Span));
+                    context.RunAll();
                 }
             }
 
@@ -942,6 +943,8 @@ namespace Vim.UnitTest
                         Assert.True(_asyncTagger.AsyncBackgroundRequestData.IsSome());
                         Assert.Equal(tokenSource, _asyncTagger.AsyncBackgroundRequestData.Value.CancellationTokenSource);
                     }
+
+                    context.RunAll();
                 }
             }
         }
@@ -990,6 +993,7 @@ namespace Vim.UnitTest
                     Assert.Equal(
                         new[] { _textBuffer.GetLineSpan(2, 3) },
                         tags.Select(x => x.Span));
+                    context.RunAll();
                 }
             }
         }

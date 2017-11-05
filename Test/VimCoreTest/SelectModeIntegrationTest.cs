@@ -31,7 +31,6 @@ namespace Vim.UnitTest
         public override void Dispose()
         {
             _testableMouseDevice.IsLeftButtonPressed = false;
-            TestableSynchronizationContext.Uninstall();
             base.Dispose();
         }
 

@@ -203,7 +203,7 @@ namespace Vim.UnitTest
                 Assert.True(Vim.LoadVimRc().IsLoadFailed);
             }
 
-            [Theory,
+            [WpfTheory,
             InlineData(@"set shellcmdflag=-lic", @"-lic"),
             InlineData(@"set shellcmdflag=sh", @"sh")]
             public void ShellFlag(string command, string expected)
@@ -212,7 +212,7 @@ namespace Vim.UnitTest
                 Assert.Equal(expected, _globalSettings.ShellFlag);
             }
 
-            [Theory,
+            [WpfTheory,
              InlineData(@"set shell=sh.exe", @"sh.exe"),
              InlineData(@"set shell=c:\1\sh.exe", @"c:\1\sh.exe"),
              InlineData(@"set shell=c:\s\sh.exe", @"c:\s\sh.exe"),

@@ -727,7 +727,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Issue #1269 - part II
             /// </summary>
-            [Theory]
+            [WpfTheory]
             [InlineData("VirtualEditOptions")]
             public void Forward_FromLastWordOfLastLine(string virtualEdit)
             {
@@ -765,7 +765,7 @@ namespace Vim.UnitTest
             /// Arrow left at beginning of line with 'whichwrap=['
             /// should move the end of the previous line
             /// </summary>
-            [Theory]
+            [WpfTheory]
             [InlineData("VirtualEditOptions")]
             public void With_IsWhichWrapArrowLeftInsert(string virtualEdit)
             {
@@ -782,7 +782,7 @@ namespace Vim.UnitTest
             /// Arrow right at end of line without 'whichwrap=['
             /// should stay put
             /// </summary>
-            [Theory]
+            [WpfTheory]
             [InlineData("VirtualEditOptions")]
             public void Without_IsWhichWrapArrowRightInsert(string virtualEdit)
             {
@@ -799,7 +799,7 @@ namespace Vim.UnitTest
             /// Arrow right at end of line with 'whichwrap=]'
             /// should move the beginning of the next line
             /// </summary>
-            [Theory]
+            [WpfTheory]
             [InlineData("VirtualEditOptions")]
             public void With_IsWhichWrapArrowRightInsert(string virtualEdit)
             {
