@@ -83,6 +83,11 @@ namespace Vim.UnitTest
                 throw new InvalidOperationException();
             }
 
+            if (PostedActionCount > 0)
+            {
+                throw new InvalidOperationException();
+            }
+
             SynchronizationContext.SetSynchronizationContext(_oldSynchronizationContext);
             _oldSynchronizationContext = null;
             _isSet = false;
