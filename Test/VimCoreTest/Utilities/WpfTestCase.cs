@@ -39,8 +39,7 @@ namespace Vim.UnitTest.Utilities
             var sta = StaTaskScheduler.DefaultSta;
             var task = Task.Factory.StartNew(async () =>
             {
-                Debug.Assert(sta.Threads.Count == 1);
-                Debug.Assert(sta.Threads[0] == Thread.CurrentThread);
+                Debug.Assert(sta.StaThread == Thread.CurrentThread);
  
                 using (await _wpfTestSerializationGate.DisposableWaitAsync(CancellationToken.None))
                 {
