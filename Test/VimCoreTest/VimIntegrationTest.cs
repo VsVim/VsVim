@@ -178,8 +178,8 @@ namespace Vim.UnitTest
 
             public override void Dispose()
             {
-                base.Dispose();
                 _vim.FileSystem = _originalFileSystem;
+                base.Dispose();
             }
 
             private void Run(string vimRcText)

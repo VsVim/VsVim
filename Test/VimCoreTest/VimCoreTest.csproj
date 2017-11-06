@@ -105,6 +105,7 @@
     <Compile Include="Utilities\StaTaskScheduler.cs" />
     <Compile Include="Utilities\WpfFactDiscoverer.cs" />
     <Compile Include="Utilities\WpfTestCase.cs" />
+    <Compile Include="Utilities\WpfTestSharedData.cs" />
     <Compile Include="WpfFactAttribute.cs" />
     <Compile Include="VersioningTest.cs" />
     <Compile Include="WordCompletionUtilTest.cs" />

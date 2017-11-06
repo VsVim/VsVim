@@ -85,6 +85,7 @@ namespace Vim.UnitTest.Mock
             ClosedOtherWindows = false;
             ClosedOtherTabs = false;
             GoToDefinitionCount = 0;
+            FocusedTextView = null;
             IsTextViewVisible = null;
             _isVisibleChanged = null;
             TryCustomProcessFunc = null;

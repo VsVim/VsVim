@@ -228,6 +228,11 @@ namespace Vim.UnitTest
                 throw new Exception($"Need to apply {nameof(WpfFactAttribute)} to this test case");
             }
 
+            if (SynchronizationContext.Current?.GetType() != typeof(DispatcherSynchronizationContext))
+            {
+                throw new Exception("Invalid synchronization context on test start");
+            }
+
             _vimEditorHost = GetOrCreateVimEditorHost();
             ClipboardDevice.Text = String.Empty;
 
@@ -331,6 +336,11 @@ namespace Vim.UnitTest
             if (TestableSynchronizationContext.PostedActionCount != 0)
             {
                 throw new Exception("Posted items that did not finish");
+            }
+
+            if (SynchronizationContext.Current?.GetType() != typeof(TestableSynchronizationContext))
+            {
+                throw new Exception("Invalid SynchronizationContext on test dispose");
             }
         }
 
