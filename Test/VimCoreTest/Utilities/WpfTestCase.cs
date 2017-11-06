@@ -17,6 +17,7 @@ namespace Vim.UnitTest.Utilities
     {
         private Guid _semaphoreName;
         private Semaphore _wpfTestSerializationGate;
+        private WpfTestSharedData _sharedData;
  
         [EditorBrowsable(EditorBrowsableState.Never)]
         [Obsolete("Called by the de-serializer; should only be called by deriving classes for de-serialization purposes")]
@@ -29,10 +30,12 @@ namespace Vim.UnitTest.Utilities
         {
             _semaphoreName = wpfTestSerializationGate;
             _wpfTestSerializationGate = new Semaphore(1, 1, _semaphoreName.ToString("N"));
+            _sharedData = WpfTestSharedData.Instance;
         }
  
         public override Task<RunSummary> RunAsync(IMessageSink diagnosticMessageSink, IMessageBus messageBus, object[] constructorArguments, ExceptionAggregator aggregator, CancellationTokenSource cancellationTokenSource)
         {
+            _sharedData.ExecutingTest(TestMethod);
             var sta = StaTaskScheduler.DefaultSta;
             var task = Task.Factory.StartNew(async () =>
             {
@@ -43,9 +46,6 @@ namespace Vim.UnitTest.Utilities
                 {
                     try
                     {
-                        // Reset our flag ensuring that part of this test actually needs WpfFact
-                        s_wpfFactRequirementReason = null;
- 
                         // All WPF Tests need a DispatcherSynchronizationContext and we dont want to block pending keyboard
                         // or mouse input from the user. So use background priority which is a single level below user input.
                         var dispatcherSynchronizationContext = new DispatcherSynchronizationContext();
@@ -69,8 +69,6 @@ namespace Vim.UnitTest.Utilities
                     }
                     finally
                     {
-                        s_wpfFactRequirementReason = null;
- 
                         // Cleanup the synchronization context even if the test is failing exceptionally
                         SynchronizationContext.SetSynchronizationContext(null);
                     }
@@ -91,17 +89,7 @@ namespace Vim.UnitTest.Utilities
             base.Deserialize(data);
             _semaphoreName = Guid.ParseExact(data.GetValue<string>(nameof(_semaphoreName)), "N");
             _wpfTestSerializationGate = new Semaphore(1, 1, _semaphoreName.ToString("N"));
-        }
- 
-        private static string s_wpfFactRequirementReason;
- 
-        /// <summary>
-        /// TODO: possibly delete
-        /// Asserts that the test is running on a <see cref="WpfFactAttributeAttribute"/> test method, and records the reason for requiring the <see cref="WpfFactAttributeAttribute"/>.
-        /// </summary>
-        public static void RequireWpfFact(string reason)
-        {
-            s_wpfFactRequirementReason = reason;
+            _sharedData = WpfTestSharedData.Instance;
         }
     }
 }

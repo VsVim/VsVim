@@ -275,56 +275,62 @@ namespace Vim.UnitTest
         [WpfFact]
         public void SimpleSingle()
         {
-            Create("cat dog", "fish");
-            var tags = _tagger.GetTags(_textBuffer.GetExtent()).ToList();
-            var expected = new [] { _textBuffer.GetSpan(4, 3) };
-            if (tags.Count == 0)
+            using (var context = new TestableSynchronizationContext())
             {
-                // Fine for the result to be delayed but we must see a TagsChanged event occur 
-                // to signal the new tags.  The SnapshotSpan values which occur in that list
-                // must include the expected span
-                Assert.False(IsComplete());
-                WaitUntilCompleted();
-                Assert.True(_tagsChangedList.Any(x => x.Span.Contains(expected[0])));
-                tags = _tagger.GetTags(_textBuffer.GetExtent()).ToList();
-            }
-            else
-            {
-                // If the tags returned promptly they shouldn't have raised any tags changed
-                // events
-                Assert.Equal(0, _tagsChangedList.Count);
-            }
+                Create("cat dog", "fish");
+                var tags = _tagger.GetTags(_textBuffer.GetExtent()).ToList();
+                var expected = new[] { _textBuffer.GetSpan(4, 3) };
+                if (tags.Count == 0)
+                {
+                    // Fine for the result to be delayed but we must see a TagsChanged event occur 
+                    // to signal the new tags.  The SnapshotSpan values which occur in that list
+                    // must include the expected span
+                    Assert.False(IsComplete());
+                    WaitUntilCompleted(context);
+                    Assert.True(_tagsChangedList.Any(x => x.Span.Contains(expected[0])));
+                    tags = _tagger.GetTags(_textBuffer.GetExtent()).ToList();
+                }
+                else
+                {
+                    // If the tags returned promptly they shouldn't have raised any tags changed
+                    // events
+                    Assert.Equal(0, _tagsChangedList.Count);
+                }
 
-            Assert.Equal(expected, tags.Select(x => x.Span));
+                Assert.Equal(expected, tags.Select(x => x.Span));
+            }
         }
 
         [WpfFact]
         public void SimpleMultipleSameLine()
         {
-            Create("cat dog dog", "fish");
-            var tags = _tagger.GetTags(_textBuffer.GetExtent()).ToList();
-            var expected = new [] { _textBuffer.GetSpan(4, 3), _textBuffer.GetSpan(8, 3) };
-            if (tags.Count == 0)
+            using (var context = new TestableSynchronizationContext())
             {
-                // Fine for the result to be delayed but we must see a TagsChanged event occur 
-                // to signal the new tags.  The SnapshotSpan values which occur in that list
-                // must include the expected span
-                Assert.False(IsComplete());
-                WaitUntilCompleted();
-                foreach (var value in expected)
+                Create("cat dog dog", "fish");
+                var tags = _tagger.GetTags(_textBuffer.GetExtent()).ToList();
+                var expected = new[] { _textBuffer.GetSpan(4, 3), _textBuffer.GetSpan(8, 3) };
+                if (tags.Count == 0)
                 {
-                    Assert.True(_tagsChangedList.Any(x => x.Span.Contains(value)));
+                    // Fine for the result to be delayed but we must see a TagsChanged event occur 
+                    // to signal the new tags.  The SnapshotSpan values which occur in that list
+                    // must include the expected span
+                    Assert.False(IsComplete());
+                    WaitUntilCompleted(context);
+                    foreach (var value in expected)
+                    {
+                        Assert.True(_tagsChangedList.Any(x => x.Span.Contains(value)));
+                    }
+                    tags = _tagger.GetTags(_textBuffer.GetExtent()).ToList();
                 }
-                tags = _tagger.GetTags(_textBuffer.GetExtent()).ToList();
-            }
-            else
-            {
-                // If the tags returned promptly they shouldn't have raised any tags changed
-                // events
-                Assert.Equal(0, _tagsChangedList.Count);
-            }
+                else
+                {
+                    // If the tags returned promptly they shouldn't have raised any tags changed
+                    // events
+                    Assert.Equal(0, _tagsChangedList.Count);
+                }
 
-            Assert.Equal(expected, tags.Select(x => x.Span));
+                Assert.Equal(expected, tags.Select(x => x.Span));
+            }
         }
 
         /// <summary>
