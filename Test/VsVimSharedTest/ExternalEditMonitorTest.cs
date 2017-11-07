@@ -165,7 +165,7 @@ namespace Vim.VisualStudio.UnitTest
                 Create("cat", "tree", "dog");
                 CreateTags(_textBuffer.GetLine(0).Extent);
                 var externalEditSpans = _monitor.GetExternalEditSpans(ExternalEditMonitor.CheckKind.All);
-                Assert.Equal(0, externalEditSpans.Count);
+                Assert.Empty(externalEditSpans);
             }
 
             /// <summary>
@@ -178,7 +178,7 @@ namespace Vim.VisualStudio.UnitTest
                 CreateTags(_textBuffer.GetLine(0).Extent);
                 _adapter.Setup(x => x.IsExternalEditTag(It.IsAny<ITag>())).Returns(true);
                 var externalEditSpans = _monitor.GetExternalEditSpans(ExternalEditMonitor.CheckKind.All);
-                Assert.Equal(1, externalEditSpans.Count);
+                Assert.Single(externalEditSpans);
                 Assert.Equal(_textBuffer.GetLine(0).Extent, externalEditSpans[0]);
             }
 
@@ -192,7 +192,7 @@ namespace Vim.VisualStudio.UnitTest
                 CreateTags(_textBuffer.GetLine(0).Extent);
                 _adapter.Setup(x => x.IsExternalEditTag(It.IsAny<ITag>())).Returns(true);
                 var externalEditSpans = _monitor.GetExternalEditSpans(ExternalEditMonitor.CheckKind.Markers);
-                Assert.Equal(0, externalEditSpans.Count);
+                Assert.Empty(externalEditSpans);
             }
         }
 
@@ -210,10 +210,10 @@ namespace Vim.VisualStudio.UnitTest
 
                 CreateTags(_textBuffer.GetLine(0).Extent);
                 _adapter.Setup(x => x.IsExternalEditTag(It.IsAny<ITag>())).Returns(true);
-                Assert.Equal(1, _monitor.GetExternalEditSpans(ExternalEditMonitor.CheckKind.Tags).Count);
+                Assert.Single(_monitor.GetExternalEditSpans(ExternalEditMonitor.CheckKind.Tags));
 
                 _buffer.SwitchMode(ModeKind.Command, ModeArgument.None);
-                Assert.Equal(0, _monitor.IgnoredExternalEditSpans.Count());
+                Assert.Empty(_monitor.IgnoredExternalEditSpans);
             }
 
             /// <summary>
@@ -228,7 +228,7 @@ namespace Vim.VisualStudio.UnitTest
                 _adapter.Setup(x => x.IsExternalEditTag(It.IsAny<ITag>())).Returns(true);
                 _buffer.SwitchMode(ModeKind.ExternalEdit, ModeArgument.None);
                 _buffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
-                Assert.Equal(1, _monitor.IgnoredExternalEditSpans.Count());
+                Assert.Single(_monitor.IgnoredExternalEditSpans);
             }
         }
 

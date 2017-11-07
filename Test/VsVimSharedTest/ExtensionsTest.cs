@@ -32,7 +32,7 @@ namespace Vim.VisualStudio.UnitTest
             {
                 var com = MockObjectFactory.CreateCommand(0, "name", "::f");
                 var list = Extensions.GetCommandKeyBindings(com.Object).ToList();
-                Assert.Equal(1, list.Count);
+                Assert.Single(list);
                 Assert.Equal('f', list[0].KeyBinding.FirstKeyStroke.KeyInput.Char);
                 Assert.Equal("name", list[0].Name);
             }
@@ -57,7 +57,7 @@ namespace Vim.VisualStudio.UnitTest
             {
                 var com = MockObjectFactory.CreateCommand(0, "name", "::f");
                 var list = Extensions.GetCommandKeyBindings(com.Object).ToList();
-                Assert.Equal(1, list.Count);
+                Assert.Single(list);
                 Assert.Equal('f', list[0].KeyBinding.FirstKeyStroke.KeyInput.Char);
                 Assert.Equal(String.Empty, list[0].KeyBinding.Scope);
             }
@@ -70,7 +70,7 @@ namespace Vim.VisualStudio.UnitTest
             {
                 var com = MockObjectFactory.CreateCommand(0, "name", "::notavalidkey");
                 var e = Extensions.GetCommandKeyBindings(com.Object).ToList();
-                Assert.Equal(0, e.Count);
+                Assert.Empty(e);
             }
         }
 
@@ -85,7 +85,7 @@ namespace Vim.VisualStudio.UnitTest
                 var mock = _factory.Create<DteCommand>();
                 mock.SetupGet(x => x.Bindings).Throws(new OutOfMemoryException());
                 var all = mock.Object.GetBindings();
-                Assert.Equal(0, all.Count());
+                Assert.Empty(all);
             }
 
             [Fact]

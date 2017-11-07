@@ -126,6 +126,8 @@ namespace Vim.VisualStudio.UnitTest
             {
                 oleCommandData.Dispose();
             }
+
+            TestableSynchronizationContext.RunAll();
         }
 
         /// <summary>
@@ -172,7 +174,7 @@ namespace Vim.VisualStudio.UnitTest
                 _vimApplicationSettings.SetupGet(x => x.CleanMacros).Returns(false);
             }
 
-            [Fact]
+            [WpfFact]
             public void BackNoSoftTabStop()
             {
                 _nextTarget.SetupExecOne().Verifiable();
@@ -184,14 +186,14 @@ namespace Vim.VisualStudio.UnitTest
             /// <summary>
             /// Don't custom process back when 'sts' is enabled, let Vim handle it
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void BackSoftTabStop()
             {
                 _vimApplicationSettings.SetupGet(x => x.UseEditorTabAndBackspace).Returns(false);
                 Assert.False(_targetRaw.TryCustomProcess(InsertCommand.Back));
             }
 
-            [Fact]
+            [WpfFact]
             public void TabNoSoftTabStop()
             {
                 _vimApplicationSettings.SetupGet(x => x.UseEditorTabAndBackspace).Returns(true);
@@ -203,7 +205,7 @@ namespace Vim.VisualStudio.UnitTest
             /// <summary>
             /// Don't custom process tab when 'sts' is enabled, let Vim handle it
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void TabSoftTabStop()
             {
                 _vimApplicationSettings.SetupGet(x => x.UseEditorTabAndBackspace).Returns(false);
@@ -215,7 +217,7 @@ namespace Vim.VisualStudio.UnitTest
             /// Don't custom process anything when doing clean macro recording.  Let core vim
             /// handle it all so we don't affect the output with intellisense.
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void CleanMacrosRecording()
             {
                 try
@@ -232,7 +234,7 @@ namespace Vim.VisualStudio.UnitTest
                 }
             }
 
-            [Fact]
+            [WpfFact]
             public void CleanMacrosNotRecording()
             {
                 _nextTarget.SetupExecOne();
@@ -264,20 +266,20 @@ namespace Vim.VisualStudio.UnitTest
                 Assert.Equal(expected, ki);
             }
 
-            [Fact]
+            [WpfFact]
             public void Tab()
             {
                 AssertCanConvert2K(VSConstants.VSStd2KCmdID.TAB, KeyInputUtil.TabKey);
             }
 
-            [Fact]
+            [WpfFact]
             public void InAutomationShouldFail()
             {
                 _vsAdapter.Setup(x => x.InAutomationFunction).Returns(true);
                 AssertCannotConvert2K(VSConstants.VSStd2KCmdID.TAB);
             }
 
-            [Fact]
+            [WpfFact]
             public void InIncrementalSearchShouldFail()
             {
                 _vsAdapter.Setup(x => x.IsIncrementalSearchActive(It.IsAny<ITextView>())).Returns(true);
@@ -292,7 +294,7 @@ namespace Vim.VisualStudio.UnitTest
             {
             }
 
-            [Fact]
+            [WpfFact]
             public void IgnoreEscapeIfCantProcess()
             {
                 _vimBuffer.SwitchMode(ModeKind.Disabled, ModeArgument.None);
@@ -302,7 +304,7 @@ namespace Vim.VisualStudio.UnitTest
                 _factory.Verify();
             }
 
-            [Fact]
+            [WpfFact]
             public void EnableEscapeButDontHandleNormally()
             {
                 _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
@@ -318,7 +320,7 @@ namespace Vim.VisualStudio.UnitTest
             {
             }
 
-            [Fact]
+            [WpfFact]
             public void PassOnIfCantHandle()
             {
                 _vimBuffer.SwitchMode(ModeKind.Disabled, ModeArgument.None);
@@ -332,7 +334,7 @@ namespace Vim.VisualStudio.UnitTest
             /// If a given KeyInput is marked for discarding make sure we don't pass it along to the
             /// next IOleCommandTarget.
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void DiscardedKeyInput()
             {
                 _bufferCoordinator.Discard(KeyInputUtil.EscapeKey);
@@ -340,7 +342,7 @@ namespace Vim.VisualStudio.UnitTest
                 _factory.Verify();
             }
 
-            [Fact]
+            [WpfFact]
             public void HandleEscapeNormally()
             {
                 var count = 0;
@@ -356,7 +358,7 @@ namespace Vim.VisualStudio.UnitTest
             /// chain.  It should be passed directly to the IVimBuffer if it can be handled else 
             /// it shouldn't be handled
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void WithUnmatchedBufferedInput()
             {
                 _vim.KeyMap.MapWithNoRemap("jj", "hello", KeyRemapMode.Insert);
@@ -372,7 +374,7 @@ namespace Vim.VisualStudio.UnitTest
             /// Make sure in the case that the next input matches the final expansion of a 
             /// buffered input that it's processed correctly
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void WithMatchedBufferedInput()
             {
                 _vim.KeyMap.MapWithNoRemap("jj", "hello", KeyRemapMode.Insert);
@@ -389,7 +391,7 @@ namespace Vim.VisualStudio.UnitTest
             /// it into a single value then we need to make sure we pass both values onto the IVimBuffer
             /// so the remapping can occur
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void CollapseBufferedInputToSingleKeyInput()
             {
                 _vim.KeyMap.MapWithNoRemap("jj", "z", KeyRemapMode.Insert);
@@ -405,7 +407,7 @@ namespace Vim.VisualStudio.UnitTest
             /// If parameter info is up then the arrow keys should be routed to parameter info and
             /// not to the IVimBuffer
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void SignatureHelp_ArrowGoToCommandTarget()
             {
                 _broker.SetupGet(x => x.IsSignatureHelpActive).Returns(true);
@@ -425,7 +427,7 @@ namespace Vim.VisualStudio.UnitTest
             /// Make sure the GoToDefinition command wil clear the active selection.  We don't want
             /// this command causing VsVim to switch to Visual Mode 
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void GoToDefinitionShouldClearSelection()
             {
                 _textBuffer.SetText("dog", "cat");
@@ -448,7 +450,7 @@ namespace Vim.VisualStudio.UnitTest
             /// 
             /// Issue 1855
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void NonSingleKeyMapShouldNotDismissIntellisense()
             {
                 _vimBuffer.Vim.KeyMap.MapWithRemap("jj", "<ESC>", KeyRemapMode.Insert);
@@ -466,7 +468,7 @@ namespace Vim.VisualStudio.UnitTest
                 Assert.Equal("jk", _textBuffer.GetLine(0).GetText());
             }
 
-            [Fact]
+            [WpfFact]
             public void EnsureTabPassedToCustomProcessorInComplexKeyMapping()
             {
                 _vimBuffer.Vim.KeyMap.MapWithRemap("jj", "<ESC>", KeyRemapMode.Insert);
@@ -522,7 +524,7 @@ namespace Vim.VisualStudio.UnitTest
             /// that should be fixed but also there is simply no reason that we should be processing this
             /// command here.  Let VS do the work
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void GoToDefinition()
             {
                 var editCommand = CreateEditCommand(EditCommandKind.GoToDefinition);
@@ -540,7 +542,7 @@ namespace Vim.VisualStudio.UnitTest
 
             /// Don't actually run the Escape in the QueryStatus command if we're in visual mode
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void EnableEscapeAndDontHandleInResharperPlusVisualMode()
             {
                 var count = 0;
@@ -555,7 +557,7 @@ namespace Vim.VisualStudio.UnitTest
             /// it on to R#.  R# will intercept escape and never give it to us and we'll think 
             /// we're still in insert.  
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void EnableAndHandleEscape()
             {
                 var count = 0;
@@ -571,7 +573,7 @@ namespace Vim.VisualStudio.UnitTest
             /// it from R#.  Back in R# is used to do special parens delete and we don't want that
             /// overriding a command
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void BackspaceAsCommand()
             {
                 var backKeyInput = KeyInputUtil.VimKeyToKeyInput(VimKey.Back);
@@ -589,7 +591,7 @@ namespace Vim.VisualStudio.UnitTest
             /// it go back to R# for processing.  They special case Back during edit to do actions
             /// like matched paren deletion that we want to enable.
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void BackspaceInInsert()
             {
                 var backKeyInput = KeyInputUtil.VimKeyToKeyInput(VimKey.Back);
@@ -606,7 +608,7 @@ namespace Vim.VisualStudio.UnitTest
             /// Make sure we process Escape during QueryStatus if we're in insert mode.  R# will
             /// intercept escape and never give it to us and we'll think we're still in insert
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void EnableAndHandleEscapeInResharperPlusExternalEdit()
             {
                 var count = 0;
@@ -620,7 +622,7 @@ namespace Vim.VisualStudio.UnitTest
             /// <summary>
             /// The PageUp key isn't special so don't special case it in R#
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void HandlePageUpNormally()
             {
                 var count = 0;
@@ -636,7 +638,7 @@ namespace Vim.VisualStudio.UnitTest
             /// are suppressing it's action.  We want to process this directly though if Vim believes
             /// Enter to be a command and not an edit, for example in normal mode
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void EnterAsCommand()
             {
                 _textView.SetText("cat", "dog");
@@ -653,7 +655,7 @@ namespace Vim.VisualStudio.UnitTest
             /// mode for R#.  It would be an edit and we don't want to interfere with R#'s handling 
             /// of edits
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void EnterInInsert()
             {
                 _textView.SetText("cat", "dog");

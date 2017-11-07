@@ -57,21 +57,21 @@ namespace Vim.VisualStudio.UnitTest
                 SetupPair(_textBuffer.Object, _textDocument.Object);
             }
 
-            [Fact]
+            [WpfFact]
             public void NormalNotInstalled()
             {
                 _resharperUtil.SetupGet(x => x.IsInstalled).Returns(false);
                 Assert.Null(_extensionAdapter.ShouldCreateVimBuffer(_textView.Object));
             }
 
-            [Fact]
+            [WpfFact]
             public void NormalInstalled()
             {
                 _resharperUtil.SetupGet(x => x.IsInstalled).Returns(true);
                 Assert.Null(_extensionAdapter.ShouldCreateVimBuffer(_textView.Object));
             }
 
-            [Fact]
+            [WpfFact]
             public void RegexEditor()
             {
                 _resharperUtil.SetupGet(x => x.IsInstalled).Returns(false);
@@ -80,10 +80,10 @@ namespace Vim.VisualStudio.UnitTest
 
                 _resharperUtil.SetupGet(x => x.IsInstalled).Returns(true);
                 _textDocument.SetupGet(x => x.FilePath).Returns(ReSharperExtensionAdapter.FilePathPrefixRegexEditor);
-                Assert.Equal(false, _extensionAdapter.ShouldCreateVimBuffer(_textView.Object));
+                Assert.False(_extensionAdapter.ShouldCreateVimBuffer(_textView.Object));
             }
 
-            [Fact]
+            [WpfFact]
             public void UnitTestSessionsWindow()
             {
                 _resharperUtil.SetupGet(x => x.IsInstalled).Returns(false);
@@ -92,7 +92,7 @@ namespace Vim.VisualStudio.UnitTest
 
                 _resharperUtil.SetupGet(x => x.IsInstalled).Returns(true);
                 _textDocument.SetupGet(x => x.FilePath).Returns(ReSharperExtensionAdapter.FilePathPrefixUnitTestSessionOutput);
-                Assert.Equal(false, _extensionAdapter.ShouldCreateVimBuffer(_textView.Object));
+                Assert.False(_extensionAdapter.ShouldCreateVimBuffer(_textView.Object));
             }
         }
     }

@@ -46,14 +46,14 @@ namespace Vim.VisualStudio.UnitTest
                 _roslynListenerFactory.RenameUtil = _renameUtil.Object;
             }
 
-            [Fact]
+            [WpfFact]
             public void RaiseNoRename()
             {
                 _renameUtil.Raise(x => x.IsRenameActiveChanged += null, EventArgs.Empty);
                 Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
             }
 
-            [Fact]
+            [WpfFact]
             public void RaiseWithRename()
             {
                 _renameUtil.SetupGet(x => x.IsRenameActive).Returns(true);
@@ -64,7 +64,7 @@ namespace Vim.VisualStudio.UnitTest
             /// <summary>
             /// The roslyn controller shouldn't be tracknig non-roslyn buffers
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void RaiseWithRenameOnNonRoslynBuffer()
             {
                 var textVimBuffer = CreateVimBufferWithContentType("text");
@@ -78,7 +78,7 @@ namespace Vim.VisualStudio.UnitTest
             /// When we leave rename move all of the external edits back into the previous 
             /// mode 
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void RenameLeft()
             {
                 _renameUtil.SetupGet(x => x.IsRenameActive).Returns(true);
@@ -92,7 +92,7 @@ namespace Vim.VisualStudio.UnitTest
             /// When leaving rename mode don't change buffers that were already out of external
             /// edit mode 
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void RenameLeftDontChangeNonExternalEdits()
             {
                 _renameUtil.SetupGet(x => x.IsRenameActive).Returns(true);

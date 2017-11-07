@@ -17,7 +17,7 @@ namespace Vim.VisualStudio.UnitTest
         private IExternalEditAdapter _adapter;
         private MockRepository _factory;
 
-        public void Create(params string[] lines)
+        internal void Create(params string[] lines)
         {
             _textBuffer = CreateTextBuffer(lines);
             _factory = new MockRepository(MockBehavior.Strict);
@@ -25,14 +25,14 @@ namespace Vim.VisualStudio.UnitTest
             _adapter = _adapterRaw;
         }
 
-        [Fact]
+        [WpfFact]
         public void IsExternalEditTag_NoneMatter()
         {
             Create();
             Assert.False(_adapter.IsExternalEditTag(_factory.Create<ITag>().Object));
         }
 
-        [Fact]
+        [WpfFact]
         public void IsExternalEditMarker_PredefinedTypeIsNotSnippetRelated()
         {
             Create("cat", "dog", "tree");
@@ -44,7 +44,7 @@ namespace Vim.VisualStudio.UnitTest
             }
         }
 
-        [Fact]
+        [WpfFact]
         public void IsExternalEditMarker_SnippetTypesAreExternalEdits()
         {
             Create("cat", "dog", "tree");
@@ -57,7 +57,7 @@ namespace Vim.VisualStudio.UnitTest
             }
         }
 
-        [Fact]
+        [WpfFact]
         public void IsExternalEditMarker_OtherTypesAreNotExternalEdits()
         {
             Create("cat", "dog", "tree");

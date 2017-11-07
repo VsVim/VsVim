@@ -26,24 +26,24 @@ namespace Vim.VisualStudio.UnitTest
             _toastControl = _toastNotificationServiceRaw.ToastControl;
         }
 
-        [Fact]
+        [WpfFact]
         public void DisplayAddsNotification()
         {
             var textBlock = new TextBlock();
             _toastNotificationService.Display(new object(), textBlock);
-            Assert.True(_toastControl.ToastNotificationCollection.Contains(textBlock));
+            Assert.Contains(textBlock, _toastControl.ToastNotificationCollection);
         }
 
-        [Fact]
+        [WpfFact]
         public void HiddenControlDoesNotRemoveNotification()
         {
             var textBlock = new TextBlock();
             _toastNotificationService.Display(new object(), textBlock);
             textBlock.Visibility = Visibility.Collapsed;
-            Assert.True(_toastControl.ToastNotificationCollection.Contains(textBlock));
+            Assert.Contains(textBlock, _toastControl.ToastNotificationCollection);
         }
 
-        [Fact]
+        [WpfFact]
         public void RemoveInvokesCallback()
         {
             var invokedCallback = false;
@@ -57,7 +57,7 @@ namespace Vim.VisualStudio.UnitTest
         /// <summary>
         /// Make sure the code can handle a null callback
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void RemoveNoCallback()
         {
             var textBlock = new TextBlock();
@@ -66,7 +66,7 @@ namespace Vim.VisualStudio.UnitTest
             Assert.True(_toastNotificationService.Remove(key));
         }
 
-        [Fact]
+        [WpfFact]
         public void RemoveBadToastNotification()
         {
             Assert.False(_toastNotificationService.Remove(new object()));
@@ -76,7 +76,7 @@ namespace Vim.VisualStudio.UnitTest
         /// Make sure the code can handle a Remove call from the remove callback.  This should be a 
         /// no-op but need to verify this
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void RemoveRecursive()
         {
             var invokedCallback = false;

@@ -253,7 +253,7 @@ namespace Vim.VisualStudio.UnitTest
         /// our MEF container.  This gives us the best chance of catching a random new component which accidentally
         /// introduces a new IVimBuffer against the host policy
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void RespectHostCreationPolicy()
         {
             var container = _vimEditorHost.CompositionContainer;
@@ -282,7 +282,7 @@ namespace Vim.VisualStudio.UnitTest
         /// create an IVimBuffer for every ITextView created hence one is created here.  Need
         /// to fix this so we have a base case to judge the memory leak tests by
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void TextViewOnly()
         {
             var container = _vimEditorHost.CompositionContainer;
@@ -301,7 +301,7 @@ namespace Vim.VisualStudio.UnitTest
         /// and closed without leaking memory that doesn't involve the creation of an
         /// IVimBuffer
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void TextViewHostOnly()
         {
             var container = _vimEditorHost.CompositionContainer;
@@ -317,7 +317,7 @@ namespace Vim.VisualStudio.UnitTest
             Assert.Null(weakReference.Target);
         }
 
-        [Fact]
+        [WpfFact]
         public void VimWpfDoesntHoldBuffer()
         {
             var container = _vimEditorHost.CompositionContainer;
@@ -344,7 +344,7 @@ namespace Vim.VisualStudio.UnitTest
             Assert.Null(weakTextView.Target);
         }
 
-        [Fact]
+        [WpfFact]
         public void VsVimDoesntHoldBuffer()
         {
             var vimBuffer = CreateVimBuffer();
@@ -360,7 +360,7 @@ namespace Vim.VisualStudio.UnitTest
             Assert.Null(weakTextView.Target);
         }
 
-        [Fact]
+        [WpfFact]
         public void SetGlobalMarkAndClose()
         {
             var vimBuffer = CreateVimBuffer();
@@ -384,7 +384,7 @@ namespace Vim.VisualStudio.UnitTest
         /// Change tracking is currently IVimBuffer specific.  Want to make sure it's
         /// not indirectly holding onto an IVimBuffer reference
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void ChangeTrackerDoesntHoldTheBuffer()
         {
             var vimBuffer = CreateVimBuffer();
@@ -406,7 +406,7 @@ namespace Vim.VisualStudio.UnitTest
         /// <summary>
         /// Make sure the caching which comes with searching doesn't hold onto the buffer
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void SearchCacheDoesntHoldTheBuffer()
         {
             var vimBuffer = CreateVimBuffer();

@@ -25,7 +25,6 @@ namespace Vim.VisualStudio.UnitTest
         private readonly Mock<IVsEditorAdaptersFactoryService> _vsEditorAdaptersFactoryService;
         private readonly Mock<IEditorToSettingsSynchronizer> _synchronizer;
         private readonly Mock<IVimApplicationSettings> _vimApplicationSettings;
-        private readonly TestableSynchronizationContext _context;
 
         protected HostFactoryTest()
         {
@@ -38,8 +37,6 @@ namespace Vim.VisualStudio.UnitTest
 
             var vsAdapter = _mockFactory.Create<IVsAdapter>();
             vsAdapter.SetupGet(x => x.EditorAdapter).Returns(_vsEditorAdaptersFactoryService.Object);
-            _context = new TestableSynchronizationContext(install: false);
-            _context.Install();
 
             _hostFactory = new HostFactory(
                 Vim,
@@ -53,12 +50,6 @@ namespace Vim.VisualStudio.UnitTest
                 _synchronizer.Object,
                 _vimApplicationSettings.Object,
                 new Lazy<ICommandTargetFactory, IOrderable>[] { });
-        }
-
-        public override void Dispose()
-        {
-            _context.Uninstall();
-            base.Dispose();
         }
 
         private void InvalidateSynchronizer()
@@ -115,7 +106,7 @@ namespace Vim.VisualStudio.UnitTest
                 RaiseTextViewCreated(_textView);
 
                 _synchronizer.Setup(x => x.StartSynchronizing(_vimBuffer, SettingSyncSource.Editor)).Verifiable();
-                _context.RunAll();
+                TestableSynchronizationContext.RunAll();
                 Dispatcher.CurrentDispatcher.DoEvents();
                 _synchronizer.Verify();
             }
@@ -128,7 +119,7 @@ namespace Vim.VisualStudio.UnitTest
                 RaiseTextViewCreated(_textView);
 
                 _synchronizer.Setup(x => x.StartSynchronizing(_vimBuffer, SettingSyncSource.Vim)).Verifiable();
-                _context.RunAll();
+                TestableSynchronizationContext.RunAll();
                 Dispatcher.CurrentDispatcher.DoEvents();
                 _synchronizer.Verify();
             }
@@ -141,7 +132,7 @@ namespace Vim.VisualStudio.UnitTest
                 RaiseTextViewCreated(_textView);
 
                 _synchronizer.Setup(x => x.StartSynchronizing(_vimBuffer, SettingSyncSource.Editor)).Verifiable();
-                _context.RunAll();
+                TestableSynchronizationContext.RunAll();
                 Dispatcher.CurrentDispatcher.DoEvents();
                 _synchronizer.Verify();
             }
@@ -156,7 +147,7 @@ namespace Vim.VisualStudio.UnitTest
                 RaiseTextViewCreated(_textView);
                 RaiseVimBufferCreated(_vimBuffer);
                 _textView.Close();
-                _context.RunAll();
+                TestableSynchronizationContext.RunAll();
             }
 
             /// <summary>
@@ -175,7 +166,7 @@ namespace Vim.VisualStudio.UnitTest
                 RaiseVsTextViewCreated(_vsTextView.Object);
                 _synchronizer.Verify();
                 InvalidateSynchronizer();
-                _context.RunAll();
+                TestableSynchronizationContext.RunAll();
             }
 
             [WpfFact]
@@ -191,7 +182,7 @@ namespace Vim.VisualStudio.UnitTest
                 RaiseVsTextViewCreated(_vsTextView.Object);
                 _synchronizer.Verify();
                 InvalidateSynchronizer();
-                _context.RunAll();
+                TestableSynchronizationContext.RunAll();
             }
 
             [WpfFact]
@@ -207,7 +198,7 @@ namespace Vim.VisualStudio.UnitTest
                 RaiseVsTextViewCreated(_vsTextView.Object);
                 _synchronizer.Verify();
                 InvalidateSynchronizer();
-                _context.RunAll();
+                TestableSynchronizationContext.RunAll();
             }
         }
     }

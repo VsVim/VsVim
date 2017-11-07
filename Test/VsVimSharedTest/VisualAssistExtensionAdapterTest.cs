@@ -26,7 +26,7 @@ namespace Vim.VisualStudio.UnitTest
         [Fact]
         public void CorrectCommands()
         {
-            Assert.Equal(true, _adapter.ShouldKeepSelectionAfterHostCommand("VAssistX.SmartSelectExtend", ""));
+            Assert.True(_adapter.ShouldKeepSelectionAfterHostCommand("VAssistX.SmartSelectExtend", ""));
         }
 
         [Fact]

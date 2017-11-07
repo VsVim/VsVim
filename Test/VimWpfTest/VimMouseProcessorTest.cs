@@ -30,7 +30,7 @@ namespace Vim.UI.Wpf.UnitTest
             /// is handled elsewhere.  If the mouse commands end up making it to Visual Mode it will
             /// result in a beep event.  Verify that doesn't happen
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void VisualMode()
             {
                 _vimBuffer.ProcessNotation("v");
@@ -42,7 +42,7 @@ namespace Vim.UI.Wpf.UnitTest
                 }
             }
 
-            [Fact]
+            [WpfFact]
             public void GoToDefinition()
             {
                 _keyboardDevice.SetupGet(x => x.KeyModifiers).Returns(VimKeyModifiers.Control);
@@ -51,7 +51,7 @@ namespace Vim.UI.Wpf.UnitTest
                 Assert.Equal(1, VimHost.GoToDefinitionCount);
             }
 
-            [Fact]
+            [WpfFact]
             public void Issue1317()
             {
                 _vimBuffer.ProcessNotation("v");

@@ -55,7 +55,7 @@ namespace Vim.UI.Wpf.UnitTest
 
         public sealed class InCommandLineUpdateTest : CommandMarginControllerTest
         {
-            [Fact]
+            [WpfFact]
             public void Check()
             {
                 Assert.False(_controller.InCommandLineUpdate);
@@ -79,7 +79,7 @@ namespace Vim.UI.Wpf.UnitTest
                 return KeyInputUtil.CharToKeyInput(c);
             }
 
-            [Fact]
+            [WpfFact]
             public void InKeyEvent()
             {
                 var keyInput = GetKeyInput('c');
@@ -90,7 +90,7 @@ namespace Vim.UI.Wpf.UnitTest
                 Assert.False(_controller.InVimBufferKeyEvent);
             }
 
-            [Fact]
+            [WpfFact]
             public void MessageEventNoKeyEvent()
             {
                 var msg = "test";
@@ -98,7 +98,7 @@ namespace Vim.UI.Wpf.UnitTest
                 Assert.Equal(msg, _marginControl.CommandLineTextBox.Text);
             }
 
-            [Fact]
+            [WpfFact]
             public void MessageEventKeyEvent()
             {
                 var msg = "test";
@@ -137,7 +137,7 @@ namespace Vim.UI.Wpf.UnitTest
             /// <summary>
             /// A switch mode with no messages should display the banner
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void SwitchMode1()
             {
                 var mode = new Mock<INormalMode>();
@@ -150,7 +150,7 @@ namespace Vim.UI.Wpf.UnitTest
             /// <summary>
             /// A switch mode with no messages should display the banner
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void SwitchMode2()
             {
                 var mode = new Mock<IMode>();
@@ -162,7 +162,7 @@ namespace Vim.UI.Wpf.UnitTest
             /// <summary>
             /// Status line shouldn't be updated until a KeyInput event completes
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void SwitchMode3()
             {
                 var mode = new Mock<IMode>();
@@ -176,7 +176,7 @@ namespace Vim.UI.Wpf.UnitTest
             /// <summary>
             /// Status line shouldn't be updated until a KeyInput event completes
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void SwitchMode4()
             {
                 var mode = new Mock<IMode>();
@@ -193,7 +193,7 @@ namespace Vim.UI.Wpf.UnitTest
             /// <summary>
             /// A switch to command mode should start the status bar with a :.
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void SwitchMode5()
             {
                 var mode = new Mock<ICommandMode>();
@@ -207,7 +207,7 @@ namespace Vim.UI.Wpf.UnitTest
             /// <summary>
             /// A switch to command mode should start the status bar with a :. + the command
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void SwitchMode6()
             {
                 var mode = new Mock<ICommandMode>();
@@ -218,7 +218,7 @@ namespace Vim.UI.Wpf.UnitTest
                 Assert.Equal(":foo", _marginControl.CommandLineTextBox.Text);
             }
 
-            [Fact]
+            [WpfFact]
             public void SwitchMode7()
             {
                 var mode = new Mock<IMode>();
@@ -227,7 +227,7 @@ namespace Vim.UI.Wpf.UnitTest
                 Assert.Equal(Resources.ReplaceBanner, _marginControl.CommandLineTextBox.Text);
             }
 
-            [Fact]
+            [WpfFact]
             public void SwitchMode_OneTimeCommand_Insert()
             {
                 var mode = new Mock<INormalMode>();
@@ -238,7 +238,7 @@ namespace Vim.UI.Wpf.UnitTest
                 Assert.Equal(String.Format(Resources.NormalOneTimeCommandBanner, "insert"), _marginControl.CommandLineTextBox.Text);
             }
 
-            [Fact]
+            [WpfFact]
             public void SwitchMode_SubstituteConfirm1()
             {
                 var mode = _factory.Create<ISubstituteConfirmMode>();
@@ -251,7 +251,7 @@ namespace Vim.UI.Wpf.UnitTest
                 _factory.Verify();
             }
 
-            [Fact]
+            [WpfFact]
             public void StatusMessage1()
             {
                 _vimBuffer.RaiseStatusMessage("foo");
@@ -261,7 +261,7 @@ namespace Vim.UI.Wpf.UnitTest
             /// <summary>
             /// Don't add it until the end of a KeyInput event
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void StatusMessage2()
             {
                 var ki = KeyInputUtil.CharToKeyInput('c');
@@ -273,7 +273,7 @@ namespace Vim.UI.Wpf.UnitTest
             /// <summary>
             /// Don't add it until the end of a KeyInput event
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void StatusMessage3()
             {
                 var ki = KeyInputUtil.CharToKeyInput('c');
@@ -286,7 +286,7 @@ namespace Vim.UI.Wpf.UnitTest
             /// <summary>
             /// Status message should win over mode switch.  Think :setting ignorecase.  Both status + switch mode
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void StatusMessage4()
             {
                 var mode = new Mock<IMode>();
@@ -299,7 +299,7 @@ namespace Vim.UI.Wpf.UnitTest
                 Assert.Equal("foo", _marginControl.CommandLineTextBox.Text);
             }
 
-            [Fact]
+            [WpfFact]
             public void StatusMessage5()
             {
                 _vimBuffer.RaiseStatusMessage("foo" + Environment.NewLine + "bar");
@@ -309,7 +309,7 @@ namespace Vim.UI.Wpf.UnitTest
             /// <summary>
             /// Don't update in the middle of an KeyInput event
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void StatusMessage6()
             {
                 var ki = KeyInputUtil.CharToKeyInput('c');
@@ -321,7 +321,7 @@ namespace Vim.UI.Wpf.UnitTest
             /// <summary>
             /// Don't update in the middle of an KeyInput event
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void StatusMessage7()
             {
                 var ki = KeyInputUtil.CharToKeyInput('c');
@@ -334,7 +334,7 @@ namespace Vim.UI.Wpf.UnitTest
             /// <summary>
             /// StatusMessageLong wins over SwitchMode
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void StatusMessage8()
             {
                 var mode = new Mock<IMode>();
@@ -347,7 +347,7 @@ namespace Vim.UI.Wpf.UnitTest
                 Assert.Equal("foo" + Environment.NewLine + "bar", _marginControl.CommandLineTextBox.Text);
             }
 
-            [Fact]
+            [WpfFact]
             public void ErrorMessage1()
             {
                 _vimBuffer.RaiseErrorMessage("foo");
@@ -357,7 +357,7 @@ namespace Vim.UI.Wpf.UnitTest
             /// <summary>
             /// Don't add it until the end of a KeyInput event
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void ErrorMessage2()
             {
                 var ki = KeyInputUtil.CharToKeyInput('c');
@@ -369,7 +369,7 @@ namespace Vim.UI.Wpf.UnitTest
             /// <summary>
             /// Don't add it until the end of a KeyInput event
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void ErrorMessage3()
             {
                 var ki = KeyInputUtil.CharToKeyInput('c');
@@ -382,7 +382,7 @@ namespace Vim.UI.Wpf.UnitTest
             /// <summary>
             /// Status message should win over mode switch.  Think :setting ignorecase.  Both status + switch mode
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void ErrorMessage4()
             {
                 var mode = new Mock<IMode>();
@@ -395,7 +395,7 @@ namespace Vim.UI.Wpf.UnitTest
                 Assert.Equal("foo", _marginControl.CommandLineTextBox.Text);
             }
 
-            [Fact]
+            [WpfFact]
             public void NoEvents1()
             {
                 var mode = new Mock<INormalMode>();
@@ -412,7 +412,7 @@ namespace Vim.UI.Wpf.UnitTest
                 _factory.Verify();
             }
 
-            [Fact]
+            [WpfFact]
             public void NoEvents2()
             {
                 var mode = new Mock<ICommandMode>();
@@ -427,7 +427,7 @@ namespace Vim.UI.Wpf.UnitTest
                 mode.Verify();
             }
 
-            [Fact]
+            [WpfFact]
             public void NoEvents3()
             {
                 var mode = new Mock<IDisabledMode>();
@@ -445,7 +445,7 @@ namespace Vim.UI.Wpf.UnitTest
             /// <summary>
             /// Ensure the status line is updated for a normal mode search
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Search_Normal_Forward()
             {
                 var mode = _factory.Create<INormalMode>();
@@ -457,7 +457,7 @@ namespace Vim.UI.Wpf.UnitTest
                 _factory.Verify();
             }
 
-            [Fact]
+            [WpfFact]
             public void Search_Normal_Backward()
             {
                 var mode = _factory.Create<INormalMode>();
@@ -472,7 +472,7 @@ namespace Vim.UI.Wpf.UnitTest
             /// <summary>
             /// Ensure the status line is updated for a visual mode search
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Search_Visual_Forward()
             {
                 var mode = _factory.Create<IVisualMode>();
@@ -484,7 +484,7 @@ namespace Vim.UI.Wpf.UnitTest
                 _factory.Verify();
             }
 
-            [Fact]
+            [WpfFact]
             public void Search_Visual_Backward()
             {
                 var mode = _factory.Create<IVisualMode>();
@@ -500,7 +500,7 @@ namespace Vim.UI.Wpf.UnitTest
             /// Once a visual search is complete we should go back to the standard
             /// visual mode banner
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Search_Visual_Complete()
             {
                 var mode = _factory.Create<IVisualMode>();

@@ -29,7 +29,7 @@ namespace Vim.UI.Wpf.UnitTest
 
         public sealed class NormalTest : WpfIntegrationTest
         {
-            [Fact]
+            [WpfFact]
             public void SimpleDelete()
             {
                 Create("cat", "dog");
@@ -37,7 +37,7 @@ namespace Vim.UI.Wpf.UnitTest
                 Assert.Equal(new[] { "dog" }, _textBuffer.GetLines());
             }
 
-            [Fact]
+            [WpfFact]
             public void HandleEscape()
             {
                 Create("cat");
@@ -50,7 +50,7 @@ namespace Vim.UI.Wpf.UnitTest
 
         public sealed class InsertTest : WpfIntegrationTest
         {
-            [Fact]
+            [WpfFact]
             public void AltInput()
             {
                 Create("");
