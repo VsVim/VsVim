@@ -333,7 +333,7 @@ namespace Vim.UnitTest
                 throw new Exception(message);
             }
 
-            if (TestableSynchronizationContext.PostedActionCount != 0)
+            if (TestableSynchronizationContext.PostedCallbackCount != 0)
             {
                 throw new Exception("Posted items that did not finish");
             }
