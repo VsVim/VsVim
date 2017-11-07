@@ -23,7 +23,7 @@ namespace Vim.UnitTest
             {
                 var tagBlock = Parse("<a></a>").Single();
                 Assert.Equal("a", tagBlock.Text);
-                Assert.Equal(0, tagBlock.Children.Count);
+                Assert.Empty(tagBlock.Children);
             }
 
             [WpfFact]
@@ -31,7 +31,7 @@ namespace Vim.UnitTest
             {
                 var tagBlock = Parse("<a>cat</a>").Single();
                 Assert.Equal("a", tagBlock.Text);
-                Assert.Equal(0, tagBlock.Children.Count);
+                Assert.Empty(tagBlock.Children);
             }
 
             [WpfFact]
@@ -55,14 +55,14 @@ namespace Vim.UnitTest
             public void IgnoreBr()
             {
                 var tagBlock = Parse("<a><br></a>").Single();
-                Assert.Equal(0, tagBlock.Children.Count);
+                Assert.Empty(tagBlock.Children);
             }
 
             [WpfFact]
             public void IgnoreMeta()
             {
                 var tagBlock = Parse("<a><meta></a>").Single();
-                Assert.Equal(0, tagBlock.Children.Count);
+                Assert.Empty(tagBlock.Children);
             }
 
             [WpfFact]
@@ -78,14 +78,14 @@ namespace Vim.UnitTest
             {
                 var tagBlock = Parse("<h2>cat</h2>").Single();
                 Assert.Equal("h2", tagBlock.Text);
-                Assert.Equal(0, tagBlock.Children.Count);
+                Assert.Empty(tagBlock.Children);
             }
             [WpfFact]
             public void OtherNameCharacters()
             {
                 var tagBlock = Parse("<ns:some.tag_name>cat</ns:some.tag_name>").Single();
                 Assert.Equal("ns:some.tag_name", tagBlock.Text);
-                Assert.Equal(0, tagBlock.Children.Count);
+                Assert.Empty(tagBlock.Children);
             }
         }
 
@@ -154,7 +154,7 @@ namespace Vim.UnitTest
             {
                 var tagBlock = Parse("<a name='foo'></a>").Single();
                 Assert.Equal("a", tagBlock.Text);
-                Assert.Equal(0, tagBlock.Children.Count);
+                Assert.Empty(tagBlock.Children);
             }
 
             [WpfFact]
@@ -162,7 +162,7 @@ namespace Vim.UnitTest
             {
                 var tagBlock = Parse("<a name=\"foo\"></a>").Single();
                 Assert.Equal("a", tagBlock.Text);
-                Assert.Equal(0, tagBlock.Children.Count);
+                Assert.Empty(tagBlock.Children);
             }
 
             [WpfFact]
@@ -170,7 +170,7 @@ namespace Vim.UnitTest
             {
                 var tagBlock = Parse("<a name1='foo' name2='bar' name-dash='abc' novalue></a>").Single();
                 Assert.Equal("a", tagBlock.Text);
-                Assert.Equal(0, tagBlock.Children.Count);
+                Assert.Empty(tagBlock.Children);
             }
 
             [WpfFact]
@@ -178,7 +178,7 @@ namespace Vim.UnitTest
             {
                 var tagBlock = Parse("<a ns:some.attr_name=\"1\">cat</a>").Single();
                 Assert.Equal("a", tagBlock.Text);
-                Assert.Equal(0, tagBlock.Children.Count);
+                Assert.Empty(tagBlock.Children);
             }
 
             [WpfFact]
@@ -187,7 +187,7 @@ namespace Vim.UnitTest
                 Action<string> action = text =>
                 {
                     var items = Parse(text);
-                    Assert.Equal(0, items.Count);
+                    Assert.Empty(items);
                 };
 
                 action("<a name1='f hello // bar");
@@ -203,7 +203,7 @@ namespace Vim.UnitTest
             {
                 var tagBlock = Parse(@"<a name-dash=""1"">cat</a>").Single();
                 Assert.Equal("a", tagBlock.Text);
-                Assert.Equal(0, tagBlock.Children.Count);
+                Assert.Empty(tagBlock.Children);
             }
 
             [WpfFact]
@@ -211,7 +211,7 @@ namespace Vim.UnitTest
             {
                 var tagBlock = Parse(@"<button disabled>search</button>").Single();
                 Assert.Equal("button", tagBlock.Text);
-                Assert.Equal(0, tagBlock.Children.Count);
+                Assert.Empty(tagBlock.Children);
             }
 
         }

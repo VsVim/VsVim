@@ -278,7 +278,7 @@ namespace Vim.UnitTest
             private void AssertSingle(params SnapshotSpan[] spans)
             {
                 var blocks = _matchingTokenUtil.ParseDirectiveBlocks(_textBuffer.CurrentSnapshot);
-                Assert.Equal(1, blocks.Count);
+                Assert.Single(blocks);
                 AssertBlock(blocks[0], spans);
             }
 
@@ -429,7 +429,7 @@ namespace Vim.UnitTest
                 Assert.Equal(2, blocks.Count);
                 _textBuffer.Delete(_textBuffer.GetLineRange(2, 3).ExtentIncludingLineBreak);
                 blocks = _matchingTokenUtil.GetDirectiveBlocks(_textBuffer.CurrentSnapshot);
-                Assert.Equal(1, blocks.Count);
+                Assert.Single(blocks);
             }
 
             /// <summary>

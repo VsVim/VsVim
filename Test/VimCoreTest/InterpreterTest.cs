@@ -204,7 +204,7 @@ namespace Vim.UnitTest
                 _textBuffer.Properties[MockVimHost.FileNameKey] = "test.txt";
             }
 
-            public void Verify(char mark, int line, int column, int index = 1)
+            internal void Verify(char mark, int line, int column, int index = 1)
             {
                 var msg = String.Format(" {0}  {1,5}{2,5} test.txt", mark, line, column);
                 Assert.Equal(msg, _statusUtil.LastStatusLong[index]);
@@ -850,7 +850,7 @@ namespace Vim.UnitTest
             {
                 Create("");
                 ParseAndRun(@"echo");
-                Assert.Equal(null, _statusUtil.LastStatus);
+                Assert.Null(_statusUtil.LastStatus);
             }
 
             [WpfFact]
@@ -972,8 +972,9 @@ namespace Vim.UnitTest
             {
                 Create("");
                 ParseAndRun("execute");
-                Assert.Equal(null, _statusUtil.LastStatus);
+                Assert.Null(_statusUtil.LastStatus);
             }
+
             [WpfFact]
             public void ExecuteString()
             {
@@ -1105,7 +1106,7 @@ namespace Vim.UnitTest
                 Create();
                 ParseAndRun(@"unlet x");
                 Assert.Equal(Resources.Interpreter_NoSuchVariable("x"), _statusUtil.LastError);
-                Assert.Equal(0, VariableMap.Count);
+                Assert.Empty(VariableMap);
             }
 
             /// <summary>
@@ -1127,7 +1128,7 @@ namespace Vim.UnitTest
                 ParseAndRun(@"let y=42");
                 ParseAndRun(@"let z=42");
                 ParseAndRun(@"unlet x y");
-                Assert.Equal(1, VariableMap.Count);
+                Assert.Single(VariableMap);
                 Assert.True(VariableMap.ContainsKey("z"));
             }
         }
@@ -1392,8 +1393,8 @@ namespace Vim.UnitTest
                 ParseAndRun("autocmd BufEnter *.html set ts=4");
                 ParseAndRun("autocmd BufEnter *.cs set ts=4");
                 var all = _vimData.AutoCommands.ToList();
-                Assert.Equal(all[0].Pattern, "*.html");
-                Assert.Equal(all[1].Pattern, "*.cs");
+                Assert.Equal("*.html", all[0].Pattern);
+                Assert.Equal("*.cs", all[1].Pattern);
             }
 
             [WpfFact]
@@ -2275,6 +2276,7 @@ namespace Vim.UnitTest
                 Assert.True(didRun);
             }
 
+            [WpfFact]
             public void Issue1328()
             {
                 Create("");

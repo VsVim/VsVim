@@ -76,7 +76,7 @@ namespace Vim.UnitTest
         public void Equality2()
         {
             var i1 = VimUtil.CreateKeyInput(c: 'c');
-            Assert.NotEqual<object>(i1, 42);
+            Assert.NotEqual<object>(42, i1);
         }
 
         [Fact]

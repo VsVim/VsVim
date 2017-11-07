@@ -25,7 +25,7 @@ namespace Vim.UnitTest
                 + "~-_*+%:#";
             foreach (var cur in all)
             {
-                Assert.True(RegisterNameUtil.RegisterNameChars.Contains(cur));
+                Assert.Contains(cur, RegisterNameUtil.RegisterNameChars);
             }
         }
 

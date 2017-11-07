@@ -401,7 +401,7 @@ namespace Vim.UnitTest
             {
                 var ki = KeyInputUtil.CharWithControlToKeyInput('[');
                 var name = KeyInputSet.NewOneKeyInput(ki);
-                Assert.True(_mode.CommandNames.Contains(name));
+                Assert.Contains(name, _mode.CommandNames);
             }
 
             [WpfFact]

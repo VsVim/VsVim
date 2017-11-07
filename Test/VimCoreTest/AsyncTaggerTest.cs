@@ -376,7 +376,7 @@ namespace Vim.UnitTest
                     Create("hello world");
                     _asyncTaggerSource.SetPromptTags(_textBuffer.GetSpan(0, 1));
                     var tags = _asyncTagger.GetTags(EntireBufferSpan).ToList();
-                    Assert.Equal(1, tags.Count);
+                    Assert.Single(tags);
                     Assert.Equal(_textBuffer.GetSpan(0, 1), tags[0].Span);
                     Assert.True(context.IsEmpty);
                     Assert.True(_asyncTagger.TagCacheData.IsEmpty);
@@ -395,7 +395,7 @@ namespace Vim.UnitTest
                     _textBuffer.GetExtent(),
                     _textBuffer.GetSpan(0, 1));
                 var tags = _asyncTagger.GetTags(EntireBufferSpan).ToList();
-                Assert.Equal(1, tags.Count);
+                Assert.Single(tags);
                 Assert.Equal(_textBuffer.GetSpan(0, 1), tags[0].Span);
             }
 
@@ -408,7 +408,7 @@ namespace Vim.UnitTest
             {
                 Create("hello world");
                 var tags = _asyncTagger.GetTags(EntireBufferSpan).ToList();
-                Assert.Equal(0, tags.Count);
+                Assert.Empty(tags);
                 Assert.True(_asyncTagger.AsyncBackgroundRequestData.IsSome());
             }
 
@@ -425,7 +425,7 @@ namespace Vim.UnitTest
                     _asyncTaggerSource.SetBackgroundTags(span);
                     bool wasAsync;
                     var tags = GetTagsFull(_textBuffer.GetExtent(), context, out wasAsync);
-                    Assert.Equal(1, tags.Count);
+                    Assert.Single(tags);
                     Assert.Equal(span, tags[0].Span);
                     Assert.True(wasAsync);
                 }
@@ -444,7 +444,7 @@ namespace Vim.UnitTest
                     var span = _textBuffer.GetSpan(1, 2);
                     _asyncTaggerSource.SetBackgroundTags(span);
                     var tags = GetTagsFull(_textBuffer.GetExtent(), context);
-                    Assert.Equal(1, tags.Count);
+                    Assert.Single(tags);
                     Assert.Equal(span, tags[0].Span);
                 }
             }
@@ -510,7 +510,7 @@ namespace Vim.UnitTest
 
                 _textBuffer.Replace(new Span(0, 1), "b");
                 var tags = _asyncTagger.GetTags(_textBuffer.GetExtent()).ToList();
-                Assert.Equal(0, tags.Count);
+                Assert.Empty(tags);
                 Assert.NotSame(cancellationTokenSource, _asyncTagger.AsyncBackgroundRequestData.Value.CancellationTokenSource);
                 Assert.True(cancellationTokenSource.IsCancellationRequested);
             }
@@ -532,7 +532,7 @@ namespace Vim.UnitTest
 
                 _textBuffer.Replace(new Span(0, 3), "bat");
                 var tags = _asyncTagger.GetTags(_textBuffer.GetExtent()).ToList();
-                Assert.Equal(0, tags.Count);
+                Assert.Empty(tags);
                 Assert.NotSame(cancellationTokenSource, _asyncTagger.AsyncBackgroundRequestData.Value.CancellationTokenSource);
                 Assert.True(cancellationTokenSource.IsCancellationRequested);
             }
@@ -556,7 +556,7 @@ namespace Vim.UnitTest
                     });
 
                     var tags = GetTagsFull(_textBuffer.GetExtent(), context);
-                    Assert.Equal(0, tags.Count);
+                    Assert.Empty(tags);
                     Assert.True(didRun);
                 }
             }
@@ -573,7 +573,7 @@ namespace Vim.UnitTest
                     _textBuffer.GetLine(0).ExtentIncludingLineBreak,
                     _textBuffer.GetSpan(0, 1));
                 var tags = _asyncTagger.GetTags(_textBuffer.GetLineRange(0, 1).ExtentIncludingLineBreak).ToList();
-                Assert.Equal(1, tags.Count);
+                Assert.Single(tags);
                 Assert.True(_asyncTagger.AsyncBackgroundRequestData.IsSome());
             }
 
@@ -590,7 +590,7 @@ namespace Vim.UnitTest
                     _textBuffer.GetSpan(0, 1));
                 _textBuffer.Replace(new Span(0, 3), "cot");
                 var tags = _asyncTagger.GetTags(_textBuffer.GetLineRange(0, 1).ExtentIncludingLineBreak).ToList();
-                Assert.Equal(1, tags.Count);
+                Assert.Single(tags);
                 Assert.True(_asyncTagger.AsyncBackgroundRequestData.IsSome());
             }
 
@@ -693,7 +693,7 @@ namespace Vim.UnitTest
                     _asyncTaggerSource.SetBackgroundFunc(span => TestUtils.GetDogTags(span));
                     var col = new NormalizedSnapshotSpanCollection();
                     var tags = GetTagsFull(col, context);
-                    Assert.Equal(0, tags.Count);
+                    Assert.Empty(tags);
                 }
             }
 
@@ -971,7 +971,7 @@ namespace Vim.UnitTest
                 CreateWithView("dogs cat bears");
                 _mockTextView.SetupGet(x => x.InLayout).Returns(true);
                 var tags = _asyncTagger.GetTags(_textBuffer.GetExtent());
-                Assert.Equal(0, tags.Count());
+                Assert.Empty(tags);
             }
 
             /// <summary>
@@ -1145,7 +1145,7 @@ namespace Vim.UnitTest
                     _asyncTaggerSource.SetBackgroundFunc(span => TestUtils.GetDogTags(span));
                     SynchronizationContext.SetSynchronizationContext(null);
                     var tags = _asyncTagger.GetTags(_textBuffer.GetExtent());
-                    Assert.Equal(0, tags.Count());
+                    Assert.Empty(tags);
                 }
                 finally
                 {

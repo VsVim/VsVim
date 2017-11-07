@@ -12,7 +12,7 @@ namespace Vim.UnitTest
         private ITextBuffer _buffer;
         private IEditorOperations _operations;
 
-        public void CreateLines(params string[] lines)
+        internal void CreateLines(params string[] lines)
         {
             _view = CreateTextView(lines);
             _buffer = _view.TextBuffer;

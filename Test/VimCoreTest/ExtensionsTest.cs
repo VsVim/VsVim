@@ -20,8 +20,8 @@ namespace Vim.UnitTest
             Assert.Equal("hello world", projectionBuffer.GetLine(0).GetText());
             var all = projectionBuffer.GetSourceBuffersRecursive().ToList();
             Assert.Equal(2, all.Count);
-            Assert.True(all.Contains(textBuffer1));
-            Assert.True(all.Contains(textBuffer2));
+            Assert.Contains(textBuffer1, all);
+            Assert.Contains(textBuffer2, all);
         }
 
         [WpfFact]
@@ -40,9 +40,9 @@ namespace Vim.UnitTest
             Assert.Equal("hello world", projectionBuffer2.GetLine(0).GetText());
             var all = projectionBuffer2.GetSourceBuffersRecursive().ToList();
             Assert.Equal(3, all.Count);
-            Assert.True(all.Contains(textBuffer1));
-            Assert.True(all.Contains(textBuffer2));
-            Assert.True(all.Contains(textBuffer3));
+            Assert.Contains(textBuffer1, all);
+            Assert.Contains(textBuffer2, all);
+            Assert.Contains(textBuffer3, all);
         }
 
         [WpfFact]

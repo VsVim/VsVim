@@ -991,21 +991,6 @@ namespace Vim.UnitTest
                 Assert.Equal(0, _textView.GetCaretPoint().Position);
                 Assert.Equal(ModeKind.Insert, _vimBuffer.ModeKind);
             }
-
-            /// <summary>
-            /// In an undo the caret should go back to the start of the line.  
-            /// Disabled: Undo testing infrastructure doesn't support this yet
-            /// </summary>
-            public void Undo()
-            {
-                Create("cat", "dog");
-                _vimBuffer.ProcessNotation("vllIbig ");
-                Assert.Equal("big cat", _textBuffer.GetLine(0).GetText());
-                _vimBuffer.ProcessNotation("<Esc>u");
-                Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
-                Assert.Equal("cat", _textBuffer.GetLine(0).GetText());
-                Assert.Equal(0, _textView.GetCaretPoint().Position);
-            }
         }
 
         public sealed class SelectionTest : VisualModeIntegrationTest

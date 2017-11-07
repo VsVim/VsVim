@@ -287,14 +287,14 @@ namespace Vim.UnitTest
                     // must include the expected span
                     Assert.False(IsComplete());
                     WaitUntilCompleted(context);
-                    Assert.True(_tagsChangedList.Any(x => x.Span.Contains(expected[0])));
+                    Assert.Contains(_tagsChangedList, x => x.Span.Contains(expected[0]));
                     tags = _tagger.GetTags(_textBuffer.GetExtent()).ToList();
                 }
                 else
                 {
                     // If the tags returned promptly they shouldn't have raised any tags changed
                     // events
-                    Assert.Equal(0, _tagsChangedList.Count);
+                    Assert.Empty(_tagsChangedList);
                 }
 
                 Assert.Equal(expected, tags.Select(x => x.Span));
@@ -318,7 +318,7 @@ namespace Vim.UnitTest
                     WaitUntilCompleted(context);
                     foreach (var value in expected)
                     {
-                        Assert.True(_tagsChangedList.Any(x => x.Span.Contains(value)));
+                        Assert.Contains(_tagsChangedList, x => x.Span.Contains(value));
                     }
                     tags = _tagger.GetTags(_textBuffer.GetExtent()).ToList();
                 }
@@ -326,7 +326,7 @@ namespace Vim.UnitTest
                 {
                     // If the tags returned promptly they shouldn't have raised any tags changed
                     // events
-                    Assert.Equal(0, _tagsChangedList.Count);
+                    Assert.Empty(_tagsChangedList);
                 }
 
                 Assert.Equal(expected, tags.Select(x => x.Span));
@@ -343,7 +343,7 @@ namespace Vim.UnitTest
         {
             Create("cat dog");
             _textBuffer.Replace(new Span(0, 0), "hello dog");
-            Assert.Equal(0, _tagsChangedList.Count);
+            Assert.Empty(_tagsChangedList);
         }
 
         /// <summary>
@@ -356,7 +356,7 @@ namespace Vim.UnitTest
             Create("cat dog");
             var col = new NormalizedSnapshotSpanCollection();
             var tags = _tagger.GetTags(col).ToList();
-            Assert.Equal(0, tags.Count);
+            Assert.Empty(tags);
         }
     }
 }

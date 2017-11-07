@@ -62,7 +62,7 @@ namespace Vim.UnitTest
             var view = tuple.Item1;
             view.SetupGet(x => x.InLayout).Returns(true);
             var lines = TextViewUtil.GetVisibleSnapshotLines(view.Object).ToList();
-            Assert.Equal(0, lines.Count);
+            Assert.Empty(lines);
         }
     }
 }

@@ -30,17 +30,17 @@ namespace Vim.UnitTest
                 "running out of things to make up"
             };
 
-        public void Create(params string[] lines)
+        internal void Create(params string[] lines)
         {
             CreateCore(null, lines);
         }
 
-        public void Create(IMotionUtil motionUtil, params string[] lines)
+        internal void Create(IMotionUtil motionUtil, params string[] lines)
         {
             CreateCore(motionUtil, lines);
         }
 
-        public void CreateCore(IMotionUtil motionUtil, params string[] lines)
+        internal void CreateCore(IMotionUtil motionUtil, params string[] lines)
         {
             _textView = CreateTextView(lines);
             _textView.Caret.MoveTo(new SnapshotPoint(_textView.TextSnapshot, 0));
@@ -1098,7 +1098,7 @@ namespace Vim.UnitTest
             var def = KeyInputUtil.CharWithControlToKeyInput(']');
             var name = KeyInputSet.NewOneKeyInput(def);
             Assert.True(_mode.CanProcess(def));
-            Assert.True(_mode.CommandNames.Contains(name));
+            Assert.Contains(name, _mode.CommandNames);
         }
 
         [WpfFact]
@@ -1133,7 +1133,7 @@ namespace Vim.UnitTest
         {
             Create("");
             Assert.True(_mode.CanProcess(KeyInputUtil.CharToKeyInput('m')));
-            Assert.True(_mode.CommandNames.Any(x => x.KeyInputs.First().Char == 'm'));
+            Assert.Contains(_mode.CommandNames, x => x.KeyInputs.First().Char == 'm');
         }
 
         /// <summary>

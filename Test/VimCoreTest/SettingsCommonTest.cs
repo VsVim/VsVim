@@ -147,7 +147,7 @@ namespace Vim.UnitTest
             Assert.True(_settings.TrySetValue(GlobalSettingNames.IgnoreCaseName, SettingValue.NewToggle(true)));
             var value = _settings.GetSetting(GlobalSettingNames.IgnoreCaseName);
             Assert.True(value.IsSome());
-            Assert.Equal(true, value.Value.Value.AsToggle().Item);
+            Assert.True(value.Value.Value.AsToggle().Item);
         }
 
         [Fact]

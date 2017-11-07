@@ -19,7 +19,7 @@ namespace Vim.UnitTest
         private ITextBuffer _textBuffer = null;
         private ITextSnapshot _snapshot = null;
 
-        public void Create(params string[] lines)
+        internal void Create(params string[] lines)
         {
             _textBuffer = CreateTextBuffer(lines);
             _snapshot = _textBuffer.CurrentSnapshot;
@@ -175,7 +175,7 @@ namespace Vim.UnitTest
             Create("foo bar", "baz");
             var line = _snapshot.GetLineFromLineNumber(1);
             var list = SnapshotPointUtil.GetLines(line.Start.Subtract(1), SearchPath.Backward);
-            Assert.Equal(1, list.Count());
+            Assert.Single(list);
         }
 
         [WpfFact]
@@ -205,7 +205,7 @@ namespace Vim.UnitTest
             Create("foo");
             var line = _snapshot.GetLineFromLineNumber(0);
             var list = SnapshotPointUtil.GetSpans(SearchPath.Forward, line.End);
-            Assert.Equal(0, list.Count());
+            Assert.Empty(list);
         }
 
         /// <summary>
@@ -217,7 +217,7 @@ namespace Vim.UnitTest
             Create("foo");
             var line = _snapshot.GetLineFromLineNumber(0);
             var list = SnapshotPointUtil.GetSpans(SearchPath.Backward, line.Start + 2);
-            Assert.Equal(1, list.Count());
+            Assert.Single(list);
         }
 
         /// <summary>
@@ -250,7 +250,7 @@ namespace Vim.UnitTest
             Create("foo bar", "baz");
             var line = _snapshot.GetLineFromLineNumber(1);
             var list = SnapshotPointUtil.GetSpans(SearchPath.Backward, line.Start.Subtract(1));
-            Assert.Equal(1, list.Count());
+            Assert.Single(list);
         }
 
         [WpfFact]

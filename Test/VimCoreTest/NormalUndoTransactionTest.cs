@@ -13,7 +13,7 @@ namespace Vim.UnitTest
         private NormalUndoTransaction _transactionRaw;
         private IUndoTransaction _transaction;
 
-        public void Create(bool haveRealTransaction = true)
+        internal void Create(bool haveRealTransaction = true)
         {
             _factory = new MockRepository(MockBehavior.Strict);
 

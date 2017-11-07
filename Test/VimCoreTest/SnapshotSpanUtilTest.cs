@@ -18,7 +18,7 @@ namespace Vim.UnitTest
         private ITextBuffer _buffer = null;
         private ITextSnapshot _snapshot = null;
 
-        public void Create(params string[] lines)
+        internal void Create(params string[] lines)
         {
             _buffer = CreateTextBuffer(lines);
             _snapshot = _buffer.CurrentSnapshot;
@@ -87,7 +87,7 @@ namespace Vim.UnitTest
         {
             Create("foo bar");
             var points = SnapshotSpanUtil.GetPoints(SearchPath.Forward, new SnapshotSpan(_buffer.CurrentSnapshot, 0, 0));
-            Assert.Equal(0, points.Count());
+            Assert.Empty(points);
         }
 
         [WpfFact]
@@ -149,7 +149,7 @@ namespace Vim.UnitTest
         {
             Create("foo bar");
             var points = SnapshotSpanUtil.GetPoints(SearchPath.Backward, new SnapshotSpan(_buffer.CurrentSnapshot, 0, 0));
-            Assert.Equal(0, points.Count());
+            Assert.Empty(points);
         }
 
         [WpfFact]

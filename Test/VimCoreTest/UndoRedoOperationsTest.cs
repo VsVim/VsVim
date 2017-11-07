@@ -108,9 +108,9 @@ namespace Vim.UnitTest
                 Create();
                 var linkedUndoTransaction = _undoRedoOperations.CreateLinkedUndoTransaction("test");
                 _undoRedoOperationsRaw.ResetState();
-                Assert.Equal(0, _undoRedoOperationsRaw.LinkedUndoTransactionStack.Count);
+                Assert.Empty(_undoRedoOperationsRaw.LinkedUndoTransactionStack);
                 linkedUndoTransaction.Complete();
-                Assert.Equal(0, _undoRedoOperationsRaw.LinkedUndoTransactionStack.Count);
+                Assert.Empty(_undoRedoOperationsRaw.LinkedUndoTransactionStack);
             }
 
             /// <summary>
@@ -123,11 +123,11 @@ namespace Vim.UnitTest
                 var linkedUndoTransaction1 = _undoRedoOperations.CreateLinkedUndoTransaction("test1");
                 _undoRedoOperationsRaw.ResetState();
                 var linkedUndoTransaction2 = _undoRedoOperations.CreateLinkedUndoTransaction("test2");
-                Assert.Equal(1, _undoRedoOperationsRaw.LinkedUndoTransactionStack.Count);
+                Assert.Single(_undoRedoOperationsRaw.LinkedUndoTransactionStack);
                 linkedUndoTransaction1.Complete();
-                Assert.Equal(1, _undoRedoOperationsRaw.LinkedUndoTransactionStack.Count);
+                Assert.Single(_undoRedoOperationsRaw.LinkedUndoTransactionStack);
                 linkedUndoTransaction2.Complete();
-                Assert.Equal(0, _undoRedoOperationsRaw.LinkedUndoTransactionStack.Count);
+                Assert.Empty(_undoRedoOperationsRaw.LinkedUndoTransactionStack);
             }
 
             /// <summary>
@@ -154,7 +154,7 @@ namespace Vim.UnitTest
                     Assert.Equal(stack.Count, _undoRedoOperationsRaw.LinkedUndoTransactionStack.Count);
                 }
 
-                Assert.Equal(0, _undoRedoOperationsRaw.LinkedUndoTransactionStack.Count);
+                Assert.Empty(_undoRedoOperationsRaw.LinkedUndoTransactionStack);
             }
 
             [WpfFact]
@@ -546,7 +546,7 @@ namespace Vim.UnitTest
 
                 _statusUtil.Setup(x => x.OnError(Resources.Undo_ChainOrderErrorNormal)).Verifiable();
                 transaction1.Complete();
-                Assert.Equal(0, _undoRedoOperationsRaw.NormalUndoTransactionStack.Count);
+                Assert.Empty(_undoRedoOperationsRaw.NormalUndoTransactionStack);
                 _statusUtil.Verify();
 
                 // We are closing transactions out of order.  This is absolutely an error and would normally be 

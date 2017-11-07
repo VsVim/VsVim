@@ -29,7 +29,7 @@ namespace Vim.UnitTest
         public void Folds_DefaultIsEmpty()
         {
             Create(string.Empty);
-            Assert.Equal(0, _foldData.Folds.Count());
+            Assert.Empty(_foldData.Folds);
         }
 
         /// <summary>
@@ -55,7 +55,7 @@ namespace Vim.UnitTest
             Create("the quick brown", "fox jumped", " over the dog");
             var range = _textBuffer.GetLineRange(0);
             _foldData.CreateFold(range);
-            Assert.Equal(0, _foldData.Folds.Count());
+            Assert.Empty(_foldData.Folds);
         }
 
         /// <summary>
@@ -81,8 +81,8 @@ namespace Vim.UnitTest
             _foldData.CreateFold(range1);
             var range2 = _textBuffer.GetLineRange(0, 2);
             _foldData.CreateFold(range2);
-            Assert.True(_foldData.Folds.Contains(range1.Extent));
-            Assert.True(_foldData.Folds.Contains(range2.Extent));
+            Assert.Contains(range1.Extent, _foldData.Folds);
+            Assert.Contains(range2.Extent, _foldData.Folds);
         }
 
         [WpfFact]
@@ -101,7 +101,7 @@ namespace Vim.UnitTest
             var range = _textBuffer.GetLineRange(0, 1);
             _foldData.CreateFold(range);
             Assert.True(_foldData.DeleteFold(_textBuffer.GetLine(0).Start));
-            Assert.Equal(0, _foldData.Folds.Count());
+            Assert.Empty(_foldData.Folds);
         }
 
         [WpfFact]
@@ -111,7 +111,7 @@ namespace Vim.UnitTest
             _foldData.CreateFold(_textBuffer.GetLineRange(0, 1));
             _foldData.CreateFold(_textBuffer.GetLineRange(0, 2));
             _foldData.DeleteAllFolds(_textBuffer.GetExtent());
-            Assert.Equal(0, _foldData.Folds.Count());
+            Assert.Empty(_foldData.Folds);
         }
     }
 }

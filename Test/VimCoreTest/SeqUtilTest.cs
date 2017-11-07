@@ -24,9 +24,9 @@ namespace Vim.UnitTest
         public void SkipMax_Count2()
         {
             var res = SeqUtil.skipMax(100, "foo");
-            Assert.Equal(0, res.Count());
-            Assert.Equal(0, res.Count());
-            Assert.Equal(0, res.Count());
+            Assert.Empty(res);
+            Assert.Empty(res);
+            Assert.Empty(res);
         }
 
         /// <summary>

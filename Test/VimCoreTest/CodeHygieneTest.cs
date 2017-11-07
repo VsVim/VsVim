@@ -46,7 +46,7 @@ namespace Vim.UnitTest
                 const string prefix = "Vim.UnitTest.";
                 foreach (var type in _testAssembly.GetTypes().Where(x => x.IsPublic))
                 {
-                    Assert.True(type.FullName.StartsWith(prefix, StringComparison.Ordinal));
+                    Assert.StartsWith(prefix, type.FullName, StringComparison.Ordinal);
                 }
             }
 

@@ -9,7 +9,7 @@ namespace Vim.UnitTest
         private ITextBuffer _buffer;
         private ITextSnapshot _snapshot;
 
-        public void Create(params string[] lines)
+        internal void Create(params string[] lines)
         {
             _buffer = CreateTextBuffer(lines);
             _snapshot = _buffer.CurrentSnapshot;
