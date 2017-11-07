@@ -35,18 +35,45 @@ namespace Vim.UnitTest.Utilities
             }
         }
 
-        public void PostingAction(TestableSynchronizationContext testContext)
+        private void MonitorTestableSynchronizationContext()
+        {
+            TestableSynchronizationContext.Created += (sender, e) =>
+            {
+                MonitorTestableSynchronizationContext(e.TestableSynchronizationContext);
+            };
+        }
+
+        /// <summary>
+        /// When a <see cref="TestableSynchronizationContext"/> instance is used in a <see cref="WpfFactAttribute"/>
+        /// test it can cause a deadlock. This happens when there are posted actions that are not run and the test
+        /// case is non-async. 
+        /// 
+        /// The xunit framework monitors all calls to the active <see cref="SynchronizationContext"/> and it will 
+        /// wait on them to complete before finishing a test. Hence if anything is posted but not run the test will
+        /// deadlock forever waiting for this to happen.
+        /// 
+        /// This code monitors the use of our custom <see cref="TestableSynchronizationContext"/> and attempts to 
+        /// detect this situation and actively fail the test when it happens. The code is a hueristic and hence 
+        /// imprecise. But is effective in finding these problmes.
+        /// </summary>
+        private void MonitorTestableSynchronizationContext(TestableSynchronizationContext testContext)
         {
             if (!StaTaskScheduler.DefaultSta.IsRunningInScheduler)
             {
                 return;
             }
 
-            var asyncContext = SynchronizationContext.Current as AsyncTestSyncContext;
-            if (asyncContext == null)
+            // To cause the test to fail we need to post an action ot the AsyncTestContext. The xunit framework 
+            // wraps such delegates in a try / catch and fails the test if any exception occurs. This is best
+            // captured at the point a posted action occurs. 
+            AsyncTestSyncContext asyncContext = null;
+            testContext.PostedCallback += (sender, e) =>
             {
-                return;
-            }
+                if (SynchronizationContext.Current is AsyncTestSyncContext c)
+                {
+                    asyncContext = c;
+                }
+            };
 
             var startTime = DateTime.UtcNow;
             void checkForBad()
@@ -54,11 +81,11 @@ namespace Vim.UnitTest.Utilities
                 try
                 {
                     var span = DateTime.UtcNow - startTime;
-                    if (testContext.PostedActionCount > 0)
+                    if (!testContext.IsDisposed)
                     {
-                        if (span > TimeSpan.FromSeconds(30))
+                        if (testContext.PostedCallbackCount > 0 && span > TimeSpan.FromSeconds(30))
                         {
-                            asyncContext.Post(_ => throw new Exception("Unfulfilled TestableSynchronizationContext detected"), null);
+                            asyncContext?.Post(_ => throw new Exception("Unfulfilled TestableSynchronizationContext detected"), null);
                             testContext.RunAll();
                         }
                         else
@@ -88,26 +115,5 @@ namespace Vim.UnitTest.Utilities
             queueCheckForBad();
         }
 
-        private void MonitorTestableSynchronizationContext()
-        {
-            (AsyncTestSyncContext asyncContext, TestableSynchronizationContext testableSyncContext) getCurrentContext()
-            {
-                switch (SynchronizationContext.Current)
-                {
-                    case TestableSynchronizationContext testableContext: return (null, testableContext);
-                    case AsyncTestSyncContext asyncContext:
-                        {
-                            var fieldInfo = asyncContext.GetType().GetField(
-                                "innerContext",
-                                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-                            var field = fieldInfo.GetValue(asyncContext);
-                            return (asyncContext, field as TestableSynchronizationContext);
-                        }
-                    default: return (null, null);
-                }
-            }
-
-
-        }
     }
 }
