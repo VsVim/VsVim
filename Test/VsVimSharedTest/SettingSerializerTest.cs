@@ -118,7 +118,7 @@ namespace Vim.VisualStudio.UnitTest
                 {
                     var text = SettingSerializer.ConvertToString(new[] { commandKeyBinding });
                     var list = SettingSerializer.ConvertToCommandKeyBindings(text);
-                    Assert.Equal(1, list.Count);
+                    Assert.Single(list);
                     ExpectEqual(commandKeyBinding, list[0]);
                 }
             }

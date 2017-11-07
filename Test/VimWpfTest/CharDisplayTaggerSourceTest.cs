@@ -40,20 +40,20 @@ namespace Vim.UI.Wpf.UnitTest
                 }
             }
 
-            [Fact]
+            [WpfFact]
             public void NoTags()
             {
                 Create("dog");
                 var tags = _source.GetTags(_textBuffer.GetSpan(0, 3));
-                Assert.Equal(0, tags.Count);
+                Assert.Empty(tags);
             }
 
-            [Fact]
+            [WpfFact]
             public void SingleTag()
             {
                 Create("d" + (char)29 + "g");
                 var tags = _source.GetTags(_textBuffer.GetSpan(0, 3));
-                Assert.Equal(1, tags.Count);
+                Assert.Single(tags);
             }
 
             /// <summary>
@@ -61,18 +61,18 @@ namespace Vim.UI.Wpf.UnitTest
             /// show up in gVim, we don't do that here.  The editor hard codes these to new line characters 
             /// and they should never be treated as anything but new lines 
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void IgnoreNewLines()
             {
                 Create("dog", "cat");
                 var tags = _source.GetTags(_textBuffer.GetExtent());
-                Assert.Equal(0, tags.Count);
+                Assert.Empty(tags);
             }
 
             /// <summary>
             /// Ask for the tags in descending order.  This will cause the cache to be populated backwards 
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void LineOrderDescending()
             {
                 Create(Enumerable.Repeat("d" + (char)29 + "g", 100).ToArray());
@@ -89,7 +89,7 @@ namespace Vim.UI.Wpf.UnitTest
             /// <summary>
             /// Ask for the tags in ascending order.  This will cause the cache to be populated in order
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void LineOrderAscending()
             {
                 Create(Enumerable.Repeat("d" + (char)29 + "g", 100).ToArray());
@@ -107,7 +107,7 @@ namespace Vim.UI.Wpf.UnitTest
             /// Ask for the tags in alternating order.  This will cause the cache to be populated in alternating
             /// order
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void LineOrderAlternating()
             {
                 Create(Enumerable.Repeat("d" + (char)29 + "g", 100).ToArray());
@@ -137,23 +137,23 @@ namespace Vim.UI.Wpf.UnitTest
             /// When asked for tags on an earlier snapshot we should simply ignore the request.  For non-adornment tags
             /// it's important to provide this information.  But for adornment taggers it isn't worth it.  
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void EarlierSnapshot()
             {
                 Create("" + (char)29);
                 var snapshot = _textBuffer.CurrentSnapshot;
                 _textBuffer.Insert(0, "hello world");
                 var tags = _source.GetTags(new SnapshotSpan(snapshot, 0, 1));
-                Assert.Equal(0, tags.Count);
+                Assert.Empty(tags);
             }
 
-            [Fact]
+            [WpfFact]
             public void SingleTagDisplayDisabled()
             {
                 Create("d" + (char)29 + "g");
                 _controlCharUtil.DisplayControlChars = false;
                 var tags = _source.GetTags(_textBuffer.GetSpan(0, 3));
-                Assert.Equal(0, tags.Count);
+                Assert.Empty(tags);
             }
         }
 
@@ -163,7 +163,7 @@ namespace Vim.UI.Wpf.UnitTest
         /// </summary>
         public sealed class EditTest : CharDisplayTaggerSourceTest
         {
-            [Fact]
+            [WpfFact]
             public void JustBefore()
             {
                 Create("d" + (char)29 + "g");
@@ -173,7 +173,7 @@ namespace Vim.UI.Wpf.UnitTest
                 Assert.Equal(tags.Select(x => x.Span), new[] { _textBuffer.GetSpan(2, 1) });
             }
 
-            [Fact]
+            [WpfFact]
             public void JustAfter()
             {
                 Create("d" + (char)29 + "g");
@@ -183,17 +183,17 @@ namespace Vim.UI.Wpf.UnitTest
                 Assert.Equal(tags.Select(x => x.Span), new[] { _textBuffer.GetSpan(1, 1) });
             }
 
-            [Fact]
+            [WpfFact]
             public void DeleteTag()
             {
                 Create("d" + (char)29 + "g");
                 _source.GetTags(_textBuffer.GetExtent());
                 _textBuffer.Delete(new Span(1, 1));
                 var tags = _source.GetTags(_textBuffer.GetExtent());
-                Assert.Equal(0, tags.Count);
+                Assert.Empty(tags);
             }
 
-            [Fact]
+            [WpfFact]
             public void InsertTag()
             {
                 Create("d" + (char)29 + "g cat");
@@ -214,7 +214,7 @@ namespace Vim.UI.Wpf.UnitTest
                 _basicTaggerSource.Changed += (x, y) => { _changedCount++; };
             }
 
-            [Fact]
+            [WpfFact]
             public void OnControlCharsChanged()
             {
                 Create("hello world");
@@ -222,7 +222,7 @@ namespace Vim.UI.Wpf.UnitTest
                 Assert.Equal(1, _changedCount);
             }
 
-            [Fact]
+            [WpfFact]
             public void OnControlCharsNotChanged()
             {
                 Create("hello world");

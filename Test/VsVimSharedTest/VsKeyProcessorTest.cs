@@ -275,7 +275,7 @@ namespace Vim.VisualStudio.UnitTest
             /// Don't handle the AltGr scenarios here.  The AltGr key is just too ambiguous to handle in the 
             /// KeyDown event
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void AltGr()
             {
                 VerifyNotHandle(Key.D, ModifierKeys.Alt | ModifierKeys.Control);
@@ -285,7 +285,7 @@ namespace Vim.VisualStudio.UnitTest
             /// Don't handle any alpha input in the KeyDown phase.  This should all be handled inside
             /// of the TextInput phase instead
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void AlphaKeys()
             {
                 VerifyNotHandle(Key.A);
@@ -300,7 +300,7 @@ namespace Vim.VisualStudio.UnitTest
             /// If incremental search is active then we don't want to route input to VsVim.  Instead we 
             /// want to let it get processed by incremental search
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void DontHandleIfIncrementalSearchActive()
             {
                 var all = new[] { Key.Enter, Key.Tab, Key.Back };
@@ -341,7 +341,7 @@ namespace Vim.VisualStudio.UnitTest
             /// <summary>
             /// Make sure that alpha input is handled in TextInput
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void AlphaKeys()
             {
                 var all = "ab1AB!";
@@ -355,7 +355,7 @@ namespace Vim.VisualStudio.UnitTest
             /// If incremental search is active then we don't want to route input to VsVim.  Instead we 
             /// want to let it get processed by incremental search
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void DontHandleIfIncrementalSearchActive()
             {
                 var all = new[] { KeyInputUtil.EnterKey, KeyInputUtil.CharToKeyInput('a') };
@@ -372,7 +372,7 @@ namespace Vim.VisualStudio.UnitTest
             /// When presented with a KeyInput the TryProcess command should consider if the mapped key
             /// is a direct insert not the provided key.  
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void InsertCheckShouldConsiderMapped()
             {
                 var keyInput = KeyInputUtil.CharWithControlToKeyInput('e');
@@ -388,7 +388,7 @@ namespace Vim.VisualStudio.UnitTest
             /// the like.  If we're not in insert mode we don't consider intellisense in the key 
             /// processor
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void NonInsertShouldntCheckForCommand()
             {
                 _mockVimBuffer.SetupGet(x => x.ModeKind).Returns(ModeKind.Normal).Verifiable();
@@ -400,7 +400,7 @@ namespace Vim.VisualStudio.UnitTest
             /// Visual Studio won't pass along any characters less or equal to 0x1f so we need to
             /// handle them no matter what mode we are in
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void LowerControlKeys()
             {
                 const int max = 0x1f;
@@ -424,7 +424,7 @@ namespace Vim.VisualStudio.UnitTest
             /// Visual Studio will pass along other control characters so don't handle them.  Let them
             /// go through intellisense
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void UpperControlKeys()
             {
                 const int start = 0x20;
@@ -460,7 +460,7 @@ namespace Vim.VisualStudio.UnitTest
             /// Suppress the VsCodeWindowAdapter handling on KeyDown.  The WM_CHAR message will
             /// come between the KeyDown and KeyUp event
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void SuppressOnKeyDown()
             {
                 var e = _device.CreateKeyEventArgs(Key.A);
@@ -471,7 +471,7 @@ namespace Vim.VisualStudio.UnitTest
             /// <summary>
             /// Restore the handling on KeyUp.  
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void RestoreOnKeyUp()
             {
                 var e = _device.CreateKeyEventArgs(Key.A);
@@ -483,7 +483,7 @@ namespace Vim.VisualStudio.UnitTest
             /// <summary>
             /// So long as keys remain down we want to suppress the PreProcessMessage path
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void MoreKeyDowns()
             {
                 var e = _device.CreateKeyEventArgs(Key.A);
@@ -499,7 +499,7 @@ namespace Vim.VisualStudio.UnitTest
             /// hence we'll end up with lots of up messages.  If that happens then we just ignore
             /// them
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void MoreKeyUps()
             {
                 var e = _device.CreateKeyEventArgs(Key.A);
@@ -514,7 +514,7 @@ namespace Vim.VisualStudio.UnitTest
             /// Handle the case where the buffer suddenly changes to not readonly in a KeyDown
             /// while we're in the middle of suppressing messages
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void ChangeInReadOnlyOnDown()
             {
                 var e = _device.CreateKeyEventArgs(Key.A);
@@ -532,7 +532,7 @@ namespace Vim.VisualStudio.UnitTest
             /// If it isn't an expression view then it should be processed even if the key is in the 
             /// required set 
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void NullCase()
             {
                 _reportDesignerUtil.Setup(x => x.IsExpressionView(_wpfTextView)).Returns(false);
@@ -541,7 +541,7 @@ namespace Vim.VisualStudio.UnitTest
                 Assert.True(e.Handled);
             }
 
-            [Fact]
+            [WpfFact]
             public void NotSpecialKey()
             {
                 _reportDesignerUtil.Setup(x => x.IsExpressionView(_wpfTextView)).Returns(true);
@@ -551,7 +551,7 @@ namespace Vim.VisualStudio.UnitTest
                 Assert.True(e.Handled);
             }
 
-            [Fact]
+            [WpfFact]
             public void SpecialKey()
             {
                 _reportDesignerUtil.Setup(x => x.IsExpressionView(_wpfTextView)).Returns(true);

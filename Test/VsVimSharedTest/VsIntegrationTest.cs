@@ -77,7 +77,7 @@ namespace Vim.VisualStudio.UnitTest
             /// As long as the Visual Studio controls tabs and backspace then the 'backspace' setting will
             /// not be respected 
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void IgnoreBackspaceSetting()
             {
                 Create("cat");
@@ -87,7 +87,7 @@ namespace Vim.VisualStudio.UnitTest
                 Assert.Equal("ca", _textBuffer.GetLine(0).GetText());
             }
 
-            [Fact]
+            [WpfFact]
             public void RespectBackspaceSetting()
             {
                 Create("cat");
@@ -98,7 +98,7 @@ namespace Vim.VisualStudio.UnitTest
                 Assert.Equal(1, VimHost.BeepCount);
             }
 
-            [Fact]
+            [WpfFact]
             public void IgnoreTab()
             {
                 Create("");
@@ -109,7 +109,7 @@ namespace Vim.VisualStudio.UnitTest
                 Assert.Equal(new string(' ', 8), _textBuffer.GetLine(0).GetText());
             }
 
-            [Fact]
+            [WpfFact]
             public void RespectTab()
             {
                 Create("");
@@ -126,7 +126,7 @@ namespace Vim.VisualStudio.UnitTest
             /// <summary>
             /// Make sure that S_RETURN will actually come across as such 
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void ShiftAndReturn()
             {
                 Create("cat", "dog");
@@ -141,7 +141,7 @@ namespace Vim.VisualStudio.UnitTest
             /// <summary>
             /// Make sure that S_TAB will actually come across as such 
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void ShiftAndTab()
             {
                 Create("cat", "dog");
@@ -153,7 +153,7 @@ namespace Vim.VisualStudio.UnitTest
                 Assert.Equal("dog", _textBuffer.GetLine(2).GetText());
             }
 
-            [Fact]
+            [WpfFact]
             public void ShiftAndEnter()
             {
                 Create("cat", "dog");
@@ -168,7 +168,7 @@ namespace Vim.VisualStudio.UnitTest
             /// key combination and mapping wasn't kicking in.  Now that we know it can't be part of a dead
             /// key mapping we process it promptly as it should be 
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void DoubleSemicolon()
             {
                 Create("cat", "dog");
@@ -182,7 +182,7 @@ namespace Vim.VisualStudio.UnitTest
             /// Make sure that keys which are mapped to display window keys are passed down to 
             /// Visual Studio as mapped keys 
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void MappedDisplayWindowKey()
             {
                 Create("cat", "dog");
@@ -199,7 +199,7 @@ namespace Vim.VisualStudio.UnitTest
             /// <summary>
             /// Simple sanity check to ensure that our simulation is working properly
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Insert_SanityCheck()
             {
                 Create("hello world");
@@ -212,7 +212,7 @@ namespace Vim.VisualStudio.UnitTest
             /// <summary>
             /// Make sure that Escape dismisses intellisense even in normal mode
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void NormalMode_EscapeShouldDismissCompletion()
             {
                 Create("cat dog");
@@ -225,7 +225,7 @@ namespace Vim.VisualStudio.UnitTest
             /// <summary>
             /// Keys like j, k should go to normal mode even when Intellisense is active
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void NormalMode_CommandKeysGoToVim()
             {
                 Create("cat dog");
@@ -238,7 +238,7 @@ namespace Vim.VisualStudio.UnitTest
             /// Arrow keys and the like should go through Visual Studio when intellisense is 
             /// active
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void NormalMode_ArrowKeysGoToVisualStudio()
             {
                 Create("cat", "dog");
@@ -253,7 +253,7 @@ namespace Vim.VisualStudio.UnitTest
             /// Without any mappings the Shift+Down should extend the selection downwards and cause us to
             /// enter Visual Mode
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void StandardCommand_ExtendSelectionDown()
             {
                 Create("dog", "cat", "tree");
@@ -266,7 +266,7 @@ namespace Vim.VisualStudio.UnitTest
             /// Without any mappings the Shift+Right should extend the selection downwards and cause us to
             /// enter Visual Mode
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void StandardCommand_ExtendSelectionRight()
             {
                 Create("dog", "cat", "tree");
@@ -278,7 +278,7 @@ namespace Vim.VisualStudio.UnitTest
             /// <summary>
             /// Make sure the Insert key correctly toggles to insert mode then replace
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void SwitchMode_InsertKey()
             {
                 Create("");
@@ -292,7 +292,7 @@ namespace Vim.VisualStudio.UnitTest
             /// Make sure that we allow keys like down to make it directly to Insert mode when there is
             /// an active IWordCompletionSession
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void WordCompletion_Down()
             {
                 Create("c dog", "cat copter");
@@ -307,7 +307,7 @@ namespace Vim.VisualStudio.UnitTest
             /// When there is an active IWordCompletionSession we want to let even direct input go directly
             /// to insert mode.  
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void WordCompletion_TypeChar()
             {
                 Create("c dog", "cat");
@@ -322,7 +322,7 @@ namespace Vim.VisualStudio.UnitTest
 
         public sealed class EscapeTest : VsIntegrationTest
         {
-            [Fact]
+            [WpfFact]
             public void DismissPeekDefinitionWindow()
             {
                 CreatePeek("cat dog");
@@ -334,7 +334,7 @@ namespace Vim.VisualStudio.UnitTest
             /// The Escape key shouldn't dismiss the peek definition window when we are in 
             /// insert mode
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void DontDismissPeekDefinitionWindow()
             {
                 CreatePeek("cat dog");
@@ -349,7 +349,7 @@ namespace Vim.VisualStudio.UnitTest
             /// In a normal window the Escape key should cause a beep to occur when the buffer is
             /// in normal mode 
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void BeepNormalMode()
             {
                 Create();
@@ -369,7 +369,7 @@ namespace Vim.VisualStudio.UnitTest
                 /// Verify that the back behavior which R# works as expected when we are in 
                 /// Insert mode.  It should delete the simple double matched parens
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void ParenWorksInInsert()
                 {
                     Create("method();", "next");
@@ -384,7 +384,7 @@ namespace Vim.VisualStudio.UnitTest
                 /// an issue during the testing of the special casing of Back which caused the key to be
                 /// disabled for a time
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void AcrossEntireLine()
                 {
                     Create("hello();", "world");
@@ -397,7 +397,7 @@ namespace Vim.VisualStudio.UnitTest
                     }
                 }
 
-                [Fact]
+                [WpfFact]
                 public void AcrossEntireLineWithVeOneMore()
                 {
                     Create("hello();", "world");
@@ -416,7 +416,7 @@ namespace Vim.VisualStudio.UnitTest
                 /// the initial handling of the command.  But this shouldn't affect the repeat as it should
                 /// be using CustomProcess under the hood
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void Repeat()
                 {
                     Create("dog toy", "fish chips");
@@ -453,7 +453,7 @@ namespace Vim.VisualStudio.UnitTest
                 /// intellisense displayed by R# and hence have to let them do it by letting them see the Escape 
                 /// key themselves 
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void InsertWithIntellisenseActive()
                 {
                     Create("blah");
@@ -470,7 +470,7 @@ namespace Vim.VisualStudio.UnitTest
                 /// We have no way to track whether or not R# intellisense is active.  Hence we have to act as if
                 /// it is at all times even when it's not. 
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void InsertWithIntellisenseInactive()
                 {
                     Create("blah");

@@ -43,7 +43,7 @@ namespace Vim.UI.Wpf.UnitTest
             /// <summary>
             /// Don't handle AltGR keys
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void KeyDown1()
             {
                 var arg = CreateKeyEventArgs(Key.D8, ModifierKeys.Alt | ModifierKeys.Control);
@@ -54,7 +54,7 @@ namespace Vim.UI.Wpf.UnitTest
             /// <summary>
             /// Don't handle non-input keys
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void KeyDown2()
             {
                 foreach (var cur in new[] { Key.LeftAlt, Key.RightAlt, Key.LeftCtrl, Key.RightCtrl, Key.LeftShift, Key.RightShift })
@@ -69,7 +69,7 @@ namespace Vim.UI.Wpf.UnitTest
             /// Don't handle any alpha characters in the KeyDown event.  Textual input should be 
             /// handled in TextInput not KeyDown
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void DontHandleAlpha()
             {
                 for (var i = 0; i < 26; i++)
@@ -84,7 +84,7 @@ namespace Vim.UI.Wpf.UnitTest
             /// <summary>
             /// Do handle non printable characters here
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void KeyDown4()
             {
                 _mockVimBuffer.Setup(x => x.CanProcess(It.IsAny<KeyInput>())).Returns(true).Verifiable();
@@ -104,7 +104,7 @@ namespace Vim.UI.Wpf.UnitTest
             /// <summary>
             /// Do pass non-printable charcaters onto the IVimBuffer
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void KeyDown5()
             {
                 _mockVimBuffer.Setup(x => x.CanProcess(It.IsAny<KeyInput>())).Returns(false).Verifiable();
@@ -123,7 +123,7 @@ namespace Vim.UI.Wpf.UnitTest
             /// <summary>
             /// Control + char will end up as Control text and should be passed onto TextInput
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void PassControlLetterToBuffer()
             {
                 for (var i = 0; i < 26; i++)
@@ -139,7 +139,7 @@ namespace Vim.UI.Wpf.UnitTest
             /// The Alt key when combined with a char will be passed as TextComposition::System text and 
             /// we should hence handle it in the TextInput handler and not KeyDown
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void DontPassAltLetterToBuffer()
             {
                 for (var i = 0; i < 26; i++)
@@ -153,7 +153,7 @@ namespace Vim.UI.Wpf.UnitTest
                 _factory.Verify();
             }
 
-            [Fact]
+            [WpfFact]
             public void PassNonCharOnlyToBuffer()
             {
                 _mockVimBuffer.Setup(x => x.CanProcess(It.IsAny<KeyInput>())).Returns(true).Verifiable();
@@ -172,7 +172,7 @@ namespace Vim.UI.Wpf.UnitTest
                 }
             }
 
-            [Fact]
+            [WpfFact]
             public void NonCharWithModifierShouldCarryModifier()
             {
                 var ki = KeyInputUtil.ApplyKeyModifiersToKey(VimKey.Left, VimKeyModifiers.Shift);
@@ -190,7 +190,7 @@ namespace Vim.UI.Wpf.UnitTest
             /// event.  It shouldn't be processed though in insert mode since it maps to a character
             /// and would rendere as invisible data if processed as an ITextBuffer edit
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void ShiftPlusEscape()
             {
                 KeyInput ki;
@@ -224,7 +224,7 @@ namespace Vim.UI.Wpf.UnitTest
                 return _wpfTextView.VisualElement.CreateTextCompositionEventArgs(text, _inputDevice);
             }
 
-            [Fact]
+            [WpfFact]
             public void SimpleSystemText()
             {
                 var keyInput = KeyInputUtil.CharToKeyInput('\u00C1');

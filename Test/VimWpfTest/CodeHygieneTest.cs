@@ -20,7 +20,7 @@ namespace Vim.UI.Wpf.UnitTest
             const string prefix = "Vim.UI.Wpf.UnitTest.";
             foreach (var type in _assembly.GetTypes().Where(x => x.IsPublic))
             {
-                Assert.True(type.FullName.StartsWith(prefix, StringComparison.Ordinal));
+                Assert.StartsWith(prefix, type.FullName, StringComparison.Ordinal);
             }
         }
     }

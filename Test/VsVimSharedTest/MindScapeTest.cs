@@ -52,7 +52,7 @@ namespace Vim.VisualStudio.UnitTest
         /// <summary>
         /// If it's not installed then don't listen to any key strokes
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void NotInstalled()
         {
             Create(isInstalled: false);
@@ -65,7 +65,7 @@ namespace Vim.VisualStudio.UnitTest
         /// <summary>
         /// Do nothing if there is no completion active
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void IgnoreWhenNoCompletionActive()
         {
             Create(isInstalled: true);
@@ -80,7 +80,7 @@ namespace Vim.VisualStudio.UnitTest
         /// <summary>
         /// Dismiss intellisense if it shows up during normal mode
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void DismissCompletionInNormalMode()
         {
             Create(isInstalled: true);
@@ -96,7 +96,7 @@ namespace Vim.VisualStudio.UnitTest
         /// <summary>
         /// Dismiss intellisense if it pops up in the transition to insert mode
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void DismissCompletionInTransitionToInsert()
         {
             Create(isInstalled: true);
@@ -111,7 +111,7 @@ namespace Vim.VisualStudio.UnitTest
         /// <summary>
         /// Don't dismiss during insert mode
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void DontDismissInInsert()
         {
             Create(isInstalled: true);

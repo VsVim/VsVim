@@ -75,13 +75,6 @@ namespace Vim.VisualStudio.UnitTest
             VerifyConvert(cmd, vimKey, kind);
         }
 
-        // [Test, Description("Make sure we don't puke on missing data"),Ignore]
-        public void TypeCharNoData()
-        {
-            EditCommand command;
-            Assert.False(OleCommandUtil.TryConvert(VSConstants.GUID_VSStandardCommandSet97, (uint)VSConstants.VSStd2KCmdID.TYPECHAR, IntPtr.Zero, VimKeyModifiers.None, out command));
-        }
-
         /// <summary>
         /// When processing a raw character we shouldn't be reapplying the existing modifiers.  That only needs
         /// to be done for non-char commands
@@ -169,7 +162,7 @@ namespace Vim.VisualStudio.UnitTest
         public void Tab_WithShift()
         {
             var keyInput = KeyInputUtil.ApplyKeyModifiers(KeyInputUtil.TabKey, VimKeyModifiers.Shift);
-            Assert.Equal(keyInput.KeyModifiers, VimKeyModifiers.Shift);
+            Assert.Equal(VimKeyModifiers.Shift, keyInput.KeyModifiers);
             VerifyConvert(VSConstants.VSStd2KCmdID.TAB, VimKeyModifiers.Shift, keyInput, EditCommandKind.UserInput);
         }
 

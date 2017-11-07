@@ -32,7 +32,7 @@ namespace Vim.UI.Wpf.UnitTest
             _blockCaret = _blockCaretRaw;
         }
 
-        [Fact]
+        [WpfFact]
         public void TextView1()
         {
             Create();
@@ -42,7 +42,7 @@ namespace Vim.UI.Wpf.UnitTest
         /// <summary>
         /// Don't throw when ContaintingTextViewLine throws
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void Show1()
         {
             Create();
@@ -52,7 +52,7 @@ namespace Vim.UI.Wpf.UnitTest
             Assert.Equal(CaretDisplay.HalfBlock, _blockCaret.CaretDisplay);
         }
 
-        [Fact]
+        [WpfFact]
         public void Hide1()
         {
             Create();

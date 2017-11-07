@@ -70,7 +70,7 @@ namespace Vim.UI.Wpf.UnitTest
 
         public sealed class BasicTest : CommandLineEditIntegrationTest
         {
-            [Fact]
+            [WpfFact]
             public void EscapeKeyExits()
             {
                 Create("cat");
@@ -81,7 +81,7 @@ namespace Vim.UI.Wpf.UnitTest
                 Assert.True(_marginControl.IsEditReadOnly);
             }
 
-            [Fact]
+            [WpfFact]
             public void HomeKeyMovesToStart()
             {
                 Create("");
@@ -89,7 +89,7 @@ namespace Vim.UI.Wpf.UnitTest
                 Assert.Equal(1, _marginControl.CommandLineTextBox.CaretIndex);
             }
 
-            [Fact]
+            [WpfFact]
             public void LeftKeyMovesBeforeLastCharacter()
             {
                 Create("");
@@ -102,7 +102,7 @@ namespace Vim.UI.Wpf.UnitTest
             /// an edit.  If it's not marked as handled then it will propagate to the editor
             /// and register as a key stroke
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void HandleEnterKey()
             {
                 Create("cat", "dog");
@@ -115,7 +115,7 @@ namespace Vim.UI.Wpf.UnitTest
 
         public sealed class ClearTest : CommandLineEditIntegrationTest
         {
-            [Fact]
+            [WpfFact]
             public void ClearCommandEditStart()
             {
                 Create();
@@ -124,7 +124,7 @@ namespace Vim.UI.Wpf.UnitTest
                 Assert.Equal("t", _vimBuffer.CommandMode.Command);
             }
 
-            [Fact]
+            [WpfFact]
             public void ClearCommand()
             {
                 Create();
@@ -133,7 +133,7 @@ namespace Vim.UI.Wpf.UnitTest
                 Assert.Equal("", _vimBuffer.CommandMode.Command);
             }
 
-            [Fact]
+            [WpfFact]
             public void ClearSearch()
             {
                 Create();
@@ -142,7 +142,7 @@ namespace Vim.UI.Wpf.UnitTest
                 Assert.Equal("", _vimBuffer.IncrementalSearch.CurrentSearchText);
             }
 
-            [Fact]
+            [WpfFact]
             public void ClearSearchEdit()
             {
                 Create();
@@ -154,7 +154,7 @@ namespace Vim.UI.Wpf.UnitTest
 
         public sealed class CommandModeTest : CommandLineEditIntegrationTest
         {
-            [Fact]
+            [WpfFact]
             public void SingleLeftKey()
             {
                 Create("cat", "dog", "fish");
@@ -165,7 +165,7 @@ namespace Vim.UI.Wpf.UnitTest
             /// <summary>
             /// If the edit box is cleared it should be changed by to the ':' item
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void ClearEditBox()
             {
                 Create("");
@@ -177,7 +177,7 @@ namespace Vim.UI.Wpf.UnitTest
             /// <summary>
             /// Don't let the first character get deleted
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void DeleteFirstCharacter()
             {
                 Create("");
@@ -190,7 +190,7 @@ namespace Vim.UI.Wpf.UnitTest
             /// Previously keys like caused issues because their literal char value was being appended to the
             /// beginning of the edit box
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void HomeKey()
             {
                 Create("");
@@ -202,7 +202,7 @@ namespace Vim.UI.Wpf.UnitTest
             /// <summary>
             /// The delete key should function to delete text as expected 
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void DeleteKey()
             {
                 Create("");
@@ -227,7 +227,7 @@ namespace Vim.UI.Wpf.UnitTest
                 /// <summary>
                 /// The search should be updating as edits are made 
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void Simple()
                 {
                     Create("cat", "dog", "fish");
@@ -235,7 +235,7 @@ namespace Vim.UI.Wpf.UnitTest
                     Assert.Equal("dog", _incrementalSearch.CurrentSearchData.Pattern);
                 }
 
-                [Fact]
+                [WpfFact]
                 public void ClearEditBox()
                 {
                     Create("");
@@ -244,7 +244,7 @@ namespace Vim.UI.Wpf.UnitTest
                     Assert.Equal("/", _marginControl.CommandLineTextBox.Text);
                 }
 
-                [Fact]
+                [WpfFact]
                 public void ClearAndRestart()
                 {
                     Create("cat", "dog", "fish");
@@ -252,7 +252,7 @@ namespace Vim.UI.Wpf.UnitTest
                     Assert.Equal("fish", _incrementalSearch.CurrentSearchData.Pattern);
                 }
 
-                [Fact]
+                [WpfFact]
                 public void BackKeyUpdateText()
                 {
                     Create("cat", "dog", "fish");
@@ -264,7 +264,7 @@ namespace Vim.UI.Wpf.UnitTest
                 /// When the Enter key is run it should complete the search and cause the cursor
                 /// to be placed at the start of the successful find
                 /// </summary>
-                [Fact]
+                [WpfFact]
                 public void EnterToCompleteFind()
                 {
                     Create("cat", "dog", "fish");
@@ -278,7 +278,7 @@ namespace Vim.UI.Wpf.UnitTest
         {
             public sealed class PasteFromVimTest : PasteTest
             {
-                [Fact]
+                [WpfFact]
                 public void Simple()
                 {
                     Create("cat");
@@ -287,7 +287,7 @@ namespace Vim.UI.Wpf.UnitTest
                     Assert.Equal(":test", _marginControl.CommandLineTextBox.Text);
                 }
 
-                [Fact]
+                [WpfFact]
                 public void InPasteWait()
                 {
                     Create("cat");
@@ -298,7 +298,7 @@ namespace Vim.UI.Wpf.UnitTest
 
             public sealed class PasteInEditTest : PasteTest
             {
-                [Fact]
+                [WpfFact]
                 public void Simple()
                 {
                     Create("cat");
@@ -307,7 +307,7 @@ namespace Vim.UI.Wpf.UnitTest
                     Assert.Equal(":cat", _marginControl.CommandLineTextBox.Text);
                 }
 
-                [Fact]
+                [WpfFact]
                 public void InPasteWait()
                 {
                     Create("cat");
@@ -315,7 +315,7 @@ namespace Vim.UI.Wpf.UnitTest
                     Assert.True(_controller.InPasteWait);
                 }
 
-                [Fact]
+                [WpfFact]
                 public void EscapeCancels()
                 {
                     Create("cat");
@@ -323,7 +323,7 @@ namespace Vim.UI.Wpf.UnitTest
                     Assert.False(_controller.InPasteWait);
                 }
 
-                [Fact]
+                [WpfFact]
                 public void PasteStartCaretPosition()
                 {
                     Create();

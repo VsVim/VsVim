@@ -1,6 +1,7 @@
 ﻿using System.Windows.Input;
 using Xunit;
 using Vim.UI.Wpf.Implementation.Misc;
+using Vim.UnitTest;
 
 namespace Vim.UI.Wpf.UnitTest
 {
@@ -16,7 +17,7 @@ namespace Vim.UI.Wpf.UnitTest
         /// <summary>
         /// Don't throw on the None case
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void IsKeyDown1()
         {
             Assert.False(_deviceImpl.IsKeyDown(Key.None));

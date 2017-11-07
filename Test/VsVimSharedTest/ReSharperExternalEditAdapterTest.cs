@@ -38,7 +38,7 @@ namespace Vim.VisualStudio.UnitTest
             /// <summary>
             /// Ensure that the R# adapter doesn't pick up on IVsTextMarker instances
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void None()
             {
                 Create("cat", "dog", "tree");
@@ -50,7 +50,7 @@ namespace Vim.VisualStudio.UnitTest
                 }
             }
 
-            [Fact]
+            [WpfFact]
             public void NormalTagIsNot()
             {
                 Create("");
@@ -58,7 +58,7 @@ namespace Vim.VisualStudio.UnitTest
                 Assert.False(_editAdapter.IsExternalEditTag(tag.Object));
             }
 
-            [Fact]
+            [WpfFact]
             public void RightTagWithAttributes()
             {
                 Create("");
@@ -77,7 +77,7 @@ namespace Vim.VisualStudio.UnitTest
                 }
             }
 
-            [Fact]
+            [WpfFact]
             public void RightTagWithWrongAttributes()
             {
                 Create("");
@@ -96,7 +96,7 @@ namespace Vim.VisualStudio.UnitTest
             /// The Laszy property in imported collections can throw an exception due to composition
             /// failure.  Make sure this exception doesn't bring down the IsInterested check
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void Issue1381()
             {
                 Create();

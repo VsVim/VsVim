@@ -67,7 +67,7 @@ namespace Vim.VisualStudio.UnitTest
                 _vimApplicationSettings.Object.KeyMappingIssueFixed = false;
             }
 
-            [Fact]
+            [WpfFact]
             public void FixEnter()
             {
                 var enterCommand = MockObjectFactory.CreateCommand(
@@ -80,7 +80,7 @@ namespace Vim.VisualStudio.UnitTest
                 Assert.True(_vimApplicationSettings.Object.KeyMappingIssueFixed);
             }
 
-            [Fact]
+            [WpfFact]
             public void FixBackspace()
             {
                 var enterCommand = MockObjectFactory.CreateCommand(
@@ -103,14 +103,14 @@ namespace Vim.VisualStudio.UnitTest
                 return new CommandKeyBinding(new CommandId(), name, key);
             }
 
-            [Fact]
+            [WpfFact]
             public void Ctor1()
             {
                 Create("::ctrl+h");
                 Assert.Equal(ConflictingKeyBindingState.HasNotChecked, _service.ConflictingKeyBindingState);
             }
 
-            [Fact]
+            [WpfFact]
             public void IgnoreAnyConflicts1()
             {
                 Create();
@@ -118,7 +118,7 @@ namespace Vim.VisualStudio.UnitTest
                 Assert.Equal(ConflictingKeyBindingState.ConflictsIgnoredOrResolved, _service.ConflictingKeyBindingState);
             }
 
-            [Fact]
+            [WpfFact]
             public void IgnoreAnyConflicts2()
             {
                 Create();
@@ -128,7 +128,7 @@ namespace Vim.VisualStudio.UnitTest
                 Assert.True(didSee);
             }
 
-            [Fact]
+            [WpfFact]
             public void ResetConflictingKeyBindingState1()
             {
                 Create();
@@ -137,7 +137,7 @@ namespace Vim.VisualStudio.UnitTest
                 Assert.Equal(ConflictingKeyBindingState.HasNotChecked, _service.ConflictingKeyBindingState);
             }
 
-            [Fact]
+            [WpfFact]
             public void ResetConflictingKeyBindingState2()
             {
                 Create();
@@ -151,7 +151,7 @@ namespace Vim.VisualStudio.UnitTest
             /// <summary>
             /// Nothing should change since we haven't checked yet
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void ResolveAnyConflicts1()
             {
                 Create();
@@ -163,7 +163,7 @@ namespace Vim.VisualStudio.UnitTest
             /// <summary>
             /// Nothing should change if they're ignored or resolved
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void ResolveAnyConflicts2()
             {
                 Create();
@@ -172,7 +172,7 @@ namespace Vim.VisualStudio.UnitTest
                 Assert.Equal(ConflictingKeyBindingState.ConflictsIgnoredOrResolved, _serviceRaw.ConflictingKeyBindingState);
             }
 
-            [Fact]
+            [WpfFact]
             public void ResolveAnyConflicts3()
             {
                 Create("::ctrl+h");
@@ -183,58 +183,58 @@ namespace Vim.VisualStudio.UnitTest
                 Assert.Equal(ConflictingKeyBindingState.ConflictsIgnoredOrResolved, _service.ConflictingKeyBindingState);
             }
 
-            [Fact]
+            [WpfFact]
             public void FindConflictingCommands1()
             {
                 Create("::ctrl+h");
                 var inputs = new KeyInput[] { KeyInputUtil.CharWithControlToKeyInput('h') };
                 var list = _serviceRaw.FindConflictingCommandKeyBindings(_commandListSnapshot, new HashSet<KeyInput>(inputs));
-                Assert.Equal(1, list.Count);
+                Assert.Single(list);
             }
 
-            [Fact]
+            [WpfFact]
             public void FindConflictingCommands2()
             {
                 Create("::h");
                 var inputs = new KeyInput[] { KeyInputUtil.CharToKeyInput('z') };
                 var list = _serviceRaw.FindConflictingCommandKeyBindings(_commandListSnapshot, new HashSet<KeyInput>(inputs));
-                Assert.Equal(0, list.Count);
+                Assert.Empty(list);
             }
 
             /// <summary>
             /// Conflicting key on first
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void FindConflictingCommands3()
             {
                 Create("::ctrl+z, h");
                 var inputs = new KeyInput[] { KeyInputUtil.CharWithControlToKeyInput('z') };
                 var list = _serviceRaw.FindConflictingCommandKeyBindings(_commandListSnapshot, new HashSet<KeyInput>(inputs));
-                Assert.Equal(1, list.Count);
+                Assert.Single(list);
             }
 
             /// <summary>
             /// Only check first key
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void FindConflictingCommands4()
             {
                 Create("::h, z");
                 var inputs = new KeyInput[] { KeyInputUtil.CharToKeyInput('z') };
                 var list = _serviceRaw.FindConflictingCommandKeyBindings(_commandListSnapshot, new HashSet<KeyInput>(inputs));
-                Assert.Equal(0, list.Count);
+                Assert.Empty(list);
             }
 
-            [Fact]
+            [WpfFact]
             public void FindConflictingCommands5()
             {
                 Create("::a", "::ctrl+z, h");
                 var inputs = new KeyInput[] { KeyInputUtil.CharWithControlToKeyInput('z') };
                 var list = _serviceRaw.FindConflictingCommandKeyBindings(_commandListSnapshot, new HashSet<KeyInput>(inputs));
-                Assert.Equal(1, list.Count);
+                Assert.Single(list);
             }
 
-            [Fact]
+            [WpfFact]
             public void FindConflictingCommands6()
             {
                 Create("Global::ctrl+a", "Text Editor::ctrl+z");
@@ -245,13 +245,13 @@ namespace Vim.VisualStudio.UnitTest
                 Assert.Equal(2, list.Count);
             }
 
-            [Fact]
+            [WpfFact]
             public void FindConflictingCommands7()
             {
                 Create("balgh::a", "aoeu::z");
                 var inputs = new KeyInput[] { KeyInputUtil.CharToKeyInput('z'), KeyInputUtil.CharToKeyInput('a') };
                 var list = _serviceRaw.FindConflictingCommandKeyBindings(_commandListSnapshot, new HashSet<KeyInput>(inputs));
-                Assert.Equal(0, list.Count);
+                Assert.Empty(list);
             }
 
             /// <summary>
@@ -260,20 +260,20 @@ namespace Vim.VisualStudio.UnitTest
             /// though does differentiate.  Ctrl+f is differente than Ctrl+Shift+F.  So make sure
             /// we don't remove a Ctrl+Shift+F else find all will be disabled by default
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void FindConflictingCommands_IgnoreControlPlusShift()
             {
                 Create("::ctrl+shift+f", "::ctrl+f");
                 var inputs = new[] { KeyInputUtil.CharWithControlToKeyInput('f') };
                 var list = _serviceRaw.FindConflictingCommandKeyBindings(_commandListSnapshot, new HashSet<KeyInput>(inputs));
-                Assert.Equal(1, list.Count);
+                Assert.Single(list);
             }
 
             /// <summary>
             /// By default we should skip the unbinding of the arrow keys. They are too important 
             /// to VS experience and it nearly matches the Vim one anyways
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void ShouldSkip_ArrowKeys()
             {
                 var binding = CreateCommandKeyBinding(KeyInputUtil.VimKeyToKeyInput(VimKey.Left));
@@ -285,7 +285,7 @@ namespace Vim.VisualStudio.UnitTest
             /// Don't skip function keys.  They are only used in Vim custom key bindings and hence
             /// it's something we really want to support if it's specified
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void ShouldSkip_FunctionKeys()
             {
                 var binding = CreateCommandKeyBinding(KeyInputUtil.VimKeyToKeyInput(VimKey.F2));
@@ -297,20 +297,19 @@ namespace Vim.VisualStudio.UnitTest
             /// Make sure that after running the conflicting check and there are conflicts that we
             /// store the information
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void RunConflictingKeyBindingStateCheck_SetSnapshot()
             {
                 Create("::d", "::ctrl+h", "::b");
                 var vimBuffer = CreateVimBuffer("");
                 _service.RunConflictingKeyBindingStateCheck(vimBuffer);
-                Assert.NotNull(_serviceRaw.ConflictingKeyBindingState);
                 Assert.Equal(ConflictingKeyBindingState.FoundConflicts, _serviceRaw.ConflictingKeyBindingState);
             }
 
             /// <summary>
             /// Make sure we correctly detect there are no conflicts if there are none
             /// </summary>
-            [Fact]
+            [WpfFact]
             public void RunConflictingKeyBindingStateCheck_NoConflicts()
             {
                 Create(new string[] { });

@@ -260,7 +260,6 @@ namespace Vim.VisualStudio.UnitTest.Utils
         private readonly Mock<IReportDesignerUtil> _reportDesignerUtil;
         private readonly Mock<IVimApplicationSettings> _vimApplicationSettings;
         private readonly VsCommandTarget _vsCommandTarget;
-        private readonly TestableSynchronizationContext _testableSynchronizationContext;
         private readonly IKeyUtil _keyUtil;
         private readonly ReSharperCommandTargetSimulation _reSharperCommandTarget;
         private bool _simulateStandardKeyMappings;
@@ -305,7 +304,6 @@ namespace Vim.VisualStudio.UnitTest.Utils
             _wpfTextView = (IWpfTextView)bufferCoordinator.VimBuffer.TextView;
             _factory = new MockRepository(MockBehavior.Strict);
             _vsKeyboardInputSimulation = new VsKeyboardInputSimulation(this, _wpfTextView);
-            _testableSynchronizationContext = new TestableSynchronizationContext(install: false);
             _simulateStandardKeyMappings = simulateStandardKeyMappings;
 
             // Create the IVsAdapter and pick reasonable defaults here.  Consumers can modify 
@@ -424,15 +422,10 @@ namespace Vim.VisualStudio.UnitTest.Utils
         /// </summary>
         internal void Run(KeyInput keyInput)
         {
-            _testableSynchronizationContext.Install();
-            try
+            using (var context = new TestableSynchronizationContext())
             {
                 _vsKeyboardInputSimulation.Run(keyInput);
-                _testableSynchronizationContext.RunAll();
-            }
-            finally
-            {
-                _testableSynchronizationContext.Uninstall();
+                context.RunAll();
             }
         }
 
