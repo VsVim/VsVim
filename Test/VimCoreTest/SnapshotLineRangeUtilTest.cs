@@ -10,7 +10,7 @@ namespace Vim.UnitTest
     {
         private ITextBuffer _buffer;
 
-        public void Create(params string[] lines)
+        internal void Create(params string[] lines)
         {
             _buffer = CreateTextBuffer(lines);
         }

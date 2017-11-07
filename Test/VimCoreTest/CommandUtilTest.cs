@@ -2541,17 +2541,6 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
-            /// Make sure the macro infrastructure hooks into bulk operations
-            /// </summary>
-            public void RunMacro_CallBulkOperations()
-            {
-                Create("");
-                _commandUtil.RunMacro('!', 1);
-                Assert.Equal(1, _bulkOperations.BeginCount);
-                Assert.Equal(1, _bulkOperations.BeginCount);
-            }
-
-            /// <summary>
             /// When jumping from a location not in the jump list and we're not in the middle 
             /// of a traversal the location should be added to the list
             /// </summary>

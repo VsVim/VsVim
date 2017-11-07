@@ -178,7 +178,7 @@ namespace Vim.UnitTest
         {
             var type = typeof(T);
             var targetType = typeof(IEquatable<T>);
-            Assert.True(type.GetInterfaces().Contains(targetType));
+            Assert.Contains(targetType, type.GetInterfaces());
         }
 
         private void ObjectEquals()

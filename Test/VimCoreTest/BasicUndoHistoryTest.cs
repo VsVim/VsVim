@@ -48,8 +48,8 @@ namespace Vim.UnitTest
                 }
 
                 _basicUndoHistory.Clear();
-                Assert.Equal(0, _basicUndoHistoryRaw.UndoStack.Count);
-                Assert.Equal(0, _basicUndoHistoryRaw.RedoStack.Count);
+                Assert.Empty(_basicUndoHistoryRaw.UndoStack);
+                Assert.Empty(_basicUndoHistoryRaw.RedoStack);
             }
 
             /// <summary>
@@ -73,7 +73,7 @@ namespace Vim.UnitTest
             {
                 var transaction = _basicUndoHistory.CreateTransaction("Test");
                 transaction.Complete();
-                Assert.Equal(1, _basicUndoHistoryRaw.UndoStack.Count);
+                Assert.Single(_basicUndoHistoryRaw.UndoStack);
                 Assert.Same(transaction, _basicUndoHistoryRaw.UndoStack.Peek());
             }
 

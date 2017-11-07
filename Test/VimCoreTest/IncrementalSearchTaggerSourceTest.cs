@@ -16,7 +16,7 @@ namespace Vim.UnitTest
         private IncrementalSearchTaggerSource _taggerSourceRaw;
         private IBasicTaggerSource<TextMarkerTag> _taggerSource;
 
-        public void Create(params string[] lines)
+        internal void Create(params string[] lines)
         {
             _vimBuffer = CreateVimBuffer(lines);
             _textView = _vimBuffer.TextView;
@@ -55,7 +55,7 @@ namespace Vim.UnitTest
         {
             Create("dog cat bar");
             _search.DoSearch("dog");
-            Assert.Equal(0, GetTags().Count());
+            Assert.Empty(GetTags());
         }
 
         /// <summary>
@@ -79,7 +79,7 @@ namespace Vim.UnitTest
             Create("dog cat bar");
             _vimBuffer.SwitchMode(ModeKind.VisualCharacter, ModeArgument.None);
             _search.DoSearch("dog", enter: false);
-            Assert.Equal(0, GetTags().Count());
+            Assert.Empty(GetTags());
         }
 
         /// <summary>
@@ -91,7 +91,7 @@ namespace Vim.UnitTest
             Create("dog cat bar");
             _search.DoSearch("dog", enter: false);
             _globalSettings.IncrementalSearch = false;
-            Assert.Equal(0, GetTags().Count());
+            Assert.Empty(GetTags());
         }
     }
 }

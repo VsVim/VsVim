@@ -302,7 +302,7 @@ autocmd BufEnter *.html set ts=12
                 Run(text);
 
                 var errorArray = ((VimRcState.LoadSucceeded)_vim.VimRcState).Item2;
-                Assert.Equal(1, errorArray.Length);
+                Assert.Single(errorArray);
                 Assert.Equal(Resources.Interpreter_UnknownOption("foo"), errorArray[0]);
             }
 

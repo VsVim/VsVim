@@ -352,11 +352,12 @@ namespace Vim.UnitTest
             {
                 foreach (var cur in CharAll)
                 {
-                    Assert.True(KeyInputUtil.VimKeyCharList.Contains(cur));
+                    Assert.Contains(cur, KeyInputUtil.VimKeyCharList);
                     Assert.True(KeyInputUtil.CharToKeyInputMap.ContainsKey(cur));
                 }
             }
 
+            [Fact]
             public void CharToKeyInput_LowerLetters()
             {
                 foreach (var cur in CharLettersLower)
@@ -420,7 +421,7 @@ namespace Vim.UnitTest
 
                 foreach (var cur in array)
                 {
-                    Assert.True(KeyInputUtil.VimKeyInputList.Contains(cur));
+                    Assert.Contains(cur, KeyInputUtil.VimKeyInputList);
                 }
             }
 

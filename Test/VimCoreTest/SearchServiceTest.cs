@@ -16,7 +16,7 @@ namespace Vim.UnitTest
         private SearchService _searchRaw;
         private ISearchService _search;
 
-        public virtual void Create(params string[] lines)
+        internal virtual void Create(params string[] lines)
         {
             Create(TextSearchService, lines);
         }
@@ -484,7 +484,7 @@ namespace Vim.UnitTest
                         });
             }
 
-            public override void Create(params string[] lines)
+            internal override void Create(params string[] lines)
             {
                 base.Create(_mock.Object, lines);
             }

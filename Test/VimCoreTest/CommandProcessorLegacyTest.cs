@@ -31,7 +31,7 @@ namespace Vim.UnitTest
         private Mock<IVim> _vim;
         private VimInterpreter _interpreter;
 
-        public void Create(params string[] lines)
+        private void Create(params string[] lines)
         {
             _textView = CreateTextView(lines);
             _textView.Caret.MoveTo(new SnapshotPoint(_textView.TextSnapshot, 0));

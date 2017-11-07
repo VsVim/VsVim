@@ -561,8 +561,8 @@ namespace Vim.UnitTest
                 _runner.Add(command1);
                 _runner.Add(command2);
                 Assert.Equal(2, _runner.Commands.Count());
-                Assert.True(_runner.Commands.Contains(command1));
-                Assert.True(_runner.Commands.Contains(command2));
+                Assert.Contains(command1, _runner.Commands);
+                Assert.Contains(command2, _runner.Commands);
             }
 
             [WpfFact]
@@ -591,7 +591,7 @@ namespace Vim.UnitTest
                 var command1 = VimUtil.CreateNormalBinding("foo", data => CommandResult.NewCompleted(ModeSwitch.NoSwitch));
                 _runner.Add(command1);
                 _runner.Remove(command1.KeyInputSet);
-                Assert.Equal(0, _runner.Commands.Count());
+                Assert.Empty(_runner.Commands);
             }
 
             /// <summary>
@@ -602,7 +602,7 @@ namespace Vim.UnitTest
             {
                 Create(String.Empty);
                 _runner.Remove(KeyNotationUtil.StringToKeyInputSet("foo"));
-                Assert.Equal(0, _runner.Commands.Count());
+                Assert.Empty(_runner.Commands);
             }
 
             [WpfFact]

@@ -28,9 +28,9 @@ namespace Vim.UnitTest
         {
             _textBuffer.SetText("hello world");
             var region = _outliner.CreateOutliningRegion(_textBuffer.GetExtent(), SpanTrackingMode.EdgeExclusive, "", "");
-            Assert.Equal(1, _outliner.GetOutliningRegions(_textBuffer.GetExtent()).Count);
+            Assert.Single(_outliner.GetOutliningRegions(_textBuffer.GetExtent()));
             _outliner.DeleteOutliningRegion(region.Cookie);
-            Assert.Equal(0, _outliner.GetOutliningRegions(_textBuffer.GetExtent()).Count);
+            Assert.Empty(_outliner.GetOutliningRegions(_textBuffer.GetExtent()));
         }
 
         [WpfFact]

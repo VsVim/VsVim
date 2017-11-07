@@ -62,7 +62,7 @@ namespace Vim.UnitTest
                 Create("dog cat");
                 _vimData.LastSearchData = VimUtil.CreateSearchData("");
                 var ret = GetTags(_textBuffer.GetExtent());
-                Assert.Equal(0, ret.Count());
+                Assert.Empty(ret);
             }
 
             /// <summary>
@@ -74,7 +74,7 @@ namespace Vim.UnitTest
                 Create("foo is the bar");
                 _vimData.LastSearchData = VimUtil.CreateSearchData("foo");
                 var ret = GetTags(_textBuffer.GetExtent());
-                Assert.Equal(1, ret.Count());
+                Assert.Single(ret);
                 Assert.Equal(new SnapshotSpan(_textBuffer.CurrentSnapshot, 0, 3), ret.Single().Span);
             }
 
@@ -87,7 +87,7 @@ namespace Vim.UnitTest
                 Create("foo is the bar");
                 _vimData.LastSearchData = VimUtil.CreateSearchData("foo");
                 var ret = GetTags(new SnapshotSpan(_textBuffer.CurrentSnapshot, 4, 3));
-                Assert.Equal(0, ret.Count());
+                Assert.Empty(ret);
             }
 
             /// <summary>
@@ -159,7 +159,7 @@ namespace Vim.UnitTest
                 _vimData.LastSearchData = VimUtil.CreateSearchData("dog");
                 _globalSettings.HighlightSearch = false;
                 var ret = TryGetTagsPrompt(_textBuffer.GetExtent());
-                Assert.Equal(0, ret.Count);
+                Assert.Empty(ret);
             }
 
             /// <summary>
@@ -172,7 +172,7 @@ namespace Vim.UnitTest
                 _vimData.LastSearchData = VimUtil.CreateSearchData("dog");
                 _vimData.SuspendDisplayPattern();
                 var ret = TryGetTagsPrompt(_textBuffer.GetExtent());
-                Assert.Equal(0, ret.Count);
+                Assert.Empty(ret);
             }
         }
 
@@ -189,7 +189,7 @@ namespace Vim.UnitTest
                 _vimData.LastSearchData = VimUtil.CreateSearchData("dog");
                 _asyncTaggerSourceRaw._isVisible = false;
                 var ret = TryGetTagsPrompt(_textBuffer.GetExtent());
-                Assert.Equal(0, ret.Count);
+                Assert.Empty(ret);
             }
         }
 

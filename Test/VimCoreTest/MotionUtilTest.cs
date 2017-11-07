@@ -704,7 +704,7 @@ more";
 
                 Assert.True(data.IsSome());
                 AssertData(data.Value, new SnapshotSpan(_snapshot, 2, 7), MotionKind.CharacterWiseInclusive);
-                Assert.Equal(data.Value.Span.GetText(), @"""foo""  ");
+                Assert.Equal(@"""foo""  ", data.Value.Span.GetText());
             }
 
             [WpfFact]
@@ -716,7 +716,7 @@ more";
 
                 var data = _motionUtil.QuotedString('"');
 
-                Assert.Equal(data.Value.Span.GetText(), @"  ""foo""");
+                Assert.Equal(@"  ""foo""", data.Value.Span.GetText());
             }
 
             [WpfFact]
@@ -728,7 +728,7 @@ more";
 
                 var data = _motionUtil.QuotedString('"');
 
-                Assert.Equal(data.Value.Span.GetText(), @"""foo"" ");
+                Assert.Equal(@"""foo"" ", data.Value.Span.GetText());
             }
 
             /// <summary>
@@ -3515,7 +3515,7 @@ more";
                 _textView.MoveCaretTo(0);
                 var data = _motionUtil.LineToColumn(4);
                 Assert.Equal("The", data.Span.GetText());
-                Assert.Equal(true, data.IsForward);
+                Assert.True(data.IsForward);
                 Assert.Equal(OperationKind.CharacterWise, data.OperationKind);
                 Assert.Equal(MotionKind.CharacterWiseExclusive, data.MotionKind);
                 Assert.Equal(CaretColumn.NewScreenColumn(3), data.DesiredColumn);
@@ -3531,7 +3531,7 @@ more";
                 _textView.MoveCaretTo(3);
                 var data = _motionUtil.LineToColumn(1);
                 Assert.Equal("The", data.Span.GetText());
-                Assert.Equal(false, data.IsForward);
+                Assert.False(data.IsForward);
                 Assert.Equal(OperationKind.CharacterWise, data.OperationKind);
                 Assert.Equal(MotionKind.CharacterWiseExclusive, data.MotionKind);
                 Assert.Equal(CaretColumn.NewScreenColumn(0), data.DesiredColumn);
@@ -3565,7 +3565,7 @@ more";
                 var data = _motionUtil.LineToColumn(2);
 
                 // Tabs are 4 spaces long; we should end up in the first tab
-                Assert.Equal(data.Span.GetText(), "\t\t\t");
+                Assert.Equal("\t\t\t", data.Span.GetText());
                 Assert.Equal(OperationKind.CharacterWise, data.OperationKind);
                 Assert.Equal(MotionKind.CharacterWiseExclusive, data.MotionKind);
                 Assert.Equal(CaretColumn.NewScreenColumn(1), data.DesiredColumn);

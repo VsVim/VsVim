@@ -391,7 +391,7 @@ namespace Vim.UnitTest
                 _vimHost.Setup(x => x.GoToDefinition()).Returns(false);
                 var res = _operations.GoToDefinition();
                 Assert.True(res.IsFailed);
-                Assert.True(((Result.Failed)res).Item.Contains("foo"));
+                Assert.Contains("foo", ((Result.Failed)res).Item);
             }
 
             /// <summary>

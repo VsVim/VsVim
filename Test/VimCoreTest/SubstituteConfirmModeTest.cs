@@ -21,7 +21,7 @@ namespace Vim.UnitTest
         private SubstituteConfirmMode _modeRaw;
         private ISubstituteConfirmMode _mode;
 
-        public void Create(params string[] lines)
+        internal void Create(params string[] lines)
         {
             _textView = CreateTextView(lines);
             _textBuffer = _textView.TextBuffer;

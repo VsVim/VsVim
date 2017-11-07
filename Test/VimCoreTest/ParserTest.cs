@@ -168,7 +168,7 @@ namespace Vim.UnitTest
             public void Empty()
             {
                 var list = Parse("let");
-                Assert.Equal(0, list.Count);
+                Assert.Empty(list);
             }
 
             [Fact]
@@ -1636,6 +1636,7 @@ let x = 42
                 Assert.True(shift.Item.IsRange);
             }
 
+            [Fact]
             public void ShiftRightWithRangeAndSpace()
             {
                 var command = ParseLineCommand("'a,'b >");

@@ -18,7 +18,7 @@ namespace Vim.UnitTest
         private MockVimHost _vimHost;
         private string _lastStatus;
 
-        public virtual void Create(params string[] lines)
+        internal virtual void Create(params string[] lines)
         {
             _vimBuffer = CreateVimBuffer(lines);
             _vimBuffer.StatusMessage += (sender, args) => { _lastStatus = args.Message; };
@@ -495,7 +495,7 @@ namespace Vim.UnitTest
             {
                 Create("");
                 RunCommand("");
-                Assert.Equal(0, VimData.CommandHistory.Count());
+                Assert.Empty(VimData.CommandHistory);
             }
 
             [WpfFact]
@@ -559,9 +559,9 @@ namespace Vim.UnitTest
                 Create("cat", "dog", "bear");
 
                 RunCommand("m 2");
-                Assert.Equal(_textBuffer.GetLine(0).GetText(), "dog");
-                Assert.Equal(_textBuffer.GetLine(1).GetText(), "cat");
-                Assert.Equal(_textBuffer.GetLine(2).GetText(), "bear");
+                Assert.Equal("dog", _textBuffer.GetLine(0).GetText());
+                Assert.Equal("cat", _textBuffer.GetLine(1).GetText());
+                Assert.Equal("bear", _textBuffer.GetLine(2).GetText());
             }
 
             /// <summary>
@@ -574,9 +574,9 @@ namespace Vim.UnitTest
                 Create("cat", "dog", "bear");
 
                 RunCommand("m 3");
-                Assert.Equal(_textBuffer.GetLine(0).GetText(), "dog");
-                Assert.Equal(_textBuffer.GetLine(1).GetText(), "bear");
-                Assert.Equal(_textBuffer.GetLine(2).GetText(), "cat");
+                Assert.Equal("dog", _textBuffer.GetLine(0).GetText());
+                Assert.Equal("bear", _textBuffer.GetLine(1).GetText());
+                Assert.Equal("cat", _textBuffer.GetLine(2).GetText());
             }
 
 
@@ -590,9 +590,9 @@ namespace Vim.UnitTest
                 _textView.MoveCaretToLine(2);
                 RunCommand("m0");
 
-                Assert.Equal(_textBuffer.GetLine(0).GetText(), "bear");
-                Assert.Equal(_textBuffer.GetLine(1).GetText(), "cat");
-                Assert.Equal(_textBuffer.GetLine(2).GetText(), "dog");
+                Assert.Equal("bear", _textBuffer.GetLine(0).GetText());
+                Assert.Equal("cat", _textBuffer.GetLine(1).GetText());
+                Assert.Equal("dog", _textBuffer.GetLine(2).GetText());
             }
         }
 
@@ -654,7 +654,7 @@ namespace Vim.UnitTest
         {
             public sealed class GlobalDefaultTest : SubstituteTest
             {
-                public override void Create(params string[] lines)
+                internal override void Create(params string[] lines)
                 {
                     base.Create(lines);
                     _vimBuffer.Vim.GlobalSettings.GlobalDefault = true;
@@ -806,8 +806,8 @@ namespace Vim.UnitTest
                 {
                     Create("a.c", "abc");
                     RunCommand(@"%s/a\.c/replaced/g");
-                    Assert.Equal(_textBuffer.GetLine(0).GetText(), "replaced");
-                    Assert.Equal(_textBuffer.GetLine(1).GetText(), "abc");
+                    Assert.Equal("replaced", _textBuffer.GetLine(0).GetText());
+                    Assert.Equal("abc", _textBuffer.GetLine(1).GetText());
                 }
 
                 /// <summary>
@@ -826,7 +826,7 @@ namespace Vim.UnitTest
                 {
                     Create("foo", "bar");
                     RunCommand(@"%s/\n/ /");
-                    Assert.Equal(_textBuffer.GetLine(0).GetText(), "foo bar");
+                    Assert.Equal("foo bar", _textBuffer.GetLine(0).GetText());
                 }
 
                 /// <summary>
@@ -842,7 +842,7 @@ namespace Vim.UnitTest
                     RunCommandRaw("/bar");
                     RunCommandRaw(":%s//baz");
 
-                    Assert.Equal(_textBuffer.GetLine(1).Extent.GetText(), "baz");
+                    Assert.Equal("baz", _textBuffer.GetLine(1).Extent.GetText());
                 }
 
                 [WpfFact]
@@ -855,7 +855,7 @@ namespace Vim.UnitTest
                     // Do same substitute as the last substitute, but global this time
                     RunCommandRaw(":%&g");
 
-                    Assert.Equal(_textBuffer.GetLine(0).Extent.GetText(), "bar bar bar");
+                    Assert.Equal("bar bar bar", _textBuffer.GetLine(0).Extent.GetText());
                 }
 
                 /// <summary>
@@ -869,7 +869,7 @@ namespace Vim.UnitTest
                     RunCommandRaw(":%s/foo/foos");
                     RunCommandRaw(":%s//baz");
 
-                    Assert.Equal(_textBuffer.GetLine(0).Extent.GetText(), "bazs");
+                    Assert.Equal("bazs", _textBuffer.GetLine(0).Extent.GetText());
                 }
 
                 /// <summary>
@@ -1085,7 +1085,7 @@ namespace Vim.UnitTest
                 Create("foo", "bar", "baz");
                 _textView.MoveCaretToLine(1);
                 RunCommand("y2");
-                Assert.True(UnnamedRegister.StringValue.EndsWith(Environment.NewLine));
+                Assert.EndsWith(Environment.NewLine, UnnamedRegister.StringValue);
             }
         }
 

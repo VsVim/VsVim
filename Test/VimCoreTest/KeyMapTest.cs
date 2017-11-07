@@ -28,7 +28,7 @@ namespace Vim.UnitTest
 
         protected void AssertNoMapping(KeyInputSet lhs, KeyRemapMode mode = null)
         {
-            Assert.False(_map.GetKeyMappingsForMode(mode).Any(keyMapping => keyMapping.Left == lhs));
+            Assert.DoesNotContain(_map.GetKeyMappingsForMode(mode), keyMapping => keyMapping.Left == lhs);
 
             mode = mode ?? KeyRemapMode.Normal;
             var result = _map.GetKeyMappingResult(lhs, mode);

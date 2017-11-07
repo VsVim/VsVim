@@ -213,7 +213,7 @@ namespace Vim.UnitTest
             public void Jumps_Empty()
             {
                 Create("");
-                Assert.Equal(0, _jumpList.Jumps.Count());
+                Assert.Empty(_jumpList.Jumps);
             }
         }
     }

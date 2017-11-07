@@ -81,13 +81,13 @@ namespace Vim.UnitTest
 
         public sealed class PathTest : GlobalSettingsTest
         {
-            public void Expect(string text, params PathOption[] expected)
+            internal void Expect(string text, params PathOption[] expected)
             {
                 var list = _globalSettingsRaw.GetPathOptionList(text);
                 Expect(list, expected);
             }
 
-            public void Expect(IEnumerable<PathOption> value, params PathOption[] expected)
+            internal void Expect(IEnumerable<PathOption> value, params PathOption[] expected)
             {
                 Assert.Equal(expected, value);
             }
@@ -207,8 +207,8 @@ namespace Vim.UnitTest
             public void Sanity1()
             {
                 var all = _globalSettings.AllSettings;
-                Assert.True(all.Any(x => x.Name == GlobalSettingNames.IgnoreCaseName));
-                Assert.True(all.Any(x => x.Name == GlobalSettingNames.ScrollOffsetName));
+                Assert.Contains(all, x => x.Name == GlobalSettingNames.IgnoreCaseName);
+                Assert.Contains(all, x => x.Name == GlobalSettingNames.ScrollOffsetName);
             }
 
             [Fact]
