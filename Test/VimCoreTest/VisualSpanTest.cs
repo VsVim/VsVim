@@ -30,6 +30,7 @@ namespace Vim.UnitTest
                 {
                     Create("cat", "dog");
                     _textView.Selection.Select(_textBuffer.GetPoint(0), _textBuffer.GetPoint(5));
+                    TestableSynchronizationContext.RunAll();
                     var visualSpan = VisualSpan.CreateForSelection(_textView, VisualKind.Character, tabStop: 4);
                     var characterSpan = visualSpan.AsCharacter().Item;
                     Assert.True(characterSpan.IncludeLastLineLineBreak);
@@ -41,6 +42,7 @@ namespace Vim.UnitTest
                 {
                     Create("cat", "", "dog");
                     _textView.Selection.Select(_textBuffer.GetPoint(0), _textBuffer.GetPoint(6));
+                    TestableSynchronizationContext.RunAll();
                     Assert.Equal(1, _textView.Selection.StreamSelectionSpan.End.Position.GetContainingLine().LineNumber);
                     var visualSpan = VisualSpan.CreateForSelection(_textView, VisualKind.Character, tabStop: 4);
                     var characterSpan = visualSpan.AsCharacter().Item;
@@ -225,6 +227,7 @@ namespace Vim.UnitTest
                     var blockSpan = new BlockSpan(_textBuffer.GetPoint(1), tabStop: 2, spaces: 2, height: 2);
                     var visualSpan = VisualSpan.NewBlock(blockSpan);
                     visualSpan.Select(_textView, SearchPath.Forward);
+                    TestableSynchronizationContext.RunAll();
 
                     // It may seem odd for the second span to start on column 1 since the tab is partially
                     // included in the line.  However Visual Studio has this behavior.  It won't select a 
@@ -245,6 +248,7 @@ namespace Vim.UnitTest
                     var blockSpan = new BlockSpan(_textBuffer.GetPoint(1), tabStop: 2, spaces: 3, height: 2);
                     var visualSpan = VisualSpan.NewBlock(blockSpan);
                     visualSpan.Select(_textView, SearchPath.Forward);
+                    TestableSynchronizationContext.RunAll();
                     Assert.Equal(
                         new[]
                         {
@@ -265,6 +269,7 @@ namespace Vim.UnitTest
                     var blockSpan = new BlockSpan(_textBuffer.GetPoint(1), tabStop: 4, spaces: 1, height: 2);
                     var visualSpan = VisualSpan.NewBlock(blockSpan);
                     visualSpan.Select(_textView, SearchPath.Forward);
+                    TestableSynchronizationContext.RunAll();
                     Assert.Equal(
                         new[]
                         {
@@ -287,6 +292,7 @@ namespace Vim.UnitTest
                     var characterSpan = new CharacterSpan(_textBuffer.GetSpan(1, 3));
                     var visualSpan = VisualSpan.NewCharacter(characterSpan);
                     visualSpan.Select(_textView, SearchPath.Backward);
+                    TestableSynchronizationContext.RunAll();
                     Assert.True(_textView.Selection.IsReversed);
                     Assert.Equal(characterSpan.Span, _textView.GetSelectionSpan());
                 }
@@ -298,6 +304,7 @@ namespace Vim.UnitTest
                     var characterSpan = new CharacterSpan(_textBuffer.GetSpan(0, 4));
                     var visualSpan = VisualSpan.NewCharacter(characterSpan);
                     visualSpan.Select(_textView, SearchPath.Backward);
+                    TestableSynchronizationContext.RunAll();
                     Assert.Equal(4, _textView.Selection.StreamSelectionSpan.Length);
                     Assert.True(_textView.Selection.IsReversed);
                 }
@@ -312,6 +319,7 @@ namespace Vim.UnitTest
                     var characterSpan = new CharacterSpan(_textBuffer.GetSpan(1, 3));
                     var visualSpan = VisualSpan.NewCharacter(characterSpan);
                     visualSpan.Select(_textView, SearchPath.Forward);
+                    TestableSynchronizationContext.RunAll();
                     Assert.False(_textView.Selection.IsReversed);
                     Assert.Equal(characterSpan.Span, _textView.GetSelectionSpan());
                 }
@@ -323,6 +331,7 @@ namespace Vim.UnitTest
                     var characterSpan = new CharacterSpan(_textBuffer.GetSpan(0, 4));
                     var visualSpan = VisualSpan.NewCharacter(characterSpan);
                     visualSpan.Select(_textView, SearchPath.Forward);
+                    TestableSynchronizationContext.RunAll();
                     Assert.Equal(4, _textView.Selection.StreamSelectionSpan.Length);
                     Assert.False(_textView.Selection.IsReversed);
                 }
@@ -340,6 +349,7 @@ namespace Vim.UnitTest
                     var lineRange = _textBuffer.GetLineRange(1);
                     var visualSpan = VisualSpan.NewLine(lineRange);
                     visualSpan.Select(_textView, SearchPath.Backward);
+                    TestableSynchronizationContext.RunAll();
                     Assert.True(_textView.Selection.IsReversed);
                     Assert.Equal(lineRange.ExtentIncludingLineBreak, _textView.GetSelectionSpan());
                 }
@@ -354,6 +364,7 @@ namespace Vim.UnitTest
                     var lineRange = _textBuffer.GetLineRange(1);
                     var visualSpan = VisualSpan.NewLine(lineRange);
                     visualSpan.Select(_textView, SearchPath.Forward);
+                    TestableSynchronizationContext.RunAll();
                     Assert.False(_textView.Selection.IsReversed);
                     Assert.Equal(lineRange.ExtentIncludingLineBreak, _textView.GetSelectionSpan());
                 }
@@ -371,6 +382,7 @@ namespace Vim.UnitTest
                     var blockSpan = _vimBuffer.GetBlockSpan(1, 2, 0, 2);
                     var visualSpan = VisualSpan.NewBlock(blockSpan);
                     visualSpan.Select(_textView, SearchPath.Forward);
+                    TestableSynchronizationContext.RunAll();
                     Assert.Equal(blockSpan, _vimBuffer.GetSelectionBlockSpan());
                     Assert.Equal(TextSelectionMode.Box, _textView.Selection.Mode);
                 }
