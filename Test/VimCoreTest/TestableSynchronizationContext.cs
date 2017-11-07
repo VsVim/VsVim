@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Threading;
 using Vim.EditorHost;
+using Vim.UnitTest.Utilities;
 
 namespace Vim.UnitTest
 {
@@ -9,10 +10,11 @@ namespace Vim.UnitTest
     {
         private SynchronizationContext _oldSynchronizationContext;
         private bool _isSet;
-        private readonly List<Action> _list = new List<Action>();
+        private bool _isTracked;
+        private readonly Queue<Action> _queue = new Queue<Action>();
 
-        public bool IsEmpty => 0 == _list.Count;
-        public int PostedActionCount => _list.Count;
+        public bool IsEmpty => 0 == _queue.Count;
+        public int PostedActionCount => _queue.Count;
 
         public TestableSynchronizationContext(bool install = true)
         {
@@ -37,23 +39,29 @@ namespace Vim.UnitTest
                 throw new ArgumentException(nameof(d));
             }
 
-            _list.Add(() => d(state));
+            if (!_isTracked)
+            {
+                WpfTestSharedData.Instance.PostingAction(this);
+                _isTracked = true;
+            }
+
+            _queue.Enqueue(() => d(state));
         }
 
         public void RunOne()
         {
-            if (_list.Count == 0)
+            if (_queue.Count == 0)
             {
                 throw new InvalidOperationException();
             }
 
-            _list[0]();
-            _list.RemoveAt(0);
+            var action = _queue.Dequeue();
+            action();
         }
 
         public void RunAll()
         {
-            while (_list.Count > 0)
+            while (_queue.Count > 0)
             {
                 RunOne();
             }

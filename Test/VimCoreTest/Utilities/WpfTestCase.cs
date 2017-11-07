@@ -90,5 +90,6 @@ namespace Vim.UnitTest.Utilities
             _wpfTestSerializationGate = new Semaphore(1, 1, _semaphoreName.ToString("N"));
             _sharedData = WpfTestSharedData.Instance;
         }
+
     }
 }
