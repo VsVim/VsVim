@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Threading;
+using Vim.EditorHost;
 using Xunit.Abstractions;
 using Xunit.Sdk;
 
@@ -16,9 +17,10 @@ namespace Vim.UnitTest.Utilities
     /// This type is actually responsible for spinning up the STA context to run all of the
     /// tests. 
     /// 
-    /// Overriding the <see cref="XunitTestInvoker"/> is not the correct approach. That type begins
-    /// constructing types before RunAsync and hence ctors end up running on the current thread 
-    /// vs. the STA ones. Just completely wrapping the invocation here is the best case. 
+    /// Overriding the <see cref="XunitTestInvoker"/> to setup the STA context is not the correct 
+    /// approach. That type begins constructing types before RunAsync and hence ctors end up 
+    /// running on the current thread vs. the STA ones. Just completely wrapping the invocation
+    /// here is the best case. 
     /// </summary>
     public sealed class WpfTestRunner : XunitTestRunner
     {
@@ -49,20 +51,20 @@ namespace Vim.UnitTest.Utilities
             {
                 Debug.Assert(sta.StaThread == Thread.CurrentThread);
 
-                using (await SharedData.TestSerializationgate.DisposableWaitAsync(CancellationToken.None))
+                using (await SharedData.TestSerializationGate.DisposableWaitAsync(CancellationToken.None))
                 {
                     try
                     {
                         // All WPF Tests need a DispatcherSynchronizationContext and we dont want to block pending keyboard
                         // or mouse input from the user. So use background priority which is a single level below user input.
-                        var dispatcherSynchronizationContext = new DispatcherSynchronizationContext();
+                        var context = new DispatcherSynchronizationContext();
 
                         // xUnit creates its own synchronization context and wraps any existing context so that messages are
                         // still pumped as necessary. So we are safe setting it here, where we are not safe setting it in test.
-                        SynchronizationContext.SetSynchronizationContext(dispatcherSynchronizationContext);
+                        SynchronizationContext.SetSynchronizationContext(context);
 
                         // Just call back into the normal xUnit dispatch process now that we are on an STA Thread with no synchronization context.
-                        var invoker = new XunitTestInvoker(Test, MessageBus, TestClass, ConstructorArguments, TestMethod, TestMethodArguments, BeforeAfterAttributes, aggregator, CancellationTokenSource);
+                        var invoker = new WpfTestInvoker(SharedData, Test, MessageBus, TestClass, ConstructorArguments, TestMethod, TestMethodArguments, BeforeAfterAttributes, aggregator, CancellationTokenSource);
                         var baseTask = invoker.RunAsync();
                         do
                         {

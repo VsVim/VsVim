@@ -6,42 +6,8 @@ using Vim.UnitTest.Utilities;
 
 namespace Vim.UnitTest
 {
-    public sealed class TestableSynchronizationContextEventArgs : EventArgs
-    {
-        public TestableSynchronizationContext TestableSynchronizationContext { get; }
-
-        public TestableSynchronizationContextEventArgs(TestableSynchronizationContext context)
-        {
-            TestableSynchronizationContext = context;
-        }
-    }
-
     public sealed class TestableSynchronizationContext : SynchronizationContext, IDisposable
     {
-        #region Static Data 
-        private static readonly object s_guard = new object();
-        private static event EventHandler<TestableSynchronizationContextEventArgs> s_createdEvent;
-
-        public static event EventHandler<TestableSynchronizationContextEventArgs> Created
-        {
-            add
-            {
-                lock (s_guard)
-                {
-                    s_createdEvent += value;
-                }
-            }
-            remove
-            {
-                lock (s_guard)
-                {
-                    s_createdEvent -= value;
-                }
-            }
-        }
-
-        #endregion
-
         private SynchronizationContext _oldSynchronizationContext;
         private bool _isSet;
         private readonly Queue<Action> _queue = new Queue<Action>();
@@ -49,18 +15,12 @@ namespace Vim.UnitTest
         public bool IsEmpty => 0 == _queue.Count;
         public bool IsDisposed { get; private set; }
         public int PostedCallbackCount => _queue.Count;
-        public event EventHandler PostedCallback;
 
         public TestableSynchronizationContext(bool install = true)
         {
             if (install)
             {
                 Install();
-            }
-
-            lock (s_guard)
-            {
-                s_createdEvent?.Invoke(this, new TestableSynchronizationContextEventArgs(this));
             }
         }
 
@@ -83,7 +43,6 @@ namespace Vim.UnitTest
 
             CheckDisposed();
             _queue.Enqueue(() => d(state));
-            PostedCallback?.Invoke(this, EventArgs.Empty);
         }
 
         public void RunOne()

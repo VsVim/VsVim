@@ -406,14 +406,10 @@ namespace Vim.UnitTest
             [WpfFact]
             public void UseBackground()
             {
-                using (var context = new TestableSynchronizationContext())
-                {
-                    Create("hello world");
-                    var tags = _asyncTagger.GetTags(EntireBufferSpan).ToList();
-                    Assert.Empty(tags);
-                    Assert.True(_asyncTagger.AsyncBackgroundRequestData.IsSome());
-                    context.RunAll();
-                }
+                Create("hello world");
+                var tags = _asyncTagger.GetTags(EntireBufferSpan).ToList();
+                Assert.Empty(tags);
+                Assert.True(_asyncTagger.AsyncBackgroundRequestData.IsSome());
             }
 
             /// <summary>

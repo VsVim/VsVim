@@ -106,8 +106,8 @@
     <Compile Include="Utilities\WpfFactDiscoverer.cs" />
     <Compile Include="Utilities\WpfTestCase.cs" />
     <Compile Include="Utilities\WpfTestCaseRunner.cs" />
-    <Compile Include="Utilities\WpfTestRunner.cs" />
     <Compile Include="Utilities\WpfTestInvoker.cs" />
+    <Compile Include="Utilities\WpfTestRunner.cs" />
     <Compile Include="Utilities\WpfTestSharedData.cs" />
     <Compile Include="WpfFactAttribute.cs" />
     <Compile Include="VersioningTest.cs" />
