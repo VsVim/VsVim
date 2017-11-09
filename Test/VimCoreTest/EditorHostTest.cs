@@ -109,7 +109,10 @@ namespace Vim.UnitTest
 
         protected void Dispose()
         {
-
+            if (!StaTaskScheduler.DefaultSta.IsRunningInScheduler)
+            {
+                throw new Exception($"Need to apply {nameof(WpfFactAttribute)} to this test case");
+            }
         }
 
         private EditorHost.EditorHost GetOrCreateEditorHost()
