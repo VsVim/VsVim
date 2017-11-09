@@ -3,9 +3,12 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows.Threading;
+using Vim.EditorHost;
 using Xunit.Abstractions;
 using Xunit.Sdk;
 
@@ -30,11 +33,13 @@ namespace Vim.UnitTest.Utilities
         /// </summary>
         private readonly List<string> _recentTestCases = new List<string>();
 
-        public Semaphore TestSerializationgate = new Semaphore(1, 1, TestSerializationGateName.ToString("N"));
+        private readonly ConditionalWeakTable<AsyncTestSyncContext, object> _contextTrackingTable = new ConditionalWeakTable<AsyncTestSyncContext, object>();
+
+        public Semaphore TestSerializationGate = new Semaphore(1, 1, TestSerializationGateName.ToString("N"));
 
         private WpfTestSharedData()
         {
-            MonitorTestableSynchronizationContext();
+
         }
 
         public void ExecutingTest(ITestMethod testMethod)
@@ -55,16 +60,8 @@ namespace Vim.UnitTest.Utilities
             }
         }
 
-        private void MonitorTestableSynchronizationContext()
-        {
-            TestableSynchronizationContext.Created += (sender, e) =>
-            {
-                MonitorTestableSynchronizationContext(e.TestableSynchronizationContext);
-            };
-        }
-
         /// <summary>
-        /// When a <see cref="TestableSynchronizationContext"/> instance is used in a <see cref="WpfFactAttribute"/>
+        /// When a <see cref="SynchronizationContext"/> instance is used in a <see cref="WpfFactAttribute"/>
         /// test it can cause a deadlock. This happens when there are posted actions that are not run and the test
         /// case is non-async. 
         /// 
@@ -72,41 +69,54 @@ namespace Vim.UnitTest.Utilities
         /// wait on them to complete before finishing a test. Hence if anything is posted but not run the test will
         /// deadlock forever waiting for this to happen.
         /// 
-        /// This code monitors the use of our custom <see cref="TestableSynchronizationContext"/> and attempts to 
+        /// This code monitors the use of our <see cref="SynchronizationContext"/> and attempts to 
         /// detect this situation and actively fail the test when it happens. The code is a hueristic and hence 
         /// imprecise. But is effective in finding these problmes.
         /// </summary>
-        private void MonitorTestableSynchronizationContext(TestableSynchronizationContext testContext)
+        public void MonitorActiveAsyncTestSyncContext()
         {
-            if (!StaTaskScheduler.DefaultSta.IsRunningInScheduler)
+            // To cause the test to fail we need to post an action ot the AsyncTestContext. The xunit framework 
+            // wraps such delegates in a try / catch and fails the test if any exception occurs. This is best
+            // captured at the point a posted action occurs. 
+            var asyncContext = SynchronizationContext.Current as AsyncTestSyncContext;
+            if (_contextTrackingTable.TryGetValue(asyncContext, out _))
             {
                 return;
             }
 
-            // To cause the test to fail we need to post an action ot the AsyncTestContext. The xunit framework 
-            // wraps such delegates in a try / catch and fails the test if any exception occurs. This is best
-            // captured at the point a posted action occurs. 
-            AsyncTestSyncContext asyncContext = null;
-            testContext.PostedCallback += (sender, e) =>
-            {
-                if (SynchronizationContext.Current is AsyncTestSyncContext c)
-                {
-                    asyncContext = c;
-                }
-            };
+            var dispatcher = Dispatcher.CurrentDispatcher;
 
+            void runCallbacks()
+            {
+                var fieldInfo = asyncContext.GetType().GetField("innerContext", BindingFlags.NonPublic | BindingFlags.Instance);
+                var innerContext = fieldInfo.GetValue(asyncContext) as SynchronizationContext;
+                switch (innerContext)
+                {
+                    case TestableSynchronizationContext testContext:
+                        testContext.RunAll();
+                        break;
+                    case DispatcherSynchronizationContext _:
+                        dispatcher.DoEvents();
+                        break;
+                    default:
+                        Debug.Fail($"Unrecognized context: {asyncContext.GetType()}");
+                        break;
+                }
+            }
+
+            _contextTrackingTable.Add(asyncContext, new object());
             var startTime = DateTime.UtcNow;
             void checkForBad()
             {
                 try
                 {
-                    var span = DateTime.UtcNow - startTime;
-                    if (!testContext.IsDisposed)
+                    if (!asyncContext.WaitForCompletionAsync().IsCompleted)
                     {
-                        if (testContext.PostedCallbackCount > 0 && span > TimeSpan.FromSeconds(30))
+                        var span = DateTime.UtcNow - startTime;
+                        if (span > TimeSpan.FromSeconds(30))
                         {
                             asyncContext?.Post(_ => throw new Exception("Unfulfilled TestableSynchronizationContext detected"), null);
-                            testContext.RunAll();
+                            runCallbacks();
                         }
                         else
                         {
@@ -134,6 +144,5 @@ namespace Vim.UnitTest.Utilities
 
             queueCheckForBad();
         }
-
     }
 }
