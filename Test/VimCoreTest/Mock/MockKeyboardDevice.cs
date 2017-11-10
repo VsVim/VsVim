@@ -132,6 +132,12 @@ namespace Vim.UnitTest.Mock
                 case VimKey.Back:
                     key = Key.Back;
                     return true;
+                case VimKey.Home:
+                    key = Key.Home;
+                    return true;
+                case VimKey.End:
+                    key = Key.End;
+                    return true;
             }
 
             if (char.IsLetter(keyInput.Char))
