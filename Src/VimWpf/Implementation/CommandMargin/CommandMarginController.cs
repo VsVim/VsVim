@@ -575,10 +575,13 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             // updated at KeyInputEnd (and not KeyInputStart), so we need to check again here
 
             var editKind = CalculateCommandLineEditKind();
-            if (editKind != _editKind && editKind != EditKind.None)
+            if (editKind != _editKind)
             {
                 ChangeEditKind(editKind);
-                _margin.UpdateCaretPosition(EditPosition.End);
+                if (editKind != EditKind.None)
+                {
+                    _margin.UpdateCaretPosition(EditPosition.End);
+                }
             }
         }
 
