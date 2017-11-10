@@ -109,6 +109,8 @@
     <Compile Include="Utilities\WpfTestInvoker.cs" />
     <Compile Include="Utilities\WpfTestRunner.cs" />
     <Compile Include="Utilities\WpfTestSharedData.cs" />
+    <Compile Include="Utilities\WpfTheoryTestCase.cs" />
+    <Compile Include="Utilities\WpfTheoryTestCaseRunner.cs" />
     <Compile Include="WpfFactAttribute.cs" />
     <Compile Include="VersioningTest.cs" />
     <Compile Include="WordCompletionUtilTest.cs" />

@@ -500,19 +500,23 @@ namespace Vim.UnitTest
             [WpfFact]
             public void ReplaceWorseRequest()
             {
-                Create("cat", "dog", "bear");
+                using (var context = new TestableSynchronizationContext())
+                {
+                    Create("cat", "dog", "bear");
 
-                var cancellationTokenSource = new CancellationTokenSource();
-                _asyncTagger.AsyncBackgroundRequestData = CreateAsyncBackgroundRequestSome(
-                    _textBuffer.GetLine(0).Extent,
-                    cancellationTokenSource,
-                    new Task(() => { }));
+                    var cancellationTokenSource = new CancellationTokenSource();
+                    _asyncTagger.AsyncBackgroundRequestData = CreateAsyncBackgroundRequestSome(
+                        _textBuffer.GetLine(0).Extent,
+                        cancellationTokenSource,
+                        new Task(() => { }));
 
-                _textBuffer.Replace(new Span(0, 1), "b");
-                var tags = _asyncTagger.GetTags(_textBuffer.GetExtent()).ToList();
-                Assert.Empty(tags);
-                Assert.NotSame(cancellationTokenSource, _asyncTagger.AsyncBackgroundRequestData.Value.CancellationTokenSource);
-                Assert.True(cancellationTokenSource.IsCancellationRequested);
+                    _textBuffer.Replace(new Span(0, 1), "b");
+                    var tags = _asyncTagger.GetTags(_textBuffer.GetExtent()).ToList();
+                    Assert.Empty(tags);
+                    Assert.NotSame(cancellationTokenSource, _asyncTagger.AsyncBackgroundRequestData.Value.CancellationTokenSource);
+                    Assert.True(cancellationTokenSource.IsCancellationRequested);
+                    context.RunAll();
+                }
             }
 
             /// <summary>
@@ -584,14 +588,18 @@ namespace Vim.UnitTest
             [WpfFact]
             public void ForwardEdit()
             {
-                Create("cat", "dog", "bat");
-                _asyncTagger.TagCacheData = CreateTagCache(
-                    _textBuffer.GetLine(0).ExtentIncludingLineBreak,
-                    _textBuffer.GetSpan(0, 1));
-                _textBuffer.Replace(new Span(0, 3), "cot");
-                var tags = _asyncTagger.GetTags(_textBuffer.GetLineRange(0, 1).ExtentIncludingLineBreak).ToList();
-                Assert.Single(tags);
-                Assert.True(_asyncTagger.AsyncBackgroundRequestData.IsSome());
+                using (var context = new TestableSynchronizationContext())
+                {
+                    Create("cat", "dog", "bat");
+                    _asyncTagger.TagCacheData = CreateTagCache(
+                        _textBuffer.GetLine(0).ExtentIncludingLineBreak,
+                        _textBuffer.GetSpan(0, 1));
+                    _textBuffer.Replace(new Span(0, 3), "cot");
+                    var tags = _asyncTagger.GetTags(_textBuffer.GetLineRange(0, 1).ExtentIncludingLineBreak).ToList();
+                    Assert.Single(tags);
+                    Assert.True(_asyncTagger.AsyncBackgroundRequestData.IsSome());
+                    context.RunAll();
+                }
             }
 
             /// <summary>
