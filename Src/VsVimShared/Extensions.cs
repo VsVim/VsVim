@@ -747,6 +747,11 @@ namespace Vim.VisualStudio
             return contentType.IsOfType(Constants.CSharpContentType);
         }
 
+        public static bool IsVisualBasic(this IContentType contentType)
+        {
+            return contentType.IsOfType("Basic");
+        }
+
         public static bool IsJavaScript(this IContentType contentType)
         {
             return contentType.IsOfType("JavaScript");

@@ -94,7 +94,7 @@ namespace Vim.VisualStudio.Implementation.Roslyn
 
         internal static bool IsRoslynContentType(IContentType contentType)
         {
-            return contentType.IsCSharp();
+            return contentType.IsCSharp() || contentType.IsVisualBasic();
         }
 
         internal void OnVimBufferCreated(IVimBuffer vimBuffer)
