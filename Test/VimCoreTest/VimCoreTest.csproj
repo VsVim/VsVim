@@ -84,7 +84,6 @@
     <Compile Include="CommonOperationsIntegrationTest.cs" />
     <Compile Include="CountedClassifierTest.cs" />
     <Compile Include="CountedTaggerTest.cs" />
-    <Compile Include="EditorHostTest.cs" />
     <Compile Include="EditorVersionUtilTest.cs" />
     <Compile Include="EditUtilTest.cs" />
     <Compile Include="Exports\OutlinerTaggerProvider.cs" />

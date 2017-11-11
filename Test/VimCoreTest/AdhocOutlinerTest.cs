@@ -9,7 +9,7 @@ using Vim.EditorHost;
 
 namespace Vim.UnitTest
 {
-    public sealed class AdhocOutlinerTest : EditorHostTest
+    public sealed class AdhocOutlinerTest : VimTestBase
     {
         private readonly ITextBuffer _textBuffer;
         private readonly AdhocOutliner _outlinerRaw;

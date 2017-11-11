@@ -19,7 +19,7 @@ namespace Vim.UnitTest
     /// ITagger (async or not).  The intent is to have many variations of the taggers defined 
     /// here and put them through the same guantlet 
     /// </summary>
-    public abstract class TaggerCommonTest : EditorHostTest
+    public abstract class TaggerCommonTest : VimTestBase
     {
         #region AsyncTaggerCommonTest 
 

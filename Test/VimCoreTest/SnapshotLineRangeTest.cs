@@ -6,13 +6,13 @@ using Vim.EditorHost;
 
 namespace Vim.UnitTest
 {
-    public abstract class SnapshotLineRangeTest : EditorHostTest
+    public abstract class SnapshotLineRangeTest : VimTestBase
     {
         private ITextBuffer _textBuffer;
 
         public void Create(params string[] lines)
         {
-            _textBuffer = EditorHost.CreateTextBuffer(lines);
+            _textBuffer = VimEditorHost.CreateTextBuffer(lines);
         }
 
         public sealed class CreateTest : SnapshotLineRangeTest

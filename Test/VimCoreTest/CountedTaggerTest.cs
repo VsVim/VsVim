@@ -8,7 +8,7 @@ using Vim.Extensions;
 
 namespace Vim.UnitTest
 {
-    public sealed class CountedTaggerTest : EditorHostTest
+    public sealed class CountedTaggerTest : VimTestBase
     {
         private readonly MockRepository _factory;
         private readonly object _key;

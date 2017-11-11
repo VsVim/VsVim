@@ -17,7 +17,7 @@ using Vim.EditorHost;
 
 namespace Vim.UnitTest
 {
-    public abstract class AsyncTaggerTest : EditorHostTest
+    public abstract class AsyncTaggerTest : VimTestBase
     {
         #region TestableAsyncTaggerSource
 
@@ -184,7 +184,7 @@ namespace Vim.UnitTest
 
         protected void Create(params string[] lines)
         {
-            _textBuffer = EditorHost.CreateTextBuffer(lines);
+            _textBuffer = VimEditorHost.CreateTextBuffer(lines);
 
             _asyncTaggerSource = new TestableAsyncTaggerSource(_textBuffer);
             _asyncTagger = new AsyncTagger<string, TextMarkerTag>(_asyncTaggerSource);
@@ -229,25 +229,25 @@ namespace Vim.UnitTest
             return new TagCache<TextMarkerTag>(FSharpOption.Create(backgroundCacheData), null);
         }
 
-        protected List<ITagSpan<TextMarkerTag>> GetTagsFull(SnapshotSpan span, TestableSynchronizationContext context)
+        protected List<ITagSpan<TextMarkerTag>> GetTagsFull(SnapshotSpan span)
         {
             bool unused;
-            return GetTagsFull(span, context, out unused);
+            return GetTagsFull(span, out unused);
         }
 
-        protected List<ITagSpan<TextMarkerTag>> GetTagsFull(NormalizedSnapshotSpanCollection col, TestableSynchronizationContext context)
+        protected List<ITagSpan<TextMarkerTag>> GetTagsFull(NormalizedSnapshotSpanCollection col)
         {
             bool unused;
-            return GetTagsFull(col, context, out unused);
+            return GetTagsFull(col, out unused);
         }
 
-        protected List<ITagSpan<TextMarkerTag>> GetTagsFull(SnapshotSpan span, TestableSynchronizationContext context, out bool wasAsync)
+        protected List<ITagSpan<TextMarkerTag>> GetTagsFull(SnapshotSpan span, out bool wasAsync)
         {
             var col = new NormalizedSnapshotSpanCollection(span);
-            return GetTagsFull(col, context, out wasAsync);
+            return GetTagsFull(col, out wasAsync);
         }
 
-        protected List<ITagSpan<TextMarkerTag>> GetTagsFull(NormalizedSnapshotSpanCollection col, TestableSynchronizationContext context, out bool wasAsync)
+        protected List<ITagSpan<TextMarkerTag>> GetTagsFull(NormalizedSnapshotSpanCollection col, out bool wasAsync)
         {
             Assert.False(_asyncTagger.AsyncBackgroundRequestData.IsSome());
             wasAsync = false;
@@ -255,7 +255,7 @@ namespace Vim.UnitTest
 
             if (_asyncTagger.AsyncBackgroundRequestData.IsSome())
             {
-                WaitForBackgroundToComplete(context);
+                WaitForBackgroundToComplete();
                 tags = _asyncTagger.GetTags(col).ToList();
                 wasAsync = true;
             }
@@ -263,9 +263,9 @@ namespace Vim.UnitTest
             return tags;
         }
 
-        protected void WaitForBackgroundToComplete(TestableSynchronizationContext context)
+        protected void WaitForBackgroundToComplete()
         {
-            _asyncTagger.WaitForBackgroundToComplete(context);
+            _asyncTagger.WaitForBackgroundToComplete(TestableSynchronizationContext);
         }
 
         internal AsyncBackgroundRequest CreateAsyncBackgroundRequest(
@@ -371,14 +371,14 @@ namespace Vim.UnitTest
             [WpfFact]
             public void UsePrompt()
             {
-                using (var context = new TestableSynchronizationContext())
+                using (var TestableSynchronizationContext = new TestableSynchronizationContext())
                 {
                     Create("hello world");
                     _asyncTaggerSource.SetPromptTags(_textBuffer.GetSpan(0, 1));
                     var tags = _asyncTagger.GetTags(EntireBufferSpan).ToList();
                     Assert.Single(tags);
                     Assert.Equal(_textBuffer.GetSpan(0, 1), tags[0].Span);
-                    Assert.True(context.IsEmpty);
+                    Assert.True(TestableSynchronizationContext.IsEmpty);
                     Assert.True(_asyncTagger.TagCacheData.IsEmpty);
                 }
             }
@@ -410,6 +410,7 @@ namespace Vim.UnitTest
                 var tags = _asyncTagger.GetTags(EntireBufferSpan).ToList();
                 Assert.Empty(tags);
                 Assert.True(_asyncTagger.AsyncBackgroundRequestData.IsSome());
+                WaitForBackgroundToComplete();
             }
 
             /// <summary>
@@ -418,17 +419,14 @@ namespace Vim.UnitTest
             [WpfFact]
             public void UseBackgroundUpdateCache()
             {
-                using (var context = new TestableSynchronizationContext())
-                {
-                    Create("cat", "dog", "bear");
-                    var span = _textBuffer.GetSpan(1, 2);
-                    _asyncTaggerSource.SetBackgroundTags(span);
-                    bool wasAsync;
-                    var tags = GetTagsFull(_textBuffer.GetExtent(), context, out wasAsync);
-                    Assert.Single(tags);
-                    Assert.Equal(span, tags[0].Span);
-                    Assert.True(wasAsync);
-                }
+                Create("cat", "dog", "bear");
+                var span = _textBuffer.GetSpan(1, 2);
+                _asyncTaggerSource.SetBackgroundTags(span);
+                bool wasAsync;
+                var tags = GetTagsFull(_textBuffer.GetExtent(), out wasAsync);
+                Assert.Single(tags);
+                Assert.Equal(span, tags[0].Span);
+                Assert.True(wasAsync);
             }
 
             /// <summary>
@@ -438,15 +436,12 @@ namespace Vim.UnitTest
             [WpfFact]
             public void Delay()
             {
-                using (var context = new TestableSynchronizationContext())
-                {
-                    Create("cat", "dog", "bear");
-                    var span = _textBuffer.GetSpan(1, 2);
-                    _asyncTaggerSource.SetBackgroundTags(span);
-                    var tags = GetTagsFull(_textBuffer.GetExtent(), context);
-                    Assert.Single(tags);
-                    Assert.Equal(span, tags[0].Span);
-                }
+                Create("cat", "dog", "bear");
+                var span = _textBuffer.GetSpan(1, 2);
+                _asyncTaggerSource.SetBackgroundTags(span);
+                var tags = GetTagsFull(_textBuffer.GetExtent());
+                Assert.Single(tags);
+                Assert.Equal(span, tags[0].Span);
             }
 
             /// <summary>
@@ -456,19 +451,16 @@ namespace Vim.UnitTest
             [WpfFact]
             public void BackgroundShouldRaiseTagsChanged()
             {
-                using (var context = new TestableSynchronizationContext())
-                {
-                    Create("cat", "dog", "bear");
-                    _asyncTaggerSource.SetBackgroundTags(
-                        _textBuffer.GetSpan(1, 2),
-                        _textBuffer.GetSpan(3, 4));
+                Create("cat", "dog", "bear");
+                _asyncTaggerSource.SetBackgroundTags(
+                    _textBuffer.GetSpan(1, 2),
+                    _textBuffer.GetSpan(3, 4));
 
-                    var didRun = false;
-                    _asyncTaggerInterface.TagsChanged += delegate { didRun = true; };
-                    var tags = GetTagsFull(_textBuffer.GetExtent(), context);
-                    Assert.True(didRun);
-                    Assert.Equal(2, tags.Count);
-                }
+                var didRun = false;
+                _asyncTaggerInterface.TagsChanged += delegate { didRun = true; };
+                var tags = GetTagsFull(_textBuffer.GetExtent());
+                Assert.True(didRun);
+                Assert.Equal(2, tags.Count);
             }
 
             /// <summary>
@@ -500,23 +492,20 @@ namespace Vim.UnitTest
             [WpfFact]
             public void ReplaceWorseRequest()
             {
-                using (var context = new TestableSynchronizationContext())
-                {
-                    Create("cat", "dog", "bear");
+                Create("cat", "dog", "bear");
 
-                    var cancellationTokenSource = new CancellationTokenSource();
-                    _asyncTagger.AsyncBackgroundRequestData = CreateAsyncBackgroundRequestSome(
-                        _textBuffer.GetLine(0).Extent,
-                        cancellationTokenSource,
-                        new Task(() => { }));
+                var cancellationTokenSource = new CancellationTokenSource();
+                _asyncTagger.AsyncBackgroundRequestData = CreateAsyncBackgroundRequestSome(
+                    _textBuffer.GetLine(0).Extent,
+                    cancellationTokenSource,
+                    new Task(() => { }));
 
-                    _textBuffer.Replace(new Span(0, 1), "b");
-                    var tags = _asyncTagger.GetTags(_textBuffer.GetExtent()).ToList();
-                    Assert.Empty(tags);
-                    Assert.NotSame(cancellationTokenSource, _asyncTagger.AsyncBackgroundRequestData.Value.CancellationTokenSource);
-                    Assert.True(cancellationTokenSource.IsCancellationRequested);
-                    context.RunAll();
-                }
+                _textBuffer.Replace(new Span(0, 1), "b");
+                var tags = _asyncTagger.GetTags(_textBuffer.GetExtent()).ToList();
+                Assert.Empty(tags);
+                Assert.NotSame(cancellationTokenSource, _asyncTagger.AsyncBackgroundRequestData.Value.CancellationTokenSource);
+                Assert.True(cancellationTokenSource.IsCancellationRequested);
+                WaitForBackgroundToComplete();
             }
 
             /// <summary>
@@ -539,6 +528,7 @@ namespace Vim.UnitTest
                 Assert.Empty(tags);
                 Assert.NotSame(cancellationTokenSource, _asyncTagger.AsyncBackgroundRequestData.Value.CancellationTokenSource);
                 Assert.True(cancellationTokenSource.IsCancellationRequested);
+                WaitForBackgroundToComplete();
             }
 
             /// <summary>
@@ -548,21 +538,18 @@ namespace Vim.UnitTest
             [WpfFact]
             public void BackgroundThrows()
             {
-                using (var context = new TestableSynchronizationContext())
+                Create("cat", "dog", "bat");
+
+                var didRun = false;
+                _asyncTaggerSource.SetBackgroundCallback(delegate
                 {
-                    Create("cat", "dog", "bat");
+                    didRun = true;
+                    throw new Exception("");
+                });
 
-                    var didRun = false;
-                    _asyncTaggerSource.SetBackgroundCallback(delegate
-                    {
-                        didRun = true;
-                        throw new Exception("");
-                    });
-
-                    var tags = GetTagsFull(_textBuffer.GetExtent(), context);
-                    Assert.Empty(tags);
-                    Assert.True(didRun);
-                }
+                var tags = GetTagsFull(_textBuffer.GetExtent());
+                Assert.Empty(tags);
+                Assert.True(didRun);
             }
 
             /// <summary>
@@ -579,6 +566,7 @@ namespace Vim.UnitTest
                 var tags = _asyncTagger.GetTags(_textBuffer.GetLineRange(0, 1).ExtentIncludingLineBreak).ToList();
                 Assert.Single(tags);
                 Assert.True(_asyncTagger.AsyncBackgroundRequestData.IsSome());
+                WaitForBackgroundToComplete();
             }
 
             /// <summary>
@@ -588,18 +576,15 @@ namespace Vim.UnitTest
             [WpfFact]
             public void ForwardEdit()
             {
-                using (var context = new TestableSynchronizationContext())
-                {
-                    Create("cat", "dog", "bat");
-                    _asyncTagger.TagCacheData = CreateTagCache(
-                        _textBuffer.GetLine(0).ExtentIncludingLineBreak,
-                        _textBuffer.GetSpan(0, 1));
-                    _textBuffer.Replace(new Span(0, 3), "cot");
-                    var tags = _asyncTagger.GetTags(_textBuffer.GetLineRange(0, 1).ExtentIncludingLineBreak).ToList();
-                    Assert.Single(tags);
-                    Assert.True(_asyncTagger.AsyncBackgroundRequestData.IsSome());
-                    context.RunAll();
-                }
+                Create("cat", "dog", "bat");
+                _asyncTagger.TagCacheData = CreateTagCache(
+                    _textBuffer.GetLine(0).ExtentIncludingLineBreak,
+                    _textBuffer.GetSpan(0, 1));
+                _textBuffer.Replace(new Span(0, 3), "cot");
+                var tags = _asyncTagger.GetTags(_textBuffer.GetLineRange(0, 1).ExtentIncludingLineBreak).ToList();
+                Assert.Single(tags);
+                Assert.True(_asyncTagger.AsyncBackgroundRequestData.IsSome());
+                WaitForBackgroundToComplete();
             }
 
             /// <summary>
@@ -628,6 +613,7 @@ namespace Vim.UnitTest
                 _asyncTagger.TagCacheData = new TagCache<TextMarkerTag>(FSharpOption.Create(backgroundData), FSharpOption.Create(trackingData));
                 var tags = _asyncTagger.GetTags(_textBuffer.GetLineRange(0, 2).ExtentIncludingLineBreak);
                 Assert.Equal(2, tags.Count());
+                WaitForBackgroundToComplete();
             }
 
             /// <summary>
@@ -638,55 +624,46 @@ namespace Vim.UnitTest
             [WpfFact]
             public void ToEmptyBuffer()
             {
-                using (var context = new TestableSynchronizationContext())
-                {
-                    Create("cat", "dog", "bear", "pig");
-                    _asyncTagger.TagCacheData = CreateTagCache(
-                        _textBuffer.GetExtent(),
-                        _textBuffer.GetSpan(0, 3),
-                        _textBuffer.GetSpan(5, 3));
-                    _textBuffer.Delete(new Span(0, _textBuffer.CurrentSnapshot.Length));
-                    var list = GetTagsFull(_textBuffer.GetExtent(), context);
-                    Assert.NotNull(list);
-                }
+                Create("cat", "dog", "bear", "pig");
+                _asyncTagger.TagCacheData = CreateTagCache(
+                    _textBuffer.GetExtent(),
+                    _textBuffer.GetSpan(0, 3),
+                    _textBuffer.GetSpan(5, 3));
+                _textBuffer.Delete(new Span(0, _textBuffer.CurrentSnapshot.Length));
+                var list = GetTagsFull(_textBuffer.GetExtent());
+                Assert.NotNull(list);
             }
 
             [WpfFact]
             public void SourceSpansMultiple_AllRelevant()
             {
-                using (var context = new TestableSynchronizationContext())
-                {
-                    Create("cat", "dog", "fish", "tree dog");
-                    _asyncTaggerSource.SetBackgroundFunc(span => TestUtils.GetDogTags(span));
-                    var col = new NormalizedSnapshotSpanCollection(new[]
-                        {
+                Create("cat", "dog", "fish", "tree dog");
+                _asyncTaggerSource.SetBackgroundFunc(span => TestUtils.GetDogTags(span));
+                var col = new NormalizedSnapshotSpanCollection(new[]
+                    {
                         _textBuffer.GetLineRange(1).ExtentIncludingLineBreak,
                         _textBuffer.GetLineRange(3).ExtentIncludingLineBreak
                     });
-                    var tags = GetTagsFull(col, context);
-                    Assert.Equal(
-                        new[] { _textBuffer.GetLineSpan(1, 0, 3), _textBuffer.GetLineSpan(3, 5, 3) },
-                        tags.Select(x => x.Span));
-                }
+                var tags = GetTagsFull(col);
+                Assert.Equal(
+                    new[] { _textBuffer.GetLineSpan(1, 0, 3), _textBuffer.GetLineSpan(3, 5, 3) },
+                    tags.Select(x => x.Span));
             }
 
             [WpfFact]
             public void SourceSpansMultiple_OneRelevant()
             {
-                using (var context = new TestableSynchronizationContext())
-                {
-                    Create("cat", "dog", "fish", "tree dog");
-                    _asyncTaggerSource.SetBackgroundFunc(span => TestUtils.GetDogTags(span));
-                    var col = new NormalizedSnapshotSpanCollection(new[]
-                        {
+                Create("cat", "dog", "fish", "tree dog");
+                _asyncTaggerSource.SetBackgroundFunc(span => TestUtils.GetDogTags(span));
+                var col = new NormalizedSnapshotSpanCollection(new[]
+                    {
                         _textBuffer.GetLineRange(0).ExtentIncludingLineBreak,
                         _textBuffer.GetLineRange(3).ExtentIncludingLineBreak
                     });
-                    var tags = GetTagsFull(col, context);
-                    Assert.Equal(
-                        new[] { _textBuffer.GetLineSpan(3, 5, 3) },
-                        tags.Select(x => x.Span));
-                }
+                var tags = GetTagsFull(col);
+                Assert.Equal(
+                    new[] { _textBuffer.GetLineSpan(3, 5, 3) },
+                    tags.Select(x => x.Span));
             }
 
             /// <summary>
@@ -695,14 +672,11 @@ namespace Vim.UnitTest
             [WpfFact]
             public void SourceSpansNone()
             {
-                using (var context = new TestableSynchronizationContext())
-                {
-                    Create("cat", "dog", "fish", "tree dog");
-                    _asyncTaggerSource.SetBackgroundFunc(span => TestUtils.GetDogTags(span));
-                    var col = new NormalizedSnapshotSpanCollection();
-                    var tags = GetTagsFull(col, context);
-                    Assert.Empty(tags);
-                }
+                Create("cat", "dog", "fish", "tree dog");
+                _asyncTaggerSource.SetBackgroundFunc(span => TestUtils.GetDogTags(span));
+                var col = new NormalizedSnapshotSpanCollection();
+                var tags = GetTagsFull(col);
+                Assert.Empty(tags);
             }
 
             /// <summary>
@@ -712,16 +686,13 @@ namespace Vim.UnitTest
             [WpfFact]
             public void AfterCompleteNotInCache()
             {
-                using (var context = new TestableSynchronizationContext())
-                {
-                    Create("cat", "dog", "fish", "tree dog");
-                    _asyncTaggerSource.SetBackgroundFunc(span => TestUtils.GetDogTags(span));
-                    GetTagsFull(_textBuffer.GetLineRange(0, 1).Extent, context);
-                    var tags = GetTagsFull(_textBuffer.GetLineRange(3).Extent, context);
-                    Assert.Equal(
-                        new[] { _textBuffer.GetLineSpan(3, 5, 3) },
-                        tags.Select(x => x.Span));
-                }
+                Create("cat", "dog", "fish", "tree dog");
+                _asyncTaggerSource.SetBackgroundFunc(span => TestUtils.GetDogTags(span));
+                GetTagsFull(_textBuffer.GetLineRange(0, 1).Extent);
+                var tags = GetTagsFull(_textBuffer.GetLineRange(3).Extent);
+                Assert.Equal(
+                    new[] { _textBuffer.GetLineSpan(3, 5, 3) },
+                    tags.Select(x => x.Span));
             }
         }
 
@@ -806,17 +777,14 @@ namespace Vim.UnitTest
             [WpfFact]
             public void BackgroundComplete()
             {
-                using (var context = new TestableSynchronizationContext())
-                {
-                    Create("cat", "dog", "bear");
-                    SnapshotSpan? tagsChanged = null;
-                    var requestSpan = _textBuffer.GetLineRange(0, 1).ExtentIncludingLineBreak;
-                    _asyncTaggerInterface.TagsChanged += (sender, e) => { tagsChanged = e.Span; };
-                    _asyncTaggerSource.SetBackgroundTags(_textBuffer.GetSpan(0, 1));
-                    GetTagsFull(requestSpan, context);
-                    Assert.True(tagsChanged.HasValue);
-                    Assert.Equal(requestSpan, tagsChanged);
-                }
+                Create("cat", "dog", "bear");
+                SnapshotSpan? tagsChanged = null;
+                var requestSpan = _textBuffer.GetLineRange(0, 1).ExtentIncludingLineBreak;
+                _asyncTaggerInterface.TagsChanged += (sender, e) => { tagsChanged = e.Span; };
+                _asyncTaggerSource.SetBackgroundTags(_textBuffer.GetSpan(0, 1));
+                GetTagsFull(requestSpan);
+                Assert.True(tagsChanged.HasValue);
+                Assert.Equal(requestSpan, tagsChanged);
             }
 
             /// <summary>
@@ -829,26 +797,23 @@ namespace Vim.UnitTest
             [WpfFact]
             public void TrackingPredictedBackgroundResult()
             {
-                using (var context = new TestableSynchronizationContext())
-                {
-                    Create("cat", "dog", "bear", "tree");
+                Create("cat", "dog", "bear", "tree");
 
-                    SnapshotSpan? tagsChanged = null;
-                    _asyncTaggerInterface.TagsChanged += (sender, e) => { tagsChanged = e.Span; };
+                SnapshotSpan? tagsChanged = null;
+                _asyncTaggerInterface.TagsChanged += (sender, e) => { tagsChanged = e.Span; };
 
-                    // Setup the previous background cache
-                    _asyncTagger.TagCacheData = new TagCache<TextMarkerTag>(null, CreateTrackingCacheDataSome(
-                        _textBuffer.GetLineRange(0, 1).ExtentIncludingLineBreak,
-                        _textBuffer.GetSpan(0, 1)));
+                // Setup the previous background cache
+                _asyncTagger.TagCacheData = new TagCache<TextMarkerTag>(null, CreateTrackingCacheDataSome(
+                    _textBuffer.GetLineRange(0, 1).ExtentIncludingLineBreak,
+                    _textBuffer.GetSpan(0, 1)));
 
-                    // Make an edit so that we are truly mapping forward then request tags for the same
-                    // area
-                    _textBuffer.Replace(_textBuffer.GetLine(2).Extent.Span, "fish");
-                    _asyncTaggerSource.SetBackgroundTags(_textBuffer.GetSpan(0, 1));
-                    GetTagsFull(_textBuffer.GetLineRange(0, 1).ExtentIncludingLineBreak, context);
+                // Make an edit so that we are truly mapping forward then request tags for the same
+                // area
+                _textBuffer.Replace(_textBuffer.GetLine(2).Extent.Span, "fish");
+                _asyncTaggerSource.SetBackgroundTags(_textBuffer.GetSpan(0, 1));
+                GetTagsFull(_textBuffer.GetLineRange(0, 1).ExtentIncludingLineBreak);
 
-                    Assert.False(tagsChanged.HasValue);
-                }
+                Assert.False(tagsChanged.HasValue);
             }
 
             /// <summary>
@@ -857,28 +822,25 @@ namespace Vim.UnitTest
             [WpfFact]
             public void TrackingDidNotPredictBackgroundResult()
             {
-                using (var context = new TestableSynchronizationContext())
-                {
-                    Create("cat", "dog", "bear", "tree");
+                Create("cat", "dog", "bear", "tree");
 
-                    SnapshotSpan? tagsChanged = null;
-                    _asyncTaggerInterface.TagsChanged += (sender, e) => { tagsChanged = e.Span; };
+                SnapshotSpan? tagsChanged = null;
+                _asyncTaggerInterface.TagsChanged += (sender, e) => { tagsChanged = e.Span; };
 
-                    // Setup the previous background cache
-                    _asyncTagger.TagCacheData = new TagCache<TextMarkerTag>(null, CreateTrackingCacheDataSome(
-                        _textBuffer.GetLineRange(0, 1).ExtentIncludingLineBreak,
-                        _textBuffer.GetSpan(0, 1)));
+                // Setup the previous background cache
+                _asyncTagger.TagCacheData = new TagCache<TextMarkerTag>(null, CreateTrackingCacheDataSome(
+                    _textBuffer.GetLineRange(0, 1).ExtentIncludingLineBreak,
+                    _textBuffer.GetSpan(0, 1)));
 
-                    // Make an edit so that we are truly mapping forward then request tags for the same
-                    // area
-                    _textBuffer.Replace(_textBuffer.GetLine(2).Extent.Span, "fish");
-                    _asyncTaggerSource.SetBackgroundTags(_textBuffer.GetSpan(1, 1));
-                    var requestSpan = _textBuffer.GetLineRange(0, 1).ExtentIncludingLineBreak;
-                    GetTagsFull(requestSpan, context);
+                // Make an edit so that we are truly mapping forward then request tags for the same
+                // area
+                _textBuffer.Replace(_textBuffer.GetLine(2).Extent.Span, "fish");
+                _asyncTaggerSource.SetBackgroundTags(_textBuffer.GetSpan(1, 1));
+                var requestSpan = _textBuffer.GetLineRange(0, 1).ExtentIncludingLineBreak;
+                GetTagsFull(requestSpan);
 
-                    Assert.True(tagsChanged.HasValue);
-                    Assert.Equal(requestSpan, tagsChanged.Value);
-                }
+                Assert.True(tagsChanged.HasValue);
+                Assert.Equal(requestSpan, tagsChanged.Value);
             }
         }
 
@@ -896,30 +858,27 @@ namespace Vim.UnitTest
             [WpfFact]
             public void GetTags()
             {
-                using (var context = new TestableSynchronizationContext())
-                {
-                    Create("dog", "cat", "fish", "dog");
-                    _asyncTaggerSource.SetBackgroundFunc(span => TestUtils.GetDogTags(span));
-                    _asyncTagger.GetTags(_textBuffer.GetLineRange(0).Extent);
-                    Assert.True(_asyncTagger.AsyncBackgroundRequestData.IsSome());
+                Create("dog", "cat", "fish", "dog");
+                _asyncTaggerSource.SetBackgroundFunc(span => TestUtils.GetDogTags(span));
+                _asyncTagger.GetTags(_textBuffer.GetLineRange(0).Extent);
+                Assert.True(_asyncTagger.AsyncBackgroundRequestData.IsSome());
 
-                    // Background is done.  Because we control the synchronization context though the foreground 
-                    // thread still sees it as active and hence will continue to queue data on it 
-                    _asyncTagger.AsyncBackgroundRequestData.Value.Task.Wait();
-                    Assert.True(_asyncTagger.AsyncBackgroundRequestData.IsSome());
-                    _asyncTagger.GetTags(_textBuffer.GetLineRange(3).Extent);
+                // Background is done.  Because we control the synchronization TestableSynchronizationContext though the foreground 
+                // thread still sees it as active and hence will continue to queue data on it 
+                _asyncTagger.AsyncBackgroundRequestData.Value.Task.Wait();
+                Assert.True(_asyncTagger.AsyncBackgroundRequestData.IsSome());
+                _asyncTagger.GetTags(_textBuffer.GetLineRange(3).Extent);
 
-                    // Clear the queue, the missing work will be seen and immedieatly requeued
-                    context.RunAll();
-                    Assert.True(_asyncTagger.AsyncBackgroundRequestData.IsSome());
-                    WaitForBackgroundToComplete(context);
+                // Clear the queue, the missing work will be seen and immedieatly requeued
+                TestableSynchronizationContext.RunAll();
+                Assert.True(_asyncTagger.AsyncBackgroundRequestData.IsSome());
+                WaitForBackgroundToComplete();
 
-                    var tags = _asyncTagger.GetTags(_textBuffer.GetExtent());
-                    Assert.Equal(
-                        new[] { _textBuffer.GetLineSpan(0, 3), _textBuffer.GetLineSpan(3, 3) },
-                        tags.Select(x => x.Span));
-                    context.RunAll();
-                }
+                var tags = _asyncTagger.GetTags(_textBuffer.GetExtent());
+                Assert.Equal(
+                    new[] { _textBuffer.GetLineSpan(0, 3), _textBuffer.GetLineSpan(3, 3) },
+                    tags.Select(x => x.Span));
+                TestableSynchronizationContext.RunAll();
             }
 
             /// <summary>
@@ -930,30 +889,27 @@ namespace Vim.UnitTest
             [WpfFact]
             public void BackgroundCompleted()
             {
-                using (var context = new TestableSynchronizationContext())
+                Create("dog", "cat", "fish", "dog");
+                _asyncTaggerSource.SetBackgroundFunc(span => TestUtils.GetDogTags(span));
+                _asyncTagger.GetTags(_textBuffer.GetLineRange(0).Extent);
+                _asyncTagger.AsyncBackgroundRequestData.Value.Task.Wait();
+
+                // The background request is now complete and it's posted to the UI thread.  Create a 
+                // new request on a new snapshot.  This will supercede the existing request
+                _textBuffer.Replace(new Span(0, 0), "big ");
+                _asyncTagger.GetTags(_textBuffer.GetLineRange(0).Extent);
+                Assert.True(_asyncTagger.AsyncBackgroundRequestData.IsSome());
+                var tokenSource = _asyncTagger.AsyncBackgroundRequestData.Value.CancellationTokenSource;
+
+                // The background will try to post twice (once for progress and the other for complete)
+                for (int i = 0; i < 2; i++)
                 {
-                    Create("dog", "cat", "fish", "dog");
-                    _asyncTaggerSource.SetBackgroundFunc(span => TestUtils.GetDogTags(span));
-                    _asyncTagger.GetTags(_textBuffer.GetLineRange(0).Extent);
-                    _asyncTagger.AsyncBackgroundRequestData.Value.Task.Wait();
-
-                    // The background request is now complete and it's posted to the UI thread.  Create a 
-                    // new request on a new snapshot.  This will supercede the existing request
-                    _textBuffer.Replace(new Span(0, 0), "big ");
-                    _asyncTagger.GetTags(_textBuffer.GetLineRange(0).Extent);
+                    TestableSynchronizationContext.RunOne();
                     Assert.True(_asyncTagger.AsyncBackgroundRequestData.IsSome());
-                    var tokenSource = _asyncTagger.AsyncBackgroundRequestData.Value.CancellationTokenSource;
-
-                    // The background will try to post twice (once for progress and the other for complete)
-                    for (int i = 0; i < 2; i++)
-                    {
-                        context.RunOne();
-                        Assert.True(_asyncTagger.AsyncBackgroundRequestData.IsSome());
-                        Assert.Equal(tokenSource, _asyncTagger.AsyncBackgroundRequestData.Value.CancellationTokenSource);
-                    }
-
-                    context.RunAll();
+                    Assert.Equal(tokenSource, _asyncTagger.AsyncBackgroundRequestData.Value.CancellationTokenSource);
                 }
+
+                TestableSynchronizationContext.RunAll();
             }
         }
 
@@ -980,6 +936,7 @@ namespace Vim.UnitTest
                 _mockTextView.SetupGet(x => x.InLayout).Returns(true);
                 var tags = _asyncTagger.GetTags(_textBuffer.GetExtent());
                 Assert.Empty(tags);
+                WaitForBackgroundToComplete();
             }
 
             /// <summary>
@@ -988,21 +945,18 @@ namespace Vim.UnitTest
             [WpfFact]
             public void PrioritizeVisibleLines()
             {
-                using (var context = new TestableSynchronizationContext())
-                {
-                    CreateWithView("dog", "cat", "dog", "bear");
-                    _mockFactory.SetVisibleLineRange(_mockTextView, _textBuffer.GetLineRange(2));
-                    _asyncTagger.GetTags(_textBuffer.GetLineRange(0).Extent);
-                    _asyncTagger.AsyncBackgroundRequestData.Value.Task.Wait();
+                CreateWithView("dog", "cat", "dog", "bear");
+                _mockFactory.SetVisibleLineRange(_mockTextView, _textBuffer.GetLineRange(2));
+                _asyncTagger.GetTags(_textBuffer.GetLineRange(0).Extent);
+                _asyncTagger.AsyncBackgroundRequestData.Value.Task.Wait();
 
-                    // The visible lines will finish first and post.  Let only this one go through
-                    context.RunOne();
-                    var tags = _asyncTagger.GetTags(_textBuffer.GetExtent());
-                    Assert.Equal(
-                        new[] { _textBuffer.GetLineSpan(2, 3) },
-                        tags.Select(x => x.Span));
-                    context.RunAll();
-                }
+                // The visible lines will finish first and post.  Let only this one go through
+                TestableSynchronizationContext.RunOne();
+                var tags = _asyncTagger.GetTags(_textBuffer.GetExtent());
+                Assert.Equal(
+                    new[] { _textBuffer.GetLineSpan(2, 3) },
+                    tags.Select(x => x.Span));
+                WaitForBackgroundToComplete();
             }
         }
 
@@ -1015,40 +969,37 @@ namespace Vim.UnitTest
             [WpfFact]
             public void FulfillOutstandingRequests()
             {
-                using (var context = new TestableSynchronizationContext())
-                {
-                    Create("cat", "dog", "fish", "tree");
-                    _asyncTagger.ChunkCount = 1;
-                    _asyncTaggerSource.SetBackgroundFunc(
-                        span =>
-                        {
-                            var lineRange = SnapshotLineRange.CreateForSpan(span);
-                            if (lineRange.LineRange.ContainsLineNumber(0))
-                            {
-                                return span.Snapshot.GetLineFromLineNumber(0).Extent;
-                            }
-
-                            if (lineRange.LineRange.ContainsLineNumber(1))
-                            {
-                                return span.Snapshot.GetLineFromLineNumber(1).Extent;
-                            }
-
-                            return null;
-                        });
-
-                    for (int i = 0; i < _textBuffer.CurrentSnapshot.LineCount; i++)
+                Create("cat", "dog", "fish", "tree");
+                _asyncTagger.ChunkCount = 1;
+                _asyncTaggerSource.SetBackgroundFunc(
+                    span =>
                     {
-                        var span = _textBuffer.GetLineSpan(i, i);
-                        var col = new NormalizedSnapshotSpanCollection(span);
-                        _asyncTagger.GetTags(col);
-                    }
+                        var lineRange = SnapshotLineRange.CreateForSpan(span);
+                        if (lineRange.LineRange.ContainsLineNumber(0))
+                        {
+                            return span.Snapshot.GetLineFromLineNumber(0).Extent;
+                        }
 
-                    _asyncTaggerSource.Delay = null;
-                    WaitForBackgroundToComplete(context);
+                        if (lineRange.LineRange.ContainsLineNumber(1))
+                        {
+                            return span.Snapshot.GetLineFromLineNumber(1).Extent;
+                        }
 
-                    var tags = _asyncTagger.GetTags(new NormalizedSnapshotSpanCollection(_textBuffer.GetExtent()));
-                    Assert.Equal(2, tags.Count());
+                        return null;
+                    });
+
+                for (int i = 0; i < _textBuffer.CurrentSnapshot.LineCount; i++)
+                {
+                    var span = _textBuffer.GetLineSpan(i, i);
+                    var col = new NormalizedSnapshotSpanCollection(span);
+                    _asyncTagger.GetTags(col);
                 }
+
+                _asyncTaggerSource.Delay = null;
+                WaitForBackgroundToComplete();
+
+                var tags = _asyncTagger.GetTags(new NormalizedSnapshotSpanCollection(_textBuffer.GetExtent()));
+                Assert.Equal(2, tags.Count());
             }
 
             /// <summary>
@@ -1060,18 +1011,15 @@ namespace Vim.UnitTest
             [WpfFact]
             public void SourceThrows()
             {
-                using (var context = new TestableSynchronizationContext())
-                {
-                    Create("cat", "dog", "fish", "tree");
-                    _asyncTaggerSource.Delay = null;
-                    _asyncTaggerSource.SetBackgroundCallback((x, y) => { throw new Exception("test"); });
-                    var lineRange = _textBuffer.GetLineRange(0, 0);
-                    _asyncTagger.GetTags(lineRange.Extent);
-                    WaitForBackgroundToComplete(context);
+                Create("cat", "dog", "fish", "tree");
+                _asyncTaggerSource.Delay = null;
+                _asyncTaggerSource.SetBackgroundCallback((x, y) => { throw new Exception("test"); });
+                var lineRange = _textBuffer.GetLineRange(0, 0);
+                _asyncTagger.GetTags(lineRange.Extent);
+                WaitForBackgroundToComplete();
 
-                    Assert.True(_asyncTagger.TagCacheData.BackgroundCacheData.IsSome());
-                    Assert.True(_asyncTagger.TagCacheData.BackgroundCacheData.Value.VisitedCollection.Contains(lineRange.LineRange));
-                }
+                Assert.True(_asyncTagger.TagCacheData.BackgroundCacheData.IsSome());
+                Assert.True(_asyncTagger.TagCacheData.BackgroundCacheData.Value.VisitedCollection.Contains(lineRange.LineRange));
             }
 
             /// <summary>
@@ -1081,54 +1029,48 @@ namespace Vim.UnitTest
             [WpfFact]
             public void ChunkedData()
             {
-                using (var context = new TestableSynchronizationContext())
+                var list = new List<String>();
+                for (int i = 0; i < 10; i++)
                 {
-                    var list = new List<String>();
-                    for (int i = 0; i < 10; i++)
+                    list.Add("dog chases cat");
+                    list.Add("fish around tree");
+                    list.Add("where am i");
+                    for (int j = 0; j < 7; j++)
                     {
-                        list.Add("dog chases cat");
-                        list.Add("fish around tree");
-                        list.Add("where am i");
-                        for (int j = 0; j < 7; j++)
-                        {
-                            list.Add("a");
-                        }
+                        list.Add("a");
                     }
-                    Create(list.ToArray());
-                    _asyncTagger.ChunkCount = 10;
-                    _asyncTaggerSource.Delay = null;
-                    _asyncTaggerSource.SetBackgroundFunc(span => TestUtils.GetDogTags(span));
-                    _asyncTagger.GetTags(_textBuffer.GetExtent());
-                    WaitForBackgroundToComplete(context);
+                }
+                Create(list.ToArray());
+                _asyncTagger.ChunkCount = 10;
+                _asyncTaggerSource.Delay = null;
+                _asyncTaggerSource.SetBackgroundFunc(span => TestUtils.GetDogTags(span));
+                _asyncTagger.GetTags(_textBuffer.GetExtent());
+                WaitForBackgroundToComplete();
 
-                    var tags = _asyncTagger.GetTags(_textBuffer.GetExtent()).ToList();
-                    Assert.Equal(10, tags.Count);
-                    for (int i = 0; i < tags.Count; i++)
-                    {
-                        var span = tags[i].Span;
-                        Assert.Equal("dog", span.GetText());
-                        Assert.Equal(0, span.Start.GetContainingLine().LineNumber % 10);
-                    }
+                var tags = _asyncTagger.GetTags(_textBuffer.GetExtent()).ToList();
+                Assert.Equal(10, tags.Count);
+                for (int i = 0; i < tags.Count; i++)
+                {
+                    var span = tags[i].Span;
+                    Assert.Equal("dog", span.GetText());
+                    Assert.Equal(0, span.Start.GetContainingLine().LineNumber % 10);
                 }
             }
 
             [WpfFact]
             public void AfterEditWithTrackingData()
             {
-                using (var context = new TestableSynchronizationContext())
-                {
-                    Create("dog", "cat", "fish");
-                    _asyncTaggerSource.SetBackgroundFunc(span => TestUtils.GetDogTags(span));
-                    GetTagsFull(_textBuffer.GetExtent(), context);
-                    _asyncTagger.TagCacheData = new TagCache<TextMarkerTag>(
-                        _asyncTagger.TagCacheData.BackgroundCacheData,
-                        CreateTrackingCacheDataSome(_textBuffer.GetSpan(0, 1), _textBuffer.GetSpan(0, 2)));
-                    _textBuffer.Replace(new Span(0, 0), "hello world ");
-                    var tags = GetTagsFull(_textBuffer.GetExtent(), context);
-                    Assert.Equal(
-                        new[] { "dog" },
-                        tags.Select(x => x.Span.GetText()));
-                }
+                Create("dog", "cat", "fish");
+                _asyncTaggerSource.SetBackgroundFunc(span => TestUtils.GetDogTags(span));
+                GetTagsFull(_textBuffer.GetExtent());
+                _asyncTagger.TagCacheData = new TagCache<TextMarkerTag>(
+                    _asyncTagger.TagCacheData.BackgroundCacheData,
+                    CreateTrackingCacheDataSome(_textBuffer.GetSpan(0, 1), _textBuffer.GetSpan(0, 2)));
+                _textBuffer.Replace(new Span(0, 0), "hello world ");
+                var tags = GetTagsFull(_textBuffer.GetExtent());
+                Assert.Equal(
+                    new[] { "dog" },
+                    tags.Select(x => x.Span.GetText()));
             }
 
             [WpfFact]
@@ -1139,7 +1081,7 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
-            /// It's possible for the synchronization context to be null in Visual Studio.  Particularly 
+            /// It's possible for the synchronization TestableSynchronizationContext to be null in Visual Studio.  Particularly 
             /// when the WPF designer is active.  Make sure that we handle this gracefully and don't 
             /// crash
             /// </summary>

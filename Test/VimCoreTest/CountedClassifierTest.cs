@@ -9,7 +9,7 @@ using Vim.Extensions;
 
 namespace Vim.UnitTest
 {
-    public sealed class CountedClassifierTest : EditorHostTest
+    public sealed class CountedClassifierTest : VimTestBase
     {
         private readonly MockRepository _factory;
         private readonly object _key;
