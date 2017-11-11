@@ -11,7 +11,7 @@ using Vim.EditorHost;
 
 namespace Vim.UnitTest
 {
-    public abstract class ClassifierTest : EditorHostTest
+    public abstract class ClassifierTest : VimTestBase
     {
         public sealed class BasicTest : ClassifierTest
         {
@@ -23,7 +23,7 @@ namespace Vim.UnitTest
             {
                 _textBuffer = CreateTextBuffer();
 
-                var classificationType = EditorHost.ClassificationTypeRegistryService.GetOrCreateClassificationType("classifier test");
+                var classificationType = VimEditorHost.ClassificationTypeRegistryService.GetOrCreateClassificationType("classifier test");
                 _source = new TextBasicTaggerSource<IClassificationTag>(new ClassificationTag(classificationType));
                 _classifier = TaggerUtil.CreateBasicClassifierRaw(_source);
             }
@@ -64,7 +64,7 @@ namespace Vim.UnitTest
             {
                 _textBuffer = CreateTextBuffer();
 
-                var classificationType = EditorHost.ClassificationTypeRegistryService.GetOrCreateClassificationType("classifier test");
+                var classificationType = VimEditorHost.ClassificationTypeRegistryService.GetOrCreateClassificationType("classifier test");
                 _source = new TextAsyncTaggerSource<IClassificationTag>(new ClassificationTag(classificationType), _textBuffer);
                 _asyncTagger = new AsyncTagger<Tuple<string, IClassificationTag>, IClassificationTag>(_source);
                 _classifier = new Classifier(_asyncTagger);

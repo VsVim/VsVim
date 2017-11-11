@@ -6,7 +6,7 @@ using Vim.EditorHost;
 
 namespace Vim.UnitTest
 {
-    public sealed class ExtensionsTest : EditorHostTest
+    public sealed class ExtensionsTest : VimTestBase
     {
         [WpfFact]
         public void GetSourceBuffersRecursive_Simple()

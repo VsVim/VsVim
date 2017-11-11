@@ -6,7 +6,7 @@ using Vim.Extensions;
 
 namespace Vim.UnitTest
 {
-    public abstract class ChannelTest : EditorHostTest
+    public abstract class ChannelTest : VimTestBase
     {
         private readonly Channel _channel;
         private ITextBuffer _textBuffer;

@@ -10,7 +10,7 @@ namespace Vim.UnitTest
     /// <summary>
     /// Used for detecting leaks in our components
     /// </summary>
-    public sealed class MemoryLeakTest : EditorHostTest
+    public sealed class MemoryLeakTest : VimTestBase
     {
         private void RunGarbageCollector()
         {

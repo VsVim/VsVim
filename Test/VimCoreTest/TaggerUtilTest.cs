@@ -6,7 +6,7 @@ using Vim.EditorHost;
 
 namespace Vim.UnitTest
 {
-    public abstract class TaggerUtilTest : EditorHostTest
+    public abstract class TaggerUtilTest : VimTestBase
     {
         public sealed class AdjustRequestSpanTest : TaggerUtilTest
         {

@@ -11,7 +11,7 @@ using Vim.EditorHost;
 
 namespace Vim.UnitTest
 {
-    public abstract class BasicTaggerTest : EditorHostTest
+    public abstract class BasicTaggerTest : VimTestBase
     {
         #region TestableBasicTaggerSource 
 
