@@ -6,7 +6,6 @@ using Microsoft.VisualStudio.TextManager.Interop;
 using Moq;
 using Vim;
 using Vim.UI.Wpf;
-using Vim.UI.Wpf.UnitTest;
 using Vim.UnitTest;
 using Vim.UnitTest.Mock;
 using Vim.VisualStudio.Implementation.Misc;
@@ -14,7 +13,7 @@ using Xunit;
 
 namespace Vim.VisualStudio.UnitTest
 {
-    public abstract class VsKeyProcessorTest : VimKeyProcessorTest
+    public abstract class VsKeyProcessorTest : VimTestBase
     {
         #region MockAdapter
 
@@ -214,6 +213,7 @@ namespace Vim.VisualStudio.UnitTest
 
         #endregion
 
+        private VsVimKeyProcessor _processor;
         private MockRepository _factory;
         private IWpfTextView _wpfTextView;
         private Mock<IVimBuffer> _mockVimBuffer;
@@ -224,12 +224,17 @@ namespace Vim.VisualStudio.UnitTest
         internal IVimBufferCoordinator _bufferCoordinator;
         private MockKeyboardDevice _device;
 
-        internal VsVimKeyProcessor VsKeyProcessor
+        public VsKeyProcessorTest()
         {
-            get { return (VsVimKeyProcessor)_processor; }
+            _processor = CreateKeyProcessor();
         }
 
-        protected override VimKeyProcessor CreateKeyProcessor()
+        internal VsVimKeyProcessor VsKeyProcessor
+        {
+            get { return _processor; }
+        }
+
+        internal VsVimKeyProcessor CreateKeyProcessor()
         {
             _factory = new MockRepository(MockBehavior.Strict);
             _wpfTextView = CreateTextView();

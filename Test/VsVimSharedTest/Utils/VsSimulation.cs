@@ -13,7 +13,6 @@ using Moq;
 using Vim;
 using Vim.Extensions;
 using Vim.UI.Wpf;
-using Vim.UI.Wpf.UnitTest;
 using Vim.UnitTest;
 using Vim.VisualStudio.Implementation.Misc;
 using Vim.VisualStudio.Implementation.ReSharper;

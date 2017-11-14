@@ -13,6 +13,8 @@ using Vim.UnitTest;
 
 namespace Vim.UI.Wpf.UnitTest
 {
+    using Resources = global::Vim.UI.Wpf.Properties.Resources;
+
     public abstract class CommandMarginControllerTest : VimTestBase
     {
         private readonly MockRepository _factory;
