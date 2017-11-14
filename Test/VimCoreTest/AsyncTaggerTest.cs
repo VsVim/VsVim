@@ -1055,6 +1055,7 @@ namespace Vim.UnitTest
                     Assert.Equal("dog", span.GetText());
                     Assert.Equal(0, span.Start.GetContainingLine().LineNumber % 10);
                 }
+                WaitForBackgroundToComplete();
             }
 
             [WpfFact]

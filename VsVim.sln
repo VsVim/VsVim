@@ -40,6 +40,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Vs2017", "Src\VsSpecific\Vs
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VimEditorHost", "Src\VimEditorHost\VimEditorHost.csproj", "{863A0141-59C5-481D-A3FC-A5812D973FEB}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VimTestUtils", "Src\VimTestUtils\VimTestUtils.csproj", "{6819AD26-901E-4261-95AA-9913D435296A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -206,6 +208,18 @@ Global
 		{863A0141-59C5-481D-A3FC-A5812D973FEB}.Release|Mixed Platforms.Build.0 = Release|Any CPU
 		{863A0141-59C5-481D-A3FC-A5812D973FEB}.Release|x86.ActiveCfg = Release|Any CPU
 		{863A0141-59C5-481D-A3FC-A5812D973FEB}.Release|x86.Build.0 = Release|Any CPU
+		{6819AD26-901E-4261-95AA-9913D435296A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6819AD26-901E-4261-95AA-9913D435296A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6819AD26-901E-4261-95AA-9913D435296A}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{6819AD26-901E-4261-95AA-9913D435296A}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{6819AD26-901E-4261-95AA-9913D435296A}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{6819AD26-901E-4261-95AA-9913D435296A}.Debug|x86.Build.0 = Debug|Any CPU
+		{6819AD26-901E-4261-95AA-9913D435296A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6819AD26-901E-4261-95AA-9913D435296A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6819AD26-901E-4261-95AA-9913D435296A}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{6819AD26-901E-4261-95AA-9913D435296A}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{6819AD26-901E-4261-95AA-9913D435296A}.Release|x86.ActiveCfg = Release|Any CPU
+		{6819AD26-901E-4261-95AA-9913D435296A}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

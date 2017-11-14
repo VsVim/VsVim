@@ -40,9 +40,6 @@
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="xunit.extensibility.execution">
-      <Version>2.3.1</Version>
-    </PackageReference>
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
     <Reference Include="System" />
@@ -56,6 +53,9 @@
     <PackageReference Include="Castle.Core" Version="4.0.0-beta002" />
     <PackageReference Include="Moq" Version="4.5.28" />
     <PackageReference Include="xunit" Version="2.3.1" />
+    <PackageReference Include="xunit.extensibility.execution">
+      <Version>2.3.1</Version>
+    </PackageReference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AdhocOutlinerTest.cs" />
@@ -86,7 +86,6 @@
     <Compile Include="CountedTaggerTest.cs" />
     <Compile Include="EditorVersionUtilTest.cs" />
     <Compile Include="EditUtilTest.cs" />
-    <Compile Include="Exports\OutlinerTaggerProvider.cs" />
     <Compile Include="ExtensionsTest.cs" />
     <Compile Include="HistoryListTest.cs" />
     <Compile Include="HistorySessionTest.cs" />
@@ -98,19 +97,8 @@
     <Compile Include="SnapshotLineRangeTest.cs" />
     <Compile Include="TaggerCommonTest.cs" />
     <Compile Include="TaggerUtilTest.cs" />
-    <Compile Include="TestableSynchronizationContext.cs" />
     <Compile Include="TestUtils.cs" />
     <Compile Include="TextTaggerSource.cs" />
-    <Compile Include="Utilities\StaTaskScheduler.cs" />
-    <Compile Include="Utilities\WpfFactDiscoverer.cs" />
-    <Compile Include="Utilities\WpfTestCase.cs" />
-    <Compile Include="Utilities\WpfTestCaseRunner.cs" />
-    <Compile Include="Utilities\WpfTestInvoker.cs" />
-    <Compile Include="Utilities\WpfTestRunner.cs" />
-    <Compile Include="Utilities\WpfTestSharedData.cs" />
-    <Compile Include="Utilities\WpfTheoryTestCase.cs" />
-    <Compile Include="Utilities\WpfTheoryTestCaseRunner.cs" />
-    <Compile Include="WpfFactAttribute.cs" />
     <Compile Include="VersioningTest.cs" />
     <Compile Include="WordCompletionUtilTest.cs" />
     <Compile Include="MatchingTokenUtilTest.cs" />
@@ -131,33 +119,14 @@
     <Compile Include="TestableBulkOperations.cs" />
     <Compile Include="TextChangeTest.cs" />
     <Compile Include="TokenizerTest.cs" />
-    <Compile Include="VimEditorHost.cs" />
     <Compile Include="VimHostTest.cs" />
     <Compile Include="VimRegexFactoryTest.cs" />
     <Compile Include="VisualSpanTest.cs" />
-    <Compile Include="EqualityUtil.cs" />
-    <Compile Include="Exports\TestableMouseDevice.cs" />
-    <Compile Include="Exports\TestableClipboardDevice.cs" />
-    <Compile Include="Exports\TestableKeyboardDevice.cs" />
-    <Compile Include="Exports\VimErrorHandler.cs" />
-    <Compile Include="Exports\VimHost.cs" />
     <Compile Include="ExpressionInterpreterTest.cs" />
-    <Compile Include="Extensions.cs" />
     <Compile Include="FuncUtil.cs" />
-    <Compile Include="IVimErrorDetector.cs" />
     <Compile Include="MatchUtil.cs" />
-    <Compile Include="Mock\Extensions.cs" />
-    <Compile Include="Mock\ITagSpan.cs" />
-    <Compile Include="Mock\MockKeyboardDevice.cs" />
-    <Compile Include="Mock\MockNormalMode.cs" />
-    <Compile Include="Mock\MockObjectFactory.cs" />
-    <Compile Include="Mock\MockPresentationSource.cs" />
-    <Compile Include="Mock\MockRegisterValueBacking.cs" />
-    <Compile Include="Mock\MockVimBuffer.cs" />
-    <Compile Include="Mock\MockVimHost.cs" />
     <Compile Include="SnapshotLineUtilTest.cs" />
     <Compile Include="TestableStatusUtil.cs" />
-    <Compile Include="TestConstants.cs" />
     <Compile Include="VimDataTest.cs" />
     <Compile Include="EditorToSettingSynchronizerTest.cs" />
     <Compile Include="FoldManagerTest.cs" />
@@ -176,9 +145,7 @@
     <Compile Include="SubstituteConfirmTaggerSourceTest.cs" />
     <Compile Include="TextLineTest.cs" />
     <Compile Include="VimRegexTest.cs" />
-    <Compile Include="VimTestBase.cs" />
     <Compile Include="VimTextBufferTest.cs" />
-    <Compile Include="VimUtil.cs" />
     <Compile Include="VirtualSnapshotPointUtilTest.cs" />
     <Compile Include="SelectionChangeTrackerTest.cs" />
     <Compile Include="SeqUtilTest.cs" />
@@ -245,6 +212,10 @@
     <ProjectReference Include="..\..\Src\VimEditorHost\VimEditorHost.csproj">
       <Project>{863a0141-59c5-481d-a3fc-a5812d973feb}</Project>
       <Name>VimEditorHost</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Src\VimTestUtils\VimTestUtils.csproj">
+      <Project>{6819ad26-901e-4261-95aa-9913d435296a}</Project>
+      <Name>VimTestUtils</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\Src\VimWpf\VimWpf.csproj">
       <Project>{65A749E0-F1B1-4E43-BE73-25072EE398C6}</Project>

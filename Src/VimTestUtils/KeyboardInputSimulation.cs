@@ -9,7 +9,7 @@ using Vim.Extensions;
 using Vim.UI.Wpf.Implementation.Misc;
 using Vim.UnitTest;
 
-namespace Vim.UI.Wpf.UnitTest
+namespace Vim.UnitTest
 {
     public enum KeyDirection
     {
@@ -135,9 +135,9 @@ namespace Vim.UI.Wpf.UnitTest
             /// <summary>
             /// Set of KeyModifiers which should be registered as down
             /// </summary>
-            internal ModifierKeys DownKeyModifiers;
+            public ModifierKeys DownKeyModifiers { get; set; }
 
-            internal DefaultKeyboardDevice()
+            public DefaultKeyboardDevice()
                 : this(InputManager.Current)
             {
             }
@@ -199,7 +199,7 @@ namespace Vim.UI.Wpf.UnitTest
                 };
 
             var map = new Dictionary<KeyInput, KeyData>();
-            foreach (char c in KeyInputUtilTest.CharLettersLower)
+            foreach (char c in KeyInputUtil.CharLettersLower)
             {
                 foreach (var mod in combos)
                 {
