@@ -871,7 +871,6 @@ namespace Vim.UnitTest
 
                 // Clear the queue, the missing work will be seen and immedieatly requeued
                 TestableSynchronizationContext.RunAll();
-                Assert.True(_asyncTagger.AsyncBackgroundRequestData.IsSome());
                 WaitForBackgroundToComplete();
 
                 var tags = _asyncTagger.GetTags(_textBuffer.GetExtent());
