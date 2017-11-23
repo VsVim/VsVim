@@ -878,6 +878,7 @@ namespace Vim.UnitTest
                     new[] { _textBuffer.GetLineSpan(0, 3), _textBuffer.GetLineSpan(3, 3) },
                     tags.Select(x => x.Span));
                 TestableSynchronizationContext.RunAll();
+                WaitForBackgroundToComplete();
             }
 
             /// <summary>
