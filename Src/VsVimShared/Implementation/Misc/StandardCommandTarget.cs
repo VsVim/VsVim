@@ -135,7 +135,7 @@ namespace Vim.VisualStudio.Implementation.Misc
             // pass on to the next command target.  This is necessary to close the peek definition
             // window
             if (_vimBuffer.ModeKind == ModeKind.Normal &&
-                _textView.Roles.Contains(Constants.TextViewRoleEmbeddedPeekTextView) &&
+                _textView.Roles.Contains(VsVimConstants.TextViewRoleEmbeddedPeekTextView) &&
                 keyInput == KeyInputUtil.EscapeKey)
             {
                 return false;
@@ -332,7 +332,7 @@ namespace Vim.VisualStudio.Implementation.Misc
     }
 
     [Export(typeof(ICommandTargetFactory))]
-    [Name(Constants.StandardCommandTargetName)]
+    [Name(VsVimConstants.StandardCommandTargetName)]
     [Order]
     internal sealed class StandardCommandTargetFactory : ICommandTargetFactory
     {

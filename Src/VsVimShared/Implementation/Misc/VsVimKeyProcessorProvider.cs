@@ -8,11 +8,11 @@ using Vim.UI.Wpf;
 namespace Vim.VisualStudio.Implementation.Misc
 {
     [Export(typeof(IKeyProcessorProvider))]
-    [Order(Before = Constants.FallbackKeyProcessorName)]
-    [Order(Before = Constants.VisualStudioKeyProcessorName)]
+    [Order(Before = VsVimConstants.FallbackKeyProcessorName)]
+    [Order(Before = VsVimConstants.VisualStudioKeyProcessorName)]
     [Name(VimConstants.MainKeyProcessorName)]
     [TextViewRole(PredefinedTextViewRoles.Editable)]
-    [TextViewRole(Constants.TextViewRoleEmbeddedPeekTextView)]
+    [TextViewRole(VsVimConstants.TextViewRoleEmbeddedPeekTextView)]
     [ContentType(VimConstants.ContentType)]
     internal sealed class VsVimKeyProcessorProvider : IKeyProcessorProvider
     {

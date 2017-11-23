@@ -22,8 +22,8 @@ namespace Vim.VisualStudio.Implementation.Misc
     /// </summary>
     [Export(typeof(IKeyProcessorProvider))]
     [Order(After = VimConstants.MainKeyProcessorName)]
-    [Order(Before = Constants.VisualStudioKeyProcessorName)]
-    [Name(Constants.FallbackKeyProcessorName)]
+    [Order(Before = VsVimConstants.VisualStudioKeyProcessorName)]
+    [Name(VsVimConstants.FallbackKeyProcessorName)]
     [TextViewRole(PredefinedTextViewRoles.Interactive)]
     [ContentType(VimConstants.AnyContentType)]
     internal sealed class FallbackKeyProcessorProvider : IKeyProcessorProvider

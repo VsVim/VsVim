@@ -44,7 +44,7 @@ namespace Vim.VisualStudio.UnitTest
                 _textBuffer = CreateTextBuffer(lines);
                 _textView = TextEditorFactoryService.CreateTextView(
                     _textBuffer,
-                    TextEditorFactoryService.CreateTextViewRoleSet(PredefinedTextViewRoles.Document, PredefinedTextViewRoles.Editable, Constants.TextViewRoleEmbeddedPeekTextView));
+                    TextEditorFactoryService.CreateTextViewRoleSet(PredefinedTextViewRoles.Document, PredefinedTextViewRoles.Editable, VsVimConstants.TextViewRoleEmbeddedPeekTextView));
             }
             else
             {

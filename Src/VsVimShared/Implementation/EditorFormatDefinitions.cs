@@ -7,7 +7,7 @@ namespace Vim.VisualStudio.Implementation
 {
     internal static class EditorFormatDefinitionNames
     {
-        internal const string Margin = Constants.ToastMarginFormatDefinitionName;
+        internal const string Margin = VsVimConstants.ToastMarginFormatDefinitionName;
     }
 
     [Export(typeof(EditorFormatDefinition))]
