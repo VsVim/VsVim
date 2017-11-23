@@ -18,7 +18,7 @@ namespace Vim.VisualStudio.UnitTest
 
         private ITextView CreateCSharpTextView(params string[] lines)
         {
-            var contentType = GetOrCreateContentType(Constants.CSharpContentType, "code");
+            var contentType = GetOrCreateContentType(VsVimConstants.CSharpContentType, "code");
             var textBuffer = CreateTextBuffer(contentType, lines);
             return TextEditorFactoryService.CreateTextView(textBuffer);
         }

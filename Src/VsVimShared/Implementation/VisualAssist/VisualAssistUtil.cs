@@ -15,7 +15,7 @@ namespace Vim.VisualStudio.Implementation.VisualAssist
 {
     [ContentType(VimConstants.ContentType)]
     [TextViewRole(PredefinedTextViewRoles.Editable)]
-    [Order(Before = Constants.VisualStudioKeyProcessorName, After = VimConstants.MainKeyProcessorName)]
+    [Order(Before = VsVimConstants.VisualStudioKeyProcessorName, After = VimConstants.MainKeyProcessorName)]
     [MarginContainer(PredefinedMarginNames.Top)]
     [Export(typeof(IKeyProcessorProvider))]
     [Export(typeof(IVisualAssistUtil))]

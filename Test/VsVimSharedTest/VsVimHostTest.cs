@@ -138,7 +138,7 @@ namespace Vim.VisualStudio.UnitTest
                 {
                     Create();
 
-                    var contentType = GetOrCreateContentType(Constants.CPlusPlusContentType, "code");
+                    var contentType = GetOrCreateContentType(VsVimConstants.CPlusPlusContentType, "code");
                     _textView = CreateTextView(contentType, lines);
                     _textManager.SetupGet(x => x.ActiveTextViewOptional).Returns(_textView);
                 }
@@ -242,7 +242,7 @@ namespace Vim.VisualStudio.UnitTest
             [WpfFact]
             public void EmbeddedPeekTextView()
             {
-                var textView = CreateWithRoles(PredefinedTextViewRoles.Editable, Constants.TextViewRoleEmbeddedPeekTextView);
+                var textView = CreateWithRoles(PredefinedTextViewRoles.Editable, VsVimConstants.TextViewRoleEmbeddedPeekTextView);
                 Assert.True(_host.ShouldCreateVimBuffer(textView));
             }
 
@@ -273,7 +273,7 @@ namespace Vim.VisualStudio.UnitTest
                 var textView = CreateWithRoles(
                     PredefinedTextViewRoles.Interactive,
                     PredefinedTextViewRoles.Editable,
-                    Constants.TextViewRoleEmbeddedPeekTextView,
+                    VsVimConstants.TextViewRoleEmbeddedPeekTextView,
                     PredefinedTextViewRoles.Analyzable,
                     PredefinedTextViewRoles.Zoomable);
                 Assert.True(_host.ShouldCreateVimBuffer(textView));
@@ -340,7 +340,7 @@ namespace Vim.VisualStudio.UnitTest
                 var buffer = new Mock<ITextBuffer>(MockBehavior.Strict);
                 var vsTextBuffer = (new Mock<IVsTextLines>(MockBehavior.Strict));
                 var userData = vsTextBuffer.As<IVsUserData>();
-                var moniker = Constants.VsUserDataFileNameMoniker;
+                var moniker = VsVimConstants.VsUserDataFileNameMoniker;
                 object ret = "foo";
                 userData.Setup(x => x.GetData(ref moniker, out ret)).Returns(0);
                 _editorAdaptersFactoryService.Setup(x => x.GetBufferAdapter(buffer.Object)).Returns(vsTextBuffer.Object);

@@ -22,7 +22,7 @@ namespace Vim.VisualStudio.UnitTest
         {
             _factory = new MockRepository(MockBehavior.Strict);
             _roslynListenerFactory = new RoslynListenerFactory(_factory.Create<SVsServiceProvider>().Object);
-            _vimBuffer = CreateVimBufferWithContentType(Constants.CSharpContentType);
+            _vimBuffer = CreateVimBufferWithContentType(VsVimConstants.CSharpContentType);
         }
 
         private IVimBuffer CreateVimBufferWithContentType(string contentTypeName)

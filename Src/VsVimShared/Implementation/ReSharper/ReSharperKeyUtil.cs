@@ -155,7 +155,7 @@ namespace Vim.VisualStudio.Implementation.ReSharper
 
     [Export(typeof(ICommandTargetFactory))]
     [Name("ReSharper Command Target")]
-    [Order(Before = Constants.StandardCommandTargetName)]
+    [Order(Before = VsVimConstants.StandardCommandTargetName)]
     internal sealed class ReSharperCommandTargetFactory : ICommandTargetFactory
     {
         private readonly IReSharperUtil _reSharperUtil;
@@ -179,7 +179,7 @@ namespace Vim.VisualStudio.Implementation.ReSharper
 
     [ContentType(VimConstants.ContentType)]
     [TextViewRole(PredefinedTextViewRoles.Editable)]
-    [Order(Before = Constants.VisualStudioKeyProcessorName, After = VimConstants.MainKeyProcessorName)]
+    [Order(Before = VsVimConstants.VisualStudioKeyProcessorName, After = VimConstants.MainKeyProcessorName)]
     [Export(typeof(IKeyProcessorProvider))]
     [Name("ReSharper Key Processor")]
     internal sealed class ReSharperKeyProcessorProvider : IKeyProcessorProvider

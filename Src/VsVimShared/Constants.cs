@@ -2,8 +2,7 @@
 
 namespace Vim.VisualStudio
 {
-    // TODO: Rename to VsVimConstants to avoid ambiguity issues
-    public static class Constants
+    public static class VsVimConstants
     {
         /// <summary>
         /// Content Type name and display name for C++ projects

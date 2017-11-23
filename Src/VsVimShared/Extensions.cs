@@ -227,7 +227,7 @@ namespace Vim.VisualStudio
             try
             {
                 // GUID_VsBufferMoniker
-                var monikerId = Constants.VsUserDataFileNameMoniker;
+                var monikerId = VsVimConstants.VsUserDataFileNameMoniker;
                 var userData = (IVsUserData)lines;
                 object data;
                 if (VSConstants.S_OK != userData.GetData(ref monikerId, out data)
@@ -736,7 +736,7 @@ namespace Vim.VisualStudio
         /// </summary>
         public static bool IsCPlusPlus(this IContentType contentType)
         {
-            return contentType.IsOfType(Constants.CPlusPlusContentType);
+            return contentType.IsOfType(VsVimConstants.CPlusPlusContentType);
         }
 
         /// <summary>
@@ -744,7 +744,7 @@ namespace Vim.VisualStudio
         /// </summary>
         public static bool IsCSharp(this IContentType contentType)
         {
-            return contentType.IsOfType(Constants.CSharpContentType);
+            return contentType.IsOfType(VsVimConstants.CSharpContentType);
         }
 
         public static bool IsVisualBasic(this IContentType contentType)
