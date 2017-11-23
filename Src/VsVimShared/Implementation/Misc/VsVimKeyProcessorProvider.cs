@@ -12,6 +12,7 @@ namespace Vim.VisualStudio.Implementation.Misc
     [Order(Before = Constants.VisualStudioKeyProcessorName)]
     [Name(VimConstants.MainKeyProcessorName)]
     [TextViewRole(PredefinedTextViewRoles.Editable)]
+    [TextViewRole(Constants.TextViewRoleEmbeddedPeekTextView)]
     [ContentType(VimConstants.ContentType)]
     internal sealed class VsVimKeyProcessorProvider : IKeyProcessorProvider
     {
