@@ -123,10 +123,7 @@ namespace Vim.UI.Wpf.Implementation.Misc
 
         private void RaiseTick()
         {
-            if (Tick != null)
-            {
-                Tick(this, EventArgs.Empty);
-            }
+            Tick?.Invoke(this, EventArgs.Empty);
         }
 
         #region IVimBufferCreationListener

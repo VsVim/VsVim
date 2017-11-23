@@ -48,8 +48,10 @@ namespace Vim.VisualStudio.Implementation.Misc
         private static TelemetryClient CreateClient(_DTE dte, string instrumentationKey)
         {
             var config = TelemetryConfiguration.CreateDefault();
-            var client = new TelemetryClient(config);
-            client.InstrumentationKey = instrumentationKey;
+            var client = new TelemetryClient(config)
+            {
+                InstrumentationKey = instrumentationKey
+            };
             client.Context.User.Id = GetUserId();
             client.Context.Session.Id = Guid.NewGuid().ToString();
             client.Context.Properties.Add("Host", dte.Application.Edition);

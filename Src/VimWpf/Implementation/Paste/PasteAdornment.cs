@@ -69,10 +69,12 @@ namespace Vim.UI.Wpf.Implementation.Paste
             var backgroundBrush = textViewProperties.GetBackgroundBrush(SystemColors.WindowBrush);
             var properties = _editorFormatMap.GetProperties("Plain Text");
 
-            var textBlock = new TextBlock();
-            textBlock.Text = "\"";
-            textBlock.Foreground = properties.GetForegroundBrush(SystemColors.WindowTextBrush);
-            textBlock.Background = backgroundBrush;
+            var textBlock = new TextBlock
+            {
+                Text = "\"",
+                Foreground = properties.GetForegroundBrush(SystemColors.WindowTextBrush),
+                Background = backgroundBrush
+            };
 
             var typeface = properties["Typeface"] as Typeface;
             if (typeface != null)
@@ -89,10 +91,12 @@ namespace Vim.UI.Wpf.Implementation.Paste
                 textBlock.FontSize = (double)obj;
             }
 
-            var border = new Border();
-            border.Opacity = 100;
-            border.Background = Brushes.White;
-            border.Child = textBlock;
+            var border = new Border
+            {
+                Opacity = 100,
+                Background = Brushes.White,
+                Child = textBlock
+            };
 
             Canvas.SetTop(border, _textView.Caret.Top);
             Canvas.SetLeft(border, _textView.Caret.Left);

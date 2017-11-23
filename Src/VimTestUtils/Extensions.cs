@@ -1455,8 +1455,10 @@ namespace Vim.UnitTest
         public static TextCompositionEventArgs CreateTextCompositionEventArgs(this FrameworkElement frameworkElement, string text, InputDevice inputDevice, InputManager inputManager = null)
         {
             var textComposition = CreateTextComposition(frameworkElement, text, inputManager);
-            var args = new TextCompositionEventArgs(inputDevice, textComposition);
-            args.RoutedEvent = UIElement.TextInputEvent;
+            var args = new TextCompositionEventArgs(inputDevice, textComposition)
+            {
+                RoutedEvent = UIElement.TextInputEvent
+            };
             return args;
         }
 

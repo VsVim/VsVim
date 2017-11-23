@@ -125,8 +125,7 @@ namespace Vim.UnitTest.Mock
         string IVimHost.GetName(ITextBuffer textBuffer)
         {
             string name = null;
-            object value;
-            if (textBuffer.Properties.TryGetPropertySafe(FileNameKey, out value))
+            if (textBuffer.Properties.TryGetPropertySafe(FileNameKey, out object value))
             {
                 name = value as string;
             }

@@ -56,11 +56,7 @@ namespace Vim.VisualStudio.Implementation.Misc
                 if (_state != value)
                 {
                     _state = value;
-                    var list = ConflictingKeyBindingStateChanged;
-                    if (list != null)
-                    {
-                        list(this, EventArgs.Empty);
-                    }
+                    ConflictingKeyBindingStateChanged?.Invoke(this, EventArgs.Empty);
                 }
             }
         }
@@ -129,10 +125,12 @@ namespace Vim.VisualStudio.Implementation.Misc
                 .Select(x => x.CommandNames)
                 .SelectMany(x => x)
                 .Where(x => x.KeyInputs.Length > 0)
-                .Select(x => x.KeyInputs.First()));
+                .Select(x => x.KeyInputs.First()))
+            {
 
-            // Include the key used to disable VsVim
-            hashSet.Add(buffer.LocalSettings.GlobalSettings.DisableAllCommand);
+                // Include the key used to disable VsVim
+                buffer.LocalSettings.GlobalSettings.DisableAllCommand
+            };
 
             // Need to get the custom key bindings in the list.  It's very common for users 
             // to use for example function keys (<F2>, <F3>, etc ...) in their mappings which
@@ -266,8 +264,7 @@ namespace Vim.VisualStudio.Implementation.Misc
                 var globalScopeName = _scopeData.GlobalScopeName;
                 foreach (var command in _dte.Commands.GetCommands())
                 {
-                    CommandId commandId;
-                    if (!command.TryGetCommandId(out commandId))
+                    if (!command.TryGetCommandId(out CommandId commandId))
                     {
                         continue;
                     }
@@ -306,8 +303,7 @@ namespace Vim.VisualStudio.Implementation.Misc
                 {
                     streamWriter.WriteLine("Command: {0}", dteCommand.Name);
 
-                    CommandId commandId;
-                    if (!dteCommand.TryGetCommandId(out commandId))
+                    if (!dteCommand.TryGetCommandId(out CommandId commandId))
                     {
                         streamWriter.WriteLine("Cannot get CommandId: + ", dteCommand.Name);
                         continue;
@@ -315,8 +311,7 @@ namespace Vim.VisualStudio.Implementation.Misc
 
                     streamWriter.WriteLine("\tId: {0} {1}", commandId.Group, commandId.Id);
 
-                    Exception bindingEx;
-                    var bindings = dteCommand.GetBindings(out bindingEx);
+                    var bindings = dteCommand.GetBindings(out Exception bindingEx);
                     if (bindingEx != null)
                     {
                         streamWriter.WriteLine("!!!Exception!!! " + bindingEx.Message + Environment.NewLine + bindingEx.StackTrace);
@@ -327,8 +322,7 @@ namespace Vim.VisualStudio.Implementation.Misc
                     {
                         streamWriter.WriteLine("\tBinding: {0} ", binding);
 
-                        KeyBinding keyBinding;
-                        if (KeyBinding.TryParse(binding, out keyBinding))
+                        if (KeyBinding.TryParse(binding, out KeyBinding keyBinding))
                         {
                             streamWriter.WriteLine("\tKey Binding: {0} {1}", keyBinding.Scope, keyBinding.CommandString);
                         }

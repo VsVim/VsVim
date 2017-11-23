@@ -231,11 +231,13 @@ namespace VimApp
 
                 if (i + 1 < viewInfoList.Count)
                 {
-                    var splitter = new GridSplitter();
-                    splitter.ResizeDirection = GridResizeDirection.Rows;
-                    splitter.HorizontalAlignment = HorizontalAlignment.Stretch;
-                    splitter.VerticalAlignment = VerticalAlignment.Stretch;
-                    splitter.ShowsPreview = true;
+                    var splitter = new GridSplitter
+                    {
+                        ResizeDirection = GridResizeDirection.Rows,
+                        HorizontalAlignment = HorizontalAlignment.Stretch,
+                        VerticalAlignment = VerticalAlignment.Stretch,
+                        ShowsPreview = true
+                    };
                     splitter.SetValue(Grid.RowProperty, row++);
                     splitter.SetValue(Grid.ColumnProperty, 0);
                     splitter.Height = 5;
@@ -257,15 +259,19 @@ namespace VimApp
             for (int i = 0; i < viewInfoList.Count; i++)
             {
                 // Build up the row for the host control
-                var hostRow = new RowDefinition();
-                hostRow.Height = new GridLength(1, GridUnitType.Star);
+                var hostRow = new RowDefinition
+                {
+                    Height = new GridLength(1, GridUnitType.Star)
+                };
                 grid.RowDefinitions.Add(hostRow);
 
                 // Build up the splitter if this isn't the last control in the list
                 if (i + 1 < viewInfoList.Count)
                 {
-                    var splitterRow = new RowDefinition();
-                    splitterRow.Height = new GridLength(0, GridUnitType.Auto);
+                    var splitterRow = new RowDefinition
+                    {
+                        Height = new GridLength(0, GridUnitType.Auto)
+                    };
                     grid.RowDefinitions.Add(splitterRow);
                 }
             }
@@ -278,8 +284,10 @@ namespace VimApp
             var viewInfoList = vimWindow.VimViewInfoList;
             if (viewInfoList.Count == 0)
             {
-                var textBlock = new TextBlock();
-                textBlock.Text = "No buffer associated with this window";
+                var textBlock = new TextBlock
+                {
+                    Text = "No buffer associated with this window"
+                };
                 return textBlock;
             }
 
@@ -368,8 +376,10 @@ namespace VimApp
 
         private void OnOpenClick(object sender, EventArgs e)
         {
-            var openFileDialog = new OpenFileDialog();
-            openFileDialog.CheckFileExists = true;
+            var openFileDialog = new OpenFileDialog
+            {
+                CheckFileExists = true
+            };
             if ((bool)openFileDialog.ShowDialog(this))
             {
                 // TODO: Get a real content type
@@ -401,8 +411,7 @@ namespace VimApp
                 return;
             }
 
-            ITextUndoHistory textUndoHistory;
-            if (!_textUndoHistoryRegistry.TryGetHistory(vimBuffer.TextBuffer, out textUndoHistory))
+            if (!_textUndoHistoryRegistry.TryGetHistory(vimBuffer.TextBuffer, out ITextUndoHistory textUndoHistory))
             {
                 return;
             }

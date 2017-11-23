@@ -40,11 +40,7 @@ namespace Vim.UI.Wpf.Implementation.WordCompletion
         {
             _isDismissed = true;
 
-            var dismissed = _dismissed;
-            if (dismissed != null)
-            {
-                dismissed(this, EventArgs.Empty);
-            }
+            _dismissed?.Invoke(this, EventArgs.Empty);
         }
 
         /// <summary>

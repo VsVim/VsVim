@@ -88,8 +88,7 @@ namespace Vim.VisualStudio.UnitTest
         /// </summary>
         protected void RunExec(KeyInput keyInput)
         {
-            OleCommandData data;
-            Assert.True(OleCommandUtil.TryConvert(keyInput, out data));
+            Assert.True(OleCommandUtil.TryConvert(keyInput, out OleCommandData data));
             try
             {
                 _target.Exec(data);
@@ -136,13 +135,11 @@ namespace Vim.VisualStudio.UnitTest
         /// </summary>
         protected bool RunQueryStatus(KeyInput keyInput)
         {
-            OleCommandData data;
-            Assert.True(OleCommandUtil.TryConvert(keyInput, out data));
+            Assert.True(OleCommandUtil.TryConvert(keyInput, out OleCommandData data));
             try
             {
-                OLECMD command;
                 return
-                    ErrorHandler.Succeeded(_target.QueryStatus(data, out command)) &&
+                    ErrorHandler.Succeeded(_target.QueryStatus(data, out OLECMD command)) &&
                     command.cmdf == (uint)(OLECMDF.OLECMDF_ENABLED | OLECMDF.OLECMDF_SUPPORTED);
             }
             finally
@@ -255,14 +252,12 @@ namespace Vim.VisualStudio.UnitTest
 
             private void AssertCannotConvert2K(VSConstants.VSStd2KCmdID id)
             {
-                KeyInput ki;
-                Assert.False(_targetRaw.TryConvert(VSConstants.VSStd2K, (uint)id, IntPtr.Zero, out ki));
+                Assert.False(_targetRaw.TryConvert(VSConstants.VSStd2K, (uint)id, IntPtr.Zero, out KeyInput ki));
             }
 
             private void AssertCanConvert2K(VSConstants.VSStd2KCmdID id, KeyInput expected)
             {
-                KeyInput ki;
-                Assert.True(_targetRaw.TryConvert(VSConstants.VSStd2K, (uint)id, IntPtr.Zero, out ki));
+                Assert.True(_targetRaw.TryConvert(VSConstants.VSStd2K, (uint)id, IntPtr.Zero, out KeyInput ki));
                 Assert.Equal(expected, ki);
             }
 
@@ -528,8 +523,7 @@ namespace Vim.VisualStudio.UnitTest
             public void GoToDefinition()
             {
                 var editCommand = CreateEditCommand(EditCommandKind.GoToDefinition);
-                Action action = null;
-                Assert.False(_targetRaw.Exec(editCommand, out action));
+                Assert.False(_targetRaw.Exec(editCommand, out Action action));
             }
         }
 

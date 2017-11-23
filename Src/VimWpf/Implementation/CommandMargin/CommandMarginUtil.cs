@@ -31,8 +31,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             // the margin implementation being disposed to avoid memory leaks.  The editor framework though will
             // only call Dispose if it attempted to create the margin.  If we create the margin and the editor does 
             // not then Dispose won't be called and a memory leak will occur 
-            CommandMargin commandMargin;
-            if (_provider.TryGetCommandMargin(vimBuffer, out commandMargin))
+            if (_provider.TryGetCommandMargin(vimBuffer, out CommandMargin commandMargin))
             {
                 commandMargin.Enabled = commandMarginVisible;
             }

@@ -28,8 +28,7 @@ namespace Vim.UI.Wpf.Implementation.Mouse
 
         IMouseProcessor IMouseProcessorProvider.GetAssociatedProcessor(IWpfTextView wpfTextView)
         {
-            IVimBuffer vimBuffer;
-            if (_vim.TryGetOrCreateVimBufferForHost(wpfTextView, out vimBuffer))
+            if (_vim.TryGetOrCreateVimBufferForHost(wpfTextView, out IVimBuffer vimBuffer))
             {
                 return new VimMouseProcessor(vimBuffer, _keyboardDevice);
             }

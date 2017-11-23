@@ -81,9 +81,7 @@ namespace Vim.VisualStudio.UnitTest.Utils
 
         int IOleCommandTarget.Exec(ref Guid commandGroup, uint commandId, uint commandExecOpt, IntPtr variantIn, IntPtr variantOut)
         {
-            KeyInput keyInput;
-            EditCommandKind editCommandKind;
-            if (!OleCommandUtil.TryConvert(commandGroup, commandId, variantIn, out keyInput, out editCommandKind) ||
+            if (!OleCommandUtil.TryConvert(commandGroup, commandId, variantIn, out KeyInput keyInput, out EditCommandKind editCommandKind) ||
                 !TryExec(keyInput))
             {
                 return _nextCommandTarget.Exec(ref commandGroup, commandId, commandExecOpt, variantIn, variantOut);

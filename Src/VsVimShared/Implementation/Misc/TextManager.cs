@@ -29,11 +29,10 @@ namespace Vim.VisualStudio.Implementation.Misc
         {
             get
             {
-                IVsTextView vsTextView;
                 IWpfTextView textView = null;
                 try
                 {
-                    ErrorHandler.ThrowOnFailure(_textManager.GetActiveView(0, null, out vsTextView));
+                    ErrorHandler.ThrowOnFailure(_textManager.GetActiveView(0, null, out IVsTextView vsTextView));
                     textView = _vsAdapter.EditorAdapter.GetWpfTextView(vsTextView);
                 }
                 catch
@@ -82,8 +81,7 @@ namespace Vim.VisualStudio.Implementation.Misc
                     continue;
                 }
 
-                ITextBuffer buffer;
-                if (_vsAdapter.GetTextBufferForDocCookie(docCookie).TryGetValue(out buffer))
+                if (_vsAdapter.GetTextBufferForDocCookie(docCookie).TryGetValue(out ITextBuffer buffer))
                 {
                     list.Add(buffer);
                 }
@@ -152,8 +150,7 @@ namespace Vim.VisualStudio.Implementation.Misc
 
         internal Result SaveCore(ITextBuffer textBuffer)
         {
-            ITextDocument textDocument;
-            if (!_textDocumentFactoryService.TryGetTextDocument(textBuffer, out textDocument))
+            if (!_textDocumentFactoryService.TryGetTextDocument(textBuffer, out ITextDocument textDocument))
             {
                 return Result.Error;
             }
@@ -173,16 +170,14 @@ namespace Vim.VisualStudio.Implementation.Misc
 
         internal bool CloseView(ITextView textView)
         {
-            IVsWindowFrame vsWindowFrame;
-            if (!_vsAdapter.GetContainingWindowFrame(textView).TryGetValue(out vsWindowFrame))
+            if (!_vsAdapter.GetContainingWindowFrame(textView).TryGetValue(out IVsWindowFrame vsWindowFrame))
             {
                 return false;
             }
 
             // In the case this is a split view then close should close on of the views vs. closing the 
             // entire frame
-            IVsCodeWindow vsCodeWindow;
-            if (vsWindowFrame.GetCodeWindow().TryGetValue(out vsCodeWindow) && vsCodeWindow.IsSplit())
+            if (vsWindowFrame.GetCodeWindow().TryGetValue(out IVsCodeWindow vsCodeWindow) && vsCodeWindow.IsSplit())
             {
                 return SendSplit(vsCodeWindow);
             }
@@ -197,8 +192,7 @@ namespace Vim.VisualStudio.Implementation.Misc
 
         internal bool SplitView(ITextView textView)
         {
-            IVsCodeWindow codeWindow;
-            if (_vsAdapter.GetCodeWindow(textView).TryGetValue(out codeWindow))
+            if (_vsAdapter.GetCodeWindow(textView).TryGetValue(out IVsCodeWindow codeWindow))
             {
                 return SendSplit(codeWindow);
             }

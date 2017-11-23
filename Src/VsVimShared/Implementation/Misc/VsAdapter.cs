@@ -204,8 +204,7 @@ namespace Vim.VisualStudio.Implementation.Misc
                 return Enumerable.Empty<IVsTextView>();
             }
 
-            IVsEnumTextViews vsEnum;
-            if (ErrorHandler.Failed(_textManager.EnumViews(vsTextBuffer, out vsEnum)))
+            if (ErrorHandler.Failed(_textManager.EnumViews(vsTextBuffer, out IVsEnumTextViews vsEnum)))
             {
                 // When run as a result of navigation for NavigateTo this method can fail.  The reason
                 // isn't understood but it can fail so we must handle it.  
@@ -268,8 +267,7 @@ namespace Vim.VisualStudio.Implementation.Misc
         {
             try
             {
-                uint docCookie;
-                _table.FindDocument(textDocument.FilePath, out docCookie);
+                _table.FindDocument(textDocument.FilePath, out uint docCookie);
                 return docCookie;
             }
             catch (Exception ex)
@@ -292,8 +290,7 @@ namespace Vim.VisualStudio.Implementation.Misc
                 return false;
             }
 
-            Guid id;
-            return ErrorHandler.Succeeded(vsTextLines.GetLanguageServiceID(out id))
+            return ErrorHandler.Succeeded(vsTextLines.GetLanguageServiceID(out Guid id))
                 && id == VSConstants.CLSID_HtmlLanguageService;
         }
 
@@ -312,8 +309,7 @@ namespace Vim.VisualStudio.Implementation.Misc
             }
 
             var key = s_watchWindowGuid;
-            object value;
-            if (!ErrorHandler.Succeeded(vsUserData.GetData(ref key, out value)) || value == null)
+            if (!ErrorHandler.Succeeded(vsUserData.GetData(ref key, out object value)) || value == null)
             {
                 return false;
             }
@@ -343,8 +339,7 @@ namespace Vim.VisualStudio.Implementation.Misc
                 return false;
             }
 
-            uint flags;
-            if (ErrorHandler.Succeeded(textLines.GetStateFlags(out flags))
+            if (ErrorHandler.Succeeded(textLines.GetStateFlags(out uint flags))
                 && 0 != (flags & (uint)BUFFERSTATEFLAGS.BSF_USER_READONLY))
             {
                 return true;
@@ -427,11 +422,8 @@ namespace Vim.VisualStudio.Implementation.Misc
             try
             {
                 var dataSource = (IVsUIDataSource)_vsFindManager;
-
-                IVsUIObject uiObj;
-                object obj;
-                if (ErrorHandler.Failed(dataSource.GetValue("IsIncrementalSearchActive", out uiObj)) ||
-                    ErrorHandler.Failed(uiObj.get_Data(out obj)) ||
+                if (ErrorHandler.Failed(dataSource.GetValue("IsIncrementalSearchActive", out IVsUIObject uiObj)) ||
+                    ErrorHandler.Failed(uiObj.get_Data(out object obj)) ||
                     !(obj is bool))
                 {
                     return false;
@@ -467,8 +459,7 @@ namespace Vim.VisualStudio.Implementation.Misc
                 return false;
             }
 
-            IVsTextView vsTextView;
-            var hr = textManager.GetActiveView2(fMustHaveFocus: 0, pBuffer: null, grfIncludeViewFrameType: (uint)_VIEWFRAMETYPE.vftCodeWindow, ppView: out vsTextView);
+            var hr = textManager.GetActiveView2(fMustHaveFocus: 0, pBuffer: null, grfIncludeViewFrameType: (uint)_VIEWFRAMETYPE.vftCodeWindow, ppView: out IVsTextView vsTextView);
             if (ErrorHandler.Failed(hr))
             {
                 textView = null;

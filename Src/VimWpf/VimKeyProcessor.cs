@@ -150,8 +150,7 @@ namespace Vim.UI.Wpf
                 // Attempt to map the key information into a KeyInput value which can be processed
                 // by Vim.  If this worksa nd the key is processed then the input is considered
                 // to be handled
-                KeyInput keyInput;
-                if (_keyUtil.TryConvertSpecialToKeyInput(args.Key, args.KeyboardDevice.Modifiers, out keyInput))
+                if (_keyUtil.TryConvertSpecialToKeyInput(args.Key, args.KeyboardDevice.Modifiers, out KeyInput keyInput))
                 {
                     handled = TryProcess(keyInput);
                 }

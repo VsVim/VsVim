@@ -266,10 +266,8 @@ namespace Vim.UnitTest
         /// </summary>
         public void Run(KeyInput keyInput)
         {
-            Key key;
-            ModifierKeys modifierKeys;
 
-            if (!TryConvert(keyInput, out key, out modifierKeys))
+            if (!TryConvert(keyInput, out Key key, out ModifierKeys modifierKeys))
             {
                 throw new Exception(String.Format("Couldn't convert '{0}' to Wpf keys", keyInput));
             }
@@ -299,8 +297,10 @@ namespace Vim.UnitTest
                 // textual composition 
                 var textInputEventArgs = new TextCompositionEventArgs(
                     _defaultKeyboardDevice,
-                    CreateTextComposition(text));
-                textInputEventArgs.RoutedEvent = UIElement.TextInputEvent;
+                    CreateTextComposition(text))
+                {
+                    RoutedEvent = UIElement.TextInputEvent
+                };
                 _defaultInputController.HandleTextInput(this, textInputEventArgs);
             }
 
@@ -365,8 +365,10 @@ namespace Vim.UnitTest
                 _defaultKeyboardDevice,
                 _presentationSource.Object,
                 0,
-                key);
-            keyEventArgs.RoutedEvent = e;
+                key)
+            {
+                RoutedEvent = e
+            };
             return keyEventArgs;
         }
 
@@ -395,8 +397,7 @@ namespace Vim.UnitTest
                 return true;
             }
 
-            KeyData keyData;
-            if (s_keyDataMap.TryGetValue(keyInput, out keyData))
+            if (s_keyDataMap.TryGetValue(keyInput, out KeyData keyData))
             {
                 key = keyData.Key;
                 modifierKeys = keyData.ModifierKeys;

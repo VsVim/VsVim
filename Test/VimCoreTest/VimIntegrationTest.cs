@@ -38,8 +38,7 @@ namespace Vim.UnitTest
                 var view = CreateTextView("foo bar");
                 var vimBuffer = Vim.CreateVimBuffer(view);
 
-                IVimBuffer found;
-                Assert.True(Vim.TryGetVimBuffer(view, out found));
+                Assert.True(Vim.TryGetVimBuffer(view, out IVimBuffer found));
                 Assert.Same(view, found.TextView);
             }
 

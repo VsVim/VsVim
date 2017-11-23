@@ -37,9 +37,10 @@ namespace Vim.VisualStudio.Implementation.Misc
                 TimeSpan.FromSeconds(.1),
                 DispatcherPriority.Normal,
                 OnTimer,
-                Dispatcher.CurrentDispatcher);
-
-            _timer.IsEnabled = !_vimApplicationSettings.UseEditorCommandMargin;
+                Dispatcher.CurrentDispatcher)
+            {
+                IsEnabled = !_vimApplicationSettings.UseEditorCommandMargin
+            };
             _vimApplicationSettings.SettingsChanged += OnSettingsChanged;
         }
 

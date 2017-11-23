@@ -61,8 +61,10 @@ namespace Vim.UnitTest
             [Fact]
             public void SimpleGet()
             {
-                var source = new CustomSettingSource("test");
-                source.Value = "foo";
+                var source = new CustomSettingSource("test")
+                {
+                    Value = "foo"
+                };
                 _globalSettings.AddCustomSetting(source.Name, source.Name, source);
                 Assert.Equal("foo", GetStringValue(source.Name));
             }
@@ -70,8 +72,10 @@ namespace Vim.UnitTest
             [Fact]
             public void SimpleSet()
             {
-                var source = new CustomSettingSource("test");
-                source.Value = "foo";
+                var source = new CustomSettingSource("test")
+                {
+                    Value = "foo"
+                };
                 _globalSettings.AddCustomSetting(source.Name, source.Name, source);
                 _globalSettings.TrySetValueFromString(source.Name, "bar");
                 Assert.Equal("bar", GetStringValue(source.Name));

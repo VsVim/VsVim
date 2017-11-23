@@ -9,8 +9,10 @@ namespace Vim.UnitTest
         public void ValueBackingTest1()
         {
             var backing = new MockRegisterValueBacking();
-            var reg = new Register(RegisterName.Unnamed, backing);
-            reg.RegisterValue = new RegisterValue("foo", OperationKind.CharacterWise);
+            var reg = new Register(RegisterName.Unnamed, backing)
+            {
+                RegisterValue = new RegisterValue("foo", OperationKind.CharacterWise)
+            };
             Assert.Equal("foo", backing.RegisterValue.StringValue);
         }
     }

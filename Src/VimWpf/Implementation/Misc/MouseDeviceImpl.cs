@@ -65,8 +65,7 @@ namespace Vim.UI.Wpf.Implementation.Misc
 
         public bool InDragOperation(ITextView textView)
         {
-            Handler handler;
-            if (TryGetHandler(textView, out handler))
+            if (TryGetHandler(textView, out Handler handler))
             {
                 return handler.InDrag;
             }
@@ -88,8 +87,7 @@ namespace Vim.UI.Wpf.Implementation.Misc
 
         public IMouseProcessor GetAssociatedProcessor(IWpfTextView wpfTextView)
         {
-            Handler handler;
-            if (!TryGetHandler(wpfTextView, out handler))
+            if (!TryGetHandler(wpfTextView, out Handler handler))
             {
                 handler = new Handler();
                 wpfTextView.Properties.AddProperty(s_key, handler);

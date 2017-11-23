@@ -206,8 +206,7 @@ namespace Vim.VisualStudio.UnitTest.Utils
 
             int IOleCommandTarget.Exec(ref Guid commandGroup, uint cmdId, uint cmdExecOpt, IntPtr variantIn, IntPtr variantOut)
             {
-                EditCommand editCommand;
-                if (!OleCommandUtil.TryConvert(commandGroup, cmdId, variantIn, VimKeyModifiers.None, out editCommand))
+                if (!OleCommandUtil.TryConvert(commandGroup, cmdId, variantIn, VimKeyModifiers.None, out EditCommand editCommand))
                 {
                     _lastExecEditCommand = null;
                     return VSConstants.E_FAIL;
@@ -219,8 +218,7 @@ namespace Vim.VisualStudio.UnitTest.Utils
 
             int IOleCommandTarget.QueryStatus(ref Guid commandGroup, uint commandCount, OLECMD[] commands, IntPtr commandText)
             {
-                EditCommand editCommand;
-                if (1 != commandCount || !OleCommandUtil.TryConvert(commandGroup, commands[0].cmdID, commandText, VimKeyModifiers.None, out editCommand))
+                if (1 != commandCount || !OleCommandUtil.TryConvert(commandGroup, commands[0].cmdID, commandText, VimKeyModifiers.None, out EditCommand editCommand))
                 {
                     _lastQueryStatusEditCommand = null;
                     commands[0].cmdf = 0;
@@ -468,9 +466,8 @@ namespace Vim.VisualStudio.UnitTest.Utils
             // to be when a QueryStatus / Exec pair executes succesfully or when Visual Studio loses
             // and gains focus again.  These may be related
 
-            bool result;
             var commandId = oleCommandData.CommandId;
-            if (_cachedQueryStatusMap.TryGetValue(commandId, out result))
+            if (_cachedQueryStatusMap.TryGetValue(commandId, out bool result))
             {
                 return result;
             }
@@ -485,8 +482,7 @@ namespace Vim.VisualStudio.UnitTest.Utils
         /// </summary>
         private bool RunQueryStatusCore(OleCommandData oleCommandData)
         {
-            OLECMD command;
-            var hr = _commandTarget.QueryStatus(oleCommandData, out command);
+            var hr = _commandTarget.QueryStatus(oleCommandData, out OLECMD command);
             if (!ErrorHandler.Succeeded(hr))
             {
                 return false;

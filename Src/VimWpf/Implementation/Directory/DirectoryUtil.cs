@@ -57,8 +57,7 @@ namespace Vim.UI.Wpf.Implementation.Directory
 
         private string GetDirectoryPath(ITextBuffer textBuffer)
         {
-            string name = "";
-            if (!textBuffer.Properties.TryGetPropertySafe(s_nameKey, out name))
+            if (!textBuffer.Properties.TryGetPropertySafe(s_nameKey, out string name))
             {
                 name = null;
             }

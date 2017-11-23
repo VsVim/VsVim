@@ -31,11 +31,7 @@ namespace Vim.VisualStudio.Implementation.ConflictingKey
 
         private void OnConfigureClick(object sender, RoutedEventArgs e)
         {
-            var list = ConfigureClick;
-            if (list != null)
-            {
-                list(this, RoutedEventArgs.Empty);
-            }
+            ConfigureClick?.Invoke(this, RoutedEventArgs.Empty);
         }
     }
 }

@@ -13,8 +13,7 @@ namespace Vim.VisualStudio.UnitTest
         {
             using (var ptr = CharPointer.Create(data))
             {
-                EditCommand command;
-                Assert.True(OleCommandUtil.TryConvert(VSConstants.VSStd2K, (uint)VSConstants.VSStd2KCmdID.TYPECHAR, ptr.IntPtr, VimKeyModifiers.None, out command));
+                Assert.True(OleCommandUtil.TryConvert(VSConstants.VSStd2K, (uint)VSConstants.VSStd2KCmdID.TYPECHAR, ptr.IntPtr, VimKeyModifiers.None, out EditCommand command));
                 return command;
             }
         }
@@ -36,8 +35,7 @@ namespace Vim.VisualStudio.UnitTest
 
         private void VerifyConvert(VSConstants.VSStd2KCmdID cmd, VimKeyModifiers modifiers, KeyInput ki, EditCommandKind kind)
         {
-            EditCommand command;
-            Assert.True(OleCommandUtil.TryConvert(VSConstants.VSStd2K, (uint)cmd, IntPtr.Zero, modifiers, out command));
+            Assert.True(OleCommandUtil.TryConvert(VSConstants.VSStd2K, (uint)cmd, IntPtr.Zero, modifiers, out EditCommand command));
             Assert.Equal(ki, command.KeyInput);
             Assert.Equal(kind, command.EditCommandKind);
         }
@@ -49,8 +47,7 @@ namespace Vim.VisualStudio.UnitTest
 
         private void VerifyConvert(VSConstants.VSStd97CmdID cmd, KeyInput ki, EditCommandKind kind)
         {
-            EditCommand command;
-            Assert.True(OleCommandUtil.TryConvert(VSConstants.GUID_VSStandardCommandSet97, (uint)cmd, IntPtr.Zero, VimKeyModifiers.None, out command));
+            Assert.True(OleCommandUtil.TryConvert(VSConstants.GUID_VSStandardCommandSet97, (uint)cmd, IntPtr.Zero, VimKeyModifiers.None, out EditCommand command));
             Assert.Equal(ki, command.KeyInput);
             Assert.Equal(kind, command.EditCommandKind);
         }
@@ -61,8 +58,7 @@ namespace Vim.VisualStudio.UnitTest
         private void VerifyConvert(VimKey vimKey, VSConstants.VSStd2KCmdID cmd)
         {
             var keyInput = KeyInputUtil.VimKeyToKeyInput(vimKey);
-            OleCommandData oleCommandData;
-            Assert.True(OleCommandUtil.TryConvert(keyInput, false, out oleCommandData));
+            Assert.True(OleCommandUtil.TryConvert(keyInput, false, out OleCommandData oleCommandData));
             Assert.Equal(VSConstants.VSStd2K, oleCommandData.Group);
             Assert.Equal(new OleCommandData(cmd), oleCommandData);
         }
@@ -90,8 +86,7 @@ namespace Vim.VisualStudio.UnitTest
             {
                 using (var ptr = CharPointer.Create(c))
                 {
-                    EditCommand command;
-                    Assert.True(OleCommandUtil.TryConvert(VSConstants.VSStd2K, (uint)VSConstants.VSStd2KCmdID.TYPECHAR, ptr.IntPtr, modifiers, out command));
+                    Assert.True(OleCommandUtil.TryConvert(VSConstants.VSStd2K, (uint)VSConstants.VSStd2KCmdID.TYPECHAR, ptr.IntPtr, modifiers, out EditCommand command));
                     Assert.Equal(c, command.KeyInput.Char);
                 }
             }
@@ -110,8 +105,7 @@ namespace Vim.VisualStudio.UnitTest
         public void ArrowKey_WithModifiers()
         {
             var modifiers = VimKeyModifiers.Alt | VimKeyModifiers.Control;
-            EditCommand command;
-            Assert.True(OleCommandUtil.TryConvert(VSConstants.VSStd2K, (uint)VSConstants.VSStd2KCmdID.LEFT, IntPtr.Zero, modifiers, out command));
+            Assert.True(OleCommandUtil.TryConvert(VSConstants.VSStd2K, (uint)VSConstants.VSStd2KCmdID.LEFT, IntPtr.Zero, modifiers, out EditCommand command));
             Assert.Equal(modifiers, command.KeyInput.KeyModifiers);
         }
 
@@ -217,7 +211,6 @@ namespace Vim.VisualStudio.UnitTest
                 var oleCommandData = OleCommandData.Empty;
                 try
                 {
-                    KeyInput converted;
                     Assert.True(OleCommandUtil.TryConvert(cur, out oleCommandData));
 
                     // We lose fidelity on these keys because they both get written out as numbers
@@ -226,7 +219,7 @@ namespace Vim.VisualStudio.UnitTest
                     {
                         continue;
                     }
-                    Assert.True(OleCommandUtil.TryConvert(oleCommandData, out converted));
+                    Assert.True(OleCommandUtil.TryConvert(oleCommandData, out KeyInput converted));
                     Assert.Equal(converted, cur);
                 }
                 finally

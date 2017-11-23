@@ -64,8 +64,7 @@ namespace Vim.EditorHost
 
         private void BuildCatalog(EditorVersion editorVersion)
         {
-            Version vsVersion;
-            GetEditorInfoAndHookResolve(editorVersion, out vsVersion);
+            GetEditorInfoAndHookResolve(editorVersion, out Version vsVersion);
             BuildCatalog(vsVersion);
         }
 
@@ -87,8 +86,7 @@ namespace Vim.EditorHost
 
         private static void GetEditorInfoAndHookResolve(EditorVersion editorVersion, out Version vsVersion)
         {
-            string vsInstallDirectory;
-            if (!EditorLocatorUtil.TryGetEditorInfo(editorVersion, out vsVersion, out vsInstallDirectory))
+            if (!EditorLocatorUtil.TryGetEditorInfo(editorVersion, out vsVersion, out string vsInstallDirectory))
             {
                 throw new Exception("Unable to calculate the version of Visual Studio installed on the machine");
             }
@@ -105,13 +103,15 @@ namespace Vim.EditorHost
         /// </summary>
         private static void HookResolve(string installDirectory)
         {
-            var dirList = new List<string>();
-            dirList.Add(Path.Combine(installDirectory, "PrivateAssemblies"));
+            var dirList = new List<string>
+            {
+                Path.Combine(installDirectory, "PrivateAssemblies"),
 
-            // Before 15.0 all of the editor assemblies were located in the GAC.  Hence no resolve needs to be done
-            // because they will be discovered automatically when we load by the qualified name.  Starting in 15.0 
-            // though the assemblies are not GAC'd and we need to load from the extension directory. 
-            dirList.Add(Path.Combine(installDirectory, @"CommonExtensions\Microsoft\Editor"));
+                // Before 15.0 all of the editor assemblies were located in the GAC.  Hence no resolve needs to be done
+                // because they will be discovered automatically when we load by the qualified name.  Starting in 15.0 
+                // though the assemblies are not GAC'd and we need to load from the extension directory. 
+                Path.Combine(installDirectory, @"CommonExtensions\Microsoft\Editor")
+            };
 
             AppDomain.CurrentDomain.AssemblyResolve += (sender, e) =>
                 {

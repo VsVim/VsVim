@@ -48,8 +48,7 @@ namespace Vim.VisualStudio
             var scopes = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             foreach (var command in commands)
             {
-                CommandId commandId;
-                if (!command.TryGetCommandId(out commandId))
+                if (!command.TryGetCommandId(out CommandId commandId))
                 {
                     continue;
                 }
@@ -79,8 +78,7 @@ namespace Vim.VisualStudio
         /// </summary>
         public bool IsActive(CommandKeyBinding commandKeyBinding)
         {
-            CommandData commandData;
-            if (!_commandMap.TryGetValue(commandKeyBinding.Id, out commandData))
+            if (!_commandMap.TryGetValue(commandKeyBinding.Id, out CommandData commandData))
             {
                 return false;
             }
@@ -90,20 +88,17 @@ namespace Vim.VisualStudio
 
         public bool TryGetCommand(CommandId id, out DteCommand command)
         {
-            ReadOnlyCollection<CommandKeyBinding> bindings;
-            return TryGetCommandData(id, out command, out bindings);
+            return TryGetCommandData(id, out command, out ReadOnlyCollection<CommandKeyBinding> bindings);
         }
 
         public bool TryGetCommandKeyBindings(CommandId id, out ReadOnlyCollection<CommandKeyBinding> bindings)
         {
-            DteCommand command;
-            return TryGetCommandData(id, out command, out bindings);
+            return TryGetCommandData(id, out DteCommand command, out bindings);
         }
 
         public bool TryGetCommandData(CommandId id, out DteCommand command, out ReadOnlyCollection<CommandKeyBinding> bindings)
         {
-            CommandData commandData;
-            if (!_commandMap.TryGetValue(id, out commandData))
+            if (!_commandMap.TryGetValue(id, out CommandData commandData))
             {
                 command = null;
                 bindings = null;

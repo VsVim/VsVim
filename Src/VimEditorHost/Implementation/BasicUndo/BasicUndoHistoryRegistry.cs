@@ -38,15 +38,13 @@ namespace Vim.EditorHost.Implementation.BasicUndo
 
         ITextUndoHistory ITextUndoHistoryRegistry.GetHistory(object context)
         {
-            IBasicUndoHistory history;
-            _map.TryGetValue(context, out history);
+            _map.TryGetValue(context, out IBasicUndoHistory history);
             return history;
         }
 
         ITextUndoHistory ITextUndoHistoryRegistry.RegisterHistory(object context)
         {
-            IBasicUndoHistory history;
-            if (!_map.TryGetValue(context, out history))
+            if (!_map.TryGetValue(context, out IBasicUndoHistory history))
             {
                 history = new BasicUndoHistory(context);
                 _map.Add(context, history);
@@ -66,8 +64,7 @@ namespace Vim.EditorHost.Implementation.BasicUndo
 
         bool ITextUndoHistoryRegistry.TryGetHistory(object context, out ITextUndoHistory history)
         {
-            IBasicUndoHistory basicUndoHistory;
-            if (TryGetHistory(context, out basicUndoHistory))
+            if (TryGetHistory(context, out IBasicUndoHistory basicUndoHistory))
             {
                 history = basicUndoHistory;
                 return true;

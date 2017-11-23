@@ -210,8 +210,7 @@ namespace Vim.VisualStudio
             _smartIndentationService = smartIndentationService;
             _extensionAdapterBroker = extensionAdapterBroker;
 
-            uint cookie;
-            _vsMonitorSelection.AdviseSelectionEvents(this, out cookie);
+            _vsMonitorSelection.AdviseSelectionEvents(this, out uint cookie);
 
             InitTelemetry(telemetryProvider.GetOrCreate(vimApplicationSettings, _dte), vimApplicationSettings);
         }
@@ -491,8 +490,7 @@ namespace Vim.VisualStudio
         /// </summary>
         public override bool TryCustomProcess(ITextView textView, InsertCommand command)
         {
-            VsCommandTarget vsCommandTarget;
-            if (VsCommandTarget.TryGet(textView, out vsCommandTarget))
+            if (VsCommandTarget.TryGet(textView, out VsCommandTarget vsCommandTarget))
             {
                 return vsCommandTarget.TryCustomProcess(command);
             }
@@ -819,8 +817,7 @@ namespace Vim.VisualStudio
 
                 ITextView oldView = getTextView(varValueOld);
                 ITextView newView = null;
-                object value;
-                if (ErrorHandler.Succeeded(_vsMonitorSelection.GetCurrentElementValue((uint)VSConstants.VSSELELEMID.SEID_WindowFrame, out value)))
+                if (ErrorHandler.Succeeded(_vsMonitorSelection.GetCurrentElementValue((uint)VSConstants.VSSELELEMID.SEID_WindowFrame, out object value)))
                 {
                     newView = getTextView(value);
                 }

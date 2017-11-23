@@ -95,9 +95,11 @@ namespace VimApp.Implementation.NewLineDisplay
 
         private UIElement CreateAdornment(string text)
         {
-            var textBox = new TextBox();
-            textBox.Text = text;
-            textBox.BorderThickness = new Thickness(1);
+            var textBox = new TextBox
+            {
+                Text = text,
+                BorderThickness = new Thickness(1)
+            };
             textBox.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
             textBox.Foreground = Brushes.Black;
             textBox.FontWeight = FontWeights.Bold;

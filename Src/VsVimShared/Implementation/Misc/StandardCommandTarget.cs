@@ -156,8 +156,7 @@ namespace Vim.VisualStudio.Implementation.Misc
             // will automatically map the KeyInput under the hood at the IVimBuffer level but
             // not at the individual IMode.  Have to manually map here and test against the 
             // mapped KeyInput
-            KeyInput mapped;
-            if (!TryGetSingleMapping(keyInput, out mapped))
+            if (!TryGetSingleMapping(keyInput, out KeyInput mapped))
             {
                 return _vimBuffer.Process(keyInput).IsAnyHandled;
             }

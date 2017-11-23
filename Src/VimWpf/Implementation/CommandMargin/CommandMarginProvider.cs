@@ -63,8 +63,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
 
         IWpfTextViewMargin IWpfTextViewMarginProvider.CreateMargin(IWpfTextViewHost wpfTextViewHost, IWpfTextViewMargin marginContainer)
         {
-            IVimBuffer vimBuffer;
-            if (!_vim.TryGetOrCreateVimBufferForHost(wpfTextViewHost.TextView, out vimBuffer))
+            if (!_vim.TryGetOrCreateVimBufferForHost(wpfTextViewHost.TextView, out IVimBuffer vimBuffer))
             {
                 return null;
             }

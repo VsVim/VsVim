@@ -23,9 +23,8 @@ namespace Vim.VisualStudio.Implementation.OptionPages
 
         private void ShowOptionsPage()
         {
-            IVsPackage vsPackage;
             Guid packageGuid = VsVimConstants.PackageGuid;
-            if (ErrorHandler.Succeeded(_vsShell.LoadPackage(ref packageGuid, out vsPackage)))
+            if (ErrorHandler.Succeeded(_vsShell.LoadPackage(ref packageGuid, out IVsPackage vsPackage)))
             {
                 var package = vsPackage as Package;
                 if (package != null)

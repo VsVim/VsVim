@@ -42,11 +42,7 @@ namespace Vim.VisualStudio.Implementation.Settings
 
         internal void OnSettingsChanged()
         {
-            var handler = SettingsChanged;
-            if (handler != null)
-            {
-                handler(this, new ApplicationSettingsEventArgs());
-            }
+            SettingsChanged?.Invoke(this, new ApplicationSettingsEventArgs());
         }
 
         [ImportingConstructor]
@@ -137,8 +133,7 @@ namespace Vim.VisualStudio.Implementation.Settings
                 return defaultValue;
             }
 
-            T enumValue;
-            if (Enum.TryParse(value, out enumValue))
+            if (Enum.TryParse(value, out T enumValue))
             {
                 return enumValue;
             }

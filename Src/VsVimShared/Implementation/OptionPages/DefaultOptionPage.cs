@@ -93,8 +93,7 @@ namespace Vim.VisualStudio.Implementation.OptionPages
                     return null;
                 }
 
-                string convertedValue;
-                if (_map.TryGetValue((T)value, out convertedValue))
+                if (_map.TryGetValue((T)value, out string convertedValue))
                 {
                     return convertedValue;
                 }
@@ -110,8 +109,7 @@ namespace Vim.VisualStudio.Implementation.OptionPages
             public override object ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, object value)
             {
                 var str = value as string;
-                T convertedValue;
-                if (_reverseMap.TryGetValue(str, out convertedValue))
+                if (_reverseMap.TryGetValue(str, out T convertedValue))
                 {
                     return convertedValue;
                 }
@@ -138,11 +136,13 @@ namespace Vim.VisualStudio.Implementation.OptionPages
         {
             public override Dictionary<VimRcLoadSetting, string> CreateMap()
             {
-                var map = new Dictionary<VimRcLoadSetting, string>();
-                map.Add(VimRcLoadSetting.None, "No vsvimrc or vimrc files");
-                map.Add(VimRcLoadSetting.VsVimRc, "vsvimrc files only");
-                map.Add(VimRcLoadSetting.VimRc, "vimrc files only");
-                map.Add(VimRcLoadSetting.Both, "vsvimrc or vimrc files");
+                var map = new Dictionary<VimRcLoadSetting, string>
+                {
+                    { VimRcLoadSetting.None, "No vsvimrc or vimrc files" },
+                    { VimRcLoadSetting.VsVimRc, "vsvimrc files only" },
+                    { VimRcLoadSetting.VimRc, "vimrc files only" },
+                    { VimRcLoadSetting.Both, "vsvimrc or vimrc files" }
+                };
                 return map;
             }
         }
@@ -155,10 +155,12 @@ namespace Vim.VisualStudio.Implementation.OptionPages
         {
             public override Dictionary<WordWrapDisplay, string> CreateMap()
             {
-                var map = new Dictionary<WordWrapDisplay, string>();
-                map.Add(WordWrapDisplay.AutoIndent, "AutoIndent");
-                map.Add(WordWrapDisplay.Glyph, "Glyph");
-                map.Add(WordWrapDisplay.All, "AutoIndent + Glyph");
+                var map = new Dictionary<WordWrapDisplay, string>
+                {
+                    { WordWrapDisplay.AutoIndent, "AutoIndent" },
+                    { WordWrapDisplay.Glyph, "Glyph" },
+                    { WordWrapDisplay.All, "AutoIndent + Glyph" }
+                };
                 return map;
             }
         }
@@ -504,8 +506,7 @@ namespace Vim.VisualStudio.Implementation.OptionPages
         private Color FromColorRef(IVsFontAndColorStorage vsStorage, uint colorValue)
         {
             var vsUtil = (IVsFontAndColorUtilities)vsStorage;
-            int type;
-            ErrorHandler.ThrowOnFailure(vsUtil.GetColorType(colorValue, out type));
+            ErrorHandler.ThrowOnFailure(vsUtil.GetColorType(colorValue, out int type));
             switch ((__VSCOLORTYPE)type)
             {
                 case __VSCOLORTYPE.CT_SYSCOLOR:
@@ -515,17 +516,14 @@ namespace Vim.VisualStudio.Implementation.OptionPages
                     {
                         var array = new COLORINDEX[1];
                         ErrorHandler.ThrowOnFailure(vsUtil.GetEncodedIndex(colorValue, array));
-                        uint rgb;
-                        ErrorHandler.ThrowOnFailure(vsUtil.GetRGBOfIndex(array[0], out rgb));
+                        ErrorHandler.ThrowOnFailure(vsUtil.GetRGBOfIndex(array[0], out uint rgb));
                         return ColorTranslator.FromWin32((int)rgb);
                     };
                 case __VSCOLORTYPE.CT_VSCOLOR:
                     {
                         var vsUIShell = (IVsUIShell2)GetService(typeof(SVsUIShell));
-                        int index;
-                        ErrorHandler.ThrowOnFailure(vsUtil.GetEncodedVSColor(colorValue, out index));
-                        uint rgbValue;
-                        ErrorHandler.ThrowOnFailure(vsUIShell.GetVSSysColorEx(index, out rgbValue));
+                        ErrorHandler.ThrowOnFailure(vsUtil.GetEncodedVSColor(colorValue, out int index));
+                        ErrorHandler.ThrowOnFailure(vsUIShell.GetVSSysColorEx(index, out uint rgbValue));
                         return ColorTranslator.FromWin32((int)rgbValue);
                     };
                 case __VSCOLORTYPE.CT_AUTOMATIC:

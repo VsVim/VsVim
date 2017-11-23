@@ -45,11 +45,7 @@ namespace VimApp.Implementation.Window
             var vimWindow = new VimWindow(_vim, tabItem);
             _map.Add(tabItem, vimWindow);
 
-            var handlers = _vimWindowCreated;
-            if (handlers != null)
-            {
-                handlers(this, new VimWindowEventArgs(vimWindow));
-            }
+            _vimWindowCreated?.Invoke(this, new VimWindowEventArgs(vimWindow));
 
             return vimWindow;
         }

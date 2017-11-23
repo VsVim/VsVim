@@ -100,11 +100,7 @@ namespace Vim.UI.Wpf.Implementation.CharDisplay
 
         private void RaiseDisplayControlCharsChanged()
         {
-            EventHandler e = _displayControlCharsChanged;
-            if (e != null)
-            {
-                e(this, EventArgs.Empty);
-            }
+            _displayControlCharsChanged?.Invoke(this, EventArgs.Empty);
         }
 
         #region IControlCharUtil

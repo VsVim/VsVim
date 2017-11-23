@@ -69,9 +69,8 @@ namespace Vim.VisualStudio
 
         internal bool IsEditCommand(Guid commandGroup, uint commandId)
         {
-            EditCommand command;
             return
-                OleCommandUtil.TryConvert(commandGroup, commandId, IntPtr.Zero, VimKeyModifiers.None, out command) &&
+                OleCommandUtil.TryConvert(commandGroup, commandId, IntPtr.Zero, VimKeyModifiers.None, out EditCommand command) &&
                 command.HasKeyInput;
         }
 
@@ -106,8 +105,7 @@ namespace Vim.VisualStudio
                 return false;
             }
 
-            IVsCodeWindow codeWindow;
-            if (!adapter.GetCodeWindow(textView).TryGetValue(out codeWindow))
+            if (!adapter.GetCodeWindow(textView).TryGetValue(out IVsCodeWindow codeWindow))
             {
                 return false;
             }

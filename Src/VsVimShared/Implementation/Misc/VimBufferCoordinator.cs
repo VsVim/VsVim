@@ -115,8 +115,7 @@ namespace Vim.VisualStudio.Implementation.Misc
 
         KeyProcessor IKeyProcessorProvider.GetAssociatedProcessor(IWpfTextView wpfTextView)
         {
-            IVimBuffer vimBuffer;
-            if (_vim.TryGetOrCreateVimBufferForHost(wpfTextView, out vimBuffer))
+            if (_vim.TryGetOrCreateVimBufferForHost(wpfTextView, out IVimBuffer vimBuffer))
             {
                 return GetOrCreate(vimBuffer);
             }

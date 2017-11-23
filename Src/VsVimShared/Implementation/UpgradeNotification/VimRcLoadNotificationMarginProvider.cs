@@ -86,10 +86,12 @@ namespace Vim.VisualStudio.Implementation.UpgradeNotification
             // If the notification has occured then there is nothing else to do.  We are done
             if (!_vimApplicationSettings.HaveNotifiedVimRcLoad && state.Item1.VimRcKind == VimRcKind.VimRc)
             {
-                var linkBanner = new LinkBanner();
-                linkBanner.LinkAddress = "https://github.com/jaredpar/VsVim/wiki/FAQ#vimrc";
-                linkBanner.LinkText = "FAQ";
-                linkBanner.BannerText = "VsVim automatically loaded an existing _vimrc file";
+                var linkBanner = new LinkBanner
+                {
+                    LinkAddress = "https://github.com/jaredpar/VsVim/wiki/FAQ#vimrc",
+                    LinkText = "FAQ",
+                    BannerText = "VsVim automatically loaded an existing _vimrc file"
+                };
                 _toastNotificationServiceProvider.GetToastNoficationService(wpfTextView).Display(_notifyToastKey, linkBanner, OnNotifyClosed);
             }
 

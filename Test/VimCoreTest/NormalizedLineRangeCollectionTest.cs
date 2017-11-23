@@ -15,8 +15,10 @@ namespace Vim.UnitTest
             [Fact]
             public void Simple()
             {
-                var visited = new NormalizedLineRangeCollection();
-                visited.Add(LineRange.CreateFromBounds(0, 2));
+                var visited = new NormalizedLineRangeCollection
+                {
+                    LineRange.CreateFromBounds(0, 2)
+                };
                 Assert.Equal(LineRange.CreateFromBounds(0, 2), visited.OverarchingLineRange.Value);
             }
 
@@ -188,8 +190,10 @@ namespace Vim.UnitTest
         [Fact]
         public void Clear()
         {
-            var col = new NormalizedLineRangeCollection();
-            col.Add(new LineRange(1, 2));
+            var col = new NormalizedLineRangeCollection
+            {
+                new LineRange(1, 2)
+            };
             col.Clear();
             Assert.Equal(0, col.Count);
         }

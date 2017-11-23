@@ -35,8 +35,7 @@ namespace Vim.VisualStudio.Implementation.Settings
 
         internal static List<CommandKeyBinding> ConvertToCommandKeyBindings(string text)
         {
-            List<CommandKeyBinding> list;
-            if (TryConvertToCommandKeyBindings(text, out list))
+            if (TryConvertToCommandKeyBindings(text, out List<CommandKeyBinding> list))
             {
                 return list;
             }
@@ -56,12 +55,9 @@ namespace Vim.VisualStudio.Implementation.Settings
 
             for (int i = 0; i < items.Count; i += 4)
             {
-                Guid group;
-                uint id;
-                KeyBinding keyBinding;
-                if (!Guid.TryParse(items[i], out group) ||
-                    !UInt32.TryParse(items[i + 1], out id) ||
-                    !KeyBinding.TryParse(items[i + 3], out keyBinding))
+                if (!Guid.TryParse(items[i], out Guid group) ||
+                    !UInt32.TryParse(items[i + 1], out uint id) ||
+                    !KeyBinding.TryParse(items[i + 3], out KeyBinding keyBinding))
                 {
                     return false;
                 }
