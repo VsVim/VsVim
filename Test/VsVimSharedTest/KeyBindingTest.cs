@@ -825,8 +825,7 @@ Transact-SQL Editor::Ctrl+J
         {
             foreach (var line in SampleCommands)
             {
-                KeyBinding binding;
-                Assert.True(KeyBinding.TryParse(line, out binding), "Could not parse - " + line);
+                Assert.True(KeyBinding.TryParse(line, out KeyBinding binding), "Could not parse - " + line);
             }
         }
 
@@ -838,8 +837,7 @@ Transact-SQL Editor::Ctrl+J
         {
             foreach (var line in SampleCommands)
             {
-                KeyBinding binding;
-                Assert.True(KeyBinding.TryParse(line, out binding));
+                Assert.True(KeyBinding.TryParse(line, out KeyBinding binding));
                 Assert.Equal(line, binding.CommandString);
             }
         }

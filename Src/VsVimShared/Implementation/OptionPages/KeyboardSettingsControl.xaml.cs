@@ -103,8 +103,10 @@ namespace Vim.VisualStudio.Implementation.OptionPages
 
             foreach (var firstKey in allFirstKeys)
             {
-                var data = new KeyBindingData(handledByVsVim[firstKey].Union(handledByVs[firstKey]).ToReadOnlyCollection());
-                data.HandledByVsVim = handledByVsVim.Contains(firstKey);
+                var data = new KeyBindingData(handledByVsVim[firstKey].Union(handledByVs[firstKey]).ToReadOnlyCollection())
+                {
+                    HandledByVsVim = handledByVsVim.Contains(firstKey)
+                };
                 _keyBindingList.Add(data);
 
                 if (IsAdvanced(firstKey))
@@ -177,11 +179,7 @@ namespace Vim.VisualStudio.Implementation.OptionPages
 
             foreach (var commandId in commandIdList)
             {
-                // First step is to find the Visual Studio command we are binding to and it's existing 
-                // binding information
-                EnvDTE.Command command;
-                ReadOnlyCollection<CommandKeyBinding> currentBindingList;
-                if (!_snapshot.TryGetCommandData(commandId, out command, out currentBindingList))
+                if (!_snapshot.TryGetCommandData(commandId, out EnvDTE.Command command, out ReadOnlyCollection<CommandKeyBinding> currentBindingList))
                 {
                     continue;
                 }

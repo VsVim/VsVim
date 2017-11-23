@@ -40,8 +40,7 @@ namespace Vim.VisualStudio.Implementation.ExternalEdit
 
             foreach (var adapter in _adapterList)
             {
-                ITagger<ITag> tagger;
-                if (adapter.IsInterested(textView, out tagger))
+                if (adapter.IsInterested(textView, out ITagger<ITag> tagger))
                 {
                     bufferAdapterList.Add(adapter);
                     if (tagger != null)

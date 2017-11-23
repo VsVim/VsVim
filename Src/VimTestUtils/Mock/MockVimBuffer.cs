@@ -178,66 +178,42 @@ namespace Vim.UnitTest.Mock
 
         public void RaiseSwitchedMode(SwitchModeEventArgs args)
         {
-            if (SwitchedMode != null)
-            {
-                SwitchedMode(this, args);
-            }
+            SwitchedMode?.Invoke(this, args);
         }
 
         public void RaiseClosed()
         {
-            if (Closed != null)
-            {
-                Closed(this, EventArgs.Empty);
-            }
+            Closed?.Invoke(this, EventArgs.Empty);
         }
 
         public void RaiseStatusMessage(string message)
         {
-            if (StatusMessage != null)
-            {
-                StatusMessage(this, new StringEventArgs(message));
-            }
+            StatusMessage?.Invoke(this, new StringEventArgs(message));
         }
 
         public void RaiseErrorMessage(string message)
         {
-            if (ErrorMessage != null)
-            {
-                ErrorMessage(this, new StringEventArgs(message));
-            }
+            ErrorMessage?.Invoke(this, new StringEventArgs(message));
         }
 
         public void RaiseKeyInputProcessed(KeyInput ki, ProcessResult result)
         {
-            if (KeyInputProcessed != null)
-            {
-                KeyInputProcessed(this, new KeyInputProcessedEventArgs(ki, result));
-            }
+            KeyInputProcessed?.Invoke(this, new KeyInputProcessedEventArgs(ki, result));
         }
 
         public void RaiseKeyInputStart(KeyInput ki)
         {
-            if (KeyInputStart != null)
-            {
-                KeyInputStart(this, new KeyInputStartEventArgs(ki));
-            }
+            KeyInputStart?.Invoke(this, new KeyInputStartEventArgs(ki));
         }
 
         public void RaiseKeyInputEnd(KeyInput ki)
         {
-            if (KeyInputEnd != null)
-            {
-                KeyInputEnd(this, new KeyInputEventArgs(ki));
-            }
+            KeyInputEnd?.Invoke(this, new KeyInputEventArgs(ki));
         }
 
         public void RaiseKeyInputBuffered(KeyInputSet keyInputSet)
         {
-            if (KeyInputBuffered != null)
-            {
-                KeyInputBuffered(this, new KeyInputSetEventArgs(keyInputSet));
-            }
+            KeyInputBuffered?.Invoke(this, new KeyInputSetEventArgs(keyInputSet));
         }
 
         public event EventHandler<StringEventArgs> StatusMessage;

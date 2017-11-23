@@ -91,8 +91,7 @@ namespace VimApp
 
         public override int GetTabIndex(ITextView textView)
         {
-            IVimViewInfo vimViewInfo;
-            if (!TryGetVimViewInfo(textView, out vimViewInfo))
+            if (!TryGetVimViewInfo(textView, out IVimViewInfo vimViewInfo))
             {
                 return -1;
             }
@@ -131,8 +130,7 @@ namespace VimApp
                 return false;
             }
 
-            IWpfTextView createdTextView;
-            if (TryLoadPath(filePath, out createdTextView))
+            if (TryLoadPath(filePath, out IWpfTextView createdTextView))
             {
                 var wpfTextViewHost = MainWindow.CreateTextViewHost(createdTextView);
                 vimWindow.Clear();
@@ -237,8 +235,7 @@ namespace VimApp
         public override void SplitViewHorizontally(ITextView textView)
         {
             // First find the IVimViewInfo that contains this ITextView
-            IVimViewInfo vimViewInfo;
-            if (!TryGetVimViewInfo(textView, out vimViewInfo))
+            if (!TryGetVimViewInfo(textView, out IVimViewInfo vimViewInfo))
             {
                 _vim.ActiveStatusUtil.OnError(ErrorCouldNotFindVimViewInfo);
                 return;
@@ -292,8 +289,7 @@ namespace VimApp
 
         private bool TryLoadPathAsDirectory(string filePath, out IWpfTextView textView)
         {
-            ITextBuffer textBuffer;
-            if (!_directoryUtil.TryCreateDirectoryTextBuffer(filePath, out textBuffer))
+            if (!_directoryUtil.TryCreateDirectoryTextBuffer(filePath, out ITextBuffer textBuffer))
             {
                 textView = null;
                 return false;

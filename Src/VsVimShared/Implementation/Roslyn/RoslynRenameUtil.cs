@@ -39,11 +39,7 @@ namespace Vim.VisualStudio.Implementation.Roslyn
 
         private void OnActiveSessionChanged(object sender, EventArgs e)
         {
-            var handlers = IsRenameActiveChanged;
-            if (handlers != null)
-            {
-                handlers(this, EventArgs.Empty);
-            }
+            IsRenameActiveChanged?.Invoke(this, EventArgs.Empty);
         }
 
         private void Cancel()
@@ -64,8 +60,7 @@ namespace Vim.VisualStudio.Implementation.Roslyn
 
         internal static bool TryCreate(SVsServiceProvider vsServiceProvider, out IRoslynRenameUtil roslynRenameUtil)
         {
-            RoslynRenameUtil util;
-            bool ret = TryCreateCore(vsServiceProvider, out util);
+            bool ret = TryCreateCore(vsServiceProvider, out RoslynRenameUtil util);
             roslynRenameUtil = util;
             return ret;
         }

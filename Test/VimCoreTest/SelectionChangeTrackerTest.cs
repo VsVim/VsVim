@@ -39,8 +39,10 @@ namespace Vim.UnitTest
             _mouseDevice = _factory.Create<IMouseDevice>();
             _selectionOverride = _factory.Create<IVisualModeSelectionOverride>();
             _selectionOverride.Setup(x => x.IsInsertModePreferred(It.IsAny<ITextView>())).Returns(false);
-            var selectionList = new List<IVisualModeSelectionOverride>();
-            selectionList.Add(_selectionOverride.Object);
+            var selectionList = new List<IVisualModeSelectionOverride>
+            {
+                _selectionOverride.Object
+            };
             _context = new TestableSynchronizationContext();
 
             _tracker = new SelectionChangeTracker(_vimBuffer.Object, _factory.Create<ICommonOperations>(MockBehavior.Loose).Object, selectionList.ToFSharpList(), _mouseDevice.Object);

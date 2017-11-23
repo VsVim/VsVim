@@ -52,8 +52,7 @@ namespace Vim.VisualStudio.Implementation.Roslyn
         [ImportingConstructor]
         internal RoslynListenerFactory(SVsServiceProvider vsServiceProvider)
         {
-            IRoslynRenameUtil renameUtil;
-            if (RoslynRenameUtil.TryCreate(vsServiceProvider, out renameUtil))
+            if (RoslynRenameUtil.TryCreate(vsServiceProvider, out IRoslynRenameUtil renameUtil))
             {
                 RenameUtil = renameUtil;
             }

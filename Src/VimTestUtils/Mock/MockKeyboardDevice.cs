@@ -84,9 +84,7 @@ namespace Vim.UnitTest.Mock
 
         public KeyEventArgs CreateKeyEventArgs(KeyInput keyInput)
         {
-            Key key;
-            ModifierKeys modKeys;
-            if (!TryGetKeyForKeyInput(keyInput, out key, out modKeys))
+            if (!TryGetKeyForKeyInput(keyInput, out Key key, out ModifierKeys modKeys))
             {
                 throw new Exception();
             }
@@ -170,9 +168,7 @@ namespace Vim.UnitTest.Mock
         /// </summary>
         public void SendKeyStroke(UIElement target, KeyInput keyInput)
         {
-            Key key;
-            ModifierKeys modKeys;
-            if (!TryGetKeyForKeyInput(keyInput, out key, out modKeys))
+            if (!TryGetKeyForKeyInput(keyInput, out Key key, out ModifierKeys modKeys))
             {
                 throw new Exception();
             }

@@ -24,50 +24,52 @@ namespace Vim.UI.Wpf.Implementation.Misc
 
         internal static Dictionary<VimKey, Key> BuildVimKeyToWpfKeyMap()
         {
-            var map = new Dictionary<VimKey, Key>();
-            map[VimKey.Enter] = Key.Enter;
-            map[VimKey.Escape] = Key.Escape;
-            map[VimKey.Back] = Key.Back;
-            map[VimKey.Delete] = Key.Delete;
-            map[VimKey.Left] = Key.Left;
-            map[VimKey.Up] = Key.Up;
-            map[VimKey.Right] = Key.Right;
-            map[VimKey.Down] = Key.Down;
-            map[VimKey.Help] = Key.Help;
-            map[VimKey.Insert] = Key.Insert;
-            map[VimKey.Home] = Key.Home;
-            map[VimKey.End] = Key.End;
-            map[VimKey.PageUp] = Key.PageUp;
-            map[VimKey.PageDown] = Key.PageDown;
-            map[VimKey.Tab] = Key.Tab;
-            map[VimKey.F1] = Key.F1;
-            map[VimKey.F2] = Key.F2;
-            map[VimKey.F3] = Key.F3;
-            map[VimKey.F4] = Key.F4;
-            map[VimKey.F5] = Key.F5;
-            map[VimKey.F6] = Key.F6;
-            map[VimKey.F7] = Key.F7;
-            map[VimKey.F8] = Key.F8;
-            map[VimKey.F9] = Key.F9;
-            map[VimKey.F10] = Key.F10;
-            map[VimKey.F11] = Key.F11;
-            map[VimKey.F12] = Key.F12;
-            map[VimKey.KeypadMultiply] = Key.Multiply;
-            map[VimKey.KeypadPlus] = Key.Add;
-            map[VimKey.KeypadMinus] = Key.Subtract;
-            map[VimKey.KeypadDecimal] = Key.Decimal;
-            map[VimKey.KeypadDivide] = Key.Divide;
-            map[VimKey.KeypadEnter] = Key.Separator;
-            map[VimKey.Keypad0] = Key.NumPad0;
-            map[VimKey.Keypad1] = Key.NumPad1;
-            map[VimKey.Keypad2] = Key.NumPad2;
-            map[VimKey.Keypad3] = Key.NumPad3;
-            map[VimKey.Keypad4] = Key.NumPad4;
-            map[VimKey.Keypad5] = Key.NumPad5;
-            map[VimKey.Keypad6] = Key.NumPad6;
-            map[VimKey.Keypad7] = Key.NumPad7;
-            map[VimKey.Keypad8] = Key.NumPad8;
-            map[VimKey.Keypad9] = Key.NumPad9;
+            var map = new Dictionary<VimKey, Key>
+            {
+                [VimKey.Enter] = Key.Enter,
+                [VimKey.Escape] = Key.Escape,
+                [VimKey.Back] = Key.Back,
+                [VimKey.Delete] = Key.Delete,
+                [VimKey.Left] = Key.Left,
+                [VimKey.Up] = Key.Up,
+                [VimKey.Right] = Key.Right,
+                [VimKey.Down] = Key.Down,
+                [VimKey.Help] = Key.Help,
+                [VimKey.Insert] = Key.Insert,
+                [VimKey.Home] = Key.Home,
+                [VimKey.End] = Key.End,
+                [VimKey.PageUp] = Key.PageUp,
+                [VimKey.PageDown] = Key.PageDown,
+                [VimKey.Tab] = Key.Tab,
+                [VimKey.F1] = Key.F1,
+                [VimKey.F2] = Key.F2,
+                [VimKey.F3] = Key.F3,
+                [VimKey.F4] = Key.F4,
+                [VimKey.F5] = Key.F5,
+                [VimKey.F6] = Key.F6,
+                [VimKey.F7] = Key.F7,
+                [VimKey.F8] = Key.F8,
+                [VimKey.F9] = Key.F9,
+                [VimKey.F10] = Key.F10,
+                [VimKey.F11] = Key.F11,
+                [VimKey.F12] = Key.F12,
+                [VimKey.KeypadMultiply] = Key.Multiply,
+                [VimKey.KeypadPlus] = Key.Add,
+                [VimKey.KeypadMinus] = Key.Subtract,
+                [VimKey.KeypadDecimal] = Key.Decimal,
+                [VimKey.KeypadDivide] = Key.Divide,
+                [VimKey.KeypadEnter] = Key.Separator,
+                [VimKey.Keypad0] = Key.NumPad0,
+                [VimKey.Keypad1] = Key.NumPad1,
+                [VimKey.Keypad2] = Key.NumPad2,
+                [VimKey.Keypad3] = Key.NumPad3,
+                [VimKey.Keypad4] = Key.NumPad4,
+                [VimKey.Keypad5] = Key.NumPad5,
+                [VimKey.Keypad6] = Key.NumPad6,
+                [VimKey.Keypad7] = Key.NumPad7,
+                [VimKey.Keypad8] = Key.NumPad8,
+                [VimKey.Keypad9] = Key.NumPad9
+            };
 
             return map;
         }

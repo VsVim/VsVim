@@ -193,8 +193,7 @@ namespace Vim.UI.Wpf.UnitTest
             [WpfFact]
             public void ShiftPlusEscape()
             {
-                KeyInput ki;
-                Assert.True(KeyUtil.TryConvertSpecialToKeyInput(Key.Escape, ModifierKeys.Shift, out ki));
+                Assert.True(KeyUtil.TryConvertSpecialToKeyInput(Key.Escape, ModifierKeys.Shift, out KeyInput ki));
                 _mockVimBuffer.Setup(x => x.CanProcess(ki)).Returns(false).Verifiable();
 
                 var arg = CreateKeyEventArgs(Key.Escape, ModifierKeys.Shift);

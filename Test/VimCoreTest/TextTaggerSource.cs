@@ -49,11 +49,7 @@ namespace Vim.UnitTest
 
         internal void RaiseChanged()
         {
-            var list = Changed;
-            if (list != null)
-            {
-                list(this, EventArgs.Empty);
-            }
+            Changed?.Invoke(this, EventArgs.Empty);
         }
 
         internal static bool IsMatch(ITextSnapshot snapshot, int position, string text)

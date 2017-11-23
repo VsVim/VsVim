@@ -173,8 +173,7 @@ namespace Vim.VisualStudio
         {
             // Create the IVimBuffer after loading the VimRc so that it gets the appropriate
             // settings
-            IVimBuffer vimBuffer;
-            if (!_vim.TryGetOrCreateVimBufferForHost(textView, out vimBuffer))
+            if (!_vim.TryGetOrCreateVimBufferForHost(textView, out IVimBuffer vimBuffer))
             {
                 return;
             }
@@ -230,8 +229,7 @@ namespace Vim.VisualStudio
                 return;
             }
 
-            IVimBuffer vimBuffer;
-            if (!_vim.TryGetVimBuffer(textView, out vimBuffer))
+            if (!_vim.TryGetVimBuffer(textView, out IVimBuffer vimBuffer))
             {
                 return;
             }

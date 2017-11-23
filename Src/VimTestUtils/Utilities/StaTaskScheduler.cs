@@ -43,9 +43,11 @@ namespace Vim.UnitTest.Utilities
                         System.Diagnostics.Debug.Assert(t.IsCompleted, "Can't run, not completed");
                     }
                 }
-            });
-            StaThread.Name = $"{nameof(StaTaskScheduler)} thread";
-            StaThread.IsBackground = true;
+            })
+            {
+                Name = $"{nameof(StaTaskScheduler)} thread",
+                IsBackground = true
+            };
             StaThread.SetApartmentState(ApartmentState.STA);
             StaThread.Start();
         }

@@ -33,11 +33,7 @@ namespace VimApp.Implementation
 
         private void RaiseChanged()
         {
-            var e = Changed;
-            if (e != null)
-            {
-                e(this, EventArgs.Empty);
-            }
+            Changed?.Invoke(this, EventArgs.Empty);
         }
     }
 }

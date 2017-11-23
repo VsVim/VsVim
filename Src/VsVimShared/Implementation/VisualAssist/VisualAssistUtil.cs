@@ -131,8 +131,7 @@ namespace Vim.VisualStudio.Implementation.VisualAssist
                 return null;
             }
 
-            IVimBuffer vimBuffer;
-            if (!_vim.TryGetOrCreateVimBufferForHost(wpfTextView, out vimBuffer))
+            if (!_vim.TryGetOrCreateVimBufferForHost(wpfTextView, out IVimBuffer vimBuffer))
             {
                 return null;
             }

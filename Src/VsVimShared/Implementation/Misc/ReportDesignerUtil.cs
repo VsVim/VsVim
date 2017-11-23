@@ -94,8 +94,7 @@ namespace Vim.VisualStudio.Implementation.Misc
             try
             {
                 var guid = ReportContextGuid;
-                object data;
-                return ErrorHandler.Succeeded(vsUserData.GetData(ref guid, out data)) && data != null;
+                return ErrorHandler.Succeeded(vsUserData.GetData(ref guid, out object data)) && data != null;
             }
             catch
             {

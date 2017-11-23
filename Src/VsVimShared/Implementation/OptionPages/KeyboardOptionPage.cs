@@ -24,8 +24,10 @@ namespace Vim.VisualStudio.Implementation.OptionPages
                 if (_elementHost == null)
                 {
                     _keyboardSettingsControl = CreateKeyboardSettingsControl();
-                    _elementHost = new ElementHost();
-                    _elementHost.Child = _keyboardSettingsControl;
+                    _elementHost = new ElementHost
+                    {
+                        Child = _keyboardSettingsControl
+                    };
                 }
 
                 return _elementHost;

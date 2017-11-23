@@ -32,10 +32,12 @@ namespace Vim.UI.Wpf.UnitTest
             _search = _factory.Create<IIncrementalSearch>();
             _search.SetupGet(x => x.InSearch).Returns(false);
             _search.SetupGet(x => x.InPasteWait).Returns(false);
-            _vimBuffer = new MockVimBuffer();
-            _vimBuffer.IncrementalSearchImpl = _search.Object;
-            _vimBuffer.VimImpl = MockObjectFactory.CreateVim(factory: _factory).Object;
-            _vimBuffer.CommandModeImpl = _factory.Create<ICommandMode>(MockBehavior.Loose).Object;
+            _vimBuffer = new MockVimBuffer
+            {
+                IncrementalSearchImpl = _search.Object,
+                VimImpl = MockObjectFactory.CreateVim(factory: _factory).Object,
+                CommandModeImpl = _factory.Create<ICommandMode>(MockBehavior.Loose).Object
+            };
             var textBuffer = CreateTextBuffer(new[] { "" });
             _vimBuffer.TextViewImpl = TextEditorFactoryService.CreateTextView(textBuffer);
 

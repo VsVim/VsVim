@@ -41,8 +41,10 @@ namespace Vim.VisualStudio.Implementation.ToastNotification
         {
             _wpfTextView = wpfTextView;
             _editorFormatMap = editorFormatMap;
-            _toastControl = new ToastControl();
-            _toastControl.Visibility = Visibility.Collapsed;
+            _toastControl = new ToastControl
+            {
+                Visibility = Visibility.Collapsed
+            };
             _toastControl.ToastNotificationCollection.CollectionChanged += OnToastControlItemsChanged;
             _editorFormatMap.FormatMappingChanged += OnEditorFormatMappingChanged;
             _wpfTextView.Closed += OnTextViewClosed;
@@ -127,8 +129,7 @@ namespace Vim.VisualStudio.Implementation.ToastNotification
 
         bool IToastNotificationService.Remove(object key)
         {
-            ToastData toastData;
-            if (!_toastDataMap.TryGetValue(key, out toastData))
+            if (!_toastDataMap.TryGetValue(key, out ToastData toastData))
             {
                 return false;
             }

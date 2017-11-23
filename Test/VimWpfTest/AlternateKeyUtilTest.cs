@@ -20,8 +20,7 @@ namespace Vim.UI.Wpf.UnitTest
         {
             private void AssertMap(Key key, ModifierKeys modifierKeys, KeyInput keyInput)
             {
-                KeyInput mapped;
-                Assert.True(_keyUtil.TryConvertSpecialToKeyInput(key, modifierKeys, out mapped));
+                Assert.True(_keyUtil.TryConvertSpecialToKeyInput(key, modifierKeys, out KeyInput mapped));
                 Assert.Equal(keyInput, mapped);
             }
 

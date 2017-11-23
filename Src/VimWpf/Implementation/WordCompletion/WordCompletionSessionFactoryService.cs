@@ -85,8 +85,7 @@ namespace Vim.UI.Wpf.Implementation.WordCompletion
 
                 // Get out the collection of words.  If none is present then there is no information to
                 // augment here
-                CompletionData completionData;
-                if (!textView.Properties.TryGetPropertySafe(_completionDataKey, out completionData) || completionData.WordCollection == null)
+                if (!textView.Properties.TryGetPropertySafe(_completionDataKey, out CompletionData completionData) || completionData.WordCollection == null)
                 {
                     return;
                 }

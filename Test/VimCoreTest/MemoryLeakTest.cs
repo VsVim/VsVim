@@ -25,8 +25,7 @@ namespace Vim.UnitTest
 
         private void ClearUndoHistory(ITextBuffer textBuffer)
         {
-            IBasicUndoHistory basicUndoHistory;
-            Assert.True(BasicUndoHistoryRegistry.TryGetBasicUndoHistory(textBuffer, out basicUndoHistory));
+            Assert.True(BasicUndoHistoryRegistry.TryGetBasicUndoHistory(textBuffer, out IBasicUndoHistory basicUndoHistory));
             basicUndoHistory.Clear();
         }
 

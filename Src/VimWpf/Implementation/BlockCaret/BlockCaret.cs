@@ -192,8 +192,10 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
                     caretBlinkTimeSpan,
                     DispatcherPriority.Normal,
                     protectedOperations.GetProtectedEventHandler(onCaretBlinkTimer),
-                    Dispatcher.CurrentDispatcher);
-                blinkTimer.IsEnabled = caretBlinkTime != null;
+                    Dispatcher.CurrentDispatcher)
+                {
+                    IsEnabled = caretBlinkTime != null
+                };
                 return blinkTimer;
             }
             catch (ArgumentOutOfRangeException)
@@ -204,8 +206,10 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
                     TimeSpan.FromSeconds(2),
                     DispatcherPriority.Normal,
                     protectedOperations.GetProtectedEventHandler(onCaretBlinkTimer),
-                    Dispatcher.CurrentDispatcher);
-                blinkTimer.IsEnabled = true;
+                    Dispatcher.CurrentDispatcher)
+                {
+                    IsEnabled = true
+                };
                 return blinkTimer;
             }
         }

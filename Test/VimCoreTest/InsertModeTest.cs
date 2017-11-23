@@ -54,8 +54,10 @@ namespace Vim.UnitTest
 
         protected void Create(bool insertMode, params string[] lines)
         {
-            _factory = new MockRepository(MockBehavior.Strict);
-            _factory.DefaultValue = DefaultValue.Mock;
+            _factory = new MockRepository(MockBehavior.Strict)
+            {
+                DefaultValue = DefaultValue.Mock
+            };
             _textView = CreateTextView(lines);
             _textBuffer = _textView.TextBuffer;
             _vim = _factory.Create<IVim>(MockBehavior.Loose);

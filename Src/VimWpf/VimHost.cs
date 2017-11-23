@@ -178,8 +178,7 @@ namespace Vim.UI.Wpf
                     continue;
                 }
 
-                ITextDocument document;
-                if (_textDocumentFactoryService.TryGetTextDocument(sourceTextBuffer, out document) && document.IsDirty)
+                if (_textDocumentFactoryService.TryGetTextDocument(sourceTextBuffer, out ITextDocument document) && document.IsDirty)
                 {
                     return true;
                 }
@@ -235,8 +234,7 @@ namespace Vim.UI.Wpf
 
         public virtual bool Reload(ITextView textView)
         {
-            ITextDocument document;
-            if (!_textDocumentFactoryService.TryGetTextDocument(textView.TextDataModel.DocumentBuffer, out document))
+            if (!_textDocumentFactoryService.TryGetTextDocument(textView.TextDataModel.DocumentBuffer, out ITextDocument document))
             {
                 return false;
             }
@@ -274,8 +272,7 @@ namespace Vim.UI.Wpf
 
         public virtual bool Save(ITextBuffer textBuffer)
         {
-            ITextDocument document;
-            if (!_textDocumentFactoryService.TryGetTextDocument(textBuffer, out document))
+            if (!_textDocumentFactoryService.TryGetTextDocument(textBuffer, out ITextDocument document))
             {
                 return false;
             }
@@ -532,8 +529,7 @@ namespace Vim.UI.Wpf
 
         FSharpOption<ITextView> IVimHost.GetFocusedTextView()
         {
-            ITextView textView;
-            return TryGetFocusedTextView(out textView)
+            return TryGetFocusedTextView(out ITextView textView)
                 ? FSharpOption.Create(textView)
                 : FSharpOption<ITextView>.None;
         }

@@ -153,39 +153,41 @@ namespace Vim.VisualStudio
 
         private static void BuildVsMap()
         {
-            var map = new Dictionary<string, KeyInput>(StringComparer.OrdinalIgnoreCase);
-            map.Add("Down Arrow", KeyInputUtil.VimKeyToKeyInput(VimKey.Down));
-            map.Add("Up Arrow", KeyInputUtil.VimKeyToKeyInput(VimKey.Up));
-            map.Add("Left Arrow", KeyInputUtil.VimKeyToKeyInput(VimKey.Left));
-            map.Add("Right Arrow", KeyInputUtil.VimKeyToKeyInput(VimKey.Right));
-            map.Add("Bkspce", KeyInputUtil.VimKeyToKeyInput(VimKey.Back));
-            map.Add("PgDn", KeyInputUtil.VimKeyToKeyInput(VimKey.PageDown));
-            map.Add("PgUp", KeyInputUtil.VimKeyToKeyInput(VimKey.PageUp));
-            map.Add("Ins", KeyInputUtil.VimKeyToKeyInput(VimKey.Insert));
-            map.Add("Del", KeyInputUtil.VimKeyToKeyInput(VimKey.Delete));
-            map.Add("Esc", KeyInputUtil.EscapeKey);
-            map.Add("Break", KeyInputUtil.CharWithControlToKeyInput('c'));
-            map.Add("Num +", KeyInputUtil.VimKeyToKeyInput(VimKey.KeypadPlus));
-            map.Add("Num -", KeyInputUtil.VimKeyToKeyInput(VimKey.KeypadMinus));
-            map.Add("Num /", KeyInputUtil.VimKeyToKeyInput(VimKey.KeypadDivide));
-            map.Add("Num *", KeyInputUtil.VimKeyToKeyInput(VimKey.KeypadMultiply));
-            map.Add("Enter", KeyInputUtil.EnterKey);
-            map.Add("Tab", KeyInputUtil.TabKey);
-            map.Add("Home", KeyInputUtil.VimKeyToKeyInput(VimKey.Home));
-            map.Add("End", KeyInputUtil.VimKeyToKeyInput(VimKey.End));
-            map.Add("F1", KeyInputUtil.VimKeyToKeyInput(VimKey.F1));
-            map.Add("F2", KeyInputUtil.VimKeyToKeyInput(VimKey.F2));
-            map.Add("F3", KeyInputUtil.VimKeyToKeyInput(VimKey.F3));
-            map.Add("F4", KeyInputUtil.VimKeyToKeyInput(VimKey.F4));
-            map.Add("F5", KeyInputUtil.VimKeyToKeyInput(VimKey.F5));
-            map.Add("F6", KeyInputUtil.VimKeyToKeyInput(VimKey.F6));
-            map.Add("F7", KeyInputUtil.VimKeyToKeyInput(VimKey.F7));
-            map.Add("F8", KeyInputUtil.VimKeyToKeyInput(VimKey.F8));
-            map.Add("F9", KeyInputUtil.VimKeyToKeyInput(VimKey.F9));
-            map.Add("F10", KeyInputUtil.VimKeyToKeyInput(VimKey.F10));
-            map.Add("F11", KeyInputUtil.VimKeyToKeyInput(VimKey.F11));
-            map.Add("F12", KeyInputUtil.VimKeyToKeyInput(VimKey.F12));
-            map.Add("Space", KeyInputUtil.CharToKeyInput(' '));
+            var map = new Dictionary<string, KeyInput>(StringComparer.OrdinalIgnoreCase)
+            {
+                { "Down Arrow", KeyInputUtil.VimKeyToKeyInput(VimKey.Down) },
+                { "Up Arrow", KeyInputUtil.VimKeyToKeyInput(VimKey.Up) },
+                { "Left Arrow", KeyInputUtil.VimKeyToKeyInput(VimKey.Left) },
+                { "Right Arrow", KeyInputUtil.VimKeyToKeyInput(VimKey.Right) },
+                { "Bkspce", KeyInputUtil.VimKeyToKeyInput(VimKey.Back) },
+                { "PgDn", KeyInputUtil.VimKeyToKeyInput(VimKey.PageDown) },
+                { "PgUp", KeyInputUtil.VimKeyToKeyInput(VimKey.PageUp) },
+                { "Ins", KeyInputUtil.VimKeyToKeyInput(VimKey.Insert) },
+                { "Del", KeyInputUtil.VimKeyToKeyInput(VimKey.Delete) },
+                { "Esc", KeyInputUtil.EscapeKey },
+                { "Break", KeyInputUtil.CharWithControlToKeyInput('c') },
+                { "Num +", KeyInputUtil.VimKeyToKeyInput(VimKey.KeypadPlus) },
+                { "Num -", KeyInputUtil.VimKeyToKeyInput(VimKey.KeypadMinus) },
+                { "Num /", KeyInputUtil.VimKeyToKeyInput(VimKey.KeypadDivide) },
+                { "Num *", KeyInputUtil.VimKeyToKeyInput(VimKey.KeypadMultiply) },
+                { "Enter", KeyInputUtil.EnterKey },
+                { "Tab", KeyInputUtil.TabKey },
+                { "Home", KeyInputUtil.VimKeyToKeyInput(VimKey.Home) },
+                { "End", KeyInputUtil.VimKeyToKeyInput(VimKey.End) },
+                { "F1", KeyInputUtil.VimKeyToKeyInput(VimKey.F1) },
+                { "F2", KeyInputUtil.VimKeyToKeyInput(VimKey.F2) },
+                { "F3", KeyInputUtil.VimKeyToKeyInput(VimKey.F3) },
+                { "F4", KeyInputUtil.VimKeyToKeyInput(VimKey.F4) },
+                { "F5", KeyInputUtil.VimKeyToKeyInput(VimKey.F5) },
+                { "F6", KeyInputUtil.VimKeyToKeyInput(VimKey.F6) },
+                { "F7", KeyInputUtil.VimKeyToKeyInput(VimKey.F7) },
+                { "F8", KeyInputUtil.VimKeyToKeyInput(VimKey.F8) },
+                { "F9", KeyInputUtil.VimKeyToKeyInput(VimKey.F9) },
+                { "F10", KeyInputUtil.VimKeyToKeyInput(VimKey.F10) },
+                { "F11", KeyInputUtil.VimKeyToKeyInput(VimKey.F11) },
+                { "F12", KeyInputUtil.VimKeyToKeyInput(VimKey.F12) },
+                { "Space", KeyInputUtil.CharToKeyInput(' ') }
+            };
 
             s_vsMap = map;
         }
@@ -240,8 +242,7 @@ namespace Vim.VisualStudio
                 return ConvertToKeyInput(keystroke[0]);
             }
 
-            KeyInput vs;
-            if (TryConvertVsSpecificKey(keystroke, out vs))
+            if (TryConvertVsSpecificKey(keystroke, out KeyInput vs))
             {
                 return vs;
             }
@@ -329,8 +330,7 @@ namespace Vim.VisualStudio
         /// </summary>
         public static KeyBinding Parse(string binding)
         {
-            KeyBinding keyBinding;
-            if (!TryParse(binding, out keyBinding))
+            if (!TryParse(binding, out KeyBinding keyBinding))
             {
                 throw new ArgumentException("Invalid key binding");
             }

@@ -88,23 +88,23 @@ namespace Vim.UI.Wpf.Implementation.CharDisplay
                 var position = i + offset;
                 var c = snapshot[position];
 
-                string text;
-                if (!ControlCharUtil.TryGetDisplayText(c, out text))
+                if (!ControlCharUtil.TryGetDisplayText(c, out string text))
                 {
                     continue;
                 }
 
                 UIElement adornment;
-                int cacheIndex;
-                if (TryFindIndex(position, out cacheIndex))
+                if (TryFindIndex(position, out int cacheIndex))
                 {
                     adornment = _adornmentCache[cacheIndex].Adornment;
                 }
                 else
                 {
-                    var textBox = new TextBox();
-                    textBox.Text = text;
-                    textBox.BorderThickness = new Thickness(0);
+                    var textBox = new TextBox
+                    {
+                        Text = text,
+                        BorderThickness = new Thickness(0)
+                    };
                     textBox.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
                     textBox.Foreground = _foregroundBrush;
                     textBox.CaretBrush = _foregroundBrush;
@@ -231,11 +231,7 @@ namespace Vim.UI.Wpf.Implementation.CharDisplay
 
         private void RaiseChanged()
         {
-            var e = _changedEvent;
-            if (e != null)
-            {
-                e(this, EventArgs.Empty);
-            }
+            _changedEvent?.Invoke(this, EventArgs.Empty);
         }
 
         #region IBasicTaggerSource<IntraTextAdornmentTag>

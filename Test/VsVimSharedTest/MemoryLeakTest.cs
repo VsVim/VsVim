@@ -204,8 +204,7 @@ namespace Vim.VisualStudio.UnitTest
 
         private void ClearHistory(ITextBuffer textBuffer)
         {
-            IBasicUndoHistory basicUndoHistory;
-            if (_vimEditorHost.BasicUndoHistoryRegistry.TryGetBasicUndoHistory(textBuffer, out basicUndoHistory))
+            if (_vimEditorHost.BasicUndoHistoryRegistry.TryGetBasicUndoHistory(textBuffer, out IBasicUndoHistory basicUndoHistory))
             {
                 basicUndoHistory.Clear();
             }
@@ -264,8 +263,7 @@ namespace Vim.VisualStudio.UnitTest
                 var factory = container.GetExportedValue<ITextEditorFactoryService>();
                 var textView = factory.CreateTextView();
                 var vim = container.GetExportedValue<IVim>();
-                IVimBuffer vimBuffer;
-                Assert.False(vim.TryGetVimBuffer(textView, out vimBuffer));
+                Assert.False(vim.TryGetVimBuffer(textView, out IVimBuffer vimBuffer));
             }
             finally
             {

@@ -17,10 +17,7 @@ namespace Vim.VisualStudio
 
         internal static bool TryConvert(Guid commandGroup, uint commandId, IntPtr pVariableIn, VimKeyModifiers modifiers, out EditCommand command)
         {
-            KeyInput keyInput;
-            EditCommandKind kind;
-            bool isRawText;
-            if (!TryConvert(commandGroup, commandId, pVariableIn, out keyInput, out kind, out isRawText))
+            if (!TryConvert(commandGroup, commandId, pVariableIn, out KeyInput keyInput, out EditCommandKind kind, out bool isRawText))
             {
                 command = null;
                 return false;
@@ -39,14 +36,12 @@ namespace Vim.VisualStudio
 
         internal static bool TryConvert(OleCommandData oleCommandData, out KeyInput keyInput)
         {
-            EditCommandKind editCommandKind;
-            return TryConvert(oleCommandData.Group, oleCommandData.Id, oleCommandData.VariantIn, out keyInput, out editCommandKind);
+            return TryConvert(oleCommandData.Group, oleCommandData.Id, oleCommandData.VariantIn, out keyInput, out EditCommandKind editCommandKind);
         }
 
         internal static bool TryConvert(Guid commandGroup, uint commandId, IntPtr variantIn, out KeyInput keyInput, out EditCommandKind kind)
         {
-            bool unused;
-            return TryConvert(commandGroup, commandId, variantIn, out keyInput, out kind, out unused);
+            return TryConvert(commandGroup, commandId, variantIn, out keyInput, out kind, out bool unused);
         }
 
         internal static bool TryConvert(Guid commandGroup, uint commandId, IntPtr variantIn, out KeyInput keyInput, out EditCommandKind kind, out bool isRawText)

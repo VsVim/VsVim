@@ -24,11 +24,7 @@ namespace VimApp.Implementation.Window
 
         private void RaiseChanged()
         {
-            var handlers = _changed;
-            if (handlers != null)
-            {
-                handlers(this, EventArgs.Empty);
-            }
+            _changed?.Invoke(this, EventArgs.Empty);
         }
 
         private void OnTextViewClosed(object sender, EventArgs e)

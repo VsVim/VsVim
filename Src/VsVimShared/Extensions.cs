@@ -96,8 +96,7 @@ namespace Vim.VisualStudio
         /// </summary>
         public static IEnumerable<string> GetBindings(this DteCommand command)
         {
-            Exception unused;
-            return GetBindings(command, out unused);
+            return GetBindings(command, out Exception unused);
         }
 
         /// <summary>
@@ -116,16 +115,14 @@ namespace Vim.VisualStudio
 
         private static IEnumerable<CommandKeyBinding> GetCommandKeyBindingsHelper(DteCommand command)
         {
-            CommandId commandId;
-            if (!command.TryGetCommandId(out commandId))
+            if (!command.TryGetCommandId(out CommandId commandId))
             {
                 yield break;
             }
 
             foreach (var cur in command.GetBindings())
             {
-                KeyBinding binding;
-                if (KeyBinding.TryParse(cur, out binding))
+                if (KeyBinding.TryParse(cur, out KeyBinding binding))
                 {
                     var name = command.Name;
                     if (String.IsNullOrEmpty(name))
@@ -229,8 +226,7 @@ namespace Vim.VisualStudio
                 // GUID_VsBufferMoniker
                 var monikerId = VsVimConstants.VsUserDataFileNameMoniker;
                 var userData = (IVsUserData)lines;
-                object data;
-                if (VSConstants.S_OK != userData.GetData(ref monikerId, out data)
+                if (VSConstants.S_OK != userData.GetData(ref monikerId, out object data)
                     || String.IsNullOrEmpty(data as string))
                 {
                     return String.Empty;
@@ -246,8 +242,7 @@ namespace Vim.VisualStudio
 
         public static Result<IVsEnumLineMarkers> GetLineMarkersEnum(this IVsTextLines lines, TextSpan span)
         {
-            IVsEnumLineMarkers markers;
-            var hresult = lines.EnumMarkers(span.iStartLine, span.iStartIndex, span.iEndLine, span.iEndIndex, 0, (uint)ENUMMARKERFLAGS.EM_ALLTYPES, out markers);
+            var hresult = lines.EnumMarkers(span.iStartLine, span.iStartIndex, span.iEndLine, span.iEndIndex, 0, (uint)ENUMMARKERFLAGS.EM_ALLTYPES, out IVsEnumLineMarkers markers);
             return Result.CreateSuccessOrError(markers, hresult);
         }
 
@@ -265,8 +260,7 @@ namespace Vim.VisualStudio
 
         public static Result<IVsTextLines> GetTextLines(this IVsTextView textView)
         {
-            IVsTextLines textLines;
-            var hresult = textView.GetBuffer(out textLines);
+            var hresult = textView.GetBuffer(out IVsTextLines textLines);
             return Result.CreateSuccessOrError(textLines, hresult);
         }
 
@@ -287,8 +281,7 @@ namespace Vim.VisualStudio
 
         public static Result<IVsWindowFrame> GetWindowFrame(this IVsTextViewEx textViewEx)
         {
-            object frame;
-            if (!ErrorHandler.Succeeded(textViewEx.GetWindowFrame(out frame)))
+            if (!ErrorHandler.Succeeded(textViewEx.GetWindowFrame(out object frame)))
             {
                 return Result.Error;
             }
@@ -329,14 +322,12 @@ namespace Vim.VisualStudio
 
         internal static bool IsPackageInstalled(this IVsShell vsShell, Guid packageId)
         {
-            int isInstalled;
-            return ErrorHandler.Succeeded(vsShell.IsPackageInstalled(ref packageId, out isInstalled)) && 1 == isInstalled;
+            return ErrorHandler.Succeeded(vsShell.IsPackageInstalled(ref packageId, out int isInstalled)) && 1 == isInstalled;
         }
 
         internal static bool IsInModalState(this IVsShell vsShell)
         {
-            object value;
-            if (ErrorHandler.Failed(vsShell.GetProperty((int)__VSSPROPID4.VSSPROPID_IsModal, out value)) ||
+            if (ErrorHandler.Failed(vsShell.GetProperty((int)__VSSPROPID4.VSSPROPID_IsModal, out object value)) ||
                 !(value is bool))
             {
                 return false;
@@ -370,15 +361,13 @@ namespace Vim.VisualStudio
 
         public static Result<List<IVsWindowFrame>> GetDocumentWindowFrames(this IVsUIShell vsShell)
         {
-            IEnumWindowFrames enumFrames;
-            var hr = vsShell.GetDocumentWindowEnum(out enumFrames);
+            var hr = vsShell.GetDocumentWindowEnum(out IEnumWindowFrames enumFrames);
             return ErrorHandler.Failed(hr) ? Result.CreateError(hr) : enumFrames.GetContents();
         }
 
         public static Result<List<IVsWindowFrame>> GetDocumentWindowFrames(this IVsUIShell4 vsShell, __WindowFrameTypeFlags flags)
         {
-            IEnumWindowFrames enumFrames;
-            var hr = vsShell.GetWindowEnum((uint)flags, out enumFrames);
+            var hr = vsShell.GetWindowEnum((uint)flags, out IEnumWindowFrames enumFrames);
             return ErrorHandler.Failed(hr) ? Result.CreateError(hr) : enumFrames.GetContents();
         }
 
@@ -392,8 +381,7 @@ namespace Vim.VisualStudio
             var array = new IVsWindowFrame[16];
             while (true)
             {
-                uint num;
-                var hr = enumFrames.Next((uint)array.Length, array, out num);
+                var hr = enumFrames.Next((uint)array.Length, array, out uint num);
                 if (ErrorHandler.Failed(hr))
                 {
                     return Result.CreateError(hr);
@@ -420,8 +408,7 @@ namespace Vim.VisualStudio
         /// </summary>
         public static Result<IVsTextView> GetPrimaryView(this IVsCodeWindow vsCodeWindow)
         {
-            IVsTextView vsTextView;
-            var hr = vsCodeWindow.GetPrimaryView(out vsTextView);
+            var hr = vsCodeWindow.GetPrimaryView(out IVsTextView vsTextView);
             if (ErrorHandler.Failed(hr))
             {
                 return Result.CreateError(hr);
@@ -450,8 +437,7 @@ namespace Vim.VisualStudio
         /// </summary>
         public static Result<IVsTextView> GetLastActiveView(this IVsCodeWindow vsCodeWindow)
         {
-            IVsTextView vsTextView;
-            var hr = vsCodeWindow.GetLastActiveView(out vsTextView);
+            var hr = vsCodeWindow.GetLastActiveView(out IVsTextView vsTextView);
             if (ErrorHandler.Failed(hr))
             {
                 return Result.CreateError(hr);
@@ -505,8 +491,7 @@ namespace Vim.VisualStudio
         /// </summary>
         public static Result<IVsTextView> GetSecondaryView(this IVsCodeWindow vsCodeWindow)
         {
-            IVsTextView vsTextView;
-            var hr = vsCodeWindow.GetSecondaryView(out vsTextView);
+            var hr = vsCodeWindow.GetSecondaryView(out IVsTextView vsTextView);
             if (ErrorHandler.Failed(hr))
             {
                 return Result.CreateError(hr);
@@ -553,8 +538,7 @@ namespace Vim.VisualStudio
             {
                 var vsCodeWindow = vsWindowFrame.GetCodeWindow().Value;
 
-                IVsTextLines vsTextLines;
-                ErrorHandler.ThrowOnFailure(vsCodeWindow.GetBuffer(out vsTextLines));
+                ErrorHandler.ThrowOnFailure(vsCodeWindow.GetBuffer(out IVsTextLines vsTextLines));
                 if (vsTextLines == null)
                 {
                     return Result.Error;
@@ -593,8 +577,7 @@ namespace Vim.VisualStudio
         {
             try
             {
-                object parentObj;
-                int hresult = vsWindowFrame.GetProperty((int)__VSFPROPID2.VSFPROPID_ParentFrame, out parentObj);
+                int hresult = vsWindowFrame.GetProperty((int)__VSFPROPID2.VSFPROPID_ParentFrame, out object parentObj);
                 if (!ErrorHandler.Succeeded(hresult))
                 {
                     parentWindowFrame = null;
@@ -617,8 +600,7 @@ namespace Vim.VisualStudio
         /// </summary>
         public static IVsWindowFrame GetTopMost(this IVsWindowFrame vsWindowFrame)
         {
-            IVsWindowFrame parent;
-            if (vsWindowFrame.TryGetParent(out parent))
+            if (vsWindowFrame.TryGetParent(out IVsWindowFrame parent))
             {
                 return GetTopMost(parent);
             }
@@ -632,9 +614,8 @@ namespace Vim.VisualStudio
 
         public static Tuple<bool, IWpfTextView> TryGetActiveTextView(this IVsTextManager vsTextManager, IVsEditorAdaptersFactoryService factoryService)
         {
-            IVsTextView vsTextView;
             IWpfTextView textView = null;
-            if (ErrorHandler.Succeeded(vsTextManager.GetActiveView(0, null, out vsTextView)) && vsTextView != null)
+            if (ErrorHandler.Succeeded(vsTextManager.GetActiveView(0, null, out IVsTextView vsTextView)) && vsTextView != null)
             {
                 textView = factoryService.GetWpfTextViewNoThrow(vsTextView);
             }
@@ -655,8 +636,7 @@ namespace Vim.VisualStudio
             var list = new List<IVsTextLineMarker>();
             do
             {
-                IVsTextLineMarker marker;
-                var hresult = markers.Next(out marker);
+                var hresult = markers.Next(out IVsTextLineMarker marker);
                 if (ErrorHandler.Succeeded(hresult) && marker != null)
                 {
                     list.Add(marker);
@@ -689,8 +669,7 @@ namespace Vim.VisualStudio
 
         public static Result<MARKERTYPE> GetMarkerType(this IVsTextLineMarker marker)
         {
-            int type;
-            var hresult = marker.GetType(out type);
+            var hresult = marker.GetType(out int type);
             return Result.CreateSuccessOrError((MARKERTYPE)type, hresult);
         }
 
@@ -706,15 +685,13 @@ namespace Vim.VisualStudio
 
         public static Result<bool> IsCmdUIContextActive(this IVsMonitorSelection selection, Guid cmdId)
         {
-            uint cookie;
-            var hresult = selection.GetCmdUIContextCookie(ref cmdId, out cookie);
+            var hresult = selection.GetCmdUIContextCookie(ref cmdId, out uint cookie);
             if (ErrorHandler.Failed(hresult))
             {
                 return Result.CreateError(hresult);
             }
 
-            int active;
-            hresult = selection.IsCmdUIContextActive(cookie, out active);
+            hresult = selection.IsCmdUIContextActive(cookie, out int active);
             return Result.CreateSuccessOrError(active != 0, hresult);
         }
 
@@ -899,8 +876,7 @@ namespace Vim.VisualStudio
         {
             try
             {
-                string found;
-                if (textView.Properties.TryGetPropertySafe(key, out found) && StringComparer.Ordinal.Equals(name, found))
+                if (textView.Properties.TryGetPropertySafe(key, out string found) && StringComparer.Ordinal.Equals(name, found))
                 {
                     return null;
                 }
@@ -1014,8 +990,7 @@ namespace Vim.VisualStudio
         {
             foreach (var cur in dte.GetProjects())
             {
-                ProjectItem item;
-                if (cur.TryGetProjectItem(fileName, out item))
+                if (cur.TryGetProjectItem(fileName, out ProjectItem item))
                 {
                     yield return item;
                 }
@@ -1131,8 +1106,7 @@ namespace Vim.VisualStudio
 
         internal static int QueryStatus(this IOleCommandTarget oleCommandTarget, OleCommandData oleCommandData)
         {
-            OLECMD command;
-            return QueryStatus(oleCommandTarget, oleCommandData, out command);
+            return QueryStatus(oleCommandTarget, oleCommandData, out OLECMD command);
         }
 
         internal static int QueryStatus(this IOleCommandTarget oleCommandTarget, OleCommandData oleCommandData, out OLECMD command)
@@ -1221,8 +1195,7 @@ namespace Vim.VisualStudio
         public static List<uint> GetRunningDocumentCookies(this IVsRunningDocumentTable runningDocumentTable)
         {
             var list = new List<uint>();
-            IEnumRunningDocuments enumDocuments;
-            if (!ErrorHandler.Succeeded(runningDocumentTable.GetRunningDocumentsEnum(out enumDocuments)))
+            if (!ErrorHandler.Succeeded(runningDocumentTable.GetRunningDocumentsEnum(out IEnumRunningDocuments enumDocuments)))
             {
                 return list;
             }

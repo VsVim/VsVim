@@ -37,8 +37,7 @@ namespace Vim.VisualStudio.Implementation.ReSharper
             }
 
             var textBuffer = textView.TextDataModel.DocumentBuffer;
-            ITextDocument textDocument;
-            if (!_textDocumentFactoryService.TryGetTextDocument(textBuffer, out textDocument))
+            if (!_textDocumentFactoryService.TryGetTextDocument(textBuffer, out ITextDocument textDocument))
             {
                 return null;
             }

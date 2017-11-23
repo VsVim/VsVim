@@ -159,8 +159,7 @@ namespace Vim.VisualStudio
 
             // Only print the text if a command is being run in the command window.  If it's being run via another extension
             // then don't print any output.
-            int running;
-            if (VSConstants.S_OK != commandWindow.RunningCommandWindowCommand(out running) || running == 0)
+            if (VSConstants.S_OK != commandWindow.RunningCommandWindowCommand(out int running) || running == 0)
             {
                 return;
             }
@@ -178,8 +177,7 @@ namespace Vim.VisualStudio
 
             var name = GetStringArgument(variantIn) ?? "";
 
-            ModeKind mode;
-            if (!Enum.TryParse(name, out mode))
+            if (!Enum.TryParse(name, out ModeKind mode))
             {
                 PrintToCommandWindow(string.Format("Invalid mode name: {0}", name));
 
@@ -188,15 +186,13 @@ namespace Vim.VisualStudio
                 return VSConstants.E_INVALIDARG;
             }
 
-            IWpfTextView activeTextView;
-            if (!_vsAdapter.TryGetActiveTextView(out activeTextView))
+            if (!_vsAdapter.TryGetActiveTextView(out IWpfTextView activeTextView))
             {
                 PrintToCommandWindow("Could not detect an active vim buffer");
                 return VSConstants.E_FAIL;
             }
 
-            IVimBuffer vimBuffer;
-            if (!_vim.TryGetVimBuffer(activeTextView, out vimBuffer))
+            if (!_vim.TryGetVimBuffer(activeTextView, out IVimBuffer vimBuffer))
             {
                 PrintToCommandWindow("Active view isn't a vim buffer");
                 return VSConstants.E_FAIL;

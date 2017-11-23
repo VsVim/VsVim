@@ -36,10 +36,7 @@ namespace Vim.UnitTest
 
             internal void RaiseChanged()
             {
-                if (_changed != null)
-                {
-                    _changed(this, EventArgs.Empty);
-                }
+                _changed?.Invoke(this, EventArgs.Empty);
             }
 
             #region IBasicTaggerSource<TextMarkerTag>

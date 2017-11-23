@@ -86,10 +86,7 @@ namespace Vim.UnitTest
 
             internal void RaiseChanged(SnapshotSpan? span)
             {
-                if (_changed != null)
-                {
-                    _changed(this, EventArgs.Empty);
-                }
+                _changed?.Invoke(this, EventArgs.Empty);
             }
 
             #region IAsyncTaggerSource
@@ -114,10 +111,7 @@ namespace Vim.UnitTest
             {
                 Assert.False(InMainThread);
 
-                if (_backgroundCallback != null)
-                {
-                    _backgroundCallback(value, span);
-                }
+                _backgroundCallback?.Invoke(value, span);
 
                 cancellationToken.ThrowIfCancellationRequested();
 
@@ -231,14 +225,12 @@ namespace Vim.UnitTest
 
         protected List<ITagSpan<TextMarkerTag>> GetTagsFull(SnapshotSpan span)
         {
-            bool unused;
-            return GetTagsFull(span, out unused);
+            return GetTagsFull(span, out bool unused);
         }
 
         protected List<ITagSpan<TextMarkerTag>> GetTagsFull(NormalizedSnapshotSpanCollection col)
         {
-            bool unused;
-            return GetTagsFull(col, out unused);
+            return GetTagsFull(col, out bool unused);
         }
 
         protected List<ITagSpan<TextMarkerTag>> GetTagsFull(SnapshotSpan span, out bool wasAsync)
@@ -422,8 +414,7 @@ namespace Vim.UnitTest
                 Create("cat", "dog", "bear");
                 var span = _textBuffer.GetSpan(1, 2);
                 _asyncTaggerSource.SetBackgroundTags(span);
-                bool wasAsync;
-                var tags = GetTagsFull(_textBuffer.GetExtent(), out wasAsync);
+                var tags = GetTagsFull(_textBuffer.GetExtent(), out bool wasAsync);
                 Assert.Single(tags);
                 Assert.Equal(span, tags[0].Span);
                 Assert.True(wasAsync);

@@ -101,12 +101,13 @@ namespace Vim.VisualStudio.UnitTest
             {
                 Create();
                 var lazy = new Lazy<ITaggerProvider>(() => { throw new Exception(); });
-                var list = new List<Lazy<ITaggerProvider>>();
-                list.Add(lazy);
+                var list = new List<Lazy<ITaggerProvider>>
+                {
+                    lazy
+                };
                 _editAdapterRaw.TaggerProviders = list;
                 var textView = CreateTextView();
-                ITagger<ITag> tagger;
-                Assert.False(_editAdapter.IsInterested(textView, out tagger));
+                Assert.False(_editAdapter.IsInterested(textView, out ITagger<ITag> tagger));
             }
         }
     }

@@ -191,8 +191,7 @@ namespace Vim.VisualStudio
         {
             keyInput = null;
 
-            EditCommand editCommand;
-            if (!TryConvert(commandGroup, commandId, variantIn, out editCommand))
+            if (!TryConvert(commandGroup, commandId, variantIn, out EditCommand editCommand))
             {
                 return false;
             }
@@ -308,8 +307,7 @@ namespace Vim.VisualStudio
         {
             var vsCommandTarget = new VsCommandTarget(vimBufferCoordinator, textManager, adapter, broker, keyUtil, vimApplicationSettings);
 
-            IOleCommandTarget nextCommandTarget;
-            var hresult = vsTextView.AddCommandFilter(vsCommandTarget, out nextCommandTarget);
+            var hresult = vsTextView.AddCommandFilter(vsCommandTarget, out IOleCommandTarget nextCommandTarget);
             if (ErrorHandler.Failed(hresult))
             {
                 return Result.CreateError(hresult);
@@ -347,17 +345,13 @@ namespace Vim.VisualStudio
             finally
             {
                 // Run any cleanup actions specified by ExecCore 
-                if (action != null)
-                {
-                    action();
-                }
+                action?.Invoke();
             }
         }
 
         int IOleCommandTarget.QueryStatus(ref Guid pguidCmdGroup, uint cCmds, OLECMD[] prgCmds, IntPtr pCmdText)
         {
-            EditCommand editCommand;
-            if (1 == cCmds && TryConvert(pguidCmdGroup, prgCmds[0].cmdID, pCmdText, out editCommand))
+            if (1 == cCmds && TryConvert(pguidCmdGroup, prgCmds[0].cmdID, pCmdText, out EditCommand editCommand))
             {
                 var action = QueryStatus(editCommand);
                 switch (action)

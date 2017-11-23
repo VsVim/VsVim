@@ -72,8 +72,7 @@ namespace Vim.VisualStudio.Implementation.Misc
 
         internal ScopeKind GetScopeKind(string name)
         {
-            ScopeKind kind;
-            if (!_scopeKindMap.TryGetValue(name, out kind))
+            if (!_scopeKindMap.TryGetValue(name, out ScopeKind kind))
             {
                 kind = ScopeKind.Unknown;
             }
@@ -83,11 +82,13 @@ namespace Vim.VisualStudio.Implementation.Misc
 
         private Dictionary<string, ScopeKind> BuildScopeKindMap()
         {
-            var map = new Dictionary<string, ScopeKind>(StringComparer.OrdinalIgnoreCase);
-            map[_globalScopeName] = ScopeKind.Global;
-            map[_textEditorScopeName] = ScopeKind.TextEditor;
-            map[_solutionExplorerScopeName] = ScopeKind.SolutionExplorer;
-            map[""] = ScopeKind.EmptyName;
+            var map = new Dictionary<string, ScopeKind>(StringComparer.OrdinalIgnoreCase)
+            {
+                [_globalScopeName] = ScopeKind.Global,
+                [_textEditorScopeName] = ScopeKind.TextEditor,
+                [_solutionExplorerScopeName] = ScopeKind.SolutionExplorer,
+                [""] = ScopeKind.EmptyName
+            };
             return map;
         }
 
@@ -163,8 +164,7 @@ namespace Vim.VisualStudio.Implementation.Misc
                             idString = idString.Substring(1);
                         }
 
-                        uint resourceId;
-                        if (UInt32.TryParse(idString, out resourceId))
+                        if (UInt32.TryParse(idString, out uint resourceId))
                         {
                             id = resourceId;
                         }

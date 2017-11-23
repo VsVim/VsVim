@@ -531,8 +531,7 @@ namespace Vim.UnitTest
         private static VimEditorHost GetOrCreateVimEditorHost()
         {
             var key = Thread.CurrentThread.ManagedThreadId;
-            VimEditorHost host;
-            if (!s_cachedVimEditorHostMap.TryGetValue(key, out host))
+            if (!s_cachedVimEditorHostMap.TryGetValue(key, out VimEditorHost host))
             {
                 var editorHostFactory = new EditorHostFactory();
                 editorHostFactory.Add(new AssemblyCatalog(typeof(IVim).Assembly));

@@ -125,8 +125,7 @@ namespace Vim.EditorHost
             var array = new ISetupInstance[] { null };
             do
             {
-                var found = 0;
-                e.Next(array.Length, array, out found);
+                e.Next(array.Length, array, out int found);
                 if (found == 0)
                 {
                     break;

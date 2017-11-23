@@ -122,8 +122,7 @@ namespace Vim.VisualStudio.Implementation.ReSharper
 
         private bool IsVsAdornmentTagType(Type type)
         {
-            bool isType;
-            if (_tagMap.TryGetValue(type, out isType))
+            if (_tagMap.TryGetValue(type, out bool isType))
             {
                 return isType;
             }

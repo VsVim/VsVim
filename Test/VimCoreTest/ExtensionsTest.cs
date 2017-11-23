@@ -52,8 +52,7 @@ namespace Vim.UnitTest
             var key = new object();
             col.AddProperty(key, "target");
 
-            string value;
-            Assert.True(col.TryGetPropertySafe(key, out value));
+            Assert.True(col.TryGetPropertySafe(key, out string value));
             Assert.Equal("target", value);
         }
 
@@ -63,8 +62,7 @@ namespace Vim.UnitTest
             var col = new PropertyCollection();
             var key = new object();
 
-            string value;
-            Assert.False(col.TryGetPropertySafe(key, out value));
+            Assert.False(col.TryGetPropertySafe(key, out string value));
         }
 
         /// <summary>
@@ -77,8 +75,7 @@ namespace Vim.UnitTest
             var key = new object();
             col.AddProperty(key, this);
 
-            string value;
-            Assert.False(col.TryGetPropertySafe(key, out value));
+            Assert.False(col.TryGetPropertySafe(key, out string value));
         }
     }
 }

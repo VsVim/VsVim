@@ -114,11 +114,7 @@ namespace Vim.EditorHost.Implementation.BasicUndo
             if (_openTransactionStack.Count == 0)
             {
                 _undoStack.Push(transaction);
-                var list = _undoTransactionCompleted;
-                if (list != null)
-                {
-                    list(this, new TextUndoTransactionCompletedEventArgs(null, TextUndoTransactionCompletionResult.TransactionAdded));
-                }
+                _undoTransactionCompleted?.Invoke(this, new TextUndoTransactionCompletedEventArgs(null, TextUndoTransactionCompletionResult.TransactionAdded));
             }
             else
             {
@@ -154,12 +150,7 @@ namespace Vim.EditorHost.Implementation.BasicUndo
 
         private void RaiseUndoRedoHappened()
         {
-            var list = _undoRedoHappened;
-            if (list != null)
-            {
-                // Note: Passing null here as this is what Visual Studio does
-                list(this, new TextUndoRedoEventArgs(_state, null));
-            }
+            _undoRedoHappened?.Invoke(this, new TextUndoRedoEventArgs(_state, null));
         }
 
         #region ITextUndoHistory
