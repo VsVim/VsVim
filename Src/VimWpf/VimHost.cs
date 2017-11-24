@@ -208,8 +208,7 @@ namespace Vim.UI.Wpf
         /// </summary>
         public virtual bool IsVisible(ITextView textView)
         {
-            var wpfTextView = textView as IWpfTextView;
-            if (wpfTextView != null)
+            if (textView is IWpfTextView wpfTextView)
             {
                 return wpfTextView.VisualElement.IsVisible;
             }

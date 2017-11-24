@@ -168,8 +168,7 @@ namespace Vim.VisualStudio.Implementation.Misc
 
                 // Still need to account for the case where the window is backed by a projection buffer
                 // and this ITextBuffer is in the graph
-                var frameProjectionBuffer = frameTextBuffer as IProjectionBuffer;
-                if (frameProjectionBuffer != null && frameProjectionBuffer.SourceBuffers.Contains(textBuffer))
+                if (frameTextBuffer is IProjectionBuffer frameProjectionBuffer && frameProjectionBuffer.SourceBuffers.Contains(textBuffer))
                 {
                     list.Add(frame);
                 }

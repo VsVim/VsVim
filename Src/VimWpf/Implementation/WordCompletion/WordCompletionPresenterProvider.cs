@@ -434,11 +434,10 @@ namespace Vim.UI.Wpf.Implementation.WordCompletion
                 try
                 {
                     var presenter = provider.TryCreateIntellisensePresenter(session);
-                    var popupPresenter = presenter as IPopupIntellisensePresenter;
 
                     // We only need to wrap IPopupIntellisensePresenter values as they are the
                     // only ones which expose opacity
-                    if (popupPresenter != null)
+                    if (presenter is IPopupIntellisensePresenter popupPresenter)
                     {
                         return new WordCompletionPresenter(popupPresenter);
                     }

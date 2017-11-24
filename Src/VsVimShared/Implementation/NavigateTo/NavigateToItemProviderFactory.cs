@@ -69,8 +69,7 @@ namespace Vim.VisualStudio.Implementation.NavigateTo
             // Note: The exact scenarios under which this happens is not well understood.  It does repro under
             // a clean machine and Windows 8.1 but doesn't always repro under other configurations.  Either way
             // need to fix
-            var wpfTextView = _textManager.ActiveTextViewOptional as IWpfTextView;
-            if (wpfTextView != null && !wpfTextView.HasAggregateFocus && wpfTextView.TextSnapshot.ContentType.IsCPlusPlus())
+            if (_textManager.ActiveTextViewOptional is IWpfTextView wpfTextView && !wpfTextView.HasAggregateFocus && wpfTextView.TextSnapshot.ContentType.IsCPlusPlus())
             {
                 VimTrace.TraceInfo("NavigateTo adjust C++ focus");
                 Keyboard.Focus(wpfTextView.VisualElement);

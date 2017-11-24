@@ -86,13 +86,9 @@ namespace Vim.UI.Wpf.Implementation.WordCompletion
         /// </summary>
         private bool MoveWithWrap(bool moveNext)
         {
-            var originalCompletion = _wordCompletionSet.SelectionStatus != null
-                ? _wordCompletionSet.SelectionStatus.Completion
-                : null;
+            var originalCompletion = _wordCompletionSet.SelectionStatus?.Completion;
             var ret = SendCommand(moveNext ? IntellisenseKeyboardCommand.Down : IntellisenseKeyboardCommand.Up);
-            var currentCompletion = _wordCompletionSet.SelectionStatus != null
-                ? _wordCompletionSet.SelectionStatus.Completion
-                : null;
+            var currentCompletion = _wordCompletionSet.SelectionStatus?.Completion;
             if (originalCompletion != null && currentCompletion == originalCompletion)
             {
                 ret = SendCommand(moveNext ? IntellisenseKeyboardCommand.TopLine : IntellisenseKeyboardCommand.BottomLine);

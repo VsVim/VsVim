@@ -179,8 +179,7 @@ namespace Vim.EditorHost
         /// </summary>
         public static IEnumerable<ITextBuffer> GetSourceBuffersRecursive(this ITextBuffer textBuffer)
         {
-            var projectionBuffer = textBuffer as IProjectionBuffer;
-            if (projectionBuffer != null)
+            if (textBuffer is IProjectionBuffer projectionBuffer)
             {
                 return projectionBuffer.GetSourceBuffersRecursive();
             }
@@ -393,8 +392,7 @@ namespace Vim.EditorHost
                 found.Add(current);
                 foreach (var sourceBuffer in current.SourceBuffers)
                 {
-                    var sourceProjection = sourceBuffer as IProjectionBuffer;
-                    if (sourceProjection != null)
+                    if (sourceBuffer is IProjectionBuffer sourceProjection)
                     {
                         toVisit.Enqueue(sourceProjection);
                     }

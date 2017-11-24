@@ -312,8 +312,7 @@ namespace Vim.UnitTest
                 Vim.MacroRecorder.StopRecording();
             }
 
-            var vimHost = Vim.VimHost as MockVimHost;
-            if (vimHost != null)
+            if (Vim.VimHost is MockVimHost vimHost)
             {
                 vimHost.ShouldCreateVimBufferImpl = false;
                 vimHost.Clear();

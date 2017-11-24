@@ -75,8 +75,7 @@ namespace Vim.UI.Wpf.Implementation.Misc
 
         public FSharpOption<VimPoint> GetPosition(ITextView textView)
         {
-            var wpfTextView = textView as IWpfTextView;
-            if (wpfTextView != null)
+            if (textView is IWpfTextView wpfTextView)
             {
                 var position = _mouseDevice.GetPosition(wpfTextView.VisualElement);
                 return FSharpOption.Create(new VimPoint(x: position.X, y: position.Y));

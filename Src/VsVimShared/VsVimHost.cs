@@ -248,8 +248,7 @@ namespace Vim.VisualStudio
             {
                 // Many Visual Studio commands expect focus to be in the editor when 
                 // running.  Switch focus there if an appropriate ITextView is available
-                var wpfTextView = contextTextView as IWpfTextView;
-                if (wpfTextView != null)
+                if (contextTextView is IWpfTextView wpfTextView)
                 {
                     wpfTextView.VisualElement.Focus();
                 }
