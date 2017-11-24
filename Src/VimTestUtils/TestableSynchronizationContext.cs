@@ -16,12 +16,11 @@ namespace Vim.UnitTest
         public bool IsDisposed { get; private set; }
         public int PostedCallbackCount => _queue.Count;
 
-        public TestableSynchronizationContext(bool install = true)
+        public TestableSynchronizationContext()
         {
-            if (install)
-            {
-                Install();
-            }
+            _oldSynchronizationContext = SynchronizationContext.Current;
+            SynchronizationContext.SetSynchronizationContext(this);
+            _isSet = true;
         }
 
         public void Dispose()
@@ -55,6 +54,7 @@ namespace Vim.UnitTest
             }
 
             var action = _queue.Dequeue();
+
             action();
         }
 
@@ -68,21 +68,7 @@ namespace Vim.UnitTest
             }
         }
 
-        public void Install()
-        {
-            if (_isSet)
-            {
-                throw new InvalidOperationException();
-            }
-
-            CheckDisposed();
-
-            _oldSynchronizationContext = SynchronizationContext.Current;
-            SynchronizationContext.SetSynchronizationContext(this);
-            _isSet = true;
-        }
-
-        public void Uninstall()
+        private void Uninstall()
         {
             if (!_isSet)
             {
