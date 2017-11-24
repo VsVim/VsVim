@@ -11,13 +11,30 @@ namespace Vim.UnitTest
         private SynchronizationContext _oldSynchronizationContext;
         private bool _isSet;
         private readonly Queue<Action> _queue = new Queue<Action>();
+        private readonly int _mainThreadId;
 
-        public bool IsEmpty => 0 == _queue.Count;
+        /// <summary>
+        /// Is execution currently on thi main thread for this context? 
+        /// </summary>
+        public bool InMainThread => Thread.CurrentThread.ManagedThreadId == _mainThreadId;
+
+        public bool IsEmpty => PostedCallbackCount == 0;
         public bool IsDisposed { get; private set; }
-        public int PostedCallbackCount => _queue.Count;
-
-        public TestableSynchronizationContext()
+        public int PostedCallbackCount
         {
+            get
+            {
+                CheckMainThread();
+                lock (_queue)
+                {
+                    return _queue.Count;
+                }
+            }
+        }
+
+        public TestableSynchronizationContext(Thread mainThread = null)
+        {
+            _mainThreadId = mainThread?.ManagedThreadId ?? Thread.CurrentThread.ManagedThreadId;
             _oldSynchronizationContext = SynchronizationContext.Current;
             SynchronizationContext.SetSynchronizationContext(this);
             _isSet = true;
@@ -41,19 +58,28 @@ namespace Vim.UnitTest
             }
 
             CheckDisposed();
-            _queue.Enqueue(() => d(state));
+
+            lock (_queue)
+            {
+                _queue.Enqueue(() => d(state));
+            }
         }
 
         public void RunOne()
         {
             CheckDisposed();
+            CheckMainThread();
 
-            if (_queue.Count == 0)
+            Action action;
+            lock (_queue)
             {
-                throw new InvalidOperationException();
-            }
+                if (_queue.Count == 0)
+                {
+                    throw new InvalidOperationException();
+                }
 
-            var action = _queue.Dequeue();
+                action = _queue.Dequeue();
+            }
 
             action();
         }
@@ -61,8 +87,9 @@ namespace Vim.UnitTest
         public void RunAll()
         {
             CheckDisposed();
+            CheckMainThread();
 
-            while (_queue.Count > 0)
+            while (!IsEmpty)
             {
                 RunOne();
             }
@@ -91,6 +118,14 @@ namespace Vim.UnitTest
             if (IsDisposed)
             {
                 throw new InvalidOperationException("Object is disposed");
+            }
+        }
+
+        private void CheckMainThread()
+        {
+            if (!InMainThread)
+            {
+                throw new InvalidOperationException("This call can only be made from the main thread");
             }
         }
     }
