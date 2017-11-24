@@ -72,8 +72,7 @@ namespace Vim.VisualStudio
                 return Enumerable.Empty<string>();
             }
 
-            var bindingsArray = bindings as object[];
-            if (bindingsArray != null)
+            if (bindings is object[] bindingsArray)
             {
                 return bindingsArray
                     .Where(x => x is string)
@@ -81,8 +80,7 @@ namespace Vim.VisualStudio
                     .Where(x => !String.IsNullOrEmpty(x));
             }
 
-            var singleBinding = bindings as string;
-            if (singleBinding != null)
+            if (bindings is string singleBinding)
             {
                 return Enumerable.Repeat(singleBinding, 1);
             }

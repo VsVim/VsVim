@@ -16,7 +16,12 @@ namespace Vim.UnitTest
 
         protected VimRegexTest()
         {
+            // This can't be simplified due to a bug in Roslyn. Suppressing the suggestion
+            // until fixed
+            // https://github.com/dotnet/roslyn/issues/23368
+#pragma warning disable IDE0017 
             _globalSettings = new GlobalSettings();
+#pragma warning restore IDE0017
             _globalSettings.IgnoreCase = true;
             _globalSettings.SmartCase = false;
         }

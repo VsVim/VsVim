@@ -76,8 +76,7 @@ namespace Vim.UI.Wpf.Implementation.Paste
                 Background = backgroundBrush
             };
 
-            var typeface = properties["Typeface"] as Typeface;
-            if (typeface != null)
+            if (properties["Typeface"] is Typeface typeface)
             {
                 textBlock.FontFamily = typeface.FontFamily;
                 textBlock.FontStretch = typeface.Stretch;

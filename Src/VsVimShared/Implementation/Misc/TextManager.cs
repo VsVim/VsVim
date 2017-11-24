@@ -234,8 +234,7 @@ namespace Vim.VisualStudio.Implementation.Misc
         /// </summary>
         private static bool SendSplit(IVsCodeWindow codeWindow)
         {
-            var target = codeWindow as IOleCommandTarget;
-            if (target != null)
+            if (codeWindow is IOleCommandTarget target)
             {
                 var group = VSConstants.GUID_VSStandardCommandSet97;
                 var cmdId = VSConstants.VSStd97CmdID.Split;

@@ -113,7 +113,7 @@ namespace VimApp
             {
                 var tabInfo = ActiveVimWindowOpt;
                 var found = tabInfo.VimViewInfoList.FirstOrDefault(x => x.TextViewHost.TextView.HasAggregateFocus);
-                return found != null ? found.VimBuffer : null;
+                return found?.VimBuffer;
             }
         }
 
@@ -319,15 +319,13 @@ namespace VimApp
                 var textViewHost = vimViewInfo.TextViewHost;
                 var parent = LogicalTreeHelper.GetParent(textViewHost.HostControl);
 
-                var grid = parent as Grid;
-                if (grid != null)
+                if (parent is Grid grid)
                 {
                     grid.Children.Remove(textViewHost.HostControl);
                     continue;
                 }
 
-                var tabItem = parent as TabItem;
-                if (tabItem != null)
+                if (parent is TabItem tabItem)
                 {
                     tabItem.Content = null;
                     continue;

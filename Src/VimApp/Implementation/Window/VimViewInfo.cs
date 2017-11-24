@@ -12,7 +12,7 @@ namespace VimApp.Implementation.Window
         internal IWpfTextViewHost TextViewHost { get; set; }
         internal IVimBuffer VimBuffer { get; set; }
         internal IVimWindow VimWindow { get; set; }
-        internal ITextView TextView { get { return TextViewHost != null ? TextViewHost.TextView : null; } }
+        internal ITextView TextView { get { return TextViewHost?.TextView; } }
 
         #region IVimViewInfo
 

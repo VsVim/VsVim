@@ -26,8 +26,7 @@ namespace Vim.VisualStudio.Implementation.OptionPages
             Guid packageGuid = VsVimConstants.PackageGuid;
             if (ErrorHandler.Succeeded(_vsShell.LoadPackage(ref packageGuid, out IVsPackage vsPackage)))
             {
-                var package = vsPackage as Package;
-                if (package != null)
+                if (vsPackage is Package package)
                 {
                     package.ShowOptionPage(typeof(KeyboardOptionPage));
                 }

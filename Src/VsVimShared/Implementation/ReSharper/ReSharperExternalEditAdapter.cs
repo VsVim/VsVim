@@ -158,9 +158,7 @@ namespace Vim.VisualStudio.Implementation.ReSharper
                 return true;
             }
 
-            tagger = versionInfo.TaggerProvider != null
-                ? versionInfo.TaggerProvider.SafeCreateTagger<ITag>(textBuffer).GetValueOrDefault()
-                : null;
+            tagger = versionInfo.TaggerProvider?.SafeCreateTagger<ITag>(textBuffer).GetValueOrDefault();
             return tagger != null;
         }
 

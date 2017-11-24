@@ -54,8 +54,7 @@ namespace Vim.EditorHost.Implementation.BasicUndo
 
         void ITextUndoHistoryRegistry.RemoveHistory(ITextUndoHistory history)
         {
-            var basicUndoHistory = history as BasicUndoHistory;
-            if (basicUndoHistory != null)
+            if (history is BasicUndoHistory basicUndoHistory)
             {
                 _map.Remove(basicUndoHistory.Context);
                 basicUndoHistory.Clear();
