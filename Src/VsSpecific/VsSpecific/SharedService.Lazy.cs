@@ -21,6 +21,9 @@ namespace Vim.VisualStudio.Specific
 
         private bool IsLazyLoaded(uint documentCookie)
         {
+#if VS_SPECIFIC_2012
+            return false;
+#else
             try
             {
                 var rdt = (IVsRunningDocumentTable4)_vsRunningDocumentTable;
@@ -31,6 +34,7 @@ namespace Vim.VisualStudio.Specific
             {
                 return false;
             }
+#endif
         }
     }
 
@@ -45,7 +49,7 @@ namespace Vim.VisualStudio.Specific
             _vsRunningDocumentTable = (IVsRunningDocumentTable)vsServiceProvider.GetService(typeof(SVsRunningDocumentTable));
         }
 
-        #region ISharedServiceVersionFactory
+#region ISharedServiceVersionFactory
 
         VisualStudioVersion ISharedServiceVersionFactory.Version
         {
@@ -57,7 +61,7 @@ namespace Vim.VisualStudio.Specific
             return new SharedService(_vsRunningDocumentTable);
         }
 
-        #endregion
+#endregion
     }
 }
 

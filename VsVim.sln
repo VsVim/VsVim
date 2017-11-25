@@ -47,6 +47,9 @@ EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
 		Src\VsSpecific\VsSpecific\VsSpecific.projitems*{003af6b2-eb30-4494-b89f-15e1390fe47d}*SharedItemsImports = 13
+		Src\VsSpecific\VsSpecific\VsSpecific.projitems*{4bbec6cf-089e-4f22-8649-5144388c655d}*SharedItemsImports = 4
+		Src\VsSpecific\VsSpecific\VsSpecific.projitems*{60316861-7561-4b07-8a16-212e00a2856e}*SharedItemsImports = 4
+		Src\VsSpecific\VsSpecific\VsSpecific.projitems*{ca760951-31f6-40b1-bab5-68cb26816abe}*SharedItemsImports = 4
 		Src\VsSpecific\VsSpecific\VsSpecific.projitems*{d8eb4054-f9eb-45de-b07f-254e253028e7}*SharedItemsImports = 4
 	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
