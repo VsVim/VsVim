@@ -18,7 +18,6 @@ namespace Vim.VisualStudio.Specific
 #elif VS_SPECIFIC_2017
     VisualStudioVersion.Vs2017;
 #else
-            default;
 #error "Bad VsSpecific project"
 #endif
     }
