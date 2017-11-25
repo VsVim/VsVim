@@ -244,7 +244,6 @@ try {
     # Build all of the relevant projects.  Both the deployment binaries and the 
     # test infrastructure
     write-host "Building Projects"
-    build-release Test\EditorUtilsTest\EditorUtilsTest.csproj
     build-release Test\VimCoreTest\VimCoreTest.csproj
     build-release Test\VimWpfTest\VimWpfTest.csproj
     build-release Test\VsVimSharedTest\VsVimSharedTest.csproj
