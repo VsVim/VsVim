@@ -30,7 +30,7 @@ namespace Vim.VisualStudio.UnitTest.Mock
 
         public static Mock<EnvDTE.Command> CreateCommand(Guid guid, int id, string name, params string[] bindings)
         {
-            object binding = bindings.Length == 1
+            var binding = bindings.Length == 1
                 ? (object)bindings[0]
                 : bindings;
             var mock = new Mock<EnvDTE.Command>(MockBehavior.Strict);

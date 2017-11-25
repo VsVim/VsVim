@@ -206,7 +206,7 @@ namespace Vim.UnitTest
 
             internal void Verify(char mark, int line, int column, int index = 1)
             {
-                var msg = String.Format(" {0}  {1,5}{2,5} test.txt", mark, line, column);
+                var msg = string.Format(" {0}  {1,5}{2,5} test.txt", mark, line, column);
                 Assert.Equal(msg, _statusUtil.LastStatusLong[index]);
             }
 
@@ -807,7 +807,7 @@ namespace Vim.UnitTest
                 Create("");
                 const int count = 15;
                 var expected = new List<string>();
-                for (int i = 0; i < count; i++)
+                for (var i = 0; i < count; i++)
                 {
                     _vimData.CommandHistory.Add("cat" + i);
                 }
@@ -815,9 +815,9 @@ namespace Vim.UnitTest
                 ParseAndRun("history");
                 var found = _statusUtil.LastStatusLong.ToList();
                 Assert.Equal(count + 1, found.Count);
-                for (int i = 1; i < found.Count; i++)
+                for (var i = 1; i < found.Count; i++)
                 {
-                    var line = String.Format("{0,7} {1}", i, "cat" + (i - 1));
+                    var line = string.Format("{0,7} {1}", i, "cat" + (i - 1));
                     Assert.Equal(line, found[i]);
                 }
             }
@@ -1117,7 +1117,7 @@ namespace Vim.UnitTest
             {
                 Create();
                 ParseAndRun(@"unlet! x");
-                Assert.True(String.IsNullOrEmpty(_statusUtil.LastError));
+                Assert.True(string.IsNullOrEmpty(_statusUtil.LastError));
             }
 
             [WpfFact]

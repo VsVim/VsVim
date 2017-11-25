@@ -424,7 +424,7 @@ namespace Vim.UnitTest
             public void ManyTimes()
             {
                 Create("hello world");
-                for (int i = 0; i < 5; i++)
+                for (var i = 0; i < 5; i++)
                 {
                     _textView.MoveCaretTo(0);
                     var searchResult = _search.DoSearch("el", enter: true).AsComplete().Item;

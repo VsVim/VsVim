@@ -100,7 +100,7 @@ namespace Vim.VisualStudio.UnitTest
                     Create();
                     var textView = CreateTextView("");
                     _textManager.SetupGet(x => x.ActiveTextViewOptional).Returns(textView);
-                    _dte.Setup(x => x.ExecuteCommand(VsVimHost.CommandNameGoToDefinition, String.Empty)).Throws(new Exception());
+                    _dte.Setup(x => x.ExecuteCommand(VsVimHost.CommandNameGoToDefinition, string.Empty)).Throws(new Exception());
                     Assert.False(_host.GoToDefinition());
                 }
 
@@ -110,7 +110,7 @@ namespace Vim.VisualStudio.UnitTest
                     Create();
                     var textView = CreateTextView("");
                     _textManager.SetupGet(x => x.ActiveTextViewOptional).Returns(textView);
-                    _dte.Setup(x => x.ExecuteCommand(VsVimHost.CommandNameGoToDefinition, String.Empty));
+                    _dte.Setup(x => x.ExecuteCommand(VsVimHost.CommandNameGoToDefinition, string.Empty));
                     Assert.True(_host.GoToDefinition());
                 }
 

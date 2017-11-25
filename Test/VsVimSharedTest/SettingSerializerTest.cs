@@ -129,7 +129,7 @@ namespace Vim.VisualStudio.UnitTest
                 var text = SettingSerializer.ConvertToString(s_commandKeyBindings);
                 var list = SettingSerializer.ConvertToCommandKeyBindings(text);
                 Assert.Equal(s_commandKeyBindings.Count, list.Count);
-                for (int i = 0; i < list.Count; i++)
+                for (var i = 0; i < list.Count; i++)
                 {
                     ExpectEqual(s_commandKeyBindings[i], list[i]);
                 }

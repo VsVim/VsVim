@@ -1880,7 +1880,7 @@ let x = 42
                 var parser = CreateParser("");
                 foreach (var tuple in Parser.s_LineCommandNamePair)
                 {
-                    if (!String.IsNullOrEmpty(tuple.Item2))
+                    if (!string.IsNullOrEmpty(tuple.Item2))
                     {
                         Assert.Equal(tuple.Item1, parser.TryExpand(tuple.Item2));
                     }

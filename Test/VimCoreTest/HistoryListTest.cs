@@ -22,7 +22,7 @@ namespace Vim.UnitTest
             public void DontExceedTheLimit()
             {
                 _historyList.Limit = 1;
-                for (int i = 0; i < 100; i++)
+                for (var i = 0; i < 100; i++)
                 {
                     var msg = i.ToString();
                     _historyList.Add(msg);
@@ -39,7 +39,7 @@ namespace Vim.UnitTest
             public void TotalCount()
             {
                 _historyList.Limit = 4;
-                for (int i = 0; i < 100; i++)
+                for (var i = 0; i < 100; i++)
                 {
                     _historyList.Add("dog");
                     Assert.Equal(i + 1, _historyList.TotalCount);
@@ -55,7 +55,7 @@ namespace Vim.UnitTest
             [Fact]
             public void MostRecentIsHead()
             {
-                for (int i = 0; i < 10; i++)
+                for (var i = 0; i < 10; i++)
                 {
                     var msg = i.ToString();
                     _historyList.Add(msg);

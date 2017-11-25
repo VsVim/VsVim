@@ -59,7 +59,7 @@ namespace Vim.UnitTest
                 return false;
             }
 
-            for (int i = 0; i < text.Length; i++)
+            for (var i = 0; i < text.Length; i++)
             {
                 if (snapshot[i + position] != text[i])
                 {

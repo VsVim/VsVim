@@ -234,7 +234,7 @@ namespace Vim.UnitTest
             }
 
             _vimEditorHost = GetOrCreateVimEditorHost();
-            ClipboardDevice.Text = String.Empty;
+            ClipboardDevice.Text = string.Empty;
 
             // One setting we do differ on for a default is 'timeout'.  We don't want them interfering
             // with the reliability of tests.  The default is on but turn it off here to prevent any 

@@ -38,8 +38,8 @@ namespace Vim.UnitTest
             var lines = TextLine.GetTextLines("");
             Assert.Equal(1, lines.Count);
             var textLine = lines.Single();
-            Assert.Equal(String.Empty, textLine.Text);
-            Assert.Equal(String.Empty, textLine.NewLine);
+            Assert.Equal(string.Empty, textLine.Text);
+            Assert.Equal(string.Empty, textLine.NewLine);
         }
 
         /// <summary>
@@ -53,7 +53,7 @@ namespace Vim.UnitTest
             Assert.Equal("dog", lines[0].Text);
             Assert.Equal(Environment.NewLine, lines[0].NewLine);
             Assert.Equal("cat", lines[1].Text);
-            Assert.Equal(String.Empty, lines[1].NewLine);
+            Assert.Equal(string.Empty, lines[1].NewLine);
         }
 
         /// <summary>
@@ -67,7 +67,7 @@ namespace Vim.UnitTest
             Assert.Equal("dog", lines[0].Text);
             Assert.Equal("\r", lines[0].NewLine);
             Assert.Equal("cat", lines[1].Text);
-            Assert.Equal(String.Empty, lines[1].NewLine);
+            Assert.Equal(string.Empty, lines[1].NewLine);
         }
     }
 }

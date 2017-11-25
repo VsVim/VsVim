@@ -29,7 +29,7 @@ namespace VimApp.Implementation.Window
 
         private void OnTextViewClosed(object sender, EventArgs e)
         {
-            int i = 0;
+            var i = 0;
             while (i < _vimViewInfoList.Count)
             {
                 if (_vimViewInfoList[i].TextView.IsClosed)

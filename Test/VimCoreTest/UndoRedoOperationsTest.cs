@@ -73,7 +73,7 @@ namespace Vim.UnitTest
 
         private void RaiseUndoTransactionCompleted(int count = 1)
         {
-            for (int i = 0; i < count; i++)
+            for (var i = 0; i < count; i++)
             {
                 var args = new TextUndoTransactionCompletedEventArgs(null, TextUndoTransactionCompletionResult.TransactionAdded);
                 _mockUndoHistory.Raise(x => x.UndoTransactionCompleted += null, _mockUndoHistory.Object, args);
@@ -138,9 +138,9 @@ namespace Vim.UnitTest
             {
                 Create(HistoryKind.Basic);
 
-                int count = 10;
+                var count = 10;
                 var stack = new Stack<ILinkedUndoTransaction>();
-                for (int i = 0; i < count; i++)
+                for (var i = 0; i < count; i++)
                 {
                     stack.Push(_undoRedoOperations.CreateLinkedUndoTransaction("test"));
                 }
@@ -250,7 +250,7 @@ namespace Vim.UnitTest
             public void BackToBack()
             {
                 Create(HistoryKind.Basic);
-                for (int i = 0; i < 5; i++)
+                for (var i = 0; i < 5; i++)
                 {
                     var linkedTransaction = _undoRedoOperations.CreateLinkedUndoTransaction("outer");
                     var transaction = _undoRedoOperations.CreateUndoTransaction("inner");

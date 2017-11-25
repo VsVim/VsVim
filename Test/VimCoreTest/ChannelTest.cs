@@ -32,7 +32,7 @@ namespace Vim.UnitTest
             {
                 Create("cat", "fish", "dog");
 
-                for (int i = 0; i < 10; i++)
+                for (var i = 0; i < 10; i++)
                 {
                     _channel.WriteNormal(_textBuffer.GetLineRange(0));
                     Assert.Equal(i + 1, _channel.CurrentVersion);
@@ -47,7 +47,7 @@ namespace Vim.UnitTest
             {
                 Create("cat", "fish", "dog");
 
-                for (int i = 0; i < 10; i++)
+                for (var i = 0; i < 10; i++)
                 {
                     _channel.WriteNormal(_textBuffer.GetLineRange(0));
                     Assert.Equal(i + 1, _channel.CurrentStack.Length);
@@ -59,7 +59,7 @@ namespace Vim.UnitTest
             {
                 Create("cat", "fish", "dog", "tree");
 
-                for (int i = 0; i < 4; i++)
+                for (var i = 0; i < 4; i++)
                 {
                     var lineRange = _textBuffer.GetLineRange(i);
                     _channel.WriteNormal(lineRange);
@@ -77,7 +77,7 @@ namespace Vim.UnitTest
             {
                 Create("cat", "fish", "dog", "tree");
 
-                for (int i = 0; i < 4; i++)
+                for (var i = 0; i < 4; i++)
                 {
                     _channel.WriteNormal(_textBuffer.GetLineRange(i));
                 }
@@ -106,7 +106,7 @@ namespace Vim.UnitTest
             {
                 Create("cat", "fish", "dog");
 
-                for (int i = 0; i < 10; i++)
+                for (var i = 0; i < 10; i++)
                 {
                     _channel.WriteVisibleLines(_textBuffer.GetLineRange(0));
                     Assert.Equal(i + 1, _channel.CurrentVersion);
@@ -122,7 +122,7 @@ namespace Vim.UnitTest
             {
                 Create("cat", "fish", "dog");
 
-                for (int i = 0; i < 10; i++)
+                for (var i = 0; i < 10; i++)
                 {
                     _channel.WriteVisibleLines(_textBuffer.GetLineRange(0));
                     Assert.Equal(0, _channel.CurrentStack.Length);
@@ -134,7 +134,7 @@ namespace Vim.UnitTest
             {
                 Create("cat", "fish", "dog", "tree");
 
-                for (int i = 0; i < 4; i++)
+                for (var i = 0; i < 4; i++)
                 {
                     var lineRange = _textBuffer.GetLineRange(i);
                     _channel.WriteVisibleLines(lineRange);

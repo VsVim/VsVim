@@ -78,7 +78,7 @@ namespace Vim.UnitTest
             {
                 const string text = "cat";
                 Create(text);
-                for (int i = 0; i < text.Length; i++)
+                for (var i = 0; i < text.Length; i++)
                 {
                     Assert.Equal(text[i], _tokenStream.CurrentChar.Value);
                     _tokenStream.IncrementIndex();

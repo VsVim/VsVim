@@ -12,10 +12,10 @@ namespace Vim.UnitTest
         {
             private void Expect(string source, string toFind, string toReplace, string expected)
             {
-                for (int i = 0; i < toFind.Length; i++)
+                for (var i = 0; i < toFind.Length; i++)
                 {
                     var original = toFind[i];
-                    var changed = Char.IsUpper(original) ? Char.ToLower(original) : Char.ToUpper(original);
+                    var changed = char.IsUpper(original) ? char.ToLower(original) : char.ToUpper(original);
                     var toFindChanged = toFind.Replace(original, changed);
                     var replace = StringUtil.ReplaceNoCase(source, toFindChanged, toReplace);
                     Assert.Equal(expected, replace);

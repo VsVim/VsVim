@@ -236,7 +236,7 @@ namespace Vim.VisualStudio.Implementation.Misc
             // though does differentiate.  Ctrl+f is different than Ctrl+Shift+F.  So don't 
             // process any alpha commands which have both Ctrl and Shift as Vim wouldn't 
             // ever hit them
-            if (Char.IsLetter(first.Char) && first.KeyModifiers == (VimKeyModifiers.Shift | VimKeyModifiers.Control))
+            if (char.IsLetter(first.Char) && first.KeyModifiers == (VimKeyModifiers.Shift | VimKeyModifiers.Control))
             {
                 return true;
             }

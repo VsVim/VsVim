@@ -77,7 +77,7 @@ namespace Vim.VisualStudio
                 return bindingsArray
                     .Where(x => x is string)
                     .Cast<string>()
-                    .Where(x => !String.IsNullOrEmpty(x));
+                    .Where(x => !string.IsNullOrEmpty(x));
             }
 
             if (bindings is string singleBinding)
@@ -123,7 +123,7 @@ namespace Vim.VisualStudio
                 if (KeyBinding.TryParse(cur, out KeyBinding binding))
                 {
                     var name = command.Name;
-                    if (String.IsNullOrEmpty(name))
+                    if (string.IsNullOrEmpty(name))
                     {
                         name = string.Format("<Unnamed> {0}", commandId.Id);
                     }
@@ -225,16 +225,16 @@ namespace Vim.VisualStudio
                 var monikerId = VsVimConstants.VsUserDataFileNameMoniker;
                 var userData = (IVsUserData)lines;
                 if (VSConstants.S_OK != userData.GetData(ref monikerId, out object data)
-                    || String.IsNullOrEmpty(data as string))
+                    || string.IsNullOrEmpty(data as string))
                 {
-                    return String.Empty;
+                    return string.Empty;
                 }
 
                 return (string)data;
             }
             catch (InvalidCastException)
             {
-                return String.Empty;
+                return string.Empty;
             }
         }
 
@@ -575,7 +575,7 @@ namespace Vim.VisualStudio
         {
             try
             {
-                int hresult = vsWindowFrame.GetProperty((int)__VSFPROPID2.VSFPROPID_ParentFrame, out object parentObj);
+                var hresult = vsWindowFrame.GetProperty((int)__VSFPROPID2.VSFPROPID_ParentFrame, out object parentObj);
                 if (!ErrorHandler.Succeeded(hresult))
                 {
                     parentWindowFrame = null;
@@ -978,7 +978,7 @@ namespace Vim.VisualStudio
         public static IEnumerable<Project> GetProjects(this _DTE dte)
         {
             var list = dte.Solution.Projects;
-            for (int i = 1; i <= list.Count; i++)
+            for (var i = 1; i <= list.Count; i++)
             {
                 yield return list.Item(i);
             }
@@ -1002,7 +1002,7 @@ namespace Vim.VisualStudio
         public static IEnumerable<ProjectItem> GetProjecItems(this Project project)
         {
             var items = project.ProjectItems;
-            for (int i = 1; i <= items.Count; i++)
+            for (var i = 1; i <= items.Count; i++)
             {
                 yield return items.Item(i);
             }

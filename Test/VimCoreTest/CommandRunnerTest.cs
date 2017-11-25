@@ -241,7 +241,7 @@ namespace Vim.UnitTest
             [WpfFact]
             public void CommandMatch1()
             {
-                Create(String.Empty);
+                Create(string.Empty);
                 var count1 = 0;
                 _runner.Add(VimUtil.CreateNormalBinding("a", data => { count1++; return CommandResult.NewCompleted(ModeSwitch.NoSwitch); }));
                 Run("a");
@@ -251,7 +251,7 @@ namespace Vim.UnitTest
             [WpfFact]
             public void CommandMatch2()
             {
-                Create(String.Empty);
+                Create(string.Empty);
                 var count1 = 0;
                 _runner.Add(VimUtil.CreateNormalBinding("a", data => { count1++; return CommandResult.NewCompleted(ModeSwitch.NoSwitch); }));
                 Run("b");
@@ -261,7 +261,7 @@ namespace Vim.UnitTest
             [WpfFact]
             public void CommandMatch3()
             {
-                Create(String.Empty);
+                Create(string.Empty);
                 var count1 = 0;
                 _runner.Add(VimUtil.CreateNormalBinding("a", data => { count1++; return CommandResult.NewCompleted(ModeSwitch.NoSwitch); }));
                 var count2 = 0;
@@ -274,7 +274,7 @@ namespace Vim.UnitTest
             [WpfFact]
             public void CommandMatch4()
             {
-                Create(String.Empty);
+                Create(string.Empty);
                 var count1 = 0;
                 _runner.Add(VimUtil.CreateNormalBinding("ab", data => { count1++; return CommandResult.NewCompleted(ModeSwitch.NoSwitch); }));
                 var count2 = 0;
@@ -290,7 +290,7 @@ namespace Vim.UnitTest
             [WpfFact]
             public void CommandMatch5()
             {
-                Create(String.Empty);
+                Create(string.Empty);
                 var count1 = 0;
                 _runner.Add(VimUtil.CreateMotionBinding("aa", data => { count1++; return NormalCommand.NewYank(data); }));
                 var count2 = 0;
@@ -303,7 +303,7 @@ namespace Vim.UnitTest
             [WpfFact]
             public void CommandMatch6()
             {
-                Create(String.Empty);
+                Create(string.Empty);
                 var count1 = 0;
                 _runner.Add(VimUtil.CreateMotionBinding("aa", data => { count1++; return NormalCommand.NewYank(data); }));
                 var count2 = 0;
@@ -329,7 +329,7 @@ namespace Vim.UnitTest
             [WpfFact]
             public void Count1()
             {
-                Create(String.Empty);
+                Create(string.Empty);
                 var didRun = false;
                 _runner.Add(VimUtil.CreateNormalBinding("a", data =>
                     {
@@ -344,7 +344,7 @@ namespace Vim.UnitTest
             [WpfFact]
             public void Count2()
             {
-                Create(String.Empty);
+                Create(string.Empty);
                 var didRun = false;
                 _runner.Add(VimUtil.CreateNormalBinding("a", data =>
                     {
@@ -360,7 +360,7 @@ namespace Vim.UnitTest
             [WpfFact]
             public void Count3()
             {
-                Create(String.Empty);
+                Create(string.Empty);
                 var didRun = false;
                 _runner.Add(VimUtil.CreateNormalBinding("a", data =>
                     {
@@ -389,7 +389,7 @@ namespace Vim.UnitTest
             [WpfFact]
             public void Register1()
             {
-                Create(String.Empty);
+                Create(string.Empty);
                 var didRun = false;
                 _runner.Add(VimUtil.CreateNormalBinding("a", data =>
                     {
@@ -404,7 +404,7 @@ namespace Vim.UnitTest
             [WpfFact]
             public void Register2()
             {
-                Create(String.Empty);
+                Create(string.Empty);
                 var didRun = false;
                 _runner.Add(VimUtil.CreateNormalBinding("a", data =>
                     {
@@ -419,7 +419,7 @@ namespace Vim.UnitTest
             [WpfFact]
             public void Register3()
             {
-                Create(String.Empty);
+                Create(string.Empty);
                 var didRun = false;
                 _runner.Add(VimUtil.CreateNormalBinding("a", data =>
                     {
@@ -434,7 +434,7 @@ namespace Vim.UnitTest
             [WpfFact]
             public void CountAndRegister1()
             {
-                Create(String.Empty);
+                Create(string.Empty);
                 var didRun = false;
                 _runner.Add(VimUtil.CreateNormalBinding("a", data =>
                     {
@@ -451,7 +451,7 @@ namespace Vim.UnitTest
             [WpfFact]
             public void CountAndRegister2()
             {
-                Create(String.Empty);
+                Create(string.Empty);
                 var didRun = false;
                 _runner.Add(VimUtil.CreateNormalBinding("a", data =>
                     {
@@ -546,7 +546,7 @@ namespace Vim.UnitTest
             [WpfFact]
             public void Add1()
             {
-                Create(String.Empty);
+                Create(string.Empty);
                 var command1 = VimUtil.CreateNormalBinding("foo", data => CommandResult.NewCompleted(ModeSwitch.NoSwitch));
                 _runner.Add(command1);
                 Assert.Same(command1, _runner.Commands.Single());
@@ -555,7 +555,7 @@ namespace Vim.UnitTest
             [WpfFact]
             public void Add2()
             {
-                Create(String.Empty);
+                Create(string.Empty);
                 var command1 = VimUtil.CreateNormalBinding("foo", data => CommandResult.NewCompleted(ModeSwitch.NoSwitch));
                 var command2 = VimUtil.CreateNormalBinding("bar", data => CommandResult.NewCompleted(ModeSwitch.NoSwitch));
                 _runner.Add(command1);
@@ -568,7 +568,7 @@ namespace Vim.UnitTest
             [WpfFact]
             public void Add3()
             {
-                Create(String.Empty);
+                Create(string.Empty);
                 var command1 = VimUtil.CreateNormalBinding("foo", data => CommandResult.NewCompleted(ModeSwitch.NoSwitch));
                 _runner.Add(command1);
                 Assert.Throws<ArgumentException>(() => _runner.Add(command1));
@@ -577,7 +577,7 @@ namespace Vim.UnitTest
             [WpfFact]
             public void Add4()
             {
-                Create(String.Empty);
+                Create(string.Empty);
                 var command1 = VimUtil.CreateNormalBinding("foo", data => CommandResult.NewCompleted(ModeSwitch.NoSwitch));
                 var command2 = VimUtil.CreateNormalBinding("foo");
                 _runner.Add(command1);
@@ -587,7 +587,7 @@ namespace Vim.UnitTest
             [WpfFact]
             public void Remove1()
             {
-                Create(String.Empty);
+                Create(string.Empty);
                 var command1 = VimUtil.CreateNormalBinding("foo", data => CommandResult.NewCompleted(ModeSwitch.NoSwitch));
                 _runner.Add(command1);
                 _runner.Remove(command1.KeyInputSet);
@@ -600,7 +600,7 @@ namespace Vim.UnitTest
             [WpfFact]
             public void Remove2()
             {
-                Create(String.Empty);
+                Create(string.Empty);
                 _runner.Remove(KeyNotationUtil.StringToKeyInputSet("foo"));
                 Assert.Empty(_runner.Commands);
             }

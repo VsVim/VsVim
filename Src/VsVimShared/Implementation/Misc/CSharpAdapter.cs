@@ -69,7 +69,7 @@ namespace Vim.VisualStudio.Implementation.Misc
             // First find the last + character
             var snapshot = span.Snapshot;
             SnapshotPoint? plusPoint = null;
-            for (int i = span.Length - 1; i >= 0; i--)
+            for (var i = span.Length - 1; i >= 0; i--)
             {
                 var position = span.Start.Position + i;
                 var point = new SnapshotPoint(snapshot, position);

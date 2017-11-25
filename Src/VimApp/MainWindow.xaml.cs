@@ -220,7 +220,7 @@ namespace VimApp
         {
             var grid = BuildGridCore(viewInfoList);
             var row = 0;
-            for (int i = 0; i < viewInfoList.Count; i++)
+            for (var i = 0; i < viewInfoList.Count; i++)
             {
                 var viewInfo = viewInfoList[i];
                 var textViewHost = viewInfo.TextViewHost;
@@ -256,7 +256,7 @@ namespace VimApp
         {
             var grid = new Grid();
 
-            for (int i = 0; i < viewInfoList.Count; i++)
+            for (var i = 0; i < viewInfoList.Count; i++)
             {
                 // Build up the row for the host control
                 var hostRow = new RowDefinition
@@ -359,7 +359,7 @@ namespace VimApp
         {
             var builder = new StringBuilder();
             builder.AppendLine("Begin");
-            for (int i = 0; i < 32; i++)
+            for (var i = 0; i < 32; i++)
             {
                 builder.AppendFormat("{0} - {1}{2}", i, (char)i, Environment.NewLine);
             }
@@ -393,7 +393,7 @@ namespace VimApp
         private void OnNewTabClick(object sender, RoutedEventArgs e)
         {
             // TODO: Move the title to IVimWindow
-            var name = String.Format("Empty Doc {0}", _vimWindowManager.VimWindowList.Count + 1);
+            var name = string.Format("Empty Doc {0}", _vimWindowManager.VimWindowList.Count + 1);
             AddNewTab(name);
         }
 

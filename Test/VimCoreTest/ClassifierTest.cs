@@ -43,7 +43,7 @@ namespace Vim.UnitTest
             [WpfFact]
             public void ChangeEvent()
             {
-                int count = 0;
+                var count = 0;
                 _source.Text = "dog";
                 _source.Changed += delegate { count++; };
                 _source.Text = "bar";

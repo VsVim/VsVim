@@ -199,7 +199,7 @@ namespace Vim.EditorHost
 
         public static void SetText(this ITextBuffer buffer, params string[] lines)
         {
-            var text = String.Join(Environment.NewLine, lines);
+            var text = string.Join(Environment.NewLine, lines);
             var edit = buffer.CreateEdit(EditOptions.DefaultMinimalChange, 0, null);
             edit.Replace(new Span(0, buffer.CurrentSnapshot.Length), text);
             edit.Apply();

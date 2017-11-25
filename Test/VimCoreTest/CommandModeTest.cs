@@ -86,7 +86,7 @@ namespace Vim.UnitTest
             _mode.Process('c');
             _mode.Process(KeyInputUtil.VimKeyToKeyInput(VimKey.Back));
             _mode.Process(KeyInputUtil.VimKeyToKeyInput(VimKey.Back));
-            Assert.Equal(String.Empty, _modeRaw.Command);
+            Assert.Equal(string.Empty, _modeRaw.Command);
         }
 
         /// <summary>
@@ -110,7 +110,7 @@ namespace Vim.UnitTest
         public void OnEnter1()
         {
             _mode.OnEnter(ModeArgument.None);
-            Assert.Equal(String.Empty, _modeRaw.Command);
+            Assert.Equal(string.Empty, _modeRaw.Command);
         }
 
         [WpfFact]

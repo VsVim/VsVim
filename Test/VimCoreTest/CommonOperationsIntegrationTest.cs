@@ -188,7 +188,7 @@ namespace Vim.UnitTest
                     _globalSettings.ScrollOffset = 2;
                     _textView.SetVisibleLineCount(5);
                     _textView.ScrollToTop();
-                    int mouseLineNumber = _lastLineNumber - 6;
+                    var mouseLineNumber = _lastLineNumber - 6;
                     _textView.MoveCaretToLine(mouseLineNumber);
                     _foldManager.CreateFold(_textBuffer.GetLineRange(startLine: mouseLineNumber + 1, endLine: mouseLineNumber + 4));
                     _commonOperationsRaw.AdjustTextViewForScrollOffset();

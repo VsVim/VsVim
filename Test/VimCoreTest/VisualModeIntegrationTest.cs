@@ -1337,7 +1337,7 @@ namespace Vim.UnitTest
                 _vimBuffer.Process("v");
                 foreach (var keyInput in KeyInputUtil.VimKeyInputList.Where(x => x.IsMouseKey))
                 {
-                    bool ret = _vimBuffer.CanProcess(keyInput);
+                    var ret = _vimBuffer.CanProcess(keyInput);
                     Assert.False(_vimBuffer.CanProcess(keyInput));
                 }
             }

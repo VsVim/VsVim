@@ -48,7 +48,7 @@ namespace Vim.UnitTest
             /// </summary>
             internal void HandlePreviewKeyDown(object sender, KeyEventArgs e)
             {
-                for (int i = _keyProcessors.Count - 1; i >= 0; i--)
+                for (var i = _keyProcessors.Count - 1; i >= 0; i--)
                 {
                     var keyProcessor = _keyProcessors[i];
                     if (e.Handled && !keyProcessor.IsInterestedInHandledEvents)
@@ -65,7 +65,7 @@ namespace Vim.UnitTest
             /// </summary>
             internal void HandlePreviewKeyUp(object sender, KeyEventArgs e)
             {
-                for (int i = _keyProcessors.Count - 1; i >= 0; i--)
+                for (var i = _keyProcessors.Count - 1; i >= 0; i--)
                 {
                     var keyProcessor = _keyProcessors[i];
                     if (e.Handled && !keyProcessor.IsInterestedInHandledEvents)
@@ -199,7 +199,7 @@ namespace Vim.UnitTest
                 };
 
             var map = new Dictionary<KeyInput, KeyData>();
-            foreach (char c in KeyInputUtil.CharLettersLower)
+            foreach (var c in KeyInputUtil.CharLettersLower)
             {
                 foreach (var mod in combos)
                 {
@@ -269,7 +269,7 @@ namespace Vim.UnitTest
 
             if (!TryConvert(keyInput, out Key key, out ModifierKeys modifierKeys))
             {
-                throw new Exception(String.Format("Couldn't convert '{0}' to Wpf keys", keyInput));
+                throw new Exception(string.Format("Couldn't convert '{0}' to Wpf keys", keyInput));
             }
 
             try
@@ -277,7 +277,7 @@ namespace Vim.UnitTest
                 _defaultKeyboardDevice.DownKeyModifiers = modifierKeys;
                 var text = keyInput.RawChar.IsSome()
                     ? keyInput.Char.ToString()
-                    : String.Empty;
+                    : string.Empty;
                 Run(text, keyInput, key, modifierKeys);
             }
             finally
@@ -428,12 +428,12 @@ namespace Vim.UnitTest
             }
 
             var keyInput = KeyInputUtil.VimKeyToKeyInput(vimKey);
-            if (Char.IsLetter(keyInput.Char))
+            if (char.IsLetter(keyInput.Char))
             {
                 return StringToKey(keyInput.Char.ToString());
             }
 
-            throw new Exception(String.Format("Can't convert {0} to a Wpf Key", vimKey));
+            throw new Exception(string.Format("Can't convert {0} to a Wpf Key", vimKey));
         }
 
         private Key StringToKey(string str)

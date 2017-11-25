@@ -89,7 +89,7 @@ namespace Vim.UnitTest
             {
                 var lineText = "#if foo ()";
                 AssertKind(MatchingTokenKind.Directive, lineText, column: 0);
-                for (int i = 1; i < lineText.Length; i++)
+                for (var i = 1; i < lineText.Length; i++)
                 {
                     AssertKind(MatchingTokenKind.Parens, lineText, column: i);
                 }
@@ -269,7 +269,7 @@ namespace Vim.UnitTest
             private void AssertBlock(DirectiveBlock block, params SnapshotSpan[] spans)
             {
                 Assert.Equal(spans.Length, block.Directives.Count);
-                for (int i = 0; i < spans.Length; i++)
+                for (var i = 0; i < spans.Length; i++)
                 {
                     Assert.Equal(spans[i].Span, block.Directives[i].Span);
                 }

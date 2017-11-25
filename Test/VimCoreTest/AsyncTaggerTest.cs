@@ -58,7 +58,7 @@ namespace Vim.UnitTest
                 _backgroundTags = tagSpans.Select(CreateTagSpan).ToList();
             }
 
-            internal void SetBackgroundCallback(Action<String, SnapshotSpan> action)
+            internal void SetBackgroundCallback(Action<string, SnapshotSpan> action)
             {
                 _backgroundCallback = action;
             }
@@ -893,7 +893,7 @@ namespace Vim.UnitTest
                 var tokenSource = _asyncTagger.AsyncBackgroundRequestData.Value.CancellationTokenSource;
 
                 // The background will try to post twice (once for progress and the other for complete)
-                for (int i = 0; i < 2; i++)
+                for (var i = 0; i < 2; i++)
                 {
                     TestableSynchronizationContext.RunOne();
                     Assert.True(_asyncTagger.AsyncBackgroundRequestData.IsSome());
@@ -979,7 +979,7 @@ namespace Vim.UnitTest
                         return null;
                     });
 
-                for (int i = 0; i < _textBuffer.CurrentSnapshot.LineCount; i++)
+                for (var i = 0; i < _textBuffer.CurrentSnapshot.LineCount; i++)
                 {
                     var span = _textBuffer.GetLineSpan(i, i);
                     var col = new NormalizedSnapshotSpanCollection(span);
@@ -1020,13 +1020,13 @@ namespace Vim.UnitTest
             [WpfFact]
             public void ChunkedData()
             {
-                var list = new List<String>();
-                for (int i = 0; i < 10; i++)
+                var list = new List<string>();
+                for (var i = 0; i < 10; i++)
                 {
                     list.Add("dog chases cat");
                     list.Add("fish around tree");
                     list.Add("where am i");
-                    for (int j = 0; j < 7; j++)
+                    for (var j = 0; j < 7; j++)
                     {
                         list.Add("a");
                     }
@@ -1040,7 +1040,7 @@ namespace Vim.UnitTest
 
                 var tags = _asyncTagger.GetTags(_textBuffer.GetExtent()).ToList();
                 Assert.Equal(10, tags.Count);
-                for (int i = 0; i < tags.Count; i++)
+                for (var i = 0; i < tags.Count; i++)
                 {
                     var span = tags[i].Span;
                     Assert.Equal("dog", span.GetText());

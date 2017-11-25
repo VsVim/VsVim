@@ -83,7 +83,7 @@ namespace Vim.UI.Wpf.Implementation.CharDisplay
             var list = new List<ITagSpan<IntraTextAdornmentTag>>();
             var offset = span.Start.Position;
             var snapshot = span.Snapshot;
-            for (int i = 0; i < span.Length; i++)
+            for (var i = 0; i < span.Length; i++)
             {
                 var position = i + offset;
                 var c = snapshot[position];
@@ -136,8 +136,8 @@ namespace Vim.UI.Wpf.Implementation.CharDisplay
                 return false;
             }
 
-            int min = 0;
-            int max = _adornmentCache.Count - 1;
+            var min = 0;
+            var max = _adornmentCache.Count - 1;
             int mid;
             int current;
 
@@ -203,7 +203,7 @@ namespace Vim.UI.Wpf.Implementation.CharDisplay
 
         private void OnTextChange(ITextChange textChange)
         {
-            int index = 0;
+            var index = 0;
 
             // Move past the keys that don't matter 
             while (index < _adornmentCache.Count && _adornmentCache[index].Position < textChange.OldPosition)

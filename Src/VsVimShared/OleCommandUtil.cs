@@ -81,7 +81,7 @@ namespace Vim.VisualStudio
                 case VSConstants.VSStd2KCmdID.TYPECHAR:
                     if (variantIn == IntPtr.Zero)
                     {
-                        keyInput = KeyInputUtil.CharToKeyInput(Char.MinValue);
+                        keyInput = KeyInputUtil.CharToKeyInput(char.MinValue);
                     }
                     else
                     {

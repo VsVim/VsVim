@@ -34,7 +34,7 @@ namespace Vim.UI.Wpf.UnitTest
         {
             private void AssertCache()
             {
-                for (int i = 0; i + 1 < _source.AdornmentCache.Count; i++)
+                for (var i = 0; i + 1 < _source.AdornmentCache.Count; i++)
                 {
                     Assert.True(_source.AdornmentCache[i].Position < _source.AdornmentCache[i + 1].Position);
                 }
@@ -77,7 +77,7 @@ namespace Vim.UI.Wpf.UnitTest
             {
                 Create(Enumerable.Repeat("d" + (char)29 + "g", 100).ToArray());
                 var snapshot = _textBuffer.CurrentSnapshot;
-                for (int i = snapshot.LineCount - 1; i >= 0; i--)
+                for (var i = snapshot.LineCount - 1; i >= 0; i--)
                 {
                     var line = snapshot.GetLine(i);
                     var tags = _source.GetTags(line.Extent);
@@ -94,7 +94,7 @@ namespace Vim.UI.Wpf.UnitTest
             {
                 Create(Enumerable.Repeat("d" + (char)29 + "g", 100).ToArray());
                 var snapshot = _textBuffer.CurrentSnapshot;
-                for (int i = 0; i < snapshot.LineCount; i++)
+                for (var i = 0; i < snapshot.LineCount; i++)
                 {
                     var line = snapshot.GetLine(i);
                     var tags = _source.GetTags(line.Extent);
@@ -112,7 +112,7 @@ namespace Vim.UI.Wpf.UnitTest
             {
                 Create(Enumerable.Repeat("d" + (char)29 + "g", 100).ToArray());
                 var snapshot = _textBuffer.CurrentSnapshot;
-                for (int i = 1; i <= snapshot.LineCount; i++)
+                for (var i = 1; i <= snapshot.LineCount; i++)
                 {
                     int index;
                     if (i % 2 == 0)

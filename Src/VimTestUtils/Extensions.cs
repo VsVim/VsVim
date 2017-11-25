@@ -1431,12 +1431,12 @@ namespace Vim.UnitTest
             if (text.Length == 1)
             {
                 var c = text[0];
-                if (Char.IsControl(c))
+                if (char.IsControl(c))
                 {
                     var type = typeof(TextComposition);
                     var method = type.GetMethod("MakeControl", BindingFlags.Instance | BindingFlags.NonPublic);
                     method.Invoke(textComposition, new object[] { });
-                    Assert.True(String.IsNullOrEmpty(textComposition.Text));
+                    Assert.True(string.IsNullOrEmpty(textComposition.Text));
                     Assert.Equal(text, textComposition.ControlText);
                 }
                 else if (0 != (c & 0x80))
@@ -1444,7 +1444,7 @@ namespace Vim.UnitTest
                     var type = typeof(TextComposition);
                     var method = type.GetMethod("MakeSystem", BindingFlags.Instance | BindingFlags.NonPublic);
                     method.Invoke(textComposition, new object[] { });
-                    Assert.True(String.IsNullOrEmpty(textComposition.Text));
+                    Assert.True(string.IsNullOrEmpty(textComposition.Text));
                     Assert.Equal(text, textComposition.SystemText);
                 }
             }
@@ -1496,7 +1496,7 @@ namespace Vim.UnitTest
         {
             if (cancellationToken.CanBeCanceled)
             {
-                int signalledIndex = WaitHandle.WaitAny(new[] { semaphore, cancellationToken.WaitHandle });
+                var signalledIndex = WaitHandle.WaitAny(new[] { semaphore, cancellationToken.WaitHandle });
                 if (signalledIndex != 0)
                 {
                     cancellationToken.ThrowIfCancellationRequested();

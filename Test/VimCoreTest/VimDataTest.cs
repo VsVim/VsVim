@@ -24,7 +24,7 @@ namespace Vim.UnitTest
             [WpfFact]
             public void Initial()
             {
-                Assert.False(String.IsNullOrEmpty(_vimData.CurrentDirectory));
+                Assert.False(string.IsNullOrEmpty(_vimData.CurrentDirectory));
             }
 
             /// <summary>
@@ -114,7 +114,7 @@ namespace Vim.UnitTest
                 {
                     _globalSettings.HighlightSearch = false;
                     _vimData.LastSearchData = new SearchData("dog", SearchPath.Forward);
-                    Assert.True(String.IsNullOrEmpty(_vimData.DisplayPattern));
+                    Assert.True(string.IsNullOrEmpty(_vimData.DisplayPattern));
                 }
             }
         }
@@ -202,7 +202,7 @@ namespace Vim.UnitTest
                 public void Suspend()
                 {
                     _vimData.SuspendDisplayPattern();
-                    Assert.True(String.IsNullOrEmpty(_vimData.DisplayPattern));
+                    Assert.True(string.IsNullOrEmpty(_vimData.DisplayPattern));
                 }
 
                 [WpfFact]
@@ -219,7 +219,7 @@ namespace Vim.UnitTest
                     _globalSettings.HighlightSearch = false;
                     _vimData.SuspendDisplayPattern();
                     _vimData.ResumeDisplayPattern();
-                    Assert.True(String.IsNullOrEmpty(_vimData.DisplayPattern));
+                    Assert.True(string.IsNullOrEmpty(_vimData.DisplayPattern));
                 }
             }
         }

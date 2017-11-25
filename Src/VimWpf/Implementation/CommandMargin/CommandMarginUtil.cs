@@ -128,9 +128,9 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             switch (currentMode.ModeKind)
             {
                 case ModeKind.Normal:
-                    status = String.IsNullOrEmpty(oneTimeArgument)
-                        ? String.Empty
-                        : String.Format(Resources.NormalOneTimeCommandBanner, oneTimeArgument);
+                    status = string.IsNullOrEmpty(oneTimeArgument)
+                        ? string.Empty
+                        : string.Format(Resources.NormalOneTimeCommandBanner, oneTimeArgument);
                     break;
                 case ModeKind.Command:
                     status = ":" + vimBuffer.CommandMode.Command;
@@ -142,19 +142,19 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
                     status = Resources.ReplaceBanner;
                     break;
                 case ModeKind.VisualBlock:
-                    status = String.IsNullOrEmpty(oneTimeArgument)
+                    status = string.IsNullOrEmpty(oneTimeArgument)
                         ? Resources.VisualBlockBanner
-                        : String.Format(Resources.VisualBlockOneTimeCommandBanner, oneTimeArgument);
+                        : string.Format(Resources.VisualBlockOneTimeCommandBanner, oneTimeArgument);
                     break;
                 case ModeKind.VisualCharacter:
-                    status = String.IsNullOrEmpty(oneTimeArgument)
+                    status = string.IsNullOrEmpty(oneTimeArgument)
                         ? Resources.VisualCharacterBanner
-                        : String.Format(Resources.VisualCharacterOneTimeCommandBanner, oneTimeArgument);
+                        : string.Format(Resources.VisualCharacterOneTimeCommandBanner, oneTimeArgument);
                     break;
                 case ModeKind.VisualLine:
-                    status = String.IsNullOrEmpty(oneTimeArgument)
+                    status = string.IsNullOrEmpty(oneTimeArgument)
                         ? Resources.VisualLineBanner
-                        : String.Format(Resources.VisualLineOneTimeCommandBanner, oneTimeArgument);
+                        : string.Format(Resources.VisualLineOneTimeCommandBanner, oneTimeArgument);
                     break;
                 case ModeKind.SelectBlock:
                     status = Resources.SelectBlockBanner;
@@ -175,7 +175,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
                     status = GetStatusSubstituteConfirm(vimBuffer.SubstituteConfirmMode);
                     break;
                 default:
-                    status = String.Empty;
+                    status = string.Empty;
                     break;
             }
 
@@ -185,7 +185,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
         private static string GetStatusSubstituteConfirm(ISubstituteConfirmMode mode)
         {
             var replace = mode.CurrentSubstitute.SomeOrDefault("");
-            return String.Format(Resources.SubstituteConfirmBannerFormat, replace);
+            return string.Format(Resources.SubstituteConfirmBannerFormat, replace);
         }
 
         private static string GetStatusWithRegister(string commandLine, ICommandRunner commandRunner)

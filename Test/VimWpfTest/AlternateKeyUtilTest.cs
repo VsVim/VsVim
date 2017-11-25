@@ -46,7 +46,7 @@ namespace Vim.UI.Wpf.UnitTest
             [Fact]
             public void FunctionKeys()
             {
-                for (int i = 1; i <= 12; i++)
+                for (var i = 1; i <= 12; i++)
                 {
                     var name = string.Format("F{0}", i);
                     var key = (Key)Enum.Parse(typeof(Key), name);
