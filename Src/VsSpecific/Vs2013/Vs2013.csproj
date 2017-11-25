@@ -20,7 +20,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
     <DebugSymbols>true</DebugSymbols>
-    <DefineConstants>TRACE;DEBUG</DefineConstants>
+    <DefineConstants>TRACE;DEBUG;VS_SPECIFIC_2013</DefineConstants>
     <DebugType>full</DebugType>
     <ErrorReport>prompt</ErrorReport>
   </PropertyGroup>
@@ -51,8 +51,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="SharedService.cs" />
-    <Compile Include="SharedService.Lazy.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\VsInterfaces\VsInterfaces.csproj">
@@ -60,6 +58,7 @@
       <Name>VsInterfaces</Name>
     </ProjectReference>
   </ItemGroup>
+  <Import Project="..\VsSpecific\VsSpecific.projitems" Label="Shared" />
   <Import Project="..\..\..\VsVim.targets" />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
