@@ -270,7 +270,7 @@ namespace Vim.UnitTest
             var left = _textView.TextSnapshot.GetLineFromLineNumber(1).Start;
             var right = _textView.Caret.Position.BufferPosition;
             Assert.Equal(left, right);
-            Assert.Equal(String.Empty, _textView.TextSnapshot.GetLineFromLineNumber(1).GetText());
+            Assert.Equal(string.Empty, _textView.TextSnapshot.GetLineFromLineNumber(1).GetText());
         }
 
         /// <summary>

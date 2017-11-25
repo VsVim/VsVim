@@ -309,12 +309,12 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
         /// </summary>
         private Size CalculateCaretSize()
         {
-            double defaultWidth = FormattedText.Width;
+            var defaultWidth = FormattedText.Width;
 
             var caret = _textView.Caret;
             var line = caret.ContainingTextViewLine;
-            double width = defaultWidth;
-            double height = caret.Height;
+            var width = defaultWidth;
+            var height = caret.Height;
             if (IsRealCaretVisible)
             {
                 // Get the size of the character to which we need to paint the caret.  Special case

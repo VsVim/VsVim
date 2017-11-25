@@ -734,7 +734,7 @@ namespace Vim.UnitTest
                 public void Substitute4()
                 {
                     Create("cat bat", "dag");
-                    var message = String.Empty;
+                    var message = string.Empty;
                     _vimBuffer.StatusMessage += (_, e) => { message = e.Message; };
                     RunCommand("s/a/b/p");
                     Assert.Equal("cbt bat", message);
@@ -747,7 +747,7 @@ namespace Vim.UnitTest
                 public void Substitute6()
                 {
                     Create("cat bat", "dag");
-                    var message = String.Empty;
+                    var message = string.Empty;
                     _vimBuffer.StatusMessage += (_, e) => { message = e.Message; };
                     RunCommand("s/a/b/#");
                     Assert.Equal("  1 cbt bat", message);
@@ -760,7 +760,7 @@ namespace Vim.UnitTest
                 public void Substitute7()
                 {
                     Create("cat bat", "dag");
-                    var message = String.Empty;
+                    var message = string.Empty;
                     _vimBuffer.StatusMessage += (_, e) => { message = e.Message; };
                     RunCommand("s/a/b/l");
                     Assert.Equal("cbt bat$", message);

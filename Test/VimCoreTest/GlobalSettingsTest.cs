@@ -218,7 +218,7 @@ namespace Vim.UnitTest
             [Fact]
             public void IsVirtualEditOneMore1()
             {
-                _globalSettings.VirtualEdit = String.Empty;
+                _globalSettings.VirtualEdit = string.Empty;
                 Assert.False(_globalSettings.IsVirtualEditOneMore);
             }
 

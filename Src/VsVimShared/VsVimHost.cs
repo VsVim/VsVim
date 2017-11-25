@@ -102,7 +102,7 @@ namespace Vim.VisualStudio
                     return;
                 }
 
-                bool value = ((SettingValue.Toggle)settingValue).Item;
+                var value = ((SettingValue.Toggle)settingValue).Item;
                 switch (name)
                 {
                     case UseEditorIndentName:
@@ -276,7 +276,7 @@ namespace Vim.VisualStudio
                 }
 
                 var c = snapshot[position];
-                return Char.IsLetter(c) || Char.IsDigit(c) || c == '_';
+                return char.IsLetter(c) || char.IsDigit(c) || c == '_';
             };
 
             var start = textView.Caret.Position.BufferPosition.Position;
@@ -451,7 +451,7 @@ namespace Vim.VisualStudio
             var vsTextLines = _editorAdaptersFactoryService.GetBufferAdapter(buffer) as IVsTextLines;
             if (vsTextLines == null)
             {
-                return String.Empty;
+                return string.Empty;
             }
             return vsTextLines.GetFileName();
         }

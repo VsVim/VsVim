@@ -61,7 +61,7 @@ namespace CleanVsix
             var files = Directory.GetFiles(sourcePath)
                 .Select(x => Path.GetFileName(x))
                 .ToArray();
-            ZipFileCompressor z = new ZipFileCompressor(destFilePath, sourcePath, files, deleteIfOutputExists: true);
+            var z = new ZipFileCompressor(destFilePath, sourcePath, files, deleteIfOutputExists: true);
         }
     }
 }

@@ -25,7 +25,7 @@ namespace Vim.UnitTest
         [WpfFact]
         public void MoveCaretDown1()
         {
-            CreateLines("foo", String.Empty);
+            CreateLines("foo", string.Empty);
             var tss = _view.TextSnapshot;
             var line = tss.GetLineFromLineNumber(0);
             _view.Caret.MoveTo(line.Start);

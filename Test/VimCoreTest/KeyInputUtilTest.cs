@@ -174,7 +174,7 @@ namespace Vim.UnitTest
                 const string expected = "\u00B0\u00B1\u00B2\u00B3\u00B4\u00B5\u00B6\u00B7\u00B8\u00B9";
                 for (var i = 0; i < expected.Length; i++)
                 {
-                    var c = Char.Parse(i.ToString());
+                    var c = char.Parse(i.ToString());
                     var keyInput = ApplyModifiers(c, VimKeyModifiers.Alt);
                     Assert.Equal(expected[i], keyInput.Char);
                     Assert.Equal(VimKeyModifiers.None, keyInput.KeyModifiers);
@@ -246,7 +246,7 @@ namespace Vim.UnitTest
                 foreach (var entry in list)
                 {
                     var pair = entry.Split('-');
-                    var name = String.Format("<{0}>", pair[0]);
+                    var name = string.Format("<{0}>", pair[0]);
                     var c = (char)Int32.Parse(pair[1]);
                     var left = KeyNotationUtil.StringToKeyInput(name);
                     var right = KeyInputUtil.CharToKeyInput(c);
@@ -263,7 +263,7 @@ namespace Vim.UnitTest
                     var left = KeyNotationUtil.StringToKeyInput(all[0]);
                     var right = KeyNotationUtil.StringToKeyInput(all[1]);
                     Assert.Equal(left, right);
-                    if (!String.IsNullOrEmpty(all[2]))
+                    if (!string.IsNullOrEmpty(all[2]))
                     {
                         var number = Int32.Parse(all[2]);
                         var c = (char)number;
@@ -470,7 +470,7 @@ namespace Vim.UnitTest
             [Fact]
             public void VimKey_AllValuesDifferent()
             {
-                HashSet<VimKey> set = new HashSet<VimKey>();
+                var set = new HashSet<VimKey>();
                 var all = Enum.GetValues(typeof(VimKey)).Cast<VimKey>().ToList();
                 foreach (var value in all)
                 {
@@ -508,7 +508,7 @@ namespace Vim.UnitTest
                         continue;
                     }
 
-                    if (Char.IsLetter(KeyInputUtil.VimKeyToKeyInput(cur).Char))
+                    if (char.IsLetter(KeyInputUtil.VimKeyToKeyInput(cur).Char))
                     {
                         continue;
                     }
@@ -541,7 +541,7 @@ namespace Vim.UnitTest
                 foreach (var letter in CharLettersLower)
                 {
                     var lower = KeyInputUtil.CharToKeyInput(letter);
-                    var upper = KeyInputUtil.CharToKeyInput(Char.ToUpper(letter));
+                    var upper = KeyInputUtil.CharToKeyInput(char.ToUpper(letter));
                     var lowerWithShift = KeyInputUtil.ChangeKeyModifiersDangerous(lower, VimKeyModifiers.Shift);
                     Assert.NotEqual(lowerWithShift, upper);
                 }
@@ -553,7 +553,7 @@ namespace Vim.UnitTest
                 foreach (var letter in CharLettersLower)
                 {
                     var lower = KeyInputUtil.CharToKeyInput(letter);
-                    var upper = KeyInputUtil.CharToKeyInput(Char.ToUpper(letter));
+                    var upper = KeyInputUtil.CharToKeyInput(char.ToUpper(letter));
                     var upperNoShift = KeyInputUtil.ChangeKeyModifiersDangerous(upper, VimKeyModifiers.None);
                     Assert.NotEqual(lower, upperNoShift);
                 }

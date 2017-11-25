@@ -373,7 +373,7 @@ namespace Vim.UnitTest.Mock
             // the roles are checked for the outlining manager.
             // Pretend we don't support anything
             var roles = factory.Create<ITextViewRoleSet>();
-            roles.Setup(x => x.Contains(It.IsAny<String>())).Returns(false);
+            roles.Setup(x => x.Contains(It.IsAny<string>())).Returns(false);
 
             var properties = new PropertyCollection();
             var textView = factory.Create<ITextView>();
@@ -521,7 +521,7 @@ namespace Vim.UnitTest.Mock
         {
             factory = factory ?? new MockRepository(MockBehavior.Strict);
             var mock = factory.Create<ITextViewLineCollection>();
-            for (int i = 0; i < range.Count; i++)
+            for (var i = 0; i < range.Count; i++)
             {
                 var number = range.StartLineNumber + i;
                 var line = range.Snapshot.GetLineFromLineNumber(number);

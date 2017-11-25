@@ -218,8 +218,8 @@ namespace Vim.VisualStudio
         /// </summary>
         private static bool IsQueryParameterList(IntPtr variantIn, IntPtr variantOut, uint nCmdexecopt)
         {
-            ushort lo = (ushort)(nCmdexecopt & (uint)0xffff);
-            ushort hi = (ushort)(nCmdexecopt >> 16);
+            var lo = (ushort)(nCmdexecopt & (uint)0xffff);
+            var hi = (ushort)(nCmdexecopt >> 16);
             if (lo == (ushort)OLECMDEXECOPT.OLECMDEXECOPT_SHOWHELP)
             {
                 if (hi == VsMenus.VSCmdOptQueryParameterList)

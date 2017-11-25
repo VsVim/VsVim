@@ -670,7 +670,7 @@ Transact-SQL Editor::Ctrl+J
         public void Parse2()
         {
             var b = KeyBinding.Parse("::b");
-            Assert.Equal(String.Empty, b.Scope);
+            Assert.Equal(string.Empty, b.Scope);
             Assert.Equal('b', b.FirstKeyStroke.Char);
         }
 
@@ -678,7 +678,7 @@ Transact-SQL Editor::Ctrl+J
         public void Parse3()
         {
             var b = KeyBinding.Parse("::f2");
-            Assert.Equal(Char.MinValue, b.FirstKeyStroke.Char);
+            Assert.Equal(char.MinValue, b.FirstKeyStroke.Char);
             Assert.Equal(VimKey.F2, b.FirstKeyStroke.KeyInput.Key);
         }
 

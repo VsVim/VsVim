@@ -60,7 +60,7 @@ namespace Vim.VisualStudio.Implementation.Roslyn
 
         internal static bool TryCreate(SVsServiceProvider vsServiceProvider, out IRoslynRenameUtil roslynRenameUtil)
         {
-            bool ret = TryCreateCore(vsServiceProvider, out RoslynRenameUtil util);
+            var ret = TryCreateCore(vsServiceProvider, out RoslynRenameUtil util);
             roslynRenameUtil = util;
             return ret;
         }

@@ -1355,7 +1355,7 @@ namespace Vim.UnitTest
         [WpfFact]
         public void VerifyCommandsNotRepeatable()
         {
-            Create(String.Empty);
+            Create(string.Empty);
             Action<string> verify = str =>
             {
                 var keyInputSet = KeyNotationUtil.StringToKeyInputSet(str);

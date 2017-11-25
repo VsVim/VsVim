@@ -17,7 +17,7 @@ namespace Vim.VisualStudio.UnitTest
                 var scopeData = ScopeData.Default;
                 Assert.Equal(ScopeKind.Global, scopeData.GetScopeKind("Global"));
                 Assert.Equal(ScopeKind.TextEditor, scopeData.GetScopeKind("Text Editor"));
-                Assert.Equal(ScopeKind.EmptyName, scopeData.GetScopeKind(String.Empty));
+                Assert.Equal(ScopeKind.EmptyName, scopeData.GetScopeKind(string.Empty));
             }
 
             [Fact]

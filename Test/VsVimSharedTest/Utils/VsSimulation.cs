@@ -195,7 +195,7 @@ namespace Vim.VisualStudio.UnitTest.Utils
                         return true;
                 }
 
-                if (Char.IsLetterOrDigit(keyInput.Char))
+                if (char.IsLetterOrDigit(keyInput.Char))
                 {
                     _editorOperatins.InsertText(keyInput.Char.ToString());
                     return true;
@@ -402,7 +402,7 @@ namespace Vim.VisualStudio.UnitTest.Utils
         {
             foreach (var cur in text)
             {
-                this.Run(cur);
+                Run(cur);
             }
         }
 
@@ -538,7 +538,7 @@ namespace Vim.VisualStudio.UnitTest.Utils
         {
             if (keyInput.RawChar.IsSome())
             {
-                if (Char.IsLetterOrDigit(keyInput.Char))
+                if (char.IsLetterOrDigit(keyInput.Char))
                 {
                     oleCommandData = OleCommandData.Empty;
                     return false;

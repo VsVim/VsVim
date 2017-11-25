@@ -38,7 +38,7 @@ namespace Vim.UI.Wpf.Implementation.CharDisplay
 
         internal static bool TryGetDisplayText(char c, out string text)
         {
-            int i = (int)c;
+            var i = (int)c;
             if (!IsRelevant(i))
             {
                 text = null;

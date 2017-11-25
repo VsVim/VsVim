@@ -5,7 +5,7 @@ namespace Vim.VisualStudio.UnitTest.Utils
 {
     public sealed class CharPointer : IDisposable
     {
-        public readonly Char Char;
+        public readonly char Char;
         public IntPtr IntPtr;
 
         private CharPointer(char c, IntPtr ptr)

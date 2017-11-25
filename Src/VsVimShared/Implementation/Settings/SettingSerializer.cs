@@ -53,7 +53,7 @@ namespace Vim.VisualStudio.Implementation.Settings
                 return false;
             }
 
-            for (int i = 0; i < items.Count; i += 4)
+            for (var i = 0; i < items.Count; i += 4)
             {
                 if (!Guid.TryParse(items[i], out Guid group) ||
                     !UInt32.TryParse(items[i + 1], out uint id) ||

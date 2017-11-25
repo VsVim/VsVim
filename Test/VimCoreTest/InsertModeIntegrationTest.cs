@@ -350,7 +350,7 @@ namespace Vim.UnitTest
                 Assert.Equal(
                     new[] { "fish", "tree", "cat", "dog" },
                     _textBuffer.GetLines());
-                for (int i = 0; i < 3; i++)
+                for (var i = 0; i < 3; i++)
                 {
                     Assert.Equal(Environment.NewLine, _textBuffer.GetLine(i).GetLineBreakText());
                 }

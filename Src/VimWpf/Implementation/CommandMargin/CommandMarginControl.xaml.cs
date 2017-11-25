@@ -139,7 +139,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
 
             var text = _commandLineInput.Text;
             int index;
-            if (String.IsNullOrEmpty(text))
+            if (string.IsNullOrEmpty(text))
             {
                 // Handle the odd case of no text.  This shouldn't be possible because this control shouldn't be 
                 // engaged without a : or / on the command line.  Handle it anyways to be safe

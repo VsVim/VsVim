@@ -59,7 +59,7 @@ namespace Vim.VisualStudio.UnitTest
                 var list = Extensions.GetCommandKeyBindings(com.Object).ToList();
                 Assert.Single(list);
                 Assert.Equal('f', list[0].KeyBinding.FirstKeyStroke.KeyInput.Char);
-                Assert.Equal(String.Empty, list[0].KeyBinding.Scope);
+                Assert.Equal(string.Empty, list[0].KeyBinding.Scope);
             }
 
             /// <summary>

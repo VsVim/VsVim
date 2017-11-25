@@ -353,7 +353,7 @@ namespace Vim.VisualStudio.UnitTest
             public void BeepNormalMode()
             {
                 Create();
-                int count = 0;
+                var count = 0;
                 _vimBuffer.KeyInputProcessed += delegate { count++; };
                 _vsSimulation.Run(VimKey.Escape);
                 Assert.Equal(1, count);
@@ -390,7 +390,7 @@ namespace Vim.VisualStudio.UnitTest
                     Create("hello();", "world");
                     _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
                     _textView.MoveCaretTo(8);
-                    for (int i = 0; i < 8; i++)
+                    for (var i = 0; i < 8; i++)
                     {
                         _vsSimulation.Run(VimKey.Back);
                         Assert.Equal(8 - (i + 1), _textView.GetCaretPoint().Position);
@@ -404,7 +404,7 @@ namespace Vim.VisualStudio.UnitTest
                     _vimBuffer.GlobalSettings.VirtualEdit = "onemore";
                     _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
                     _textView.MoveCaretTo(8);
-                    for (int i = 0; i < 8; i++)
+                    for (var i = 0; i < 8; i++)
                     {
                         _vsSimulation.Run(VimKey.Back);
                         Assert.Equal(8 - (i + 1), _textView.GetCaretPoint().Position);

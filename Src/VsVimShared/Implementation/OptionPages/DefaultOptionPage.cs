@@ -472,7 +472,7 @@ namespace Vim.VisualStudio.Implementation.OptionPages
             var array = new ColorableItemInfo[1];
             ErrorHandler.ThrowOnFailure(vsStorage.GetItem(colorKey.Name, array));
 
-            int isValid = colorKey.IsForeground
+            var isValid = colorKey.IsForeground
                 ? array[0].bForegroundValid
                 : array[0].bBackgroundValid;
             if (isValid == 0)
@@ -480,7 +480,7 @@ namespace Vim.VisualStudio.Implementation.OptionPages
                 throw new Exception();
             }
 
-            uint colorRef = colorKey.IsForeground
+            var colorRef = colorKey.IsForeground
                 ? array[0].crForeground
                 : array[0].crBackground;
             return FromColorRef(vsStorage, colorRef);

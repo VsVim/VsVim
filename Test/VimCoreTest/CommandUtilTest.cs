@@ -220,7 +220,7 @@ namespace Vim.UnitTest
             {
                 Create("cat", "dog", "tree");
                 var range = _textBuffer.GetLineRange(0, 1);
-                for (int i = 0; i < 2; i++)
+                for (var i = 0; i < 2; i++)
                 {
                     var point = _textBuffer.GetPointInLine(i, 0);
                     _foldManager.Setup(x => x.CloseFold(point, 1)).Verifiable();
@@ -555,7 +555,7 @@ namespace Vim.UnitTest
                 var transaction = new Mock<ILinkedUndoTransaction>(MockBehavior.Strict);
                 transaction.Setup(x => x.Dispose()).Verifiable();
                 _undoRedoOperations
-                    .Setup(x => x.CreateLinkedUndoTransaction(It.IsAny<String>()))
+                    .Setup(x => x.CreateLinkedUndoTransaction(It.IsAny<string>()))
                     .Returns(transaction.Object)
                     .Verifiable();
                 _undoRedoOperations
@@ -563,7 +563,7 @@ namespace Vim.UnitTest
                     .Throws(new ArgumentException())
                     .Verifiable();
 
-                bool caught = false;
+                var caught = false;
                 Action<Unit> actionRaw = _ => { throw new ArgumentException(); };
                 var action = actionRaw.ToFSharpFunc();
                 try
@@ -592,7 +592,7 @@ namespace Vim.UnitTest
                 var transaction = new Mock<ILinkedUndoTransaction>(MockBehavior.Strict);
                 transaction.Setup(x => x.Dispose()).Verifiable();
                 _undoRedoOperations
-                    .Setup(x => x.CreateLinkedUndoTransaction(It.IsAny<String>()))
+                    .Setup(x => x.CreateLinkedUndoTransaction(It.IsAny<string>()))
                     .Returns(transaction.Object)
                     .Verifiable();
                 _undoRedoOperations
@@ -600,7 +600,7 @@ namespace Vim.UnitTest
                     .Throws(new ArgumentException())
                     .Verifiable();
 
-                bool caught = false;
+                var caught = false;
                 Action<Unit> actionRaw = _ => { throw new ArgumentException(); };
                 var action = actionRaw.ToFSharpFunc();
                 try
@@ -2069,7 +2069,7 @@ namespace Vim.UnitTest
             public void DeleteLineSelection_Block()
             {
                 Create("cat", "dog", "fish");
-                _globalSettings.VirtualEdit = String.Empty;
+                _globalSettings.VirtualEdit = string.Empty;
                 var visualSpan = VisualSpan.NewBlock(_textView.GetBlockSpan(1, 1, 0, 2));
                 _commandUtil.DeleteLineSelection(VimUtil.MissingRegisterName, visualSpan);
                 Assert.Equal("c", _textView.GetLine(0).GetText());
@@ -2297,7 +2297,7 @@ namespace Vim.UnitTest
             public void GetNumberValueAtCaret_Decimal_GoPastWord()
             {
                 Create("dog13");
-                _localSettings.NumberFormats = String.Empty;
+                _localSettings.NumberFormats = string.Empty;
                 Assert.Equal(NumberValue.NewDecimal(13), GetNumberValueAtCaret());
             }
 
@@ -2349,7 +2349,7 @@ namespace Vim.UnitTest
                 _commandUtil.InsertLineAbove(1);
                 var point = _textView.Caret.Position.BufferPosition;
                 Assert.Equal(1, point.GetContainingLine().LineNumber);
-                Assert.Equal(String.Empty, point.GetContainingLine().GetText());
+                Assert.Equal(string.Empty, point.GetContainingLine().GetText());
             }
 
             /// <summary>
@@ -2361,12 +2361,14 @@ namespace Vim.UnitTest
             {
                 Create("foo bar", "baz");
 
-                bool didEdit = false;
+                var didEdit = false;
 
                 _textView.TextBuffer.Changed += (sender, e) =>
                 {
                     if (didEdit)
+                    {
                         return;
+                    }
 
                     using (var edit = _textView.TextBuffer.CreateEdit())
                     {
@@ -2403,7 +2405,7 @@ namespace Vim.UnitTest
             {
                 Create("foo", "bar", "baz");
                 _commandUtil.InsertLineBelow(1);
-                Assert.Equal(String.Empty, _textView.GetLine(1).GetText());
+                Assert.Equal(string.Empty, _textView.GetLine(1).GetText());
                 Assert.Equal(_textView.GetLine(1).Start, _textView.GetCaretPoint());
             }
 
@@ -2438,11 +2440,11 @@ namespace Vim.UnitTest
                 line = buffer.CurrentSnapshot.GetLineFromLineNumber(1);
                 Assert.Equal(Environment.NewLine, line.GetLineBreakText());
                 Assert.Equal(2, line.LineBreakLength);
-                Assert.Equal(String.Empty, line.GetText());
-                Assert.Equal(String.Empty + Environment.NewLine, line.GetTextIncludingLineBreak());
+                Assert.Equal(string.Empty, line.GetText());
+                Assert.Equal(string.Empty + Environment.NewLine, line.GetTextIncludingLineBreak());
 
                 line = buffer.CurrentSnapshot.GetLineFromLineNumber(2);
-                Assert.Equal(String.Empty, line.GetLineBreakText());
+                Assert.Equal(string.Empty, line.GetLineBreakText());
                 Assert.Equal(0, line.LineBreakLength);
                 Assert.Equal("baz", line.GetText());
                 Assert.Equal("baz", line.GetTextIncludingLineBreak());
@@ -2457,12 +2459,14 @@ namespace Vim.UnitTest
             {
                 Create("foo bar", "baz");
 
-                bool didEdit = false;
+                var didEdit = false;
 
                 _textView.TextBuffer.Changed += (sender, e) =>
                 {
                     if (didEdit)
+                    {
                         return;
+                    }
 
                     using (var edit = _textView.TextBuffer.CreateEdit())
                     {

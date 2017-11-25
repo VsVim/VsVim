@@ -381,7 +381,7 @@ namespace Vim.UnitTest
             public void CharRightAtLastOfLine()
             {
                 Create("cat", "dog");
-                _globalSettings.VirtualEdit = String.Empty;  // Ensure not 'OneMore'
+                _globalSettings.VirtualEdit = string.Empty;  // Ensure not 'OneMore'
                 _textView.MoveCaretTo(2);
                 _vimBuffer.Process("l");
                 Assert.Equal(1, _vimHost.BeepCount);
@@ -709,7 +709,7 @@ namespace Vim.UnitTest
             public void NoEndIf()
             {
                 Create("#if", "#elif", "#if");
-                for (int i = 0; i < 10; i++)
+                for (var i = 0; i < 10; i++)
                 {
                     _vimBuffer.Process("%");
                     Assert.Equal(1, _textView.GetCaretLine().LineNumber);
@@ -2003,7 +2003,7 @@ namespace Vim.UnitTest
                     _vimData.DisplayPatternChanged += delegate { ran = true; };
                     _vimBuffer.Process(VimKey.Escape);
                     Assert.True(ran);
-                    Assert.True(String.IsNullOrEmpty(_vimData.DisplayPattern));
+                    Assert.True(string.IsNullOrEmpty(_vimData.DisplayPattern));
                 }
 
 
@@ -6029,7 +6029,7 @@ namespace Vim.UnitTest
             {
                 Create("hat", "cat");
                 _textView.MoveCaretTo(2);
-                _vimBuffer.LocalSettings.GlobalSettings.VirtualEdit = String.Empty;
+                _vimBuffer.LocalSettings.GlobalSettings.VirtualEdit = string.Empty;
                 _vimBuffer.Process("cl");
                 Assert.Equal("ha", _textView.GetLine(0).GetText());
                 Assert.Equal("cat", _textView.GetLine(1).GetText());

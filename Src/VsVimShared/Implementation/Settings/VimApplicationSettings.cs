@@ -73,7 +73,7 @@ namespace Vim.VisualStudio.Implementation.Settings
             }
             catch (Exception e)
             {
-                Report(String.Format(ErrorGetFormat, propertyName), e);
+                Report(string.Format(ErrorGetFormat, propertyName), e);
                 return defaultValue;
             }
         }
@@ -88,7 +88,7 @@ namespace Vim.VisualStudio.Implementation.Settings
             }
             catch (Exception e)
             {
-                Report(String.Format(ErrorSetFormat, propertyName), e);
+                Report(string.Format(ErrorSetFormat, propertyName), e);
             }
         }
 
@@ -106,7 +106,7 @@ namespace Vim.VisualStudio.Implementation.Settings
             }
             catch (Exception e)
             {
-                Report(String.Format(ErrorGetFormat, propertyName), e);
+                Report(string.Format(ErrorGetFormat, propertyName), e);
                 return defaultValue;
             }
         }
@@ -121,13 +121,13 @@ namespace Vim.VisualStudio.Implementation.Settings
             }
             catch (Exception e)
             {
-                Report(String.Format(ErrorSetFormat, propertyName), e);
+                Report(string.Format(ErrorSetFormat, propertyName), e);
             }
         }
 
         internal T GetEnum<T>(string propertyName, T defaultValue) where T : struct
         {
-            string value = GetString(propertyName, null);
+            var value = GetString(propertyName, null);
             if (value == null)
             {
                 return defaultValue;

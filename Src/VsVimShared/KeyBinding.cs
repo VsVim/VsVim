@@ -120,9 +120,9 @@ namespace Vim.VisualStudio
             {
                 builder.Append(query.First().Key);
             }
-            else if (Char.IsLetter(input.Char))
+            else if (char.IsLetter(input.Char))
             {
-                builder.Append(Char.ToUpper(input.Char));
+                builder.Append(char.ToUpper(input.Char));
             }
             else if (input.Char == ' ')
             {
@@ -231,7 +231,7 @@ namespace Vim.VisualStudio
         /// </summary>
         private static KeyInput ConvertToKeyInput(char c)
         {
-            c = Char.IsLetter(c) ? Char.ToLower(c) : c;
+            c = char.IsLetter(c) ? char.ToLower(c) : c;
             return KeyInputUtil.CharToKeyInput(c);
         }
 

@@ -501,7 +501,7 @@ namespace Vim.UnitTest
             public void SameText()
             {
                 Create("cat dog");
-                for (int i = 0; i < 10; i++)
+                for (var i = 0; i < 10; i++)
                 {
                     FindNext("dog");
                     Assert.Equal(1, _searchCount);

@@ -90,8 +90,8 @@ namespace Vim.VisualStudio
                 return false;
             }
 
-            return this.KeyInput == other.KeyInput
-                && this.KeyModifiers == other.KeyModifiers;
+            return KeyInput == other.KeyInput
+                && KeyModifiers == other.KeyModifiers;
         }
 
         public static bool operator ==(KeyStroke left, KeyStroke right)

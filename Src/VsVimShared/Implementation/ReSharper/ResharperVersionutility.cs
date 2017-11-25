@@ -52,7 +52,7 @@ namespace Vim.VisualStudio.Implementation.ReSharper
 
             if (assembly.FullName.StartsWith(ResharperPlatform6AssemblyName))
             {
-                FileVersionInfo fvi = FileVersionInfo.GetVersionInfo(assembly.Location);
+                var fvi = FileVersionInfo.GetVersionInfo(assembly.Location);
                 var version = new Version(fvi.FileVersion);
 
                 // Starting with ReSharper 9, the assembly we detect is part of the "ReSharper Platform"

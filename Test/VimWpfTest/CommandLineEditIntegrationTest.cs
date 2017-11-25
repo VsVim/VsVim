@@ -29,7 +29,7 @@ namespace Vim.UI.Wpf.UnitTest
         {
             _factory = new MockRepository(MockBehavior.Strict);
             _marginControl = new CommandMarginControl();
-            _marginControl.CommandLineTextBox.Text = String.Empty;
+            _marginControl.CommandLineTextBox.Text = string.Empty;
             _vimBuffer = CreateVimBuffer(lines);
             _textBuffer = _vimBuffer.TextBuffer;
             _textView = _vimBuffer.TextView;
@@ -54,7 +54,7 @@ namespace Vim.UI.Wpf.UnitTest
         private void ProcessNotation(string notation)
         {
             var keyInputList = KeyNotationUtil.StringToKeyInputSet(notation).KeyInputs.ToList();
-            for (int i = 0; i < keyInputList.Count; i++)
+            for (var i = 0; i < keyInputList.Count; i++)
             {
                 var keyInput = keyInputList[i];
                 if (_marginControl.IsEditEnabled)

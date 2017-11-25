@@ -91,13 +91,13 @@ namespace Vim.EditorHost
         {
             try
             {
-                var subKeyPath = String.Format(@"Software\Microsoft\{0}\{1}.0", skuKeyName, majorVersion);
+                var subKeyPath = string.Format(@"Software\Microsoft\{0}\{1}.0", skuKeyName, majorVersion);
                 using (var key = Registry.LocalMachine.OpenSubKey(subKeyPath, writable: false))
                 {
                     if (key != null)
                     {
                         vsInstallDirectory = key.GetValue("InstallDir", null) as string;
-                        if (!String.IsNullOrEmpty(vsInstallDirectory))
+                        if (!string.IsNullOrEmpty(vsInstallDirectory))
                         {
                             return true;
                         }

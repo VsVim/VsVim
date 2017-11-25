@@ -222,7 +222,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             Debug.Assert(_vimBufferKeyEventState.InEvent);
             try
             {
-                if (!String.IsNullOrEmpty(_vimBufferKeyEventState.Message))
+                if (!string.IsNullOrEmpty(_vimBufferKeyEventState.Message))
                 {
                     UpdateCommandLine(_vimBufferKeyEventState.Message);
                 }
@@ -358,7 +358,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
         /// </summary>
         private bool HandleHistoryNavigation(KeyInput keyInput)
         {
-            bool handled = _vimBuffer.Process(KeyInputUtil.VimKeyToKeyInput(VimKey.Up)).IsAnyHandled;
+            var handled = _vimBuffer.Process(KeyInputUtil.VimKeyToKeyInput(VimKey.Up)).IsAnyHandled;
             var prefixChar = GetPrefixChar(_editKind);
             if (handled && _editKind != EditKind.None && prefixChar.HasValue)
             {
@@ -669,8 +669,8 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             var prefixChar = GetPrefixChar(_editKind);
             if (prefixChar != null)
             {
-                bool update = false;
-                if (String.IsNullOrEmpty(command))
+                var update = false;
+                if (string.IsNullOrEmpty(command))
                 {
                     command = prefixChar.Value.ToString();
                     update = true;

@@ -118,7 +118,7 @@ namespace Vim.VisualStudio
                 }
 
                 var versionNumber = _textBuffer.CurrentSnapshot.Version.VersionNumber;
-                int hr = _nextCommandTarget.Exec(oleCommandData);
+                var hr = _nextCommandTarget.Exec(oleCommandData);
 
                 // Whether or not an Exec succeeded is a bit of a heuristic.  IOleCommandTarget implementations like
                 // C++ will return E_ABORT if Intellisense failed but the character was actually inserted into 

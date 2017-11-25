@@ -180,7 +180,7 @@ namespace VimApp
             foreach (var vimWindow in _vimWindowManager.VimWindowList)
             {
                 var list = vimWindow.VimViewInfoList;
-                int i = 0;
+                var i = 0;
                 while (i < list.Count)
                 {
                     if (list[i].TextView == textView)
@@ -196,7 +196,7 @@ namespace VimApp
                     continue;
                 }
 
-                int target = -1;
+                var target = -1;
                 switch (direction)
                 {
                     case Direction.Up:
@@ -228,7 +228,7 @@ namespace VimApp
 
         public override void RunHostCommand(ITextView textView, string command, string argument)
         {
-            string msg = string.Format("Host Command Name='{0}' Argument='{1}'", command, argument);
+            var msg = string.Format("Host Command Name='{0}' Argument='{1}'", command, argument);
             _vim.ActiveStatusUtil.OnStatus(msg);
         }
 

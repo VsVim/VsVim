@@ -25,9 +25,9 @@ namespace Vim.VisualStudio.Implementation.OptionPages
         /// processed through some heuristics to get a nice piece of text for the UI.</param>
         public KeyBindingHandledByOption(string handlerName, IEnumerable<string> handlerCommands)
         {
-            this.HandlerName = handlerName;
+            HandlerName = handlerName;
 
-            List<string> cleanedUpCommands = handlerCommands.ToList();
+            var cleanedUpCommands = handlerCommands.ToList();
             ILookup<string, string> commandsByFirstDottedName = cleanedUpCommands.ToLookup(command => command.Split('.')[0]);
 
             // Do we have any large groups?
