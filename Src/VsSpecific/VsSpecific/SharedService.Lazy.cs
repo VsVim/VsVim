@@ -1,4 +1,3 @@
-// !!! Generated file. Do not edit directly !!!
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
@@ -9,7 +8,7 @@ using Microsoft.VisualStudio.PlatformUI.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Shell;
 
-namespace Vim.VisualStudio.Vs2015
+namespace Vim.VisualStudio.Specific
 {
     internal partial class SharedService 
     {
@@ -50,7 +49,7 @@ namespace Vim.VisualStudio.Vs2015
 
         VisualStudioVersion ISharedServiceVersionFactory.Version
         {
-            get { return VisualStudioVersion.Vs2015; }
+            get { return VsSpecificConstants.VisualStudioVersion; }
         }
 
         ISharedService ISharedServiceVersionFactory.Create()
