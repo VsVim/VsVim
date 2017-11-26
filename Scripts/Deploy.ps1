@@ -5,9 +5,9 @@ param (
 Set-StrictMode -version 2.0
 $ErrorActionPreference="Stop"
 
-[string]$script:rootPath = Split-Path -parent $MyInvocation.MyCommand.Definition 
-[string]$script:rootPath = resolve-path (Join-Path $rootPath "..")
-[string]$script:zip = Join-Path $rootPath "Tools\7za920\7za.exe"
+[string]$rootDir = Split-Path -parent $MyInvocation.MyCommand.Definition 
+[string]$rootDir = Resolve-Path (Join-Path $rootDir "..")
+[string]$zip = Join-Path $rootDir "Tools\7za920\7za.exe"
 
 # Check to see if the given version of Visual Studio is installed
 function Test-VsInstall() { 
@@ -21,12 +21,6 @@ function Test-VsInstall() {
     }
     $i = get-itemproperty $path InstallDir -ea SilentlyContinue | %{ $_.InstallDir }
     return $i -ne $null
-}
-
-function Test-Return() {
-    if ($LASTEXITCODE -ne 0) {
-        Write-Error "Command failed with code $LASTEXITCODE"
-    }
 }
 
 # Test the contents of the Vsix to make sure it has all of the appropriate
@@ -111,7 +105,7 @@ function Test-UnitTests() {
         "Binaries\Release\VimCoreTest\Vim.Core.UnitTest.dll",
         "Binaries\Release\VimWpfTest\Vim.UI.Wpf.UnitTest.dll",
         "Binaries\Release\VsVimSharedTest\Vim.VisualStudio.Shared.UnitTest.dll"
-    $xunit = Join-Path $rootPath "Tools\xunit.console.clr4.x86.exe"
+    $xunit = Join-Path $rootDir "Tools\xunit.console.clr4.x86.exe"
 
     foreach ($file in $all) { 
         $name = Split-Path -leaf $file
@@ -169,47 +163,45 @@ function Build-Clean() {
     param ([string]$fileName = $(throw "Need a project file name"))
     $name = Split-Path -leaf $fileName
     Write-Host "`t$name"
-    & $msbuild /nologo /verbosity:m /t:Clean /p:Configuration=Release /p:VisualStudioVersion=$vsVersion $fileName
-    Test-Return
-    & $msbuild /nologo /verbosity:m /t:Clean /p:Configuration=Debug /p:VisualStudioVersion=$vsVersion $fileName
-    Test-Return
+    Exec-Console $msbuild "/nologo /verbosity:m /t:Clean /p:Configuration=Release /p:VisualStudioVersion=$vsVersion $fileName"
+    Exec-Console $msbuild "/nologo /verbosity:m /t:Clean /p:Configuration=Debug /p:VisualStudioVersion=$vsVersion $fileName"
 }
 
 function Build-Release() {
     param ([string]$fileName = $(throw "Need a project file name"))
     $name = Split-Path -leaf $fileName
     Write-Host "`t$name"
-    & $msbuild /nologo /verbosity:q /p:Configuration=Release /p:VisualStudioVersion=$vsVersion $fileName
-    Test-Return
+    Exec-Console $msbuild "/nologo /verbosity:q /p:Configuration=Release /p:VisualStudioVersion=$vsVersion $fileName"
 }
 
 # Due to the way we build the VSIX there are many files included that we don't actually
 # want to deploy.  Here we will clear out those files and rebuild the VSIX without 
 # them
-function clean-vsixcontents() { 
+function Clean-VsixContents() { 
     param ([string]$vsixPath = $(throw "Need the path to the VSIX")) 
+    $cleanUtil = Join-Path $rootDir "Binaries\Release\CleanVsix\CleanVsix.exe"
 
     Write-Host "Cleaning VSIX contents"
     Write-Host "`tBuilding CleanVsix"
     Build-Release "Src\CleanVsix\CleanVsix.csproj"
 
     Write-Host "`tCleaning contents"
-    & Binaries\Release\CleanVsix\CleanVsix.exe "$vsixPath"
+    Exec-Console $cleanUtil "$vsixPath"
 }
 
 function Build-Vsix() {
-    if (-not (Test-Path Deploy)) {
-        mkdir Deploy 2>&1 | Out-Null
-    }
-    rm Deploy\VsVim* 
-    copy "Binaries\Release\VsVim\VsVim.vsix" "Deploy\VsVim.orig.vsix"
-    copy "Deploy\VsVim.orig.vsix" "Deploy\VsVim.vsix"
-    clean-vsixcontents (resolve-path "Deploy\VsVim.vsix")
-    copy "Deploy\VsVim.vsix" "Deploy\VsVim.zip"
+    Create-Directory "Deploy"
+    Remove-Item -re -fo "Deploy\VsVim*" 
+    Copy-Item "Binaries\Release\VsVim\VsVim.vsix" "Deploy\VsVim.orig.vsix"
+    Copy-Item "Deploy\VsVim.orig.vsix" "Deploy\VsVim.vsix"
+    Clean-VsixContents (Resolve-Path "Deploy\VsVim.vsix")
+    Copy-item "Deploy\VsVim.vsix" "Deploy\VsVim.zip"
 } 
 
-pushd $rootPath
+pushd $rootDir
 try {
+
+    . "Scripts\Common-Utils.ps1"
 
     # TODO: Using a path to VS is lazy.  Should use the VS locate APIs to find the 
     # instance.  This lets us get back to a method of using vsVersion as the starting
