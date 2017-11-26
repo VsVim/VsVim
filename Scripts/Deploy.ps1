@@ -7,12 +7,15 @@ $ErrorActionPreference="Stop"
 
 [string]$rootDir = Split-Path -parent $MyInvocation.MyCommand.Definition 
 [string]$rootDir = Resolve-Path (Join-Path $rootDir "..")
+[string]$binariesDir = Join-Path $rootDir "Binaries"
+[string]$releaseDir = Join-Path $binariesDir "Release"
+[string]$deployDir = Join-Path $binariesDir "Deploy"
 
 # Test the contents of the Vsix to make sure it has all of the appropriate
 # files 
 function Test-VsixContents() { 
     Write-Host "Verifying the Vsix Contents"
-    $vsixPath = "Deploy\VsVim.vsix"
+    $vsixPath = Join-Path $deployDir "VsVim.vsix"
     if (-not (Test-Path $vsixPath)) {
         throw "Vsix doesn't exist"
     }
@@ -89,16 +92,14 @@ function Test-VsixContents() {
 function Test-UnitTests() { 
     Write-Host "Running unit tests"
     $all = 
-        "Binaries\Release\VimCoreTest\Vim.Core.UnitTest.dll",
-        "Binaries\Release\VimWpfTest\Vim.UI.Wpf.UnitTest.dll",
-        "Binaries\Release\VsVimSharedTest\Vim.VisualStudio.Shared.UnitTest.dll"
+        "VimCoreTest\Vim.Core.UnitTest.dll",
+        "VimWpfTest\Vim.UI.Wpf.UnitTest.dll",
+        "VsVimSharedTest\Vim.VisualStudio.Shared.UnitTest.dll"
     $xunit = Join-Path $rootDir "Tools\xunit.console.x86.exe"
 
-    foreach ($file in $all) { 
-        $name = Split-Path -leaf $file
-        $filePath = Join-Path $rootDir $file
-        Write-Host -NoNewLine ("`t{0}: " -f $name)
-        Exec-Console $xunit "$file"
+    foreach ($filePath in $all) { 
+        $filePath = Join-Path $releaseDir $file
+        Exec-Console $xunit $filePath
     }
 }
 
@@ -136,25 +137,26 @@ function Test-Version() {
     }
 }
 
-# Due to the way we build the VSIX there are many files included that we don't actually
-# want to deploy.  Here we will clear out those files and rebuild the VSIX without 
-# them
-function Clean-VsixContents() { 
-    param ([string]$vsixPath = $(throw "Need the path to the VSIX")) 
-    $cleanUtil = Join-Path $rootDir "Binaries\Release\CleanVsix\CleanVsix.exe"
-
-    Write-Host "Cleaning VSIX contents"
-    Write-Host "`tCleaning contents"
-    Exec-Console $cleanUtil "$vsixPath"
-}
 
 function Build-Vsix() {
-    Create-Directory "Deploy"
-    Remove-Item -re -fo "Deploy\VsVim*" 
-    Copy-Item "Binaries\Release\VsVim\VsVim.vsix" "Deploy\VsVim.orig.vsix"
-    Copy-Item "Deploy\VsVim.orig.vsix" "Deploy\VsVim.vsix"
-    Clean-VsixContents (Resolve-Path "Deploy\VsVim.vsix")
-    Copy-item "Deploy\VsVim.vsix" "Deploy\VsVim.zip"
+    Create-Directory $deployDir
+    Push-Location $deployDir 
+    try { 
+        Remove-Item -re -fo "$deployDir\*"
+        $sourcePath = Join-Path $releaseDir "VsVim\VsVim.vsix"
+        Copy-Item $sourcePath "VsVim.orig.vsix"
+        Copy-Item $sourcePath "VsVim.vsix"
+
+        # Due to the way we build the VSIX there are many files included that we don't actually
+        # want to deploy.  Here we will clear out those files and rebuild the VSIX without 
+        # them
+        $cleanUtil = Join-Path $releaseDir "CleanVsix\CleanVsix.exe"
+        Exec-Console $cleanUtil (Join-Path $deployDir "VsVim.vsix")
+        Copy-Item "VsVim.vsix" "VsVim.zip"
+    }
+    finally {
+        Pop-Location
+    }
 } 
 
 function Build-Code(){ 
