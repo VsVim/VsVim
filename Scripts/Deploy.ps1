@@ -8,20 +8,6 @@ $ErrorActionPreference="Stop"
 [string]$rootDir = Split-Path -parent $MyInvocation.MyCommand.Definition 
 [string]$rootDir = Resolve-Path (Join-Path $rootDir "..")
 
-# Check to see if the given version of Visual Studio is installed
-function Test-VsInstall() { 
-    param ([string]$version = $(throw "Need a version"))
-
-    if ([IntPtr]::Size -eq 4) {
-        $path = "hklm:\Software\Microsoft\VisualStudio\{0}" -f $version
-    }
-    else {
-        $path = "hklm:\Software\Wow6432Node\Microsoft\VisualStudio\{0}" -f $version
-    }
-    $i = get-itemproperty $path InstallDir -ea SilentlyContinue | %{ $_.InstallDir }
-    return $i -ne $null
-}
-
 # Test the contents of the Vsix to make sure it has all of the appropriate
 # files 
 function Test-VsixContents() { 
@@ -101,23 +87,18 @@ function Test-VsixContents() {
 
 # Run all of the unit tests
 function Test-UnitTests() { 
+    Write-Host "Running unit tests"
     $all = 
-        "Binaries\Release\EditorUtilsTest\EditorUtils.UnitTest.dll",
         "Binaries\Release\VimCoreTest\Vim.Core.UnitTest.dll",
         "Binaries\Release\VimWpfTest\Vim.UI.Wpf.UnitTest.dll",
         "Binaries\Release\VsVimSharedTest\Vim.VisualStudio.Shared.UnitTest.dll"
-    $xunit = Join-Path $rootDir "Tools\xunit.console.clr4.x86.exe"
+    $xunit = Join-Path $rootDir "Tools\xunit.console.x86.exe"
 
     foreach ($file in $all) { 
         $name = Split-Path -leaf $file
+        $filePath = Join-Path $rootDir $file
         Write-Host -NoNewLine ("`t{0}: " -f $name)
-        $output = & $xunit $file /silent
-        if ($LASTEXITCODE -ne 0) {
-            Write-Host "& $xunit $file /silent"
-            throw "Command failed with code $LASTEXITCODE"
-        }
-        $last = $output[$output.Count - 1] 
-        Write-Host $last
+        Exec-Console $xunit "$file"
     }
 }
 
@@ -125,7 +106,7 @@ function Test-UnitTests() {
 function Test-Version() {
     Write-Host "Testing Version Numbers"
     $version = $null;
-    foreach ($line in gc "Src\VimCore\Constants.fs") {
+    foreach ($line in Get-Content "Src\VimCore\Constants.fs") {
         if ($line -match 'let VersionNumber = "([\d.]*)"') {
             $version = $matches[1]
             break
@@ -134,11 +115,10 @@ function Test-Version() {
 
     if ($version -eq $null) {
         throw "Couldn't determine the version from Constants.fs"
-        return
     }
 
     $foundPackageVersion = $false
-    foreach ($line in gc "Src\VsVim\VsVimPackage.cs") {
+    foreach ($line in Get-Content "Src\VsVim\VsVimPackage.cs") {
         if ($line -match 'productId: VimConstants.VersionNumber') {
             $foundPackageVersion = $true
             break
@@ -146,17 +126,13 @@ function Test-Version() {
     }
 
     if (-not $foundPackageVersion) {
-        $msg = "Could not verify the version of VsVimPackage.cs"
-        throw $msg
-        return
+        throw "Could not verify the version of VsVimPackage.cs"
     }
 
-    $data = [xml](gc "Src\VsVim\source.extension.vsixmanifest")
+    $data = [xml](Get-Content "Src\VsVim\source.extension.vsixmanifest")
     $manifestVersion = $data.PackageManifest.Metadata.Identity.Version
     if ($manifestVersion -ne $version) { 
-        $msg = "The version {0} doesn't match up with the manifest version of {1}" -f $version, $manifestVersion
-        throw $msg
-        return
+        throw "The version $version doesn't match up with the manifest version of $manifestVersion" 
     }
 }
 
@@ -225,7 +201,6 @@ try {
     Test-VsixContents 
 
     if (-not $fast) {
-        Write-Host "Running unit tests"
         Test-UnitTests
     }
 }
