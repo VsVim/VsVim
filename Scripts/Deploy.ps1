@@ -172,7 +172,7 @@ function Build-Code(){
     Exec-Console $msbuild "$args VsVim.sln"
 }
 
-pushd $rootDir
+Push-Location $rootDir
 try {
 
     . "Scripts\Common-Utils.ps1"
@@ -212,7 +212,7 @@ catch {
     exit 1
 }
 finally {
-    popd
+    Pop-Location
 }
 
 
