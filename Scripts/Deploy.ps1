@@ -2,15 +2,15 @@ param (
     [switch]$fast = $false, 
     [string]$vsDir = "C:\Program Files (x86)\Microsoft Visual Studio\2017\Enterprise")
 
-set-strictmode -version 2.0
+Set-StrictMode -version 2.0
 $ErrorActionPreference="Stop"
 
-[string]$script:rootPath = split-path -parent $MyInvocation.MyCommand.Definition 
-[string]$script:rootPath = resolve-path (join-path $rootPath "..")
-[string]$script:zip = join-path $rootPath "Tools\7za920\7za.exe"
+[string]$script:rootPath = Split-Path -parent $MyInvocation.MyCommand.Definition 
+[string]$script:rootPath = resolve-path (Join-Path $rootPath "..")
+[string]$script:zip = Join-Path $rootPath "Tools\7za920\7za.exe"
 
 # Check to see if the given version of Visual Studio is installed
-function test-vsinstall() { 
+function Test-VsInstall() { 
     param ([string]$version = $(throw "Need a version"))
 
     if ([IntPtr]::Size -eq 4) {
@@ -23,18 +23,18 @@ function test-vsinstall() {
     return $i -ne $null
 }
 
-function test-return() {
+function Test-Return() {
     if ($LASTEXITCODE -ne 0) {
-        write-error "Command failed with code $LASTEXITCODE"
+        Write-Error "Command failed with code $LASTEXITCODE"
     }
 }
 
 # Test the contents of the Vsix to make sure it has all of the appropriate
 # files 
-function test-vsixcontents() { 
+function Test-VsixContents() { 
     $vsixPath = "Deploy\VsVim.vsix"
-    if (-not (test-Path $vsixPath)) {
-        write-error "Vsix doesn't exist"
+    if (-not (Test-Path $vsixPath)) {
+        Write-Error "Vsix doesn't exist"
     }
 
     $expectedFiles = @(
@@ -60,75 +60,75 @@ function test-vsixcontents() {
         "[Content_Types].xml")
 
     # Make a folder to hold the foundFiles
-    $target = join-path ([IO.Path]::GetTempPath()) ([IO.Path]::GetRandomFileName())
-    mkdir $target | out-null
-    & $zip x "-o$target" $vsixPath | out-null
+    $target = Join-Path ([IO.Path]::GetTempPath()) ([IO.Path]::GetRandomFileName())
+    mkdir $target | Out-Null
+    & $zip x "-o$target" $vsixPath | Out-Null
 
     $foundFiles = gci $target | %{ $_.Name }
     if ($foundFiles.Count -ne $expectedFiles.Count) { 
-        write-host "Found $($foundFiles.Count) but expected $($expectedFiles.Count)"
-        write-host "Wrong number of foundFiles in VSIX." 
-        write-host "Extra foundFiles"
+        Write-Host "Found $($foundFiles.Count) but expected $($expectedFiles.Count)"
+        Write-Host "Wrong number of foundFiles in VSIX." 
+        Write-Host "Extra foundFiles"
         foreach ($file in $foundFiles) {
             if (-not $expectedFiles.Contains($file)) {
-                write-host "`t$file"
+                Write-Host "`t$file"
             }
         }
 
-        write-host "Missing foundFiles"
+        Write-Host "Missing foundFiles"
         foreach ($file in $expectedFiles) {
             if (-not $foundFiles.Contains($file)) {
-                write-host "`t$file"
+                Write-Host "`t$file"
             }
         }
 
-        write-host "Location: $target"
+        Write-Host "Location: $target"
     }
 
     foreach ($item in $expectedFiles) {
         # Look for dummy foundFiles that made it into the VSIX instead of the 
         # actual DLL 
-        $itemPath = join-path $target $item
+        $itemPath = Join-Path $target $item
         if ($item.EndsWith("dll") -and ((get-item $itemPath).Length -lt 5kb)) {
-            write-error "Small file detected $item in the zip file ($target)"
+            Write-Error "Small file detected $item in the zip file ($target)"
         }
 
         # Make sure the telemetry key was properly deployed.
-        $name = split-path -leaf $item
+        $name = Split-Path -leaf $item
         if ($name -eq "telemetry.txt") {
             [string]$content = gc -raw $itemPath
             if ($content.Trim() -eq "") {
-                write-error "Telemetry file is empty"
+                Write-Error "Telemetry file is empty"
             }
         }
     }
 }
 
 # Run all of the unit tests
-function test-unittests() { 
+function Test-UnitTests() { 
     $all = 
         "Binaries\Release\EditorUtilsTest\EditorUtils.UnitTest.dll",
         "Binaries\Release\VimCoreTest\Vim.Core.UnitTest.dll",
         "Binaries\Release\VimWpfTest\Vim.UI.Wpf.UnitTest.dll",
         "Binaries\Release\VsVimSharedTest\Vim.VisualStudio.Shared.UnitTest.dll"
-    $xunit = join-path $rootPath "Tools\xunit.console.clr4.x86.exe"
+    $xunit = Join-Path $rootPath "Tools\xunit.console.clr4.x86.exe"
 
     foreach ($file in $all) { 
-        $name = split-path -leaf $file
-        write-host -NoNewLine ("`t{0}: " -f $name)
+        $name = Split-Path -leaf $file
+        Write-Host -NoNewLine ("`t{0}: " -f $name)
         $output = & $xunit $file /silent
         if ($LASTEXITCODE -ne 0) {
-            write-host "& $xunit $file /silent"
-            write-error "Command failed with code $LASTEXITCODE"
+            Write-Host "& $xunit $file /silent"
+            Write-Error "Command failed with code $LASTEXITCODE"
         }
         $last = $output[$output.Count - 1] 
-        write-host $last
+        Write-Host $last
     }
 }
 
 # Make sure that the version number is the same in all locations.  
-function test-version() {
-    write-host "Testing Version Numbers"
+function Test-Version() {
+    Write-Host "Testing Version Numbers"
     $version = $null;
     foreach ($line in gc "Src\VimCore\Constants.fs") {
         if ($line -match 'let VersionNumber = "([\d.]*)"') {
@@ -138,7 +138,7 @@ function test-version() {
     }
 
     if ($version -eq $null) {
-        write-error "Couldn't determine the version from Constants.fs"
+        Write-Error "Couldn't determine the version from Constants.fs"
         return
     }
 
@@ -152,7 +152,7 @@ function test-version() {
 
     if (-not $foundPackageVersion) {
         $msg = "Could not verify the version of VsVimPackage.cs"
-        write-error $msg
+        Write-Error $msg
         return
     }
 
@@ -160,25 +160,25 @@ function test-version() {
     $manifestVersion = $data.PackageManifest.Metadata.Identity.Version
     if ($manifestVersion -ne $version) { 
         $msg = "The version {0} doesn't match up with the manifest version of {1}" -f $version, $manifestVersion
-        write-error $msg
+        Write-Error $msg
         return
     }
 }
 
-function build-clean() {
+function Build-Clean() {
     param ([string]$fileName = $(throw "Need a project file name"))
-    $name = split-path -leaf $fileName
-    write-host "`t$name"
+    $name = Split-Path -leaf $fileName
+    Write-Host "`t$name"
     & $msbuild /nologo /verbosity:m /t:Clean /p:Configuration=Release /p:VisualStudioVersion=$vsVersion $fileName
     Test-Return
     & $msbuild /nologo /verbosity:m /t:Clean /p:Configuration=Debug /p:VisualStudioVersion=$vsVersion $fileName
     Test-Return
 }
 
-function build-release() {
+function Build-Release() {
     param ([string]$fileName = $(throw "Need a project file name"))
-    $name = split-path -leaf $fileName
-    write-host "`t$name"
+    $name = Split-Path -leaf $fileName
+    Write-Host "`t$name"
     & $msbuild /nologo /verbosity:q /p:Configuration=Release /p:VisualStudioVersion=$vsVersion $fileName
     Test-Return
 }
@@ -189,17 +189,17 @@ function build-release() {
 function clean-vsixcontents() { 
     param ([string]$vsixPath = $(throw "Need the path to the VSIX")) 
 
-    write-host "Cleaning VSIX contents"
-    write-host "`tBuilding CleanVsix"
-    build-release "Src\CleanVsix\CleanVsix.csproj"
+    Write-Host "Cleaning VSIX contents"
+    Write-Host "`tBuilding CleanVsix"
+    Build-Release "Src\CleanVsix\CleanVsix.csproj"
 
-    write-host "`tCleaning contents"
+    Write-Host "`tCleaning contents"
     & Binaries\Release\CleanVsix\CleanVsix.exe "$vsixPath"
 }
 
-function build-vsix() {
-    if (-not (test-path Deploy)) {
-        mkdir Deploy 2>&1 | out-null
+function Build-Vsix() {
+    if (-not (Test-Path Deploy)) {
+        mkdir Deploy 2>&1 | Out-Null
     }
     rm Deploy\VsVim* 
     copy "Binaries\Release\VsVim\VsVim.vsix" "Deploy\VsVim.orig.vsix"
@@ -216,53 +216,53 @@ try {
     # point.
     $vsVersion = "15.0"
     if ($vsDir -eq "") { 
-        write-host "Need a path to a Visual Studio 2017 installation."
-        write-host "Example: C:\Program Files (x86)\Microsoft Visual Studio\2017\Enterprise"
-        write-error "Exiting"
+        Write-Host "Need a path to a Visual Studio 2017 installation."
+        Write-Host "Example: C:\Program Files (x86)\Microsoft Visual Studio\2017\Enterprise"
+        Write-Error "Exiting"
         exit 1
     }
 
-    $msbuild = join-path $vsDir "MSBuild\15.0\Bin\msbuild.exe"
-    if (-not (test-path $msbuild)) {
-        write-error "Can't find msbuild.exe"
+    $msbuild = Join-Path $vsDir "MSBuild\15.0\Bin\msbuild.exe"
+    if (-not (Test-Path $msbuild)) {
+        Write-Error "Can't find msbuild.exe"
         exit 1
     }
 
-    write-host "Using MSBuild $msbuild"
+    Write-Host "Using MSBuild $msbuild"
 
-    write-host "Cleaning Projects"
-    build-clean Src\VsSpecific\Vs2012\Vs2012.csproj
-    build-clean Src\VsSpecific\Vs2013\Vs2013.csproj
-    build-clean Src\VsSpecific\Vs2015\Vs2015.csproj
-    build-clean Src\VsSpecific\Vs2017\Vs2017.csproj
-    build-clean Src\VsVim\VsVim.csproj
+    Write-Host "Cleaning Projects"
+    Build-Clean Src\VsSpecific\Vs2012\Vs2012.csproj
+    Build-Clean Src\VsSpecific\Vs2013\Vs2013.csproj
+    Build-Clean Src\VsSpecific\Vs2015\Vs2015.csproj
+    Build-Clean Src\VsSpecific\Vs2017\Vs2017.csproj
+    Build-Clean Src\VsVim\VsVim.csproj
 
     # Before building make sure the version number is consistent in all 
     # locations
-    test-version
+    Test-Version
 
     # Build all of the relevant projects.  Both the deployment binaries and the 
     # test infrastructure
-    write-host "Building Projects"
-    build-release Test\VimCoreTest\VimCoreTest.csproj
-    build-release Test\VimWpfTest\VimWpfTest.csproj
-    build-release Test\VsVimSharedTest\VsVimSharedTest.csproj
+    Write-Host "Building Projects"
+    Build-Release Test\VimCoreTest\VimCoreTest.csproj
+    Build-Release Test\VimWpfTest\VimWpfTest.csproj
+    Build-Release Test\VsVimSharedTest\VsVimSharedTest.csproj
 
     # Now build the main output project
-    build-release Src\VsVim\VsVim.csproj
-    build-vsix
+    Build-Release Src\VsVim\VsVim.csproj
+    Build-Vsix
 
-    write-host "Verifying the Vsix Contents"
-    test-vsixcontents 
+    Write-Host "Verifying the Vsix Contents"
+    Test-VsixContents 
 
     if (-not $fast) {
-        write-host "Running unit tests"
-        test-unittests
+        Write-Host "Running unit tests"
+        Test-UnitTests
     }
 }
 catch {
-    write-host "Error: $($_.Exception.Message)"
-    write-host $_.ScriptStackTrace
+    Write-Host "Error: $($_.Exception.Message)"
+    Write-Host $_.ScriptStackTrace
     exit 1
 }
 finally {
