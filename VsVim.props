@@ -80,7 +80,6 @@
     <AssemblySearchPaths>
       {TargetFrameworkDirectory};
       {RawFileName};
-      {HintPathFromItem};
       $(ReferencePath);  
     </AssemblySearchPaths>
   </PropertyGroup>
