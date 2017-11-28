@@ -16,6 +16,11 @@
          variable for testing other versions --> 
     <VsVimTargetVersion Condition="'$(VsVimTargetVersion)' == ''">$(VisualStudioVersion)</VsVimTargetVersion>
     <VsVimTargetVersion Condition="'$(VsVimTargetVersion)' == ''">15.0</VsVimTargetVersion>
+
+    <!-- Standard Calculation of NuGet package location -->
+    <NuGetPackageRoot Condition="'$(NuGetPackageRoot)' == ''">$(NUGET_PACKAGES)</NuGetPackageRoot> <!-- Respect environment variable if set -->
+    <NuGetPackageRoot Condition="'$(NuGetPackageRoot)' == '' AND '$(OS)' == 'Windows_NT'">$(UserProfile)/.nuget/packages/</NuGetPackageRoot>
+    <NuGetPackageRoot Condition="'$(NuGetPackageRoot)' == '' AND '$(OS)' != 'Windows_NT'">$(HOME)/.nuget/packages/</NuGetPackageRoot>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Is32Bit)' == 'True'">
