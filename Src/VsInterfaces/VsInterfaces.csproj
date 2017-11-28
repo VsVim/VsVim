@@ -45,9 +45,6 @@
     <Reference Include="System.Core" />
     <Reference Include="System.Data" />
   </ItemGroup>
-  <ItemGroup>
-    <None Include="packages.config" />
-  </ItemGroup>
   <Import Project="..\..\VsVim.targets" />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
