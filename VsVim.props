@@ -37,21 +37,6 @@
     <Vs2015InstallDir>$(registry:HKEY_LOCAL_MACHINE\Software\Wow6432Node\Microsoft\VisualStudio\14.0@InstallDir)</Vs2015InstallDir>
   </PropertyGroup>
 
-  <PropertyGroup Condition=" '$(VsVimTargetVersion)' == '10.0' ">
-    <VsVimAppConfig>$(MSBuildThisFileDirectory)References\Vs2010\App.config</VsVimAppConfig>
-    <DefineConstants>$(DefineConstants);VS2010</DefineConstants>
-  </PropertyGroup>
-
-  <PropertyGroup Condition=" '$(VsVimTargetVersion)' == '11.0' ">
-    <VsVimAppConfig>$(MSBuildThisFileDirectory)References\Vs2012\App.config</VsVimAppConfig>
-    <DefineConstants>$(DefineConstants);VS2011</DefineConstants>
-  </PropertyGroup>
-
-  <PropertyGroup Condition=" '$(VsVimTargetVersion)' == '12.0' ">
-    <VsVimAppConfig>$(MSBuildThisFileDirectory)References\Vs2013\App.config</VsVimAppConfig>
-    <DefineConstants>$(DefineConstants);VS2012</DefineConstants>
-  </PropertyGroup>
-
   <PropertyGroup Condition=" '$(VsVimTargetVersion)' == '14.0' ">
     <VsVimAppConfig>$(MSBuildThisFileDirectory)References\Vs2015\App.config</VsVimAppConfig>
     <VsRunnablePropsFilePath>$(MSBuildThisFileDirectory)References\VS2015\Runnable.props</VsRunnablePropsFilePath>
