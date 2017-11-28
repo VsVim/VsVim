@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using Vim.UI.Wpf;
 using Xunit;
 
 namespace Vim.VisualStudio.UnitTest
@@ -43,6 +44,32 @@ namespace Vim.VisualStudio.UnitTest
                     }
 
                     Assert.True(type.FullName.StartsWith(prefix, StringComparison.Ordinal), string.Format("Wrong namespace prefix on {0}", type.FullName));
+                }
+            }
+        }
+
+        /// <summary>
+        /// There should be no references to FSharp.Core in the projects. This should be embedded into 
+        /// the Vim.Core assembly and not an actual reference. Too many ways that VS ships the DLL that
+        /// it makes referencing it too difficult. Embedding is much more reliably.
+        /// </summary>
+        [Fact]
+        public void FSharpCoreReferences()
+        {
+            var assemblyList = new[]
+            {
+                typeof(IVimHost).Assembly,
+                typeof(VimHost).Assembly,
+                typeof(VsVimHost).Assembly
+            };
+
+            Assert.Equal(assemblyList.Length, assemblyList.Distinct().Count());
+
+            foreach (var assembly in assemblyList)
+            {
+                foreach (var assemblyRef in assembly.GetReferencedAssemblies())
+                {
+                    Assert.NotEqual("FSharp.Core", assemblyRef.Name, StringComparer.OrdinalIgnoreCase);
                 }
             }
         }
