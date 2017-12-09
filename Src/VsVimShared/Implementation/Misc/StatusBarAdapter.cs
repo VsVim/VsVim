@@ -9,6 +9,7 @@ using System.Windows.Threading;
 using Vim.UI.Wpf;
 using Vim.Extensions;
 using System.Diagnostics;
+using Microsoft.VisualStudio;
 
 namespace Vim.VisualStudio.Implementation.Misc
 {
@@ -24,6 +25,7 @@ namespace Vim.VisualStudio.Implementation.Misc
         private readonly IVim _vim;
         private readonly IVimApplicationSettings _vimApplicationSettings;
         private readonly DispatcherTimer _timer;
+        private string _lastStatus;
 
         [ImportingConstructor]
         internal StatusBarAdapter(IVim vim, IProtectedOperations vimProtectedOperations, ICommandMarginUtil commandMarginUtil, IVimApplicationSettings vimApplicationSettings, SVsServiceProvider vsServiceProvider)
@@ -57,10 +59,19 @@ namespace Vim.VisualStudio.Implementation.Misc
 
                 if (status.Length == 0)
                 {
-                    status = " ";
-                }
+                    if (VSConstants.S_OK == _vsStatusbar.GetText(out var currentText) &&
+                        StringComparer.Ordinal.Equals(currentText, _lastStatus))
+                    {
+                        _vsStatusbar.SetText(" ");
+                    }
 
-                _vsStatusbar.SetText(status);
+                    _lastStatus = null;
+                }
+                else
+                {
+                    _lastStatus = status;
+                    _vsStatusbar.SetText(status);
+                }
             }
             catch (Exception ex)
             {
@@ -77,6 +88,7 @@ namespace Vim.VisualStudio.Implementation.Misc
             }
 
             _timer.IsEnabled = !useCommandMargin;
+            _lastStatus = null;
         }
 
         void IVimBufferCreationListener.VimBufferCreated(IVimBuffer vimBuffer)
