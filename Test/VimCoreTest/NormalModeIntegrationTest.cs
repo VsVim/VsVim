@@ -4480,12 +4480,44 @@ namespace Vim.UnitTest
                 _vimBuffer.ProcessNotation(".");
             }
 
+            /// <summary>
+            /// The count passed into . should replace the count originally provided to the motion.
+            /// </summary>
             [WpfFact]
-            public void ChangeCount()
+            public void CountReplacesOperatorCount()
             {
                 Create("cat dog fish tree", "cat dog fish tree");
                 _vimBuffer.Process("d2w");
                 Assert.Equal("fish tree", _textBuffer.GetLine(0).GetText());
+                _textView.MoveCaretToLine(1);
+                _vimBuffer.Process("3.");
+                Assert.Equal("tree", _textBuffer.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// The count passed into . should replace the count originally provided to the operator.
+            /// </summary>
+            [WpfFact]
+            public void CountReplacesMotionCount()
+            {
+                Create("cat dog fish tree", "cat dog fish tree");
+                _vimBuffer.Process("2dw");
+                Assert.Equal("fish tree", _textBuffer.GetLine(0).GetText());
+                _textView.MoveCaretToLine(1);
+                _vimBuffer.Process("3.");
+                Assert.Equal("tree", _textBuffer.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// The count passed into . should replace the count originally provided to the operator and
+            /// motion.
+            /// </summary>
+            [WpfFact]
+            public void CountReplacesOperatoraAndMotionCount()
+            {
+                Create("cat dog fish tree", "cat dog fish tree");
+                _vimBuffer.Process("2d2w");
+                Assert.Equal("", _textBuffer.GetLine(0).GetText());
                 _textView.MoveCaretToLine(1);
                 _vimBuffer.Process("3.");
                 Assert.Equal("tree", _textBuffer.GetLine(0).GetText());
