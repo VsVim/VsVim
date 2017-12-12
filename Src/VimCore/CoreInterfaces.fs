@@ -868,19 +868,19 @@ type MotionArgument = {
 
     /// Provides the raw count which is a combination of the OperatorCount
     /// and MotionCount values.  
-    member x.RawCount = 
+    member x.Count = 
         match x.MotionCount,x.OperatorCount with
-        | None,None -> None
-        | Some(c),None -> Some c
-        | None,Some(c) -> Some c
-        | Some(l),Some(r) -> Some (l*r)
+        | None, None -> None
+        | Some c, None -> Some c
+        | None, Some c  -> Some c
+        | Some l, Some r -> Some (l*r)
 
     /// Resolves the count to a value.  It will use the default 1 for 
     /// any count which is not provided 
-    member x.Count = 
-        let operatorCount = x.OperatorCount |> OptionUtil.getOrDefault 1
-        let motionCount = x.MotionCount |> OptionUtil.getOrDefault 1
-        operatorCount * motionCount
+    member x.CountOrDefault = 
+        match x.Count with
+        | Some c -> c
+        | None -> 1
 
 /// Char searches are interesting because they are defined in one IVimBuffer
 /// and can be repeated in any IVimBuffer.  Use a discriminated union here 
