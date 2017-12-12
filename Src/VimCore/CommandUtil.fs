@@ -2053,8 +2053,7 @@ type internal CommandUtil
             // for linked commands which means the original should just be used
             let getCommandData (original : CommandData) = 
                 match repeatData with
-                | None -> 
-                    original
+                | None -> original
                 | Some repeatData -> 
                     match repeatData.Count with
                     | Some count -> { original with Count = repeatData.Count }

@@ -4479,6 +4479,17 @@ namespace Vim.UnitTest
                 _textView.MoveCaretToLine(1);
                 _vimBuffer.ProcessNotation(".");
             }
+
+            [WpfFact]
+            public void ChangeCount()
+            {
+                Create("cat dog fish tree", "cat dog fish tree");
+                _vimBuffer.Process("d2w");
+                Assert.Equal("fish tree", _textBuffer.GetLine(0).GetText());
+                _textView.MoveCaretToLine(1);
+                _vimBuffer.Process("3.");
+                Assert.Equal("tree", _textBuffer.GetLine(0).GetText());
+            }
         }
 
         public sealed class ReplaceCharTest : NormalModeIntegrationTest
