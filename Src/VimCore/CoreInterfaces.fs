@@ -2651,6 +2651,114 @@ type NormalCommand =
     /// Yank the specified number of lines
     | YankLines
 
+    with 
+
+    member x.MotionData = 
+        match x.GetMotionDataCore() with
+        | Some (_, motionData) -> Some motionData
+        | None -> None
+
+    member private x.GetMotionDataCore() = 
+        match x with
+        | NormalCommand.ChangeMotion motion -> Some (NormalCommand.ChangeMotion, motion)
+        | NormalCommand.DeleteMotion motion -> Some (NormalCommand.DeleteMotion, motion)
+        | NormalCommand.FoldMotion motion -> Some (NormalCommand.FoldMotion, motion)
+        | NormalCommand.FormatMotion motion -> Some (NormalCommand.FormatMotion, motion)
+        | NormalCommand.ShiftMotionLinesLeft motion -> Some (NormalCommand.ShiftMotionLinesLeft, motion)
+        | NormalCommand.ShiftMotionLinesRight motion -> Some (NormalCommand.ShiftMotionLinesRight, motion)
+        | NormalCommand.Yank motion -> Some (NormalCommand.Yank, motion)
+
+        // Non-motion commands
+        | NormalCommand.AddToWord _ -> None
+        | NormalCommand.ChangeCaseCaretLine _ -> None
+        | NormalCommand.ChangeCaseCaretPoint _ -> None
+        | NormalCommand.ChangeCaseMotion _ -> None
+        | NormalCommand.ChangeLines -> None
+        | NormalCommand.ChangeTillEndOfLine -> None
+        | NormalCommand.CloseAllFolds -> None
+        | NormalCommand.CloseAllFoldsUnderCaret -> None
+        | NormalCommand.CloseBuffer -> None
+        | NormalCommand.CloseWindow -> None
+        | NormalCommand.CloseFoldUnderCaret -> None
+        | NormalCommand.DeleteAllFoldsInBuffer -> None
+        | NormalCommand.DeleteCharacterAtCaret -> None
+        | NormalCommand.DeleteCharacterBeforeCaret -> None
+        | NormalCommand.DeleteFoldUnderCaret -> None
+        | NormalCommand.DeleteAllFoldsUnderCaret -> None
+        | NormalCommand.DeleteLines -> None
+        | NormalCommand.DeleteTillEndOfLine -> None
+        | NormalCommand.FoldLines -> None
+        | NormalCommand.FormatLines -> None
+        | NormalCommand.GoToDefinition -> None
+        | NormalCommand.GoToFileUnderCaret _ -> None
+        | NormalCommand.GoToGlobalDeclaration -> None
+        | NormalCommand.GoToLocalDeclaration -> None
+        | NormalCommand.GoToNextTab _ -> None
+        | NormalCommand.GoToView _ -> None
+        | NormalCommand.InsertAfterCaret -> None
+        | NormalCommand.InsertBeforeCaret -> None
+        | NormalCommand.InsertAtEndOfLine -> None
+        | NormalCommand.InsertAtFirstNonBlank -> None
+        | NormalCommand.InsertAtStartOfLine -> None
+        | NormalCommand.InsertLineAbove -> None
+        | NormalCommand.InsertLineBelow -> None
+        | NormalCommand.JoinLines _ -> None
+        | NormalCommand.JumpToMark _ -> None
+        | NormalCommand.JumpToMarkLine _ -> None
+        | NormalCommand.JumpToOlderPosition -> None
+        | NormalCommand.JumpToNewerPosition -> None
+        | NormalCommand.MoveCaretToMotion _ -> None
+        | NormalCommand.Undo -> None
+        | NormalCommand.UndoLine -> None
+        | NormalCommand.OpenAllFolds -> None
+        | NormalCommand.OpenAllFoldsUnderCaret -> None
+        | NormalCommand.OpenFoldUnderCaret -> None
+        | NormalCommand.ToggleFoldUnderCaret -> None
+        | NormalCommand.ToggleAllFolds -> None
+        | NormalCommand.Ping _ -> None
+        | NormalCommand.PutAfterCaret _ -> None
+        | NormalCommand.PutAfterCaretWithIndent -> None
+        | NormalCommand.PutAfterCaretMouse -> None
+        | NormalCommand.PutBeforeCaret _ -> None
+        | NormalCommand.PutBeforeCaretWithIndent -> None
+        | NormalCommand.PrintFileInformation -> None
+        | NormalCommand.RecordMacroStart _ -> None
+        | NormalCommand.RecordMacroStop -> None
+        | NormalCommand.Redo -> None
+        | NormalCommand.RepeatLastCommand -> None
+        | NormalCommand.RepeatLastSubstitute _ -> None 
+        | NormalCommand.ReplaceAtCaret -> None
+        | NormalCommand.ReplaceChar _ -> None
+        | NormalCommand.RunMacro _ -> None
+        | NormalCommand.SetMarkToCaret _ -> None
+        | NormalCommand.ScrollLines _ -> None
+        | NormalCommand.ScrollPages _ -> None
+        | NormalCommand.ScrollWindow _ -> None
+        | NormalCommand.ScrollCaretLineToTop _ -> None
+        | NormalCommand.ScrollCaretLineToMiddle _ -> None
+        | NormalCommand.ScrollCaretLineToBottom _ -> None
+        | NormalCommand.ShiftLinesLeft -> None
+        | NormalCommand.ShiftLinesRight -> None
+        | NormalCommand.SplitViewHorizontally -> None
+        | NormalCommand.SplitViewVertically -> None
+        | NormalCommand.SubstituteCharacterAtCaret -> None
+        | NormalCommand.SubtractFromWord -> None
+        | NormalCommand.SwitchMode _ -> None
+        | NormalCommand.SwitchModeVisualCommand _ -> None
+        | NormalCommand.SwitchPreviousVisualMode -> None
+        | NormalCommand.SwitchToSelection _ -> None
+        | NormalCommand.WriteBufferAndQuit -> None
+        | NormalCommand.YankLines -> None
+
+    /// Change the MotionData associated with this command if it's a part of the command. Otherwise it 
+    /// returns the original command unchanged
+    member x.ChangeMotionData changeMotionFunc = 
+        match x.GetMotionDataCore() with
+        | Some (createCommandFunc, motionData) ->
+            let motionData = changeMotionFunc motionData
+            createCommandFunc motionData
+        | None -> x
+
 /// Visual mode commands which can be executed by the user 
 [<RequireQualifiedAccess>]
 [<NoComparison>]

@@ -4491,7 +4491,7 @@ namespace Vim.UnitTest
                 Assert.Equal("fish tree", _textBuffer.GetLine(0).GetText());
                 _textView.MoveCaretToLine(1);
                 _vimBuffer.Process("3.");
-                Assert.Equal("tree", _textBuffer.GetLine(0).GetText());
+                Assert.Equal("tree", _textBuffer.GetLine(1).GetText());
             }
 
             /// <summary>
@@ -4505,7 +4505,7 @@ namespace Vim.UnitTest
                 Assert.Equal("fish tree", _textBuffer.GetLine(0).GetText());
                 _textView.MoveCaretToLine(1);
                 _vimBuffer.Process("3.");
-                Assert.Equal("tree", _textBuffer.GetLine(0).GetText());
+                Assert.Equal("tree", _textBuffer.GetLine(1).GetText());
             }
 
             /// <summary>
@@ -4520,7 +4520,7 @@ namespace Vim.UnitTest
                 Assert.Equal("", _textBuffer.GetLine(0).GetText());
                 _textView.MoveCaretToLine(1);
                 _vimBuffer.Process("3.");
-                Assert.Equal("tree", _textBuffer.GetLine(0).GetText());
+                Assert.Equal("tree", _textBuffer.GetLine(1).GetText());
             }
         }
 
