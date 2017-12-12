@@ -163,6 +163,8 @@ namespace Vim.UI.Wpf
 
         public abstract void GoToTab(int index);
 
+        public abstract void OpenQuickFixWindow();
+
         public abstract bool GoToQuickFix(QuickFix quickFix, int count, bool hasBang);
 
         public virtual bool IsDirty(ITextBuffer textBuffer)
@@ -601,6 +603,11 @@ namespace Vim.UI.Wpf
         void IVimHost.MoveFocus(ITextView textView, Direction direction)
         {
             MoveFocus(textView, direction);
+        }
+
+        void IVimHost.OpenQuickFixWindow()
+        {
+            OpenQuickFixWindow();
         }
 
         bool IVimHost.NavigateTo(VirtualSnapshotPoint point)

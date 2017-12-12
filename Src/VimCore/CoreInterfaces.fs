@@ -3941,6 +3941,9 @@ type IVimHost =
 
     abstract NavigateTo : point : VirtualSnapshotPoint -> bool
 
+    // Open the quick fix window (:cwindow)
+    abstract OpenQuickFixWindow : unit -> unit
+
     /// Quit the application
     abstract Quit : unit -> unit
 

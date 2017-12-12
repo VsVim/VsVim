@@ -510,6 +510,11 @@ namespace Vim.VisualStudio
             _sharedService.GoToTab(index);
         }
 
+        public override void OpenQuickFixWindow()
+        {
+            SafeExecuteCommand(null, "View.ErrorList");
+        }
+
         public override bool GoToQuickFix(QuickFix quickFix, int count, bool hasBang)
         {
             // This implementation could be much more riguorous but for next a simple navigation

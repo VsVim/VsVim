@@ -64,6 +64,11 @@ namespace Vim.UI.Wpf.UnitTest
                 throw new NotImplementedException();
             }
 
+            public override void OpenQuickFixWindow()
+            {
+                throw new NotImplementedException();
+            }
+
             public override bool GoToQuickFix(QuickFix quickFix, int count, bool hasBang)
             {
                 return false;

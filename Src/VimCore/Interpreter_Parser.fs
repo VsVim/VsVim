@@ -127,6 +127,7 @@ type Parser
         ("close", "clo")
         ("cnext", "cn")
         ("cprevious", "cp")
+        ("cwindow", "cw")
         ("copy", "co")
         ("delete","d")
         ("delmarks", "delm")
@@ -1552,6 +1553,10 @@ type Parser
         let hasBang = x.ParseBang()
         LineCommand.QuickFixNext (count, hasBang)
 
+    member x.ParseQuickFixWindow _ =
+        _tokenizer.MoveToEndOfLine()
+        LineCommand.QuickFixWindow
+
     member x.ParseQuickFixPrevious count =
         let hasBang = x.ParseBang()
         LineCommand.QuickFixPrevious (count, hasBang)
@@ -2081,6 +2086,7 @@ type Parser
                 | "cprevious" -> handleCount x.ParseQuickFixPrevious
                 | "copy" -> x.ParseCopyTo lineRange 
                 | "cunmap" -> noRange (fun () -> x.ParseMapUnmap false [KeyRemapMode.Command])
+                | "cwindow" -> noRange x.ParseQuickFixWindow
                 | "delete" -> x.ParseDelete lineRange
                 | "delmarks" -> noRange (fun () -> x.ParseDeleteMarks())
                 | "display" -> noRange x.ParseDisplayRegisters 

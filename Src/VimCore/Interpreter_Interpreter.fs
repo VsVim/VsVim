@@ -1143,6 +1143,9 @@ type VimInterpreter
                 let point = SnapshotLineUtil.GetFirstNonBlankOrEnd line
                 _commonOperations.MoveCaretToPoint point ViewFlags.VirtualEdit))
 
+    member x.RunOpenQuickFixWindow () =
+        _vimHost.OpenQuickFixWindow()
+
     member x.RunQuickFixNext count hasBang =
         let count = OptionUtil.getOrDefault 1 count 
         _vimHost.GoToQuickFix QuickFix.Next count hasBang |> ignore
@@ -1743,6 +1746,7 @@ type VimInterpreter
         | LineCommand.PrintCurrentDirectory -> x.RunPrintCurrentDirectory()
         | LineCommand.PutAfter (lineRange, registerName) -> x.RunPut lineRange registerName true
         | LineCommand.PutBefore (lineRange, registerName) -> x.RunPut lineRange registerName false
+        | LineCommand.QuickFixWindow -> x.RunOpenQuickFixWindow()
         | LineCommand.QuickFixNext (count, hasBang) -> x.RunQuickFixNext count hasBang
         | LineCommand.QuickFixPrevious (count, hasBang) -> x.RunQuickFixPrevious count hasBang
         | LineCommand.Quit hasBang -> x.RunQuit hasBang
