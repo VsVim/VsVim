@@ -10,7 +10,7 @@ namespace Vim.UnitTest
         {
             Func<MotionArgument, FSharpOption<MotionResult>> func = arg =>
                 {
-                    action(arg.Count);
+                    action(arg.CountOrDefault);
                     return FSharpOption<MotionResult>.None;
                 };
             return func.ToFSharpFunc();
@@ -20,7 +20,7 @@ namespace Vim.UnitTest
         {
             Func<MotionArgument, FSharpOption<MotionResult>> func = arg =>
                 {
-                    return FSharpOption.Create(action(arg.Count));
+                    return FSharpOption.Create(action(arg.CountOrDefault));
                 };
             return func.ToFSharpFunc();
         }

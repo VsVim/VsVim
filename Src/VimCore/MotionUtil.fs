@@ -2742,66 +2742,66 @@ type internal MotionUtil
 
         let motionResult = 
             match motion with 
-            | Motion.AllBlock blockKind -> x.AllBlock x.CaretPoint blockKind motionArgument.Count
-            | Motion.AllParagraph -> x.AllParagraph motionArgument.Count
-            | Motion.AllWord wordKind -> x.AllWord wordKind motionArgument.Count x.CaretPoint
-            | Motion.AllSentence -> x.AllSentence motionArgument.Count |> Some
-            | Motion.TagBlock kind -> x.TagBlock motionArgument.Count x.CaretPoint kind
-            | Motion.BackwardEndOfWord wordKind -> x.BackwardEndOfWord wordKind motionArgument.Count
+            | Motion.AllBlock blockKind -> x.AllBlock x.CaretPoint blockKind motionArgument.CountOrDefault
+            | Motion.AllParagraph -> x.AllParagraph motionArgument.CountOrDefault
+            | Motion.AllWord wordKind -> x.AllWord wordKind motionArgument.CountOrDefault x.CaretPoint
+            | Motion.AllSentence -> x.AllSentence motionArgument.CountOrDefault |> Some
+            | Motion.TagBlock kind -> x.TagBlock motionArgument.CountOrDefault x.CaretPoint kind
+            | Motion.BackwardEndOfWord wordKind -> x.BackwardEndOfWord wordKind motionArgument.CountOrDefault
             | Motion.BeginingOfLine -> x.BeginingOfLine() |> Some
-            | Motion.CharLeft -> x.CharLeft motionArgument.Count |> Some
-            | Motion.CharRight -> x.CharRight motionArgument.Count |> Some
-            | Motion.SpaceLeft -> x.SpaceLeft motionArgument.Count |> Some
-            | Motion.SpaceRight -> x.SpaceRight motionArgument.Count |> Some
-            | Motion.ArrowLeft -> x.ArrowLeft motionArgument.Count |> Some
-            | Motion.ArrowRight -> x.ArrowRight motionArgument.Count |> Some
-            | Motion.CharSearch (kind, direction, c) -> x.CharSearch c motionArgument.Count kind direction
-            | Motion.DisplayLineDown -> x.DisplayLineDown motionArgument.Count
-            | Motion.DisplayLineUp -> x.DisplayLineUp motionArgument.Count
+            | Motion.CharLeft -> x.CharLeft motionArgument.CountOrDefault |> Some
+            | Motion.CharRight -> x.CharRight motionArgument.CountOrDefault |> Some
+            | Motion.SpaceLeft -> x.SpaceLeft motionArgument.CountOrDefault |> Some
+            | Motion.SpaceRight -> x.SpaceRight motionArgument.CountOrDefault |> Some
+            | Motion.ArrowLeft -> x.ArrowLeft motionArgument.CountOrDefault |> Some
+            | Motion.ArrowRight -> x.ArrowRight motionArgument.CountOrDefault |> Some
+            | Motion.CharSearch (kind, direction, c) -> x.CharSearch c motionArgument.CountOrDefault kind direction
+            | Motion.DisplayLineDown -> x.DisplayLineDown motionArgument.CountOrDefault
+            | Motion.DisplayLineUp -> x.DisplayLineUp motionArgument.CountOrDefault
             | Motion.DisplayLineStart -> x.DisplayLineStart()
             | Motion.DisplayLineEnd -> x.DisplayLineEnd()
             | Motion.DisplayLineFirstNonBlank -> x.DisplayLineFirstNonBlank() |> Some
             | Motion.DisplayLineMiddleOfScreen -> x.DisplayLineMiddleOfScreen () 
-            | Motion.EndOfLine -> x.EndOfLine motionArgument.Count |> Some
-            | Motion.EndOfWord wordKind -> x.EndOfWord wordKind motionArgument.Count |> Some
+            | Motion.EndOfLine -> x.EndOfLine motionArgument.CountOrDefault |> Some
+            | Motion.EndOfWord wordKind -> x.EndOfWord wordKind motionArgument.CountOrDefault |> Some
             | Motion.FirstNonBlankOnCurrentLine -> x.FirstNonBlankOnCurrentLine() |> Some
-            | Motion.FirstNonBlankOnLine -> x.FirstNonBlankOnLine motionArgument.Count |> Some
-            | Motion.InnerBlock blockKind -> x.InnerBlock x.CaretPoint blockKind motionArgument.Count
-            | Motion.InnerWord wordKind -> x.InnerWord wordKind motionArgument.Count x.CaretPoint
-            | Motion.InnerParagraph -> x.InnerParagraph motionArgument.Count
-            | Motion.LastNonBlankOnLine -> x.LastNonBlankOnLine motionArgument.Count |> Some
-            | Motion.LastSearch isReverse -> x.LastSearch isReverse motionArgument.Count
-            | Motion.LineDown -> x.LineDown motionArgument.Count
-            | Motion.LineDownToFirstNonBlank -> x.LineDownToFirstNonBlank motionArgument.Count |> Some
-            | Motion.LineFromBottomOfVisibleWindow -> x.LineFromBottomOfVisibleWindow motionArgument.RawCount 
-            | Motion.LineFromTopOfVisibleWindow -> x.LineFromTopOfVisibleWindow motionArgument.RawCount 
+            | Motion.FirstNonBlankOnLine -> x.FirstNonBlankOnLine motionArgument.CountOrDefault |> Some
+            | Motion.InnerBlock blockKind -> x.InnerBlock x.CaretPoint blockKind motionArgument.CountOrDefault
+            | Motion.InnerWord wordKind -> x.InnerWord wordKind motionArgument.CountOrDefault x.CaretPoint
+            | Motion.InnerParagraph -> x.InnerParagraph motionArgument.CountOrDefault
+            | Motion.LastNonBlankOnLine -> x.LastNonBlankOnLine motionArgument.CountOrDefault |> Some
+            | Motion.LastSearch isReverse -> x.LastSearch isReverse motionArgument.CountOrDefault
+            | Motion.LineDown -> x.LineDown motionArgument.CountOrDefault
+            | Motion.LineDownToFirstNonBlank -> x.LineDownToFirstNonBlank motionArgument.CountOrDefault |> Some
+            | Motion.LineFromBottomOfVisibleWindow -> x.LineFromBottomOfVisibleWindow motionArgument.Count 
+            | Motion.LineFromTopOfVisibleWindow -> x.LineFromTopOfVisibleWindow motionArgument.Count 
             | Motion.LineInMiddleOfVisibleWindow -> x.LineInMiddleOfVisibleWindow() 
-            | Motion.LineOrFirstToFirstNonBlank -> x.LineOrFirstToFirstNonBlank motionArgument.RawCount |> Some
-            | Motion.LineOrLastToFirstNonBlank -> x.LineOrLastToFirstNonBlank motionArgument.RawCount |> Some
-            | Motion.LineUp -> x.LineUp motionArgument.Count
-            | Motion.LineUpToFirstNonBlank -> x.LineUpToFirstNonBlank motionArgument.Count |> Some
+            | Motion.LineOrFirstToFirstNonBlank -> x.LineOrFirstToFirstNonBlank motionArgument.Count |> Some
+            | Motion.LineOrLastToFirstNonBlank -> x.LineOrLastToFirstNonBlank motionArgument.Count |> Some
+            | Motion.LineUp -> x.LineUp motionArgument.CountOrDefault
+            | Motion.LineUpToFirstNonBlank -> x.LineUpToFirstNonBlank motionArgument.CountOrDefault |> Some
             | Motion.Mark localMark -> x.Mark localMark
             | Motion.MarkLine localMark -> x.MarkLine localMark
-            | Motion.MatchingTokenOrDocumentPercent -> x.MatchingTokenOrDocumentPercent motionArgument.RawCount
-            | Motion.NextPartialWord path -> x.NextPartialWord path motionArgument.Count
-            | Motion.NextWord path -> x.NextWord path motionArgument.Count
-            | Motion.ParagraphBackward -> x.ParagraphBackward motionArgument.Count |> Some
-            | Motion.ParagraphForward -> x.ParagraphForward motionArgument.Count |> Some
+            | Motion.MatchingTokenOrDocumentPercent -> x.MatchingTokenOrDocumentPercent motionArgument.Count
+            | Motion.NextPartialWord path -> x.NextPartialWord path motionArgument.CountOrDefault
+            | Motion.NextWord path -> x.NextWord path motionArgument.CountOrDefault
+            | Motion.ParagraphBackward -> x.ParagraphBackward motionArgument.CountOrDefault |> Some
+            | Motion.ParagraphForward -> x.ParagraphForward motionArgument.CountOrDefault |> Some
             | Motion.QuotedString quoteChar -> x.QuotedString quoteChar
-            | Motion.QuotedStringContents quoteChar -> x.QuotedStringContentsWithCount quoteChar motionArgument.Count
-            | Motion.RepeatLastCharSearch -> x.RepeatLastCharSearch motionArgument.Count
-            | Motion.RepeatLastCharSearchOpposite -> x.RepeatLastCharSearchOpposite motionArgument.Count
-            | Motion.Search searchData-> x.Search searchData motionArgument.Count
-            | Motion.SectionBackwardOrCloseBrace -> x.SectionBackwardOrCloseBrace motionArgument.Count |> Some
-            | Motion.SectionBackwardOrOpenBrace -> x.SectionBackwardOrOpenBrace motionArgument.Count |> Some
-            | Motion.SectionForward -> x.SectionForward motionArgument.MotionContext motionArgument.Count |> Some
-            | Motion.SectionForwardOrCloseBrace -> x.SectionForwardOrCloseBrace motionArgument.MotionContext motionArgument.Count |> Some
-            | Motion.ScreenColumn -> x.LineToColumn motionArgument.Count |> Some
-            | Motion.SentenceBackward -> x.SentenceBackward motionArgument.Count |> Some
-            | Motion.SentenceForward -> x.SentenceForward motionArgument.Count |> Some
-            | Motion.UnmatchedToken (path, kind) -> x.UnmatchedToken path kind motionArgument.Count
-            | Motion.WordBackward wordKind -> x.WordBackward wordKind motionArgument.Count |> Some
-            | Motion.WordForward wordKind -> x.WordForward wordKind motionArgument.Count motionArgument.MotionContext |> Some
+            | Motion.QuotedStringContents quoteChar -> x.QuotedStringContentsWithCount quoteChar motionArgument.CountOrDefault
+            | Motion.RepeatLastCharSearch -> x.RepeatLastCharSearch motionArgument.CountOrDefault
+            | Motion.RepeatLastCharSearchOpposite -> x.RepeatLastCharSearchOpposite motionArgument.CountOrDefault
+            | Motion.Search searchData-> x.Search searchData motionArgument.CountOrDefault
+            | Motion.SectionBackwardOrCloseBrace -> x.SectionBackwardOrCloseBrace motionArgument.CountOrDefault |> Some
+            | Motion.SectionBackwardOrOpenBrace -> x.SectionBackwardOrOpenBrace motionArgument.CountOrDefault |> Some
+            | Motion.SectionForward -> x.SectionForward motionArgument.MotionContext motionArgument.CountOrDefault |> Some
+            | Motion.SectionForwardOrCloseBrace -> x.SectionForwardOrCloseBrace motionArgument.MotionContext motionArgument.CountOrDefault |> Some
+            | Motion.ScreenColumn -> x.LineToColumn motionArgument.CountOrDefault |> Some
+            | Motion.SentenceBackward -> x.SentenceBackward motionArgument.CountOrDefault |> Some
+            | Motion.SentenceForward -> x.SentenceForward motionArgument.CountOrDefault |> Some
+            | Motion.UnmatchedToken (path, kind) -> x.UnmatchedToken path kind motionArgument.CountOrDefault
+            | Motion.WordBackward wordKind -> x.WordBackward wordKind motionArgument.CountOrDefault |> Some
+            | Motion.WordForward wordKind -> x.WordForward wordKind motionArgument.CountOrDefault motionArgument.MotionContext |> Some
 
         // If this motion is being used for an operator we need to consider the exclusive
         // promotions
