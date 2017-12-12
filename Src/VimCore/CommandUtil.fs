@@ -2048,23 +2048,34 @@ type internal CommandUtil
         // Function to actually repeat the last change 
         let rec repeat (command : StoredCommand) (repeatData : CommandData option) = 
 
-            // Calculate the new CommandData based on the original and repeat CommandData 
-            // values.  The repeat CommandData will be None in nested command repeats 
-            // for linked commands which means the original should just be used
-            let getCommandData (original : CommandData) = 
+            // Before repeating a command it needs to be updated in the context of the repeat operation. This 
+            // includes recalculating the visual span and considering explicit counts that are passed into 
+            // the repeat operation.
+            //
+            // When a count is passed to repeat then it acts as if it was the only count passed to the original
+            // command. This overrides the original count or counts passed to motion operators.
+            let repeatCount = 
                 match repeatData with
-                | None -> original
-                | Some repeatData -> 
-                    match repeatData.Count with
-                    | Some count -> { original with Count = repeatData.Count }
-                    | None -> original
+                | None -> None 
+                | Some r -> r.Count
 
             match command with
             | StoredCommand.NormalCommand (command, data, _) ->
-                let data = getCommandData data
+                let command, data = 
+                    match repeatCount with 
+                    | Some _ -> 
+                        let data = { data with Count = repeatCount }
+                        let command = command.ChangeMotionData (fun motionData -> 
+                            let argument = { motionData.MotionArgument with MotionCount = repeatCount; OperatorCount = None }
+                            { motionData with MotionArgument = argument })
+                        (command, data)
+                    | None -> (command, data)
                 x.RunNormalCommand command data
             | StoredCommand.VisualCommand (command, data, storedVisualSpan, _) -> 
-                let data = getCommandData data
+                let data = 
+                    match repeatCount with
+                    | Some _ -> { data with Count = repeatCount } 
+                    | None -> data
                 let visualSpan = x.CalculateVisualSpan storedVisualSpan
                 x.RunVisualCommand command data visualSpan
             | StoredCommand.InsertCommand (command, _) ->
