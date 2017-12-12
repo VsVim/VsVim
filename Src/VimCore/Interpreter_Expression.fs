@@ -597,6 +597,9 @@ and [<RequireQualifiedAccess>] LineCommand =
     /// LineRange (defaults to current)
     | PutBefore of LineRangeSpecifier * RegisterName option
 
+    /// Display the quick fix window
+    | QuickFixWindow
+
     /// Next error in the quick fix list.  int is for count and bool is for the bang option
     | QuickFixNext of int option * bool
 

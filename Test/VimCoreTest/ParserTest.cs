@@ -1914,6 +1914,12 @@ let x = 42
                 check("reg");
                 check("reg a");
             }
+
+            [Fact]
+            public void QuickFixWindow()
+            {
+                Assert.Equal(LineCommand.QuickFixWindow, ParseLineCommand("cwindow"));
+            }
         }
     }
 }

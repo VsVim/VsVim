@@ -43,6 +43,7 @@ namespace Vim.UnitTest.Mock
         public Func<string, string, IVimData, string> RunCommandFunc { get; set; }
         public Action<ITextView, string, string> RunHostCommandFunc { get; set; }
         public Action<QuickFix, int, bool> RunQuickFixFunc { get; set; }
+        public Action OpenQuickFixWindowFunc { get; set; }
         public Func<string, string, bool> RunSaveTextAs { get; set; }
         public ITextBuffer LastSaved { get; set; }
         public ITextView LastClosed { get; set; }
@@ -95,6 +96,7 @@ namespace Vim.UnitTest.Mock
             RunCommandFunc = delegate { throw new NotImplementedException(); };
             RunHostCommandFunc = delegate { throw new NotImplementedException(); };
             RunQuickFixFunc = delegate { throw new NotImplementedException(); };
+            OpenQuickFixWindowFunc = delegate { throw new NotImplementedException(); };
             RunSaveTextAs = delegate { throw new NotImplementedException(); };
             ReloadFunc = delegate { return true; };
             IsDirtyFunc = null;
@@ -322,6 +324,11 @@ namespace Vim.UnitTest.Mock
         bool IVimHost.ShouldIncludeRcFile(VimRcPath vimRcPath)
         {
             return ShouldIncludeRcFile;
+        }
+
+        void IVimHost.OpenQuickFixWindow()
+        {
+            OpenQuickFixWindowFunc();
         }
 
         bool IVimHost.GoToQuickFix(QuickFix quickFix, int count, bool hasBang)

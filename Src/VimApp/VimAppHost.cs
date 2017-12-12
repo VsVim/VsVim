@@ -251,6 +251,11 @@ namespace VimApp
             _vim.ActiveStatusUtil.OnError(ErrorUnsupported);
         }
 
+        public override void OpenQuickFixWindow()
+        {
+
+        }
+
         public override bool GoToQuickFix(QuickFix quickFix, int count, bool hasBang)
         {
             return false;
