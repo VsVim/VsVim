@@ -1740,5 +1740,14 @@ namespace Vim.UnitTest
             endLine = endLine >= 0 ? endLine : startLine;
             return SnapshotLineRange.CreateForLineNumberRange(snapshot, startLine, endLine).Value;
         }
+
+        /// <summary>
+        /// Convenient one liner to assert the option has a value and then return it.
+        /// </summary>
+        public static T AssertSome<T>(this FSharpOption<T> option)
+        {
+            Assert.True(option.IsSome());
+            return option.Value;
+        }
     }
 }
