@@ -389,6 +389,8 @@ type VimRegexBuilder
 
 module VimRegexFactory =
 
+    let NewLineRegex = "(?:\r?\n|\r)"
+
     /// Generates strings based on a char filter func.  Easier than hand writing out
     /// the values
     let GenerateCharString filterFunc = 
@@ -479,6 +481,47 @@ module VimRegexFactory =
             | None -> VimResult.Error Resources.Regex_Unknown
             | Some regex -> VimRegex(data.Pattern, data.CaseSpecifier, bclPattern, regex, data.IncludesNewLine) |> VimResult.Result
 
+    /// Try and parse out the name of a named collection.  This is called when the 
+    /// index points to ':' assuming this is a valid named collection
+    let TryParseNamedCollectionName (data : VimRegexBuilder) = 
+        let index = data.Index
+        if data.CharAtOrDefault index = ':' then
+            let mutable endIndex = index + 1
+            while endIndex < data.Pattern.Length && data.CharAtOrDefault endIndex <> ':' do
+                endIndex <- endIndex + 1
+
+            if data.CharAtOrDefault (endIndex + 1) = ']' then
+                // It's a named collection
+                let startIndex = index + 1
+                let name = data.Pattern.Substring(startIndex, endIndex - startIndex)
+                Some name
+            else
+                None
+        else
+            None
+
+    /// Try and append one of the named collections.  These are covered in :help E769.  
+    let TryAppendNamedCollection (data : VimRegexBuilder) c = 
+        if data.IsCollectionOpen && c = '[' then
+            match TryParseNamedCollectionName data with
+            | None -> false
+            | Some name -> 
+                match Map.tryFind name NamedCollectionMap with
+                | Some value -> 
+                    // Length of the name + characters in the named "::]"
+                    data.Index <- data.Index + (name.Length + 3)
+                    data.AppendString value
+                    true
+                | None -> false
+        else
+            false
+
+    /// Convert a normal unescaped char. This still needs to consider open patterns.
+    let ConvertCharAsNormal (data : VimRegexBuilder) c = 
+        if not (TryAppendNamedCollection data c) then
+            data.AppendEscapedChar c
+            data.IsStartOfPattern <- false
+
     /// Convert the given character as a special character.  This is done independent of any 
     /// magic setting.
     let ConvertCharAsSpecial (data : VimRegexBuilder) c = 
@@ -521,7 +564,8 @@ module VimRegexFactory =
                 data.AppendEscapedChar ']'
                 data.IncrementIndex 1
             | _ -> 
-                data.BeginCollection()
+                if data.IsCollectionOpen then ConvertCharAsNormal data '['
+                else data.BeginCollection()
         | ']' -> if data.IsCollectionOpen then data.EndCollection() else data.AppendEscapedChar(']')
         | 'd' -> data.AppendString @"\d"
         | 'D' -> data.AppendString @"\D"
@@ -549,17 +593,35 @@ module VimRegexFactory =
         | 'F' -> data.AppendString @"[a-zA-Z@/\.-_+,#$%{}[\]:!~=]"
         | 'p' -> data.AppendString PrintableGroupPattern
         | 'P' -> data.AppendString PrintableGroupNoDigitsPattern
+        | 'n' -> 
+            // vim expects \n to match any kind of newline, regardless of platform. Think about it,
+            // you can't see newlines, so why should you be expected to know the diff between them?
+            // Also, use ?: for non-capturing group, so we don't cause any weird behavior
+            data.AppendString NewLineRegex
+            data.IncludesNewLine <- true
+        | 't' -> data.AppendString @"\t"
         | 'v' -> data.MagicKind <- MagicKind.VeryMagic
         | 'V' -> data.MagicKind <- MagicKind.VeryNoMagic
         | 'm' -> data.MagicKind <- MagicKind.Magic
         | 'M' -> data.MagicKind <- MagicKind.NoMagic
-        | _ -> data.AppendEscapedChar c
+        | 'C' -> 
+            data.MatchCase <- true
+            data.CaseSpecifier <- CaseSpecifier.OrdinalCase
+        | 'c' -> 
+            data.MatchCase <- false
+            data.CaseSpecifier <- CaseSpecifier.IgnoreCase
+        | _ -> 
+            if CharUtil.IsDigit c then
+                // Convert the \1 escape into the BCL \1 for any single digit
+                let str = sprintf "\\%c"c
+                data.AppendString str
+            else data.AppendEscapedChar c
 
     /// Convert the given escaped char in the magic and no magic settings.  The 
     /// differences here are minimal so it's convenient to put them in one method
     /// here
     let ConvertEscapedCharAsMagicAndNoMagic (data : VimRegexBuilder) c =
-        let isMagic = data.MagicKind = MagicKind.Magic
+        let isMagic = data.MagicKind = MagicKind.Magic || data.MagicKind = MagicKind.VeryMagic
         match c with 
         | '.' -> if isMagic then data.AppendEscapedChar c else ConvertCharAsSpecial data c
         | '*' -> if isMagic then data.AppendEscapedChar c else ConvertCharAsSpecial data c 
@@ -587,6 +649,7 @@ module VimRegexFactory =
         | 'O' -> ConvertCharAsSpecial data c
         | 's' -> ConvertCharAsSpecial data c 
         | 'S' -> ConvertCharAsSpecial data c 
+        | 't' -> ConvertCharAsSpecial data c
         | 'u' -> ConvertCharAsSpecial data c
         | 'U' -> ConvertCharAsSpecial data c
         | 'w' -> ConvertCharAsSpecial data c
@@ -611,52 +674,16 @@ module VimRegexFactory =
                 | '$' -> data.AppendChar '$'
                 | '.' -> data.AppendString @"(.|\n)"
                 | _ -> data.Break()
-        | 'v' -> data.MagicKind <- MagicKind.VeryMagic
-        | 'V' -> data.MagicKind <- MagicKind.VeryNoMagic
-        | 'm' -> data.MagicKind <- MagicKind.Magic
-        | 'M' -> data.MagicKind <- MagicKind.NoMagic
-        | _ -> data.AppendEscapedChar c
-
-    /// Try and parse out the name of a named collection.  This is called when the 
-    /// index points to ':' assuming this is a valid named collection
-    let TryParseNamedCollectionName (data : VimRegexBuilder) = 
-        let index = data.Index
-        if data.CharAtOrDefault index = ':' then
-            let mutable endIndex = index + 1
-            while endIndex < data.Pattern.Length && data.CharAtOrDefault endIndex <> ':' do
-                endIndex <- endIndex + 1
-
-            if data.CharAtOrDefault (endIndex + 1) = ']' then
-                // It's a named collection
-                let startIndex = index + 1
-                let name = data.Pattern.Substring(startIndex, endIndex - startIndex)
-                Some name
-            else
-                None
-        else
-            None
-
-    /// Try and append one of the named collections.  These are covered in :help E769.  
-    let TryAppendNamedCollection (data : VimRegexBuilder) c = 
-        if data.IsCollectionOpen && c = '[' then
-            match TryParseNamedCollectionName data with
-            | None -> false
-            | Some name -> 
-                match Map.tryFind name NamedCollectionMap with
-                | Some value -> 
-                    // Length of the name + characters in the named "::]"
-                    data.Index <- data.Index + (name.Length + 3)
-                    data.AppendString value
-                    true
-                | None -> false
-        else
-            false
-
-    /// Convert a normal unescaped char. This still needs to consider open patterns.
-    let ConvertCharAsNormal (data : VimRegexBuilder) c = 
-        if not (TryAppendNamedCollection data c) then
-            data.AppendEscapedChar c
-            data.IsStartOfPattern <- false
+        | 'v' -> ConvertCharAsSpecial data c
+        | 'V' -> ConvertCharAsSpecial data c
+        | 'm' -> ConvertCharAsSpecial data c
+        | 'M' -> ConvertCharAsSpecial data c
+        | 'c' -> ConvertCharAsSpecial data c
+        | 'C' -> ConvertCharAsSpecial data c
+        | 'n' -> ConvertCharAsSpecial data c
+        | c -> 
+            if CharUtil.IsDigit c then ConvertCharAsSpecial data c
+            else data.AppendEscapedChar c
 
     let ConvertCore (data : VimRegexBuilder) c isEscaped = 
 
@@ -673,7 +700,8 @@ module VimRegexFactory =
                 elif c = '_' then true
                 else false
 
-            if not isEscaped && isSimpleChar then ConvertCharAsNormal data c
+            if isEscaped then ConvertEscapedCharAsMagicAndNoMagic data c
+            elif isSimpleChar then ConvertCharAsNormal data c
             else ConvertCharAsSpecial data c
 
         let convertNoMagic data c isEscaped =
@@ -689,8 +717,8 @@ module VimRegexFactory =
             if isEscaped then ConvertEscapedCharAsMagicAndNoMagic data c
             else 
                 match c with 
-                | '*' -> ConvertCharAsNormal data c
-                | '.' -> ConvertCharAsNormal data c
+                | '*' -> ConvertCharAsSpecial data c
+                | '.' -> ConvertCharAsSpecial data c
                 | '}' -> if data.IsRangeOpen then data.EndRange() else data.AppendChar '}'
                 | '^' -> ConvertCharAsSpecial data c
                 | '$' -> ConvertCharAsSpecial data c

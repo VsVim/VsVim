@@ -302,6 +302,7 @@ namespace Vim.UnitTest
             [Fact]
             public void Newline()
             {
+                VerifyRegex(@"\n", VimRegexFactory.NewLineRegex);
                 VerifyReplace(@"\n", "hello\nworld", " ", "hello world");
                 VerifyReplace(@"\n", "hello\r\nworld", " ", "hello world");
                 VerifyReplace(@"\n", "hello\rworld", " ", "hello world");
@@ -606,6 +607,7 @@ namespace Vim.UnitTest
             [Fact]
             public void ItemStar3()
             {
+                VerifyRegex(@"\mab*", @"ab*");
                 VerifyMatchIs(@"\mab*", "abb", "abb");
                 VerifyMatchIs(@"\mab*", "cab", "ab");
                 VerifyMatchIs(@"\mab*", "cabb", "abb");
@@ -727,6 +729,7 @@ namespace Vim.UnitTest
             [Fact]
             public void AtomBackslashHat4()
             {
+                VerifyRegex(@"\v\^", @"\^");
                 VerifyMatchIs(@"\v\^", "^", "^");
                 VerifyMatchIs(@"\v\^a", "^a", "^a");
                 VerifyMatchIs(@"\vb\^a", "b^a", "b^a");
@@ -1349,6 +1352,15 @@ namespace Vim.UnitTest
                 VerifyRegex(@"\v<is>", @"\bis\b");
                 VerifyRegex(@"\v<is", @"\bis");
             }
+
+            [Fact]
+            public void EscapedToNothing()
+            {
+                VerifyRegex(@"\v\^", @"\^");
+                VerifyRegex(@"\v\$", @"\$");
+                VerifyRegex(@"\v\*", @"\*");
+            }
+
         }
     }
 }
