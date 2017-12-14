@@ -60,7 +60,6 @@ type VimReplaceCaseState =
     | LowerChar
     | LowerUtil
 
-
 /// Type responsible for generating replace strings.
 [<Sealed>]
 type VimRegexReplaceUtil
@@ -230,6 +229,7 @@ type VimRegex
             util.Replace replacement replaceData
         else
             input
+    override x.ToString() = sprintf "vim %O -> bcl %O" x.VimPattern x.RegexPattern
 
 [<RequireQualifiedAccess>]
 [<NoComparison>]
@@ -479,8 +479,8 @@ module VimRegexFactory =
             | None -> VimResult.Error Resources.Regex_Unknown
             | Some regex -> VimRegex(data.Pattern, data.CaseSpecifier, bclPattern, regex, data.IncludesNewLine) |> VimResult.Result
 
-    /// Convert the given character as a special character.  Interpretation
-    /// may depend on the type of magic that is currently being employed
+    /// Convert the given character as a special character.  This is done independent of any 
+    /// magic setting.
     let ConvertCharAsSpecial (data : VimRegexBuilder) c = 
         match c with
         | '.' -> data.AppendChar '.'
@@ -549,26 +549,10 @@ module VimRegexFactory =
         | 'F' -> data.AppendString @"[a-zA-Z@/\.-_+,#$%{}[\]:!~=]"
         | 'p' -> data.AppendString PrintableGroupPattern
         | 'P' -> data.AppendString PrintableGroupNoDigitsPattern
-        | _ -> data.AppendEscapedChar c
-
-    /// Convert the given char in the magic setting 
-    let ConvertCharAsMagic (data : VimRegexBuilder) c =
-        match c with 
-        | '*' -> data.AppendChar '*'
-        | '.' -> data.AppendChar '.'
-        | '}' -> if data.IsRangeOpen then data.EndRange() else data.AppendChar '}'
-        | '^' -> ConvertCharAsSpecial data c
-        | '$' -> ConvertCharAsSpecial data c
-        | '[' -> ConvertCharAsSpecial data c
-        | ']' -> ConvertCharAsSpecial data c
-        | _ -> data.AppendEscapedChar c
-
-    /// Convert the given char in the nomagic setting
-    let ConvertCharAsNoMagic (data : VimRegexBuilder) c =
-        match c with 
-        | '^' -> ConvertCharAsSpecial data c 
-        | '$' -> ConvertCharAsSpecial data c
-        | ']' -> ConvertCharAsSpecial data c
+        | 'v' -> data.MagicKind <- MagicKind.VeryMagic
+        | 'V' -> data.MagicKind <- MagicKind.VeryNoMagic
+        | 'm' -> data.MagicKind <- MagicKind.Magic
+        | 'M' -> data.MagicKind <- MagicKind.NoMagic
         | _ -> data.AppendEscapedChar c
 
     /// Convert the given escaped char in the magic and no magic settings.  The 
@@ -627,42 +611,11 @@ module VimRegexFactory =
                 | '$' -> data.AppendChar '$'
                 | '.' -> data.AppendString @"(.|\n)"
                 | _ -> data.Break()
-        | _ -> data.AppendEscapedChar c
-
-    /// Process an escaped character.  Look first for global options such as ignore 
-    /// case or magic and then go for magic specific characters
-    let ProcessEscapedChar (data : VimRegexBuilder) c =
-        match c with 
-        | 'm' -> data.MagicKind <- MagicKind.Magic
-        | 'M' -> data.MagicKind <- MagicKind.NoMagic
         | 'v' -> data.MagicKind <- MagicKind.VeryMagic
         | 'V' -> data.MagicKind <- MagicKind.VeryNoMagic
-        | 't' -> data.AppendString "\t"
-        | 'C' -> 
-            data.MatchCase <- true
-            data.CaseSpecifier <- CaseSpecifier.OrdinalCase
-        | 'c' -> 
-            data.MatchCase <- false
-            data.CaseSpecifier <- CaseSpecifier.IgnoreCase
-        | 'n' -> 
-            // vim expects \n to match any kind of newline, regardless of platform. Think about it,
-            // you can't see newlines, so why should you be expected to know the diff between them?
-            // Also, use ?: for non-capturing group, so we don't cause any weird behavior
-            data.AppendString "(?:\r?\n|\r)"
-            data.IncludesNewLine <- true
-        | _ -> 
-            if CharUtil.IsDigit c then
-                // Convert the \1 escape into the BCL \1 for any single digit
-                let str = sprintf "\\%c"c
-                data.AppendString str
-            else
-                match data.MagicKind with
-                | MagicKind.Magic -> ConvertEscapedCharAsMagicAndNoMagic data c 
-                | MagicKind.NoMagic -> ConvertEscapedCharAsMagicAndNoMagic data c
-                | MagicKind.VeryMagic -> data.AppendEscapedChar c
-                | MagicKind.VeryNoMagic -> ConvertCharAsSpecial data c
-
-                data.IsStartOfPattern <- false
+        | 'm' -> data.MagicKind <- MagicKind.Magic
+        | 'M' -> data.MagicKind <- MagicKind.NoMagic
+        | _ -> data.AppendEscapedChar c
 
     /// Try and parse out the name of a named collection.  This is called when the 
     /// index points to ':' assuming this is a valid named collection
@@ -699,21 +652,57 @@ module VimRegexFactory =
         else
             false
 
-    /// Convert a normal unescaped char 
-    let ProcessNormalChar (data : VimRegexBuilder) c = 
+    /// Convert a normal unescaped char. This still needs to consider open patterns.
+    let ConvertCharAsNormal (data : VimRegexBuilder) c = 
         if not (TryAppendNamedCollection data c) then
-
-            // Process the normal character based on our current magic kind
-            match data.MagicKind with
-            | MagicKind.Magic -> ConvertCharAsMagic data c
-            | MagicKind.NoMagic -> ConvertCharAsNoMagic data c
-            | MagicKind.VeryMagic -> 
-                if CharUtil.IsLetter c || CharUtil.IsDigit c || c = '_' then 
-                    data.AppendChar c
-                else
-                    ConvertCharAsSpecial data c
-            | MagicKind.VeryNoMagic -> data.AppendEscapedChar c
+            data.AppendEscapedChar c
             data.IsStartOfPattern <- false
+
+    let ConvertCore (data : VimRegexBuilder) c isEscaped = 
+
+        let convertVeryNoMagic data c isEscaped =
+            if isEscaped then ConvertCharAsSpecial data c
+            else ConvertCharAsNormal data c
+
+        let convertVeryMagic data c isEscaped = 
+            // In VeryMagic mode all characters except a select few ar treated as special
+            // characters. This will return true for characters which should not be treated 
+            // specially in very magic
+            let isSimpleChar  =
+                if CharUtil.IsLetterOrDigit c then true
+                elif c = '_' then true
+                else false
+
+            if not isEscaped && isSimpleChar then ConvertCharAsNormal data c
+            else ConvertCharAsSpecial data c
+
+        let convertNoMagic data c isEscaped =
+            if isEscaped then ConvertEscapedCharAsMagicAndNoMagic data c
+            else 
+                match c with 
+                | '^' -> ConvertCharAsSpecial data c 
+                | '$' -> ConvertCharAsSpecial data c
+                | ']' -> ConvertCharAsSpecial data c
+                | _ -> ConvertCharAsNormal data c
+            
+        let convertMagic data c isEscaped =
+            if isEscaped then ConvertEscapedCharAsMagicAndNoMagic data c
+            else 
+                match c with 
+                | '*' -> ConvertCharAsNormal data c
+                | '.' -> ConvertCharAsNormal data c
+                | '}' -> if data.IsRangeOpen then data.EndRange() else data.AppendChar '}'
+                | '^' -> ConvertCharAsSpecial data c
+                | '$' -> ConvertCharAsSpecial data c
+                | '[' -> ConvertCharAsSpecial data c
+                | ']' -> ConvertCharAsSpecial data c
+                | _ -> ConvertCharAsNormal data c
+
+        match data.MagicKind with
+        | MagicKind.VeryNoMagic -> convertVeryNoMagic data c isEscaped
+        | MagicKind.NoMagic -> convertNoMagic data c isEscaped
+        | MagicKind.Magic -> convertMagic data c isEscaped
+        | MagicKind.VeryMagic -> convertVeryMagic data c isEscaped
 
     let Convert (data : VimRegexBuilder) = 
         let rec inner () : VimResult<VimRegex> =
@@ -726,20 +715,20 @@ module VimRegexFactory =
                     let wasStartOfCollection = data.IsStartOfCollection
                     data.IncrementIndex 1
                     match data.CharAtIndex with 
-                    | None -> ProcessNormalChar data '\\'
+                    | None -> ConvertCore data '\\' false
                     | Some c -> 
                         data.IncrementIndex 1
-                        ProcessEscapedChar data c
+                        ConvertCore data c true
 
                     // If we were at the start of a collection before processing this 
                     // char then we no longer are afterwards
                     if wasStartOfCollection then 
                         data.IsStartOfCollection <- false
-
                     inner ()
                 | Some c -> 
                     data.IncrementIndex 1
-                    ProcessNormalChar data c |> inner
+                    ConvertCore data c false
+                    inner ()
         inner ()
 
     let CreateEx pattern options = 
@@ -814,7 +803,6 @@ module VimRegexFactory =
         let options = 
             if Util.IsFlagSet flags SubstituteFlags.Nomagic then options ||| VimRegexOptions.NoMagic
             else options 
-
 
         Create pattern options 
 

@@ -31,6 +31,17 @@ namespace Vim.UnitTest
             return VimRegexFactory.CreateForSettings(pattern, _globalSettings);
         }
 
+        private static void VerifyRegex(string vimPattern, string regexPattern)
+        {
+            VerifyRegex(VimRegexOptions.Default, vimPattern, regexPattern);
+        }
+
+        private static void VerifyRegex(VimRegexOptions options, string vimPattern, string regexPattern)
+        {
+            var vimRegex = VimRegexFactory.Create(vimPattern, options).AssertSome();
+            Assert.Equal(regexPattern, vimRegex.RegexPattern);
+        }
+
         private void VerifyMatches(string pattern, params string[] inputArray)
         {
             VerifyMatches(VimRegexOptions.Default, pattern, inputArray);
@@ -85,6 +96,7 @@ namespace Vim.UnitTest
             [Fact]
             public void OpenBracketMatchesLiterally()
             {
+                VerifyRegex(VimRegexOptions.NoMagic, "[", @"\[");
                 VerifyMatches(VimRegexOptions.NoMagic, "[", "[", "int[", "][");
                 VerifyMatches(VimRegexOptions.Default, "[", "[", "int[", "][");
             }
@@ -1313,6 +1325,29 @@ namespace Vim.UnitTest
             public void Issue1248()
             {
                 VerifyMatches(@"Task<\(.\{-}\)>", "public void Task<string>");
+            }
+
+            [Fact]
+            public void Issue2036()
+            {
+                VerifyMatches(@"\v\d\d+", "123");
+                VerifyMatches(@"\v\d\d+", "456");
+            }
+        }
+
+        public sealed class VeryMagic : VimRegexTest
+        {
+            [Fact]
+            public void Digits()
+            {
+                VerifyRegex(@"\v\d+", @"\d+");
+            }
+
+            [Fact]
+            public void WordBoundary()
+            {
+                VerifyRegex(@"\v<is>", @"\bis\b");
+                VerifyRegex(@"\v<is", @"\bis");
             }
         }
     }
