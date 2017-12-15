@@ -421,9 +421,7 @@ type internal InsertMode
     /// Complete the current batched edit command if one exists
     member x.CompleteCombinedEditCommand keyInput = 
         match _sessionData.CombinedEditCommand with
-        | None ->
-            // Nothing to do
-            () 
+        | None -> () 
         | Some command -> 
             _sessionData <- { _sessionData with CombinedEditCommand = None }
 
@@ -524,7 +522,7 @@ type internal InsertMode
                         match _insertUtil.RepeatBlock command blockSpan with
                         | Some text -> InsertCommand.BlockInsert (text, blockSpan.Height) |> Some
                         | None -> None
-                    _sessionData <- { _sessionData with CombinedEditCommand = combinedCommand } 
+                    x.ChangeCombinedEditCommand combinedCommand
                 finally 
                     _textChangeTracker.TrackCurrentChange <- true
 
@@ -556,7 +554,7 @@ type internal InsertMode
     member x.ProcessWordCompletionPrevious keyInput =
         x.StartWordCompletionSession false
 
-    member x.ProcessEscape keyInput =
+    member x.ProcessEscape _ =
 
         x.ApplyAfterEdits()
 
@@ -565,6 +563,11 @@ type internal InsertMode
 
         // Save the last edit point before moving the column to the left
         _vimBuffer.VimTextBuffer.LastInsertExitPoint <- Some x.CaretPoint
+
+        // Save the last text edit
+        match _sessionData.CombinedEditCommand with
+        | Some (InsertCommand.Insert text) -> _vimBuffer.VimData.LastTextInsert <- Some text
+        | _ -> ()
 
         // Don't move the caret for block inserts.  It's explicitly positioned 
         let moveCaretLeft = 
@@ -692,7 +695,7 @@ type internal InsertMode
                 match _sessionData.CombinedEditCommand with
                 | None -> command
                 | Some previousCommand -> InsertMode.CreateCombinedEditCommand previousCommand command
-            _sessionData <- { _sessionData with CombinedEditCommand = Some command }
+            x.ChangeCombinedEditCommand (Some command)
 
         else
             // Not an edit command.  If there is an existing edit command then go ahead and flush
@@ -856,16 +859,14 @@ type internal InsertMode
 
             // Next try and process by examining the current change
             match x.ProcessWithCurrentChange keyInput with
-            | Some result ->
-                result
+            | Some result -> result
             | None ->
                 match x.GetRawInsertCommand keyInput with
                 | Some rawInsertCommand ->
                     match rawInsertCommand with
                     | RawInsertCommand.CustomCommand func -> func keyInput
                     | RawInsertCommand.InsertCommand (keyInputSet, insertCommand, commandFlags) -> x.RunInsertCommand insertCommand keyInputSet commandFlags
-                | None -> 
-                    ProcessResult.NotHandled
+                | None -> ProcessResult.NotHandled
 
     /// This is raised when caret changes.  If this is the result of a user click then 
     /// we need to complete the change.
@@ -906,9 +907,9 @@ type internal InsertMode
             let oldPosition = SnapshotPointUtil.GetLineColumn args.OldPosition.BufferPosition
             let newPosition = SnapshotPointUtil.GetLineColumn args.NewPosition.BufferPosition
             let command = movement _sessionData.CombinedEditCommand oldPosition newPosition 
-            _sessionData <- { _sessionData with CombinedEditCommand = command }
+            x.ChangeCombinedEditCommand command
         else
-            _sessionData <- { _sessionData with CombinedEditCommand = None }
+            x.ChangeCombinedEditCommand None
         _vimBuffer.VimTextBuffer.InsertStartPoint <- Some x.CaretPoint
         _vimBuffer.VimTextBuffer.IsSoftTabStopValidForBackspace <- true
 
@@ -952,8 +953,14 @@ type internal InsertMode
             match _sessionData.CombinedEditCommand with
             | None -> textChangeCommand
             | Some command -> InsertCommand.Combined (command, textChangeCommand)
+        x.ChangeCombinedEditCommand (Some command)
 
-        _sessionData <- { _sessionData with CombinedEditCommand = Some command } 
+    member x.ChangeCombinedEditCommand (command : InsertCommand option) =
+        match command with
+        | Some (InsertCommand.Insert text) -> _vimBuffer.VimData.LastTextInsert <- Some text
+        | _ -> ()
+
+        _sessionData <- { _sessionData with CombinedEditCommand = command } 
 
     /// Raised when a global setting is changed
     member x.OnGlobalSettingsChanged (args : SettingEventArgs) =

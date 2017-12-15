@@ -39,19 +39,28 @@ type CommandLineBacking (_vimData : IVimData) =
     interface IRegisterValueBacking  with
         member x.RegisterValue
             with get() = RegisterValue(_vimData.LastCommandLine, OperationKind.CharacterWise)
-            and set value = ()
+            and set _ = ()
+
+type LastTextInsertBacking (_vimData : IVimData) = 
+    interface IRegisterValueBacking with
+        member x.RegisterValue 
+            with get() = 
+                let value = match _vimData.LastTextInsert with Some s -> s | None -> ""
+                RegisterValue(value, OperationKind.CharacterWise)
+            and set _ = ()
 
 type internal BlackholeRegisterValueBacking() = 
     let mutable _value = RegisterValue(StringUtil.Empty, OperationKind.CharacterWise)
     interface IRegisterValueBacking with
         member x.RegisterValue
             with get() = _value
-            and set value = ()
+            and set _ = ()
 
 type internal RegisterMap (_map : Map<RegisterName, Register>) =
     new(vimData : IVimData, clipboard : IClipboardDevice, currentFileNameFunc : unit -> string option) = 
         let clipboardBacking = ClipboardRegisterValueBacking(clipboard) :> IRegisterValueBacking
         let commandLineBacking = CommandLineBacking(vimData) :> IRegisterValueBacking
+        let lastTextInsertBacking = LastTextInsertBacking(vimData) :> IRegisterValueBacking
         let fileNameBacking = { new IRegisterValueBacking with
             member x.RegisterValue
                 with get() = 
@@ -71,6 +80,7 @@ type internal RegisterMap (_map : Map<RegisterName, Register>) =
             | RegisterName.SelectionAndDrop SelectionAndDropRegister.Star  -> clipboardBacking
             | RegisterName.ReadOnly ReadOnlyRegister.Percent -> fileNameBacking
             | RegisterName.ReadOnly ReadOnlyRegister.Colon -> commandLineBacking
+            | RegisterName.ReadOnly ReadOnlyRegister.Dot -> lastTextInsertBacking
             | RegisterName.Blackhole -> BlackholeRegisterValueBacking() :> IRegisterValueBacking
             | RegisterName.LastSearchPattern -> LastSearchRegisterValueBacking(vimData) :> IRegisterValueBacking
             | _ -> DefaultRegisterValueBacking() :> IRegisterValueBacking
