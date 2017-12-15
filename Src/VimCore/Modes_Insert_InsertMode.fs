@@ -956,8 +956,20 @@ type internal InsertMode
         x.ChangeCombinedEditCommand (Some command)
 
     member x.ChangeCombinedEditCommand (command : InsertCommand option) =
-        match command with
-        | Some (InsertCommand.Insert text) -> _vimBuffer.VimData.LastTextInsert <- Some text
+
+        let rec getText command = 
+            match command with 
+            | InsertCommand.Insert text -> Some text
+            | InsertCommand.InsertNewLine -> Some Environment.NewLine
+            | InsertCommand.InsertTab -> Some "\t"
+            | InsertCommand.Combined (left, right) ->
+                match getText left, getText right with
+                | Some left, Some right -> Some (left + right)
+                | _ -> None
+            | _ -> None
+
+        match OptionUtil.map2 getText command with
+        | Some text -> _vimBuffer.VimData.LastTextInsert <- Some text
         | _ -> ()
 
         _sessionData <- { _sessionData with CombinedEditCommand = command } 

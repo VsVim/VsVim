@@ -416,6 +416,14 @@ namespace Vim.UnitTest
                 Assert.Equal("dogs", _textBuffer.GetLine(0).GetText());
                 Assert.Equal("s", RegisterMap.GetRegisterText('.'));
             }
+
+            [WpfFact]
+            public void AccrossMultipleLines()
+            {
+                Create("");
+                _vimBuffer.ProcessNotation("dog<CR>cat<Esc>");
+                Assert.Equal("dog" + Environment.NewLine + "cat", RegisterMap.GetRegisterText('.'));
+            }
         }
 
         /// <summary>
