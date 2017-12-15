@@ -384,6 +384,7 @@ namespace Vim.UnitTest
                 Create("");
                 _vimBuffer.ProcessNotation("dog");
                 _textView.MoveCaretTo(2);
+                _vimBuffer.ProcessNotation("<Esc>");
                 Assert.Equal("dog", RegisterMap.GetRegisterText('.'));
             }
 
@@ -396,7 +397,7 @@ namespace Vim.UnitTest
                 Create("");
                 _vimBuffer.ProcessNotation("dog");
                 _textView.MoveCaretTo(2);
-                _vimBuffer.ProcessNotation("t");
+                _vimBuffer.ProcessNotation("t<Esc>");
                 Assert.Equal("t", RegisterMap.GetRegisterText('.'));
             }
 
@@ -411,7 +412,7 @@ namespace Vim.UnitTest
                 _vimBuffer.ProcessNotation("dog");
                 _textView.MoveCaretTo(2);
                 _textView.MoveCaretTo(3);
-                _vimBuffer.ProcessNotation("s");
+                _vimBuffer.ProcessNotation("s<Esc>");
                 Assert.Equal("dogs", _textBuffer.GetLine(0).GetText());
                 Assert.Equal("s", RegisterMap.GetRegisterText('.'));
             }

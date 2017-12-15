@@ -3898,6 +3898,9 @@ type IVimData =
     /// Data for the last substitute command performed
     abstract LastSubstituteData : SubstituteData option with get, set
 
+    /// Last text inserted into any buffer. Used for the '.' register
+    abstract LastTextInsert : string option with get, set
+
     /// The previous value of the current directory Vim is positioned in
     abstract PreviousCurrentDirectory : string
 

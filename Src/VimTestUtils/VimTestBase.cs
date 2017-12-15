@@ -277,6 +277,7 @@ namespace Vim.UnitTest
             Vim.VimData.LastCommand = FSharpOption<StoredCommand>.None;
             Vim.VimData.LastCommandLine = "";
             Vim.VimData.LastShellCommand = FSharpOption<string>.None;
+            Vim.VimData.LastTextInsert = FSharpOption<string>.None;
             Vim.VimData.AutoCommands = FSharpList<AutoCommand>.Empty;
             Vim.VimData.AutoCommandGroups = FSharpList<AutoCommandGroup>.Empty;
 
