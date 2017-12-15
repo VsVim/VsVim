@@ -1659,6 +1659,12 @@ namespace Vim.UnitTest
             return map.GetRegister(name);
         }
 
+        public static string GetRegisterText(this IRegisterMap map, char c)
+        {
+            var register = GetRegister(map, c);
+            return register.StringValue;
+        }
+
         public static Register GetRegister(this IRegisterMap map, int number)
         {
             var name = RegisterNameUtil.NumberToRegister(number).Value;

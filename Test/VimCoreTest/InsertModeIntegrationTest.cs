@@ -358,6 +358,66 @@ namespace Vim.UnitTest
         }
 
         /// <summary>
+        /// Tests for the '.' register
+        /// </summary>
+        public sealed class LastTextRegisterTest : InsertModeIntegrationTest
+        {
+            [WpfFact]
+            public void SimpleWord()
+            {
+                Create("");
+                _vimBuffer.ProcessNotation("dog<Esc>");
+                Assert.Equal("dog", RegisterMap.GetRegisterText('.'));
+            }
+
+            [WpfFact]
+            public void WordsWithSpaces()
+            {
+                Create("");
+                _vimBuffer.ProcessNotation("dog tree<Esc>");
+                Assert.Equal("dog tree", RegisterMap.GetRegisterText('.'));
+            }
+
+            [WpfFact]
+            public void CaretMove()
+            {
+                Create("");
+                _vimBuffer.ProcessNotation("dog");
+                _textView.MoveCaretTo(2);
+                Assert.Equal("dog", RegisterMap.GetRegisterText('.'));
+            }
+
+            /// <summary>
+            /// Once the caret moves and typing starts again then the register resets
+            /// </summary>
+            [WpfFact]
+            public void TypeAfterCaretMove()
+            {
+                Create("");
+                _vimBuffer.ProcessNotation("dog");
+                _textView.MoveCaretTo(2);
+                _vimBuffer.ProcessNotation("t");
+                Assert.Equal("t", RegisterMap.GetRegisterText('.'));
+            }
+
+            /// <summary>
+            /// Even if the caret moves back to the original position the new typing action breaks
+            /// the repeat text.
+            /// </summary>
+            [WpfFact]
+            public void TypeAfterCaretMoveBack()
+            {
+                Create("");
+                _vimBuffer.ProcessNotation("dog");
+                _textView.MoveCaretTo(2);
+                _textView.MoveCaretTo(3);
+                _vimBuffer.ProcessNotation("s");
+                Assert.Equal("dogs", _textBuffer.GetLine(0).GetText());
+                Assert.Equal("s", RegisterMap.GetRegisterText('.'));
+            }
+        }
+
+        /// <summary>
         /// Test the behavior of the '^ and `^ motion in insert mode
         /// </summary>
         public sealed class LastCaretEditMarkTest : InsertModeIntegrationTest
