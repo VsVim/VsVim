@@ -32,6 +32,12 @@ module ParseResultUtil =
         | ParseResult.Failed msg -> LineCommand.ParseError msg
         | ParseResult.Succeeded lineCommand -> lineCommand
 
+[<RequireQualifiedAccess>]
+type StringConstantState =
+    | Normal
+    | Escape
+    | Special of System.Text.StringBuilder
+
 type ParseResultBuilder
     (
         _errorMessage : string
@@ -1439,6 +1445,7 @@ type Parser
         let command = x.ParseRestOfLine()
         LineCommand.ShellCommand command
 
+
     /// Parse out a string constant from the token stream.  Loads of special characters are
     /// possible here.  A complete list is available at :help expr-string
     member x.ParseStringConstant() = 
@@ -1447,34 +1454,73 @@ type Parser
 
         let builder = System.Text.StringBuilder()
         let moveNextChar () = _tokenizer.MoveNextChar()
-        let rec inner afterEscape = 
+
+        let rollbackSpecial (specialSequence: System.Text.StringBuilder) =
+            for idx = 0 to specialSequence.Length - 1 do
+                builder.AppendChar(specialSequence.Chars(idx))
+
+        let finish () =
+            builder.ToString()
+            |> VariableValue.String
+            |> Expression.ConstantValue
+            |> ParseResult.Succeeded
+
+        let rec inner state = 
             if _tokenizer.IsAtEndOfLine then
                 ParseResult.Failed Resources.Parser_MissingQuote
             else
                 let c = _tokenizer.CurrentChar
                 moveNextChar()
-                if afterEscape then
+                match state with
+                | StringConstantState.Special(specialSequence) ->
                     match c with
-                    | 't' -> builder.AppendChar '\t'
-                    | 'b' -> builder.AppendChar '\b'
-                    | 'f' -> builder.AppendChar '\f'
-                    | 'n' -> builder.AppendChar '\n'
-                    | 'r' -> builder.AppendChar '\r'
-                    | '\\' -> builder.AppendChar '\\'
-                    | _ -> builder.AppendChar c
-                    inner false
-                elif c = '\\' then
-                    inner true
-                elif c = '"' then
-                    builder.ToString()
-                    |> VariableValue.String
-                    |> Expression.ConstantValue
-                    |> ParseResult.Succeeded
-                else
-                    builder.AppendChar c
-                    inner false
+                    | '>' ->
+                        specialSequence.AppendChar('>')
+                        match KeyNotationUtil.TryStringToKeyInput(specialSequence.ToString()) with
+                        | Some(key) ->
+                            match key.RawChar with
+                            | Some(char) -> builder.AppendChar(char)
+                            | None -> rollbackSpecial specialSequence
+                        | None -> rollbackSpecial specialSequence
+                        inner StringConstantState.Normal
+                    | '"' ->
+                        rollbackSpecial specialSequence
+                        finish ()
 
-        inner false
+                    | '\\' ->
+                        rollbackSpecial specialSequence
+                        inner StringConstantState.Escape
+                        
+                    | _ ->
+                        specialSequence.AppendChar(c)
+                        inner (StringConstantState.Special(specialSequence))
+
+
+                | StringConstantState.Escape ->
+                    if c = '<' then
+                        inner (StringConstantState.Special(System.Text.StringBuilder("<")))
+                    else
+                        match c with
+                        | 't' -> builder.AppendChar '\t'
+                        | 'b' -> builder.AppendChar '\b'
+                        | 'f' -> builder.AppendChar '\f'
+                        | 'n' -> builder.AppendChar '\n'
+                        | 'r' -> builder.AppendChar '\r'
+                        | '"' -> builder.AppendChar '"'
+                        | '\\' -> builder.AppendChar '\\'
+                        | _ -> builder.AppendChar c
+                        inner StringConstantState.Normal
+
+                | StringConstantState.Normal ->
+                    if c = '\\' then
+                        inner StringConstantState.Escape
+                    elif c = '"' then
+                        finish()
+                    else
+                        builder.AppendChar c
+                        inner StringConstantState.Normal
+
+        inner StringConstantState.Normal
 
     /// Parse out a string literal from the token stream.  The only special character here is
     /// an escaped '.  Everything else is taken literally 
