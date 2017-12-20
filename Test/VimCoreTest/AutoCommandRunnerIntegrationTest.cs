@@ -26,6 +26,54 @@ namespace Vim.UnitTest
                 var vimBuffer = CreateVimBufferWithName("foo.html");
                 Assert.Equal(14, vimBuffer.LocalSettings.TabStop);
             }
+
+            [Fact]
+            public void NonMatchingPathIsNotApplied()
+            {
+                VimData.AddAutoCommand(EventKind.BufEnter, "*/app/*", "set ts=14");
+                var vimBuffer = CreateVimBufferWithName("/code/foo.html");
+                Assert.NotEqual(14, vimBuffer.LocalSettings.TabStop);
+            }
+
+            [Fact]
+            public void PathSeparatorsCanBeUsedForUnixPaths()
+            {
+                VimData.AddAutoCommand(EventKind.BufEnter, @"*\app\*", "set ts=14");
+                var vimBuffer = CreateVimBufferWithName("/code/app/foo.html");
+                Assert.Equal(14, vimBuffer.LocalSettings.TabStop);
+            }
+
+            [Fact]
+            public void AlternatePathSeparatorsCanBeUsedForUnixPaths()
+            {
+                VimData.AddAutoCommand(EventKind.BufEnter, "*/app/*", "set ts=14");
+                var vimBuffer = CreateVimBufferWithName("/code/app/foo.html");
+                Assert.Equal(14, vimBuffer.LocalSettings.TabStop);
+            }
+
+            [Fact]
+            public void AlternatePathSeparatorsCanBeUsedForWindowsPaths()
+            {
+                VimData.AddAutoCommand(EventKind.BufEnter, "*/app/*", "set ts=14");
+                var vimBuffer = CreateVimBufferWithName(@"c:\code\app\foo.html");
+                Assert.Equal(14, vimBuffer.LocalSettings.TabStop);
+            }
+
+            [Fact]
+            public void PathSeparatorsCanBeUsedForWindowsPaths()
+            {
+                VimData.AddAutoCommand(EventKind.BufEnter, @"*\app\*", "set ts=14");
+                var vimBuffer = CreateVimBufferWithName(@"c:\code\app\foo.html");
+                Assert.Equal(14, vimBuffer.LocalSettings.TabStop);
+            }
+
+            [Fact]
+            public void CaseSensitive()
+            {
+                VimData.AddAutoCommand(EventKind.BufEnter, "*/app/*", "set ts=14");
+                var vimBuffer = CreateVimBufferWithName(@"c:\code\App\foo.html");
+                Assert.NotEqual(14, vimBuffer.LocalSettings.TabStop);
+            }
         }
 
         public sealed class FileTypeTest : AutoCommandRunnerIntegrationTest

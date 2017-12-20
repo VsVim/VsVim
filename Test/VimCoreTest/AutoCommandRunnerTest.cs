@@ -95,6 +95,43 @@ namespace Vim.UnitTest
                 AssertMatch("test.h", @"*.\(c\|cpp\|h\)");
                 AssertMatch("test.cpp", @"*.\(c\|cpp\|h\)");
                 AssertMatch("test.c", @"*.\(c\|cpp\|h\)");
+
+                AssertMatch("test.h", @"*.{c,cpp,h}");
+                AssertMatch("test.cpp", @"*.{c,cpp,h}");
+                AssertMatch("test.c", @"*.{c,cpp,h}");
+
+                AssertMatch("test.h", @"*.c,*.cpp,*.h");
+                AssertMatch("test.cpp", @"*.c,*.cpp,*.h");
+                AssertMatch("test.c", @"*.c,*.cpp,*.h");
+            }
+
+            [Fact]
+            public void Literals()
+            {
+                AssertMatch("a", @"*");
+                AssertMatch("a", @"?");
+                AssertMatch("?", @"\?");
+                AssertMatch(".", @".");
+                AssertMatch("~", @"~");
+                AssertMatch(",", @"\,");
+                AssertMatch("}", @"\}");
+                AssertMatch("{", @"\{");
+                AssertMatch("a", @"[az]");
+                AssertMatch("b", @"[^az]");
+                AssertMatch("aBc42", @"[a-zA-Z0-9]\\\{5,6\}");
+            }
+
+            [Fact]
+            public void Simple()
+            {
+                AssertMatch("readme.txt", @"*.txt");
+                AssertMatch("~/.vimrc", @"~/.vimrc");
+                AssertMatch("/tmp/doc/xx.txt", @"*/doc/*.txt");
+                AssertMatch("/usr/home/piet/doc/yy.txt", @"*/doc/*.txt");
+                AssertMatch(@"c:\code\sampleProject\example1.c", @"*.[ch],*.hpp,*.cpp");
+                AssertMatch("test.z", @"*.\{c,cpp,h\},*.z");
+
+                AssertNotMatch(@"c:\code\sampleProject\example1.z", @"*.[ch],*.hpp,*.cpp");
             }
         }
     }
