@@ -636,6 +636,11 @@ namespace Vim.VisualStudio
                 .Where(window => window.Kind == "Document" && (window.Left != 0))
                 .ToList();
             topLevelWindows.Sort((a, b) => a.Left < b.Left ? -1 : 1);
+            if (topLevelWindows.Count == 0)
+            {
+                return false;
+            }
+
             var indexOfActiveDoc = topLevelWindows.FindIndex(win => win == _dte.ActiveWindow);
             var movedIndex = indexOfActiveDoc + indexDelta;
             var newIndex = (movedIndex < 0 ? movedIndex + topLevelWindows.Count : movedIndex % topLevelWindows.Count);
