@@ -638,13 +638,13 @@ namespace Vim.VisualStudio
             topLevelWindows.Sort((a, b) => a.Left < b.Left ? -1 : 1);
             var indexOfActiveDoc = topLevelWindows.FindIndex(win => win == _dte.ActiveWindow);
             var movedIndex = indexOfActiveDoc + indexDelta;
-            var newIndex = (movedIndex < 0 ? movedIndex + topLevelWindows.Count : movedIndex % topLevelWindows.Count);
+            var newIndex = (movedIndex < 0 ? movedIndex + topLevelWindows.Count : movedIndex % (double)topLevelWindows.Count);
             if (newIndex >= topLevelWindows.Count)
             {
                 return false;
             }
 
-            topLevelWindows[newIndex].Activate();
+            topLevelWindows[(int)newIndex].Activate();
             return true;
         }
 
