@@ -445,8 +445,11 @@ type internal CommonOperations
 
         /// Move the caret right.  Don't go off the end of the line
         let moveRight () =
-            if x.CaretPoint.Position < x.CaretLine.End.Position then
-                let point = SnapshotPointUtil.AddOne x.CaretPoint
+            let point =
+                x.CaretPoint
+                |> SnapshotPointUtil.AddOne
+                |> (fun y -> if Char.IsSurrogate (y.GetChar()) then SnapshotPointUtil.AddOne y else y)
+            if point.Position <= x.CaretLine.End.Position then
                 x.MoveCaretToPoint point ViewFlags.Standard
                 true
             else
