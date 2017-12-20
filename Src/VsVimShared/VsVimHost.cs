@@ -483,7 +483,7 @@ namespace Vim.VisualStudio
         {
             IWpfTextView activeTextView;
             if (!_vsAdapter.TryGetActiveTextView(out activeTextView) ||
-                !activeTextView.TextBuffer.GetSourceBuffersRecursive().Contains(textBuffer))
+                !TextBufferUtil.GetSourceBuffersRecursive(activeTextView.TextBuffer).Contains(textBuffer))
             {
                 return null;
             }
