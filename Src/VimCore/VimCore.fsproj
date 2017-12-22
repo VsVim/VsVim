@@ -1,42 +1,14 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <Import Project="..\..\VsVim.props" />
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProductVersion>8.0.30703</ProductVersion>
-    <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{06be08e7-8626-40bd-877b-8d2dca6ba451}</ProjectGuid>
     <OutputType>Library</OutputType>
-    <RootNamespace>FsVim</RootNamespace>
+    <RootNamespace>Vim.Core</RootNamespace>
     <AssemblyName>Vim.Core</AssemblyName>
-    <FileAlignment>512</FileAlignment>
-    <Name>VimCore</Name>
-    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
-    <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\..\</SolutionDir>
+    <TargetFramework>net45</TargetFramework>
     <OtherFlags>--standalone</OtherFlags>
-    <TargetFrameworkProfile />
-    <FSharpTargetsPath>$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v15.0\FSharp\Microsoft.FSharp.Targets</FSharpTargetsPath>
     <NoWarn>2011</NoWarn>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>3</WarningLevel>
-    <OtherFlags>--standalone</OtherFlags>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <DefineConstants>TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>3</WarningLevel>
-  </PropertyGroup>
   <Import Project="..\..\VsVim.targets" />
-  <Import Project="$(FSharpTargetsPath)" />
   <ItemGroup>
     <Compile Include="Resources.fs" />
     <Compile Include="VimTrace.fs" />

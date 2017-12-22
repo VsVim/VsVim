@@ -7,6 +7,7 @@
     <VsVimEmptyAppConfig>$(MSBuildThisFileDirectory)References\Vs2010\App.config</VsVimEmptyAppConfig>
     <RepoPath>$(MSBuildThisFileDirectory)</RepoPath>
     <BinariesPath>$(RepoPath)Binaries\</BinariesPath>
+    <OutputPath>$(BinariesPath)$(Configuration)\$(MSBuildProjectName)</OutputPath>
     <BaseIntermediateOutputPath>$(BinariesPath)obj\$(MSBuildProjectName)\</BaseIntermediateOutputPath>
 
     <!-- The version of VS that should be targetted for testing. Prefer the
