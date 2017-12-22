@@ -1,40 +1,11 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="..\..\VsVim.props" />
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <PlatformTarget>x86</PlatformTarget>
-    <ProductVersion>8.0.30703</ProductVersion>
-    <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{797C1463-3984-47BE-8CD2-4FF68D1E30DA}</ProjectGuid>
     <OutputType>Library</OutputType>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>Vim.UI.Wpf.UnitTest</RootNamespace>
     <AssemblyName>Vim.UI.Wpf.UnitTest</AssemblyName>
-    <FileAlignment>512</FileAlignment>
-    <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\</SolutionDir>
-    <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
-    <TargetFrameworkProfile />
+    <TargetFramework>net461</TargetFramework>
     <VsVimIsRunnable>true</VsVimIsRunnable>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <UseVSHostingProcess>false</UseVSHostingProcess>
-    <Prefer32Bit>false</Prefer32Bit>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <DefineConstants>TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="PresentationCore" />
@@ -51,49 +22,14 @@
     <PackageReference Include="xunit" Version="2.3.1" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AlternateKeyUtilTest.cs" />
-    <Compile Include="BlockCaretControllerTest.cs" />
-    <Compile Include="BlockCaretTest.cs" />
-    <Compile Include="CharDisplayTaggerSourceTest.cs" />
-    <Compile Include="CodeHygieneTest.cs" />
-    <Compile Include="CommandLineEditIntegrationTest.cs" />
-    <Compile Include="CommandMarginProviderTest.cs" />
-    <Compile Include="VimMouseProcessorTest.cs" />
-    <Compile Include="WpfIntegrationTest.cs" />
-    <Compile Include="CommandMarginControllerTest.cs" />
-    <Compile Include="DisplayWindowBrokerTest.cs" />
-    <Compile Include="KeyboardDeviceImplTest.cs" />
-    <Compile Include="KeyMappingTimeoutHandlerTest.cs" />
-    <Compile Include="VimKeyProcessorTest.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="VimHostTests.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\..\Src\VimEditorHost\VimEditorHost.csproj">
-      <Project>{863a0141-59c5-481d-a3fc-a5812d973feb}</Project>
-      <Name>VimEditorHost</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\Src\VimCore\VimCore.fsproj">
-      <Project>{06BE08E7-8626-40BD-877B-8D2DCA6BA451}</Project>
-      <Name>VimCore</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\Src\VimTestUtils\VimTestUtils.csproj">
-      <Project>{6819ad26-901e-4261-95aa-9913d435296a}</Project>
-      <Name>VimTestUtils</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\Src\VimWpf\VimWpf.csproj">
-      <Project>{65A749E0-F1B1-4E43-BE73-25072EE398C6}</Project>
-      <Name>VimWpf</Name>
-    </ProjectReference>
+    <ProjectReference Include="..\..\Src\VimEditorHost\VimEditorHost.csproj" />
+    <ProjectReference Include="..\..\Src\VimCore\VimCore.fsproj" />
+    <ProjectReference Include="..\..\Src\VimTestUtils\VimTestUtils.csproj" />
+    <ProjectReference Include="..\..\Src\VimWpf\VimWpf.csproj" />
   </ItemGroup>
   <ItemGroup>
     <None Include="$(VsVimAppConfig)">
       <Link>app.config</Link>
     </None>
   </ItemGroup>
-  <ItemGroup>
-    <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
-  </ItemGroup>
-  <Import Project="..\..\VsVim.targets" />
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

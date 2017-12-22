@@ -1,43 +1,11 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="..\..\VsVim.props" />
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <PlatformTarget>x86</PlatformTarget>
-    <ProductVersion>10.0.20506</ProductVersion>
-    <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{B4FC7C81-E500-47C8-A884-2DBB7CA77123}</ProjectGuid>
     <OutputType>Library</OutputType>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>Vim.UnitTest</RootNamespace>
     <AssemblyName>Vim.Core.UnitTest</AssemblyName>
-    <FileAlignment>512</FileAlignment>
-    <ProjectTypeGuids>{3AC096D0-A1C2-E12C-1390-A8335801FDAB};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
-    <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
-    <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\..\</SolutionDir>
-    <TargetFrameworkProfile />
+    <TargetFramework>net461</TargetFramework>
     <VsVimIsRunnable>true</VsVimIsRunnable>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
-    <UseVSHostingProcess>false</UseVSHostingProcess>
-    <Prefer32Bit>false</Prefer32Bit>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <DefineConstants>TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
-    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="PresentationCore" />
@@ -53,180 +21,18 @@
     <PackageReference Include="Castle.Core" Version="4.0.0-beta002" />
     <PackageReference Include="Moq" Version="4.5.28" />
     <PackageReference Include="xunit" Version="2.3.1" />
-    <PackageReference Include="xunit.extensibility.execution">
-      <Version>2.3.1</Version>
-    </PackageReference>
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="AdhocOutlinerTest.cs" />
-    <Compile Include="AsyncTaggerTest.cs" />
-    <Compile Include="AutoCommandRunnerIntegrationTest.cs" />
-    <Compile Include="AutoCommandRunnerTest.cs" />
-    <Compile Include="BasicTaggerTest.cs" />
-    <Compile Include="BasicUndoHistoryTest.cs" />
-    <Compile Include="BlockSpanTest.cs" />
-    <Compile Include="BuiltinFunctionsTest.cs" />
-    <Compile Include="BulkOperationsTest.cs" />
-    <Compile Include="ChangeTrackerTest.cs" />
-    <Compile Include="ChannelTest.cs" />
-    <Compile Include="CharacterSpanTest.cs" />
-    <Compile Include="CharSpanTest.cs" />
-    <Compile Include="CharUtilTest.cs" />
-    <Compile Include="ClassifierTest.cs" />
-    <Compile Include="ClipboardRegisterValueBackingTest.cs" />
-    <Compile Include="CodeHygieneTest.cs" />
-    <Compile Include="CommandModeIntegrationTest.cs" />
-    <Compile Include="CommandModeTest.cs" />
-    <Compile Include="CommandNameTest.cs" />
-    <Compile Include="CommandProcessorLegacyTest.cs" />
-    <Compile Include="CommandRunnerTest.cs" />
-    <Compile Include="CommandUtilTest.cs" />
-    <Compile Include="CommonOperationsIntegrationTest.cs" />
-    <Compile Include="CountedClassifierTest.cs" />
-    <Compile Include="CountedTaggerTest.cs" />
-    <Compile Include="EditorVersionUtilTest.cs" />
-    <Compile Include="EditUtilTest.cs" />
-    <Compile Include="ExtensionsTest.cs" />
-    <Compile Include="HistoryListTest.cs" />
-    <Compile Include="HistorySessionTest.cs" />
-    <Compile Include="LineRangeTest.cs" />
-    <Compile Include="MemoryLeakTest.cs" />
-    <Compile Include="MockFactory.cs" />
-    <Compile Include="NormalizedLineRangeCollectionTest.cs" />
-    <Compile Include="ProtectedOperationsTest.cs" />
-    <Compile Include="SnapshotLineRangeTest.cs" />
-    <Compile Include="TaggerCommonTest.cs" />
-    <Compile Include="TaggerUtilTest.cs" />
-    <Compile Include="TestUtils.cs" />
-    <Compile Include="TextTaggerSource.cs" />
-    <Compile Include="VersioningTest.cs" />
-    <Compile Include="WordCompletionUtilTest.cs" />
-    <Compile Include="MatchingTokenUtilTest.cs" />
-    <Compile Include="ModeMapTest.cs" />
-    <Compile Include="RegisterValueTest.cs" />
-    <Compile Include="SearchOffsetDataTest.cs" />
-    <Compile Include="SearchDataTest.cs" />
-    <Compile Include="SnapshotColumnTest.cs" />
-    <Compile Include="SnapshotOverlapPointTest.cs" />
-    <Compile Include="SnapshotOverlapSpanTest.cs" />
-    <Compile Include="StringUtilTest.cs" />
-    <Compile Include="TagBlockParserTest.cs" />
-    <Compile Include="TextObjectUtilTest.cs" />
-    <Compile Include="TokenStreamTest.cs" />
-    <Compile Include="VimBufferTest.cs" />
-    <Compile Include="SelectModeIntegrationTest.cs" />
-    <Compile Include="SystemUtilTest.cs" />
-    <Compile Include="TestableBulkOperations.cs" />
-    <Compile Include="TextChangeTest.cs" />
-    <Compile Include="TokenizerTest.cs" />
-    <Compile Include="VimHostTest.cs" />
-    <Compile Include="VimRegexFactoryTest.cs" />
-    <Compile Include="VisualSpanTest.cs" />
-    <Compile Include="ExpressionInterpreterTest.cs" />
-    <Compile Include="FuncUtil.cs" />
-    <Compile Include="MatchUtil.cs" />
-    <Compile Include="SnapshotLineUtilTest.cs" />
-    <Compile Include="TestableStatusUtil.cs" />
-    <Compile Include="VimDataTest.cs" />
-    <Compile Include="EditorToSettingSynchronizerTest.cs" />
-    <Compile Include="FoldManagerTest.cs" />
-    <Compile Include="InsertUtilTest.cs" />
-    <Compile Include="InterpreterTest.cs" />
-    <Compile Include="ParserTest.cs" />
-    <Compile Include="ReplaceModeIntegrationTest.cs" />
-    <Compile Include="MacroIntegrationTest.cs" />
-    <Compile Include="IncrementalSearchTaggerSourceTest.cs" />
-    <Compile Include="KeyInputSetTest.cs" />
-    <Compile Include="SubstituteConfirmModeTest.cs" />
-    <Compile Include="SnapshotLineRangeUtilTest.cs" />
-    <Compile Include="RegisterMapTest.cs" />
-    <Compile Include="RegisterNameTest.cs" />
-    <Compile Include="RegisterTest.cs" />
-    <Compile Include="SubstituteConfirmTaggerSourceTest.cs" />
-    <Compile Include="TextLineTest.cs" />
-    <Compile Include="VimRegexTest.cs" />
-    <Compile Include="VimTextBufferTest.cs" />
-    <Compile Include="VirtualSnapshotPointUtilTest.cs" />
-    <Compile Include="SelectionChangeTrackerTest.cs" />
-    <Compile Include="SeqUtilTest.cs" />
-    <Compile Include="VisualModeIntegrationTest.cs" />
-    <Compile Include="FoldDataTest.cs" />
-    <Compile Include="InsertModeIntegrationTest.cs" />
-    <Compile Include="FileSystemTest.cs" />
-    <Compile Include="MotionUtilTest.cs" />
-    <Compile Include="NormalModeIntegrationTest.cs" />
-    <Compile Include="SearchServiceTest.cs" />
-    <Compile Include="TextChangeTrackerTest.cs" />
-    <Compile Include="TextSelectionUtilTest.cs" />
-    <Compile Include="SnapshotSpanUtilTest.cs" />
-    <Compile Include="SnapshotPointUtilTest.cs" />
-    <Compile Include="DisabledModeTest.cs" />
-    <Compile Include="GlobalSettingsTest.cs" />
-    <Compile Include="HighlightSearchTaggerSourceTest.cs" />
-    <Compile Include="IEditorOperationsTest.cs" />
-    <Compile Include="IncrementalSearchTest.cs" />
-    <Compile Include="JumpListTest.cs" />
-    <Compile Include="KeyMapTest.cs" />
-    <Compile Include="KeyNotationUtilTest.cs" />
-    <Compile Include="LocalSettingsTest.cs" />
-    <Compile Include="CommonOperationsTest.cs" />
-    <Compile Include="CountCaptureTest.cs" />
-    <Compile Include="KeyInputUtilTest.cs" />
-    <Compile Include="InsertModeTest.cs" />
-    <Compile Include="IntegrationTest.cs" />
-    <Compile Include="KeyInputTest.cs" />
-    <Compile Include="MarkMapTest.cs" />
-    <Compile Include="MotionCaptureTest.cs" />
-    <Compile Include="NormalModeTest.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="SelectionTrackerTest.cs" />
-    <Compile Include="SettingsCommonTest.cs" />
-    <Compile Include="SnapshotUtilTest.cs" />
-    <Compile Include="TextUtilTest.cs" />
-    <Compile Include="TextViewUtilTest.cs" />
-    <Compile Include="BufferTrackingServiceTest.cs" />
-    <Compile Include="UndoRedoOperationsTest.cs" />
-    <Compile Include="NormalUndoTransactionTest.cs" />
-    <Compile Include="VimBufferFactoryIntegrationTest.cs" />
-    <Compile Include="VimIntegrationTest.cs" />
-    <Compile Include="VimTest.cs" />
-    <Compile Include="VisualModeTest.cs" />
-    <Compile Include="VisualSelectionTest.cs" />
-    <Compile Include="WordUtilTest.cs" />
+    <PackageReference Include="xunit.extensibility.execution" Version="2.3.1" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Todo.txt" />
-  </ItemGroup>
-  <ItemGroup>
-    <BootstrapperPackage Include="Microsoft.Net.Framework.3.5.SP1">
-      <Visible>False</Visible>
-      <ProductName>.NET Framework 3.5 SP1</ProductName>
-      <Install>false</Install>
-    </BootstrapperPackage>
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\..\Src\VimCore\VimCore.fsproj">
-      <Project>{06BE08E7-8626-40BD-877B-8D2DCA6BA451}</Project>
-      <Name>VimCore</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\Src\VimEditorHost\VimEditorHost.csproj">
-      <Project>{863a0141-59c5-481d-a3fc-a5812d973feb}</Project>
-      <Name>VimEditorHost</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\Src\VimTestUtils\VimTestUtils.csproj">
-      <Project>{6819ad26-901e-4261-95aa-9913d435296a}</Project>
-      <Name>VimTestUtils</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\Src\VimWpf\VimWpf.csproj">
-      <Project>{65A749E0-F1B1-4E43-BE73-25072EE398C6}</Project>
-      <Name>VimWpf</Name>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
     <None Include="$(VsVimAppConfig)">
       <Link>app.config</Link>
     </None>
   </ItemGroup>
-  <Import Project="..\..\VsVim.targets" />
-  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
+  <ItemGroup>
+    <ProjectReference Include="..\..\Src\VimCore\VimCore.fsproj" />
+    <ProjectReference Include="..\..\Src\VimEditorHost\VimEditorHost.csproj" />
+    <ProjectReference Include="..\..\Src\VimTestUtils\VimTestUtils.csproj" />
+    <ProjectReference Include="..\..\Src\VimWpf\VimWpf.csproj" />
+  </ItemGroup>
 </Project>
