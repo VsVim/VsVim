@@ -1,36 +1,12 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="..\..\VsVim.props" />
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <!-- Properties to enable easy NuGet publishing.  Want release by default -->
-    <Configuration Condition=" '$(Configuration)' == '' ">Release</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <PlatformTarget>x86</PlatformTarget>
-    <ProjectGuid>{863A0141-59C5-481D-A3FC-A5812D973FEB}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>Vim.EditorHost</RootNamespace>
     <AssemblyName>Vim.EditorHost</AssemblyName>
-    <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
-    <TargetFrameworkProfile />
+    <TargetFramework>net461</TargetFramework>
     <VsVimIsRunnable>true</VsVimIsRunnable>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <DefineConstants>$(DefineConstants);DEBUG;TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <Prefer32Bit>false</Prefer32Bit>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <DefineConstants>$(DefineConstants);TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Microsoft.VisualStudio.Setup.Configuration.Interop, Version=1.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
@@ -43,25 +19,6 @@
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="EditorVersion.cs" />
-    <Compile Include="EditorVersionUtil.cs" />
-    <Compile Include="IBasicUndoHistoryRegistry.cs" />
-    <Compile Include="Implementation\BasicUndo\BasicUndoHistory.cs" />
-    <Compile Include="Implementation\BasicUndo\BasicUndoHistoryRegistry.cs" />
-    <Compile Include="Implementation\BasicUndo\BasicUndoTransaction.cs" />
-    <Compile Include="Implementation\Misc\BasicLoggingServiceInternal.cs" />
-    <Compile Include="Implementation\Misc\BasicObscuringTipManager.cs" />
-    <Compile Include="Implementation\Misc\BasicWaitIndicator.cs" />
-    <Compile Include="EditorHost.cs" />
-    <Compile Include="EditorHostFactory.cs" />
-    <Compile Include="EditorHostFactory.JoinableTaskContextExportProvider.cs" />
-    <Compile Include="EditorLocatorUtil.cs" />
-    <Compile Include="Extensions.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
-  </ItemGroup>
-  <ItemGroup>
     <None Include="app.config" />
   </ItemGroup>
-  <Import Project="..\..\VsVim.targets" />
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
