@@ -6,6 +6,7 @@
     <VsVimEmptyAppConfig>$(MSBuildThisFileDirectory)References\Vs2010\App.config</VsVimEmptyAppConfig>
     <RepoPath>$(MSBuildThisFileDirectory)</RepoPath>
     <BinariesPath>$(RepoPath)Binaries\</BinariesPath>
+    <Configuration Condition="'$(Configuration)' == ''">Debug</Configuration>
     <OutputPath>$(BinariesPath)$(Configuration)\$(MSBuildProjectName)</OutputPath>
     <BaseIntermediateOutputPath>$(BinariesPath)obj\$(MSBuildProjectName)\</BaseIntermediateOutputPath>
 
