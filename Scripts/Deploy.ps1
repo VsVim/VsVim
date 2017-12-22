@@ -92,9 +92,9 @@ function Test-VsixContents() {
 function Test-UnitTests() { 
     Write-Host "Running unit tests"
     $all = 
-        "VimCoreTest\Vim.Core.UnitTest.dll",
-        "VimWpfTest\Vim.UI.Wpf.UnitTest.dll",
-        "VsVimSharedTest\Vim.VisualStudio.Shared.UnitTest.dll"
+        "VimCoreTest\net461\Vim.Core.UnitTest.dll",
+        "VimWpfTest\net461\Vim.UI.Wpf.UnitTest.dll",
+        "VsVimSharedTest\net461\Vim.VisualStudio.Shared.UnitTest.dll"
     $xunit = Join-Path $rootDir "Tools\xunit.console.x86.exe"
 
     foreach ($filePath in $all) { 
@@ -143,14 +143,14 @@ function Build-Vsix() {
     Push-Location $deployDir 
     try { 
         Remove-Item -re -fo "$deployDir\*"
-        $sourcePath = Join-Path $releaseDir "VsVim\VsVim.vsix"
+        $sourcePath = Join-Path $releaseDir "VsVim\net45\VsVim.vsix"
         Copy-Item $sourcePath "VsVim.orig.vsix"
         Copy-Item $sourcePath "VsVim.vsix"
 
         # Due to the way we build the VSIX there are many files included that we don't actually
         # want to deploy.  Here we will clear out those files and rebuild the VSIX without 
         # them
-        $cleanUtil = Join-Path $releaseDir "CleanVsix\CleanVsix.exe"
+        $cleanUtil = Join-Path $releaseDir "CleanVsix\net461\CleanVsix.exe"
         Exec-Console $cleanUtil (Join-Path $deployDir "VsVim.vsix")
         Copy-Item "VsVim.vsix" "VsVim.zip"
     }
