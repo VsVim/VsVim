@@ -1,5 +1,4 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-  <Import Project="..\..\VsVim.props" />
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <RootNamespace>Vim.Core</RootNamespace>
@@ -8,7 +7,6 @@
     <OtherFlags>--standalone</OtherFlags>
     <NoWarn>2011</NoWarn>
   </PropertyGroup>
-  <Import Project="..\..\VsVim.targets" />
   <ItemGroup>
     <Compile Include="Resources.fs" />
     <Compile Include="VimTrace.fs" />

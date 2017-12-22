@@ -21,6 +21,17 @@
     <NuGetPackageRoot Condition="'$(NuGetPackageRoot)' == '' AND '$(OS)' != 'Windows_NT'">$(HOME)/.nuget/packages/</NuGetPackageRoot>
   </PropertyGroup>
 
+  <!--
+      When building WPF projects MSBuild will create a temporary project with an extension of
+      tmp_proj.  In that case the SDK is unable to determine the target language and cannot pick
+      the correct import. Need to set it explicitly here.
+      See https://github.com/dotnet/project-system/issues/1467
+    -->
+  <PropertyGroup Condition="'$(MSBuildProjectExtension)' == '.tmp_proj'">
+    <Language>C#</Language>
+    <LanguageTargets>$(MSBuildToolsPath)\Microsoft.CSharp.targets</LanguageTargets>
+  </PropertyGroup>
+
   <PropertyGroup Condition=" '$(VsVimTargetVersion)' == '14.0' ">
     <VsVimAppConfig>$(MSBuildThisFileDirectory)References\Vs2015\App.config</VsVimAppConfig>
     <VsRunnablePropsFilePath>$(MSBuildThisFileDirectory)References\VS2015\Runnable.props</VsRunnablePropsFilePath>

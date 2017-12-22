@@ -1,38 +1,10 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="..\..\VsVim.props" />
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <PlatformTarget>x86</PlatformTarget>
-    <ProductVersion>8.0.30703</ProductVersion>
-    <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{979DEDC6-25E2-494B-9E8F-6E42078C601C}</ProjectGuid>
     <OutputType>Library</OutputType>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>Vim.VisualStudio</RootNamespace>
     <AssemblyName>Vim.VisualStudio.Shared</AssemblyName>
-    <FileAlignment>512</FileAlignment>
-    <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\</SolutionDir>
-    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
-    <TargetFrameworkProfile />
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <Prefer32Bit>false</Prefer32Bit>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <DefineConstants>TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <Prefer32Bit>false</Prefer32Bit>
+    <TargetFramework>net45</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.ApplicationInsights" Version="2.0.0.0" />
@@ -71,128 +43,9 @@
     <Reference Include="WindowsFormsIntegration" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="CommandKeyBinding.cs" />
-    <Compile Include="CommandKeyBindingSnapshot.cs" />
-    <Compile Include="CommandListSnapshot.cs" />
-    <Compile Include="Constants.cs" />
-    <Compile Include="DebugUtil.cs" />
-    <Compile Include="EditCommand.cs" />
-    <Compile Include="EditCommandKind.cs" />
-    <Compile Include="Extensions.cs" />
-    <Compile Include="ICommandTarget.cs" />
-    <Compile Include="IExtensionAdapter.cs" />
-    <Compile Include="Implementation\ExternalEdit\ExternalEditMonitor.cs" />
-    <Compile Include="Implementation\ExternalEdit\ExternalEditorManager.cs" />
-    <Compile Include="IExternalEditAdapter.cs" />
-    <Compile Include="Implementation\Misc\ExtensionAdapterBroker.cs" />
-    <Compile Include="Implementation\Misc\FallbackKeyProcessorProvider.cs" />
-    <Compile Include="Implementation\Misc\FallbackKeyProcessor.cs" />
-    <Compile Include="Implementation\Misc\ReportDesignerUtil.cs" />
-    <Compile Include="Implementation\Misc\ScopeData.cs" />
-    <Compile Include="Implementation\Misc\StandardCommandTarget.cs" />
-    <Compile Include="Implementation\Misc\StatusBarAdapter.cs" />
-    <Compile Include="Implementation\Misc\Telemetry.cs" />
-    <Compile Include="Implementation\OptionPages\ComboBoxTemplateSelector.cs" />
-    <Compile Include="Implementation\OptionPages\DefaultOptionPage.cs">
-      <SubType>Component</SubType>
-    </Compile>
-    <Compile Include="Implementation\OptionPages\KeyBindingData.cs" />
-    <Compile Include="Implementation\OptionPages\KeyBindingHandledByOption.cs" />
-    <Compile Include="Implementation\OptionPages\KeyboardOptionPage.cs">
-      <SubType>Component</SubType>
-    </Compile>
-    <Compile Include="Implementation\OptionPages\KeyboardSettingsControl.xaml.cs">
-      <DependentUpon>KeyboardSettingsControl.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="Implementation\ReSharper\ReSharperExternalEditAdapter.cs" />
-    <Compile Include="Implementation\ReSharper\ReSharperExtensionAdapter.cs" />
-    <Compile Include="Implementation\ReSharper\ReSharperKeyUtil.cs" />
-    <Compile Include="Implementation\ReSharper\ReSharperUtil.cs" />
-    <Compile Include="Implementation\ExternalEdit\SnippetExternalEditAdapter.cs" />
-    <Compile Include="HostFactory.cs" />
-    <Compile Include="IKeyBindingService.cs" />
-    <Compile Include="Implementation\ConflictingKey\ConflictingKeyBindingMargin.cs" />
-    <Compile Include="Implementation\ConflictingKey\ConflictingKeyBindingMarginProvider.cs" />
-    <Compile Include="Implementation\Misc\CSharpAdapter.cs" />
-    <Compile Include="Implementation\EditorFormatDefinitions.cs" />
-    <Compile Include="Implementation\Misc\KeyBindingService.cs" />
-    <Compile Include="Implementation\Misc\MindScape.cs" />
-    <Compile Include="Implementation\OptionPages\KeyboardOptionsProvider.cs" />
-    <Compile Include="Implementation\Misc\PowerToolsUtil.cs" />
-    <Compile Include="Implementation\Misc\TextManager.cs" />
-    <Compile Include="Implementation\Misc\VimBufferCoordinator.cs" />
-    <Compile Include="Implementation\NavigateTo\IThreadCommunicator.cs" />
-    <Compile Include="Implementation\NavigateTo\NavigateToItemProvider.cs" />
-    <Compile Include="Implementation\NavigateTo\NavigateToItemProviderFactory.cs" />
-    <Compile Include="Implementation\ReSharper\ReSharperTagDetector.cs" />
-    <Compile Include="Implementation\ReSharper\ReSharperVersion.cs" />
-    <Compile Include="Implementation\ReSharper\ResharperVersionutility.cs" />
-    <Compile Include="Implementation\Roslyn\IRoslynRenameUtil.cs" />
-    <Compile Include="Implementation\Roslyn\RoslynListenerFactory.cs" />
-    <Compile Include="Implementation\Roslyn\RoslynRenameUtil.cs" />
-    <Compile Include="Implementation\Settings\SettingSerializer.cs" />
-    <Compile Include="Implementation\Settings\VimApplicationSettings.cs" />
-    <Compile Include="Implementation\SharedService\DefaultSharedServiceFactory.cs" />
-    <Compile Include="Implementation\SharedService\SharedServiceFactory.cs" />
-    <Compile Include="IKeyboardOptionsProvider.cs" />
-    <Compile Include="Implementation\ToastNotification\ToastControl.xaml.cs">
-      <DependentUpon>ToastControl.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="Implementation\ToastNotification\ToastNotificationService.cs" />
-    <Compile Include="Implementation\ToastNotification\ToastNotificationServiceProvider.cs" />
-    <Compile Include="Implementation\UpgradeNotification\ErrorBanner.xaml.cs">
-      <DependentUpon>ErrorBanner.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="Implementation\UpgradeNotification\LinkBanner.xaml.cs">
-      <DependentUpon>LinkBanner.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="Implementation\UpgradeNotification\VimRcLoadNotificationMarginProvider.cs" />
-    <Compile Include="Implementation\VisualAssist\VisualAssistExtensionAdapter.cs" />
-    <Compile Include="ITelemetry.cs" />
-    <Compile Include="IToastNotifaction.cs" />
-    <Compile Include="Implementation\VisualAssist\IVisualAssistUtil.cs" />
-    <Compile Include="Implementation\VisualAssist\VisualAssistKeyProcessor.cs" />
-    <Compile Include="Implementation\VisualAssist\VisualAssistMargin.xaml.cs">
-      <DependentUpon>VisualAssistMargin.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="Implementation\VisualAssist\VisualAssistUtil.cs" />
-    <Compile Include="Implementation\VisualAssist\VisualAssistSelectionAdapter.cs" />
-    <Compile Include="Implementation\Misc\VsAdapter.cs" />
-    <Compile Include="Implementation\Misc\VsVimKeyProcessorProvider.cs" />
-    <Compile Include="IReportDesignerUtil.cs" />
-    <Compile Include="Implementation\ReSharper\IResharperUtil.cs" />
-    <Compile Include="ITextManager.cs" />
-    <Compile Include="IVimApplicationSettings.cs" />
-    <Compile Include="IVimBufferCoordinator.cs" />
-    <Compile Include="KeyBinding.cs" />
-    <Compile Include="KeyStroke.cs" />
-    <Compile Include="NativeMethods.cs" />
-    <Compile Include="OleCommandData.cs" />
-    <Compile Include="OleCommandUtil.cs" />
-    <Compile Include="IVsAdapter.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Result.cs" />
-    <Compile Include="Implementation\ConflictingKey\ConflictingKeyBindingMarginControl.xaml.cs">
-      <DependentUpon>ConflictingKeyBindingMarginControl.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="VsCommandTarget.cs" />
-    <Compile Include="VsFilterKeysAdapter.cs" />
-    <Compile Include="Implementation\Misc\VsVimKeyProcessor.cs" />
-    <Compile Include="VsVimHost.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\VimCore\VimCore.fsproj">
-      <Project>{06BE08E7-8626-40BD-877B-8D2DCA6BA451}</Project>
-      <Name>VimCore</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\VimWpf\VimWpf.csproj">
-      <Project>{65A749E0-F1B1-4E43-BE73-25072EE398C6}</Project>
-      <Name>VimWpf</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\VsInterfaces\VsInterfaces.csproj">
-      <Project>{e27dbbf1-6116-4e32-8fa5-07dce5e62bb6}</Project>
-      <Name>VsInterfaces</Name>
-    </ProjectReference>
+    <ProjectReference Include="..\VimCore\VimCore.fsproj" />
+    <ProjectReference Include="..\VimWpf\VimWpf.csproj" />
+    <ProjectReference Include="..\VsInterfaces\VsInterfaces.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Page Include="Implementation\OptionPages\KeyboardSettingsControl.xaml">
@@ -220,6 +73,4 @@
       <SubType>Designer</SubType>
     </Page>
   </ItemGroup>
-  <Import Project="..\..\VsVim.targets" />
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
