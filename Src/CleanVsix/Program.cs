@@ -44,11 +44,24 @@ namespace CleanVsix
         {
             foreach (var filePath in Directory.GetFiles(path))
             {
-                var fileName = Path.GetFileName(filePath);
-                if (fileName.StartsWith("Microsoft.VisualStudio.") ||
-                    fileName.StartsWith("FSharp.Core") || 
-                    fileName.StartsWith("System.Xml") ||
-                    fileName.StartsWith("Newtonsoft.Json"))
+                var fileName = Path.GetFileNameWithoutExtension(filePath);
+                var delete = false;
+                switch (fileName.ToLower())
+                {
+                    case "fsharp.core":
+                    case "system.xml":
+                    case "newtonsoft.json":
+                    case "envdte":
+                    case "envdte80":
+                    case "stdole":
+                        delete = true;
+                        break;
+                    default:
+                        delete = fileName.StartsWith("Microsoft.VisualStudio");
+                        break;
+                }
+
+                if (delete)
                 {
                     File.Delete(filePath);
                 }
