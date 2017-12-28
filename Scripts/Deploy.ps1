@@ -98,7 +98,7 @@ function Test-UnitTests() {
     $xunit = Join-Path $rootDir "Tools\xunit.console.x86.exe"
 
     foreach ($filePath in $all) { 
-        $filePath = Join-Path $releaseDir $file
+        $filePath = Join-Path $releaseDir $filePath
         Exec-Console $xunit $filePath
     }
 }
