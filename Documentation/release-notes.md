@@ -1,5 +1,14 @@
 # Release Notes
 
+### Version 2.5.0
+[Issues closed in milestone 2.5.0](https://github.com/jaredpar/VsVim/milestone/47?closed=1)
+
+Primary Issues Addressed
+* Support for the `.` register 
+* Several bugs around `.` command repeating
+* Stopped erasing error information from status bar 
+* Lots of infrastructure issues 
+
 ### Version 2.4.1
 [Issues closed in milestone 2.4.1](https://github.com/jaredpar/VsVim/milestone/47?closed=1)
 
