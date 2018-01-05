@@ -48,7 +48,7 @@ function Test-VsixContents() {
     $zipUtil = Join-Path $rootDir "Tools\7za920\7za.exe"
     Exec-Command $zipUtil "x -o$target $vsixPath" | Out-Null
 
-    $foundFiles = gci $target | %{ $_.Name }
+    $foundFiles = Get-ChildItem $target | %{ $_.Name }
     if ($foundFiles.Count -ne $expectedFiles.Count) { 
         Write-Host "Found $($foundFiles.Count) but expected $($expectedFiles.Count)"
         Write-Host "Wrong number of foundFiles in VSIX." 
@@ -80,9 +80,13 @@ function Test-VsixContents() {
         # Make sure the telemetry key was properly deployed.
         $name = Split-Path -leaf $item
         if ($name -eq "telemetry.txt") {
-            [string]$content = gc -raw $itemPath
-            if ($content.Trim() -eq "") {
-                throw "Telemetry file is empty"
+            
+            $hash = Get-FileHash -Path $itemPath -Algorithm SHA256
+            $expectedHash = "73367820A78BF339FA7A5D3D819B1C907A81F4D593BB4D2E153718928DE487DD"
+            if ($hash.Hash -ne $expectedHash) {
+                Write-Host "Found hash of $($hash.Hash)"
+                Write-Host "Expected hash of $expectedHash"
+                throw "Content of telemetry.txt is incorrect"
             }
         }
     }
