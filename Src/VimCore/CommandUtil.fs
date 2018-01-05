@@ -870,6 +870,14 @@ type internal CommandUtil
         let value = RegisterValue(StringData.OfSpan span, OperationKind.CharacterWise)
         _commonOperations.SetRegisterValue registerName RegisterOperation.Delete value
 
+    member x.DisplayCharacterBytes () = 
+        match SnapshotPointUtil.TryGetChar x.CaretPoint with
+        | None -> _commonOperations.Beep()
+        | Some c -> 
+            let str = sprintf "%d" (int c)
+            _statusUtil.OnStatus str
+        CommandResult.Completed ModeSwitch.NoSwitch
+
     /// Run the specified action with a wrapped undo transaction.  This is often necessary when
     /// an edit command manipulates the caret
     member x.EditWithUndoTransaction<'T> (name : string) (action : unit -> 'T) : 'T = 
@@ -2358,6 +2366,7 @@ type internal CommandUtil
         | NormalCommand.DeleteLines -> x.DeleteLines count registerName
         | NormalCommand.DeleteMotion motion -> x.RunWithMotion motion (x.DeleteMotion registerName)
         | NormalCommand.DeleteTillEndOfLine -> x.DeleteTillEndOfLine count registerName
+        | NormalCommand.DisplayCharacterBytes -> x.DisplayCharacterBytes()
         | NormalCommand.FoldLines -> x.FoldLines data.CountOrDefault
         | NormalCommand.FoldMotion motion -> x.RunWithMotion motion x.FoldMotion
         | NormalCommand.FormatLines -> x.FormatLines count

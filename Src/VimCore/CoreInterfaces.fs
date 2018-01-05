@@ -2438,6 +2438,9 @@ type NormalCommand =
     /// Delete till the end of the line and 'count - 1' more lines down
     | DeleteTillEndOfLine
 
+    /// Display the bytes of the current character in the status bar
+    | DisplayCharacterBytes
+
     /// Fold 'count' lines in the ITextBuffer
     | FoldLines
 
@@ -2687,6 +2690,7 @@ type NormalCommand =
         | NormalCommand.DeleteAllFoldsUnderCaret -> None
         | NormalCommand.DeleteLines -> None
         | NormalCommand.DeleteTillEndOfLine -> None
+        | NormalCommand.DisplayCharacterBytes
         | NormalCommand.FoldLines -> None
         | NormalCommand.FormatLines -> None
         | NormalCommand.GoToDefinition -> None
