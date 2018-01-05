@@ -16,6 +16,7 @@ This puts the emphasis of the effort on features like motions, macros, registers
 - Non-goal: Full implementation of Vim Script
 - Goal: Adding emulations for popular plugins 
 - Non-goal: Loading vim plugins directly
+- Non-goal: autocmd
 
 ## Vim Script / Plugins
 There are occasional asks for plugins and / or extended vim script support in issues. Enough that I wanted to explain in a bit more detail why neither is a goal of the project. 
