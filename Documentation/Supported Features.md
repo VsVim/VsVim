@@ -17,8 +17,13 @@ This is the set of motions which are currently supported listed alphabetically. 
 - E : End of big word 
 - gg
 - g_ : Last non white space on the line 
+- ge : Backward to end of word
+- gE : Backward to end of WORD
 - g* [0.9.6]
 - g# [0.9.6]
+- g0 : First character of screen line
+- g^ : First visible character on line
+- g$ : Last visible character on line
 - G 
 - h / &lt;Left&gt; / &lt;Bs&gt; / &lt;C-H&gt; : character left
 - H
