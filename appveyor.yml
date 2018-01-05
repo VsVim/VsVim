@@ -21,12 +21,12 @@ build:
   verbosity: minimal
 
 after_build:
-  - Binaries\Debug\CleanVsix\CleanVsix.exe Binaries\Debug\VsVim\VsVim.vsix
+  - Binaries\Debug\CleanVsix\net461\CleanVsix.exe Binaries\Debug\VsVim\VsVim.vsix
 
 test_script:
-  - cmd: '%xunit20%\xunit.console.x86.exe Binaries\Debug\VimCoreTest\Vim.Core.UnitTest.dll -appveyor -noshadow'
-  - cmd: '%xunit20%\xunit.console.x86.exe Binaries\Debug\VimWpfTest\Vim.UI.Wpf.UnitTest.dll -appveyor -noshadow'
-  - cmd: '%xunit20%\xunit.console.x86.exe Binaries\Debug\VsVimSharedTest\Vim.VisualStudio.Shared.UnitTest.dll -appveyor -noshadow'
+  - cmd: '%xunit20%\xunit.console.x86.exe Binaries\Debug\VimCoreTest\net461\Vim.Core.UnitTest.dll -appveyor -noshadow'
+  - cmd: '%xunit20%\xunit.console.x86.exe Binaries\Debug\VimWpfTest\net461\Vim.UI.Wpf.UnitTest.dll -appveyor -noshadow'
+  - cmd: '%xunit20%\xunit.console.x86.exe Binaries\Debug\VsVimSharedTest\net461\Vim.VisualStudio.Shared.UnitTest.dll -appveyor -noshadow'
 
 after_test:
   # Pushes the compiled vsix to artifacts and publishes it to vsixgallery.com
