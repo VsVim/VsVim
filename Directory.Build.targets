@@ -1,4 +1,17 @@
 <Project>
+
+  <!-- 
+       Need to work around a NuGet bug where IDE restore doesn't respect the PrivateAssets 
+       atrtibute on the FSharp.Core reference that exists in VimCore.fsproj. This works fine 
+       from the command line.
+
+       https://github.com/NuGet/Home/issues/6367
+   -->
+
+  <ItemGroup>
+    <PackageReference Include="FSharp.Core" Version="4.2.3" ExcludeAssets="all" Condition="'$(MSBuildProjectExtension)' != '.fsproj'"/>
+  </ItemGroup>  
+
   <Import Project="$(VsRunnablePropsFilePath)" Condition="'$(VsVimIsRunnable)' == 'true'" />
 
   <Import Project="$(VsSDKInstall)\Microsoft.VsSDK.targets" Condition="Exists('$(VsSDKInstall)\Microsoft.VsSDK.targets') and '$(IsVsixProject)' == 'true'" />
