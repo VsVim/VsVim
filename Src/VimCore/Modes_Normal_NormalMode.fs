@@ -75,6 +75,7 @@ type internal NormalMode
                 yield ("g??", CommandFlags.Repeatable, NormalCommand.ChangeCaseCaretLine ChangeCharacterKind.Rot13)
                 yield ("g&", CommandFlags.Special, NormalCommand.RepeatLastSubstitute true)
                 yield ("g<LeftMouse>", CommandFlags.Special, NormalCommand.GoToDefinition)
+                yield ("g8", CommandFlags.Special, NormalCommand.DisplayCharacterBytes)
                 yield ("i", CommandFlags.None, NormalCommand.InsertBeforeCaret)
                 yield ("I", CommandFlags.LinkedWithNextCommand ||| CommandFlags.Repeatable, NormalCommand.InsertAtFirstNonBlank)
                 yield ("J", CommandFlags.Repeatable, NormalCommand.JoinLines JoinKind.RemoveEmptySpaces)
