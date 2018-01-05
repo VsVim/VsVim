@@ -3467,6 +3467,22 @@ namespace Vim.UnitTest
                 _vimBuffer.Process("g?w");
                 Assert.Equal("png dog", _textBuffer.GetLine(0).GetText());
             }
+
+            [WpfFact]
+            public void MotionRight()
+            {
+                Create("hello");
+                _vimBuffer.Process("g~l");
+                Assert.Equal("Hello", _textBuffer.GetLine(0).GetText());
+            }
+
+            [WpfFact]
+            public void MotionWordPartial()
+            {
+                Create("hello");
+                _vimBuffer.ProcessNotation("lg~w");
+                Assert.Equal("hELLO", _textBuffer.GetLine(0).GetText());
+            }
         }
 
         public sealed class PutAfterTest : NormalModeIntegrationTest
