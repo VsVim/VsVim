@@ -72,6 +72,7 @@ This is the set of motions which are currently supported listed alphabetically. 
  - guu
  - gUgU
  - gUU
+ - g~ : change case motion
  - g~g~
  - g~~
  - g?g?

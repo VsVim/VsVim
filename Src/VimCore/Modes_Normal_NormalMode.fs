@@ -158,6 +158,7 @@ type internal NormalMode
                 yield ("gU", CommandFlags.Repeatable, (fun motion -> NormalCommand.ChangeCaseMotion (ChangeCharacterKind.ToUpperCase, motion)))
                 yield ("gu", CommandFlags.Repeatable, (fun motion -> NormalCommand.ChangeCaseMotion (ChangeCharacterKind.ToLowerCase, motion)))
                 yield ("g?", CommandFlags.Repeatable, (fun motion -> NormalCommand.ChangeCaseMotion (ChangeCharacterKind.Rot13, motion)))
+                yield ("g~", CommandFlags.Repeatable, (fun motion -> NormalCommand.ChangeCaseMotion (ChangeCharacterKind.ToggleCase, motion)))
                 yield ("y", CommandFlags.Yank, NormalCommand.Yank)
                 yield ("zf", CommandFlags.None, NormalCommand.FoldMotion)
                 yield ("<lt>", CommandFlags.Repeatable ||| CommandFlags.ShiftLeft, NormalCommand.ShiftMotionLinesLeft)
