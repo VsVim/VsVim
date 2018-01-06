@@ -22,6 +22,7 @@
 *.binlog
 Thumbs.db
 telemetry.txt
+launchSettings.json
 
 # Project Files
 *.user
