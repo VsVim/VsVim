@@ -107,6 +107,14 @@ This is the set of motions which are currently supported listed alphabetically. 
 - &gt;&gt;
 - ==
 
+## Commands
+
+- substitute
+- mapping: all map, unmap, remap and mapclear commands
+- normal: execute key sequence in normal mode
+- registers
+- cwindow
+
 ## Misc
 
 - Text object selections (aw, (, {,) do not properly handle white space in all cases.  Additionally they cannot be used as selection operators in Visual Mode.  This support is planned for 0.9.7.  
