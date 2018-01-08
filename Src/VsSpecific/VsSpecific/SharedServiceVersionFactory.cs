@@ -16,16 +16,12 @@ namespace Vim.VisualStudio.Specific
     [Export(typeof(ISharedServiceVersionFactory))]
     internal sealed class SharedServiceVersionFactory : ISharedServiceVersionFactory
     {
-        internal ExportProvider ExportProvider { get; }
-        internal IVsRunningDocumentTable VsRunningDocumentTable { get; }
+        internal SVsServiceProvider VsServiceProvider { get; }
 
         [ImportingConstructor]
         internal SharedServiceVersionFactory(SVsServiceProvider vsServiceProvider)
         {
-            VsRunningDocumentTable = (IVsRunningDocumentTable)vsServiceProvider.GetService(typeof(SVsRunningDocumentTable));
-
-            var componentModel = (IComponentModel)vsServiceProvider.GetService(typeof(SComponentModel));
-            ExportProvider = componentModel.DefaultExportProvider;
+            VsServiceProvider = vsServiceProvider;
         }
 
         #region ISharedServiceVersionFactory
@@ -37,7 +33,7 @@ namespace Vim.VisualStudio.Specific
 
         ISharedService ISharedServiceVersionFactory.Create()
         {
-            return new SharedService(ExportProvider, VsRunningDocumentTable);
+            return new SharedService(VsServiceProvider);
         }
 
         #endregion

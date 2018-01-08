@@ -11,25 +11,39 @@ using Microsoft.VisualStudio.Language.Intellisense;
 
 namespace Vim.VisualStudio.Specific
 {
+#if VS_SPECIFIC_2012
+
     internal partial class SharedService 
     {
+        private void InitLazy() { } 
+        private bool IsLazyLoaded(uint documentCookie) => false;
+    }
+
+#else
+
+    internal partial class SharedService 
+    {
+        private IVsRunningDocumentTable4 _runningDocumentTable;
+
+        private void InitLazy()
+        {
+            _runningDocumentTable = (IVsRunningDocumentTable4)VsServiceProvider.GetService(typeof(SVsRunningDocumentTable));
+        }
+
         private bool IsLazyLoaded(uint documentCookie)
         {
-#if VS_SPECIFIC_2012
-            return false;
-#else
             try
             {
-                var rdt = (IVsRunningDocumentTable4)VsRunningDocumentTable;
-                var flags = (_VSRDTFLAGS4)rdt.GetDocumentFlags(documentCookie);
+                var flags = (_VSRDTFLAGS4)_runningDocumentTable.GetDocumentFlags(documentCookie);
                 return 0 != (flags & _VSRDTFLAGS4.RDT_PendingInitialization);
             }
             catch (Exception)
             {
                 return false;
             }
-#endif
         }
     }
+
+#endif
 }
 

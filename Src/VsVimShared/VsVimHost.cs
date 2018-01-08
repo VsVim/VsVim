@@ -758,7 +758,7 @@ namespace Vim.VisualStudio
 
         public override bool ShouldCreateVimBuffer(ITextView textView)
         {
-            if (textView.Roles.Contains(VsVimConstants.TextViewRoleEmbeddedPeekTextView))
+            if (textView.IsPeekView())
             {
                 return true;
             }
