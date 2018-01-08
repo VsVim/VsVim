@@ -8,6 +8,13 @@ namespace Vim.VisualStudio.Specific
 {
     internal sealed partial class SharedService : ISharedService
     {
+        internal IVsRunningDocumentTable VsRunningDocumentTable { get; }
+
+        internal SharedService(IVsRunningDocumentTable vsRunningDocumentTable)
+        {
+            VsRunningDocumentTable = vsRunningDocumentTable;
+        }
+
         internal void GoToTab(int index)
         {
             GetActiveViews()[index].ShowInFront();
