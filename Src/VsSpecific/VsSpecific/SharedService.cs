@@ -3,15 +3,19 @@ using System.Linq;
 using Microsoft.VisualStudio.Platform.WindowManagement;
 using Microsoft.VisualStudio.PlatformUI.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
+using Microsoft.VisualStudio.ComponentModelHost;
+using System.ComponentModel.Composition.Hosting;
 
 namespace Vim.VisualStudio.Specific
 {
     internal sealed partial class SharedService : ISharedService
     {
+        internal ExportProvider ExportProvider { get; }
         internal IVsRunningDocumentTable VsRunningDocumentTable { get; }
 
-        internal SharedService(IVsRunningDocumentTable vsRunningDocumentTable)
+        internal SharedService(ExportProvider exportProvider, IVsRunningDocumentTable vsRunningDocumentTable)
         {
+            ExportProvider = exportProvider;
             VsRunningDocumentTable = vsRunningDocumentTable;
         }
 

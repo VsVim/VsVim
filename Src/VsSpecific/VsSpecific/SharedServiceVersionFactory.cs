@@ -8,18 +8,24 @@ using Microsoft.VisualStudio.PlatformUI.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Language.Intellisense;
+using Microsoft.VisualStudio.ComponentModelHost;
+using System.ComponentModel.Composition.Hosting;
 
 namespace Vim.VisualStudio.Specific
 {
     [Export(typeof(ISharedServiceVersionFactory))]
     internal sealed class SharedServiceVersionFactory : ISharedServiceVersionFactory
     {
-        private readonly IVsRunningDocumentTable _vsRunningDocumentTable;
+        internal ExportProvider ExportProvider { get; }
+        internal IVsRunningDocumentTable VsRunningDocumentTable { get; }
 
         [ImportingConstructor]
         internal SharedServiceVersionFactory(SVsServiceProvider vsServiceProvider)
         {
-            _vsRunningDocumentTable = (IVsRunningDocumentTable)vsServiceProvider.GetService(typeof(SVsRunningDocumentTable));
+            VsRunningDocumentTable = (IVsRunningDocumentTable)vsServiceProvider.GetService(typeof(SVsRunningDocumentTable));
+
+            var componentModel = (IComponentModel)vsServiceProvider.GetService(typeof(SComponentModel));
+            ExportProvider = componentModel.DefaultExportProvider;
         }
 
         #region ISharedServiceVersionFactory
@@ -31,7 +37,7 @@ namespace Vim.VisualStudio.Specific
 
         ISharedService ISharedServiceVersionFactory.Create()
         {
-            return new SharedService(_vsRunningDocumentTable);
+            return new SharedService(ExportProvider, VsRunningDocumentTable);
         }
 
         #endregion
