@@ -5,18 +5,25 @@ using Microsoft.VisualStudio.PlatformUI.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.ComponentModelHost;
 using System.ComponentModel.Composition.Hosting;
+using Microsoft.VisualStudio.Shell;
+using Microsoft.VisualStudio.Text.Editor;
 
 namespace Vim.VisualStudio.Specific
 {
     internal sealed partial class SharedService : ISharedService
     {
+        internal SVsServiceProvider VsServiceProvider { get; }
+        internal IComponentModel ComponentModel { get; }
         internal ExportProvider ExportProvider { get; }
-        internal IVsRunningDocumentTable VsRunningDocumentTable { get; }
 
-        internal SharedService(ExportProvider exportProvider, IVsRunningDocumentTable vsRunningDocumentTable)
+        internal SharedService(SVsServiceProvider vsServiceProvider)
         {
-            ExportProvider = exportProvider;
-            VsRunningDocumentTable = vsRunningDocumentTable;
+            VsServiceProvider = vsServiceProvider;
+            ComponentModel = (IComponentModel)vsServiceProvider.GetService(typeof(SComponentModel));
+            ExportProvider = ComponentModel.DefaultExportProvider;
+
+            InitLazy();
+            InitPeek();
         }
 
         internal void GoToTab(int index)
@@ -88,6 +95,11 @@ namespace Vim.VisualStudio.Specific
         bool ISharedService.IsLazyLoaded(uint documentCookie)
         {
             return IsLazyLoaded(documentCookie);
+        }
+
+        bool ISharedService.ClosePeekView(ITextView peekView)
+        {
+            return ClosePeekView(peekView);
         }
 
         #endregion

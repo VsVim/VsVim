@@ -135,7 +135,7 @@ namespace Vim.VisualStudio.Implementation.Misc
             // pass on to the next command target.  This is necessary to close the peek definition
             // window
             if (_vimBuffer.ModeKind == ModeKind.Normal &&
-                _textView.Roles.Contains(VsVimConstants.TextViewRoleEmbeddedPeekTextView) &&
+                _textView.IsPeekView() &&
                 keyInput == KeyInputUtil.EscapeKey)
             {
                 return false;

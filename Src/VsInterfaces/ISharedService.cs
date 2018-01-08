@@ -1,4 +1,5 @@
 ﻿using Microsoft.VisualStudio.Shell.Interop;
+using Microsoft.VisualStudio.Text.Editor;
 
 namespace Vim.VisualStudio
 {
@@ -50,6 +51,11 @@ namespace Vim.VisualStudio
         /// Is the document represented by the cookie being lazily loaded by the IDE?
         /// </summary>
         bool IsLazyLoaded(uint documentCookie);
+
+        /// <summary>
+        /// Helper to close an <see cref="ITextView"/> when it is a peek window. 
+        /// </summary>
+        bool ClosePeekView(ITextView peekView);
     }
 
     /// <summary>

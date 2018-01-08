@@ -858,6 +858,14 @@ namespace Vim.VisualStudio
             return GetVisibleSnapshotSpans(textView);
         }
 
+        public static bool IsPeekView(this ITextView textView) => textView.Roles.Contains(VsVimConstants.TextViewRoleEmbeddedPeekTextView);
+
+        /// <summary>
+        /// When the provided <see cref="ITextView"/> is a peek view, return the <see cref="ITextView" /> that is hosting
+        /// it.
+        /// </summary>
+        public static bool TryGetPeekViewHostView(this ITextView peekView, out ITextView hostView) => peekView.Properties.TryGetPropertySafe("PeekContainingTextView", out hostView);
+
         #endregion
 
         #region IWpfTextView

@@ -170,6 +170,11 @@ namespace Vim.VisualStudio.Implementation.Misc
 
         internal bool CloseView(ITextView textView)
         {
+            if (textView.IsPeekView())
+            {
+                return _sharedService.ClosePeekView(textView);
+            }
+
             if (!_vsAdapter.GetContainingWindowFrame(textView).TryGetValue(out IVsWindowFrame vsWindowFrame))
             {
                 return false;

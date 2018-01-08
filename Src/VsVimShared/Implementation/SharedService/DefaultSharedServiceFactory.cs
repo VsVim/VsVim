@@ -1,4 +1,5 @@
 ﻿using Microsoft.VisualStudio.Shell.Interop;
+using Microsoft.VisualStudio.Text.Editor;
 
 namespace Vim.VisualStudio.Implementation.SharedService
 {
@@ -21,6 +22,11 @@ namespace Vim.VisualStudio.Implementation.SharedService
             }
 
             bool ISharedService.IsLazyLoaded(uint documentCookie)
+            {
+                return false;
+            }
+
+            bool ISharedService.ClosePeekView(ITextView peekView)
             {
                 return false;
             }
