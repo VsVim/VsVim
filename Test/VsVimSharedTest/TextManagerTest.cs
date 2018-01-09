@@ -42,17 +42,25 @@ namespace Vim.VisualStudio.UnitTest
             _manager = _managerRaw;
         }
 
+        private Mock<IWpfTextView> CreateTextView()
+        {
+            var roles = _factory.Create<ITextViewRoleSet>();
+            var textView = _factory.Create<IWpfTextView>();
+            textView.SetupGet(x => x.Roles).Returns(roles.Object);
+            return textView;
+        }
+
         [Fact]
         public void SplitView1()
         {
-            var view = _factory.Create<IWpfTextView>();
+            var view = CreateTextView();
             Assert.False(_manager.SplitView(view.Object));
         }
 
         [Fact]
         public void SplitView2()
         {
-            var view = _factory.Create<IWpfTextView>();
+            var view = CreateTextView();
             var codeWindow = _adapter.MakeCodeWindow(view.Object, _factory);
             Assert.False(_manager.SplitView(view.Object));
             _factory.Verify();
@@ -61,7 +69,7 @@ namespace Vim.VisualStudio.UnitTest
         [Fact]
         public void SplitView3()
         {
-            var view = _factory.Create<IWpfTextView>();
+            var view = CreateTextView();
             var tuple = _adapter.MakeCodeWindowAndCommandTarget(view.Object, _factory);
             var codeWindow = tuple.Item1;
             var commandTarget = tuple.Item2;
@@ -80,7 +88,7 @@ namespace Vim.VisualStudio.UnitTest
         [Fact]
         public void CloseView_NoWindowFrame()
         {
-            var view = _factory.Create<IWpfTextView>().Object;
+            var view = CreateTextView().Object;
             Assert.False(_manager.CloseView(view));
         }
 
@@ -91,7 +99,7 @@ namespace Vim.VisualStudio.UnitTest
         [Fact]
         public void CloseView_DontSave()
         {
-            var textView = _factory.Create<IWpfTextView>();
+            var textView = CreateTextView();
             var vsCodeWindow = _adapter.MakeCodeWindow(textView.Object, _factory);
             var vsWindowFrame = _adapter.MakeWindowFrame(textView.Object, _factory);
             vsWindowFrame
@@ -115,8 +123,8 @@ namespace Vim.VisualStudio.UnitTest
         [Fact]
         public void MoveViewUp2()
         {
-            var view1 = _factory.Create<IWpfTextView>();
-            var view2 = _factory.Create<IWpfTextView>();
+            var view1 = CreateTextView();
+            var view2 = CreateTextView();
             var codeWindow = _adapter.MakeCodeWindow(view1.Object, _factory);
             codeWindow.MakePrimaryView(_adapter, view1.Object, _factory);
             codeWindow.MakeSecondaryView(_adapter, view2.Object, _factory);
@@ -126,8 +134,8 @@ namespace Vim.VisualStudio.UnitTest
         [Fact]
         public void MoveViewUp3()
         {
-            var view1 = _factory.Create<IWpfTextView>();
-            var view2 = _factory.Create<IWpfTextView>();
+            var view1 = CreateTextView();
+            var view2 = CreateTextView();
             var codeWindow = _adapter.MakeCodeWindow(view1.Object, _factory);
             var vsView1 = codeWindow.MakePrimaryView(_adapter, view1.Object, _factory);
             var vsView2 = codeWindow.MakeSecondaryView(_adapter, view2.Object, _factory);
@@ -139,8 +147,8 @@ namespace Vim.VisualStudio.UnitTest
         [Fact]
         public void MoveViewUp4()
         {
-            var view1 = _factory.Create<IWpfTextView>();
-            var view2 = _factory.Create<IWpfTextView>();
+            var view1 = CreateTextView();
+            var view2 = CreateTextView();
             var codeWindow = _adapter.MakeCodeWindow(view1.Object, _factory);
             var vsView1 = codeWindow.MakePrimaryView(_adapter, view1.Object, _factory);
             var vsView2 = codeWindow.MakeSecondaryView(_adapter, view2.Object, _factory);
@@ -152,8 +160,8 @@ namespace Vim.VisualStudio.UnitTest
         [Fact]
         public void MoveViewDown1()
         {
-            var view1 = _factory.Create<IWpfTextView>();
-            var view2 = _factory.Create<IWpfTextView>();
+            var view1 = CreateTextView();
+            var view2 = CreateTextView();
             var codeWindow = _adapter.MakeCodeWindow(view2.Object, _factory);
             var vsView1 = codeWindow.MakePrimaryView(_adapter, view1.Object, _factory);
             var vsView2 = codeWindow.MakeSecondaryView(_adapter, view2.Object, _factory);
@@ -165,8 +173,8 @@ namespace Vim.VisualStudio.UnitTest
         [Fact]
         public void MoveViewDown2()
         {
-            var view1 = _factory.Create<IWpfTextView>();
-            var view2 = _factory.Create<IWpfTextView>();
+            var view1 = CreateTextView();
+            var view2 = CreateTextView();
             var codeWindow = _adapter.MakeCodeWindow(view2.Object, _factory);
             var vsView1 = codeWindow.MakePrimaryView(_adapter, view1.Object, _factory);
             var vsView2 = codeWindow.MakeSecondaryView(_adapter, view2.Object, _factory);
