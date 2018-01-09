@@ -52,10 +52,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             /// </summary>
             internal SwitchModeEventArgs SwitchModeEventArgs;
 
-            internal bool InEvent
-            {
-                get { return KeyInputEventCount > 0; }
-            }
+            internal bool InEvent => KeyInputEventCount > 0;
 
             internal void Clear()
             {
@@ -134,10 +131,10 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
 
         private void OnGotAggregateFocus(object sender, EventArgs e)
         {
-            UpdateStatusLine();
+            UpdateStatusLineVisibility();
         }
 
-        private void ChangeEditKind(EditKind editKind)
+        private void ChangeEditKind(EditKind editKind, bool updateCommandLine = true)
         {
             if (editKind == _editKind)
             {
@@ -154,7 +151,12 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
                         ParentVisualElement.Focus();
                     }
                     _margin.IsEditReadOnly = true;
-                    UpdateForNoEvent();
+
+                    if (updateCommandLine)
+                    {
+                        UpdateCommandLineForNoEvent();
+                    }
+
                     break;
                 case EditKind.Command:
                 case EditKind.SearchForward:
@@ -214,34 +216,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
 
         internal void Reset()
         {
-            UpdateForNoEvent();
-        }
-
-        private void KeyInputEventComplete()
-        {
-            Debug.Assert(_vimBufferKeyEventState.InEvent);
-            try
-            {
-                if (!string.IsNullOrEmpty(_vimBufferKeyEventState.Message))
-                {
-                    UpdateCommandLine(_vimBufferKeyEventState.Message);
-                }
-                else if (_vimBufferKeyEventState.SwitchModeEventArgs != null)
-                {
-                    var args = _vimBufferKeyEventState.SwitchModeEventArgs;
-                    UpdateForSwitchMode(args.CurrentMode);
-                }
-                else
-                {
-                    UpdateForNoEvent();
-                }
-                UpdateStatusLine();
-            }
-            finally
-            {
-                _vimBufferKeyEventState.KeyInputEventCount--;
-                _vimBufferKeyEventState.Clear();
-            }
+            UpdateCommandLineForNoEvent();
         }
 
         private void MessageEvent(string message)
@@ -266,7 +241,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
         /// Update the status in command line at the end of a key press event which didn't result in 
         /// a mode change
         /// </summary>
-        private void UpdateForNoEvent()
+        private void UpdateCommandLineForNoEvent()
         {
             // In the middle of an edit the edit edit box is responsible for keeping the 
             // text up to date 
@@ -289,7 +264,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
         /// <summary>
         /// Update the status line.
         /// </summary>
-        private void UpdateStatusLine()
+        private void UpdateStatusLineVisibility()
         {
             var isStatusLineVisible = _vimBuffer.GlobalSettings.LastStatus != 0;
 
@@ -569,7 +544,32 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
 
         private void OnKeyInputEnd(object sender, KeyInputEventArgs args)
         {
-            KeyInputEventComplete();
+            Debug.Assert(_vimBufferKeyEventState.InEvent);
+            var updateCommandLine = true;
+            try
+            {
+                if (!string.IsNullOrEmpty(_vimBufferKeyEventState.Message))
+                {
+                    UpdateCommandLine(_vimBufferKeyEventState.Message);
+                    updateCommandLine = false;
+                }
+                else if (_vimBufferKeyEventState.SwitchModeEventArgs != null)
+                {
+                    var switchArgs = _vimBufferKeyEventState.SwitchModeEventArgs;
+                    UpdateForSwitchMode(switchArgs.CurrentMode);
+                }
+                else
+                {
+                    UpdateCommandLineForNoEvent();
+                }
+
+                UpdateStatusLineVisibility();
+            }
+            finally
+            {
+                _vimBufferKeyEventState.KeyInputEventCount--;
+                _vimBufferKeyEventState.Clear();
+            }
 
             // On entering command mode or forward/backward search, the EditKind state is only
             // updated at KeyInputEnd (and not KeyInputStart), so we need to check again here
@@ -577,7 +577,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             var editKind = CalculateCommandLineEditKind();
             if (editKind != _editKind)
             {
-                ChangeEditKind(editKind);
+                ChangeEditKind(editKind, updateCommandLine);
                 if (editKind != EditKind.None)
                 {
                     _margin.UpdateCaretPosition(EditPosition.End);
@@ -640,7 +640,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
                 return;
             }
 
-            UpdateForNoEvent();
+            UpdateCommandLineForNoEvent();
         }
 
         private void OnCommandLineTextBoxPreviewKeyDown(object sender, KeyEventArgs e)
