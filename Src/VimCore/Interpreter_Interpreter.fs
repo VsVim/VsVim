@@ -1379,9 +1379,12 @@ type VimInterpreter
 
         // Display all of the setings which don't have the default value
         let displayAllNonDefault() = 
+            let allSettings = 
+                _localSettings.Settings
+                |> Seq.append _windowSettings.Settings
+                |> Seq.append _globalSettings.Settings
 
-            // TODO: need to filter out terminal 
-            _localSettings.AllSettings 
+            allSettings
             |> Seq.filter (fun s -> not s.IsValueDefault) 
             |> Seq.map getSettingDisplay 
             |> _statusUtil.OnStatusLong

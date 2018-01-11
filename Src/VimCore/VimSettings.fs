@@ -39,7 +39,7 @@ type internal SettingsMap
         _rawData
         |> Seq.iter (fun setting -> this.AddSetting setting)
 
-    member x.AllSettings = _settingMap.Values |> List.ofSeq
+    member x.Settings = _settingMap.Values |> List.ofSeq
 
     member x.OwnsSetting settingName = x.GetSetting settingName |> Option.isSome
 
@@ -309,7 +309,7 @@ type internal GlobalSettings() =
     interface IVimGlobalSettings with
         // IVimSettings
 
-        member x.AllSettings = _map.AllSettings
+        member x.Settings = _map.Settings
         member x.TrySetValue settingName value = _map.TrySetValue settingName value
         member x.TrySetValueFromString settingName strValue = _map.TrySetValueFromString settingName strValue
         member x.GetSetting settingName = _map.GetSetting settingName
@@ -493,8 +493,8 @@ type internal LocalSettings
 
     static member Copy (settings : IVimLocalSettings) = 
         let copy = LocalSettings(settings.GlobalSettings)
-        settings.AllSettings
-        |> Seq.filter (fun s -> not s.IsGlobal && not s.IsValueCalculated)
+        settings.Settings
+        |> Seq.filter (fun s -> not s.IsValueCalculated)
         |> Seq.iter (fun s -> copy.Map.TrySetValue s.Name s.Value |> ignore)
         copy :> IVimLocalSettings
 
@@ -520,7 +520,7 @@ type internal LocalSettings
     interface IVimLocalSettings with 
         // IVimSettings
         
-        member x.AllSettings = _map.AllSettings |> Seq.append _globalSettings.AllSettings |> List.ofSeq
+        member x.Settings = _map.Settings
         member x.TrySetValue settingName value = 
             if _map.OwnsSetting settingName then _map.TrySetValue settingName value
             else _globalSettings.TrySetValue settingName value
@@ -602,13 +602,13 @@ type internal WindowSettings
 
     static member Copy (settings : IVimWindowSettings) = 
         let copy = WindowSettings(settings.GlobalSettings)
-        settings.AllSettings
-        |> Seq.filter (fun s -> not s.IsGlobal && not s.IsValueCalculated)
+        settings.Settings
+        |> Seq.filter (fun s -> not s.IsValueCalculated)
         |> Seq.iter (fun s -> copy.Map.TrySetValue s.Name s.Value |> ignore)
         copy :> IVimWindowSettings
 
     interface IVimWindowSettings with 
-        member x.AllSettings = _map.AllSettings |> Seq.append _globalSettings.AllSettings |> List.ofSeq
+        member x.Settings = _map.Settings
         member x.TrySetValue settingName value = 
             if _map.OwnsSetting settingName then _map.TrySetValue settingName value
             else _globalSettings.TrySetValue settingName value

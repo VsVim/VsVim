@@ -755,6 +755,31 @@ namespace Vim.UnitTest
                 ParseAndRun(@"set ts=3");
                 Assert.Equal(3, _localSettings.TabStop);
             }
+
+            /// <summary>
+            /// Ensure that we don't crash when there is nothing to display
+            /// </summary>
+            [WpfFact]
+            public void PrintEmpty()
+            {
+                Create("");
+                _vimBuffer.GlobalSettings.Timeout = true;
+                ParseAndRun(@"set");
+                Assert.Equal("", _statusUtil.LastStatus);
+            }
+
+            /// <summary>
+            /// Window settings need to be included in the display.
+            /// </summary>
+            [WpfFact]
+            public void PrintIncludeWindow()
+            {
+                Create("");
+                _vimBuffer.WindowSettings.CursorLine = true;
+                _vimBuffer.GlobalSettings.Timeout = true;
+                ParseAndRun(@"set");
+                Assert.Equal("cursorline", _statusUtil.LastStatus);
+            }
         }
 
         public sealed class HelpTest : InterpreterTest

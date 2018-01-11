@@ -293,7 +293,7 @@ namespace Vim.UnitTest
 
             // Reset all of the global settings back to their default values.   Adds quite
             // a bit of sanity to the test bed
-            foreach (var setting in Vim.GlobalSettings.AllSettings)
+            foreach (var setting in Vim.GlobalSettings.Settings)
             {
                 if (!setting.IsValueDefault && !setting.IsValueCalculated)
                 {

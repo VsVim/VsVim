@@ -210,7 +210,7 @@ namespace Vim.UnitTest
             [Fact]
             public void Sanity1()
             {
-                var all = _globalSettings.AllSettings;
+                var all = _globalSettings.Settings;
                 Assert.Contains(all, x => x.Name == GlobalSettingNames.IgnoreCaseName);
                 Assert.Contains(all, x => x.Name == GlobalSettingNames.ScrollOffsetName);
             }

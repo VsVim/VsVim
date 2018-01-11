@@ -95,7 +95,7 @@ namespace Vim.UnitTest
         [Fact]
         public void SettingsAreImmutable()
         {
-            var all = _settings.AllSettings;
+            var all = _settings.Settings;
             var value = all.Single(x => x.Name == GlobalSettingNames.ScrollOffsetName);
             var prev = value.Value.AsNumber().Item;
             Assert.NotEqual(42, prev);
@@ -110,7 +110,7 @@ namespace Vim.UnitTest
         [Fact]
         public void GetSettingByName()
         {
-            foreach (var setting in _settings.AllSettings)
+            foreach (var setting in _settings.Settings)
             {
                 var found = _settings.GetSetting(setting.Name);
                 Assert.True(found.IsSome());
@@ -125,7 +125,7 @@ namespace Vim.UnitTest
         [Fact]
         public void GetSettingByAbbreviation()
         {
-            foreach (var setting in _settings.AllSettings)
+            foreach (var setting in _settings.Settings)
             {
                 var found = _settings.GetSetting(setting.Abbreviation);
                 Assert.True(found.IsSome());
@@ -165,7 +165,7 @@ namespace Vim.UnitTest
         [Fact]
         public void TrySetValue3()
         {
-            foreach (var cur in _settings.AllSettings)
+            foreach (var cur in _settings.Settings)
             {
                 SettingValue value = null;
                 if (cur.Kind.IsToggle)
@@ -192,7 +192,7 @@ namespace Vim.UnitTest
         [Fact]
         public void TrySetValueFromString1()
         {
-            foreach (var cur in _settings.AllSettings)
+            foreach (var cur in _settings.Settings)
             {
                 string value = null;
                 if (cur.Kind.IsToggle)
@@ -222,7 +222,7 @@ namespace Vim.UnitTest
         [Fact]
         public void TrySetValueFromString2()
         {
-            foreach (var cur in _settings.AllSettings)
+            foreach (var cur in _settings.Settings)
             {
                 string value = null;
                 if (cur.Kind.IsToggle)
@@ -293,7 +293,7 @@ namespace Vim.UnitTest
         [Fact]
         public void SettingsShouldStartAsDefault()
         {
-            foreach (var setting in _settings.AllSettings)
+            foreach (var setting in _settings.Settings)
             {
                 Assert.True(setting.IsValueDefault);
             }
