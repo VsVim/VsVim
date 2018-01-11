@@ -545,8 +545,8 @@ type internal Vim
         match localSettings with
         | None -> ()
         | Some localSettings ->
-            localSettings.AllSettings
-            |> Seq.filter (fun s -> not s.IsGlobal && not s.IsValueCalculated)
+            localSettings.Settings
+            |> Seq.filter (fun s -> not s.IsValueCalculated)
             |> Seq.iter (fun s -> vimTextBuffer.LocalSettings.TrySetValue s.Name s.Value |> ignore)
 
         // Put the IVimTextBuffer into the ITextBuffer property bag so we can query for it in the future
@@ -574,8 +574,8 @@ type internal Vim
         match windowSettings with
         | None -> ()
         | Some windowSettings ->
-            windowSettings.AllSettings
-            |> Seq.filter (fun s -> not s.IsGlobal && not s.IsValueCalculated)
+            windowSettings.Settings
+            |> Seq.filter (fun s -> not s.IsValueCalculated)
             |> Seq.iter (fun s -> vimBuffer.WindowSettings.TrySetValue s.Name s.Value |> ignore)
 
         // Setup the handlers for KeyInputStart and KeyInputEnd to accurately track the active

@@ -251,8 +251,8 @@ type SettingEventArgs(_setting : Setting, _isValueChanged : bool) =
 /// names tend to have more familiar camel case names
 type IVimSettings =
 
-    /// Returns a sequence of all of the settings and values
-    abstract AllSettings : Setting list
+    /// Collection of settings owned by this IVimSettings instance
+    abstract Settings : Setting list
 
     /// Try and set a setting to the passed in value.  This can fail if the value does not 
     /// have the correct type.  The provided name can be the full name or abbreviation

@@ -23,7 +23,7 @@ namespace Vim.UnitTest
 
         public void OnStatusLong(IEnumerable<string> value)
         {
-            LastStatus = value.Aggregate((x, y) => x + Environment.NewLine + y);
+            LastStatus = value.Any() ? value.Aggregate((x, y) => x + Environment.NewLine + y) : "";
             LastStatusLong = value.ToArray();
         }
 
