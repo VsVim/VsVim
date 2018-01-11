@@ -96,11 +96,11 @@ namespace Vim.UnitTest
         public void SettingsAreImmutable()
         {
             var all = _settings.Settings;
-            var value = all.Single(x => x.Name == GlobalSettingNames.ScrollOffsetName);
+            var value = all.Single(x => x.Name == NumberSettingName);
             var prev = value.Value.AsNumber().Item;
             Assert.NotEqual(42, prev);
-            Assert.True(_settings.TrySetValue(GlobalSettingNames.ScrollOffsetName, SettingValue.NewNumber(42)));
-            value = all.Single(x => x.Name == GlobalSettingNames.ScrollOffsetName);
+            Assert.True(_settings.TrySetValue(NumberSettingName, SettingValue.NewNumber(42)));
+            value = all.Single(x => x.Name == NumberSettingName);
             Assert.Equal(prev, value.Value.AsNumber().Item);
         }
 
