@@ -1713,7 +1713,9 @@ module TextViewUtil =
     /// _textView.ViewportTop to the y coordinate
     let GetTextViewLines (textView : ITextView) =
         try
-            textView.TextViewLines |> Some
+            let textViewLines = textView.TextViewLines
+            if textViewLines <> null then Some textViewLines
+            else None
         with 
             // TextViewLines can throw if the view is being laid out.  Highly unlikely we'd hit
             // that inside of Vim but need to be careful
