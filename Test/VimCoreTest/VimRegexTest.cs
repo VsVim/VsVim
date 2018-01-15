@@ -1276,6 +1276,30 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class OrTest : VimRegexTest
+        {
+            [Fact]
+            public void Simple()
+            {
+                VerifyRegex(@"a\|b", "a|b");
+                VerifyMatches(@"a\|b", "a", "b");
+            }
+
+            [Fact]
+            public void Grouping()
+            {
+                VerifyRegex(@"ab\|c", @"ab|c");
+                VerifyMatches(@"ab\|c", "ab", "c");
+            }
+
+            [Fact]
+            public void NewLineOrBrace()
+            {
+                VerifyRegex(@"^$\|{", @"^\r?$|\{");
+                VerifyMatches(@"^$\|{", "", "blah {");
+            }
+        }
+
         public sealed class SearchTest : VimRegexTest
         {
             [Fact]

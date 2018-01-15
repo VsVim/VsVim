@@ -325,8 +325,6 @@ type VimRegexBuilder
         with get() = _includesNewLine
         and set value = _includesNewLine <- value
 
-    member x.IsEndOfPattern = x.Index >= x.Pattern.Length
-
     member x.IncrementGroupCount() = 
         _groupCount <- _groupCount + 1
 
@@ -386,6 +384,8 @@ type VimRegexBuilder
 
     member x.Break() =
         _isBroken <- true
+
+    override x.ToString() = sprintf "pattern %s index %d index char %c" _pattern x.Index x.CharAtIndexOrDefault
 
 module VimRegexFactory =
 
@@ -552,8 +552,14 @@ module VimRegexFactory =
         | '|' -> data.AppendChar '|'
         | '^' -> if data.IsStartOfPattern || data.IsStartOfCollection then data.AppendChar '^' else data.AppendEscapedChar '^'
         | '$' -> 
-            if data.IsEndOfPattern then 
-                data.AppendString @"\r?$" 
+            let isEndOfPattern = 
+                if data.Index >= data.Pattern.Length then true 
+                else
+                    match data.MagicKind, data.CharAt data.Index, data.CharAt (data.Index + 1) with
+                    | MagicKind.VeryMagic, Some '|', _ -> true
+                    | _, Some '\\', Some '|' -> true
+                    | _ -> false
+            if isEndOfPattern then data.AppendString @"\r?$" 
             else data.AppendEscapedChar '$'
         | '<' -> data.AppendString @"\b"
         | '>' -> data.AppendString @"\b"
