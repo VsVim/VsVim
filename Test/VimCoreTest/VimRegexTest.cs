@@ -129,6 +129,128 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class CaseSensitiveTest : VimRegexTest
+        {
+            /// <summary>
+            /// Make sure the parsing is case sensitive by default
+            /// </summary>
+            [Fact]
+            public void RespectIgnoreCase()
+            {
+                VerifyMatches("a", "a");
+                VerifyNotMatches("a", "A");
+                VerifyMatches("b", "b");
+                VerifyNotMatches("b", "B");
+            }
+
+            [Fact]
+            public void SensitiveSpecifier()
+            {
+                VerifyMatches(@"\Ca", "a");
+                VerifyMatches(@"\Cb", "b");
+                VerifyNotMatches(@"\Ca", "A");
+                VerifyNotMatches(@"\Cb", "B");
+            }
+
+            /// <summary>
+            /// Make sure we support the \C specifier anywhere in the search string
+            /// </summary>
+            [Fact]
+            public void SensitiveSpecifierInMiddleOfString()
+            {
+                var regex = Create(@"d\Cog").Value;
+                Assert.True(regex.CaseSpecifier.IsOrdinalCase);
+                Assert.Equal(@"d\Cog", regex.VimPattern);
+                Assert.Equal("dog", regex.RegexPattern);
+            }
+
+            /// <summary>
+            /// The \C modifier takes precedence over ignorecase option
+            /// </summary>
+            [Fact]
+            public void SensitiveSpecifierBeatsIgonreCase()
+            {
+                VerifyMatches(VimRegexOptions.IgnoreCase, @"\Ca", "a");
+                VerifyMatches(VimRegexOptions.IgnoreCase, @"\Cb", "b");
+                VerifyNotMatches(VimRegexOptions.IgnoreCase, @"\Ca", "A");
+                VerifyNotMatches(VimRegexOptions.IgnoreCase, @"\Cb", "B");
+            }
+
+            [Fact]
+            public void InsensitiveSpecifier()
+            {
+                VerifyMatches(@"\ca", "a", "A");
+                VerifyMatches(@"\cb", "b", "B");
+            }
+
+            /// <summary>
+            /// Make sure we support the \c specifier anywhere in the search string
+            /// </summary>
+            [Fact]
+            public void InsensitiveSpecifierInMiddleOfString()
+            {
+                var regex = Create(@"D\cOG").Value;
+                Assert.True(regex.CaseSpecifier.IsIgnoreCase);
+                Assert.Equal(@"D\cOG", regex.VimPattern);
+                Assert.Equal("DOG", regex.RegexPattern);
+            }
+
+            /// <summary>
+            /// The \c modifier takes precedence over the ignore case option
+            /// </summary>
+            [Fact]
+            public void InsensitiveSpecifierBeatsDefault()
+            {
+                VerifyMatches(@"\ca", "a", "A");
+                VerifyMatches(@"\cb", "b", "B");
+            }
+
+            /// <summary>
+            /// SmartCase should match both if only lower
+            /// </summary>
+            [Fact]
+            public void Simple()
+            {
+                VerifyMatches(VimRegexOptions.SmartCase | VimRegexOptions.IgnoreCase, "a", "A", "a");
+                VerifyMatches(VimRegexOptions.SmartCase | VimRegexOptions.IgnoreCase, "b", "b", "B");
+            }
+
+            /// <summary>
+            /// SmartCase is case sensitive if any are upper
+            /// </summary>
+            [Fact]
+            public void WithUpper()
+            {
+                VerifyMatches(VimRegexOptions.SmartCase, "A", "A");
+                VerifyNotMatches(VimRegexOptions.SmartCase, "A", "a");
+                VerifyMatches(VimRegexOptions.SmartCase, "B", "B");
+                VerifyNotMatches(VimRegexOptions.SmartCase, "B", "b");
+            }
+
+            /// <summary>
+            /// The \c modifier beats smart case as well
+            /// </summary>
+            [Fact]
+            public void InsensitiveSpecifierWins()
+            {
+                VerifyMatches(VimRegexOptions.SmartCase, @"\cFoo", "foo", "FOO", "fOO");
+                VerifyMatches(VimRegexOptions.SmartCase, @"\cBar", "BAR", "bar");
+            }
+
+            /// <summary>
+            /// The \C modifier beats smart case as well
+            /// </summary>
+            [Fact]
+            public void SensitiveSpecifierWins()
+            {
+                var options = VimRegexOptions.SmartCase | VimRegexOptions.IgnoreCase;
+                VerifyMatches(options, @"\CFOO", "FOO");
+                VerifyNotMatches(options, @"\CFOO", "foo");
+                VerifyMatches(options, @"\CBAR", "BAR");
+                VerifyNotMatches(options, @"\CBAR", "bar");
+            }
+        }
+
         public sealed class ReplaceTest : VimRegexTest
         {
             private readonly IRegisterMap _registerMap;
@@ -394,125 +516,6 @@ namespace Vim.UnitTest
             {
                 VerifyMatches(VimRegexOptions.IgnoreCase, "a", "a", "A");
                 VerifyMatches("b", "b", "b");
-            }
-
-            /// <summary>
-            /// Make sure the parsing is case sensitive by default
-            /// </summary>
-            [Fact]
-            public void Case_RespectIgnoreCase()
-            {
-                VerifyMatches("a", "a");
-                VerifyNotMatches("a", "A");
-                VerifyMatches("b", "b");
-                VerifyNotMatches("b", "B");
-            }
-
-            [Fact]
-            public void Case_SensitiveSpecifier()
-            {
-                VerifyMatches(@"\Ca", "a");
-                VerifyMatches(@"\Cb", "b");
-                VerifyNotMatches(@"\Ca", "A");
-                VerifyNotMatches(@"\Cb", "B");
-            }
-
-            /// <summary>
-            /// Make sure we support the \C specifier anywhere in the search string
-            /// </summary>
-            [Fact]
-            public void Case_SensitiveSpecifierInMiddleOfString()
-            {
-                var regex = Create(@"d\Cog").Value;
-                Assert.True(regex.CaseSpecifier.IsOrdinalCase);
-                Assert.Equal(@"d\Cog", regex.VimPattern);
-                Assert.Equal("dog", regex.RegexPattern);
-            }
-
-            /// <summary>
-            /// The \C modifier takes precedence over ignorecase option
-            /// </summary>
-            [Fact]
-            public void Case_SensitiveSpecifierBeatsIgonreCase()
-            {
-                VerifyMatches(VimRegexOptions.IgnoreCase, @"\Ca", "a");
-                VerifyMatches(VimRegexOptions.IgnoreCase, @"\Cb", "b");
-                VerifyNotMatches(VimRegexOptions.IgnoreCase, @"\Ca", "A");
-                VerifyNotMatches(VimRegexOptions.IgnoreCase, @"\Cb", "B");
-            }
-
-            [Fact]
-            public void Case_InsensitiveSpecifier()
-            {
-                VerifyMatches(@"\ca", "a", "A");
-                VerifyMatches(@"\cb", "b", "B");
-            }
-
-            /// <summary>
-            /// Make sure we support the \c specifier anywhere in the search string
-            /// </summary>
-            [Fact]
-            public void Case_InsensitiveSpecifierInMiddleOfString()
-            {
-                var regex = Create(@"D\cOG").Value;
-                Assert.True(regex.CaseSpecifier.IsIgnoreCase);
-                Assert.Equal(@"D\cOG", regex.VimPattern);
-                Assert.Equal("DOG", regex.RegexPattern);
-            }
-
-            /// <summary>
-            /// The \c modifier takes precedence over the ignore case option
-            /// </summary>
-            [Fact]
-            public void Case_InsensitiveSpecifierBeatsDefault()
-            {
-                VerifyMatches(@"\ca", "a", "A");
-                VerifyMatches(@"\cb", "b", "B");
-            }
-
-            /// <summary>
-            /// SmartCase should match both if only lower
-            /// </summary>
-            [Fact]
-            public void SmartCase_Simple()
-            {
-                VerifyMatches(VimRegexOptions.SmartCase | VimRegexOptions.IgnoreCase, "a", "A", "a");
-                VerifyMatches(VimRegexOptions.SmartCase | VimRegexOptions.IgnoreCase, "b", "b", "B");
-            }
-
-            /// <summary>
-            /// SmartCase is case sensitive if any are upper
-            /// </summary>
-            [Fact]
-            public void SmartCase_WithUpper()
-            {
-                VerifyMatches(VimRegexOptions.SmartCase, "A", "A");
-                VerifyNotMatches(VimRegexOptions.SmartCase, "A", "a");
-                VerifyMatches(VimRegexOptions.SmartCase, "B", "B");
-                VerifyNotMatches(VimRegexOptions.SmartCase, "B", "b");
-            }
-
-            /// <summary>
-            /// The \c modifier beats smart case as well
-            /// </summary>
-            [Fact]
-            public void SmartCase_InsensitiveSpecifierWins()
-            {
-                VerifyMatches(VimRegexOptions.SmartCase, @"\cFoo", "foo", "FOO", "fOO");
-                VerifyMatches(VimRegexOptions.SmartCase, @"\cBar", "BAR", "bar");
-            }
-
-            /// <summary>
-            /// The \C modifier beats smart case as well
-            /// </summary>
-            [Fact]
-            public void SmartCase_SensitiveSpecifierWins()
-            {
-                var options = VimRegexOptions.SmartCase | VimRegexOptions.IgnoreCase;
-                VerifyMatches(options, @"\CFOO", "FOO");
-                VerifyNotMatches(options, @"\CFOO", "foo");
-                VerifyMatches(options, @"\CBAR", "BAR");
-                VerifyNotMatches(options, @"\CBAR", "bar");
             }
 
             [Fact]
