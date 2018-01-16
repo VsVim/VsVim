@@ -1388,6 +1388,12 @@ namespace Vim.UnitTest
                 VerifyRegex(@"\v\*", @"\*");
             }
 
+            [Fact]
+            public void EscapedParens()
+            {
+                VerifyRegex(@"\vMethod\(", @"Method\(");
+                VerifyMatches(@"\vMethod\(", @"Method(");
+            }
         }
     }
 }
