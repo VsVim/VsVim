@@ -191,7 +191,6 @@ type internal VisualMode
             if ki = KeyInputUtil.EscapeKey && x.ShouldHandleEscape then
                 ProcessResult.Handled ModeSwitch.SwitchPreviousMode
             else
-                let original = _textBuffer.CurrentSnapshot.Version.VersionNumber
                 match _runner.Run ki with
                 | BindResult.NeedMoreInput _ -> 
                     // Commands like incremental search can move the caret and be incomplete.  Need to 

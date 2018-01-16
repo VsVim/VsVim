@@ -697,7 +697,7 @@ module VimRegexFactory =
             if isEscaped then ConvertCharAsSpecial data c
             else ConvertCharAsNormal data c
 
-        let convertVeryMagic data c isEscaped = 
+        let convertVeryMagic (data : VimRegexBuilder) c isEscaped = 
             // In VeryMagic mode all characters except a select few ar treated as special
             // characters. This will return true for characters which should not be treated 
             // specially in very magic
@@ -706,7 +706,9 @@ module VimRegexFactory =
                 elif c = '_' then true
                 else false
 
-            if isEscaped then ConvertEscapedCharAsMagicAndNoMagic data c
+            if isEscaped then
+                if isSimpleChar then ConvertEscapedCharAsMagicAndNoMagic data c
+                else data.AppendEscapedChar c
             elif isSimpleChar then ConvertCharAsNormal data c
             else ConvertCharAsSpecial data c
 
