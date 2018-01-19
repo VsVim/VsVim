@@ -294,6 +294,121 @@ namespace Vim.UnitTest
             }
         }
 
+        public abstract class EnterVisualModeWithCountTest : VisualModeIntegrationTest
+        {
+            public sealed class CharacterTest : EnterVisualModeWithCountTest
+            {
+                [WpfTheory]
+                [InlineData('v')]
+                [InlineData('V')]
+                public void SimpleCharacter(char kind)
+                {
+                    Create("dog");
+                    _vimBuffer.ProcessNotation("vy");
+                    Assert.Equal(StoredVisualSelection.NewCharacter(1), VimData.LastVisualSelection.Value);
+                    _vimBuffer.ProcessNotation($"2{kind}");
+                    Assert.Equal(ModeKind.VisualCharacter, _vimBuffer.ModeKind);
+                    Assert.Equal("do", _textView.Selection.GetSpan().GetText());
+                }
+
+                [WpfTheory]
+                [InlineData('v')]
+                [InlineData('V')]
+                public void CountGoesPastSingleLine(char kind)
+                {
+                    Create("dog");
+                    _vimBuffer.ProcessNotation("vly");
+                    Assert.Equal(StoredVisualSelection.NewCharacter(1), VimData.LastVisualSelection.Value);
+                    _vimBuffer.ProcessNotation($"20{kind}");
+                    Assert.Equal(ModeKind.VisualCharacter, _vimBuffer.ModeKind);
+                    Assert.Equal("dog" + Environment.NewLine, _textView.Selection.GetSpan().GetText());
+                }
+
+                [WpfTheory]
+                [InlineData('v')]
+                [InlineData('V')]
+                public void CountAcrossLines(char kind)
+                {
+                    Create("dog", "cat", "fish", "tree");
+                    _vimBuffer.ProcessNotation("vjy");
+                    Assert.Equal(StoredVisualSelection.NewCharacter(1), VimData.LastVisualSelection.Value);
+                    _vimBuffer.ProcessNotation($"2{kind}");
+                    Assert.Equal(ModeKind.VisualCharacter, _vimBuffer.ModeKind);
+                    Assert.Equal(_textBuffer.GetPoint(0), _textView.Selection.Start.Position);
+                    Assert.Equal(_textBuffer.GetPointInLine(line: 3, column: 0), _textView.Selection.End.Position);
+                }
+
+                /// <summary>
+                /// When using a count across a multi-line character selection the count just multilies lines
+                /// but keeps the character in the same column.
+                /// </summary>
+                [WpfTheory]
+                [InlineData('v')]
+                [InlineData('V')]
+                public void CountAcrossLinesNonZeroColumn(char kind)
+                {
+                    Create("dog", "cat", "fish", "tree");
+                    _vimBuffer.ProcessNotation("lvjy");
+                    Assert.Equal(StoredVisualSelection.NewCharacter(1), VimData.LastVisualSelection.Value);
+                    _vimBuffer.ProcessNotation($"2{kind}");
+                    Assert.Equal(ModeKind.VisualCharacter, _vimBuffer.ModeKind);
+                    Assert.Equal(_textBuffer.GetPointInLine(line: 0, column: 1), _textView.Selection.Start.Position);
+                    Assert.Equal(_textBuffer.GetPointInLine(line: 3, column: 1), _textView.Selection.End.Position);
+                }
+
+                /// <summary>
+                /// The 3rd column doesn't exist here but should go to the 2nd which is the 
+                /// new line
+                /// </summary>
+                [WpfTheory]
+                [InlineData('v')]
+                [InlineData('V')]
+                public void CountAcrossLinesNonZeroColumnThatExtends(char kind)
+                {
+                    Create("dog", "cat", "fish", "t");
+                    _vimBuffer.ProcessNotation("llvjy");
+                    Assert.Equal(StoredVisualSelection.NewCharacter(1), VimData.LastVisualSelection.Value);
+                    _vimBuffer.ProcessNotation($"2{kind}");
+                    Assert.Equal(ModeKind.VisualCharacter, _vimBuffer.ModeKind);
+                    Assert.Equal(_textBuffer.GetPointInLine(line: 0, column: 1), _textView.Selection.Start.Position);
+                    Assert.Equal(_textBuffer.GetPointInLine(line: 3, column: 1), _textView.Selection.End.Position);
+                }
+            }
+
+            public sealed class LineTest : EnterVisualModeWithCountTest
+            {
+                [WpfTheory]
+                [InlineData('v')]
+                [InlineData('V')]
+                public void SimpleLine(char kind)
+                {
+                    Create("dog", "cat", "fish", "tree");
+                    _vimBuffer.ProcessNotation("Vy");
+                    Assert.Equal(StoredVisualSelection.NewLine(1), VimData.LastVisualSelection.Value);
+                    _vimBuffer.ProcessNotation($"1{kind}");
+                    Assert.Equal(ModeKind.VisualLine, _vimBuffer.ModeKind);
+                    var selection = _vimBuffer.VisualLineMode.VisualSelection;
+                    var range = selection.AsLine().Item1;
+                    Assert.Equal(range, _textBuffer.GetLineRange(startLine: 0, endLine: 0));
+                }
+
+                [WpfTheory]
+                [InlineData('v')]
+                [InlineData('V')]
+                public void SimpleLineDoubleCount(char kind)
+                {
+                    Create("dog", "cat", "fish", "tree");
+                    _vimBuffer.ProcessNotation("Vy");
+                    Assert.Equal(StoredVisualSelection.NewLine(1), VimData.LastVisualSelection.Value);
+                    _vimBuffer.ProcessNotation($"2{kind}");
+                    Assert.Equal(ModeKind.VisualLine, _vimBuffer.ModeKind);
+                    var selection = _vimBuffer.VisualLineMode.VisualSelection;
+                    var range = selection.AsLine().Item1;
+                    Assert.Equal(range, _textBuffer.GetLineRange(startLine: 0, endLine: 1));
+                }
+            }
+        }
+
         public sealed class DeleteLineSelectionTest : VisualModeIntegrationTest
         {
             /// <summary>
