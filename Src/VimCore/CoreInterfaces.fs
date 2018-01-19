@@ -2190,6 +2190,8 @@ type VisualSelection =
             let blockSpan = BlockSpan(caretPoint, tabStop, 1, 1)
             VisualSelection.Block (blockSpan, BlockCaretLocation.BottomRight)
 
+/// This is used for commands like [count]v and [count]V to hold a visual selection
+/// without any specific buffer information.
 [<RequireQualifiedAccess>]
 [<NoComparison>]
 type StoredVisualSelection =
