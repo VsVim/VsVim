@@ -3273,26 +3273,23 @@ type StoredVisualSpan =
 
     /// Storing a character wise span.  Need to know the line count and the offset 
     /// in the last line for the end.  
-    | Character of int * int
+    | Character of lineCount : int * lastLineLength : int
 
     /// Storing a line wise span just stores the count of lines
-    | Line of int
+    | Line of count : int
 
     /// Storing of a block span records the length of the span and the number of
     /// lines which should be affected by the Span
-    | Block of int * int
+    | Block of width : int * height : int
 
     with
 
     /// Create a StoredVisualSpan from the provided VisualSpan value
     static member OfVisualSpan visualSpan = 
         match visualSpan with
-        | VisualSpan.Character characterSpan ->
-            StoredVisualSpan.Character (characterSpan.LineCount, characterSpan.LastLineLength)
-        | VisualSpan.Line range ->
-            StoredVisualSpan.Line range.Count
-        | VisualSpan.Block blockSpan -> 
-            StoredVisualSpan.Block (blockSpan.Spaces, blockSpan.Height)
+        | VisualSpan.Character characterSpan -> StoredVisualSpan.Character (characterSpan.LineCount, characterSpan.LastLineLength)
+        | VisualSpan.Line range -> StoredVisualSpan.Line range.Count
+        | VisualSpan.Block blockSpan -> StoredVisualSpan.Block (blockSpan.Spaces, blockSpan.Height)
 
 /// Contains information about an executed Command.  This instance *will* be stored
 /// for long periods of time and used to repeat a Command instance across multiple
