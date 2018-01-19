@@ -242,6 +242,15 @@ type internal VisualMode
                 // Before resetting the selection save it
                 _vimTextBuffer.LastVisualSelection <- Some lastVisualSelection
 
+                // Save the last visual selection at the global level for use with [count]V|v except
+                // in the case of <Esc>. This <Esc> exception is not a documented behavior but exists
+                // experimentally. 
+                if ki <> KeyInputUtil.EscapeKey then
+                    let vimData = _vimBufferData.Vim.VimData
+                    match StoredVisualSelection.CreateFromVisualSpan lastVisualSelection.VisualSpan with
+                    | None -> ()
+                    | Some v -> vimData.LastVisualSelection <- Some v
+
                 if result.IsAnySwitchToVisual then
                     _selectionTracker.UpdateSelection()
                 elif not result.IsAnySwitchToCommand then
