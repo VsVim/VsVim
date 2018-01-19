@@ -82,6 +82,7 @@ type internal VimData(_globalSettings : IVimGlobalSettings) as this =
     let mutable _lastCharSearch : (CharSearchKind * SearchPath * char) option = None
     let mutable _lastMacroRun : char option = None
     let mutable _lastCommand : StoredCommand option = None
+    let mutable _lastVisualSelection : StoredVisualSelection option = None
     let mutable _lastCommandLine = ""
     let mutable _displayPattern = ""
     let mutable _displayPatternSuspended = false
@@ -175,6 +176,9 @@ type internal VimData(_globalSettings : IVimGlobalSettings) as this =
         member x.LastTextInsert
             with get() = _lastTextInsert
             and set value = _lastTextInsert <- value
+        member x.LastVisualSelection 
+            with get() = _lastVisualSelection
+            and set value = _lastVisualSelection <- value
         member x.SuspendDisplayPattern() = x.SuspendDisplayPattern()
         member x.ResumeDisplayPattern() = x.ResumeDisplayPattern()
         [<CLIEvent>]

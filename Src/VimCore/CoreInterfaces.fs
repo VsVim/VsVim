@@ -2190,6 +2190,45 @@ type VisualSelection =
             let blockSpan = BlockSpan(caretPoint, tabStop, 1, 1)
             VisualSelection.Block (blockSpan, BlockCaretLocation.BottomRight)
 
+[<RequireQualifiedAccess>]
+[<NoComparison>]
+type StoredVisualSelection =
+    | Character of characters : int
+    | Line of lines : int
+
+    with 
+
+    member x.GetVisualSpan (point : SnapshotPoint) count = 
+        match x with
+        | StoredVisualSelection.Character c ->
+            let snapshot = SnapshotPointUtil.GetSnapshot point
+            let count = c * count
+            let endPoint = 
+                point
+                |> SnapshotPointUtil.GetPoints SearchPath.Forward
+                |> SeqUtil.skipMax count
+                |> SeqUtil.headOrDefault (SnapshotUtil.GetEndPoint snapshot)
+            let span = CharacterSpan(point, endPoint)
+            VisualSpan.Character span
+        | StoredVisualSelection.Line c ->
+            let line = SnapshotPointUtil.GetContainingLine point
+            let count = c * count
+            let range = SnapshotLineRangeUtil.CreateForLineAndMaxCount line count
+            VisualSpan.Line range
+
+    static member CreateFromVisualSpan visualSpan =
+        match visualSpan with
+        | VisualSpan.Character span ->
+            let count = 
+                span.Span
+                |> SnapshotSpanUtil.GetPoints SearchPath.Forward
+                |> Seq.where (fun x -> not (SnapshotPointUtil.IsInsideLineBreak x))
+                |> Seq.length
+            let count = max count 1
+            StoredVisualSelection.Character count |> Some
+        | VisualSpan.Line range -> StoredVisualSelection.Line range.Count |> Some
+        | VisualSpan.Block _ -> None
+
 /// Most text object entries have specific effects on Visual Mode.  They are 
 /// described below
 [<RequireQualifiedAccess>]
@@ -3904,6 +3943,9 @@ type IVimData =
 
     /// Last text inserted into any buffer. Used for the '.' register
     abstract LastTextInsert : string option with get, set
+
+    /// Last, unescaped, visual selection that occurred
+    abstract LastVisualSelection : StoredVisualSelection option with get, set
 
     /// The previous value of the current directory Vim is positioned in
     abstract PreviousCurrentDirectory : string

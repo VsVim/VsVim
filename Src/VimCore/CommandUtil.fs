@@ -2424,7 +2424,7 @@ type internal CommandUtil
         | NormalCommand.SplitViewHorizontally -> x.SplitViewHorizontally()
         | NormalCommand.SplitViewVertically -> x.SplitViewVertically()
         | NormalCommand.SwitchMode (modeKind, modeArgument) -> x.SwitchMode modeKind modeArgument
-        | NormalCommand.SwitchModeVisualCommand visualKind -> x.SwitchModeVisualCommand visualKind
+        | NormalCommand.SwitchModeVisualCommand visualKind -> x.SwitchModeVisualCommand visualKind data.Count
         | NormalCommand.SwitchPreviousVisualMode -> x.SwitchPreviousVisualMode()
         | NormalCommand.SwitchToSelection caretMovement -> x.SwitchToSelection caretMovement
         | NormalCommand.ToggleFoldUnderCaret -> x.ToggleFoldUnderCaret count
@@ -2862,13 +2862,24 @@ type internal CommandUtil
         CommandResult.Completed (ModeSwitch.SwitchModeWithArgument (modeKind, modeArgument))
 
     /// Switch to the visual mode specified by 'selectmode=cmd'
-    member x.SwitchModeVisualCommand visualKind = 
-        let modeKind =
-            if Util.IsFlagSet _globalSettings.SelectModeOptions SelectModeOptions.Command then
-                visualKind.SelectModeKind
-            else
-                visualKind.VisualModeKind
-        CommandResult.Completed (ModeSwitch.SwitchModeWithArgument (modeKind, ModeArgument.None))
+    member x.SwitchModeVisualCommand visualKind count = 
+        match count, _vimData.LastVisualSelection with
+        | Some count, Some lastSelection ->
+            let visualSpan = lastSelection.GetVisualSpan x.CaretPoint count
+            let modeKind = 
+                match lastSelection with
+                | StoredVisualSelection.Character _ -> ModeKind.VisualCharacter
+                | StoredVisualSelection.Line _ -> ModeKind.VisualLine
+            let visualSelection = VisualSelection.CreateForward visualSpan
+            let arg = ModeArgument.InitialVisualSelection (visualSelection, None)
+            CommandResult.Completed (ModeSwitch.SwitchModeWithArgument (modeKind, arg))
+        | _ ->
+            let modeKind =
+                if Util.IsFlagSet _globalSettings.SelectModeOptions SelectModeOptions.Command then
+                    visualKind.SelectModeKind
+                else
+                    visualKind.VisualModeKind
+            CommandResult.Completed (ModeSwitch.SwitchModeWithArgument (modeKind, ModeArgument.None))
 
     /// Switch to the previous Visual Span selection
     member x.SwitchPreviousVisualMode () = 
