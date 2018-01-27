@@ -1135,6 +1135,13 @@ module SnapshotPointUtil =
     /// if it's the end of the Snapshot
     let TryAddOne point = TryAdd 1 point
 
+    /// Try and add a value to the point. If it's past the end of the snapshot then return
+    /// the end
+    let TryAddOrEnd count point = 
+        match TryAdd count point with
+        | Some p -> p
+        | None -> SnapshotUtil.GetEndPoint point.Snapshot
+
     /// Add the given count to the SnapshotPoint
     let Add count (point:SnapshotPoint) = point.Add(count)
 

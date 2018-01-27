@@ -2195,23 +2195,49 @@ type VisualSelection =
 [<RequireQualifiedAccess>]
 [<NoComparison>]
 type StoredVisualSelection =
-    | Character of characters : int
-    | Line of lines : int
+    | Character of lineCount : int * width : int
+    | Line of lineCount : int
 
     with 
 
-    member x.GetVisualSpan (point : SnapshotPoint) count = 
+    member x.GetVisualSpan (point : SnapshotPoint) count : VisualSpan = 
+
+        // Get the point which is 'count' columns forward from the passed in point (exclusive). If the point
+        // extends past the line break the point past the line break will be returned if possible.
+        let addOrEntireLine point count = 
+            let column = SnapshotColumn(point)
+            let line = column.Line
+            if count + column.Column >= line.Length then 
+                match SnapshotPointUtil.TryAddOne line.EndIncludingLineBreak with 
+                | Some p -> p
+                | None -> line.EndIncludingLineBreak
+            else SnapshotPointUtil.Add count point 
+
         match x with
-        | StoredVisualSelection.Character c ->
-            let snapshot = SnapshotPointUtil.GetSnapshot point
-            let count = c * count
-            let endPoint = 
-                point
-                |> SnapshotPointUtil.GetPoints SearchPath.Forward
-                |> SeqUtil.skipMax count
-                |> SeqUtil.headOrDefault (SnapshotUtil.GetEndPoint snapshot)
-            let span = CharacterSpan(point, endPoint)
-            VisualSpan.Character span
+        | StoredVisualSelection.Character (lineCount, width) ->
+
+            let rec getForCharacter lineCount width = 
+                if lineCount = 1 then 
+                    // For a single line count only moves the caret on the current line
+                    let endPoint = addOrEntireLine point (width * count)
+                    CharacterSpan(point, endPoint)
+                else
+                    // For multiple lines the count changes the number of lines in the selection
+                    let startColumn = SnapshotColumn(point)
+                    let range = SnapshotLineRangeUtil.CreateForLineAndMaxCount startColumn.Line (count * lineCount)
+                    let lastLine = range.LastLine
+                    if range.Count = 1 then
+                        getForCharacter 1 width
+                    elif lastLine.Length = 0 then
+                        CharacterSpan(point, lastLine.Start)
+                    else
+                        let contextColumnNumber = min (lastLine.Length - 1) startColumn.Column
+                        let contextPoint = SnapshotPointUtil.Add contextColumnNumber lastLine.Start
+                        let endPoint = addOrEntireLine contextPoint (width - 1)
+                        CharacterSpan(point, endPoint)
+
+            let characterSpan = getForCharacter lineCount width
+            VisualSpan.Character characterSpan
         | StoredVisualSelection.Line c ->
             let line = SnapshotPointUtil.GetContainingLine point
             let count = c * count
@@ -2221,13 +2247,13 @@ type StoredVisualSelection =
     static member CreateFromVisualSpan visualSpan =
         match visualSpan with
         | VisualSpan.Character span ->
-            let count = 
-                span.Span
-                |> SnapshotSpanUtil.GetPoints SearchPath.Forward
-                |> Seq.where (fun x -> not (SnapshotPointUtil.IsInsideLineBreak x))
-                |> Seq.length
-            let count = max count 1
-            StoredVisualSelection.Character count |> Some
+            if span.LineCount = 1 then StoredVisualSelection.Character (1, span.Length) |> Some
+            else
+                let width = 
+                    let startColumn = SnapshotPointUtil.GetColumn span.Start
+                    if startColumn >= span.LastLineLength then 1
+                    else span.LastLineLength - startColumn
+                StoredVisualSelection.Character (span.LineCount, width) |> Some
         | VisualSpan.Line range -> StoredVisualSelection.Line range.Count |> Some
         | VisualSpan.Block _ -> None
 

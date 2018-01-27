@@ -18,7 +18,7 @@ namespace Vim.UnitTest
             public void SimpleCharacter(int count)
             {
                 var buffer = CreateTextBuffer("hello");
-                var storedVisualSelection = StoredVisualSelection.NewCharacter(count);
+                var storedVisualSelection = StoredVisualSelection.NewCharacter(1, count);
                 var visualSpan = storedVisualSelection.GetVisualSpan(buffer.GetStartPoint(), 1);
                 Assert.Equal(count, visualSpan.AsCharacter().Item.Length);
                 Assert.Equal("hello".Substring(0, count), visualSpan.Spans.Single().GetText());
