@@ -373,6 +373,26 @@ namespace Vim.UnitTest
                     Assert.Equal(_textBuffer.GetPointInLine(line: 0, column: 2), _textView.Selection.Start.Position);
                     Assert.Equal(_textBuffer.GetPointInLine(line: 3, column: 1), _textView.Selection.End.Position);
                 }
+
+                /// <summary>
+                /// When looking at a multiline character span the last column is stored as an offset of the 
+                /// start point: positive or negative. In the case where the 1v command results in a single line
+                /// this will result in a reverse selection. 
+                /// </summary>
+                [WpfTheory]
+                [InlineData('v')]
+                [InlineData('V')]
+                public void MultipleLinesShrunkResultsInReverseSpan(char kind)
+                {
+                    Create("dog", "cat", "fish", "t");
+                    _vimBuffer.ProcessNotation("llvjhy");
+                    Assert.Equal(StoredVisualSelection.NewCharacter(_lineCount: 2, _width: 1), VimData.LastVisualSelection.Value);
+                    _textView.MoveCaretToLine(lineNumber: 3, column: 2);
+                    _vimBuffer.ProcessNotation($"1{kind}");
+                    Assert.Equal(ModeKind.VisualCharacter, _vimBuffer.ModeKind);
+                    Assert.Equal(_textBuffer.GetPointInLine(line: 3, column: 2), _textView.Selection.Start.Position);
+                    Assert.Equal(_textBuffer.GetPointInLine(line: 3, column: 1), _textView.Selection.End.Position);
+                }
             }
 
             public sealed class LineTest : EnterVisualModeWithCountTest
