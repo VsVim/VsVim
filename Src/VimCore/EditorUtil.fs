@@ -911,6 +911,11 @@ module SnapshotLineUtil =
         if span.Length = 0 then None
         else span.End.Subtract(1) |> Some
 
+    let GetLastIncludedPointOrStart line = 
+        match GetLastIncludedPoint line with
+        | Some p -> p 
+        | None -> line.Start
+
     /// Is this the last included point on the ITextSnapshotLine
     let IsLastPoint (line : ITextSnapshotLine) point = 
         if line.Length = 0 then point = line.Start

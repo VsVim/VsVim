@@ -2865,12 +2865,13 @@ type internal CommandUtil
     member x.SwitchModeVisualCommand visualKind count = 
         match count, _vimData.LastVisualSelection with
         | Some count, Some lastSelection ->
-            let visualSpan = lastSelection.GetVisualSpan x.CaretPoint count
+            let visualSelection = lastSelection.GetVisualSelection x.CaretPoint count
             let modeKind = 
                 match lastSelection with
                 | StoredVisualSelection.Character _ -> ModeKind.VisualCharacter
+                | StoredVisualSelection.CharacterLine _ -> ModeKind.VisualCharacter
                 | StoredVisualSelection.Line _ -> ModeKind.VisualLine
-            let visualSelection = VisualSelection.CreateForward visualSpan
+            let visualSelection = VisualSelection.CreateForward visualSelection.VisualSpan
             let arg = ModeArgument.InitialVisualSelection (visualSelection, None)
             CommandResult.Completed (ModeSwitch.SwitchModeWithArgument (modeKind, arg))
         | _ ->
