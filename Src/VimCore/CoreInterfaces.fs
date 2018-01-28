@@ -2195,12 +2195,13 @@ type VisualSelection =
 [<RequireQualifiedAccess>]
 [<NoComparison>]
 type StoredVisualSelection =
-    | Character of lineCount : int * width : int
+    | Character of width : int
+    | CharacterLine of lineCount : int * lastLineOffset : int 
     | Line of lineCount : int
 
     with 
 
-    member x.GetVisualSpan (point : SnapshotPoint) count : VisualSpan = 
+    member x.GetVisualSelection (point : SnapshotPoint) count =
 
         // Get the point which is 'count' columns forward from the passed in point (exclusive). If the point
         // extends past the line break the point past the line break will be returned if possible.
@@ -2214,46 +2215,44 @@ type StoredVisualSelection =
             else SnapshotPointUtil.Add count point 
 
         match x with
-        | StoredVisualSelection.Character (lineCount, width) ->
+        | StoredVisualSelection.Character width ->
+            // For a single line count only moves the caret on the current line
+            let endPoint = addOrEntireLine point (width * count)
+            let characterSpan = CharacterSpan(point, endPoint)
+            VisualSelection.Character (characterSpan, SearchPath.Forward)
+        | StoredVisualSelection.CharacterLine (lineCount, offset)  ->
+            let startColumn = SnapshotColumn(point)
+            let range = SnapshotLineRangeUtil.CreateForLineAndMaxCount startColumn.Line (count * lineCount)
+            let lastLine = range.LastLine
+            let endPoint =
+                let column = 
+                    if offset >= 0 then startColumn.Column + offset + 1
+                    else startColumn.Column + offset
+                addOrEntireLine lastLine.Start column
+                        
+            let characterSpan, searchPath = 
+                if point.Position < endPoint.Position then 
+                    CharacterSpan(point, endPoint), SearchPath.Forward
+                else 
+                    let point = SnapshotPointUtil.AddOneOrCurrent point
+                    CharacterSpan(endPoint, point), SearchPath.Backward
 
-            let rec getForCharacter lineCount width = 
-                if lineCount = 1 then 
-                    // For a single line count only moves the caret on the current line
-                    let endPoint = addOrEntireLine point (width * count)
-                    CharacterSpan(point, endPoint)
-                else
-                    // For multiple lines the count changes the number of lines in the selection
-                    let startColumn = SnapshotColumn(point)
-                    let range = SnapshotLineRangeUtil.CreateForLineAndMaxCount startColumn.Line (count * lineCount)
-                    let lastLine = range.LastLine
-                    if range.Count = 1 then
-                        getForCharacter 1 width
-                    elif lastLine.Length = 0 then
-                        CharacterSpan(point, lastLine.Start)
-                    else
-                        let contextColumnNumber = min (lastLine.Length - 1) startColumn.Column
-                        let contextPoint = SnapshotPointUtil.Add contextColumnNumber lastLine.Start
-                        let endPoint = addOrEntireLine contextPoint (width - 1)
-                        CharacterSpan(point, endPoint)
-
-            let characterSpan = getForCharacter lineCount width
-            VisualSpan.Character characterSpan
+            VisualSelection.Character (characterSpan, searchPath)
         | StoredVisualSelection.Line c ->
             let line = SnapshotPointUtil.GetContainingLine point
             let count = c * count
             let range = SnapshotLineRangeUtil.CreateForLineAndMaxCount line count
-            VisualSpan.Line range
+            VisualSelection.Line (range, SearchPath.Forward, 0)
 
     static member CreateFromVisualSpan visualSpan =
         match visualSpan with
         | VisualSpan.Character span ->
-            if span.LineCount = 1 then StoredVisualSelection.Character (1, span.Length) |> Some
+            if span.LineCount = 1 then StoredVisualSelection.Character span.Length |> Some
             else
-                let width = 
-                    let startColumn = SnapshotPointUtil.GetColumn span.Start
-                    if startColumn >= span.LastLineLength then 1
-                    else span.LastLineLength - startColumn
-                StoredVisualSelection.Character (span.LineCount, width) |> Some
+                let startColumn = SnapshotPointUtil.GetColumn span.Start
+                let endColumn = max 0 (span.LastLineLength - 1)
+                let offset = endColumn - startColumn
+                StoredVisualSelection.CharacterLine (lineCount = span.LineCount, lastLineOffset = offset) |> Some
         | VisualSpan.Line range -> StoredVisualSelection.Line range.Count |> Some
         | VisualSpan.Block _ -> None
 
