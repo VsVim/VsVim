@@ -321,7 +321,8 @@ namespace Vim.UnitTest
                     Assert.Equal(StoredVisualSelection.NewCharacter(_width: 2), VimData.LastVisualSelection.Value);
                     _vimBuffer.ProcessNotation($"20{kind}");
                     Assert.Equal(ModeKind.VisualCharacter, _vimBuffer.ModeKind);
-                    Assert.Equal("dog" + Environment.NewLine, _textView.Selection.GetSpan().GetText());
+                    _vimBuffer.ProcessNotation("y");
+                    Assert.Equal("dog" + Environment.NewLine, UnnamedRegister.StringValue);
                 }
 
                 [WpfTheory]
@@ -331,11 +332,11 @@ namespace Vim.UnitTest
                 {
                     Create("dog", "cat", "fish", "tree");
                     _vimBuffer.ProcessNotation("vjy");
-                    Assert.Equal(StoredVisualSelection.NewCharacterLine(_lineCount: 2, _lastLineOffset: 1), VimData.LastVisualSelection.Value);
+                    Assert.Equal(StoredVisualSelection.NewCharacterLine(_lineCount: 2, _lastLineOffset: 0), VimData.LastVisualSelection.Value);
                     _vimBuffer.ProcessNotation($"2{kind}");
                     Assert.Equal(ModeKind.VisualCharacter, _vimBuffer.ModeKind);
                     Assert.Equal(_textBuffer.GetPoint(0), _textView.Selection.Start.Position);
-                    Assert.Equal(_textBuffer.GetPointInLine(line: 3, column: 0), _textView.Selection.End.Position);
+                    Assert.Equal(_textBuffer.GetPointInLine(line: 3, column: 1), _textView.Selection.End.Position);
                 }
 
                 /// <summary>
@@ -349,11 +350,11 @@ namespace Vim.UnitTest
                 {
                     Create("dog", "cat", "fish", "tree");
                     _vimBuffer.ProcessNotation("lvjy");
-                    Assert.Equal(StoredVisualSelection.NewCharacter(_width: 1), VimData.LastVisualSelection.Value);
+                    Assert.Equal(StoredVisualSelection.NewCharacterLine(_lineCount: 2, _lastLineOffset: 0), VimData.LastVisualSelection.Value);
                     _vimBuffer.ProcessNotation($"2{kind}");
                     Assert.Equal(ModeKind.VisualCharacter, _vimBuffer.ModeKind);
                     Assert.Equal(_textBuffer.GetPointInLine(line: 0, column: 1), _textView.Selection.Start.Position);
-                    Assert.Equal(_textBuffer.GetPointInLine(line: 3, column: 1), _textView.Selection.End.Position);
+                    Assert.Equal(_textBuffer.GetPointInLine(line: 3, column: 2), _textView.Selection.End.Position);
                 }
 
                 /// <summary>
@@ -367,7 +368,7 @@ namespace Vim.UnitTest
                 {
                     Create("dog", "cat", "fish", "t");
                     _vimBuffer.ProcessNotation("llvjy");
-                    Assert.Equal(StoredVisualSelection.NewCharacterLine(_lineCount: 2, _lastLineOffset: 1), VimData.LastVisualSelection.Value);
+                    Assert.Equal(StoredVisualSelection.NewCharacterLine(_lineCount: 2, _lastLineOffset: 0), VimData.LastVisualSelection.Value);
                     _vimBuffer.ProcessNotation($"2{kind}");
                     Assert.Equal(ModeKind.VisualCharacter, _vimBuffer.ModeKind);
                     Assert.Equal(_textBuffer.GetPointInLine(line: 0, column: 2), _textView.Selection.Start.Position);

@@ -40,6 +40,17 @@ namespace Vim.UnitTest
             [WpfFact]
             public void CharacterIntoLineBreak()
             {
+                var textBuffer = CreateTextBuffer("dog", "");
+                var sel = StoredVisualSelection.NewCharacter(_width: 20);
+                var visualSpan = sel.GetVisualSelection(textBuffer.GetStartPoint(), 1).VisualSpan;
+                var span = visualSpan.Spans.Single();
+                Assert.Equal(textBuffer.GetPointInLine(line: 1, column: 0), span.End);
+                Assert.Equal("dog" + Environment.NewLine, span.GetText());
+            }
+
+            [WpfFact]
+            public void CharacterLineIntoLineBreak()
+            {
                 var textBuffer = CreateTextBuffer("dog", "cat", "fish", "t");
                 var sel = StoredVisualSelection.NewCharacterLine(_lineCount: 2, _lastLineOffset: 1);
                 var point = textBuffer.GetPointInLine(line: 2, column: 2);
