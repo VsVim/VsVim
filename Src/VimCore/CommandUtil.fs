@@ -15,7 +15,7 @@ open StringBuilderExtensions
 [<RequireQualifiedAccess>]
 [<NoComparison>]
 [<StructuralEquality>]
-type internal NumberValue = 
+type internal NumberValue =
     | Decimal of int
     | Octal of int
     | Hex of int
@@ -23,20 +23,20 @@ type internal NumberValue =
 
     with
 
-    member x.NumberFormat = 
+    member x.NumberFormat =
         match x with
         | Decimal _ -> NumberFormat.Decimal
         | Octal _ -> NumberFormat.Octal
         | Hex _ -> NumberFormat.Hex
         | Alpha _ -> NumberFormat.Alpha
 
-/// There are some commands which if began in normal mode must end in normal 
+/// There are some commands which if began in normal mode must end in normal
 /// mode (undo and redo).  In general this is easy, don't switch modes.  But often
-/// the code needs to call out to 3rd party code which can change the mode by 
-/// altering the selection.  
+/// the code needs to call out to 3rd party code which can change the mode by
+/// altering the selection.
 ///
 /// This is a simple IDisposable type which will put us back into normal mode
-/// if this happens. 
+/// if this happens.
 type internal NormalModeSelectionGuard
     (
         _vimBufferData : IVimBufferData
@@ -44,7 +44,7 @@ type internal NormalModeSelectionGuard
 
     let _beganInNormalMode = _vimBufferData.VimTextBuffer.ModeKind = ModeKind.Normal
 
-    member x.Dispose() = 
+    member x.Dispose() =
         let selection = _vimBufferData.TextView.Selection
         if _beganInNormalMode && not selection.IsEmpty then
             selection.Clear()
@@ -61,10 +61,10 @@ type internal NormalModeSelectionGuard
 /// them together as it reduces the overhead of sharing common infrastructure.
 ///
 /// I've debated back and forth about separating them out.  Thus far though I've
-/// decided to keep them all together because while there is a large set of 
-/// functionality here there is very little state.  So long as I can keep the 
+/// decided to keep them all together because while there is a large set of
+/// functionality here there is very little state.  So long as I can keep the
 /// amount of stored state low here I believe it counters the size of the type
-type internal CommandUtil 
+type internal CommandUtil
     (
         _vimBufferData : IVimBufferData,
         _motionUtil : IMotionUtil,
@@ -121,7 +121,7 @@ type internal CommandUtil
     member x.CurrentSnapshot = _textBuffer.CurrentSnapshot
 
     /// Add count values to the specific word
-    member x.AddToWord count = 
+    member x.AddToWord count =
 
         let allowAlpha = _localSettings.IsNumberFormatSupported NumberFormat.Alpha
         match x.GetNumberValueAtCaret() with
@@ -129,8 +129,8 @@ type internal CommandUtil
             _commonOperations.Beep()
         | Some (numberValue, span) ->
 
-            // Calculate te new value of the number 
-            let text = 
+            // Calculate te new value of the number
+            let text =
                 match numberValue with
                 | NumberValue.Alpha c -> c |> CharUtil.AlphaAdd count |> StringUtil.OfChar
                 | NumberValue.Decimal number -> sprintf "%d" (number + count)
@@ -139,7 +139,7 @@ type internal CommandUtil
 
             // Need a transaction here in order to properly position the caret.  After the
             // add the caret needs to be positioned on the last character in the number
-            x.EditWithUndoTransaction "Add" (fun () -> 
+            x.EditWithUndoTransaction "Add" (fun () ->
 
                 _textBuffer.Replace(span.Span, text) |> ignore
 
@@ -148,14 +148,14 @@ type internal CommandUtil
 
         CommandResult.Completed ModeSwitch.NoSwitch
 
-    /// Apply the ITextEdit and returned the mapped position value from the resulting 
+    /// Apply the ITextEdit and returned the mapped position value from the resulting
     /// ITextSnapshot into the current ITextSnapshot.
     ///
     /// A number of commands will edit the text and calculate the position of the caret
     /// based on the edits about to be made.  It's possible for other extensions to listen
-    /// to the events fired by an edit and make fix up edits.  This code accounts for that 
+    /// to the events fired by an edit and make fix up edits.  This code accounts for that
     /// and returns the position mapped into the current ITextSnapshot
-    member x.ApplyEditAndMapPoint (textEdit : ITextEdit) position = 
+    member x.ApplyEditAndMapPoint (textEdit : ITextEdit) position =
         let editSnapshot = textEdit.Apply()
         let editPoint = SnapshotPoint(editSnapshot, position)
         let currentSnapshot = x.CurrentSnapshot
@@ -163,7 +163,7 @@ type internal CommandUtil
         | None -> SnapshotPoint(currentSnapshot, 0)
         | Some point -> point
 
-    member x.ApplyEditAndMapPosition (textEdit : ITextEdit) position = 
+    member x.ApplyEditAndMapPosition (textEdit : ITextEdit) position =
         let point = x.ApplyEditAndMapPoint textEdit position
         point.Position
 
@@ -172,7 +172,7 @@ type internal CommandUtil
     member x.CalculateIdentStringData (registerValue : RegisterValue) =
 
         // Get the indent string to apply to the lines which are indented
-        let indent = 
+        let indent =
             x.CaretLine
             |> SnapshotLineUtil.GetIndentText
             |> _commonOperations.NormalizeBlanks
@@ -184,29 +184,29 @@ type internal CommandUtil
             let text = indent + (textLine.Text.Substring(oldIndent.Length))
             { textLine with Text = text }
 
-        // Really a put after with indent is just a normal put after of the adjusted 
+        // Really a put after with indent is just a normal put after of the adjusted
         // register value.  So adjust here and forward on the magic
-        let stringData = 
+        let stringData =
             let stringData = registerValue.StringData
-            match stringData with 
-            | StringData.Block _ -> 
+            match stringData with
+            | StringData.Block _ ->
                 // Block values don't participate in indentation of this manner
-                stringData 
+                stringData
             | StringData.Simple text ->
                 match registerValue.OperationKind with
                 | OperationKind.CharacterWise ->
-    
+
                     // We only change lines after the first.  So break it into separate lines
                     // fix their indent and then produce the new value.
                     let lines = TextLine.GetTextLines text
                     let head = lines.Head
                     let rest = lines.Rest |> Seq.map adjustTextLine
-                    let text = 
+                    let text =
                         let all = Seq.append (Seq.singleton head) rest
                         TextLine.CreateString all
                     StringData.Simple text
 
-                | OperationKind.LineWise -> 
+                | OperationKind.LineWise ->
 
                     // Change every line for a line wise operation
                     text
@@ -217,22 +217,22 @@ type internal CommandUtil
 
         x.CreateRegisterValue stringData registerValue.OperationKind
 
-    /// Calculate the VisualSpan value for the associated ITextBuffer given the 
+    /// Calculate the VisualSpan value for the associated ITextBuffer given the
     /// StoreVisualSpan value
     member x.CalculateVisualSpan stored =
 
         match stored with
-        | StoredVisualSpan.Line (count = count) -> 
-            // Repeating a LineWise operation just creates a span with the same 
+        | StoredVisualSpan.Line (count = count) ->
+            // Repeating a LineWise operation just creates a span with the same
             // number of lines as the original operation
             let range = SnapshotLineRangeUtil.CreateForLineAndMaxCount x.CaretLine count
             VisualSpan.Line range
 
-        | StoredVisualSpan.Character (lineCount = lineCount; lastLineLength = lastLineLength) -> 
+        | StoredVisualSpan.Character (lineCount = lineCount; lastLineLength = lastLineLength) ->
             let characterSpan = CharacterSpan(x.CaretPoint, lineCount, lastLineLength)
             VisualSpan.Character characterSpan
         | StoredVisualSpan.Block (width = width; height = height) ->
-            // Need to rehydrate spans of length 'length' on 'count' lines from the 
+            // Need to rehydrate spans of length 'length' on 'count' lines from the
             // current caret position
             let blockSpan = BlockSpan(x.CaretPoint, _localSettings.TabStop, width, height)
             VisualSpan.Block blockSpan
@@ -244,7 +244,7 @@ type internal CommandUtil
     /// Change the characters in the given span via the specified change kind
     member x.ChangeCaseSpanCore kind (editSpan : EditSpan) =
 
-        let func = 
+        let func =
             match kind with
             | ChangeCharacterKind.Rot13 -> CharUtil.ChangeRot13
             | ChangeCharacterKind.ToLowerCase -> CharUtil.ToLower
@@ -264,11 +264,11 @@ type internal CommandUtil
     /// Change the caret line via the specified ChangeCharacterKind.
     member x.ChangeCaseCaretLine kind =
 
-        // The caret should be positioned on the first non-blank space in 
+        // The caret should be positioned on the first non-blank space in
         // the line.  If the line is completely blank the caret should
         // not be moved.  Caret should be in the same place for undo / redo
         // so move before and inside the transaction
-        let position = 
+        let position =
             x.CaretLine
             |> SnapshotLineUtil.GetPoints SearchPath.Forward
             |> Seq.skipWhile SnapshotPointUtil.IsWhiteSpace
@@ -302,12 +302,12 @@ type internal CommandUtil
     /// Change the case of the current caret point
     member x.ChangeCaseCaretPoint kind count =
 
-        // The caret should be placed after the caret point but only 
-        // for redo.  Undo should move back to the current position so 
+        // The caret should be placed after the caret point but only
+        // for redo.  Undo should move back to the current position so
         // don't move until inside the transaction
         x.EditWithUndoTransaction "Change" (fun () ->
 
-            let span = 
+            let span =
                 let endPoint = SnapshotLineUtil.GetColumnOrEnd (x.CaretColumn + count) x.CaretLine
                 SnapshotSpan(x.CaretPoint, endPoint)
 
@@ -320,10 +320,10 @@ type internal CommandUtil
 
         CommandResult.Completed ModeSwitch.NoSwitch
 
-    /// Change the case of the selected text.  
-    member x.ChangeCaseVisual kind (visualSpan : VisualSpan) = 
+    /// Change the case of the selected text.
+    member x.ChangeCaseVisual kind (visualSpan : VisualSpan) =
 
-        // The caret should be positioned at the start of the VisualSpan for both 
+        // The caret should be positioned at the start of the VisualSpan for both
         // undo / redo so move it before and inside the transaction
         let point = visualSpan.Start
         let moveCaret () = TextViewUtil.MoveCaretToPosition _textView point.Position
@@ -335,26 +335,26 @@ type internal CommandUtil
         CommandResult.Completed ModeSwitch.SwitchPreviousMode
 
     /// Delete the specified motion and enter insert mode
-    member x.ChangeMotion registerName (result : MotionResult) = 
+    member x.ChangeMotion registerName (result : MotionResult) =
 
-        // This command has legacy / special case behavior for forward word motions.  It will 
-        // not delete any trailing whitespace in the span if the motion is created for a forward 
-        // word motion. This behavior is detailed in the :help WORD section of the gVim 
-        // documentation and is likely legacy behavior coming from the original vi 
+        // This command has legacy / special case behavior for forward word motions.  It will
+        // not delete any trailing whitespace in the span if the motion is created for a forward
+        // word motion. This behavior is detailed in the :help WORD section of the gVim
+        // documentation and is likely legacy behavior coming from the original vi
         // implementation.  A larger discussion thread is available here
         // http://groups.google.com/group/vim_use/browse_thread/thread/88b6499bbcb0878d/561dfe13d3f2ef63?lnk=gst&q=whitespace+cw#561dfe13d3f2ef63
 
-        let span = 
+        let span =
             if result.IsAnyWordMotion && result.IsForward then
-                let point = 
+                let point =
                     result.Span
                     |> SnapshotSpanUtil.GetPoints SearchPath.Backward
                     |> Seq.tryFind (fun x -> x.GetChar() |> CharUtil.IsWhiteSpace |> not)
-                match point with 
-                | Some(p) -> 
-                    let endPoint = 
+                match point with
+                | Some(p) ->
+                    let endPoint =
                         p
-                        |> SnapshotPointUtil.TryAddOne 
+                        |> SnapshotPointUtil.TryAddOne
                         |> OptionUtil.getOrDefault (SnapshotUtil.GetEndPoint (p.Snapshot))
                     SnapshotSpan(result.Span.Start, endPoint)
                 | None -> result.Span
@@ -363,7 +363,7 @@ type internal CommandUtil
                 // is backed up so that it leaves a single blank line after the delete operation.  This
                 // allows the insert to begin on a blank line
                 match SnapshotSpanUtil.GetLastIncludedPoint result.Span with
-                | Some point -> 
+                | Some point ->
                     if SnapshotPointUtil.IsInsideLineBreak point then
                         let line = SnapshotPointUtil.GetContainingLine point
                         SnapshotSpan(result.Span.Start, line.End)
@@ -372,22 +372,22 @@ type internal CommandUtil
                 | None -> result.Span
 
         // Use an undo transaction to preserve the caret position.  Experiments show that the rules
-        // for caret undo should be 
+        // for caret undo should be
         //  1. start of the change if motion is character wise
         //  2. start of second line if motion is line wise
-        let point = 
+        let point =
             match result.MotionKind with
             | MotionKind.CharacterWiseExclusive -> span.Start
             | MotionKind.CharacterWiseInclusive -> span.Start
-            | MotionKind.LineWise -> 
+            | MotionKind.LineWise ->
                 let startLine = SnapshotSpanUtil.GetStartLine span
-                let line = 
+                let line =
                     SnapshotUtil.TryGetLine span.Snapshot (startLine.LineNumber + 1)
                     |> OptionUtil.getOrDefault startLine
                 line.Start
 
         TextViewUtil.MoveCaretToPoint _textView point
-        let commandResult = 
+        let commandResult =
             x.EditWithLinkedChange "Change" (fun () ->
                 _textBuffer.Delete(span.Span) |> ignore
                 TextViewUtil.MoveCaretToPosition _textView span.Start.Position)
@@ -399,26 +399,26 @@ type internal CommandUtil
 
         commandResult
 
-    /// Delete 'count' lines and begin insert mode.  The documentation of this command 
-    /// and behavior are a bit off.  It's documented like it behaves like 'dd + insert mode' 
+    /// Delete 'count' lines and begin insert mode.  The documentation of this command
+    /// and behavior are a bit off.  It's documented like it behaves like 'dd + insert mode'
     /// but behaves more like ChangeTillEndOfLine but linewise and deletes the entire
     /// first line
-    member x.ChangeLines count registerName = 
+    member x.ChangeLines count registerName =
         let range = SnapshotLineRangeUtil.CreateForLineAndMaxCount x.CaretLine count
         x.ChangeLinesCore range registerName
 
     /// Core routine for changing a set of lines in the ITextBuffer.  This is the backing function
     /// for changing lines in both normal and visual mode
-    member x.ChangeLinesCore (range : SnapshotLineRange) registerName = 
+    member x.ChangeLinesCore (range : SnapshotLineRange) registerName =
 
         // Caret position for the undo operation depends on the number of lines which are in
         // range being deleted.  If there is a single line then we position it before the first
-        // non space / tab character in the first line.  If there is more than one line then we 
-        // position it at the equivalent location in the second line.  
-        // 
+        // non space / tab character in the first line.  If there is more than one line then we
+        // position it at the equivalent location in the second line.
+        //
         // There appears to be no logical reason for this behavior difference but it exists
-        let point = 
-            let line = 
+        let point =
+            let line =
                 if range.Count = 1 then
                     range.StartLine
                 else
@@ -431,17 +431,17 @@ type internal CommandUtil
         | None -> ()
         | Some point -> TextViewUtil.MoveCaretToPoint _textView point
 
-        // Start an edit transaction to get the appropriate undo / redo behavior for the 
+        // Start an edit transaction to get the appropriate undo / redo behavior for the
         // caret movement after the edit.
-        x.EditWithLinkedChange "ChangeLines" (fun () -> 
+        x.EditWithLinkedChange "ChangeLines" (fun () ->
 
             // Actually delete the text and position the caret
             _textBuffer.Delete(range.Extent.Span) |> ignore
             x.MoveCaretToDeletedLineStart range.StartLine
 
             // Update the register now that the operation is complete.  Register value is odd here
-            // because we really didn't delete linewise but it's required to be a linewise 
-            // operation.  
+            // because we really didn't delete linewise but it's required to be a linewise
+            // operation.
             let stringData = range.Extent.GetText() |> StringData.Simple
             let value = x.CreateRegisterValue stringData OperationKind.LineWise
             _commonOperations.SetRegisterValue registerName RegisterOperation.Delete value)
@@ -452,31 +452,31 @@ type internal CommandUtil
     member x.ChangeLineSelection registerName (visualSpan : VisualSpan) specialCaseBlock =
 
         // The majority of cases simply delete a SnapshotLineRange directly.  Handle that here
-        let deleteRange (range : SnapshotLineRange) = 
+        let deleteRange (range : SnapshotLineRange) =
 
             // In an undo the caret position has 2 cases.
             //  - Single line range: Start of the first line
             //  - Multiline range: Start of the second line.
-            let point = 
-                if range.Count = 1 then 
+            let point =
+                if range.Count = 1 then
                     range.StartLine.Start
-                else 
+                else
                     let next = SnapshotUtil.GetLine range.Snapshot (range.StartLineNumber + 1)
                     next.Start
             TextViewUtil.MoveCaretToPoint _textView point
 
-            let commandResult = x.EditWithLinkedChange "ChangeLines" (fun () -> 
+            let commandResult = x.EditWithLinkedChange "ChangeLines" (fun () ->
                 _textBuffer.Delete(range.Extent.Span) |> ignore
                 x.MoveCaretToDeletedLineStart range.StartLine)
 
             (EditSpan.Single range.Extent, commandResult)
 
         // The special casing of block deletion is handled here
-        let deleteBlock (col : NonEmptyCollection<SnapshotOverlapSpan>) = 
+        let deleteBlock (col : NonEmptyCollection<SnapshotOverlapSpan>) =
 
             // First step is to change the SnapshotSpan instances to extent from the start to the
-            // end of the current line 
-            let col = col |> NonEmptyCollectionUtil.Map (fun span -> 
+            // end of the current line
+            let col = col |> NonEmptyCollectionUtil.Map (fun span ->
                 let line = SnapshotPointUtil.GetContainingLine span.Start.Point
                 let span = SnapshotSpan(span.Start.Point, line.End)
                 SnapshotOverlapSpan(span))
@@ -493,13 +493,13 @@ type internal CommandUtil
             (EditSpan.Block col, commandResult)
 
         // Dispatch to the appropriate type of edit
-        let editSpan, commandResult = 
-            match visualSpan with 
-            | VisualSpan.Character characterSpan -> 
+        let editSpan, commandResult =
+            match visualSpan with
+            | VisualSpan.Character characterSpan ->
                 characterSpan.Span |> SnapshotLineRangeUtil.CreateForSpan |> deleteRange
-            | VisualSpan.Line range -> 
+            | VisualSpan.Line range ->
                 deleteRange range
-            | VisualSpan.Block blockSpan -> 
+            | VisualSpan.Block blockSpan ->
                 if specialCaseBlock then deleteBlock blockSpan.BlockOverlapSpans
                 else visualSpan.EditSpan.OverarchingSpan |> SnapshotLineRangeUtil.CreateForSpan |> deleteRange
 
@@ -511,7 +511,7 @@ type internal CommandUtil
     /// Delete till the end of the line and start insert mode
     member x.ChangeTillEndOfLine count registerName =
 
-        // The actual text edit portion of this operation is identical to the 
+        // The actual text edit portion of this operation is identical to the
         // DeleteTillEndOfLine operation.  There is a difference though in the
         // positioning of the caret.  DeleteTillEndOfLine needs to consider the virtual
         // space settings since it remains in normal mode but change does not due
@@ -526,20 +526,20 @@ type internal CommandUtil
             _commonOperations.MoveCaretToPoint point ViewFlags.None)
 
     /// Delete the selected text in Visual Mode and begin insert mode with a linked
-    /// transaction. 
-    member x.ChangeSelection registerName (visualSpan : VisualSpan) = 
+    /// transaction.
+    member x.ChangeSelection registerName (visualSpan : VisualSpan) =
 
         match visualSpan with
-        | VisualSpan.Character _ -> 
-            // For block and character modes the change selection command is simply a 
-            // delete of the span and move into insert mode.  
+        | VisualSpan.Character _ ->
+            // For block and character modes the change selection command is simply a
+            // delete of the span and move into insert mode.
             //
             // Caret needs to be positioned at the front of the span in undo so move it
             // before we create the transaction
             TextViewUtil.MoveCaretToPoint _textView visualSpan.Start
-            x.EditWithLinkedChange "ChangeSelection" (fun() -> 
+            x.EditWithLinkedChange "ChangeSelection" (fun() ->
                 x.DeleteSelection registerName visualSpan |> ignore)
-        | VisualSpan.Block blockSpan ->  
+        | VisualSpan.Block blockSpan ->
             // Change in block mode has behavior very similar to Shift + Insert.  It needs
             // to be a change followed by a transition into insert where the insert actions
             // are repeated across the block span
@@ -567,7 +567,7 @@ type internal CommandUtil
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Close all of the folds in the buffer
-    member x.CloseAllFolds() = 
+    member x.CloseAllFolds() =
         let span = SnapshotUtil.GetExtent x.CurrentSnapshot
         _foldManager.CloseAllFolds span
         CommandResult.Completed ModeSwitch.NoSwitch
@@ -587,23 +587,23 @@ type internal CommandUtil
     /// Close the IVimBuffer.  This is an implementation of the ZZ command and won't check
     /// for a dirty buffer
     member x.CloseBuffer() =
-        _vimHost.Close _textView 
+        _vimHost.Close _textView
         CommandResult.Completed ModeSwitch.NoSwitch
 
     member x.CloseWindow() =
         _commonOperations.CloseWindowUnlessDirty()
         CommandResult.Completed ModeSwitch.NoSwitch
 
-    /// Create a possibly LineWise register value with the specified string value at the given 
+    /// Create a possibly LineWise register value with the specified string value at the given
     /// point.  This is factored out here because a LineWise value in vim should always
-    /// end with a new line but we can't always guarantee the text we are working with 
+    /// end with a new line but we can't always guarantee the text we are working with
     /// contains a new line.  This normalizes out the process needed to make this correct
     /// while respecting the settings of the ITextBuffer
-    member x.CreateRegisterValue stringData operationKind = 
+    member x.CreateRegisterValue stringData operationKind =
         _commonOperations.CreateRegisterValue x.CaretPoint stringData operationKind
 
-    /// Delete 'count' characters after the cursor on the current line.  Caret should 
-    /// remain at it's original position 
+    /// Delete 'count' characters after the cursor on the current line.  Caret should
+    /// remain at it's original position
     member x.DeleteCharacterAtCaret count registerName =
 
         // Check for the case where the caret is past the end of the line.  Can happen
@@ -614,11 +614,11 @@ type internal CommandUtil
 
             // Use a transaction so we can guarantee the caret is in the correct
             // position on undo / redo
-            x.EditWithUndoTransaction "DeleteChar" (fun () -> 
+            x.EditWithUndoTransaction "DeleteChar" (fun () ->
                 let position = x.CaretPoint.Position
                 let snapshot = TextBufferUtil.DeleteAndGetLatest _textBuffer span.Span
 
-                // Need to respect the virtual edit setting here as we could have 
+                // Need to respect the virtual edit setting here as we could have
                 // deleted the last character on the line
                 let point = SnapshotPoint(snapshot, position)
                 _commonOperations.MoveCaretToPoint point ViewFlags.VirtualEdit)
@@ -633,13 +633,13 @@ type internal CommandUtil
     /// positioned at the begining of the span for undo / redo
     member x.DeleteCharacterBeforeCaret count registerName =
 
-        let startPoint = 
+        let startPoint =
             let position = x.CaretPoint.Position - count
             if position < x.CaretLine.Start.Position then x.CaretLine.Start else SnapshotPoint(x.CurrentSnapshot, position)
         let span = SnapshotSpan(startPoint, x.CaretPoint)
 
-        // Use a transaction so we can guarantee the caret is in the correct position.  We 
-        // need to position the caret to the start of the span before the transaction to 
+        // Use a transaction so we can guarantee the caret is in the correct position.  We
+        // need to position the caret to the start of the span before the transaction to
         // ensure it appears there during an undo
         TextViewUtil.MoveCaretToPoint _textView startPoint
         x.EditWithUndoTransaction "DeleteChar" (fun () ->
@@ -653,7 +653,7 @@ type internal CommandUtil
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Delete a fold under the caret
-    member x.DeleteFoldUnderCaret () = 
+    member x.DeleteFoldUnderCaret () =
         _foldManager.DeleteFold x.CaretPoint
         CommandResult.Completed ModeSwitch.NoSwitch
 
@@ -675,24 +675,24 @@ type internal CommandUtil
         _foldManager.DeleteAllFolds extent
         CommandResult.Completed ModeSwitch.NoSwitch
 
-    /// Delete the selected text from the buffer and put it into the specified 
-    /// register. 
+    /// Delete the selected text from the buffer and put it into the specified
+    /// register.
     member x.DeleteLineSelection registerName (visualSpan : VisualSpan) =
 
-        // For each of the 3 cases the caret should begin at the start of the 
-        // VisualSpan during undo so move the caret now. 
+        // For each of the 3 cases the caret should begin at the start of the
+        // VisualSpan during undo so move the caret now.
         TextViewUtil.MoveCaretToPoint _textView visualSpan.Start
 
-        // Start a transaction so we can manipulate the caret position during 
+        // Start a transaction so we can manipulate the caret position during
         // an undo / redo
-        let editSpan = 
-            x.EditWithUndoTransaction "Delete" (fun () -> 
-    
+        let editSpan =
+            x.EditWithUndoTransaction "Delete" (fun () ->
+
                 use edit = _textBuffer.CreateEdit()
-                let editSpan = 
+                let editSpan =
                     match visualSpan with
                     | VisualSpan.Character characterSpan ->
-                        // Just extend the SnapshotSpan to the encompassing SnapshotLineRange 
+                        // Just extend the SnapshotSpan to the encompassing SnapshotLineRange
                         let range = SnapshotLineRangeUtil.CreateForSpan characterSpan.Span
                         let span = range.ExtentIncludingLineBreak
                         edit.Delete(span.Span) |> ignore
@@ -701,11 +701,11 @@ type internal CommandUtil
                         // Easiest case.  It's just the range
                         edit.Delete(range.ExtentIncludingLineBreak.Span) |> ignore
                         EditSpan.Single range.ExtentIncludingLineBreak
-                    | VisualSpan.Block blockSpan -> 
+                    | VisualSpan.Block blockSpan ->
 
-                        // The delete is from the start of the block selection util the end of 
-                        // te containing line 
-                        let collection = 
+                        // The delete is from the start of the block selection util the end of
+                        // te containing line
+                        let collection =
                             blockSpan.BlockOverlapSpans
                             |> NonEmptyCollectionUtil.Map (fun span ->
                                 let line = SnapshotPointUtil.GetContainingLine span.Start.Point
@@ -716,7 +716,7 @@ type internal CommandUtil
                         collection |> Seq.iter (fun span -> edit.Delete(span) |> ignore)
 
                         EditSpan.Block collection
-    
+
                 let point = x.ApplyEditAndMapPoint edit visualSpan.Start.Position
                 _commonOperations.MoveCaretToPoint point ViewFlags.VirtualEdit
 
@@ -727,10 +727,10 @@ type internal CommandUtil
 
         CommandResult.Completed ModeSwitch.SwitchPreviousMode
 
-    /// Delete the highlighted text from the buffer and put it into the specified 
+    /// Delete the highlighted text from the buffer and put it into the specified
     /// register.  The caret should be positioned at the beginning of the text for
     /// undo / redo
-    member x.DeleteSelection registerName (visualSpan : VisualSpan) = 
+    member x.DeleteSelection registerName (visualSpan : VisualSpan) =
         let startPoint = visualSpan.Start
 
         // Use a transaction to guarantee caret position.  Caret should be at the start
@@ -746,7 +746,7 @@ type internal CommandUtil
                 // line break
                 let span =
                     match SnapshotSpanUtil.GetLastIncludedPoint span with
-                    | None -> 
+                    | None ->
                         // Don't need to special case a 0 length span as it won't actually
                         // cause any change in the ITextBuffer
                         span
@@ -771,40 +771,40 @@ type internal CommandUtil
 
     /// Delete count lines from the cursor.  The caret should be positioned at the start
     /// of the first line for both undo / redo
-    member x.DeleteLines count registerName = 
+    member x.DeleteLines count registerName =
         _commonOperations.DeleteLines x.CaretLine count registerName
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Delete the specified motion of text
-    member x.DeleteMotion registerName (result : MotionResult) = 
+    member x.DeleteMotion registerName (result : MotionResult) =
 
-        // The d{motion} command has an exception listed which is visible by typing ':help d' in 
+        // The d{motion} command has an exception listed which is visible by typing ':help d' in
         // gVim.  In summary, if the motion is characterwise, begins and ends on different
         // lines and the start is preceeding by only whitespace and the end is followed
-        // only by whitespace then it becomes a linewise motion for those lines.  This can be 
+        // only by whitespace then it becomes a linewise motion for those lines.  This can be
         // demonstrated with the following example.  Caret is on the 'c', there is one space before
         // every word and 4 spaces after dog
         //
         //  cat
-        //  dog    
+        //  dog
         //  fish
         //
-        // Now execute 'd/  ' (2 spaces after the /).  This will delete the entire cat and dog 
+        // Now execute 'd/  ' (2 spaces after the /).  This will delete the entire cat and dog
         // line
         let span, operationKind =
             let span = result.Span
             if result.LineRange.Count > 1 && result.OperationKind = OperationKind.CharacterWise then
                 let startLine, lastLine = SnapshotSpanUtil.GetStartAndLastLine span
-                let lastPoint = 
+                let lastPoint =
                     if result.IsExclusive then result.End
                     else result.LastOrStart
-                let endsInWhiteSpace = 
+                let endsInWhiteSpace =
                     lastPoint
                     |> SnapshotPointUtil.GetPoints SearchPath.Forward
                     |> Seq.takeWhile (fun point -> point.Position < lastLine.End.Position)
                     |> Seq.forall SnapshotPointUtil.IsWhiteSpace
 
-                let inIndent = 
+                let inIndent =
                     let indentPoint = SnapshotLineUtil.GetIndentPoint startLine
                     span.Start.Position <= indentPoint.Position
 
@@ -815,7 +815,7 @@ type internal CommandUtil
             else
                 span, result.OperationKind
 
-        // Caret should be placed at the start of the motion for both undo / redo so place it 
+        // Caret should be placed at the start of the motion for both undo / redo so place it
         // before starting the transaction
         TextViewUtil.MoveCaretToPoint _textView span.Start
         x.EditWithUndoTransaction "Delete" (fun () ->
@@ -840,9 +840,9 @@ type internal CommandUtil
 
         let caretPosition = x.CaretPoint.Position
 
-        // The caret is already at the start of the Span and it needs to be after the 
+        // The caret is already at the start of the Span and it needs to be after the
         // delete so wrap it in an undo transaction
-        x.EditWithUndoTransaction "Delete" (fun () -> 
+        x.EditWithUndoTransaction "Delete" (fun () ->
             x.DeleteTillEndOfLineCore count registerName
 
             // Move the caret back to the original position in the ITextBuffer.
@@ -852,8 +852,8 @@ type internal CommandUtil
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Delete from the caret to the end of the line and 'count - 1' more lines
-    member x.DeleteTillEndOfLineCore count registerName = 
-        let span = 
+    member x.DeleteTillEndOfLineCore count registerName =
+        let span =
             if count = 1 then
                 // Just deleting till the end of the caret line
                 SnapshotSpan(x.CaretPoint, x.CaretLine.End)
@@ -870,23 +870,23 @@ type internal CommandUtil
         let value = RegisterValue(StringData.OfSpan span, OperationKind.CharacterWise)
         _commonOperations.SetRegisterValue registerName RegisterOperation.Delete value
 
-    member x.DisplayCharacterBytes () = 
+    member x.DisplayCharacterBytes () =
         match SnapshotPointUtil.TryGetChar x.CaretPoint with
         | None -> _commonOperations.Beep()
-        | Some c -> 
+        | Some c ->
             let str = sprintf "%d" (int c)
             _statusUtil.OnStatus str
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Run the specified action with a wrapped undo transaction.  This is often necessary when
     /// an edit command manipulates the caret
-    member x.EditWithUndoTransaction<'T> (name : string) (action : unit -> 'T) : 'T = 
+    member x.EditWithUndoTransaction<'T> (name : string) (action : unit -> 'T) : 'T =
         _undoRedoOperations.EditWithUndoTransaction name _textView action
 
     /// Used for the several commands which make an edit here and need the edit to be linked
-    /// with the next insert mode change.  
+    /// with the next insert mode change.
     member x.EditWithLinkedChange name action =
-        let transaction = _undoRedoOperations.CreateLinkedUndoTransaction name 
+        let transaction = _undoRedoOperations.CreateLinkedUndoTransaction name
 
         try
             x.EditWithUndoTransaction name action
@@ -902,7 +902,7 @@ type internal CommandUtil
         CommandResult.Completed (ModeSwitch.SwitchModeWithArgument (ModeKind.Insert, arg))
 
     /// Used for the several commands which make an edit here and need the edit to be linked
-    /// with the next insert mode change.  
+    /// with the next insert mode change.
     member x.EditBlockWithLinkedChange name blockSpan action =
         let transaction = _undoRedoOperations.CreateLinkedUndoTransaction name
 
@@ -921,7 +921,7 @@ type internal CommandUtil
 
     /// Used for commands which need to operate on the visual buffer and produce a SnapshotSpan
     /// to be mapped back to the text / edit buffer
-    member x.EditWithVisualSnapshot action = 
+    member x.EditWithVisualSnapshot action =
         let snapshotData = TextViewUtil.GetVisualSnapshotDataOrEdit _textView
         let span = action snapshotData
         BufferGraphUtil.MapSpanDownToSingle _bufferGraph span x.CurrentSnapshot
@@ -938,8 +938,8 @@ type internal CommandUtil
 
         CommandResult.Completed ModeSwitch.NoSwitch
 
-    /// Fold the specified selection 
-    member x.FoldSelection (visualSpan : VisualSpan) = 
+    /// Fold the specified selection
+    member x.FoldSelection (visualSpan : VisualSpan) =
         _foldManager.CreateFold visualSpan.LineRange
 
         CommandResult.Completed ModeSwitch.SwitchPreviousMode
@@ -961,8 +961,8 @@ type internal CommandUtil
 
         CommandResult.Completed ModeSwitch.SwitchPreviousMode
 
-    /// Format the lines in the Motion 
-    member x.FormatMotion (result : MotionResult) = 
+    /// Format the lines in the Motion
+    member x.FormatMotion (result : MotionResult) =
         _commonOperations.FormatLines result.LineRange
         CommandResult.Completed ModeSwitch.NoSwitch
 
@@ -974,24 +974,24 @@ type internal CommandUtil
     ///
     /// TODO: Need to integrate the parsing functions here with that of the tokenizer
     /// which also parses out the same set of numbers
-    member x.GetNumberValueAtCaret() : (NumberValue * SnapshotSpan) option= 
+    member x.GetNumberValueAtCaret() : (NumberValue * SnapshotSpan) option=
 
         // Calculate the forward span of the line
-        let span = 
-            let startPoint = 
+        let span =
+            let startPoint =
                 SnapshotPointUtil.OrderAscending x.CaretPoint x.CaretLine.End
                 |> fst
             SnapshotSpan(startPoint, x.CaretLine.End)
 
-        // Get the number match out of the line with the given regex 
-        let getNumber numberValue numberPattern parseFunc = 
+        // Get the number match out of the line with the given regex
+        let getNumber numberValue numberPattern parseFunc =
 
             // Need to calculate the index on which to start looking for the number.  Move
             // past blanks as they don't factor in here
-            let index = 
+            let index =
                 span
                 |> SnapshotSpanUtil.GetPoints SearchPath.Forward
-                |> Seq.skipWhile (fun point -> 
+                |> Seq.skipWhile (fun point ->
                     if _localSettings.IsNumberFormatSupported(NumberFormat.Alpha) then
                         SnapshotPointUtil.IsBlank point
                     else
@@ -1003,12 +1003,12 @@ type internal CommandUtil
             System.Text.RegularExpressions.Regex.Matches(text, numberPattern)
             |> Seq.cast<System.Text.RegularExpressions.Match>
             |> Seq.tryFind (fun m -> index >= m.Index && index < (m.Index + m.Length))
-            |> Option.map (fun m -> 
+            |> Option.map (fun m ->
                 let span = SnapshotSpan(x.CurrentSnapshot, x.CaretLine.Start.Position + m.Index, m.Length)
                 let succeeded, number = parseFunc m.Value
                 if succeeded then
                     Some (numberValue number, span)
-                else    
+                else
                     None)
             |> OptionUtil.collapse
 
@@ -1018,14 +1018,14 @@ type internal CommandUtil
 
         // Get the point for a hex number
         let getHex () =
-            getNumber NumberValue.Hex "(-?)0x[a-f0-9]+" (fun text -> 
-                let isNegative, text = 
+            getNumber NumberValue.Hex "(-?)0x[a-f0-9]+" (fun text ->
+                let isNegative, text =
                     if text.[0] = '-' then
                         true, text.Substring(3)
                     else
                         false, text.Substring(2)
                 let succeeded, number = System.Int32.TryParse(text, System.Globalization.NumberStyles.AllowHexSpecifier, System.Globalization.CultureInfo.CurrentCulture)
-                let number = 
+                let number =
                     if succeeded && isNegative then
                         -number
                     else
@@ -1036,8 +1036,8 @@ type internal CommandUtil
             //getNumber = "0(0*)\d+"
             None
 
-        let number = 
-            [ 
+        let number =
+            [
                 (getHex, NumberFormat.Hex)
                 (getOctal, NumberFormat.Octal)
                 (getDecimal, NumberFormat.Decimal)
@@ -1059,7 +1059,7 @@ type internal CommandUtil
                 span
                 |> SnapshotSpanUtil.GetPoints SearchPath.Forward
                 |> Seq.skipWhile (fun point -> point |> SnapshotPointUtil.GetChar |> CharUtil.IsAlpha |> not)
-                |> Seq.map (fun point -> 
+                |> Seq.map (fun point ->
                     let c = point.GetChar()
                     NumberValue.Alpha c, SnapshotSpan(point, 1))
                 |> SeqUtil.tryHeadOnly
@@ -1083,7 +1083,7 @@ type internal CommandUtil
 
     /// GoTo the file name under the cursor using a new window (tab)
     member x.GoToFileInSelectionInNewWindow (visualSpan : VisualSpan) =
-        let goToFile name = 
+        let goToFile name =
             _commonOperations.GoToFileInNewWindow name
             CommandResult.Completed (ModeSwitch.SwitchMode ModeKind.Normal)
         match visualSpan with
@@ -1093,7 +1093,7 @@ type internal CommandUtil
 
     /// GoTo the file name under the cursor in the same window
     member x.GoToFileInSelection (visualSpan : VisualSpan) =
-        let goToFile name = 
+        let goToFile name =
             _commonOperations.GoToFile name
             CommandResult.Completed (ModeSwitch.SwitchMode ModeKind.Normal)
         match visualSpan with
@@ -1112,7 +1112,7 @@ type internal CommandUtil
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Go to the next tab in the specified direction
-    member x.GoToNextTab path countOption = 
+    member x.GoToNextTab path countOption =
         match path with
         | SearchPath.Forward ->
             match countOption with
@@ -1125,38 +1125,38 @@ type internal CommandUtil
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// GoTo the ITextView in the specified direction
-    member x.GoToView direction = 
-        _vimHost.MoveFocus _textView direction 
+    member x.GoToView direction =
+        _vimHost.MoveFocus _textView direction
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Join 'count' lines in the buffer
-    member x.JoinLines kind count = 
+    member x.JoinLines kind count =
 
         // An oddity of the join command is that the count 1 and 2 have the same effect.  Easiest
         // to treat both values as 2 since the math works out for all other values above 2
         let count = if count = 1 then 2 else count
 
         match SnapshotLineRangeUtil.CreateForLineAndCount x.CaretLine count with
-        | None -> 
-            // If the count exceeds the length of the buffer then the operation should not 
+        | None ->
+            // If the count exceeds the length of the buffer then the operation should not
             // complete and a beep should be issued
             _commonOperations.Beep()
-        | Some range -> 
-            // The caret should be positioned one after the second to last line in the 
+        | Some range ->
+            // The caret should be positioned one after the second to last line in the
             // join.  It should have it's original position during an undo so don't
             // move the caret until we're inside the transaction
-            x.EditWithUndoTransaction "Join" (fun () -> 
+            x.EditWithUndoTransaction "Join" (fun () ->
                 _commonOperations.Join range kind
                 x.MoveCaretFollowingJoin range)
 
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Join the selection of lines in the buffer
-    member x.JoinSelection kind (visualSpan : VisualSpan) = 
-        let range = SnapshotLineRangeUtil.CreateForSpan visualSpan.EditSpan.OverarchingSpan 
+    member x.JoinSelection kind (visualSpan : VisualSpan) =
+        let range = SnapshotLineRangeUtil.CreateForSpan visualSpan.EditSpan.OverarchingSpan
 
         // Extend the range to at least 2 lines if possible
-        let range = 
+        let range =
             if range.Count = 1 && range.LastLineNumber = SnapshotUtil.GetLastLineNumber range.Snapshot then
                 // Can't extend
                 range
@@ -1172,22 +1172,22 @@ type internal CommandUtil
             _commonOperations.Beep()
 
             CommandResult.Completed ModeSwitch.NoSwitch
-        else 
+        else
             // The caret before the join should be positioned at the start of the VisualSpan
             TextViewUtil.MoveCaretToPoint _textView visualSpan.Start
-            x.EditWithUndoTransaction "Join" (fun () -> 
+            x.EditWithUndoTransaction "Join" (fun () ->
                 _commonOperations.Join range kind
                 x.MoveCaretFollowingJoin range)
 
             CommandResult.Completed ModeSwitch.SwitchPreviousMode
 
-    /// Invert the current selection 
+    /// Invert the current selection
     member x.InvertSelection (visualSpan : VisualSpan) (streamSelectionSpan : VirtualSnapshotSpan) columnOnlyInBlock =
 
         // Do the selection change with the new values.  The only elements that must be correct
         // are the anchor point and caret position.  The selection tracker will be responsible
         // for properly setting to the character, line, block, etc ... once the command completes
-        let changeSelection anchorPoint caretPoint = 
+        let changeSelection anchorPoint caretPoint =
             let extendIntoLineBreak = streamSelectionSpan.End.IsInVirtualSpace
             let visualSelection = VisualSelection.CreateForPoints visualSpan.VisualKind anchorPoint caretPoint _localSettings.TabStop
             let visualSelection = visualSelection.AdjustForExtendIntoLineBreak extendIntoLineBreak
@@ -1199,21 +1199,21 @@ type internal CommandUtil
         | None -> ()
         | Some anchorPoint ->
             match visualSpan with
-            | VisualSpan.Character characterSpan -> 
-                if characterSpan.Length > 1 then 
+            | VisualSpan.Character characterSpan ->
+                if characterSpan.Length > 1 then
                     let last = Option.get characterSpan.Last
                     if x.CaretPoint.Position > characterSpan.Start.Position then
                         changeSelection x.CaretPoint characterSpan.Start
                     else
                         changeSelection characterSpan.Start last
-            | VisualSpan.Line _ -> 
+            | VisualSpan.Line _ ->
                 changeSelection x.CaretPoint anchorPoint
-            | VisualSpan.Block blockSpan -> 
+            | VisualSpan.Block blockSpan ->
                 if columnOnlyInBlock then
                     // In this mode the caret simple jumps to the other end of the selection on the same
                     // line.  It doesn't switch caret + anchor, just the side the caret is on
-                    let caretSpaces, anchorSpaces = 
-                        if (SnapshotPointUtil.GetColumn x.CaretPoint) >= (SnapshotPointUtil.GetColumn anchorPoint) then 
+                    let caretSpaces, anchorSpaces =
+                        if (SnapshotPointUtil.GetColumn x.CaretPoint) >= (SnapshotPointUtil.GetColumn anchorPoint) then
                             blockSpan.ColumnSpaces, (blockSpan.Spaces + blockSpan.ColumnSpaces) - 1
                         else
                             (blockSpan.Spaces + blockSpan.ColumnSpaces) - 1, blockSpan.ColumnSpaces
@@ -1227,14 +1227,14 @@ type internal CommandUtil
 
         CommandResult.Completed ModeSwitch.NoSwitch
 
-    /// Switch to insert mode after the caret 
-    member x.InsertAfterCaret count = 
+    /// Switch to insert mode after the caret
+    member x.InsertAfterCaret count =
         let point = x.CaretPoint
-        if SnapshotPointUtil.IsInsideLineBreak point then 
+        if SnapshotPointUtil.IsInsideLineBreak point then
             ()
-        elif SnapshotPointUtil.IsEndPoint point then 
+        elif SnapshotPointUtil.IsEndPoint point then
             ()
-        else 
+        else
             let point = point.Add(1)
             TextViewUtil.MoveCaretToPoint _textView point
 
@@ -1253,7 +1253,7 @@ type internal CommandUtil
     /// Begin insert mode on the first non-blank character of the line.  Pass the count onto
     /// insert mode so it can duplicate the input
     member x.InsertAtFirstNonBlank count =
-        let point = 
+        let point =
             x.CaretLine
             |> SnapshotLineUtil.GetPoints SearchPath.Forward
             |> Seq.skipWhile SnapshotPointUtil.IsWhiteSpace
@@ -1272,11 +1272,11 @@ type internal CommandUtil
 
     /// Insert a line above the current caret line and begin insert mode at the start of that
     /// line
-    member x.InsertLineAbove count = 
+    member x.InsertLineAbove count =
         let savedCaretLine = x.CaretLine
 
         // REPEAT TODO: Need to file a bug to get the caret position correct here for redo
-        _undoRedoOperations.EditWithUndoTransaction "InsertLineAbove" _textView (fun() -> 
+        _undoRedoOperations.EditWithUndoTransaction "InsertLineAbove" _textView (fun() ->
             let line = x.CaretLine
             let newLineText = _commonOperations.GetNewLineText x.CaretPoint
             _textBuffer.Replace(new Span(line.Start.Position,0), newLineText) |> ignore)
@@ -1288,9 +1288,9 @@ type internal CommandUtil
         let switch = ModeSwitch.SwitchModeWithArgument (ModeKind.Insert, ModeArgument.InsertWithCountAndNewLine count)
         CommandResult.Completed switch
 
-    /// Insert a line below the current caret line and begin insert mode at the start of that 
+    /// Insert a line below the current caret line and begin insert mode at the start of that
     /// line
-    member x.InsertLineBelow count = 
+    member x.InsertLineBelow count =
 
         // The caret position here odd.  The caret during undo / redo should be in the original
         // caret position.  However the edit needs to occur with the caret indented on the newly
@@ -1312,16 +1312,16 @@ type internal CommandUtil
 
         match BufferGraphUtil.MapPointDownToSnapshotStandard _bufferGraph visualLineEndIncludingLineBreak x.CurrentSnapshot with
         | None -> ()
-        | Some point -> 
+        | Some point ->
 
-            _undoRedoOperations.EditWithUndoTransaction  "InsertLineBelow" _textView (fun () -> 
+            _undoRedoOperations.EditWithUndoTransaction  "InsertLineBelow" _textView (fun () ->
                 let span = SnapshotSpan(point, 0)
                 _textBuffer.Replace(span.Span, newLineText) |> ignore
 
                 TextViewUtil.MoveCaretToPosition _textView savedCaretPoint.Position)
 
-            let newLine = 
-                let newPoint = 
+            let newLine =
+                let newPoint =
                     // When this command is run on the last line of the file then point will still
                     // refer to the original line.  In that case we need to move to the end of the
                     // ITextSnapshot
@@ -1336,7 +1336,7 @@ type internal CommandUtil
         CommandResult.Completed switch
 
     /// Jump to the next tag in the tag list
-    member x.JumpToNewerPosition count = 
+    member x.JumpToNewerPosition count =
         if not (_jumpList.MoveNewer count) then
             _commonOperations.Beep()
         else
@@ -1344,7 +1344,7 @@ type internal CommandUtil
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Jump to the previous tag in the tag list
-    member x.JumpToOlderPosition count = 
+    member x.JumpToOlderPosition count =
 
         // Begin a traversal if we are no yet traversing
         if not _jumpList.IsTraversing then
@@ -1356,15 +1356,15 @@ type internal CommandUtil
             x.JumpToTagCore ()
         CommandResult.Completed ModeSwitch.NoSwitch
 
-    /// Jump to the specified mark.  Most motions are mapped to caret movements in MotionUtil.fs 
+    /// Jump to the specified mark.  Most motions are mapped to caret movements in MotionUtil.fs
     /// since they embed caret information.  Marks are special though because they have the ability
     /// to cross files hence we special case them here
     member x.JumpToMarkCore mark exact =
         let before = x.CaretPoint
 
         // Jump to the given point in the ITextBuffer
-        let jumpLocal (point : VirtualSnapshotPoint) = 
-            let point = 
+        let jumpLocal (point : VirtualSnapshotPoint) =
+            let point =
                 if exact then
                     point
                 else
@@ -1378,7 +1378,7 @@ type internal CommandUtil
             CommandResult.Completed ModeSwitch.NoSwitch
 
         // Called when the mark is not set
-        let markNotSet () = 
+        let markNotSet () =
             _statusUtil.OnError Resources.Common_MarkNotSet
             CommandResult.Error
 
@@ -1411,41 +1411,41 @@ type internal CommandUtil
             | Some point -> jumpLocal point
 
     /// Jump to the specified mark
-    member x.JumpToMark mark = 
+    member x.JumpToMark mark =
         x.JumpToMarkCore mark true
 
     /// Jump to the start of the line containing the specified mark
-    member x.JumpToMarkLine mark = 
+    member x.JumpToMarkLine mark =
         x.JumpToMarkCore mark false
 
-    /// Jumps to the specified 
+    /// Jumps to the specified
     member x.JumpToTagCore () =
         match _jumpList.Current with
         | None -> _commonOperations.Beep()
         | Some point -> _commonOperations.MoveCaretToPoint point ViewFlags.Standard
 
-    /// Move the caret to start of a line which is deleted.  Needs to preserve the original 
+    /// Move the caret to start of a line which is deleted.  Needs to preserve the original
     /// indent if 'autoindent' is set.
     ///
     /// Be wary of using this function.  It has the implicit contract that the Start position
-    /// of the line is still valid.  
+    /// of the line is still valid.
     member x.MoveCaretToDeletedLineStart (deletedLine : ITextSnapshotLine) =
         Contract.Requires (deletedLine.Start.Position <= x.CurrentSnapshot.Length)
 
         if _localSettings.AutoIndent then
             // Caret needs to be positioned at the indentation point of the previous line.  Don't
             // create actual whitespace, put the caret instead into virtual space
-            let point = 
+            let point =
                 deletedLine.Start
                 |> SnapshotPointUtil.GetContainingLine
                 |> SnapshotLineUtil.GetIndentPoint
 
-            // We are moving the caret into virtual space here.  Hence we need to do this in terms 
+            // We are moving the caret into virtual space here.  Hence we need to do this in terms
             // of spaces and not absolute character column.  Basically we have to expand tabs to the
             // appropriate number of spaces
             let column = _commonOperations.GetSpacesToPoint point
 
-            if column = 0 then 
+            if column = 0 then
                 TextViewUtil.MoveCaretToPosition _textView deletedLine.Start.Position
             else
                 let point = SnapshotUtil.GetPoint x.CurrentSnapshot deletedLine.Start.Position
@@ -1456,60 +1456,60 @@ type internal CommandUtil
             TextViewUtil.MoveCaretToPosition _textView deletedLine.Start.Position
 
     /// Move the caret to the proper indent on the newly created line
-    member x.MoveCaretToNewLineIndent contextLine newLine = 
+    member x.MoveCaretToNewLineIndent contextLine newLine =
 
         // Calling GetNewLineIndent can cause a buffer edit.  Need to rebind
         // the snapshot related items after calling the API
-        let indent = _commonOperations.GetNewLineIndent contextLine newLine 
+        let indent = _commonOperations.GetNewLineIndent contextLine newLine
         match SnapshotUtil.TryGetLine x.CurrentSnapshot newLine.LineNumber, indent with
-        | Some newLine, Some indent -> 
+        | Some newLine, Some indent ->
             let virtualPoint = VirtualSnapshotPoint(newLine.Start, indent)
             TextViewUtil.MoveCaretToVirtualPoint _textView virtualPoint
         | Some newLine, None ->
-            TextViewUtil.MoveCaretToPoint _textView newLine.Start 
+            TextViewUtil.MoveCaretToPoint _textView newLine.Start
         | None, Some _ -> ()
         | None, None -> ()
 
-    /// The Join commands (Visual and Normal) have identical cursor positioning behavior and 
+    /// The Join commands (Visual and Normal) have identical cursor positioning behavior and
     /// it's non-trivial so it's factored out to a function here.  In short the caret should be
     /// positioned 1 position after the last character in the second to last line of the join
-    /// The caret should be positioned one after the second to last line in the 
+    /// The caret should be positioned one after the second to last line in the
     /// join.  It should have it's original position during an undo so don't
     /// move the caret until we're inside the transaction
     member x.MoveCaretFollowingJoin (range : SnapshotLineRange) =
-        let point = 
+        let point =
             let number = range.StartLineNumber + range.Count - 2
             let line = SnapshotUtil.GetLine range.Snapshot number
             line |> SnapshotLineUtil.GetLastIncludedPoint |> OptionUtil.getOrDefault line.Start
         match TrackingPointUtil.GetPointInSnapshot point PointTrackingMode.Positive x.CurrentSnapshot with
-        | None -> 
+        | None ->
             ()
-        | Some point -> 
+        | Some point ->
             let point = SnapshotPointUtil.AddOneOrCurrent point
             TextViewUtil.MoveCaretToPoint _textView point
 
     /// Move the caret to the result of the motion
-    member x.MoveCaretToMotion motion count = 
+    member x.MoveCaretToMotion motion count =
         let argument = { MotionContext = MotionContext.Movement; OperatorCount = None; MotionCount = count}
         match _motionUtil.GetMotion motion argument with
-        | None -> 
+        | None ->
             // If the motion couldn't be gotten then just beep
             _commonOperations.Beep()
             CommandResult.Error
-        | Some result -> 
+        | Some result ->
 
             let point = x.CaretPoint
             _commonOperations.MoveCaretToMotionResult result
 
-            if point = x.CaretPoint then 
+            if point = x.CaretPoint then
                 // Failure to move the caret for a motion results in a beep for certain motions.  There
-                // isn't any documentation here but experimentally it is true for 'l' and 'h'.  
+                // isn't any documentation here but experimentally it is true for 'l' and 'h'.
                 //
                 // Though attractive the correct solution is *not* to have the motion itself fail
                 // in those cases.  While a 'h' movement fails when the caret is in column 0, a yank
-                // from the same location, 'yh', succeeds.  It yanks nothing but it does so 
+                // from the same location, 'yh', succeeds.  It yanks nothing but it does so
                 // successfully.  The error only happens when it's applied to a movement.
-                let makeError () = 
+                let makeError () =
                     _commonOperations.Beep()
                     CommandResult.Error
                 match motion with
@@ -1520,10 +1520,10 @@ type internal CommandUtil
                 CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Move the caret to the result of the text object selection
-    member x.MoveCaretToTextObject count motion textObjectKind (visualSpan : VisualSpan) = 
+    member x.MoveCaretToTextObject count motion textObjectKind (visualSpan : VisualSpan) =
 
         // First step is to get the desired final mode of the text object movement
-        let desiredVisualKind = 
+        let desiredVisualKind =
             match textObjectKind with
             | TextObjectKind.None -> visualSpan.VisualKind
             | TextObjectKind.AlwaysCharacter -> VisualKind.Character
@@ -1544,13 +1544,13 @@ type internal CommandUtil
             let argument = ModeArgument.InitialVisualSelection (visualSelection, None)
             x.SwitchMode desiredVisualKind.VisualModeKind argument
 
-        let isInitialSelection = 
+        let isInitialSelection =
             match visualSpan with
             | VisualSpan.Character characterSpan -> characterSpan.Length <= 1
             | VisualSpan.Block blockSpan -> blockSpan.Spaces <= 1
             | VisualSpan.Line lineRange -> lineRange.Count = 1
 
-        let moveTag kind = 
+        let moveTag kind =
             if isInitialSelection then
                 match _motionUtil.GetTextObject motion x.CaretPoint with
                 | None -> onError()
@@ -1566,9 +1566,9 @@ type internal CommandUtil
             // TODO: Backwards motions
             // TODO: The non-initial selection needs to ensure we're in the correct mode
 
-            // The behavior of a text object depends highly on whether or not this is 
-            // visual mode in it's initial state.  The docs define this as the start 
-            // and end being the same but that's not true for line mode where stard and 
+            // The behavior of a text object depends highly on whether or not this is
+            // visual mode in it's initial state.  The docs define this as the start
+            // and end being the same but that's not true for line mode where stard and
             // end are rarely the same.
             if isInitialSelection then
                 // For an initial selection we just do a standard motion from the caret point
@@ -1576,18 +1576,18 @@ type internal CommandUtil
                 let argument = { MotionContext = MotionContext.Movement; OperatorCount = None; MotionCount = Some count}
                 match _motionUtil.GetMotion motion argument with
                 | None -> onError ()
-                | Some motionResult -> 
+                | Some motionResult ->
 
-                    // The initial selection span for a text object doesn't change based on 
+                    // The initial selection span for a text object doesn't change based on
                     // whether the selection is inclusive / exclusive.  Only the caret position
                     // changes
                     setSelection motionResult.Span
             else
                 // Need to move the caret to the next item.  When we are in inclusive selection
                 // though the caret is at the last position of the previous motion so doing the
-                // motion again is essentially a no-op.  Calculate the correct point from which 
+                // motion again is essentially a no-op.  Calculate the correct point from which
                 // to do the motion
-                let point = 
+                let point =
                     match _globalSettings.SelectionKind with
                     | SelectionKind.Inclusive -> SnapshotPointUtil.AddOneOrCurrent x.CaretPoint
                     | SelectionKind.Exclusive -> x.CaretPoint
@@ -1598,19 +1598,19 @@ type internal CommandUtil
                     _commonOperations.MoveCaretToMotionResult motionResult
                     CommandResult.Completed ModeSwitch.NoSwitch
 
-        let moveBlock blockKind motion = 
+        let moveBlock blockKind motion =
             let argument = { MotionContext = MotionContext.Movement; OperatorCount = None; MotionCount = Some count}
             match _motionUtil.GetMotion motion argument with
             | None -> onError ()
-            | Some motionResult -> 
+            | Some motionResult ->
                 let blockVisualSpan = VisualSpan.CreateForSpan motionResult.Span desiredVisualKind _localSettings.TabStop
                 if visualSpan <> blockVisualSpan then
-                    // Selection is not yet the entire block so just expand to the block 
+                    // Selection is not yet the entire block so just expand to the block
                     setSelection motionResult.Span
                 else
                     // Attempt to expand the selection to the encompassing block.  Simply move
-                    // the caret outside the current block and attempt again to get the 
-                    let contextPoint = 
+                    // the caret outside the current block and attempt again to get the
+                    let contextPoint =
                         let offset = match motion with
                                      | Motion.AllBlock _ -> 1
                                      | Motion.InnerBlock _ -> 2
@@ -1626,11 +1626,11 @@ type internal CommandUtil
         | Motion.InnerBlock blockKind -> moveBlock blockKind motion
         | Motion.TagBlock kind -> moveTag kind
         | Motion.QuotedStringContents quote -> moveBlock quote motion
-        | _ -> moveNormal () 
+        | _ -> moveNormal ()
 
     /// Open a fold in visual mode.  In Visual Mode a single fold level is opened for every
     /// line in the selection
-    member x.OpenFoldInSelection (visualSpan : VisualSpan) = 
+    member x.OpenFoldInSelection (visualSpan : VisualSpan) =
         let range = visualSpan.LineRange
         let offset = range.StartLineNumber
         for i = 0 to range.Count - 1 do
@@ -1639,18 +1639,18 @@ type internal CommandUtil
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Toggle fold under the caret
-    member x.ToggleFoldUnderCaret count = 
+    member x.ToggleFoldUnderCaret count =
         _foldManager.ToggleFold x.CaretPoint count
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Toggle all folds in the buffer
-    member x.ToggleAllFolds() = 
+    member x.ToggleAllFolds() =
         let span = SnapshotUtil.GetExtent x.CurrentSnapshot
         _foldManager.ToggleAllFolds span
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Open 'count' folds under the caret
-    member x.OpenFoldUnderCaret count = 
+    member x.OpenFoldUnderCaret count =
         _foldManager.OpenFold x.CaretPoint count
         CommandResult.Completed ModeSwitch.NoSwitch
 
@@ -1660,27 +1660,27 @@ type internal CommandUtil
         _foldManager.OpenAllFolds span
         CommandResult.Completed ModeSwitch.NoSwitch
 
-    /// Open all of the folds under the caret 
+    /// Open all of the folds under the caret
     member x.OpenAllFoldsUnderCaret () =
         let span = SnapshotSpan(x.CaretPoint, 1)
         _foldManager.OpenAllFolds span
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Open all folds under the caret in visual mode
-    member x.OpenAllFoldsInSelection (visualSpan : VisualSpan) = 
+    member x.OpenAllFoldsInSelection (visualSpan : VisualSpan) =
         let span = visualSpan.LineRange.ExtentIncludingLineBreak
         _foldManager.OpenAllFolds span
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Run the Ping command
-    member x.Ping (pingData : PingData) data = 
+    member x.Ping (pingData : PingData) data =
         pingData.Function data
 
     /// Put the contents of the specified register after the cursor.  Used for the
     /// 'p' and 'gp' command in normal mode
     member x.PutAfterCaret registerName count moveCaretAfterText =
         let register = x.GetRegister registerName
-        x.PutAfterCaretCore (register.RegisterValue) count moveCaretAfterText 
+        x.PutAfterCaretCore (register.RegisterValue) count moveCaretAfterText
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Core put after function used by many of the put after operations
@@ -1705,31 +1705,31 @@ type internal CommandUtil
             else
                 stringData
 
-        let point = 
+        let point =
             match registerValue.OperationKind with
-            | OperationKind.CharacterWise -> 
-                if x.CaretLine.Length = 0 then 
+            | OperationKind.CharacterWise ->
+                if x.CaretLine.Length = 0 then
                     x.CaretLine.Start
                 elif SnapshotPointUtil.IsInsideLineBreak x.CaretPoint then
                     x.CaretLine.End
                 else
                     SnapshotPointUtil.AddOneOrCurrent x.CaretPoint
-            | OperationKind.LineWise -> 
+            | OperationKind.LineWise ->
                 x.CaretLine.EndIncludingLineBreak
 
         x.PutCore point stringData registerValue.OperationKind moveCaretAfterText
 
     /// Put the contents of the register into the buffer after the cursor and respect
     /// the indent of the current line.  Used for the ']p' command
-    member x.PutAfterCaretWithIndent registerName count = 
+    member x.PutAfterCaretWithIndent registerName count =
         let register = x.GetRegister registerName
         let registerValue = x.CalculateIdentStringData register.RegisterValue
         x.PutAfterCaretCore registerValue count false
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Happens when the middle mouse button is clicked.  Need to paste the contents of the default
-    /// register at the current position 
-    member x.PutAfterCaretMouse() = 
+    /// register at the current position
+    member x.PutAfterCaretMouse() =
         try
             match _mouseDevice.GetPosition _textView with
             | None -> ()
@@ -1742,10 +1742,10 @@ type internal CommandUtil
                 // Now run the put after command
                 let register = x.GetRegister (Some RegisterName.Unnamed)
                 x.PutAfterCaretCore register.RegisterValue 1 false
-        with 
+        with
         // Dealing with ITextViewLines can lead to an exception (particularly during layout).  Need
         // to be safe here and handle the exception.  If we can't access the ITextViewLines there
-        // isn't much that can be done for scrolling 
+        // isn't much that can be done for scrolling
         | _ -> ()
 
         CommandResult.Completed ModeSwitch.NoSwitch
@@ -1768,7 +1768,7 @@ type internal CommandUtil
     /// Core put function used by many of the put before operations
     member x.PutBeforeCaretCore (registerValue : RegisterValue) count moveCaretAfterText =
         let stringData = registerValue.StringData.ApplyCount count
-        let point = 
+        let point =
             match registerValue.OperationKind with
             | OperationKind.CharacterWise -> x.CaretPoint
             | OperationKind.LineWise -> x.CaretLine.Start
@@ -1776,7 +1776,7 @@ type internal CommandUtil
         x.PutCore point stringData registerValue.OperationKind moveCaretAfterText
 
     /// Put the contents of the specified register after the cursor.  Used for the
-    /// normal 'p', 'gp', 'P', 'gP', ']p' and '[p' commands.  For linewise put operations 
+    /// normal 'p', 'gp', 'P', 'gP', ']p' and '[p' commands.  For linewise put operations
     /// the point must be at the start of a line
     member x.PutCore point stringData operationKind moveCaretAfterText =
 
@@ -1786,7 +1786,7 @@ type internal CommandUtil
 
         // The caret should be positioned at the current position in undo so don't move
         // it before the transaction.
-        x.EditWithUndoTransaction "Put" (fun () -> 
+        x.EditWithUndoTransaction "Put" (fun () ->
 
             _commonOperations.Put point stringData operationKind
 
@@ -1794,14 +1794,14 @@ type internal CommandUtil
             // get the original insertion point in the new ITextSnapshot
             let point = SnapshotUtil.GetPoint x.CurrentSnapshot point.Position
             match operationKind with
-            | OperationKind.CharacterWise -> 
+            | OperationKind.CharacterWise ->
 
-                let point = 
+                let point =
                     match stringData with
                     | StringData.Simple text ->
-                        if EditUtil.HasNewLine text && not moveCaretAfterText then 
+                        if EditUtil.HasNewLine text && not moveCaretAfterText then
                             // For multi-line operations which do not specify to move the caret after
-                            // the text we instead put the caret at the first character of the new 
+                            // the text we instead put the caret at the first character of the new
                             // text
                             point
                         else
@@ -1811,10 +1811,10 @@ type internal CommandUtil
                             let offset = max 0 offset
                             let point = SnapshotPointUtil.Add offset point
                             if moveCaretAfterText then SnapshotPointUtil.AddOneOrCurrent point else point
-                    | StringData.Block col -> 
+                    | StringData.Block col ->
                         if moveCaretAfterText then
                             // Needs to be positioned after the last item in the collection
-                            let line = 
+                            let line =
                                 let number = oldPoint |> SnapshotPointUtil.GetContainingLine |> SnapshotLineUtil.GetLineNumber
                                 let number = number + (col.Count - 1)
                                 SnapshotUtil.GetLine x.CurrentSnapshot number
@@ -1828,7 +1828,7 @@ type internal CommandUtil
             | OperationKind.LineWise ->
 
                 // Get the line on which we will be positioning the caret
-                let line = 
+                let line =
                     if moveCaretAfterText then
                         // Move to the first line after the insertion.  Can be calculated with a line
                         // count offset
@@ -1837,12 +1837,12 @@ type internal CommandUtil
                         SnapshotUtil.GetLine x.CurrentSnapshot (number + offset)
                     else
                         // The caret should be moved to the first line of the inserted text.
-                        let number = 
+                        let number =
                             let oldLineNumber = oldPoint |> SnapshotPointUtil.GetContainingLine |> SnapshotLineUtil.GetLineNumber
-                            if SnapshotPointUtil.IsStartOfLine oldPoint then 
+                            if SnapshotPointUtil.IsStartOfLine oldPoint then
                                 oldLineNumber
                             else
-                                // Anything other than the start of the line will cause the Put to 
+                                // Anything other than the start of the line will cause the Put to
                                 // occur one line below and we need to account for that
                                 oldLineNumber + 1
                         SnapshotUtil.GetLine x.CurrentSnapshot number
@@ -1852,15 +1852,15 @@ type internal CommandUtil
                 _commonOperations.MoveCaretToPoint point ViewFlags.VirtualEdit)
 
     /// Put the contents of the specified register over the selection.  This is used for all
-    /// visual mode put commands. 
-    member x.PutOverSelection registerName count moveCaretAfterText visualSpan = 
+    /// visual mode put commands.
+    member x.PutOverSelection registerName count moveCaretAfterText visualSpan =
 
         // Build up the common variables
         let register =x .GetRegister registerName
         let stringData = register.StringData.ApplyCount count
         let operationKind = register.OperationKind
 
-        let deletedSpan, operationKind = 
+        let deletedSpan, operationKind =
             match visualSpan with
             | VisualSpan.Character characterSpan ->
 
@@ -1868,8 +1868,8 @@ type internal CommandUtil
                 // of the pasted span after redo so move to the start before the undo transaction
                 TextViewUtil.MoveCaretToPoint _textView characterSpan.Start
                 x.EditWithUndoTransaction "Put" (fun () ->
-    
-                    // Delete the span and move the caret back to the start of the 
+
+                    // Delete the span and move the caret back to the start of the
                     // span in the new ITextSnapshot
                     _textBuffer.Delete(characterSpan.Span.Span) |> ignore
                     TextViewUtil.MoveCaretToPosition _textView characterSpan.Start.Position
@@ -1883,19 +1883,19 @@ type internal CommandUtil
             | VisualSpan.Line range ->
 
                 // Cursor needs to be positioned at the start of the range for both undo so
-                // move the caret now 
+                // move the caret now
                 TextViewUtil.MoveCaretToPoint _textView range.Start
                 x.EditWithUndoTransaction "Put" (fun () ->
 
                     // When putting over a linewise selection the put needs to be done
                     // in a linewise fashion.  This means in certain cases we have to adjust
                     // the StringData to have proper newline semantics
-                    let stringData = 
+                    let stringData =
                         match stringData with
                         | StringData.Simple str ->
                             let str = if EditUtil.EndsWithNewLine str then str else str + (EditUtil.NewLine _options)
                             StringData.Simple str
-                        | StringData.Block _ -> 
+                        | StringData.Block _ ->
                             stringData
                     let operationKind = OperationKind.LineWise
 
@@ -1924,14 +1924,14 @@ type internal CommandUtil
                     col |> Seq.iter (fun span -> edit.Delete(span) |> ignore)
                     edit.Apply() |> ignore
 
-                    // Now do a standard put operation.  The point of the put varies a bit 
+                    // Now do a standard put operation.  The point of the put varies a bit
                     // based on whether we're doing a linewise or characterwise insert
-                    let point = 
+                    let point =
                         match operationKind with
-                        | OperationKind.CharacterWise -> 
+                        | OperationKind.CharacterWise ->
                             // Put occurs at the start of the original span
                             SnapshotUtil.GetPoint x.CurrentSnapshot span.Start.Point.Position
-                        | OperationKind.LineWise -> 
+                        | OperationKind.LineWise ->
                             // Put occurs on the line after the last edit
                             let lastSpan = col |> SeqUtil.last
                             let number = lastSpan.Start.Point |> SnapshotPointUtil.GetContainingLine |> SnapshotLineUtil.GetLineNumber
@@ -1942,7 +1942,7 @@ type internal CommandUtil
 
         // Update the unnamed register with the deleted text
         let value = x.CreateRegisterValue (StringData.OfEditSpan deletedSpan) operationKind
-        _commonOperations.SetRegisterValue (Some RegisterName.Unnamed) RegisterOperation.Delete value 
+        _commonOperations.SetRegisterValue (Some RegisterName.Unnamed) RegisterOperation.Delete value
 
         CommandResult.Completed ModeSwitch.SwitchPreviousMode
 
@@ -1955,25 +1955,25 @@ type internal CommandUtil
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Start a macro recording
-    member x.RecordMacroStart c = 
-        let isAppend, c = 
+    member x.RecordMacroStart c =
+        let isAppend, c =
             if CharUtil.IsUpper c && CharUtil.IsLetter c then
                 true, CharUtil.ToLower c
             else
                 false, c
 
         // Restrict the register to the valid ones for macros
-        let name = 
+        let name =
             if CharUtil.IsLetter c then
                 NamedRegister.OfChar c |> Option.map RegisterName.Named
             elif CharUtil.IsDigit c then
                 NumberedRegister.OfChar c |> Option.map RegisterName.Numbered
             elif c = '"' then
                 RegisterName.Unnamed |> Some
-            else 
+            else
                 None
 
-        match name with 
+        match name with
         | None ->
             // Beep on an invalid macro register
             _commonOperations.Beep()
@@ -1989,22 +1989,22 @@ type internal CommandUtil
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Redo count operations in the ITextBuffer
-    member x.Redo count = 
+    member x.Redo count =
         use guard = new NormalModeSelectionGuard(_vimBufferData)
         _commonOperations.Redo count
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Repeat the last executed command against the current buffer
-    member x.RepeatLastCommand (repeatData : CommandData) = 
+    member x.RepeatLastCommand (repeatData : CommandData) =
 
-        // Chain the running of the next command on the basis of the success of 
+        // Chain the running of the next command on the basis of the success of
         // the previous command
-        let chainCommand commandResult runNextCommand = 
+        let chainCommand commandResult runNextCommand =
 
             // Running linked commands will throw away the ModeSwitch value.  This can contain
-            // an open IUndoTransaction.  This must be completed here or it will break undo in the 
+            // an open IUndoTransaction.  This must be completed here or it will break undo in the
             // ITextBuffer
-            let maybeCloseTransaction modeSwitch = 
+            let maybeCloseTransaction modeSwitch =
                 match modeSwitch with
                 | ModeSwitch.SwitchModeWithArgument (_, argument) ->
                     match argument with
@@ -2028,19 +2028,19 @@ type internal CommandUtil
         // Repeating an insert command is a bit different than repeating a normal command because
         // of the way the caret position is handled.  Every insert command ends with a move left
         // on the caret.  When repeating this move left is only done once though.
-        let repeatInsert command count = 
-            let command, doMoveLeft = 
+        let repeatInsert command count =
+            let command, doMoveLeft =
                 match command with
                 | InsertCommand.Combined (leftCommand, rightCommand) ->
-                    match leftCommand with 
+                    match leftCommand with
                     | InsertCommand.MoveCaret Direction.Left -> rightCommand, true
                     | _ -> command, false
                 | _ -> command, false
 
-            // Run the commands in sequence.  Only continue onto the second if the first 
+            // Run the commands in sequence.  Only continue onto the second if the first
             // command succeeds.  We do want any actions performed in the linked commands
             // to remain linked so do this inside of an edit transaction
-            let rec func count commandResult = 
+            let rec func count commandResult =
                 if count = 0 then
                     commandResult
                 else
@@ -2053,50 +2053,50 @@ type internal CommandUtil
             else
                 commandResult
 
-        // Function to actually repeat the last change 
-        let rec repeat (command : StoredCommand) (repeatData : CommandData option) = 
+        // Function to actually repeat the last change
+        let rec repeat (command : StoredCommand) (repeatData : CommandData option) =
 
-            // Before repeating a command it needs to be updated in the context of the repeat operation. This 
-            // includes recalculating the visual span and considering explicit counts that are passed into 
+            // Before repeating a command it needs to be updated in the context of the repeat operation. This
+            // includes recalculating the visual span and considering explicit counts that are passed into
             // the repeat operation.
             //
             // When a count is passed to repeat then it acts as if it was the only count passed to the original
             // command. This overrides the original count or counts passed to motion operators.
-            let repeatCount = 
+            let repeatCount =
                 match repeatData with
-                | None -> None 
+                | None -> None
                 | Some r -> r.Count
 
             match command with
             | StoredCommand.NormalCommand (command, data, _) ->
-                let command, data = 
-                    match repeatCount with 
-                    | Some _ -> 
+                let command, data =
+                    match repeatCount with
+                    | Some _ ->
                         let data = { data with Count = repeatCount }
-                        let command = command.ChangeMotionData (fun motionData -> 
+                        let command = command.ChangeMotionData (fun motionData ->
                             let argument = { motionData.MotionArgument with MotionCount = repeatCount; OperatorCount = None }
                             { motionData with MotionArgument = argument })
                         (command, data)
                     | None -> (command, data)
                 x.RunNormalCommand command data
-            | StoredCommand.VisualCommand (command, data, storedVisualSpan, _) -> 
-                let data = 
+            | StoredCommand.VisualCommand (command, data, storedVisualSpan, _) ->
+                let data =
                     match repeatCount with
-                    | Some _ -> { data with Count = repeatCount } 
+                    | Some _ -> { data with Count = repeatCount }
                     | None -> data
                 let visualSpan = x.CalculateVisualSpan storedVisualSpan
                 x.RunVisualCommand command data visualSpan
             | StoredCommand.InsertCommand (command, _) ->
 
-                let count = 
+                let count =
                     match repeatData with
                     | Some repeatData -> repeatData.CountOrDefault
-                    | None -> 1 
+                    | None -> 1
 
                 repeatInsert command count
-            | StoredCommand.LinkedCommand (command1, command2) -> 
+            | StoredCommand.LinkedCommand (command1, command2) ->
 
-                // Run the commands in sequence.  Only continue onto the second if the first 
+                // Run the commands in sequence.  Only continue onto the second if the first
                 // command succeeds.  We do want any actions performed in the linked commands
                 // to remain linked so do this inside of an edit transaction
                 let commandResult = repeat command1 repeatData
@@ -2104,13 +2104,13 @@ type internal CommandUtil
 
         if _inRepeatLastChange then
             _statusUtil.OnError Resources.NormalMode_RecursiveRepeatDetected
-            CommandResult.Error 
+            CommandResult.Error
         else
             use bulkOperation = _bulkOperations.BeginBulkOperation()
             try
                 _inRepeatLastChange <- true
                 match _vimData.LastCommand with
-                | None -> 
+                | None ->
                     _commonOperations.Beep()
                     CommandResult.Completed ModeSwitch.NoSwitch
                 | Some command ->
@@ -2123,12 +2123,12 @@ type internal CommandUtil
                 _inRepeatLastChange <- false
 
     /// Repeat the last substitute command.
-    member x.RepeatLastSubstitute useSameFlags = 
+    member x.RepeatLastSubstitute useSameFlags =
         match _vimData.LastSubstituteData with
         | None -> _commonOperations.Beep()
         | Some data ->
             let range = SnapshotLineRangeUtil.CreateForLine x.CaretLine
-            let flags = 
+            let flags =
                 if useSameFlags then
                     data.Flags
                 else
@@ -2143,7 +2143,7 @@ type internal CommandUtil
         CommandResult.Completed switch
 
     /// Replace the char under the cursor with the specified character
-    member x.ReplaceChar keyInput count = 
+    member x.ReplaceChar keyInput count =
 
         let point = x.CaretPoint
         let line = point.GetContainingLine()
@@ -2151,7 +2151,7 @@ type internal CommandUtil
         let replaceChar () =
             let span = new Span(point.Position, count)
             let position =
-                if keyInput = KeyInputUtil.EnterKey then 
+                if keyInput = KeyInputUtil.EnterKey then
                     // Special case for replacement with a newline.  First, vim only inserts a
                     // single newline regardless of the count.  Second, let the host do any magic
                     // by simulating a keystroke, e.g. from inside a C# documentation comment.
@@ -2161,15 +2161,15 @@ type internal CommandUtil
                     let caretPoint = TextViewUtil.GetCaretPoint _textView
                     caretPoint.Position - 1
                 else
-                    // The caret should move to the end of the replace operation which is 
-                    // 'count - 1' characters from the original position 
+                    // The caret should move to the end of the replace operation which is
+                    // 'count - 1' characters from the original position
                     let replaceText = new System.String(keyInput.Char, count)
                     _textBuffer.Replace(span, replaceText) |> ignore
                     point.Position + count - 1
 
             // Don't use the ITextSnapshot that is returned from Replace.  This represents the ITextSnapshot
             // after our change.  If other components are listening to the Change events they could make their
-            // own change.  The ITextSnapshot returned reflects only our change, not theirs.  To properly 
+            // own change.  The ITextSnapshot returned reflects only our change, not theirs.  To properly
             // position the caret we need the current ITextSnapshot
             let snapshot = _textBuffer.CurrentSnapshot
 
@@ -2197,9 +2197,9 @@ type internal CommandUtil
             CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Replace the char under the cursor in visual mode.
-    member x.ReplaceSelection keyInput (visualSpan : VisualSpan) = 
+    member x.ReplaceSelection keyInput (visualSpan : VisualSpan) =
 
-        let replaceText = 
+        let replaceText =
             if keyInput = KeyInputUtil.EnterKey then EditUtil.NewLine _options
             else System.String(keyInput.Char, 1)
 
@@ -2212,11 +2212,11 @@ type internal CommandUtil
         _textView.Selection.Clear()
         TextViewUtil.MoveCaretToPoint _textView visualSpan.Start
 
-        x.EditWithUndoTransaction "ReplaceChar" (fun () -> 
+        x.EditWithUndoTransaction "ReplaceChar" (fun () ->
             use edit = _textBuffer.CreateEdit()
             let builder = System.Text.StringBuilder()
 
-            for span in visualSpan.OverlapSpans do 
+            for span in visualSpan.OverlapSpans do
                 if span.HasOverlapStart then
                     let startPoint = span.Start
                     builder.Length <- 0
@@ -2235,21 +2235,21 @@ type internal CommandUtil
         CommandResult.Completed (ModeSwitch.SwitchMode ModeKind.Normal)
 
     /// Run the specified Command
-    member x.RunCommand command = 
+    member x.RunCommand command =
         match command with
         | Command.NormalCommand (command, data) -> x.RunNormalCommand command data
         | Command.VisualCommand (command, data, visualSpan) -> x.RunVisualCommand command data visualSpan
         | Command.InsertCommand command -> x.RunInsertCommand command
 
     /// Run the Macro which is present in the specified char
-    member x.RunMacro registerName count = 
+    member x.RunMacro registerName count =
 
         // If the '@' is used then we are doing a run last macro run
-        let registerName = 
+        let registerName =
             if registerName = '@' then _vimData.LastMacroRun |> OptionUtil.getOrDefault registerName
             else registerName
 
-        let name = 
+        let name =
             // TODO:  Need to handle, = and .
             if CharUtil.IsDigit registerName then
                 NumberedRegister.OfChar registerName |> Option.map RegisterName.Numbered
@@ -2276,32 +2276,32 @@ type internal CommandUtil
             let map = System.Collections.Generic.Dictionary<ITextBuffer, ILinkedUndoTransaction>();
 
             use bulkOperation = _bulkOperations.BeginBulkOperation()
-            try 
+            try
 
-                // Actually run the macro by replaying the key strokes one at a time.  Returns 
+                // Actually run the macro by replaying the key strokes one at a time.  Returns
                 // false if the macro should be stopped due to a failed command
                 let runMacro () =
-                    let rec inner list = 
-                        match list with 
-                        | [] -> 
+                    let rec inner list =
+                        match list with
+                        | [] ->
                             // No more input so we are finished
                             true
-                        | keyInput :: tail -> 
+                        | keyInput :: tail ->
 
-                            // Prefer the focussed IVimBuffer over the current.  It's possible for the 
-                            // macro playback switch the active buffer via gt, gT, etc ... and playback 
+                            // Prefer the focussed IVimBuffer over the current.  It's possible for the
+                            // macro playback switch the active buffer via gt, gT, etc ... and playback
                             // should continue on the newly focussed IVimBuffer.  Should the host API
                             // fail to return an active IVimBuffer continue using the original one
-                            let buffer = 
+                            let buffer =
                                 match _vim.FocusedBuffer with
                                 | Some buffer -> Some buffer
                                 | None -> _vim.GetVimBuffer _textView
 
                             match buffer with
-                            | None -> 
+                            | None ->
                                 // Nothing to do if we don't have an ITextBuffer with focus
                                 false
-                            | Some buffer -> 
+                            | Some buffer ->
                                 // Make sure we have an IUndoTransaction open in the ITextBuffer
                                 if not (map.ContainsKey(buffer.TextBuffer)) then
                                     let transaction = _undoRedoOperations.CreateLinkedUndoTransactionWithFlags "Macro Run" LinkedUndoTransactionFlags.CanBeEmpty
@@ -2317,7 +2317,7 @@ type internal CommandUtil
 
                     inner list
 
-                // Run the macro count times. 
+                // Run the macro count times.
                 let go = ref true
                 for i = 1 to count do
                     if go.Value then
@@ -2370,7 +2370,7 @@ type internal CommandUtil
         | NormalCommand.FoldLines -> x.FoldLines data.CountOrDefault
         | NormalCommand.FoldMotion motion -> x.RunWithMotion motion x.FoldMotion
         | NormalCommand.FormatLines -> x.FormatLines count
-        | NormalCommand.FormatMotion motion -> x.RunWithMotion motion x.FormatMotion 
+        | NormalCommand.FormatMotion motion -> x.RunWithMotion motion x.FormatMotion
         | NormalCommand.GoToDefinition -> x.GoToDefinition()
         | NormalCommand.GoToFileUnderCaret useNewWindow -> x.GoToFileUnderCaret useNewWindow
         | NormalCommand.GoToGlobalDeclaration -> x.GoToGlobalDeclaration()
@@ -2436,13 +2436,13 @@ type internal CommandUtil
         | NormalCommand.YankLines -> x.YankLines count registerName
 
     /// Run a VisualCommand against the buffer
-    member x.RunVisualCommand command (data : CommandData) (visualSpan : VisualSpan) = 
+    member x.RunVisualCommand command (data : CommandData) (visualSpan : VisualSpan) =
 
         let streamSelectionSpan = _textView.Selection.StreamSelectionSpan
 
-        // Clear the selection before actually running any Visual Commands.  Selection is one 
+        // Clear the selection before actually running any Visual Commands.  Selection is one
         // of the items which is preserved along with caret position when we use an edit transaction
-        // with the change primitives (EditWithUndoTransaction).  We don't want the selection to 
+        // with the change primitives (EditWithUndoTransaction).  We don't want the selection to
         // reappear during an undo hence clear it now so it's gone.
         _textView.Selection.Clear()
 
@@ -2466,13 +2466,13 @@ type internal CommandUtil
         | VisualCommand.MoveCaretToTextObject (motion, textObjectKind)-> x.MoveCaretToTextObject count motion textObjectKind visualSpan
         | VisualCommand.OpenFoldInSelection -> x.OpenFoldInSelection visualSpan
         | VisualCommand.OpenAllFoldsInSelection -> x.OpenAllFoldsInSelection visualSpan
-        | VisualCommand.PutOverSelection moveCaretAfterText -> x.PutOverSelection registerName count moveCaretAfterText visualSpan 
+        | VisualCommand.PutOverSelection moveCaretAfterText -> x.PutOverSelection registerName count moveCaretAfterText visualSpan
         | VisualCommand.ReplaceSelection keyInput -> x.ReplaceSelection keyInput visualSpan
         | VisualCommand.ShiftLinesLeft -> x.ShiftLinesLeftVisual count visualSpan
         | VisualCommand.ShiftLinesRight -> x.ShiftLinesRightVisual count visualSpan
-        | VisualCommand.SwitchModeInsert -> x.SwitchModeInsert visualSpan 
+        | VisualCommand.SwitchModeInsert -> x.SwitchModeInsert visualSpan
         | VisualCommand.SwitchModePrevious -> x.SwitchPreviousMode()
-        | VisualCommand.SwitchModeVisual visualKind -> x.SwitchModeVisual visualKind 
+        | VisualCommand.SwitchModeVisual visualKind -> x.SwitchModeVisual visualKind
         | VisualCommand.SwitchModeOtherVisual -> x.SwitchModeOtherVisual visualSpan
         | VisualCommand.ToggleFoldInSelection -> x.ToggleFoldUnderCaret count
         | VisualCommand.ToggleAllFoldsInSelection-> x.ToggleAllFolds()
@@ -2485,16 +2485,16 @@ type internal CommandUtil
 
     /// Get the MotionResult value for the provided MotionData and pass it
     /// if found to the provided function
-    member x.RunWithMotion (motion : MotionData) func = 
+    member x.RunWithMotion (motion : MotionData) func =
         match _motionUtil.GetMotion motion.Motion motion.MotionArgument with
-        | None -> 
+        | None ->
             _commonOperations.Beep()
             CommandResult.Error
         | Some data ->
             func data
 
     /// Process the m[a-z] command
-    member x.SetMarkToCaret c = 
+    member x.SetMarkToCaret c =
         match Mark.OfChar c with
         | None ->
             _statusUtil.OnError Resources.Common_MarkInvalid
@@ -2508,20 +2508,20 @@ type internal CommandUtil
             CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Scroll the window up / down a specified number of lines.  If a count is provided
-    /// that will always be used.  Else we may choose one or the value of the 'scroll' 
+    /// that will always be used.  Else we may choose one or the value of the 'scroll'
     /// option
     member x.ScrollLines scrollDirection useScrollOption countOption =
 
-        // Scrolling lines needs to scroll against the visual buffer vs the edit buffer so 
+        // Scrolling lines needs to scroll against the visual buffer vs the edit buffer so
         // that we treated folded lines as a single line.  Normally this would mean we need
         // to jump into the Visual Snapshot.  Here we don't though because we end using
         // IViewScroller to scroll and it does it's count based on Visual Lines vs. real lines
         // in the edit buffer
 
-        // Get the number of lines that we should scroll by.  
-        let count = 
+        // Get the number of lines that we should scroll by.
+        let count =
             match countOption with
-            | Some count -> 
+            | Some count ->
                 // When a count is provided then we always use that count.  If this is a
                 // scroll option version though we do need to update the scroll option to
                 // this value
@@ -2537,8 +2537,8 @@ type internal CommandUtil
         let count = if count <= 0 then 1 else count
 
         // In the case we are not using 'startofline' then this is a maintain caret column
-        // operation.  Save the current value now so that it can be processed later 
-        let maintainSpacesToCaret = 
+        // operation.  Save the current value now so that it can be processed later
+        let maintainSpacesToCaret =
             let spacesToCaret = SnapshotPointUtil.GetSpacesToPoint x.CaretPoint _localSettings.TabStop
             match _commonOperations.MaintainCaretColumn with
             | MaintainCaretColumn.None -> spacesToCaret
@@ -2547,7 +2547,7 @@ type internal CommandUtil
 
         try
             // Update the caret to the specified offset from the first visible line
-            let updateCaretToOffset lineOffset = 
+            let updateCaretToOffset lineOffset =
                 let textViewLines = _textView.TextViewLines
                 let firstIndex = textViewLines.GetIndexOfTextLine(textViewLines.FirstVisibleLine)
                 let textViewLine = textViewLines.[firstIndex + lineOffset]
@@ -2558,17 +2558,17 @@ type internal CommandUtil
             let firstIndex = textViewLines.GetIndexOfTextLine(textViewLines.FirstVisibleLine)
             let caretIndex = textViewLines.GetIndexOfTextLine(_textView.Caret.ContainingTextViewLine)
 
-            // How many visual lines is the caret offset from the first visible line 
+            // How many visual lines is the caret offset from the first visible line
             let lineOffset = max 0 (caretIndex - firstIndex)
 
             match scrollDirection with
-            | ScrollDirection.Up -> 
+            | ScrollDirection.Up ->
                 if 0 = textViewLines.FirstVisibleLine.Start.Position then
                     // The buffer is currently scrolled to the very top.  Move the caret by the specified
-                    // count or beep if caret at the start of the file as well.  Make sure this movement 
-                    // occurs on the visual lines, not the edit buffer (other wise folds will cause the 
+                    // count or beep if caret at the start of the file as well.  Make sure this movement
+                    // occurs on the visual lines, not the edit buffer (other wise folds will cause the
                     // caret to move incorrectly)
-                    if caretIndex = 0 then 
+                    if caretIndex = 0 then
                         _commonOperations.Beep()
                     else
                         let index = max 0 (caretIndex - count)
@@ -2579,8 +2579,8 @@ type internal CommandUtil
                     updateCaretToOffset lineOffset
             | ScrollDirection.Down ->
                 if x.CurrentSnapshot.Length = textViewLines.LastVisibleLine.EndIncludingLineBreak.Position then
-                    // Currently scrolled to the end of the buffer.  Move the caret by the count or 
-                    // beep if truly at the end 
+                    // Currently scrolled to the end of the buffer.  Move the caret by the count or
+                    // beep if truly at the end
                     let lastIndex = textViewLines.GetIndexOfTextLine(textViewLines.LastVisibleLine)
                     if lastIndex = caretIndex then
                         _commonOperations.Beep()
@@ -2603,17 +2603,17 @@ type internal CommandUtil
                 TextViewUtil.MoveCaretToPoint _textView point
                 _commonOperations.MaintainCaretColumn <- MaintainCaretColumn.Spaces maintainSpacesToCaret
 
-        with 
+        with
         // Dealing with ITextViewLines can lead to an exception (particularly during layout).  Need
         // to be safe here and handle the exception.  If we can't access the ITextViewLines there
-        // isn't much that can be done for scrolling 
-        | _ -> () 
+        // isn't much that can be done for scrolling
+        | _ -> ()
 
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Scroll a page in the specified direction
-    member x.ScrollPages direction count = 
-        let doScroll () = 
+    member x.ScrollPages direction count =
+        let doScroll () =
             match direction with
             | ScrollDirection.Up -> _editorOperations.PageUp(false)
             | ScrollDirection.Down -> _editorOperations.PageDown(false)
@@ -2622,11 +2622,11 @@ type internal CommandUtil
         for i = 1 to count do
             doScroll()
 
-        // The editor PageUp and PageDown don't actually move the caret.  Manually move it 
-        // here.  Need to take into account that TextViewLines can throw 
+        // The editor PageUp and PageDown don't actually move the caret.  Manually move it
+        // here.  Need to take into account that TextViewLines can throw
         try
-            let line = 
-                match direction with 
+            let line =
+                match direction with
                 | ScrollDirection.Up -> _textView.TextViewLines.FirstVisibleLine
                 | ScrollDirection.Down -> _textView.TextViewLines.LastVisibleLine
                 | _ -> _textView.TextViewLines.FirstVisibleLine
@@ -2636,18 +2636,18 @@ type internal CommandUtil
 
         CommandResult.Completed ModeSwitch.NoSwitch
 
-    /// Scroll the window in the specified direction by the specified number of lines.  The 
+    /// Scroll the window in the specified direction by the specified number of lines.  The
     /// caret only moves if it leaves the view port
-    member x.ScrollWindow direction count = 
+    member x.ScrollWindow direction count =
         try
 
             // If the scroll of the window has taken the caret off of the visible portion of the ITextView
             // then we need to move it back at the same column
-            let updateCaret (textViewLine : ITextViewLine) = 
+            let updateCaret (textViewLine : ITextViewLine) =
 
-                // This is one operation which does maintain the column spacing as we go up and down the 
+                // This is one operation which does maintain the column spacing as we go up and down the
                 // lines.  Make sure to use spaces here not column
-                let columnSpaces = 
+                let columnSpaces =
                     let caretSpaces = _commonOperations.GetSpacesToPoint x.CaretPoint
                     match _commonOperations.MaintainCaretColumn with
                     | MaintainCaretColumn.None -> caretSpaces
@@ -2676,39 +2676,39 @@ type internal CommandUtil
 
             _commonOperations.AdjustCaretForScrollOffset()
 
-        with 
+        with
         // Dealing with ITextViewLines can lead to an exception (particularly during layout).  Need
         // to be safe here and handle the exception.  If we can't access the ITextViewLines there
-        // isn't much that can be done for scrolling 
-        | _ -> () 
+        // isn't much that can be done for scrolling
+        | _ -> ()
 
         CommandResult.Completed ModeSwitch.NoSwitch
 
-    /// Scroll the line containing the caret to the top of the ITextView.  
-    member x.ScrollCaretLineToTop keepCaretColumn = 
+    /// Scroll the line containing the caret to the top of the ITextView.
+    member x.ScrollCaretLineToTop keepCaretColumn =
         _commonOperations.EditorOperations.ScrollLineTop()
         if not keepCaretColumn then
             _commonOperations.EditorOperations.MoveToStartOfLineAfterWhiteSpace(false)
         _commonOperations.EnsureAtCaret ViewFlags.ScrollOffset
         CommandResult.Completed ModeSwitch.NoSwitch
 
-    /// Scroll the line containing the caret to the middle of the ITextView.  
-    member x.ScrollCaretLineToMiddle keepCaretColumn = 
+    /// Scroll the line containing the caret to the middle of the ITextView.
+    member x.ScrollCaretLineToMiddle keepCaretColumn =
         _commonOperations.EditorOperations.ScrollLineCenter()
         if not keepCaretColumn then
             _commonOperations.EditorOperations.MoveToStartOfLineAfterWhiteSpace(false)
         _commonOperations.EnsureAtCaret ViewFlags.ScrollOffset
         CommandResult.Completed ModeSwitch.NoSwitch
 
-    /// Scroll the line containing the caret to the bottom of the ITextView.  
-    member x.ScrollCaretLineToBottom keepCaretColumn = 
+    /// Scroll the line containing the caret to the bottom of the ITextView.
+    member x.ScrollCaretLineToBottom keepCaretColumn =
         _commonOperations.EditorOperations.ScrollLineBottom()
         if not keepCaretColumn then
             _commonOperations.EditorOperations.MoveToStartOfLineAfterWhiteSpace(false)
         _commonOperations.EnsureAtCaret ViewFlags.ScrollOffset
         CommandResult.Completed ModeSwitch.NoSwitch
 
-    /// Shift the given line range left by the specified value.  The caret will be 
+    /// Shift the given line range left by the specified value.  The caret will be
     /// placed at the first character on the first line of the shifted text
     member x.ShiftLinesLeftCore range multiplier =
 
@@ -2717,15 +2717,15 @@ type internal CommandUtil
             _commonOperations.ShiftLineRangeLeft range multiplier
 
             // Now move the caret to the first non-whitespace character on the first
-            // line 
+            // line
             let line = SnapshotUtil.GetLine x.CurrentSnapshot range.StartLineNumber
-            let point = 
-                match SnapshotLineUtil.GetFirstNonBlank line with 
+            let point =
+                match SnapshotLineUtil.GetFirstNonBlank line with
                 | None -> SnapshotLineUtil.GetLastIncludedPoint line |> OptionUtil.getOrDefault line.Start
                 | Some point -> point
             TextViewUtil.MoveCaretToPoint _textView point)
 
-    /// Shift the given line range left by the specified value.  The caret will be 
+    /// Shift the given line range left by the specified value.  The caret will be
     /// placed at the first character on the first line of the shifted text
     member x.ShiftLinesRightCore range multiplier =
 
@@ -2734,22 +2734,22 @@ type internal CommandUtil
             _commonOperations.ShiftLineRangeRight range multiplier
 
             // Now move the caret to the first non-whitespace character on the first
-            // line 
+            // line
             let line = SnapshotUtil.GetLine x.CurrentSnapshot range.StartLineNumber
-            let point = 
-                match SnapshotLineUtil.GetFirstNonBlank line with 
+            let point =
+                match SnapshotLineUtil.GetFirstNonBlank line with
                 | None -> SnapshotLineUtil.GetLastIncludedPoint line |> OptionUtil.getOrDefault line.Start
                 | Some point -> point
             TextViewUtil.MoveCaretToPoint _textView point)
 
-    /// Shift 'count' lines to the left 
+    /// Shift 'count' lines to the left
     member x.ShiftLinesLeft count =
         let range = SnapshotLineRangeUtil.CreateForLineAndMaxCount x.CaretLine count
         x.ShiftLinesLeftCore range 1
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Shift 'motion' lines to the left by 'count' shiftwidth.
-    member x.ShiftLinesLeftVisual count visualSpan = 
+    member x.ShiftLinesLeftVisual count visualSpan =
 
         // Both Character and Line spans operate like most shifts
         match visualSpan with
@@ -2768,20 +2768,20 @@ type internal CommandUtil
             // Use a transaction to preserve the caret.  But move the caret first since
             // it needs to be undone to this location
             TextViewUtil.MoveCaretToPosition _textView targetCaretPosition
-            x.EditWithUndoTransaction "ShiftLeft" (fun () -> 
-                _commonOperations.ShiftLineBlockRight blockSpan.BlockSpans count
+            x.EditWithUndoTransaction "ShiftLeft" (fun () ->
+                _commonOperations.ShiftLineBlockLeft blockSpan.BlockSpans count
                 TextViewUtil.MoveCaretToPosition _textView targetCaretPosition)
 
         CommandResult.Completed ModeSwitch.SwitchPreviousMode
 
-    /// Shift 'count' lines to the right 
+    /// Shift 'count' lines to the right
     member x.ShiftLinesRight count =
         let range = SnapshotLineRangeUtil.CreateForLineAndMaxCount x.CaretLine count
         x.ShiftLinesRightCore range 1
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Shift 'motion' lines to the right by 'count' shiftwidth
-    member x.ShiftLinesRightVisual count visualSpan = 
+    member x.ShiftLinesRightVisual count visualSpan =
 
         // Both Character and Line spans operate like most shifts
         match visualSpan with
@@ -2795,12 +2795,12 @@ type internal CommandUtil
             // 0 but rather shifts at the start column of every span.  It also treats
             // the caret much more different by keeping it at the start of the first
             // span vs. the start of the shift
-            let targetCaretPosition = visualSpan.Start.Position 
+            let targetCaretPosition = visualSpan.Start.Position
 
             // Use a transaction to preserve the caret.  But move the caret first since
             // it needs to be undone to this location
             TextViewUtil.MoveCaretToPosition _textView targetCaretPosition
-            x.EditWithUndoTransaction "ShiftLeft" (fun () -> 
+            x.EditWithUndoTransaction "ShiftLeft" (fun () ->
                 _commonOperations.ShiftLineBlockRight blockSpan.BlockSpans count
 
                 TextViewUtil.MoveCaretToPosition _textView targetCaretPosition)
@@ -2808,18 +2808,18 @@ type internal CommandUtil
         CommandResult.Completed ModeSwitch.SwitchPreviousMode
 
     /// Shift 'motion' lines to the left
-    member x.ShiftMotionLinesLeft (result : MotionResult) = 
+    member x.ShiftMotionLinesLeft (result : MotionResult) =
         x.ShiftLinesLeftCore result.LineRange 1
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Shift 'motion' lines to the right
-    member x.ShiftMotionLinesRight (result : MotionResult) = 
+    member x.ShiftMotionLinesRight (result : MotionResult) =
         x.ShiftLinesRightCore result.LineRange 1
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Split the view horizontally
-    member x.SplitViewHorizontally () = 
-        _vimHost.SplitViewHorizontally _textView 
+    member x.SplitViewHorizontally () =
+        _vimHost.SplitViewHorizontally _textView
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Split the view vertically
@@ -2830,7 +2830,7 @@ type internal CommandUtil
     /// Substitute 'count' characters at the cursor on the current line.  Very similar to
     /// DeleteCharacterAtCaret.  Main exception is the behavior when the caret is on
     /// or after the last character in the line
-    /// should be after the span for Substitute even if 've='.  
+    /// should be after the span for Substitute even if 've='.
     member x.SubstituteCharacterAtCaret count registerName =
 
         x.EditWithLinkedChange "Substitute" (fun () ->
@@ -2841,14 +2841,14 @@ type internal CommandUtil
             else
                 let endPoint = SnapshotLineUtil.GetColumnOrEnd (x.CaretColumn + count) x.CaretLine
                 let span = SnapshotSpan(x.CaretPoint, endPoint)
-    
+
                 // Use a transaction so we can guarantee the caret is in the correct
                 // position on undo / redo
-                x.EditWithUndoTransaction "DeleteChar" (fun () -> 
+                x.EditWithUndoTransaction "DeleteChar" (fun () ->
                     let position = x.CaretPoint.Position
                     let snapshot = TextBufferUtil.DeleteAndGetLatest _textBuffer span.Span
                     TextViewUtil.MoveCaretToPoint _textView (SnapshotPoint(snapshot, position)))
-    
+
                 // Put the deleted text into the specified register
                 let value = RegisterValue(StringData.OfSpan span, OperationKind.CharacterWise)
                 _commonOperations.SetRegisterValue registerName RegisterOperation.Delete value)
@@ -2858,15 +2858,15 @@ type internal CommandUtil
         x.AddToWord -count
 
     /// Switch to the given mode
-    member x.SwitchMode modeKind modeArgument = 
+    member x.SwitchMode modeKind modeArgument =
         CommandResult.Completed (ModeSwitch.SwitchModeWithArgument (modeKind, modeArgument))
 
     /// Switch to the visual mode specified by 'selectmode=cmd'
-    member x.SwitchModeVisualCommand visualKind count = 
+    member x.SwitchModeVisualCommand visualKind count =
         match count, _vimData.LastVisualSelection with
         | Some count, Some lastSelection ->
             let visualSelection = lastSelection.GetVisualSelection x.CaretPoint count
-            let modeKind = 
+            let modeKind =
                 match lastSelection with
                 | StoredVisualSelection.Character _ -> ModeKind.VisualCharacter
                 | StoredVisualSelection.CharacterLine _ -> ModeKind.VisualCharacter
@@ -2883,11 +2883,11 @@ type internal CommandUtil
             CommandResult.Completed (ModeSwitch.SwitchModeWithArgument (modeKind, ModeArgument.None))
 
     /// Switch to the previous Visual Span selection
-    member x.SwitchPreviousVisualMode () = 
+    member x.SwitchPreviousVisualMode () =
         match _vimTextBuffer.LastVisualSelection with
         | None ->
             // If there is no available previous visual span then raise an error
-            _statusUtil.OnError Resources.Common_NoPreviousVisualSpan 
+            _statusUtil.OnError Resources.Common_NoPreviousVisualSpan
             CommandResult.Error
 
         | Some visualSelection ->
@@ -2896,7 +2896,7 @@ type internal CommandUtil
             x.SwitchMode modeKind modeArgument
 
     /// Move the caret to the specified motion.  How this command is implemented is largely dependent
-    /// upon the values of 'keymodel' and 'selectmode'.  It will either move the caret potentially as 
+    /// upon the values of 'keymodel' and 'selectmode'.  It will either move the caret potentially as
     /// a motion or initiate a select in the editor
     member x.SwitchToSelection caretMovement =
         let anchorPoint = x.CaretPoint
@@ -2905,7 +2905,7 @@ type internal CommandUtil
         else
             let visualSelection = VisualSelection.CreateForPoints VisualKind.Character anchorPoint x.CaretPoint _localSettings.TabStop
             let visualSelection = visualSelection.AdjustForSelectionKind _globalSettings.SelectionKind
-            let modeKind = 
+            let modeKind =
                 if Util.IsFlagSet _globalSettings.SelectModeOptions SelectModeOptions.Keyboard then
                     ModeKind.SelectCharacter
                 else
@@ -2915,16 +2915,16 @@ type internal CommandUtil
 
     /// Switch from the current visual mode into insert.  If we are in block mode this
     /// will start a block insertion
-    member x.SwitchModeInsert (visualSpan : VisualSpan) = 
+    member x.SwitchModeInsert (visualSpan : VisualSpan) =
 
         match visualSpan with
         | VisualSpan.Block blockSpan ->
             // The insert begins at the start of the block collection.  Any undo should move
-            // the caret back to this position so make sure to move it before we start the 
+            // the caret back to this position so make sure to move it before we start the
             // transaction so that it will be properly positioned on undo
             TextViewUtil.MoveCaretToPoint _textView visualSpan.Start
             x.EditBlockWithLinkedChange "Visual Insert" blockSpan (fun _ -> ())
-        | _ -> 
+        | _ ->
             // For all other visual mode inserts the caret moves to column 0 on the first
             // line of the selection.  It should be positioned there after an undo so move
             // it now before the undo transaction
@@ -2936,8 +2936,8 @@ type internal CommandUtil
             x.SwitchMode ModeKind.Insert ModeArgument.None
 
     /// Switch to the previous mode
-    member x.SwitchPreviousMode() = 
-        CommandResult.Completed ModeSwitch.SwitchPreviousMode 
+    member x.SwitchPreviousMode() =
+        CommandResult.Completed ModeSwitch.SwitchPreviousMode
 
     /// Switch to other visual mode: visual from select or vice versa
     member x.SwitchModeOtherVisual visualSpan =
@@ -2955,23 +2955,23 @@ type internal CommandUtil
             CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Switch from the current visual mode into the specified visual mode
-    member x.SwitchModeVisual newVisualKind = 
+    member x.SwitchModeVisual newVisualKind =
 
         let badOperation () =
             _commonOperations.Beep()
             CommandResult.Completed ModeSwitch.NoSwitch
 
         // The anchor point is the original anchor point of the visual session
-        let anchorPoint = 
+        let anchorPoint =
             _vimBufferData.VisualCaretStartPoint
             |> OptionUtil.map2 (TrackingPointUtil.GetPoint x.CurrentSnapshot)
         match anchorPoint with
         | None -> badOperation ()
-        | Some anchorPoint -> 
+        | Some anchorPoint ->
 
             match _vimTextBuffer.ModeKind |> VisualKind.OfModeKind with
             | None -> badOperation ()
-            | Some currentVisualKind -> 
+            | Some currentVisualKind ->
                 if currentVisualKind = newVisualKind then
                     // Switching to the same mode just goes back to normal
                     x.SwitchMode ModeKind.Normal ModeArgument.None
@@ -2983,7 +2983,7 @@ type internal CommandUtil
                     x.SwitchMode newVisualSelection.VisualKind.VisualModeKind modeArgument
 
     /// Undo count operations in the ITextBuffer
-    member x.Undo count = 
+    member x.Undo count =
         use guard = new NormalModeSelectionGuard(_vimBufferData)
         _commonOperations.Undo count
         CommandResult.Completed ModeSwitch.NoSwitch
@@ -2996,14 +2996,14 @@ type internal CommandUtil
 
     /// Write out the ITextBuffer and quit
     member x.WriteBufferAndQuit () =
-        let result = 
+        let result =
             if _vimHost.IsDirty _textBuffer then
                 _vimHost.Save _textBuffer
             else
                 true
 
         if result then
-            _vimHost.Close _textView 
+            _vimHost.Close _textView
             CommandResult.Completed ModeSwitch.NoSwitch
         else
             CommandResult.Error
@@ -3011,8 +3011,8 @@ type internal CommandUtil
     /// Yank the specified lines into the specified register.  This command should operate
     /// against the visual buffer if possible.  Yanking a line which contains the fold should
     /// yank the entire fold
-    member x.YankLines count registerName = 
-        let span = x.EditWithVisualSnapshot (fun x -> 
+    member x.YankLines count registerName =
+        let span = x.EditWithVisualSnapshot (fun x ->
 
             // Get the line range in the snapshot data
             let range = SnapshotLineRangeUtil.CreateForLineAndMaxCount x.CaretLine count
@@ -3031,15 +3031,15 @@ type internal CommandUtil
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Yank the contents of the motion into the specified register
-    member x.YankMotion registerName (result : MotionResult) = 
+    member x.YankMotion registerName (result : MotionResult) =
         let value = x.CreateRegisterValue (StringData.OfSpan result.Span) result.OperationKind
         _commonOperations.SetRegisterValue registerName RegisterOperation.Yank value
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Yank the lines in the specified selection
-    member x.YankLineSelection registerName (visualSpan : VisualSpan) = 
-        let editSpan, operationKind = 
-            match visualSpan with 
+    member x.YankLineSelection registerName (visualSpan : VisualSpan) =
+        let editSpan, operationKind =
+            match visualSpan with
             | VisualSpan.Character characterSpan ->
                 // Extend the character selection to the full lines
                 let range = SnapshotLineRangeUtil.CreateForSpan characterSpan.Span
@@ -3057,7 +3057,7 @@ type internal CommandUtil
         CommandResult.Completed ModeSwitch.SwitchPreviousMode
 
     /// Yank the selection into the specified register
-    member x.YankSelection registerName (visualSpan : VisualSpan) = 
+    member x.YankSelection registerName (visualSpan : VisualSpan) =
         let data = StringData.OfEditSpan visualSpan.EditSpan
         let value = x.CreateRegisterValue data visualSpan.OperationKind
         _commonOperations.SetRegisterValue registerName RegisterOperation.Yank value
@@ -3089,7 +3089,7 @@ type internal CommandUtil
 
     interface ICommandUtil with
         member x.RunNormalCommand command data = x.RunNormalCommand command data
-        member x.RunVisualCommand command data visualSpan = x.RunVisualCommand command data visualSpan 
+        member x.RunVisualCommand command data visualSpan = x.RunVisualCommand command data visualSpan
         member x.RunInsertCommand command = x.RunInsertCommand command
         member x.RunCommand command = x.RunCommand command
 
