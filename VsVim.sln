@@ -1,18 +1,22 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.27130.2024
+VisualStudioVersion = 15.0.27130.2027
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{7CD56D22-AAAA-4A93-8D98-1A014D9A6D39}"
 	ProjectSection(SolutionItems) = preProject
-		Cleanup.txt = Cleanup.txt
-		CodingGuidelines.txt = CodingGuidelines.txt
-		VsVim.nunit = VsVim.nunit
+		appveyor.yml = appveyor.yml
+		CODE_OF_CONDUCT.md = CODE_OF_CONDUCT.md
+		CONTRIBUTING.md = CONTRIBUTING.md
+		Directory.Build.props = Directory.Build.props
+		Directory.Build.targets = Directory.Build.targets
+		License.txt = License.txt
+		README.md = README.md
 	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "VsVim", "Src\VsVim\VsVim.csproj", "{11710F28-88D6-44DD-99DB-1F0AAA8CDAA0}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "VimCore", "Src\VimCore\VimCore.fsproj", "{15DDED1B-E0CE-4128-9C63-A1D80171A08C}"
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "VimCore", "Src\VimCore\VimCore.fsproj", "{92121D37-D2E5-45AB-853C-99B0A85B7C8D}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "VimCoreTest", "Test\VimCoreTest\VimCoreTest.csproj", "{B4FC7C81-E500-47C8-A884-2DBB7CA77123}"
 EndProject
@@ -44,6 +48,15 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "VimTestUtils", "Src\VimTest
 EndProject
 Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "VsSpecific", "Src\VsSpecific\VsSpecific\VsSpecific.shproj", "{003AF6B2-EB30-4494-B89F-15E1390FE47D}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Documentation", "Documentation", "{E112A054-F81F-4775-B456-EA82B71C573A}"
+	ProjectSection(SolutionItems) = preProject
+		Documentation\CodingGuidelines.md = Documentation\CodingGuidelines.md
+		Documentation\older-drops.md = Documentation\older-drops.md
+		Documentation\Project Goals.md = Documentation\Project Goals.md
+		Documentation\release-notes.md = Documentation\release-notes.md
+		Documentation\Supported Features.md = Documentation\Supported Features.md
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
 		Src\VsSpecific\VsSpecific\VsSpecific.projitems*{003af6b2-eb30-4494-b89f-15e1390fe47d}*SharedItemsImports = 13
@@ -71,17 +84,17 @@ Global
 		{11710F28-88D6-44DD-99DB-1F0AAA8CDAA0}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
 		{11710F28-88D6-44DD-99DB-1F0AAA8CDAA0}.Release|Mixed Platforms.Build.0 = Release|Any CPU
 		{11710F28-88D6-44DD-99DB-1F0AAA8CDAA0}.Release|x86.ActiveCfg = Release|Any CPU
-		{15DDED1B-E0CE-4128-9C63-A1D80171A08C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{15DDED1B-E0CE-4128-9C63-A1D80171A08C}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{15DDED1B-E0CE-4128-9C63-A1D80171A08C}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
-		{15DDED1B-E0CE-4128-9C63-A1D80171A08C}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
-		{15DDED1B-E0CE-4128-9C63-A1D80171A08C}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{15DDED1B-E0CE-4128-9C63-A1D80171A08C}.Release|Any CPU.ActiveCfg = Debug|Any CPU
-		{15DDED1B-E0CE-4128-9C63-A1D80171A08C}.Release|Any CPU.Build.0 = Debug|Any CPU
-		{15DDED1B-E0CE-4128-9C63-A1D80171A08C}.Release|Mixed Platforms.ActiveCfg = Debug|Any CPU
-		{15DDED1B-E0CE-4128-9C63-A1D80171A08C}.Release|Mixed Platforms.Build.0 = Debug|Any CPU
-		{15DDED1B-E0CE-4128-9C63-A1D80171A08C}.Release|x86.ActiveCfg = Debug|Any CPU
-		{15DDED1B-E0CE-4128-9C63-A1D80171A08C}.Release|x86.Build.0 = Debug|Any CPU
+		{92121D37-D2E5-45AB-853C-99B0A85B7C8D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{92121D37-D2E5-45AB-853C-99B0A85B7C8D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{92121D37-D2E5-45AB-853C-99B0A85B7C8D}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{92121D37-D2E5-45AB-853C-99B0A85B7C8D}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{92121D37-D2E5-45AB-853C-99B0A85B7C8D}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{92121D37-D2E5-45AB-853C-99B0A85B7C8D}.Release|Any CPU.ActiveCfg = Debug|Any CPU
+		{92121D37-D2E5-45AB-853C-99B0A85B7C8D}.Release|Any CPU.Build.0 = Debug|Any CPU
+		{92121D37-D2E5-45AB-853C-99B0A85B7C8D}.Release|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{92121D37-D2E5-45AB-853C-99B0A85B7C8D}.Release|Mixed Platforms.Build.0 = Debug|Any CPU
+		{92121D37-D2E5-45AB-853C-99B0A85B7C8D}.Release|x86.ActiveCfg = Debug|Any CPU
+		{92121D37-D2E5-45AB-853C-99B0A85B7C8D}.Release|x86.Build.0 = Debug|Any CPU
 		{B4FC7C81-E500-47C8-A884-2DBB7CA77123}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{B4FC7C81-E500-47C8-A884-2DBB7CA77123}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B4FC7C81-E500-47C8-A884-2DBB7CA77123}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
