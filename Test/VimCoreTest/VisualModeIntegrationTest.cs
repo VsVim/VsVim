@@ -9,6 +9,7 @@ using Vim.Extensions;
 using Vim.UnitTest.Mock;
 using Xunit;
 using Xunit.Extensions;
+using System.Collections.Generic;
 
 namespace Vim.UnitTest
 {
@@ -155,7 +156,7 @@ namespace Vim.UnitTest
                     Create("kitty", "\tdog");
                     _vimBuffer.ProcessNotation("ll<C-Q>jl");
 
-                    // In a strict vim interpretation both '\t' and 'd' would be selected in the 
+                    // In a strict vim interpretation both '\t' and 'd' would be selected in the
                     // second line.  The Visual Studio editor won't have this selection and instead
                     // will not select the tab since it's only partially selected.  Hence only the
                     // 'd' will end up selected
@@ -170,9 +171,9 @@ namespace Vim.UnitTest
 
                 /// <summary>
                 /// This is an anti fact
-                /// 
+                ///
                 /// The WPF editor can't place the caret in the middle of a tab.  It can't
-                /// for example put it on the 2 of the 4th space a tab occupies.  
+                /// for example put it on the 2 of the 4th space a tab occupies.
                 /// </summary>
                 [WpfFact]
                 public void MiddleOfTab()
@@ -203,7 +204,7 @@ namespace Vim.UnitTest
                 }
 
                 /// <summary>
-                /// Make sure the CTRL-Q command causes the block selection to start out as a single width 
+                /// Make sure the CTRL-Q command causes the block selection to start out as a single width
                 /// column from places other than the start of the document
                 /// </summary>
                 [WpfFact]
@@ -267,6 +268,49 @@ namespace Vim.UnitTest
                     Assert.Equal(blockSpan, _vimBuffer.GetSelectionBlockSpan());
                     Assert.Equal(_textView.GetPointInLine(1, 2), _textView.GetCaretPoint());
                 }
+            }
+        }
+
+        public abstract class VisualShiftTest : VisualModeIntegrationTest
+        {
+            protected abstract string Select { get; }
+            protected abstract IEnumerable<string> Lines();
+
+            [WpfFact]
+            public void IndentAdds()
+            {
+                Create("one", "two", "three");
+                _vimBuffer.ProcessNotation($"{Select}>");
+                Assert.All(Lines(), line => Assert.StartsWith("\t", line));
+            }
+
+            [WpfFact]
+            public void OutdentRemoves()
+            {
+                Create("\tone", "\ttwo", "\tthree");
+                _vimBuffer.ProcessNotation($"{Select}<lt>");
+                Assert.All(Lines(), line => Assert.False(line.StartsWith("\t")));
+            }
+
+            public sealed class Block : VisualShiftTest
+            {
+                protected override string Select => "<C-Q>jj";
+                protected override IEnumerable<string> Lines()
+                    => _textBuffer.GetLines();
+            }
+
+            public sealed class Line : VisualShiftTest
+            {
+                protected override string Select => "Vj";
+                protected override IEnumerable<string> Lines()
+                    => _textBuffer.GetLines().Take(2);
+            }
+
+            public sealed class Character : VisualShiftTest
+            {
+                protected override string Select => "v";
+                protected override IEnumerable<string> Lines()
+                    => _textBuffer.GetLines().Take(1);
             }
         }
 
@@ -358,7 +402,7 @@ namespace Vim.UnitTest
                 }
 
                 /// <summary>
-                /// The 3rd column doesn't exist here but should go to the 2nd which is the 
+                /// The 3rd column doesn't exist here but should go to the 2nd which is the
                 /// new line
                 /// </summary>
                 [WpfTheory]
@@ -376,9 +420,9 @@ namespace Vim.UnitTest
                 }
 
                 /// <summary>
-                /// When looking at a multiline character span the last column is stored as an offset of the 
+                /// When looking at a multiline character span the last column is stored as an offset of the
                 /// start point: positive or negative. In the case where the 1v command results in a single line
-                /// this will result in a reverse selection. 
+                /// this will result in a reverse selection.
                 /// </summary>
                 [WpfTheory]
                 [InlineData('v')]
@@ -460,7 +504,7 @@ namespace Vim.UnitTest
             {
                 /// <summary>
                 /// When an entire line is selected in character wise mode and then deleted
-                /// it should not be a line delete but instead delete the contents of the 
+                /// it should not be a line delete but instead delete the contents of the
                 /// line.
                 /// </summary>
                 [WpfFact]
@@ -474,7 +518,7 @@ namespace Vim.UnitTest
                 }
 
                 /// <summary>
-                /// If the character wise selection extents into the line break then the 
+                /// If the character wise selection extents into the line break then the
                 /// entire line should be deleted
                 /// </summary>
                 [WpfFact]
@@ -642,7 +686,7 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
-            /// The 'l' movement should put the caret past the end of the line 
+            /// The 'l' movement should put the caret past the end of the line
             /// </summary>
             [WpfFact]
             public void MoveEndOfLine_Right()
@@ -653,7 +697,7 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
-            /// The entire word should be selected 
+            /// The entire word should be selected
             /// </summary>
             [WpfFact]
             public void InnerWord()
@@ -677,7 +721,7 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
-            /// The initial character selection in exclusive selection should be empty 
+            /// The initial character selection in exclusive selection should be empty
             /// </summary>
             [WpfFact]
             public void Issue1483()
@@ -697,7 +741,7 @@ namespace Vim.UnitTest
             public sealed class IntellisenseTest : BlockInsertTest
             {
                 /// <summary>
-                /// Pretend there was nothing to delete, it just got inserted by hitting Ctrl+Space 
+                /// Pretend there was nothing to delete, it just got inserted by hitting Ctrl+Space
                 /// and selecting the value
                 /// </summary>
                 [WpfFact]
@@ -763,8 +807,8 @@ namespace Vim.UnitTest
                 }
 
                 /// <summary>
-                /// When the selection is at the start of the tab then the tab should be 
-                /// kept because it is not being split 
+                /// When the selection is at the start of the tab then the tab should be
+                /// kept because it is not being split
                 /// </summary>
                 [WpfFact]
                 public void SimpleStartOfLine()
@@ -840,7 +884,7 @@ namespace Vim.UnitTest
                 }
 
                 /// <summary>
-                /// The block insert shouldn't add text to any of the columns which didn't extend into 
+                /// The block insert shouldn't add text to any of the columns which didn't extend into
                 /// the original selection
                 /// </summary>
                 [WpfFact]
@@ -898,7 +942,7 @@ namespace Vim.UnitTest
                 }
 
                 /// <summary>
-                /// If the repeat goes off the end of the ITextBuffer then the change should just be 
+                /// If the repeat goes off the end of the ITextBuffer then the change should just be
                 /// applied to the lines from the caret to the end
                 /// </summary>
                 [WpfFact]
@@ -1097,11 +1141,11 @@ namespace Vim.UnitTest
             {
                 /// <summary>
                 /// This is an anti test.
-                /// 
-                /// The WPF editor has no way to position the caret in the middle of a 
+                ///
+                /// The WPF editor has no way to position the caret in the middle of a
                 /// tab.  It can't for instance place it on the 2 space of the 4 spaces
                 /// the caret occupies.  Hence this test have a deviating behavior from
-                /// gVim because the caret position differs on the final 'l' 
+                /// gVim because the caret position differs on the final 'l'
                 /// </summary>
                 [WpfFact]
                 public void Overlap()
@@ -1133,7 +1177,7 @@ namespace Vim.UnitTest
         {
             /// <summary>
             /// In Visual Mode it is possible to move the caret past the end of the line even if
-            /// 'virtualedit='.  
+            /// 'virtualedit='.
             /// </summary>
             [WpfFact]
             public void MoveToEndOfLineCharacter()
@@ -1464,7 +1508,7 @@ namespace Vim.UnitTest
         {
             /// <summary>
             /// Visual Mode itself doesn't actually process mouse commands.  That is the job of
-            /// the selection mode tracker.  
+            /// the selection mode tracker.
             /// </summary>
             [WpfFact]
             public void MouseCommands()
@@ -1557,7 +1601,7 @@ namespace Vim.UnitTest
 
             /// <summary>
             /// Make sure we handle the virtual spaces properly here.  The 'C' command should leave the caret
-            /// in virtual space due to the previous indent and escape should cause the caret to jump back to 
+            /// in virtual space due to the previous indent and escape should cause the caret to jump back to
             /// real spaces when leaving insert mode
             /// </summary>
             [WpfFact]
@@ -1935,8 +1979,8 @@ namespace Vim.UnitTest
 
             /// <summary>
             /// When the final line of the ITextBuffer is an empty line make sure that we can
-            /// move up off of it when in Visual Line Mode.  
-            /// 
+            /// move up off of it when in Visual Line Mode.
+            ///
             /// Issue #769
             /// </summary>
             [WpfFact]
@@ -1949,9 +1993,9 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
-            /// Make sure that we can use 'j' to go over an empty line in Visual Character 
+            /// Make sure that we can use 'j' to go over an empty line in Visual Character
             /// mode
-            /// 
+            ///
             /// Issue #758
             /// </summary>
             [WpfFact]
@@ -2046,7 +2090,7 @@ namespace Vim.UnitTest
 
             /// <summary>
             /// Character should be positioned at the start of the first line in the
-            /// block 
+            /// block
             /// </summary>
             [WpfFact]
             public void PutOver_CharacterWise_WithBlock()
@@ -2061,7 +2105,7 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
-            /// Caret should be positioned after the line character in the last 
+            /// Caret should be positioned after the line character in the last
             /// line of the inserted block
             /// </summary>
             [WpfFact]
@@ -2093,7 +2137,7 @@ namespace Vim.UnitTest
 
             /// <summary>
             /// When doing a put over selection the text being deleted should be put into
-            /// the unnamed register.  If the put came from the unnamed register then the 
+            /// the unnamed register.  If the put came from the unnamed register then the
             /// original put value is overwritten
             /// </summary>
             [WpfFact]
@@ -2343,7 +2387,7 @@ namespace Vim.UnitTest
 
             /// <summary>
             /// Put with indent commands are another odd ball item in Vim.  It's the one put command
-            /// which doesn't delete the selection when putting the text into the buffer.  Instead 
+            /// which doesn't delete the selection when putting the text into the buffer.  Instead
             /// it just continues on in visual mode after the put
             /// </summary>
             [WpfFact]
@@ -2403,8 +2447,8 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
-            /// This behavior isn't documented.  But if iw begins on a single white space character 
-            /// then repeated iw shouldn't change anything.  It should select the single space and 
+            /// This behavior isn't documented.  But if iw begins on a single white space character
+            /// then repeated iw shouldn't change anything.  It should select the single space and
             /// go from there
             /// </summary>
             [WpfFact]
@@ -2436,7 +2480,7 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
-            /// The non initial selection from white space should extend to the 
+            /// The non initial selection from white space should extend to the
             /// next word
             /// </summary>
             [WpfFact]
@@ -2476,7 +2520,7 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
-            /// Ensure the ab motion includes the parens and puts the caret on the last 
+            /// Ensure the ab motion includes the parens and puts the caret on the last
             /// character
             /// </summary>
             [WpfFact]
@@ -2552,7 +2596,7 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
-            /// If we've already selected the inner block at the caret then move outward 
+            /// If we've already selected the inner block at the caret then move outward
             /// and select the containing block
             /// </summary>
             [WpfFact]
@@ -2568,7 +2612,7 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
-            /// If the entire inner block is not yet selected then go ahead and select it 
+            /// If the entire inner block is not yet selected then go ahead and select it
             /// </summary>
             [WpfFact]
             public void TextObject_InnerParen_ExpandToFullBlock()
@@ -2581,7 +2625,7 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
-            /// Ensure the ib motion excludes the parens and puts the caret on the last 
+            /// Ensure the ib motion excludes the parens and puts the caret on the last
             /// character
             /// </summary>
             [WpfFact]
@@ -2595,7 +2639,7 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
-            /// Ensure the iB motion excludes the brackets and puts the caret on the last 
+            /// Ensure the iB motion excludes the brackets and puts the caret on the last
             /// character
             /// </summary>
             [WpfFact]
