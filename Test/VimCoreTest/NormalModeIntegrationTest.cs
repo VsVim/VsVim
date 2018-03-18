@@ -556,6 +556,15 @@ namespace Vim.UnitTest
             }
 
             [WpfFact]
+            public void LastLineWhenEmpty()
+            {
+                Create("dog", "cat", "");
+                Assert.Equal(3, _textBuffer.CurrentSnapshot.LineCount);
+                _vimBuffer.Process("G");
+                Assert.Equal(_textBuffer.GetPointInLine(line: 2, column: 0), _textView.GetCaretPoint());
+            }
+
+            [WpfFact]
             public void MoveOverFold()
             {
                 Create("cat", "dog", "fish", "tree");
