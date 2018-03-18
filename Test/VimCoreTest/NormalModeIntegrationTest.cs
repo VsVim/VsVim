@@ -1561,6 +1561,14 @@ namespace Vim.UnitTest
                 _vimBuffer.ProcessNotation("\"aY");
                 Assert.Equal("dog", RegisterMap.GetRegister('a').StringValue);
             }
+
+            [WpfFact]
+            public void Issue1892()
+            {
+                Create("test");
+                _vimBuffer.ProcessNotation("y$");
+                Assert.Equal("test", UnnamedRegister.StringValue);
+            }
         }
 
         public abstract class KeyMappingTest : NormalModeIntegrationTest
