@@ -2293,7 +2293,7 @@ type internal MotionUtil
             match numberOpt with
             | Some number ->  SnapshotUtil.GetLineOrLast x.CurrentSnapshot (Util.VimLineToTssLine number)
             | None -> SnapshotUtil.GetLastLine x.CurrentSnapshot 
-        x.LineToLineFirstNonBlankMotion MotionResultFlags.MaintainCaretColumn x.CaretLine endLine
+        x.LineToLineFirstNonBlankMotion (MotionResultFlags.MaintainCaretColumn ||| MotionResultFlags.IncludeEmptyLastLine) x.CaretLine endLine
 
     /// Go to the last non-blank character on the 'count - 1' line
     member x.LastNonBlankOnLine count = 

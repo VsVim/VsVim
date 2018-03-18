@@ -556,6 +556,15 @@ namespace Vim.UnitTest
             }
 
             [WpfFact]
+            public void LastLineWhenEmpty()
+            {
+                Create("dog", "cat", "");
+                Assert.Equal(3, _textBuffer.CurrentSnapshot.LineCount);
+                _vimBuffer.Process("G");
+                Assert.Equal(_textBuffer.GetPointInLine(line: 2, column: 0), _textView.GetCaretPoint());
+            }
+
+            [WpfFact]
             public void MoveOverFold()
             {
                 Create("cat", "dog", "fish", "tree");
@@ -1560,6 +1569,14 @@ namespace Vim.UnitTest
                 _vimBuffer.ProcessNotation(":nmap Y y$", enter: true);
                 _vimBuffer.ProcessNotation("\"aY");
                 Assert.Equal("dog", RegisterMap.GetRegister('a').StringValue);
+            }
+
+            [WpfFact]
+            public void Issue1892()
+            {
+                Create("test");
+                _vimBuffer.ProcessNotation("y$");
+                Assert.Equal("test", UnnamedRegister.StringValue);
             }
         }
 
