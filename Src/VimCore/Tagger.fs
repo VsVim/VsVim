@@ -13,14 +13,14 @@ open System.Threading
 open VimCoreExtensions
 
 /// Tagger for incremental searches
-type IncrementalSearchTaggerSource (_vimBuffer : IVimBuffer) as this =
+type IncrementalSearchTaggerSource (_vimBuffer: IVimBuffer) as this =
 
     let _search = _vimBuffer.IncrementalSearch
     let _textBuffer = _vimBuffer.TextBuffer
     let _globalSettings = _vimBuffer.GlobalSettings
     let _eventHandlers = DisposableBag()
     let _changed = StandardEvent()
-    let mutable _searchSpan : ITrackingSpan option = None
+    let mutable _searchSpan: ITrackingSpan option = None
 
     static let EmptyTagList = ReadOnlyCollection<ITagSpan<TextMarkerTag>>([| |])
 
@@ -105,13 +105,13 @@ type IncrementalSearchTaggerSource (_vimBuffer : IVimBuffer) as this =
 type internal IncrementalSearchTaggerProvider
     [<ImportingConstructor>]
     (
-        _vim : IVim
+        _vim: IVim
     ) = 
 
     let _key = obj()
 
     interface IViewTaggerProvider with 
-        member x.CreateTagger<'T when 'T :> ITag> (textView : ITextView, textBuffer) = 
+        member x.CreateTagger<'T when 'T :> ITag> (textView: ITextView, textBuffer) = 
             if textView.TextBuffer = textBuffer then
                 match _vim.GetOrCreateVimBufferForHost textView with
                 | None -> null
@@ -125,17 +125,17 @@ type internal IncrementalSearchTaggerProvider
                 null
 
 type HighlightSearchData = {
-    Pattern : string
-    VimRegexOptions : VimRegexOptions
+    Pattern: string
+    VimRegexOptions: VimRegexOptions
 }
 
 /// Tagger for completed incremental searches
 type HighlightSearchTaggerSource
     ( 
-        _textView : ITextView,
-        _globalSettings : IVimGlobalSettings,
-        _vimData : IVimData,
-        _vimHost : IVimHost
+        _textView: ITextView,
+        _globalSettings: IVimGlobalSettings,
+        _vimData: IVimData,
+        _vimHost: IVimHost
     ) as this =
 
     let _textBuffer = _textView.TextBuffer
@@ -206,7 +206,7 @@ type HighlightSearchTaggerSource
             None
 
     [<UsedInBackgroundThread>]
-    static member GetTagsInBackground (highlightSearchData : HighlightSearchData) span (cancellationToken : CancellationToken) = 
+    static member GetTagsInBackground (highlightSearchData: HighlightSearchData) span (cancellationToken: CancellationToken) = 
 
         if StringUtil.IsNullOrEmpty highlightSearchData.Pattern then
             EmptyTagList
@@ -278,13 +278,13 @@ type HighlightSearchTaggerSource
 type HighlightIncrementalSearchTaggerProvider
     [<ImportingConstructor>]
     ( 
-        _vim : IVim
+        _vim: IVim
     ) = 
 
     let _key = obj()
 
     interface IViewTaggerProvider with 
-        member x.CreateTagger<'T when 'T :> ITag> ((textView : ITextView), textBuffer) = 
+        member x.CreateTagger<'T when 'T :> ITag> ((textView: ITextView), textBuffer) = 
             if textView.TextBuffer = textBuffer then
                 match _vim.GetOrCreateVimBufferForHost textView with
                 | None -> null
@@ -301,13 +301,13 @@ type HighlightIncrementalSearchTaggerProvider
 /// Tagger for matches as they appear during a confirm substitute
 type SubstituteConfirmTaggerSource
     ( 
-        _textBuffer : ITextBuffer,
-        _mode : ISubstituteConfirmMode
+        _textBuffer: ITextBuffer,
+        _mode: ISubstituteConfirmMode
     ) as this =
 
     let _changed = StandardEvent()
     let _eventHandlers = DisposableBag()
-    let mutable _currentMatch : SnapshotSpan option = None
+    let mutable _currentMatch: SnapshotSpan option = None
 
     static let EmptyTagList = ReadOnlyCollection<ITagSpan<TextMarkerTag>>([| |])
 
@@ -344,13 +344,13 @@ type SubstituteConfirmTaggerSource
 type SubstituteConfirmTaggerProvider
     [<ImportingConstructor>]
     ( 
-        _vim : IVim
+        _vim: IVim
     ) = 
 
     let _key = obj()
 
     interface IViewTaggerProvider with 
-        member x.CreateTagger<'T when 'T :> ITag> ((textView : ITextView), textBuffer) = 
+        member x.CreateTagger<'T when 'T :> ITag> ((textView: ITextView), textBuffer) = 
             if textView.TextBuffer = textBuffer then
                 match _vim.GetOrCreateVimBufferForHost textView with
                 | None -> null
@@ -366,7 +366,7 @@ type SubstituteConfirmTaggerProvider
 /// Fold tagger for the IOutliningRegion tags created by folds.  Note that folds work
 /// on an ITextBuffer level and not an ITextView level.  Hence this works directly with
 /// IFoldManagerData instead of IFoldManager
-type internal FoldTaggerSource(_foldData : IFoldData) as this =
+type internal FoldTaggerSource(_foldData: IFoldData) as this =
 
     let _textBuffer = _foldData.TextBuffer
     let _changed = StandardEvent()
@@ -408,7 +408,7 @@ type internal FoldTaggerSource(_foldData : IFoldData) as this =
 type FoldTaggerProvider
     [<ImportingConstructor>]
     (
-        _factory : IFoldManagerFactory
+        _factory: IFoldManagerFactory
     ) =
 
     let _key = obj()

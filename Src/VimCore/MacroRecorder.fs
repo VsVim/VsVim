@@ -1,11 +1,11 @@
 ﻿namespace Vim
 
 /// Macro recording implementation
-type internal MacroRecorder (_registerMap : IRegisterMap) =
+type internal MacroRecorder (_registerMap: IRegisterMap) =
 
     /// Option holding the data related to recording.  If it's Some then we are in the
     /// middle of recording.
-    let mutable _recordData : (Register * KeyInput list) option = None
+    let mutable _recordData: (Register * KeyInput list) option = None
 
     /// This records whether or not the KeyInputEnd event is valid or not for 
     /// recording.  The macro recorder needs to be careful to not record key
@@ -24,7 +24,7 @@ type internal MacroRecorder (_registerMap : IRegisterMap) =
     member x.IsRecording = Option.isSome _recordData
 
     /// Start recording KeyInput values which are processed
-    member x.StartRecording (register : Register) isAppend = 
+    member x.StartRecording (register: Register) isAppend = 
         Contract.Requires (Option.isNone _recordData)
 
         // Calculate the initial list.  If we are appending to the existing register
@@ -50,7 +50,7 @@ type internal MacroRecorder (_registerMap : IRegisterMap) =
         _recordingStoppedEvent.Trigger x
 
     /// Need to track the KeyInputProcessed event for every IVimBuffer in the system
-    member x.OnVimBufferCreated (buffer : IVimBuffer) =
+    member x.OnVimBufferCreated (buffer: IVimBuffer) =
         let bag = DisposableBag()
         buffer.KeyInputStart.Subscribe x.OnKeyInputStart |> bag.Add
         buffer.KeyInputEnd.Subscribe x.OnKeyInputEnd |> bag.Add
@@ -59,7 +59,7 @@ type internal MacroRecorder (_registerMap : IRegisterMap) =
     member x.OnKeyInputStart _ = 
         _isKeyInputEndValid <- Option.isSome _recordData
 
-    member x.OnKeyInputEnd (args : KeyInputEventArgs) =
+    member x.OnKeyInputEnd (args: KeyInputEventArgs) =
         if _isKeyInputEndValid then
             match _recordData with
             | None -> () 

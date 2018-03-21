@@ -10,7 +10,7 @@ open System.Collections.Generic
 open System.ComponentModel.Composition
 
 type internal StatusUtil() = 
-    let mutable _vimBuffer : IVimBufferInternal option = None
+    let mutable _vimBuffer: IVimBufferInternal option = None
 
     member x.VimBuffer 
         with get () = _vimBuffer
@@ -46,16 +46,16 @@ type StatusUtilFactory () =
     let _key = new System.Object()
 
     /// Get or create an PropagatingStatusUtil instance for the ITextBuffer
-    member x.GetStatusUtilForBuffer (textBuffer : ITextBuffer) =
+    member x.GetStatusUtilForBuffer (textBuffer: ITextBuffer) =
         textBuffer.Properties.GetOrCreateSingletonProperty(_key, (fun unused -> PropagatingStatusUtil()))
 
     /// Get or create an StatusUtil instance for the ITextView
-    member x.GetStatusUtilForView (textView : ITextView) =
+    member x.GetStatusUtilForView (textView: ITextView) =
         textView.Properties.GetOrCreateSingletonProperty(_key, (fun unused -> StatusUtil()))
 
     /// When an IVimBuffer is created go ahead and update the backing VimBuffer value for
     /// the status util
-    member x.InitializeVimBuffer (vimBuffer : IVimBufferInternal) = 
+    member x.InitializeVimBuffer (vimBuffer: IVimBufferInternal) = 
         try
             let statusUtil = x.GetStatusUtilForView vimBuffer.TextView
             statusUtil.VimBuffer <- Some vimBuffer

@@ -7,17 +7,17 @@ open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Editor
 
 type internal NormalModeData = {
-    Command : string
-    InReplace : bool
+    Command: string
+    InReplace: bool
 }
 
 type internal NormalMode 
     ( 
-        _vimBufferData : IVimBufferData,
-        _operations : ICommonOperations,
-        _motionUtil : IMotionUtil,
-        _runner : ICommandRunner,
-        _capture : IMotionCapture
+        _vimBufferData: IVimBufferData,
+        _operations: ICommonOperations,
+        _motionUtil: IMotionUtil,
+        _runner: ICommandRunner,
+        _capture: IMotionCapture
     ) as this =
 
     let _vimTextBuffer = _vimBufferData.VimTextBuffer
@@ -40,7 +40,7 @@ type internal NormalMode
 
     /// This is the list of commands that have the same key binding as the selection 
     /// commands and run when keymodel doesn't have startsel as a value
-    let mutable _selectionAlternateCommands : CommandBinding list = List.empty
+    let mutable _selectionAlternateCommands: CommandBinding list = List.empty
 
     let _eventHandlers = DisposableBag()
 
@@ -172,9 +172,9 @@ type internal NormalMode
         Seq.append normalSeq motionSeq 
         |> List.ofSeq
 
-    let mutable _sharedSelectionCommands : List<CommandBinding> = List.empty
+    let mutable _sharedSelectionCommands: List<CommandBinding> = List.empty
 
-    let mutable _sharedSelectionCommandNameSet : Set<KeyInputSet> = Set.empty
+    let mutable _sharedSelectionCommandNameSet: Set<KeyInputSet> = Set.empty
 
     do
         // Up cast here to work around the F# bug which prevents accessing a CLIEvent from
@@ -245,7 +245,7 @@ type internal NormalMode
                 x.UpdateSelectionCommands()
 
     /// Raised when a global setting is changed
-    member x.OnGlobalSettingsChanged (args : SettingEventArgs) = 
+    member x.OnGlobalSettingsChanged (args: SettingEventArgs) = 
         if x.IsCommandRunnerPopulated then
             let setting = args.Setting
             if StringUtil.IsEqual setting.Name GlobalSettingNames.TildeOpName then
@@ -258,7 +258,7 @@ type internal NormalMode
         let func () = 
             _data <- { _data with InReplace = true }
 
-            let bind (keyInput : KeyInput) = 
+            let bind (keyInput: KeyInput) = 
                 _data <- { _data with InReplace = false }
                 match keyInput.Key with
                 | VimKey.Escape -> BindResult.Cancelled
@@ -273,7 +273,7 @@ type internal NormalMode
 
     /// Get a mark and us the provided 'func' to create a Motion value
     member x.BindMark func = 
-        let bindFunc (keyInput : KeyInput) =
+        let bindFunc (keyInput: KeyInput) =
             match Mark.OfChar keyInput.Char with
             | None -> BindResult<NormalCommand>.Error
             | Some localMark -> BindResult<_>.Complete (func localMark)
@@ -316,7 +316,7 @@ type internal NormalMode
         _runner.ResetState()
         _data <- EmptyData
 
-    member x.CanProcess (keyInput : KeyInput) =
+    member x.CanProcess (keyInput: KeyInput) =
         let doesCommandStartWith keyInput =
             let name = KeyInputSet.OneKeyInput keyInput
             _runner.Commands 
@@ -334,7 +334,7 @@ type internal NormalMode
         else 
             false
     
-    member x.Process (keyInput : KeyInput) = 
+    member x.Process (keyInput: KeyInput) = 
 
         // Update the text of the command so long as this isn't a control character 
         if not (CharUtil.IsControl keyInput.Char) then

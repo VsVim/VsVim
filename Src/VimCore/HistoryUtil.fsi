@@ -9,4 +9,4 @@ type internal HistoryUtil =
     static member CreateHistorySession<'TData, 'TResult> : IHistoryClient<'TData, 'TResult> -> 'TData -> string -> IVimBuffer option -> IHistorySession<'TData, 'TResult>
 
     /// The set of KeyInput values which history considers to be a valid command
-    static member CommandNames : KeyInput list
+    static member CommandNames: KeyInput list

@@ -27,20 +27,20 @@ open System
 /// ideal but will have to do for now.  
 type internal TrackingLineColumn 
     ( 
-        _textBuffer : ITextBuffer,
-        _column : int,
-        _mode : LineColumnTrackingMode,
-        _onClose : TrackingLineColumn -> unit
+        _textBuffer: ITextBuffer,
+        _column: int,
+        _mode: LineColumnTrackingMode,
+        _onClose: TrackingLineColumn -> unit
     ) =
 
     /// This is the SnapshotSpan of the line that we are tracking.  It is None in the
     /// case of a deleted line
-    let mutable _line : ITextSnapshotLine option  = None
+    let mutable _line: ITextSnapshotLine option  = None
 
     /// When the line this TrackingLineColumn is deleted, this will record the version 
     /// number of the last valid version containing the line.  That way if we undo this 
     /// can become valid again
-    let mutable _lastValidVersion : (int * int) option  = None
+    let mutable _lastValidVersion: (int * int) option  = None
 
     let mutable _column = _column
 
@@ -70,7 +70,7 @@ type internal TrackingLineColumn
         _lastValidVersion <- None
 
     /// Update the internal tracking information based on the new ITextSnapshot
-    member x.OnBufferChanged (e : TextContentChangedEventArgs) =
+    member x.OnBufferChanged (e: TextContentChangedEventArgs) =
         match _line with 
         | Some snapshotLine -> x.AdjustForChange snapshotLine e
         | None -> x.CheckForUndo e
@@ -80,7 +80,7 @@ type internal TrackingLineColumn
     ///
     /// Note: This method occurs on a hot path, especially in macro playback, hence we
     /// take great care to avoid allocations on this path whenever possible
-    member x.AdjustForChange (oldLine : ITextSnapshotLine) (e : TextContentChangedEventArgs) =
+    member x.AdjustForChange (oldLine: ITextSnapshotLine) (e: TextContentChangedEventArgs) =
         let changes = e.Changes
         match _mode with
         | LineColumnTrackingMode.Default ->
@@ -99,7 +99,7 @@ type internal TrackingLineColumn
             _line <- Some (newSnapshot.GetLineFromLineNumber number)
         | LineColumnTrackingMode.SurviveDeletes -> x.AdjustForChangeCore oldLine e
 
-    member x.AdjustForChangeCore (oldLine : ITextSnapshotLine) (e : TextContentChangedEventArgs) =
+    member x.AdjustForChangeCore (oldLine: ITextSnapshotLine) (e: TextContentChangedEventArgs) =
         let newSnapshot = e.After
         let changes = e.Changes
 
@@ -120,7 +120,7 @@ type internal TrackingLineColumn
             x.MarkInvalid oldLine
 
     /// Is the specified line deleted by this change
-    member x.IsLineDeletedByChange (snapshotLine : ITextSnapshotLine) (changes : INormalizedTextChangeCollection) =
+    member x.IsLineDeletedByChange (snapshotLine: ITextSnapshotLine) (changes: INormalizedTextChangeCollection) =
 
         if changes.IncludesLineChanges then
             let span = snapshotLine.ExtentIncludingLineBreak.Span
@@ -137,7 +137,7 @@ type internal TrackingLineColumn
     /// This line was deleted at some point in the past and hence we're invalid.  If the 
     /// current change is an Undo back to the last version where we were valid then we
     /// become valid again
-    member x.CheckForUndo (e : TextContentChangedEventArgs) = 
+    member x.CheckForUndo (e: TextContentChangedEventArgs) = 
         Debug.Assert(not x.IsValid)
         match _lastValidVersion with
         | Some (version, lineNumber) ->
@@ -150,7 +150,7 @@ type internal TrackingLineColumn
 
     /// For whatever reason this is now invalid.  Store the last good information so we can
     /// recover during an undo operation
-    member x.MarkInvalid (snapshotLine : ITextSnapshotLine) =
+    member x.MarkInvalid (snapshotLine: ITextSnapshotLine) =
         _line <- None
         _lastValidVersion <- Some (snapshotLine.Snapshot.Version.VersionNumber, snapshotLine.LineNumber)
 
@@ -222,7 +222,7 @@ type internal TrackingVisualSpan =
         | Line (trackingLineColumn, _) -> trackingLineColumn.Close()
         | Block (trackingLineColumn, _, _, _) -> trackingLineColumn.Close()
 
-    static member Create (bufferTrackingService : IBufferTrackingService) visualSpan =
+    static member Create (bufferTrackingService: IBufferTrackingService) visualSpan =
         match visualSpan with
         | VisualSpan.Character characterSpan ->
 
@@ -261,10 +261,10 @@ type internal TrackingVisualSpan =
 
 type internal TrackingVisualSelection 
     (
-        _trackingVisualSpan : ITrackingVisualSpan,
-        _path : SearchPath,
-        _column : int,
-        _blockCaretLocation : BlockCaretLocation
+        _trackingVisualSpan: ITrackingVisualSpan,
+        _path: SearchPath,
+        _column: int,
+        _blockCaretLocation: BlockCaretLocation
     ) =
 
     member x.VisualSelection =
@@ -287,7 +287,7 @@ type internal TrackingVisualSelection
         x.VisualSelection |> Option.map (fun visualSelection -> visualSelection.GetCaretPoint SelectionKind.Inclusive)
 
     /// Create an ITrackingVisualSelection with the provided data
-    static member Create (bufferTrackingService : IBufferTrackingService) (visualSelection : VisualSelection)=
+    static member Create (bufferTrackingService: IBufferTrackingService) (visualSelection: VisualSelection)=
 
         // Track the inclusive VisualSpan.  Internally the VisualSelection type represents values as inclusive
         // ones.  
@@ -306,8 +306,8 @@ type internal TrackingVisualSelection
         member x.Close() = _trackingVisualSpan.Close()
 
 type internal TrackedData = {
-    List : List<TrackingLineColumn>
-    Observer : System.IDisposable 
+    List: List<TrackingLineColumn>
+    Observer: System.IDisposable 
 }
 
 /// Service responsible for tracking various parts of an ITextBuffer which can't be replicated
@@ -318,13 +318,13 @@ type internal BufferTrackingService() =
 
     static let _key = obj()
 
-    member x.FindTrackedData (textBuffer : ITextBuffer) =
+    member x.FindTrackedData (textBuffer: ITextBuffer) =
         PropertyCollectionUtil.GetValue<TrackedData> _key textBuffer.Properties
     
     /// Remove the TrackingLineColumn from the map.  If it is the only remaining 
     /// TrackingLineColumn assigned to the ITextBuffer, remove it from the map
     /// and unsubscribe from the Changed event
-    member x.Remove (trackingLineColumn : TrackingLineColumn) = 
+    member x.Remove (trackingLineColumn: TrackingLineColumn) = 
         let textBuffer = trackingLineColumn.TextBuffer
         match x.FindTrackedData textBuffer with
         | Some trackedData -> 
@@ -336,7 +336,7 @@ type internal BufferTrackingService() =
 
     /// Add the TrackingLineColumn to the map.  If this is the first item in the
     /// map then subscribe to the Changed event on the buffer
-    member x.Add (trackingLineColumn : TrackingLineColumn) =
+    member x.Add (trackingLineColumn: TrackingLineColumn) =
         let textBuffer = trackingLineColumn.TextBuffer
         let trackedData = 
             match x.FindTrackedData textBuffer with
@@ -348,12 +348,12 @@ type internal BufferTrackingService() =
                 trackedData
         trackedData.List.Add trackingLineColumn
 
-    member x.OnBufferChanged (e : TextContentChangedEventArgs) = 
+    member x.OnBufferChanged (e: TextContentChangedEventArgs) = 
         match x.FindTrackedData e.Before.TextBuffer with
         | Some trackedData -> trackedData.List |> Seq.iter (fun trackingLineColumn -> trackingLineColumn.OnBufferChanged e)
         | None -> ()
 
-    member x.Create (textBuffer : ITextBuffer) lineNumber column mode = 
+    member x.Create (textBuffer: ITextBuffer) lineNumber column mode = 
         let trackingLineColumn = TrackingLineColumn(textBuffer, column, mode, x.Remove)
         let textSnapshot = textBuffer.CurrentSnapshot
         let textLine = textSnapshot.GetLineFromLineNumber(lineNumber)
@@ -376,12 +376,12 @@ type internal BufferTrackingService() =
 type internal ChangeTracker
     [<ImportingConstructor>]
     (
-        _vim : IVim
+        _vim: IVim
     ) =
 
     let _vimData = _vim.VimData
 
-    member x.OnVimBufferCreated (vimBuffer : IVimBuffer) =
+    member x.OnVimBufferCreated (vimBuffer: IVimBuffer) =
         let handler = x.OnCommandRan
         vimBuffer.NormalMode.CommandRunner.CommandRan |> Event.add handler
         vimBuffer.VisualLineMode.CommandRunner.CommandRan |> Event.add handler
@@ -390,7 +390,7 @@ type internal ChangeTracker
         vimBuffer.InsertMode.CommandRan |> Event.add handler
         vimBuffer.ReplaceMode.CommandRan |> Event.add handler
 
-    member x.OnCommandRan (args : CommandRunDataEventArgs) = 
+    member x.OnCommandRan (args: CommandRunDataEventArgs) = 
         let data = args.CommandRunData
         let command = data.CommandBinding
         if command.IsMovement || command.IsSpecial then
@@ -426,13 +426,13 @@ type internal ChangeTracker
 [<Export(typeof<IProtectedOperations>)>]
 type internal ProtectedOperations =
 
-    val _errorHandlers : List<Lazy<IExtensionErrorHandler>>
+    val _errorHandlers: List<Lazy<IExtensionErrorHandler>>
 
     [<ImportingConstructor>]
-    new ([<ImportMany>] errorHandlers : Lazy<IExtensionErrorHandler> seq) = 
+    new ([<ImportMany>] errorHandlers: Lazy<IExtensionErrorHandler> seq) = 
         { _errorHandlers = errorHandlers |> GenericListUtil.OfSeq }
 
-    new (errorHandler : IExtensionErrorHandler) = 
+    new (errorHandler: IExtensionErrorHandler) = 
         let l = Lazy<IExtensionErrorHandler>(fun _ -> errorHandler)
         let list = l |> Seq.singleton |> GenericListUtil.OfSeq
         { _errorHandlers = list }
@@ -442,7 +442,7 @@ type internal ProtectedOperations =
 
     /// Produce a delegate that can safely execute the given action.  If it throws an exception 
     /// then make sure to alert the error handlers
-    member private x.GetProtectedAction (action  : Action) : Action =
+    member private x.GetProtectedAction (action : Action): Action =
         let a () = 
             try
                 action.Invoke()
@@ -450,7 +450,7 @@ type internal ProtectedOperations =
             | e -> x.AlertAll e
         Action(a)
 
-    member private x.GetProtectedEventHandler (eventHandler : EventHandler) : EventHandler = 
+    member private x.GetProtectedEventHandler (eventHandler: EventHandler): EventHandler = 
         let a sender e = 
             try
                 eventHandler.Invoke(sender, e)

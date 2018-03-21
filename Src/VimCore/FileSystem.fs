@@ -26,7 +26,7 @@ type internal FileSystem() =
     /// an exception occurred during processing and if not the lines that were read
     /// Read all of the lines from the file at the given path.  If this fails None
     /// will be returned
-    member x.ReadAllLinesCore (streamReader : StreamReader) =
+    member x.ReadAllLinesCore (streamReader: StreamReader) =
         let list = List<string>()
         let mutable line = streamReader.ReadLine()
         while line <> null do
@@ -38,19 +38,19 @@ type internal FileSystem() =
     /// This will attempt to read the path using first the encoding dictated by the BOM and 
     /// if there is no BOM it will try UTF8.  If either encoding encounters errors trying to
     /// process the file then this function will also fail
-    member x.ReadAllLinesBomAndUtf8 (path : string) = 
+    member x.ReadAllLinesBomAndUtf8 (path: string) = 
         let encoding = UTF8Encoding(false, true)
         use streamReader = new StreamReader(path, encoding, true)
         x.ReadAllLinesCore streamReader
 
     /// Read the lines with the Latin1 encoding.  
-    member x.ReadAllLinesLatin1 (path : string) = 
+    member x.ReadAllLinesLatin1 (path: string) = 
         let encoding = Encoding.GetEncoding("Latin1")
         use streamReader = new StreamReader(path, encoding, false)
         x.ReadAllLinesCore streamReader
 
     /// Forced utf8 encoding
-    member x.ReadAllLinesUtf8 (path : string) = 
+    member x.ReadAllLinesUtf8 (path: string) = 
         let encoding = Encoding.UTF8
         use streamReader = new StreamReader(path, encoding, false)
         x.ReadAllLinesCore streamReader
@@ -74,7 +74,7 @@ type internal FileSystem() =
                 x.ReadAllLinesUtf8;
             |]
 
-        let mutable lines : List<string> option = None
+        let mutable lines: List<string> option = None
         let mutable i = 0
         while i < all.Length && Option.isNone lines do
             try
@@ -172,7 +172,7 @@ type internal FileSystem() =
         with 
             _ -> None
 
-    member x.Write filePath (stream : Stream) = 
+    member x.Write filePath (stream: Stream) = 
         try
             use fileStream = File.Open(filePath, FileMode.Create, FileAccess.Write)
             stream.CopyTo(fileStream)

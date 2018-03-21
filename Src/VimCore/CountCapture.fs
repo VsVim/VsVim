@@ -7,10 +7,10 @@ open Microsoft.VisualStudio.Text.Editor;
 module internal CountCapture =
 
     /// Get a count value starting with the provided KeyInput
-    let GetCount keyRemapMode (keyInput : KeyInput) = 
-        let charToInt (c : char) = c.ToString() |> System.Int32.Parse
+    let GetCount keyRemapMode (keyInput: KeyInput) = 
+        let charToInt (c: char) = c.ToString() |> System.Int32.Parse
 
-        let rec nextFunc number (keyInput : KeyInput) =
+        let rec nextFunc number (keyInput: KeyInput) =
             match keyInput.IsDigit with
             | true ->
                 let digit = charToInt keyInput.Char

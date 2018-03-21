@@ -36,7 +36,7 @@ module public FSharpOption =
         | null -> None
         | _ -> Some value
 
-    let CreateForNullable (value : System.Nullable<'T>) =
+    let CreateForNullable (value: System.Nullable<'T>) =
         if value.HasValue then Some value.Value
         else None
 
@@ -44,31 +44,31 @@ module public FSharpOption =
 type public FSharpFuncUtil = 
 
     [<Extension>] 
-    static member ToFSharpFunc<'a> (func : System.Func<'a>) = fun () -> func.Invoke()
+    static member ToFSharpFunc<'a> (func: System.Func<'a>) = fun () -> func.Invoke()
 
     [<Extension>] 
-    static member ToFSharpFunc<'a,'b> (func : System.Converter<'a,'b>) = fun x -> func.Invoke(x)
+    static member ToFSharpFunc<'a,'b> (func: System.Converter<'a,'b>) = fun x -> func.Invoke(x)
 
     [<Extension>] 
-    static member ToFSharpFunc<'a,'b> (func : System.Func<'a,'b>) = fun x -> func.Invoke(x)
+    static member ToFSharpFunc<'a,'b> (func: System.Func<'a,'b>) = fun x -> func.Invoke(x)
 
     [<Extension>] 
-    static member ToFSharpFunc<'a,'b,'c> (func : System.Func<'a,'b,'c>) = fun x y -> func.Invoke(x,y)
+    static member ToFSharpFunc<'a,'b,'c> (func: System.Func<'a,'b,'c>) = fun x y -> func.Invoke(x,y)
 
     [<Extension>] 
-    static member ToFSharpFunc<'a,'b,'c,'d> (func : System.Func<'a,'b,'c,'d>) = fun x y z -> func.Invoke(x,y,z)
+    static member ToFSharpFunc<'a,'b,'c,'d> (func: System.Func<'a,'b,'c,'d>) = fun x y z -> func.Invoke(x,y,z)
 
     [<Extension>] 
-    static member ToFSharpFunc<'a> (func : System.Action) = fun () -> func.Invoke()
+    static member ToFSharpFunc<'a> (func: System.Action) = fun () -> func.Invoke()
 
     [<Extension>] 
-    static member ToFSharpFunc<'a> (func : System.Action<'a>) = fun x -> func.Invoke(x)
+    static member ToFSharpFunc<'a> (func: System.Action<'a>) = fun x -> func.Invoke(x)
 
-    static member Create<'a,'b> (func : System.Func<'a,'b>) = FSharpFuncUtil.ToFSharpFunc func
+    static member Create<'a,'b> (func: System.Func<'a,'b>) = FSharpFuncUtil.ToFSharpFunc func
 
-    static member Create<'a,'b,'c> (func : System.Func<'a,'b,'c>) = FSharpFuncUtil.ToFSharpFunc func
+    static member Create<'a,'b,'c> (func: System.Func<'a,'b,'c>) = FSharpFuncUtil.ToFSharpFunc func
 
-    static member Create<'a,'b,'c,'d> (func : System.Func<'a,'b,'c,'d>) = FSharpFuncUtil.ToFSharpFunc func
+    static member Create<'a,'b,'c,'d> (func: System.Func<'a,'b,'c,'d>) = FSharpFuncUtil.ToFSharpFunc func
 
 [<Extension>]
 module public CollectionExtensions =
@@ -86,10 +86,10 @@ module public CollectionExtensions =
         historyList
 
     [<Extension>] 
-    let ToReadOnlyCollectionShallow (list : List<'T>) = ReadOnlyCollection<'T>(list)
+    let ToReadOnlyCollectionShallow (list: List<'T>) = ReadOnlyCollection<'T>(list)
 
     [<Extension>]
-    let ToReadOnlyCollection (e : 'T seq) = 
+    let ToReadOnlyCollection (e: 'T seq) = 
         let list = List<'T>(e)
         ReadOnlyCollection<'T>(list)
 
@@ -98,7 +98,7 @@ module public EditorExtensions =
     open System.Runtime.InteropServices
 
     [<Extension>]
-    let TryGetPropertySafe<'T> propertyCollection (key : obj) ([<Out>] value : byref<'T>) =
+    let TryGetPropertySafe<'T> propertyCollection (key: obj) ([<Out>] value: byref<'T>) =
         match PropertyCollectionUtil.GetValue<'T> key propertyCollection with
         | Some v ->
             value <- v

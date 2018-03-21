@@ -11,31 +11,31 @@ open Vim
 type internal ITextChangeTracker =
 
     /// Associated ITextView
-    abstract TextView : ITextView
+    abstract TextView: ITextView
 
     /// Whether or not change tracking is currently enabled.  Disabling the tracking will
     /// cause the current change to be completed
-    abstract TrackCurrentChange : bool with get, set
+    abstract TrackCurrentChange: bool with get, set
 
     /// Current change
-    abstract CurrentChange : TextChange option
+    abstract CurrentChange: TextChange option
 
     /// Complete the current change if there is one
-    abstract CompleteChange : unit -> unit
+    abstract CompleteChange: unit -> unit
 
     /// Clear out the current change without completing it
-    abstract ClearChange : unit -> unit
+    abstract ClearChange: unit -> unit
 
     /// Raised when a change is completed
     [<CLIEvent>]
-    abstract ChangeCompleted : IDelegateEvent<System.EventHandler<TextChangeEventArgs>>
+    abstract ChangeCompleted: IDelegateEvent<System.EventHandler<TextChangeEventArgs>>
 
 /// Used to track changes to an individual IVimBuffer
 type internal TextChangeTracker
     ( 
-        _vimTextBuffer : IVimTextBuffer,
-        _textView : ITextView,
-        _operations : ICommonOperations
+        _vimTextBuffer: IVimTextBuffer,
+        _textView: ITextView,
+        _operations: ICommonOperations
     ) as this =
 
     static let Key = System.Object()
@@ -44,7 +44,7 @@ type internal TextChangeTracker
     let _changeCompletedEvent = StandardEvent<TextChangeEventArgs>()
 
     /// Tracks the current active text change.  This will grow as the user edits
-    let mutable _currentTextChange : (TextChange * ITextChange) option = None
+    let mutable _currentTextChange: (TextChange * ITextChange) option = None
 
     /// Whether or not tracking is currently enabled
     let mutable _trackCurrentChange = false
@@ -88,7 +88,7 @@ type internal TextChangeTracker
 
     /// Convert the ITextChange value into a TextChange instance.  This will not handle any special 
     /// edit patterns and simply does a raw adjustment
-    member x.ConvertBufferChange (beforeSnapshot : ITextSnapshot) (change : ITextChange) =
+    member x.ConvertBufferChange (beforeSnapshot: ITextSnapshot) (change: ITextChange) =
 
         let convert () = 
 
@@ -130,14 +130,14 @@ type internal TextChangeTracker
         else 
             convert ()
 
-    member x.OnTextChanged (args : TextContentChangedEventArgs) = 
+    member x.OnTextChanged (args: TextContentChangedEventArgs) = 
 
         if x.TrackCurrentChange then
             x.UpdateCurrentChange args
 
         x.UpdateLastEditPoint args
 
-    member x.UpdateCurrentChange (args : TextContentChangedEventArgs) = 
+    member x.UpdateCurrentChange (args: TextContentChangedEventArgs) = 
 
         // At this time we only support contiguous changes (or rather a single change)
         if args.Changes.Count = 1 then
@@ -153,7 +153,7 @@ type internal TextChangeTracker
     /// Update the last edit point based on the latest change to the ITextBuffer.  Note that 
     /// this isn't necessarily a vim originated edit.  Can be done by another Visual Studio
     /// operation but we still treat it like a Vim edit
-    member x.UpdateLastEditPoint (args : TextContentChangedEventArgs) = 
+    member x.UpdateLastEditPoint (args: TextContentChangedEventArgs) = 
 
         if args.Changes.Count = 1 then
             let change = args.Changes.Item(0)
@@ -170,7 +170,7 @@ type internal TextChangeTracker
             _vimTextBuffer.LastEditPoint <- None
 
     /// Attempt to merge the change operations together
-    member x.MergeChange oldTextChange (oldChange : ITextChange) newTextChange (newChange : ITextChange) =
+    member x.MergeChange oldTextChange (oldChange: ITextChange) newTextChange (newChange: ITextChange) =
 
         // First step is to determine if we can merge the changes.  Essentially we need to ensure that
         // the changes are occurring at the same point in the ITextBuffer 
@@ -201,7 +201,7 @@ type internal TextChangeTracker
             x.CompleteChange()
             _currentTextChange <- Some (newTextChange, newChange)
 
-    static member GetTextChangeTracker (bufferData : IVimBufferData) (commonOperationsFactory : ICommonOperationsFactory) =
+    static member GetTextChangeTracker (bufferData: IVimBufferData) (commonOperationsFactory: ICommonOperationsFactory) =
         let textView = bufferData.TextView
         textView.Properties.GetOrCreateSingletonProperty(Key, (fun () -> 
             let operations = commonOperationsFactory.GetCommonOperations bufferData

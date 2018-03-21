@@ -10,8 +10,8 @@ open System.ComponentModel.Composition
 /// Data relating to tracking changes to a line
 type internal LineChangeTrackingData =
     {
-        LineNumber : int
-        SavedLine : string option
+        LineNumber: int
+        SavedLine: string option
     }
     static member Empty = {
         LineNumber = 0
@@ -21,7 +21,7 @@ type internal LineChangeTrackingData =
 /// Used to track changes to the current line of an individual IVimBuffer
 type internal LineChangeTracker
     ( 
-        _vimBufferData : IVimBufferData
+        _vimBufferData: IVimBufferData
     ) as x =
 
     let _disposables = DisposableBag()
@@ -129,7 +129,7 @@ type internal LineChangeTrackerFactory
     let _key = System.Object()
     
     interface ILineChangeTrackerFactory with
-        member x.GetLineChangeTracker (bufferData : IVimBufferData) =
+        member x.GetLineChangeTracker (bufferData: IVimBufferData) =
             let textView = bufferData.TextView
             textView.Properties.GetOrCreateSingletonProperty(_key, (fun () -> 
                 LineChangeTracker(bufferData) :> ILineChangeTracker))

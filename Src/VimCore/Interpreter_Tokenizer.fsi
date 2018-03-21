@@ -23,10 +23,10 @@ type internal TokenizerFlags =
 type internal ResetTokenizerFlags = 
 
     /// The flags that will be set on reset
-    member TokenizerFlags : TokenizerFlags
+    member TokenizerFlags: TokenizerFlags
 
     /// Reset now 
-    member Reset : unit -> unit
+    member Reset: unit -> unit
 
     interface IDisposable
 
@@ -34,46 +34,46 @@ type internal ResetTokenizerFlags =
 [<Class>]
 type internal Tokenizer = 
 
-    new: text : string * tokenizerFlags : TokenizerFlags -> Tokenizer
+    new: text: string * tokenizerFlags: TokenizerFlags -> Tokenizer
 
     /// Current mark into the token stream
-    member Mark : int
+    member Mark: int
 
     /// The flags the tokenizer is parsing under
-    member TokenizerFlags : TokenizerFlags with get, set 
+    member TokenizerFlags: TokenizerFlags with get, set 
 
     /// Is it at the end of the stream
-    member IsAtEndOfLine : bool
+    member IsAtEndOfLine: bool
 
     /// Current Token 
-    member CurrentToken : Token
+    member CurrentToken: Token
 
     /// Current TokenKind
-    member CurrentTokenKind : TokenKind
+    member CurrentTokenKind: TokenKind
 
     /// Current character that the tokenizer is pointing at
-    member CurrentChar : char
+    member CurrentChar: char
 
     /// Move to the next token in the stream.  Double quotes will be treated as a 
     /// comment
-    member MoveNextToken : unit -> unit
+    member MoveNextToken: unit -> unit
 
     /// Move to the next character in the stream and reset the current token.  If the 
     /// current token is a word then this would move past the first character in the
     /// word
-    member MoveNextChar : unit -> unit
+    member MoveNextChar: unit -> unit
 
     /// Rewind the token stream to the specified mark
-    member MoveToMark : mark : int -> unit
+    member MoveToMark: mark: int -> unit
 
     /// Move to the end of the current line
-    member MoveToEndOfLine : unit -> unit
+    member MoveToEndOfLine: unit -> unit
 
     /// Change the flags on the tokenizer and return a ResetTokenizerFlags instance
     /// that will reset the flags when done 
-    member SetTokenizerFlagsScoped : tokenizerFlags : TokenizerFlags -> ResetTokenizerFlags
+    member SetTokenizerFlagsScoped: tokenizerFlags: TokenizerFlags -> ResetTokenizerFlags
 
     /// Reset the tokenizer with the specified string and flags.  It will begin parsing
     /// this text from the beginning
-    member Reset : text : string -> tokenizerFlags : TokenizerFlags -> unit
+    member Reset: text: string -> tokenizerFlags: TokenizerFlags -> unit
 

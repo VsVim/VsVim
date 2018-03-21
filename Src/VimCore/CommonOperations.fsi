@@ -8,4 +8,4 @@ open Microsoft.VisualStudio.Text.Outlining
 
 module internal CommonUtil =
 
-    val RaiseSearchResultMessage : IStatusUtil -> SearchResult -> unit
+    val RaiseSearchResultMessage: IStatusUtil -> SearchResult -> unit

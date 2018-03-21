@@ -6,7 +6,7 @@ open Microsoft.VisualStudio.Text.Outlining
 
 type internal InsertUtil =
 
-    new : IVimBufferData * IMotionUtil * ICommonOperations -> InsertUtil
+    new: IVimBufferData * IMotionUtil * ICommonOperations -> InsertUtil
 
     interface IInsertUtil
 

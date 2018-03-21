@@ -17,8 +17,8 @@ type NameScope =
     | Vim
 
 type VariableName = { 
-    NameScope : NameScope
-    Name : string 
+    NameScope: NameScope
+    Name: string 
 }
 
 [<RequireQualifiedAccess>]
@@ -160,23 +160,23 @@ type AutoCommandGroup =
     | Named of string 
 
 type AutoCommand = {
-    Group : AutoCommandGroup
+    Group: AutoCommandGroup
 
-    EventKind : EventKind
+    EventKind: EventKind
 
-    LineCommandText : string
+    LineCommandText: string
 
-    Pattern : string
+    Pattern: string
 }    
 
 type AutoCommandDefinition = { 
-    Group : AutoCommandGroup
+    Group: AutoCommandGroup
 
-    EventKinds : EventKind list
+    EventKinds: EventKind list
 
-    LineCommandText : string
+    LineCommandText: string
 
-    Patterns : string list
+    Patterns: string list
 }
 
 /// A single line specifier in a range 
@@ -325,34 +325,34 @@ type BinaryKind =
 
 /// Data for the :call command
 type CallInfo = {
-    Name : string
-    Arguments : string
-    LineRange : LineRangeSpecifier
-    IsScriptLocal : bool
+    Name: string
+    Arguments: string
+    LineRange: LineRangeSpecifier
+    IsScriptLocal: bool
 }
 
 type FunctionDefinition = {
 
     /// Name of the function
-    Name : string
+    Name: string
 
     /// Arguments to the function
-    Parameters : string list
+    Parameters: string list
 
     /// Is the function responsible for its ranges
-    IsRange : bool
+    IsRange: bool
 
     /// Is the function supposed to abort on the first error
-    IsAbort : bool
+    IsAbort: bool
 
     /// Is the function intended to be invoked from a dictionary
-    IsDictionary : bool
+    IsDictionary: bool
 
     /// Is this a forced definition of the function
-    IsForced : bool
+    IsForced: bool
 
     /// Is this a script local function (begins with s:)
-    IsScriptLocal : bool
+    IsScriptLocal: bool
 }
 
 /// Represents the values or the '+cmd' which can occur on commands like :edit
@@ -366,10 +366,10 @@ type CommandOption =
 and Function = {
 
     /// The definition of the function 
-    Definition : FunctionDefinition
+    Definition: FunctionDefinition
 
     // Line commands that compose the function
-    LineCommands : LineCommand list
+    LineCommands: LineCommand list
 }
 
 /// The ConditionalBlock type is used to represent if / else if / else blocks
@@ -379,10 +379,10 @@ and ConditionalBlock = {
     /// The conditional which must be true in order for the LineCommand list
     /// to be executed.  If there is no condition then the LineCommand list 
     /// is unconditionally executed
-    Conditional : Expression option
+    Conditional: Expression option
 
     /// The LineCommand values that make up this conditional block
-    LineCommands : LineCommand list
+    LineCommands: LineCommand list
 
 }
 
@@ -726,17 +726,17 @@ type IVimInterpreter =
 
     /// Get the ITextSnapshotLine for the provided LineSpecifier if it's 
     /// applicable
-    abstract GetLine : lineSpecifier : LineSpecifier -> ITextSnapshotLine option
+    abstract GetLine: lineSpecifier: LineSpecifier -> ITextSnapshotLine option
 
     /// Get the specified LineRange in the IVimBuffer
-    abstract GetLineRange : lineRange : LineRangeSpecifier -> SnapshotLineRange option
+    abstract GetLineRange: lineRange: LineRangeSpecifier -> SnapshotLineRange option
 
     /// Run the LineCommand
-    abstract RunLineCommand : lineCommand : LineCommand -> unit
+    abstract RunLineCommand: lineCommand: LineCommand -> unit
 
     /// Run the Expression
-    abstract RunExpression : expression : Expression -> VariableValue
+    abstract RunExpression: expression: Expression -> VariableValue
 
     /// Run the given script 
-    abstract RunScript : lines : string[] -> unit
+    abstract RunScript: lines: string[] -> unit
 

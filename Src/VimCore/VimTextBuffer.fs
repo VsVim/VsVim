@@ -10,22 +10,22 @@ open Microsoft.VisualStudio.Utilities
 
 type internal VimTextBuffer 
     (
-        _textBuffer : ITextBuffer,
-        _localSettings : IVimLocalSettings,
-        _wordNavigator : ITextStructureNavigator,
-        _bufferTrackingService : IBufferTrackingService,
-        _undoRedoOperations : IUndoRedoOperations,
-        _vim : IVim
+        _textBuffer: ITextBuffer,
+        _localSettings: IVimLocalSettings,
+        _wordNavigator: ITextStructureNavigator,
+        _bufferTrackingService: IBufferTrackingService,
+        _undoRedoOperations: IUndoRedoOperations,
+        _vim: IVim
     ) =
 
     let _vimHost = _vim.VimHost
     let _globalSettings = _localSettings.GlobalSettings
     let _switchedModeEvent = StandardEvent<SwitchModeKindEventArgs>()
     let mutable _modeKind = ModeKind.Normal
-    let mutable _lastVisualSelection : ITrackingVisualSelection option = None
-    let mutable _insertStartPoint : ITrackingLineColumn option = None
-    let mutable _lastInsertExitPoint : ITrackingLineColumn option = None
-    let mutable _lastEditPoint : ITrackingLineColumn option = None
+    let mutable _lastVisualSelection: ITrackingVisualSelection option = None
+    let mutable _insertStartPoint: ITrackingLineColumn option = None
+    let mutable _lastInsertExitPoint: ITrackingLineColumn option = None
+    let mutable _lastEditPoint: ITrackingLineColumn option = None
     let mutable _isSoftTabStopValidForBackspace = true
 
     member x.LastVisualSelection 

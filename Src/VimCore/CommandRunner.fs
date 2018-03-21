@@ -8,27 +8,27 @@ open Microsoft.VisualStudio.Text.Editor
 type internal CommandRunnerData = {
 
     /// Name of the current command
-    KeyInputSet : KeyInputSet
+    KeyInputSet: KeyInputSet
 
     /// Reverse ordered List of all KeyInput for a given command
-    Inputs : KeyInput list
+    Inputs: KeyInput list
 
     /// Once a CommandBinding is chosen this will be the flags of that 
     /// CommandBinding instance
-    CommandFlags : CommandFlags option
+    CommandFlags: CommandFlags option
 }
 
 /// Implementation of the ICommandRunner interface.  
 type internal CommandRunner
     ( 
-        _textView : ITextView,
-        _registerMap : IRegisterMap,
-        _motionCapture : IMotionCapture,
-        _localSettings : IVimLocalSettings,
-        _commandUtil : ICommandUtil,
-        _statusUtil : IStatusUtil,
-        _visualKind : VisualKind,
-        _defaultKeyRemapMode : KeyRemapMode
+        _textView: ITextView,
+        _registerMap: IRegisterMap,
+        _motionCapture: IMotionCapture,
+        _localSettings: IVimLocalSettings,
+        _commandUtil: ICommandUtil,
+        _statusUtil: IStatusUtil,
+        _visualKind: VisualKind,
+        _defaultKeyRemapMode: KeyRemapMode
     ) =
 
     /// Represents the empty state for processing commands.  Holds all of the default
@@ -41,13 +41,13 @@ type internal CommandRunner
 
     let _commandRanEvent = StandardEvent<CommandRunDataEventArgs>()
     
-    let mutable _commandMap : Map<KeyInputSet, CommandBinding> = Map.empty
+    let mutable _commandMap: Map<KeyInputSet, CommandBinding> = Map.empty
 
     /// Contains all of the state data for a Command operation
     let mutable _data = _emptyData
 
     /// The latest BindData we are waiting to receive KeyInput to complete
-    let mutable _runBindData : BindData<Command * CommandBinding> option = None
+    let mutable _runBindData: BindData<Command * CommandBinding> option = None
 
     /// True during the running of a particular KeyInput 
     let mutable _inBind = false
@@ -55,9 +55,9 @@ type internal CommandRunner
     /// True during the binding of the count
     let mutable _inCount = false
 
-    let mutable _registerName : RegisterName option = None 
+    let mutable _registerName: RegisterName option = None 
 
-    let mutable _count : int option = None 
+    let mutable _count: int option = None 
 
     member x.HasRegisterName = Option.isSome _registerName
 
@@ -80,7 +80,7 @@ type internal CommandRunner
     /// is found it will be passed to completeFunc
     member x.BindRegister completeFunc = 
 
-        let inner (keyInput : KeyInput) = 
+        let inner (keyInput: KeyInput) = 
             match RegisterNameUtil.CharToRegister keyInput.Char with
             | None -> BindResult.Error
             | Some name -> 
@@ -91,7 +91,7 @@ type internal CommandRunner
 
     /// Used to wait for a count value to complete.  Passed in the initial digit 
     /// in the count
-    member x.BindCount (initialDigit : KeyInput) completeFunc =
+    member x.BindCount (initialDigit: KeyInput) completeFunc =
 
         let rec inner (num:string) (ki:KeyInput) = 
             if ki.IsDigit then
@@ -108,13 +108,13 @@ type internal CommandRunner
 
     /// Bind the optional register and count operations and then pass that off to the command 
     /// infrastructure
-    member x.BindCountAndRegister (keyInput : KeyInput) =
+    member x.BindCountAndRegister (keyInput: KeyInput) =
 
-        let tryRegister (keyInput : KeyInput) foundFunc missingFunc = 
+        let tryRegister (keyInput: KeyInput) foundFunc missingFunc = 
             if keyInput.Char = '"' then x.BindRegister foundFunc
             else missingFunc keyInput
 
-        let tryCount (keyInput : KeyInput) foundFunc missingFunc = 
+        let tryCount (keyInput: KeyInput) foundFunc missingFunc = 
             if keyInput.IsDigit && keyInput.Char <> '0' then x.BindCount keyInput foundFunc
             else missingFunc keyInput
 
@@ -152,7 +152,7 @@ type internal CommandRunner
     ///
     /// This makes the function feel a bit hacky but sadly it's just a special case in Vim which requires a 
     /// corresponding special case here
-    member x.BindMotion (commandBinding : CommandBinding) (commandData : CommandData) motionFunc keyInput =
+    member x.BindMotion (commandBinding: CommandBinding) (commandData: CommandData) motionFunc keyInput =
 
         // Convert the motion information into a BindResult.Complete value
         let convertMotion motion motionCount =
@@ -204,7 +204,7 @@ type internal CommandRunner
     member x.BindCommand registerName count keyInput = 
 
         // Find any commands which have the given prefix
-        let findPrefixMatches (commandName : KeyInputSet) =
+        let findPrefixMatches (commandName: KeyInputSet) =
             let commandInputs = commandName.KeyInputs
             let count = List.length commandInputs
             let commandInputsSeq = commandInputs |> Seq.ofList
@@ -217,7 +217,7 @@ type internal CommandRunner
 
         let commandData = { RegisterName = registerName; Count = count }
 
-        let rec inner (commandName : KeyInputSet) previousCommandName currentInput = 
+        let rec inner (commandName: KeyInputSet) previousCommandName currentInput = 
 
             // Used to continue driving the 'inner' function a BindData value.
             let bindNext keyRemapMode = 
@@ -356,7 +356,7 @@ type internal CommandRunner
                 _runBindData <- Some bindData
                 BindResult.NeedMoreInput { KeyRemapMode = bindData.KeyRemapMode; BindFunction = x.Run }
             
-    member x.Add (command : CommandBinding) = 
+    member x.Add (command: CommandBinding) = 
         if Map.containsKey command.KeyInputSet _commandMap then 
             invalidArg "command" Resources.CommandRunner_CommandNameAlreadyAdded
         _commandMap <- Map.add command.KeyInputSet command _commandMap

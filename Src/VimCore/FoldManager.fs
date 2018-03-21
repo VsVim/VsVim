@@ -21,11 +21,11 @@ open System.Linq;
 [<Sealed>]
 type internal FoldData
     (
-        _textBuffer : ITextBuffer
+        _textBuffer: ITextBuffer
     ) =
 
     let _foldsUpdated = StandardEvent()
-    let mutable _folds : ITrackingSpan list = List.empty
+    let mutable _folds: ITrackingSpan list = List.empty
 
     /// Get the SnapshotSpan values which represent folded regions in the ITextView which
     /// were created by vim
@@ -37,7 +37,7 @@ type internal FoldData
         |> Seq.sortBy (fun span -> span.Start.Position)
 
     /// Create a fold over the given line range
-    member x.CreateFold (range : SnapshotLineRange) = 
+    member x.CreateFold (range: SnapshotLineRange) = 
         if range.Count > 1 then
 
             // Note we only use the Extent of the range and do not include the line break.  If
@@ -50,7 +50,7 @@ type internal FoldData
             _foldsUpdated.Trigger x
 
     /// Delete the fold which corresponds to the given SnapshotPoint
-    member x.DeleteFold (point : SnapshotPoint) = 
+    member x.DeleteFold (point: SnapshotPoint) = 
         let snapshot = _textBuffer.CurrentSnapshot
         let data = 
             _folds
@@ -68,7 +68,7 @@ type internal FoldData
         ret
 
     /// Delete all folds which intersect the given SnapshotSpan
-    member x.DeleteAllFolds (span : SnapshotSpan) =
+    member x.DeleteAllFolds (span: SnapshotSpan) =
         _folds <-
             _folds
             |> Seq.map (TrackingSpanUtil.GetSpan _textBuffer.CurrentSnapshot)
@@ -89,10 +89,10 @@ type internal FoldData
 
 type internal FoldManager 
     (
-        _textView : ITextView,
-        _foldData : IFoldData,
-        _statusUtil : IStatusUtil,
-        _outliningManager : IOutliningManager option
+        _textView: ITextView,
+        _foldData: IFoldData,
+        _statusUtil: IStatusUtil,
+        _outliningManager: IOutliningManager option
     ) =
 
     member x.CaretPoint = TextViewUtil.GetCaretPoint _textView
@@ -123,7 +123,7 @@ type internal FoldManager
             |> Seq.iter (fun region -> outliningManager.TryCollapse(region) |> ignore))
 
     /// Close all folds which intersect with the given SnapshotSpan
-    member x.CloseAllFolds (span : SnapshotSpan) =
+    member x.CloseAllFolds (span: SnapshotSpan) =
         x.DoWithOutliningManager (fun outliningManager -> 
             // Get the collapsed regions and map them to SnapshotSpan values in this buffer.  Then
             // order them by most start and then length
@@ -132,7 +132,7 @@ type internal FoldManager
             |> Seq.iter (fun region -> outliningManager.TryCollapse(region) |> ignore))
 
     /// Create a fold over the given line range
-    member x.CreateFold (range : SnapshotLineRange) = 
+    member x.CreateFold (range: SnapshotLineRange) = 
         _foldData.CreateFold range
         if range.Count > 1 then
 
@@ -150,7 +150,7 @@ type internal FoldManager
     /// Do the given operation with the IOutliningManager.  If there is no IOutliningManager
     /// associated with this ITextView then no action will occur and an error message will
     /// be raised to the user
-    member x.DoWithOutliningManager (action : IOutliningManager -> unit) = 
+    member x.DoWithOutliningManager (action: IOutliningManager -> unit) = 
         match _outliningManager with
         | None -> _statusUtil.OnWarning Resources.Internal_FoldsNotSupported
         | Some outliningManager -> action outliningManager
@@ -180,7 +180,7 @@ type internal FoldManager
             |> Seq.iter (fun region -> outliningManager.Expand(region) |> ignore))
 
     /// Open all folds which intersect the given SnapshotSpan value
-    member x.OpenAllFolds (span : SnapshotSpan) =
+    member x.OpenAllFolds (span: SnapshotSpan) =
         x.DoWithOutliningManager (fun outliningManager -> 
 
             outliningManager.GetCollapsedRegions(span)
@@ -201,7 +201,7 @@ type internal FoldManager
              x.CloseFold point count)
 
     /// Toggle the fold which corresponds to the given SnapshotPoint
-    member x.ToggleAllFolds (span : SnapshotSpan) =
+    member x.ToggleAllFolds (span: SnapshotSpan) =
         x.DoWithOutliningManager (fun outliningManager -> 
            let currentRegions = outliningManager.GetAllRegions(span)
                                    |> List.ofSeq
@@ -228,8 +228,8 @@ type internal FoldManager
 type FoldManagerFactory
     [<ImportingConstructor>]
     (
-        _statusUtilFactory : IStatusUtilFactory,
-        _outliningManagerService : IOutliningManagerService
+        _statusUtilFactory: IStatusUtilFactory,
+        _outliningManagerService: IOutliningManagerService
     ) =
 
     /// Use an object instance as a key.  Makes it harder for components to ignore this
@@ -238,10 +238,10 @@ type FoldManagerFactory
 
     let _managerKey = new System.Object()
 
-    member x.GetFoldData (textBuffer : ITextBuffer) = 
+    member x.GetFoldData (textBuffer: ITextBuffer) = 
         textBuffer.Properties.GetOrCreateSingletonProperty(_dataKey, (fun unused -> FoldData(textBuffer)))
 
-    member x.GetFoldManager (textView : ITextView) = 
+    member x.GetFoldManager (textView: ITextView) = 
         textView.Properties.GetOrCreateSingletonProperty(_managerKey, (fun unused ->
             let outliningManager = 
                 let outliningManager = _outliningManagerService.GetOutliningManager textView

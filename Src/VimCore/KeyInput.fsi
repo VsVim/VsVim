@@ -10,36 +10,36 @@ type KeyInput =
 
     /// The character representation of this input.  If there is no character representation
     /// then Char.MinValue will be returend
-    member Char : char
+    member Char: char
 
     /// Returns the actual backing character in the form of an option.  Several keys 
     /// don't have corresponding char values and will return None
-    member RawChar : char option
+    member RawChar: char option
 
     /// The VimKey for this KeyInput.  
-    member Key : VimKey
+    member Key: VimKey
 
     /// The extra modifier keys applied to the VimKey value
-    member KeyModifiers : VimKeyModifiers
+    member KeyModifiers: VimKeyModifiers
 
     /// Is the character for this KeyInput a digit
-    member IsDigit : bool
+    member IsDigit: bool
 
     /// Is this an arrow key?
-    member IsArrowKey : bool 
+    member IsArrowKey: bool 
 
     /// Is this a function key
-    member IsFunctionKey : bool
+    member IsFunctionKey: bool
 
     /// Is this a mouse key
-    member IsMouseKey : bool
+    member IsMouseKey: bool
 
     /// The empty KeyInput.  Used in places where a KeyInput is required but no 
     /// good mapping exists
-    static member DefaultValue : KeyInput
+    static member DefaultValue: KeyInput
 
-    static member op_Equality : KeyInput * KeyInput -> bool
-    static member op_Inequality : KeyInput * KeyInput -> bool
+    static member op_Equality: KeyInput * KeyInput -> bool
+    static member op_Inequality: KeyInput * KeyInput -> bool
 
     interface System.IComparable
     interface System.IComparable<KeyInput>
@@ -48,51 +48,51 @@ type KeyInput =
 module KeyInputUtil = 
 
     /// The Null Key: VimKey.Null
-    val NullKey : KeyInput
+    val NullKey: KeyInput
 
     /// The LineFeed key: VimKey.LineFeed
-    val LineFeedKey : KeyInput
+    val LineFeedKey: KeyInput
 
     /// The FormFeed key: VimKey.FormFeed
-    val FormFeedKey : KeyInput
+    val FormFeedKey: KeyInput
 
     /// The Enter Key: VimKey.Enter
-    val EnterKey : KeyInput
+    val EnterKey: KeyInput
 
     /// The Escape Key: VimKey.Escape
-    val EscapeKey : KeyInput 
+    val EscapeKey: KeyInput 
 
     /// The Tab Key: VimKey.Tab
-    val TabKey : KeyInput 
+    val TabKey: KeyInput 
 
     /// The KeyInput for every VimKey in the system which is considered predefined
-    val VimKeyInputList : KeyInput list
+    val VimKeyInputList: KeyInput list
 
     /// The set of core characters as a seq
-    val VimKeyCharList : char list
+    val VimKeyCharList: char list
 
     /// Apply the modifiers to the given KeyInput and determine the result.  This will
     /// not necessarily return a KeyInput with the modifier set.  It attempts to unify 
     /// certain ambiguous combinations.
-    val ApplyKeyModifiers : keyInput : KeyInput -> modifiers : VimKeyModifiers -> KeyInput
+    val ApplyKeyModifiers: keyInput: KeyInput -> modifiers: VimKeyModifiers -> KeyInput
 
     /// Apply the modifiers to the given character
-    val ApplyKeyModifiersToChar : c : char  -> modifiers : VimKeyModifiers -> KeyInput
+    val ApplyKeyModifiersToChar: c: char  -> modifiers: VimKeyModifiers -> KeyInput
 
     /// Apply the modifiers to the given VimKey
-    val ApplyKeyModifiersToKey : vimKey : VimKey -> modifiers : VimKeyModifiers -> KeyInput
+    val ApplyKeyModifiersToKey: vimKey: VimKey -> modifiers: VimKeyModifiers -> KeyInput
 
     /// Try and convert the given char to a KeyInput value
-    val CharToKeyInput : c : char -> KeyInput
+    val CharToKeyInput: c: char -> KeyInput
 
     /// Convert the passed in char to a KeyInput with Control
-    val CharWithControlToKeyInput : c : char -> KeyInput
+    val CharWithControlToKeyInput: c: char -> KeyInput
 
     /// Convert the passed in char to a KeyInput with Alt
-    val CharWithAltToKeyInput : c : char -> KeyInput
+    val CharWithAltToKeyInput: c: char -> KeyInput
 
     /// Convert the specified VimKey code to a KeyInput 
-    val VimKeyToKeyInput : vimKey : VimKey -> KeyInput
+    val VimKeyToKeyInput: vimKey: VimKey -> KeyInput
 
     /// Change the KeyModifiers associated with this KeyInput.  Will not change the value
     /// of the underlying char.  Although it may produce a KeyInput that makes no 
@@ -101,8 +101,8 @@ module KeyInputUtil =
     ///
     /// This method should be avoided.  If you need to apply modifiers then use
     /// ApplyModifiers which uses Vim semantics when deciding how to apply the modifiers
-    val ChangeKeyModifiersDangerous : keyInput : KeyInput -> modifiers : VimKeyModifiers -> KeyInput
+    val ChangeKeyModifiersDangerous: keyInput: KeyInput -> modifiers: VimKeyModifiers -> KeyInput
 
     /// Get the alternate key for the given KeyInput if it's a key from the keypad 
-    val GetNonKeypadEquivalent : keyInput : KeyInput -> KeyInput option 
+    val GetNonKeypadEquivalent: keyInput: KeyInput -> KeyInput option 
 

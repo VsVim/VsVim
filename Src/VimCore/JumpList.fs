@@ -9,8 +9,8 @@ open System.Collections.Generic
 /// window
 type internal JumpList 
     ( 
-        _textView : ITextView,
-        _bufferTrackingService : IBufferTrackingService
+        _textView: ITextView,
+        _bufferTrackingService: IBufferTrackingService
     ) =
 
     let _textBuffer = _textView.TextBuffer
@@ -25,10 +25,10 @@ type internal JumpList
     let _list = new LinkedList<ITrackingLineColumn>()
 
     /// Index into the linked list of values.  Contains a value if we are actively traversing
-    let mutable _current : (LinkedListNode<ITrackingLineColumn> * int) option = None
+    let mutable _current: (LinkedListNode<ITrackingLineColumn> * int) option = None
 
     /// Last jump from location
-    let mutable _lastJumpLocation : ITrackingLineColumn option = None
+    let mutable _lastJumpLocation: ITrackingLineColumn option = None
 
     /// Return the point for the caret before the most recent jump
     member x.LastJumpLocation = _lastJumpLocation |> OptionUtil.map2 (fun trackingLineColumn -> trackingLineColumn.VirtualPoint)
@@ -61,7 +61,7 @@ type internal JumpList
     /// Find the LinkedListNode tracking the provided line number.  Returns None if 
     /// one doesn't exist
     member x.FindNodeTrackingLine lineNumber = 
-        let rec inner (current : LinkedListNode<ITrackingLineColumn>) =
+        let rec inner (current: LinkedListNode<ITrackingLineColumn>) =
 
             let currentLineNumber = current.Value.Point |> Option.map SnapshotPointUtil.GetLineNumber
             let matches = 
@@ -145,7 +145,7 @@ type internal JumpList
             // Not traversing
             false
         | Some (current, index) ->
-            let rec inner (current : LinkedListNode<ITrackingLineColumn>) count = 
+            let rec inner (current: LinkedListNode<ITrackingLineColumn>) count = 
                 if count = 0 then current, true
                 elif current.Previous = null then current, false
                 else inner current.Previous (count - 1)
@@ -163,7 +163,7 @@ type internal JumpList
             // Not traversing
             false
         | Some (current, index) ->
-            let rec inner (current : LinkedListNode<ITrackingLineColumn>) count = 
+            let rec inner (current: LinkedListNode<ITrackingLineColumn>) count = 
                 if count = 0 then current, true
                 elif current.Next = null then current, false
                 else inner current.Next (count - 1)

@@ -19,19 +19,19 @@ open Vim.Interpreter
 [<DataContract>]
 type SessionRegisterValue = {
     [<field: DataMember(Name = "name")>] 
-    Name : char
+    Name: char
 
     [<field: DataMember(Name = "isCharacterWise")>]
-    IsCharacterWise : bool
+    IsCharacterWise: bool
 
     [<field: DataMember(Name = "value")>]
-    Value : string
+    Value: string
 }
 
 [<DataContract>]
 type SessionData = {
     [<field: DataMember(Name = "registers")>]
-    Registers : SessionRegisterValue[]
+    Registers: SessionRegisterValue[]
 } 
     with
 
@@ -42,7 +42,7 @@ type SessionData = {
 type internal BulkOperations  
     [<ImportingConstructor>]
     (
-        _vimHost : IVimHost
+        _vimHost: IVimHost
     ) =
 
     /// The active count of bulk operations
@@ -67,22 +67,22 @@ type internal BulkOperations
         member x.InBulkOperation = _bulkOperationCount > 0
         member x.BeginBulkOperation () = x.BeginBulkOperation()
 
-type internal VimData(_globalSettings : IVimGlobalSettings) as this =
+type internal VimData(_globalSettings: IVimGlobalSettings) as this =
 
-    let mutable _autoCommandGroups : AutoCommandGroup list = List.Empty
-    let mutable _autoCommands : AutoCommand list = List.Empty
+    let mutable _autoCommandGroups: AutoCommandGroup list = List.Empty
+    let mutable _autoCommands: AutoCommand list = List.Empty
     let mutable _currentDirectory = System.Environment.CurrentDirectory
     let mutable _previousCurrentDirecotry = _currentDirectory
     let mutable _commandHistory = HistoryList()
     let mutable _searchHistory = HistoryList()
-    let mutable _lastSubstituteData : SubstituteData option = None
+    let mutable _lastSubstituteData: SubstituteData option = None
     let mutable _lastSearchData = SearchData("", SearchPath.Forward)
-    let mutable _lastShellCommand : string option = None
-    let mutable _lastTextInsert : string option = None
-    let mutable _lastCharSearch : (CharSearchKind * SearchPath * char) option = None
-    let mutable _lastMacroRun : char option = None
-    let mutable _lastCommand : StoredCommand option = None
-    let mutable _lastVisualSelection : StoredVisualSelection option = None
+    let mutable _lastShellCommand: string option = None
+    let mutable _lastTextInsert: string option = None
+    let mutable _lastCharSearch: (CharSearchKind * SearchPath * char) option = None
+    let mutable _lastMacroRun: char option = None
+    let mutable _lastCommand: StoredCommand option = None
+    let mutable _lastVisualSelection: StoredVisualSelection option = None
     let mutable _lastCommandLine = ""
     let mutable _displayPattern = ""
     let mutable _displayPatternSuspended = false
@@ -189,27 +189,27 @@ type internal VimBufferFactory
 
     [<ImportingConstructor>]
     (
-        _host : IVimHost,
-        _editorOperationsFactoryService : IEditorOperationsFactoryService,
-        _editorOptionsFactoryService : IEditorOptionsFactoryService,
-        _outliningManagerService : IOutliningManagerService,
-        _completionWindowBrokerFactoryService : IDisplayWindowBrokerFactoryService,
-        _commonOperationsFactory : ICommonOperationsFactory,
-        _wordUtil : IWordUtil,
-        _lineChangeTrackerFactory : ILineChangeTrackerFactory,
-        _textSearchService : ITextSearchService,
-        _bufferTrackingService : IBufferTrackingService,
-        _undoManagerProvider : ITextBufferUndoManagerProvider,
-        _statusUtilFactory : IStatusUtilFactory,
-        _foldManagerFactory : IFoldManagerFactory,
-        _keyboardDevice : IKeyboardDevice,
-        _mouseDevice : IMouseDevice,
-        _wordCompletionSessionFactoryService : IWordCompletionSessionFactoryService,
-        _bulkOperations : IBulkOperations
+        _host: IVimHost,
+        _editorOperationsFactoryService: IEditorOperationsFactoryService,
+        _editorOptionsFactoryService: IEditorOptionsFactoryService,
+        _outliningManagerService: IOutliningManagerService,
+        _completionWindowBrokerFactoryService: IDisplayWindowBrokerFactoryService,
+        _commonOperationsFactory: ICommonOperationsFactory,
+        _wordUtil: IWordUtil,
+        _lineChangeTrackerFactory: ILineChangeTrackerFactory,
+        _textSearchService: ITextSearchService,
+        _bufferTrackingService: IBufferTrackingService,
+        _undoManagerProvider: ITextBufferUndoManagerProvider,
+        _statusUtilFactory: IStatusUtilFactory,
+        _foldManagerFactory: IFoldManagerFactory,
+        _keyboardDevice: IKeyboardDevice,
+        _mouseDevice: IMouseDevice,
+        _wordCompletionSessionFactoryService: IWordCompletionSessionFactoryService,
+        _bulkOperations: IBulkOperations
     ) =
 
     /// Create an IVimTextBuffer instance for the provided ITextBuffer
-    member x.CreateVimTextBuffer (textBuffer : ITextBuffer) (vim : IVim) = 
+    member x.CreateVimTextBuffer (textBuffer: ITextBuffer) (vim: IVim) = 
         let localSettings = LocalSettings(vim.GlobalSettings) :> IVimLocalSettings
         let wordNavigator = _wordUtil.CreateTextStructureNavigator WordKind.NormalWord textBuffer.ContentType
         let statusUtil = _statusUtilFactory.GetStatusUtilForBuffer textBuffer
@@ -224,7 +224,7 @@ type internal VimBufferFactory
 
     /// Create a VimBufferData instance for the given ITextView and IVimTextBuffer.  This is mainly
     /// used for testing purposes
-    member x.CreateVimBufferData (vimTextBuffer : IVimTextBuffer) (textView : ITextView) =
+    member x.CreateVimBufferData (vimTextBuffer: IVimTextBuffer) (textView: ITextView) =
         Contract.Requires (vimTextBuffer.TextBuffer = textView.TextBuffer)
 
         let vim = vimTextBuffer.Vim
@@ -236,7 +236,7 @@ type internal VimBufferFactory
         VimBufferData(vimTextBuffer, textView, windowSettings, jumpList, statusUtil, _wordUtil) :> IVimBufferData
 
     /// Create an IVimBuffer instance for the provided VimBufferData
-    member x.CreateVimBuffer (vimBufferData : IVimBufferData) = 
+    member x.CreateVimBuffer (vimBufferData: IVimBufferData) = 
         let textView = vimBufferData.TextView
         let commonOperations = _commonOperationsFactory.GetCommonOperations vimBufferData
         let wordUtil = vimBufferData.WordUtil
@@ -304,7 +304,7 @@ type internal VimBufferFactory
     /// often are, passed to CreateVimBuffer in an uninitialized state.  In that state certain
     /// operations like Select can't be done.  Hence we have to delay the mode switch until 
     /// the ITextView is fully initialized.  Put all of that logic here.
-    member x.SetupInitialMode (vimBuffer : IVimBuffer) =
+    member x.SetupInitialMode (vimBuffer: IVimBuffer) =
 
         let textView = vimBuffer.TextView
         let vimBufferData = vimBuffer.VimBufferData
@@ -352,21 +352,21 @@ type internal VimBufferFactory
 [<Export(typeof<IVim>)>]
 type internal Vim
     (
-        _vimHost : IVimHost,
-        _bufferFactoryService : IVimBufferFactory,
-        _interpreterFactory : IVimInterpreterFactory,
-        _bufferCreationListeners : Lazy<IVimBufferCreationListener> list,
-        _globalSettings : IVimGlobalSettings,
-        _markMap : IMarkMap,
-        _keyMap : IKeyMap,
-        _clipboardDevice : IClipboardDevice,
-        _search : ISearchService,
-        _fileSystem : IFileSystem,
-        _vimData : IVimData,
-        _bulkOperations : IBulkOperations,
-        _variableMap : VariableMap,
-        _editorToSettingSynchronizer : IEditorToSettingsSynchronizer,
-        _statusUtilFactory : IStatusUtilFactory
+        _vimHost: IVimHost,
+        _bufferFactoryService: IVimBufferFactory,
+        _interpreterFactory: IVimInterpreterFactory,
+        _bufferCreationListeners: Lazy<IVimBufferCreationListener> list,
+        _globalSettings: IVimGlobalSettings,
+        _markMap: IMarkMap,
+        _keyMap: IKeyMap,
+        _clipboardDevice: IClipboardDevice,
+        _search: ISearchService,
+        _fileSystem: IFileSystem,
+        _vimData: IVimData,
+        _bulkOperations: IBulkOperations,
+        _variableMap: VariableMap,
+        _editorToSettingSynchronizer: IEditorToSettingsSynchronizer,
+        _statusUtilFactory: IStatusUtilFactory
     ) as this =
 
     /// This key is placed in the ITextView property bag to note that vim buffer creation has
@@ -381,7 +381,7 @@ type internal Vim
     let _vimBufferMap = Dictionary<ITextView, IVimBuffer * IVimInterpreter * DisposableBag>()
 
     /// Holds the active stack of IVimBuffer instances
-    let mutable _activeBufferStack : IVimBuffer list = List.empty
+    let mutable _activeBufferStack: IVimBuffer list = List.empty
 
     /// Whether or not the vimrc file should be automatically loaded before creating the 
     /// first IVimBuffer instance
@@ -436,17 +436,17 @@ type internal Vim
 
     [<ImportingConstructor>]
     new(
-        host : IVimHost,
-        bufferFactoryService : IVimBufferFactory,
-        interpreterFactory : IVimInterpreterFactory,
-        bufferTrackingService : IBufferTrackingService,
-        [<ImportMany>] bufferCreationListeners : Lazy<IVimBufferCreationListener> seq,
-        search : ITextSearchService,
-        fileSystem : IFileSystem,
-        clipboard : IClipboardDevice,
-        bulkOperations : IBulkOperations,
-        editorToSettingSynchronizer : IEditorToSettingsSynchronizer,
-        statusUtilFactory : IStatusUtilFactory) =
+        host: IVimHost,
+        bufferFactoryService: IVimBufferFactory,
+        interpreterFactory: IVimInterpreterFactory,
+        bufferTrackingService: IBufferTrackingService,
+        [<ImportMany>] bufferCreationListeners: Lazy<IVimBufferCreationListener> seq,
+        search: ITextSearchService,
+        fileSystem: IFileSystem,
+        clipboard: IClipboardDevice,
+        bulkOperations: IBulkOperations,
+        editorToSettingSynchronizer: IEditorToSettingsSynchronizer,
+        statusUtilFactory: IStatusUtilFactory) =
         let markMap = MarkMap(bufferTrackingService)
         let globalSettings = GlobalSettings() :> IVimGlobalSettings
         let vimData = VimData(globalSettings) :> IVimData
@@ -539,7 +539,7 @@ type internal Vim
     /// Create an IVimTextBuffer for the given ITextBuffer.  If an IVimLocalSettings instance is 
     /// provided then attempt to copy them into the created IVimTextBuffer copy of the 
     /// IVimLocalSettings
-    member x.CreateVimTextBuffer (textBuffer : ITextBuffer) (localSettings : IVimLocalSettings option) = 
+    member x.CreateVimTextBuffer (textBuffer: ITextBuffer) (localSettings: IVimLocalSettings option) = 
         if textBuffer.Properties.ContainsProperty _vimTextBufferKey then
             invalidArg "textBuffer" Resources.Vim_TextViewAlreadyHasVimBuffer
 
@@ -566,7 +566,7 @@ type internal Vim
     /// Create an IVimBuffer for the given ITextView and associated IVimTextBuffer.  This 
     /// will not notify the IVimBufferCreationListener collection about the new
     /// IVimBuffer
-    member x.CreateVimBufferCore textView (windowSettings : IVimWindowSettings option) =
+    member x.CreateVimBufferCore textView (windowSettings: IVimWindowSettings option) =
         if _vimBufferMap.ContainsKey(textView) then 
             invalidArg "textView" Resources.Vim_TextViewAlreadyHasVimBuffer
 
@@ -612,7 +612,7 @@ type internal Vim
         _bufferCreationListeners |> Seq.iter (fun x -> x.Value.VimBufferCreated vimBuffer)
         vimBuffer
 
-    member x.GetVimInterpreter (vimBuffer : IVimBuffer) = 
+    member x.GetVimInterpreter (vimBuffer: IVimBuffer) = 
         let tuple = _vimBufferMap.TryGetValue vimBuffer.TextView
         match tuple with 
         | (true, (_, vimInterpreter, _)) -> vimInterpreter
@@ -662,7 +662,7 @@ type internal Vim
             let bag = new DisposableBag()
             let errorList = List<string>()
             let textView = _vimHost.CreateHiddenTextView()
-            let mutable createdVimBuffer : IVimBuffer option = None
+            let mutable createdVimBuffer: IVimBuffer option = None
 
             try
                 // For the vimrc IVimBuffer we go straight to the factory methods.  We don't want
@@ -727,7 +727,7 @@ type internal Vim
 
     /// Called when there is no vimrc file.  Update IVimGlobalSettings to be the appropriate
     /// value for what the host requests
-    member x.LoadDefaultSettings() : unit = 
+    member x.LoadDefaultSettings(): unit = 
         match _vimHost.DefaultSettings with
         | DefaultSettings.GVim73 ->
             // Strictly speaking this is not the default for 7.3.  However given this is running
@@ -766,7 +766,7 @@ type internal Vim
             with
                 _ -> SessionData.Empty
 
-    member x.WriteSessionData (sessionData : SessionData) filePath = 
+    member x.WriteSessionData (sessionData: SessionData) filePath = 
         let serializer = new DataContractJsonSerializer(typeof<SessionData>)
         use stream = new MemoryStream()
         try
@@ -813,7 +813,7 @@ type internal Vim
             bag.DisposeAll()
         _vimBufferMap.Remove textView
 
-    member x.TryGetVimBuffer(textView : ITextView, [<Out>] vimBuffer : IVimBuffer byref) =
+    member x.TryGetVimBuffer(textView: ITextView, [<Out>] vimBuffer: IVimBuffer byref) =
         let tuple = _vimBufferMap.TryGetValue textView
         match tuple with 
         | (true, (buffer, _, _)) -> 
@@ -832,7 +832,7 @@ type internal Vim
     /// Also we want to reduce the number of times we ask the host this question.  The determination
     /// could be expensive and there is no need to do it over and over again.  Scenarios like
     /// the command window end up forcing this code path a large number of times.  
-    member x.ShouldCreateVimBuffer (textView : ITextView) = 
+    member x.ShouldCreateVimBuffer (textView: ITextView) = 
         match PropertyCollectionUtil.GetValue<bool> ShouldCreateVimBufferKey textView.Properties with 
         | Some value -> value
         | None -> 
@@ -840,7 +840,7 @@ type internal Vim
             textView.Properties.AddProperty(ShouldCreateVimBufferKey, (box value))
             value
 
-    member x.TryGetOrCreateVimBufferForHost(textView : ITextView, [<Out>] vimBuffer : IVimBuffer byref) =
+    member x.TryGetOrCreateVimBufferForHost(textView: ITextView, [<Out>] vimBuffer: IVimBuffer byref) =
         if x.TryGetVimBuffer(textView, &vimBuffer) then
             true
         elif x.ShouldCreateVimBuffer textView then
@@ -850,7 +850,7 @@ type internal Vim
         else
             false
 
-    member x.TryGetVimTextBuffer (textBuffer : ITextBuffer, [<Out>] vimTextBuffer : IVimTextBuffer byref) =
+    member x.TryGetVimTextBuffer (textBuffer: ITextBuffer, [<Out>] vimTextBuffer: IVimTextBuffer byref) =
         match PropertyCollectionUtil.GetValue<IVimTextBuffer> _vimTextBufferKey textBuffer.Properties with
         | Some found ->
             vimTextBuffer <- found
@@ -858,10 +858,10 @@ type internal Vim
         | None ->
             false
 
-    member x.DisableVimBuffer (vimBuffer : IVimBuffer) =
+    member x.DisableVimBuffer (vimBuffer: IVimBuffer) =
         vimBuffer.SwitchMode ModeKind.Disabled ModeArgument.None |> ignore
 
-    member x.EnableVimBuffer (vimBuffer : IVimBuffer) =
+    member x.EnableVimBuffer (vimBuffer: IVimBuffer) =
         let modeKind =
             if vimBuffer.TextView.Selection.IsEmpty then
                 ModeKind.Normal

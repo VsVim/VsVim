@@ -7,25 +7,25 @@ open Microsoft.VisualStudio.Text.Editor
 
 type ServiceSearchData = {
 
-    SearchData : SearchData
+    SearchData: SearchData
 
-    VimRegexOptions : VimRegexOptions
+    VimRegexOptions: VimRegexOptions
 
-    Navigator : ITextStructureNavigator
+    Navigator: ITextStructureNavigator
 }
 
 /// An entry in our cache.  This type must be *very* careful to not hold the ITextBuffer in
 /// question in memory.  This is why a WeakReference is used.  We don't want a cached search
 /// entry creating a memory leak 
 type EditorServiceCacheEntry = { 
-    SearchString : string
-    Options : FindOptions
-    EditorData : WeakReference<ITextSnapshot * ITextStructureNavigator>
-    StartPosition : int 
-    FoundSpan : Span
+    SearchString: string
+    Options: FindOptions
+    EditorData: WeakReference<ITextSnapshot * ITextStructureNavigator>
+    StartPosition: int 
+    FoundSpan: Span
 } with 
 
-    member x.Matches (findData : FindData) (position : int) =
+    member x.Matches (findData: FindData) (position: int) =
         if findData.FindOptions = x.Options && findData.SearchString = x.SearchString && position = x.StartPosition then
             match x.EditorData.Target with
             | Some (snapshot, navigator) -> findData.TextSnapshotToSearch = snapshot && findData.TextStructureNavigator = navigator
@@ -33,7 +33,7 @@ type EditorServiceCacheEntry = {
         else
             false
 
-    static member Create (findData : FindData) (position : int) (foundSpan : SnapshotSpan) =
+    static member Create (findData: FindData) (position: int) (foundSpan: SnapshotSpan) =
         let editorData = (findData.TextSnapshotToSearch, findData.TextStructureNavigator)
         {
             SearchString = findData.SearchString
@@ -62,7 +62,7 @@ type EditorServiceCacheEntry = {
 [<UsedInBackgroundThread()>]
 type internal EditorSearchService 
     (
-        _textSearchService : ITextSearchService
+        _textSearchService: ITextSearchService
     ) =
 
     /// Vim semantics make repeated searches for the exact same string a very common 
@@ -72,18 +72,18 @@ type internal EditorSearchService
     ///
     /// This is used from multiple threads and all access must be inside a 
     /// lock(_cacheArray) guard
-    let _cacheArray : EditorServiceCacheEntry option [] = Array.init 10 (fun _ -> None)
+    let _cacheArray: EditorServiceCacheEntry option [] = Array.init 10 (fun _ -> None)
     let mutable _cacheArrayIndex = 0
 
     /// Look for the find information in the cache
-    member private x.FindNextInCache (findData : FindData) (position : int) =
+    member private x.FindNextInCache (findData: FindData) (position: int) =
         lock (_cacheArray) (fun () -> 
             _cacheArray
             |> SeqUtil.filterToSome
             |> Seq.tryFind (fun cacheEntry -> cacheEntry.Matches findData position)
             |> Option.map (fun cacheEntry -> SnapshotSpan(findData.TextSnapshotToSearch, cacheEntry.FoundSpan)))
 
-    member private x.AddIntoCache (findData : FindData) (position : int) (foundSpan : SnapshotSpan) = 
+    member private x.AddIntoCache (findData: FindData) (position: int) (foundSpan: SnapshotSpan) = 
         lock (_cacheArray) (fun () -> 
             let cacheEntry = EditorServiceCacheEntry.Create findData position foundSpan
             _cacheArray.[_cacheArrayIndex] <- Some cacheEntry
@@ -94,7 +94,7 @@ type internal EditorSearchService
 
     /// Find the next occurrence of FindData in the snapshot at the given position.  This
     /// will always do a search (never consults the cache)
-    member private x.FindNextCore (findData : FindData) (position : int) =
+    member private x.FindNextCore (findData: FindData) (position: int) =
         try
             _textSearchService.FindNext(position, true, findData) |> NullableUtil.ToOption
         with 
@@ -104,7 +104,7 @@ type internal EditorSearchService
 
     /// Find the next occurrence of FindData at the given position.  This will use the cache 
     /// if possible
-    member x.FindNext (findData : FindData) (position : int) =
+    member x.FindNext (findData: FindData) (position: int) =
         match x.FindNextInCache findData position with
         | Some foundSpan -> Some foundSpan
         | None -> 
@@ -117,8 +117,8 @@ type internal EditorSearchService
 [<UsedInBackgroundThread()>]
 type internal SearchService 
     (
-        _textSearchService : ITextSearchService,
-        _globalSettings : IVimGlobalSettings
+        _textSearchService: ITextSearchService,
+        _globalSettings: IVimGlobalSettings
     ) =
 
     let _editorSearchService = EditorSearchService(_textSearchService)
@@ -135,7 +135,7 @@ type internal SearchService
     member x.GetServiceSearchData searchData navigator = 
         { SearchData = searchData; VimRegexOptions = _vimRegexOptions; Navigator = navigator }
 
-    member x.ApplySearchOffsetDataLine (span : SnapshotSpan) count = 
+    member x.ApplySearchOffsetDataLine (span: SnapshotSpan) count = 
         let snapshot = span.Snapshot
         let startLine = SnapshotPointUtil.GetContainingLine span.Start
         let number = startLine.LineNumber + count
@@ -150,7 +150,7 @@ type internal SearchService
         let point = SnapshotPointUtil.GetRelativePoint startPoint count true
         SnapshotSpan(point, 1)
 
-    member x.ApplySearchOffsetDataSearch (serviceSearchData : ServiceSearchData) point (patternData : PatternData) = 
+    member x.ApplySearchOffsetDataSearch (serviceSearchData: ServiceSearchData) point (patternData: PatternData) = 
         let searchData = SearchData(patternData.Pattern, patternData.Path, true)
         let serviceSearchData = { serviceSearchData with SearchData = searchData }
         match x.FindNextCore serviceSearchData point 1 with
@@ -158,7 +158,7 @@ type internal SearchService
         | SearchResult.NotFound _ -> None
         | SearchResult.Error _ -> None
 
-    member x.ApplySearchOffsetData (serviceSearchData : ServiceSearchData) (span : SnapshotSpan) : SnapshotSpan option =
+    member x.ApplySearchOffsetData (serviceSearchData: ServiceSearchData) (span: SnapshotSpan): SnapshotSpan option =
         match serviceSearchData.SearchData.Offset with
         | SearchOffsetData.None -> Some span
         | SearchOffsetData.Line count -> x.ApplySearchOffsetDataLine span count |> Some
@@ -167,7 +167,7 @@ type internal SearchService
         | SearchOffsetData.Search patternData -> x.ApplySearchOffsetDataSearch serviceSearchData span.End patternData
 
     /// This method is called from multiple threads.  Made static to help promote safety
-    static member ConvertToFindDataCore (serviceSearchData : ServiceSearchData) snapshot = 
+    static member ConvertToFindDataCore (serviceSearchData: ServiceSearchData) snapshot = 
 
         // First get the text and possible text based options for the pattern.  We special
         // case a search of whole words that is not a regex for efficiency reasons
@@ -247,7 +247,7 @@ type internal SearchService
         | :? System.ArgumentException as ex -> VimResult.Error ex.Message
 
     /// This is the core find function.  It will repeat the FindData search 'count' times.  
-    member x.FindCore (serviceSearchData : ServiceSearchData) (findData : FindData) (startPoint : SnapshotPoint) count : SearchResult =
+    member x.FindCore (serviceSearchData: ServiceSearchData) (findData: FindData) (startPoint: SnapshotPoint) count: SearchResult =
 
         let searchData = serviceSearchData.SearchData
         let isForward = searchData.Kind.IsAnyForward 
@@ -271,7 +271,7 @@ type internal SearchService
             wrapPosition <- position
 
         // Get the next search position given the search result SnapshotSpan
-        let getNextSearchPosition (span : SnapshotSpan) = 
+        let getNextSearchPosition (span: SnapshotSpan) = 
             if isForward then
                 span.End.Position
             elif span.Start.Position = 0 then 
@@ -324,7 +324,7 @@ type internal SearchService
 
         searchResult
 
-    member x.FindNextCore (serviceSearchData : ServiceSearchData) (startPoint : SnapshotPoint) count =
+    member x.FindNextCore (serviceSearchData: ServiceSearchData) (startPoint: SnapshotPoint) count =
 
         // Find the real place to search.  When going forward we should start after
         // the caret and before should start before. This prevents the text 

@@ -21,11 +21,11 @@ type OptionBuilder() =
     member x.Zero () = None
 
 type CachedParsedItem<'T> = { 
-    Version : int
-    Items : List<'T>
+    Version: int
+    Items: List<'T>
 } with
 
-    static member GetItems (snapshot : ITextSnapshot) key doParse = 
+    static member GetItems (snapshot: ITextSnapshot) key doParse = 
         let textBuffer = snapshot.TextBuffer
         let propertyCollection = textBuffer.Properties
 
@@ -46,10 +46,10 @@ type CachedParsedItem<'T> = {
 /// Used to represent xml / html tags within the file.  
 type TagBlock
     (
-        text : string,
-        fullSpan : Span,
-        innerSpan : Span,
-        children : List<TagBlock>
+        text: string,
+        fullSpan: Span,
+        innerSpan: Span,
+        children: List<TagBlock>
     ) =
 
     let _text = text
@@ -60,7 +60,7 @@ type TagBlock
     // This is the span within the tag block that does not include the tags
     let _innerSpan = innerSpan
 
-    let mutable _parent : TagBlock option = None
+    let mutable _parent: TagBlock option = None
 
     let _children = children
 
@@ -76,7 +76,7 @@ type TagBlock
         with get () = _parent
         and set value = _parent <- value
 
-type TagBlockParser (snapshot : ITextSnapshot) = 
+type TagBlockParser (snapshot: ITextSnapshot) = 
 
     let _snapshot = snapshot
     let _builder = OptionBuilder()
@@ -142,7 +142,7 @@ type TagBlockParser (snapshot : ITextSnapshot) =
             None
 
     /// Parse out a single attribute name value pair 
-    member x.ParseAttribute startPosition : Span option = 
+    member x.ParseAttribute startPosition: Span option = 
         let position = x.SkipBlanks startPosition
         _builder { 
             let! nameSpan = x.ParseAttributeName position
@@ -224,12 +224,12 @@ type TagBlockParser (snapshot : ITextSnapshot) =
 
     /// Parse out the contents of a tag with the specified name within the given Span.  This returns
     /// a tuple of the tag contents and whether or not the ending tag was ever found.  
-    member x.ParseTagContents tagName tagStartPosition contentStartPosition : TagBlock option = 
+    member x.ParseTagContents tagName tagStartPosition contentStartPosition: TagBlock option = 
         let children = List<TagBlock>()
 
         // This is a tuple of values.  The first value is the end of the content 
         // portion of the text while the second is the end of the closing tag
-        let mutable endPosition : (int * int) option = None
+        let mutable endPosition: (int * int) option = None
         let mutable position = contentStartPosition
         while position < _snapshot.Length && Option.isNone endPosition do
             match x.ParseStartTag position with
@@ -291,10 +291,10 @@ module TagBlockUtil =
     let GetTagBlocks snapshot = 
         CachedParsedItem<TagBlock>.GetItems snapshot _tagBlockKey ParseTagBlocks
 
-    let GetTagBlockForPoint (point : SnapshotPoint) =
+    let GetTagBlockForPoint (point: SnapshotPoint) =
         let tagBlocks = GetTagBlocks point.Snapshot
 
-        let isMatch (tagBlock : TagBlock) = 
+        let isMatch (tagBlock: TagBlock) = 
             let span = tagBlock.FullSpan
             span.Contains point.Position
 
@@ -314,8 +314,8 @@ type DirectiveKind =
     | EndIf
 
 type Directive = { 
-    Kind : DirectiveKind;
-    Span : Span
+    Kind: DirectiveKind;
+    Span: Span
 }
     with
 
@@ -327,8 +327,8 @@ type Directive = {
     override x.ToString() = sprintf "%O - %O" x.Kind x.Span
 
 type DirectiveBlock = {
-    Directives : List<Directive>
-    IsComplete : bool
+    Directives: List<Directive>
+    IsComplete: bool
 }
 
 [<RequireQualifiedAccess>]
@@ -385,13 +385,13 @@ type MatchingTokenUtil() =
 
                 // Process the token kind and the token to determine the span of the 
                 // directive on this line 
-                let func kind (token : Token) = 
+                let func kind (token: Token) = 
                     let endPosition = token.StartIndex + token.Length
                     let span = Span.FromBounds(start, endPosition)
                     { Kind = kind; Span = span } |> Some
 
                 // The span of the token for the #if variety blocks is the entire line
-                let all kind (token : Token) = 
+                let all kind (token: Token) = 
                     let span = Span.FromBounds(start, lineText.Length)
                     { Kind = kind; Span = span; } |> Some
 
@@ -410,7 +410,7 @@ type MatchingTokenUtil() =
     /// Parse out the directive blocks for the given ITextSnapshot.  Don't use
     /// this method directly.  Instead go through GetDirectiveBlocks which will
     /// cache the value
-    member x.ParseDirectiveBlocks (snapshot : ITextSnapshot) = 
+    member x.ParseDirectiveBlocks (snapshot: ITextSnapshot) = 
 
         let lastLineNumber = snapshot.LineCount - 1
 
@@ -430,7 +430,7 @@ type MatchingTokenUtil() =
 
         // Parse out the remainder of a directive given an initial directive value.  Then
         // return the line number after the completion of this block 
-        let rec parseBlockRemainder (startDirective : Directive) lineNumber = 
+        let rec parseBlockRemainder (startDirective: Directive) lineNumber = 
             let list = List<Directive>()
             list.Add(startDirective)
 
@@ -485,7 +485,7 @@ type MatchingTokenUtil() =
         allBlocksList
 
     /// Get the directive blocks for the specified ITextSnapshot
-    member x.GetDirectiveBlocks (snapshot : ITextSnapshot) = 
+    member x.GetDirectiveBlocks (snapshot: ITextSnapshot) = 
         CachedParsedItem<DirectiveBlock>.GetItems snapshot _directiveBlocksKey x.ParseDirectiveBlocks
 
     /// Find the correct MatchingTokenKind for the given line and column position on that 
@@ -579,8 +579,8 @@ type MatchingTokenUtil() =
         let findMatchingTokenChar target startChar endChar = 
             let stack = Stack<int>()
             let length = SnapshotUtil.GetLength snapshot
-            let mutable found : int option = None
-            let mutable targetDepth : int option = None
+            let mutable found: int option = None
+            let mutable targetDepth: int option = None
             let mutable index = 0
             while index < length do
                 let c = SnapshotUtil.GetChar index snapshot
@@ -639,9 +639,9 @@ type MatchingTokenUtil() =
                         false
                 (fun index -> matches index '/' '*'), (fun index -> matches index '*' '/')
 
-            let mutable commentStart : int option = None
+            let mutable commentStart: int option = None
             let mutable index = 0
-            let mutable found : int option = None
+            let mutable found: int option = None
             while index < length do 
                 if Option.isNone commentStart && isBegin index then
                     commentStart <- Some index
@@ -671,10 +671,10 @@ type MatchingTokenUtil() =
             | Some start -> Span(start, 1) |> Some
 
         // Find the matching directive starting from the buffer position 'target'
-        let findMatchingDirective (target : int) = 
+        let findMatchingDirective (target: int) = 
 
             let blockList = x.GetDirectiveBlocks snapshot
-            let mutable found : Span option = None
+            let mutable found: Span option = None
             let mutable blockIndex = 0
             while blockIndex < blockList.Count do
                 let block = blockList.[blockIndex]
@@ -754,7 +754,7 @@ type MatchingTokenUtil() =
 
         let mutable depth = 0
         let mutable count = count
-        let mutable found : SnapshotPoint option = None
+        let mutable found: SnapshotPoint option = None
         use e = charSeq.GetEnumerator()
         while e.MoveNext() && Option.isNone found do
             let c = e.Current.GetChar()
@@ -769,11 +769,11 @@ type MatchingTokenUtil() =
         found
 
 type QuotedStringData =  {
-    LeadingWhiteSpace : SnapshotSpan
-    LeadingQuote : SnapshotPoint
-    Contents : SnapshotSpan
-    TrailingQuote : SnapshotPoint
-    TrailingWhiteSpace : SnapshotSpan 
+    LeadingWhiteSpace: SnapshotSpan
+    LeadingQuote: SnapshotPoint
+    Contents: SnapshotSpan
+    TrailingQuote: SnapshotPoint
+    TrailingWhiteSpace: SnapshotSpan 
 } with
     
     member x.FullSpan = SnapshotSpanUtil.Create x.LeadingWhiteSpace.Start x.TrailingWhiteSpace.End
@@ -799,8 +799,8 @@ type VisualMotionResult =
 
 type internal MotionUtil 
     ( 
-        _vimBufferData : IVimBufferData,
-        _commonOperations : ICommonOperations
+        _vimBufferData: IVimBufferData,
+        _commonOperations: ICommonOperations
     ) = 
 
     let _vimTextBuffer = _vimBufferData.VimTextBuffer
@@ -844,7 +844,7 @@ type internal MotionUtil
 
     /// Apply the 'startofline' option to the given MotionResult.  This function must be 
     /// called with the MotionData mapped back to the edit snapshot
-    member x.ApplyStartOfLineOption (motionData : MotionResult) =
+    member x.ApplyStartOfLineOption (motionData: MotionResult) =
         Contract.Assert(match motionData.MotionKind with MotionKind.LineWise _ -> true | _ -> false)
         Contract.Assert(motionData.Span.Snapshot = x.CurrentSnapshot)
         if not _globalSettings.StartOfLine then 
@@ -860,7 +860,7 @@ type internal MotionUtil
                 MotionKind = MotionKind.LineWise 
                 DesiredColumn = column }
 
-    member x.ApplyBigDelete (result : MotionResult) =
+    member x.ApplyBigDelete (result: MotionResult) =
         let flags = result.MotionResultFlags ||| MotionResultFlags.BigDelete
         { result with MotionResultFlags = flags }
 
@@ -870,7 +870,7 @@ type internal MotionUtil
     ///
     /// This function wraps the conversion of the information from the edit buffer into the 
     /// visual buffer and back again when we are done. 
-    member x.MotionWithVisualSnapshotCore (action : SnapshotData -> 'T) (getMotionResult : 'T -> MotionResult option) =
+    member x.MotionWithVisualSnapshotCore (action: SnapshotData -> 'T) (getMotionResult: 'T -> MotionResult option) =
 
         // First get the SnapshotData for the VisualBuffer based on the current position of the
         // caret in the EditBuffer.  
@@ -903,7 +903,7 @@ type internal MotionUtil
                     VisualMotionResult.FailedNoMapToEditSnapshot
 
     /// Run the motion function against the Visual Snapshot
-    member x.MotionWithVisualSnapshot (action : SnapshotData -> MotionResult) = 
+    member x.MotionWithVisualSnapshot (action: SnapshotData -> MotionResult) = 
 
         match x.MotionWithVisualSnapshotCore action (fun x -> Some x) with
         | VisualMotionResult.Succeeded motionResult ->
@@ -916,7 +916,7 @@ type internal MotionUtil
             action snapshotData
 
     /// Run the motion function against the Visual Snapshot
-    member x.MotionOptionWithVisualSnapshot (action : SnapshotData -> MotionResult option) = 
+    member x.MotionOptionWithVisualSnapshot (action: SnapshotData -> MotionResult option) = 
 
         match x.MotionWithVisualSnapshotCore action (fun x -> x) with
         | VisualMotionResult.Succeeded motionResult ->
@@ -1024,7 +1024,7 @@ type internal MotionUtil
             MotionResult.Create span true MotionKind.CharacterWiseExclusive |> Some
 
     member x.DisplayLineMiddleOfScreen() =
-        let createForPoint (point : SnapshotPoint) = 
+        let createForPoint (point: SnapshotPoint) = 
             let isForward = x.CaretPoint.Position <= point.Position
             let startPoint, endPoint = SnapshotPointUtil.OrderAscending x.CaretPoint point
             let span = SnapshotSpan(startPoint, endPoint)
@@ -1048,7 +1048,7 @@ type internal MotionUtil
     /// Get the motion between the provided two lines.  The motion will be linewise
     /// and have a column of the first non-whitespace character.  If the 'startofline'
     /// option is not set it will keep the original column
-    member x.LineToLineFirstNonBlankMotion (flags : MotionResultFlags) (startLine : ITextSnapshotLine) (endLine : ITextSnapshotLine) = 
+    member x.LineToLineFirstNonBlankMotion (flags: MotionResultFlags) (startLine: ITextSnapshotLine) (endLine: ITextSnapshotLine) = 
 
         // Get the column based on the 'startofline' option
         let column = 
@@ -1068,7 +1068,7 @@ type internal MotionUtil
         MotionResult.CreateExEx range.ExtentIncludingLineBreak isForward MotionKind.LineWise flags column
 
     /// Get the block span for the specified char at the given context point
-    member x.GetBlock (blockKind : BlockKind) contextPoint = 
+    member x.GetBlock (blockKind: BlockKind) contextPoint = 
 
         let startChar, endChar = blockKind.Characters
 
@@ -1119,7 +1119,7 @@ type internal MotionUtil
         | Some startPoint, Some lastPoint -> Some (startPoint, lastPoint)
         | _ -> None
 
-    member x.GetBlockWithCount (blockKind : BlockKind) contextPoint count = 
+    member x.GetBlockWithCount (blockKind: BlockKind) contextPoint count = 
 
         // Need to wrap GetBlock to account for blocks being side by 
         // side.  In that case we have to detect a side by side block and 
@@ -1127,7 +1127,7 @@ type internal MotionUtil
         let getBlockHelper closePoint =
             let mutable isDone = false
             let mutable contextPoint = SnapshotPointUtil.AddOne closePoint
-            let mutable result : (SnapshotPoint * SnapshotPoint) option = None
+            let mutable result: (SnapshotPoint * SnapshotPoint) option = None
 
             while not isDone do
                 match x.GetBlock blockKind contextPoint with
@@ -1193,8 +1193,8 @@ type internal MotionUtil
                 index <- index + 1
             list
 
-        let getStringData (stringSpan : SnapshotSpan) = 
-            let isWhiteSpace (position : int) = 
+        let getStringData (stringSpan: SnapshotSpan) = 
+            let isWhiteSpace (position: int) = 
                 let c = x.CurrentSnapshot.[position]
                 CharUtil.IsWhiteSpace c
 
@@ -1240,7 +1240,7 @@ type internal MotionUtil
         // the string which contains the position.  The tricky case is when the position falls directly
         // on a quote.  In that case we have to determine if it is the start or end quote (just check 
         // for an even count to make that determination)
-        let mutable data : QuotedStringData option = None
+        let mutable data: QuotedStringData option = None
         let mutable index = 0 
         while index < quoteSpans.Count && Option.isNone data do
             let span = quoteSpans.[index]
@@ -1980,10 +1980,10 @@ type internal MotionUtil
         //
         // Note: Line breaks do not factor into this calculation.  This can be demonstrated 
         // experimentally
-        let getSpan (startPoint : SnapshotPoint) point count =
+        let getSpan (startPoint: SnapshotPoint) point count =
             Contract.Assert(not (SnapshotPointUtil.IsInsideLineBreak point))
 
-            let rec inner (wordSpan : SnapshotSpan) (remainingWords : SnapshotSpan list) count = 
+            let rec inner (wordSpan: SnapshotSpan) (remainingWords: SnapshotSpan list) count = 
                 if count = 0 then 
                     // Count gets us to this word so return it's start
                     Some wordSpan.Start
@@ -2535,7 +2535,7 @@ type internal MotionUtil
             MotionResult.Create span true MotionKind.CharacterWiseInclusive |> Some
 
     /// Get the motion for a search command.  Used to implement the '/' and '?' motions
-    member x.Search (searchData : SearchData) count = 
+    member x.Search (searchData: SearchData) count = 
 
         // Searching as part of a motion should update the last pattern information
         // irrespective of whether or not the search completes
@@ -2545,7 +2545,7 @@ type internal MotionUtil
 
     /// Implements the core searching motion.  Will *not* update the LastPatternData 
     /// value.  Simply performs the search and returns the result
-    member x.SearchCore (searchData : SearchData) searchPoint count =
+    member x.SearchCore (searchData: SearchData) searchPoint count =
 
         // All search operations update the jump list
         _jumpList.Add x.CaretPoint
@@ -2689,7 +2689,7 @@ type internal MotionUtil
     /// The documentation around 'exclusive-linewise' says it applies to any 
     /// exclusive motion.  However in practice it doesn't appear to apply to 
     /// word motions
-    member x.AdjustMotionResult motion (motionResult : MotionResult) =
+    member x.AdjustMotionResult motion (motionResult: MotionResult) =
 
         // Do the actual adjustment for exclusive motions.  The kind which should be 
         // added to the adjusted motion is provided
@@ -2738,7 +2738,7 @@ type internal MotionUtil
         | MotionKind.LineWise _ -> motionResult
 
     /// Run the specified motion and return it's result
-    member x.GetMotion motion (motionArgument : MotionArgument) = 
+    member x.GetMotion motion (motionArgument: MotionArgument) = 
 
         let motionResult = 
             match motion with 

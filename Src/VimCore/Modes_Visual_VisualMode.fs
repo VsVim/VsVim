@@ -9,13 +9,13 @@ open Vim.Modes
 
 type internal VisualMode
     (
-        _vimBufferData : IVimBufferData,
-        _operations : ICommonOperations,
-        _motionUtil : IMotionUtil,
-        _visualKind : VisualKind,
-        _runner : ICommandRunner,
-        _capture : IMotionCapture,
-        _selectionTracker : ISelectionTracker
+        _vimBufferData: IVimBufferData,
+        _operations: ICommonOperations,
+        _motionUtil: IMotionUtil,
+        _visualKind: VisualKind,
+        _runner: ICommandRunner,
+        _capture: IMotionCapture,
+        _selectionTracker: ISelectionTracker
     ) = 
 
     let _vimTextBuffer = _vimBufferData.VimTextBuffer
@@ -31,7 +31,7 @@ type internal VisualMode
 
     /// Get a mark and use the provided 'func' to create a Motion value
     static let BindMark func = 
-        let bindFunc (keyInput : KeyInput) =
+        let bindFunc (keyInput: KeyInput) =
             match Mark.OfChar keyInput.Char with
             | None -> BindResult<NormalCommand>.Error
             | Some localMark -> BindResult<_>.Complete (func localMark)
@@ -137,7 +137,7 @@ type internal VisualMode
 
     /// Visual Mode doesn't actually process any mouse keys.  Actual mouse events for
     /// selection are handled by the selection tracker 
-    member x.CanProcess (keyInput : KeyInput) = not keyInput.IsMouseKey
+    member x.CanProcess (keyInput: KeyInput) = not keyInput.IsMouseKey
 
     member x.CommandNames = 
         x.EnsureCommandsBuilt()
@@ -180,7 +180,7 @@ type internal VisualMode
         _runner.ResetState()
         _selectionTracker.Stop()
 
-    member x.Process (ki : KeyInput) =  
+    member x.Process (ki: KeyInput) =  
 
         // Save the VisualSelection before executing the command.  Many commands which exit
         // visual mode such as 'y' change the selection during execution.  We want to restore

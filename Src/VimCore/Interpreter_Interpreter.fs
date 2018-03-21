@@ -18,7 +18,7 @@ type DefaultLineRange =
 [<Class>]
 type VariableValueUtil
     (
-        _statusUtil : IStatusUtil
+        _statusUtil: IStatusUtil
     ) =
 
     member x.ConvertToNumber value = 
@@ -55,12 +55,12 @@ type VariableValueUtil
 [<Class>]
 type BuiltinFunctionCaller
     (
-        _variableMap : Dictionary<string, VariableValue>
+        _variableMap: Dictionary<string, VariableValue>
     ) =
-    member x.Call (func : BuiltinFunctionCall) =
+    member x.Call (func: BuiltinFunctionCall) =
         match func with
         | BuiltinFunctionCall.Escape(escapeIn, escapeWhat) ->
-            let escapeChar (c : char) =
+            let escapeChar (c: char) =
                 let character = c.ToString()
                 if escapeWhat.Contains character then sprintf @"\%s" character else character
             Seq.map escapeChar escapeIn
@@ -86,11 +86,11 @@ type BuiltinFunctionCaller
 [<Class>]
 type VimScriptFunctionCaller
     (
-        _builtinCaller : BuiltinFunctionCaller,
-        _statusUtil : IStatusUtil
+        _builtinCaller: BuiltinFunctionCaller,
+        _statusUtil: IStatusUtil
     ) =
     let _getValue = VariableValueUtil(_statusUtil)
-    member x.Call (name : VariableName) (args : VariableValue list) =
+    member x.Call (name: VariableName) (args: VariableValue list) =
         let tooManyArgs() =
             sprintf "Too many arguments for function: %s" name.Name |> _statusUtil.OnError
             VariableValue.Error
@@ -134,11 +134,11 @@ type VimScriptFunctionCaller
 [<Class>]
 type ExpressionInterpreter
     (
-        _statusUtil : IStatusUtil,
-        _localSettings : IVimSettings,
-        _windowSettings : IVimSettings,
-        _variableMap : Dictionary<string, VariableValue>,
-        _registerMap : IRegisterMap
+        _statusUtil: IStatusUtil,
+        _localSettings: IVimSettings,
+        _windowSettings: IVimSettings,
+        _variableMap: Dictionary<string, VariableValue>,
+        _registerMap: IRegisterMap
     ) =
     let _builtinCaller = BuiltinFunctionCaller(_variableMap)
     let _functionCaller = VimScriptFunctionCaller(_builtinCaller, _statusUtil)
@@ -174,7 +174,7 @@ type ExpressionInterpreter
         (_registerMap.GetRegister name).StringValue |> VariableValue.String
 
     /// Get the value of the specified expression 
-    member x.RunExpression (expr : Expression) : VariableValue =
+    member x.RunExpression (expr: Expression): VariableValue =
         let runExpression expressions = [for expr in expressions -> x.RunExpression expr]
         match expr with
         | Expression.ConstantValue value -> value
@@ -189,13 +189,13 @@ type ExpressionInterpreter
         | Expression.List expressions -> runExpression expressions |> VariableValue.List 
 
     /// Run the binary expression
-    member x.RunBinaryExpression binaryKind (leftExpr : Expression) (rightExpr : Expression) = 
+    member x.RunBinaryExpression binaryKind (leftExpr: Expression) (rightExpr: Expression) = 
 
         let notSupported() =
             _statusUtil.OnError "Binary operation not supported at this time"
             VariableValue.Error
 
-        let runAdd (leftValue : VariableValue) (rightValue : VariableValue) = 
+        let runAdd (leftValue: VariableValue) (rightValue: VariableValue) = 
             if leftValue.VariableType = VariableType.List && rightValue.VariableType = VariableType.List then
                 // it's a list concatenation
                 notSupported()
@@ -206,7 +206,7 @@ type ExpressionInterpreter
                 | Some left, Some right -> left + right |> VariableValue.Number
                 | _ -> VariableValue.Error
 
-        let runConcat (leftValue : VariableValue) (rightValue : VariableValue) =
+        let runConcat (leftValue: VariableValue) (rightValue: VariableValue) =
             let leftString = _getValue.ConvertToString leftValue
             let rightString = _getValue.ConvertToString rightValue
             match leftString, rightString with
@@ -228,11 +228,11 @@ type ExpressionInterpreter
 [<Class>]
 type VimInterpreter
     (
-        _vimBuffer : IVimBuffer,
-        _commonOperations : ICommonOperations,
-        _foldManager : IFoldManager,
-        _fileSystem : IFileSystem,
-        _bufferTrackingService : IBufferTrackingService
+        _vimBuffer: IVimBuffer,
+        _commonOperations: ICommonOperations,
+        _foldManager: IFoldManager,
+        _fileSystem: IFileSystem,
+        _bufferTrackingService: IBufferTrackingService
     ) =
 
     let _vimBufferData = _vimBuffer.VimBufferData
@@ -282,13 +282,13 @@ type VimInterpreter
     member x.CurrentSnapshot = _textBuffer.CurrentSnapshot
 
     /// Execute the external command and return the lines of output
-    member x.ExecuteCommand (command : string) : string[] option = 
+    member x.ExecuteCommand (command: string): string[] option = 
         // TODO: Implement
         None
 
     /// Resolve the given path.  In the case the path contains illegal characters it 
     /// will be returned unaltered. 
-    member x.ResolveVimPath (path : string) =
+    member x.ResolveVimPath (path: string) =
         try
             SystemUtil.ResolveVimPath _vimData.CurrentDirectory path
         with
@@ -296,15 +296,15 @@ type VimInterpreter
 
     /// Get a tuple of the ITextSnapshotLine specified by the given LineSpecifier and the 
     /// corresponding vim line number
-    member x.GetLineAndVimLineNumberCore lineSpecifier (currentLine : ITextSnapshotLine) = 
+    member x.GetLineAndVimLineNumberCore lineSpecifier (currentLine: ITextSnapshotLine) = 
 
         // To convert from a VS line number to a vim line number, simply add 1
-        let getLineAndNumber (line : ITextSnapshotLine) = (line, line.LineNumber + 1)
+        let getLineAndNumber (line: ITextSnapshotLine) = (line, line.LineNumber + 1)
 
         // Get the ITextSnapshotLine specified by lineSpecifier and then apply the
         // given adjustment to the number.  Can fail if the line number adjustment
         // is invalid
-        let getAdjustment adjustment (line : ITextSnapshotLine) = 
+        let getAdjustment adjustment (line: ITextSnapshotLine) = 
             let vimLine = line.LineNumber + 1 + adjustment
             let number = Util.VimLineToTssLine vimLine
 
@@ -434,7 +434,7 @@ type VimInterpreter
     member x.GetCountOrDefault count = Util.CountOrDefault count
 
     /// Add the specified auto command to the list 
-    member x.RunAddAutoCommand (autoCommandDefinition : AutoCommandDefinition) = 
+    member x.RunAddAutoCommand (autoCommandDefinition: AutoCommandDefinition) = 
         let builder = System.Collections.Generic.List<AutoCommand>()
         for eventKind in autoCommandDefinition.EventKinds do
             for pattern in autoCommandDefinition.Patterns do
@@ -465,7 +465,7 @@ type VimInterpreter
             _globalSettings.Selection <- "inclusive"
         | _ -> _statusUtil.OnError (Resources.Interpreter_InvalidArgument model)
 
-    member x.RunCall (callInfo : CallInfo) = 
+    member x.RunCall (callInfo: CallInfo) = 
         _statusUtil.OnError (Resources.Interpreter_CallNotSupported callInfo.Name)
 
     /// Change the directory to the given value
@@ -621,7 +621,7 @@ type VimInterpreter
         |> Seq.map (fun localMark -> Mark.LocalMark localMark)
         |> Seq.iter x.RunDeleteMarkCore
 
-    member x.RunFunction (func : Function) = 
+    member x.RunFunction (func: Function) = 
         _statusUtil.OnError Resources.Interpreter_FunctionNotSupported
 
     /// Display the given map modes
@@ -652,7 +652,7 @@ type VimInterpreter
                 | KeyRemapMode.Insert -> "i"
 
         // Get the printable format for the KeyInputSet 
-        let getKeyInputSetLine (keyInputSet : KeyInputSet) = 
+        let getKeyInputSetLine (keyInputSet: KeyInputSet) = 
 
             keyInputSet.KeyInputs |> Seq.map KeyNotationUtil.GetDisplayName |> String.concat ""
 
@@ -680,7 +680,7 @@ type VimInterpreter
 
         // The value when display shouldn't contain any new lines.  They are expressed as instead
         // ^J which is the key-notation for <NL>
-        let normalizeDisplayString (data : string) = data.Replace(System.Environment.NewLine, "^J")
+        let normalizeDisplayString (data: string) = data.Replace(System.Environment.NewLine, "^J")
 
         let displayNames = 
             match nameList with
@@ -713,7 +713,7 @@ type VimInterpreter
         let lines = Seq.append (Seq.singleton Resources.CommandMode_RegisterBanner) lines
         _statusUtil.OnStatusLong lines
 
-    member x.RunDisplayLets (names : VariableName list) = 
+    member x.RunDisplayLets (names: VariableName list) = 
         let list = List<string>()
         for name in names do
             let found, value = _variableMap.TryGetValue name.Name
@@ -727,11 +727,11 @@ type VimInterpreter
         _statusUtil.OnStatusLong list
 
     /// Display the specified marks
-    member x.RunDisplayMarks (marks : Mark list) = 
+    member x.RunDisplayMarks (marks: Mark list) = 
         if not (List.isEmpty marks) then
             _statusUtil.OnError (Resources.Interpreter_OptionNotSupported "Specific marks")
         else
-            let printMark (ident : char) (point : VirtualSnapshotPoint) =
+            let printMark (ident: char) (point: VirtualSnapshotPoint) =
                 let textLine = point.Position.GetContainingLine()
                 let lineNum = textLine.LineNumber + 1
                 let column = point.Position.Position - textLine.Start.Position
@@ -1014,8 +1014,8 @@ type VimInterpreter
         _statusUtil.OnStatusLong(output)
 
     /// Run the if command
-    member x.RunIf (conditionalBlockList : ConditionalBlock list)  =
-        let shouldRun (conditionalBlock : ConditionalBlock) =
+    member x.RunIf (conditionalBlockList: ConditionalBlock list)  =
+        let shouldRun (conditionalBlock: ConditionalBlock) =
             match conditionalBlock.Conditional with
             | None -> true
             | Some expr -> 
@@ -1049,7 +1049,7 @@ type VimInterpreter
         _commonOperations.MoveCaretToPoint point (ViewFlags.Standard &&& (~~~ViewFlags.TextExpanded))
 
     /// Run the let command
-    member x.RunLet (name : VariableName) expr =
+    member x.RunLet (name: VariableName) expr =
         // TODO: At this point we are treating all variables as if they were global.  Need to 
         // take into account the NameScope at this level too
         match x.RunExpression expr with
@@ -1057,8 +1057,8 @@ type VimInterpreter
         | value -> _variableMap.[name.Name] <- value
 
     /// Run the let command for registers
-    member x.RunLetRegister (name : RegisterName) expr =
-        let setRegister (value : string) =
+    member x.RunLetRegister (name: RegisterName) expr =
+        let setRegister (value: string) =
             let registerValue = RegisterValue(value, OperationKind.CharacterWise)
             _commonOperations.SetRegisterValue (Some name) RegisterOperation.Yank registerValue
         match _exprInterpreter.GetExpressionAsString expr with
@@ -1188,7 +1188,7 @@ type VimInterpreter
                 _commonOperations.CloseWindowUnlessDirty())
 
     /// Run the core parts of the read command
-    member x.RunReadCore (lineRange : SnapshotLineRange) (lines : string[]) = 
+    member x.RunReadCore (lineRange: SnapshotLineRange) (lines: string[]) = 
         let point = lineRange.EndIncludingLineBreak
         let lineBreak = _commonOperations.GetNewLineText point
         let text = 
@@ -1226,8 +1226,8 @@ type VimInterpreter
         _commonOperations.Redo 1
 
     /// Remove the auto commands which match the specified definition
-    member x.RemoveAutoCommands (autoCommandDefinition : AutoCommandDefinition) = 
-        let isMatch (autoCommand : AutoCommand) = 
+    member x.RemoveAutoCommands (autoCommandDefinition: AutoCommandDefinition) = 
+        let isMatch (autoCommand: AutoCommand) = 
             
             if autoCommand.Group = autoCommandDefinition.Group then
                 let isPatternMatch = Seq.exists (fun p -> autoCommand.Pattern = p) autoCommandDefinition.Patterns
@@ -1266,7 +1266,7 @@ type VimInterpreter
             let spans = 
     
                 // Find the next position which has a space or tab value 
-                let rec nextPoint (point : SnapshotPoint) = 
+                let rec nextPoint (point: SnapshotPoint) = 
                     if point.Position >= lineRange.End.Position then
                         None
                     elif SnapshotPointUtil.IsBlank point then
@@ -1338,7 +1338,7 @@ type VimInterpreter
     member x.RunSet setArguments =
 
         // Get the setting for the specified name
-        let withSetting name msg (func : Setting -> IVimSettings -> unit) =
+        let withSetting name msg (func: Setting -> IVimSettings -> unit) =
             match _localSettings.GetSetting name with
             | None -> 
                 match _windowSettings.GetSetting name with
@@ -1463,7 +1463,7 @@ type VimInterpreter
                 | SetArgument.UseSetting name -> useSetting name)
 
     /// Run the specified shell command
-    member x.RunShellCommand (command : string) =
+    member x.RunShellCommand (command: string) =
 
         // Actuall run the command
         let doRun command = 
@@ -1549,7 +1549,7 @@ type VimInterpreter
 
         // Called to initialize the data and move to a confirm style substitution.  Have to find the first match
         // before passing off to confirm
-        let setupConfirmSubstitute (range : SnapshotLineRange) (data : SubstituteData) =
+        let setupConfirmSubstitute (range: SnapshotLineRange) (data: SubstituteData) =
             let regex = VimRegexFactory.CreateForSubstituteFlags data.SearchPattern _globalSettings data.Flags
             match regex with
             | None -> 
@@ -1779,10 +1779,10 @@ type VimInterpreter
         | LineCommand.WriteAll hasBang -> x.RunWriteAll hasBang
         | LineCommand.Yank (lineRange, registerName, count) -> x.RunYank registerName lineRange count
 
-    member x.RunWithLineRange lineRangeSpecifier (func : SnapshotLineRange -> unit) = 
+    member x.RunWithLineRange lineRangeSpecifier (func: SnapshotLineRange -> unit) = 
         x.RunWithLineRangeOrDefault lineRangeSpecifier DefaultLineRange.None func
 
-    member x.RunWithLineRangeOrDefault (lineRangeSpecifier : LineRangeSpecifier) defaultLineRange (func : SnapshotLineRange -> unit) = 
+    member x.RunWithLineRangeOrDefault (lineRangeSpecifier: LineRangeSpecifier) defaultLineRange (func: SnapshotLineRange -> unit) = 
         match x.GetLineRangeOrDefault lineRangeSpecifier defaultLineRange with
         | None -> _statusUtil.OnError Resources.Range_Invalid
         | Some lineRange -> func lineRange
@@ -1805,12 +1805,12 @@ type VimInterpreter
 type VimInterpreterFactory
     [<ImportingConstructor>]
     (
-        _commonOperationsFactory : ICommonOperationsFactory,
-        _foldManagerFactory : IFoldManagerFactory,
-        _bufferTrackingService : IBufferTrackingService
+        _commonOperationsFactory: ICommonOperationsFactory,
+        _foldManagerFactory: IFoldManagerFactory,
+        _bufferTrackingService: IBufferTrackingService
     ) = 
 
-    member x.CreateVimInterpreter (vimBuffer : IVimBuffer) fileSystem =
+    member x.CreateVimInterpreter (vimBuffer: IVimBuffer) fileSystem =
         let commonOperations = _commonOperationsFactory.GetCommonOperations vimBuffer.VimBufferData
         let foldManager = _foldManagerFactory.GetFoldManager vimBuffer.TextView
         let interpreter = VimInterpreter(vimBuffer, commonOperations, foldManager, fileSystem, _bufferTrackingService)

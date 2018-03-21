@@ -2,7 +2,7 @@
 
 namespace Vim
 
-type internal DisabledMode(_vimBufferData : IVimBufferData) =
+type internal DisabledMode(_vimBufferData: IVimBufferData) =
 
     let _localSettings = _vimBufferData.LocalSettings
     let _globalSettings = _localSettings.GlobalSettings

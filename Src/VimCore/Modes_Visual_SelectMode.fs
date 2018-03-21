@@ -7,14 +7,14 @@ open Vim.Modes
 
 type internal SelectMode
     (
-        _vimBufferData : IVimBufferData,
-        _commonOperations : ICommonOperations,
-        _motionUtil : IMotionUtil,
-        _visualKind : VisualKind,
-        _runner : ICommandRunner,
-        _capture : IMotionCapture,
-        _undoRedoOperations : IUndoRedoOperations,
-        _selectionTracker : ISelectionTracker
+        _vimBufferData: IVimBufferData,
+        _commonOperations: ICommonOperations,
+        _motionUtil: IMotionUtil,
+        _visualKind: VisualKind,
+        _runner: ICommandRunner,
+        _capture: IMotionCapture,
+        _undoRedoOperations: IUndoRedoOperations,
+        _selectionTracker: ISelectionTracker
     ) = 
 
     let _globalSettings = _vimBufferData.LocalSettings.GlobalSettings
@@ -43,7 +43,7 @@ type internal SelectMode
 
     /// A 'special key' is defined in :help keymodel as any of the following keys.  Depending
     /// on the value of the keymodel setting they can affect the selection
-    static let GetCaretMovement (keyInput : KeyInput) =
+    static let GetCaretMovement (keyInput: KeyInput) =
         if not (Util.IsFlagSet keyInput.KeyModifiers VimKeyModifiers.Control) then
             match keyInput.Key with
             | VimKey.Up -> Some CaretMovement.Up
@@ -66,7 +66,7 @@ type internal SelectMode
             | _ -> None
 
     /// Whether a key input corresponds to normal text
-    static let IsTextKeyInput (keyInput : KeyInput) =
+    static let IsTextKeyInput (keyInput: KeyInput) =
         Option.isSome keyInput.RawChar && not (CharUtil.IsControl keyInput.Char)
 
     let mutable _builtCommands = false
@@ -84,7 +84,7 @@ type internal SelectMode
     member x.EnsureCommandsBuilt() =
 
         /// Whether a command is bound to a key that is not insertable text
-        let isNonTextCommand (command : CommandBinding) =
+        let isNonTextCommand (command: CommandBinding) =
             match command.KeyInputSet.FirstKeyInput with
             | None ->
                 true
@@ -109,7 +109,7 @@ type internal SelectMode
 
     member x.CurrentSnapshot = _textView.TextSnapshot
 
-    member x.ShouldStopSelection (keyInput : KeyInput) =
+    member x.ShouldStopSelection (keyInput: KeyInput) =
         let hasShift = Util.IsFlagSet keyInput.KeyModifiers VimKeyModifiers.Shift
         let hasStopSelection = Util.IsFlagSet _globalSettings.KeyModelOptions KeyModelOptions.StopSelection
         not hasShift && hasStopSelection
@@ -130,7 +130,7 @@ type internal SelectMode
     /// transaction
     member x.ProcessInput text linked =
 
-        let replaceSelection (span : SnapshotSpan) text =
+        let replaceSelection (span: SnapshotSpan) text =
             _undoRedoOperations.EditWithUndoTransaction "Replace" _textView <| fun () ->
 
                 use edit = _textBuffer.CreateEdit()
@@ -172,7 +172,7 @@ type internal SelectMode
 
     /// Select Mode doesn't actually process any mouse keys.  Actual mouse events for
     /// selection are handled by the selection tracker 
-    member x.CanProcess (keyInput : KeyInput) = not keyInput.IsMouseKey
+    member x.CanProcess (keyInput: KeyInput) = not keyInput.IsMouseKey
 
     member x.Process keyInput = 
 

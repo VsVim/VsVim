@@ -37,7 +37,7 @@ type StringData =
         | Block left, Simple right -> Block (NonEmptyCollectionUtil.Append [ right ] left)
         | Block left, Block right -> Block (NonEmptyCollectionUtil.Append (right.All |> List.ofSeq) left)
 
-    static member OfNormalizedSnasphotSpanCollection (col : NormalizedSnapshotSpanCollection) = 
+    static member OfNormalizedSnasphotSpanCollection (col: NormalizedSnapshotSpanCollection) = 
         if col.Count = 0 then
             StringData.Simple StringUtil.Empty
         elif col.Count = 1 then 
@@ -452,10 +452,10 @@ module RegisterNameUtil =
 /// will be fidelity loss in some
 type RegisterValue
     (
-        _isString : bool,
-        _stringData : StringData,
-        _keyInputs : KeyInput list,
-        _operationKind : OperationKind
+        _isString: bool,
+        _stringData: StringData,
+        _keyInputs: KeyInput list,
+        _operationKind: OperationKind
     ) =
 
     /// Once a line wise value is in a string form it should always end with a new line.  It's
@@ -466,15 +466,15 @@ type RegisterValue
         | StringData.Simple str, OperationKind.LineWise -> EditUtil.EndsWithNewLine str
         | _ -> true
         
-    new (value : string, operationKind : OperationKind) =
+    new (value: string, operationKind: OperationKind) =
         RegisterValue(StringData.Simple value, operationKind)
 
-    new (stringData : StringData, operationKind : OperationKind) =
+    new (stringData: StringData, operationKind: OperationKind) =
         // TODO: Why do we allow an OperationKind here?  Can you ever have a line wise block StringData?
         Debug.Assert(IsNormalized stringData operationKind)
         RegisterValue(true, stringData, List.empty, operationKind)
 
-    new (keyInputs : KeyInput list) =
+    new (keyInputs: KeyInput list) =
         RegisterValue(false, StringData.Simple "", keyInputs, OperationKind.CharacterWise)
 
     /// Get the RegisterData as a StringData instance
@@ -516,7 +516,7 @@ type RegisterValue
 
     /// Append the provided RegisterValue to this one.  Used for append register operations (yank, 
     /// delete, etc ... with an upper case register)
-    member x.Append (value : RegisterValue) =
+    member x.Append (value: RegisterValue) =
         if _isString then
             let stringData = x.StringData.Append value.StringData
             RegisterValue(stringData, x.OperationKind)
@@ -530,7 +530,7 @@ type RegisterValue
 type internal IRegisterValueBacking = 
 
     /// The RegisterValue to use
-    abstract RegisterValue : RegisterValue with get, set
+    abstract RegisterValue: RegisterValue with get, set
 
 /// Default implementation of IRegisterValueBacking.  Just holds the RegisterValue
 /// in a mutable field
@@ -545,8 +545,8 @@ type internal DefaultRegisterValueBacking() =
 type Register
     internal 
     ( 
-        _name : RegisterName,
-        _valueBacking : IRegisterValueBacking ) = 
+        _name: RegisterName,
+        _valueBacking: IRegisterValueBacking ) = 
 
     new (c:char) =
         let name = RegisterNameUtil.CharToRegister c |> Option.get
@@ -566,12 +566,12 @@ type Register
 type IRegisterMap = 
 
     /// Gets all of the available register name values
-    abstract RegisterNames : seq<RegisterName>
+    abstract RegisterNames: seq<RegisterName>
 
     /// Get the register with the specified name
-    abstract GetRegister : registerName : RegisterName -> Register
+    abstract GetRegister: registerName: RegisterName -> Register
 
     /// Update the register with the specified value
-    abstract SetRegisterValue : registerName : RegisterName -> value : RegisterValue -> unit
+    abstract SetRegisterValue: registerName: RegisterName -> value: RegisterValue -> unit
 
 

@@ -38,9 +38,9 @@ type TransactionCloseResult =
 
 type NormalUndoTransaction 
     (
-        _name : string,
-        _transaction : ITextUndoTransaction option,
-        _undoRedoOperations : UndoRedoOperations
+        _name: string,
+        _transaction: ITextUndoTransaction option,
+        _undoRedoOperations: UndoRedoOperations
     ) =
 
     let mutable _isComplete = false
@@ -70,10 +70,10 @@ type NormalUndoTransaction
 
 and TextViewUndoTransaction 
     (
-        _name : string,
-        _transaction : ITextUndoTransaction option,
-        _editorOperations : IEditorOperations option,
-        _undoRedoOperations : UndoRedoOperations
+        _name: string,
+        _transaction: ITextUndoTransaction option,
+        _editorOperations: IEditorOperations option,
+        _undoRedoOperations: UndoRedoOperations
     ) =
     inherit NormalUndoTransaction(_name, _transaction, _undoRedoOperations)
 
@@ -93,9 +93,9 @@ and TextViewUndoTransaction
 /// that it is linked to
 and LinkedUndoTransaction
     (
-        _name : string,
-        _flags : LinkedUndoTransactionFlags,
-        _undoRedoOperations : UndoRedoOperations
+        _name: string,
+        _flags: LinkedUndoTransactionFlags,
+        _undoRedoOperations: UndoRedoOperations
     ) = 
 
     let mutable _isComplete = false
@@ -121,10 +121,10 @@ and LinkedUndoTransaction
 /// undo rather than throwing and killing the ITextBuffer.  
 and UndoRedoOperations 
     (
-        _vimHost : IVimHost,
-        _statusUtil : IStatusUtil,
-        _textUndoHistory : ITextUndoHistory option,
-        _editorOperationsFactoryService : IEditorOperationsFactoryService
+        _vimHost: IVimHost,
+        _statusUtil: IStatusUtil,
+        _textUndoHistory: ITextUndoHistory option,
+        _editorOperationsFactoryService: IEditorOperationsFactoryService
     ) as this =
 
     let _linkedUndoTransactionStack = Stack<LinkedUndoTransaction>()
@@ -133,8 +133,8 @@ and UndoRedoOperations
 
     // Contains the active set of operations to undo from the perspective of Vim.  If 
     // there is no history this should always be empty
-    let mutable _undoStack : UndoRedoData list = List.empty
-    let mutable _redoStack : UndoRedoData list = List.empty
+    let mutable _undoStack: UndoRedoData list = List.empty
+    let mutable _redoStack: UndoRedoData list = List.empty
     let _bag = DisposableBag()
 
     do
@@ -221,7 +221,7 @@ and UndoRedoOperations
             VimTrace.TraceInfo("!!! Broken undo / redo chain")
             _statusUtil.OnError Resources.Undo_ChainBroken
 
-    member x.CreateUndoTransaction (name : string) = 
+    member x.CreateUndoTransaction (name: string) = 
         VimTrace.TraceInfo("Open Undo Transaction: {0}", name)
         let undoTransaction = 
             match _textUndoHistory with
@@ -234,7 +234,7 @@ and UndoRedoOperations
         _normalUndoTransactionStack.Push(undoTransaction)
         undoTransaction :> IUndoTransaction
 
-    member x.CreateTextViewUndoTransaction (name : string) (textView : ITextView) = 
+    member x.CreateTextViewUndoTransaction (name: string) (textView: ITextView) = 
         VimTrace.TraceInfo("Open Text View Undo Transaction: {0}", name)
         let textViewUndoTransaction = 
             match _textUndoHistory with
@@ -252,7 +252,7 @@ and UndoRedoOperations
         textViewUndoTransaction :> ITextViewUndoTransaction
 
     /// Create a linked undo transaction.
-    member x.CreateLinkedUndoTransaction (name : string) flags =
+    member x.CreateLinkedUndoTransaction (name: string) flags =
         VimTrace.TraceInfo("Open Linked Undo Transaction: {0}", name)
 
         // A linked undo transaction works by simply counting all of the normal undo transactions
@@ -333,7 +333,7 @@ and UndoRedoOperations
 
     /// Called when a transaction is closed.  Need to determine the close state based on the current
     /// expected undo stack 
-    member x.UndoTransactionClosedCore<'T> (undoTransaction : 'T) (stack : Stack<'T>) : TransactionCloseResult =
+    member x.UndoTransactionClosedCore<'T> (undoTransaction: 'T) (stack: Stack<'T>): TransactionCloseResult =
         if stack.Count > 0 then
             if obj.ReferenceEquals(stack.Peek(), undoTransaction) then
                 // This is the most recently open linked transaction which is what we are expecting
@@ -351,7 +351,7 @@ and UndoRedoOperations
     ///
     ///     - transactions we orphaned in ResetState because of detected errors
     ///     - transactions closed out of order 
-    member x.LinkedUndoTransactionClosed (linkedUndoTransaction : LinkedUndoTransaction) = 
+    member x.LinkedUndoTransactionClosed (linkedUndoTransaction: LinkedUndoTransaction) = 
         match x.UndoTransactionClosedCore linkedUndoTransaction _linkedUndoTransactionStack with
         | TransactionCloseResult.Expected -> 
             if _linkedUndoTransactionStack.Count = 0 && Option.isSome _textUndoHistory then
@@ -387,7 +387,7 @@ and UndoRedoOperations
     ///
     ///     - transactions we orphaned in ResetState because of detected errors
     ///     - transactions closed out of order 
-    member x.NormalUndoTransactionClosed (normalUndoTransaction : NormalUndoTransaction) = 
+    member x.NormalUndoTransactionClosed (normalUndoTransaction: NormalUndoTransaction) = 
         match x.UndoTransactionClosedCore normalUndoTransaction _normalUndoTransactionStack with
         | TransactionCloseResult.Expected -> ()
         | TransactionCloseResult.Orphaned -> ()
