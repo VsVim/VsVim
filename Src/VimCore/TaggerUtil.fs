@@ -37,7 +37,7 @@ module TaggerUtilCore =
     /// In order to provide the minimum possible valid SnapshotSpan the simple taggers
     /// cache the overarching SnapshotSpan for the latest ITextSnapshot of all requests
     /// to which they are given.
-    let AdjustRequestedSpan (cachedRequestSpan : SnapshotSpan option) (requestSpan : SnapshotSpan) =
+    let AdjustRequestedSpan (cachedRequestSpan: SnapshotSpan option) (requestSpan: SnapshotSpan) =
         match cachedRequestSpan with
         | None -> requestSpan
         | Some cachedRequestSpan ->
@@ -67,9 +67,9 @@ module TaggerUtilCore =
 /// This solves the same problem as CountedTagger but for IClassifier
 type internal CountedValue<'T> 
     (
-        _value : 'T,
-        _key : obj,
-        _propertyCollection : PropertyCollection
+        _value: 'T,
+        _key: obj,
+        _propertyCollection: PropertyCollection
     ) = 
 
     let mutable _count = 1
@@ -86,7 +86,7 @@ type internal CountedValue<'T>
             | _ -> ()
             _propertyCollection.RemoveProperty(_key) |> ignore
 
-    static member GetOrCreate propertyCollection key (createFunc : unit -> 'T) = 
+    static member GetOrCreate propertyCollection key (createFunc: unit -> 'T) = 
         match PropertyCollectionUtil.GetValue<CountedValue<'T>> key propertyCollection with
         | Some countedValue ->
             countedValue.Increment()
@@ -106,13 +106,13 @@ type internal CountedValue<'T>
 /// for only one ITagger to be created for the same scenario
 type internal CountedTagger<'TTag when 'TTag :> ITag>  =
 
-    val private _countedValue : CountedValue<ITagger<'TTag>>
+    val private _countedValue: CountedValue<ITagger<'TTag>>
 
     member x.Tagger = x._countedValue.Value
 
     member x.Dispose() = x._countedValue.Release()
 
-    new (propertyCollection : PropertyCollection, key : obj, createFunc : (unit -> ITagger<'TTag>)) =
+    new (propertyCollection: PropertyCollection, key: obj, createFunc: (unit -> ITagger<'TTag>)) =
         let value = CountedValue<ITagger<'TTag>>.GetOrCreate propertyCollection key createFunc
         { _countedValue = value }
 
@@ -128,13 +128,13 @@ type internal CountedTagger<'TTag when 'TTag :> ITag>  =
 /// This solves the same problem as CountedTagger but for IClassifier
 type internal CountedClassifier =
 
-    val private _countedValue : CountedValue<IClassifier>
+    val private _countedValue: CountedValue<IClassifier>
 
     member x.Classifier = x._countedValue.Value
 
     member x.Dispose() = x._countedValue.Release()
 
-    new (propertyCollection : PropertyCollection, key : obj, createFunc : (unit -> IClassifier)) =
+    new (propertyCollection: PropertyCollection, key: obj, createFunc: (unit -> IClassifier)) =
         let value = CountedValue<IClassifier>.GetOrCreate propertyCollection key createFunc
         { _countedValue = value }
 
@@ -151,16 +151,16 @@ type internal CountedClassifier =
 [<Struct>]
 type internal OutliningData = 
     {
-        TrackingSpan : ITrackingSpan;
-        Tag : OutliningRegionTag;
-        Cookie : int
+        TrackingSpan: ITrackingSpan;
+        Tag: OutliningRegionTag;
+        Cookie: int
     }
 
 /// Implementation of the IAdhocOutliner service.  This class is only used for testing
 /// so it's focused on creating the simplest implementation vs. the most efficient
 type internal AdhocOutliner 
     (
-        _textBuffer : ITextBuffer
+        _textBuffer: ITextBuffer
     ) =
 
     let _map = new Dictionary<int, OutliningData>()
@@ -182,7 +182,7 @@ type internal AdhocOutliner
             raise (new Exception(msg))
 
     /// Get all of the values which map to the given ITextSnapshot
-    member private x.GetOutliningRegions (span : SnapshotSpan) =
+    member private x.GetOutliningRegions (span: SnapshotSpan) =
         // Avoid allocating a map or new collection if we are simply empty
         if _map.Count = 0 then
             s_emptyCollection
@@ -196,7 +196,7 @@ type internal AdhocOutliner
 
             ReadOnlyCollection<OutliningRegion>(list)
 
-    member private x.CreateOutliningRegion (span : SnapshotSpan) spanTrackingMode text hint = 
+    member private x.CreateOutliningRegion (span: SnapshotSpan) spanTrackingMode text hint = 
         let trackingSpan = span.Snapshot.CreateTrackingSpan(span.Span, spanTrackingMode) 
         let tag = OutliningRegionTag(text, hint) 
         let data = { TrackingSpan = trackingSpan; Tag = tag; Cookie = _counter }
@@ -205,7 +205,7 @@ type internal AdhocOutliner
         _changed.Trigger x
         { Tag = tag; Span = span; Cookie = data.Cookie }
 
-    static member GetOrCreate (textBuffer : ITextBuffer) = 
+    static member GetOrCreate (textBuffer: ITextBuffer) = 
         let propertyCollection = textBuffer.Properties
         propertyCollection.GetOrCreateSingletonProperty(s_outlinerKey, (fun _ -> AdhocOutliner(textBuffer)))
 
@@ -237,7 +237,7 @@ type internal AdhocOutliner
 
 type internal Classifier
     (
-        _tagger : ITagger<IClassificationTag>
+        _tagger: ITagger<IClassificationTag>
     ) as this =
 
     let _changed = StandardEvent<ClassificationChangedEventArgs>()
@@ -271,12 +271,12 @@ type internal Classifier
 
 type internal BasicTagger<'TTag when 'TTag :> ITag>
     (
-        _basicTaggerSource : IBasicTaggerSource<'TTag>
+        _basicTaggerSource: IBasicTaggerSource<'TTag>
     ) as this = 
 
     let _changed = StandardEvent<SnapshotSpanEventArgs>()
     let _eventHandlers = DisposableBag()
-    let mutable _cachedRequestSpan : SnapshotSpan option = None
+    let mutable _cachedRequestSpan: SnapshotSpan option = None
 
     do 
         _basicTaggerSource.Changed
@@ -298,7 +298,7 @@ type internal BasicTagger<'TTag when 'TTag :> ITag>
         | :? IDisposable as d -> d.Dispose()
         | _ -> ()
 
-    member x.GetTags (col : NormalizedSnapshotSpanCollection) = 
+    member x.GetTags (col: NormalizedSnapshotSpanCollection) = 
         if col.Count > 0 then
             let span = NormalizedSnapshotSpanCollectionUtil.GetOverarchingSpan col
             _cachedRequestSpan <- Some (TaggerUtilCore.AdjustRequestedSpan _cachedRequestSpan span)
@@ -320,7 +320,7 @@ type internal BasicTagger<'TTag when 'TTag :> ITag>
 /// guarantees to use Interlocked.Exchange
 type TextViewLineRange = 
     {
-        LineRange : SnapshotLineRange
+        LineRange: SnapshotLineRange
     }
 
 /// This class is used to support the one way transfer of SnapshotLineRange values between
@@ -332,11 +332,11 @@ type internal Channel() =
 
     /// This is the normal request stack from the main thread.  More recently requested items
     /// are given higher priority than older items
-    let mutable _stack : SnapshotLineRange list = list.Empty
+    let mutable _stack: SnapshotLineRange list = list.Empty
 
     /// When set this is represents the visible line range of the text view.  It has the highest
     /// priority for the background thread
-    let mutable _textViewLineRange : TextViewLineRange option = None
+    let mutable _textViewLineRange: TextViewLineRange option = None
 
     /// Version number tracks the number of writes to the channel
     let mutable _version = 0
@@ -363,7 +363,7 @@ type internal Channel() =
         Interlocked.Increment(& _version) |> ignore
 
     member private x.ReadNormal() = 
-        let mutable value : SnapshotLineRange option = None
+        let mutable value: SnapshotLineRange option = None
         let mutable isDone = false
         while not isDone do
             let oldStack = _stack
@@ -376,7 +376,7 @@ type internal Channel() =
         value
 
     member private x.ReadVisibleLines() = 
-        let mutable value : SnapshotLineRange option = None
+        let mutable value: SnapshotLineRange option = None
         let mutable isDone = false
         while not isDone do
             let oldTextViewLineRange = _textViewLineRange
@@ -422,7 +422,7 @@ type internal NormalizedLineRangeCollection() =
     member x.Item
         with get(index) = _list.[index]
        
-    member x.Add (lineRange : LineRange) = 
+    member x.Add (lineRange: LineRange) = 
         match x.FindInsertionPoint lineRange.StartLineNumber with
         | None ->
             // Just insert at the end and let the collapse code do the work in this case 
@@ -499,8 +499,8 @@ type internal NormalizedLineRangeCollection() =
             if removeCount > 0 then
                 _list.RemoveRange(index + 1, removeCount)
 
-    member private x.FindInsertionPoint (startLineNumber : int) =
-        let mutable value : int option = None
+    member private x.FindInsertionPoint (startLineNumber: int) =
+        let mutable value: int option = None
         let mutable index = 0
         while index < _list.Count do
             if startLineNumber <= _list.[index].StartLineNumber then
@@ -510,7 +510,7 @@ type internal NormalizedLineRangeCollection() =
                 index <- index + 1
         value
 
-    static member Create (collection : LineRange seq) = 
+    static member Create (collection: LineRange seq) = 
         let range = NormalizedLineRangeCollection()
         for r in collection do
             range.Add r
@@ -532,15 +532,15 @@ type internal TagCacheState =
 [<Struct>]
 type internal TrackingCacheData<'TTag when 'TTag :> ITag>
     (
-        _trackingSpan : ITrackingSpan,
-        _trackingList : ReadOnlyCollection<(ITrackingSpan * 'TTag)> 
+        _trackingSpan: ITrackingSpan,
+        _trackingList: ReadOnlyCollection<(ITrackingSpan * 'TTag)> 
     ) =
 
     member x.TrackingSpan = _trackingSpan
 
     member x.TrackingList = _trackingList
 
-    member x.Merge (snapshot : ITextSnapshot) (trackingCacheData : TrackingCacheData<'TTag>) =
+    member x.Merge (snapshot: ITextSnapshot) (trackingCacheData: TrackingCacheData<'TTag>) =
         let left = TrackingSpanUtil.GetSpan snapshot (x.TrackingSpan)
         let right = TrackingSpanUtil.GetSpan snapshot trackingCacheData.TrackingSpan
         let span = 
@@ -561,7 +561,7 @@ type internal TrackingCacheData<'TTag when 'TTag :> ITag>
 
     /// Does this tracking information contain tags over the given span in it's 
     /// ITextSnapshot
-    member x.ContainsCachedTags (span : SnapshotSpan) =
+    member x.ContainsCachedTags (span: SnapshotSpan) =
         let snapshot = span.Snapshot
         TrackingSpanUtil.GetSpan snapshot x.TrackingSpan |> Option.isSome
 
@@ -592,9 +592,9 @@ type internal TrackingCacheData<'TTag when 'TTag :> ITag>
 [<Struct>]
 type BackgroundCacheData<'TTag when 'TTag :> ITag> =
 
-    val private _snapshot : ITextSnapshot
-    val private _visitedCollection : NormalizedLineRangeCollection
-    val private _tagList : ReadOnlyCollection<ITagSpan<'TTag>>
+    val private _snapshot: ITextSnapshot
+    val private _visitedCollection: NormalizedLineRangeCollection
+    val private _tagList: ReadOnlyCollection<ITagSpan<'TTag>>
 
     member x.Snapshot = x._snapshot
 
@@ -614,13 +614,13 @@ type BackgroundCacheData<'TTag when 'TTag :> ITag> =
     new (snapshot, visitedCollection, tagList) = 
         { _snapshot = snapshot; _visitedCollection = visitedCollection; _tagList = tagList }
 
-    new (lineRange : SnapshotLineRange, tagList) =
+    new (lineRange: SnapshotLineRange, tagList) =
         let col = NormalizedLineRangeCollection()
         col.Add(lineRange.LineRange)
         { _snapshot = lineRange.Snapshot; _visitedCollection = col; _tagList = tagList }
 
     /// Determine tag cache state we have for the given SnapshotSpan
-    member x.GetTagCacheState (span : SnapshotSpan) =
+    member x.GetTagCacheState (span: SnapshotSpan) =
         // If the requested span doesn't even intersect with the overarching SnapshotSpan
         // of the cached data in the background then a more exhaustive search isn't needed
         // at this time
@@ -650,8 +650,8 @@ type BackgroundCacheData<'TTag when 'TTag :> ITag> =
 
 [<Struct>]
 type internal TagCache<'TTag when 'TTag :> ITag> = 
-    val mutable private _backgroundCacheData : BackgroundCacheData<'TTag> option
-    val mutable private _trackingCacheData : TrackingCacheData<'TTag> option
+    val mutable private _backgroundCacheData: BackgroundCacheData<'TTag> option
+    val mutable private _trackingCacheData: TrackingCacheData<'TTag> option
 
     member x.BackgroundCacheData
         with get() = x._backgroundCacheData
@@ -671,15 +671,15 @@ type internal TagCache<'TTag when 'TTag :> ITag> =
 [<Struct>]
 type internal AsyncBackgroundRequest =
     {
-        Snapshot : ITextSnapshot
-        Channel : Channel
-        Task : Task
-        CancellationTokenSource : CancellationTokenSource
+        Snapshot: ITextSnapshot
+        Channel: Channel
+        Task: Task
+        CancellationTokenSource: CancellationTokenSource
     }
 
 type internal AsyncTagger<'TData, 'TTag when 'TTag :> ITag> 
     (
-        _asyncTaggerSource : IAsyncTaggerSource<'TData, 'TTag>
+        _asyncTaggerSource: IAsyncTaggerSource<'TData, 'TTag>
     ) as this = 
 
     /// This number was chosen virtually at random.  In extremely large files it's legal
@@ -700,7 +700,7 @@ type internal AsyncTagger<'TData, 'TTag when 'TTag :> ITag>
     /// The one and only active AsyncBackgroundRequest instance.  There can be several
     /// in flight at once.  But we will cancel the earlier ones should a new one be 
     /// requested
-    let mutable _asyncBackgroundRequest : AsyncBackgroundRequest option = None
+    let mutable _asyncBackgroundRequest: AsyncBackgroundRequest option = None
 
     /// The current cache of tags we've provided to our consumer
     let mutable _tagCache = TagCache<'TTag>.Empty
@@ -711,7 +711,7 @@ type internal AsyncTagger<'TData, 'TTag when 'TTag :> ITag>
     /// for the cases where IAsyncTaggerSource declares that it changes.  It's not incorrect
     /// to say the overarching SnapshotSpan has changed in this case.  And it's cheaper
     /// to use the overaching span in the case of odd requests like time travel ones
-    let mutable _cachedOverarchingRequestSpan : SnapshotSpan option = None
+    let mutable _cachedOverarchingRequestSpan: SnapshotSpan option = None
 
     let mutable _chunkCount = DefaultChunkCount;
 
@@ -753,7 +753,7 @@ type internal AsyncTagger<'TData, 'TTag when 'TTag :> ITag>
     /// returning from our TrackingCacheData over the same SnapshotSpan.  Often times the 
     /// new data is the same as the old hence we don't need to produce any changed information
     /// to the buffer
-    member x.DidTagsChange (span : SnapshotSpan) (tagList : ReadOnlyCollection<ITagSpan<'TTag>>) =
+    member x.DidTagsChange (span: SnapshotSpan) (tagList: ReadOnlyCollection<ITagSpan<'TTag>>) =
         match _tagCache.TrackingCacheData with
         | None -> 
             // Nothing in the tracking cache so it changed if there is anything in the new
@@ -778,7 +778,7 @@ type internal AsyncTagger<'TData, 'TTag when 'TTag :> ITag>
 
     /// Get the tags for the specified NormalizedSnapshotSpanCollection.  Use the cache if 
     /// possible and possibly go to the background if necessary
-    member x.GetTags (col : NormalizedSnapshotSpanCollection) =
+    member x.GetTags (col: NormalizedSnapshotSpanCollection) =
         // The editor itself will never send an empty collection to GetTags.  But this is an 
         // API and other components are free to call it with whatever values they like
         if col.Count = 0 then
@@ -791,7 +791,7 @@ type internal AsyncTagger<'TData, 'TTag when 'TTag :> ITag>
                 x.GetTagsForSpan col.[0]
             else
                 VimTrace.TraceInfo("AsyncTagger::GetTags Count {0}", col.Count);
-                let mutable all : ITagSpan<'TTag> seq = Seq.empty
+                let mutable all: ITagSpan<'TTag> seq = Seq.empty
                 for span in col do 
                     let current = x.GetTagsForSpan span
                     all <- Seq.append all current
@@ -854,7 +854,7 @@ type internal AsyncTagger<'TData, 'TTag when 'TTag :> ITag>
 
     /// Get the tags for the specified SnapshotSpan in a background task.  If there are outstanding
     /// requests for SnapshotSpan values then this one will take priority over those 
-    member x.GetTagsInBackground (span : SnapshotSpan) =
+    member x.GetTagsInBackground (span: SnapshotSpan) =
         let synchronizationContext = SynchronizationContext.Current
         if synchronizationContext <> null then
             // The background processing should now be focussed on the specified ITextSnapshot 
@@ -947,14 +947,14 @@ type internal AsyncTagger<'TData, 'TTag when 'TTag :> ITag>
     [<UsedInBackgroundThread>]
     static member GetTagsInBackgroundCore
         (
-            asyncTaggerSource : IAsyncTaggerSource<'TData, 'TTag>,
-            data : 'TData,
-            chunkCount : int,
-            channel : Channel,
-            visited : NormalizedLineRangeCollection,
-            cancellationToken : CancellationToken,
-            onComplete : CompleteReason -> unit,
-            onProgress : SnapshotLineRange -> ReadOnlyCollection<ITagSpan<'TTag>> -> unit
+            asyncTaggerSource: IAsyncTaggerSource<'TData, 'TTag>,
+            data: 'TData,
+            chunkCount: int,
+            channel: Channel,
+            visited: NormalizedLineRangeCollection,
+            cancellationToken: CancellationToken,
+            onComplete: CompleteReason -> unit,
+            onProgress: SnapshotLineRange -> ReadOnlyCollection<ITagSpan<'TTag>> -> unit
         ) =
         let completeReason = 
             try
@@ -988,7 +988,7 @@ type internal AsyncTagger<'TData, 'TTag when 'TTag :> ITag>
 
                 // Get the tags for the specified SnapshotLineRange and return the results.  No chunking is done here,
                 // the data is just directly processed
-                let getTags (tagLineRange : SnapshotLineRange) =
+                let getTags (tagLineRange: SnapshotLineRange) =
                     match visited.GetUnvisited tagLineRange.LineRange with
                     | None -> ()
                     | Some unvisited ->
@@ -1058,7 +1058,7 @@ type internal AsyncTagger<'TData, 'TTag when 'TTag :> ITag>
 
             _asyncBackgroundRequest <- None
 
-    member private x.AdjustRequestSpan (col : NormalizedSnapshotSpanCollection) =
+    member private x.AdjustRequestSpan (col: NormalizedSnapshotSpanCollection) =
         if col.Count > 0 then
             // Note that we only use the overarching span to track what data we are responsible 
             // for in a
@@ -1135,7 +1135,7 @@ type internal AsyncTagger<'TData, 'TTag when 'TTag :> ITag>
     ///
     /// Called on the main thread
     /// </summary>
-    member private x.OnGetTagsInBackgroundProgress cancellationTokenSource (lineRange : SnapshotLineRange) tagList =
+    member private x.OnGetTagsInBackgroundProgress cancellationTokenSource (lineRange: SnapshotLineRange) tagList =
         if x.IsActiveBackgroundRequest cancellationTokenSource then
             // Merge the existing background data if it's present and on the same ITextSnapshot
             let newData =
@@ -1163,7 +1163,7 @@ type internal AsyncTagger<'TData, 'TTag when 'TTag :> ITag>
     /// Called when the background request is completed
     ///
     /// Called on the main thread
-    member private x.OnGetTagsInBackgroundComplete reason (channel : Channel) cancellationTokenSource =
+    member private x.OnGetTagsInBackgroundComplete reason (channel: Channel) cancellationTokenSource =
         if x.IsActiveBackgroundRequest cancellationTokenSource then
             // The request is complete.  Reset the active request information
             x.CancelAsyncBackgroundRequest()
@@ -1198,53 +1198,53 @@ type internal AsyncTagger<'TData, 'TTag when 'TTag :> ITag>
 
 module TaggerUtil =
 
-    let CreateAsyncTaggerRaw (asyncTaggerSource : IAsyncTaggerSource<'TData, 'TTag>) =
+    let CreateAsyncTaggerRaw (asyncTaggerSource: IAsyncTaggerSource<'TData, 'TTag>) =
         let tagger = new AsyncTagger<'TData, 'TTag>(asyncTaggerSource)
         tagger :> ITagger<'TTag>
 
-    let CreateAsyncTagger propertyCollection (key : obj) (createFunc : unit -> IAsyncTaggerSource<'TData, 'TTag>) =
+    let CreateAsyncTagger propertyCollection (key: obj) (createFunc: unit -> IAsyncTaggerSource<'TData, 'TTag>) =
         let createTagger () = 
             let source = createFunc ()
             CreateAsyncTaggerRaw source
         let countedTagger = new CountedTagger<'TTag>(propertyCollection, key, createTagger)
         countedTagger :> ITagger<'TTag>
 
-    let CreateAsyncClassifierRaw (asyncTaggerSource : IAsyncTaggerSource<'TData, IClassificationTag>) =
+    let CreateAsyncClassifierRaw (asyncTaggerSource: IAsyncTaggerSource<'TData, IClassificationTag>) =
         let tagger = CreateAsyncTaggerRaw asyncTaggerSource
         let classifier = new Classifier(tagger)
         classifier :> IClassifier
 
-    let CreateAsyncClassifier propertyCollection (key : obj) (createFunc : unit -> IAsyncTaggerSource<'TData, IClassificationTag>) =
+    let CreateAsyncClassifier propertyCollection (key: obj) (createFunc: unit -> IAsyncTaggerSource<'TData, IClassificationTag>) =
         let createClassifier () = 
             let source = createFunc ()
             CreateAsyncClassifierRaw source
         let countedClassifier = new CountedClassifier(propertyCollection, key, createClassifier)
         countedClassifier :> IClassifier
 
-    let CreateBasicTaggerRaw (basicTaggerSource : IBasicTaggerSource<'TTag>) =
+    let CreateBasicTaggerRaw (basicTaggerSource: IBasicTaggerSource<'TTag>) =
         let tagger = new BasicTagger<'TTag>(basicTaggerSource)
         tagger :> ITagger<'TTag>
 
-    let CreateBasicTagger propertyCollection (key : obj) (createFunc : unit -> IBasicTaggerSource<'TTag>) =
+    let CreateBasicTagger propertyCollection (key: obj) (createFunc: unit -> IBasicTaggerSource<'TTag>) =
         let createTagger () = 
             let source = createFunc ()
             CreateBasicTaggerRaw source
         let countedTagger = new CountedTagger<'TTag>(propertyCollection, key, createTagger)
         countedTagger :> ITagger<'TTag>
 
-    let CreateBasicClassifierRaw (basicTaggerSource : IBasicTaggerSource<IClassificationTag>) =
+    let CreateBasicClassifierRaw (basicTaggerSource: IBasicTaggerSource<IClassificationTag>) =
         let tagger = CreateBasicTaggerRaw basicTaggerSource
         let classifier = new Classifier(tagger)
         classifier :> IClassifier
 
-    let CreateBasicClassifier propertyCollection (key : obj) (createFunc : unit -> IBasicTaggerSource<IClassificationTag>) =
+    let CreateBasicClassifier propertyCollection (key: obj) (createFunc: unit -> IBasicTaggerSource<IClassificationTag>) =
         let createClassifier () = 
             let source = createFunc ()
             CreateBasicClassifierRaw source
         let countedClassifier = new CountedClassifier(propertyCollection, key, createClassifier)
         countedClassifier :> IClassifier
 
-    let GetOrCreateOutliner (textBuffer : ITextBuffer) =
+    let GetOrCreateOutliner (textBuffer: ITextBuffer) =
         let outliner = AdhocOutliner.GetOrCreate textBuffer
         outliner :> IAdhocOutliner
 

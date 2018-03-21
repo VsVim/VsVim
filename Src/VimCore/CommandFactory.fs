@@ -6,8 +6,8 @@ open Microsoft.VisualStudio.Text.Editor
 
 type internal CommandFactory
     ( 
-        _operations : ICommonOperations, 
-        _capture : IMotionCapture
+        _operations: ICommonOperations, 
+        _capture: IMotionCapture
     ) =
 
     let _textView = _operations.TextView
@@ -82,7 +82,7 @@ type internal CommandFactory
     /// Build up a set of NormalCommandBinding values from applicable Motion values.  These will 
     /// move the cursor to the result of the motion
     member x.CreateMovementsFromMotions() =
-        let processMotionBinding (binding : MotionBinding) =
+        let processMotionBinding (binding: MotionBinding) =
 
             match binding with
             | MotionBinding.Simple (name, _, motion) -> 
@@ -114,7 +114,7 @@ type internal CommandFactory
     /// Create movement commands for the text-object Motions.  These are described in :help text-objects
     /// section.  All text-object motions will contain the TextObjectSelection flag
     member x.CreateMovementTextObjectCommands() =
-        let processMotionBinding (binding : MotionBinding) =
+        let processMotionBinding (binding: MotionBinding) =
 
             // Determine what kind of text object we are dealing with here
             let textObjectKind = 
@@ -166,7 +166,7 @@ type internal CommandFactory
     /// Create the macro editing commands for the given information.  This relies on listening to events
     /// and the observable values are added to the Disposable bag so the caller may unsubscribe at a 
     /// later time
-    member x.CreateMacroEditCommands (runner : ICommandRunner) (macroRecorder : IMacroRecorder) (bag : DisposableBag) = 
+    member x.CreateMacroEditCommands (runner: ICommandRunner) (macroRecorder: IMacroRecorder) (bag: DisposableBag) = 
 
         // Check IMacroRecorder state and return the proper command based on it
         let getMacroCommand () = 

@@ -42,7 +42,7 @@ type CaretMovement =
         | Direction.Left -> CaretMovement.Left
         | _ -> raise (Contract.GetInvalidEnumException direction)
 
-type TextViewEventArgs(_textView : ITextView) =
+type TextViewEventArgs(_textView: ITextView) =
     inherit System.EventArgs()
 
     member x.TextView = _textView
@@ -54,10 +54,10 @@ type VimRcKind =
 type VimRcPath = { 
 
     /// Which type of file was loaded 
-    VimRcKind : VimRcKind 
+    VimRcKind: VimRcKind 
 
     /// Full path to the file which the contents were loaded from
-    FilePath : string
+    FilePath: string
 }
 
 [<RequireQualifiedAccess>]
@@ -91,39 +91,39 @@ type ChangeCharacterKind =
 type IStatusUtil =
 
     /// Raised when there is a special status message that needs to be reported
-    abstract OnStatus : string -> unit
+    abstract OnStatus: string -> unit
 
     /// Raised when there is a long status message that needs to be reported
-    abstract OnStatusLong : string seq -> unit 
+    abstract OnStatusLong: string seq -> unit 
 
     /// Raised when there is an error message that needs to be reported
-    abstract OnError : string -> unit 
+    abstract OnError: string -> unit 
 
     /// Raised when there is a warning message that needs to be reported
-    abstract OnWarning : string -> unit 
+    abstract OnWarning: string -> unit 
 
 /// Abstracts away VsVim's interaction with the file system to facilitate testing
 type IFileSystem =
 
     /// Create the specified directory, returns true if it was actually created
-    abstract CreateDirectory : path : string -> bool 
+    abstract CreateDirectory: path: string -> bool 
 
     /// Get the directories to probe for RC files
-    abstract GetVimRcDirectories : unit -> string[]
+    abstract GetVimRcDirectories: unit -> string[]
 
     /// Get the possible paths for a vimrc file in the order they should be 
     /// considered 
-    abstract GetVimRcFilePaths : unit -> VimRcPath[]
+    abstract GetVimRcFilePaths: unit -> VimRcPath[]
 
     /// Attempt to read all of the lines from the given file 
-    abstract ReadAllLines : filePath : string -> string[] option
+    abstract ReadAllLines: filePath: string -> string[] option
 
     /// Read the contents of the directory 
-    abstract ReadDirectoryContents : directoryPath : string -> string[] option
+    abstract ReadDirectoryContents: directoryPath: string -> string[] option
 
-    abstract Read : filePath : string -> Stream option
+    abstract Read: filePath: string -> Stream option
 
-    abstract Write : filePath : string -> stream : Stream -> bool
+    abstract Write: filePath: string -> stream: Stream -> bool
 
 /// Utility function for searching for Word values.  This is a MEF importable
 /// component
@@ -131,15 +131,15 @@ type IFileSystem =
 type IWordUtil = 
 
     /// Get the full word span for the word value which crosses the given SnapshotPoint
-    abstract GetFullWordSpan : wordKind : WordKind -> point : SnapshotPoint -> SnapshotSpan option
+    abstract GetFullWordSpan: wordKind: WordKind -> point: SnapshotPoint -> SnapshotSpan option
 
     /// Get the SnapshotSpan for Word values from the given point.  If the provided point is 
     /// in the middle of a word the span of the entire word will be returned
-    abstract GetWords : wordKind : WordKind -> path : SearchPath -> point : SnapshotPoint -> SnapshotSpan seq
+    abstract GetWords: wordKind: WordKind -> path: SearchPath -> point: SnapshotPoint -> SnapshotSpan seq
 
     /// Create an ITextStructureNavigator where the extent of words is calculated for
     /// the specified WordKind value
-    abstract CreateTextStructureNavigator : wordKind : WordKind -> contentType : IContentType -> ITextStructureNavigator
+    abstract CreateTextStructureNavigator: wordKind: WordKind -> contentType: IContentType -> ITextStructureNavigator
 
 /// Used to display a word completion list to the user
 type IWordCompletionSession =
@@ -147,25 +147,25 @@ type IWordCompletionSession =
     inherit IPropertyOwner
 
     /// Is the session dismissed
-    abstract IsDismissed : bool
+    abstract IsDismissed: bool
 
     /// The associated ITextView instance
-    abstract TextView : ITextView
+    abstract TextView: ITextView
 
     /// Select the next word in the session
-    abstract MoveNext : unit -> bool
+    abstract MoveNext: unit -> bool
 
     /// Select the previous word in the session.
-    abstract MovePrevious : unit -> bool
+    abstract MovePrevious: unit -> bool
 
     /// Dismiss the completion session 
-    abstract Dismiss : unit -> unit
+    abstract Dismiss: unit -> unit
 
     /// Raised when the session is dismissed
     [<CLIEvent>]
-    abstract Dismissed : IDelegateEvent<System.EventHandler>
+    abstract Dismissed: IDelegateEvent<System.EventHandler>
 
-type WordCompletionSessionEventArgs(_wordCompletionSession : IWordCompletionSession) =
+type WordCompletionSessionEventArgs(_wordCompletionSession: IWordCompletionSession) =
     inherit System.EventArgs()
 
     member x.WordCompletionSession = _wordCompletionSession
@@ -174,20 +174,20 @@ type WordCompletionSessionEventArgs(_wordCompletionSession : IWordCompletionSess
 type IWordCompletionSessionFactoryService = 
 
     /// Create a session with the given set of words
-    abstract CreateWordCompletionSession : textView : ITextView -> wordSpan : SnapshotSpan -> words : string seq -> isForward : bool -> IWordCompletionSession
+    abstract CreateWordCompletionSession: textView: ITextView -> wordSpan: SnapshotSpan -> words: string seq -> isForward: bool -> IWordCompletionSession
 
     /// Raised when the session is created
     [<CLIEvent>]
-    abstract Created : IDelegateEvent<System.EventHandler<WordCompletionSessionEventArgs>>
+    abstract Created: IDelegateEvent<System.EventHandler<WordCompletionSessionEventArgs>>
 
 /// Wraps an ITextUndoTransaction so we can avoid all of the null checks
 type IUndoTransaction =
 
     /// Call when it completes
-    abstract Complete : unit -> unit
+    abstract Complete: unit -> unit
 
     /// Cancels the transaction
-    abstract Cancel : unit -> unit
+    abstract Cancel: unit -> unit
 
     inherit System.IDisposable
 
@@ -196,11 +196,11 @@ type ITextViewUndoTransaction =
 
     /// Adds an ITextUndoPrimitive which will reset the selection to the current
     /// state when redoing this edit
-    abstract AddAfterTextBufferChangePrimitive : unit -> unit
+    abstract AddAfterTextBufferChangePrimitive: unit -> unit
 
     /// Adds an ITextUndoPrimitive which will reset the selection to the current
     /// state when undoing this change
-    abstract AddBeforeTextBufferChangePrimitive : unit -> unit
+    abstract AddBeforeTextBufferChangePrimitive: unit -> unit
 
     inherit IUndoTransaction
 
@@ -216,7 +216,7 @@ type LinkedUndoTransactionFlags =
 type ILinkedUndoTransaction =
 
     /// Complete the linked operation
-    abstract Complete : unit -> unit
+    abstract Complete: unit -> unit
 
     inherit System.IDisposable
 
@@ -224,37 +224,37 @@ type ILinkedUndoTransaction =
 type IUndoRedoOperations = 
 
     /// Is there an open linked undo transaction
-    abstract InLinkedUndoTransaction : bool
+    abstract InLinkedUndoTransaction: bool
 
     /// StatusUtil instance that is used to report errors
-    abstract StatusUtil : IStatusUtil
+    abstract StatusUtil: IStatusUtil
 
     /// Close the IUndoRedoOperations and remove any attached event handlers
-    abstract Close : unit -> unit
+    abstract Close: unit -> unit
 
     /// Creates an Undo Transaction
-    abstract CreateUndoTransaction : name : string -> IUndoTransaction
+    abstract CreateUndoTransaction: name: string -> IUndoTransaction
 
     /// Creates an Undo Transaction specific to the given ITextView.  Use when operations
     /// like caret position need to be a part of the undo / redo stack
-    abstract CreateTextViewUndoTransaction : name : string -> textView : ITextView -> ITextViewUndoTransaction
+    abstract CreateTextViewUndoTransaction: name: string -> textView: ITextView -> ITextViewUndoTransaction
 
     /// Creates a linked undo transaction
-    abstract CreateLinkedUndoTransaction : name : string -> ILinkedUndoTransaction
+    abstract CreateLinkedUndoTransaction: name: string -> ILinkedUndoTransaction
 
     /// Creates a linked undo transaction with flags
-    abstract CreateLinkedUndoTransactionWithFlags : name : string -> flags : LinkedUndoTransactionFlags -> ILinkedUndoTransaction
+    abstract CreateLinkedUndoTransactionWithFlags: name: string -> flags: LinkedUndoTransactionFlags -> ILinkedUndoTransaction
 
     /// Wrap the passed in "action" inside an undo transaction.  This is needed
     /// when making edits such as paste so that the cursor will move properly 
     /// during an undo operation
-    abstract EditWithUndoTransaction<'T> : name : string -> textView : ITextView -> action : (unit -> 'T) -> 'T
+    abstract EditWithUndoTransaction: name: string -> textView: ITextView -> action: (unit -> 'T) -> 'T
 
     /// Redo the last "count" operations
-    abstract Redo : count:int -> unit
+    abstract Redo: count:int -> unit
 
     /// Undo the last "count" operations
-    abstract Undo : count:int -> unit
+    abstract Undo: count:int -> unit
 
 /// Represents a set of changes to a contiguous region. 
 [<RequireQualifiedAccess>]
@@ -268,7 +268,7 @@ type TextChange =
 
     /// Get the insert text resulting from the change if there is any
     member x.InsertText = 
-        let rec inner textChange (text : string) = 
+        let rec inner textChange (text: string) = 
             match textChange with 
             | Insert data -> text + data |> Some
             | DeleteLeft count -> 
@@ -320,7 +320,7 @@ type TextChange =
 
         // Insert can only merge with a previous insert operation.  It can't 
         // merge with any deletes that came before it
-        let reduceInsert before (text : string) =
+        let reduceInsert before (text: string) =
             match before with
             | Insert otherText -> Some (Insert (otherText + text))
             | _ -> None 
@@ -394,7 +394,7 @@ type TextChange =
         | None -> Combination (left, right)
         | Some textChange -> textChange
 
-type TextChangeEventArgs(_textChange : TextChange) =
+type TextChangeEventArgs(_textChange: TextChange) =
     inherit System.EventArgs()
 
     member x.TextChange = _textChange
@@ -416,13 +416,13 @@ type SearchOptions =
 type PatternData = {
 
     /// The Pattern to search for
-    Pattern : string
+    Pattern: string
 
     /// The direction in which the pattern was searched for
-    Path : SearchPath
+    Path: SearchPath
 }
 
-type PatternDataEventArgs(_patternData : PatternData) =
+type PatternDataEventArgs(_patternData: PatternData) =
     inherit System.EventArgs()
 
     member x.PatternData = _patternData
@@ -442,7 +442,7 @@ type SearchOffsetData =
 
     with 
 
-    static member private ParseCore (offset : string) =
+    static member private ParseCore (offset: string) =
         Contract.Requires (offset.Length > 0)
 
         let index = ref 0
@@ -528,7 +528,7 @@ type SearchOffsetData =
             | ';' -> parseSearch () 
             | _ -> SearchOffsetData.None
 
-    static member Parse (offset : string) =
+    static member Parse (offset: string) =
         if StringUtil.IsNullOrEmpty offset then
             SearchOffsetData.None
         else
@@ -538,17 +538,17 @@ type SearchOffsetData =
 [<DebuggerDisplay("{ToString(),nq}")>]
 type SearchData
     (
-        _pattern : string,
-        _offset : SearchOffsetData,
-        _kind : SearchKind,
-        _options : SearchOptions
+        _pattern: string,
+        _offset: SearchOffsetData,
+        _kind: SearchKind,
+        _options: SearchOptions
     ) = 
 
-    new (pattern : string, path : SearchPath, isWrap : bool) =
+    new (pattern: string, path: SearchPath, isWrap: bool) =
         let kind = SearchKind.OfPathAndWrap path isWrap
         SearchData(pattern, SearchOffsetData.None, kind, SearchOptions.Default)
 
-    new (pattern : string, path : SearchPath) = 
+    new (pattern: string, path: SearchPath) = 
         let kind = SearchKind.OfPathAndWrap path true
         SearchData(pattern, SearchOffsetData.None, kind, SearchOptions.Default)
 
@@ -588,7 +588,7 @@ type SearchData
             _kind = other.Kind &&
             _options = other.Options
 
-    override x.Equals(other : obj) = 
+    override x.Equals(other: obj) = 
         match other with
         | :? SearchData as otherSearchData -> x.Equals(otherSearchData);
         | _ -> false 
@@ -604,7 +604,7 @@ type SearchData
 
     /// Parse out a SearchData value given the specific pattern and SearchKind.  The pattern should
     /// not include a beginning / or ?.  That should be removed by this point
-    static member Parse (pattern : string) (searchKind : SearchKind) searchOptions =
+    static member Parse (pattern: string) (searchKind: SearchKind) searchOptions =
         let mutable index = -1
         let mutable i = 1
         let targetChar = 
@@ -627,7 +627,7 @@ type SearchData
     interface System.IEquatable<SearchData> with
         member x.Equals other = x.Equals(other)
 
-type SearchDataEventArgs(_searchData : SearchData) =
+type SearchDataEventArgs(_searchData: SearchData) =
     inherit System.EventArgs()
 
     member x.SearchData = _searchData
@@ -666,7 +666,7 @@ type SearchResult =
         | SearchResult.NotFound (searchData, _) -> searchData
         | SearchResult.Error (searchData, _) -> searchData
 
-type SearchResultEventArgs(_searchResult : SearchResult) = 
+type SearchResultEventArgs(_searchResult: SearchResult) = 
     inherit System.EventArgs()
 
     member x.SearchResult = _searchResult
@@ -679,11 +679,11 @@ type ISearchService =
 
     /// Find the next occurrence of the pattern in the buffer starting at the 
     /// given SnapshotPoint
-    abstract FindNext : searchPoint : SnapshotPoint -> searchData : SearchData -> navigator : ITextStructureNavigator -> SearchResult
+    abstract FindNext: searchPoint: SnapshotPoint -> searchData: SearchData -> navigator: ITextStructureNavigator -> SearchResult
 
     /// Find the next 'count' occurrence of the specified pattern.  Note: The first occurrence won't
     /// match anything at the provided start point.  That will be adjusted appropriately
-    abstract FindNextPattern : searchPoint : SnapshotPoint -> searchPoint : SearchData -> navigator : ITextStructureNavigator -> count : int -> SearchResult
+    abstract FindNextPattern: searchPoint: SnapshotPoint -> searchPoint: SearchData -> navigator: ITextStructureNavigator -> count: int -> SearchResult
 
 /// Column information about the caret in relation to this Motion Result
 [<RequireQualifiedAccess>]
@@ -757,25 +757,25 @@ type MotionKind =
 type MotionResult = {
 
     /// Span of the motion.
-    Span : SnapshotSpan
+    Span: SnapshotSpan
 
     /// In the case this MotionResult is the result of an exclusive promotion, this will 
     /// hold the original SnapshotSpan
-    OriginalSpan : SnapshotSpan
+    OriginalSpan: SnapshotSpan
 
     /// Is the motion forward
-    IsForward : bool
+    IsForward: bool
 
     /// Kind of the motion
-    MotionKind : MotionKind
+    MotionKind: MotionKind
 
     /// The flags on the MotionRelult
-    MotionResultFlags : MotionResultFlags
+    MotionResultFlags: MotionResultFlags
 
     /// In addition to recording the Span, certain motions like j, k, and | also
     /// record data about the desired column within the span.  This value may or may not
     /// be a valid point within the line
-    DesiredColumn : CaretColumn
+    DesiredColumn: CaretColumn
 
 } with
 
@@ -856,13 +856,13 @@ type MotionContext =
 type MotionArgument = {
 
     /// Context of the Motion
-    MotionContext : MotionContext
+    MotionContext: MotionContext
 
     /// Count passed to the operator
-    OperatorCount : int option
+    OperatorCount: int option
 
     /// Count passed to the motion 
-    MotionCount : int option 
+    MotionCount: int option 
 
 } with
 
@@ -1144,16 +1144,16 @@ type Motion =
 and IMotionUtil =
 
     /// The associated ITextView instance
-    abstract TextView : ITextView
+    abstract TextView: ITextView
 
     /// Get the specified Motion value 
-    abstract GetMotion : motion : Motion -> motionArgument : MotionArgument -> MotionResult option 
+    abstract GetMotion: motion: Motion -> motionArgument: MotionArgument -> MotionResult option 
 
     /// Get the specific text object motion from the given SnapshotPoint
-    abstract GetTextObject : motion : Motion -> point : SnapshotPoint -> MotionResult option
+    abstract GetTextObject: motion: Motion -> point: SnapshotPoint -> MotionResult option
 
     /// Get the expanded tag point for the given tag block kind
-    abstract GetExpandedTagBlock : point : SnapshotPoint -> kind : TagBlockKind -> SnapshotSpan option
+    abstract GetExpandedTagBlock: point: SnapshotPoint -> kind: TagBlockKind -> SnapshotSpan option
 
 type ModeKind = 
     | Normal = 1
@@ -1298,7 +1298,7 @@ type KeyInputSet =
         | ManyKeyInputs list -> ManyKeyInputs (list @ [ki])
 
     /// Does the name start with the given KeyInputSet
-    member x.StartsWith (targetName : KeyInputSet) = 
+    member x.StartsWith (targetName: KeyInputSet) = 
         match targetName,x with
         | Empty, _ -> true
         | OneKeyInput leftKi, OneKeyInput rightKi ->  leftKi = rightKi
@@ -1310,7 +1310,7 @@ type KeyInputSet =
                 SeqUtil.contentsEqual (left |> Seq.ofList) (right |> Seq.ofList |> Seq.take left.Length)
             else false
 
-    member x.CompareTo (other : KeyInputSet) = 
+    member x.CompareTo (other: KeyInputSet) = 
         let rec inner (left:KeyInput list) (right:KeyInput list) =
             if left.IsEmpty && right.IsEmpty then 0
             elif left.IsEmpty then -1
@@ -1391,7 +1391,7 @@ module KeyInputSetUtil =
         |> Seq.map KeyInputUtil.VimKeyToKeyInput
         |> OfSeq
 
-    let Combine (left : KeyInputSet) (right : KeyInputSet) =
+    let Combine (left: KeyInputSet) (right: KeyInputSet) =
         let all = left.KeyInputs @ right.KeyInputs
         OfList all
 
@@ -1441,13 +1441,13 @@ type KeyMappingResult =
 [<DebuggerDisplay("{ToString()}")>]
 type CharacterSpan = 
 
-    val private _start : SnapshotPoint
+    val private _start: SnapshotPoint
 
-    val private _lineCount : int
+    val private _lineCount: int
 
-    val private _lastLineLength : int
+    val private _lastLineLength: int
 
-    new (start : SnapshotPoint, lineCount : int, lastLineLength : int) =
+    new (start: SnapshotPoint, lineCount: int, lastLineLength: int) =
 
         // Don't let the last line of the CharacterSpan end partially into a line 
         // break.  Encompass the entire line break instead 
@@ -1465,7 +1465,7 @@ type CharacterSpan =
             _lineCount = lineCount
             _lastLineLength = lastLineLength }
 
-    new (span : SnapshotSpan) = 
+    new (span: SnapshotSpan) = 
         let lineCount = SnapshotSpanUtil.GetLineCount span
         let lastLine = SnapshotSpanUtil.GetLastLine span
         let lastLineLength = 
@@ -1476,7 +1476,7 @@ type CharacterSpan =
                 max 0 diff
         CharacterSpan(span.Start, lineCount, lastLineLength)
 
-    new (startPoint : SnapshotPoint, endPoint: SnapshotPoint) =
+    new (startPoint: SnapshotPoint, endPoint: SnapshotPoint) =
         let span = SnapshotSpan(startPoint, endPoint)
         CharacterSpan(span)
 
@@ -1497,7 +1497,7 @@ type CharacterSpan =
 
     /// The last point included in the CharacterSpan
     member x.Last = 
-        let endPoint : SnapshotPoint = x.End
+        let endPoint: SnapshotPoint = x.End
         if endPoint.Position = x.Start.Position then
             None
         else
@@ -1552,10 +1552,10 @@ type CharacterSpan =
 [<Struct>]
 type BlockSpan =
 
-    val private _startPoint : SnapshotPoint
-    val private _tabStop : int
-    val private _spaces : int
-    val private _height : int
+    val private _startPoint: SnapshotPoint
+    val private _tabStop: int
+    val private _spaces: int
+    val private _height: int
 
     new (startPoint, tabStop, spaces, height) = 
         { _startPoint = startPoint; _tabStop = tabStop; _spaces = spaces; _height = height }
@@ -1600,7 +1600,7 @@ type BlockSpan =
     member x.TextBuffer =  x.Start.Snapshot.TextBuffer
 
     /// Get the NonEmptyCollection<SnapshotSpan> for the given block information
-    member x.BlockSpans : NonEmptyCollection<SnapshotSpan> =
+    member x.BlockSpans: NonEmptyCollection<SnapshotSpan> =
         let snapshot = SnapshotPointUtil.GetSnapshot x.Start
         let offset = x.ColumnSpaces
         let lineNumber = SnapshotPointUtil.GetLineNumber x.Start
@@ -1621,7 +1621,7 @@ type BlockSpan =
     /// Get a NonEmptyCollection indicating of the SnapshotSpan that each line of
     /// this block spans, along with the offset (measured in cells) of the block
     /// with respect to the start point and end point.
-    member x.BlockOverlapSpans : NonEmptyCollection<SnapshotOverlapSpan> =
+    member x.BlockOverlapSpans: NonEmptyCollection<SnapshotOverlapSpan> =
         let snapshot = SnapshotPointUtil.GetSnapshot x.Start
         let offset = x.ColumnSpaces
         let lineNumber = SnapshotPointUtil.GetLineNumber x.Start
@@ -1649,7 +1649,7 @@ type BlockSpan =
     /// height and width.  The start of the BlockSpan is not necessarily the Start of the SnapshotSpan
     /// as an End column which occurs before the start could cause the BlockSpan start to be before the 
     /// SnapshotSpan start
-    static member CreateForSpan (span : SnapshotSpan) tabStop =
+    static member CreateForSpan (span: SnapshotSpan) tabStop =
         let startPoint, width = 
             let startColumnSpaces = SnapshotPointUtil.GetSpacesToPoint span.Start tabStop
             let endColumnSpaces = SnapshotPointUtil.GetSpacesToPoint span.End tabStop
@@ -1774,7 +1774,7 @@ type VisualSpan =
             x
 
     /// Select the given VisualSpan in the ITextView
-    member x.Select (textView : ITextView) path =
+    member x.Select (textView: ITextView) path =
 
         // Select the given SnapshotSpan
         let selectSpan startPoint endPoint = 
@@ -1847,7 +1847,7 @@ type VisualSpan =
     /// Create the VisualSpan based on the specified points.  The activePoint is assumed
     /// to be the end of the selection and hence not included (exclusive) just as it is 
     /// in ITextSelection
-    static member CreateForSelectionPoints visualKind (anchorPoint : SnapshotPoint) (activePoint : SnapshotPoint) tabStop =
+    static member CreateForSelectionPoints visualKind (anchorPoint: SnapshotPoint) (activePoint: SnapshotPoint) tabStop =
 
         match visualKind with
         | VisualKind.Character ->
@@ -1876,7 +1876,7 @@ type VisualSpan =
 
     /// Create a VisualSelection based off of the current selection.  If no selection is present
     /// then an empty VisualSpan will be created at the caret
-    static member CreateForSelection (textView : ITextView) visualKind tabStop =
+    static member CreateForSelection (textView: ITextView) visualKind tabStop =
         let selection = textView.Selection
         if selection.IsEmpty then
             let caretPoint = TextViewUtil.GetCaretPoint textView
@@ -1896,7 +1896,7 @@ type VisualSpan =
                 let visualSpan = VisualSpan.CreateForSelectionPoints visualKind anchorPoint activePoint tabStop
                 visualSpan.AdjustForExtendIntoLineBreak selection.End.IsInVirtualSpace
 
-    static member CreateForSpan (span : SnapshotSpan) visualKind tabStop =
+    static member CreateForSpan (span: SnapshotSpan) visualKind tabStop =
         match visualKind with
         | VisualKind.Character -> CharacterSpan(span) |> Character
         | VisualKind.Line -> span |> SnapshotLineRangeUtil.CreateForSpan |> Line
@@ -1992,7 +1992,7 @@ type VisualSelection =
     /// specified SelectionKind.  
     member x.GetCaretPoint selectionKind = 
 
-        let getAdjustedEnd (span : SnapshotSpan) = 
+        let getAdjustedEnd (span: SnapshotSpan) = 
             if span.Length = 0 then
                 span.Start
             else
@@ -2043,7 +2043,7 @@ type VisualSelection =
 
 
     /// Select the given VisualSpan in the ITextView
-    member x.Select (textView : ITextView) =
+    member x.Select (textView: ITextView) =
         let path =
             match x with
             | Character (_, path) -> path
@@ -2063,7 +2063,7 @@ type VisualSelection =
             VisualSelection.Block (blockSpan, BlockCaretLocation.BottomRight)
 
     /// Create the VisualSelection over the VisualSpan with the specified caret location
-    static member Create (visualSpan : VisualSpan) path (caretPoint : SnapshotPoint) =
+    static member Create (visualSpan: VisualSpan) path (caretPoint: SnapshotPoint) =
         match visualSpan with
         | VisualSpan.Character characterSpan ->
             Character (characterSpan, path)
@@ -2089,7 +2089,7 @@ type VisualSelection =
     /// Create a VisualSelection for the given anchor point and caret.  The position, anchorPoint or 
     /// caretPoint, which is greater position wise is the last point included in the selection.  It
     /// is inclusive
-    static member CreateForPoints visualKind (anchorPoint : SnapshotPoint) (caretPoint : SnapshotPoint) tabStop =
+    static member CreateForPoints visualKind (anchorPoint: SnapshotPoint) (caretPoint: SnapshotPoint) tabStop =
 
         let createBlock () =
             let anchorSpaces = SnapshotPointUtil.GetSpacesToPoint anchorPoint tabStop
@@ -2139,7 +2139,7 @@ type VisualSelection =
     /// Create a VisualSelection based off of the current selection and position of the caret.  The
     /// SelectionKind should specify what the current mode is (or the mode which produced the 
     /// active ITextSelection)
-    static member CreateForSelection (textView : ITextView) visualKind selectionKind tabStop =
+    static member CreateForSelection (textView: ITextView) visualKind selectionKind tabStop =
         let caretPoint = TextViewUtil.GetCaretPoint textView
         let visualSpan = VisualSpan.CreateForSelection textView visualKind tabStop
 
@@ -2195,13 +2195,13 @@ type VisualSelection =
 [<RequireQualifiedAccess>]
 [<NoComparison>]
 type StoredVisualSelection =
-    | Character of width : int
-    | CharacterLine of lineCount : int * lastLineOffset : int 
-    | Line of lineCount : int
+    | Character of width: int
+    | CharacterLine of lineCount: int * lastLineOffset: int 
+    | Line of lineCount: int
 
     with 
 
-    member x.GetVisualSelection (point : SnapshotPoint) count =
+    member x.GetVisualSelection (point: SnapshotPoint) count =
 
         // Get the point which is 'count' columns forward from the passed in point (exclusive). If the point
         // extends past the line break the point past the line break will be returned if possible.
@@ -2399,20 +2399,20 @@ type CommandFlags =
 type MotionData = {
 
     /// The associated Motion value
-    Motion : Motion
+    Motion: Motion
 
     /// The argument which should be supplied to the given Motion
-    MotionArgument : MotionArgument
+    MotionArgument: MotionArgument
 }
 
 /// Data needed to execute a command
 type CommandData = {
 
     /// The raw count provided to the command
-    Count : int option 
+    Count: int option 
 
     /// The register name specified for the command 
-    RegisterName : RegisterName option
+    RegisterName: RegisterName option
 
 } with
 
@@ -2425,7 +2425,7 @@ type CommandData = {
 /// to ease testing requirements.  In order to do this and support Ping we need a 
 /// separate type here to wrap the Func to be comparable.  Does so in a reference 
 /// fashion
-type PingData (_func : CommandData -> CommandResult) = 
+type PingData (_func: CommandData -> CommandResult) = 
 
     member x.Function = _func
 
@@ -3109,26 +3109,26 @@ type BindResult<'T> =
 
     /// Used to compose to BindResult<'T> functions together by forwarding from
     /// one to the other once the value is completed
-    member x.Map (mapFunc : 'T -> BindResult<'U>) : BindResult<'U> =
+    member x.Map (mapFunc: 'T -> BindResult<'U>): BindResult<'U> =
         match x with
         | Complete value -> mapFunc value 
-        | NeedMoreInput (bindData : BindData<'T>) -> NeedMoreInput (bindData.Map mapFunc)
+        | NeedMoreInput (bindData: BindData<'T>) -> NeedMoreInput (bindData.Map mapFunc)
         | Error -> Error
         | Cancelled -> Cancelled
 
     /// Used to convert a BindResult<'T>.Completed to BindResult<'U>.Completed through a conversion
     /// function
-    member x.Convert (convertFunc : 'T -> 'U) : BindResult<'U> = 
+    member x.Convert (convertFunc: 'T -> 'U): BindResult<'U> = 
         x.Map (fun value -> convertFunc value |> BindResult.Complete)
 
 and BindData<'T> = {
 
     /// The optional KeyRemapMode which should be used when binding
     /// the next KeyInput in the sequence
-    KeyRemapMode : KeyRemapMode 
+    KeyRemapMode: KeyRemapMode 
 
     /// Function to call to get the BindResult for this data
-    BindFunction : KeyInput -> BindResult<'T>
+    BindFunction: KeyInput -> BindResult<'T>
 
 } with
 
@@ -3154,7 +3154,7 @@ and BindData<'T> = {
 
     /// Very similar to the Convert function.  This will instead map a BindData<'T>.Completed
     /// to a BindData<'U> of any form 
-    member x.Map<'U> (mapFunc : 'T -> BindResult<'U>) : BindData<'U> = 
+    member x.Map<'U> (mapFunc: 'T -> BindResult<'U>): BindData<'U> = 
 
         let rec inner bindFunction keyInput = 
             match x.BindFunction keyInput with
@@ -3168,7 +3168,7 @@ and BindData<'T> = {
     /// Often types bindings need to compose together because we need an inner binding
     /// to succeed so we can create a projected value.  This function will allow us
     /// to translate a BindResult<'T>.Completed -> BindResult<'U>.Completed
-    member x.Convert (convertFunc : 'T -> 'U) : BindData<'U> = 
+    member x.Convert (convertFunc: 'T -> 'U): BindData<'U> = 
         x.Map (fun value -> convertFunc value |> BindResult.Complete)
 
 /// Several types of BindData<'T> need to take an action when a binding begins against
@@ -3270,27 +3270,27 @@ type CommandBinding =
 and ICommandUtil = 
 
     /// Run a normal command
-    abstract RunNormalCommand : command : NormalCommand -> commandData : CommandData -> CommandResult
+    abstract RunNormalCommand: command: NormalCommand -> commandData: CommandData -> CommandResult
 
     /// Run a visual command
-    abstract RunVisualCommand : command : VisualCommand -> commandData: CommandData -> visualSpan : VisualSpan -> CommandResult
+    abstract RunVisualCommand: command: VisualCommand -> commandData: CommandData -> visualSpan: VisualSpan -> CommandResult
 
     /// Run a insert command
-    abstract RunInsertCommand : command : InsertCommand -> CommandResult
+    abstract RunInsertCommand: command: InsertCommand -> CommandResult
 
     /// Run a command
-    abstract RunCommand : command : Command -> CommandResult
+    abstract RunCommand: command: Command -> CommandResult
 
 type internal IInsertUtil = 
 
     /// Run a insert command
-    abstract RunInsertCommand : insertCommand : InsertCommand -> CommandResult
+    abstract RunInsertCommand: insertCommand: InsertCommand -> CommandResult
 
     /// Repeat the given edit series. 
-    abstract RepeatEdit : textChange : TextChange -> addNewLines : bool -> count : int -> unit
+    abstract RepeatEdit: textChange: TextChange -> addNewLines: bool -> count: int -> unit
 
     /// Repeat the given edit series. 
-    abstract RepeatBlock : command : InsertCommand -> blockSpan : BlockSpan -> string option
+    abstract RepeatBlock: command: InsertCommand -> blockSpan: BlockSpan -> string option
 
 /// Contains the stored information about a Visual Span.  This instance *will* be 
 /// stored for long periods of time and used to repeat a Command instance across
@@ -3300,14 +3300,14 @@ type StoredVisualSpan =
 
     /// Storing a character wise span.  Need to know the line count and the offset 
     /// in the last line for the end.  
-    | Character of lineCount : int * lastLineLength : int
+    | Character of lineCount: int * lastLineLength: int
 
     /// Storing a line wise span just stores the count of lines
-    | Line of count : int
+    | Line of count: int
 
     /// Storing of a block span records the length of the span and the number of
     /// lines which should be affected by the Span
-    | Block of width : int * height : int
+    | Block of width: int * height: int
 
     with
 
@@ -3358,7 +3358,7 @@ type StoredCommand =
         | LinkedCommand (_, right) -> right.LastCommand
 
     /// Create a StoredCommand instance from the given Command value
-    static member OfCommand command (commandBinding : CommandBinding) = 
+    static member OfCommand command (commandBinding: CommandBinding) = 
         match command with 
         | Command.NormalCommand (command, data) -> 
             StoredCommand.NormalCommand (command, data, commandBinding.CommandFlags)
@@ -3427,17 +3427,17 @@ type MotionBinding =
 type CommandRunData = {
 
     /// The binding which the command was invoked from
-    CommandBinding : CommandBinding
+    CommandBinding: CommandBinding
 
     /// The Command which was run
-    Command : Command
+    Command: Command
 
     /// The result of the Command Run
-    CommandResult : CommandResult
+    CommandResult: CommandResult
 
 }
 
-type CommandRunDataEventArgs(_commandRunData : CommandRunData) =
+type CommandRunDataEventArgs(_commandRunData: CommandRunData) =
     inherit System.EventArgs()
 
     member x.CommandRunData = _commandRunData
@@ -3447,67 +3447,67 @@ type CommandRunDataEventArgs(_commandRunData : CommandRunData) =
 type IMotionCapture =
 
     /// Associated ITextView
-    abstract TextView : ITextView
+    abstract TextView: ITextView
     
     /// Set of MotionBinding values supported
-    abstract MotionBindings : MotionBinding list
+    abstract MotionBindings: MotionBinding list
 
     /// Get the motion and count starting with the given KeyInput
-    abstract GetMotionAndCount : KeyInput -> BindResult<Motion * int option>
+    abstract GetMotionAndCount: KeyInput -> BindResult<Motion * int option>
 
     /// Get the motion with the provided KeyInput
-    abstract GetMotion : KeyInput -> BindResult<Motion>
+    abstract GetMotion: KeyInput -> BindResult<Motion>
 
 /// Responsible for managing a set of Commands and running them
 type ICommandRunner =
 
     /// Set of Commands currently supported
-    abstract Commands : CommandBinding seq
+    abstract Commands: CommandBinding seq
 
     /// In certain circumstances a specific type of key remapping needs to occur for input.  This 
     /// option will have the appropriate value in those circumstances.  For example while processing
     /// the {char} argument to f,F,t or T the Language mapping will be used
-    abstract KeyRemapMode : KeyRemapMode 
+    abstract KeyRemapMode: KeyRemapMode 
 
     /// True when in the middle of a count operation
-    abstract InCount : bool
+    abstract InCount: bool
 
     /// Is the command runner currently binding a command which needs to explicitly handle escape
-    abstract IsHandlingEscape : bool
+    abstract IsHandlingEscape: bool
 
     /// True if waiting on more input
-    abstract IsWaitingForMoreInput : bool
+    abstract IsWaitingForMoreInput: bool
 
     /// True if the current command has a register associated with it 
-    abstract HasRegisterName : bool 
+    abstract HasRegisterName: bool 
 
     /// True if the current command has a count associated with it 
-    abstract HasCount : bool
+    abstract HasCount: bool
 
     /// When HasRegister is true this has the associated RegisterName 
-    abstract RegisterName : RegisterName
+    abstract RegisterName: RegisterName
 
     /// When HasCount is true this has the associated count
-    abstract Count : int 
+    abstract Count: int 
 
     /// Add a Command.  If there is already a Command with the same name an exception will
     /// be raised
-    abstract Add : CommandBinding -> unit
+    abstract Add: CommandBinding -> unit
 
     /// Remove a command with the specified name
-    abstract Remove : KeyInputSet -> unit
+    abstract Remove: KeyInputSet -> unit
 
     /// Process the given KeyInput.  If the command completed it will return a result.  A
     /// None value implies more input is needed to finish the operation
-    abstract Run : KeyInput -> BindResult<CommandRunData>
+    abstract Run: KeyInput -> BindResult<CommandRunData>
 
     /// If currently waiting for more input on a Command, reset to the 
     /// initial state
-    abstract ResetState : unit -> unit
+    abstract ResetState: unit -> unit
 
     /// Raised when a command is successfully run
     [<CLIEvent>]
-    abstract CommandRan : IDelegateEvent<System.EventHandler<CommandRunDataEventArgs>>
+    abstract CommandRan: IDelegateEvent<System.EventHandler<CommandRunDataEventArgs>>
 
 /// Information about a single key mapping
 [<NoComparison>]
@@ -3515,48 +3515,48 @@ type ICommandRunner =
 type KeyMapping = {
 
     // The LHS of the key mapping
-    Left : KeyInputSet
+    Left: KeyInputSet
 
     // The RHS of the key mapping
-    Right : KeyInputSet 
+    Right: KeyInputSet 
 
     // Does the expansion participate in remapping
-    AllowRemap : bool
+    AllowRemap: bool
 }
 
 /// Manages the key map for Vim.  Responsible for handling all key remappings
 type IKeyMap =
 
     /// Is the mapping of the 0 key currently enabled
-    abstract IsZeroMappingEnabled : bool with get, set 
+    abstract IsZeroMappingEnabled: bool with get, set 
 
     /// Get all mappings for the specified mode
-    abstract GetKeyMappingsForMode : KeyRemapMode -> KeyMapping list
+    abstract GetKeyMappingsForMode: KeyRemapMode -> KeyMapping list
 
     /// Get the mapping for the provided KeyInput for the given mode.  If no mapping exists
     /// then a sequence of a single element containing the passed in key will be returned.  
     /// If a recursive mapping is detected it will not be persued and treated instead as 
     /// if the recursion did not exist
-    abstract GetKeyMapping : KeyInputSet -> KeyRemapMode -> KeyMappingResult
+    abstract GetKeyMapping: KeyInputSet -> KeyRemapMode -> KeyMappingResult
 
     /// Map the given key sequence without allowing for remaping
-    abstract MapWithNoRemap : lhs : string -> rhs : string -> KeyRemapMode -> bool
+    abstract MapWithNoRemap: lhs: string -> rhs: string -> KeyRemapMode -> bool
 
     /// Map the given key sequence allowing for a remap 
-    abstract MapWithRemap : lhs : string -> rhs : string -> KeyRemapMode -> bool
+    abstract MapWithRemap: lhs: string -> rhs: string -> KeyRemapMode -> bool
 
     /// Unmap the specified key sequence for the specified mode
-    abstract Unmap : lhs : string -> KeyRemapMode -> bool
+    abstract Unmap: lhs: string -> KeyRemapMode -> bool
 
     /// Unmap the specified key sequence for the specified mode by considering
     /// the passed in value to be an expansion
-    abstract UnmapByMapping : righs : string -> KeyRemapMode -> bool
+    abstract UnmapByMapping: righs: string -> KeyRemapMode -> bool
 
     /// Clear the Key mappings for the specified mode
-    abstract Clear : KeyRemapMode -> unit
+    abstract Clear: KeyRemapMode -> unit
 
     /// Clear the Key mappings for all modes
-    abstract ClearAll : unit -> unit
+    abstract ClearAll: unit -> unit
 
 /// Jump list information associated with an IVimBuffer.  This is maintained as a forward
 /// and backwards traversable list of points with which to navigate to
@@ -3568,89 +3568,89 @@ type IKeyMap =
 type IJumpList = 
 
     /// Associated ITextView instance
-    abstract TextView : ITextView
+    abstract TextView: ITextView
 
     /// Current value in the jump list.  Will be None if we are not currently traversing the
     /// jump list
-    abstract Current : SnapshotPoint option
+    abstract Current: SnapshotPoint option
 
     /// Current index into the jump list.  Will be None if we are not currently traversing
     /// the jump list
-    abstract CurrentIndex : int option
+    abstract CurrentIndex: int option
 
     /// True if we are currently traversing the list
-    abstract IsTraversing : bool
+    abstract IsTraversing: bool
 
     /// Get all of the jumps in the jump list.  Returns in order of most recent to oldest
-    abstract Jumps : VirtualSnapshotPoint list
+    abstract Jumps: VirtualSnapshotPoint list
 
     /// The SnapshotPoint when the last jump occurred
-    abstract LastJumpLocation : VirtualSnapshotPoint option
+    abstract LastJumpLocation: VirtualSnapshotPoint option
 
     /// Add a given SnapshotPoint to the jump list.  This will reset Current to point to 
     /// the begining of the jump list
-    abstract Add : SnapshotPoint -> unit
+    abstract Add: SnapshotPoint -> unit
 
     /// Clear out all of the stored jump information.  Removes all tracking information from
     /// the IJumpList
-    abstract Clear : unit -> unit
+    abstract Clear: unit -> unit
 
     /// Move to the previous point in the jump list.  This will fail if we are not traversing
     /// the list or at the end 
-    abstract MoveOlder : int -> bool
+    abstract MoveOlder: int -> bool
 
     /// Move to the next point in the jump list.  This will fail if we are not traversing
     /// the list or at the start
-    abstract MoveNewer : int -> bool
+    abstract MoveNewer: int -> bool
 
     /// Set the last jump location to the given line and column
-    abstract SetLastJumpLocation : line : int -> column : int -> unit
+    abstract SetLastJumpLocation: line: int -> column: int -> unit
 
     /// Start a traversal of the list
-    abstract StartTraversal : unit -> unit
+    abstract StartTraversal: unit -> unit
 
 type IIncrementalSearch = 
 
     /// True when a search is occurring
-    abstract InSearch : bool
+    abstract InSearch: bool
 
     /// True when the search is in a paste wait state
-    abstract InPasteWait : bool
+    abstract InPasteWait: bool
 
     /// When in the middle of a search this will return the SearchData for 
     /// the search
-    abstract CurrentSearchData : SearchData 
+    abstract CurrentSearchData: SearchData 
 
     /// When in the middle of a search this will return the SearchResult for the 
     /// search
-    abstract CurrentSearchResult : SearchResult 
+    abstract CurrentSearchResult: SearchResult 
 
     /// When in the middle of a search this will return the actual text which
     /// is being searched for
-    abstract CurrentSearchText : string
+    abstract CurrentSearchText: string
 
     /// The ITextStructureNavigator used for finding 'word' values in the ITextBuffer
-    abstract WordNavigator : ITextStructureNavigator
+    abstract WordNavigator: ITextStructureNavigator
 
     /// Begin an incremental search in the ITextView
-    abstract Begin : path : SearchPath -> BindData<SearchResult>
+    abstract Begin: path: SearchPath -> BindData<SearchResult>
 
     /// Cancel an incremental search which is currently in progress
-    abstract Cancel : unit -> unit
+    abstract Cancel: unit -> unit
 
     /// Reset the current search to be the given value 
-    abstract ResetSearch : pattern : string -> unit
+    abstract ResetSearch: pattern: string -> unit
 
     [<CLIEvent>]
-    abstract CurrentSearchUpdated : IDelegateEvent<System.EventHandler<SearchResultEventArgs>>
+    abstract CurrentSearchUpdated: IDelegateEvent<System.EventHandler<SearchResultEventArgs>>
 
     [<CLIEvent>]
-    abstract CurrentSearchCompleted : IDelegateEvent<System.EventHandler<SearchResultEventArgs>>
+    abstract CurrentSearchCompleted: IDelegateEvent<System.EventHandler<SearchResultEventArgs>>
 
     [<CLIEvent>]
-    abstract CurrentSearchCancelled : IDelegateEvent<System.EventHandler<SearchDataEventArgs>>
+    abstract CurrentSearchCancelled: IDelegateEvent<System.EventHandler<SearchDataEventArgs>>
 
-type RecordRegisterEventArgs(_register : Register, _isAppend : bool) =
+type RecordRegisterEventArgs(_register: Register, _isAppend: bool) =
     inherit System.EventArgs()
     
     member x.Register = _register
@@ -3661,26 +3661,26 @@ type RecordRegisterEventArgs(_register : Register, _isAppend : bool) =
 type IMacroRecorder =
 
     /// The current recording 
-    abstract CurrentRecording : KeyInput list option
+    abstract CurrentRecording: KeyInput list option
 
     /// Is a macro currently recording
-    abstract IsRecording : bool
+    abstract IsRecording: bool
 
     /// Start recording a macro into the specified Register.  Will fail if the recorder
     /// is already recording
-    abstract StartRecording : register : Register -> isAppend : bool -> unit
+    abstract StartRecording: register: Register -> isAppend: bool -> unit
 
     /// Stop recording a macro.  Will fail if it's not actually recording
-    abstract StopRecording : unit -> unit
+    abstract StopRecording: unit -> unit
 
     /// Raised when a macro recording is started.  Passes the Register where the recording
     /// will take place.  The bool is whether the record is an append or not
     [<CLIEvent>]
-    abstract RecordingStarted : IDelegateEvent<System.EventHandler<RecordRegisterEventArgs>>
+    abstract RecordingStarted: IDelegateEvent<System.EventHandler<RecordRegisterEventArgs>>
 
     /// Raised when a macro recording is completed.
     [<CLIEvent>]
-    abstract RecordingStopped : IDelegateEvent<System.EventHandler>
+    abstract RecordingStopped: IDelegateEvent<System.EventHandler>
 
 [<RequireQualifiedAccess>]
 type ProcessResult = 
@@ -3768,21 +3768,21 @@ type ProcessResult =
         | CommandResult.Completed modeSwitch -> Handled modeSwitch
         | CommandResult.Error -> Error
 
-type StringEventArgs(_message : string) =
+type StringEventArgs(_message: string) =
     inherit System.EventArgs()
 
     member x.Message = _message
 
     override x.ToString() = _message
 
-type KeyInputEventArgs (_keyInput : KeyInput) = 
+type KeyInputEventArgs (_keyInput: KeyInput) = 
     inherit System.EventArgs()
 
     member x.KeyInput = _keyInput
 
     override x.ToString() = _keyInput.ToString()
 
-type KeyInputStartEventArgs (_keyInput : KeyInput) =
+type KeyInputStartEventArgs (_keyInput: KeyInput) =
     inherit KeyInputEventArgs(_keyInput)
 
     let mutable _handled = false
@@ -3793,14 +3793,14 @@ type KeyInputStartEventArgs (_keyInput : KeyInput) =
 
     override x.ToString() = _keyInput.ToString()
 
-type KeyInputSetEventArgs (_keyInputSet : KeyInputSet) = 
+type KeyInputSetEventArgs (_keyInputSet: KeyInputSet) = 
     inherit System.EventArgs()
 
     member x.KeyInputSet = _keyInputSet
 
     override x.ToString() = _keyInputSet.ToString()
 
-type KeyInputProcessedEventArgs(_keyInput : KeyInput, _processResult : ProcessResult) =
+type KeyInputProcessedEventArgs(_keyInput: KeyInput, _processResult: ProcessResult) =
     inherit System.EventArgs()
 
     member x.KeyInput = _keyInput
@@ -3813,7 +3813,7 @@ type KeyInputProcessedEventArgs(_keyInput : KeyInput, _processResult : ProcessRe
 /// of history lists in Vim (:help history).  
 type HistoryList () = 
 
-    let mutable _list : string list = List.empty
+    let mutable _list: string list = List.empty
     let mutable _limit = VimConstants.DefaultHistoryLength
     let mutable _totalCount = 0
 
@@ -3873,118 +3873,118 @@ type HistoryList () =
 type internal IHistoryClient<'TData, 'TResult> =
 
     /// History list used by this client
-    abstract HistoryList : HistoryList
+    abstract HistoryList: HistoryList
 
     /// Get the register map 
-    abstract RegisterMap : IRegisterMap
+    abstract RegisterMap: IRegisterMap
 
     /// What remapping mode if any should be used for key input
-    abstract RemapMode : KeyRemapMode
+    abstract RemapMode: KeyRemapMode
 
     /// Beep
-    abstract Beep : unit -> unit
+    abstract Beep: unit -> unit
 
     /// Process the new command with the previous TData value
-    abstract ProcessCommand : data : 'TData -> command : string -> 'TData
+    abstract ProcessCommand: data: 'TData -> command: string -> 'TData
 
     /// Called when the command is completed.  The last valid TData and command
     /// string will be provided
-    abstract Completed : data : 'TData -> command : string -> 'TResult
+    abstract Completed: data: 'TData -> command: string -> 'TResult
 
     /// Called when the command is cancelled.  The last valid TData value will
     /// be provided
-    abstract Cancelled : data : 'TData -> unit
+    abstract Cancelled: data: 'TData -> unit
 
 /// An active use of an IHistoryClient instance 
 type internal IHistorySession<'TData, 'TResult> =
 
     /// The IHistoryClient this session is using 
-    abstract HistoryClient : IHistoryClient<'TData, 'TResult>
+    abstract HistoryClient: IHistoryClient<'TData, 'TResult>
 
     /// The current command that is being used 
-    abstract Command : string 
+    abstract Command: string 
 
     /// Is the session currently waiting for a register paste operation to complete
-    abstract InPasteWait : bool
+    abstract InPasteWait: bool
 
     /// The current client data 
-    abstract ClientData : 'TData
+    abstract ClientData: 'TData
 
     /// Cancel the IHistorySession
-    abstract Cancel : unit -> unit
+    abstract Cancel: unit -> unit
 
     /// Reset the command to the current value
-    abstract ResetCommand : string -> unit
+    abstract ResetCommand: string -> unit
 
     /// Create an BindDataStorage for this session which will process relevant KeyInput values
     /// as manipulating the current history
-    abstract CreateBindDataStorage : unit -> BindDataStorage<'TResult>
+    abstract CreateBindDataStorage: unit -> BindDataStorage<'TResult>
 
 /// Represents shared state which is available to all IVimBuffer instances.
 type IVimData = 
 
     /// The set of supported auto command groups
-    abstract AutoCommandGroups : AutoCommandGroup list with get, set
+    abstract AutoCommandGroups: AutoCommandGroup list with get, set
 
     /// The set of auto commands
-    abstract AutoCommands : AutoCommand list with get, set
+    abstract AutoCommands: AutoCommand list with get, set
 
     /// The current directory Vim is positioned in
-    abstract CurrentDirectory : string with get, set
+    abstract CurrentDirectory: string with get, set
 
-    /// The history of the : command list
-    abstract CommandHistory : HistoryList with get, set
+    /// The history of the: command list
+    abstract CommandHistory: HistoryList with get, set
 
     /// This is the pattern for which all occurences should be highlighted in the visible
     /// IVimBuffer instances.  When this value is empty then no pattern should be highlighted
-    abstract DisplayPattern : string
+    abstract DisplayPattern: string
 
     /// The ordered list of incremental search values
-    abstract SearchHistory : HistoryList with get, set
+    abstract SearchHistory: HistoryList with get, set
 
     /// Motion function used with the last f, F, t or T motion.  The 
     /// first item in the tuple is the forward version and the second item
     /// is the backwards version
-    abstract LastCharSearch : (CharSearchKind * SearchPath * char) option with get, set
+    abstract LastCharSearch: (CharSearchKind * SearchPath * char) option with get, set
 
     /// The last command which was ran 
-    abstract LastCommand : StoredCommand option with get, set
+    abstract LastCommand: StoredCommand option with get, set
 
     /// The last command line which was ran
-    abstract LastCommandLine : string with get, set
+    abstract LastCommandLine: string with get, set
 
     /// The last shell command that was run
-    abstract LastShellCommand : string option with get, set
+    abstract LastShellCommand: string option with get, set
 
     /// The last macro register which was run
-    abstract LastMacroRun : char option with get, set
+    abstract LastMacroRun: char option with get, set
 
     /// Last pattern searched for in any buffer.
-    abstract LastSearchData : SearchData with get, set
+    abstract LastSearchData: SearchData with get, set
 
     /// Data for the last substitute command performed
-    abstract LastSubstituteData : SubstituteData option with get, set
+    abstract LastSubstituteData: SubstituteData option with get, set
 
     /// Last text inserted into any buffer. Used for the '.' register
-    abstract LastTextInsert : string option with get, set
+    abstract LastTextInsert: string option with get, set
 
     /// Last, unescaped, visual selection that occurred
-    abstract LastVisualSelection : StoredVisualSelection option with get, set
+    abstract LastVisualSelection: StoredVisualSelection option with get, set
 
     /// The previous value of the current directory Vim is positioned in
-    abstract PreviousCurrentDirectory : string
+    abstract PreviousCurrentDirectory: string
 
     /// Suspend the display of patterns in the visible IVimBuffer instances.  This is usually
     /// associated with the use of the :nohl command
-    abstract SuspendDisplayPattern : unit -> unit
+    abstract SuspendDisplayPattern: unit -> unit
 
     /// Resume the display of patterns in the visible IVimBuffer instance.  If the display
     /// isn't currently suspended then tihs command will have no effect on the system
-    abstract ResumeDisplayPattern : unit -> unit
+    abstract ResumeDisplayPattern: unit -> unit
 
     /// Raised when the DisplayPattern property changes
     [<CLIEvent>]
-    abstract DisplayPatternChanged : IDelegateEvent<System.EventHandler>
+    abstract DisplayPatternChanged: IDelegateEvent<System.EventHandler>
 
 [<RequireQualifiedAccess>]
 [<NoComparison>]
@@ -3994,8 +3994,8 @@ type QuickFix =
 
 type TextViewChangedEventArgs
     (
-        _oldTextView : ITextView option,
-        _newTextView : ITextView option
+        _oldTextView: ITextView option,
+        _newTextView: ITextView option
     ) =
 
     inherit System.EventArgs()
@@ -4016,322 +4016,322 @@ type IVimHost =
 
     /// Should vim automatically start synchronization of IVimBuffer instances when they are 
     /// created
-    abstract AutoSynchronizeSettings : bool 
+    abstract AutoSynchronizeSettings: bool 
 
     /// What settings defaults should be used when there is no vimrc file present
-    abstract DefaultSettings : DefaultSettings
+    abstract DefaultSettings: DefaultSettings
 
     /// Is auto-command enabled for this host
-    abstract IsAutoCommandEnabled : bool
+    abstract IsAutoCommandEnabled: bool
 
     /// Is undo / redo expected at this point in time due to a host operation.
-    abstract IsUndoRedoExpected : bool 
+    abstract IsUndoRedoExpected: bool 
 
     /// Get the count of window tabs that are active in the host. This refers to tabs for actual 
     /// edit windows, not anything to do with tabs in the text file.  If window tabs are not supported 
     /// then -1 should be returned
-    abstract TabCount : int
+    abstract TabCount: int
 
-    abstract Beep : unit -> unit
+    abstract Beep: unit -> unit
 
     /// Called at the start of a bulk operation such as a macro replay or a repeat of
     /// a last command
-    abstract BeginBulkOperation : unit -> unit
+    abstract BeginBulkOperation: unit -> unit
 
     /// Close the provided view
-    abstract Close : ITextView -> unit
+    abstract Close: ITextView -> unit
 
     /// Close all tabs but this one
-    abstract CloseAllOtherTabs : ITextView -> unit
+    abstract CloseAllOtherTabs: ITextView -> unit
 
     /// Close all windows but this one within this tab
-    abstract CloseAllOtherWindows : ITextView -> unit
+    abstract CloseAllOtherWindows: ITextView -> unit
 
     /// Create a hidden ITextView instance.  This is primarily used to load the contents
     /// of the vimrc
-    abstract CreateHiddenTextView : unit -> ITextView
+    abstract CreateHiddenTextView: unit -> ITextView
 
     /// Called at the end of a bulk operation such as a macro replay or a repeat of
     /// a last command
-    abstract EndBulkOperation : unit -> unit
+    abstract EndBulkOperation: unit -> unit
 
     /// Ensure that the given point is visible
-    abstract EnsureVisible : textView : ITextView -> point : SnapshotPoint -> unit
+    abstract EnsureVisible: textView: ITextView -> point: SnapshotPoint -> unit
 
     /// Format the provided lines
-    abstract FormatLines : textView : ITextView -> range : SnapshotLineRange -> unit
+    abstract FormatLines: textView: ITextView -> range: SnapshotLineRange -> unit
 
     /// Get the ITextView which currently has keyboard focus
-    abstract GetFocusedTextView : unit -> ITextView option
+    abstract GetFocusedTextView: unit -> ITextView option
 
     /// Get the tab index of the tab containing the given ITextView.  A number less
     /// than 0 indicates the value couldn't be determined
-    abstract GetTabIndex : textView : ITextView -> int
+    abstract GetTabIndex: textView: ITextView -> int
 
     /// Get the indent for the new line.  This has precedence over the 'autoindent'
     /// setting
-    abstract GetNewLineIndent : textView : ITextView -> contextLine : ITextSnapshotLine -> newLine : ITextSnapshotLine -> int option
+    abstract GetNewLineIndent: textView: ITextView -> contextLine: ITextSnapshotLine -> newLine: ITextSnapshotLine -> int option
 
     /// Get the WordWrap style which should be used for the specified ITextView if word 
     /// wrap is enabled
-    abstract GetWordWrapStyle : textView : ITextView -> WordWrapStyles
+    abstract GetWordWrapStyle: textView: ITextView -> WordWrapStyles
 
     /// Go to the definition of the value under the cursor
-    abstract GoToDefinition : unit -> bool
+    abstract GoToDefinition: unit -> bool
 
     /// Go to the local declaration of the value under the cursor
-    abstract GoToLocalDeclaration : textView : ITextView -> identifier : string -> bool
+    abstract GoToLocalDeclaration: textView: ITextView -> identifier: string -> bool
 
     /// Go to the local declaration of the value under the cursor
-    abstract GoToGlobalDeclaration : tetxView : ITextView -> identifier : string -> bool
+    abstract GoToGlobalDeclaration: tetxView: ITextView -> identifier: string -> bool
 
     /// Go to the nth tab in the tab list.  This value is always a 0 based index 
     /// into the set of tabs.  It does not correspond to vim's handling of tab
     /// values which is not a standard 0 based index
-    abstract GoToTab : index : int -> unit
+    abstract GoToTab: index: int -> unit
 
     /// Go to the specified entry in the quick fix list
-    abstract GoToQuickFix : quickFix : QuickFix -> count : int -> hasBang : bool -> bool
+    abstract GoToQuickFix: quickFix: QuickFix -> count: int -> hasBang: bool -> bool
 
     /// Get the name of the given ITextBuffer
-    abstract GetName : textBuffer : ITextBuffer -> string
+    abstract GetName: textBuffer: ITextBuffer -> string
 
     /// Is the ITextBuffer in a dirty state?
-    abstract IsDirty : textBuffer : ITextBuffer -> bool
+    abstract IsDirty: textBuffer: ITextBuffer -> bool
 
     /// Is the ITextBuffer read only
-    abstract IsReadOnly : textBuffer : ITextBuffer -> bool
+    abstract IsReadOnly: textBuffer: ITextBuffer -> bool
 
     /// Is the ITextView visible to the user
-    abstract IsVisible : textView : ITextView -> bool
+    abstract IsVisible: textView: ITextView -> bool
 
     /// Is the ITextView in focus
-    abstract IsFocused : textView : ITextView -> bool
+    abstract IsFocused: textView: ITextView -> bool
 
     /// Loads the new file into the existing window
-    abstract LoadFileIntoExistingWindow : filePath : string -> textView : ITextView -> bool
+    abstract LoadFileIntoExistingWindow: filePath: string -> textView: ITextView -> bool
 
     /// Loads the new file into a new existing window
-    abstract LoadFileIntoNewWindow : filePath : string -> bool
+    abstract LoadFileIntoNewWindow: filePath: string -> bool
 
     /// Run the host specific make operation
-    abstract Make : jumpToFirstError : bool -> arguments : string -> unit
+    abstract Make: jumpToFirstError: bool -> arguments: string -> unit
 
     /// Move the focus to the ITextView in the open document in the specified direction
-    abstract MoveFocus : textView : ITextView -> direction : Direction -> unit
+    abstract MoveFocus: textView: ITextView -> direction: Direction -> unit
 
-    abstract NavigateTo : point : VirtualSnapshotPoint -> bool
+    abstract NavigateTo: point: VirtualSnapshotPoint -> bool
 
     // Open the quick fix window (:cwindow)
-    abstract OpenQuickFixWindow : unit -> unit
+    abstract OpenQuickFixWindow: unit -> unit
 
     /// Quit the application
-    abstract Quit : unit -> unit
+    abstract Quit: unit -> unit
 
     /// Reload the contents of the ITextView discarding any changes
-    abstract Reload : textView : ITextView -> bool
+    abstract Reload: textView: ITextView -> bool
 
     /// Run the specified command with the given arguments and return the textual
     /// output
-    abstract RunCommand : file : string -> arguments : string -> vimHost : IVimData -> string
+    abstract RunCommand: file: string -> arguments: string -> vimHost: IVimData -> string
 
     /// Run the Visual studio command in the context of the given ITextView
-    abstract RunHostCommand : textView : ITextView -> commandName : string -> argument : string -> unit
+    abstract RunHostCommand: textView: ITextView -> commandName: string -> argument: string -> unit
 
     /// Save the provided ITextBuffer instance
-    abstract Save : textBuffer : ITextBuffer -> bool 
+    abstract Save: textBuffer: ITextBuffer -> bool 
 
     /// Save the current document as a new file with the specified name
-    abstract SaveTextAs : text : string -> filePath : string -> bool 
+    abstract SaveTextAs: text: string -> filePath: string -> bool 
 
     /// Should the selection be kept after running the given host command?  In general 
     /// VsVim will clear the selection after a host command because that is the vim
     /// behavior.  Certain host commands exist to set selection though and clearing that
     /// isn't desirable
-    abstract ShouldKeepSelectionAfterHostCommand : command : string -> argument : string -> bool 
+    abstract ShouldKeepSelectionAfterHostCommand: command: string -> argument: string -> bool 
 
     /// Called by Vim when it encounters a new ITextView and needs to know if it should 
     /// create an IVimBuffer for it
-    abstract ShouldCreateVimBuffer : textView : ITextView -> bool
+    abstract ShouldCreateVimBuffer: textView: ITextView -> bool
 
     /// Called by Vim when it is loading vimrc files.  This gives the host the chance to
     /// filter out vimrc files it doesn't want to consider
-    abstract ShouldIncludeRcFile : vimRcPath : VimRcPath -> bool
+    abstract ShouldIncludeRcFile: vimRcPath: VimRcPath -> bool
 
     /// Split the views horizontally
-    abstract SplitViewHorizontally : ITextView -> unit
+    abstract SplitViewHorizontally: ITextView -> unit
 
     /// Split the views horizontally
-    abstract SplitViewVertically : ITextView -> unit
+    abstract SplitViewVertically: ITextView -> unit
 
     /// Called when IVim is fully created.  This callback gives the host the oppurtunity
     /// to customize various aspects of vim including IVimGlobalSettings, IVimData, etc ...
-    abstract VimCreated : vim : IVim -> unit
+    abstract VimCreated: vim: IVim -> unit
 
     /// Called when VsVim attempts to load the user _vimrc file.  If the load succeeded 
     /// then the resulting settings are passed into the method.  If the load failed it is 
     /// the defaults.  Either way, they are the default settings used for new buffers
-    abstract VimRcLoaded : vimRcState : VimRcState -> localSettings : IVimLocalSettings -> windowSettings : IVimWindowSettings -> unit
+    abstract VimRcLoaded: vimRcState: VimRcState -> localSettings: IVimLocalSettings -> windowSettings: IVimWindowSettings -> unit
 
     /// Allow the host to custom process the insert command.  Hosts often have
     /// special non-vim semantics for certain types of edits (Enter for 
     /// example).  This override allows them to do this processing
-    abstract TryCustomProcess : textView : ITextView -> command : InsertCommand -> bool
+    abstract TryCustomProcess: textView: ITextView -> command: InsertCommand -> bool
 
     /// Raised when the visibility of an ITextView changes
     [<CLIEvent>]
-    abstract IsVisibleChanged : IDelegateEvent<System.EventHandler<TextViewEventArgs>>
+    abstract IsVisibleChanged: IDelegateEvent<System.EventHandler<TextViewEventArgs>>
 
     /// Raised when the active ITextView changes
     [<CLIEvent>]
-    abstract ActiveTextViewChanged : IDelegateEvent<System.EventHandler<TextViewChangedEventArgs>>
+    abstract ActiveTextViewChanged: IDelegateEvent<System.EventHandler<TextViewChangedEventArgs>>
 
 /// Core parts of an IVimBuffer.  Used for components which make up an IVimBuffer but
 /// need the same data provided by IVimBuffer.
 and IVimBufferData =
 
     /// The current directory for this particular window
-    abstract CurrentDirectory : string option with get, set
+    abstract CurrentDirectory: string option with get, set
 
     /// This is the caret point at the start of the most recent visual mode session. It's
     /// the actual location of the caret vs. the anchor point.
-    abstract VisualCaretStartPoint : ITrackingPoint option with get, set
+    abstract VisualCaretStartPoint: ITrackingPoint option with get, set
 
     /// This is the anchor point for the visual mode selection.  It is different than the anchor
     /// point in ITextSelection.  The ITextSelection anchor point is always the start or end
     /// of the visual selection.  While the anchor point for visual mode selection may be in 
     /// the middle (in say line wise mode)
-    abstract VisualAnchorPoint : ITrackingPoint option with get, set
+    abstract VisualAnchorPoint: ITrackingPoint option with get, set
 
     /// The IJumpList associated with the IVimBuffer
-    abstract JumpList : IJumpList
+    abstract JumpList: IJumpList
 
     /// The ITextView associated with the IVimBuffer
-    abstract TextView : ITextView
+    abstract TextView: ITextView
 
     /// The ITextBuffer associated with the IVimBuffer
-    abstract TextBuffer : ITextBuffer
+    abstract TextBuffer: ITextBuffer
 
     /// The IStatusUtil associated with the IVimBuffer
-    abstract StatusUtil : IStatusUtil
+    abstract StatusUtil: IStatusUtil
 
     /// The IUndoRedOperations associated with the IVimBuffer
-    abstract UndoRedoOperations : IUndoRedoOperations
+    abstract UndoRedoOperations: IUndoRedoOperations
 
     /// The IVimTextBuffer associated with the IVimBuffer
-    abstract VimTextBuffer : IVimTextBuffer
+    abstract VimTextBuffer: IVimTextBuffer
 
     /// The IVimWindowSettings associated with the ITextView 
-    abstract WindowSettings : IVimWindowSettings
+    abstract WindowSettings: IVimWindowSettings
 
     /// The IWordUtil associated with the IVimBuffer
-    abstract WordUtil : IWordUtil
+    abstract WordUtil: IWordUtil
 
     /// The IVimLocalSettings associated with the ITextBuffer
-    abstract LocalSettings : IVimLocalSettings
+    abstract LocalSettings: IVimLocalSettings
 
-    abstract Vim : IVim
+    abstract Vim: IVim
 
 /// Vim instance.  Global for a group of buffers
 and IVim =
 
     /// Buffer actively processing input.  This has no relation to the IVimBuffer
     /// which has focus 
-    abstract ActiveBuffer : IVimBuffer option
+    abstract ActiveBuffer: IVimBuffer option
 
     /// The IStatusUtil for the active IVimBuffer.  If there is currently no active IVimBuffer
     /// then a silent one will be returned 
-    abstract ActiveStatusUtil : IStatusUtil
+    abstract ActiveStatusUtil: IStatusUtil
 
     /// Whether or not the vimrc file should be autoloaded before the first IVimBuffer
     /// is created
-    abstract AutoLoadVimRc : bool with get, set
+    abstract AutoLoadVimRc: bool with get, set
 
     /// Whether or not saved data like macros shuold be autoloaded before the first IVimBuffer 
     // is created
-    abstract AutoLoadSessionData : bool with get, set
+    abstract AutoLoadSessionData: bool with get, set
 
     /// Get the set of tracked IVimBuffer instances
-    abstract VimBuffers : IVimBuffer list
+    abstract VimBuffers: IVimBuffer list
 
     /// Get the IVimBuffer which currently has KeyBoard focus
-    abstract FocusedBuffer : IVimBuffer option
+    abstract FocusedBuffer: IVimBuffer option
 
     /// Is Vim currently disabled 
-    abstract IsDisabled : bool with get, set
+    abstract IsDisabled: bool with get, set
 
     /// In the middle of a bulk operation such as a macro replay or repeat last command
-    abstract InBulkOperation : bool
+    abstract InBulkOperation: bool
 
     /// IKeyMap for this IVim instance
-    abstract KeyMap : IKeyMap
+    abstract KeyMap: IKeyMap
 
     /// IMacroRecorder for the IVim instance
-    abstract MacroRecorder : IMacroRecorder
+    abstract MacroRecorder: IMacroRecorder
 
     /// IMarkMap for the IVim instance
-    abstract MarkMap : IMarkMap
+    abstract MarkMap: IMarkMap
 
     /// IRegisterMap for the IVim instance
-    abstract RegisterMap : IRegisterMap
+    abstract RegisterMap: IRegisterMap
 
     /// ISearchService for this IVim instance
-    abstract SearchService : ISearchService
+    abstract SearchService: ISearchService
 
     /// IGlobalSettings for this IVim instance
-    abstract GlobalSettings : IVimGlobalSettings
+    abstract GlobalSettings: IVimGlobalSettings
 
     /// The variable map for this IVim instance
-    abstract VariableMap : VariableMap
+    abstract VariableMap: VariableMap
 
-    abstract VimData : IVimData 
+    abstract VimData: IVimData 
 
-    abstract VimHost : IVimHost
+    abstract VimHost: IVimHost
 
     /// The state of the VimRc file
-    abstract VimRcState : VimRcState
+    abstract VimRcState: VimRcState
 
     /// Create an IVimBuffer for the given ITextView
-    abstract CreateVimBuffer : textView: ITextView -> IVimBuffer
+    abstract CreateVimBuffer: textView: ITextView -> IVimBuffer
 
     /// Create an IVimTextBuffer for the given ITextBuffer
-    abstract CreateVimTextBuffer : textBuffer: ITextBuffer -> IVimTextBuffer
+    abstract CreateVimTextBuffer: textBuffer: ITextBuffer -> IVimTextBuffer
 
     /// Close all IVimBuffer instances in the system
-    abstract CloseAllVimBuffers : unit -> unit
+    abstract CloseAllVimBuffers: unit -> unit
 
     /// Get the IVimInterpreter for the specified IVimBuffer
-    abstract GetVimInterpreter : vimBuffer : IVimBuffer -> IVimInterpreter
+    abstract GetVimInterpreter: vimBuffer: IVimBuffer -> IVimInterpreter
 
     /// Get or create an IVimBuffer for the given ITextView
-    abstract GetOrCreateVimBuffer : textView: ITextView -> IVimBuffer
+    abstract GetOrCreateVimBuffer: textView: ITextView -> IVimBuffer
 
     /// Get or create an IVimTextBuffer for the given ITextBuffer
-    abstract GetOrCreateVimTextBuffer : textBuffer: ITextBuffer -> IVimTextBuffer
+    abstract GetOrCreateVimTextBuffer: textBuffer: ITextBuffer -> IVimTextBuffer
 
     /// Load the VimRc file.  If the file was previously loaded a new load will be 
     /// attempted.  Returns true if a VimRc was actually loaded.
-    abstract LoadVimRc : unit -> VimRcState
+    abstract LoadVimRc: unit -> VimRcState
 
     /// Load the saved data file. 
-    abstract LoadSessionData : unit -> unit
+    abstract LoadSessionData: unit -> unit
 
     /// Save out the current session data.
-    abstract SaveSessionData : unit -> unit
+    abstract SaveSessionData: unit -> unit
 
     /// Remove the IVimBuffer associated with the given view.  This will not actually close
     /// the IVimBuffer but instead just removes it's association with the given view
-    abstract RemoveVimBuffer : ITextView -> bool
+    abstract RemoveVimBuffer: ITextView -> bool
 
     /// Get the IVimBuffer associated with the given ITextView
-    abstract TryGetVimBuffer : textView : ITextView * [<Out>] vimBuffer : IVimBuffer byref -> bool
+    abstract TryGetVimBuffer: textView: ITextView * [<Out>] vimBuffer: IVimBuffer byref -> bool
 
     /// Get the IVimTextBuffer associated with the given ITextBuffer
-    abstract TryGetVimTextBuffer : textBuffer : ITextBuffer * [<Out>] vimTextBuffer : IVimTextBuffer byref -> bool
+    abstract TryGetVimTextBuffer: textBuffer: ITextBuffer * [<Out>] vimTextBuffer: IVimTextBuffer byref -> bool
 
     /// This implements a cached version of IVimHost::ShouldCreateVimBuffer.  Code should prefer 
     /// this method wherever possible 
-    abstract ShouldCreateVimBuffer : textView : ITextView -> bool
+    abstract ShouldCreateVimBuffer: textView: ITextView -> bool
 
     /// Get or create an IVimBuffer for the given ITextView.  The creation of the IVimBuffer will
     /// only occur if the host returns true from IVimHost::ShouldCreateVimBuffer.  
@@ -4340,12 +4340,12 @@ and IVim =
     /// ITagger implementations will be called long before the host has a chance to create the 
     /// IVimBuffer instance.  This method removes the ordering concerns and maintains control of 
     /// creation in the IVimHost
-    abstract TryGetOrCreateVimBufferForHost : textView : ITextView * [<Out>] vimBuffer : IVimBuffer byref -> bool
+    abstract TryGetOrCreateVimBufferForHost: textView: ITextView * [<Out>] vimBuffer: IVimBuffer byref -> bool
 
 and SwitchModeKindEventArgs
     (
-        _modeKind : ModeKind,
-        _modeArgument : ModeArgument
+        _modeKind: ModeKind,
+        _modeArgument: ModeArgument
     ) =
     inherit System.EventArgs()
 
@@ -4355,8 +4355,8 @@ and SwitchModeKindEventArgs
 
 and SwitchModeEventArgs 
     (
-        _previousMode : IMode,
-        _currentMode : IMode
+        _previousMode: IMode,
+        _currentMode: IMode
     ) = 
 
     inherit System.EventArgs()
@@ -4371,217 +4371,217 @@ and SwitchModeEventArgs
 and IMarkMap =
 
     /// The set of active global marks
-    abstract GlobalMarks : (Letter * VirtualSnapshotPoint) seq
+    abstract GlobalMarks: (Letter * VirtualSnapshotPoint) seq
 
     /// Get the mark for the given char for the IVimTextBuffer
-    abstract GetMark : mark : Mark -> vimBufferData : IVimBufferData -> VirtualSnapshotPoint option
+    abstract GetMark: mark: Mark -> vimBufferData: IVimBufferData -> VirtualSnapshotPoint option
 
     /// Get the current value of the specified global mark
-    abstract GetGlobalMark : letter : Letter -> VirtualSnapshotPoint option
+    abstract GetGlobalMark: letter: Letter -> VirtualSnapshotPoint option
 
     /// Set the global mark to the given line and column in the provided IVimTextBuffer
-    abstract SetGlobalMark : letter: Letter -> vimtextBuffer : IVimTextBuffer -> line : int -> column : int -> unit
+    abstract SetGlobalMark: letter: Letter -> vimtextBuffer: IVimTextBuffer -> line: int -> column: int -> unit
 
     /// Set the mark for the given char for the IVimTextBuffer
-    abstract SetMark : mark : Mark -> vimBufferData : IVimBufferData -> line : int -> column : int -> bool
+    abstract SetMark: mark: Mark -> vimBufferData: IVimBufferData -> line: int -> column: int -> bool
 
     /// Set the last exited position before the window is closed
-    abstract SetLastExitedPosition : bufferName : string -> line : int -> column : int -> bool
+    abstract SetLastExitedPosition: bufferName: string -> line: int -> column: int -> bool
 
     /// Remove the specified mark and return whether or not a mark was actually
     /// removed
-    abstract RemoveGlobalMark : letter : Letter -> bool
+    abstract RemoveGlobalMark: letter: Letter -> bool
 
     /// Delete all of the global marks 
-    abstract Clear : unit -> unit
+    abstract Clear: unit -> unit
 
 /// This is the interface which represents the parts of a vim buffer which are shared amongst all
 /// of it's views
 and IVimTextBuffer = 
 
     /// The associated ITextBuffer instance
-    abstract TextBuffer : ITextBuffer
+    abstract TextBuffer: ITextBuffer
 
     /// The associated IVimGlobalSettings instance
-    abstract GlobalSettings : IVimGlobalSettings
+    abstract GlobalSettings: IVimGlobalSettings
 
     /// The 'start' point of the current insert session.  This is relevant for settings like 
     /// 'backspace'
-    abstract InsertStartPoint : SnapshotPoint option with get, set
+    abstract InsertStartPoint: SnapshotPoint option with get, set
 
     /// True when 'softtabstop' setting should be considered during backspace operations in insert
     /// mode
-    abstract IsSoftTabStopValidForBackspace : bool with get, set
+    abstract IsSoftTabStopValidForBackspace: bool with get, set
 
     /// The point the caret occupied when Insert mode was exited 
-    abstract LastInsertExitPoint : SnapshotPoint option with get, set
+    abstract LastInsertExitPoint: SnapshotPoint option with get, set
 
     /// The last VisualSpan selection for the IVimTextBuffer.  This is a combination of a VisualSpan
     /// and the SnapshotPoint within the span where the caret should be positioned
-    abstract LastVisualSelection : VisualSelection option with get, set
+    abstract LastVisualSelection: VisualSelection option with get, set
 
     /// The point the caret occupied when the last edit occurred
-    abstract LastEditPoint : SnapshotPoint option with get, set
+    abstract LastEditPoint: SnapshotPoint option with get, set
 
     /// The set of active local marks in the ITextBuffer
-    abstract LocalMarks : (LocalMark * VirtualSnapshotPoint) seq
+    abstract LocalMarks: (LocalMark * VirtualSnapshotPoint) seq
 
     /// The associated IVimLocalSettings instance
-    abstract LocalSettings : IVimLocalSettings
+    abstract LocalSettings: IVimLocalSettings
 
     /// ModeKind of the current mode of the IVimTextBuffer.  It may seem odd at first to put ModeKind
     /// at this level but it is indeed shared amongst all views.  This can be demonstrated by opening
     /// the same file in multiple tabs, switch to insert in one and then move to the other via the
     /// mouse and noting it is also in Insert mode.  Actual IMode values are ITextView specific though
     /// and only live at the ITextView level
-    abstract ModeKind : ModeKind
+    abstract ModeKind: ModeKind
 
     /// Name of the buffer.  Used for items like Marks
-    abstract Name : string
+    abstract Name: string
 
     /// The IUndoRedoOperations associated with the IVimTextBuffer
-    abstract UndoRedoOperations : IUndoRedoOperations
+    abstract UndoRedoOperations: IUndoRedoOperations
 
     /// The associated IVim instance
-    abstract Vim : IVim
+    abstract Vim: IVim
 
     /// The ITextStructureNavigator for word values in the ITextBuffer
-    abstract WordNavigator : ITextStructureNavigator
+    abstract WordNavigator: ITextStructureNavigator
 
     /// Clear out all of the cached information in the IVimTextBuffer.  It will reset to it's startup
     /// state 
-    abstract Clear : unit -> unit
+    abstract Clear: unit -> unit
 
     /// Get the local mark value 
-    abstract GetLocalMark : localMark : LocalMark -> VirtualSnapshotPoint option
+    abstract GetLocalMark: localMark: LocalMark -> VirtualSnapshotPoint option
 
     /// Set the local mark value to the specified line and column.  Returns false if the given 
     /// mark cannot be set
-    abstract SetLocalMark : localMark : LocalMark -> line : int -> column : int -> bool
+    abstract SetLocalMark: localMark: LocalMark -> line: int -> column: int -> bool
 
     /// Remove the specified local mark.  Returns whether a mark was actually removed
-    abstract RemoveLocalMark : localMark : LocalMark -> bool
+    abstract RemoveLocalMark: localMark: LocalMark -> bool
 
     /// Switch the current mode to the provided value
-    abstract SwitchMode : ModeKind -> ModeArgument -> unit
+    abstract SwitchMode: ModeKind -> ModeArgument -> unit
 
     /// Raised when the mode is switched.  Returns the old and new mode 
     [<CLIEvent>]
-    abstract SwitchedMode : IDelegateEvent<System.EventHandler<SwitchModeKindEventArgs>>
+    abstract SwitchedMode: IDelegateEvent<System.EventHandler<SwitchModeKindEventArgs>>
 
 /// Main interface for the Vim editor engine so to speak. 
 and IVimBuffer =
 
     /// Sequence of available Modes
-    abstract AllModes : seq<IMode>
+    abstract AllModes: seq<IMode>
 
     /// Buffered KeyInput list.  When a key remapping has multiple source elements the input 
     /// is buffered until it is completed or the ambiguity is removed.  
-    abstract BufferedKeyInputs : KeyInput list
+    abstract BufferedKeyInputs: KeyInput list
 
     /// The current directory for this particular window
-    abstract CurrentDirectory : string option with get, set
+    abstract CurrentDirectory: string option with get, set
 
     /// The ICommandUtil for this IVimBuffer
-    abstract CommandUtil : ICommandUtil
+    abstract CommandUtil: ICommandUtil
 
     /// Global settings for the buffer
-    abstract GlobalSettings : IVimGlobalSettings
+    abstract GlobalSettings: IVimGlobalSettings
 
     /// IIncrementalSearch instance associated with this IVimBuffer
-    abstract IncrementalSearch : IIncrementalSearch
+    abstract IncrementalSearch: IIncrementalSearch
 
     /// Whether or not the IVimBuffer is currently processing a KeyInput value
-    abstract IsProcessingInput : bool
+    abstract IsProcessingInput: bool
 
     /// Whether or not the IVimBuffer is currently switching modes
-    abstract IsSwitchingMode : bool
+    abstract IsSwitchingMode: bool
 
     /// Is this IVimBuffer instance closed
-    abstract IsClosed : bool
+    abstract IsClosed: bool
 
     /// Jump list
-    abstract JumpList : IJumpList
+    abstract JumpList: IJumpList
 
     /// Local settings for the buffer
-    abstract LocalSettings : IVimLocalSettings
+    abstract LocalSettings: IVimLocalSettings
 
     /// Associated IMarkMap
-    abstract MarkMap : IMarkMap
+    abstract MarkMap: IMarkMap
 
     /// Current mode of the buffer
-    abstract Mode : IMode
+    abstract Mode: IMode
 
     /// ModeKind of the current IMode in the buffer
-    abstract ModeKind : ModeKind
+    abstract ModeKind: ModeKind
 
     /// Name of the buffer.  Used for items like Marks
-    abstract Name : string
+    abstract Name: string
 
     /// If we are in the middle of processing a "one time command" (<c-o>) then this will
     /// hold the ModeKind which will be switched back to after it's completed
-    abstract InOneTimeCommand : ModeKind option
+    abstract InOneTimeCommand: ModeKind option
 
     /// Register map for IVim.  Global to all IVimBuffer instances but provided here
     /// for convenience
-    abstract RegisterMap : IRegisterMap
+    abstract RegisterMap: IRegisterMap
 
     /// Underlying ITextBuffer Vim is operating under
-    abstract TextBuffer : ITextBuffer
+    abstract TextBuffer: ITextBuffer
 
     /// Current ITextSnapshot of the ITextBuffer
-    abstract TextSnapshot : ITextSnapshot
+    abstract TextSnapshot: ITextSnapshot
 
     /// View of the file
-    abstract TextView : ITextView
+    abstract TextView: ITextView
 
     /// The IMotionUtil associated with this IVimBuffer instance
-    abstract MotionUtil : IMotionUtil
+    abstract MotionUtil: IMotionUtil
 
     /// The IUndoRedoOperations associated with this IVimBuffer instance
-    abstract UndoRedoOperations : IUndoRedoOperations
+    abstract UndoRedoOperations: IUndoRedoOperations
 
     /// Owning IVim instance
-    abstract Vim : IVim
+    abstract Vim: IVim
 
     /// Associated IVimTextBuffer
-    abstract VimTextBuffer : IVimTextBuffer
+    abstract VimTextBuffer: IVimTextBuffer
 
     /// VimBufferData for the given IVimBuffer
-    abstract VimBufferData : IVimBufferData
+    abstract VimBufferData: IVimBufferData
 
     /// The ITextStructureNavigator for word values in the buffer
-    abstract WordNavigator : ITextStructureNavigator
+    abstract WordNavigator: ITextStructureNavigator
 
     /// Associated IVimWindowSettings
-    abstract WindowSettings : IVimWindowSettings
+    abstract WindowSettings: IVimWindowSettings
 
     /// Associated IVimData instance
-    abstract VimData : IVimData
+    abstract VimData: IVimData
 
     /// INormalMode instance for normal mode
-    abstract NormalMode : INormalMode
+    abstract NormalMode: INormalMode
 
     /// ICommandMode instance for command mode
-    abstract CommandMode : ICommandMode 
+    abstract CommandMode: ICommandMode 
 
     /// IDisabledMode instance for disabled mode
-    abstract DisabledMode : IDisabledMode
+    abstract DisabledMode: IDisabledMode
 
     /// IVisualMode for visual character mode
-    abstract VisualCharacterMode : IVisualMode
+    abstract VisualCharacterMode: IVisualMode
 
     /// IVisualMode for visual line mode
-    abstract VisualLineMode : IVisualMode
+    abstract VisualLineMode: IVisualMode
 
     /// IVisualMode for visual block mode
-    abstract VisualBlockMode : IVisualMode
+    abstract VisualBlockMode: IVisualMode
 
     /// IInsertMode instance for insert mode
-    abstract InsertMode : IInsertMode
+    abstract InsertMode: IInsertMode
 
     /// IInsertMode instance for replace mode
-    abstract ReplaceMode : IInsertMode
+    abstract ReplaceMode: IInsertMode
 
     /// ISelectMode instance for character mode
     abstract SelectCharacterMode: ISelectMode
@@ -4593,26 +4593,26 @@ and IVimBuffer =
     abstract SelectBlockMode: ISelectMode
 
     /// ISubstituteConfirmDoe instance for substitute confirm mode
-    abstract SubstituteConfirmMode : ISubstituteConfirmMode
+    abstract SubstituteConfirmMode: ISubstituteConfirmMode
 
     /// IMode instance for external edits
-    abstract ExternalEditMode : IMode
+    abstract ExternalEditMode: IMode
 
     /// Get the register of the given name
-    abstract GetRegister : RegisterName -> Register
+    abstract GetRegister: RegisterName -> Register
 
     /// Get the specified Mode
-    abstract GetMode : ModeKind -> IMode
+    abstract GetMode: ModeKind -> IMode
 
     /// Get the KeyInput value produced by this KeyInput in the current state of the
     /// IVimBuffer.  This will consider any buffered KeyInput values.
-    abstract GetKeyInputMapping : keyInput : KeyInput -> KeyMappingResult
+    abstract GetKeyInputMapping: keyInput: KeyInput -> KeyMappingResult
 
     /// Process the KeyInput and return whether or not the input was completely handled
-    abstract Process : KeyInput -> ProcessResult
+    abstract Process: KeyInput -> ProcessResult
 
     /// Process all of the buffered KeyInput values.
-    abstract ProcessBufferedKeyInputs : unit -> unit
+    abstract ProcessBufferedKeyInputs: unit -> unit
 
     /// Can the passed in KeyInput be processed by the current state of IVimBuffer.  The
     /// provided KeyInput will participate in remapping based on the current mode
@@ -4625,31 +4625,31 @@ and IVimBuffer =
     /// This is very similar to CanProcess except it will return false for any KeyInput
     /// which would be processed as a direct insert.  In other words commands like 'a',
     /// 'b' when handled by insert / replace mode
-    abstract CanProcessAsCommand : KeyInput -> bool
+    abstract CanProcessAsCommand: KeyInput -> bool
 
     /// Switch the current mode to the provided value
-    abstract SwitchMode : ModeKind -> ModeArgument -> IMode
+    abstract SwitchMode: ModeKind -> ModeArgument -> IMode
 
     /// Switch the buffer back to the previous mode which is returned
-    abstract SwitchPreviousMode : unit -> IMode
+    abstract SwitchPreviousMode: unit -> IMode
 
     /// Add a processed KeyInput value.  This is a way for a host which is intercepting 
     /// KeyInput and custom processing it to still participate in items like Macro 
     /// recording.  The provided value will not go through any remapping
-    abstract SimulateProcessed : KeyInput -> unit
+    abstract SimulateProcessed: KeyInput -> unit
 
     /// Called when the view is closed and the IVimBuffer should uninstall itself
     /// and it's modes
-    abstract Close : unit -> unit
+    abstract Close: unit -> unit
     
     /// Raised when the mode is switched.  Returns the old and new mode 
     [<CLIEvent>]
-    abstract SwitchedMode : IDelegateEvent<System.EventHandler<SwitchModeEventArgs>>
+    abstract SwitchedMode: IDelegateEvent<System.EventHandler<SwitchModeEventArgs>>
 
     /// Raised when a KeyInput is received by the buffer.  This will be raised for the 
     /// KeyInput which was received and does not consider any mappings
     [<CLIEvent>]
-    abstract KeyInputStart : IDelegateEvent<System.EventHandler<KeyInputStartEventArgs>>
+    abstract KeyInputStart: IDelegateEvent<System.EventHandler<KeyInputStartEventArgs>>
 
     /// This is raised just before the IVimBuffer attempts to process a KeyInput 
     /// value.  This will not necessarily be the KeyInput which was raised in KeyInputStart
@@ -4660,7 +4660,7 @@ and IVimBuffer =
     /// processed by the IVimBuffer.  It will instead immediately move to the 
     /// KeyInputProcessed event
     [<CLIEvent>]
-    abstract KeyInputProcessing : IDelegateEvent<System.EventHandler<KeyInputStartEventArgs>>
+    abstract KeyInputProcessing: IDelegateEvent<System.EventHandler<KeyInputStartEventArgs>>
 
     /// Raised when a key is processed.  This is raised when the KeyInput is actually
     /// processed by Vim, not when it is received.  
@@ -4670,38 +4670,38 @@ and IVimBuffer =
     /// mapping contains more than one key.  In this case the input is buffered until the 
     /// second key is read and then the inputs are processed
     [<CLIEvent>]
-    abstract KeyInputProcessed : IDelegateEvent<System.EventHandler<KeyInputProcessedEventArgs>>
+    abstract KeyInputProcessed: IDelegateEvent<System.EventHandler<KeyInputProcessedEventArgs>>
 
     /// Raised when a key is received but not immediately processed.  Occurs when a
     /// key remapping has more than one source key strokes
     [<CLIEvent>]
-    abstract KeyInputBuffered : IDelegateEvent<System.EventHandler<KeyInputSetEventArgs>>
+    abstract KeyInputBuffered: IDelegateEvent<System.EventHandler<KeyInputSetEventArgs>>
 
     /// Raised when a KeyInput is completed processing within the IVimBuffer.  This happens 
     /// if the KeyInput is buffered or processed.  This will be raised for the KeyInput which
     /// was initially considered (came from KeyInputStart).  It won't consider any mappings
     [<CLIEvent>]
-    abstract KeyInputEnd : IDelegateEvent<System.EventHandler<KeyInputEventArgs>>
+    abstract KeyInputEnd: IDelegateEvent<System.EventHandler<KeyInputEventArgs>>
 
     /// Raised when a warning is encountered
     [<CLIEvent>]
-    abstract WarningMessage : IDelegateEvent<System.EventHandler<StringEventArgs>>
+    abstract WarningMessage: IDelegateEvent<System.EventHandler<StringEventArgs>>
 
     /// Raised when an error is encountered
     [<CLIEvent>]
-    abstract ErrorMessage : IDelegateEvent<System.EventHandler<StringEventArgs>>
+    abstract ErrorMessage: IDelegateEvent<System.EventHandler<StringEventArgs>>
 
     /// Raised when a status message is encountered
     [<CLIEvent>]
-    abstract StatusMessage : IDelegateEvent<System.EventHandler<StringEventArgs>>
+    abstract StatusMessage: IDelegateEvent<System.EventHandler<StringEventArgs>>
 
     /// Raised when the IVimBuffer is being closed
     [<CLIEvent>]
-    abstract Closing : IDelegateEvent<System.EventHandler>
+    abstract Closing: IDelegateEvent<System.EventHandler>
 
     /// Raised when the IVimBuffer is closed
     [<CLIEvent>]
-    abstract Closed : IDelegateEvent<System.EventHandler>
+    abstract Closed: IDelegateEvent<System.EventHandler>
 
     inherit IPropertyOwner
 
@@ -4709,46 +4709,46 @@ and IVimBuffer =
 and IMode =
 
     /// Associated IVimTextBuffer
-    abstract VimTextBuffer : IVimTextBuffer 
+    abstract VimTextBuffer: IVimTextBuffer 
 
     /// What type of Mode is this
-    abstract ModeKind : ModeKind
+    abstract ModeKind: ModeKind
 
     /// Sequence of commands handled by the Mode.  
-    abstract CommandNames : seq<KeyInputSet>
+    abstract CommandNames: seq<KeyInputSet>
 
     /// Can the mode process this particular KeyIput at the current time
-    abstract CanProcess : KeyInput -> bool
+    abstract CanProcess: KeyInput -> bool
 
     /// Process the given KeyInput
-    abstract Process : KeyInput -> ProcessResult
+    abstract Process: KeyInput -> ProcessResult
 
     /// Called when the mode is entered
-    abstract OnEnter : ModeArgument -> unit
+    abstract OnEnter: ModeArgument -> unit
 
     /// Called when the mode is left
-    abstract OnLeave : unit -> unit
+    abstract OnLeave: unit -> unit
 
     /// Called when the owning IVimBuffer is closed so that the mode can free up 
     /// any resources including event handlers
-    abstract OnClose : unit -> unit
+    abstract OnClose: unit -> unit
 
 and INormalMode =
 
     /// Buffered input for the current command
-    abstract Command : string 
+    abstract Command: string 
 
     /// The ICommandRunner implementation associated with NormalMode
-    abstract CommandRunner : ICommandRunner 
+    abstract CommandRunner: ICommandRunner 
 
     /// Mode keys need to be remapped with currently
-    abstract KeyRemapMode : KeyRemapMode
+    abstract KeyRemapMode: KeyRemapMode
 
     /// Is normal mode in the middle of a count operation
-    abstract InCount : bool
+    abstract InCount: bool
 
     /// Is normal mode in the middle of a character replace operation
-    abstract InReplace : bool
+    abstract InReplace: bool
 
     inherit IMode
 
@@ -4756,85 +4756,85 @@ and INormalMode =
 and IInsertMode =
 
     /// The active IWordCompletionSession if one is active
-    abstract ActiveWordCompletionSession : IWordCompletionSession option
+    abstract ActiveWordCompletionSession: IWordCompletionSession option
 
     /// Is insert mode currently in a paste operation
-    abstract IsInPaste : bool
+    abstract IsInPaste: bool
 
     /// Is this KeyInput value considered to be a direct insert command in the current
     /// state of the IVimBuffer.  This does not apply to commands which edit the buffer
     /// like 'CTRL-D' but instead commands like 'a', 'b' which directly edit the 
     /// ITextBuffer
-    abstract IsDirectInsert : KeyInput -> bool
+    abstract IsDirectInsert: KeyInput -> bool
 
     /// Raised when a command is successfully run
     [<CLIEvent>]
-    abstract CommandRan : IDelegateEvent<System.EventHandler<CommandRunDataEventArgs>>
+    abstract CommandRan: IDelegateEvent<System.EventHandler<CommandRunDataEventArgs>>
 
     inherit IMode
 
 and ICommandMode = 
 
     /// Buffered input for the current command
-    abstract Command : string with get, set
+    abstract Command: string with get, set
 
     /// Is command mode currently waiting for a register paste operation to complete
-    abstract InPasteWait : bool
+    abstract InPasteWait: bool
 
     /// Run the specified command
-    abstract RunCommand : string -> unit
+    abstract RunCommand: string -> unit
 
     /// Raised when the command string is changed
     [<CLIEvent>]
-    abstract CommandChanged : IDelegateEvent<System.EventHandler>
+    abstract CommandChanged: IDelegateEvent<System.EventHandler>
 
     inherit IMode
 
 and IVisualMode = 
 
     /// The ICommandRunner implementation associated with NormalMode
-    abstract CommandRunner : ICommandRunner 
+    abstract CommandRunner: ICommandRunner 
 
     /// Mode keys need to be remapped with currently
-    abstract KeyRemapMode : KeyRemapMode 
+    abstract KeyRemapMode: KeyRemapMode 
 
     /// Is visual mode in the middle of a count operation
-    abstract InCount : bool
+    abstract InCount: bool
 
     /// The current Visual Selection
-    abstract VisualSelection : VisualSelection
+    abstract VisualSelection: VisualSelection
 
     /// Asks Visual Mode to reset what it perceives to be the original selection.  Instead it 
     /// views the current selection as the original selection for entering the mode
-    abstract SyncSelection : unit -> unit
+    abstract SyncSelection: unit -> unit
 
     inherit IMode 
     
 and IDisabledMode =
     
     /// Help message to display 
-    abstract HelpMessage : string 
+    abstract HelpMessage: string 
 
     inherit IMode
 
 and ISelectMode = 
 
     /// Sync the selection with the current state
-    abstract SyncSelection : unit -> unit
+    abstract SyncSelection: unit -> unit
 
     inherit IMode
 
 and ISubstituteConfirmMode =
 
     /// The SnapshotSpan of the current matching piece of text
-    abstract CurrentMatch : SnapshotSpan option
+    abstract CurrentMatch: SnapshotSpan option
 
     /// The string which will replace the current match
-    abstract CurrentSubstitute : string option
+    abstract CurrentSubstitute: string option
 
     /// Raised when the current match changes
     [<CLIEvent>]
-    abstract CurrentMatchChanged : IEvent<SnapshotSpan option> 
+    abstract CurrentMatchChanged: IEvent<SnapshotSpan option> 
 
     inherit IMode 
 
@@ -4873,12 +4873,12 @@ type IProtectedOperations =
     /// Get an Action delegate which invokes the original action and handles any
     /// thrown Exceptions by passing them off the the available IExtensionErrorHandler
     /// values
-    abstract member GetProtectedAction : action : Action -> Action
+    abstract member GetProtectedAction: action: Action -> Action
 
     /// Get an EventHandler delegate which invokes the original action and handles any
     /// thrown Exceptions by passing them off the the available IExtensionErrorHandler
     /// values
-    abstract member GetProtectedEventHandler : eventHandler : EventHandler -> EventHandler
+    abstract member GetProtectedEventHandler: eventHandler: EventHandler -> EventHandler
 
     /// Report an Exception to the IExtensionErrorHandlers
-    abstract member Report : ex : Exception -> unit
+    abstract member Report: ex: Exception -> unit

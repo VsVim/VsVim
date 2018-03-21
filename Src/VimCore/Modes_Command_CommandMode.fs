@@ -8,8 +8,8 @@ open System.Text.RegularExpressions
 
 type internal CommandMode
     ( 
-        _buffer : IVimBuffer, 
-        _operations : ICommonOperations
+        _buffer: IVimBuffer, 
+        _operations: ICommonOperations
     ) =
 
     let _commandChangedEvent = StandardEvent()
@@ -21,13 +21,13 @@ type internal CommandMode
     // Command to show when entering command from Visual Mode
     static let FromVisualModeString = "'<,'>"
 
-    static let BindDataError : BindData<int> = {
+    static let BindDataError: BindData<int> = {
         KeyRemapMode = KeyRemapMode.None;
         BindFunction = fun _ -> BindResult.Error
     }
 
     let mutable _command = StringUtil.Empty
-    let mutable _historySession : IHistorySession<int, int> option = None
+    let mutable _historySession: IHistorySession<int, int> option = None
     let mutable _bindData = BindDataError
     let mutable _keepSelection = false
 
@@ -44,7 +44,7 @@ type internal CommandMode
         | Some historySession -> historySession.InPasteWait
         | None -> false
 
-    member x.ParseAndRunInput (command : string) = 
+    member x.ParseAndRunInput (command: string) = 
         let command = 
             if command.Length > 0 && command.[0] = ':' then
                 command.Substring(1)
@@ -73,7 +73,7 @@ type internal CommandMode
             else 
                 selection.Clear()
 
-    member x.Process (keyInput : KeyInput) =
+    member x.Process (keyInput: KeyInput) =
 
         match _bindData.BindFunction keyInput with
         | BindResult.Complete _ ->

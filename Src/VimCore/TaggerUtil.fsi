@@ -31,15 +31,15 @@ module TaggerUtil =
     val CreateBasicTagger<'TTag when 'TTag :> ITag> : PropertyCollection -> obj -> (unit -> IBasicTaggerSource<'TTag>) -> ITagger<'TTag>
 
     /// Create an IClassifieer implementation for the IBasicTaggerSource.
-    val CreateBasicClassifierRaw : IBasicTaggerSource<IClassificationTag> -> IClassifier
+    val CreateBasicClassifierRaw: IBasicTaggerSource<IClassificationTag> -> IClassifier
 
     /// Create an IClassifieer implementation for the IBasicTaggerSource.
-    val CreateBasicClassifier : PropertyCollection -> obj -> (unit -> IBasicTaggerSource<IClassificationTag>) -> IClassifier
+    val CreateBasicClassifier: PropertyCollection -> obj -> (unit -> IBasicTaggerSource<IClassificationTag>) -> IClassifier
 
     /// Get or create the IAdhocOutliner instance for the given ITextBuffer.  This return will be useless 
     /// unless the code which calls this method exports an ITaggerProvider which proxies the return 
     /// of GetOrCreateOutlinerTagger
-    val GetOrCreateOutliner : ITextBuffer -> IAdhocOutliner
+    val GetOrCreateOutliner: ITextBuffer -> IAdhocOutliner
 
     /// This is the ITagger implementation for IAdhocOutliner
-    val CreateOutlinerTagger : ITextBuffer -> ITagger<OutliningRegionTag>
+    val CreateOutlinerTagger: ITextBuffer -> ITagger<OutliningRegionTag>

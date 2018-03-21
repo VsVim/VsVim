@@ -10,27 +10,27 @@ open System.Text.RegularExpressions
 type ConfirmData = { 
 
     /// This is the regex which is being matched
-    Regex : VimRegex
+    Regex: VimRegex
 
     /// The replacement text
-    SubstituteText : string
+    SubstituteText: string
 
     /// This is the current SnapshotSpan which is presented to the user for replacement
-    CurrentMatch : SnapshotSpan 
+    CurrentMatch: SnapshotSpan 
 
     /// This is the last line number on which the substitute should occur
-    LastLineNumber : int
+    LastLineNumber: int
 
     /// Is this a replace all operation? 
-    IsReplaceAll : bool
+    IsReplaceAll: bool
 }
 
 type ConfirmAction = ConfirmData -> ModeSwitch 
 
 type internal SubstituteConfirmMode
     (
-        _vimBufferData : IVimBufferData,
-        _operations : ICommonOperations
+        _vimBufferData: IVimBufferData,
+        _operations: ICommonOperations
     ) as this = 
 
     let _vimTextBuffer = _vimBufferData.VimTextBuffer
@@ -40,8 +40,8 @@ type internal SubstituteConfirmMode
     let _editorOperations = _operations.EditorOperations
     let _registerMap = _vimBufferData.Vim.RegisterMap
     let _currentMatchChanged = Event<_>()
-    let mutable _commandMap : Map<KeyInput, ConfirmAction> = Map.empty
-    let mutable _confirmData : ConfirmData option = None
+    let mutable _commandMap: Map<KeyInput, ConfirmAction> = Map.empty
+    let mutable _confirmData: ConfirmData option = None
 
     do
         let add keyInput func = 
@@ -65,7 +65,7 @@ type internal SubstituteConfirmMode
 
     member x.CurrentSnapshot = _textBuffer.CurrentSnapshot
 
-    member x.CanProcess (keyInput : KeyInput) = not keyInput.IsMouseKey
+    member x.CanProcess (keyInput: KeyInput) = not keyInput.IsMouseKey
 
     member x.CaretPoint = TextViewUtil.GetCaretPoint _textView
 
@@ -103,7 +103,7 @@ type internal SubstituteConfirmMode
         ModeSwitch.SwitchMode ModeKind.Normal
 
     /// Move to the next match given provided ConfirmData 
-    member x.MoveToNext (data : ConfirmData) = 
+    member x.MoveToNext (data: ConfirmData) = 
 
         // First we need to get the point after the Current selection.  This function
         // is called after edits so it's possible the Snapshot is different.

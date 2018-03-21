@@ -94,7 +94,7 @@ module KeyNotationUtil =
         |> Map.ofSeq
 
     /// Convert the given special key name + modifier into a KeyInput value 
-    let ConvertSpecialKeyName (dataCharSpan : CharSpan) modifier = 
+    let ConvertSpecialKeyName (dataCharSpan: CharSpan) modifier = 
 
         let keyInput = 
             match Map.tryFind dataCharSpan SpecialKeyMap with
@@ -128,7 +128,7 @@ module KeyNotationUtil =
                 KeyInputUtil.ApplyKeyModifiers keyInput modifier |> Some
 
     /// Try and convert a <char-...> notation into a KeyInput value 
-    let TryCharNotationToKeyInput (dataCharSpan : CharSpan) = 
+    let TryCharNotationToKeyInput (dataCharSpan: CharSpan) = 
         Contract.Assert(dataCharSpan.CharAt 0 = '<')
         Contract.Assert(dataCharSpan.CharAt (dataCharSpan.Length - 1) = '>')
 
@@ -157,7 +157,7 @@ module KeyNotationUtil =
             | _ -> None
 
     /// Try and convert a key notation that is bracketed with < and > to a KeyInput value
-    let TryKeyNotationToKeyInput (dataCharSpan : CharSpan) = 
+    let TryKeyNotationToKeyInput (dataCharSpan: CharSpan) = 
         Contract.Assert(dataCharSpan.CharAt 0 = '<')
         Contract.Assert(dataCharSpan.CharAt (dataCharSpan.Length - 1) = '>')
 
@@ -198,7 +198,7 @@ module KeyNotationUtil =
     /// Try and convert the given string value into a KeyInput.  If the value is wrapped in 
     /// < and > then it will be interpreted as a special key modifier as defined by 
     /// :help key-notation
-    let TryStringToKeyInputCore (dataCharSpan : CharSpan) =
+    let TryStringToKeyInputCore (dataCharSpan: CharSpan) =
         if dataCharSpan.Length = 0 then
             None
         elif dataCharSpan.CharAt 0 = '<' then
@@ -216,7 +216,7 @@ module KeyNotationUtil =
 
     /// Try and convert the given string value into a single KeyInput value.  If the conversion
     /// fails or is more than 1 KeyInput in length then None will be returned
-    let TryStringToKeyInput (data : string) = 
+    let TryStringToKeyInput (data: string) = 
         let dataCharSpan = CharSpan(data, CharComparer.IgnoreCase)
         match TryStringToKeyInputCore dataCharSpan with
         | Some (keyInput, length) ->
@@ -253,7 +253,7 @@ module KeyNotationUtil =
         | Some list -> list
         | None -> invalidArg "data" (Resources.KeyNotationUtil_InvalidNotation data)
 
-    let TryGetSpecialKeyName (keyInput : KeyInput) = 
+    let TryGetSpecialKeyName (keyInput: KeyInput) = 
         let found = 
             SpecialKeyMap
             |> Seq.tryFind (fun pair -> 
@@ -265,11 +265,11 @@ module KeyNotationUtil =
         match found with 
         | None -> None
         | Some pair ->
-            let extra : VimKeyModifiers = Util.UnsetFlag keyInput.KeyModifiers pair.Value.KeyModifiers
+            let extra: VimKeyModifiers = Util.UnsetFlag keyInput.KeyModifiers pair.Value.KeyModifiers
             Some (pair.Key.ToString(), extra)
 
     /// Get the display name for the specified KeyInput value.
-    let GetDisplayName (keyInput : KeyInput) = 
+    let GetDisplayName (keyInput: KeyInput) = 
 
         let inner name keyModifiers forceBookend = 
             let rec getPrefix current keyModifiers = 

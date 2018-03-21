@@ -4,7 +4,7 @@ namespace Vim
 open Microsoft.VisualStudio.Text
 open System.Collections.Generic
 
-type MarkMap(_bufferTrackingService : IBufferTrackingService) =
+type MarkMap(_bufferTrackingService: IBufferTrackingService) =
 
     /// This is a map from letter to key.  The key is the key into the property collection
     /// of the ITextBuffer which holds the ITrackingLineColumn for the global mark.  We
@@ -18,9 +18,9 @@ type MarkMap(_bufferTrackingService : IBufferTrackingService) =
     /// is stored.  The MarkMap table lives much longer than the individual marks 
     /// so we hold them in a WeakReference<T> to prevent holding the ITextBuffer 
     /// in memory.
-    let mutable _globalMarkMap : Map<Letter, WeakReference<ITextBuffer>> = Map.empty
+    let mutable _globalMarkMap: Map<Letter, WeakReference<ITextBuffer>> = Map.empty
 
-    let mutable _globalLastExitedMap : Map<string, int * int> = Map.empty
+    let mutable _globalLastExitedMap: Map<string, int * int> = Map.empty
 
     /// Get the core information about the global mark represented by the letter
     member x.GetGlobalMarkData letter =
@@ -67,7 +67,7 @@ type MarkMap(_bufferTrackingService : IBufferTrackingService) =
         | Some (_, trackingLineColumn, _) -> trackingLineColumn.VirtualPoint
 
     /// Set the global mark to the value in question
-    member x.SetGlobalMark letter (vimTextBuffer : IVimTextBuffer) line column =
+    member x.SetGlobalMark letter (vimTextBuffer: IVimTextBuffer) line column =
         // First clear out the existing mark if it exists.  
         x.RemoveGlobalMark letter |> ignore
 
@@ -79,7 +79,7 @@ type MarkMap(_bufferTrackingService : IBufferTrackingService) =
         _globalMarkMap <- Map.add letter value _globalMarkMap
 
     /// Get the given mark in the context of the given IVimTextBuffer
-    member x.GetMark mark (vimBufferData : IVimBufferData) =
+    member x.GetMark mark (vimBufferData: IVimBufferData) =
         match mark with
         | Mark.GlobalMark letter -> 
 
@@ -116,7 +116,7 @@ type MarkMap(_bufferTrackingService : IBufferTrackingService) =
                     Some (VirtualSnapshotPointUtil.OfPoint snapshot)
 
     /// Set the given mark to the specified line and column in the context of the IVimTextBuffer
-    member x.SetMark mark (vimBufferData : IVimBufferData) line column = 
+    member x.SetMark mark (vimBufferData: IVimBufferData) line column = 
         let vimTextBuffer = vimBufferData.VimTextBuffer
         match mark with
         | Mark.GlobalMark letter -> 

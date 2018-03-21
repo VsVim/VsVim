@@ -16,7 +16,7 @@ open VimCoreExtensions
 type internal AutoCommandRunner
     [<ImportingConstructor>]
     (
-        _vim : IVim
+        _vim: IVim
     ) as this =
 
     let _vimData = _vim.VimData
@@ -28,7 +28,7 @@ type internal AutoCommandRunner
         |> Observable.add this.OnActiveTextViewChanged
 
     /// Create the Regex for the specified pattern.  The allowed items are specified in ':help autocmd-patterns'
-    static let CreateFilePatternRegex (pattern : string) = 
+    static let CreateFilePatternRegex (pattern: string) = 
         let builder = System.Text.StringBuilder()
         let mutable i = 0 
         while i < pattern.Length do 
@@ -66,7 +66,7 @@ type internal AutoCommandRunner
         |> List.ofSeq
 
     /// Run the specified AutoCommand against the IVimBuffer in question 
-    member x.RunAutoCommands (vimBuffer : IVimBuffer) eventKind = 
+    member x.RunAutoCommands (vimBuffer: IVimBuffer) eventKind = 
         if _vimHost.IsAutoCommandEnabled then
             let fileName = _vimHost.GetName vimBuffer.TextBuffer
             let autoCommandList = x.GetAutoCommands fileName eventKind
@@ -81,7 +81,7 @@ type internal AutoCommandRunner
                     |> ignore)
 
     /// Called when the active ITextView changes according to the host
-    member x.OnActiveTextViewChanged (e : TextViewChangedEventArgs) =
+    member x.OnActiveTextViewChanged (e: TextViewChangedEventArgs) =
         match OptionUtil.map2 _vim.GetVimBuffer e.OldTextView with
         | Some vimBuffer -> x.RunAutoCommands vimBuffer EventKind.BufLeave
         | None -> ()
@@ -91,7 +91,7 @@ type internal AutoCommandRunner
         | None -> ()
 
     /// VimBufferCreated is the closest event we have for BufEnter.   
-    member x.OnVimBufferCreated (vimBuffer : IVimBuffer) =
+    member x.OnVimBufferCreated (vimBuffer: IVimBuffer) =
         // TODO: BufEnter should really be raised every time the text buffer gets edit
         // focus.  Hard to detect that in WPF / VS though because keyboard focus is very
         // different than edit focus.  For now just raise it once here.  

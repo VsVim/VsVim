@@ -44,8 +44,8 @@ type internal SectionKind =
 
 type internal TextObjectUtil
     (
-        _globalSettings : IVimGlobalSettings,
-        _textBuffer : ITextBuffer
+        _globalSettings: IVimGlobalSettings,
+        _textBuffer: ITextBuffer
     ) = 
 
     /// List of characters which represent the end of a sentence. 
@@ -58,14 +58,14 @@ type internal TextObjectUtil
     member x.CurrentSnapshot = _textBuffer.CurrentSnapshot
 
     /// Is the line above the specified line empty
-    member x.IsLineAboveEmpty (line : ITextSnapshotLine) = 
+    member x.IsLineAboveEmpty (line: ITextSnapshotLine) = 
         let number = line.LineNumber - 1
         match SnapshotUtil.TryGetLine line.Snapshot number with
         | None -> true
         | Some line -> SnapshotLineUtil.IsEmpty line
 
     /// Is the line above the specified line blank or empty
-    member x.IsLineAboveBlankOrEmpty (line : ITextSnapshotLine) = 
+    member x.IsLineAboveBlankOrEmpty (line: ITextSnapshotLine) = 
         let number = line.LineNumber - 1
         match SnapshotUtil.TryGetLine line.Snapshot number with
         | None -> true
@@ -93,7 +93,7 @@ type internal TextObjectUtil
 
     /// Is this point the start of a paragraph.  Considers both paragraph and section 
     /// start points
-    member x.IsParagraphStart (column : SnapshotColumn) =
+    member x.IsParagraphStart (column: SnapshotColumn) =
         if column.IsStartOfLine then
             let line = column.Line
             x.IsParagraphStartOnly line || x.IsSectionStart SectionKind.Default line
@@ -144,7 +144,7 @@ type internal TextObjectUtil
 
     /// Is this the end point of the span of an actual sentence.  Considers sentence, paragraph and 
     /// section semantics
-    member x.IsSentenceEnd sentenceKind (column : SnapshotColumn) = 
+    member x.IsSentenceEnd sentenceKind (column: SnapshotColumn) = 
         let line = column.Line
         if column.IsStartOfLine && x.IsSentenceLine line then
             // If this point is the start of a sentence line then it's the end point of the
@@ -172,7 +172,7 @@ type internal TextObjectUtil
 
     /// Checks for a simple end of a sentence.  Only checks for the characters case and
     /// will ignore items like sentence lines and new lines
-    member x.IsSentenceEndSimple sentenceKind (column : SnapshotColumn) = 
+    member x.IsSentenceEndSimple sentenceKind (column: SnapshotColumn) = 
         if not (x.IsSentenceEndWhiteSpace column.Point) then
             // If the column doesn't begin in the white space that ends a sentence then
             // this can't possible be the end of a simple sentence
@@ -183,7 +183,7 @@ type internal TextObjectUtil
 
     /// Checks for the last character of a simple sentence.  Only checks for the characters 
     /// case and will ignore items like sentence lines
-    member x.IsSentenceLastSimple sentenceKind (point : SnapshotPoint) = 
+    member x.IsSentenceLastSimple sentenceKind (point: SnapshotPoint) = 
         // Is the char for the provided point in the given list.  Make sure to 
         // account for the snapshot end point here as it makes the remaining 
         // logic easier 
@@ -215,7 +215,7 @@ type internal TextObjectUtil
 
     /// Is this point the star of a sentence.  Considers sentences, paragraphs and section
     /// boundaries
-    member x.IsSentenceStart sentenceKind (column : SnapshotColumn) = 
+    member x.IsSentenceStart sentenceKind (column: SnapshotColumn) = 
         if x.IsSentenceStartOnly sentenceKind column then
             true
         else
@@ -234,7 +234,7 @@ type internal TextObjectUtil
 
     /// Is the start of a sentence.  This doesn't consider section or paragraph boundaries
     /// but specifically items related to the start of a sentence
-    member x.IsSentenceStartOnly sentenceKind (column : SnapshotColumn) = 
+    member x.IsSentenceStartOnly sentenceKind (column: SnapshotColumn) = 
         let mutable adjustedColumn = column 
         while adjustedColumn.Column > 0 && SnapshotPointUtil.IsBlank (adjustedColumn.Point.Subtract(1)) do
             adjustedColumn <- adjustedColumn.Subtract 1
@@ -266,7 +266,7 @@ type internal TextObjectUtil
                 x.IsSentenceEnd sentenceKind column
 
     /// Is the SnapshotPoint in the white space between sentences
-    member x.IsSentenceWhiteSpace sentenceKind (column : SnapshotColumn) =
+    member x.IsSentenceWhiteSpace sentenceKind (column: SnapshotColumn) =
         if column.IsStartOfLine && x.IsEmptyLineWithNoEmptyAbove column.Line then
             false
         else
@@ -288,7 +288,7 @@ type internal TextObjectUtil
 
     /// This function is used to match nroff macros for both section and paragraph sections.  It 
     /// determines if the line starts with the proper macro string
-    member x.IsTextMacroMatchLine (line : ITextSnapshotLine) macroString =
+    member x.IsTextMacroMatchLine (line: ITextSnapshotLine) macroString =
         let isLengthCorrect = 0 = (String.length macroString) % 2
         if not isLengthCorrect then 
             // Match can only occur with a valid macro string length
@@ -318,7 +318,7 @@ type internal TextObjectUtil
     member x.GetParagraphs path point = 
 
         // Get the full span of a paragraph given a start point
-        let getFullSpanFromStartColumn (column : SnapshotColumn) =
+        let getFullSpanFromStartColumn (column: SnapshotColumn) =
             Contract.Assert (x.IsParagraphStart column)
             let point = column.Point
             let snapshot = SnapshotPointUtil.GetSnapshot point
@@ -424,10 +424,10 @@ type internal TextObjectUtil
     /// Get the SnapshotSpan values for the sentence values starting from the given SnapshotPoint 
     /// in the specified direction.  Note: The full span of the section will be returned if the 
     /// provided SnapshotPoint is in the middle of it
-    member x.GetSentences sentenceKind path (point : SnapshotPoint) =
+    member x.GetSentences sentenceKind path (point: SnapshotPoint) =
 
         // Get the full span of a sentence given the particular start point
-        let getFullSpanFromStartColumn (column : SnapshotColumn) =
+        let getFullSpanFromStartColumn (column: SnapshotColumn) =
             Contract.Assert (x.IsSentenceStart sentenceKind column)
 
             let point = column.Point
@@ -447,14 +447,14 @@ type internal TextObjectUtil
         x.GetTextObjectsCore point path (x.IsSentenceStart sentenceKind) getFullSpanFromStartColumn
 
     /// Get the text objects core from the given point in the given direction
-    member x.GetTextObjectsCore (point : SnapshotPoint) path (isStartColumn : SnapshotColumn -> bool) (getSpanFromStartColumn : SnapshotColumn -> SnapshotSpan) = 
+    member x.GetTextObjectsCore (point: SnapshotPoint) path (isStartColumn: SnapshotColumn -> bool) (getSpanFromStartColumn: SnapshotColumn -> SnapshotSpan) = 
 
         let column = SnapshotColumnUtil.CreateFromPoint point
         let snapshot = SnapshotPointUtil.GetSnapshot point
         let isNotStartColumn column = not (isStartColumn column)
 
         // Wrap the get full span method to deal with <end>.  
-        let getSpanFromStartColumn (column : SnapshotColumn) = 
+        let getSpanFromStartColumn (column: SnapshotColumn) = 
             if SnapshotPointUtil.IsEndPoint column.Point then
                 SnapshotSpan(column.Point, 0)
             else

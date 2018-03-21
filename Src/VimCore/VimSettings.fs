@@ -21,7 +21,7 @@ type SettingValueParseFunc = string -> SettingValue option
 
 type internal SettingsMap
     (
-        _rawData : Setting seq
+        _rawData: Setting seq
     ) as this =
 
     let _settingChangedEvent = StandardEvent<SettingEventArgs>()
@@ -45,7 +45,7 @@ type internal SettingsMap
 
     member x.SettingChanged = _settingChangedEvent.Publish
 
-    member x.AddSetting (setting : Setting) =
+    member x.AddSetting (setting: Setting) =
         _settingMap.Add(setting.Name, setting)
         _shortToFullNameMap.Add(setting.Abbreviation, setting.Name)
 
@@ -66,7 +66,7 @@ type internal SettingsMap
         | Some fullName -> fullName
         | None -> settingNameOrAbbrev
 
-    member x.TrySetValue settingNameOrAbbrev (value : SettingValue) =
+    member x.TrySetValue settingNameOrAbbrev (value: SettingValue) =
         let name = x.GetFullName settingNameOrAbbrev
         match _settingMap.TryGetValueEx name with
         | None -> false
@@ -88,7 +88,7 @@ type internal SettingsMap
             | None -> false
             | Some value -> x.TrySetValue setting.Name value
 
-    member x.GetSetting settingNameOrAbbrev : Setting option =
+    member x.GetSetting settingNameOrAbbrev: Setting option =
         let name = x.GetFullName settingNameOrAbbrev
         _settingMap.TryGetValueEx name
 
@@ -116,7 +116,7 @@ type internal SettingsMap
         | SettingValue.String _ -> failwith "invalid"
         | SettingValue.Toggle _ -> failwith "invalid"
 
-    member x.ConvertStringToValue (setting : Setting) (str : string) = 
+    member x.ConvertStringToValue (setting: Setting) (str: string) = 
         match _customParseMap.TryGetValueEx setting.Name with
         | None -> x.ConvertStringToValueCore str setting.Kind
         | Some func ->
@@ -238,7 +238,7 @@ type internal GlobalSettings() =
     member x.GetCommaOptions name mappingList emptyOption combineFunc = 
         _map.GetStringValue name 
         |> StringUtil.Split ',' 
-        |> Seq.fold (fun (options : 'a) (current : string)->
+        |> Seq.fold (fun (options: 'a) (current: string)->
             match List.tryFind (fun (name, _) -> name = current) mappingList with
             | None -> options
             | Some (_, value) -> combineFunc options value) emptyOption
@@ -468,7 +468,7 @@ type internal GlobalSettings() =
 
 type internal LocalSettings
     ( 
-        _globalSettings : IVimGlobalSettings
+        _globalSettings: IVimGlobalSettings
     ) =
 
     static let LocalSettingInfoList =
@@ -491,7 +491,7 @@ type internal LocalSettings
 
     member x.Map = _map
 
-    static member Copy (settings : IVimLocalSettings) = 
+    static member Copy (settings: IVimLocalSettings) = 
         let copy = LocalSettings(settings.GlobalSettings)
         settings.Settings
         |> Seq.filter (fun s -> not s.IsValueCalculated)
@@ -564,8 +564,8 @@ type internal LocalSettings
 
 type internal WindowSettings
     ( 
-        _globalSettings : IVimGlobalSettings,
-        _textView : ITextView option
+        _globalSettings: IVimGlobalSettings,
+        _textView: ITextView option
     ) as this =
 
     static let WindowSettingInfoList =
@@ -588,7 +588,7 @@ type internal WindowSettings
         _map.ReplaceSetting setting
 
     new (settings) = WindowSettings(settings, None)
-    new (settings, textView : ITextView) = WindowSettings(settings, Some textView)
+    new (settings, textView: ITextView) = WindowSettings(settings, Some textView)
 
     member x.Map = _map
 
@@ -600,7 +600,7 @@ type internal WindowSettings
         | None -> defaultValue
         | Some textView -> int (textView.ViewportHeight / textView.LineHeight / 2.0 + 0.5)
 
-    static member Copy (settings : IVimWindowSettings) = 
+    static member Copy (settings: IVimWindowSettings) = 
         let copy = WindowSettings(settings.GlobalSettings)
         settings.Settings
         |> Seq.filter (fun s -> not s.IsValueCalculated)
@@ -704,7 +704,7 @@ type internal EditorToSettingSynchronizer
                 IsLocal = false
             })
 
-    member x.StartSynchronizing (vimBuffer : IVimBuffer) settingSyncSource = 
+    member x.StartSynchronizing (vimBuffer: IVimBuffer) settingSyncSource = 
         let properties = vimBuffer.TextView.Properties
         if not (properties.ContainsProperty _key) then
             properties.AddProperty(_key, _key)
@@ -714,7 +714,7 @@ type internal EditorToSettingSynchronizer
             | SettingSyncSource.Editor -> x.CopyEditorToVimSettings vimBuffer
             | SettingSyncSource.Vim -> x.CopyVimToEditorSettings vimBuffer
 
-    member x.SetupSynchronization (vimBuffer : IVimBuffer) = 
+    member x.SetupSynchronization (vimBuffer: IVimBuffer) = 
         let editorOptions = vimBuffer.TextView.Options
         if editorOptions <> null then
 
@@ -756,11 +756,11 @@ type internal EditorToSettingSynchronizer
                 bag.DisposeAll())
 
     /// Is this a local setting of note
-    member x.IsTrackedLocalSetting (setting : Setting) = 
+    member x.IsTrackedLocalSetting (setting: Setting) = 
         _settingList |> Seq.exists (fun x -> x.IsLocal && x.VimSettingName = setting.Name)
 
     /// Is this a window setting of note
-    member x.IsTrackedWindowSetting (setting : Setting) = 
+    member x.IsTrackedWindowSetting (setting: Setting) = 
         _settingList |> Seq.exists (fun x -> not x.IsLocal && x.VimSettingName = setting.Name)
 
     /// Is this an editor setting of note
@@ -768,7 +768,7 @@ type internal EditorToSettingSynchronizer
         _settingList |> Seq.exists (fun x -> x.EditorOptionKey = optionId) 
 
     /// Synchronize the settings if needed.  Prevent recursive sync's here
-    member x.TrySync (vimBuffer : IVimBuffer) syncFunc = 
+    member x.TrySync (vimBuffer: IVimBuffer) syncFunc = 
         let editorOptions = vimBuffer.TextView.Options
         if editorOptions <> null then
             let localSettings = vimBuffer.LocalSettings
@@ -789,7 +789,7 @@ type internal EditorToSettingSynchronizer
 
     /// Synchronize the settings from the local settings to the editor.  Do not
     /// call this directly but instead call through SynchronizeSettings
-    member x.CopyEditorToVimSettings (vimBuffer : IVimBuffer) = 
+    member x.CopyEditorToVimSettings (vimBuffer: IVimBuffer) = 
         x.TrySync vimBuffer (fun vimBuffer editorOptions ->
             for data in _settingList do 
                 match data.GetEditorValue editorOptions with

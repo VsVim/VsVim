@@ -12,17 +12,17 @@ open Microsoft.VisualStudio.Utilities
 /// need the same data provided by IVimBuffer.
 type VimBufferData 
     (
-        _vimTextBuffer : IVimTextBuffer,
-        _textView : ITextView,
-        _windowSettings : IVimWindowSettings,
-        _jumpList : IJumpList,
-        _statusUtil : IStatusUtil,
-        _wordUtil : IWordUtil
+        _vimTextBuffer: IVimTextBuffer,
+        _textView: ITextView,
+        _windowSettings: IVimWindowSettings,
+        _jumpList: IJumpList,
+        _statusUtil: IStatusUtil,
+        _wordUtil: IWordUtil
     ) = 
 
-    let mutable _currentDirectory : string option = None
-    let mutable _visualCaretStartPoint : ITrackingPoint option = None
-    let mutable _visualAnchorPoint : ITrackingPoint option = None 
+    let mutable _currentDirectory: string option = None
+    let mutable _visualCaretStartPoint: ITrackingPoint option = None
+    let mutable _visualAnchorPoint: ITrackingPoint option = None 
 
     interface IVimBufferData with
         member x.CurrentDirectory 
@@ -48,7 +48,7 @@ type VimBufferData
 /// Implementation of the uninitialized mode.  This is designed to handle the ITextView
 /// while it's in an uninitialized state.  It shouldn't touch the ITextView in any way.  
 /// This is why it doesn't even contain a reference to it
-type UninitializedMode(_vimTextBuffer : IVimTextBuffer) =
+type UninitializedMode(_vimTextBuffer: IVimTextBuffer) =
     interface IMode with
         member x.VimTextBuffer = _vimTextBuffer
         member x.ModeKind = ModeKind.Uninitialized
@@ -61,11 +61,11 @@ type UninitializedMode(_vimTextBuffer : IVimTextBuffer) =
 
 type internal ModeMap
     (
-        _vimTextBuffer : IVimTextBuffer,
-        _incrementalSearch : IIncrementalSearch
+        _vimTextBuffer: IVimTextBuffer,
+        _incrementalSearch: IIncrementalSearch
     ) = 
 
-    let mutable _modeMap : Map<ModeKind, IMode> = Map.empty
+    let mutable _modeMap: Map<ModeKind, IMode> = Map.empty
     let mutable _mode = UninitializedMode(_vimTextBuffer) :> IMode
     let mutable _previousMode = None
     let mutable _isSwitchingMode = false
@@ -134,24 +134,24 @@ type internal ModeMap
 
     member x.GetMode kind = Map.find kind _modeMap
 
-    member x.AddMode (mode : IMode) = 
+    member x.AddMode (mode: IMode) = 
         _modeMap <- Map.add (mode.ModeKind) mode _modeMap
 
-    member x.RemoveMode (mode : IMode) = 
+    member x.RemoveMode (mode: IMode) = 
         _modeMap <- Map.remove mode.ModeKind _modeMap
 
-    member x.Reset (mode : IMode) =
+    member x.Reset (mode: IMode) =
         _mode <- mode
         _previousMode <- None
 
 type internal VimBuffer 
     (
-        _vimBufferData : IVimBufferData,
-        _incrementalSearch : IIncrementalSearch,
-        _motionUtil : IMotionUtil,
-        _wordNavigator : ITextStructureNavigator,
-        _windowSettings : IVimWindowSettings,
-        _commandUtil : ICommandUtil
+        _vimBufferData: IVimBufferData,
+        _incrementalSearch: IIncrementalSearch,
+        _motionUtil: IMotionUtil,
+        _wordNavigator: ITextStructureNavigator,
+        _windowSettings: IVimWindowSettings,
+        _commandUtil: ICommandUtil
     ) as this =
 
     /// Maximum number of maps which can occur for a key map.  This is not a standard vim or gVim
@@ -176,11 +176,11 @@ type internal VimBuffer
     /// Are we in the middle of executing a single action in a given mode after which we
     /// return back to insert mode.  When Some the value can only be Insert or Replace as 
     /// they are the only modes to issue the command
-    let mutable _inOneTimeCommand : ModeKind option = None
+    let mutable _inOneTimeCommand: ModeKind option = None
 
     /// This is the buffered input when a remap request needs more than one 
     /// element
-    let mutable _bufferedKeyInput : KeyInputSet option = None
+    let mutable _bufferedKeyInput: KeyInputSet option = None
 
     let _keyInputStartEvent = StandardEvent<KeyInputStartEventArgs>()
     let _keyInputProcessingEvent = StandardEvent<KeyInputStartEventArgs>()
@@ -293,7 +293,7 @@ type internal VimBuffer
             else
                 false
 
-        let mapped (keyInputSet : KeyInputSet) =
+        let mapped (keyInputSet: KeyInputSet) =
             // Simplest case.  Mapped to a set of values so just consider the first one
             //
             // Note: This is not necessarily the provided KeyInput.  There could be several
@@ -389,7 +389,7 @@ type internal VimBuffer
 
     /// Process the single KeyInput value.  No mappings are considered here.  The KeyInput is 
     /// simply processed directly
-    member x.ProcessOneKeyInput (keyInput : KeyInput) =
+    member x.ProcessOneKeyInput (keyInput: KeyInput) =
 
         let processResult = 
 
@@ -466,7 +466,7 @@ type internal VimBuffer
 
     /// Process the provided KeyInputSet until completion or until a point where an 
     /// ambiguous mapping is reached
-    member x.ProcessCore (keyInputSet : KeyInputSet) = 
+    member x.ProcessCore (keyInputSet: KeyInputSet) = 
         Contract.Assert(Option.isNone _bufferedKeyInput)
 
         let mapCount = ref 0
@@ -482,7 +482,7 @@ type internal VimBuffer
 
         // Process the KeyInput values in the given set to completion without considering
         // any further key mappings
-        let processSet (keyInputSet : KeyInputSet) = 
+        let processSet (keyInputSet: KeyInputSet) = 
             let mutable error = false
             for keyInput in keyInputSet.KeyInputs do
                 if not (isError ()) then 
@@ -531,7 +531,7 @@ type internal VimBuffer
         processResult.Value
 
     /// Actually process the input key.  Raise the change event on an actual change
-    member x.Process (keyInput : KeyInput) =
+    member x.Process (keyInput: KeyInput) =
 
         // Raise the event that we received the key
         let args = KeyInputStartEventArgs(keyInput)

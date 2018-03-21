@@ -8,15 +8,15 @@ open Microsoft.VisualStudio.Text.Operations
 open Microsoft.VisualStudio.Utilities
 
 type internal VimBufferData = 
-    new : IVimTextBuffer * ITextView * IVimWindowSettings * IJumpList * IStatusUtil * IWordUtil -> VimBufferData
+    new: IVimTextBuffer * ITextView * IVimWindowSettings * IJumpList * IStatusUtil * IWordUtil -> VimBufferData
 
     interface IVimBufferData
 
 type internal VimBuffer =
 
-    new : IVimBufferData * IIncrementalSearch * IMotionUtil * ITextStructureNavigator * IVimWindowSettings * ICommandUtil -> VimBuffer
+    new: IVimBufferData * IIncrementalSearch * IMotionUtil * ITextStructureNavigator * IVimWindowSettings * ICommandUtil -> VimBuffer
 
-    member AddMode : IMode -> unit
+    member AddMode: IMode -> unit
 
     interface IVimBuffer
 

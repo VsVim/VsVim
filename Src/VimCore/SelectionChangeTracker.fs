@@ -17,10 +17,10 @@ open System.Collections.Generic
 /// inside on
 type internal SelectionChangeTracker
     ( 
-        _vimBuffer : IVimBuffer,
-        _commonOperations : ICommonOperations,
-        _selectionOverrideList : IVisualModeSelectionOverride list,
-        _mouseDevice : IMouseDevice
+        _vimBuffer: IVimBuffer,
+        _commonOperations: ICommonOperations,
+        _selectionOverrideList: IVisualModeSelectionOverride list,
+        _mouseDevice: IMouseDevice
     ) as this =
 
     let _globalSettings = _vimBuffer.GlobalSettings
@@ -234,9 +234,9 @@ type internal SelectionChangeTracker
 type internal SelectionChangeTrackerFactory
     [<ImportingConstructor>]
     (
-        [<ImportMany>] _selectionOverrideList : IVisualModeSelectionOverride seq,
-        _mouseDevice : IMouseDevice,
-        _commonOperationsFactory : ICommonOperationsFactory
+        [<ImportMany>] _selectionOverrideList: IVisualModeSelectionOverride seq,
+        _mouseDevice: IMouseDevice,
+        _commonOperationsFactory: ICommonOperationsFactory
     ) =
 
     let _selectionOverrideList = _selectionOverrideList |> List.ofSeq

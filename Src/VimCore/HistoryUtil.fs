@@ -24,10 +24,10 @@ type HistoryCommand =
 
 type internal HistorySession<'TData, 'TResult>
     (
-        _historyClient : IHistoryClient<'TData, 'TResult>,
-        _initialClientData : 'TData,
-        _command : string,
-        _buffer : IVimBuffer option
+        _historyClient: IHistoryClient<'TData, 'TResult>,
+        _initialClientData: 'TData,
+        _command: string,
+        _buffer: IVimBuffer option
     ) =
 
     let _registerMap = _historyClient.RegisterMap
@@ -120,7 +120,7 @@ type internal HistorySession<'TData, 'TResult>
             x.CreateBindResult()
 
     /// Run a history scroll at the specified index
-    member x.DoHistoryScroll (historyList : string list) index =
+    member x.DoHistoryScroll (historyList: string list) index =
         if index < 0 || index >= historyList.Length then
             // Make sure we are searching at a valid index
             _historyClient.Beep()

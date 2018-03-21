@@ -6,9 +6,9 @@ open System.Runtime.InteropServices
 [<Sealed>]
 type KeyInput
     (
-        _key : VimKey,
-        _modKey : VimKeyModifiers, 
-        _literal : char option 
+        _key: VimKey,
+        _modKey: VimKeyModifiers, 
+        _literal: char option 
     ) =
 
     member x.Char = _literal |> OptionUtil.getOrDefault CharUtil.MinValue
@@ -37,7 +37,7 @@ type KeyInput
     /// This is demonstratable in a couple of areas.  One simple one is using the 
     /// the CTRL-F command (scroll down).  It has the same behavior with capital 
     /// or lower case F.
-    member x.CompareTo (right : KeyInput) =
+    member x.CompareTo (right: KeyInput) =
         if obj.ReferenceEquals(right, null) then
             1
         else 
@@ -258,7 +258,7 @@ module KeyInputUtil =
             |> List.ofSeq
 
 #if DEBUG
-        let mutable debugMap : Map<char, KeyInput> = Map.empty
+        let mutable debugMap: Map<char, KeyInput> = Map.empty
         for tuple in inputs do
             let c = fst tuple
             let found = Map.tryFind c debugMap
@@ -302,9 +302,9 @@ module KeyInputUtil =
     /// Apply the modifiers to the given KeyInput and determine the result.  This will
     /// not necessarily return a KeyInput with the modifier set.  It attempts to unify 
     /// certain ambiguous combinations.
-    let ApplyKeyModifiers (keyInput : KeyInput) (targetModifiers : VimKeyModifiers) =
+    let ApplyKeyModifiers (keyInput: KeyInput) (targetModifiers: VimKeyModifiers) =
 
-        let normalizeShift (keyInput : KeyInput) =
+        let normalizeShift (keyInput: KeyInput) =
             match keyInput.RawChar with
             | None -> keyInput
             | Some c ->
@@ -342,7 +342,7 @@ module KeyInputUtil =
                     // Nothing special to do here
                     keyInput
 
-        let normalizeControl (keyInput : KeyInput) = 
+        let normalizeControl (keyInput: KeyInput) = 
             if Util.IsFlagSet keyInput.KeyModifiers VimKeyModifiers.Alt then
                 keyInput
             else
@@ -365,7 +365,7 @@ module KeyInputUtil =
                         let modifiers = Util.UnsetFlag keyInput.KeyModifiers VimKeyModifiers.Control
                         ChangeKeyModifiersDangerous keyInput modifiers
 
-        let normalizeAlt (keyInput : KeyInput) =
+        let normalizeAlt (keyInput: KeyInput) =
             match keyInput.RawChar with
             | None -> keyInput
             | Some c ->
@@ -382,7 +382,7 @@ module KeyInputUtil =
                     // Nothing special to do here
                     keyInput
 
-        let normalizeAltGr (keyInput : KeyInput) = 
+        let normalizeAltGr (keyInput: KeyInput) = 
             match keyInput.RawChar with
             | None -> keyInput
             | Some c ->
@@ -390,7 +390,7 @@ module KeyInputUtil =
                 // key mapping. So in order to let VsVim behave the same way, the modifiers should be removed. Furthermore there's 
                 // no special Alt-Gr modifier, it's rerpresented by Ctrl+Alt, so remove both of them. 
                 // This fixes the #1008 and #1390 issues.
-                let unsetflag (a : VimKeyModifiers) (b : VimKeyModifiers) : VimKeyModifiers = Util.UnsetFlag a b
+                let unsetflag (a: VimKeyModifiers) (b: VimKeyModifiers): VimKeyModifiers = Util.UnsetFlag a b
                 let unsetflags a b c = unsetflag (unsetflag a b) c
                 let modifiers = unsetflags keyInput.KeyModifiers VimKeyModifiers.Alt VimKeyModifiers.Control
                 KeyInput(keyInput.Key, modifiers, Some c)
@@ -441,7 +441,7 @@ module KeyInputUtil =
         let keyInput = ch |> CharToKeyInput 
         ApplyKeyModifiers keyInput VimKeyModifiers.Alt
 
-    let GetNonKeypadEquivalent (keyInput : KeyInput) = 
+    let GetNonKeypadEquivalent (keyInput: KeyInput) = 
 
         let apply c = 
             let keyInput = CharToKeyInput c

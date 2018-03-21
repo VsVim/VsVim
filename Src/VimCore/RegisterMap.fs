@@ -3,7 +3,7 @@
 namespace Vim
 
 /// IRegisterValueBacking implementation for the clipboard 
-type ClipboardRegisterValueBacking (_device : IClipboardDevice) =
+type ClipboardRegisterValueBacking (_device: IClipboardDevice) =
 
     member x.RegisterValue = 
         let text = _device.Text
@@ -23,25 +23,25 @@ type ClipboardRegisterValueBacking (_device : IClipboardDevice) =
 /// case letter registers can be accessed via an upper case version.  The only
 /// difference is when accessed via upper case sets of the value should be 
 /// append operations
-type AppendRegisterValueBacking (_register : Register) =
+type AppendRegisterValueBacking (_register: Register) =
     interface IRegisterValueBacking with
         member x.RegisterValue 
             with get () = _register.RegisterValue
             and set value = _register.RegisterValue <- _register.RegisterValue.Append value
 
-type LastSearchRegisterValueBacking (_vimData : IVimData) = 
+type LastSearchRegisterValueBacking (_vimData: IVimData) = 
     interface IRegisterValueBacking with
         member x.RegisterValue 
             with get () = RegisterValue(_vimData.LastSearchData.Pattern, OperationKind.CharacterWise)
             and set value = _vimData.LastSearchData <- SearchData(value.StringValue, SearchPath.Forward, false)
 
-type CommandLineBacking (_vimData : IVimData) = 
+type CommandLineBacking (_vimData: IVimData) = 
     interface IRegisterValueBacking  with
         member x.RegisterValue
             with get() = RegisterValue(_vimData.LastCommandLine, OperationKind.CharacterWise)
             and set _ = ()
 
-type LastTextInsertBacking (_vimData : IVimData) = 
+type LastTextInsertBacking (_vimData: IVimData) = 
     interface IRegisterValueBacking with
         member x.RegisterValue 
             with get() = 
@@ -56,8 +56,8 @@ type internal BlackholeRegisterValueBacking() =
             with get() = _value
             and set _ = ()
 
-type internal RegisterMap (_map : Map<RegisterName, Register>) =
-    new(vimData : IVimData, clipboard : IClipboardDevice, currentFileNameFunc : unit -> string option) = 
+type internal RegisterMap (_map: Map<RegisterName, Register>) =
+    new(vimData: IVimData, clipboard: IClipboardDevice, currentFileNameFunc: unit -> string option) = 
         let clipboardBacking = ClipboardRegisterValueBacking(clipboard) :> IRegisterValueBacking
         let commandLineBacking = CommandLineBacking(vimData) :> IRegisterValueBacking
         let lastTextInsertBacking = LastTextInsertBacking(vimData) :> IRegisterValueBacking
@@ -72,7 +72,7 @@ type internal RegisterMap (_map : Map<RegisterName, Register>) =
                 and set _ = () }
 
         // Is this an append register 
-        let isAppendRegister (name : RegisterName) = name.IsAppend
+        let isAppendRegister (name: RegisterName) = name.IsAppend
 
         let getBacking name = 
             match name with 
@@ -98,7 +98,7 @@ type internal RegisterMap (_map : Map<RegisterName, Register>) =
             let originalMap = map
             RegisterName.All
             |> Seq.filter isAppendRegister
-            |> Seq.fold (fun map (name : RegisterName) ->
+            |> Seq.fold (fun map (name: RegisterName) ->
                 match name.Char with
                 | None -> map
                 | Some c ->

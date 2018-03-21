@@ -7,19 +7,19 @@ open Microsoft.VisualStudio.Text.Editor.OptionsExtensionMethods
 
 type internal GlobalSettings = 
     interface IVimGlobalSettings
-    new : unit -> GlobalSettings
+    new: unit -> GlobalSettings
 
 type internal LocalSettings = 
     interface IVimLocalSettings
-    new : IVimGlobalSettings -> LocalSettings
+    new: IVimGlobalSettings -> LocalSettings
 
-    static member Copy : IVimLocalSettings -> IVimLocalSettings
+    static member Copy: IVimLocalSettings -> IVimLocalSettings
 
 type internal WindowSettings = 
     interface IVimWindowSettings
-    new : IVimGlobalSettings -> WindowSettings
-    new : IVimGlobalSettings * ITextView -> WindowSettings
+    new: IVimGlobalSettings -> WindowSettings
+    new: IVimGlobalSettings * ITextView -> WindowSettings
 
-    static member Copy : IVimWindowSettings -> IVimWindowSettings
+    static member Copy: IVimWindowSettings -> IVimWindowSettings
 
 

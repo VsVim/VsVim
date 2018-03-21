@@ -15,7 +15,7 @@ open StringBuilderExtensions
 module internal CommonUtil = 
 
     /// Raise the error / warning messages for a given SearchResult
-    let RaiseSearchResultMessage (statusUtil : IStatusUtil) searchResult =
+    let RaiseSearchResultMessage (statusUtil: IStatusUtil) searchResult =
 
         match searchResult with 
         | SearchResult.Found (searchData, _, _, didWrap) ->
@@ -38,9 +38,9 @@ module internal CommonUtil =
 
 type internal CommonOperations
     (
-        _vimBufferData : IVimBufferData,
-        _editorOperations : IEditorOperations,
-        _outliningManager : IOutliningManager option
+        _vimBufferData: IVimBufferData,
+        _editorOperations: IEditorOperations,
+        _outliningManager: IOutliningManager option
     ) =
 
     let _vimTextBuffer = _vimBufferData.VimTextBuffer
@@ -151,7 +151,7 @@ type internal CommonOperations
     // Convert any virtual spaces to real normalized spaces
     member x.FillInVirtualSpace () =
         if x.CaretVirtualPoint.IsInVirtualSpace then
-            let blanks : string = 
+            let blanks: string = 
                 let blanks = StringUtil.RepeatChar x.CaretVirtualPoint.VirtualSpaces ' '
                 x.NormalizeBlanks blanks
 
@@ -323,7 +323,7 @@ type internal CommonOperations
     /// This is needed in outlining cases where a visual line has a different edit line 
     /// at the start and line break of the visual line.  The function will map the line at the
     /// line break back to the line of the start. 
-    member x.AdjustEditLineForVisualSnapshotLine (line : ITextSnapshotLine) = 
+    member x.AdjustEditLineForVisualSnapshotLine (line: ITextSnapshotLine) = 
         let bufferGraph = _textView.BufferGraph
         let visualSnapshot = _textView.TextViewModel.VisualBuffer.CurrentSnapshot
         match BufferGraphUtil.MapSpanUpToSnapshot bufferGraph line.ExtentIncludingLineBreak SpanTrackingMode.EdgeInclusive visualSnapshot with
@@ -337,7 +337,7 @@ type internal CommonOperations
 
     /// Delete count lines from the cursor.  The caret should be positioned at the start
     /// of the first line for both undo / redo
-    member x.DeleteLines (startLine : ITextSnapshotLine) count registerName =
+    member x.DeleteLines (startLine: ITextSnapshotLine) count registerName =
 
         // Function to actually perform the delete
         let doDelete spanOnVisualSnapshot caretPointOnVisualSnapshot includesLastLine =  
@@ -558,7 +558,7 @@ type internal CommonOperations
         _maintainCaretColumn <- MaintainCaretColumn.Spaces spaces
 
     /// Move the caret to the position dictated by the given MotionResult value
-    member x.MoveCaretToMotionResult (result : MotionResult) =
+    member x.MoveCaretToMotionResult (result: MotionResult) =
 
         let shouldMaintainCaretColumn = Util.IsFlagSet result.MotionResultFlags MotionResultFlags.MaintainCaretColumn
         match shouldMaintainCaretColumn, result.CaretColumn with
@@ -610,7 +610,7 @@ type internal CommonOperations
     /// Many operations for moving a motion result need to be calculated in the
     /// visual snapshot.  This method will return the DirectionLastLine value
     /// in that snapshot or the original value if no mapping is possible. 
-    member x.GetDirectionLastLineInVisualSnapshot (result : MotionResult) : ITextSnapshotLine =
+    member x.GetDirectionLastLineInVisualSnapshot (result: MotionResult): ITextSnapshotLine =
         let line = result.DirectionLastLine
         x.AdjustEditLineForVisualSnapshotLine line
 
@@ -618,7 +618,7 @@ type internal CommonOperations
     ///
     /// Note: This method mixes points from the edit and visual snapshot.  Take care
     /// when changing this function to account for both. 
-    member x.MoveCaretToMotionResultCore (result : MotionResult) =
+    member x.MoveCaretToMotionResultCore (result: MotionResult) =
 
         let point = 
 
@@ -686,7 +686,7 @@ type internal CommonOperations
 
     /// Move the caret to the proper indentation on a newly created line.  The context line 
     /// is provided to calculate an indentation off of
-    member x.GetNewLineIndent  (contextLine : ITextSnapshotLine) (newLine : ITextSnapshotLine) =
+    member x.GetNewLineIndent  (contextLine: ITextSnapshotLine) (newLine: ITextSnapshotLine) =
         match _vimHost.GetNewLineIndent _textView contextLine newLine with
         | Some indent -> Some indent
         | None ->
@@ -785,7 +785,7 @@ type internal CommonOperations
         |> OptionUtil.getOrDefault (SnapshotSpanUtil.CreateEmpty point)
         |> SnapshotSpanUtil.GetText
 
-    member x.NavigateToPoint (point : VirtualSnapshotPoint) = 
+    member x.NavigateToPoint (point: VirtualSnapshotPoint) = 
         let textBuffer = point.Position.Snapshot.TextBuffer
         if textBuffer = _textView.TextBuffer then 
             x.MoveCaretToPoint point.Position (ViewFlags.Visible ||| ViewFlags.ScrollOffset)
@@ -805,7 +805,7 @@ type internal CommonOperations
 
     /// Normalize any blanks to the appropriate number of space characters based on the 
     /// Vim settings
-    member x.NormalizeBlanksToSpaces (text : string) =
+    member x.NormalizeBlanksToSpaces (text: string) =
         Contract.Assert(StringUtil.IsBlanks text)
         let builder = System.Text.StringBuilder()
         let tabSize = _localSettings.TabStop
@@ -825,7 +825,7 @@ type internal CommonOperations
         builder.ToString()
 
     /// Normalize spaces into tabs / spaces based on the ExpandTab, TabStop settings
-    member x.NormalizeSpaces (text : string) = 
+    member x.NormalizeSpaces (text: string) = 
         Contract.Assert(Seq.forall (fun c -> c = ' ') text)
         if _localSettings.ExpandTab then
             text
@@ -848,7 +848,7 @@ type internal CommonOperations
     /// Given the specified blank 'text' at the specified column normalize it out to the
     /// correct spaces / tab based on the 'expandtab' setting.  This has to consider the 
     /// difficulty of mixed spaces and tabs filling up the remaining tab boundary 
-    member x.NormalizeBlanksAtColumn text (column : SnapshotColumn) = 
+    member x.NormalizeBlanksAtColumn text (column: SnapshotColumn) = 
         let spacesToColumn = SnapshotLineUtil.GetSpacesToColumn  column.Line column.Column _localSettings.TabStop
         if spacesToColumn % _localSettings.TabStop = 0 then
             // If the column is on a 'tabstop' boundary then there is no difficulty here
@@ -933,7 +933,7 @@ type internal CommonOperations
 
     /// Shift lines in the specified range to the left by one shiftwidth
     /// item.  The shift will done against 'column' in the line
-    member x.ShiftLineRangeLeft (range : SnapshotLineRange) multiplier =
+    member x.ShiftLineRangeLeft (range: SnapshotLineRange) multiplier =
         let count = _localSettings.ShiftWidth * multiplier
 
         use edit = _textBuffer.CreateEdit()
@@ -951,7 +951,7 @@ type internal CommonOperations
 
     /// Shift lines in the specified range to the right by one shiftwidth 
     /// item.  The shift will occur against column 'column'
-    member x.ShiftLineRangeRight (range : SnapshotLineRange) multiplier =
+    member x.ShiftLineRangeRight (range: SnapshotLineRange) multiplier =
         let shiftText = 
             let count = _localSettings.ShiftWidth * multiplier
             StringUtil.RepeatChar count ' '
@@ -971,13 +971,13 @@ type internal CommonOperations
 
         edit.Apply() |> ignore
 
-    member x.Substitute pattern replace (range : SnapshotLineRange) flags = 
+    member x.Substitute pattern replace (range: SnapshotLineRange) flags = 
 
         /// Actually do the replace with the given regex
-        let doReplace (regex : VimRegex) = 
+        let doReplace (regex: VimRegex) = 
             use edit = _textView.TextBuffer.CreateEdit()
 
-            let replaceOne line (c : Capture) = 
+            let replaceOne line (c: Capture) = 
                 let replaceData = x.GetReplaceData x.CaretPoint
                 let newText =  regex.Replace c.Value replace replaceData _registerMap
                 let offset = 
@@ -1112,7 +1112,7 @@ type internal CommonOperations
         builder.ToString(), text.Length
 
     /// Join the lines in the specified line range together. 
-    member x.Join (lineRange : SnapshotLineRange) joinKind = 
+    member x.Join (lineRange: SnapshotLineRange) joinKind = 
 
         if lineRange.Count > 1 then
 
@@ -1314,7 +1314,7 @@ type internal CommonOperations
             outliningManager.ExpandAll(span, fun _ -> true) |> ignore
 
     /// Ensure the point is on screen / visible
-    member x.EnsurePointVisible (point : SnapshotPoint) = 
+    member x.EnsurePointVisible (point: SnapshotPoint) = 
         if point.Position = x.CaretPoint.Position then
             TextViewUtil.EnsureCaretOnScreen _textView
         else
@@ -1336,7 +1336,7 @@ type internal CommonOperations
     /// Updates the given register with the specified value.  This will also update 
     /// other registers based on the type of update that is being performed.  See 
     /// :help registers for the full details
-    member x.SetRegisterValue (name : RegisterName option) operation (value : RegisterValue) = 
+    member x.SetRegisterValue (name: RegisterName option) operation (value: RegisterValue) = 
         let name, isUnnamedOrMissing = 
             match name with 
             | None -> x.GetRegisterName None, true
@@ -1446,9 +1446,9 @@ type internal CommonOperations
 type CommonOperationsFactory
     [<ImportingConstructor>]
     (
-        _editorOperationsFactoryService : IEditorOperationsFactoryService,
-        _outliningManagerService : IOutliningManagerService,
-        _undoManagerProvider : ITextBufferUndoManagerProvider
+        _editorOperationsFactoryService: IEditorOperationsFactoryService,
+        _outliningManagerService: IOutliningManagerService,
+        _undoManagerProvider: ITextBufferUndoManagerProvider
     ) = 
 
     /// Use an object instance as a key.  Makes it harder for components to ignore this
@@ -1456,7 +1456,7 @@ type CommonOperationsFactory
     let _key = System.Object()
 
     /// Create an ICommonOperations instance for the given VimBufferData
-    member x.CreateCommonOperations (vimBufferData : IVimBufferData) =
+    member x.CreateCommonOperations (vimBufferData: IVimBufferData) =
         let textView = vimBufferData.TextView
         let editorOperations = _editorOperationsFactoryService.GetEditorOperations(textView)
 
@@ -1469,7 +1469,7 @@ type CommonOperationsFactory
         CommonOperations(vimBufferData, editorOperations, outlining) :> ICommonOperations
 
     /// Get or create the ICommonOperations for the given buffer
-    member x.GetCommonOperations (bufferData : IVimBufferData) = 
+    member x.GetCommonOperations (bufferData: IVimBufferData) = 
         let properties = bufferData.TextView.Properties
         properties.GetOrCreateSingletonProperty(_key, (fun () -> x.CreateCommonOperations bufferData))
 

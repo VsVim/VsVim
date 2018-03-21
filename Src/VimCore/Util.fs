@@ -18,11 +18,11 @@ module internal Util =
         LanguagePrimitives.EnumOfValue value
 
     /// Get the declared values of the specified enumeration
-    let GetEnumValues<'T when 'T : enum<int>>() : 'T seq=
+    let GetEnumValues<'T when 'T: enum<int>>(): 'T seq=
         System.Enum.GetValues(typeof<'T>) |> Seq.cast<'T>
 
     /// Type safe helper method for creating a WeakReference<'T>
-    let CreateWeakReference<'T when 'T : not struct> (value : 'T) =
+    let CreateWeakReference<'T when 'T: not struct> (value: 'T) =
         let weakRef = System.WeakReference(value)
         Vim.WeakReference<'T>(weakRef)
 

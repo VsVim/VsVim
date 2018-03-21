@@ -19,17 +19,17 @@ type RemapModeMap = Map<KeyInputSet, KeyMapping>
 /// approach because it's easy to follow and meets the specs
 type Mapper
     (
-        _keyInputSet : KeyInputSet,
-        _modeMap : RemapModeMap,
-        _globalSettings : IVimGlobalSettings,
-        _isZeroMappingEnabled : bool
+        _keyInputSet: KeyInputSet,
+        _modeMap: RemapModeMap,
+        _globalSettings: IVimGlobalSettings,
+        _isZeroMappingEnabled: bool
     ) =
 
     /// During the processing of mapping input we found a match for the inputKeySet to the 
     /// specified KeyMapping entry.  Return the KeyInputSet which this definitively mapped
     /// to (and requires no remapping) and the set of keys which still must be considered
     /// for mapping
-    member x.ProcessMapping (lhs : KeyInputSet) (keyMapping : KeyMapping) = 
+    member x.ProcessMapping (lhs: KeyInputSet) (keyMapping: KeyMapping) = 
 
         let mappedSet, remainingSet = 
             if keyMapping.AllowRemap then
@@ -72,7 +72,7 @@ type Mapper
 
         mappedSet, remainingSet
 
-    static member IsFirstKeyInputZero (keyInputSet : KeyInputSet) =
+    static member IsFirstKeyInputZero (keyInputSet: KeyInputSet) =
         match keyInputSet.FirstKeyInput with
         | Some keyInput -> keyInput = KeyInputUtil.CharToKeyInput '0' 
         | _ -> false
@@ -95,7 +95,7 @@ type Mapper
         // until the calling code has time to process the definitively mapped set of 
         // keys.  Doing so could change the key mapping mode and hence change how we map 
         // the remaining keys
-        let successfulMap (mappedKeyInputSet : KeyInputSet) (remainingKeyInputSet : KeyInputSet) = 
+        let successfulMap (mappedKeyInputSet: KeyInputSet) (remainingKeyInputSet: KeyInputSet) = 
             if remainingKeyInputSet.Length = 0 then
                 result := KeyMappingResult.Mapped mappedKeyInputSet
             else
@@ -167,11 +167,11 @@ type Mapper
 
 type internal KeyMap
     (
-        _globalSettings : IVimGlobalSettings,
-        _variableMap : VariableMap
+        _globalSettings: IVimGlobalSettings,
+        _variableMap: VariableMap
     ) =
 
-    let mutable _map : Map<KeyRemapMode, RemapModeMap> = Map.empty
+    let mutable _map: Map<KeyRemapMode, RemapModeMap> = Map.empty
     let mutable _isZeroMappingEnabled = true
 
     member x.IsZeroMappingEnabled 
@@ -191,16 +191,16 @@ type internal KeyMap
         | Some map -> map
 
     /// Get all of the mappings for the given KeyRemapMode
-    member x.GetKeyMappingsForMode mode : KeyMapping list = 
+    member x.GetKeyMappingsForMode mode: KeyMapping list = 
         match Map.tryFind mode _map with
         | None -> List.empty
         | Some map -> map |> Map.toSeq |> Seq.map snd |> List.ofSeq
 
     /// Main API for adding a key mapping into our storage
-    member x.MapCore (lhs : string) (rhs : string) (mode : KeyRemapMode) allowRemap = 
+    member x.MapCore (lhs: string) (rhs: string) (mode: KeyRemapMode) allowRemap = 
 
         // Replace the <Leader> value with the appropriate replacement string
-        let replaceLeader (str : string) =
+        let replaceLeader (str: string) =
             if str.IndexOf("<leader>", StringComparison.OrdinalIgnoreCase) >= 0 then
                 let replace =
                     let found, value = _variableMap.TryGetValue "mapleader"
@@ -261,7 +261,7 @@ type internal KeyMap
 
     /// Get the key mapping for the passed in data.  Returns a KeyMappingResult representing the 
     /// mapping
-    member x.GetKeyMapping (keyInputSet : KeyInputSet) mode =
+    member x.GetKeyMapping (keyInputSet: KeyInputSet) mode =
         let modeMap = x.GetRemapModeMap mode
         let mapper = Mapper(keyInputSet, modeMap, _globalSettings, _isZeroMappingEnabled)
         mapper.GetKeyMapping()

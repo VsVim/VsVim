@@ -173,8 +173,8 @@ type internal TokenStream() =
 [<DebuggerDisplay("{ToString(),nq}")>]
 type internal Tokenizer
     (
-        _text : string,
-        _tokenizerFlags : TokenizerFlags
+        _text: string,
+        _tokenizerFlags: TokenizerFlags
     ) as this =
 
     let _tokenStream = TokenStream()
@@ -265,8 +265,8 @@ type internal Tokenizer
 
 and [<Sealed>] ResetTokenizerFlags
     (
-        _tokenizer : Tokenizer,
-        _tokenizerFlags : TokenizerFlags
+        _tokenizer: Tokenizer,
+        _tokenizerFlags: TokenizerFlags
     ) = 
 
     member x.TokenizerFlags = _tokenizerFlags

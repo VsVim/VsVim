@@ -83,9 +83,9 @@ type SubstituteFlags =
     | PrintLastWithList = 0x1000
 
 type SubstituteData = {
-    SearchPattern : string
-    Substitute : string
-    Flags : SubstituteFlags
+    SearchPattern: string
+    Substitute: string
+    Flags: SubstituteFlags
 }
 
 /// Represents the different type of operations that are available for Motions

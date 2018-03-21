@@ -12,27 +12,27 @@ open System.Configuration
 type IDisplayWindowBroker =
 
     /// TextView this broker is associated with
-    abstract TextView : ITextView 
+    abstract TextView: ITextView 
 
     /// Is there currently a completion window active on the given ITextView
-    abstract IsCompletionActive : bool
+    abstract IsCompletionActive: bool
 
     /// Is signature help currently active
-    abstract IsSignatureHelpActive : bool
+    abstract IsSignatureHelpActive: bool
 
     // Is Quick Info active
-    abstract IsQuickInfoActive : bool 
+    abstract IsQuickInfoActive: bool 
 
     /// Is there a smart tip window active
-    abstract IsSmartTagSessionActive : bool
+    abstract IsSmartTagSessionActive: bool
 
     /// Dismiss any completion windows on the given ITextView
-    abstract DismissDisplayWindows : unit -> unit
+    abstract DismissDisplayWindows: unit -> unit
 
 type IDisplayWindowBrokerFactoryService  =
 
     /// Get the display broker for the provided ITextView
-    abstract GetDisplayWindowBroker : textView : ITextView -> IDisplayWindowBroker
+    abstract GetDisplayWindowBroker: textView: ITextView -> IDisplayWindowBroker
 
 /// What type of tracking are we doing
 [<RequireQualifiedAccess>]
@@ -58,88 +58,88 @@ type LineColumnTrackingMode =
 type ITrackingLineColumn =
 
     /// ITextBuffer this ITrackingLineColumn is tracking against
-    abstract TextBuffer : ITextBuffer
+    abstract TextBuffer: ITextBuffer
 
     /// Returns the LineColumnTrackingMode for this instance
-    abstract TrackingMode : LineColumnTrackingMode
+    abstract TrackingMode: LineColumnTrackingMode
 
     /// Get the point as it relates to current Snapshot.
-    abstract Point : SnapshotPoint option 
+    abstract Point: SnapshotPoint option 
 
     /// Get the point as a VirtualSnapshot point on the current ITextSnapshot
-    abstract VirtualPoint : VirtualSnapshotPoint option
+    abstract VirtualPoint: VirtualSnapshotPoint option
 
     /// Needs to be called when you are done with the ITrackingLineColumn
-    abstract Close : unit -> unit
+    abstract Close: unit -> unit
 
 /// Tracks a VisualSpan across edits to the underlying ITextBuffer.
 type ITrackingVisualSpan = 
 
     /// The associated ITextBuffer instance
-    abstract TextBuffer : ITextBuffer
+    abstract TextBuffer: ITextBuffer
 
     /// Get the VisualSpan as it relates to the current ITextSnapshot
-    abstract VisualSpan : VisualSpan option
+    abstract VisualSpan: VisualSpan option
 
     /// Needs to be called when the consumer is finished with the ITrackingVisualSpan
-    abstract Close : unit -> unit
+    abstract Close: unit -> unit
 
 /// Tracks a Visual Selection across edits to the underlying ITextBuffer.  This tracks both
 /// the selection area and the caret within the selection
 type ITrackingVisualSelection = 
 
     /// The SnapshotPoint for the caret within the current ITextSnapshot
-    abstract CaretPoint : SnapshotPoint option
+    abstract CaretPoint: SnapshotPoint option
 
     /// The associated ITextBuffer instance
-    abstract TextBuffer : ITextBuffer
+    abstract TextBuffer: ITextBuffer
 
     /// Get the Visual Selection as it relates to the current ITextSnapshot
-    abstract VisualSelection : VisualSelection option
+    abstract VisualSelection: VisualSelection option
 
     /// Needs to be called when the consumer is finished with the ITrackingVisualSpan
-    abstract Close : unit -> unit
+    abstract Close: unit -> unit
 
 type IBufferTrackingService = 
 
     /// Create an ITrackingLineColumn at the given position in the buffer.  
-    abstract CreateLineColumn : textBuffer : ITextBuffer -> line : int -> column : int -> LineColumnTrackingMode -> ITrackingLineColumn
+    abstract CreateLineColumn: textBuffer: ITextBuffer -> line: int -> column: int -> LineColumnTrackingMode -> ITrackingLineColumn
 
     /// Create an ITrackingVisualSpan for the given VisualSpan
-    abstract CreateVisualSpan : visualSpan : VisualSpan -> ITrackingVisualSpan
+    abstract CreateVisualSpan: visualSpan: VisualSpan -> ITrackingVisualSpan
 
     /// Create an ITrackingVisualSelection for the given Visual Selection
-    abstract CreateVisualSelection : visualSelection : VisualSelection -> ITrackingVisualSelection
+    abstract CreateVisualSelection: visualSelection: VisualSelection -> ITrackingVisualSelection
 
     /// Does the given ITextBuffer have any out standing tracking instances 
-    abstract HasTrackingItems : textBuffer : ITextBuffer -> bool
+    abstract HasTrackingItems: textBuffer: ITextBuffer -> bool
 
 type IVimBufferCreationListener =
 
     /// Called whenever an IVimBuffer is created
-    abstract VimBufferCreated : vimBuffer : IVimBuffer -> unit
+    abstract VimBufferCreated: vimBuffer: IVimBuffer -> unit
 
 /// Supports the creation and deletion of folds within a ITextBuffer.  Most components
 /// should talk to IFoldManager directly
 type IFoldData = 
 
     /// Associated ITextBuffer the data is over
-    abstract TextBuffer : ITextBuffer
+    abstract TextBuffer: ITextBuffer
 
     /// Gets snapshot spans for all of the currently existing folds.  This will
     /// only return the folds explicitly created by vim.  It won't return any
     /// collapsed regions in the ITextView
-    abstract Folds : SnapshotSpan seq
+    abstract Folds: SnapshotSpan seq
 
     /// Create a fold for the given line range
-    abstract CreateFold : SnapshotLineRange -> unit 
+    abstract CreateFold: SnapshotLineRange -> unit 
 
     /// Delete a fold which crosses the given SnapshotPoint.  Returns false if 
     /// there was no fold to be deleted
-    abstract DeleteFold : SnapshotPoint -> bool
+    abstract DeleteFold: SnapshotPoint -> bool
 
     /// Delete all of the folds which intersect the given SnapshotSpan
-    abstract DeleteAllFolds : SnapshotSpan -> unit
+    abstract DeleteAllFolds: SnapshotSpan -> unit
 
     /// Raised when the collection of folds are updated for any reason
     [<CLIEvent>]
@@ -152,44 +152,44 @@ type IFoldData =
 type IFoldManager = 
 
     /// Associated ITextView
-    abstract TextView : ITextView
+    abstract TextView: ITextView
 
     /// Create a fold for the given line range.  The fold will be created in a closed state.
-    abstract CreateFold : range : SnapshotLineRange -> unit 
+    abstract CreateFold: range: SnapshotLineRange -> unit 
 
     /// Close 'count' fold values under the given SnapshotPoint
-    abstract CloseFold : point : SnapshotPoint -> count : int -> unit
+    abstract CloseFold: point: SnapshotPoint -> count: int -> unit
 
     /// Close all folds which intersect the given SnapshotSpan
-    abstract CloseAllFolds : span : SnapshotSpan -> unit
+    abstract CloseAllFolds: span: SnapshotSpan -> unit
 
     /// Delete a fold which crosses the given SnapshotPoint.  Returns false if 
     /// there was no fold to be deleted
-    abstract DeleteFold : point : SnapshotPoint -> unit
+    abstract DeleteFold: point: SnapshotPoint -> unit
 
     /// Delete all of the folds which intersect the SnapshotSpan
-    abstract DeleteAllFolds : span : SnapshotSpan -> unit
+    abstract DeleteAllFolds: span: SnapshotSpan -> unit
 
     /// Toggle fold under the given SnapshotPoint
-    abstract ToggleFold : point : SnapshotPoint -> count : int -> unit
+    abstract ToggleFold: point: SnapshotPoint -> count: int -> unit
 
     /// Toggle all folds under the given SnapshotPoint
-    abstract ToggleAllFolds : span : SnapshotSpan -> unit
+    abstract ToggleAllFolds: span: SnapshotSpan -> unit
 
     /// Open 'count' folds under the given SnapshotPoint
-    abstract OpenFold : point : SnapshotPoint -> count : int -> unit
+    abstract OpenFold: point: SnapshotPoint -> count: int -> unit
 
     /// Open all folds which intersect the given SnapshotSpan
-    abstract OpenAllFolds : span : SnapshotSpan -> unit
+    abstract OpenAllFolds: span: SnapshotSpan -> unit
 
 /// Supports the get and creation of IFoldManager for a given ITextBuffer
 type IFoldManagerFactory =
 
     /// Get the IFoldData for this ITextBuffer
-    abstract GetFoldData : textBuffer : ITextBuffer -> IFoldData
+    abstract GetFoldData: textBuffer: ITextBuffer -> IFoldData
 
     /// Get the IFoldManager for this ITextView.
-    abstract GetFoldManager : textView : ITextView -> IFoldManager
+    abstract GetFoldManager: textView: ITextView -> IFoldManager
 
 /// Used because the actual Point class is in WPF which isn't available at this layer.
 [<Struct>]
@@ -202,39 +202,39 @@ type VimPoint = {
 type IMouseDevice = 
     
     /// Is the left button pressed
-    abstract IsLeftButtonPressed : bool
+    abstract IsLeftButtonPressed: bool
 
     /// Get the position of the mouse position within the ITextView
-    abstract GetPosition : textView : ITextView -> VimPoint option
+    abstract GetPosition: textView: ITextView -> VimPoint option
 
     /// Is the given ITextView in the middle fo a drag operation?
-    abstract InDragOperation : textView : ITextView -> bool
+    abstract InDragOperation: textView: ITextView -> bool
 
 /// Abstract representation of the keyboard 
 type IKeyboardDevice = 
 
     /// Is the given key pressed
-    abstract IsArrowKeyDown : bool
+    abstract IsArrowKeyDown: bool
 
     /// The modifiers currently pressed on the keyboard
-    abstract KeyModifiers : VimKeyModifiers
+    abstract KeyModifiers: VimKeyModifiers
 
 /// Tracks changes to the associated ITextView
 type ILineChangeTracker =
 
     /// Swap the most recently changed line with its saved copy
-    abstract Swap : unit -> bool
+    abstract Swap: unit -> bool
 
 /// Manages the ILineChangeTracker instances
 type ILineChangeTrackerFactory =
 
     /// Get the ILineChangeTracker associated with the given vim buffer information
-    abstract GetLineChangeTracker : vimBufferData : IVimBufferData -> ILineChangeTracker
+    abstract GetLineChangeTracker: vimBufferData: IVimBufferData -> ILineChangeTracker
 
 /// Provides access to the system clipboard 
 type IClipboardDevice =
 
-    abstract Text : string with get, set
+    abstract Text: string with get, set
 
 [<RequireQualifiedAccess>]
 [<NoComparison>]
@@ -303,56 +303,56 @@ type RegisterOperation =
 type ICommonOperations =
 
     /// Run the beep operation
-    abstract Beep : unit -> unit
+    abstract Beep: unit -> unit
 
     /// Associated IEditorOperations
-    abstract EditorOperations : IEditorOperations
+    abstract EditorOperations: IEditorOperations
 
     /// Associated IEditorOptions
-    abstract EditorOptions : IEditorOptions
+    abstract EditorOptions: IEditorOptions
 
     /// The currently maintained caret column for up / down caret movements in the
     /// buffer
-    abstract MaintainCaretColumn : MaintainCaretColumn with get, set
+    abstract MaintainCaretColumn: MaintainCaretColumn with get, set
 
     /// Associated ITextView
-    abstract TextView : ITextView 
+    abstract TextView: ITextView 
 
     /// Associated VimBufferData instance
-    abstract VimBufferData : IVimBufferData
+    abstract VimBufferData: IVimBufferData
 
-    abstract AdjustCaretForScrollOffset : unit -> unit
+    abstract AdjustCaretForScrollOffset: unit -> unit
 
-    abstract member CloseWindowUnlessDirty : unit -> unit
+    abstract member CloseWindowUnlessDirty: unit -> unit
 
     /// Create a possibly LineWise register value with the specified string value at the given 
     /// point.  This is factored out here because a LineWise value in vim should always
     /// end with a new line but we can't always guarantee the text we are working with 
     /// contains a new line.  This normalizes out the process needed to make this correct
     /// while respecting the settings of the ITextBuffer
-    abstract CreateRegisterValue : point : SnapshotPoint -> stringData : StringData -> operationKind : OperationKind -> RegisterValue
+    abstract CreateRegisterValue: point: SnapshotPoint -> stringData: StringData -> operationKind: OperationKind -> RegisterValue
 
     /// Delete at least count lines from the buffer starting from the provided line.  The 
     /// operation will fail if there aren't at least 'maxCount' lines in the buffer from
     /// the start point.
     ///
     /// This operation is performed against the visual buffer.  
-    abstract DeleteLines : startLine : ITextSnapshotLine -> maxCount : int -> registerName : RegisterName option -> unit
+    abstract DeleteLines: startLine: ITextSnapshotLine -> maxCount: int -> registerName: RegisterName option -> unit
 
     /// Ensure the view properties are met at the caret
-    abstract EnsureAtCaret : viewFlags : ViewFlags -> unit
+    abstract EnsureAtCaret: viewFlags: ViewFlags -> unit
 
     /// Ensure the view properties are met at the point
-    abstract EnsureAtPoint : point : SnapshotPoint -> viewFlags : ViewFlags -> unit
+    abstract EnsureAtPoint: point: SnapshotPoint -> viewFlags: ViewFlags -> unit
 
     /// Format the specified line range
-    abstract FormatLines : SnapshotLineRange -> unit
+    abstract FormatLines: SnapshotLineRange -> unit
 
     /// Get the new line text which should be used for new lines at the given SnapshotPoint
-    abstract GetNewLineText : SnapshotPoint -> string
+    abstract GetNewLineText: SnapshotPoint -> string
 
     /// Get the register to use based on the name provided to the operation.
-    abstract GetRegister : name : RegisterName option -> Register
+    abstract GetRegister: name: RegisterName option -> Register
 
     /// Get the indentation for a newly created ITextSnasphotLine.  The context line is
     /// is provided to calculate the indentation off of 
@@ -362,119 +362,119 @@ type ICommonOperations =
     /// an edit to occur.  
     ///
     /// Issue #946
-    abstract GetNewLineIndent : contextLine : ITextSnapshotLine -> newLine : ITextSnapshotLine -> int option
+    abstract GetNewLineIndent: contextLine: ITextSnapshotLine -> newLine: ITextSnapshotLine -> int option
 
     /// Get the standard ReplaceData for the given SnapshotPoint
-    abstract GetReplaceData : point : SnapshotPoint -> VimRegexReplaceData
+    abstract GetReplaceData: point: SnapshotPoint -> VimRegexReplaceData
 
     /// Get the number of spaces (when tabs are expanded) that is necessary to get to the 
     /// specified point on it's line
-    abstract GetSpacesToPoint : point : SnapshotPoint -> int
+    abstract GetSpacesToPoint: point: SnapshotPoint -> int
 
     /// Get the point that visually corresponds to the specified column on its line
-    abstract GetPointForSpaces : contextLine : ITextSnapshotLine -> column : int -> SnapshotPoint
+    abstract GetPointForSpaces: contextLine: ITextSnapshotLine -> column: int -> SnapshotPoint
 
     /// Attempt to GoToDefinition on the current state of the buffer.  If this operation fails, an error message will 
     /// be generated as appropriate
-    abstract GoToDefinition : unit -> Result
+    abstract GoToDefinition: unit -> Result
 
     /// Go to the file named in the word under the cursor
-    abstract GoToFile : unit -> unit
+    abstract GoToFile: unit -> unit
 
     /// Go to the file name specified as a paramter
-    abstract GoToFile : string -> unit
+    abstract GoToFile: string -> unit
 
     /// Go to the file named in the word under the cursor in a new window
-    abstract GoToFileInNewWindow : unit -> unit
+    abstract GoToFileInNewWindow: unit -> unit
 
     /// Go to the file name specified as a paramter in a new window
-    abstract GoToFileInNewWindow : string -> unit
+    abstract GoToFileInNewWindow: string -> unit
 
     /// Go to the local declaration of the word under the cursor
-    abstract GoToLocalDeclaration : unit -> unit
+    abstract GoToLocalDeclaration: unit -> unit
 
     /// Go to the global declaration of the word under the cursor
-    abstract GoToGlobalDeclaration : unit -> unit
+    abstract GoToGlobalDeclaration: unit -> unit
 
     /// Go to the "count" next tab window in the specified direction.  This will wrap 
     /// around
-    abstract GoToNextTab : path : SearchPath -> count : int -> unit
+    abstract GoToNextTab: path: SearchPath -> count: int -> unit
 
     /// Go the nth tab.  This uses vim's method of numbering tabs which is a 1 based list.  Both
     /// 0 and 1 can be used to access the first tab
-    abstract GoToTab : int -> unit
+    abstract GoToTab: int -> unit
 
     /// Convert any virtual spaces into real spaces / tabs based on the current settings.  The caret 
     /// will be positioned at the end of that change
-    abstract FillInVirtualSpace : unit -> unit
+    abstract FillInVirtualSpace: unit -> unit
 
     /// Joins the lines in the range
-    abstract Join : SnapshotLineRange -> JoinKind -> unit
+    abstract Join: SnapshotLineRange -> JoinKind -> unit
 
     /// Move the caret in the specified direction
-    abstract MoveCaret : caretMovement : CaretMovement -> bool
+    abstract MoveCaret: caretMovement: CaretMovement -> bool
 
     /// Move the caret in the specified direction with an arrow key
-    abstract MoveCaretWithArrow : caretMovement : CaretMovement -> bool
+    abstract MoveCaretWithArrow: caretMovement: CaretMovement -> bool
 
     /// Move the caret to a given point on the screen and ensure the view has the specified
     /// properties at that point 
-    abstract MoveCaretToPoint : point : SnapshotPoint -> viewFlags : ViewFlags -> unit
+    abstract MoveCaretToPoint: point: SnapshotPoint -> viewFlags: ViewFlags -> unit
 
     /// Move the caret to the MotionResult value
-    abstract MoveCaretToMotionResult : motionResult : MotionResult -> unit
+    abstract MoveCaretToMotionResult: motionResult: MotionResult -> unit
 
     /// Navigate to the given point which may occur in any ITextBuffer.  This will not update the 
     /// jump list
-    abstract NavigateToPoint : VirtualSnapshotPoint -> bool
+    abstract NavigateToPoint: VirtualSnapshotPoint -> bool
 
     /// Normalize the spaces and tabs in the string
-    abstract NormalizeBlanks : text : string -> string
+    abstract NormalizeBlanks: text: string -> string
 
     /// Normalize the spaces and tabs in the string at the given column in the buffer
-    abstract NormalizeBlanksAtColumn : text : string -> column : SnapshotColumn -> string
+    abstract NormalizeBlanksAtColumn: text: string -> column: SnapshotColumn -> string
 
     /// Normalize the set of blanks into spaces
-    abstract NormalizeBlanksToSpaces : string -> string
+    abstract NormalizeBlanksToSpaces: string -> string
 
     /// Put the specified StringData at the given point.
-    abstract Put : SnapshotPoint -> StringData -> OperationKind -> unit
+    abstract Put: SnapshotPoint -> StringData -> OperationKind -> unit
 
     /// Raise the error / warning messages for the given SearchResult
-    abstract RaiseSearchResultMessage : SearchResult -> unit
+    abstract RaiseSearchResultMessage: SearchResult -> unit
 
     /// Redo the buffer changes "count" times
-    abstract Redo : count:int -> unit
+    abstract Redo: count:int -> unit
 
     /// Scrolls the number of lines given and keeps the caret in the view
-    abstract ScrollLines : ScrollDirection -> count:int -> unit
+    abstract ScrollLines: ScrollDirection -> count:int -> unit
 
     /// Update the register with the specified value
-    abstract SetRegisterValue : name : RegisterName option -> operation : RegisterOperation -> value : RegisterValue -> unit
+    abstract SetRegisterValue: name: RegisterName option -> operation: RegisterOperation -> value: RegisterValue -> unit
 
     /// Shift the block of lines to the left by shiftwidth * 'multiplier'
-    abstract ShiftLineBlockLeft : SnapshotSpan seq -> multiplier : int -> unit
+    abstract ShiftLineBlockLeft: SnapshotSpan seq -> multiplier: int -> unit
 
     /// Shift the block of lines to the right by shiftwidth * 'multiplier'
-    abstract ShiftLineBlockRight : SnapshotSpan seq -> multiplier : int -> unit
+    abstract ShiftLineBlockRight: SnapshotSpan seq -> multiplier: int -> unit
 
     /// Shift the given line range left by shiftwidth * 'multiplier'
-    abstract ShiftLineRangeLeft : SnapshotLineRange -> multiplier : int -> unit
+    abstract ShiftLineRangeLeft: SnapshotLineRange -> multiplier: int -> unit
 
     /// Shift the given line range right by shiftwidth * 'multiplier'
-    abstract ShiftLineRangeRight : SnapshotLineRange -> multiplier : int -> unit
+    abstract ShiftLineRangeRight: SnapshotLineRange -> multiplier: int -> unit
 
     /// Substitute Command implementation
-    abstract Substitute : pattern : string -> replace : string -> SnapshotLineRange -> flags : SubstituteFlags -> unit
+    abstract Substitute: pattern: string -> replace: string -> SnapshotLineRange -> flags: SubstituteFlags -> unit
 
     /// Undo the buffer changes "count" times
-    abstract Undo : count : int -> unit
+    abstract Undo: count: int -> unit
 
 /// Factory for getting ICommonOperations instances
 type ICommonOperationsFactory =
 
     /// Get the ICommonOperations instance for this IVimBuffer
-    abstract GetCommonOperations : IVimBufferData -> ICommonOperations
+    abstract GetCommonOperations: IVimBufferData -> ICommonOperations
 
 /// This interface is used to prevent the transition from insert to visual mode
 /// when a selection occurs.  In the majority case a selection of text should result
@@ -484,7 +484,7 @@ type ICommonOperationsFactory =
 type IVisualModeSelectionOverride =
 
     /// Is insert mode preferred for the current state of the buffer
-    abstract IsInsertModePreferred : textView : ITextView -> bool
+    abstract IsInsertModePreferred: textView: ITextView -> bool
 
 /// What source should the synchronizer use as the original settings?  The values
 /// in the selected source will be copied over the other settings
@@ -495,41 +495,41 @@ type SettingSyncSource =
 
  [<Struct>]
  type SettingSyncData = {
-    EditorOptionKey : string 
+    EditorOptionKey: string 
     GetEditorValue: IEditorOptions -> SettingValue option
-    VimSettingName : string
-    GetVimSettingValue : IVimBuffer -> obj
-    IsLocal : bool
+    VimSettingName: string
+    GetVimSettingValue: IVimBuffer -> obj
+    IsLocal: bool
 } with
 
     member x.IsWindow = not x.IsLocal
 
     member x.GetSettings vimBuffer = SettingSyncData.GetSettingsCore vimBuffer x.IsLocal
 
-    static member private GetSettingsCore (vimBuffer : IVimBuffer) isLocal = 
+    static member private GetSettingsCore (vimBuffer: IVimBuffer) isLocal = 
         if isLocal then vimBuffer.LocalSettings :> IVimSettings
         else vimBuffer.WindowSettings :> IVimSettings
 
-    static member GetBoolValueFunc (editorOptionKey : EditorOptionKey<bool>) = 
+    static member GetBoolValueFunc (editorOptionKey: EditorOptionKey<bool>) = 
         (fun editorOptions -> 
             match EditorOptionsUtil.GetOptionValue editorOptions editorOptionKey with
             | None -> None
             | Some value -> SettingValue.Toggle value |> Some)
 
-    static member GetNumberValueFunc (editorOptionKey : EditorOptionKey<int>) = 
+    static member GetNumberValueFunc (editorOptionKey: EditorOptionKey<int>) = 
         (fun editorOptions -> 
             match EditorOptionsUtil.GetOptionValue editorOptions editorOptionKey with
             | None -> None
             | Some value -> SettingValue.Number value |> Some)
 
-    static member GetStringValue (editorOptionKey : EditorOptionKey<string>) = 
+    static member GetStringValue (editorOptionKey: EditorOptionKey<string>) = 
         (fun editorOptions -> 
             match EditorOptionsUtil.GetOptionValue editorOptions editorOptionKey with
             | None -> None
             | Some value -> SettingValue.String value |> Some)
 
     static member GetSettingValueFunc name isLocal =
-        (fun (vimBuffer : IVimBuffer) ->
+        (fun (vimBuffer: IVimBuffer) ->
             let settings = SettingSyncData.GetSettingsCore vimBuffer isLocal
             match settings.GetSetting name with
             | None -> null
@@ -539,7 +539,7 @@ type SettingSyncSource =
                 | SettingValue.Toggle value -> box value
                 | SettingValue.Number value -> box value)
 
-    static member Create (key : EditorOptionKey<'T>) (settingName : string) (isLocal : bool) (convertEditorValue : Func<'T, SettingValue>) (convertSettingValue : Func<SettingValue, obj>) =
+    static member Create (key: EditorOptionKey<'T>) (settingName: string) (isLocal: bool) (convertEditorValue: Func<'T, SettingValue>) (convertSettingValue: Func<SettingValue, obj>) =
         {
             EditorOptionKey = key.Name
             GetEditorValue = (fun editorOptions ->
@@ -565,7 +565,7 @@ type IEditorToSettingsSynchronizer =
     ///
     /// This method can be called multiple times for the same IVimBuffer and it 
     /// will only synchronize once 
-    abstract StartSynchronizing : vimBuffer : IVimBuffer -> source : SettingSyncSource -> unit
+    abstract StartSynchronizing: vimBuffer: IVimBuffer -> source: SettingSyncSource -> unit
 
-    abstract SyncSetting : data : SettingSyncData -> unit
+    abstract SyncSetting: data: SettingSyncData -> unit
 

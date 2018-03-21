@@ -38,10 +38,10 @@ type TokenKind =
 [<DebuggerDisplay("{ToString(),nq}")>]
 type Token
     (
-        _lineText : string,
-        _startIndex : int,
-        _length : int,
-        _tokenKind : TokenKind
+        _lineText: string,
+        _startIndex: int,
+        _length: int,
+        _tokenKind: TokenKind
     ) = 
 
     member x.TokenKind = _tokenKind

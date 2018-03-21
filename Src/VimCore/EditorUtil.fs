@@ -18,37 +18,37 @@ open System.Linq
 /// This module exists purely to break type dependency issues created below.  
 module internal EditorCoreUtil =
 
-    let IsEndPoint (point : SnapshotPoint) = 
+    let IsEndPoint (point: SnapshotPoint) = 
         point.Position = point.Snapshot.Length
 
-    let AddOneOrCurrent (point : SnapshotPoint) =
+    let AddOneOrCurrent (point: SnapshotPoint) =
         if IsEndPoint point then
             point
         else
             point.Add(1)
 
-    let SubtractOneOrCurrent (point : SnapshotPoint) = 
+    let SubtractOneOrCurrent (point: SnapshotPoint) = 
         if point.Position = 0 then
             point
         else
             point.Subtract(1)
 
-    let GetCharacterWidth (point : SnapshotPoint) tabStop = 
+    let GetCharacterWidth (point: SnapshotPoint) tabStop = 
         if IsEndPoint point then 
             0
         else
             let c = point.GetChar()
             CharUtil.GetCharacterWidth c tabStop
 
-    let IsInsideLineBreak (point : SnapshotPoint) (line : ITextSnapshotLine) = 
+    let IsInsideLineBreak (point: SnapshotPoint) (line: ITextSnapshotLine) = 
         point.Position >= line.End.Position && not (IsEndPoint point)
 
 module TrackingSpanUtil =
 
-    let Create (span : SnapshotSpan) spanTrackingMode =
+    let Create (span: SnapshotSpan) spanTrackingMode =
         span.Snapshot.CreateTrackingSpan(span.Span, spanTrackingMode)
 
-    let GetSpan (snapshot : ITextSnapshot) (span : ITrackingSpan) =
+    let GetSpan (snapshot: ITextSnapshot) (span: ITrackingSpan) =
         try 
             span.GetSpan(snapshot) |> Some
         with
@@ -56,10 +56,10 @@ module TrackingSpanUtil =
 
 module PropertyCollectionUtil = 
 
-    let ContainsKey (key : obj)  (propertyCollection : PropertyCollection) = propertyCollection.ContainsProperty(key)
+    let ContainsKey (key: obj)  (propertyCollection: PropertyCollection) = propertyCollection.ContainsProperty(key)
 
     /// Get the property value for the givne key
-    let GetValue<'T> (key : obj) (propertyCollection : PropertyCollection) = 
+    let GetValue<'T> (key: obj) (propertyCollection: PropertyCollection) = 
         try
             let succeeded, value = propertyCollection.TryGetProperty<'T>(key)
             if succeeded then
@@ -79,8 +79,8 @@ module PropertyCollectionUtil =
 [<DebuggerDisplay("{ToString()}")>]
 type LineRange
     (
-        _startLine : int,
-        _count : int
+        _startLine: int,
+        _count: int
     ) = 
 
     member x.StartLineNumber = _startLine
@@ -93,11 +93,11 @@ type LineRange
 
     member x.ContainsLineNumber lineNumber = lineNumber >= _startLine && lineNumber <= x.LastLineNumber
 
-    member x.Contains (lineRange : LineRange) = 
+    member x.Contains (lineRange: LineRange) = 
         x.StartLineNumber <= lineRange.StartLineNumber &&
         x.LastLineNumber >= lineRange.LastLineNumber
 
-    member x.Intersects (lineRange : LineRange) = 
+    member x.Intersects (lineRange: LineRange) = 
         x.ContainsLineNumber(lineRange.StartLineNumber) ||
         x.ContainsLineNumber(lineRange.LastLineNumber) ||
         x.LastLineNumber + 1 = lineRange.StartLineNumber ||
@@ -105,17 +105,17 @@ type LineRange
 
     override x.ToString() = sprintf "[%d - %d]" x.StartLineNumber x.LastLineNumber
 
-    static member op_Equality(this : LineRange, other) = this = other;
-    static member op_Inequality(this : LineRange, other) = this <> other;
+    static member op_Equality(this: LineRange, other) = this = other;
+    static member op_Inequality(this: LineRange, other) = this <> other;
 
-    static member CreateFromBounds (startLineNumber : int) (lastLineNumber : int) = 
+    static member CreateFromBounds (startLineNumber: int) (lastLineNumber: int) = 
         if (lastLineNumber < startLineNumber) then
             raise (new ArgumentOutOfRangeException("lastLineNumber", "Must be greater than startLineNmuber"))
 
         let count = (lastLineNumber - startLineNumber) + 1;
         new LineRange(startLineNumber, count)
 
-    static member CreateOverarching (left : LineRange) (right : LineRange) =
+    static member CreateOverarching (left: LineRange) (right: LineRange) =
         let startLineNumber =  min left.StartLineNumber right.StartLineNumber
         let lastLineNumber = max left.LastLineNumber right.LastLineNumber
         LineRange.CreateFromBounds startLineNumber lastLineNumber
@@ -128,9 +128,9 @@ type LineRange
 [<DebuggerDisplay("{ToString()}")>]
 type SnapshotLineRange  =
 
-    val private _snapshot : ITextSnapshot
-    val private _startLine : int
-    val private _count : int
+    val private _snapshot: ITextSnapshot
+    val private _startLine: int
+    val private _count: int
 
     member x.Snapshot = x._snapshot
 
@@ -162,7 +162,7 @@ type SnapshotLineRange  =
         let last = x.LastLineNumber
         seq { for i = start to last do yield snapshot.GetLineFromLineNumber(i) }
 
-    new (snapshot : ITextSnapshot, startLine : int, count : int) =
+    new (snapshot: ITextSnapshot, startLine: int, count: int) =
         if startLine >= snapshot.LineCount then
             raise (new ArgumentException("startLine", "Invalid Line Number"))
 
@@ -175,19 +175,19 @@ type SnapshotLineRange  =
 
     member x.GetTextIncludingLineBreak() = x.ExtentIncludingLineBreak.GetText()
 
-    static member op_Equality(left : SnapshotLineRange, right) = left = right
+    static member op_Equality(left: SnapshotLineRange, right) = left = right
 
-    static member op_Inequality(left : SnapshotLineRange, right) = left <> right
+    static member op_Inequality(left: SnapshotLineRange, right) = left <> right
 
     override x.ToString() = sprintf "[%d - %d] %O" x.StartLineNumber x.LastLineNumber x.Snapshot
 
     /// Create for the entire ITextSnapshot
-    static member CreateForExtent (snapshot : ITextSnapshot) = new SnapshotLineRange(snapshot, 0, snapshot.LineCount)
+    static member CreateForExtent (snapshot: ITextSnapshot) = new SnapshotLineRange(snapshot, 0, snapshot.LineCount)
 
     /// Create for a single ITextSnapshotLine
-    static member CreateForLine (snapshotLine : ITextSnapshotLine) = new SnapshotLineRange(snapshotLine.Snapshot, snapshotLine.LineNumber, 1)
+    static member CreateForLine (snapshotLine: ITextSnapshotLine) = new SnapshotLineRange(snapshotLine.Snapshot, snapshotLine.LineNumber, 1)
 
-    static member CreateForSpan (span : SnapshotSpan) =
+    static member CreateForSpan (span: SnapshotSpan) =
         let startLine = span.Start.GetContainingLine()
         // TODO use GetLastLine
         let lastLine = 
@@ -198,13 +198,13 @@ type SnapshotLineRange  =
     /// Create a range for the provided ITextSnapshotLine and with at most count 
     /// length.  If count pushes the range past the end of the buffer then the 
     /// span will go to the end of the buffer
-    static member CreateForLineAndMaxCount (snapshotLine : ITextSnapshotLine) (count : int) = 
+    static member CreateForLineAndMaxCount (snapshotLine: ITextSnapshotLine) (count: int) = 
         let maxCount = (snapshotLine.Snapshot.LineCount - snapshotLine.LineNumber)
         let count = Math.Min(count, maxCount)
         new SnapshotLineRange(snapshotLine.Snapshot, snapshotLine.LineNumber, count)
 
     /// Create a SnapshotLineRange which includes the 2 lines
-    static member CreateForLineRange (startLine : ITextSnapshotLine) (lastLine : ITextSnapshotLine) =
+    static member CreateForLineRange (startLine: ITextSnapshotLine) (lastLine: ITextSnapshotLine) =
         Contract.Requires(startLine.Snapshot = lastLine.Snapshot)
         let count = (lastLine.LineNumber - startLine.LineNumber) + 1
         new SnapshotLineRange(startLine.Snapshot, startLine.LineNumber, count)
@@ -212,7 +212,7 @@ type SnapshotLineRange  =
     /// <summary>
     /// Create a SnapshotLineRange which includes the 2 lines
     /// </summary>
-    static member CreateForLineNumberRange (snapshot : ITextSnapshot) (startLine : int) (lastLine : int) : Nullable<SnapshotLineRange> =
+    static member CreateForLineNumberRange (snapshot: ITextSnapshot) (startLine: int) (lastLine: int): Nullable<SnapshotLineRange> =
         Contract.Requires(startLine <= lastLine)
         if (startLine >= snapshot.LineCount || lastLine >= snapshot.LineCount) then
             Nullable<SnapshotLineRange>()
@@ -231,11 +231,11 @@ type SnapshotLineRange  =
 [<NoComparison>]
 type SnapshotColumn 
     (
-        _snapshotLine : ITextSnapshotLine,
-        _column : int
+        _snapshotLine: ITextSnapshotLine,
+        _column: int
     ) =
 
-    new (point : SnapshotPoint) = 
+    new (point: SnapshotPoint) = 
         let line = point.GetContainingLine()
         let column = point.Position - line.Start.Position
         SnapshotColumn(line, column)
@@ -279,24 +279,24 @@ type SnapshotColumn
 [<DebuggerDisplay("{ToString()}")>]
 type SnapshotOverlapPoint =
 
-    val private _point : SnapshotPoint
+    val private _point: SnapshotPoint
 
     /// The number of spaces into the point where this overlap point occurs
-    val private _beforeSpaces : int
+    val private _beforeSpaces: int
 
     /// The number of spaces the point occupies in the editor. 
     ///
     /// An interesting case to consider here is tabs.  They will not always occupy 
     /// 'tabstop' spaces.  It can occupy less if there is a character in front of the 
     /// tab which occurs on a 'tabstop' boundary. 
-    val private _totalSpaces : int
+    val private _totalSpaces: int
 
     /// !!!Do not call this directly!!!
     ///
     /// This constructor is meant for internal usage only.  If friend types existed this would employ
     /// a friend type to protect it.  It's far too easy to get the 'totalSpaces' parameter incorrect.  Instead
     /// go through a supported API for creating them
-    internal new (point : SnapshotPoint, beforeSpaces : int, totalSpaces : int) = 
+    internal new (point: SnapshotPoint, beforeSpaces: int, totalSpaces: int) = 
         if totalSpaces < 0 then
             invalidArg "totalSpaces" "totalSpaces must be positive"
         { _point = point; _beforeSpaces = beforeSpaces; _totalSpaces = totalSpaces }
@@ -307,7 +307,7 @@ type SnapshotOverlapPoint =
     ///
     /// TODO: This API is fundamentally incorrect because it treats all points as a one space item
     /// even if the underlying character is spaces wide.  
-    new (point : SnapshotPoint) =
+    new (point: SnapshotPoint) =
         let width = 
             if EditorCoreUtil.IsEndPoint point then
                 0
@@ -341,15 +341,15 @@ type SnapshotOverlapPoint =
 [<DebuggerDisplay("{ToString()}")>] 
 type SnapshotOverlapSpan = 
 
-    val private _start : SnapshotOverlapPoint
-    val private _end : SnapshotOverlapPoint 
+    val private _start: SnapshotOverlapPoint
+    val private _end: SnapshotOverlapPoint 
 
-    new (startPoint : SnapshotOverlapPoint, endPoint : SnapshotOverlapPoint) = 
+    new (startPoint: SnapshotOverlapPoint, endPoint: SnapshotOverlapPoint) = 
         if startPoint.Point.Position + startPoint.SpacesBefore > endPoint.Point.Position + endPoint.SpacesBefore then
             invalidArg "endPoint" "End cannot be before the start"
         { _start = startPoint; _end = endPoint }
 
-    new (span : SnapshotSpan) =
+    new (span: SnapshotSpan) =
         let startPoint = SnapshotOverlapPoint(span.Start)
         let endPoint = SnapshotOverlapPoint(span.End)
         { _start = startPoint; _end = endPoint }
@@ -486,7 +486,7 @@ module SnapshotUtil =
         span.Start < tss.Length && span.End <= tss.Length
 
     /// Is the last line in the ITextSnapshot empty
-    let IsLastLineEmpty (snapshot : ITextSnapshot) = 
+    let IsLastLineEmpty (snapshot: ITextSnapshot) = 
         let endPoint = GetEndPoint snapshot
         let line = endPoint.GetContainingLine()
         line.Length = 0
@@ -548,7 +548,7 @@ module SnapshotUtil =
                 snapshotLine.Start.Add(column) |> Some
 
     /// Get the point from the specified position
-    let GetPoint (snapshot : ITextSnapshot) position = SnapshotPoint(snapshot, position)
+    let GetPoint (snapshot: ITextSnapshot) position = SnapshotPoint(snapshot, position)
 
 /// Contains operations to help fudge the Editor APIs to be more F# friendly.  Does not
 /// include any Vim specific logic
@@ -606,7 +606,7 @@ module SnapshotSpanUtil =
     /// Get the end line in the SnapshotSpan.  Remember that End is not a part of the Span
     /// but instead the first point after the Span.  This is important when the Span is 
     /// ITextSnapshotLine.ExtentIncludingLineBreak as it is in Visual Mode
-    let GetLastLine (span : SnapshotSpan) = 
+    let GetLastLine (span: SnapshotSpan) = 
         if span.Length > 0 then span.End.Subtract(1).GetContainingLine()
         else GetStartLine(span)
 
@@ -745,7 +745,7 @@ module SnapshotSpanUtil =
     /// Given a NonEmptyCollection<SnapshotSpan> return the SnapshotSpan which is the overarching span that
     /// encompasses all of the SnapshotSpan values in the collection.  The Start will be the minimum start of 
     /// all of the SnapshotSpan values and the End will be the maximum
-    let GetOverarchingSpan (col : NonEmptyCollection<SnapshotSpan>) =
+    let GetOverarchingSpan (col: NonEmptyCollection<SnapshotSpan>) =
         let startPoint = col |> Seq.map (fun span -> span.Start) |> Seq.minBy (fun p -> p.Position)
         let endPoint = col |> Seq.map (fun span -> span.End) |> Seq.maxBy (fun p -> p.Position)
         SnapshotSpan(startPoint, endPoint)
@@ -757,10 +757,10 @@ module SnapshotSpanUtil =
     let CreateEmpty point = SnapshotSpan(point, 0)
 
     /// Create a span from the given point with the specified length
-    let CreateWithLength (startPoint : SnapshotPoint) (length : int) = SnapshotSpan(startPoint, length)
+    let CreateWithLength (startPoint: SnapshotPoint) (length: int) = SnapshotSpan(startPoint, length)
 
     /// Create a span which is the overarching span of the two provided SnapshotSpan values
-    let CreateOverarching (leftSpan : SnapshotSpan) (rightSpan : SnapshotSpan) = 
+    let CreateOverarching (leftSpan: SnapshotSpan) (rightSpan: SnapshotSpan) = 
         Contract.Requires (leftSpan.Snapshot = rightSpan.Snapshot)
         let snapshot = leftSpan.Snapshot
         let startPoint = 
@@ -798,7 +798,7 @@ module NormalizedSnapshotSpanCollectionUtil =
         SnapshotSpan(first.Start,last.End) 
 
     /// Get the first item 
-    let TryGetFirst (col : NormalizedSnapshotSpanCollection) = if col.Count = 0 then None else Some (col.[0])
+    let TryGetFirst (col: NormalizedSnapshotSpanCollection) = if col.Count = 0 then None else Some (col.[0])
 
     let OfSeq (s:SnapshotSpan seq) = new NormalizedSnapshotSpanCollection(s)
 
@@ -814,13 +814,13 @@ module VirtualSnapshotSpanUtil =
 module SnapshotLineUtil =
 
     /// ITextSnapshot the ITextSnapshotLine is associated with
-    let GetSnapshot (line : ITextSnapshotLine) = line.Snapshot
+    let GetSnapshot (line: ITextSnapshotLine) = line.Snapshot
 
     /// Length of the line
-    let GetLength (line : ITextSnapshotLine) = line.Length
+    let GetLength (line: ITextSnapshotLine) = line.Length
 
     /// Length of the line including the line break
-    let GetLengthIncludingLineBreak (line : ITextSnapshotLine) = line.LengthIncludingLineBreak
+    let GetLengthIncludingLineBreak (line: ITextSnapshotLine) = line.LengthIncludingLineBreak
 
     /// Get the length of the line break
     let GetLineBreakLength (line:ITextSnapshotLine) = line.LengthIncludingLineBreak - line.Length
@@ -899,10 +899,10 @@ module SnapshotLineUtil =
         span.GetText()
 
     /// Get the text of the ITextSnapshotLine 
-    let GetText (line : ITextSnapshotLine) = line.GetText()
+    let GetText (line: ITextSnapshotLine) = line.GetText()
 
     /// Get the text of the ITextSnapshotLine including the line break
-    let GetTextIncludingLineBreak (line : ITextSnapshotLine) = line.GetTextIncludingLineBreak()
+    let GetTextIncludingLineBreak (line: ITextSnapshotLine) = line.GetTextIncludingLineBreak()
 
     /// Get the last point which is included in this line not including the line 
     /// break.  Can be None if this is a 0 length line 
@@ -917,16 +917,16 @@ module SnapshotLineUtil =
         | None -> line.Start
 
     /// Is this the last included point on the ITextSnapshotLine
-    let IsLastPoint (line : ITextSnapshotLine) point = 
+    let IsLastPoint (line: ITextSnapshotLine) point = 
         if line.Length = 0 then point = line.Start
         else point.Position + 1 = line.End.Position
 
     /// Is this the last point on the line including the line break
-    let IsLastPointIncludingLineBreak (line : ITextSnapshotLine) (point : SnapshotPoint) = 
+    let IsLastPointIncludingLineBreak (line: ITextSnapshotLine) (point: SnapshotPoint) = 
         point.Position + 1 = line.EndIncludingLineBreak.Position
 
     /// Is this the last line in the ITextBuffer
-    let IsLastLine (line : ITextSnapshotLine) = 
+    let IsLastLine (line: ITextSnapshotLine) = 
         let snapshot = line.Snapshot
         snapshot.LineCount - 1 = line.LineNumber
 
@@ -953,7 +953,7 @@ module SnapshotLineUtil =
         |> SeqUtil.tryHeadOnly
 
     // Checks if the point is the first non blank character of the line
-    let IsFirstNonBlank (point : SnapshotPoint) =
+    let IsFirstNonBlank (point: SnapshotPoint) =
         point.GetContainingLine()
         |> GetFirstNonBlank = Some(point)
 
@@ -974,7 +974,7 @@ module SnapshotLineUtil =
     /// Get the SnapshotSpan for the given column in length within the extent of the
     /// line.  If the column or length exceeds the length of the line then an
     /// End will be used in it's place
-    let GetSpanInLine (line : ITextSnapshotLine) column length =
+    let GetSpanInLine (line: ITextSnapshotLine) column length =
         let startPoint = 
             if column >= line.Length then
                 line.End
@@ -990,13 +990,13 @@ module SnapshotLineUtil =
 
     /// Get a SnapshotPoint representing the nth characters into the line or the 
     /// End point of the line.  This is done using positioning 
-    let GetColumnOrEnd column (line : ITextSnapshotLine) = 
+    let GetColumnOrEnd column (line: ITextSnapshotLine) = 
         if line.Start.Position + column >= line.End.Position then line.End
         else line.Start.Add(column)
 
     /// Get a SnapshotPoint representing 'offset' characters into the line or it's
     /// line break or the EndIncludingLineBreak of the line
-    let GetColumnOrEndIncludingLineBreak column (line : ITextSnapshotLine) = 
+    let GetColumnOrEndIncludingLineBreak column (line: ITextSnapshotLine) = 
         if line.Start.Position + column >= line.EndIncludingLineBreak.Position then line.EndIncludingLineBreak
         else line.Start.Add(column)
 
@@ -1011,7 +1011,7 @@ module SnapshotLineUtil =
 
         let mutable point = line.Start
         let mutable spaces = 0 
-        let mutable value : SnapshotOverlapPoint option = None
+        let mutable value: SnapshotOverlapPoint option = None
 
         if point = endPoint then
             value <- Some (SnapshotOverlapPoint(point, 0, 0))
@@ -1054,7 +1054,7 @@ module SnapshotLineUtil =
     /// Get the count of spaces to get to the specified absolute column offset.  This will count
     /// tabs as counting for 'tabstop' spaces.  Note though that tabs which don't occur on a 'tabstop'
     /// boundary only count for the number of spaces to get to the next tabstop boundary
-    let GetSpacesToColumn (line : ITextSnapshotLine) column tabStop = 
+    let GetSpacesToColumn (line: ITextSnapshotLine) column tabStop = 
         let mutable spaces = 0
         let mutable current = SnapshotColumn(line.Start)
         let maxColumn = min column line.Length
@@ -1398,11 +1398,11 @@ module SnapshotPointUtil =
 
         /// Get the relative column in 'direction' using predicate 'isEnd'
         /// to stop the motion
-        let GetRelativeColumn direction (isEnd : SnapshotPoint -> bool) =
+        let GetRelativeColumn direction (isEnd: SnapshotPoint -> bool) =
 
             /// Adjust 'column' backward or forward if it is in the
             /// middle of a line break
-            let AdjustLineBreak (column : SnapshotColumn) =
+            let AdjustLineBreak (column: SnapshotColumn) =
                 if column.Column <= column.Line.Length then
                     column
                 else if direction = -1 then
@@ -1500,11 +1500,11 @@ module VirtualSnapshotPointUtil =
 module SnapshotLineRangeUtil = 
 
     /// Create a range for the entire ItextSnapshot
-    let CreateForSnapshot (snapshot : ITextSnapshot) = 
+    let CreateForSnapshot (snapshot: ITextSnapshot) = 
         SnapshotLineRange.CreateForExtent snapshot
 
     /// Create a range for the provided ITextSnapshotLine
-    let CreateForLine (line : ITextSnapshotLine) =
+    let CreateForLine (line: ITextSnapshotLine) =
         SnapshotLineRange.CreateForLine line
 
     /// Create a range for the provided ITextSnapshotLine and with count length
@@ -1541,7 +1541,7 @@ module SnapshotLineRangeUtil =
         CreateForLineAndMaxCount line count
 
     /// Create a line range for the provided start and end line 
-    let CreateForLineRange (startLine : ITextSnapshotLine) (endLine : ITextSnapshotLine) = 
+    let CreateForLineRange (startLine: ITextSnapshotLine) (endLine: ITextSnapshotLine) = 
         SnapshotLineRange.CreateForLineRange startLine endLine
 
     /// Create a line range for the provided start and end line 
@@ -1554,7 +1554,7 @@ module BufferGraphUtil =
 
     /// Map the point up to the given ITextSnapshot.  Returns None if the mapping is not 
     /// possible
-    let MapPointUpToSnapshot (bufferGraph : IBufferGraph) point snapshot trackingMode affinity =
+    let MapPointUpToSnapshot (bufferGraph: IBufferGraph) point snapshot trackingMode affinity =
         try
             bufferGraph.MapUpToSnapshot(point, trackingMode, affinity, snapshot)
             |> OptionUtil.ofNullable
@@ -1564,12 +1564,12 @@ module BufferGraphUtil =
 
     /// Map the point up to the given ITextSnapshot.  Returns None if the mapping is not 
     /// possible
-    let MapPointUpToSnapshotStandard (bufferGraph : IBufferGraph) point snapshot =
+    let MapPointUpToSnapshotStandard (bufferGraph: IBufferGraph) point snapshot =
         MapPointUpToSnapshot bufferGraph point snapshot PointTrackingMode.Negative PositionAffinity.Predecessor
 
     /// Map the point down to the given ITextSnapshot.  Returns None if the mapping is not 
     /// possible
-    let MapPointDownToSnapshot (bufferGraph : IBufferGraph) point snapshot trackingMode affinity =
+    let MapPointDownToSnapshot (bufferGraph: IBufferGraph) point snapshot trackingMode affinity =
         try
             bufferGraph.MapDownToSnapshot(point, trackingMode, snapshot, affinity)
             |> OptionUtil.ofNullable
@@ -1579,12 +1579,12 @@ module BufferGraphUtil =
 
     /// Map the point down to the given ITextSnapshot.  Returns None if the mapping is not 
     /// possible
-    let MapPointDownToSnapshotStandard (bufferGraph : IBufferGraph) point snapshot =
+    let MapPointDownToSnapshotStandard (bufferGraph: IBufferGraph) point snapshot =
         MapPointDownToSnapshot bufferGraph point snapshot PointTrackingMode.Negative PositionAffinity.Predecessor
 
     /// Map the SnapshotSpan up to the given ITextSnapshot.  Returns None if the mapping is
     /// not possible
-    let MapSpanUpToSnapshot (bufferGraph : IBufferGraph) span trackingMode snapshot =
+    let MapSpanUpToSnapshot (bufferGraph: IBufferGraph) span trackingMode snapshot =
         try
             bufferGraph.MapUpToSnapshot(span, trackingMode, snapshot) |> Some
         with
@@ -1593,7 +1593,7 @@ module BufferGraphUtil =
 
     /// Map the SnapshotSpan down to the given ITextSnapshot.  Returns None if the mapping is
     /// not possible
-    let MapSpanDownToSnapshot (bufferGraph : IBufferGraph) span trackingMode snapshot =
+    let MapSpanDownToSnapshot (bufferGraph: IBufferGraph) span trackingMode snapshot =
         try
             bufferGraph.MapDownToSnapshot(span, trackingMode, snapshot) |> Some
         with
@@ -1602,7 +1602,7 @@ module BufferGraphUtil =
 
     /// Map the SnapshotSpan down to the given ITextSnapshot by the Start and End points
     /// instead of by the mapped Spans
-    let MapSpanDownToSingle (bufferGraph : IBufferGraph) (span : SnapshotSpan) snapshot = 
+    let MapSpanDownToSingle (bufferGraph: IBufferGraph) (span: SnapshotSpan) snapshot = 
         let startPoint = MapPointDownToSnapshot bufferGraph span.Start snapshot PointTrackingMode.Negative PositionAffinity.Predecessor
         let endPoint = MapPointDownToSnapshot bufferGraph span.End snapshot PointTrackingMode.Positive PositionAffinity.Successor
         match startPoint, endPoint with
@@ -1616,13 +1616,13 @@ module BufferGraphUtil =
 type SnapshotData = {
 
     /// SnapshotPoint for the Caret
-    CaretPoint : SnapshotPoint
+    CaretPoint: SnapshotPoint
 
     /// ITextSnapshotLine on which the caret resides
-    CaretLine : ITextSnapshotLine
+    CaretLine: ITextSnapshotLine
 
     /// The current ITextSnapshot on which this data is based
-    CurrentSnapshot : ITextSnapshot
+    CurrentSnapshot: ITextSnapshot
 }
 
 [<System.Flags>]
@@ -1635,7 +1635,7 @@ type MoveCaretFlags =
 module EditorOptionsUtil =
 
     /// Get the option value if it exists
-    let GetOptionValue (opts : IEditorOptions) (key : EditorOptionKey<'a>) =
+    let GetOptionValue (opts: IEditorOptions) (key: EditorOptionKey<'a>) =
         try
             if opts.IsOptionDefined(key, false) then 
                 opts.GetOptionValue(key) |> Some
@@ -1650,12 +1650,12 @@ module EditorOptionsUtil =
         | Some value -> value
         | None -> defaultValue
 
-    let SetOptionValue (opts : IEditorOptions) (key : EditorOptionKey<'a>) value =
+    let SetOptionValue (opts: IEditorOptions) (key: EditorOptionKey<'a>) value =
         opts.SetOptionValue(key, value)
 
 module ProjectionBufferUtil =
 
-    let GetSourceBuffersRecursive (projectionBuffer : IProjectionBuffer) =
+    let GetSourceBuffersRecursive (projectionBuffer: IProjectionBuffer) =
         let toVisit = new Queue<IProjectionBuffer>()
         toVisit.Enqueue projectionBuffer
 
@@ -1676,14 +1676,14 @@ module TextBufferUtil =
     /// Delete the specified span and return the latest ITextSnapshot after the
     /// entire delete operation completes vs. the one which is returned for 
     /// the specific delete operation
-    let DeleteAndGetLatest (textBuffer : ITextBuffer) (deleteSpan : Span) = 
+    let DeleteAndGetLatest (textBuffer: ITextBuffer) (deleteSpan: Span) = 
         textBuffer.Delete(deleteSpan) |> ignore
         textBuffer.CurrentSnapshot
 
     /// Any ITextBuffer instance is possibly an IProjectionBuffer (which is a text buffer composed 
     /// of parts of other ITextBuffers).  This will return all of the real ITextBuffer buffers 
     /// composing the provided ITextBuffer
-    let GetSourceBuffersRecursive (textBuffer : ITextBuffer) =
+    let GetSourceBuffersRecursive (textBuffer: ITextBuffer) =
         match textBuffer with
         | :? IProjectionBuffer as p -> ProjectionBufferUtil.GetSourceBuffersRecursive p
         | _ -> Seq.singleton textBuffer
@@ -1693,7 +1693,7 @@ module TextEditUtil =
     /// Apply the change and return the latest ITextSnapshot after the edit
     /// operation completes vs. the one which is returned for this specific
     /// edit operation.
-    let ApplyAndGetLatest (textEdit : ITextEdit) = 
+    let ApplyAndGetLatest (textEdit: ITextEdit) = 
         textEdit.Apply() |> ignore
         textEdit.Snapshot.TextBuffer.CurrentSnapshot
 
@@ -1701,13 +1701,13 @@ module TextEditUtil =
 /// include any Vim specific logic
 module TextViewUtil =
 
-    let GetSnapshot (textView : ITextView) = textView.TextSnapshot
+    let GetSnapshot (textView: ITextView) = textView.TextSnapshot
 
-    let GetCaret (textView : ITextView) = textView.Caret
+    let GetCaret (textView: ITextView) = textView.Caret
 
-    let GetCaretPoint (textView : ITextView) = textView.Caret.Position.BufferPosition
+    let GetCaretPoint (textView: ITextView) = textView.Caret.Position.BufferPosition
 
-    let GetCaretVirtualPoint (textView : ITextView) = textView.Caret.Position.VirtualBufferPosition
+    let GetCaretVirtualPoint (textView: ITextView) = textView.Caret.Position.VirtualBufferPosition
 
     let GetCaretLine textView = GetCaretPoint textView |> SnapshotPointUtil.GetContainingLine
 
@@ -1723,7 +1723,7 @@ module TextViewUtil =
     ///
     /// Be aware when using GetTextViewLineContainingYCoordinate, may need to add the
     /// _textView.ViewportTop to the y coordinate
-    let GetTextViewLines (textView : ITextView) =
+    let GetTextViewLines (textView: ITextView) =
         try
             let textViewLines = textView.TextViewLines
             if textViewLines <> null then Some textViewLines
@@ -1740,7 +1740,7 @@ module TextViewUtil =
         | Some textViewLines -> textViewLines.Count
 
     /// Return the overarching SnapshotLineRange for the visible lines in the ITextView
-    let GetVisibleSnapshotLineRange (textView : ITextView) =
+    let GetVisibleSnapshotLineRange (textView: ITextView) =
         if textView.InLayout then
             None
         else 
@@ -1751,14 +1751,14 @@ module TextViewUtil =
             SnapshotLineRange.CreateForLineNumberRange textView.TextSnapshot startLine lastLine |> NullableUtil.ToOption
 
     /// Returns a sequence of ITextSnapshotLine values representing the visible lines in the buffer
-    let GetVisibleSnapshotLines (textView : ITextView) =
+    let GetVisibleSnapshotLines (textView: ITextView) =
         match GetVisibleSnapshotLineRange textView with
         | Some lineRange -> lineRange.Lines
         | None -> Seq.empty
 
     /// Returns the overarching SnapshotLineRange for the visible lines in the ITextView on the
     /// Visual snapshot.
-    let GetVisibleVisualSnapshotLineRange (textView : ITextView) = 
+    let GetVisibleVisualSnapshotLineRange (textView: ITextView) = 
         match GetVisibleSnapshotLineRange textView with
         | None -> NullableUtil.CreateNull<SnapshotLineRange>()
         | Some range ->
@@ -1772,7 +1772,7 @@ module TextViewUtil =
 
     /// Returns a sequence of ITextSnapshotLine values representing the visible lines in the buffer
     /// on the Visual snapshot
-    let GetVisibleVisualSnapshotLines (textView : ITextView) =
+    let GetVisibleVisualSnapshotLines (textView: ITextView) =
         match GetVisibleVisualSnapshotLineRange textView with
         | NullableUtil.HasValue lineRange -> lineRange.Lines
         | NullableUtil.Null -> Seq.empty
@@ -1783,7 +1783,7 @@ module TextViewUtil =
         caret.EnsureVisible()
 
     /// Clear out the selection
-    let ClearSelection (textView : ITextView) =
+    let ClearSelection (textView: ITextView) =
         textView.Selection.Clear()
 
     let private MoveCaretToCommon textView flags = 
@@ -1794,7 +1794,7 @@ module TextViewUtil =
             EnsureCaretOnScreen textView
 
     /// Move the caret to the given point
-    let MoveCaretToPointRaw textView (point : SnapshotPoint) flags = 
+    let MoveCaretToPointRaw textView (point: SnapshotPoint) flags = 
         let caret = GetCaret textView
         caret.MoveTo(point) |> ignore
         MoveCaretToCommon textView flags
@@ -1805,7 +1805,7 @@ module TextViewUtil =
         MoveCaretToPointRaw textView point MoveCaretFlags.All
 
     /// Move the caret to the given point and ensure it is on screen.  Will not expand any outlining regions
-    let MoveCaretToVirtualPointRaw textView (point : VirtualSnapshotPoint) flags = 
+    let MoveCaretToVirtualPointRaw textView (point: VirtualSnapshotPoint) flags = 
         let caret = GetCaret textView
         caret.MoveTo(point) |> ignore
         MoveCaretToCommon textView flags
@@ -1816,7 +1816,7 @@ module TextViewUtil =
         MoveCaretToVirtualPointRaw textView point MoveCaretFlags.All
 
     /// Move the caret to the given point and ensure it is on screen.  Will not expand any outlining regions
-    let MoveCaretToPositionRaw textView (position : int) flags = 
+    let MoveCaretToPositionRaw textView (position: int) flags = 
         let snapshot = GetSnapshot textView
         let point = SnapshotPoint(snapshot, position)
         MoveCaretToPointRaw textView point flags
@@ -1828,7 +1828,7 @@ module TextViewUtil =
 
     /// Get the SnapshotData value for the edit buffer.  Unlike the SnapshotData for the Visual Buffer this 
     /// can always be retrieved because the caret point is presented in terms of the edit buffer
-    let GetEditSnapshotData (textView : ITextView) = 
+    let GetEditSnapshotData (textView: ITextView) = 
         let caretPoint = GetCaretPoint textView
         let caretLine = SnapshotPointUtil.GetContainingLine caretPoint
         { 
@@ -1839,7 +1839,7 @@ module TextViewUtil =
     /// Get the SnapshotData value for the visual buffer.  Can return None if the information is not mappable
     /// to the visual buffer.  Really this shouldn't ever happen unless the IProjectionBuffer was incorrectly
     /// hooked up though
-    let GetVisualSnapshotData (textView : ITextView) = 
+    let GetVisualSnapshotData (textView: ITextView) = 
 
         // Get the visual buffer information
         let visualBuffer = textView.TextViewModel.VisualBuffer
@@ -1877,7 +1877,7 @@ module TextViewUtil =
         | None -> GetEditSnapshotData textView
 
     /// Is word wrap enabled for this ITextView
-    let IsWordWrapEnabled (textView : ITextView) = 
+    let IsWordWrapEnabled (textView: ITextView) = 
         let editorOptions = textView.Options
         match EditorOptionsUtil.GetOptionValue editorOptions DefaultTextViewOptions.WordWrapStyleId with
         | None -> false
@@ -1887,7 +1887,7 @@ module TextSelectionUtil =
 
     /// Returns the SnapshotSpan which represents the total of the selection.  This is a SnapshotSpan of the left
     /// most and right most point point in any of the selected spans 
-    let GetOverarchingSelectedSpan (selection : ITextSelection) = 
+    let GetOverarchingSelectedSpan (selection: ITextSelection) = 
         if selection.IsEmpty then 
             None
         else
@@ -1900,13 +1900,13 @@ module TextSelectionUtil =
 
 module TrackingPointUtil =
 
-    let GetPoint (snapshot : ITextSnapshot) (point : ITrackingPoint) =
+    let GetPoint (snapshot: ITextSnapshot) (point: ITrackingPoint) =
         try
             point.GetPoint(snapshot) |> Some
         with
             | :? System.ArgumentException -> None
 
-    let GetPointInSnapshot point mode (newSnapshot : ITextSnapshot) =
+    let GetPointInSnapshot point mode (newSnapshot: ITextSnapshot) =
         let oldSnapshot = SnapshotPointUtil.GetSnapshot point
         if oldSnapshot.Version.VersionNumber = newSnapshot.Version.VersionNumber then
             Some point
@@ -1959,17 +1959,17 @@ type EditSpan =
 module EditUtil = 
 
     /// NewLine to use for the ITextBuffer
-    let NewLine (options : IEditorOptions) = DefaultOptionExtensions.GetNewLineCharacter options
+    let NewLine (options: IEditorOptions) = DefaultOptionExtensions.GetNewLineCharacter options
 
     /// Get the text for a tab character based on the given options
-    let GetTabText (options : IEditorOptions) = 
+    let GetTabText (options: IEditorOptions) = 
         if DefaultOptionExtensions.IsConvertTabsToSpacesEnabled options then
             StringUtil.RepeatChar (DefaultOptionExtensions.GetTabSize options) ' '
         else
             "\t"
 
     /// Get the length of the line break at the given index 
-    let GetLineBreakLength (str : string) index =
+    let GetLineBreakLength (str: string) index =
         match str.Chars(index) with
         | '\r' ->
             if index + 1 < str.Length && '\n' = str.Chars(index + 1) then
@@ -1987,7 +1987,7 @@ module EditUtil =
             else 0
 
     /// Get the length of the line break at the end of the string
-    let GetLineBreakLengthAtEnd (str : string) =
+    let GetLineBreakLengthAtEnd (str: string) =
         if System.String.IsNullOrEmpty str then 
             0
         else
@@ -1998,7 +1998,7 @@ module EditUtil =
                 GetLineBreakLength str index
 
     /// Get the count of new lines in the string
-    let GetLineBreakCount (str : string) =
+    let GetLineBreakCount (str: string) =
         let rec inner index count =
             if index >= str.Length then
                 count
@@ -2013,7 +2013,7 @@ module EditUtil =
 
     /// Get the indentation level given the context line (the line above the line which is 
     /// being indented)
-    let GetAutoIndent (contextLine : ITextSnapshotLine) =
+    let GetAutoIndent (contextLine: ITextSnapshotLine) =
         contextLine 
         |> SnapshotLineUtil.GetIndentPoint 
         |> SnapshotPointUtil.GetColumn 
@@ -2022,7 +2022,7 @@ module EditUtil =
     let EndsWithNewLine value = 0 <> GetLineBreakLengthAtEnd value
 
     /// Does this text have a new line character inside of it?
-    let HasNewLine (text : string) = 
+    let HasNewLine (text: string) = 
         { 0 .. (text.Length - 1) }
         |> SeqUtil.any (fun index -> GetLineBreakLength text index > 0)
 
@@ -2051,7 +2051,7 @@ module EditUtil =
                 value.Substring(0, value.Length - length)
 
     /// Normalize the new line values in the string to the specified value
-    let NormalizeNewLines (text : string) (newLine : string) = 
+    let NormalizeNewLines (text: string) (newLine: string) = 
         let builder = System.Text.StringBuilder()
         let rec inner index = 
             if index >= text.Length then
@@ -2072,17 +2072,17 @@ module EditUtil =
 type TextLine = {
 
     /// The text of the line
-    Text : string
+    Text: string
 
     /// The string for the new line 
-    NewLine : string
+    NewLine: string
 
 } with
 
     member x.HasNewLine = x.NewLine.Length = 0
 
     /// Create a string back from the provided TextLine values
-    static member CreateString (textLines : TextLine seq) = 
+    static member CreateString (textLines: TextLine seq) = 
         let builder = System.Text.StringBuilder()
         for textLine in textLines do
             builder.AppendString textLine.Text
@@ -2092,7 +2092,7 @@ type TextLine = {
     /// Break a string representation into a series of TextNode values.  This will 
     /// always return at least a single value for even an empty string so we use 
     /// a NonEmptyCollection
-    static member GetTextLines (fullText : string) = 
+    static member GetTextLines (fullText: string) = 
 
         // Get the next new line item from the given index
         let rec getNextNewLine index = 
@@ -2133,15 +2133,15 @@ type TextLine = {
             let firstLine, index = getForIndex 0 |> Option.get
     
             // Now calculate the rest 
-            let rest : TextLine list = Seq.unfold getForIndex index |> List.ofSeq
+            let rest: TextLine list = Seq.unfold getForIndex index |> List.ofSeq
 
             NonEmptyCollection(firstLine, rest)
 
 module SnapshotColumnUtil =
 
-    let GetPoint (column : SnapshotColumn) = column.Point
+    let GetPoint (column: SnapshotColumn) = column.Point
 
-    let GetLine (column : SnapshotColumn) = column.Line
+    let GetLine (column: SnapshotColumn) = column.Line
     
     /// Get the columns from the given point in a forward motion 
     let private GetColumnsCore path includeLineBreak point = 
@@ -2149,8 +2149,8 @@ module SnapshotColumnUtil =
         let startLineNumber = SnapshotPointUtil.GetLineNumber point
         let filter = 
             match path with 
-            | SearchPath.Forward -> fun (c : SnapshotColumn) -> c.Point.Position >= point.Position
-            | SearchPath.Backward -> fun (c : SnapshotColumn) -> c.Point.Position <= point.Position
+            | SearchPath.Forward -> fun (c: SnapshotColumn) -> c.Point.Position >= point.Position
+            | SearchPath.Backward -> fun (c: SnapshotColumn) -> c.Point.Position <= point.Position
 
         SnapshotUtil.GetLines snapshot startLineNumber path
         |> Seq.collect (fun line -> 
@@ -2172,7 +2172,7 @@ module internal ITextEditExtensions =
 
         /// Delete the overlapped span from the ITextBuffer.  If there is any overlap then the
         /// remaining spaces will be filed with ' ' 
-        member x.Delete (overlapSpan : SnapshotOverlapSpan) = 
+        member x.Delete (overlapSpan: SnapshotOverlapSpan) = 
             let pre = overlapSpan.Start.SpacesBefore
             let post = 
                 if overlapSpan.HasOverlapEnd then

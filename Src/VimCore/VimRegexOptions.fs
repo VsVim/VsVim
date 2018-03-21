@@ -51,13 +51,13 @@ type VimRegexReplaceData = {
 
     /// When the '\r' replace sequence is used what should the replace string be.  This
     /// is usually contextual to the point in the IVimBuffer
-    NewLine : string
+    NewLine: string
 
     /// Whether or not magic should apply
-    Magic : bool
+    Magic: bool
 
     /// The 'count' times it should be replaced.  Not considered in a replace all
-    Count : VimRegexReplaceCount
+    Count: VimRegexReplaceCount
 
 } with
 

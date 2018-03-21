@@ -20,11 +20,11 @@ type Contract =
         if not test then
             raise (System.Exception("Contract failed"))
 
-    static member GetInvalidEnumException<'T> (value : 'T) : System.Exception =
+    static member GetInvalidEnumException<'T> (value: 'T): System.Exception =
         let msg = sprintf "The value %O is not a valid member of type %O" value typedefof<'T>
         System.Exception(msg)
 
-    static member FailEnumValue<'T> (value : 'T) : unit = 
+    static member FailEnumValue<'T> (value: 'T): unit = 
         raise (Contract.GetInvalidEnumException value)
 
 [<AttributeUsage(AttributeTargets.Class ||| AttributeTargets.Method ||| AttributeTargets.Interface)>]
@@ -37,7 +37,7 @@ type internal StandardEvent<'T when 'T :> System.EventArgs>() =
 
     member x.Publish = _event.Publish
 
-    member x.Trigger (sender : obj) (args : 'T) = 
+    member x.Trigger (sender: obj) (args: 'T) = 
         let argsArray = [| sender; args :> obj |]
         _event.Trigger(argsArray)
 
@@ -47,12 +47,12 @@ type internal StandardEvent() =
 
     member x.Publish = _event.Publish
 
-    member x.Trigger (sender : obj) =
+    member x.Trigger (sender: obj) =
         let argsArray = [| sender; System.EventArgs.Empty :> obj |]
         _event.Trigger(argsArray)
 
 type internal DisposableBag() = 
-    let mutable _toDispose : System.IDisposable list = List.empty
+    let mutable _toDispose: System.IDisposable list = List.empty
     member x.DisposeAll () = 
         _toDispose |> List.iter (fun x -> x.Dispose()) 
         _toDispose <- List.empty
@@ -60,19 +60,19 @@ type internal DisposableBag() =
 
 module internal NullableUtil = 
 
-    let (|HasValue|Null|) (x : System.Nullable<_>) =
+    let (|HasValue|Null|) (x: System.Nullable<_>) =
         if x.HasValue then
             HasValue (x.Value)
         else
             Null 
 
-    let Create (x : 'T) =
+    let Create (x: 'T) =
         System.Nullable<'T>(x)
 
-    let CreateNull<'T when 'T : (new : unit -> 'T) and 'T : struct and 'T :> System.ValueType> () =
+    let CreateNull<'T when 'T: (new: unit -> 'T) and 'T: struct and 'T :> System.ValueType> () =
         System.Nullable<'T>()
 
-    let ToOption (x : System.Nullable<_>) =
+    let ToOption (x: System.Nullable<_>) =
         if x.HasValue then
             Some x.Value
         else
@@ -80,8 +80,8 @@ module internal NullableUtil =
 
 [<AbstractClass>]
 type internal ToggleHandler() =
-    abstract Add : unit -> unit
-    abstract Remove : unit -> unit
+    abstract Add: unit -> unit
+    abstract Remove: unit -> unit
    
     static member Create<'T> (source:System.IObservable<'T>) (func: 'T -> unit) = ToggleHandler<'T>(source,func)
     static member Empty = 
@@ -91,10 +91,10 @@ type internal ToggleHandler() =
 
 and internal ToggleHandler<'T> 
     ( 
-        _source : System.IObservable<'T>,
-        _func : 'T -> unit) =  
+        _source: System.IObservable<'T>,
+        _func: 'T -> unit) =  
     inherit ToggleHandler()
-    let mutable _handler : System.IDisposable option = None
+    let mutable _handler: System.IDisposable option = None
     override x.Add() = 
         match _handler with
         | Some(_) -> failwith "Already subscribed"
@@ -107,7 +107,7 @@ and internal ToggleHandler<'T>
         | None -> ()
 
 /// F# friendly typed wrapper around the WeakReference class 
-type internal WeakReference<'T>( _weak : System.WeakReference ) =
+type internal WeakReference<'T>( _weak: System.WeakReference ) =
     member x.Target = 
         let v = _weak.Target
         if v = null then
@@ -118,7 +118,7 @@ type internal WeakReference<'T>( _weak : System.WeakReference ) =
 
 module internal WeakReferenceUtil =
 
-    let Create<'T> (value : 'T) = 
+    let Create<'T> (value: 'T) = 
         let weakReference = System.WeakReference(value)
         WeakReference<'T>(weakReference)
 
@@ -202,7 +202,7 @@ module internal SeqUtil =
             Some (head,tail)
 
     /// Try and get the head of the sequence
-    let tryHeadOnly (sequence : 'a seq) = 
+    let tryHeadOnly (sequence: 'a seq) = 
         use e = sequence.GetEnumerator()
         if e.MoveNext() then
             Some e.Current
@@ -298,7 +298,7 @@ module internal SeqUtil =
         }
 
     /// Filters the list removing all of the first tuple arguments which are None
-    let filterToSome2 (sequence : ('a option * 'b) seq) =
+    let filterToSome2 (sequence: ('a option * 'b) seq) =
         seq { 
             for cur in sequence do
                 let first,second = cur
@@ -342,7 +342,7 @@ module internal SeqUtil =
 
     /// Same functionality as Seq.tryFind except it allows you to pass along a 
     /// state value along 
-    let tryFind initialState predicate (sequence : 'a seq) =
+    let tryFind initialState predicate (sequence: 'a seq) =
         use e = sequence.GetEnumerator()
         let rec inner state = 
             match predicate e.Current state with
@@ -364,7 +364,7 @@ module internal MapUtil =
 
 module internal GenericListUtil = 
 
-    let OfSeq (col : 'T seq) = System.Collections.Generic.List<'T>(col)
+    let OfSeq (col: 'T seq) = System.Collections.Generic.List<'T>(col)
 
 [<RequireQualifiedAccess>]
 type internal CharComparer =
@@ -384,7 +384,7 @@ type internal CharComparer =
                 let right = System.Char.ToLower right
                 left = right
 
-    member x.Compare (left : char) (right : char) = 
+    member x.Compare (left: char) (right: char) = 
         if left = right then
             0
         else
@@ -396,7 +396,7 @@ type internal CharComparer =
                 let right = System.Char.ToLower right
                 left.CompareTo(right)
 
-    member x.GetHashCode (c : char) = 
+    member x.GetHashCode (c: char) = 
         let c = 
             match x with
             | Exact -> c
@@ -410,18 +410,18 @@ type internal CharComparer =
 [<CustomEquality>]
 type internal CharSpan 
     (
-        _value : string, 
-        _index : int,
-        _length : int,
-        _comparer : CharComparer
+        _value: string, 
+        _index: int,
+        _length: int,
+        _comparer: CharComparer
     ) = 
 
-    new (value : string, comparer : CharComparer) = 
+    new (value: string, comparer: CharComparer) = 
         CharSpan(value, 0, value.Length, comparer)
 
     member x.Length = _length
 
-    member x.CharAt index : char = 
+    member x.CharAt index: char = 
         let index = _index + index
         _value.[index]
 
@@ -435,7 +435,7 @@ type internal CharSpan
         | CharComparer.Exact -> System.StringComparer.Ordinal
         | CharComparer.IgnoreCase -> System.StringComparer.OrdinalIgnoreCase
 
-    member x.CompareTo (other : CharSpan) = 
+    member x.CompareTo (other: CharSpan) = 
         let diff = x.Length - other.Length
         if diff <> 0 then
             diff
@@ -453,7 +453,7 @@ type internal CharSpan
     member x.GetSubSpan index length = 
         CharSpan(_value, index + _index, length, _comparer)
 
-    member x.IndexOf (c : char) = 
+    member x.IndexOf (c: char) = 
         let mutable index = 0
         let mutable found = -1
         while index < x.Length && found < 0 do
@@ -498,7 +498,7 @@ type internal CharSpan
     interface System.IEquatable<CharSpan> with
         member x.Equals other = 0 = x.CompareTo other
 
-    static member FromBounds (str : string) (startIndex : int) (endIndex : int) charComparer =
+    static member FromBounds (str: string) (startIndex: int) (endIndex: int) charComparer =
         let length = endIndex - startIndex
         CharSpan(str, startIndex, length, charComparer)
 
@@ -528,7 +528,7 @@ module internal CharUtil =
     let ToLower x = System.Char.ToLower(x)
     let ToUpper x = System.Char.ToUpper(x)
     let ChangeCase x = if IsUpper x then ToLower x else ToUpper x
-    let ChangeRot13 (x : char) = 
+    let ChangeRot13 (x: char) = 
         let isUpper = IsUpper x 
         let x = ToLower x
         let index = int x - int 'a'
@@ -547,7 +547,7 @@ module internal CharUtil =
         left = right
 
     /// Get the Char value for the given ASCII code
-    let OfAsciiValue (value : byte) =
+    let OfAsciiValue (value: byte) =
         let asciiArray = [| value |]
         let charArray = System.Text.Encoding.ASCII.GetChars(asciiArray)
         if charArray.Length > 0 then
@@ -680,45 +680,45 @@ module internal CharCodes =
 module internal StringBuilderExtensions =
 
     type StringBuilder with
-        member x.AppendChar (c : char) = 
+        member x.AppendChar (c: char) = 
             x.Append(c) |> ignore
 
-        member x.AppendCharCount (c : char) (count : int) = 
+        member x.AppendCharCount (c: char) (count: int) = 
             x.Append(c, count) |> ignore
 
-        member x.AppendString (str : string) =
+        member x.AppendString (str: string) =
             x.Append(str) |> ignore
             
-        member x.AppendStringCount (str : string) (count : int) =
+        member x.AppendStringCount (str: string) (count: int) =
             for i = 0 to count - 1 do
                 x.Append(str) |> ignore
 
-        member x.AppendNumber (number : int) =
+        member x.AppendNumber (number: int) =
             x.Append(number) |> ignore
 
-        member x.AppendCharSpan (charSpan : CharSpan) =
+        member x.AppendCharSpan (charSpan: CharSpan) =
             let mutable i = 0
             while i < charSpan.Length do 
                 let c = charSpan.CharAt i
                 x.AppendChar c
                 i <- i + 1
 
-        member x.AppendSubstring (str : string) (start : int) (length : int) =
+        member x.AppendSubstring (str: string) (start: int) (length: int) =
             let charSpan = CharSpan(str, start, length, CharComparer.Exact)
             x.AppendCharSpan charSpan
 
 module internal CollectionExtensions = 
 
     type System.Collections.Generic.Stack<'T> with
-        member x.PushRange (col : 'T seq) = 
+        member x.PushRange (col: 'T seq) = 
             col |> Seq.iter (fun item -> x.Push(item))
 
     type System.Collections.Generic.Queue<'T> with
-        member x.EnqueueRange (col : 'T seq) = 
+        member x.EnqueueRange (col: 'T seq) = 
             col |> Seq.iter (fun item -> x.Enqueue(item))
 
     type System.Collections.Generic.Dictionary<'TKey, 'TValue> with
-        member x.TryGetValueEx (key : 'TKey) = 
+        member x.TryGetValueEx (key: 'TKey) = 
             let found, value = x.TryGetValue key
             if found then
                 Some value
@@ -728,7 +728,7 @@ module internal CollectionExtensions =
 module internal OptionUtil =
 
     /// Collapse an option of an option to just an option
-    let collapse<'a> (opt : 'a option option) =
+    let collapse<'a> (opt: 'a option option) =
         match opt with
         | None -> None
         | Some opt -> opt
@@ -779,7 +779,7 @@ module internal OptionUtil =
         | None -> defaultValue
 
     /// Convert the Nullable<T> to an Option<T>
-    let ofNullable (value : System.Nullable<'T>) =
+    let ofNullable (value: System.Nullable<'T>) =
         if value.HasValue then
             Some value.Value
         else
@@ -793,8 +793,8 @@ module internal OptionUtil =
 /// operations
 type NonEmptyCollection<'T> 
     (
-        _head : 'T,
-        _rest : 'T list
+        _head: 'T,
+        _rest: 'T list
     ) = 
 
     /// Number of items in the collection
@@ -823,7 +823,7 @@ type NonEmptyCollection<'T>
 module NonEmptyCollectionUtil =
 
     /// Appends a list to the NonEmptyCollection
-    let Append values (col : NonEmptyCollection<'T>) =
+    let Append values (col: NonEmptyCollection<'T>) =
         let rest = col.Rest @ values
         NonEmptyCollection(col.Head, rest)
 
@@ -834,25 +834,25 @@ module NonEmptyCollectionUtil =
         | Some (head, rest) -> NonEmptyCollection(head, rest |> List.ofSeq) |> Some
 
     /// Maps the elements in the NonEmptyCollection using the specified function
-    let Map mapFunc (col : NonEmptyCollection<'T>) = 
+    let Map mapFunc (col: NonEmptyCollection<'T>) = 
         let head = mapFunc col.Head
         let rest = List.map mapFunc col.Rest
         NonEmptyCollection<_>(head, rest)
 
 module internal ReadOnlyCollectionUtil = 
 
-    let Single (item : 'T) = 
+    let Single (item: 'T) = 
         let list = System.Collections.Generic.List<'T>()
         list.Add(item)
         ReadOnlyCollection<'T>(list)
 
-    let OfSeq (collection : 'T seq) = 
+    let OfSeq (collection: 'T seq) = 
         let list = System.Collections.Generic.List<'T>(collection)
         ReadOnlyCollection<'T>(list)
 
 module internal HashSetUtil = 
 
-    let OfSeq (collection : 'T seq) = System.Collections.Generic.HashSet<'T>(collection)
+    let OfSeq (collection: 'T seq) = System.Collections.Generic.HashSet<'T>(collection)
 
 module internal SystemUtil =
 
@@ -874,7 +874,7 @@ module internal SystemUtil =
     /// The IO.Path.Combine API has a lot of "features" which basically prevents it
     /// from being a reliable API.  The most notable is that if you pass it c:
     /// instead of c:\ it will silently fail.
-    let CombinePath (path1 : string) (path2 : string) = 
+    let CombinePath (path1: string) (path2: string) = 
 
         // Work around the c: problem by adding a trailing slash to a drive specification
         let path1 = 
@@ -912,7 +912,7 @@ module internal SystemUtil =
 
     /// Whether text starts with a leading tilde and is followed by either
     // nothing else or a directory separator
-    let StartsWithTilde (text : string) =
+    let StartsWithTilde (text: string) =
         if text.StartsWith("~") then
             if text.Length = 1 then
                 true
@@ -933,7 +933,7 @@ module internal SystemUtil =
     /// "$HOMEDRIVE$HOMEPATH" if those variables are defined
     let ResolvePath text =
 
-        let processMatch (regexMatch : Match) =
+        let processMatch (regexMatch: Match) =
             let token = regexMatch.Value
             if token.StartsWith("$") then
                 let variable = token.Substring(1)

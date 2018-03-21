@@ -17,49 +17,49 @@ type ParseResult<'T> =
 
     with 
 
-    member x.Map (mapFunc : 'T -> ParseResult<'U>) =
+    member x.Map (mapFunc: 'T -> ParseResult<'U>) =
         match x with
         | ParseResult.Failed msg -> ParseResult.Failed msg
         | ParseResult.Succeeded value -> mapFunc value
 
 module ParseResultUtil =
 
-    let Map (parseResult : ParseResult<'T>) mapFunc = 
+    let Map (parseResult: ParseResult<'T>) mapFunc = 
         parseResult.Map mapFunc
 
-    let ConvertToLineCommand (parseResult : ParseResult<LineCommand>) =
+    let ConvertToLineCommand (parseResult: ParseResult<LineCommand>) =
         match parseResult with
         | ParseResult.Failed msg -> LineCommand.ParseError msg
         | ParseResult.Succeeded lineCommand -> lineCommand
 
 type ParseResultBuilder
     (
-        _errorMessage : string
+        _errorMessage: string
     ) = 
 
     new () = ParseResultBuilder(Resources.Parser_Error)
 
     /// Bind a ParseResult value
-    member x.Bind (parseResult : ParseResult<'T>, (rest : 'T -> ParseResult<'U>)) = 
+    member x.Bind (parseResult: ParseResult<'T>, (rest: 'T -> ParseResult<'U>)) = 
         match parseResult with
         | ParseResult.Failed msg -> ParseResult.Failed msg
         | ParseResult.Succeeded value -> rest value
 
     /// Bind an option value
-    member x.Bind (parseValue : 'T option, (rest : 'T -> ParseResult<'U>)) = 
+    member x.Bind (parseValue: 'T option, (rest: 'T -> ParseResult<'U>)) = 
         match parseValue with
         | None -> ParseResult.Failed _errorMessage
         | Some value -> rest value
 
-    member x.Return (value : 'T) =
+    member x.Return (value: 'T) =
         ParseResult.Succeeded value
 
-    member x.Return (parseResult : ParseResult<'T>) =
+    member x.Return (parseResult: ParseResult<'T>) =
         match parseResult with
         | ParseResult.Failed msg -> ParseResult.Failed msg
         | ParseResult.Succeeded value -> ParseResult.Succeeded value
 
-    member x.Return (msg : string) = 
+    member x.Return (msg: string) = 
         ParseResult.Failed msg
 
     member x.ReturnFrom value = 
@@ -70,32 +70,32 @@ type ParseResultBuilder
 
 type LineCommandBuilder
     (
-        _errorMessage : string
+        _errorMessage: string
     ) = 
 
     new () = LineCommandBuilder(Resources.Parser_Error)
 
     /// Bind a ParseResult value
-    member x.Bind (parseResult : ParseResult<'T>, rest) = 
+    member x.Bind (parseResult: ParseResult<'T>, rest) = 
         match parseResult with
         | ParseResult.Failed msg -> LineCommand.ParseError msg
         | ParseResult.Succeeded value -> rest value
 
     /// Bind an option value
-    member x.Bind (parseValue : 'T option, rest) = 
+    member x.Bind (parseValue: 'T option, rest) = 
         match parseValue with
         | None -> LineCommand.ParseError _errorMessage
         | Some value -> rest value
 
-    member x.Return (value : LineCommand) =
+    member x.Return (value: LineCommand) =
         value
 
-    member x.Return (parseResult : ParseResult<LineCommand>) =
+    member x.Return (parseResult: ParseResult<LineCommand>) =
         match parseResult with
         | ParseResult.Failed msg -> LineCommand.ParseError msg
         | ParseResult.Succeeded lineCommand -> lineCommand
 
-    member x.Return (msg : string) = 
+    member x.Return (msg: string) = 
         LineCommand.ParseError msg
 
     member x.ReturnFrom value = 
@@ -107,8 +107,8 @@ type LineCommandBuilder
 [<Sealed>]
 type Parser
     (
-        _globalSettings : IVimGlobalSettings,
-        _vimData : IVimData
+        _globalSettings: IVimGlobalSettings,
+        _vimData: IVimData
     ) = 
 
     let _parseResultBuilder = ParseResultBuilder()
@@ -351,7 +351,7 @@ type Parser
         x.ParseTokenSequence [| "s"; ":" |]
 
     /// Reset the parser to the given set of input lines.  
-    member x.Reset (lines : string[]) = 
+    member x.Reset (lines: string[]) = 
         _lines <- 
             if lines.Length = 0 then
                 [|""|]
@@ -422,7 +422,7 @@ type Parser
     member x.TryExpand name =
 
         // Is 'name' an abbreviation of the given command name and abbreviation
-        let isAbbreviation (fullName : string) (abbreviation : string) = 
+        let isAbbreviation (fullName: string) (abbreviation: string) = 
             if name = fullName then
                 true
             else 
@@ -604,7 +604,7 @@ type Parser
             None
 
     /// Parse out the '++opt' parameter to some commands.
-    member x.ParseFileOptions () : FileOption list =
+    member x.ParseFileOptions (): FileOption list =
 
         // TODO: Need to implement parsing out FileOption list
         List.empty
@@ -678,7 +678,7 @@ type Parser
             | _ -> false)
         let flagString = OptionUtil.getOrDefault "" flagString
 
-        let mutable parseResult : ParseResult<SubstituteFlags> option = None
+        let mutable parseResult: ParseResult<SubstituteFlags> option = None
         let mutable flags = 
             if _globalSettings.GlobalDefault then SubstituteFlags.ReplaceAll
             else SubstituteFlags.None
@@ -757,7 +757,7 @@ type Parser
             x.SkipBlanks()
 
             let rec inner rest = 
-                let isNotBlankOrComma (token : Token) =
+                let isNotBlankOrComma (token: Token) =
                     match token.TokenKind with
                     | TokenKind.Blank -> false
                     | TokenKind.Character ',' -> false
@@ -779,7 +779,7 @@ type Parser
         let parseEventKindList () = 
 
             // Parse out an EventKind value from the specified event name 
-            let parseEventKind (word : string) = 
+            let parseEventKind (word: string) = 
                 let word = word.ToLower()
                 Map.tryFind word s_NameToEventKindMap
             
@@ -959,7 +959,7 @@ type Parser
 
             // Parse out the range of marks.  Anything from the start to end character
             // inclusive 
-            let parseRange (startChar : char) (endChar : char) =
+            let parseRange (startChar: char) (endChar: char) =
                 for i = int startChar to int endChar do
                     let c = char i 
                     match Mark.OfChar c with
@@ -1114,7 +1114,7 @@ type Parser
     /// when there was an error parsing out the function header.  Even when there is an error we 
     /// still must parse out the statements inside of it.  If we don't then a simple parsing error
     /// on a function header can lead to all of the statements inside it being executed promptly
-    member x.ParseFunction (functionDefinition : FunctionDefinition option) = 
+    member x.ParseFunction (functionDefinition: FunctionDefinition option) = 
 
         // Parse out the lines in the function.  If any of the lines inside the function register as a 
         // parse error we still need to continue parsing the function (even though it should ultimately
@@ -1303,7 +1303,7 @@ type Parser
 
     /// Parse out any valid range node.  This will consider % and any other 
     /// range expression
-    member x.ParseLineRange () : LineRangeSpecifier =
+    member x.ParseLineRange (): LineRangeSpecifier =
         if _tokenizer.CurrentChar = '%' then
             _tokenizer.MoveNextToken()
             LineRangeSpecifier.EntireBuffer
@@ -1990,7 +1990,7 @@ type Parser
     /// Parse out the :display and :registers command.  Just takes a single argument 
     /// which is the register name
     member x.ParseDisplayRegisters () = 
-        let mutable nameList : RegisterName list = List.Empty
+        let mutable nameList: RegisterName list = List.Empty
         let mutable more = true
         while more do
             x.SkipBlanks()
@@ -2012,7 +2012,7 @@ type Parser
         | TokenKind.Word word ->
 
             _tokenizer.MoveNextToken()
-            let mutable message : string option = None
+            let mutable message: string option = None
             let list = System.Collections.Generic.List<Mark>()
             for c in word do
                 match Mark.OfChar c with
@@ -2030,7 +2030,7 @@ type Parser
     /// and :endfunc.  Instead it will return the result of the current LineCommand
     member x.ParseSingleLine() =
 
-        // Skip the white space and : at the beginning of the line
+        // Skip the white space and: at the beginning of the line
         while _tokenizer.CurrentChar = ':' || _tokenizer.CurrentTokenKind = TokenKind.Blank do
             _tokenizer.MoveNextChar()
 
@@ -2046,7 +2046,7 @@ type Parser
             | LineRangeSpecifier.None -> parseFunc()
             | _ -> LineCommand.ParseError Resources.Parser_NoRangeAllowed
 
-        let handleParseResult (lineCommand : LineCommand) =
+        let handleParseResult (lineCommand: LineCommand) =
             let lineCommand = 
                 if lineCommand.Failed then
                     // If there is already a failure don't look any deeper.
@@ -2360,7 +2360,7 @@ type Parser
         x.Reset [|rangeText|]
         x.ParseLineRange(), x.ParseRestOfLine()
 
-    member x.ParseExpression (expressionText : string) =
+    member x.ParseExpression (expressionText: string) =
         x.Reset [|expressionText|]
         x.ParseExpressionCore()
 
@@ -2380,8 +2380,8 @@ type Parser
                 
 and ConditionalParser
     (
-        _parser : Parser,
-        _initialExpr : Expression
+        _parser: Parser,
+        _initialExpr: Expression
     ) = 
 
     static let StateBeforeElse = 1
@@ -2397,7 +2397,7 @@ and ConditionalParser
 
     member x.Parse() =
 
-        let mutable error : string option = None
+        let mutable error: string option = None
         let mutable isDone = false
         while not _parser.IsDone && not isDone && Option.isNone error do
             match _parser.ParseSingleCommand() with

@@ -25,9 +25,9 @@ type internal BackspaceCommand =
 /// This type houses the functionality for many of the insert mode commands
 type internal InsertUtil
     (
-        _vimBufferData : IVimBufferData,
-        _motionUtil : IMotionUtil,
-        _operations : ICommonOperations
+        _vimBufferData: IVimBufferData,
+        _motionUtil: IMotionUtil,
+        _operations: ICommonOperations
     ) =
 
     let _textView = _vimBufferData.TextView
@@ -40,7 +40,7 @@ type internal InsertUtil
     let _wordUtil = _vimBufferData.WordUtil
     let _vimHost = _vimBufferData.Vim.VimHost
     let _vimTextBuffer = _vimBufferData.VimTextBuffer
-    let mutable _combinedEditStartPoint : ITrackingPoint option = None
+    let mutable _combinedEditStartPoint: ITrackingPoint option = None
 
     /// The SnapshotPoint for the caret
     member x.CaretPoint = TextViewUtil.GetCaretPoint _textView
@@ -68,13 +68,13 @@ type internal InsertUtil
 
     /// Run the specified action with a wrapped undo transaction.  This is often necessary when
     /// an edit command manipulates the caret
-    member x.EditWithUndoTransaction<'T> (name : string) (action : unit -> 'T) : 'T = 
+    member x.EditWithUndoTransaction<'T> (name: string) (action: unit -> 'T): 'T = 
         _undoRedoOperations.EditWithUndoTransaction name _textView action
 
     /// Apply the TextChange to the given ITextEdit at the specified position.  This will
     /// return the position of the edit after the operation completes.  None is returned
     /// if the edit cannot be completed 
-    member x.ApplyTextChangeCore (textEdit : ITextEdit) (position : int) (bounds : Span) (textChange : TextChange) addNewLines =
+    member x.ApplyTextChangeCore (textEdit: ITextEdit) (position: int) (bounds: Span) (textChange: TextChange) addNewLines =
 
         let textChange = textChange.Reduce
 
@@ -158,7 +158,7 @@ type internal InsertUtil
         | None -> textEdit.Cancel()
 
     /// Apply the given TextChange to the specified BlockSpan 
-    member x.ApplyBlockInsert (text : string) startLineNumber spaces height = 
+    member x.ApplyBlockInsert (text: string) startLineNumber spaces height = 
 
         // Don't edit past the end of the ITextBuffer 
         let height = 
@@ -301,7 +301,7 @@ type internal InsertUtil
             CommandResult.Error
 
     /// Do a replacement under the caret of the specified char
-    member x.Replace (c : char) =
+    member x.Replace (c: char) =
         // Typically we have the overwrite option set for all of replace mode so this
         // is a redundant check.  But during repeat we only see the commands and not
         // the mode changes so we need to check here
@@ -316,7 +316,7 @@ type internal InsertUtil
             if not oldValue then
                 EditorOptionsUtil.SetOptionValue _editorOptions DefaultTextViewOptions.OverwriteModeId false
 
-    member x.Replace (s : string) =
+    member x.Replace (s: string) =
         // overwrite does not seem to be respected, just using delete instead
         x.DeleteRight(s.Length - 1) |> ignore
         x.Insert s
@@ -501,7 +501,7 @@ type internal InsertUtil
                 x.ApplyTextChange textChange addNewLines)
 
     /// Repeat the edits for the other lines in the block span.
-    member x.RepeatBlock (insertCommand : InsertCommand) (blockSpan : BlockSpan) =
+    member x.RepeatBlock (insertCommand: InsertCommand) (blockSpan: BlockSpan) =
 
         // Unfortunately the ITextEdit implementation doesn't properly reduce the changes that are
         // applied to it.  For example if you add 2 characters, delete them and then insert text
@@ -568,7 +568,7 @@ type internal InsertUtil
     /// Shift the caret line one 'shiftwidth' in a direction.  This is
     /// different than both normal and visual mode shifts because it will
     /// round the blanks to a 'shiftwidth' before indenting
-    member x.ShiftLine (direction : int) =
+    member x.ShiftLine (direction: int) =
 
         // Get the current indent and whether the line is blank
         let indentSpan = SnapshotLineUtil.GetIndentSpan x.CaretLine
@@ -715,7 +715,7 @@ type internal InsertUtil
 
     // A backspace over line (Ctrl-U)  and word (Ctrl-W) which begins to the right of the insert start
     // point has a max delete of the start point itself.  Do the minimization here
-    member x.AdjustBackspaceDeletePointForStartPoint (deletePoint : SnapshotPoint) =
+    member x.AdjustBackspaceDeletePointForStartPoint (deletePoint: SnapshotPoint) =
         match _vimBufferData.VimTextBuffer.InsertStartPoint with
         | None -> deletePoint
         | Some startPoint ->

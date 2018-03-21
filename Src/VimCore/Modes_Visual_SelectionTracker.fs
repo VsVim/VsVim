@@ -9,9 +9,9 @@ open Vim
 /// Responsible for tracking and updating the selection while we are in visual mode
 type internal SelectionTracker
     (
-        _vimBufferData : IVimBufferData,
-        _incrementalSearch : IIncrementalSearch,
-        _visualKind : VisualKind
+        _vimBufferData: IVimBufferData,
+        _incrementalSearch: IIncrementalSearch,
+        _visualKind: VisualKind
     ) as this =
 
     let _textView = _vimBufferData.TextView
@@ -21,14 +21,14 @@ type internal SelectionTracker
 
     /// The anchor point we are currently tracking.  This is always included in the selection which
     /// is created by this type 
-    let mutable _anchorPoint : SnapshotPoint option = None
+    let mutable _anchorPoint: SnapshotPoint option = None
 
     /// Should the selection be extended into the line break 
-    let mutable _extendIntoLineBreak : bool = false
+    let mutable _extendIntoLineBreak: bool = false
 
     /// When we are in the middle of an incremental search this will 
     /// track the most recent search result
-    let mutable _lastIncrementalSearchResult : SearchResult option = None
+    let mutable _lastIncrementalSearchResult: SearchResult option = None
 
     let mutable _textChangedHandler = ToggleHandler.Empty
     do 
@@ -156,7 +156,7 @@ type internal SelectionTracker
 
     /// When the text is changed it invalidates the anchor point.  It needs to be forwarded to
     /// the next version of the buffer.  If it's not present then just go to point 0
-    member x.OnTextChanged (args : TextContentChangedEventArgs) =
+    member x.OnTextChanged (args: TextContentChangedEventArgs) =
         match _anchorPoint with
         | None -> ()
         | Some anchorPoint ->

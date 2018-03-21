@@ -9,10 +9,10 @@ open NullableUtil
 type IncrementalSearchData = { 
 
     /// Most recent result of the search
-    SearchResult : SearchResult
+    SearchResult: SearchResult
 
     /// Most recent search text being usde
-    SearchText : string
+    SearchText: string
 
 } with 
 
@@ -28,9 +28,9 @@ type IncrementalSearchData = {
 
 type internal IncrementalSearchSession
     (
-        _key : obj,
-        _historySession : IHistorySession<ITrackingPoint, SearchResult>,
-        _incrementalSearchData : IncrementalSearchData
+        _key: obj,
+        _historySession: IHistorySession<ITrackingPoint, SearchResult>,
+        _incrementalSearchData: IncrementalSearchData
     ) =
 
     let mutable _incrementalSearchData = _incrementalSearchData
@@ -45,8 +45,8 @@ type internal IncrementalSearchSession
 
 type internal IncrementalSearch
     (
-        _vimBufferData : IVimBufferData,
-        _operations : ICommonOperations
+        _vimBufferData: IVimBufferData,
+        _operations: ICommonOperations
     ) =
 
     let _vimData = _vimBufferData.Vim.VimData
@@ -57,7 +57,7 @@ type internal IncrementalSearch
     let _globalSettings = _localSettings.GlobalSettings
     let _textView = _operations.TextView
     let _searchService = _vimBufferData.Vim.SearchService
-    let mutable _incrementalSearchSession : IncrementalSearchSession option = None
+    let mutable _incrementalSearchSession: IncrementalSearchSession option = None
     let _currentSearchUpdated = StandardEvent<SearchResultEventArgs>()
     let _currentSearchCompleted = StandardEvent<SearchResultEventArgs>()
     let _currentSearchCancelled = StandardEvent<SearchDataEventArgs>()
@@ -129,8 +129,8 @@ type internal IncrementalSearch
                 member this.RemapMode = x.RemapMode
                 member this.Beep() = _operations.Beep()
                 member this.ProcessCommand data command = runActive (fun session -> x.RunSearch session data command) data
-                member this.Completed (data : ITrackingPoint) _ = runActive (fun session -> x.RunCompleted session data) IncrementalSearchData.Default.SearchResult
-                member this.Cancelled (data : ITrackingPoint) = runActive (fun session -> x.RunCancelled session) ()
+                member this.Completed (data: ITrackingPoint) _ = runActive (fun session -> x.RunCompleted session data) IncrementalSearchData.Default.SearchResult
+                member this.Cancelled (data: ITrackingPoint) = runActive (fun session -> x.RunCancelled session) ()
             }
 
         let historySession = HistoryUtil.CreateHistorySession historyClient startPoint StringUtil.Empty None
@@ -148,7 +148,7 @@ type internal IncrementalSearch
         if _globalSettings.IncrementalSearch then
              _operations.EnsureAtCaret ViewFlags.Standard
 
-    member x.RunSearch incrementalSearchSession (startPoint : ITrackingPoint) rawPattern =
+    member x.RunSearch incrementalSearchSession (startPoint: ITrackingPoint) rawPattern =
         let incrementalSearchData = x.RunSearchCore incrementalSearchSession startPoint rawPattern
         incrementalSearchSession.IncrementalSearchData <- incrementalSearchData
         let args = SearchResultEventArgs(incrementalSearchData.SearchResult)
@@ -157,7 +157,7 @@ type internal IncrementalSearch
 
     /// Run the search for the specified text.  This will do the search, update the caret 
     /// position and raise events
-    member x.RunSearchCore incrementalSearchSession (startPoint : ITrackingPoint) rawPattern =
+    member x.RunSearchCore incrementalSearchSession (startPoint: ITrackingPoint) rawPattern =
 
         // Get the SearchResult value for the new text
         let incrementalSearchData = incrementalSearchSession.IncrementalSearchData

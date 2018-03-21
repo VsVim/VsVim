@@ -39,7 +39,7 @@ module internal StringUtil =
                 buffer.AppendString value
             buffer.ToString()
 
-    let ReplaceNoCase (source : string) (toFind : string) (toReplace : string) = 
+    let ReplaceNoCase (source: string) (toFind: string) (toReplace: string) = 
         let builder = System.Text.StringBuilder()
         let mutable lastIndex = 0
         let mutable index = source.IndexOf(toFind, StringComparison.OrdinalIgnoreCase)
@@ -53,7 +53,7 @@ module internal StringUtil =
             builder.AppendSubstring source lastIndex (source.Length - lastIndex)
         builder.ToString()
 
-    let RepeatChar count (value : char) =
+    let RepeatChar count (value: char) =
         if 1 = count then 
             (value.ToString())
         else
@@ -66,14 +66,14 @@ module internal StringUtil =
     let OfCharArray (chars:char[]) = new System.String(chars)
 
     /// Create a String from a sequence of chars
-    let OfCharSeq (chars : char seq) = chars |> Array.ofSeq |> OfCharArray
+    let OfCharSeq (chars: char seq) = chars |> Array.ofSeq |> OfCharArray
 
     let OfCharList (chars :char list) = chars |> Seq.ofList |> OfCharSeq
 
     /// Create a String from a single char
     let OfChar c = System.String(c,1)
 
-    let OfStringSeq (strings : string seq) = 
+    let OfStringSeq (strings: string seq) = 
         let builder = System.Text.StringBuilder()
         for value in strings do
             builder.AppendString value
@@ -81,22 +81,22 @@ module internal StringUtil =
 
     let IsNullOrEmpty str = System.String.IsNullOrEmpty(str)
 
-    let IndexOfChar (c : char) (str : string) = 
+    let IndexOfChar (c: char) (str: string) = 
         let result = str.IndexOf(c)
         if result < 0 then None
         else Some result
 
-    let IndexOfCharAt (c : char) (index : int) (str : string) = 
+    let IndexOfCharAt (c: char) (index: int) (str: string) = 
         let result = str.IndexOf(c, index)
         if result < 0 then None
         else Some result
 
-    let IndexOfString (toFind : string) (str : string) = 
+    let IndexOfString (toFind: string) (str: string) = 
         let result = str.IndexOf(toFind)
         if result < 0 then None
         else Some result
 
-    let IndexOfStringAt (toFind : string) (index : int) (str : string) = 
+    let IndexOfStringAt (toFind: string) (index: int) (str: string) = 
         let result = str.IndexOf(toFind, index)
         if result < 0 then None
         else Some result
@@ -135,13 +135,13 @@ module internal StringUtil =
 
     let ContainsChar (arg:string) (c:char) = arg.IndexOf(c) >= 0
 
-    let IsWhiteSpace (arg : string) = not (Seq.exists CharUtil.IsNotWhiteSpace arg)
+    let IsWhiteSpace (arg: string) = not (Seq.exists CharUtil.IsNotWhiteSpace arg)
 
-    let IsBlanks (arg : string) = Seq.forall CharUtil.IsBlank arg
+    let IsBlanks (arg: string) = Seq.forall CharUtil.IsBlank arg
 
     /// Is the specified check string a substring of the given argument at the specified
     /// index
-    let IsSubstringAt (arg : string) (check : string) (index : int) (comparer : CharComparer) =
+    let IsSubstringAt (arg: string) (check: string) (index: int) (comparer: CharComparer) =
         if index + check.Length >= arg.Length then
             false
         else

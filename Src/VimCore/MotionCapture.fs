@@ -6,8 +6,8 @@ open Microsoft.VisualStudio.Text.Editor;
 
 type internal MotionCapture 
     (
-        _vimBufferData : IVimBufferData,
-        _incrementalSearch : IIncrementalSearch
+        _vimBufferData: IVimBufferData,
+        _incrementalSearch: IIncrementalSearch
     ) = 
 
     let _textView = _vimBufferData.TextView
@@ -15,7 +15,7 @@ type internal MotionCapture
     let _localSettings = _vimBufferData.LocalSettings
 
     static let SharedMotions =  
-        let motionSeq : (string * MotionFlags * Motion) seq = 
+        let motionSeq: (string * MotionFlags * Motion) seq = 
             seq { 
                 yield ("ab", MotionFlags.TextObject ||| MotionFlags.TextObjectWithAlwaysCharacter, Motion.AllBlock BlockKind.Paren)
                 yield ("aB", MotionFlags.TextObject ||| MotionFlags.TextObjectWithAlwaysCharacter, Motion.AllBlock BlockKind.CurlyBracket)
@@ -140,7 +140,7 @@ type internal MotionCapture
 
     /// Get a local mark and us the provided 'func' to create a Motion value
     let GetLocalMark func = 
-        let bindFunc (keyInput : KeyInput) =
+        let bindFunc (keyInput: KeyInput) =
             match LocalMark.OfChar keyInput.Char with
             | None -> BindResult<Motion>.Error
             | Some localMark -> BindResult<_>.Complete (func localMark)
@@ -170,7 +170,7 @@ type internal MotionCapture
         BindDataStorage.Complex activateFunc
 
     let ComplexMotions = 
-        let motionSeq : (string * MotionFlags * BindDataStorage<Motion>) seq = 
+        let motionSeq: (string * MotionFlags * BindDataStorage<Motion>) seq = 
             seq {
                 yield (
                     "f", 
@@ -223,7 +223,7 @@ type internal MotionCapture
     /// Get the Motion value for the given KeyInput.  Will return a BindResult<Motion> which 
     /// digs through the values until a valid Motion result is detected 
     member x.GetMotion keyInput = 
-        let rec inner (previousName : KeyInputSet) keyInput =
+        let rec inner (previousName: KeyInputSet) keyInput =
             if keyInput = KeyInputUtil.EscapeKey then 
                 // User hit escape so abandon the motion
                 BindResult.Cancelled 
