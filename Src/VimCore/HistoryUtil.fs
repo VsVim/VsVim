@@ -44,7 +44,8 @@ type internal HistorySession<'TData, 'TResult>
         _inPasteWait <- false
 
     member x.CreateBindResult() = 
-        BindResult<_>.CreateNeedMoreInput _historyClient.RemapMode x.Process
+        let bindData = { KeyRemapMode = _historyClient.RemapMode; BindFunction = x.Process } 
+        BindResult<_>.NeedMoreInput bindData
 
     member x.CreateBindDataStorage() = 
         BindDataStorage.Complex (fun () -> { KeyRemapMode = _historyClient.RemapMode; BindFunction = x.Process })

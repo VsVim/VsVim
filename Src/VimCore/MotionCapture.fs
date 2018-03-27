@@ -133,11 +133,6 @@ type internal MotionCapture
             MotionBinding.Simple (name, flags, motion))
         |> List.ofSeq
 
-    /// Get a char and use the provided 'func' to create a Motion value.
-    let GetChar func = 
-        let data = BindData<_>.CreateForSingleChar KeyRemapMode.Language func
-        BindDataStorage<_>.Simple data
-
     /// Get a local mark and us the provided 'func' to create a Motion value
     let GetLocalMark func = 
         let bindFunc (keyInput: KeyInput) =
@@ -170,24 +165,30 @@ type internal MotionCapture
         BindDataStorage.Complex activateFunc
 
     let ComplexMotions = 
+
+        /// Get a char and use the provided 'func' to create a Motion value.
+        let getChar func = 
+            let data = BindData<_>.CreateForChar KeyRemapMode.Language func
+            BindDataStorage<_>.Simple data
+
         let motionSeq: (string * MotionFlags * BindDataStorage<Motion>) seq = 
             seq {
                 yield (
                     "f", 
                     MotionFlags.CaretMovement,
-                    GetChar (fun c -> Motion.CharSearch (CharSearchKind.ToChar, SearchPath.Forward, c)))
+                    getChar (fun c -> Motion.CharSearch (CharSearchKind.ToChar, SearchPath.Forward, c)))
                 yield (
                     "t", 
                     MotionFlags.CaretMovement,
-                    GetChar (fun c -> Motion.CharSearch (CharSearchKind.TillChar, SearchPath.Forward, c)))
+                    getChar (fun c -> Motion.CharSearch (CharSearchKind.TillChar, SearchPath.Forward, c)))
                 yield (
                     "F", 
                     MotionFlags.CaretMovement,
-                    GetChar (fun c -> Motion.CharSearch (CharSearchKind.ToChar, SearchPath.Backward, c)))
+                    getChar (fun c -> Motion.CharSearch (CharSearchKind.ToChar, SearchPath.Backward, c)))
                 yield (
                     "T", 
                     MotionFlags.CaretMovement,
-                    GetChar (fun c -> Motion.CharSearch (CharSearchKind.TillChar, SearchPath.Backward, c)))
+                    getChar (fun c -> Motion.CharSearch (CharSearchKind.TillChar, SearchPath.Backward, c)))
                 yield (
                     "'",
                     MotionFlags.None,   // Cursor movement has different semantics than the motion

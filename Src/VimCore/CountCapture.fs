@@ -15,14 +15,16 @@ module internal CountCapture =
             | true ->
                 let digit = charToInt keyInput.Char
                 let number = (number * 10) + digit
-                BindResult<_>.CreateNeedMoreInput keyRemapMode (nextFunc number)
+                let bindData = { KeyRemapMode = keyRemapMode; BindFunction = nextFunc number }
+                BindResult<_>.NeedMoreInput bindData
             | false ->
                 BindResult.Complete (Some number, keyInput)
 
         match keyInput.IsDigit && keyInput.Char <> '0' with
         | true -> 
             let number = charToInt keyInput.Char
-            BindResult<_>.CreateNeedMoreInput keyRemapMode (nextFunc number)
+            let bindData = { KeyRemapMode = keyRemapMode; BindFunction = nextFunc number }
+            BindResult<_>.NeedMoreInput bindData
         | false ->
             BindResult.Complete (None, keyInput)
 
