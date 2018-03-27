@@ -124,6 +124,7 @@ type VimRegexReplaceUtil
             match _replacement.[_index + 1] with
             | '\\' -> _builder.AppendChar '\\'
             | 't' -> _builder.AppendChar '\t'
+            | '*' -> _builder.AppendChar '*'
             | 'n' -> _builder.AppendChar (char 0)
             | '0' -> x.AppendReplaceString m.Value
             | '&' -> 

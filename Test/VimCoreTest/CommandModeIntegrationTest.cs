@@ -937,6 +937,14 @@ namespace Vim.UnitTest
                     _vimBuffer.Process("n");
                     Assert.Equal(_textView.GetPointInLine(1, 0), _textView.GetCaretPoint());
                 }
+
+                [WpfFact]
+                public void Issue1782()
+                {
+                    Create("*6");
+                    RunCommandRaw(@":s/\*6/\*7/g");
+                    Assert.Equal("*7", _textBuffer.GetLine(0).GetText());
+                }
             }
         }
 
