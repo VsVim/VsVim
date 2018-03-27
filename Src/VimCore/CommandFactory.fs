@@ -174,7 +174,8 @@ type internal CommandFactory
             if macroRecorder.IsRecording then
                 CommandBinding.NormalBinding (name, CommandFlags.Special, NormalCommand.RecordMacroStop)
             else
-                CommandBinding.ComplexNormalBinding (name, CommandFlags.Special, BindDataStorage<_>.CreateForSingleChar KeyRemapMode.None NormalCommand.RecordMacroStart)
+                let bindData = BindData<_>.CreateForChar KeyRemapMode.None NormalCommand.RecordMacroStart
+                CommandBinding.ComplexNormalBinding (name, CommandFlags.Special, BindDataStorage<_>.Simple bindData)
         
         // Raised when macro recording starts or stops.  
         let onMacroRecordingChanged _ = 

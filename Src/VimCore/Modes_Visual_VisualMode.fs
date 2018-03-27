@@ -95,7 +95,7 @@ type internal VisualMode
 
         let complexSeq = 
             seq {
-                yield ("r", CommandFlags.Repeatable, BindData<_>.CreateForSingle KeyRemapMode.None (fun keyInput -> VisualCommand.ReplaceSelection keyInput))
+                yield ("r", CommandFlags.Repeatable, BindData<_>.CreateForKeyInput KeyRemapMode.None VisualCommand.ReplaceSelection)
             } |> Seq.map (fun (str, flags, bindCommand) -> 
                 let keyInputSet = KeyNotationUtil.StringToKeyInputSet str
                 let storage = BindDataStorage.Simple bindCommand

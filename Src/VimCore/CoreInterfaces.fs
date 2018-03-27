@@ -3129,25 +3129,18 @@ and BindData<'T> = {
 
 } with
 
-    /// Many bindings are simply to get a single KeyInput.  Centralize that logic 
-    /// here so it doesn't need to be repeated
-    static member CreateForSingle keyRemapMode completeFunc =
-        let inner keyInput =
-            if keyInput = KeyInputUtil.EscapeKey then
-                BindResult.Cancelled
-            else
-                let data = completeFunc keyInput
-                BindResult<'T>.Complete data
-        { KeyRemapMode = keyRemapMode; BindFunction = inner }
+    /// Used for BindData where there can only be a complete result for a given 
+    /// KeyInput.
+    static member CreateForKeyInput keyRemapMode valueFunc =
+        let bindFunc keyInput = 
+            let value = valueFunc keyInput
+            BindResult<_>.Complete value
+        { KeyRemapMode = keyRemapMode; BindFunction = bindFunc } 
 
-    /// Many bindings are simply to get a single char.  Centralize that logic 
-    /// here so it doesn't need to be repeated
-    static member CreateForSingleChar keyRemapModeOpt completeFunc = 
-        BindData<_>.CreateForSingle keyRemapModeOpt (fun keyInput -> completeFunc keyInput.Char)
-
-    /// Create for a function which doesn't require any remapping
-    static member CreateForSimple bindFunc =
-        { KeyRemapMode = KeyRemapMode.None; BindFunction = bindFunc }
+    /// Used for BindData where there can only be a complete result for a given 
+    /// char
+    static member CreateForChar keyRemapMode valueFunc =
+        BindData<_>.CreateForKeyInput keyRemapMode (fun keyInput -> valueFunc keyInput.Char)
 
     /// Very similar to the Convert function.  This will instead map a BindData<'T>.Completed
     /// to a BindData<'U> of any form 
@@ -3196,12 +3189,6 @@ type BindDataStorage<'T> =
         match x with
         | Simple bindData -> Simple (bindData.Convert mapFunc)
         | Complex func -> Complex (fun () -> func().Convert mapFunc)
-
-    /// Many bindings are simply to get a single char.  Centralize that logic 
-    /// here so it doesn't need to be repeated
-    static member CreateForSingleChar keyRemapMode completeFunc = 
-        let data = BindData<_>.CreateForSingle keyRemapMode (fun keyInput -> completeFunc keyInput.Char)
-        BindDataStorage<_>.Simple data
 
 /// Representation of binding of Command's to KeyInputSet values and flags which correspond
 /// to the execution of the command
