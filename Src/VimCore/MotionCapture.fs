@@ -130,7 +130,7 @@ type internal MotionCapture
         motionSeq 
         |> Seq.map (fun (str, flags, motion) ->
             let name = KeyNotationUtil.StringToKeyInputSet str
-            MotionBinding.Simple (name, flags, motion))
+            MotionBinding.Static (name, flags, motion))
         |> List.ofSeq
 
     /// Get a local mark and us the provided 'func' to create a Motion value
@@ -209,7 +209,7 @@ type internal MotionCapture
         motionSeq
         |> Seq.map (fun (str, flags, bindDataStorage) -> 
                 let name = KeyNotationUtil.StringToKeyInputSet str 
-                MotionBinding.Complex (name, flags, bindDataStorage))
+                MotionBinding.Dynamic (name, flags, bindDataStorage))
     
     let AllMotionsCore =
         let complex = ComplexMotions 
@@ -233,13 +233,18 @@ type internal MotionCapture
                 match Map.tryFind name MotionBindingsMap with
                 | Some(command) -> 
                     match command with 
-                    | MotionBinding.Simple (_, _ , motion) -> 
+                    | MotionBinding.Static (_, _ , motion) -> 
                         // Simple motions don't need any extra information so we can 
                         // return them directly
                         BindResult.Complete motion
-                    | MotionBinding.Complex (_, _, bindDataStorage) -> 
+                    | MotionBinding.Dynamic (_, _, bindDataStorage) -> 
                         // Complex motions need further input so delegate off
                         let bindData = bindDataStorage.CreateBindData()
+                        BindResult.NeedMoreInput bindData
+                    | MotionBinding.Recursive (_, _, mapMotionFunc) -> 
+                        // Need to recursively dig into the new motion 
+                        let bindData = { KeyRemapMode = KeyRemapMode.None; BindFunction = x.GetMotion } 
+                        let bindData = bindData.Convert mapMotionFunc
                         BindResult.NeedMoreInput bindData
                 | None -> 
                     let res = MotionBindingsMap |> Seq.filter (fun pair -> pair.Key.StartsWith name) 

@@ -3413,25 +3413,30 @@ type MotionBinding =
     /// Simple motion which comprises of a single KeyInput and a function which given 
     /// a start point and count will produce the motion.  None is returned in the 
     /// case the motion is not valid
-    | Simple of KeyInputSet * MotionFlags * Motion
+    | Static of KeyInputSet * MotionFlags * Motion
 
     /// Complex motion commands take more than one KeyInput to complete.  For example 
     /// the f,t,F and T commands all require at least one additional input.  The bool
     /// in the middle of the tuple indicates whether or not the motion can be 
     /// used as a cursor movement operation  
-    | Complex of KeyInputSet * MotionFlags * BindDataStorage<Motion>
+    | Dynamic of KeyInputSet * MotionFlags * BindDataStorage<Motion>
+
+    /// Motion which combines with any other motion to produce a value
+    | Recursive of KeyInputSet * MotionFlags * (Motion -> Motion) 
 
     with
 
     member x.KeyInputSet = 
         match x with
-        | Simple (name, _, _) -> name
-        | Complex (name, _, _) -> name
+        | Static (keyInputSet, _, _) -> keyInputSet
+        | Dynamic (keyInputSet, _, _) -> keyInputSet
+        | Recursive (keyInputSet, _, _) -> keyInputSet
 
     member x.MotionFlags =
         match x with 
-        | Simple (_, flags, _) -> flags
-        | Complex (_, flags, _) -> flags
+        | Static (_, flags, _) -> flags
+        | Dynamic (_, flags, _) -> flags
+        | Recursive (_, flags, _) -> flags
 
 /// The information about the particular run of a Command
 type CommandRunData = {
@@ -3444,7 +3449,6 @@ type CommandRunData = {
 
     /// The result of the Command Run
     CommandResult: CommandResult
-
 }
 
 type CommandRunDataEventArgs(_commandRunData: CommandRunData) =

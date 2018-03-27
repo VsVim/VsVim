@@ -85,13 +85,13 @@ type internal CommandFactory
         let processMotionBinding (binding: MotionBinding) =
 
             match binding with
-            | MotionBinding.Simple (name, _, motion) -> 
+            | MotionBinding.Static (name, _, motion) -> 
 
                 // Convert the Motion into a NormalCommand which moves the caret for the given Motion
                 let command = NormalCommand.MoveCaretToMotion motion
                 CommandBinding.NormalBinding(name, CommandFlags.Movement, command) 
 
-            | MotionBinding.Complex (name, motionFlags, bindDataStorage) ->
+            | MotionBinding.Dynamic (name, motionFlags, bindDataStorage) ->
 
                 // We're starting with a BindData<Motion> and need to instead produce a BindData<NormalCommand>
                 // where the command will move the motion 
@@ -128,12 +128,12 @@ type internal CommandFactory
                     TextObjectKind.None
 
             match binding with
-            | MotionBinding.Simple (name, _, motion) -> 
+            | MotionBinding.Static (name, _, motion) -> 
 
                 let command = VisualCommand.MoveCaretToTextObject (motion, textObjectKind)
                 CommandBinding.VisualBinding(name, CommandFlags.Movement, command) 
 
-            | MotionBinding.Complex (name, motionFlags, bindDataStorage) ->
+            | MotionBinding.Dynamic (name, motionFlags, bindDataStorage) ->
 
                 // We're starting with a BindData<Motion> and need to instead produce a BindData<VisualCommand>
                 // where the command will move the motion 
