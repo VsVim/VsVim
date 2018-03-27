@@ -3085,7 +3085,8 @@ type Command =
     /// An Insert / Replace Mode Command
     | InsertCommand of InsertCommand
 
-/// The result of binding to a Motion value.
+/// This is the result of attemping to bind a series of KeyInput values into a Motion
+/// Command, etc ... 
 [<RequireQualifiedAccess>]
 type BindResult<'T> = 
 
@@ -3102,10 +3103,6 @@ type BindResult<'T> =
     | Cancelled
 
     with
-
-    static member CreateNeedMoreInput keyRemapModeOpt bindFunc =
-        let data = { KeyRemapMode = keyRemapModeOpt; BindFunction = bindFunc }
-        NeedMoreInput data
 
     /// Used to compose to BindResult<'T> functions together by forwarding from
     /// one to the other once the value is completed
@@ -3134,14 +3131,14 @@ and BindData<'T> = {
 
     /// Many bindings are simply to get a single KeyInput.  Centralize that logic 
     /// here so it doesn't need to be repeated
-    static member CreateForSingle keyRemapModeOpt completeFunc =
+    static member CreateForSingle keyRemapMode completeFunc =
         let inner keyInput =
             if keyInput = KeyInputUtil.EscapeKey then
                 BindResult.Cancelled
             else
                 let data = completeFunc keyInput
                 BindResult<'T>.Complete data
-        { KeyRemapMode = keyRemapModeOpt; BindFunction = inner }
+        { KeyRemapMode = keyRemapMode; BindFunction = inner }
 
     /// Many bindings are simply to get a single char.  Centralize that logic 
     /// here so it doesn't need to be repeated
@@ -3172,8 +3169,8 @@ and BindData<'T> = {
         x.Map (fun value -> convertFunc value |> BindResult.Complete)
 
 /// Several types of BindData<'T> need to take an action when a binding begins against
-/// themselves.  This action needs to occur before the first KeyInput value is processed
-/// and hence they need a jump start.  The most notable is IncrementalSearch which 
+/// themselves. This action needs to occur before the first KeyInput value is processed
+/// and hence they need a jump start. The most notable is IncrementalSearch which 
 /// needs to enter 'Search' mode before processing KeyInput values so the cursor can
 /// be updated
 [<RequireQualifiedAccess>]
@@ -3202,8 +3199,8 @@ type BindDataStorage<'T> =
 
     /// Many bindings are simply to get a single char.  Centralize that logic 
     /// here so it doesn't need to be repeated
-    static member CreateForSingleChar keyRemapModeOpt completeFunc = 
-        let data = BindData<_>.CreateForSingle keyRemapModeOpt (fun keyInput -> completeFunc keyInput.Char)
+    static member CreateForSingleChar keyRemapMode completeFunc = 
+        let data = BindData<_>.CreateForSingle keyRemapMode (fun keyInput -> completeFunc keyInput.Char)
         BindDataStorage<_>.Simple data
 
 /// Representation of binding of Command's to KeyInputSet values and flags which correspond

@@ -248,7 +248,8 @@ type internal CommandRunner
                     if Seq.isEmpty withPrefix then 
                         // Nothing else matched so we are good to go for this motion.
                         _data <- { _data with CommandFlags = Some commandBinding.CommandFlags }
-                        BindResult<_>.CreateNeedMoreInput KeyRemapMode.OperatorPending (fun keyInput -> x.BindMotion commandBinding commandData func keyInput)
+                        let bindData = { KeyRemapMode = KeyRemapMode.OperatorPending; BindFunction = (fun keyInput -> x.BindMotion commandBinding commandData func keyInput) }
+                        BindResult<_>.NeedMoreInput bindData
                     else 
                         // At least one other command matched so we need at least one more piece of input to
                         // differentiate the commands.  At this point though because the command is of the
