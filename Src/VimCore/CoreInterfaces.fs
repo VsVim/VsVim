@@ -3145,15 +3145,14 @@ and BindData<'T> = {
     /// Very similar to the Convert function.  This will instead map a BindData<'T>.Completed
     /// to a BindData<'U> of any form 
     member x.Map<'U> (mapFunc: 'T -> BindResult<'U>): BindData<'U> = 
-
-        let rec inner bindFunction keyInput = 
-            match x.BindFunction keyInput with
+        let originalBindFunc = x.BindFunction
+        let bindFunc keyInput = 
+            match originalBindFunc keyInput with
             | BindResult.Cancelled -> BindResult.Cancelled
             | BindResult.Complete value -> mapFunc value
             | BindResult.Error -> BindResult.Error
             | BindResult.NeedMoreInput bindData -> BindResult.NeedMoreInput (bindData.Map mapFunc)
-
-        { KeyRemapMode = x.KeyRemapMode; BindFunction = inner x.BindFunction }
+        { KeyRemapMode = x.KeyRemapMode; BindFunction = bindFunc }
 
     /// Often types bindings need to compose together because we need an inner binding
     /// to succeed so we can create a projected value.  This function will allow us
