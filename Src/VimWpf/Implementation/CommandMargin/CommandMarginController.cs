@@ -333,7 +333,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
         /// </summary>
         private bool HandleHistoryNavigation(KeyInput keyInput)
         {
-            var handled = _vimBuffer.Process(KeyInputUtil.VimKeyToKeyInput(VimKey.Up)).IsAnyHandled;
+            var handled = _vimBuffer.Process(keyInput).IsAnyHandled;
             var prefixChar = GetPrefixChar(_editKind);
             if (handled && _editKind != EditKind.None && prefixChar.HasValue)
             {
@@ -375,7 +375,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
                     e.Handled = HandleHistoryNavigation(KeyInputUtil.VimKeyToKeyInput(VimKey.Up));
                     break;
                 case Key.Down:
-                    e.Handled = HandleHistoryNavigation(KeyInputUtil.VimKeyToKeyInput(VimKey.Up));
+                    e.Handled = HandleHistoryNavigation(KeyInputUtil.VimKeyToKeyInput(VimKey.Down));
                     break;
                 case Key.Home:
                     if ((e.KeyboardDevice.Modifiers & ModifierKeys.Shift) == 0)
@@ -393,8 +393,12 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
                     break;
                 case Key.Left:
                 case Key.Back:
-                    // Ignore backspace if at start position
-                    e.Handled = _margin.IsCaretAtStart();
+                    if (_margin.IsCaretAtStart())
+                    {
+                        _vimBuffer.Process(KeyInputUtil.EscapeKey);
+                        ChangeEditKind(EditKind.None);
+                        e.Handled = true;
+                    }
                     break;
                 case Key.R:
                     if (e.KeyboardDevice.Modifiers == ModifierKeys.Control)
@@ -423,6 +427,18 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
                         textBox.Text = text;
 
                         UpdateVimBufferStateWithCommandText(text);
+                    }
+                    break;
+                case Key.P:
+                    if (e.KeyboardDevice.Modifiers == ModifierKeys.Control)
+                    {
+                        e.Handled = HandleHistoryNavigation(KeyInputUtil.ApplyKeyModifiersToChar('p', VimKeyModifiers.Control));
+                    }
+                    break;
+                case Key.N:
+                    if (e.KeyboardDevice.Modifiers == ModifierKeys.Control)
+                    {
+                        e.Handled = HandleHistoryNavigation(KeyInputUtil.ApplyKeyModifiersToChar('n', VimKeyModifiers.Control));
                     }
                     break;
             }
