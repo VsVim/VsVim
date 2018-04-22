@@ -535,6 +535,15 @@ namespace Vim.UnitTest
             }
 
             [WpfFact]
+            public void PreviousCommandAfterEmptyHistory()
+            {
+                Create("");
+                _commandHistoryList.AddRange("dog", "cat");
+                _vimBuffer.ProcessNotation(":<C-p><C-n><C-p><C-p>");
+                Assert.Equal("dog", _commandMode.Command);
+            }
+
+            [WpfFact]
             public void Backspace()
             {
                 Create("");

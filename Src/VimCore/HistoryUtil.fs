@@ -155,7 +155,8 @@ type internal HistorySession<'TData, 'TResult>
             _historyClient.Beep()
         | HistoryState.Index (list, index) -> 
             if index = 0 then
-                _clientData <- _historyClient.ProcessCommand _clientData ""
+                _command <- ""
+                _clientData <- _historyClient.ProcessCommand _clientData _command
                 _historyState <- HistoryState.Empty
             else
                 x.DoHistoryScroll list (index - 1)
