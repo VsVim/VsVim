@@ -168,6 +168,7 @@ type Parser
         ("registers", "reg")
         ("retab", "ret")
         ("set", "se")
+        ("sort", "sor")
         ("source","so")
         ("split", "sp")
         ("substitute", "s")
@@ -1958,6 +1959,12 @@ type Parser
 
         parseOption (fun x -> x)
 
+    /// Parse out the :retab command
+    member x.ParseSort lineRange =
+        let hasBang = x.ParseBang()
+        x.SkipBlanks()
+        LineCommand.Sort (lineRange, hasBang, SortFlags.None)
+
     /// Parse out the :source command.  It can have an optional '!' following it then a file
     /// name 
     member x.ParseSource() =
@@ -2143,6 +2150,7 @@ type Parser
                 | "retab" -> x.ParseRetab lineRange
                 | "registers" -> noRange x.ParseDisplayRegisters 
                 | "set" -> noRange x.ParseSet
+                | "sort" -> x.ParseSort lineRange
                 | "source" -> noRange x.ParseSource
                 | "split" -> x.ParseSplit LineCommand.HorizontalSplit lineRange
                 | "substitute" -> x.ParseSubstitute lineRange (fun x -> x)

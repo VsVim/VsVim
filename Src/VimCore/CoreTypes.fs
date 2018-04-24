@@ -52,6 +52,14 @@ type JoinKind =
     | RemoveEmptySpaces
     | KeepEmptySpaces
 
+/// Flags for the sort command
+[<System.Flags>]
+type SortFlags = 
+    | None = 0
+
+    /// Ignore case
+    | IgnoreCase = 0x1
+
 /// Flags for the substitute command
 [<System.Flags>]
 type SubstituteFlags = 

@@ -657,6 +657,12 @@ and [<RequireQualifiedAccess>] LineCommand =
     /// Process the '>' shift right command
     | ShiftRight of LineRangeSpecifier
 
+    /// Sort the specified LineRange.  The options are as follows
+    ///  - The LineRange to change (defaults to entire buffer)
+    ///  - True to reverse sort
+    ///  - sort flags
+    | Sort of LineRangeSpecifier * bool * SortFlags
+
     /// Process the 'source' command.  
     | Source of bool * string
 
