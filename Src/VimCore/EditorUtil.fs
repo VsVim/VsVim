@@ -1782,6 +1782,38 @@ module TextViewUtil =
         let caret = GetCaret textView
         caret.EnsureVisible()
 
+    /// Check whether we should recenter the view on point
+    let CheckRecenterOnPoint (textView : ITextView) point =
+        let textViewLine = textView.GetTextViewLineContainingBufferPosition point
+        let onScreen = textViewLine.VisibilityState = Formatting.VisibilityState.FullyVisible
+        if not onScreen then
+
+            // The line the point is on is not on screen.
+            // We handle three cases.  The point line:
+            // 1) precedes the first visible line by less than half a screen
+            // 2) follows the last visible line by less than half a screen
+            // 3) is further away than half a screen
+            // Vim uses pseudo-scrolling for cases 1) and 2) and centers
+            // the point vertically within the screen for 3).
+            let pointLine = SnapshotPointUtil.GetContainingLine point
+            let pointIndex = pointLine.LineNumber
+            let textViewLines = textView.TextViewLines
+            let firstVisibleLine = SnapshotPointUtil.GetContainingLine textViewLines.FirstVisibleLine.Start
+            let firstIndex = firstVisibleLine.LineNumber
+            let lastVisibleLine = SnapshotPointUtil.GetContainingLine textViewLines.LastVisibleLine.Start
+            let lastIndex = lastVisibleLine.LineNumber
+            let scrollLimit = int(ceil(textView.ViewportHeight / textView.LineHeight / 2.0))
+            if pointIndex >= firstIndex - scrollLimit && pointIndex <= firstIndex then
+                let relativeTo = Editor.ViewRelativePosition.Top
+                textView.DisplayTextLineContainingBufferPosition(point, 0.0, relativeTo) |> ignore
+            elif pointIndex >= lastIndex && pointIndex <= lastIndex + scrollLimit then
+                let relativeTo = Editor.ViewRelativePosition.Bottom
+                textView.DisplayTextLineContainingBufferPosition(point, 0.0, relativeTo) |> ignore
+            else
+                let span = pointLine.ExtentIncludingLineBreak
+                let option = Editor.EnsureSpanVisibleOptions.AlwaysCenter
+                textView.ViewScroller.EnsureSpanVisible(span, option) |> ignore
+
     /// Clear out the selection
     let ClearSelection (textView: ITextView) =
         textView.Selection.Clear()
@@ -1791,6 +1823,8 @@ module TextViewUtil =
             ClearSelection textView
 
         if Util.IsFlagSet flags MoveCaretFlags.EnsureOnScreen then
+            let point = GetCaretPoint textView
+            CheckRecenterOnPoint textView point
             EnsureCaretOnScreen textView
 
     /// Move the caret to the given point
