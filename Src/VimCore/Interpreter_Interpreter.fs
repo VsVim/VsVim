@@ -1527,7 +1527,16 @@ type VimInterpreter
 
     /// Run the :sort command
     member x.RunSort lineRange reverseOrder flags =
-        ()
+        match x.GetLineRangeOrDefault lineRange DefaultLineRange.EntireBuffer with
+        | None -> _statusUtil.OnError Resources.Range_Invalid
+        | Some lineRange ->
+            let newLine = EditUtil.NewLine _commonOperations.EditorOptions
+            let lines =
+                lineRange.Lines
+                |> Seq.map (fun line -> line.GetText())
+                |> Seq.sort
+                |> Seq.fold (fun state elem -> state + elem + newLine) StringUtil.Empty
+            _textBuffer.Replace(lineRange.ExtentIncludingLineBreak.Span, lines) |> ignore
 
     /// Run the :source command
     member x.RunSource hasBang filePath =
