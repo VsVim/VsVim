@@ -27,6 +27,15 @@ namespace Vim.UnitTest
             }
 
             [WpfFact]
+            public void ForExtentWithTrailingLineBreak()
+            {
+                Create("cat", "dog", "");
+                var lineRange = SnapshotLineRange.CreateForExtent(_textBuffer.CurrentSnapshot);
+                Assert.Equal(2, lineRange.Count);
+                Assert.Equal(_textBuffer.CurrentSnapshot.Length, lineRange.ExtentIncludingLineBreak.Length);
+            }
+
+            [WpfFact]
             public void ForLine()
             {
                 Create("cat", "dog");
