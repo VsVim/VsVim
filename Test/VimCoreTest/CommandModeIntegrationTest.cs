@@ -838,6 +838,44 @@ namespace Vim.UnitTest
                     Assert.Equal("foo bar", _textBuffer.GetLine(0).GetText());
                 }
 
+                [WpfFact]
+                public void FirstThroughLastWithTrailingLineBreak()
+                {
+                    Create("cat", "dog", "");
+                    RunCommand("1,$s/^/x/");
+                    Assert.Equal("xcat", _textBuffer.GetLine(0).GetText());
+                    Assert.Equal("xdog", _textBuffer.GetLine(1).GetText());
+                    Assert.Equal("", _textBuffer.GetLine(2).GetText());
+                }
+
+                [WpfFact]
+                public void FirstThroughLastWithoutTrailingLineBreak()
+                {
+                    Create("cat", "dog");
+                    RunCommand("1,$s/^/x/");
+                    Assert.Equal("xcat", _textBuffer.GetLine(0).GetText());
+                    Assert.Equal("xdog", _textBuffer.GetLine(1).GetText());
+                }
+
+                [WpfFact]
+                public void EntireBufferWithTrailingLineBreak()
+                {
+                    Create("cat", "dog", "");
+                    RunCommand("%s/^/x/");
+                    Assert.Equal("xcat", _textBuffer.GetLine(0).GetText());
+                    Assert.Equal("xdog", _textBuffer.GetLine(1).GetText());
+                    Assert.Equal("", _textBuffer.GetLine(2).GetText());
+                }
+
+                [WpfFact]
+                public void EntireBufferWithoutTrailingLineBreak()
+                {
+                    Create("cat", "dog");
+                    RunCommand("%s/^/x/");
+                    Assert.Equal("xcat", _textBuffer.GetLine(0).GetText());
+                    Assert.Equal("xdog", _textBuffer.GetLine(1).GetText());
+                }
+
                 /// <summary>
                 /// Covers #763 where the default search for substitute uses the last substitute
                 /// instead of the last search
