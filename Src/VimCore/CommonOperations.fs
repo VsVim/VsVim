@@ -971,6 +971,18 @@ type internal CommonOperations
 
         edit.Apply() |> ignore
 
+    /// Sort the given line range
+    member x.SortLines (range: SnapshotLineRange) reverseOrder flags =
+        let newLine = EditUtil.NewLine _editorOptions
+        let lines =
+            range.Lines
+            |> Seq.map (fun line -> line.GetText())
+            |> Seq.sort
+            |> String.concat newLine
+        _textBuffer.Replace(range.Extent.Span, lines) |> ignore
+        let firstLine = SnapshotUtil.GetLine _textView.TextSnapshot range.StartLineNumber
+        TextViewUtil.MoveCaretToPoint _textView firstLine.Start
+
     member x.Substitute pattern replace (range: SnapshotLineRange) flags = 
 
         /// Actually do the replace with the given regex
@@ -1439,6 +1451,7 @@ type internal CommonOperations
         member x.ShiftLineBlockRight col multiplier = x.ShiftLineBlockRight col multiplier
         member x.ShiftLineRangeLeft range multiplier = x.ShiftLineRangeLeft range multiplier
         member x.ShiftLineRangeRight range multiplier = x.ShiftLineRangeRight range multiplier
+        member x.SortLines range reverseOrder flags = x.SortLines range reverseOrder flags
         member x.Substitute pattern replace range flags = x.Substitute pattern replace range flags
         member x.Undo count = x.Undo count
 
