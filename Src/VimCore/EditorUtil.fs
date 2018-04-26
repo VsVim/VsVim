@@ -1501,7 +1501,17 @@ module SnapshotLineRangeUtil =
 
     /// Create a range for the entire ItextSnapshot
     let CreateForSnapshot (snapshot: ITextSnapshot) = 
-        SnapshotLineRange.CreateForExtent snapshot
+        let line = SnapshotUtil.GetLastLine snapshot
+        if snapshot.LineCount >= 2 && line.Start.Position = line.EndIncludingLineBreak.Position then
+
+            // The last (but not only) "line" is empty, which means that the
+            // end of the previous line including its linebreak is the
+            // end of the entire buffer.
+            let firstLine = snapshot.GetLineFromLineNumber(0)
+            let lastLine = snapshot.GetLineFromLineNumber(snapshot.LineCount - 2)
+            SnapshotLineRange.CreateForLineRange firstLine lastLine
+        else
+            SnapshotLineRange.CreateForExtent snapshot
 
     /// Create a range for the provided ITextSnapshotLine
     let CreateForLine (line: ITextSnapshotLine) =

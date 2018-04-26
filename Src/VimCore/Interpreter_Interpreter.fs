@@ -322,7 +322,15 @@ type VimInterpreter
 
         | LineSpecifier.LastLine ->
             let line = SnapshotUtil.GetLastLine x.CurrentSnapshot
-            line |> getLineAndNumber |> Some
+            if x.CurrentSnapshot.LineCount >= 2 && line.Start.Position = line.EndIncludingLineBreak.Position then
+
+                // The last (but not only) "line" is empty, which means that the
+                // end of the previous line including its linebreak is the
+                // end of the entire buffer.
+                SnapshotUtil.GetLine x.CurrentSnapshot (x.CurrentSnapshot.LineCount - 2)
+            else
+                line
+            |> getLineAndNumber |> Some
 
         | LineSpecifier.MarkLine mark ->
             // Get the line containing the mark in the context of this IVimTextBuffer
