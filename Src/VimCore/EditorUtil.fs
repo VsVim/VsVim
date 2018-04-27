@@ -182,7 +182,16 @@ type SnapshotLineRange  =
     override x.ToString() = sprintf "[%d - %d] %O" x.StartLineNumber x.LastLineNumber x.Snapshot
 
     /// Create for the entire ITextSnapshot
-    static member CreateForExtent (snapshot: ITextSnapshot) = new SnapshotLineRange(snapshot, 0, snapshot.LineCount)
+    static member CreateForExtent (snapshot: ITextSnapshot) =
+        let line = snapshot.GetLineFromLineNumber(snapshot.LineCount - 1)   
+        if snapshot.LineCount >= 2 && line.Start.Position = line.EndIncludingLineBreak.Position then
+
+            // The last (but not only) "line" is empty, which means that the
+            // end of the previous line including its linebreak is the
+            // end of the entire buffer.
+            new SnapshotLineRange(snapshot, 0, snapshot.LineCount - 1)
+        else
+            new SnapshotLineRange(snapshot, 0, snapshot.LineCount)
 
     /// Create for a single ITextSnapshotLine
     static member CreateForLine (snapshotLine: ITextSnapshotLine) = new SnapshotLineRange(snapshotLine.Snapshot, snapshotLine.LineNumber, 1)
