@@ -973,13 +973,25 @@ type internal CommonOperations
 
     /// Sort the given line range
     member x.SortLines (range: SnapshotLineRange) reverseOrder flags =
+
+        let keyFunction =
+            match flags with
+            | _ -> (fun x -> x)
+
+        let sortStrings (strings: seq<string>) =
+            if reverseOrder then
+                Seq.sortByDescending keyFunction strings
+            else
+                Seq.sortBy keyFunction strings
+
         let newLine = EditUtil.NewLine _editorOptions
         let lines =
             range.Lines
             |> Seq.map (fun line -> line.GetText())
-            |> Seq.sort
+            |> sortStrings
             |> String.concat newLine
         _textBuffer.Replace(range.Extent.Span, lines) |> ignore
+
         let firstLine = SnapshotUtil.GetLine _textView.TextSnapshot range.StartLineNumber
         TextViewUtil.MoveCaretToPoint _textView firstLine.Start
 
