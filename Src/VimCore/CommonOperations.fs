@@ -1315,7 +1315,7 @@ type internal CommonOperations
 
     /// Ensure the point is on screen / visible
     member x.EnsurePointVisible (point: SnapshotPoint) = 
-        TextViewUtil.CheckRecenterOnPoint _textView point
+        TextViewUtil.CheckScrollToPoint _textView point
         if point.Position = x.CaretPoint.Position then
             TextViewUtil.EnsureCaretOnScreen _textView
         else
