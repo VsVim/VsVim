@@ -974,25 +974,41 @@ type internal CommonOperations
     /// Sort the given line range
     member x.SortLines (range: SnapshotLineRange) reverseOrder flags =
 
+        // Create an array of the lines to be sorted.
+        let lines =
+            range.Lines
+            |> Seq.map (fun line -> line.GetText())
+            |> Seq.toArray
+
+        // Given a text line, extract a key.
         let keyFunction =
             match flags with
             | SortFlags.None -> (fun x -> x)
             | SortFlags.IgnoreCase -> (fun (x: string) -> x.ToLower())
 
-        let sortStrings (strings: seq<string>) =
-            if reverseOrder then
-                Seq.sortByDescending keyFunction strings
-            else
-                Seq.sortBy keyFunction strings
+        // Create a parallel array of the sort keys.
+        let keys =
+            lines
+            |> Seq.map keyFunction
+            |> Seq.toArray
 
+        // Sort an array of line numbers using the keys for comparison.
+        let sortLineNumbers (lineNumbers: seq<int>) =
+            let sortFunction = if reverseOrder then Seq.sortByDescending else Seq.sortBy
+            sortFunction (fun lineNumber -> keys.[lineNumber]) lineNumbers
+
+        // Permute the line numbers.
         let newLine = EditUtil.NewLine _editorOptions
-        let lines =
-            range.Lines
-            |> Seq.map (fun line -> line.GetText())
-            |> sortStrings
+        let replacement =
+            [0 .. lines.Length - 1]
+            |> sortLineNumbers
+            |> Seq.map (fun lineNumber -> lines.[lineNumber])
             |> String.concat newLine
-        _textBuffer.Replace(range.Extent.Span, lines) |> ignore
 
+        // Replace the old lines with the sorted lines.
+        _textBuffer.Replace(range.Extent.Span, replacement) |> ignore
+
+        // Place the cursor on the first non-blank character of the first line sorted.
         let firstLine = SnapshotUtil.GetLine _textView.TextSnapshot range.StartLineNumber
         TextViewUtil.MoveCaretToPoint _textView firstLine.Start
 
