@@ -976,7 +976,8 @@ type internal CommonOperations
 
         let keyFunction =
             match flags with
-            | _ -> (fun x -> x)
+            | SortFlags.None -> (fun x -> x)
+            | SortFlags.IgnoreCase -> (fun (x: string) -> x.ToLower())
 
         let sortStrings (strings: seq<string>) =
             if reverseOrder then

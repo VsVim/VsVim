@@ -666,6 +666,33 @@ type Parser
         else
             None
 
+    /// Used to parse out the flags for the sort commands  Will not modify the 
+    /// stream if there are no flags
+    member x.ParseSortFlags () =
+
+        // Get the string which we are parsing for flags
+        let flagString = x.ParseWhile (fun token -> 
+            match token.TokenKind with
+            | TokenKind.Word _ -> true
+            | _ -> false)
+        let flagString = OptionUtil.getOrDefault "" flagString
+
+        let mutable parseResult: ParseResult<SortFlags> option = None
+        let mutable flags = SortFlags.None
+        let mutable index = 0
+        while index < flagString.Length && Option.isNone parseResult do
+            match flagString.[index] with
+            | 'i' -> flags <- flags ||| SortFlags.IgnoreCase
+            | _  -> 
+                // Illegal character in the flags string 
+                parseResult <- ParseResult.Failed Resources.CommandMode_TrailingCharacters |> Some
+
+            index <- index + 1
+
+        match parseResult with
+        | None -> ParseResult.Succeeded flags
+        | Some p -> p
+
     /// Used to parse out the flags for substitute commands.  Will not modify the 
     /// stream if there are no flags
     member x.ParseSubstituteFlags () =
@@ -1959,11 +1986,14 @@ type Parser
 
         parseOption (fun x -> x)
 
-    /// Parse out the :retab command
+    /// Parse out the :sort command
     member x.ParseSort lineRange =
         let hasBang = x.ParseBang()
         x.SkipBlanks()
-        LineCommand.Sort (lineRange, hasBang, SortFlags.None)
+        match x.ParseSortFlags() with
+        | ParseResult.Failed message -> LineCommand.ParseError message
+        | ParseResult.Succeeded flags ->
+            LineCommand.Sort (lineRange, hasBang, flags)
 
     /// Parse out the :source command.  It can have an optional '!' following it then a file
     /// name 
