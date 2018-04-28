@@ -972,7 +972,7 @@ type internal CommonOperations
         edit.Apply() |> ignore
 
     /// Sort the given line range
-    member x.SortLines (range: SnapshotLineRange) reverseOrder flags =
+    member x.SortLines (range: SnapshotLineRange) reverseOrder flags pattern =
 
         // Extract the lines to be sorted.
         let lines = range.Lines |> Seq.map SnapshotLineUtil.GetText
@@ -1551,7 +1551,7 @@ type internal CommonOperations
         member x.ShiftLineBlockRight col multiplier = x.ShiftLineBlockRight col multiplier
         member x.ShiftLineRangeLeft range multiplier = x.ShiftLineRangeLeft range multiplier
         member x.ShiftLineRangeRight range multiplier = x.ShiftLineRangeRight range multiplier
-        member x.SortLines range reverseOrder flags = x.SortLines range reverseOrder flags
+        member x.SortLines range reverseOrder flags pattern = x.SortLines range reverseOrder flags pattern
         member x.Substitute pattern replace range flags = x.Substitute pattern replace range flags
         member x.Undo count = x.Undo count
 

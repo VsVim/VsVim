@@ -1994,12 +1994,36 @@ type Parser
 
     /// Parse out the :sort command
     member x.ParseSort lineRange =
+
+        // Whether this valid as a sort string delimiter
+        let isValidDelimiter c =
+            let isBad = CharUtil.IsLetter c
+            not isBad
+
         let hasBang = x.ParseBang()
         x.SkipBlanks()
         match x.ParseSortFlags() with
         | ParseResult.Failed message -> LineCommand.ParseError message
         | ParseResult.Succeeded flags ->
-            LineCommand.Sort (lineRange, hasBang, flags)
+            x.SkipBlanks()
+            match _tokenizer.CurrentTokenKind with
+            | TokenKind.Character delimiter ->
+                if isValidDelimiter delimiter then
+                    _tokenizer.MoveNextToken()
+                    let pattern, foundDelimiter = x.ParsePattern delimiter
+                    if not foundDelimiter then
+                        LineCommand.Sort (lineRange, hasBang, flags, Some pattern)
+                    else
+                        x.SkipBlanks()
+                        match x.ParseSortFlags() with
+                        | ParseResult.Failed message -> LineCommand.ParseError message
+                        | ParseResult.Succeeded moreFlags ->
+                            let flags = flags ||| moreFlags
+                            LineCommand.Sort (lineRange, hasBang, flags, Some pattern)
+                else
+                    LineCommand.Sort (lineRange, hasBang, flags, None)
+            | _ ->
+                LineCommand.Sort (lineRange, hasBang, flags, None)
 
     /// Parse out the :source command.  It can have an optional '!' following it then a file
     /// name 

@@ -465,7 +465,7 @@ type ICommonOperations =
     abstract ShiftLineRangeRight: SnapshotLineRange -> multiplier: int -> unit
 
     /// Sort the given line range
-    abstract SortLines: SnapshotLineRange -> reverseOrder: bool -> SortFlags -> unit
+    abstract SortLines: SnapshotLineRange -> reverseOrder: bool -> SortFlags -> pattern: string option -> unit
 
     /// Substitute Command implementation
     abstract Substitute: pattern: string -> replace: string -> SnapshotLineRange -> flags: SubstituteFlags -> unit
