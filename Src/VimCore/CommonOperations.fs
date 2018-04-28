@@ -995,24 +995,38 @@ type internal CommonOperations
             )
             if Util.IsFlagSet flags anyInteger then
 
+                // Define a function to convert a string to an integer.
+                let parseInteger (line: string) (fromBase: int) =
+                    try
+                        Convert.ToInt64(line, fromBase)
+                    with
+                    | _ -> int64(0)
+
                 // Given a text line, extract an integer key.
                 let keyFunction =
                     if Util.IsFlagSet flags SortFlags.Decimal then
-                        (fun (x: string) -> Convert.ToInt64(x))
+                        (fun (line: string) -> parseInteger line 10)
                     else if Util.IsFlagSet flags SortFlags.Hexidecimal then
-                        (fun (x: string) -> Convert.ToInt64(x, 16))
+                        (fun (line: string) -> parseInteger line 16)
                     else if Util.IsFlagSet flags SortFlags.Octal then
-                        (fun (x: string) -> Convert.ToInt64(x, 8))
+                        (fun (line: string) -> parseInteger line 8)
                     else
-                        (fun (x: string) -> Convert.ToInt64(x, 2))
+                        (fun (line: string) -> parseInteger line 2)
 
                 sortByFunction keyFunction lines
 
             else if Util.IsFlagSet flags SortFlags.Float then
 
+                // Define a function to convert a string to a float.
+                let parseFloat (line: string) =
+                    try
+                        Convert.ToDouble(line)
+                    with
+                    | _ -> 0.0
+
                 // Given a text line, extract a float key.
                 let keyFunction =
-                        (fun (x: string) -> Convert.ToDouble(x))
+                        (fun (line: string) -> parseFloat line)
 
                 sortByFunction keyFunction lines
 
@@ -1021,9 +1035,9 @@ type internal CommonOperations
                 // Given a text line, extract a text key.
                 let keyFunction =
                     if Util.IsFlagSet flags SortFlags.IgnoreCase then
-                        (fun (x: string) -> x.ToLower())
+                        (fun (line: string) -> line.ToLower())
                     else
-                        (fun (x: string) -> x)
+                        (fun (line: string) -> line)
 
                 sortByFunction keyFunction lines
 
@@ -1031,7 +1045,7 @@ type internal CommonOperations
         let sortedLines =
             if Util.IsFlagSet flags SortFlags.Unique then
                 if Util.IsFlagSet flags SortFlags.IgnoreCase then
-                    sortedLines |> Seq.distinctBy (fun x -> x.ToLower())
+                    sortedLines |> Seq.distinctBy (fun line -> line.ToLower())
                 else
                     sortedLines |> Seq.distinct
             else
