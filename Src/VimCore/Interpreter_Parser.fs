@@ -684,7 +684,7 @@ type Parser
             | 'i' -> flags <- flags ||| SortFlags.IgnoreCase
             | 'n' -> flags <- flags ||| SortFlags.Decimal
             | 'f' -> flags <- flags ||| SortFlags.Float
-            | 'h' -> flags <- flags ||| SortFlags.Hexidecimal
+            | 'x' -> flags <- flags ||| SortFlags.Hexidecimal
             | 'o' -> flags <- flags ||| SortFlags.Octal
             | 'b' -> flags <- flags ||| SortFlags.Binary
             | 'u' -> flags <- flags ||| SortFlags.Unique

@@ -974,38 +974,60 @@ type internal CommonOperations
     /// Sort the given line range
     member x.SortLines (range: SnapshotLineRange) reverseOrder flags =
 
-        // Create an array of the lines to be sorted.
+        // Extract the lines to be sorted.
         let lines =
             range.Lines
             |> Seq.map (fun line -> line.GetText())
-            |> Seq.toArray
 
-        // Given a text line, extract a key.
-        let keyFunction =
-            if Util.IsFlagSet flags SortFlags.IgnoreCase then
-                (fun (x: string) -> x.ToLower())
-            else
-                (fun x -> x)
-
-        // Create an auxiliary array of the sort keys.
-        let keys =
-            lines
-            |> Seq.map keyFunction
-            |> Seq.toArray
-
-        // Sort an array of line numbers using the keys for comparison.
-        let sortLineNumbers (lineNumbers: seq<int>) =
-            let sortFunction = if reverseOrder then Seq.sortByDescending else Seq.sortBy
-            sortFunction (fun lineNumber -> keys.[lineNumber]) lineNumbers
-
-        // Sort the line numbers by key and then convert to the corresponding lines.
-        let newLine = EditUtil.NewLine _editorOptions
+        // Sort the lines.
         let sortedLines =
-            [0 .. lines.Length - 1]
-            |> sortLineNumbers
-            |> Seq.map (fun lineNumber -> lines.[lineNumber])
 
-        // Optionally save only one copy of each unique line.
+            // Define a sort by function that handles reverse ordering.
+            let sortByFunction (keyFunction: (string -> 'Key)) =
+                (if reverseOrder then Seq.sortByDescending else Seq.sortBy) keyFunction
+
+            // Handle numeric or textual sorting.
+            let anyInteger = (
+                SortFlags.Decimal |||
+                SortFlags.Hexidecimal |||
+                SortFlags.Octal |||
+                SortFlags.Binary
+            )
+            if Util.IsFlagSet flags anyInteger then
+
+                // Given a text line, extract an integer key.
+                let keyFunction =
+                    if Util.IsFlagSet flags SortFlags.Decimal then
+                        (fun (x: string) -> Convert.ToInt64(x))
+                    else if Util.IsFlagSet flags SortFlags.Hexidecimal then
+                        (fun (x: string) -> Convert.ToInt64(x, 16))
+                    else if Util.IsFlagSet flags SortFlags.Octal then
+                        (fun (x: string) -> Convert.ToInt64(x, 8))
+                    else
+                        (fun (x: string) -> Convert.ToInt64(x, 2))
+
+                sortByFunction keyFunction lines
+
+            else if Util.IsFlagSet flags SortFlags.Float then
+
+                // Given a text line, extract a float key.
+                let keyFunction =
+                        (fun (x: string) -> Convert.ToDouble(x))
+
+                sortByFunction keyFunction lines
+
+            else
+
+                // Given a text line, extract a text key.
+                let keyFunction =
+                    if Util.IsFlagSet flags SortFlags.IgnoreCase then
+                        (fun (x: string) -> x.ToLower())
+                    else
+                        (fun (x: string) -> x)
+
+                sortByFunction keyFunction lines
+
+        // Optionally filter out duplicates.
         let sortedLines =
             if Util.IsFlagSet flags SortFlags.Unique then
                 if Util.IsFlagSet flags SortFlags.IgnoreCase then
@@ -1016,9 +1038,8 @@ type internal CommonOperations
                 sortedLines
 
         // Concatenate the sorted lines.
-        let replacement =
-            sortedLines
-            |> String.concat newLine
+        let newLine = EditUtil.NewLine _editorOptions
+        let replacement = sortedLines |> String.concat newLine
 
         // Replace the old lines with the sorted lines.
         _textBuffer.Replace(range.Extent.Span, replacement) |> ignore

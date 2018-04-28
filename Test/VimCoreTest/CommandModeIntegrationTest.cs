@@ -714,6 +714,22 @@ namespace Vim.UnitTest
                 RunCommand("sort ui");
                 Assert.Equal(new[] { "bat", "CAT", "dog" }, _textBuffer.GetLines());
             }
+
+            [WpfFact]
+            public void Decimal()
+            {
+                Create("99", "1", "100", "42");
+                RunCommand("sort n");
+                Assert.Equal(new[] { "1", "42", "99", "100" }, _textBuffer.GetLines());
+            }
+
+            [WpfFact]
+            public void Hexidecimal()
+            {
+                Create("deadbeef", "0", "cdcd", "ff");
+                RunCommand("sort x");
+                Assert.Equal(new[] { "0", "ff", "cdcd", "deadbeef" }, _textBuffer.GetLines());
+            }
         }
 
         public abstract class SubstituteTest : CommandModeIntegrationTest
