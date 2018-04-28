@@ -767,7 +767,7 @@ namespace Vim.UnitTest
             public void FloatProjectSkip()
             {
                 Create("xxx 0.1234", "xxx 0", "xxx 99", "xxx 3.1415");
-                RunCommand("sort/.../f");
+                RunCommand(@"sort/.../f");
                 Assert.Equal(new[] { "xxx 0", "xxx 0.1234", "xxx 3.1415", "xxx 99" }, _textBuffer.GetLines());
             }
 
@@ -775,7 +775,7 @@ namespace Vim.UnitTest
             public void FloatProjectMatch()
             {
                 Create("xxx 0.1234", "xxx 0", "xxx 99", "xxx 3.1415");
-                RunCommand("sort/[0-9.]+/fr");
+                RunCommand(@"sort/[0-9.]\+/fr");
                 Assert.Equal(new[] { "xxx 0", "xxx 0.1234", "xxx 3.1415", "xxx 99" }, _textBuffer.GetLines());
             }
         }

@@ -972,7 +972,7 @@ type internal CommonOperations
         edit.Apply() |> ignore
 
     /// Sort the given line range
-    member x.SortLines (range: SnapshotLineRange) reverseOrder flags pattern =
+    member x.SortLines (range: SnapshotLineRange) reverseOrder flags (pattern: string option) =
 
         // Extract the lines to be sorted.
         let lines = range.Lines |> Seq.map SnapshotLineUtil.GetText
@@ -984,12 +984,16 @@ type internal CommonOperations
         let pattern =
             match pattern with
             | Some pattern ->
-                if Util.IsFlagSet flags SortFlags.MatchPattern then
-                    Some (new Regex(pattern))
-                else if pattern.StartsWith("^") then
-                    Some (new Regex(pattern))
-                else
-                    Some (new Regex(@"^" + pattern))
+                let pattern =
+                    if Util.IsFlagSet flags SortFlags.MatchPattern then
+                        pattern
+                    else if pattern.StartsWith("^") then
+                        pattern
+                    else
+                        @"^" + pattern
+                match VimRegexFactory.Create pattern VimRegexOptions.Default with
+                | Some vimRegex -> Some vimRegex.Regex
+                | None -> None
             | None -> None
 
         // Sort the lines.
@@ -1041,7 +1045,7 @@ type internal CommonOperations
 
                 // Define a function to convert a string to an integer.
                 let parseInteger (keyPattern: Regex) (fromBase: int) (line: string) =
-                    let defaultValue = int64(0)
+                    let defaultValue = System.Int64.MinValue
                     let key = extractKey keyPattern line
                     match key with
                     | "" -> defaultValue
@@ -1072,7 +1076,7 @@ type internal CommonOperations
 
                 // Define a function to convert a string to a float.
                 let parseFloat (keyPattern: Regex) (line: string) =
-                    let defaultValue = 0.0
+                    let defaultValue = Double.MinValue
                     let key = extractKey keyPattern line
                     match key with
                     | "" -> defaultValue
