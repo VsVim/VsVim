@@ -984,6 +984,15 @@ type internal CommonOperations
         let pattern =
             match pattern with
             | Some pattern ->
+
+                // If the pattern is empty, use the last search pattern instead.
+                let pattern = 
+                    if pattern = "" then 
+                        _vimData.LastSearchData.Pattern
+                    else
+                        pattern
+
+                // Make sure the pattern is anchored if we are skipping the pattern.
                 let pattern =
                     if Util.IsFlagSet flags SortFlags.MatchPattern then
                         pattern
@@ -991,9 +1000,12 @@ type internal CommonOperations
                         pattern
                     else
                         @"^" + pattern
+
+                // Convert from vim regex syntax to native regex syntax.
                 match VimRegexFactory.Create pattern VimRegexOptions.Default with
                 | Some vimRegex -> Some vimRegex.Regex
                 | None -> None
+
             | None -> None
 
         // Sort the lines.
