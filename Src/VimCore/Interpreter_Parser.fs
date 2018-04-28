@@ -666,8 +666,7 @@ type Parser
         else
             None
 
-    /// Used to parse out the flags for the sort commands  Will not modify the 
-    /// stream if there are no flags
+    /// Used to parse out the flags for the sort commands
     member x.ParseSortFlags () =
 
         // Get the string which we are parsing for flags
@@ -683,6 +682,13 @@ type Parser
         while index < flagString.Length && Option.isNone parseResult do
             match flagString.[index] with
             | 'i' -> flags <- flags ||| SortFlags.IgnoreCase
+            | 'n' -> flags <- flags ||| SortFlags.Decimal
+            | 'f' -> flags <- flags ||| SortFlags.Float
+            | 'h' -> flags <- flags ||| SortFlags.Hexidecimal
+            | 'o' -> flags <- flags ||| SortFlags.Octal
+            | 'b' -> flags <- flags ||| SortFlags.Binary
+            | 'u' -> flags <- flags ||| SortFlags.Unique
+            | 'r' -> flags <- flags ||| SortFlags.MatchPattern
             | _  -> 
                 // Illegal character in the flags string 
                 parseResult <- ParseResult.Failed Resources.CommandMode_TrailingCharacters |> Some

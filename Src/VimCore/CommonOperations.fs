@@ -982,11 +982,12 @@ type internal CommonOperations
 
         // Given a text line, extract a key.
         let keyFunction =
-            match flags with
-            | SortFlags.None -> (fun x -> x)
-            | SortFlags.IgnoreCase -> (fun (x: string) -> x.ToLower())
+            if Util.IsFlagSet flags SortFlags.IgnoreCase then
+                (fun (x: string) -> x.ToLower())
+            else
+                (fun x -> x)
 
-        // Create a parallel array of the sort keys.
+        // Create an auxiliary array of the sort keys.
         let keys =
             lines
             |> Seq.map keyFunction
@@ -997,12 +998,16 @@ type internal CommonOperations
             let sortFunction = if reverseOrder then Seq.sortByDescending else Seq.sortBy
             sortFunction (fun lineNumber -> keys.[lineNumber]) lineNumbers
 
-        // Permute the line numbers.
+        // Sort the line numbers by key and then convert to the corresponding lines.
         let newLine = EditUtil.NewLine _editorOptions
-        let replacement =
+        let sortedLines =
             [0 .. lines.Length - 1]
             |> sortLineNumbers
             |> Seq.map (fun lineNumber -> lines.[lineNumber])
+
+        // Concatenate the sorted lines.
+        let replacement =
+            sortedLines
             |> String.concat newLine
 
         // Replace the old lines with the sorted lines.

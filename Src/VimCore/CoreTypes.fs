@@ -57,8 +57,29 @@ type JoinKind =
 type SortFlags = 
     | None = 0
 
-    /// Ignore case
+    /// Ignore case [i]
     | IgnoreCase = 0x1
+
+    /// Decimal [n]
+    | Decimal = 0x2
+
+    /// Float [f]
+    | Float = 0x4
+
+    /// Hexidecimal [h]
+    | Hexidecimal = 0x8
+
+    /// Octal [o]
+    | Octal = 0x10
+
+    /// Binary [b]
+    | Binary = 0x20
+
+    // Unique [u]
+    | Unique = 0x40
+
+    /// Match pattern [r]
+    | MatchPattern = 0x80
 
 /// Flags for the substitute command
 [<System.Flags>]
