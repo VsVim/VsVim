@@ -1011,6 +1011,7 @@ type internal CommonOperations
         // Place the cursor on the first non-blank character of the first line sorted.
         let firstLine = SnapshotUtil.GetLine _textView.TextSnapshot range.StartLineNumber
         TextViewUtil.MoveCaretToPoint _textView firstLine.Start
+        _editorOperations.MoveToStartOfLineAfterWhiteSpace(false)
 
     member x.Substitute pattern replace (range: SnapshotLineRange) flags = 
 
