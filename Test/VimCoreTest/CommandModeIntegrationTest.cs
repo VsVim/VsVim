@@ -698,6 +698,22 @@ namespace Vim.UnitTest
                 RunCommand("sort! i");
                 Assert.Equal(new[] { "dog", "cat", "bat", "BAT" }, _textBuffer.GetLines());
             }
+
+            [WpfFact]
+            public void Unique()
+            {
+                Create("cat", "bat", "dog", "cat");
+                RunCommand("sort u");
+                Assert.Equal(new[] { "bat", "cat", "dog" }, _textBuffer.GetLines());
+            }
+
+            [WpfFact]
+            public void UniqueIgnoreCase()
+            {
+                Create("CAT", "bat", "dog", "cat");
+                RunCommand("sort ui");
+                Assert.Equal(new[] { "bat", "CAT", "dog" }, _textBuffer.GetLines());
+            }
         }
 
         public abstract class SubstituteTest : CommandModeIntegrationTest

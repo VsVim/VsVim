@@ -1005,6 +1005,16 @@ type internal CommonOperations
             |> sortLineNumbers
             |> Seq.map (fun lineNumber -> lines.[lineNumber])
 
+        // Optionally save only one copy of each unique line.
+        let sortedLines =
+            if Util.IsFlagSet flags SortFlags.Unique then
+                if Util.IsFlagSet flags SortFlags.IgnoreCase then
+                    sortedLines |> Seq.distinctBy (fun x -> x.ToLower())
+                else
+                    sortedLines |> Seq.distinct
+            else
+                sortedLines
+
         // Concatenate the sorted lines.
         let replacement =
             sortedLines
