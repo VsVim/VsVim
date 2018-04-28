@@ -762,6 +762,22 @@ namespace Vim.UnitTest
                 RunCommand("sort f");
                 Assert.Equal(new[] { "0 xxx", "0.1234 xxx", "3.1415 xxx", "99 xxx" }, _textBuffer.GetLines());
             }
+
+            [WpfFact]
+            public void FloatProjectSkip()
+            {
+                Create("xxx 0.1234", "xxx 0", "xxx 99", "xxx 3.1415");
+                RunCommand("sort/.../f");
+                Assert.Equal(new[] { "xxx 0", "xxx 0.1234", "xxx 3.1415", "xxx 99" }, _textBuffer.GetLines());
+            }
+
+            [WpfFact]
+            public void FloatProjectMatch()
+            {
+                Create("xxx 0.1234", "xxx 0", "xxx 99", "xxx 3.1415");
+                RunCommand("sort/[0-9.]+/fr");
+                Assert.Equal(new[] { "xxx 0", "xxx 0.1234", "xxx 3.1415", "xxx 99" }, _textBuffer.GetLines());
+            }
         }
 
         public abstract class SubstituteTest : CommandModeIntegrationTest

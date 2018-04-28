@@ -980,6 +980,18 @@ type internal CommonOperations
         // Convert a line to lowercase.
         let toLower (line: string) = line.ToLower()
 
+        // Compile sort pattern.
+        let pattern =
+            match pattern with
+            | Some pattern ->
+                if Util.IsFlagSet flags SortFlags.MatchPattern then
+                    Some (new Regex(pattern))
+                else if pattern.StartsWith("^") then
+                    Some (new Regex(pattern))
+                else
+                    Some (new Regex(@"^" + pattern))
+            | None -> None
+
         // Sort the lines.
         let sortedLines =
 
@@ -987,14 +999,36 @@ type internal CommonOperations
             let sortByFunction (keyFunction: (string -> 'Key)) =
                 (if reverseOrder then Seq.sortByDescending else Seq.sortBy) keyFunction
 
+            // Project line using sort pattern.
+            let projectLine (line: string) =
+                match pattern with
+                | Some pattern ->
+                    let patternMatch = pattern.Match(line)
+                    if patternMatch.Success then
+                        let capture = patternMatch.Captures.[0]
+                        if Util.IsFlagSet flags SortFlags.MatchPattern then
+                            capture.ToString()
+                        else
+                            line.Substring(capture.Index + capture.Length)
+                    else
+                        ""
+                | None -> line
+
             // Extract a key using a regular expression.
-            let extractKey (pattern: Regex) (line: string) =
+            let extractKey (keyPattern: Regex) (line: string) =
+
+                // Project the line.
+                let line = projectLine line
+
+                // Trim whitespace from line.
                 let line = line.Trim()
-                let patternMatch = pattern.Match(line)
-                if patternMatch.Success then
-                    patternMatch.Captures.[0].ToString()
+
+                // Extract key using key pattern.
+                let keyMatch = keyPattern.Match(line)
+                if keyMatch.Success then
+                    keyMatch.Captures.[0].ToString()
                 else
-                    line
+                    ""
 
             // Handle numeric or textual sorting.
             let anyInteger = (
@@ -1006,16 +1040,20 @@ type internal CommonOperations
             if Util.IsFlagSet flags anyInteger then
 
                 // Define a function to convert a string to an integer.
-                let parseInteger (pattern: Regex) (fromBase: int) (line: string) =
-                    let key = extractKey pattern line
-                    try
-                        Convert.ToInt64(key, fromBase)
-                    with
-                    | _ -> int64(0)
+                let parseInteger (keyPattern: Regex) (fromBase: int) (line: string) =
+                    let defaultValue = int64(0)
+                    let key = extractKey keyPattern line
+                    match key with
+                    | "" -> defaultValue
+                    | _ ->
+                        try
+                            Convert.ToInt64(key, fromBase)
+                        with
+                        | _ -> defaultValue
 
                 // Precompile the regular expression.
-                let getKeyFunction (pattern: string) (fromBase: int) =
-                    parseInteger (new Regex(@"^" + pattern)) fromBase
+                let getKeyFunction (keyPattern: string) (fromBase: int) =
+                    parseInteger (new Regex(@"^" + keyPattern)) fromBase
 
                 // Given a text line, extract an integer key.
                 let keyFunction =
@@ -1033,16 +1071,20 @@ type internal CommonOperations
             else if Util.IsFlagSet flags SortFlags.Float then
 
                 // Define a function to convert a string to a float.
-                let parseFloat (pattern: Regex) (line: string) =
-                    let key = extractKey pattern line
-                    try
-                        Convert.ToDouble(key)
-                    with
-                    | _ -> 0.0
+                let parseFloat (keyPattern: Regex) (line: string) =
+                    let defaultValue = 0.0
+                    let key = extractKey keyPattern line
+                    match key with
+                    | "" -> defaultValue
+                    | _ ->
+                        try
+                            Convert.ToDouble(key)
+                        with
+                        | _ -> defaultValue
 
                 // Precompile the regular expression.
-                let getKeyFunction (pattern: string) =
-                    parseFloat (new Regex("^" + pattern))
+                let getKeyFunction (keyPattern: string) =
+                    parseFloat (new Regex(@"^" + keyPattern))
 
                 // Given a text line, extract a float key.
                 let floatPattern = @"[-+]?([0-9]*\.?[0-9]+|[0-9]+\.)([eE][-+]?[0-9]+)?"
@@ -1055,7 +1097,7 @@ type internal CommonOperations
                 // Given a text line, extract a text key.
                 let keyFunction =
                     if Util.IsFlagSet flags SortFlags.IgnoreCase then
-                        toLower
+                        projectLine >> toLower
                     else
                         id
 
