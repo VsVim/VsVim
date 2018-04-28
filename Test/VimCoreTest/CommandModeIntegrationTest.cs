@@ -754,6 +754,14 @@ namespace Vim.UnitTest
                 RunCommand("sort f");
                 Assert.Equal(new[] { "0", "0.1234", "3.1415", "99" }, _textBuffer.GetLines());
             }
+
+            [WpfFact]
+            public void FloatTwoFields()
+            {
+                Create("0.1234 xxx", "0 xxx", "99 xxx", "3.1415 xxx");
+                RunCommand("sort f");
+                Assert.Equal(new[] { "0 xxx", "0.1234 xxx", "3.1415 xxx", "99 xxx" }, _textBuffer.GetLines());
+            }
         }
 
         public abstract class SubstituteTest : CommandModeIntegrationTest

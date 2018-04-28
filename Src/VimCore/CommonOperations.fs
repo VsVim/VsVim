@@ -987,6 +987,15 @@ type internal CommonOperations
             let sortByFunction (keyFunction: (string -> 'Key)) =
                 (if reverseOrder then Seq.sortByDescending else Seq.sortBy) keyFunction
 
+            // Extract a key using a regular expression.
+            let extractKey (pattern: Regex) (line: string) =
+                let line = line.Trim()
+                let patternMatch = pattern.Match(line)
+                if patternMatch.Success then
+                    patternMatch.Captures.[0].ToString()
+                else
+                    line
+
             // Handle numeric or textual sorting.
             let anyInteger = (
                 SortFlags.Decimal |||
@@ -997,36 +1006,47 @@ type internal CommonOperations
             if Util.IsFlagSet flags anyInteger then
 
                 // Define a function to convert a string to an integer.
-                let parseInteger (fromBase: int) (line: string) =
+                let parseInteger (pattern: Regex) (fromBase: int) (line: string) =
+                    let key = extractKey pattern line
                     try
-                        Convert.ToInt64(line, fromBase)
+                        Convert.ToInt64(key, fromBase)
                     with
                     | _ -> int64(0)
+
+                // Precompile the regular expression.
+                let getKeyFunction (pattern: string) (fromBase: int) =
+                    parseInteger (new Regex(@"^" + pattern)) fromBase
 
                 // Given a text line, extract an integer key.
                 let keyFunction =
                     if Util.IsFlagSet flags SortFlags.Decimal then
-                        parseInteger 10
+                        getKeyFunction @"-?[0-9]+" 10
                     else if Util.IsFlagSet flags SortFlags.Hexidecimal then
-                        parseInteger 16
+                        getKeyFunction @"-?(0[xX])?[0-9a-fA-F]+" 16
                     else if Util.IsFlagSet flags SortFlags.Octal then
-                        parseInteger 8
+                        getKeyFunction @"[0-7]+" 8
                     else
-                        parseInteger 2
+                        getKeyFunction @"[0-1]+" 2
 
                 sortByFunction keyFunction lines
 
             else if Util.IsFlagSet flags SortFlags.Float then
 
                 // Define a function to convert a string to a float.
-                let parseFloat (line: string) =
+                let parseFloat (pattern: Regex) (line: string) =
+                    let key = extractKey pattern line
                     try
-                        Convert.ToDouble(line)
+                        Convert.ToDouble(key)
                     with
                     | _ -> 0.0
 
+                // Precompile the regular expression.
+                let getKeyFunction (pattern: string) =
+                    parseFloat (new Regex("^" + pattern))
+
                 // Given a text line, extract a float key.
-                let keyFunction = parseFloat
+                let floatPattern = @"[-+]?([0-9]*\.?[0-9]+|[0-9]+\.)([eE][-+]?[0-9]+)?"
+                let keyFunction = getKeyFunction floatPattern
 
                 sortByFunction keyFunction lines
 
