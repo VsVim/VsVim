@@ -726,9 +726,33 @@ namespace Vim.UnitTest
             [WpfFact]
             public void Hexidecimal()
             {
-                Create("deadbeef", "0", "cdcd", "ff");
+                Create("deadbeef", "0", "0xcdcd", "ff");
                 RunCommand("sort x");
-                Assert.Equal(new[] { "0", "ff", "cdcd", "deadbeef" }, _textBuffer.GetLines());
+                Assert.Equal(new[] { "0", "ff", "0xcdcd", "deadbeef" }, _textBuffer.GetLines());
+            }
+
+            [WpfFact]
+            public void Octal()
+            {
+                Create("0777", "0", "0664", "5");
+                RunCommand("sort o");
+                Assert.Equal(new[] { "0", "5", "0664", "0777" }, _textBuffer.GetLines());
+            }
+
+            [WpfFact]
+            public void Binary()
+            {
+                Create("111", "0", "10", "1");
+                RunCommand("sort b");
+                Assert.Equal(new[] { "0", "1", "10", "111" }, _textBuffer.GetLines());
+            }
+
+            [WpfFact]
+            public void Float()
+            {
+                Create("0.1234", "0", "99", "3.1415");
+                RunCommand("sort f");
+                Assert.Equal(new[] { "0", "0.1234", "3.1415", "99" }, _textBuffer.GetLines());
             }
         }
 
