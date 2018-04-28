@@ -659,6 +659,47 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class SortTest : CommandModeIntegrationTest
+        {
+            internal override void Create(params string[] lines)
+            {
+                base.Create(lines);
+                _vimBuffer.Vim.GlobalSettings.GlobalDefault = true;
+            }
+
+            [WpfFact]
+            public void None()
+            {
+                Create("cat", "bat", "dog");
+                RunCommand("sort");
+                Assert.Equal(new[] { "bat", "cat", "dog" }, _textBuffer.GetLines());
+            }
+
+            [WpfFact]
+            public void NoneReverseOrder()
+            {
+                Create("cat", "bat", "dog");
+                RunCommand("sort!");
+                Assert.Equal(new[] { "dog", "cat", "bat" }, _textBuffer.GetLines());
+            }
+
+            [WpfFact]
+            public void IgnoreCase()
+            {
+                Create("cat", "bat", "dog", "BAT");
+                RunCommand("sort i");
+                Assert.Equal(new[] { "bat", "BAT", "cat", "dog" }, _textBuffer.GetLines());
+            }
+
+            [WpfFact]
+            public void IgnoreCaseReverseOrder()
+            {
+                Create("cat", "bat", "dog", "BAT");
+                RunCommand("sort! i");
+                Assert.Equal(new[] { "dog", "cat", "bat", "BAT" }, _textBuffer.GetLines());
+            }
+        }
+
         public abstract class SubstituteTest : CommandModeIntegrationTest
         {
             public sealed class GlobalDefaultTest : SubstituteTest
