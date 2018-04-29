@@ -1052,7 +1052,10 @@ type internal CommonOperations
                     | "" -> defaultValue
                     | _ ->
                         try
-                            Convert.ToInt64(key, fromBase)
+                            if fromBase = 16 && key.StartsWith("-") then
+                                -Convert.ToInt64(key.Substring(1), 16)
+                            else
+                                Convert.ToInt64(key, fromBase)
                         with
                         | _ -> defaultValue
 

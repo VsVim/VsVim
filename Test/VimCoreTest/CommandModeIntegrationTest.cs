@@ -796,6 +796,14 @@ namespace Vim.UnitTest
             }
 
             [WpfFact]
+            public void HexidecimalNegativeNumbers()
+            {
+                Create("deadbeef", "0", "-0xcdcd", "ff");
+                RunCommand("sort x");
+                Assert.Equal(new[] { "-0xcdcd", "0", "ff", "deadbeef" }, _textBuffer.GetLines());
+            }
+
+            [WpfFact]
             public void Octal()
             {
                 Create("0777", "0", "0664", "5");
