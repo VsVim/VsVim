@@ -993,7 +993,8 @@ type internal CommonOperations
                         pattern
 
                 // Convert from vim regex syntax to native regex syntax.
-                match VimRegexFactory.Create pattern VimRegexOptions.Default with
+                let options = VimRegexFactory.CreateRegexOptions _globalSettings
+                match VimRegexFactory.Create pattern options with
                 | Some vimRegex -> Some vimRegex.Regex
                 | None -> None
 
