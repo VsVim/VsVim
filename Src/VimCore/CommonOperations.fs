@@ -1115,7 +1115,7 @@ type internal CommonOperations
                     if Util.IsFlagSet flags SortFlags.IgnoreCase then
                         projectLine >> toLower
                     else
-                        id
+                        projectLine
 
                 sortByFunction keyFunction lines
 
