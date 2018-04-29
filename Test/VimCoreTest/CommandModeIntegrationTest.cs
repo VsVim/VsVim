@@ -676,6 +676,22 @@ namespace Vim.UnitTest
             }
 
             [WpfFact]
+            public void NoneLineRange()
+            {
+                Create("xxx", "cat", "bat", "dog", "aaa");
+                RunCommand("2,4sort");
+                Assert.Equal(new[] { "xxx", "bat", "cat", "dog", "aaa" }, _textBuffer.GetLines());
+            }
+
+            [WpfFact]
+            public void NoneTrailingLineBreak()
+            {
+                Create("cat", "bat", "dog", "");
+                RunCommand("sort");
+                Assert.Equal(new[] { "bat", "cat", "dog", "" }, _textBuffer.GetLines());
+            }
+
+            [WpfFact]
             public void NoneReverseOrder()
             {
                 Create("cat", "bat", "dog");
@@ -748,6 +764,30 @@ namespace Vim.UnitTest
             }
 
             [WpfFact]
+            public void DecimalNegativeNumbers()
+            {
+                Create("99", "-1", "100", "-42");
+                RunCommand("sort n");
+                Assert.Equal(new[] { "-42", "-1", "99", "100" }, _textBuffer.GetLines());
+            }
+
+            [WpfFact]
+            public void DecimalMissingNumbers()
+            {
+                Create("cat", "1", "bat", "10", "2");
+                RunCommand("sort n");
+                Assert.Equal(new[] { "cat", "bat", "1", "2", "10" }, _textBuffer.GetLines());
+            }
+
+            [WpfFact]
+            public void DecimalLeadingCharacters()
+            {
+                Create("aaa 99", "bbb 1", "ccc 100", "ddd 42");
+                RunCommand("sort n");
+                Assert.Equal(new[] { "bbb 1", "ddd 42", "aaa 99", "ccc 100" }, _textBuffer.GetLines());
+            }
+
+            [WpfFact]
             public void Hexidecimal()
             {
                 Create("deadbeef", "0", "0xcdcd", "ff");
@@ -800,6 +840,30 @@ namespace Vim.UnitTest
             {
                 Create("xxx 0.1234", "xxx 0", "xxx 99", "xxx 3.1415");
                 RunCommand(@"sort/[0-9.]\+/fr");
+                Assert.Equal(new[] { "xxx 0", "xxx 0.1234", "xxx 3.1415", "xxx 99" }, _textBuffer.GetLines());
+            }
+
+            [WpfFact]
+            public void FloatProjectSkipMissingFinalDelimiter()
+            {
+                Create("xxx 0.1234", "xxx 0", "xxx 99", "xxx 3.1415");
+                RunCommand(@"sort f/...");
+                Assert.Equal(new[] { "xxx 0", "xxx 0.1234", "xxx 3.1415", "xxx 99" }, _textBuffer.GetLines());
+            }
+
+            [WpfFact]
+            public void FloatProjectMatchFlagsBeforeAndAfter()
+            {
+                Create("xxx 0.1234", "xxx 0", "xxx 99", "xxx 3.1415");
+                RunCommand(@"sort f/[0-9.]\+/r");
+                Assert.Equal(new[] { "xxx 0", "xxx 0.1234", "xxx 3.1415", "xxx 99" }, _textBuffer.GetLines());
+            }
+
+            [WpfFact]
+            public void FloatProjectMatchAlternateDelimiter()
+            {
+                Create("xxx 0.1234", "xxx 0", "xxx 99", "xxx 3.1415");
+                RunCommand(@"sort,[0-9.]\+,fr");
                 Assert.Equal(new[] { "xxx 0", "xxx 0.1234", "xxx 3.1415", "xxx 99" }, _textBuffer.GetLines());
             }
         }

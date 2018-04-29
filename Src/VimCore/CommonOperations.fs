@@ -1027,9 +1027,6 @@ type internal CommonOperations
                 // Project the line.
                 let line = projectLine line
 
-                // Trim whitespace from line.
-                let line = line.Trim()
-
                 // Extract key using key pattern.
                 let keyMatch = keyPattern.Match(line)
                 if keyMatch.Success then
@@ -1060,7 +1057,7 @@ type internal CommonOperations
 
                 // Precompile the regular expression.
                 let getKeyFunction (keyPattern: string) (fromBase: int) =
-                    parseInteger (new Regex(@"^" + keyPattern)) fromBase
+                    parseInteger (new Regex(keyPattern)) fromBase
 
                 // Given a text line, extract an integer key.
                 let keyFunction =
@@ -1091,7 +1088,7 @@ type internal CommonOperations
 
                 // Precompile the regular expression.
                 let getKeyFunction (keyPattern: string) =
-                    parseFloat (new Regex(@"^" + keyPattern))
+                    parseFloat (new Regex(keyPattern))
 
                 // Given a text line, extract a float key.
                 let floatPattern = @"[-+]?([0-9]*\.?[0-9]+|[0-9]+\.)([eE][-+]?[0-9]+)?"
