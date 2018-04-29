@@ -392,8 +392,12 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
                     }
                     break;
                 case Key.Left:
+                    // Ignore left arrow if at start position
+                    e.Handled = _margin.IsCaretAtStart();
+                    break;
                 case Key.Back:
-                    if (_margin.IsCaretAtStart())
+                    // Backspacing past the beginning aborts the command/search.
+                    if (_margin.CommandLineTextBox.Text.Length <= 1)
                     {
                         _vimBuffer.Process(KeyInputUtil.EscapeKey);
                         ChangeEditKind(EditKind.None);
