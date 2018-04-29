@@ -708,6 +708,14 @@ namespace Vim.UnitTest
             }
 
             [WpfFact]
+            public void ProjectSkipUnanchored()
+            {
+                Create("aaa cat", "bbb bat", "ccc dog", "ddd bear");
+                RunCommand(@"sort/ /");
+                Assert.Equal(new[] { "bbb bat", "ddd bear", "aaa cat", "ccc dog" }, _textBuffer.GetLines());
+            }
+
+            [WpfFact]
             public void ProjectMatch()
             {
                 Create("aaa cat", "bbb bat", "ccc dog", "ddd bear");

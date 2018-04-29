@@ -992,15 +992,6 @@ type internal CommonOperations
                     else
                         pattern
 
-                // Make sure the pattern is anchored if we are skipping the pattern.
-                let pattern =
-                    if Util.IsFlagSet flags SortFlags.MatchPattern then
-                        pattern
-                    else if pattern.StartsWith("^") then
-                        pattern
-                    else
-                        @"^" + pattern
-
                 // Convert from vim regex syntax to native regex syntax.
                 match VimRegexFactory.Create pattern VimRegexOptions.Default with
                 | Some vimRegex -> Some vimRegex.Regex
