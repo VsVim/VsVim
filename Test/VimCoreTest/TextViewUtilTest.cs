@@ -2,6 +2,7 @@
 using Vim.EditorHost;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
+using Microsoft.VisualStudio.Text.Formatting;
 using Moq;
 using Xunit;
 using Vim.UnitTest.Mock;
@@ -17,6 +18,7 @@ namespace Vim.UnitTest
             var factory = new MockRepository(MockBehavior.Strict);
             var caret = MockObjectFactory.CreateCaret(factory: factory);
             caret.Setup(x => x.EnsureVisible()).Verifiable();
+            caret.SetupGet(x => x.Position).Returns(new CaretPosition());
 
             var selection = MockObjectFactory.CreateSelection(factory: factory);
             selection.Setup(x => x.Clear()).Verifiable();
@@ -26,6 +28,11 @@ namespace Vim.UnitTest
                 selection: selection.Object,
                 caret: caret.Object,
                 factory: factory);
+
+            var line = factory.Create<ITextViewLine>();
+            line.SetupGet(x => x.VisibilityState).Returns(VisibilityState.FullyVisible).Verifiable();
+            textView.Setup(x => x.GetTextViewLineContainingBufferPosition(It.IsAny<SnapshotPoint>())).Returns(line.Object).Verifiable();
+
             var point = new VirtualSnapshotPoint(buffer.GetLine(0), 2);
             caret.Setup(x => x.MoveTo(point)).Returns(new CaretPosition()).Verifiable();
 

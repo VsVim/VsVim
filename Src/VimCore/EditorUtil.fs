@@ -1791,6 +1791,60 @@ module TextViewUtil =
         let caret = GetCaret textView
         caret.EnsureVisible()
 
+    /// Check whether and how we should scroll to put a point on-screen
+    let CheckScrollToPoint (textView : ITextView) point =
+
+        // Emulate how vim scrolls when moving off-screen.
+        let doScrollToPoint (textViewLines: ITextViewLineCollection) =
+
+            let pointLine = SnapshotPointUtil.GetContainingLine point
+            let pointLineNumber = pointLine.LineNumber
+            let firstVisibleLine = SnapshotPointUtil.GetContainingLine textViewLines.FirstVisibleLine.Start
+            let firstLineNumber = firstVisibleLine.LineNumber
+            let lastVisibleLine = SnapshotPointUtil.GetContainingLine textViewLines.LastVisibleLine.Start
+            let lastLineNumber = lastVisibleLine.LineNumber
+            let endLine = SnapshotUtil.GetLastLine textView.TextSnapshot
+            let endLineNumber = endLine.LineNumber
+            let scrollLimit = int(ceil(textView.ViewportHeight / textView.LineHeight / 2.0))
+            if pointLineNumber >= firstLineNumber - scrollLimit && pointLineNumber <= firstLineNumber then
+
+                // The point prececedes the top of the screen by
+                // less than half a screen. Scroll up.
+                let relativeTo = Editor.ViewRelativePosition.Top
+                textView.DisplayTextLineContainingBufferPosition(point, 0.0, relativeTo) |> ignore
+            elif pointLineNumber >= lastLineNumber && pointLineNumber <= lastLineNumber + scrollLimit then
+
+                // The point follows the bottom of the screen by
+                // less than half a screen. Scroll down.
+                let relativeTo = Editor.ViewRelativePosition.Bottom
+                textView.DisplayTextLineContainingBufferPosition(point, 0.0, relativeTo) |> ignore
+            elif pointLineNumber >= endLineNumber - scrollLimit && pointLineNumber <= endLineNumber then
+
+                // The point is less than half a screen from the
+                // bottom of the file. Scroll the bottom of the
+                // file to the bottom of the screen.
+                let relativeTo = Editor.ViewRelativePosition.Bottom
+                textView.DisplayTextLineContainingBufferPosition(endLine.EndIncludingLineBreak, 0.0, relativeTo) |> ignore
+            else
+
+                // Otherwise, position point in the middle of the screen.
+                let span = pointLine.ExtentIncludingLineBreak
+                let option = Editor.EnsureSpanVisibleOptions.AlwaysCenter
+                textView.ViewScroller.EnsureSpanVisible(span, option) |> ignore
+
+        // Be careful because using ITextViewLines can result in an exception.
+        try
+            let textViewLine = textView.GetTextViewLineContainingBufferPosition point
+            let onScreen = textViewLine.VisibilityState = Formatting.VisibilityState.FullyVisible
+            if not onScreen then
+
+                // The line the point is on is off-screen.
+                match GetTextViewLines textView with
+                | Some textViewLines -> doScrollToPoint textViewLines
+                | _ -> ()
+        with
+        | _ -> ()
+
     /// Clear out the selection
     let ClearSelection (textView: ITextView) =
         textView.Selection.Clear()
@@ -1800,6 +1854,8 @@ module TextViewUtil =
             ClearSelection textView
 
         if Util.IsFlagSet flags MoveCaretFlags.EnsureOnScreen then
+            let point = GetCaretPoint textView
+            CheckScrollToPoint textView point
             EnsureCaretOnScreen textView
 
     /// Move the caret to the given point
