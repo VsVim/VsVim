@@ -296,6 +296,17 @@ type internal InsertUtil
 
     member x.Insert text =
         if _editorOperations.InsertText(text) then
+
+            // Ensure that the current line has a linebreak.
+            let caretPoint = x.CaretPoint
+            let caretLine = x.CaretLine
+            if caretPoint.Position = caretLine.EndIncludingLineBreak.Position then
+                let newLine = EditUtil.NewLine _editorOptions
+                _editorOperations.InsertText(newLine) |> ignore
+                let point = SnapshotUtil.GetPoint _textBuffer.CurrentSnapshot caretPoint.Position
+                let caret = TextViewUtil.GetCaret _textView
+                caret.MoveTo(point) |> ignore
+
             CommandResult.Completed ModeSwitch.NoSwitch
         else
             CommandResult.Error
