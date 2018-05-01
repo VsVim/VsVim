@@ -59,6 +59,7 @@ module LocalSettingNames =
     let ShiftWidthName = "shiftwidth"
     let TabStopName = "tabstop"
     let QuoteEscapeName = "quoteescape"
+    let FixEndOfLine = "fixendofline"
 
 module WindowSettingNames =
 
@@ -499,6 +500,9 @@ and IVimLocalSettings =
 
     /// Which characters escape quotes for certain motion types
     abstract QuoteEscape: string with get, set
+
+    /// Whether or not to fix endofline
+    abstract FixEndOfLine: bool with get, set
 
     /// Is the provided NumberFormat supported by the current options
     abstract IsNumberFormatSupported: NumberFormat -> bool

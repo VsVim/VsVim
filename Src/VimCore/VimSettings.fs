@@ -481,6 +481,7 @@ type internal LocalSettings
             (ShiftWidthName, "sw", SettingValue.Number 8)
             (TabStopName, "ts", SettingValue.Number 8)
             (QuoteEscapeName, "qe", SettingValue.String @"\")
+            (FixEndOfLine, "fixeol", SettingValue.Toggle false)
         |]
 
     static let LocalSettingList = 
@@ -556,6 +557,9 @@ type internal LocalSettings
         member x.QuoteEscape
             with get() = _map.GetStringValue QuoteEscapeName
             and set value = _map.TrySetValue QuoteEscapeName (SettingValue.String value) |> ignore
+        member x.FixEndOfLine
+            with get() = _map.GetBoolValue FixEndOfLine
+            and set value = _map.TrySetValue FixEndOfLine (SettingValue.Toggle value) |> ignore
 
         member x.IsNumberFormatSupported numberFormat = x.IsNumberFormatSupported numberFormat
 
