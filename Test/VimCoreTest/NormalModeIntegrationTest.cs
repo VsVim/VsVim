@@ -2734,6 +2734,61 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class UndoTest : NormalModeIntegrationTest
+        {
+            /// <summary>
+            /// Undo of insert
+            /// </summary>
+            [WpfFact]
+            public void Undo_Insert()
+            {
+                Create("aaa bbb ccc");
+                _vimBuffer.ProcessNotation("1Gwiddd <Esc>");
+                Assert.Equal("aaa ddd bbb ccc", _textView.GetLine(0).GetText());
+                _vimBuffer.ProcessNotation("u");
+                Assert.Equal("aaa bbb ccc", _textView.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// Undo of insert with backspaces
+            /// </summary>
+            [WpfFact]
+            public void Undo_InsertWithBackspaces()
+            {
+                Create("aaa bbb ccc");
+                _vimBuffer.ProcessNotation("1Gwiddd<BS><BS>ef <Esc>");
+                Assert.Equal("aaa def bbb ccc", _textView.GetLine(0).GetText());
+                _vimBuffer.ProcessNotation("u");
+                Assert.Equal("aaa bbb ccc", _textView.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// Undo of change word
+            /// </summary>
+            [WpfFact]
+            public void Undo_ChangeWord()
+            {
+                Create("aaa bbb ccc");
+                _vimBuffer.ProcessNotation("1Gwcwddd<Esc>");
+                Assert.Equal("aaa ddd ccc", _textView.GetLine(0).GetText());
+                _vimBuffer.ProcessNotation("u");
+                Assert.Equal("aaa bbb ccc", _textView.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// Undo of change word with backspaces
+            /// </summary>
+            [WpfFact]
+            public void Undo_ChangeWordWithBackspaces()
+            {
+                Create("aaa bbb ccc");
+                _vimBuffer.ProcessNotation("1Gwcwddd<BS><BS>ef<Esc>");
+                Assert.Equal("aaa def ccc", _textView.GetLine(0).GetText());
+                _vimBuffer.ProcessNotation("u");
+                Assert.Equal("aaa bbb ccc", _textView.GetLine(0).GetText());
+            }
+        }
+
         public sealed class UndoLineTest : NormalModeIntegrationTest
         {
             /// <summary>
