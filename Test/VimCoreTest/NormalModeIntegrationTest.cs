@@ -555,10 +555,27 @@ namespace Vim.UnitTest
                 Assert.Equal(8, _textView.GetCaretPoint().Position);
             }
 
+            /// <summary>
+            /// Issuing 'G' in a buffer that ends with a linebreak should
+            /// go to the last line, i.e. the line that contains that linebreak
+            /// </summary>
             [WpfFact]
             public void LastLineWhenEmpty()
             {
                 Create("dog", "cat", "");
+                Assert.Equal(3, _textBuffer.CurrentSnapshot.LineCount);
+                _vimBuffer.Process("G");
+                Assert.Equal(_textBuffer.GetPointInLine(line: 1, column: 0), _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// Issuing 'G' in a buffer that does not end in a linebreak should
+            /// go to the last line, i.e. the line without a linebreak
+            /// </summary>
+            [WpfFact]
+            public void LastLineWhenNonempty()
+            {
+                Create("dog", "cat", "bat");
                 Assert.Equal(3, _textBuffer.CurrentSnapshot.LineCount);
                 _vimBuffer.Process("G");
                 Assert.Equal(_textBuffer.GetPointInLine(line: 2, column: 0), _textView.GetCaretPoint());
