@@ -1007,17 +1007,11 @@ type internal InsertMode
             | ModeArgument.InsertBlock (blockSpan, transaction) ->
                 Some transaction, InsertKind.Block blockSpan
             | ModeArgument.InsertWithCount count ->
-                if count > 1 then
-                    let transaction = _undoRedoOperations.CreateLinkedUndoTransactionWithFlags "Insert with count" LinkedUndoTransactionFlags.CanBeEmpty
-                    Some transaction, InsertKind.Repeat (count, false, TextChange.Insert StringUtil.Empty)
-                else
-                    None, InsertKind.Normal
+                let transaction = _undoRedoOperations.CreateLinkedUndoTransactionWithFlags "Insert with count" LinkedUndoTransactionFlags.CanBeEmpty
+                Some transaction, InsertKind.Repeat (count, false, TextChange.Insert StringUtil.Empty)
             | ModeArgument.InsertWithCountAndNewLine count ->
-                if count > 1 then
-                    let transaction = _undoRedoOperations.CreateLinkedUndoTransactionWithFlags "Insert with count and new line" LinkedUndoTransactionFlags.CanBeEmpty
-                    Some transaction, InsertKind.Repeat (count, true, TextChange.Insert StringUtil.Empty)
-                else
-                    None, InsertKind.Normal
+                let transaction = _undoRedoOperations.CreateLinkedUndoTransactionWithFlags "Insert with count and new line" LinkedUndoTransactionFlags.CanBeEmpty
+                Some transaction, InsertKind.Repeat (count, true, TextChange.Insert StringUtil.Empty)
             | ModeArgument.InsertWithTransaction transaction ->
                 Some transaction, InsertKind.Normal
             | _ -> 
