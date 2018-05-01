@@ -1000,27 +1000,30 @@ type internal InsertMode
         // text change
         _textChangeTracker.TrackCurrentChange <- true
 
-        // On enter we need to check the 'count' and possibly set up a transaction to 
-        // lump edits and their repeats together
+        // Set up transaction and kind of insert
         let transaction, insertKind =
             match arg with
             | ModeArgument.InsertBlock (blockSpan, transaction) ->
                 Some transaction, InsertKind.Block blockSpan
             | ModeArgument.InsertWithCount count ->
-                let transaction = _undoRedoOperations.CreateLinkedUndoTransactionWithFlags "Insert with count" LinkedUndoTransactionFlags.CanBeEmpty
-                Some transaction, InsertKind.Repeat (count, false, TextChange.Insert StringUtil.Empty)
+                if count > 1 then
+                    let transaction = _undoRedoOperations.CreateLinkedUndoTransactionWithFlags "Insert with count" LinkedUndoTransactionFlags.CanBeEmpty
+                    Some transaction, InsertKind.Repeat (count, false, TextChange.Insert StringUtil.Empty)
+                else
+                    let transaction = _undoRedoOperations.CreateLinkedUndoTransactionWithFlags "Insert" LinkedUndoTransactionFlags.CanBeEmpty
+                    Some transaction, InsertKind.Normal
             | ModeArgument.InsertWithCountAndNewLine count ->
-                let transaction = _undoRedoOperations.CreateLinkedUndoTransactionWithFlags "Insert with count and new line" LinkedUndoTransactionFlags.CanBeEmpty
-                Some transaction, InsertKind.Repeat (count, true, TextChange.Insert StringUtil.Empty)
+                if count > 1 then
+                    let transaction = _undoRedoOperations.CreateLinkedUndoTransactionWithFlags "Insert with count and new line" LinkedUndoTransactionFlags.CanBeEmpty
+                    Some transaction, InsertKind.Repeat (count, true, TextChange.Insert StringUtil.Empty)
+                else
+                    let transaction = _undoRedoOperations.CreateLinkedUndoTransactionWithFlags "Insert with new line" LinkedUndoTransactionFlags.CanBeEmpty
+                    Some transaction, InsertKind.Normal
             | ModeArgument.InsertWithTransaction transaction ->
                 Some transaction, InsertKind.Normal
             | _ -> 
-                if _isReplace then
-                    // Replace mode occurs under a transaction even if we are not repeating
-                    let transaction = _undoRedoOperations.CreateLinkedUndoTransactionWithFlags "Insert with transaction" LinkedUndoTransactionFlags.CanBeEmpty
-                    Some transaction, InsertKind.Normal
-                else
-                    None, InsertKind.Normal
+                let transaction = _undoRedoOperations.CreateLinkedUndoTransactionWithFlags "Insert with transaction" LinkedUndoTransactionFlags.CanBeEmpty
+                Some transaction, InsertKind.Normal
 
         // If the LastCommand coming into insert / replace mode is not setup for linking 
         // with the next change then clear it out now.  This is needed to implement functions
