@@ -122,7 +122,12 @@
     <Compile Include="AssemblyInfo.fs" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="FSharp.Core" Version="4.2.3" PrivateAssets="all" />
+    <PackageReference Include="FSharp.Core" Version="4.2.3">
+      <!-- Using element form vs. attributes to work around NuGet restore bug
+           https://github.com/NuGet/Home/issues/6367 
+           https://github.com/dotnet/project-system/issues/3493 -->
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
     <Reference Include="Microsoft.VisualStudio.CoreUtility, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
     <Reference Include="Microsoft.VisualStudio.Text.Data, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
     <Reference Include="Microsoft.VisualStudio.Text.Logic, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
