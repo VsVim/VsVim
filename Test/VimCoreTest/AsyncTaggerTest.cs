@@ -900,6 +900,7 @@ namespace Vim.UnitTest
                     Assert.Equal(tokenSource, _asyncTagger.AsyncBackgroundRequestData.Value.CancellationTokenSource);
                 }
 
+                _asyncTagger.AsyncBackgroundRequestData.Value.Task.Wait();
                 TestableSynchronizationContext.RunAll();
             }
         }
