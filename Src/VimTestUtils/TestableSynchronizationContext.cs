@@ -99,12 +99,12 @@ namespace Vim.UnitTest
         {
             if (!_isSet)
             {
-                throw new InvalidOperationException();
+                throw new InvalidOperationException("Not installed");
             }
 
             if (PostedCallbackCount > 0)
             {
-                throw new InvalidOperationException();
+                throw new InvalidOperationException($"Cannot uninstall because {nameof(PostedCallbackCount)} is {PostedCallbackCount}");
             }
 
             CheckDisposed();
