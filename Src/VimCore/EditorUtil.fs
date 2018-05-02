@@ -463,19 +463,17 @@ module SnapshotUtil =
     /// Get the first line in the snapshot
     let GetFirstLine tss = GetLine tss 0
 
-    let GetLastLineNumber (tss:ITextSnapshot) =
-        let lineNumber = tss.LineCount - 1 
-        let line = tss.GetLineFromLineNumber lineNumber
-        if lineNumber > 0 && line.Length = 0 then
-            lineNumber - 1
-        else
-            lineNumber
+    /// Whether the snapshot ends with a linebreak
+    let EndsWithLineBreak (snapshot: ITextSnapshot) = 
+        let lineNumber = snapshot.LineCount - 1 
+        lineNumber > 0 && snapshot.GetLineFromLineNumber(lineNumber).Length = 0
 
-    /// Get the last line in the ITextSnapshot.  Avoid pulling the entire buffer into memory
-    /// slowly by using the index
-    let GetLastLine (tss:ITextSnapshot) =
-        let lastLineNumber = GetLastLineNumber tss
-        GetLine tss lastLineNumber
+    /// Get the last line number of the snapshot
+    let GetLastLineNumber snapshot =
+        if EndsWithLineBreak snapshot then snapshot.LineCount - 2 else snapshot.LineCount - 1
+
+    /// Get the last line of the snapshot
+    let GetLastLine snapshot = GetLastLineNumber snapshot |> GetLine snapshot
 
     /// Get the end point of the snapshot
     let GetEndPoint (tss:ITextSnapshot) = SnapshotPoint(tss, tss.Length)
