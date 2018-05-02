@@ -331,14 +331,25 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
-            /// Make sure we can move to the empty last line with the 'j' command
+            /// Make sure we can move to the last line with the 'j' command
             /// </summary>
             [WpfFact]
-            public void DownToEmptyLastLine()
+            public void DownToLastLine()
+            {
+                Create("a", "b", "c");
+                _vimBuffer.Process("jj");
+                Assert.Equal(2, _textView.GetCaretLine().LineNumber);
+            }
+
+            /// <summary>
+            /// Make sure we can't move to the empty last line with the 'j' command
+            /// </summary>
+            [WpfFact]
+            public void DownTowardsEmptyLastLine()
             {
                 Create("a", "b", "");
                 _vimBuffer.Process("jj");
-                Assert.Equal(2, _textView.GetCaretLine().LineNumber);
+                Assert.Equal(1, _textView.GetCaretLine().LineNumber);
             }
 
             [WpfFact]
@@ -6865,6 +6876,15 @@ namespace Vim.UnitTest
                 _vimBuffer.Process("dd");
                 Assert.Equal("foo", _textView.TextSnapshot.GetText());
                 Assert.Equal(1, _textView.TextSnapshot.LineCount);
+            }
+
+            [WpfFact]
+            public void DeleteLines_OnLastNonEmptyLine()
+            {
+                Create("foo", "bar", "");
+                _textView.MoveCaretTo(_textView.GetLine(1).Start);
+                _vimBuffer.Process("dd");
+                Assert.Equal(new[] { "foo", "" }, _textBuffer.GetLines());
             }
 
             /// <summary>

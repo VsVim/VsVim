@@ -1188,10 +1188,6 @@ type Parser
         | _ ->
             LineCommand.ParseError Resources.Parser_Error
 
-    /// Parse out the :$ command
-    member x.ParseJumpToLastLine() =
-        ParseResult.Succeeded (LineCommand.JumpToLastLine)
-
     /// Parse a {pattern} out of the text.  The text will be consumed until the unescaped value 
     /// 'delimiter' is provided or the end of the input is reached.  The method will return a tuple
     /// of the pattern and a bool.  The bool will represent whether or not the delimiter was found.

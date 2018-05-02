@@ -451,12 +451,6 @@ type SnapshotOverlapSpan =
 /// include any Vim specific logic
 module SnapshotUtil = 
 
-    /// Get the last line in the ITextSnapshot.  Avoid pulling the entire buffer into memory
-    /// slowly by using the index
-    let GetLastLine (tss:ITextSnapshot) =
-        let lastIndex = tss.LineCount - 1
-        tss.GetLineFromLineNumber(lastIndex)   
-
     /// Get the line for the specified number
     let GetLine (tss:ITextSnapshot) lineNumber = tss.GetLineFromLineNumber lineNumber
 
@@ -469,7 +463,19 @@ module SnapshotUtil =
     /// Get the first line in the snapshot
     let GetFirstLine tss = GetLine tss 0
 
-    let GetLastLineNumber (tss:ITextSnapshot) = tss.LineCount - 1 
+    let GetLastLineNumber (tss:ITextSnapshot) =
+        let lineNumber = tss.LineCount - 1 
+        let line = tss.GetLineFromLineNumber lineNumber
+        if lineNumber > 0 && line.Length = 0 then
+            lineNumber - 1
+        else
+            lineNumber
+
+    /// Get the last line in the ITextSnapshot.  Avoid pulling the entire buffer into memory
+    /// slowly by using the index
+    let GetLastLine (tss:ITextSnapshot) =
+        let lastLineNumber = GetLastLineNumber tss
+        GetLine tss lastLineNumber
 
     /// Get the end point of the snapshot
     let GetEndPoint (tss:ITextSnapshot) = SnapshotPoint(tss, tss.Length)
@@ -487,7 +493,9 @@ module SnapshotUtil =
     let GetText (snapshot:ITextSnapshot) = snapshot.GetText()
 
     /// Is the Line Number valid
-    let IsLineNumberValid (tss:ITextSnapshot) lineNumber = lineNumber >= 0 && lineNumber < tss.LineCount
+    let IsLineNumberValid (tss:ITextSnapshot) lineNumber =
+        let lastLineNumber = GetLastLineNumber tss
+        lineNumber >= 0 && lineNumber <= lastLineNumber
 
     /// Is the Span valid in this ITextSnapshot
     let IsSpanValid (tss:ITextSnapshot) (span:Span) = 

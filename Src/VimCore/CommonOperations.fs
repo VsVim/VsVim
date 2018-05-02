@@ -139,7 +139,7 @@ type internal CommonOperations
             let line = 
                 // If this is the last line there is no line break.  Use the line above
                 let snapshot = point.Snapshot
-                if line.LineNumber = SnapshotUtil.GetLastLineNumber snapshot && line.LineNumber > 0 then
+                if line.LineBreakLength = 0 && line.LineNumber > 0 then
                     SnapshotUtil.GetLine snapshot (line.LineNumber - 1)
                 else
                     line
@@ -414,7 +414,8 @@ type internal CommonOperations
             // This cannot be normalized by always deleting the line break from the previous line because
             // it would still break for the first line.  This is an unfortunate special case we must 
             // deal with
-            let includesLastLine = range.LastLineNumber = SnapshotUtil.GetLastLineNumber x.CurrentSnapshot
+            let lastLine = SnapshotUtil.GetLastLine x.CurrentSnapshot
+            let includesLastLine = range.LastLineNumber = lastLine.LineNumber && lastLine.LineBreakLength = 0
             if includesLastLine && range.StartLineNumber > 0 then
                 let aboveLine = SnapshotUtil.GetLine x.CurrentSnapshot (range.StartLineNumber - 1)
                 let span = SnapshotSpan(aboveLine.End, range.EndIncludingLineBreak)
