@@ -168,6 +168,7 @@ type Parser
         ("registers", "reg")
         ("retab", "ret")
         ("set", "se")
+        ("sort", "sor")
         ("source","so")
         ("split", "sp")
         ("substitute", "s")
@@ -664,6 +665,39 @@ type Parser
             name
         else
             None
+
+    /// Used to parse out the flags for the sort commands
+    member x.ParseSortFlags () =
+
+        // Get the string which we are parsing for flags
+        let flagString = x.ParseWhile (fun token -> 
+            match token.TokenKind with
+            | TokenKind.Word _ -> true
+            | _ -> false)
+        let flagString = OptionUtil.getOrDefault "" flagString
+
+        let mutable parseResult: ParseResult<SortFlags> option = None
+        let mutable flags = SortFlags.None
+        let mutable index = 0
+        while index < flagString.Length && Option.isNone parseResult do
+            match flagString.[index] with
+            | 'i' -> flags <- flags ||| SortFlags.IgnoreCase
+            | 'n' -> flags <- flags ||| SortFlags.Decimal
+            | 'f' -> flags <- flags ||| SortFlags.Float
+            | 'x' -> flags <- flags ||| SortFlags.Hexidecimal
+            | 'o' -> flags <- flags ||| SortFlags.Octal
+            | 'b' -> flags <- flags ||| SortFlags.Binary
+            | 'u' -> flags <- flags ||| SortFlags.Unique
+            | 'r' -> flags <- flags ||| SortFlags.MatchPattern
+            | _  -> 
+                // Illegal character in the flags string 
+                parseResult <- ParseResult.Failed Resources.CommandMode_TrailingCharacters |> Some
+
+            index <- index + 1
+
+        match parseResult with
+        | None -> ParseResult.Succeeded flags
+        | Some p -> p
 
     /// Used to parse out the flags for substitute commands.  Will not modify the 
     /// stream if there are no flags
@@ -1958,6 +1992,39 @@ type Parser
 
         parseOption (fun x -> x)
 
+    /// Parse out the :sort command
+    member x.ParseSort lineRange =
+
+        // Whether this valid as a sort string delimiter
+        let isValidDelimiter c =
+            let isBad = CharUtil.IsLetter c
+            not isBad
+
+        let hasBang = x.ParseBang()
+        x.SkipBlanks()
+        match x.ParseSortFlags() with
+        | ParseResult.Failed message -> LineCommand.ParseError message
+        | ParseResult.Succeeded flags ->
+            x.SkipBlanks()
+            match _tokenizer.CurrentTokenKind with
+            | TokenKind.Character delimiter ->
+                if isValidDelimiter delimiter then
+                    _tokenizer.MoveNextToken()
+                    let pattern, foundDelimiter = x.ParsePattern delimiter
+                    if not foundDelimiter then
+                        LineCommand.Sort (lineRange, hasBang, flags, Some pattern)
+                    else
+                        x.SkipBlanks()
+                        match x.ParseSortFlags() with
+                        | ParseResult.Failed message -> LineCommand.ParseError message
+                        | ParseResult.Succeeded moreFlags ->
+                            let flags = flags ||| moreFlags
+                            LineCommand.Sort (lineRange, hasBang, flags, Some pattern)
+                else
+                    LineCommand.Sort (lineRange, hasBang, flags, None)
+            | _ ->
+                LineCommand.Sort (lineRange, hasBang, flags, None)
+
     /// Parse out the :source command.  It can have an optional '!' following it then a file
     /// name 
     member x.ParseSource() =
@@ -2143,6 +2210,7 @@ type Parser
                 | "retab" -> x.ParseRetab lineRange
                 | "registers" -> noRange x.ParseDisplayRegisters 
                 | "set" -> noRange x.ParseSet
+                | "sort" -> x.ParseSort lineRange
                 | "source" -> noRange x.ParseSource
                 | "split" -> x.ParseSplit LineCommand.HorizontalSplit lineRange
                 | "substitute" -> x.ParseSubstitute lineRange (fun x -> x)

@@ -659,6 +659,223 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class SortTest : CommandModeIntegrationTest
+        {
+            internal override void Create(params string[] lines)
+            {
+                base.Create(lines);
+                _vimBuffer.Vim.GlobalSettings.GlobalDefault = true;
+            }
+
+            [WpfFact]
+            public void None()
+            {
+                Create("cat", "bat", "dog");
+                RunCommand("sort");
+                Assert.Equal(new[] { "bat", "cat", "dog" }, _textBuffer.GetLines());
+            }
+
+            [WpfFact]
+            public void NoneLineRange()
+            {
+                Create("xxx", "cat", "bat", "dog", "aaa");
+                RunCommand("2,4sort");
+                Assert.Equal(new[] { "xxx", "bat", "cat", "dog", "aaa" }, _textBuffer.GetLines());
+            }
+
+            [WpfFact]
+            public void NoneTrailingLineBreak()
+            {
+                Create("cat", "bat", "dog", "");
+                RunCommand("sort");
+                Assert.Equal(new[] { "bat", "cat", "dog", "" }, _textBuffer.GetLines());
+            }
+
+            [WpfFact]
+            public void NoneReverseOrder()
+            {
+                Create("cat", "bat", "dog");
+                RunCommand("sort!");
+                Assert.Equal(new[] { "dog", "cat", "bat" }, _textBuffer.GetLines());
+            }
+
+            [WpfFact]
+            public void IgnoreCase()
+            {
+                Create("cat", "bat", "dog", "BAT");
+                RunCommand("sort i");
+                Assert.Equal(new[] { "bat", "BAT", "cat", "dog" }, _textBuffer.GetLines());
+            }
+
+            [WpfFact]
+            public void IgnoreCaseReverseOrder()
+            {
+                Create("cat", "bat", "dog", "BAT");
+                RunCommand("sort! i");
+                Assert.Equal(new[] { "dog", "cat", "bat", "BAT" }, _textBuffer.GetLines());
+            }
+
+            [WpfFact]
+            public void ProjectSkip()
+            {
+                Create("aaa cat", "bbb bat", "ccc dog", "ddd bear");
+                RunCommand(@"sort/.../");
+                Assert.Equal(new[] { "bbb bat", "ddd bear", "aaa cat", "ccc dog" }, _textBuffer.GetLines());
+            }
+
+            [WpfFact]
+            public void ProjectSkipUnanchored()
+            {
+                Create("aaa cat", "bbb bat", "ccc dog", "ddd bear");
+                RunCommand(@"sort/ /");
+                Assert.Equal(new[] { "bbb bat", "ddd bear", "aaa cat", "ccc dog" }, _textBuffer.GetLines());
+            }
+
+            [WpfFact]
+            public void ProjectMatch()
+            {
+                Create("aaa cat", "bbb bat", "ccc dog", "ddd bear");
+                RunCommand(@"sort/ [a-z]\+/r");
+                Assert.Equal(new[] { "bbb bat", "ddd bear", "aaa cat", "ccc dog" }, _textBuffer.GetLines());
+            }
+
+            [WpfFact]
+            public void Unique()
+            {
+                Create("cat", "bat", "dog", "cat");
+                RunCommand("sort u");
+                Assert.Equal(new[] { "bat", "cat", "dog" }, _textBuffer.GetLines());
+            }
+
+            [WpfFact]
+            public void UniqueIgnoreCase()
+            {
+                Create("CAT", "bat", "dog", "cat");
+                RunCommand("sort ui");
+                Assert.Equal(new[] { "bat", "CAT", "dog" }, _textBuffer.GetLines());
+            }
+
+            [WpfFact]
+            public void Decimal()
+            {
+                Create("99", "1", "100", "42");
+                RunCommand("sort n");
+                Assert.Equal(new[] { "1", "42", "99", "100" }, _textBuffer.GetLines());
+            }
+
+            [WpfFact]
+            public void DecimalNegativeNumbers()
+            {
+                Create("99", "-1", "100", "-42");
+                RunCommand("sort n");
+                Assert.Equal(new[] { "-42", "-1", "99", "100" }, _textBuffer.GetLines());
+            }
+
+            [WpfFact]
+            public void DecimalMissingNumbers()
+            {
+                Create("cat", "1", "bat", "10", "2");
+                RunCommand("sort n");
+                Assert.Equal(new[] { "cat", "bat", "1", "2", "10" }, _textBuffer.GetLines());
+            }
+
+            [WpfFact]
+            public void DecimalLeadingCharacters()
+            {
+                Create("aaa 99", "bbb 1", "ccc 100", "ddd 42");
+                RunCommand("sort n");
+                Assert.Equal(new[] { "bbb 1", "ddd 42", "aaa 99", "ccc 100" }, _textBuffer.GetLines());
+            }
+
+            [WpfFact]
+            public void Hexidecimal()
+            {
+                Create("deadbeef", "0", "0xcdcd", "ff");
+                RunCommand("sort x");
+                Assert.Equal(new[] { "0", "ff", "0xcdcd", "deadbeef" }, _textBuffer.GetLines());
+            }
+
+            [WpfFact]
+            public void HexidecimalNegativeNumbers()
+            {
+                Create("deadbeef", "0", "-0xcdcd", "ff");
+                RunCommand("sort x");
+                Assert.Equal(new[] { "-0xcdcd", "0", "ff", "deadbeef" }, _textBuffer.GetLines());
+            }
+
+            [WpfFact]
+            public void Octal()
+            {
+                Create("0777", "0", "0664", "5");
+                RunCommand("sort o");
+                Assert.Equal(new[] { "0", "5", "0664", "0777" }, _textBuffer.GetLines());
+            }
+
+            [WpfFact]
+            public void Binary()
+            {
+                Create("111", "0", "10", "1");
+                RunCommand("sort b");
+                Assert.Equal(new[] { "0", "1", "10", "111" }, _textBuffer.GetLines());
+            }
+
+            [WpfFact]
+            public void Float()
+            {
+                Create("0.1234", "0", "99", "3.1415");
+                RunCommand("sort f");
+                Assert.Equal(new[] { "0", "0.1234", "3.1415", "99" }, _textBuffer.GetLines());
+            }
+
+            [WpfFact]
+            public void FloatTwoFields()
+            {
+                Create("0.1234 xxx", "0 xxx", "99 xxx", "3.1415 xxx");
+                RunCommand("sort f");
+                Assert.Equal(new[] { "0 xxx", "0.1234 xxx", "3.1415 xxx", "99 xxx" }, _textBuffer.GetLines());
+            }
+
+            [WpfFact]
+            public void FloatProjectSkip()
+            {
+                Create("xxx 0.1234", "xxx 0", "xxx 99", "xxx 3.1415");
+                RunCommand(@"sort/.../f");
+                Assert.Equal(new[] { "xxx 0", "xxx 0.1234", "xxx 3.1415", "xxx 99" }, _textBuffer.GetLines());
+            }
+
+            [WpfFact]
+            public void FloatProjectMatch()
+            {
+                Create("xxx 0.1234", "xxx 0", "xxx 99", "xxx 3.1415");
+                RunCommand(@"sort/[0-9.]\+/fr");
+                Assert.Equal(new[] { "xxx 0", "xxx 0.1234", "xxx 3.1415", "xxx 99" }, _textBuffer.GetLines());
+            }
+
+            [WpfFact]
+            public void FloatProjectSkipMissingFinalDelimiter()
+            {
+                Create("xxx 0.1234", "xxx 0", "xxx 99", "xxx 3.1415");
+                RunCommand(@"sort f/...");
+                Assert.Equal(new[] { "xxx 0", "xxx 0.1234", "xxx 3.1415", "xxx 99" }, _textBuffer.GetLines());
+            }
+
+            [WpfFact]
+            public void FloatProjectMatchFlagsBeforeAndAfter()
+            {
+                Create("xxx 0.1234", "xxx 0", "xxx 99", "xxx 3.1415");
+                RunCommand(@"sort f/[0-9.]\+/r");
+                Assert.Equal(new[] { "xxx 0", "xxx 0.1234", "xxx 3.1415", "xxx 99" }, _textBuffer.GetLines());
+            }
+
+            [WpfFact]
+            public void FloatProjectMatchAlternateDelimiter()
+            {
+                Create("xxx 0.1234", "xxx 0", "xxx 99", "xxx 3.1415");
+                RunCommand(@"sort,[0-9.]\+,fr");
+                Assert.Equal(new[] { "xxx 0", "xxx 0.1234", "xxx 3.1415", "xxx 99" }, _textBuffer.GetLines());
+            }
+        }
+
         public abstract class SubstituteTest : CommandModeIntegrationTest
         {
             public sealed class GlobalDefaultTest : SubstituteTest

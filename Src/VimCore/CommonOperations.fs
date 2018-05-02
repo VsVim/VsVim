@@ -971,6 +971,168 @@ type internal CommonOperations
 
         edit.Apply() |> ignore
 
+    /// Sort the given line range
+    member x.SortLines (range: SnapshotLineRange) reverseOrder flags (pattern: string option) =
+
+        // Extract the lines to be sorted.
+        let lines = range.Lines |> Seq.map SnapshotLineUtil.GetText
+
+        // Convert a line to lowercase.
+        let toLower (line: string) = line.ToLower()
+
+        // Compile sort pattern.
+        let pattern =
+            match pattern with
+            | Some pattern ->
+
+                // If the pattern is empty, use the last search pattern instead.
+                let pattern = 
+                    if pattern = "" then 
+                        _vimData.LastSearchData.Pattern
+                    else
+                        pattern
+
+                // Convert from vim regex syntax to native regex syntax.
+                let options = VimRegexFactory.CreateRegexOptions _globalSettings
+                match VimRegexFactory.Create pattern options with
+                | Some vimRegex -> Some vimRegex.Regex
+                | None -> None
+
+            | None -> None
+
+        // Sort the lines.
+        let sortedLines =
+
+            // Define a sort by function that handles reverse ordering.
+            let sortByFunction (keyFunction: (string -> 'Key)) =
+                (if reverseOrder then Seq.sortByDescending else Seq.sortBy) keyFunction
+
+            // Project line using sort pattern.
+            let projectLine (line: string) =
+                match pattern with
+                | Some pattern ->
+                    let patternMatch = pattern.Match(line)
+                    if patternMatch.Success then
+                        let capture = patternMatch.Captures.[0]
+                        if Util.IsFlagSet flags SortFlags.MatchPattern then
+                            capture.ToString()
+                        else
+                            line.Substring(capture.Index + capture.Length)
+                    else
+                        ""
+                | None -> line
+
+            // Extract a key using a regular expression.
+            let extractKey (keyPattern: Regex) (line: string) =
+
+                // Project the line.
+                let line = projectLine line
+
+                // Extract key using key pattern.
+                let keyMatch = keyPattern.Match(line)
+                if keyMatch.Success then
+                    keyMatch.Captures.[0].ToString()
+                else
+                    ""
+
+            // Handle numeric or textual sorting.
+            let anyInteger = (
+                SortFlags.Decimal |||
+                SortFlags.Hexidecimal |||
+                SortFlags.Octal |||
+                SortFlags.Binary
+            )
+            if Util.IsFlagSet flags anyInteger then
+
+                // Define a function to convert a string to an integer.
+                let parseInteger (keyPattern: Regex) (fromBase: int) (line: string) =
+                    let defaultValue = System.Int64.MinValue
+                    let key = extractKey keyPattern line
+                    match key with
+                    | "" -> defaultValue
+                    | _ ->
+                        try
+                            if fromBase = 16 && key.StartsWith("-") then
+                                -Convert.ToInt64(key.Substring(1), 16)
+                            else
+                                Convert.ToInt64(key, fromBase)
+                        with
+                        | _ -> defaultValue
+
+                // Precompile the regular expression.
+                let getKeyFunction (keyPattern: string) (fromBase: int) =
+                    parseInteger (new Regex(keyPattern)) fromBase
+
+                // Given a text line, extract an integer key.
+                let keyFunction =
+                    if Util.IsFlagSet flags SortFlags.Decimal then
+                        getKeyFunction @"-?[0-9]+" 10
+                    else if Util.IsFlagSet flags SortFlags.Hexidecimal then
+                        getKeyFunction @"-?(0[xX])?[0-9a-fA-F]+" 16
+                    else if Util.IsFlagSet flags SortFlags.Octal then
+                        getKeyFunction @"[0-7]+" 8
+                    else
+                        getKeyFunction @"[0-1]+" 2
+
+                sortByFunction keyFunction lines
+
+            else if Util.IsFlagSet flags SortFlags.Float then
+
+                // Define a function to convert a string to a float.
+                let parseFloat (keyPattern: Regex) (line: string) =
+                    let defaultValue = Double.MinValue
+                    let key = extractKey keyPattern line
+                    match key with
+                    | "" -> defaultValue
+                    | _ ->
+                        try
+                            Convert.ToDouble(key)
+                        with
+                        | _ -> defaultValue
+
+                // Precompile the regular expression.
+                let getKeyFunction (keyPattern: string) =
+                    parseFloat (new Regex(keyPattern))
+
+                // Given a text line, extract a float key.
+                let floatPattern = @"[-+]?([0-9]*\.?[0-9]+|[0-9]+\.)([eE][-+]?[0-9]+)?"
+                let keyFunction = getKeyFunction floatPattern
+
+                sortByFunction keyFunction lines
+
+            else
+
+                // Given a text line, extract a text key.
+                let keyFunction =
+                    if Util.IsFlagSet flags SortFlags.IgnoreCase then
+                        projectLine >> toLower
+                    else
+                        projectLine
+
+                sortByFunction keyFunction lines
+
+        // Optionally filter out duplicates.
+        let sortedLines =
+            if Util.IsFlagSet flags SortFlags.Unique then
+                if Util.IsFlagSet flags SortFlags.IgnoreCase then
+                    sortedLines |> Seq.distinctBy toLower
+                else
+                    sortedLines |> Seq.distinct
+            else
+                sortedLines
+
+        // Concatenate the sorted lines.
+        let newLine = EditUtil.NewLine _editorOptions
+        let replacement = sortedLines |> String.concat newLine
+
+        // Replace the old lines with the sorted lines.
+        _textBuffer.Replace(range.Extent.Span, replacement) |> ignore
+
+        // Place the cursor on the first non-blank character of the first line sorted.
+        let firstLine = SnapshotUtil.GetLine _textView.TextSnapshot range.StartLineNumber
+        TextViewUtil.MoveCaretToPoint _textView firstLine.Start
+        _editorOperations.MoveToStartOfLineAfterWhiteSpace(false)
+
     member x.Substitute pattern replace (range: SnapshotLineRange) flags = 
 
         /// Actually do the replace with the given regex
@@ -1440,6 +1602,7 @@ type internal CommonOperations
         member x.ShiftLineBlockRight col multiplier = x.ShiftLineBlockRight col multiplier
         member x.ShiftLineRangeLeft range multiplier = x.ShiftLineRangeLeft range multiplier
         member x.ShiftLineRangeRight range multiplier = x.ShiftLineRangeRight range multiplier
+        member x.SortLines range reverseOrder flags pattern = x.SortLines range reverseOrder flags pattern
         member x.Substitute pattern replace range flags = x.Substitute pattern replace range flags
         member x.Undo count = x.Undo count
 
