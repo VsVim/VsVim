@@ -160,6 +160,15 @@ type internal CommonOperations
             _textBuffer.Insert(x.CaretPoint.Position, blanks) |> ignore
             TextViewUtil.MoveCaretToPosition _textView position
 
+    /// Format the specified line range
+    member x.FormatLines range =
+        _vimHost.FormatLines _textView range
+
+        // Place the cursor on the first non-blank character of the first line formatted.
+        let firstLine = SnapshotUtil.GetLine _textView.TextSnapshot range.StartLineNumber
+        TextViewUtil.MoveCaretToPoint _textView firstLine.Start
+        _editorOperations.MoveToStartOfLineAfterWhiteSpace(false)
+
     /// The caret sometimes needs to be adjusted after an Up or Down movement.  Caret position
     /// and virtual space is actually quite a predicament for VsVim because of how Vim standard 
     /// works.  Vim has no concept of Virtual Space and is designed to work in a fixed width
@@ -1568,7 +1577,7 @@ type internal CommonOperations
         member x.EnsureAtCaret viewFlags = x.EnsureAtPoint x.CaretPoint viewFlags
         member x.EnsureAtPoint point viewFlags = x.EnsureAtPoint point viewFlags
         member x.FillInVirtualSpace() = x.FillInVirtualSpace()
-        member x.FormatLines range = _vimHost.FormatLines _textView range
+        member x.FormatLines range = x.FormatLines range
         member x.GetRegister registerName = x.GetRegister registerName
         member x.GetNewLineText point = x.GetNewLineText point
         member x.GetNewLineIndent contextLine newLine = x.GetNewLineIndent contextLine newLine
