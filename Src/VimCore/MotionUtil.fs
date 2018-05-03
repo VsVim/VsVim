@@ -2257,14 +2257,7 @@ type internal MotionUtil
                 let lineCount = snapshot.LineCount 
                 let lineNumber = x.CaretLine.LineNumber + count
                 let lastLine = SnapshotUtil.GetLineOrLast snapshot lineNumber
-                let flags = 
-                    let flags = MotionResultFlags.MaintainCaretColumn
-                    if lastLine.LineNumber + 1 = lineCount then
-                        // Make sure to note we wanted to include the last line if it's 
-                        // empty
-                        MotionResultFlags.IncludeEmptyLastLine ||| flags
-                    else
-                        flags
+                let flags = MotionResultFlags.MaintainCaretColumn
                 let span = SnapshotSpan(x.CaretLine.Start, lastLine.EndIncludingLineBreak)
                 let column = x.CaretPoint |> SnapshotPointUtil.GetColumn |> CaretColumn.InLastLine
                 MotionResult.CreateExEx span true MotionKind.LineWise flags column |> Some)
