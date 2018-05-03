@@ -6,7 +6,7 @@
 
   <Commands package="guidVsVimPkg">
     <Groups>
-      <Group guid="guidVsVimCmdSet" id="VsVimMenuGroup" priority="0x0600">
+      <Group guid="guidVsVimMenuCmdSet" id="VsVimMenuGroupAlt" priority="0x0600">
         <Parent guid="guidSHLMainMenu" id="IDM_VS_MENU_TOOLS" />
       </Group>
     </Groups>
@@ -89,11 +89,26 @@
           <LocCanonicalName>.VsVim.SetMode</LocCanonicalName>
         </Strings>
       </Button>
+
+      <Button guid="guidVsVimMenuCmdSet" id="cmdidVsVimEnabled" priority="0x0100" type="Button">
+        <Parent guid="guidVsVimMenuCmdSet" id="VsVimMenuGroupAlt" />
+        <Strings>
+          <CommandName>cmdidVsVimEnabled</CommandName>
+          <ButtonText>Help find me</ButtonText>
+        </Strings>
+      </Button>
+
+      <Button guid="guidVsVimMenuCmdSet" id="cmdidVsVimEnabled2" priority="0x0100" type="Button">
+        <Parent guid="guidVsVimMenuCmdSet" id="VsVimMenuGroupAlt" />
+        <Strings>
+          <CommandName>cmdidVsVimEnabled</CommandName>
+          <ButtonText>Another item</ButtonText>
+        </Strings>
+      </Button>
     </Buttons>
 
     <Bitmaps>
       <Bitmap guid="guidImages" href="Resources\Images_32bit.bmp" usedList="bmpPic1, bmpPic2, bmpPicSearch, bmpPicX, bmpPicArrows" />
-
     </Bitmaps>
  
   </Commands>
@@ -112,6 +127,12 @@
       <IDSymbol name="cmdidVsVimSetEnabled" value="0x0104" />
       <IDSymbol name="cmdidVsVimSetDisabled" value="0x0105" />
       <IDSymbol name="cmdidVsVimSetMode" value="0x0106" />
+    </GuidSymbol>
+
+    <GuidSymbol name="guidVsVimMenuCmdSet" value="{01eccaa3-c309-4bb2-bce7-8e7f783c56ab}">
+      <IDSymbol name="VsVimMenuGroupAlt" value="0x1020" />
+      <IDSymbol name="cmdidVsVimEnabled" value="0x0100" />
+      <IDSymbol name="cmdidVsVimEnabled2" value="0x0101" />
     </GuidSymbol>
     
     <GuidSymbol name="guidImages" value="{b83708de-165c-4166-bc93-05f4efaebdf2}">
