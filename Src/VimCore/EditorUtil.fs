@@ -43,6 +43,13 @@ module internal EditorCoreUtil =
     let IsInsideLineBreak (point: SnapshotPoint) (line: ITextSnapshotLine) = 
         point.Position >= line.End.Position && not (IsEndPoint point)
 
+    let EndsWithLineBreak (snapshot: ITextSnapshot) = 
+        let lineNumber = snapshot.LineCount - 1 
+        lineNumber > 0 && snapshot.GetLineFromLineNumber(lineNumber).Length = 0
+
+    let GetLastLineNumber snapshot =
+        if EndsWithLineBreak snapshot then snapshot.LineCount - 2 else snapshot.LineCount - 1
+
 module TrackingSpanUtil =
 
     let Create (span: SnapshotSpan) spanTrackingMode =
@@ -183,15 +190,8 @@ type SnapshotLineRange  =
 
     /// Create for the entire ITextSnapshot
     static member CreateForExtent (snapshot: ITextSnapshot) =
-        let line = snapshot.GetLineFromLineNumber(snapshot.LineCount - 1)   
-        if snapshot.LineCount >= 2 && line.Start.Position = line.EndIncludingLineBreak.Position then
-
-            // The last (but not only) "line" is empty, which means that the
-            // end of the previous line including its linebreak is the
-            // end of the entire buffer.
-            new SnapshotLineRange(snapshot, 0, snapshot.LineCount - 1)
-        else
-            new SnapshotLineRange(snapshot, 0, snapshot.LineCount)
+        let lastLineNumber = EditorCoreUtil.GetLastLineNumber snapshot
+        new SnapshotLineRange(snapshot, 0, lastLineNumber + 1)
 
     /// Create for a single ITextSnapshotLine
     static member CreateForLine (snapshotLine: ITextSnapshotLine) = new SnapshotLineRange(snapshotLine.Snapshot, snapshotLine.LineNumber, 1)
@@ -464,13 +464,10 @@ module SnapshotUtil =
     let GetFirstLine tss = GetLine tss 0
 
     /// Whether the snapshot ends with a linebreak
-    let EndsWithLineBreak (snapshot: ITextSnapshot) = 
-        let lineNumber = snapshot.LineCount - 1 
-        lineNumber > 0 && snapshot.GetLineFromLineNumber(lineNumber).Length = 0
+    let EndsWithLineBreak (snapshot: ITextSnapshot) = EditorCoreUtil.EndsWithLineBreak snapshot
 
     /// Get the last line number of the snapshot
-    let GetLastLineNumber snapshot =
-        if EndsWithLineBreak snapshot then snapshot.LineCount - 2 else snapshot.LineCount - 1
+    let GetLastLineNumber snapshot = EditorCoreUtil.GetLastLineNumber snapshot
 
     /// Get the last line of the snapshot
     let GetLastLine snapshot = GetLastLineNumber snapshot |> GetLine snapshot
