@@ -709,6 +709,14 @@ type internal InsertMode
             let args = CommandRunDataEventArgs(data)
             _commandRanEvent.Trigger x args
 
+            // If there is an existing undo transaction, close it out and start a new one.
+            match _sessionData.Transaction with
+            | None -> ()
+            | Some transaction ->
+                transaction.Complete()
+                let transaction = _undoRedoOperations.CreateLinkedUndoTransactionWithFlags "Insert after motion" LinkedUndoTransactionFlags.CanBeEmpty
+                _sessionData <- { _sessionData with Transaction = Some transaction }
+
         ProcessResult.OfCommandResult result
 
     /// Paste the contents of the specified register with the given flags 

@@ -2763,6 +2763,21 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
+            /// Undo of insert with arrow keys
+            /// </summary>
+            [WpfFact]
+            public void Undo_InsertWithArrowKeys()
+            {
+                Create("aaa bbb ccc");
+                _vimBuffer.ProcessNotation("1Gwieee <Left><Left><Left><Left>ddd <Esc>");
+                Assert.Equal("aaa ddd eee bbb ccc", _textView.GetLine(0).GetText());
+                _vimBuffer.ProcessNotation("u");
+                Assert.Equal("aaa eee bbb ccc", _textView.GetLine(0).GetText());
+                _vimBuffer.ProcessNotation("u");
+                Assert.Equal("aaa bbb ccc", _textView.GetLine(0).GetText());
+            }
+
+            /// <summary>
             /// Undo of change word
             /// </summary>
             [WpfFact]
