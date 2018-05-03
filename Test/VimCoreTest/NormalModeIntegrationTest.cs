@@ -2778,6 +2778,21 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
+            /// Undo of insert with a break in the undo sequence
+            /// </summary>
+            [WpfFact]
+            public void Undo_InsertWithBreakUndoSequence()
+            {
+                Create("aaa bbb ccc");
+                _vimBuffer.ProcessNotation("1Gwiddd <C-g>ueee <Esc>");
+                Assert.Equal("aaa ddd eee bbb ccc", _textView.GetLine(0).GetText());
+                _vimBuffer.ProcessNotation("u");
+                Assert.Equal("aaa ddd bbb ccc", _textView.GetLine(0).GetText());
+                _vimBuffer.ProcessNotation("u");
+                Assert.Equal("aaa bbb ccc", _textView.GetLine(0).GetText());
+            }
+
+            /// <summary>
             /// Undo of change word
             /// </summary>
             [WpfFact]
