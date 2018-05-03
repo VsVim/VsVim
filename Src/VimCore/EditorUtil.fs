@@ -497,8 +497,8 @@ module SnapshotUtil =
         let length = tss.Length
         span.Start < tss.Length && span.End <= tss.Length
 
-    /// Is the last line in the ITextSnapshot empty
-    let IsLastLineEmpty (snapshot: ITextSnapshot) = 
+    /// Whether all lines in the ITextSnapshot have linebreaks
+    let AllLinesHaveLineBreaks (snapshot: ITextSnapshot) = 
         let endPoint = GetEndPoint snapshot
         let line = endPoint.GetContainingLine()
         line.Length = 0

@@ -501,7 +501,7 @@ type internal LocalSettings
         copy :> IVimLocalSettings
 
     member x.AdjustForTextBuffer (textBuffer: ITextBuffer) =
-        let value = SnapshotUtil.IsLastLineEmpty textBuffer.CurrentSnapshot
+        let value = SnapshotUtil.AllLinesHaveLineBreaks textBuffer.CurrentSnapshot
         _map.TrySetValue EndOfLineName (SettingValue.Toggle value) |> ignore
 
     member x.IsNumberFormatSupported numberFormat =
