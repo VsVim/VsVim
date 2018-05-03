@@ -1314,19 +1314,22 @@ type internal CommandUtil
         | None -> ()
         | Some point ->
 
-            let replacement = if isLastLine then newLineText + newLineText else newLineText
             _undoRedoOperations.EditWithUndoTransaction  "InsertLineBelow" _textView (fun () ->
                 let span = SnapshotSpan(point, 0)
-                _textBuffer.Replace(span.Span, replacement) |> ignore
+                _textBuffer.Replace(span.Span, newLineText) |> ignore
 
                 TextViewUtil.MoveCaretToPosition _textView savedCaretPoint.Position)
 
             let newLine =
-                if isLastLine then
-                    SnapshotUtil.GetLastLine x.CurrentSnapshot
-                else
-                    let newPoint = SnapshotPoint(x.CurrentSnapshot, point.Position)
-                    SnapshotPointUtil.GetContainingLine newPoint
+                let newPoint =
+                    // When this command is run on the last line of the file then point will still
+                    // refer to the original line.  In that case we need to move to the end of the
+                    // ITextSnapshot
+                    if isLastLine then
+                        SnapshotUtil.GetEndPoint x.CurrentSnapshot
+                    else
+                        SnapshotPoint(x.CurrentSnapshot, point.Position)
+                SnapshotPointUtil.GetContainingLine newPoint
             x.MoveCaretToNewLineIndent savedCaretLine newLine
 
         let switch = ModeSwitch.SwitchModeWithArgument (ModeKind.Insert, ModeArgument.InsertWithCountAndNewLine count)

@@ -3391,6 +3391,28 @@ namespace Vim.UnitTest
         public sealed class InsertLineBelowCaretTest : NormalModeIntegrationTest
         {
             /// <summary>
+            /// Open with a final newline
+            /// </summary>
+            [WpfFact]
+            public void WithFinalNewLine()
+            {
+                Create("cat", "");
+                _vimBuffer.ProcessNotation("1Godog<Esc>");
+                Assert.Equal(new[] { "cat", "dog", "" }, _textBuffer.GetLines());
+            }
+
+            /// <summary>
+            /// Open without a final newline
+            /// </summary>
+            [WpfFact]
+            public void WithoutFinalNewLine()
+            {
+                Create("cat");
+                _vimBuffer.ProcessNotation("1Godog<Esc>");
+                Assert.Equal(new[] { "cat", "dog" }, _textBuffer.GetLines());
+            }
+
+            /// <summary>
             /// Ensure the text inserted is repeated after the Escape
             /// </summary>
             [WpfFact]

@@ -543,8 +543,8 @@ module SnapshotUtil =
         |> Seq.truncate count
 
     /// Try and get the line at the specified number
-    let TryGetLine snapshot number = 
-        if IsLineNumberValid snapshot number then
+    let TryGetLine (snapshot: ITextSnapshot) number = 
+        if number = snapshot.LineCount - 1 || IsLineNumberValid snapshot number then
             GetLine snapshot number |> Some
         else
             None
