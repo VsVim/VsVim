@@ -481,7 +481,8 @@ type internal LocalSettings
             (ShiftWidthName, "sw", SettingValue.Number 8)
             (TabStopName, "ts", SettingValue.Number 8)
             (QuoteEscapeName, "qe", SettingValue.String @"\")
-            (FixEndOfLine, "fixeol", SettingValue.Toggle false)
+            (EndOfLineName, "eol", SettingValue.Toggle true)
+            (FixEndOfLineName, "fixeol", SettingValue.Toggle false)
         |]
 
     static let LocalSettingList = 
@@ -498,6 +499,10 @@ type internal LocalSettings
         |> Seq.filter (fun s -> not s.IsValueCalculated)
         |> Seq.iter (fun s -> copy.Map.TrySetValue s.Name s.Value |> ignore)
         copy :> IVimLocalSettings
+
+    member x.AdjustForTextBuffer (textBuffer: ITextBuffer) =
+        let value = SnapshotUtil.IsLastLineEmpty textBuffer.CurrentSnapshot
+        _map.TrySetValue EndOfLineName (SettingValue.Toggle value) |> ignore
 
     member x.IsNumberFormatSupported numberFormat =
 
@@ -532,6 +537,8 @@ type internal LocalSettings
             if _map.OwnsSetting settingName then _map.GetSetting settingName
             else _globalSettings.GetSetting settingName
 
+        member x.AdjustForTextBuffer textBuffer = x.AdjustForTextBuffer textBuffer
+
         member x.GlobalSettings = _globalSettings
         member x.AutoIndent
             with get() = _map.GetBoolValue AutoIndentName
@@ -557,9 +564,12 @@ type internal LocalSettings
         member x.QuoteEscape
             with get() = _map.GetStringValue QuoteEscapeName
             and set value = _map.TrySetValue QuoteEscapeName (SettingValue.String value) |> ignore
+        member x.EndOfLine
+            with get() = _map.GetBoolValue EndOfLineName
+            and set value = _map.TrySetValue EndOfLineName (SettingValue.Toggle value) |> ignore
         member x.FixEndOfLine
-            with get() = _map.GetBoolValue FixEndOfLine
-            and set value = _map.TrySetValue FixEndOfLine (SettingValue.Toggle value) |> ignore
+            with get() = _map.GetBoolValue FixEndOfLineName
+            and set value = _map.TrySetValue FixEndOfLineName (SettingValue.Toggle value) |> ignore
 
         member x.IsNumberFormatSupported numberFormat = x.IsNumberFormatSupported numberFormat
 

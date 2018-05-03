@@ -59,7 +59,8 @@ module LocalSettingNames =
     let ShiftWidthName = "shiftwidth"
     let TabStopName = "tabstop"
     let QuoteEscapeName = "quoteescape"
-    let FixEndOfLine = "fixendofline"
+    let EndOfLineName = "endofline"
+    let FixEndOfLineName = "fixendofline"
 
 module WindowSettingNames =
 
@@ -475,6 +476,10 @@ and IVimGlobalSettings =
 /// global settings with non-global ones
 and IVimLocalSettings =
 
+    /// Adjust the local settings for the specified ITextBuffer
+    abstract AdjustForTextBuffer: buffer: ITextBuffer -> unit
+
+    /// Whether or not to auto-indent
     abstract AutoIndent: bool with get, set
 
     /// Whether or not to expand tabs into spaces
@@ -500,6 +505,9 @@ and IVimLocalSettings =
 
     /// Which characters escape quotes for certain motion types
     abstract QuoteEscape: string with get, set
+
+    /// Whether or not the buffer ends with a newline
+    abstract EndOfLine: bool with get, set
 
     /// Whether or not to fix endofline
     abstract FixEndOfLine: bool with get, set
