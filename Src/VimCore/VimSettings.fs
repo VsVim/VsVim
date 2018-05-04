@@ -500,29 +500,6 @@ type internal LocalSettings
         |> Seq.iter (fun s -> copy.Map.TrySetValue s.Name s.Value |> ignore)
         copy :> IVimLocalSettings
 
-    member x.AdjustForTextView (textView: ITextView) =
-        let textBuffer = textView.TextBuffer
-        let snapshot = textBuffer.CurrentSnapshot
-        let value = SnapshotUtil.AllLinesHaveLineBreaks snapshot
-        _map.TrySetValue EndOfLineName (SettingValue.Toggle value) |> ignore
-
-    member x.ApplyToTextView (textView: ITextView) =
-        let textBuffer = textView.TextBuffer
-        let value = _map.GetBoolValue EndOfLineName
-        let snapshot = textBuffer.CurrentSnapshot
-        let editorOptions = textView.Options
-        let allLinesHaveLineBreaks = SnapshotUtil.AllLinesHaveLineBreaks snapshot
-        if value then
-            if not allLinesHaveLineBreaks then
-                let newLine = EditUtil.NewLine editorOptions
-                let endPoint = SnapshotUtil.GetEndPoint snapshot
-                textBuffer.Insert(endPoint.Position, newLine) |> ignore
-        else
-            if allLinesHaveLineBreaks then
-                let lastLine = SnapshotUtil.GetLastLine snapshot
-                let span = SnapshotSpan(lastLine.End, lastLine.EndIncludingLineBreak)
-                textBuffer.Delete(span.Span) |> ignore
-
     member x.IsNumberFormatSupported numberFormat =
 
         // The format is supported if the name is in the comma delimited value
@@ -555,9 +532,6 @@ type internal LocalSettings
         member x.GetSetting settingName =
             if _map.OwnsSetting settingName then _map.GetSetting settingName
             else _globalSettings.GetSetting settingName
-
-        member x.AdjustForTextView textView = x.AdjustForTextView textView
-        member x.ApplyToTextView textView = x.ApplyToTextView textView
 
         member x.GlobalSettings = _globalSettings
         member x.AutoIndent

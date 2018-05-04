@@ -296,10 +296,6 @@ type internal VimBufferFactory
         modeList |> List.iter (fun m -> bufferRaw.AddMode m)
         x.SetupInitialMode buffer
         _statusUtilFactory.InitializeVimBuffer (bufferRaw :> IVimBufferInternal)
-
-        // Adjust the local settings.
-        vimBufferData.LocalSettings.AdjustForTextView textView
-
         bufferRaw
 
     /// Setup the initial mode for an IVimBuffer.  The mode should be the current mode of the

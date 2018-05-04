@@ -195,6 +195,9 @@ type internal VimBuffer
     let bufferName = _vim.VimHost.GetName _vimBufferData.TextBuffer
 
     do 
+        // Apply local settings.
+        this.ApplyLocalSettings()
+
         // Listen for mode switches on the IVimTextBuffer instance.  We need to keep our 
         // Mode in sync with this value
         _vimTextBuffer.SwitchedMode
@@ -202,6 +205,11 @@ type internal VimBuffer
         |> _bag.Add
 
         _vim.MarkMap.SetMark Mark.LastJump _vimBufferData 0 0 |> ignore
+
+        // Up cast here to work around the F# bug which prevents accessing a CLIEvent from
+        // a derived type
+        let settings = _vimTextBuffer.LocalSettings :> IVimSettings
+        settings.SettingChanged.Subscribe this.OnLocalSettingsChanged |> _bag.Add
 
     member x.BufferedKeyInputs =
         match _bufferedKeyInput with
@@ -386,6 +394,39 @@ type internal VimBuffer
     member x.OnVimTextBufferSwitchedMode modeKind modeArgument =
         if x.Mode.ModeKind <> modeKind then
             _modeMap.SwitchMode modeKind modeArgument |> ignore
+
+    // Adjust any local settings for the buffer.
+    member x.AdjustLocalSettings () =
+        let textView = _vimBufferData.TextView
+        let textBuffer = textView.TextBuffer
+        let snapshot = textBuffer.CurrentSnapshot
+        let value = SnapshotUtil.AllLinesHaveLineBreaks snapshot
+        let localSettings = _vimBufferData.LocalSettings
+        localSettings.EndOfLine <- value
+
+    // Apply any local settings to the buffer.
+    member x.ApplyLocalSettings () =
+        let localSettings = _vimBufferData.LocalSettings
+        let value = localSettings.EndOfLine
+        let textView = _vimBufferData.TextView
+        let textBuffer = textView.TextBuffer
+        let snapshot = textBuffer.CurrentSnapshot
+        let editorOptions = textView.Options
+        let allLinesHaveLineBreaks = SnapshotUtil.AllLinesHaveLineBreaks snapshot
+        if value then
+            if not allLinesHaveLineBreaks then
+                let newLine = EditUtil.NewLine editorOptions
+                let endPoint = SnapshotUtil.GetEndPoint snapshot
+                textBuffer.Insert(endPoint.Position, newLine) |> ignore
+        else
+            if allLinesHaveLineBreaks then
+                let lastLine = SnapshotUtil.GetLastLine snapshot
+                let span = SnapshotSpan(lastLine.End, lastLine.EndIncludingLineBreak)
+                textBuffer.Delete(span.Span) |> ignore
+
+    /// Raised when a local setting is changed
+    member x.OnLocalSettingsChanged (args: SettingEventArgs) = 
+        x.ApplyLocalSettings()
 
     /// Process the single KeyInput value.  No mappings are considered here.  The KeyInput is 
     /// simply processed directly
