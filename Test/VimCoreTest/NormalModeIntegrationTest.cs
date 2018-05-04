@@ -2104,7 +2104,7 @@ namespace Vim.UnitTest
                     RegisterMap.GetRegister('q').UpdateValue(keyInputSet.KeyInputs.ToArray());
                     _vimBuffer.Process(":nmap <space> @q", enter: true);
                     _vimBuffer.ProcessNotation("2<Space>");
-                    Assert.Equal("ll", _textBuffer.CurrentSnapshot.GetText());
+                    Assert.Equal("ll", _textBuffer.GetLine(0).GetText());
                     Assert.Equal(0, _textView.GetCaretPoint().Position);
                 }
 
@@ -3385,6 +3385,42 @@ namespace Vim.UnitTest
                     Assert.Equal(8, _textView.GetCaretPoint().Position);
                     Assert.Equal("dog", _vimData.LastSearchData.Pattern);
                 }
+            }
+        }
+
+        public sealed class InsertIntoNewBufferTest : NormalModeIntegrationTest
+        {
+            /// <summary>
+            /// Enter insert mode but don't insert anything
+            /// </summary>
+            [WpfFact]
+            public void NothingInserted()
+            {
+                Create("");
+                _vimBuffer.ProcessNotation("i<Esc>");
+                Assert.Equal(new[] { "", }, _textBuffer.GetLines());
+            }
+
+            /// <summary>
+            /// Insert one character into a blank buffer
+            /// </summary>
+            [WpfFact]
+            public void InsertOneCharacter()
+            {
+                Create("");
+                _vimBuffer.ProcessNotation("ix<Esc>");
+                Assert.Equal(new[] { "x", "", }, _textBuffer.GetLines());
+            }
+
+            /// <summary>
+            /// Enter insert mode but don't insert anything
+            /// </summary>
+            [WpfFact]
+            public void InsertThenEraseOneCharacter()
+            {
+                Create("");
+                _vimBuffer.ProcessNotation("ix<BS><Esc>");
+                Assert.Equal(new[] { "", "", }, _textBuffer.GetLines());
             }
         }
 

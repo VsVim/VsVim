@@ -220,9 +220,6 @@ type internal VimBufferFactory
                 else manager.TextBufferUndoHistory |> Some
             UndoRedoOperations(_host, statusUtil, history, _editorOperationsFactoryService) :> IUndoRedoOperations
 
-        // Adjust the local settings.
-        localSettings.AdjustForTextBuffer textBuffer
-
         VimTextBuffer(textBuffer, localSettings, wordNavigator, _bufferTrackingService, undoRedoOperations, vim)
 
     /// Create a VimBufferData instance for the given ITextView and IVimTextBuffer.  This is mainly
@@ -555,6 +552,9 @@ type internal Vim
             localSettings.Settings
             |> Seq.filter (fun s -> not s.IsValueCalculated)
             |> Seq.iter (fun s -> vimTextBuffer.LocalSettings.TrySetValue s.Name s.Value |> ignore)
+
+        // Adjust the local settings.
+        vimTextBuffer.LocalSettings.AdjustForTextBuffer textBuffer
 
         // Put the IVimTextBuffer into the ITextBuffer property bag so we can query for it in the future
         textBuffer.Properties.[_vimTextBufferKey] <- vimTextBuffer

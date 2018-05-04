@@ -296,7 +296,7 @@ type internal InsertUtil
 
     member x.Insert text =
         if _editorOperations.InsertText(text) then
-            if _localSettings.FixEndOfLine then
+            if _localSettings.EndOfLine then
 
                 // Ensure that the current line has a linebreak.
                 let caretPoint = x.CaretPoint
