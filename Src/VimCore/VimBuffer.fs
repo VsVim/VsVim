@@ -397,6 +397,15 @@ type internal VimBuffer
 
     // Adjust any local settings for the buffer.
     member x.AdjustLocalSettings () =
+        x.AdjustEndOfLineSetting()
+
+    /// Raised when a local setting is changed
+    member x.OnLocalSettingsChanged (args: SettingEventArgs) = 
+        if args.Setting.Name = LocalSettingNames.EndOfLineName then
+            x.ApplyEndOfLineSetting()
+
+    // Adjust the 'endofline' setting for the buffer.
+    member x.AdjustEndOfLineSetting () =
         let textView = _vimBufferData.TextView
         let textBuffer = textView.TextBuffer
         let snapshot = textBuffer.CurrentSnapshot
@@ -404,14 +413,14 @@ type internal VimBuffer
         let endOfLineSetting = SnapshotUtil.AllLinesHaveLineBreaks snapshot
         localSettings.EndOfLine <- endOfLineSetting
 
-    // Apply any local settings to the buffer.
-    member x.ApplyLocalSettings () =
+    // Apply the 'endofline' setting to the buffer.
+    member x.ApplyEndOfLineSetting () =
         let localSettings = _vimBufferData.LocalSettings
-        let endOfLineSetting = localSettings.EndOfLine
         let textView = _vimBufferData.TextView
         let textBuffer = textView.TextBuffer
         let snapshot = textBuffer.CurrentSnapshot
         let editorOptions = textView.Options
+        let endOfLineSetting = localSettings.EndOfLine
         let allLinesHaveLineBreaks = SnapshotUtil.AllLinesHaveLineBreaks snapshot
         if endOfLineSetting then
             if not allLinesHaveLineBreaks then
@@ -423,10 +432,6 @@ type internal VimBuffer
                 let lastLine = SnapshotUtil.GetLastLine snapshot
                 let span = SnapshotSpan(lastLine.End, lastLine.EndIncludingLineBreak)
                 textBuffer.Delete(span.Span) |> ignore
-
-    /// Raised when a local setting is changed
-    member x.OnLocalSettingsChanged (args: SettingEventArgs) = 
-        x.ApplyLocalSettings()
 
     /// Process the single KeyInput value.  No mappings are considered here.  The KeyInput is 
     /// simply processed directly
