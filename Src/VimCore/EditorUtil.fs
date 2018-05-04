@@ -1134,6 +1134,10 @@ module SnapshotPointUtil =
     let IsEndPoint point = 
         EditorCoreUtil.IsEndPoint point
 
+    /// Is this the end of the last line of the Snapshot
+    let IsEndPointOfLastLine (point: SnapshotPoint) = 
+        point.Position = (SnapshotUtil.GetLastLine point.Snapshot).End.Position
+
     /// Is the passed in SnapshotPoint inside the line break portion of the line
     let IsInsideLineBreak point = 
         let line = GetContainingLine point
@@ -1465,7 +1469,7 @@ module SnapshotPointUtil =
             if count < 0 then
                 GetRelativeColumn -1 IsStartPoint
             else
-                GetRelativeColumn 1 IsEndPoint
+                GetRelativeColumn 1 IsEndPointOfLastLine
 
         column.Point
 

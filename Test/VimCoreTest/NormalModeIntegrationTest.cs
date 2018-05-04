@@ -7191,5 +7191,36 @@ namespace Vim.UnitTest
                 Assert.Equal("penny" + Environment.NewLine, RegisterMap.GetRegister(1).StringValue);
             }
         }
+
+        public sealed class MotionWrapTest : NormalModeIntegrationTest
+        {
+            /// <summary>
+            /// Right arrow wrapping 
+            /// </summary>
+            [WpfFact]
+            public void RightArrow()
+            {
+                Create("cat", "bat");
+                _globalSettings.WhichWrap = "<,>";
+                _vimBuffer.ProcessNotation("<Right><Right><Right>");
+                Assert.Equal(_textView.GetLine(1).Start.Position, _textView.GetCaretPoint().Position);
+                _vimBuffer.ProcessNotation("<Right><Right><Right>");
+                Assert.Equal(_textView.GetLine(1).Start.Position + 2, _textView.GetCaretPoint().Position);
+            }
+
+            /// <summary>
+            /// Right arrow wrapping with final newline
+            /// </summary>
+            [WpfFact]
+            public void RightArrowWithFinalNewLine()
+            {
+                Create("cat", "bat", "");
+                _globalSettings.WhichWrap = "<,>";
+                _vimBuffer.ProcessNotation("<Right><Right><Right>");
+                Assert.Equal(_textView.GetLine(1).Start.Position, _textView.GetCaretPoint().Position);
+                _vimBuffer.ProcessNotation("<Right><Right><Right>");
+                Assert.Equal(_textView.GetLine(1).Start.Position + 2, _textView.GetCaretPoint().Position);
+            }
+        }
     }
 }
