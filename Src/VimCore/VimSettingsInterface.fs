@@ -477,10 +477,10 @@ and IVimGlobalSettings =
 and IVimLocalSettings =
 
     /// Adjust the local settings for the specified ITextBuffer
-    abstract AdjustForTextBuffer: buffer: ITextBuffer -> unit
+    abstract AdjustForTextView: buffer: ITextView -> unit
 
     /// Apply the local settings to the specified ITextBuffer
-    abstract ApplyToTextBuffer: buffer: ITextBuffer -> unit
+    abstract ApplyToTextView: buffer: ITextView -> unit
 
     /// Whether or not to auto-indent
     abstract AutoIndent: bool with get, set

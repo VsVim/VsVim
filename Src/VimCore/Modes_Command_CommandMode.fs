@@ -59,6 +59,12 @@ type internal CommandMode
         let vimInterpreter = _buffer.Vim.GetVimInterpreter _buffer
         let result = vimInterpreter.RunLineCommand lineCommand
         _vimData.LastCommandLine <- command
+
+        // Apply any local settings to the text view.
+        let localSettings = _buffer.LocalSettings
+        let textView = _buffer.VimBufferData.TextView
+        localSettings.ApplyToTextView textView
+
         result
 
     // Command mode can be validly entered with the selection active.  Consider

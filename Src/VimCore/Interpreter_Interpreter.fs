@@ -1461,9 +1461,6 @@ type VimInterpreter
                 | SetArgument.ToggleOffSetting name -> toggleOffSetting name
                 | SetArgument.UseSetting name -> useSetting name)
 
-            // Apply any local settings to the text buffer.
-            _localSettings.ApplyToTextBuffer _textBuffer
-
     /// Run the specified shell command
     member x.RunShellCommand (command: string) =
 

@@ -296,6 +296,10 @@ type internal VimBufferFactory
         modeList |> List.iter (fun m -> bufferRaw.AddMode m)
         x.SetupInitialMode buffer
         _statusUtilFactory.InitializeVimBuffer (bufferRaw :> IVimBufferInternal)
+
+        // Adjust the local settings.
+        vimBufferData.LocalSettings.AdjustForTextView textView
+
         bufferRaw
 
     /// Setup the initial mode for an IVimBuffer.  The mode should be the current mode of the
@@ -552,9 +556,6 @@ type internal Vim
             localSettings.Settings
             |> Seq.filter (fun s -> not s.IsValueCalculated)
             |> Seq.iter (fun s -> vimTextBuffer.LocalSettings.TrySetValue s.Name s.Value |> ignore)
-
-        // Adjust the local settings.
-        vimTextBuffer.LocalSettings.AdjustForTextBuffer textBuffer
 
         // Put the IVimTextBuffer into the ITextBuffer property bag so we can query for it in the future
         textBuffer.Properties.[_vimTextBufferKey] <- vimTextBuffer

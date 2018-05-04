@@ -500,17 +500,21 @@ type internal LocalSettings
         |> Seq.iter (fun s -> copy.Map.TrySetValue s.Name s.Value |> ignore)
         copy :> IVimLocalSettings
 
-    member x.AdjustForTextBuffer (textBuffer: ITextBuffer) =
-        let value = SnapshotUtil.AllLinesHaveLineBreaks textBuffer.CurrentSnapshot
+    member x.AdjustForTextView (textView: ITextView) =
+        let textBuffer = textView.TextBuffer
+        let snapshot = textBuffer.CurrentSnapshot
+        let value = SnapshotUtil.AllLinesHaveLineBreaks snapshot
         _map.TrySetValue EndOfLineName (SettingValue.Toggle value) |> ignore
 
-    member x.ApplyToTextBuffer (textBuffer: ITextBuffer) =
+    member x.ApplyToTextView (textView: ITextView) =
+        let textBuffer = textView.TextBuffer
         let value = _map.GetBoolValue EndOfLineName
         let snapshot = textBuffer.CurrentSnapshot
+        let editorOptions = textView.Options
         let allLinesHaveLineBreaks = SnapshotUtil.AllLinesHaveLineBreaks snapshot
         if value then
             if not allLinesHaveLineBreaks then
-                let newLine = System.Environment.NewLine
+                let newLine = EditUtil.NewLine editorOptions
                 let endPoint = SnapshotUtil.GetEndPoint snapshot
                 textBuffer.Insert(endPoint.Position, newLine) |> ignore
         else
@@ -552,8 +556,8 @@ type internal LocalSettings
             if _map.OwnsSetting settingName then _map.GetSetting settingName
             else _globalSettings.GetSetting settingName
 
-        member x.AdjustForTextBuffer textBuffer = x.AdjustForTextBuffer textBuffer
-        member x.ApplyToTextBuffer textBuffer = x.ApplyToTextBuffer textBuffer
+        member x.AdjustForTextView textView = x.AdjustForTextView textView
+        member x.ApplyToTextView textView = x.ApplyToTextView textView
 
         member x.GlobalSettings = _globalSettings
         member x.AutoIndent
