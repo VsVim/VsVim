@@ -455,6 +455,10 @@ type SnapshotOverlapSpan =
 /// include any Vim specific logic
 module SnapshotUtil = 
 
+    /// Get the number of lines in the ITextSnapshot
+    /// (not including the phantom line, if any)
+    let GetLineCount (snapshot: ITextSnapshot) = EditorCoreUtil.GetLineCount snapshot
+
     /// Get the line for the specified number
     let GetLine (tss:ITextSnapshot) lineNumber = tss.GetLineFromLineNumber lineNumber
 
