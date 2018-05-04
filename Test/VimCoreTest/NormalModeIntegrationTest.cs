@@ -1568,7 +1568,7 @@ namespace Vim.UnitTest
             [WpfFact]
             public void EmptyLastLineShouldAppendNewLineInRegister()
             {
-                Create("cat", "");
+                Create("cat", "", "");
                 _textView.MoveCaretToLine(1);
                 _vimBuffer.Process("yy");
                 Assert.Equal(Environment.NewLine, UnnamedRegister.StringValue);
@@ -5842,6 +5842,32 @@ namespace Vim.UnitTest
             {
                 Create("cat", "", "bear", ".HU", "sheep");
                 _globalSettings.Sections = "HU";
+                _vimBuffer.Process("]]");
+                Assert.Equal(_textView.GetLine(3).Start, _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// The ']]' motion should stop on on the last line
+            /// </summary>
+            [WpfFact]
+            public void SectionForwardEndOfFile()
+            {
+                Create("cat", "{", "bear", "sheep");
+                _vimBuffer.Process("]]");
+                Assert.Equal(_textView.GetLine(1).Start, _textView.GetCaretPoint());
+                _vimBuffer.Process("]]");
+                Assert.Equal(_textView.GetLine(3).Start, _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// The ']]' motion should stop on on the last line with a final newline
+            /// </summary>
+            [WpfFact]
+            public void SectionForwardEndOfFileWithFinalNewLine()
+            {
+                Create("cat", "{", "bear", "sheep", "");
+                _vimBuffer.Process("]]");
+                Assert.Equal(_textView.GetLine(1).Start, _textView.GetCaretPoint());
                 _vimBuffer.Process("]]");
                 Assert.Equal(_textView.GetLine(3).Start, _textView.GetCaretPoint());
             }

@@ -2422,7 +2422,7 @@ type internal MotionUtil
             | MotionContext.AfterOperator ->
                 endPoint
             | MotionContext.Movement -> 
-                let line = SnapshotPointUtil.GetContainingLine endPoint
+                let line = SnapshotPointUtil.GetContainingLineOrLast endPoint
                 if SnapshotLineUtil.IsLastLine line then 
                     match SnapshotLineUtil.GetFirstNonBlank line with
                     | Some point -> point

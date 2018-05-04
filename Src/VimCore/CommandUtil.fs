@@ -1304,11 +1304,11 @@ type internal CommandUtil
         let savedCaretPoint = x.CaretPoint
 
         // The the line below needs to be calculated agaist the visual snapshot.
-        let visualLineEndIncludingLineBreak, newLineText, isLastLine =
+        let visualLineEndIncludingLineBreak, newLineText, hasLineBreak =
             let visualSnapshotData = TextViewUtil.GetVisualSnapshotDataOrEdit _textView
             let newLineText = _commonOperations.GetNewLineText x.CaretPoint
-            let isLastLine = SnapshotLineUtil.IsLastLine visualSnapshotData.CaretLine
-            visualSnapshotData.CaretLine.EndIncludingLineBreak, newLineText, isLastLine
+            let hasLineBreak = SnapshotLineUtil.HasLineBreak visualSnapshotData.CaretLine
+            visualSnapshotData.CaretLine.EndIncludingLineBreak, newLineText, hasLineBreak
 
         match BufferGraphUtil.MapPointDownToSnapshotStandard _bufferGraph visualLineEndIncludingLineBreak x.CurrentSnapshot with
         | None -> ()
@@ -1322,13 +1322,13 @@ type internal CommandUtil
 
             let newLine =
                 let newPoint =
-                    // When this command is run on the last line of the file then point will still
+                    // When this command is run on a line with a linebreak then point will still
                     // refer to the original line.  In that case we need to move to the end of the
                     // ITextSnapshot
-                    if isLastLine then
-                        SnapshotUtil.GetEndPoint x.CurrentSnapshot
-                    else
+                    if hasLineBreak then
                         SnapshotPoint(x.CurrentSnapshot, point.Position)
+                    else
+                        SnapshotUtil.GetEndPoint x.CurrentSnapshot
                 SnapshotPointUtil.GetContainingLine newPoint
             x.MoveCaretToNewLineIndent savedCaretLine newLine
 
