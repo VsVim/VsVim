@@ -504,6 +504,21 @@ type internal LocalSettings
         let value = SnapshotUtil.AllLinesHaveLineBreaks textBuffer.CurrentSnapshot
         _map.TrySetValue EndOfLineName (SettingValue.Toggle value) |> ignore
 
+    member x.ApplyToTextBuffer (textBuffer: ITextBuffer) =
+        let value = _map.GetBoolValue EndOfLineName
+        let snapshot = textBuffer.CurrentSnapshot
+        let allLinesHaveLineBreaks = SnapshotUtil.AllLinesHaveLineBreaks snapshot
+        if value then
+            if not allLinesHaveLineBreaks then
+                let newLine = System.Environment.NewLine
+                let endPoint = SnapshotUtil.GetEndPoint snapshot
+                textBuffer.Insert(endPoint.Position, newLine) |> ignore
+        else
+            if allLinesHaveLineBreaks then
+                let lastLine = SnapshotUtil.GetLastLine snapshot
+                let span = SnapshotSpan(lastLine.End, lastLine.EndIncludingLineBreak)
+                textBuffer.Delete(span.Span) |> ignore
+
     member x.IsNumberFormatSupported numberFormat =
 
         // The format is supported if the name is in the comma delimited value
@@ -538,6 +553,7 @@ type internal LocalSettings
             else _globalSettings.GetSetting settingName
 
         member x.AdjustForTextBuffer textBuffer = x.AdjustForTextBuffer textBuffer
+        member x.ApplyToTextBuffer textBuffer = x.ApplyToTextBuffer textBuffer
 
         member x.GlobalSettings = _globalSettings
         member x.AutoIndent
