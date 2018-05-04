@@ -194,8 +194,8 @@ type SnapshotLineRange  =
 
     /// Create for the entire ITextSnapshot
     static member CreateForExtent (snapshot: ITextSnapshot) =
-        let lastLineNumber = EditorCoreUtil.GetLastLineNumber snapshot
-        new SnapshotLineRange(snapshot, 0, lastLineNumber + 1)
+        let lineCount = EditorCoreUtil.GetLineCount snapshot
+        new SnapshotLineRange(snapshot, 0, lineCount)
 
     /// Create for a single ITextSnapshotLine
     static member CreateForLine (snapshotLine: ITextSnapshotLine) = new SnapshotLineRange(snapshotLine.Snapshot, snapshotLine.LineNumber, 1)
@@ -1140,7 +1140,8 @@ module SnapshotPointUtil =
 
     /// Is this the end of the last line of the Snapshot
     let IsEndPointOfLastLine (point: SnapshotPoint) = 
-        point.Position = (SnapshotUtil.GetLastLine point.Snapshot).End.Position
+        let lastLine = SnapshotUtil.GetLastLine point.Snapshot
+        point.Position = lastLine.End.Position
 
     /// Is the passed in SnapshotPoint inside the line break portion of the line
     let IsInsideLineBreak point = 

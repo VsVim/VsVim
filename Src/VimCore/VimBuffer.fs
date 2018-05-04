@@ -195,8 +195,8 @@ type internal VimBuffer
     let bufferName = _vim.VimHost.GetName _vimBufferData.TextBuffer
 
     do 
-        // Apply local settings.
-        this.ApplyLocalSettings()
+        // Adjust local settings.
+        this.AdjustLocalSettings()
 
         // Listen for mode switches on the IVimTextBuffer instance.  We need to keep our 
         // Mode in sync with this value
@@ -400,20 +400,20 @@ type internal VimBuffer
         let textView = _vimBufferData.TextView
         let textBuffer = textView.TextBuffer
         let snapshot = textBuffer.CurrentSnapshot
-        let value = SnapshotUtil.AllLinesHaveLineBreaks snapshot
         let localSettings = _vimBufferData.LocalSettings
-        localSettings.EndOfLine <- value
+        let endOfLineSetting = SnapshotUtil.AllLinesHaveLineBreaks snapshot
+        localSettings.EndOfLine <- endOfLineSetting
 
     // Apply any local settings to the buffer.
     member x.ApplyLocalSettings () =
         let localSettings = _vimBufferData.LocalSettings
-        let value = localSettings.EndOfLine
+        let endOfLineSetting = localSettings.EndOfLine
         let textView = _vimBufferData.TextView
         let textBuffer = textView.TextBuffer
         let snapshot = textBuffer.CurrentSnapshot
         let editorOptions = textView.Options
         let allLinesHaveLineBreaks = SnapshotUtil.AllLinesHaveLineBreaks snapshot
-        if value then
+        if endOfLineSetting then
             if not allLinesHaveLineBreaks then
                 let newLine = EditUtil.NewLine editorOptions
                 let endPoint = SnapshotUtil.GetEndPoint snapshot
