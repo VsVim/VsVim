@@ -3422,6 +3422,21 @@ namespace Vim.UnitTest
                 _vimBuffer.ProcessNotation("ix<BS><Esc>");
                 Assert.Equal(new[] { "", "", }, _textBuffer.GetLines());
             }
+
+            /// <summary>
+            /// Enter text and turn 'endofline' off and on.
+            /// </summary>
+            [WpfFact]
+            public void InsertThenToggleSetting()
+            {
+                Create("");
+                _vimBuffer.ProcessNotation("icat<Esc>");
+                Assert.Equal(new[] { "cat", "", }, _textBuffer.GetLines());
+                _vimBuffer.LocalSettings.EndOfLine = false;
+                Assert.Equal(new[] { "cat", }, _textBuffer.GetLines());
+                _vimBuffer.LocalSettings.EndOfLine = true;
+                Assert.Equal(new[] { "cat", "", }, _textBuffer.GetLines());
+            }
         }
 
         public sealed class InsertLineBelowCaretTest : NormalModeIntegrationTest
