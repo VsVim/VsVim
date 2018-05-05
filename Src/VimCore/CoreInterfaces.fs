@@ -4637,6 +4637,9 @@ and IVimBuffer =
     /// and it's modes
     abstract Close: unit -> unit
     
+    /// Whether the buffer readonly
+    abstract IsReadOnly: bool with get
+
     /// Raised when the mode is switched.  Returns the old and new mode 
     [<CLIEvent>]
     abstract SwitchedMode: IDelegateEvent<System.EventHandler<SwitchModeEventArgs>>

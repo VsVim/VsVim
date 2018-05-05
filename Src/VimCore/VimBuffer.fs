@@ -213,6 +213,9 @@ type internal VimBuffer
 
         _vimTextBuffer.Vim.VimHost.BeforeSave.Subscribe this.OnBeforeSave |> _bag.Add
 
+    member x.IsReadOnly
+        with get() = _vim.VimHost.IsReadOnly _vimBufferData.TextBuffer
+
     member x.BufferedKeyInputs =
         match _bufferedKeyInput with
         | None -> List.empty
@@ -422,21 +425,23 @@ type internal VimBuffer
 
     /// Apply the 'endofline' setting to the buffer
     member x.ApplyEndOfLineSetting () =
-        let localSettings = _vimBufferData.LocalSettings
-        let textView = _vimBufferData.TextView
-        let endOfLineSetting = localSettings.EndOfLine
-        if endOfLineSetting then
-            TextViewUtil.InsertFinalNewLine textView
-        else
-            TextViewUtil.RemoveFinalNewLine textView
+        if not x.IsReadOnly then
+            let localSettings = _vimBufferData.LocalSettings
+            let textView = _vimBufferData.TextView
+            let endOfLineSetting = localSettings.EndOfLine
+            if endOfLineSetting then
+                TextViewUtil.InsertFinalNewLine textView
+            else
+                TextViewUtil.RemoveFinalNewLine textView
 
     /// Apply the 'fixeondofline' setting to the buffer
     member x.ApplyFixEndOfLineSetting () =
-        let localSettings = _vimBufferData.LocalSettings
-        let textView = _vimBufferData.TextView
-        let fixEndOfLineSetting = localSettings.FixEndOfLine
-        if fixEndOfLineSetting then
-            TextViewUtil.InsertFinalNewLine textView
+        if not x.IsReadOnly then
+            let localSettings = _vimBufferData.LocalSettings
+            let textView = _vimBufferData.TextView
+            let fixEndOfLineSetting = localSettings.FixEndOfLine
+            if fixEndOfLineSetting then
+                TextViewUtil.InsertFinalNewLine textView
 
     /// Process the single KeyInput value.  No mappings are considered here.  The KeyInput is 
     /// simply processed directly
@@ -739,6 +744,9 @@ type internal VimBuffer
         member x.SwitchMode kind arg = x.SwitchMode kind arg
         member x.SwitchPreviousMode() = x.SwitchPreviousMode()
         member x.SimulateProcessed keyInput = x.SimulateProcessed keyInput
+
+        member x.IsReadOnly
+            with get () =  x.IsReadOnly
 
         [<CLIEvent>]
         member x.SwitchedMode = _modeMap.SwitchedEvent.Publish

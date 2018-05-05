@@ -41,6 +41,11 @@ namespace Vim.UnitTest.Mock
         public FSharpOption<ModeKind> InOneTimeCommandImpl;
         public IVimGlobalSettings GlobalSettingsImpl;
 
+        public bool IsReadOnly
+        {
+            get { return false; }
+        }
+
         public PropertyCollection Properties
         {
             get { return PropertiesImpl; }
