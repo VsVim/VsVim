@@ -3446,6 +3446,18 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
+            /// Insert with the cursor positioned on the phantom line
+            /// </summary>
+            [WpfFact]
+            public void InsertFromPhantomLine()
+            {
+                Create("cat", "");
+                _textView.MoveCaretTo(_textView.GetEndPoint().Position);
+                _vimBuffer.ProcessNotation("ix<Esc>");
+                Assert.Equal(new[] { "cat", "x", "", }, _textBuffer.GetLines());
+            }
+
+            /// <summary>
             /// Enter text and turn 'endofline' off and on.
             /// </summary>
             [WpfFact]
