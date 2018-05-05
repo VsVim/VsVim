@@ -1985,6 +1985,26 @@ module TextViewUtil =
         | None -> false
         | Some wordWrapStyle -> Util.IsFlagSet wordWrapStyle WordWrapStyles.WordWrap
 
+    /// Insert final newline
+    let InsertFinalNewLine (textView: ITextView) =
+        let snapshot = textView.TextSnapshot
+        let allLinesHaveLineBreaks = SnapshotUtil.AllLinesHaveLineBreaks snapshot
+        if not allLinesHaveLineBreaks then
+            let textBuffer = textView.TextBuffer
+            let endPoint = SnapshotUtil.GetEndPoint snapshot
+            let newLine = DefaultOptionExtensions.GetNewLineCharacter textView.Options
+            textBuffer.Insert(endPoint.Position, newLine) |> ignore
+
+    /// Remove final newline
+    let RemoveFinalNewLine (textView: ITextView) =
+        let snapshot = textView.TextSnapshot
+        let allLinesHaveLineBreaks = SnapshotUtil.AllLinesHaveLineBreaks snapshot
+        if allLinesHaveLineBreaks then
+            let textBuffer = textView.TextBuffer
+            let lastLine = SnapshotUtil.GetLastLine snapshot
+            let span = SnapshotSpan(lastLine.End, lastLine.EndIncludingLineBreak)
+            textBuffer.Delete(span.Span) |> ignore
+
 module TextSelectionUtil = 
 
     /// Returns the SnapshotSpan which represents the total of the selection.  This is a SnapshotSpan of the left

@@ -409,10 +409,7 @@ type internal VimBuffer
     /// Raised before a text buffer is saved
     member x.OnBeforeSave (args: BeforeSaveEventArgs) = 
         if args.TextBuffer = _vimBufferData.TextBuffer then
-            let localSettings = _vimBufferData.LocalSettings
-            let fixEndOfLineSetting = localSettings.FixEndOfLine
-            if fixEndOfLineSetting then
-                ()
+           x.ApplyFixEndOfLineSetting() 
 
     // Adjust the 'endofline' setting for the buffer.
     member x.AdjustEndOfLineSetting () =
@@ -427,21 +424,19 @@ type internal VimBuffer
     member x.ApplyEndOfLineSetting () =
         let localSettings = _vimBufferData.LocalSettings
         let textView = _vimBufferData.TextView
-        let textBuffer = textView.TextBuffer
-        let snapshot = textBuffer.CurrentSnapshot
-        let editorOptions = textView.Options
         let endOfLineSetting = localSettings.EndOfLine
-        let allLinesHaveLineBreaks = SnapshotUtil.AllLinesHaveLineBreaks snapshot
         if endOfLineSetting then
-            if not allLinesHaveLineBreaks then
-                let newLine = EditUtil.NewLine editorOptions
-                let endPoint = SnapshotUtil.GetEndPoint snapshot
-                textBuffer.Insert(endPoint.Position, newLine) |> ignore
+            TextViewUtil.InsertFinalNewLine textView
         else
-            if allLinesHaveLineBreaks then
-                let lastLine = SnapshotUtil.GetLastLine snapshot
-                let span = SnapshotSpan(lastLine.End, lastLine.EndIncludingLineBreak)
-                textBuffer.Delete(span.Span) |> ignore
+            TextViewUtil.RemoveFinalNewLine textView
+
+    /// Apply the 'fixeondofline' setting to the buffer.
+    member x.ApplyFixEndOfLineSetting () =
+        let localSettings = _vimBufferData.LocalSettings
+        let textView = _vimBufferData.TextView
+        let fixEndOfLineSetting = localSettings.FixEndOfLine
+        if fixEndOfLineSetting then
+            TextViewUtil.InsertFinalNewLine textView
 
     /// Process the single KeyInput value.  No mappings are considered here.  The KeyInput is 
     /// simply processed directly
