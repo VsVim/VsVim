@@ -232,6 +232,12 @@ namespace VimApp
             _vim.ActiveStatusUtil.OnStatus(msg);
         }
 
+        public override bool Save(ITextBuffer textBuffer)
+        {
+            RaiseBeforeSave(textBuffer);
+            return base.Save(textBuffer);
+        }
+
         public override void SplitViewHorizontally(ITextView textView)
         {
             // First find the IVimViewInfo that contains this ITextView
