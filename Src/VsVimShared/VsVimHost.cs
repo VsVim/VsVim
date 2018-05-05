@@ -142,10 +142,8 @@ namespace Vim.VisualStudio
         private readonly IVimApplicationSettings _vimApplicationSettings;
         private readonly ISmartIndentationService _smartIndentationService;
         private readonly IExtensionAdapterBroker _extensionAdapterBroker;
+        private readonly IVsRunningDocumentTable _runningDocumentTable;
         private IVim _vim;
-
-        private readonly RunningDocumentTable _runningDocumentTable;
-        private readonly uint _runnindDocumentTableCookie;
 
         internal _DTE DTE
         {
@@ -213,11 +211,10 @@ namespace Vim.VisualStudio
             _vimApplicationSettings = vimApplicationSettings;
             _smartIndentationService = smartIndentationService;
             _extensionAdapterBroker = extensionAdapterBroker;
+            _runningDocumentTable = serviceProvider.GetService<SVsRunningDocumentTable, IVsRunningDocumentTable>();
 
-            _runningDocumentTable = new RunningDocumentTable(serviceProvider);
-            _runnindDocumentTableCookie = _runningDocumentTable.Advise(this);
-
-            _vsMonitorSelection.AdviseSelectionEvents(this, out uint cookie);
+            _vsMonitorSelection.AdviseSelectionEvents(this, out uint selectionCookie);
+            _runningDocumentTable.AdviseRunningDocTableEvents(this, out uint runningDocumentTableCookie);
 
             InitTelemetry(telemetryProvider.GetOrCreate(vimApplicationSettings, _dte), vimApplicationSettings);
         }

@@ -52,8 +52,12 @@ namespace Vim.VisualStudio.UnitTest
             _extensionAdapterBroker = _factory.Create<IExtensionAdapterBroker>(MockBehavior.Loose);
 
             var vsMonitorSelection = _factory.Create<IVsMonitorSelection>();
-            uint cookie = 42;
-            vsMonitorSelection.Setup(x => x.AdviseSelectionEvents(It.IsAny<IVsSelectionEvents>(), out cookie)).Returns(VSConstants.S_OK);
+            uint selectionCookie = 42;
+            vsMonitorSelection.Setup(x => x.AdviseSelectionEvents(It.IsAny<IVsSelectionEvents>(), out selectionCookie)).Returns(VSConstants.S_OK);
+
+            var vsRunningDocumentTable = _factory.Create<IVsRunningDocumentTable>();
+            uint runningDocumentTableCookie = 86;
+            vsRunningDocumentTable.Setup(x => x.AdviseRunningDocTableEvents(It.IsAny<IVsRunningDocTableEvents3>(), out runningDocumentTableCookie)).Returns(VSConstants.S_OK);
 
             var telemetryProvider = _factory.Create<ITelemetryProvider>(MockBehavior.Loose);
             telemetryProvider.Setup(x => x.GetOrCreate(_vimApplicationSettings.Object, _dte.Object)).Returns(_factory.Create<ITelemetry>(MockBehavior.Loose).Object);
@@ -63,6 +67,7 @@ namespace Vim.VisualStudio.UnitTest
             sp.Setup(x => x.GetService(typeof(SVsUIShell))).Returns(_shell.Object);
             sp.Setup(x => x.GetService(typeof(IVsExtensibility))).Returns(_factory.Create<IVsExtensibility>().Object);
             sp.Setup(x => x.GetService(typeof(SVsShellMonitorSelection))).Returns(vsMonitorSelection.Object);
+            sp.Setup(x => x.GetService(typeof(SVsRunningDocumentTable))).Returns(vsRunningDocumentTable.Object);
             _hostRaw = new VsVimHost(
                 _adapter.Object,
                 _factory.Create<ITextBufferFactoryService>().Object,
