@@ -321,7 +321,7 @@ type VimInterpreter
             line |> getLineAndNumber |> Some
 
         | LineSpecifier.LastLine ->
-            SnapshotUtil.GetLastLine x.CurrentSnapshot |> getLineAndNumber |> Some
+            SnapshotUtil.GetLastNormalizedLine x.CurrentSnapshot |> getLineAndNumber |> Some
 
         | LineSpecifier.MarkLine mark ->
             // Get the line containing the mark in the context of this IVimTextBuffer

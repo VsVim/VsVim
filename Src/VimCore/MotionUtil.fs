@@ -2286,7 +2286,7 @@ type internal MotionUtil
         let endLine = 
             match numberOpt with
             | Some number ->  SnapshotUtil.GetLineOrLast x.CurrentSnapshot (Util.VimLineToTssLine number)
-            | None -> SnapshotUtil.GetLastLine x.CurrentSnapshot 
+            | None -> SnapshotUtil.GetLastNormalizedLine x.CurrentSnapshot 
         x.LineToLineFirstNonBlankMotion MotionResultFlags.MaintainCaretColumn x.CaretLine endLine
 
     /// Go to the last non-blank character on the 'count - 1' line
@@ -2424,7 +2424,7 @@ type internal MotionUtil
                 endPoint
             | MotionContext.Movement -> 
                 let line = SnapshotPointUtil.GetContainingLineOrLast endPoint
-                if SnapshotLineUtil.IsLastLine line then 
+                if SnapshotLineUtil.IsLastNormalizedLine line then 
                     match SnapshotLineUtil.GetFirstNonBlank line with
                     | Some point -> point
                     | None -> line.End

@@ -47,11 +47,11 @@ module internal EditorCoreUtil =
         let lineNumber = snapshot.LineCount - 1 
         lineNumber > 0 && snapshot.GetLineFromLineNumber(lineNumber).Length = 0
 
-    let GetLineCount snapshot =
+    let GetNormalizedLineCount (snapshot: ITextSnapshot) =
         if EndsWithLineBreak snapshot then snapshot.LineCount - 1 else snapshot.LineCount
 
-    let GetLastLineNumber snapshot =
-        (GetLineCount snapshot) - 1
+    let GetLastNormalizedLineNumber snapshot =
+        (GetNormalizedLineCount snapshot) - 1
 
 module TrackingSpanUtil =
 
@@ -173,7 +173,7 @@ type SnapshotLineRange  =
         seq { for i = start to last do yield snapshot.GetLineFromLineNumber(i) }
 
     new (snapshot: ITextSnapshot, startLine: int, count: int) =
-        let lineCount = EditorCoreUtil.GetLineCount snapshot
+        let lineCount = EditorCoreUtil.GetNormalizedLineCount snapshot
         if startLine >= lineCount then
             raise (new ArgumentException("startLine", "Invalid Line Number"))
 
@@ -194,7 +194,7 @@ type SnapshotLineRange  =
 
     /// Create for the entire ITextSnapshot
     static member CreateForExtent (snapshot: ITextSnapshot) =
-        let lineCount = EditorCoreUtil.GetLineCount snapshot
+        let lineCount = EditorCoreUtil.GetNormalizedLineCount snapshot
         new SnapshotLineRange(snapshot, 0, lineCount)
 
     /// Create for a single ITextSnapshotLine
@@ -456,8 +456,10 @@ type SnapshotOverlapSpan =
 module SnapshotUtil = 
 
     /// Get the number of lines in the ITextSnapshot
-    /// (not including the phantom line, if any)
-    let GetLineCount (snapshot: ITextSnapshot) = EditorCoreUtil.GetLineCount snapshot
+    let GetLineCount (snapshot: ITextSnapshot) = snapshot.LineCount
+
+    /// Get the number of normalized lines in the ITextSnapshot
+    let GetNormalizedLineCount (snapshot: ITextSnapshot) = EditorCoreUtil.GetNormalizedLineCount snapshot
 
     /// Get the line for the specified number
     let GetLine (tss:ITextSnapshot) lineNumber = tss.GetLineFromLineNumber lineNumber
@@ -475,17 +477,23 @@ module SnapshotUtil =
     let EndsWithLineBreak (snapshot: ITextSnapshot) = EditorCoreUtil.EndsWithLineBreak snapshot
 
     /// Get the last line number of the snapshot
-    let GetLastLineNumber snapshot = EditorCoreUtil.GetLastLineNumber snapshot
+    let GetLastLineNumber (snapshot: ITextSnapshot) = snapshot.LineCount - 1
+
+    /// Get the last normmalized line number of the snapshot
+    let GetLastNormalizedLineNumber snapshot = EditorCoreUtil.GetLastNormalizedLineNumber snapshot
 
     /// Get the last line of the snapshot
     let GetLastLine snapshot = GetLastLineNumber snapshot |> GetLine snapshot
+
+    /// Get the last line of the snapshot
+    let GetLastNormalizedLine snapshot = GetLastNormalizedLineNumber snapshot |> GetLine snapshot
 
     /// Get the end point of the snapshot
     let GetEndPoint (tss:ITextSnapshot) = SnapshotPoint(tss, tss.Length)
 
     /// The the end point of the last line of the snapshot
     let GetEndPointOfLastLine (snapshot: ITextSnapshot) = 
-        let lastLine = GetLastLine snapshot
+        let lastLine = GetLastNormalizedLine snapshot
         lastLine.End
 
     /// Get the start point of the snapshot
@@ -502,12 +510,12 @@ module SnapshotUtil =
 
     /// Is the Line Number valid
     let IsLineNumberValid (tss:ITextSnapshot) lineNumber =
-        let lastLineNumber = GetLastLineNumber tss
+        let lastLineNumber = GetLastNormalizedLineNumber tss
         lineNumber >= 0 && lineNumber <= lastLineNumber
 
     /// Is the specified number is the number of the phantom line
     let IsPhantomLineNumber (snapshot: ITextSnapshot) lineNumber =
-        lineNumber = snapshot.LineCount - 1 && lineNumber = (GetLastLineNumber snapshot) + 1
+        lineNumber = snapshot.LineCount - 1 && EndsWithLineBreak snapshot
 
     /// Is the Span valid in this ITextSnapshot
     let IsSpanValid (tss:ITextSnapshot) (span:Span) = 
@@ -523,7 +531,7 @@ module SnapshotUtil =
     /// Get a valid line for the specified number if it's valid and the last line if it's
     /// not
     let GetLineOrLast tss lineNumber =
-        let lineNumber = if IsLineNumberValid tss lineNumber then lineNumber else GetLastLineNumber tss 
+        let lineNumber = if IsLineNumberValid tss lineNumber then lineNumber else GetLastNormalizedLineNumber tss 
         tss.GetLineFromLineNumber(lineNumber)
 
     /// Get a valid line for the specified number if it's valid and the last line if it's
@@ -959,6 +967,10 @@ module SnapshotLineUtil =
     let IsLastLine (line: ITextSnapshotLine) = 
         line.LineNumber = SnapshotUtil.GetLastLineNumber line.Snapshot
 
+    /// Whether this is the last normalized line
+    let IsLastNormalizedLine (line: ITextSnapshotLine) = 
+        line.LineNumber = SnapshotUtil.GetLastNormalizedLineNumber line.Snapshot
+
     /// Whether the specified line is the phantom line
     let IsPhantomLine (line: ITextSnapshotLine) =
         SnapshotUtil.IsPhantomLineNumber line.Snapshot line.LineNumber
@@ -1121,7 +1133,7 @@ module SnapshotPointUtil =
     /// (will not return the phantom line)
     let GetContainingLineOrLast (point: SnapshotPoint) =
         if EditorCoreUtil.IsEndPoint point then
-            SnapshotUtil.GetLastLine point.Snapshot
+            SnapshotUtil.GetLastNormalizedLine point.Snapshot
         else
             point.GetContainingLine()
 
@@ -2012,7 +2024,7 @@ module TextViewUtil =
         let allLinesHaveLineBreaks = SnapshotUtil.AllLinesHaveLineBreaks snapshot
         if allLinesHaveLineBreaks then
             let textBuffer = textView.TextBuffer
-            let lastLine = SnapshotUtil.GetLastLine snapshot
+            let lastLine = SnapshotUtil.GetLastNormalizedLine snapshot
             let span = SnapshotSpan(lastLine.End, lastLine.EndIncludingLineBreak)
             textBuffer.Delete(span.Span) |> ignore
 

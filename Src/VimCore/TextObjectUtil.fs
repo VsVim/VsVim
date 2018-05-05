@@ -359,7 +359,7 @@ type internal TextObjectUtil
 
             let count = 
                 match nextStartLine with 
-                | None -> (SnapshotUtil.GetLastLineNumber snapshot) - startLine.LineNumber + 1
+                | None -> (SnapshotUtil.GetLastNormalizedLineNumber snapshot) - startLine.LineNumber + 1
                 | Some nextStartLine -> nextStartLine.LineNumber - startLine.LineNumber
 
             SnapshotLineRangeUtil.CreateForLineAndCount startLine count |> Option.get
