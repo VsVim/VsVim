@@ -30,7 +30,7 @@ namespace Vim.VisualStudio
     [Export(typeof(VsVimHost))]
     [ContentType(VimConstants.ContentType)]
     [TextViewRole(PredefinedTextViewRoles.Editable)]
-    internal sealed class VsVimHost : VimHost, IVsSelectionEvents
+    internal sealed class VsVimHost : VimHost, IVsSelectionEvents, IVsRunningDocTableEvents3
     {
         #region SettingsSource
 
@@ -144,6 +144,9 @@ namespace Vim.VisualStudio
         private readonly IExtensionAdapterBroker _extensionAdapterBroker;
         private IVim _vim;
 
+        private readonly RunningDocumentTable _runningDocumentTable;
+        private readonly uint _runnindDocumentTableCookie;
+
         internal _DTE DTE
         {
             get { return _dte; }
@@ -210,6 +213,9 @@ namespace Vim.VisualStudio
             _vimApplicationSettings = vimApplicationSettings;
             _smartIndentationService = smartIndentationService;
             _extensionAdapterBroker = extensionAdapterBroker;
+
+            _runningDocumentTable = new RunningDocumentTable(serviceProvider);
+            _runnindDocumentTableCookie = _runningDocumentTable.Advise(this);
 
             _vsMonitorSelection.AdviseSelectionEvents(this, out uint cookie);
 
@@ -871,6 +877,50 @@ namespace Vim.VisualStudio
 
         int IVsSelectionEvents.OnSelectionChanged(IVsHierarchy pHierOld, uint itemidOld, IVsMultiItemSelect pMISOld, ISelectionContainer pSCOld, IVsHierarchy pHierNew, uint itemidNew, IVsMultiItemSelect pMISNew, ISelectionContainer pSCNew)
         {
+            return VSConstants.S_OK;
+        }
+
+        public int OnAfterFirstDocumentLock(uint docCookie, uint dwRDTLockType, uint dwReadLocksRemaining, uint dwEditLocksRemaining)
+        {
+            return VSConstants.S_OK;
+        }
+
+        public int OnBeforeLastDocumentUnlock(uint docCookie, uint dwRDTLockType, uint dwReadLocksRemaining, uint dwEditLocksRemaining)
+        {
+            return VSConstants.S_OK;
+        }
+
+        public int OnAfterSave(uint docCookie)
+        {
+            return VSConstants.S_OK;
+        }
+
+        public int OnAfterAttributeChange(uint docCookie, uint grfAttribs)
+        {
+            return VSConstants.S_OK;
+        }
+
+        public int OnBeforeDocumentWindowShow(uint docCookie, int fFirstShow, IVsWindowFrame pFrame)
+        {
+            return VSConstants.S_OK;
+        }
+
+        public int OnAfterDocumentWindowHide(uint docCookie, IVsWindowFrame pFrame)
+        {
+            return VSConstants.S_OK;
+        }
+
+        public int OnAfterAttributeChangeEx(uint docCookie, uint grfAttribs, IVsHierarchy pHierOld, uint itemidOld, string pszMkDocumentOld, IVsHierarchy pHierNew, uint itemidNew, string pszMkDocumentNew)
+        {
+            return VSConstants.S_OK;
+        }
+
+        public int OnBeforeSave(uint docCookie)
+        {
+            if (_vsAdapter.GetTextBufferForDocCookie(docCookie).TryGetValue(out ITextBuffer buffer))
+            {
+                RaiseBeforeSave(buffer);
+            }
             return VSConstants.S_OK;
         }
 

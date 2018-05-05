@@ -211,6 +211,8 @@ type internal VimBuffer
         let settings = _vimTextBuffer.LocalSettings :> IVimSettings
         settings.SettingChanged.Subscribe this.OnLocalSettingsChanged |> _bag.Add
 
+        _vimTextBuffer.Vim.VimHost.BeforeSave.Subscribe this.OnBeforeSave |> _bag.Add
+
     member x.BufferedKeyInputs =
         match _bufferedKeyInput with
         | None -> List.empty
@@ -403,6 +405,14 @@ type internal VimBuffer
     member x.OnLocalSettingsChanged (args: SettingEventArgs) = 
         if args.Setting.Name = LocalSettingNames.EndOfLineName then
             x.ApplyEndOfLineSetting()
+
+    /// Raised before a text buffer is saved
+    member x.OnBeforeSave (args: BeforeSaveEventArgs) = 
+        if args.TextBuffer = _vimBufferData.TextBuffer then
+            let localSettings = _vimBufferData.LocalSettings
+            let fixEndOfLineSetting = localSettings.FixEndOfLine
+            if fixEndOfLineSetting then
+                ()
 
     // Adjust the 'endofline' setting for the buffer.
     member x.AdjustEndOfLineSetting () =

@@ -23,6 +23,7 @@ namespace Vim.UI.Wpf
         private readonly List<ITextView> _textViewList = new List<ITextView>();
         private event EventHandler<TextViewEventArgs> _isVisibleChanged;
         private event EventHandler<TextViewChangedEventArgs> _activeTextViewChanged;
+        private event EventHandler<BeforeSaveEventArgs> _beforeSave;
 
         public ITextDocumentFactoryService TextDocumentFactoryService
         {
@@ -362,6 +363,15 @@ namespace Vim.UI.Wpf
             {
                 var args = new TextViewChangedEventArgs(oldTextView, newTextView);
                 _activeTextViewChanged(this, args);
+            }
+        }
+
+        protected void RaiseBeforeSave(ITextBuffer textBuffer)
+        {
+            if (_beforeSave != null)
+            {
+                var args = new BeforeSaveEventArgs(textBuffer);
+                _beforeSave(this, args);
             }
         }
 
@@ -715,6 +725,12 @@ namespace Vim.UI.Wpf
         {
             add { _activeTextViewChanged += value; }
             remove { _activeTextViewChanged -= value; }
+        }
+
+        event EventHandler<BeforeSaveEventArgs> IVimHost.BeforeSave
+        {
+            add { _beforeSave += value; }
+            remove { _beforeSave -= value; }
         }
 
         #endregion

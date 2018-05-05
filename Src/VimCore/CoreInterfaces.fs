@@ -4169,6 +4169,10 @@ type IVimHost =
     [<CLIEvent>]
     abstract ActiveTextViewChanged: IDelegateEvent<System.EventHandler<TextViewChangedEventArgs>>
 
+    /// Raised before an ITextBuffer is saved
+    [<CLIEvent>]
+    abstract BeforeSave: IDelegateEvent<System.EventHandler<BeforeSaveEventArgs>>
+
 /// Core parts of an IVimBuffer.  Used for components which make up an IVimBuffer but
 /// need the same data provided by IVimBuffer.
 and IVimBufferData =
@@ -4324,6 +4328,14 @@ and IVim =
     /// IVimBuffer instance.  This method removes the ordering concerns and maintains control of 
     /// creation in the IVimHost
     abstract TryGetOrCreateVimBufferForHost: textView: ITextView * [<Out>] vimBuffer: IVimBuffer byref -> bool
+
+and BeforeSaveEventArgs
+    (
+        _textBuffer: ITextBuffer
+    ) =
+    inherit System.EventArgs()
+
+    member x.TextBuffer = _textBuffer
 
 and SwitchModeKindEventArgs
     (
