@@ -453,6 +453,9 @@ type SnapshotOverlapSpan =
 
 /// Contains operations to help fudge the Editor APIs to be more F# friendly.  Does not
 /// include any Vim specific logic
+/// A snapshot may include the phantom line, i.e. the empty line after a final newline.
+/// Normalized lines exclude the phantom line but there is always at least one normalized
+/// line in a snapshot.
 module SnapshotUtil = 
 
     /// Get the number of lines in the ITextSnapshot
@@ -460,6 +463,11 @@ module SnapshotUtil =
 
     /// Get the number of normalized lines in the ITextSnapshot
     let GetNormalizedLineCount (snapshot: ITextSnapshot) = EditorCoreUtil.GetNormalizedLineCount snapshot
+
+    /// Get the number of normalized lines in the ITextSnapshot,
+    /// excluding the empty line of an empty buffer
+    let GetNormalizedLineCountExcludingEmpty (snapshot: ITextSnapshot) =
+        if snapshot.Length = 0 then 0 else EditorCoreUtil.GetNormalizedLineCount snapshot
 
     /// Get the line for the specified number
     let GetLine (tss:ITextSnapshot) lineNumber = tss.GetLineFromLineNumber lineNumber

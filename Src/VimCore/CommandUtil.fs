@@ -1949,11 +1949,7 @@ type internal CommandUtil
     member x.PrintFileInformation() =
         let filePath = _vimHost.GetName _textBuffer
         let snapshot = _textBuffer.CurrentSnapshot
-        let lineCount =
-            if SnapshotUtil.GetLength snapshot = 0 then
-                0
-            else
-                SnapshotUtil.GetLineCount snapshot
+        let lineCount = SnapshotUtil.GetNormalizedLineCountExcludingEmpty snapshot
         let percent = if lineCount = 0 then 0 else x.CaretLineNumber * 100 / lineCount
         let msg = sprintf "%s %d lines --%d%%--" filePath lineCount percent
         _statusUtil.OnStatus msg
