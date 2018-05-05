@@ -206,12 +206,15 @@ type internal VimBuffer
 
         _vim.MarkMap.SetMark Mark.LastJump _vimBufferData 0 0 |> ignore
 
-        // Up cast here to work around the F# bug which prevents accessing a CLIEvent from
-        // a derived type
-        let settings = _vimTextBuffer.LocalSettings :> IVimSettings
-        settings.SettingChanged.Subscribe this.OnLocalSettingsChanged |> _bag.Add
+        // Subscribe to local settings changed events.
+        _vimTextBuffer.LocalSettings.SettingChanged
+        |> Observable.subscribe (fun args -> this.OnLocalSettingsChanged args.Setting)
+        |> _bag.Add
 
-        _vimTextBuffer.Vim.VimHost.BeforeSave.Subscribe this.OnBeforeSave |> _bag.Add
+        // Subscribe to text buffer before save events.
+        _vim.VimHost.BeforeSave
+        |> Observable.subscribe (fun args -> this.OnBeforeSave args.TextBuffer)
+        |> _bag.Add
 
     member x.IsReadOnly
         with get() = _vim.VimHost.IsReadOnly _vimBufferData.TextBuffer
@@ -405,13 +408,13 @@ type internal VimBuffer
         x.AdjustEndOfLineSetting()
 
     /// Raised when a local setting is changed
-    member x.OnLocalSettingsChanged (args: SettingEventArgs) = 
-        if args.Setting.Name = LocalSettingNames.EndOfLineName then
+    member x.OnLocalSettingsChanged (setting: Setting) = 
+        if setting.Name = LocalSettingNames.EndOfLineName then
             x.ApplyEndOfLineSetting()
 
     /// Raised before a text buffer is saved
-    member x.OnBeforeSave (args: BeforeSaveEventArgs) = 
-        if args.TextBuffer = _vimBufferData.TextBuffer then
+    member x.OnBeforeSave (textBuffer: ITextBuffer) = 
+        if textBuffer = _vimBufferData.TextBuffer then
            x.ApplyFixEndOfLineSetting() 
 
     /// Adjust the 'endofline' setting for the buffer

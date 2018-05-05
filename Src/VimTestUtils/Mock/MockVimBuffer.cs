@@ -35,16 +35,12 @@ namespace Vim.UnitTest.Mock
         public IMode ExternalEditModeImpl;
         public bool IsProcessingInputImpl;
         public bool IsSwitchingModeImpl;
+        public bool IsReadOnlyImpl;
         public PropertyCollection PropertiesImpl;
         public IVimData VimDataImpl;
         public IVim VimImpl;
         public FSharpOption<ModeKind> InOneTimeCommandImpl;
         public IVimGlobalSettings GlobalSettingsImpl;
-
-        public bool IsReadOnly
-        {
-            get { return false; }
-        }
 
         public PropertyCollection Properties
         {
@@ -104,6 +100,11 @@ namespace Vim.UnitTest.Mock
         public bool IsSwitchingMode
         {
             get { return IsSwitchingModeImpl; }
+        }
+
+        public bool IsReadOnly
+        {
+            get { return IsReadOnlyImpl; }
         }
 
         public IJumpList JumpList

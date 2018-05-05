@@ -1322,13 +1322,13 @@ type internal CommandUtil
 
             let newLine =
                 let newPoint =
-                    // When this command is run on a line with a linebreak then point will still
+                    // When this command is run on a line without a linebreak, then point will still
                     // refer to the original line.  In that case we need to move to the end of the
                     // ITextSnapshot
-                    if hasLineBreak then
-                        SnapshotPoint(x.CurrentSnapshot, point.Position)
-                    else
+                    if not hasLineBreak then
                         SnapshotUtil.GetEndPoint x.CurrentSnapshot
+                    else
+                        SnapshotPoint(x.CurrentSnapshot, point.Position)
                 SnapshotPointUtil.GetContainingLine newPoint
             x.MoveCaretToNewLineIndent savedCaretLine newLine
 
