@@ -1741,7 +1741,8 @@ type internal MotionUtil
 
         let endPoint = 
             match motionContext with
-            | MotionContext.Movement -> endPoint
+            | MotionContext.Movement ->
+                SnapshotPointUtil.GetPointOrEndPointOfLastLine endPoint
             | MotionContext.AfterOperator -> 
                 // If the word motion comes after an operator and ends on the first word 
                 // of a different line, then the motion is moved back to the last line containing
