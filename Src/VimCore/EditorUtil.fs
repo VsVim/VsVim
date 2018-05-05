@@ -483,6 +483,11 @@ module SnapshotUtil =
     /// Get the end point of the snapshot
     let GetEndPoint (tss:ITextSnapshot) = SnapshotPoint(tss, tss.Length)
 
+    /// The the end point of the last line of the snapshot
+    let GetEndPointOfLastLine (snapshot: ITextSnapshot) = 
+        let lastLine = GetLastLine snapshot
+        lastLine.End
+
     /// Get the start point of the snapshot
     let GetStartPoint (tss:ITextSnapshot) = SnapshotPoint(tss, 0)
 
@@ -1140,8 +1145,8 @@ module SnapshotPointUtil =
 
     /// Is this the end of the last line of the Snapshot
     let IsEndPointOfLastLine (point: SnapshotPoint) = 
-        let lastLine = SnapshotUtil.GetLastLine point.Snapshot
-        point.Position = lastLine.End.Position
+        let endPointOfLastLine = SnapshotUtil.GetEndPointOfLastLine point.Snapshot
+        point.Position = endPointOfLastLine.Position
 
     /// Is the passed in SnapshotPoint inside the line break portion of the line
     let IsInsideLineBreak point = 
@@ -1501,6 +1506,12 @@ module SnapshotPointUtil =
 
     let GetCharacterWidth point tabStop = 
         EditorCoreUtil.GetCharacterWidth point tabStop
+
+    /// Get the point or the end point of the last line, whichever is first
+    let GetPointOrEndPointOfLastLine (point: SnapshotPoint) =
+        let endPointOfLastLine = SnapshotUtil.GetEndPointOfLastLine point.Snapshot
+        match OrderAscending point endPointOfLastLine with
+        | (firstPoint, _) -> firstPoint
 
 module VirtualSnapshotPointUtil =
     

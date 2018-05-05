@@ -397,7 +397,7 @@ type internal VimBuffer
         if x.Mode.ModeKind <> modeKind then
             _modeMap.SwitchMode modeKind modeArgument |> ignore
 
-    // Adjust any local settings for the buffer.
+    /// Adjust any local settings for the buffer
     member x.AdjustLocalSettings () =
         x.AdjustEndOfLineSetting()
 
@@ -411,7 +411,7 @@ type internal VimBuffer
         if args.TextBuffer = _vimBufferData.TextBuffer then
            x.ApplyFixEndOfLineSetting() 
 
-    // Adjust the 'endofline' setting for the buffer.
+    /// Adjust the 'endofline' setting for the buffer
     member x.AdjustEndOfLineSetting () =
         let textView = _vimBufferData.TextView
         let textBuffer = textView.TextBuffer
@@ -420,7 +420,7 @@ type internal VimBuffer
         let endOfLineSetting = SnapshotUtil.AllLinesHaveLineBreaks snapshot
         localSettings.EndOfLine <- endOfLineSetting
 
-    // Apply the 'endofline' setting to the buffer.
+    /// Apply the 'endofline' setting to the buffer
     member x.ApplyEndOfLineSetting () =
         let localSettings = _vimBufferData.LocalSettings
         let textView = _vimBufferData.TextView
@@ -430,7 +430,7 @@ type internal VimBuffer
         else
             TextViewUtil.RemoveFinalNewLine textView
 
-    /// Apply the 'fixeondofline' setting to the buffer.
+    /// Apply the 'fixeondofline' setting to the buffer
     member x.ApplyFixEndOfLineSetting () =
         let localSettings = _vimBufferData.LocalSettings
         let textView = _vimBufferData.TextView

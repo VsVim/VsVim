@@ -475,11 +475,12 @@ type internal InsertUtil
         // ICommonOperations.MoveCaretToMotionResult but then the final
         // caret position would depend on the current mode and we would
         // rather InsertUtil not be affected by the current mode.
-        let doMotion wordMotion spanPoint =
+        let doMotion wordMotion (spanToPoint: SnapshotSpan -> SnapshotPoint) =
             let argument = { MotionContext = MotionContext.Movement; OperatorCount = None; MotionCount = None }
             match _motionUtil.GetMotion (wordMotion WordKind.NormalWord) argument with
             | Some motionResult ->
-                let point = spanPoint motionResult.Span
+                let point = spanToPoint motionResult.Span
+                let point = SnapshotPointUtil.GetPointOrEndPointOfLastLine point
                 let viewFlags = ViewFlags.All &&& ~~~ViewFlags.VirtualEdit
                 _operations.MoveCaretToPoint point viewFlags
                 true
