@@ -318,6 +318,28 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
+            /// Word reaches the end of the buffer
+            /// </summary>
+            [WpfFact]
+            public void WordToEnd()
+            {
+                Create("cat", "dog");
+                _vimBuffer.Process("www");
+                Assert.Equal(_textBuffer.GetLine(1).Start.Add(2), _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// Word reaches the end of the buffer with a final newline
+            /// </summary>
+            [WpfFact]
+            public void WordToEndWithFinalNewLine()
+            {
+                Create("cat", "dog", "");
+                _vimBuffer.Process("www");
+                Assert.Equal(_textBuffer.GetLine(1).Start.Add(2), _textView.GetCaretPoint());
+            }
+
+            /// <summary>
             /// When the last line in the buffer is empty make sure that we can move down to the 
             /// second to last line. 
             /// </summary>

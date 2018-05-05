@@ -2092,6 +2092,31 @@ namespace Vim.UnitTest
                 _vimBuffer.ProcessNotation("<c-j>");
                 Assert.Equal(new[] { "hello", "world" }, _textBuffer.GetLines());
             }
+
+            /// <summary>
+            /// Word forward in insert reaches the end of the buffer
+            /// </summary>
+            [WpfFact]
+            public void WordToEnd()
+            {
+                Create("cat", "dog");
+                _textView.MoveCaretTo(0);
+                _vimBuffer.ProcessNotation("<C-Right><C-Right><C-Right>");
+                Assert.Equal(_textBuffer.GetLine(1).Start.Add(3), _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// Word forward in insert reaches the end of the buffer with a final newline
+            /// </summary>
+            [WpfFact]
+            public void WordToEndWithFinalNewLine()
+            {
+                Create("cat", "dog", "");
+                _textView.MoveCaretTo(0);
+                _vimBuffer.ProcessNotation("<C-Right><C-Right><C-Right>");
+                Assert.Equal(_textBuffer.GetLine(1).Start.Add(3), _textView.GetCaretPoint());
+            }
+
         }
 
         public abstract class TabSettingsTest : InsertModeIntegrationTest
