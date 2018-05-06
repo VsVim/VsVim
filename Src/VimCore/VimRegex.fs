@@ -391,7 +391,7 @@ type VimRegexBuilder
 module VimRegexFactory =
 
     let DollarRegex = @"(?<!\r)(?=\r?$)"
-    let NewLineRegex = "(?:\r?\n|\r)"
+    let NewLineRegex = @"(?<!\r)\r?\n"
 
     /// Generates strings based on a char filter func.  Easier than hand writing out
     /// the values

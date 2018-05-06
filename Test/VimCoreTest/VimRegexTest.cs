@@ -445,7 +445,6 @@ namespace Vim.UnitTest
                 VerifyRegex(@"\n", VimRegexFactory.NewLineRegex);
                 VerifyReplace(@"\n", "hello\nworld", " ", "hello world");
                 VerifyReplace(@"\n", "hello\r\nworld", " ", "hello world");
-                VerifyReplace(@"\n", "hello\rworld", " ", "hello world");
             }
 
             [Fact]
@@ -1285,7 +1284,7 @@ namespace Vim.UnitTest
             [Fact]
             public void NewLine_Match()
             {
-                VerifyMatches(@"\n", "hello\r\n", "hello\n", "hello\r");
+                VerifyMatches(@"\n", "hello\r\n", "hello\n");
             }
 
             [Fact]
@@ -1316,7 +1315,7 @@ namespace Vim.UnitTest
             [Fact]
             public void NewLineOrBrace()
             {
-                VerifyRegex(@"^$\|{", @"^(?<!\r)(?=\r?$)|\{");
+                VerifyRegex(@"^$\|{", @"^" + VimRegexFactory.DollarRegex + @"|\{");
                 VerifyMatches(@"^$\|{", "", "blah {");
             }
 
