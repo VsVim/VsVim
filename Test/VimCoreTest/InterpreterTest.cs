@@ -448,13 +448,15 @@ namespace Vim.UnitTest
         {
             private string _command;
             private string _arguments;
+            private string _input;
 
             public RunCommandTest()
             {
-                VimHost.RunCommandFunc = (command, arguments, vimData) =>
+                VimHost.RunCommandFunc = (command, arguments, input, vimData) =>
                     {
                         _command = command;
                         _arguments = arguments;
+                        _input = input;
 
                         return string.Empty;
                     };
@@ -2179,7 +2181,7 @@ namespace Vim.UnitTest
                 Create("");
                 var didRun = false;
                 VimHost.RunCommandFunc =
-                    (command, args, _) =>
+                    (command, args, input, _) =>
                     {
                         Assert.Equal("/c git status", args);
                         didRun = true;
@@ -2199,7 +2201,7 @@ namespace Vim.UnitTest
                 Vim.VimData.LastShellCommand = FSharpOption.Create("cat");
                 var didRun = false;
                 VimHost.RunCommandFunc =
-                    (command, args, _) =>
+                    (command, args, input, _) =>
                     {
                         Assert.Equal("/c git status cat", args);
                         didRun = true;
@@ -2218,7 +2220,7 @@ namespace Vim.UnitTest
                 Create("");
                 var didRun = false;
                 VimHost.RunCommandFunc =
-                    (command, args, _) =>
+                    (command, args, input, _) =>
                     {
                         Assert.Equal("/c git status !", args);
                         didRun = true;

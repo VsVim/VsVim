@@ -247,7 +247,7 @@ namespace Vim.UI.Wpf
         /// <summary>
         /// Run the specified command, capture it's output and return it to the caller
         /// </summary>
-        public virtual string RunCommand(string command, string arguments, IVimData vimdata)
+        public virtual string RunCommand(string command, string arguments, string input, IVimData vimdata)
         {
             var startInfo = new ProcessStartInfo
             {
@@ -625,9 +625,9 @@ namespace Vim.UI.Wpf
             return Reload(textView);
         }
 
-        string IVimHost.RunCommand(string command, string arguments, IVimData vimData)
+        string IVimHost.RunCommand(string command, string arguments, string input, IVimData vimData)
         {
-            return RunCommand(command, arguments, vimData);
+            return RunCommand(command, arguments, input, vimData);
         }
 
         void IVimHost.RunHostCommand(ITextView textView, string command, string argument)

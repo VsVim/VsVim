@@ -4132,7 +4132,7 @@ type IVimHost =
 
     /// Run the specified command with the given arguments and return the textual
     /// output
-    abstract RunCommand: file: string -> arguments: string -> vimHost: IVimData -> string
+    abstract RunCommand: file: string -> arguments: string -> input: string -> vimHost: IVimData -> string
 
     /// Run the Visual studio command in the context of the given ITextView
     abstract RunHostCommand: textView: ITextView -> commandName: string -> argument: string -> unit

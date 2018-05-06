@@ -153,7 +153,7 @@ namespace Vim.UI.Wpf.UnitTest
                 { CallBase = true }.Object;
                 var vimData = Mock.Of<IVimData>(x => x.CurrentDirectory == cwd);
 
-                vimHost.RunCommand("pwd", "", vimData);
+                vimHost.RunCommand("pwd", "", null, vimData);
 
                 // Not sure if we can do anything besides verify that it used the getter
                 Mock.Get(vimData).VerifyGet(x => x.CurrentDirectory);
