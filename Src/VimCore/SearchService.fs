@@ -1,6 +1,7 @@
 ﻿#light
 
 namespace Vim
+open System.Text.RegularExpressions
 open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Operations
 open Microsoft.VisualStudio.Text.Editor
@@ -96,25 +97,66 @@ type internal EditorSearchService
     /// will always do a search (never consults the cache)
     member private x.FindNextCore (findData: FindData) (position: int) =
         try
-            match _textSearchService.FindNext(position, true, findData) |> NullableUtil.ToOption with
-            | None -> None
-            | Some span ->
+            let result = _textSearchService.FindNext(position, true, findData) |> NullableUtil.ToOption
+            let result =
+                match result with
+                | None -> None
+                | Some span ->
 
-                // We can't match the phantom line.
-                let snapshot = findData.TextSnapshotToSearch
-                let lastLine = SnapshotUtil.GetLastLine snapshot
-                if span.Start = lastLine.Start && SnapshotLineUtil.IsPhantomLine lastLine then
+                    // We can't match the phantom line.
+                    let snapshot = findData.TextSnapshotToSearch
+                    let lastLine = SnapshotUtil.GetLastLine snapshot
+                    if span.Start = lastLine.Start && SnapshotLineUtil.IsPhantomLine lastLine then
 
-                    // Search again from outside the phantom line.
-                    let position =
-                        if Util.IsFlagSet findData.FindOptions FindOptions.SearchReverse then
-                            let point = SnapshotUtil.GetEndPointOfLastLine snapshot
-                            point.Position
+                        // Search again from outside the phantom line.
+                        let position =
+                            if Util.IsFlagSet findData.FindOptions FindOptions.SearchReverse then
+                                let point = SnapshotUtil.GetEndPointOfLastLine snapshot
+                                point.Position
+                            else
+                                0
+                        _textSearchService.FindNext(position, true, findData) |> NullableUtil.ToOption
+                    else
+                        Some span
+            let result =
+                if Util.IsFlagSet findData.FindOptions FindOptions.SearchReverse then
+                    match result with
+                    | None -> None
+                    | Some span ->
+
+                        // Verify that it actually matches to work around a TextSearchService bug.
+                        let snapshot = findData.TextSnapshotToSearch
+                        let checkOptions = findData.FindOptions &&& (~~~FindOptions.SearchReverse)
+                        let checkFindData = FindData(findData.SearchString, snapshot, checkOptions, findData.TextStructureNavigator)
+                        let checkPosition = span.Start.Position
+                        let checkResult = _textSearchService.FindNext(checkPosition, false, checkFindData) |> NullableUtil.ToOption
+                        let keepGoing =
+                            match checkResult with
+                            | None -> true
+                            | Some checkSpan ->
+                                if checkSpan = span then
+                                    false
+                                else
+                                    true
+                        if keepGoing then
+                            let newPosition = span.Start.Position
+                            let newPosition =
+                                if newPosition = 0 then
+                                    (SnapshotUtil.GetEndPoint snapshot).Position
+                                else
+                                    newPosition - 1
+                            let newPoint = SnapshotPoint(snapshot, newPosition)
+                            let newPosition =
+                                if SnapshotPointUtil.IsInsideLineBreak newPoint then
+                                    newPosition - 1
+                                else
+                                    newPosition
+                            _textSearchService.FindNext(newPosition, true, findData) |> NullableUtil.ToOption
                         else
-                            0
-                    _textSearchService.FindNext(position, true, findData) |> NullableUtil.ToOption
+                            Some span
                 else
-                    Some span
+                    result
+            result
         with 
         | :? System.InvalidOperationException ->
             // Happens when we provide an invalid regular expression.  Just return None
