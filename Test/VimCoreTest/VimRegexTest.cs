@@ -88,6 +88,24 @@ namespace Vim.UnitTest
             Assert.Equal(toMatch, match.Value);
         }
 
+        private void VerifyMatchesAt(VimRegexOptions options, string pattern, string input, params Tuple<int, int>[] spans)
+        {
+            var opt = VimRegexFactory.Create(pattern, options);
+            Assert.True(opt.IsSome());
+            var regex = opt.Value;
+            var matches = regex.Regex.Matches(input);
+            var count = matches.Cast<object>().Count();
+            Assert.Equal(count, spans.Length);
+            for (int i = 0; i < count; i++)
+            {
+                var position = spans[i].Item1;
+                var length = spans[i].Item2;
+                var match = matches[i];
+                Assert.Equal(position, match.Index);
+                Assert.Equal(length, match.Length);
+            }
+        }
+
         public sealed class BracketTest : VimRegexTest
         {
             /// <summary>
@@ -1298,8 +1316,14 @@ namespace Vim.UnitTest
             [Fact]
             public void NewLineOrBrace()
             {
-                VerifyRegex(@"^$\|{", @"^\r?$|\{");
+                VerifyRegex(@"^$\|{", @"^(?<!\r)(?=\r?$)|\{");
                 VerifyMatches(@"^$\|{", "", "blah {");
+            }
+
+            [Fact]
+            public void DollarFoward()
+            {
+                VerifyMatchesAt(VimRegexOptions.Default, "$", "abc\r\ndef\r\n", Tuple.Create(3, 0), Tuple.Create(8, 0), Tuple.Create(10, 0));
             }
         }
 
