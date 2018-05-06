@@ -493,13 +493,13 @@ module SnapshotUtil =
     /// Get the last line of the snapshot
     let GetLastLine snapshot = GetLastLineNumber snapshot |> GetLine snapshot
 
-    /// Get the last line of the snapshot
+    /// Get the last normalized line of the snapshot
     let GetLastNormalizedLine snapshot = GetLastNormalizedLineNumber snapshot |> GetLine snapshot
 
     /// Get the end point of the snapshot
     let GetEndPoint (tss:ITextSnapshot) = SnapshotPoint(tss, tss.Length)
 
-    /// The the end point of the last line of the snapshot
+    /// Get the end point of the last line of the snapshot
     let GetEndPointOfLastLine (snapshot: ITextSnapshot) = 
         let lastLine = GetLastNormalizedLine snapshot
         lastLine.End
@@ -517,8 +517,8 @@ module SnapshotUtil =
     let GetText (snapshot:ITextSnapshot) = snapshot.GetText()
 
     /// Is the Line Number valid
-    let IsLineNumberValid (tss:ITextSnapshot) lineNumber =
-        let lastLineNumber = GetLastNormalizedLineNumber tss
+    let IsLineNumberValid (snapshot: ITextSnapshot) lineNumber =
+        let lastLineNumber = GetLastNormalizedLineNumber snapshot
         lineNumber >= 0 && lineNumber <= lastLineNumber
 
     /// Is the specified number is the number of the phantom line

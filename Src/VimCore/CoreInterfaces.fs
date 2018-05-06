@@ -4637,7 +4637,7 @@ and IVimBuffer =
     /// and it's modes
     abstract Close: unit -> unit
     
-    /// Whether the buffer readonly
+    /// Whether the buffer is readonly
     abstract IsReadOnly: bool with get
 
     /// Raised when the mode is switched.  Returns the old and new mode 

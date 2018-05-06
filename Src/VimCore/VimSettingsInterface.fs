@@ -506,7 +506,7 @@ and IVimLocalSettings =
     /// Whether or not the buffer ends with a newline
     abstract EndOfLine: bool with get, set
 
-    /// Whether or not to fix endofline
+    /// Whether or not to fix any missing final newline
     abstract FixEndOfLine: bool with get, set
 
     /// Is the provided NumberFormat supported by the current options

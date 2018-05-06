@@ -3435,7 +3435,7 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
-            /// Enter insert mode but don't insert anything
+            /// Insert one character, then backspace overe it
             /// </summary>
             [WpfFact]
             public void InsertThenEraseOneCharacter()
@@ -7252,9 +7252,9 @@ namespace Vim.UnitTest
                 Create("cat", "bat");
                 _globalSettings.WhichWrap = "<,>";
                 _vimBuffer.ProcessNotation("<Right><Right><Right>");
-                Assert.Equal(_textView.GetLine(1).Start.Position, _textView.GetCaretPoint().Position);
+                Assert.Equal(_textView.GetLine(1).Start, _textView.GetCaretPoint());
                 _vimBuffer.ProcessNotation("<Right><Right><Right>");
-                Assert.Equal(_textView.GetLine(1).Start.Position + 2, _textView.GetCaretPoint().Position);
+                Assert.Equal(_textView.GetLine(1).Start.Add(2), _textView.GetCaretPoint());
             }
 
             /// <summary>
@@ -7266,9 +7266,9 @@ namespace Vim.UnitTest
                 Create("cat", "bat", "");
                 _globalSettings.WhichWrap = "<,>";
                 _vimBuffer.ProcessNotation("<Right><Right><Right>");
-                Assert.Equal(_textView.GetLine(1).Start.Position, _textView.GetCaretPoint().Position);
+                Assert.Equal(_textView.GetLine(1).Start, _textView.GetCaretPoint());
                 _vimBuffer.ProcessNotation("<Right><Right><Right>");
-                Assert.Equal(_textView.GetLine(1).Start.Position + 2, _textView.GetCaretPoint().Position);
+                Assert.Equal(_textView.GetLine(1).Start.Add(2), _textView.GetCaretPoint());
             }
         }
     }
