@@ -1471,14 +1471,18 @@ type VimInterpreter
                 | SetArgument.UseSetting name -> useSetting name)
 
     /// Run the specified shell command
-    member x.RunShellCommand (command: string) =
+    member x.RunShellCommand (lineRange: LineRangeSpecifier) (command: string) =
 
         // Actuall run the command
         let doRun command = 
 
-            let file = _globalSettings.Shell
-            let output = _vimHost.RunCommand _globalSettings.Shell command _vimData
-            _statusUtil.OnStatus output
+            if lineRange = LineRangeSpecifier.None then
+                let file = _globalSettings.Shell
+                let output = _vimHost.RunCommand _globalSettings.Shell command _vimData
+                _statusUtil.OnStatus output
+            else
+                x.RunWithLineRangeOrDefault lineRange DefaultLineRange.None (fun lineRange ->
+                    _commonOperations.FilterLines lineRange command)
 
         // Build up the actual command replacing any non-escaped ! with the previous
         // shell command
@@ -1775,7 +1779,7 @@ type VimInterpreter
         | LineCommand.Retab (lineRange, hasBang, tabStop) -> x.RunRetab lineRange hasBang tabStop
         | LineCommand.Search (lineRange, path, pattern) -> x.RunSearch lineRange path pattern
         | LineCommand.Set argumentList -> x.RunSet argumentList
-        | LineCommand.ShellCommand command -> x.RunShellCommand command
+        | LineCommand.ShellCommand (lineRange, command) -> x.RunShellCommand lineRange command
         | LineCommand.ShiftLeft lineRange -> x.RunShiftLeft lineRange
         | LineCommand.ShiftRight lineRange -> x.RunShiftRight lineRange
         | LineCommand.Sort (lineRange, hasBang, flags, pattern) -> x.RunSort lineRange hasBang flags pattern

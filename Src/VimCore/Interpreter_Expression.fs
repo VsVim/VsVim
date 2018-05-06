@@ -648,8 +648,8 @@ and [<RequireQualifiedAccess>] LineCommand =
     /// Process the '/' and '?' commands
     | Search of LineRangeSpecifier * SearchPath * string
 
-    /// Execute the given shell command
-    | ShellCommand of string
+    /// Filter the given line range through shell command
+    | ShellCommand of LineRangeSpecifier * string
 
     /// Process the '<' shift left command
     | ShiftLeft of LineRangeSpecifier

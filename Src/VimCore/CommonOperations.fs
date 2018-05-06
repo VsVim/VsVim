@@ -160,6 +160,10 @@ type internal CommonOperations
             _textBuffer.Insert(x.CaretPoint.Position, blanks) |> ignore
             TextViewUtil.MoveCaretToPosition _textView position
 
+    /// Filter the specified line range through the specified program
+    member x.FilterLines range program =
+        ()
+
     /// Format the specified line range
     member x.FormatLines range =
         _vimHost.FormatLines _textView range
@@ -1577,6 +1581,7 @@ type internal CommonOperations
         member x.EnsureAtCaret viewFlags = x.EnsureAtPoint x.CaretPoint viewFlags
         member x.EnsureAtPoint point viewFlags = x.EnsureAtPoint point viewFlags
         member x.FillInVirtualSpace() = x.FillInVirtualSpace()
+        member x.FilterLines range command = x.FilterLines range command
         member x.FormatLines range = x.FormatLines range
         member x.GetRegister registerName = x.GetRegister registerName
         member x.GetNewLineText point = x.GetNewLineText point
