@@ -101,11 +101,18 @@ type internal EditorSearchService
             | Some span ->
 
                 // We can't match the phantom line.
-                let lastLine = SnapshotUtil.GetLastLine findData.TextSnapshotToSearch
+                let snapshot = findData.TextSnapshotToSearch
+                let lastLine = SnapshotUtil.GetLastLine snapshot
                 if span.Start = lastLine.Start && SnapshotLineUtil.IsPhantomLine lastLine then
 
-                    // Search again from the beginning as though the search wrapped.
-                    _textSearchService.FindNext(0, true, findData) |> NullableUtil.ToOption
+                    // Search again from outside the phantom line.
+                    let position =
+                        if Util.IsFlagSet findData.FindOptions FindOptions.SearchReverse then
+                            let point = SnapshotUtil.GetEndPointOfLastLine snapshot
+                            point.Position
+                        else
+                            0
+                    _textSearchService.FindNext(position, true, findData) |> NullableUtil.ToOption
                 else
                     Some span
         with 
@@ -278,7 +285,7 @@ type internal SearchService
                 position <- (SnapshotUtil.GetEndPoint startPoint.Snapshot).Position
                 didWrap <- true
             else
-                position <- position - 1
+                position <- (startPoint.Subtract 1).Position
             wrapPosition <- position
 
         // Get the next search position given the search result SnapshotSpan
