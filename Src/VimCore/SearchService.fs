@@ -96,7 +96,18 @@ type internal EditorSearchService
     /// will always do a search (never consults the cache)
     member private x.FindNextCore (findData: FindData) (position: int) =
         try
-            _textSearchService.FindNext(position, true, findData) |> NullableUtil.ToOption
+            match _textSearchService.FindNext(position, true, findData) |> NullableUtil.ToOption with
+            | None -> None
+            | Some span ->
+
+                // We can't match the phantom line.
+                let lastLine = SnapshotUtil.GetLastLine findData.TextSnapshotToSearch
+                if span.Start = lastLine.Start && SnapshotLineUtil.IsPhantomLine lastLine then
+
+                    // Search again from the beginning as though the search wrapped.
+                    _textSearchService.FindNext(0, true, findData) |> NullableUtil.ToOption
+                else
+                    Some span
         with 
         | :? System.InvalidOperationException ->
             // Happens when we provide an invalid regular expression.  Just return None
@@ -272,12 +283,23 @@ type internal SearchService
 
         // Get the next search position given the search result SnapshotSpan
         let getNextSearchPosition (span: SnapshotSpan) = 
+            let endPoint = SnapshotUtil.GetEndPoint span.Snapshot
             if isForward then
-                span.End.Position
-            elif span.Start.Position = 0 then 
-                (SnapshotUtil.GetEndPoint span.Snapshot).Position
+
+                // If the search matched an empty span, we need to
+                // advance the starting position.
+                if span.Length = 0 then
+                    if span.End.Position = endPoint.Position then
+                        0
+                    else
+                        (span.Start.Add 1).Position
+                else
+                    span.End.Position
             else
-                (span.Start.Subtract 1).Position
+                if span.Start.Position = 0 then 
+                    endPoint.Position
+                else
+                    (span.Start.Subtract 1).Position
 
         while count > 0 do
             match _editorSearchService.FindNext findData position with
