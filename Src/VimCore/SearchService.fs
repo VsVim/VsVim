@@ -21,25 +21,27 @@ type ServiceSearchData = {
 type EditorServiceCacheEntry = { 
     SearchString: string
     Options: FindOptions
-    EditorData: WeakReference<ITextSnapshot * ITextStructureNavigator>
+    Snapshot: WeakReference<ITextSnapshot>
+    Navigator: WeakReference<ITextStructureNavigator>
     StartPosition: int 
     FoundSpan: Span
 } with 
 
     member x.Matches (findData: FindData) (position: int) =
         if findData.FindOptions = x.Options && findData.SearchString = x.SearchString && position = x.StartPosition then
-            match x.EditorData.Target with
-            | Some (snapshot, navigator) -> findData.TextSnapshotToSearch = snapshot && findData.TextStructureNavigator = navigator
-            | None -> false
+            match x.Snapshot.Target, x.Navigator.Target with
+            | Some snapshot, Some navigator ->
+                findData.TextSnapshotToSearch = snapshot && findData.TextStructureNavigator = navigator
+            | _, _ -> false
         else
             false
 
     static member Create (findData: FindData) (position: int) (foundSpan: SnapshotSpan) =
-        let editorData = (findData.TextSnapshotToSearch, findData.TextStructureNavigator)
         {
             SearchString = findData.SearchString
             Options = findData.FindOptions
-            EditorData = WeakReferenceUtil.Create editorData
+            Snapshot = WeakReferenceUtil.Create findData.TextSnapshotToSearch
+            Navigator = WeakReferenceUtil.Create findData.TextStructureNavigator
             StartPosition = position
             FoundSpan = foundSpan.Span
         }
