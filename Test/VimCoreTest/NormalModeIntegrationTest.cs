@@ -3331,8 +3331,9 @@ namespace Vim.UnitTest
                 /// but not match the phantom line
                 /// </summary>
                 [WpfFact]
-                public void Issue2108()
+                public void SearchForwardJustHat()
                 {
+                    // Reported in issue 2108.
                     _assertOnWarningMessage = false;
                     Create("cat", "bat", "dog", "");
                     _vimBuffer.ProcessNotation("1G/^", enter: true);
@@ -3341,6 +3342,62 @@ namespace Vim.UnitTest
                     Assert.Equal(_textBuffer.GetLine(2).Start, _textView.GetCaretPoint());
                     _vimBuffer.ProcessNotation("n");
                     Assert.Equal(_textBuffer.GetLine(0).Start, _textView.GetCaretPoint());
+                }
+
+                /// <summary>
+                /// Searching backwards successively for '^' should advance through the buffer
+                /// but not match the phantom line
+                /// </summary>
+                [WpfFact]
+                public void SearchBackwardJustHat()
+                {
+                    // Reported in issue 2108.
+                    _assertOnWarningMessage = false;
+                    Create("cat", "bat", "dog", "");
+                    _vimBuffer.ProcessNotation("3G?^", enter: true);
+                    Assert.Equal(_textBuffer.GetLine(1).Start, _textView.GetCaretPoint());
+                    _vimBuffer.ProcessNotation("n");
+                    Assert.Equal(_textBuffer.GetLine(0).Start, _textView.GetCaretPoint());
+                    _vimBuffer.ProcessNotation("n");
+                    Assert.Equal(_textBuffer.GetLine(2).Start, _textView.GetCaretPoint());
+                }
+
+                /// <summary>
+                /// Searching successively for '$' should advance through the buffer
+                /// but not match the phantom line
+                /// </summary>
+                [WpfFact(Skip = "Not fixed yet")]
+                public void SearchForwardJustDollar()
+                {
+                    // Reported in issue 2108.
+                    _assertOnWarningMessage = false;
+                    Create("cat", "bat", "dog", "");
+                    _vimBuffer.ProcessNotation("1G/$", enter: true);
+                    Assert.Equal(_textBuffer.GetLine(0).Start.Add(2), _textView.GetCaretPoint());
+                    _vimBuffer.ProcessNotation("n");
+                    Assert.Equal(_textBuffer.GetLine(1).Start.Add(2), _textView.GetCaretPoint());
+                    _vimBuffer.ProcessNotation("n");
+                    Assert.Equal(_textBuffer.GetLine(2).Start.Add(2), _textView.GetCaretPoint());
+                    _vimBuffer.ProcessNotation("n");
+                    Assert.Equal(_textBuffer.GetLine(0).Start.Add(2), _textView.GetCaretPoint());
+                }
+
+                /// <summary>
+                /// Searching backwards successively for '$' should advance through the buffer
+                /// but not match the phantom line
+                /// </summary>
+                [WpfFact]
+                public void SearchBackwardJustDollar()
+                {
+                    // Reported in issue 2108.
+                    _assertOnWarningMessage = false;
+                    Create("cat", "bat", "dog", "");
+                    _vimBuffer.ProcessNotation("3G?$", enter: true);
+                    Assert.Equal(_textBuffer.GetLine(1).Start.Add(2), _textView.GetCaretPoint());
+                    _vimBuffer.ProcessNotation("n");
+                    Assert.Equal(_textBuffer.GetLine(0).Start.Add(2), _textView.GetCaretPoint());
+                    _vimBuffer.ProcessNotation("n");
+                    Assert.Equal(_textBuffer.GetLine(2).Start.Add(2), _textView.GetCaretPoint());
                 }
             }
 
