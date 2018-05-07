@@ -11,7 +11,7 @@ namespace Vim.VisualStudio.UnitTest
 {
     public sealed class ReferenceTest
     {
-        internal static Version VisualStudioMajor = new Version(major: 10, minor: 0, build: 0, revision: 0);
+        internal static Version VisualStudioMajor = new Version(major: 11, minor: 0, build: 0, revision: 0);
 
         private static IEnumerable<Assembly> GetAssemblies()
         {
@@ -31,6 +31,24 @@ namespace Vim.VisualStudio.UnitTest
 
             // Interop DLLS don't version hence there is only one possible version.
             if (name.Contains("Interop"))
+            {
+                return null;
+            }
+
+            // Immutable DLLS don't version hence there is only one possible version.
+            if (name.Contains("Immutable"))
+            {
+                return null;
+            }
+
+            // Settings DLLS don't version hence there is only one possible version.
+            if (name.Contains("Settings"))
+            {
+                return null;
+            }
+
+            // Shell DLLS don't version hence there is only one possible version.
+            if (name.Contains("Shell"))
             {
                 return null;
             }
