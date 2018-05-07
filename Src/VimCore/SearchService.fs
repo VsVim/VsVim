@@ -93,74 +93,95 @@ type internal EditorSearchService
                 if index >= _cacheArray.Length then 0 
                 else index)
 
-    /// Find the next occurrence of FindData in the snapshot at the given position.  This
-    /// will always do a search (never consults the cache)
-    member private x.FindNextCore (findData: FindData) (position: int) =
+    /// Invoke the search service to find the next match
+    member private x.FindNextRaw (findData: FindData) (position: int) =
         try
-            let result = _textSearchService.FindNext(position, true, findData) |> NullableUtil.ToOption
-            let result =
-                match result with
-                | None -> None
-                | Some span ->
-
-                    // We can't match the phantom line.
-                    let snapshot = findData.TextSnapshotToSearch
-                    let lastLine = SnapshotUtil.GetLastLine snapshot
-                    if span.Start = lastLine.Start && SnapshotLineUtil.IsPhantomLine lastLine then
-
-                        // Search again from outside the phantom line.
-                        let position =
-                            if Util.IsFlagSet findData.FindOptions FindOptions.SearchReverse then
-                                let point = SnapshotUtil.GetEndPointOfLastLine snapshot
-                                point.Position
-                            else
-                                0
-                        _textSearchService.FindNext(position, true, findData) |> NullableUtil.ToOption
-                    else
-                        Some span
-            let result =
-                if Util.IsFlagSet findData.FindOptions FindOptions.SearchReverse then
-                    match result with
-                    | None -> None
-                    | Some span ->
-
-                        // Verify that it actually matches to work around a TextSearchService bug.
-                        let snapshot = findData.TextSnapshotToSearch
-                        let checkOptions = findData.FindOptions &&& (~~~FindOptions.SearchReverse)
-                        let checkFindData = FindData(findData.SearchString, snapshot, checkOptions, findData.TextStructureNavigator)
-                        let checkPosition = span.Start.Position
-                        let checkResult = _textSearchService.FindNext(checkPosition, false, checkFindData) |> NullableUtil.ToOption
-                        let keepGoing =
-                            match checkResult with
-                            | None -> true
-                            | Some checkSpan ->
-                                if checkSpan = span then
-                                    false
-                                else
-                                    true
-                        if keepGoing then
-                            let newPosition = span.Start.Position
-                            let newPosition =
-                                if newPosition = 0 then
-                                    (SnapshotUtil.GetEndPoint snapshot).Position
-                                else
-                                    newPosition - 1
-                            let newPoint = SnapshotPoint(snapshot, newPosition)
-                            let newPosition =
-                                if SnapshotPointUtil.IsInsideLineBreak newPoint then
-                                    newPosition - 1
-                                else
-                                    newPosition
-                            _textSearchService.FindNext(newPosition, true, findData) |> NullableUtil.ToOption
-                        else
-                            Some span
-                else
-                    result
-            result
+            _textSearchService.FindNext(position, true, findData) |> NullableUtil.ToOption
         with 
         | :? System.InvalidOperationException ->
             // Happens when we provide an invalid regular expression.  Just return None
             None
+
+    /// Find the next occurrence of FindData in the snapshot at the given position.  This
+    /// will always do a search (never consults the cache)
+    member private x.FindNextCore (findData: FindData) (position: int) =
+        let snapshot = findData.TextSnapshotToSearch
+        let lastLine = SnapshotUtil.GetLastLine snapshot
+        let isReverseSearch = Util.IsFlagSet findData.FindOptions FindOptions.SearchReverse
+        let mutable currentPosition = position;
+        let mutable result = x.FindNextRaw findData currentPosition
+        let mutable needsValidation = true
+
+        let firstMatchPosition =
+            match result with
+            | None -> position
+            | Some span -> span.Start.Position
+
+        // Repeatedly try to find the next match, ignoring phantom lines and spurious matches.
+        while needsValidation do
+            needsValidation <- false
+
+            match result with
+            | None -> ()
+            | Some span ->
+                let matchPosition = span.Start.Position
+                if span.Start = lastLine.Start && SnapshotLineUtil.IsPhantomLine lastLine then
+
+                    // Search again from outside the phantom line.
+                    let newPosition =
+                        if Util.IsFlagSet findData.FindOptions FindOptions.SearchReverse then
+                            let point = SnapshotUtil.GetEndPointOfLastLine snapshot
+                            point.Position
+                        else
+                            0
+
+                    currentPosition <- newPosition
+                    result <- x.FindNextRaw findData currentPosition
+                    needsValidation <- true
+
+                elif isReverseSearch then
+
+                    // Verify that it actually matches to work around a TextSearchService bug
+                    // that can return spurious matches when searching backward.
+                    let checkOptions = findData.FindOptions &&& (~~~FindOptions.SearchReverse)
+                    let checkFindData = FindData(findData.SearchString, snapshot, checkOptions, findData.TextStructureNavigator)
+                    let checkPosition = matchPosition
+                    let checkResult = x.FindNextRaw checkFindData checkPosition
+                    let matchesResult =
+                        match checkResult with
+                        | None -> false
+                        | Some checkSpan -> checkSpan = span
+                    if not matchesResult then
+                        let newPosition = matchPosition
+                        let newPosition =
+                            if newPosition = 0 then
+                                (SnapshotUtil.GetEndPoint snapshot).Position
+                            else
+                                newPosition - 1
+                        let newPoint = SnapshotPoint(snapshot, newPosition)
+                        let newPosition =
+                            if SnapshotPointUtil.IsInsideLineBreak newPoint then
+                                newPosition - 1
+                            else
+                                newPosition
+
+                        currentPosition <- newPosition
+                        result <- x.FindNextRaw findData currentPosition
+                        needsValidation <- true
+
+            // Make sure we didn't wrap to the first match.
+            if needsValidation then
+                match result with
+                | None -> ()
+                | Some span ->
+                    let matchPosition = span.Start.Position
+                    if matchPosition = firstMatchPosition then
+
+                        // We can't wrap past the initial position.
+                        result <- None
+
+
+        result
 
     /// Find the next occurrence of FindData at the given position.  This will use the cache 
     /// if possible
