@@ -330,7 +330,9 @@ type internal SearchService
                 FindOptions.MatchCase
         let revOptions = if searchData.Kind.IsAnyBackward then FindOptions.SearchReverse else FindOptions.None
 
-        let options = textOptions ||| caseOptions ||| revOptions
+        let multilineOptions = FindOptions.Multiline
+
+        let options = textOptions ||| caseOptions ||| revOptions ||| multilineOptions
 
         try
             match textResult with 

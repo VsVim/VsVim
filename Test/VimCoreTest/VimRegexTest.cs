@@ -448,6 +448,14 @@ namespace Vim.UnitTest
             }
 
             [Fact]
+            public void Multiline()
+            {
+                VerifyRegex(@"abc\ndef", "abc" + VimRegexFactory.NewLineRegex + "def");
+                VerifyReplace(@"abc\ndef", "abc\ndef", "xyzzy", "xyzzy");
+                VerifyReplace(@"abc\ndef", "abc\r\ndef", "xyzzy", "xyzzy");
+            }
+
+            [Fact]
             public void UpperCaseChar()
             {
                 VerifyReplace("cat", "cat dog", @"\u&", "Cat dog");
