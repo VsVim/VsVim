@@ -41,18 +41,6 @@ namespace Vim.VisualStudio.UnitTest
                 return null;
             }
 
-            // Settings DLLS don't version hence there is only one possible version.
-            if (name.Contains("Settings"))
-            {
-                return null;
-            }
-
-            // Shell DLLS don't version hence there is only one possible version.
-            if (name.Contains("Shell"))
-            {
-                return null;
-            }
-
             return VisualStudioMajor;
         }
 
