@@ -107,7 +107,7 @@ type internal EditorSearchService
     member private x.FindNextCore (findData: FindData) (position: int) =
         let snapshot = findData.TextSnapshotToSearch
         let lastLine = SnapshotUtil.GetLastLine snapshot
-        let isReverseSearch = Util.IsFlagSet findData.FindOptions FindOptions.SearchReverse
+        let isForward = not (Util.IsFlagSet findData.FindOptions FindOptions.SearchReverse)
         let mutable currentPosition = position;
         let mutable result = x.FindNextRaw findData currentPosition
         let mutable needsValidation = true
@@ -129,40 +129,55 @@ type internal EditorSearchService
 
                     // Search again from outside the phantom line.
                     let newPosition =
-                        if Util.IsFlagSet findData.FindOptions FindOptions.SearchReverse then
+                        if isForward then
+                            0
+                        else
                             let point = SnapshotUtil.GetEndPointOfLastLine snapshot
                             point.Position
-                        else
-                            0
 
                     currentPosition <- newPosition
                     result <- x.FindNextRaw findData currentPosition
                     needsValidation <- true
 
-                elif isReverseSearch then
+                else
 
                     // Verify that it actually matches to work around a TextSearchService bug
-                    // that can return spurious matches when searching backward.
+                    // that can return spurious matches for patterns involving dollar.
+                    // Specifically, at the time of this writing, the '$' pattern can
+                    // produce a spurious match at the beginning of a nonempty line.
                     let checkOptions = findData.FindOptions &&& (~~~FindOptions.SearchReverse)
                     let checkFindData = FindData(findData.SearchString, snapshot, checkOptions, findData.TextStructureNavigator)
                     let checkPosition = matchPosition
                     let checkResult = x.FindNextRaw checkFindData checkPosition
+
+                    // The pattern actually matches if a forward search directly at the match
+                    // position returns the same span.
                     let matchesResult =
                         match checkResult with
                         | None -> false
                         | Some checkSpan -> checkSpan = span
+
                     if not matchesResult then
+                        let endPoint = SnapshotUtil.GetEndPoint snapshot
                         let newPosition = matchPosition
                         let newPosition =
-                            if newPosition = 0 then
-                                (SnapshotUtil.GetEndPoint snapshot).Position
+                            if isForward then
+                                if newPosition = endPoint.Position then
+                                    0
+                                else
+                                    newPosition + 1
                             else
-                                newPosition - 1
-                        let newPoint = SnapshotPoint(snapshot, newPosition)
-                        let newPosition =
-                            if SnapshotPointUtil.IsInsideLineBreak newPoint then
-                                newPosition - 1
-                            else
+                                let newPosition =
+                                    if newPosition = 0 then
+                                        endPoint.Position
+                                    else
+                                        newPosition - 1
+                                let newPoint = SnapshotPoint(snapshot, newPosition)
+                                let newPosition =
+                                    if SnapshotPointUtil.IsInsideLineBreak newPoint then
+                                        newPosition - 1
+                                    else
+                                        newPosition
                                 newPosition
 
                         currentPosition <- newPosition
@@ -339,10 +354,19 @@ type internal SearchService
         let mutable searchResult = SearchResult.NotFound (searchData, false)
         let mutable didWrap = false
 
-        // Need to adjust the start point if we are searching backwards.  The first search occurs before the 
-        // start point.  
+        // Need to adjust the start point. If we are searching forward and the start
+        // point is the last character on the line, the first search occurs on
+        // the next line.  If we are searching backward, the first search occurs
+        // before the start point.  
         if isForward then
-            wrapPosition <- position + 1
+            let startLine = SnapshotPointUtil.GetContainingLine startPoint
+            let endOfLine = SnapshotLineUtil.GetEnd startLine
+            if startPoint.Position = endOfLine.Position - 1 then
+                let lineBreakLength = SnapshotLineUtil.GetLineBreakLength startLine
+                position <- position + 1 + lineBreakLength
+                wrapPosition <- position
+            else
+                wrapPosition <- position + 1
         else
             if position = 0 then
                 position <- (SnapshotUtil.GetEndPoint startPoint.Snapshot).Position

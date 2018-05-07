@@ -3353,7 +3353,7 @@ namespace Vim.UnitTest
                 {
                     // Reported in issue 2108.
                     _assertOnWarningMessage = false;
-                    Create("cat", "bat", "dog", "");
+                    Create("cat", "", "dog", "");
                     _vimBuffer.ProcessNotation("3G?^", enter: true);
                     Assert.Equal(_textBuffer.GetLine(1).Start, _textView.GetCaretPoint());
                     _vimBuffer.ProcessNotation("n");
@@ -3366,16 +3366,16 @@ namespace Vim.UnitTest
                 /// Searching successively for '$' should advance through the buffer
                 /// but not match the phantom line
                 /// </summary>
-                [WpfFact(Skip = "Not fixed yet")]
+                [WpfFact]
                 public void SearchForwardJustDollar()
                 {
                     // Reported in issue 2108.
                     _assertOnWarningMessage = false;
-                    Create("cat", "bat", "dog", "");
+                    Create("cat", "", "dog", "");
                     _vimBuffer.ProcessNotation("1G/$", enter: true);
                     Assert.Equal(_textBuffer.GetLine(0).Start.Add(2), _textView.GetCaretPoint());
                     _vimBuffer.ProcessNotation("n");
-                    Assert.Equal(_textBuffer.GetLine(1).Start.Add(2), _textView.GetCaretPoint());
+                    Assert.Equal(_textBuffer.GetLine(1).Start, _textView.GetCaretPoint());
                     _vimBuffer.ProcessNotation("n");
                     Assert.Equal(_textBuffer.GetLine(2).Start.Add(2), _textView.GetCaretPoint());
                     _vimBuffer.ProcessNotation("n");
@@ -3391,9 +3391,9 @@ namespace Vim.UnitTest
                 {
                     // Reported in issue 2108.
                     _assertOnWarningMessage = false;
-                    Create("cat", "bat", "dog", "");
+                    Create("cat", "", "dog", "");
                     _vimBuffer.ProcessNotation("3G?$", enter: true);
-                    Assert.Equal(_textBuffer.GetLine(1).Start.Add(2), _textView.GetCaretPoint());
+                    Assert.Equal(_textBuffer.GetLine(1).Start, _textView.GetCaretPoint());
                     _vimBuffer.ProcessNotation("n");
                     Assert.Equal(_textBuffer.GetLine(0).Start.Add(2), _textView.GetCaretPoint());
                     _vimBuffer.ProcessNotation("n");

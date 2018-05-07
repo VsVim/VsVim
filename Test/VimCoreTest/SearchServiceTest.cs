@@ -504,7 +504,7 @@ namespace Vim.UnitTest
                 for (var i = 0; i < 10; i++)
                 {
                     FindNext("dog");
-                    Assert.Equal(1, _searchCount);
+                    Assert.Equal(2, _searchCount);
                 }
             }
 
@@ -513,11 +513,11 @@ namespace Vim.UnitTest
             {
                 Create("big cat dog");
                 FindNext("dog");
-                Assert.Equal(1, _searchCount);
+                Assert.Equal(2, _searchCount);
                 FindNext("cat");
-                Assert.Equal(2, _searchCount);
+                Assert.Equal(4, _searchCount);
                 FindNext("dog");
-                Assert.Equal(2, _searchCount);
+                Assert.Equal(4, _searchCount);
             }
 
             [WpfFact]
@@ -525,10 +525,10 @@ namespace Vim.UnitTest
             {
                 Create("cat dog");
                 FindNext("dog");
-                Assert.Equal(1, _searchCount);
+                Assert.Equal(2, _searchCount);
                 _textBuffer.Replace(new Span(0, 0), "foo ");
                 FindNext("dog");
-                Assert.Equal(2, _searchCount);
+                Assert.Equal(4, _searchCount);
             }
 
             [WpfFact]
@@ -537,7 +537,7 @@ namespace Vim.UnitTest
                 Create("cat dog");
                 FindNext("dog", position: 0);
                 FindNext("dog", position: 1);
-                Assert.Equal(2, _searchCount);
+                Assert.Equal(4, _searchCount);
             }
         }
     }
