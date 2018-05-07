@@ -1319,10 +1319,24 @@ namespace Vim.UnitTest
                 VerifyMatches(@"^$\|{", "", "blah {");
             }
 
+            /// <summary>
+            /// Hat is a zero-width beginning-of-line match
+            /// </summary>
+            [Fact]
+            public void HatFoward()
+            {
+                VerifyMatchesAt(VimRegexOptions.Default, "^", "abc\r\ndef\r\n",
+                    Tuple.Create(0, 0), Tuple.Create(5, 0), Tuple.Create(10, 0));
+            }
+
+            /// <summary>
+            /// Dollar is a zero-width end-of-line match
+            /// </summary>
             [Fact]
             public void DollarFoward()
             {
-                VerifyMatchesAt(VimRegexOptions.Default, "$", "abc\r\ndef\r\n", Tuple.Create(3, 0), Tuple.Create(8, 0), Tuple.Create(10, 0));
+                VerifyMatchesAt(VimRegexOptions.Default, "$", "abc\r\ndef\r\n",
+                    Tuple.Create(3, 0), Tuple.Create(8, 0), Tuple.Create(10, 0));
             }
         }
 
