@@ -57,7 +57,7 @@ namespace Vim.UnitTest
             {
                 Create("");
                 var options = CreateFindOptions("sample", SearchKind.Forward, SearchOptions.None);
-                Assert.Equal(FindOptions.UseRegularExpressions | FindOptions.MatchCase, options);
+                Assert.Equal(FindOptions.UseRegularExpressions | FindOptions.MatchCase | FindOptions.Multiline, options);
             }
 
             [WpfFact]
@@ -65,7 +65,7 @@ namespace Vim.UnitTest
             {
                 Create("");
                 var options = CreateFindOptions("sample", SearchKind.Forward, SearchOptions.None);
-                Assert.Equal(FindOptions.UseRegularExpressions | FindOptions.MatchCase, options);
+                Assert.Equal(FindOptions.UseRegularExpressions | FindOptions.MatchCase | FindOptions.Multiline, options);
             }
 
             [WpfFact]
@@ -73,7 +73,7 @@ namespace Vim.UnitTest
             {
                 Create("");
                 var options = CreateFindOptions(@"\<sample\>", SearchKind.Forward, SearchOptions.None);
-                Assert.Equal(FindOptions.WholeWord | FindOptions.MatchCase, options);
+                Assert.Equal(FindOptions.WholeWord | FindOptions.MatchCase | FindOptions.Multiline, options);
             }
 
             [WpfFact]
@@ -82,7 +82,7 @@ namespace Vim.UnitTest
                 Create("");
                 _globalSettings.IgnoreCase = false;
                 var options = CreateFindOptions("sample", SearchKind.Forward, SearchOptions.ConsiderIgnoreCase);
-                Assert.Equal(FindOptions.UseRegularExpressions | FindOptions.MatchCase, options);
+                Assert.Equal(FindOptions.UseRegularExpressions | FindOptions.MatchCase | FindOptions.Multiline, options);
             }
 
             [WpfFact]
@@ -91,7 +91,7 @@ namespace Vim.UnitTest
                 Create("");
                 _globalSettings.IgnoreCase = true;
                 var options = CreateFindOptions("sample", SearchKind.Forward, SearchOptions.ConsiderIgnoreCase);
-                Assert.Equal(FindOptions.UseRegularExpressions, options);
+                Assert.Equal(FindOptions.UseRegularExpressions | FindOptions.Multiline, options);
             }
 
             [WpfFact]
@@ -101,7 +101,7 @@ namespace Vim.UnitTest
                 _globalSettings.IgnoreCase = true;
                 _globalSettings.SmartCase = false;
                 var options = CreateFindOptions("sample", SearchKind.Forward, SearchOptions.ConsiderIgnoreCase | SearchOptions.ConsiderSmartCase);
-                Assert.Equal(FindOptions.UseRegularExpressions, options);
+                Assert.Equal(FindOptions.UseRegularExpressions | FindOptions.Multiline, options);
             }
 
             [WpfFact]
@@ -111,7 +111,7 @@ namespace Vim.UnitTest
                 _globalSettings.IgnoreCase = true;
                 _globalSettings.SmartCase = true;
                 var options = CreateFindOptions("sample", SearchKind.Forward, SearchOptions.ConsiderIgnoreCase | SearchOptions.ConsiderSmartCase);
-                Assert.Equal(FindOptions.UseRegularExpressions, options);
+                Assert.Equal(FindOptions.UseRegularExpressions | FindOptions.Multiline, options);
             }
 
             [WpfFact]
@@ -121,7 +121,7 @@ namespace Vim.UnitTest
                 _globalSettings.IgnoreCase = true;
                 _globalSettings.SmartCase = true;
                 var options = CreateFindOptions("foo", SearchKind.Forward, SearchOptions.ConsiderIgnoreCase | SearchOptions.ConsiderSmartCase);
-                Assert.Equal(FindOptions.UseRegularExpressions, options);
+                Assert.Equal(FindOptions.UseRegularExpressions | FindOptions.Multiline, options);
             }
 
             [WpfFact]
@@ -131,7 +131,7 @@ namespace Vim.UnitTest
                 _globalSettings.IgnoreCase = true;
                 _globalSettings.SmartCase = true;
                 var options = CreateFindOptions("fOo", SearchKind.Forward, SearchOptions.ConsiderIgnoreCase | SearchOptions.ConsiderSmartCase);
-                Assert.Equal(FindOptions.UseRegularExpressions | FindOptions.MatchCase, options);
+                Assert.Equal(FindOptions.UseRegularExpressions | FindOptions.MatchCase | FindOptions.Multiline, options);
             }
 
             [WpfFact]
@@ -139,7 +139,7 @@ namespace Vim.UnitTest
             {
                 Create("");
                 var options = CreateFindOptions(PatternUtil.CreateWholeWord("sample"), SearchKind.Backward, SearchOptions.None);
-                Assert.Equal(FindOptions.WholeWord | FindOptions.MatchCase | FindOptions.SearchReverse, options);
+                Assert.Equal(FindOptions.WholeWord | FindOptions.MatchCase | FindOptions.SearchReverse | FindOptions.Multiline, options);
             }
 
             /// <summary>
@@ -151,7 +151,7 @@ namespace Vim.UnitTest
                 Create("");
                 _globalSettings.IgnoreCase = true;
                 var options = CreateFindOptions(@"d\Cog", SearchKind.Forward, SearchOptions.ConsiderIgnoreCase);
-                Assert.Equal(FindOptions.UseRegularExpressions | FindOptions.MatchCase, options);
+                Assert.Equal(FindOptions.UseRegularExpressions | FindOptions.MatchCase | FindOptions.Multiline, options);
             }
 
             /// <summary>
@@ -163,7 +163,7 @@ namespace Vim.UnitTest
                 Create("");
                 _globalSettings.IgnoreCase = false;
                 var options = CreateFindOptions(@"d\cog", SearchKind.Forward, SearchOptions.ConsiderIgnoreCase);
-                Assert.Equal(FindOptions.UseRegularExpressions, options);
+                Assert.Equal(FindOptions.UseRegularExpressions | FindOptions.Multiline, options);
             }
         }
 
