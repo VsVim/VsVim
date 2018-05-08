@@ -1,7 +1,6 @@
 ﻿#light
 
 namespace Vim
-open System.Text.RegularExpressions
 open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Operations
 open Microsoft.VisualStudio.Text.Editor
