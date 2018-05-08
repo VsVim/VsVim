@@ -2751,6 +2751,121 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class UndoTest : NormalModeIntegrationTest
+        {
+            /// <summary>
+            /// Undo of insert
+            /// </summary>
+            [WpfFact]
+            public void Undo_Insert()
+            {
+                Create("aaa bbb ccc");
+                _vimBuffer.ProcessNotation("1Gwiddd <Esc>");
+                Assert.Equal("aaa ddd bbb ccc", _textView.GetLine(0).GetText());
+                _vimBuffer.ProcessNotation("u");
+                Assert.Equal("aaa bbb ccc", _textView.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// Undo of insert with backspaces
+            /// </summary>
+            [WpfFact]
+            public void Undo_InsertWithBackspaces()
+            {
+                Create("aaa bbb ccc");
+                _vimBuffer.ProcessNotation("1Gwiddd<BS><BS>ef <Esc>");
+                Assert.Equal("aaa def bbb ccc", _textView.GetLine(0).GetText());
+                _vimBuffer.ProcessNotation("u");
+                Assert.Equal("aaa bbb ccc", _textView.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// Undo of insert with horizontal arrow keys
+            /// </summary>
+            [WpfFact]
+            public void Undo_InsertWithHorizontalArrowKeys()
+            {
+                Create("aaa bbb ccc");
+                _vimBuffer.ProcessNotation("1Gwieee <Left><Left><Left><Left>ddd <Esc>");
+                Assert.Equal("aaa ddd eee bbb ccc", _textView.GetLine(0).GetText());
+                _vimBuffer.ProcessNotation("u");
+                Assert.Equal("aaa eee bbb ccc", _textView.GetLine(0).GetText());
+                _vimBuffer.ProcessNotation("u");
+                Assert.Equal("aaa bbb ccc", _textView.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// Undo of insert with by word arrow keys
+            /// </summary>
+            [WpfFact]
+            public void Undo_InsertWithByWordArrowKeys()
+            {
+                Create("aaa bbb ccc");
+                _vimBuffer.ProcessNotation("1Gwieee <C-Left>ddd <Esc>");
+                Assert.Equal("aaa ddd eee bbb ccc", _textView.GetLine(0).GetText());
+                _vimBuffer.ProcessNotation("u");
+                Assert.Equal("aaa eee bbb ccc", _textView.GetLine(0).GetText());
+                _vimBuffer.ProcessNotation("u");
+                Assert.Equal("aaa bbb ccc", _textView.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// Undo of insert with vertical arrow keys
+            /// </summary>
+            [WpfFact]
+            public void Undo_InsertWithVerticalArrowKeys()
+            {
+                Create("aaa bbb ccc", "fff ggg hhh");
+                _vimBuffer.ProcessNotation("1Gwieee <Down>ddd <Esc>");
+                Assert.Equal(new[] { "aaa eee bbb ccc", "fff ggg ddd hhh" }, _textBuffer.GetLines());
+                _vimBuffer.ProcessNotation("u");
+                Assert.Equal(new[] { "aaa eee bbb ccc", "fff ggg hhh" }, _textBuffer.GetLines());
+                _vimBuffer.ProcessNotation("u");
+                Assert.Equal(new[] { "aaa bbb ccc", "fff ggg hhh" }, _textBuffer.GetLines());
+            }
+
+            /// <summary>
+            /// Undo of insert with a break in the undo sequence
+            /// </summary>
+            [WpfFact]
+            public void Undo_InsertWithBreakUndoSequence()
+            {
+                Create("aaa bbb ccc");
+                _vimBuffer.ProcessNotation("1Gwiddd <C-g>ueee <Esc>");
+                Assert.Equal("aaa ddd eee bbb ccc", _textView.GetLine(0).GetText());
+                _vimBuffer.ProcessNotation("u");
+                Assert.Equal("aaa ddd bbb ccc", _textView.GetLine(0).GetText());
+                _vimBuffer.ProcessNotation("u");
+                Assert.Equal("aaa bbb ccc", _textView.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// Undo of change word
+            /// </summary>
+            [WpfFact]
+            public void Undo_ChangeWord()
+            {
+                Create("aaa bbb ccc");
+                _vimBuffer.ProcessNotation("1Gwcwddd<Esc>");
+                Assert.Equal("aaa ddd ccc", _textView.GetLine(0).GetText());
+                _vimBuffer.ProcessNotation("u");
+                Assert.Equal("aaa bbb ccc", _textView.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// Undo of change word with backspaces
+            /// </summary>
+            [WpfFact]
+            public void Undo_ChangeWordWithBackspaces()
+            {
+                Create("aaa bbb ccc");
+                _vimBuffer.ProcessNotation("1Gwcwddd<BS><BS>ef<Esc>");
+                Assert.Equal("aaa def ccc", _textView.GetLine(0).GetText());
+                _vimBuffer.ProcessNotation("u");
+                Assert.Equal("aaa bbb ccc", _textView.GetLine(0).GetText());
+            }
+        }
+
         public sealed class UndoLineTest : NormalModeIntegrationTest
         {
             /// <summary>

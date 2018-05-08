@@ -178,6 +178,9 @@ type ActiveEditItem =
     /// In Replace mode, will overwrite using the selected Register
     | OverwriteReplace
 
+    /// In the middle of an undo operation.  Waiting for the next key
+    | Undo 
+
     /// No active items
     | None
 
@@ -307,6 +310,7 @@ type internal InsertMode
                 ("<C-o>", RawInsertCommand.CustomCommand this.ProcessNormalModeOneCommand)
                 ("<C-p>", RawInsertCommand.CustomCommand this.ProcessWordCompletionPrevious)
                 ("<C-r>", RawInsertCommand.CustomCommand this.ProcessPasteStart)
+                ("<C-g>", RawInsertCommand.CustomCommand this.ProcessUndoStart)
             |]
             |> Seq.map (fun (text, rawInsertCommand) ->
                 let keyInput = KeyNotationUtil.StringToKeyInput text
@@ -709,7 +713,18 @@ type internal InsertMode
             let args = CommandRunDataEventArgs(data)
             _commandRanEvent.Trigger x args
 
+            // If there is an existing undo transaction, close it out and start a new one.
+            x.BreakUndoSequence "Insert after motion" 
+
         ProcessResult.OfCommandResult result
+
+    member x.BreakUndoSequence name =
+        match _sessionData.Transaction with
+        | None -> ()
+        | Some transaction ->
+            transaction.Complete()
+            let transaction = _undoRedoOperations.CreateLinkedUndoTransactionWithFlags name LinkedUndoTransactionFlags.CanBeEmpty
+            _sessionData <- { _sessionData with Transaction = Some transaction }
 
     /// Paste the contents of the specified register with the given flags 
     ///
@@ -816,6 +831,12 @@ type internal InsertMode
         _sessionData <- { _sessionData with ActiveEditItem = if _isReplace then ActiveEditItem.OverwriteReplace else ActiveEditItem.Paste }
         ProcessResult.Handled ModeSwitch.NoSwitch
 
+    /// Start a undo session in insert mode
+    member x.ProcessUndoStart keyInput =
+        x.CancelWordCompletionSession()
+        _sessionData <- { _sessionData with ActiveEditItem = ActiveEditItem.Undo }
+        ProcessResult.Handled ModeSwitch.NoSwitch
+
     /// Process the second key of a paste operation.  
     member x.ProcessPaste keyInput = 
 
@@ -836,6 +857,17 @@ type internal InsertMode
         else
             let flags = PasteFlags.Formatting ||| PasteFlags.Indent ||| PasteFlags.TextAsTyped
             x.Paste keyInput flags
+
+    /// Process the second key of an undo operation.  
+    member x.ProcessUndo keyInput = 
+
+        // Handle the next key.
+        if keyInput = KeyInputUtil.CharToKeyInput 'u' then
+            x.BreakUndoSequence "Break undo sequence"
+
+        _sessionData <- { _sessionData with ActiveEditItem = ActiveEditItem.None }
+
+        ProcessResult.Handled ModeSwitch.NoSwitch
 
     /// Process the KeyInput value
     member x.Process keyInput = 
@@ -867,6 +899,9 @@ type internal InsertMode
                     | RawInsertCommand.CustomCommand func -> func keyInput
                     | RawInsertCommand.InsertCommand (keyInputSet, insertCommand, commandFlags) -> x.RunInsertCommand insertCommand keyInputSet commandFlags
                 | None -> ProcessResult.NotHandled
+
+        | ActiveEditItem.Undo ->
+            x.ProcessUndo keyInput
 
     /// This is raised when caret changes.  If this is the result of a user click then 
     /// we need to complete the change.
@@ -1000,8 +1035,7 @@ type internal InsertMode
         // text change
         _textChangeTracker.TrackCurrentChange <- true
 
-        // On enter we need to check the 'count' and possibly set up a transaction to 
-        // lump edits and their repeats together
+        // Set up transaction and kind of insert
         let transaction, insertKind =
             match arg with
             | ModeArgument.InsertBlock (blockSpan, transaction) ->
@@ -1011,22 +1045,20 @@ type internal InsertMode
                     let transaction = _undoRedoOperations.CreateLinkedUndoTransactionWithFlags "Insert with count" LinkedUndoTransactionFlags.CanBeEmpty
                     Some transaction, InsertKind.Repeat (count, false, TextChange.Insert StringUtil.Empty)
                 else
-                    None, InsertKind.Normal
+                    let transaction = _undoRedoOperations.CreateLinkedUndoTransactionWithFlags "Insert" LinkedUndoTransactionFlags.CanBeEmpty
+                    Some transaction, InsertKind.Normal
             | ModeArgument.InsertWithCountAndNewLine count ->
                 if count > 1 then
                     let transaction = _undoRedoOperations.CreateLinkedUndoTransactionWithFlags "Insert with count and new line" LinkedUndoTransactionFlags.CanBeEmpty
                     Some transaction, InsertKind.Repeat (count, true, TextChange.Insert StringUtil.Empty)
                 else
-                    None, InsertKind.Normal
+                    let transaction = _undoRedoOperations.CreateLinkedUndoTransactionWithFlags "Insert with new line" LinkedUndoTransactionFlags.CanBeEmpty
+                    Some transaction, InsertKind.Normal
             | ModeArgument.InsertWithTransaction transaction ->
                 Some transaction, InsertKind.Normal
             | _ -> 
-                if _isReplace then
-                    // Replace mode occurs under a transaction even if we are not repeating
-                    let transaction = _undoRedoOperations.CreateLinkedUndoTransactionWithFlags "Insert with transaction" LinkedUndoTransactionFlags.CanBeEmpty
-                    Some transaction, InsertKind.Normal
-                else
-                    None, InsertKind.Normal
+                let transaction = _undoRedoOperations.CreateLinkedUndoTransactionWithFlags "Insert with transaction" LinkedUndoTransactionFlags.CanBeEmpty
+                Some transaction, InsertKind.Normal
 
         // If the LastCommand coming into insert / replace mode is not setup for linking 
         // with the next change then clear it out now.  This is needed to implement functions
