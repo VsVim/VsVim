@@ -217,7 +217,11 @@ namespace Vim.UnitTest
              InlineData(@"set shell=c:\1\sh.exe", @"c:\1\sh.exe"),
              InlineData(@"set shell=c:\s\sh.exe", @"c:\s\sh.exe"),
              InlineData(@"set shell=c:\sss\sh.exe", @"c:\sss\sh.exe"),
-             InlineData(@"set shell=c:\sh.exe", @"c:\sh.exe")]
+             InlineData(@"set shell=c:\sh.exe", @"c:\sh.exe"),
+             InlineData(@"set shell=c:\Program\ Files\sh.exe", @"c:\Program Files\sh.exe"),
+             InlineData(@"set shell=c:\\Program\ Files\\sh.exe", @"c:\Program Files\sh.exe"),
+             InlineData(@"set shell=cat\ dog shellcmdflag=bat", @"cat dog"),
+            ]
             public void Shell(string command, string expected)
             {
                 Run(command);

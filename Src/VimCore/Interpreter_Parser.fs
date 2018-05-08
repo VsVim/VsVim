@@ -1548,6 +1548,41 @@ type Parser
 
         result
 
+    /// Parse out a string option value from the token stream.  The string ends
+    /// on space or vertical bar and backslash escapes only those characters
+    ///
+    /// help option-backslash
+    member x.ParseOptionBackslash() = 
+        use reset = _tokenizer.SetTokenizerFlagsScoped TokenizerFlags.AllowDoubleQuote
+
+        let builder = System.Text.StringBuilder()
+        let mutable isDone = false
+        while not isDone && not _tokenizer.IsAtEndOfLine do
+            match _tokenizer.CurrentChar with
+            | '\\' ->
+                // Insert the next character literally
+                _tokenizer.MoveNextChar()
+                if _tokenizer.IsAtEndOfLine then
+                    builder.AppendChar '\\'
+                    isDone <- true
+                else
+                    let char = _tokenizer.CurrentChar
+                    if @" \|".Contains(char.ToString()) then
+                        builder.AppendChar char
+                    else
+                        builder.AppendChar '\\'
+                        builder.AppendChar char
+                    _tokenizer.MoveNextChar()
+            | ' ' ->
+                // Found the terminating character
+                _tokenizer.MoveNextChar()
+                isDone <- true
+            | c ->
+                builder.AppendChar c
+                _tokenizer.MoveNextChar()
+
+        builder.ToString()
+
     /// Parse out the 'tabnew' / 'tabedit' commands.  They have the same set of arguments
     member x.ParseTabNew() = 
         let filePath = x.ParseRestOfLineAsFilePath()
@@ -1918,16 +1953,8 @@ type Parser
                     _tokenizer.MoveNextToken()
                     parseNext (SetArgument.AssignSetting (name, ""))
                 else
-                    let value = x.ParseWhile (fun token -> 
-                        match token.TokenKind with
-                        | TokenKind.Word _ -> true
-                        | TokenKind.Character c ->
-                            CharUtil.IsLetterOrDigit c || @"-:\.,<>~[]".Contains(c.ToString())
-                        | TokenKind.Number number -> true
-                        | _ -> false)
-                    match value with 
-                    | None -> LineCommand.ParseError Resources.Parser_Error
-                    | Some value -> parseNext (argumentFunc (name, value))
+                    let value = x.ParseOptionBackslash ()
+                    parseNext (argumentFunc (name, value))
 
             // Parse out a simple assignment.  Move past the assignment char and get the value
             let parseAssign name = 
