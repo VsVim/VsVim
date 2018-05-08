@@ -172,7 +172,7 @@ type internal CommonOperations
             |> String.concat ""
 
         // Filter the input to the output.
-        let output = input.ToUpper()
+        let output = _vimHost.RunCommand _globalSettings.Shell program input _vimData
 
         // Prepare the replacement.
         let replacement = output

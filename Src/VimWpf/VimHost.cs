@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Media;
 using System.Windows;
+using System.Threading.Tasks;
 using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
@@ -245,7 +246,8 @@ namespace Vim.UI.Wpf
         }
 
         /// <summary>
-        /// Run the specified command, capture it's output and return it to the caller
+        /// Run the specified command on the supplied input, capture it's output and
+        /// return it to the caller
         /// </summary>
         public virtual string RunCommand(string command, string arguments, string input, IVimData vimdata)
         {
@@ -253,15 +255,22 @@ namespace Vim.UI.Wpf
             {
                 FileName = command,
                 Arguments = arguments,
+                RedirectStandardInput = true,
                 RedirectStandardOutput = true,
                 UseShellExecute = false,
+                CreateNoWindow = true,
                 WorkingDirectory = vimdata.CurrentDirectory
             };
             try
             {
                 var process = Process.Start(startInfo);
+                var stdin = process.StandardInput;
+                var stdout = process.StandardOutput;
+                var inputTask = Task.Run(() => { stdin.Write(input); stdin.Close(); });
+                var outputTask = Task<string>.Run(() => stdout.ReadToEnd());
                 process.WaitForExit();
-                return process.StandardOutput.ReadToEnd();
+                inputTask.Wait();
+                return outputTask.Result;
             }
             catch (Exception ex)
             {
