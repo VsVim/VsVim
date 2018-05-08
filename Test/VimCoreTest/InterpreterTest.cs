@@ -482,6 +482,67 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class RunFilterTest : InterpreterTest
+        {
+            private string _command;
+            private string _arguments;
+            private string _input;
+
+            public RunFilterTest()
+            {
+                VimHost.RunCommandFunc = (command, arguments, input, vimData) =>
+                    {
+                        _command = command;
+                        _arguments = arguments;
+                        _input = input;
+
+                        // Reverse the order of the lines.
+                        var newLine = Environment.NewLine;
+                        var reversedLines = _input
+                            .Split(new[] { newLine }, StringSplitOptions.None)
+                            .Reverse()
+                            .Skip(1);
+                        return String.Join(newLine, reversedLines) + newLine;
+                    };
+            }
+
+            /// <summary>
+            /// Reverse all lines with no final newline
+            /// </summary>
+            [WpfFact]
+            public void NoFinalNewLine()
+            {
+                Create("cat", "dog", "bat");
+                ParseAndRun(":%!reverse");
+                Assert.Equal("/c reverse", _arguments);
+                Assert.Equal(new[] { "bat", "dog", "cat", }, _textBuffer.GetLines());
+            }
+
+            /// <summary>
+            /// Reverse all lines with final newline
+            /// </summary>
+            [WpfFact]
+            public void WithFinalNewLine()
+            {
+                Create("cat", "dog", "bat", "");
+                ParseAndRun(":%!reverse");
+                Assert.Equal("/c reverse", _arguments);
+                Assert.Equal(new[] { "bat", "dog", "cat", "", }, _textBuffer.GetLines());
+            }
+
+            /// <summary>
+            /// Reverse line range
+            /// </summary>
+            [WpfFact]
+            public void LineRange()
+            {
+                Create("xxx", "cat", "dog", "bat", "yyy", "");
+                ParseAndRun(":2,4!reverse");
+                Assert.Equal("/c reverse", _arguments);
+                Assert.Equal(new[] { "xxx", "bat", "dog", "cat", "yyy", "", }, _textBuffer.GetLines());
+            }
+        }
+
         public sealed class RunSearhTest : InterpreterTest
         {
             [WpfFact]
