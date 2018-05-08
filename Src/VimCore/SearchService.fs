@@ -443,24 +443,21 @@ type internal SearchService
 
         searchResult
 
+    /// Perform a search using the specified ServiceSearchData from the specified point
     member x.FindNextCore (serviceSearchData: ServiceSearchData) (startPoint: SnapshotPoint) count =
-
-        // Find the real place to search.  When going forward we should start after
-        // the caret and before should start before. This prevents the text 
-        // under the caret from being the first match
         let searchData = serviceSearchData.SearchData
-
-        // Go ahead and run the search
         let snapshot = startPoint.Snapshot
         match SearchService.ConvertToFindDataCore serviceSearchData snapshot with
         | VimResult.Error msg -> SearchResult.Error (searchData, msg)
         | VimResult.Result findData -> x.FindCore serviceSearchData findData startPoint count 
 
+    /// Perform a search using the specified SearchData from the specified point with
+    /// the specified navigator
     member x.FindNext searchData startPoint navigator = 
         let searchServiceData = x.GetServiceSearchData searchData navigator
         x.FindNextCore searchServiceData startPoint 1
 
-    /// Search for the given pattern from the specified point. 
+    /// Search for the given pattern from the specified point
     member x.FindNextPattern searchData startPoint navigator count = 
         let searchServiceData = x.GetServiceSearchData searchData navigator
         x.FindNextCore searchServiceData startPoint count
