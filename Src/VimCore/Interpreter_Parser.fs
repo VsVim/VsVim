@@ -1584,7 +1584,12 @@ type Parser
                     builder.AppendChar char
                     _tokenizer.MoveNextChar()
 
-        builder.ToString()
+        // Expand environment variables for filenames.
+        let value = builder.ToString()
+        if isFileName then
+            SystemUtil.ResolvePath value
+        else
+            value
 
     /// Parse out the 'tabnew' / 'tabedit' commands.  They have the same set of arguments
     member x.ParseTabNew() = 
