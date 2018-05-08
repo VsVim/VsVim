@@ -161,8 +161,35 @@ type internal CommonOperations
             TextViewUtil.MoveCaretToPosition _textView position
 
     /// Filter the specified line range through the specified program
-    member x.FilterLines range program =
-        ()
+    member x.FilterLines (range: SnapshotLineRange) program =
+
+        // Extract the lines to be filtered.
+        let newLine = EditUtil.NewLine _editorOptions
+        let input =
+            range.Lines
+            |> Seq.map SnapshotLineUtil.GetText
+            |> Seq.map (fun line -> line + newLine)
+            |> String.concat ""
+
+        // Filter the input to the output.
+        let output = input.ToUpper()
+
+        // Prepare the replacement.
+        let replacement = output
+
+        // Remove final linebreak.
+        let replacement = Regex.Replace(replacement, @"\r?\n$", "")
+
+        // Normalize linebreaks.
+        let replacement = Regex.Replace(replacement, @"\r?\n", newLine)
+
+        // Replace the old lines with the filtered lines.
+        _textBuffer.Replace(range.Extent.Span, replacement) |> ignore
+
+        // Place the cursor on the first non-blank character of the first line filtered.
+        let firstLine = SnapshotUtil.GetLine _textView.TextSnapshot range.StartLineNumber
+        TextViewUtil.MoveCaretToPoint _textView firstLine.Start
+        _editorOperations.MoveToStartOfLineAfterWhiteSpace(false)
 
     /// Format the specified line range
     member x.FormatLines range =
