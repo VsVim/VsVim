@@ -375,7 +375,7 @@ type internal SearchService
                 position <- (SnapshotUtil.GetEndPoint startPoint.Snapshot).Position
                 didWrap <- true
             else
-                position <- (startPoint.Subtract 1).Position
+                position <- position - 1
             wrapPosition <- position
 
         // Get the next search position given the search result SnapshotSpan
