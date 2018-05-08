@@ -204,8 +204,11 @@ namespace Vim.UnitTest
             }
 
             [WpfTheory,
-            InlineData(@"set shellcmdflag=-lic", @"-lic"),
-            InlineData(@"set shellcmdflag=sh", @"sh")]
+                InlineData(@"set shellcmdflag=-lic", @"-lic"),
+                InlineData(@"set shellcmdflag=sh", @"sh"),
+                InlineData(@"set shellcmdflag=a\b", @"ab"),
+                InlineData(@"set shellcmdflag=a\\b", @"a\b"),
+            ]
             public void ShellFlag(string command, string expected)
             {
                 Run(command);
@@ -213,14 +216,15 @@ namespace Vim.UnitTest
             }
 
             [WpfTheory,
-             InlineData(@"set shell=sh.exe", @"sh.exe"),
-             InlineData(@"set shell=c:\1\sh.exe", @"c:\1\sh.exe"),
-             InlineData(@"set shell=c:\s\sh.exe", @"c:\s\sh.exe"),
-             InlineData(@"set shell=c:\sss\sh.exe", @"c:\sss\sh.exe"),
-             InlineData(@"set shell=c:\sh.exe", @"c:\sh.exe"),
-             InlineData(@"set shell=c:\Program\ Files\sh.exe", @"c:\Program Files\sh.exe"),
-             InlineData(@"set shell=c:\\Program\ Files\\sh.exe", @"c:\Program Files\sh.exe"),
-             InlineData(@"set shell=cat\ dog shellcmdflag=bat", @"cat dog"),
+                InlineData(@"set shell=sh.exe", @"sh.exe"),
+                InlineData(@"set shell=c:\1\sh.exe", @"c:\1\sh.exe"),
+                InlineData(@"set shell=c:\s\sh.exe", @"c:\s\sh.exe"),
+                InlineData(@"set shell=c:\sss\sh.exe", @"c:\sss\sh.exe"),
+                InlineData(@"set shell=c:\sh.exe", @"c:\sh.exe"),
+                InlineData(@"set shell=\.vimrc", @"\.vimrc"),
+                InlineData(@"set shell=c:\Program\ Files\sh.exe", @"c:\Program Files\sh.exe"),
+                InlineData(@"set shell=c:\\Program\ Files\\sh.exe", @"c:\Program Files\sh.exe"),
+                InlineData(@"set shell=cat\ dog shellcmdflag=bat", @"cat dog"),
             ]
             public void Shell(string command, string expected)
             {

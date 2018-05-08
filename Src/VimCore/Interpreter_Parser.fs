@@ -1549,10 +1549,11 @@ type Parser
         result
 
     /// Parse out a string option value from the token stream.  The string ends
-    /// on space or vertical bar and backslash escapes only those characters
+    /// on whitespace or vertical bar. If the option is a filename, backslash
+    // escapes only non-filename characters.  Otherwise, it escapes all characters.
     ///
     /// help option-backslash
-    member x.ParseOptionBackslash() = 
+    member x.ParseOptionBackslash isFileName = 
         use reset = _tokenizer.SetTokenizerFlagsScoped TokenizerFlags.AllowDoubleQuote
 
         let builder = System.Text.StringBuilder()
@@ -1560,26 +1561,28 @@ type Parser
         while not isDone && not _tokenizer.IsAtEndOfLine do
             match _tokenizer.CurrentChar with
             | '\\' ->
-                // Insert the next character literally
+
+                // Escape the next character.
                 _tokenizer.MoveNextChar()
                 if _tokenizer.IsAtEndOfLine then
                     builder.AppendChar '\\'
                     isDone <- true
                 else
                     let char = _tokenizer.CurrentChar
-                    if @" \|".Contains(char.ToString()) then
-                        builder.AppendChar char
-                    else
+                    if isFileName && CharUtil.IsFileNameChar char then
                         builder.AppendChar '\\'
                         builder.AppendChar char
+                    else
+                        builder.AppendChar char
                     _tokenizer.MoveNextChar()
-            | ' ' ->
-                // Found the terminating character
-                _tokenizer.MoveNextChar()
-                isDone <- true
-            | c ->
-                builder.AppendChar c
-                _tokenizer.MoveNextChar()
+
+            | char ->
+                if CharUtil.IsBlank char || "|".Contains(char.ToString()) then
+                    _tokenizer.MoveNextChar()
+                    isDone <- true
+                else
+                    builder.AppendChar char
+                    _tokenizer.MoveNextChar()
 
         builder.ToString()
 
@@ -1935,6 +1938,10 @@ type Parser
         let newTabStop = x.ParseNumber()
         LineCommand.Retab (lineRange, hasBang, newTabStop)
 
+    /// Whether the specified variable is a file name variable, e.g. shell
+    member x.IsFileNameSetting (name: string) =
+        [| "shell"; "sh" |] |> Seq.contains name
+
     /// Parse out the :set command and all of it's variants
     member x.ParseSet () = 
 
@@ -1953,7 +1960,8 @@ type Parser
                     _tokenizer.MoveNextToken()
                     parseNext (SetArgument.AssignSetting (name, ""))
                 else
-                    let value = x.ParseOptionBackslash ()
+                    let isFileName = x.IsFileNameSetting name
+                    let value = x.ParseOptionBackslash isFileName
                     parseNext (argumentFunc (name, value))
 
             // Parse out a simple assignment.  Move past the assignment char and get the value
