@@ -251,7 +251,10 @@ namespace Vim.UI.Wpf
         /// </summary>
         public virtual RunCommandResults RunCommand(string command, string arguments, string input, IVimData vimdata)
         {
+            // Use a (generous) timeout since we have no way to interrupt it.
             var timeout = 30 * 1000;
+
+            // Populate the start info.
             var startInfo = new ProcessStartInfo
             {
                 FileName = command,
@@ -263,6 +266,8 @@ namespace Vim.UI.Wpf
                 CreateNoWindow = true,
                 WorkingDirectory = vimdata.CurrentDirectory
             };
+
+            // Start the process and tasks to manage the I/O.
             try
             {
                 var process = Process.Start(startInfo);

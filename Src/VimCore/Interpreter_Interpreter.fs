@@ -1473,8 +1473,18 @@ type VimInterpreter
     /// Run the specified shell command
     member x.RunShellCommand (lineRange: LineRangeSpecifier) (command: string) =
 
-        // Actuall run the command
-        let doRun command = 
+        // Actually run the command.
+        let doRun (command: string) = 
+
+            // Save the last shell command for repeats.
+            _vimData.LastShellCommand <- Some command
+
+            // Prepend the shell flag before the other arguments
+            let command =
+                if _globalSettings.ShellFlag.Length > 0 then
+                    sprintf "%s %s" _globalSettings.ShellFlag command
+                else
+                    command
 
             if lineRange = LineRangeSpecifier.None then
                 let file = _globalSettings.Shell
@@ -1489,11 +1499,6 @@ type VimInterpreter
         // shell command
         let builder = System.Text.StringBuilder()
 
-        // Append the shell flag before the other arguments
-        if _globalSettings.ShellFlag.Length > 0 then
-            builder.AppendString _globalSettings.ShellFlag
-            builder.AppendChar ' '
-
         let rec inner index afterBackslash = 
             if index >= command.Length then
                 builder.ToString() |> doRun
@@ -1507,7 +1512,7 @@ type VimInterpreter
                     // specifically called out in the documentation for :shell
                     let afterBackslash = next = '\\'
                     inner (index + 2) afterBackslash
-                elif current = '!' then
+                elif current = '!' && not afterBackslash then
                     match _vimData.LastShellCommand with
                     | None -> 
                         _statusUtil.OnError Resources.Common_NoPreviousShellCommand

@@ -2270,6 +2270,7 @@ namespace Vim.UnitTest
                         return new RunCommandResults(0, "", "");
                     };
                 ParseAndRun(@"!git status !");
+                Assert.Equal(Vim.VimData.LastShellCommand, FSharpOption.Create("git status cat"));
                 Assert.True(didRun);
             }
 
@@ -2289,6 +2290,25 @@ namespace Vim.UnitTest
                         return new RunCommandResults(0, "", "");
                     };
                 ParseAndRun(@"!git status \!");
+                Assert.True(didRun);
+            }
+
+            /// <summary>
+            /// Don't replace a ! which occurs after an \\
+            /// </summary>
+            [WpfFact]
+            public void ShellCommand_BangNoReplace_DoubleEscape()
+            {
+                Create("");
+                var didRun = false;
+                VimHost.RunCommandFunc =
+                    (command, args, input, _) =>
+                    {
+                        Assert.Equal(@"/c git status \!", args);
+                        didRun = true;
+                        return new RunCommandResults(0, "", "");
+                    };
+                ParseAndRun(@"!git status \\!");
                 Assert.True(didRun);
             }
 
