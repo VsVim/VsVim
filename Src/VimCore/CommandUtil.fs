@@ -925,34 +925,54 @@ type internal CommandUtil
         let span = action snapshotData
         BufferGraphUtil.MapSpanDownToSingle _bufferGraph span x.CurrentSnapshot
 
-    /// Get filter command
-    member x.GetFilterCommand () =
-        "/c wc -l"
+    /// Get a line range specifier
+    member x.GetLineRangeSpecifier (lineRange: SnapshotLineRange) =
+        let caretLine = TextViewUtil.GetCaretLine _textView
+        let caretLineNumber = SnapshotLineUtil.GetLineNumber caretLine
+        let extentLineRange = SnapshotLineRange.CreateForExtent x.CurrentSnapshot
+        let lastLineNumber = extentLineRange.LastLineNumber
+
+        let getLineSpecifier (line: int) =
+            if line = 0 then
+                "1"
+            elif line = lastLineNumber then
+                "$"
+            elif line = caretLineNumber && not _localSettings.Number then
+                "."
+            else
+                string(line + 1)
+
+        if lineRange.StartLineNumber = 0 && lineRange.LastLineNumber = lastLineNumber then
+            "%"
+        elif lineRange.StartLineNumber = lineRange.LastLineNumber then
+            getLineSpecifier lineRange.StartLineNumber
+        else
+            let startLineSpecifier = getLineSpecifier lineRange.StartLineNumber
+            let lastLineSpecifier = getLineSpecifier lineRange.LastLineNumber
+            startLineSpecifier + "," + lastLineSpecifier
+
+    /// Build a partial filter command and switch to command mode
+    member x.StartFilterCommand (specifier: string) =
+        let partialCommand = specifier + "!"
+        let modeArgument = ModeArgument.PartialCommand partialCommand
+        CommandResult.Completed (ModeSwitch.SwitchModeWithArgument (ModeKind.Command, modeArgument))
 
     /// Filter the 'count' lines in the buffer
     member x.FilterLines count =
-        let range = SnapshotLineRangeUtil.CreateForLineAndMaxCount x.CaretLine count
-        let command = x.GetFilterCommand()
-        _commonOperations.FilterLines range command
-        CommandResult.Completed ModeSwitch.NoSwitch
+        let lineRange = SnapshotLineRangeUtil.CreateForLineAndMaxCount x.CaretLine count
+        let specifier = x.GetLineRangeSpecifier lineRange
+        x.StartFilterCommand specifier
 
     /// Filter the lines in the Motion
     member x.FilterMotion (result: MotionResult) =
-        let command = x.GetFilterCommand()
-        _commonOperations.FilterLines result.LineRange command
-        CommandResult.Completed ModeSwitch.NoSwitch
+        let lineRange = result.LineRange
+        let specifier = x.GetLineRangeSpecifier lineRange
+        x.StartFilterCommand specifier
 
     /// Filter the selected lines
     member x.FilterLinesVisual (visualSpan: VisualSpan) =
-
-        // Use a transaction so the filters occur as a single operation.
-        let command = x.GetFilterCommand()
-        x.EditWithUndoTransaction "Filter" (fun () ->
-            visualSpan.Spans
-            |> Seq.map SnapshotLineRangeUtil.CreateForSpan
-            |> Seq.iter (fun lineRange -> _commonOperations.FilterLines lineRange command))
-
-        CommandResult.Completed ModeSwitch.SwitchPreviousMode
+        let lineRange = visualSpan.LineRange
+        x.StartFilterCommand "'<,'>"
 
     /// Close a fold under the caret for 'count' lines
     member x.FoldLines count =

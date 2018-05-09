@@ -2299,6 +2299,9 @@ type ModeArgument =
     /// match to process and the range is the full range to consider for a replace
     | Substitute of SnapshotSpan * SnapshotLineRange * SubstituteData
 
+    /// Enter normal mode with a partially entered command
+    | PartialCommand of string
+
 with
 
     // Running linked commands will throw away the ModeSwitch value.  This can contain
@@ -2307,13 +2310,13 @@ with
     member x.CompleteAnyTransaction =
         match x with
         | ModeArgument.None -> ()
-        | ModeArgument.FromVisual -> ()
         | ModeArgument.InitialVisualSelection _ -> ()
         | ModeArgument.InsertBlock (_, transaction) -> transaction.Complete()
         | ModeArgument.InsertWithCount _ -> ()
         | ModeArgument.InsertWithCountAndNewLine (_, transaction) -> transaction.Complete()
         | ModeArgument.InsertWithTransaction transaction -> transaction.Complete()
         | ModeArgument.Substitute _ -> ()
+        | ModeArgument.PartialCommand _ -> ()
 
 [<RequireQualifiedAccess>]
 [<NoComparison>]

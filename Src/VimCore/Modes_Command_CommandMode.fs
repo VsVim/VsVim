@@ -138,7 +138,7 @@ type internal CommandMode
         arg.CompleteAnyTransaction
         let commandText = 
             match arg with
-            | ModeArgument.FromVisual -> FromVisualModeString
+            | ModeArgument.PartialCommand command -> command
             | _ -> StringUtil.Empty
 
         if not (StringUtil.IsNullOrEmpty commandText) then
