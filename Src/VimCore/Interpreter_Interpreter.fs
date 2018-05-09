@@ -1490,6 +1490,7 @@ type VimInterpreter
                 let file = _globalSettings.Shell
                 let results = _vimHost.RunCommand _globalSettings.Shell command StringUtil.Empty _vimData
                 let status = results.Output + results.Error
+                let status = EditUtil.RemoveEndingNewLine status
                 _statusUtil.OnStatus status
             else
                 x.RunWithLineRangeOrDefault lineRange DefaultLineRange.None (fun lineRange ->

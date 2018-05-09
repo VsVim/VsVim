@@ -182,6 +182,7 @@ type internal CommonOperations
                 message + newLine + error
             else
                 error
+        let error = EditUtil.RemoveEndingNewLine error
         _statusUtil.OnStatus error
 
         // Prepare the replacement.
