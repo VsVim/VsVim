@@ -174,6 +174,16 @@ type internal CommonOperations
         // Filter the input to the output.
         let results = _vimHost.RunCommand _globalSettings.Shell program input _vimData
 
+        // Display error output and error code, if any.
+        let error = results.Error
+        let error =
+            if results.ExitCode <> 0 then
+                let message = "Command returned " + results.ExitCode.ToString() + newLine
+                message + error
+            else
+                error
+        _statusUtil.OnStatus error
+
         // Prepare the replacement.
         let replacement = results.Output
 
