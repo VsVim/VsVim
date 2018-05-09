@@ -1597,6 +1597,72 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class FilterTest : NormalModeIntegrationTest
+        {
+            private string _command;
+            private string _arguments;
+            private string _input;
+
+            protected override void Create(params string[] lines)
+            {
+                base.Create(lines);
+                _vimHost.RunCommandFunc = (command, arguments, input, vimData) =>
+                    {
+                        _command = command;
+                        _arguments = arguments;
+                        _input = input;
+
+                        var output = input.ToUpperInvariant();
+                        return new RunCommandResults(0, output, "");
+                    };
+            }
+
+            [WpfFact]
+            public void Motion()
+            {
+                Create("dog", "cat", "bear", "fish");
+                _vimBuffer.ProcessNotation("1G!Gupper<Return>");
+                Assert.Equal("/c upper", _arguments);
+                Assert.Equal(new[] { "DOG", "CAT", "BEAR", "FISH" }, _textBuffer.GetLines());
+            }
+
+            [WpfFact]
+            public void ReverseMotion()
+            {
+                Create("dog", "cat", "bear", "fish");
+                _vimBuffer.ProcessNotation("3G!2Gupper<Return>");
+                Assert.Equal("/c upper", _arguments);
+                Assert.Equal(new[] { "dog", "CAT", "BEAR", "fish" }, _textBuffer.GetLines());
+            }
+
+            [WpfFact]
+            public void Line()
+            {
+                Create("dog", "cat", "bear", "fish");
+                _vimBuffer.ProcessNotation("2G!!upper<Return>");
+                Assert.Equal("/c upper", _arguments);
+                Assert.Equal(new[] { "dog", "CAT", "bear", "fish" }, _textBuffer.GetLines());
+            }
+
+            [WpfFact]
+            public void Lines()
+            {
+                Create("dog", "cat", "bear", "fish");
+                _vimBuffer.ProcessNotation("2G2!!upper<Return>");
+                Assert.Equal("/c upper", _arguments);
+                Assert.Equal(new[] { "dog", "CAT", "BEAR", "fish" }, _textBuffer.GetLines());
+            }
+
+            [WpfFact]
+            public void VisualLines()
+            {
+                Create("dog", "cat", "bear", "fish");
+                _vimBuffer.ProcessNotation("2GV<Return>!upper<Return>");
+                Assert.Equal("/c upper", _arguments);
+                Assert.Equal(new[] { "dog", "CAT", "BEAR", "fish" }, _textBuffer.GetLines());
+            }
+        }
+
         public abstract class KeyMappingTest : NormalModeIntegrationTest
         {
             public sealed class AmbiguousTest : KeyMappingTest
