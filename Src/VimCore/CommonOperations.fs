@@ -187,19 +187,29 @@ type internal CommonOperations
         // Prepare the replacement.
         let replacement = results.Output
 
-        // Remove final linebreak.
-        let replacement = Regex.Replace(replacement, @"\r?\n$", "")
+        if replacement.Length = 0 then
 
-        // Normalize linebreaks.
-        let replacement = Regex.Replace(replacement, @"\r?\n", newLine)
+            // Forward to delete lines to handle special cases.
+            let startLine = range.StartLine
+            let count = range.Count
+            let registerName = None
+            x.DeleteLines startLine count registerName
 
-        // Replace the old lines with the filtered lines.
-        _textBuffer.Replace(range.Extent.Span, replacement) |> ignore
+        else
 
-        // Place the cursor on the first non-blank character of the first line filtered.
-        let firstLine = SnapshotUtil.GetLine _textView.TextSnapshot range.StartLineNumber
-        TextViewUtil.MoveCaretToPoint _textView firstLine.Start
-        _editorOperations.MoveToStartOfLineAfterWhiteSpace(false)
+            // Remove final linebreak.
+            let replacement = EditUtil.RemoveEndingNewLine replacement
+
+            // Normalize linebreaks.
+            let replacement = Regex.Replace(replacement, @"\r?\n", newLine)
+
+            // Replace the old lines with the filtered lines.
+            _textBuffer.Replace(range.Extent.Span, replacement) |> ignore
+
+            // Place the cursor on the first non-blank character of the first line filtered.
+            let firstLine = SnapshotUtil.GetLine _textView.TextSnapshot range.StartLineNumber
+            TextViewUtil.MoveCaretToPoint _textView firstLine.Start
+            _editorOperations.MoveToStartOfLineAfterWhiteSpace(false)
 
     /// Format the specified line range
     member x.FormatLines range =

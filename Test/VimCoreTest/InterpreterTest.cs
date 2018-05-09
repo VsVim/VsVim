@@ -488,6 +488,17 @@ namespace Vim.UnitTest
             private string _arguments;
             private string _input;
 
+            private string reverseLines(string input)
+            {
+                var newLine = Environment.NewLine;
+                var reversedLines = input
+                    .Split(new[] { newLine }, StringSplitOptions.None)
+                    .Reverse()
+                    .Skip(1);
+                var output = String.Join(newLine, reversedLines) + newLine;
+                return output;
+            }
+
             public RunFilterTest()
             {
                 VimHost.RunCommandFunc = (command, arguments, input, vimData) =>
@@ -496,22 +507,77 @@ namespace Vim.UnitTest
                         _arguments = arguments;
                         _input = input;
 
-                        // Reverse the order of the lines.
-                        var newLine = Environment.NewLine;
-                        var reversedLines = _input
-                            .Split(new[] { newLine }, StringSplitOptions.None)
-                            .Reverse()
-                            .Skip(1);
-                        var output = String.Join(newLine, reversedLines) + newLine;
-                        return new RunCommandResults(0, output, "");
+                        if (arguments == "/c delete")
+                        {
+                            // Delete all lines.
+                            return new RunCommandResults(0, "", "");
+                        }
+                        else if (arguments == "/c reverse")
+                        {
+                            // Reverse the order of the lines.
+                            return new RunCommandResults(0, reverseLines(input), "");
+                        }
+                        else
+                        {
+                            Assert.True(false, "invalid arguments");
+                            return null;
+                        }
                     };
+            }
+
+            /// <summary>
+            /// Delete all lines with no final newline
+            /// </summary>
+            [WpfFact]
+            public void DeleteAllNoFinalNewLine()
+            {
+                Create("cat", "dog", "bat");
+                ParseAndRun(":%!delete");
+                Assert.Equal("/c delete", _arguments);
+                Assert.Equal(new[] { "", }, _textBuffer.GetLines());
+            }
+
+            /// <summary>
+            /// Delete some lines with no final newline
+            /// </summary>
+            [WpfFact]
+            public void DeleteSomeNoFinalNewLine()
+            {
+                Create("cat", "dog", "bat");
+                ParseAndRun(":2,$!delete");
+                Assert.Equal("/c delete", _arguments);
+                Assert.Equal(new[] { "cat", }, _textBuffer.GetLines());
+            }
+
+            /// <summary>
+            /// Delete all lines with final newline
+            /// </summary>
+            [WpfFact]
+            public void DeleteAllWithFinalNewLine()
+            {
+                Create("cat", "dog", "bat", "");
+                ParseAndRun(":%!delete");
+                Assert.Equal("/c delete", _arguments);
+                Assert.Equal(new[] { "", }, _textBuffer.GetLines());
+            }
+
+            /// <summary>
+            /// Delete some lines with final newline
+            /// </summary>
+            [WpfFact]
+            public void DeleteSomeWithFinalNewLine()
+            {
+                Create("cat", "dog", "bat", "");
+                ParseAndRun(":2,$!delete");
+                Assert.Equal("/c delete", _arguments);
+                Assert.Equal(new[] { "cat", "", }, _textBuffer.GetLines());
             }
 
             /// <summary>
             /// Reverse all lines with no final newline
             /// </summary>
             [WpfFact]
-            public void NoFinalNewLine()
+            public void ReverseNoFinalNewLine()
             {
                 Create("cat", "dog", "bat");
                 ParseAndRun(":%!reverse");
@@ -523,7 +589,7 @@ namespace Vim.UnitTest
             /// Reverse all lines with final newline
             /// </summary>
             [WpfFact]
-            public void WithFinalNewLine()
+            public void ReverseWithFinalNewLine()
             {
                 Create("cat", "dog", "bat", "");
                 ParseAndRun(":%!reverse");
@@ -535,7 +601,7 @@ namespace Vim.UnitTest
             /// Reverse line range
             /// </summary>
             [WpfFact]
-            public void LineRange()
+            public void ReverseLineRange()
             {
                 Create("xxx", "cat", "dog", "bat", "yyy", "");
                 ParseAndRun(":2,4!reverse");
