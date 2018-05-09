@@ -283,12 +283,13 @@ namespace Vim.UI.Wpf
                 }
                 else
                 {
-                    return new RunCommandResults(-1, "", "Process timed out");
+                    var message = new TimeoutException().Message;
+                    return new RunCommandResults(-1, "", message);
                 }
             }
             catch (Exception ex)
             {
-                return new RunCommandResults(-1, "", "Exception: " + ex.Message);
+                return new RunCommandResults(-1, "", ex.Message);
             }
         }
 
