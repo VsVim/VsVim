@@ -458,7 +458,7 @@ namespace Vim.UnitTest
                         _arguments = arguments;
                         _input = input;
 
-                        return string.Empty;
+                        return new RunCommandResults(0, string.Empty, string.Empty);
                     };
                 Create();
             }
@@ -502,7 +502,8 @@ namespace Vim.UnitTest
                             .Split(new[] { newLine }, StringSplitOptions.None)
                             .Reverse()
                             .Skip(1);
-                        return String.Join(newLine, reversedLines) + newLine;
+                        var output = String.Join(newLine, reversedLines) + newLine;
+                        return new RunCommandResults(0, output, "");
                     };
             }
 
@@ -2246,7 +2247,7 @@ namespace Vim.UnitTest
                     {
                         Assert.Equal("/c git status", args);
                         didRun = true;
-                        return "";
+                        return new RunCommandResults(0, "", "");
                     };
                 ParseAndRun(@"!git status");
                 Assert.True(didRun);
@@ -2266,7 +2267,7 @@ namespace Vim.UnitTest
                     {
                         Assert.Equal("/c git status cat", args);
                         didRun = true;
-                        return "";
+                        return new RunCommandResults(0, "", "");
                     };
                 ParseAndRun(@"!git status !");
                 Assert.True(didRun);
@@ -2285,7 +2286,7 @@ namespace Vim.UnitTest
                     {
                         Assert.Equal("/c git status !", args);
                         didRun = true;
-                        return "";
+                        return new RunCommandResults(0, "", "");
                     };
                 ParseAndRun(@"!git status \!");
                 Assert.True(didRun);
@@ -2300,7 +2301,7 @@ namespace Vim.UnitTest
             {
                 Create("");
                 var didRun = false;
-                VimHost.RunCommandFunc = delegate { didRun = true; return ""; };
+                VimHost.RunCommandFunc = delegate { didRun = true; return new RunCommandResults(0, "", ""); };
                 ParseAndRun(@"!git status !");
                 Assert.False(didRun);
                 Assert.Equal(Resources.Common_NoPreviousShellCommand, _statusUtil.LastError);

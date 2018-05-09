@@ -4011,6 +4011,19 @@ type DefaultSettings =
     | GVim73 = 0
     | GVim74 = 1
 
+type RunCommandResults
+    (
+        _exitCode: int,
+        _output: string,
+        _error: string
+    ) =
+
+    member x.ExitCode = _exitCode
+
+    member x.Output = _output
+
+    member x.Error = _error
+
 type IVimHost =
 
     /// Should vim automatically start synchronization of IVimBuffer instances when they are 
@@ -4132,7 +4145,7 @@ type IVimHost =
 
     /// Run the specified command with the given arguments and return the textual
     /// output
-    abstract RunCommand: file: string -> arguments: string -> input: string -> vimHost: IVimData -> string
+    abstract RunCommand: file: string -> arguments: string -> input: string -> vimHost: IVimData -> RunCommandResults
 
     /// Run the Visual studio command in the context of the given ITextView
     abstract RunHostCommand: textView: ITextView -> commandName: string -> argument: string -> unit

@@ -1478,8 +1478,8 @@ type VimInterpreter
 
             if lineRange = LineRangeSpecifier.None then
                 let file = _globalSettings.Shell
-                let output = _vimHost.RunCommand _globalSettings.Shell command "" _vimData
-                _statusUtil.OnStatus output
+                let results = _vimHost.RunCommand _globalSettings.Shell command "" _vimData
+                _statusUtil.OnStatus results.Output
             else
                 x.RunWithLineRangeOrDefault lineRange DefaultLineRange.None (fun lineRange ->
                     _commonOperations.FilterLines lineRange command)

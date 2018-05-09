@@ -249,15 +249,17 @@ namespace Vim.UI.Wpf
         /// Run the specified command on the supplied input, capture it's output and
         /// return it to the caller
         /// </summary>
-        public virtual string RunCommand(string command, string arguments, string input, IVimData vimdata)
+        public virtual RunCommandResults RunCommand(string command, string arguments, string input, IVimData vimdata)
         {
+            var timeout = 30 * 1000;
             var startInfo = new ProcessStartInfo
             {
                 FileName = command,
                 Arguments = arguments,
+                UseShellExecute = false,
                 RedirectStandardInput = true,
                 RedirectStandardOutput = true,
-                UseShellExecute = false,
+                RedirectStandardError = true,
                 CreateNoWindow = true,
                 WorkingDirectory = vimdata.CurrentDirectory
             };
@@ -266,15 +268,22 @@ namespace Vim.UI.Wpf
                 var process = Process.Start(startInfo);
                 var stdin = process.StandardInput;
                 var stdout = process.StandardOutput;
-                var inputTask = Task.Run(() => { stdin.Write(input); stdin.Close(); });
-                var outputTask = Task<string>.Run(() => stdout.ReadToEnd());
-                process.WaitForExit();
-                inputTask.Wait();
-                return outputTask.Result;
+                var stderr = process.StandardError;
+                var stdinTask = Task.Run(() => { stdin.Write(input); stdin.Close(); });
+                var stdoutTask = Task<string>.Run(() => stdout.ReadToEnd());
+                var stderrTask = Task<string>.Run(() => stderr.ReadToEnd());
+                if (process.WaitForExit(timeout))
+                {
+                    return new RunCommandResults(process.ExitCode, stdoutTask.Result, stderrTask.Result);
+                }
+                else
+                {
+                    return new RunCommandResults(-1, "", "Process timed out");
+                }
             }
             catch (Exception ex)
             {
-                return ex.Message;
+                return new RunCommandResults(-1, "", "Exception: " + ex.Message);
             }
         }
 
@@ -634,7 +643,7 @@ namespace Vim.UI.Wpf
             return Reload(textView);
         }
 
-        string IVimHost.RunCommand(string command, string arguments, string input, IVimData vimData)
+        RunCommandResults IVimHost.RunCommand(string command, string arguments, string input, IVimData vimData)
         {
             return RunCommand(command, arguments, input, vimData);
         }

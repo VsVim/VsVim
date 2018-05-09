@@ -172,10 +172,10 @@ type internal CommonOperations
             |> String.concat ""
 
         // Filter the input to the output.
-        let output = _vimHost.RunCommand _globalSettings.Shell program input _vimData
+        let results = _vimHost.RunCommand _globalSettings.Shell program input _vimData
 
         // Prepare the replacement.
-        let replacement = output
+        let replacement = results.Output
 
         // Remove final linebreak.
         let replacement = Regex.Replace(replacement, @"\r?\n$", "")
