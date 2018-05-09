@@ -117,4 +117,4 @@ module internal Resources =
     let Regex_UnmatchedParen = "Unmatched ("
     let Regex_UnmatchedBrace = "Unmatched {"
 
-
+    let Filter_CommandReturned exitCode = sprintf "Command returned %d" exitCode

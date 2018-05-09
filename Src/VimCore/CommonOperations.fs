@@ -178,8 +178,8 @@ type internal CommonOperations
         let error = results.Error
         let error =
             if results.ExitCode <> 0 then
-                let message = "Command returned " + results.ExitCode.ToString() + newLine
-                message + error
+                let message = Resources.Filter_CommandReturned results.ExitCode
+                message + newLine + error
             else
                 error
         _statusUtil.OnStatus error
