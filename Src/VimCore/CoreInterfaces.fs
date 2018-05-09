@@ -2526,6 +2526,12 @@ type NormalCommand =
     /// Fold 'count' lines in the ITextBuffer
     | FoldLines
 
+    /// Filter the specified lines
+    | FilterLines
+
+    /// Filter the specified motion
+    | FilterMotion of MotionData
+
     /// Create a fold over the specified motion 
     | FoldMotion of MotionData
 
@@ -2747,6 +2753,7 @@ type NormalCommand =
         match x with
         | NormalCommand.ChangeMotion motion -> Some (NormalCommand.ChangeMotion, motion)
         | NormalCommand.DeleteMotion motion -> Some (NormalCommand.DeleteMotion, motion)
+        | NormalCommand.FilterMotion motion -> Some (NormalCommand.FilterMotion, motion)
         | NormalCommand.FoldMotion motion -> Some (NormalCommand.FoldMotion, motion)
         | NormalCommand.FormatMotion motion -> Some (NormalCommand.FormatMotion, motion)
         | NormalCommand.ShiftMotionLinesLeft motion -> Some (NormalCommand.ShiftMotionLinesLeft, motion)
@@ -2773,6 +2780,7 @@ type NormalCommand =
         | NormalCommand.DeleteLines -> None
         | NormalCommand.DeleteTillEndOfLine -> None
         | NormalCommand.DisplayCharacterBytes
+        | NormalCommand.FilterLines -> None
         | NormalCommand.FoldLines -> None
         | NormalCommand.FormatLines -> None
         | NormalCommand.GoToDefinition -> None
@@ -2875,6 +2883,9 @@ type VisualCommand =
 
     /// Delete the selected text and put it into a register
     | DeleteSelection
+
+    /// Filter the selected text
+    | FilterLines
 
     /// Fold the current selected lines
     | FoldSelection

@@ -89,6 +89,7 @@ type internal VisualMode
                 yield (">", CommandFlags.Repeatable, VisualCommand.ShiftLinesRight)
                 yield ("~", CommandFlags.Repeatable, VisualCommand.ChangeCase ChangeCharacterKind.ToggleCase)
                 yield ("=", CommandFlags.Repeatable, VisualCommand.FormatLines)
+                yield ("!", CommandFlags.Repeatable, VisualCommand.FilterLines)
             } |> Seq.map (fun (str, flags, command) -> 
                 let keyInputSet = KeyNotationUtil.StringToKeyInputSet str
                 CommandBinding.VisualBinding (keyInputSet, flags, command))

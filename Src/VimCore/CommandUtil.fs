@@ -925,6 +925,35 @@ type internal CommandUtil
         let span = action snapshotData
         BufferGraphUtil.MapSpanDownToSingle _bufferGraph span x.CurrentSnapshot
 
+    /// Get filter command
+    member x.GetFilterCommand () =
+        "/c wc -l"
+
+    /// Filter the 'count' lines in the buffer
+    member x.FilterLines count =
+        let range = SnapshotLineRangeUtil.CreateForLineAndMaxCount x.CaretLine count
+        let command = x.GetFilterCommand()
+        _commonOperations.FilterLines range command
+        CommandResult.Completed ModeSwitch.NoSwitch
+
+    /// Filter the lines in the Motion
+    member x.FilterMotion (result: MotionResult) =
+        let command = x.GetFilterCommand()
+        _commonOperations.FilterLines result.LineRange command
+        CommandResult.Completed ModeSwitch.NoSwitch
+
+    /// Filter the selected lines
+    member x.FilterLinesVisual (visualSpan: VisualSpan) =
+
+        // Use a transaction so the filters occur as a single operation.
+        let command = x.GetFilterCommand()
+        x.EditWithUndoTransaction "Filter" (fun () ->
+            visualSpan.Spans
+            |> Seq.map SnapshotLineRangeUtil.CreateForSpan
+            |> Seq.iter (fun lineRange -> _commonOperations.FilterLines lineRange command))
+
+        CommandResult.Completed ModeSwitch.SwitchPreviousMode
+
     /// Close a fold under the caret for 'count' lines
     member x.FoldLines count =
         let range = SnapshotLineRangeUtil.CreateForLineAndMaxCount x.CaretLine count
@@ -2347,6 +2376,8 @@ type internal CommandUtil
         | NormalCommand.DeleteMotion motion -> x.RunWithMotion motion (x.DeleteMotion registerName)
         | NormalCommand.DeleteTillEndOfLine -> x.DeleteTillEndOfLine count registerName
         | NormalCommand.DisplayCharacterBytes -> x.DisplayCharacterBytes()
+        | NormalCommand.FilterLines -> x.FilterLines count
+        | NormalCommand.FilterMotion motion -> x.RunWithMotion motion x.FilterMotion
         | NormalCommand.FoldLines -> x.FoldLines data.CountOrDefault
         | NormalCommand.FoldMotion motion -> x.RunWithMotion motion x.FoldMotion
         | NormalCommand.FormatLines -> x.FormatLines count
@@ -2437,6 +2468,7 @@ type internal CommandUtil
         | VisualCommand.DeleteAllFoldsInSelection -> x.DeleteAllFoldInSelection visualSpan
         | VisualCommand.DeleteSelection -> x.DeleteSelection registerName visualSpan
         | VisualCommand.DeleteLineSelection -> x.DeleteLineSelection registerName visualSpan
+        | VisualCommand.FilterLines -> x.FilterLinesVisual visualSpan
         | VisualCommand.FormatLines -> x.FormatLinesVisual visualSpan
         | VisualCommand.FoldSelection -> x.FoldSelection visualSpan
         | VisualCommand.GoToFileInSelectionInNewWindow -> x.GoToFileInSelectionInNewWindow visualSpan
