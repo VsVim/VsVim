@@ -169,7 +169,7 @@ type internal CommonOperations
             range.Lines
             |> Seq.map SnapshotLineUtil.GetText
             |> Seq.map (fun line -> line + newLine)
-            |> String.concat ""
+            |> String.concat StringUtil.Empty
 
         // Filter the input to the output.
         let results = _vimHost.RunCommand _globalSettings.Shell program input _vimData
