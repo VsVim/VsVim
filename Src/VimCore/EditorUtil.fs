@@ -173,7 +173,7 @@ type SnapshotLineRange  =
         seq { for i = start to last do yield snapshot.GetLineFromLineNumber(i) }
 
     new (snapshot: ITextSnapshot, startLine: int, count: int) =
-        let lineCount = EditorCoreUtil.GetNormalizedLineCount snapshot
+        let lineCount = snapshot.LineCount
         if startLine >= lineCount then
             raise (new ArgumentException("startLine", "Invalid Line Number"))
 
