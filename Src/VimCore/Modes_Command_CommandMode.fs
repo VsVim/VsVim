@@ -135,7 +135,7 @@ type internal CommandMode
         _bindData <- historySession.CreateBindDataStorage().CreateBindData()
         _keepSelection <- false
 
-        arg.CloseAnyTransaction
+        arg.CompleteAnyTransaction
         let commandText = 
             match arg with
             | ModeArgument.FromVisual -> FromVisualModeString

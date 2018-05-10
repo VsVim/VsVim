@@ -885,7 +885,7 @@ type internal CommandUtil
 
     /// Used for the several commands which make an edit here and need the edit to be linked
     /// with the next insert mode change.
-    member x.OpenTransactionForLinkedChange name action =
+    member x.CreateTransactionForLinkedChange name action =
         let transaction = _undoRedoOperations.CreateLinkedUndoTransaction name
 
         try
@@ -900,21 +900,21 @@ type internal CommandUtil
 
         transaction
 
-    /// Create a undo transaction, perform an action, and switch to normal insert mode
+    /// Create an undo transaction, perform an action, and switch to normal insert mode
     member x.EditWithLinkedChange name action =
-        let transaction = x.OpenTransactionForLinkedChange name action
+        let transaction = x.CreateTransactionForLinkedChange name action
         let arg = ModeArgument.InsertWithTransaction transaction
         CommandResult.Completed (ModeSwitch.SwitchModeWithArgument (ModeKind.Insert, arg))
 
-    /// Create a undo transaction, perform an action, and switch to insert mode with a count
+    /// Create an undo transaction, perform an action, and switch to insert mode with a count
     member x.EditCountWithLinkedChange name count action =
-        let transaction = x.OpenTransactionForLinkedChange name action
+        let transaction = x.CreateTransactionForLinkedChange name action
         let arg = ModeArgument.InsertWithCountAndNewLine (count, transaction)
         CommandResult.Completed (ModeSwitch.SwitchModeWithArgument (ModeKind.Insert, arg))
 
-    /// Create a undo transaction, perform an action, and switch to block insert mode
+    /// Create an undo transaction, perform an action, and switch to block insert mode
     member x.EditBlockWithLinkedChange name blockSpan action =
-        let transaction = x.OpenTransactionForLinkedChange name action
+        let transaction = x.CreateTransactionForLinkedChange name action
         let arg = ModeArgument.InsertBlock (blockSpan, transaction)
         CommandResult.Completed (ModeSwitch.SwitchModeWithArgument (ModeKind.Insert, arg))
 
@@ -2001,7 +2001,7 @@ type internal CommandUtil
             | CommandResult.Completed modeSwitch ->
                 match modeSwitch with
                 | ModeSwitch.SwitchModeWithArgument (_, modeArgument) ->
-                    modeArgument.CloseAnyTransaction
+                    modeArgument.CompleteAnyTransaction
                 | _ -> ()
                 runNextCommand ()
 

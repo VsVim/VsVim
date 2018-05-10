@@ -2304,7 +2304,7 @@ with
     // Running linked commands will throw away the ModeSwitch value.  This can contain
     // an open IUndoTransaction.  This must be completed here or it will break undo in the
     // ITextBuffer
-    member x.CloseAnyTransaction =
+    member x.CompleteAnyTransaction =
         match x with
         | ModeArgument.None -> ()
         | ModeArgument.FromVisual -> ()
