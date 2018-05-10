@@ -2270,9 +2270,6 @@ type TextObjectKind =
 type ModeArgument =
     | None
 
-    /// Used for transitions from Visual Mode directly to Command mode
-    | FromVisual 
-
     /// Passed to visual mode to indicate what the initial selection should be.  The SnapshotPoint
     /// option provided is meant to be the initial caret point.  If not provided the actual 
     /// caret point is used

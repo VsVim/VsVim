@@ -18,9 +18,6 @@ type internal CommandMode
     let _parser = Parser(_buffer.Vim.GlobalSettings, _vimData)
     let _vimHost = _buffer.Vim.VimHost
 
-    // Command to show when entering command from Visual Mode
-    static let FromVisualModeString = "'<,'>"
-
     static let BindDataError: BindData<int> = {
         KeyRemapMode = KeyRemapMode.None;
         BindFunction = fun _ -> BindResult.Error

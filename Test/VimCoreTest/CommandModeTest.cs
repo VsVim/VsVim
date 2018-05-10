@@ -116,8 +116,9 @@ namespace Vim.UnitTest
         [WpfFact]
         public void OnEnter2()
         {
-            _mode.OnEnter(ModeArgument.FromVisual);
-            Assert.Equal(CommandMode.FromVisualModeString, _modeRaw.Command);
+            var partialCommand = "'<,'>";
+            _mode.OnEnter(ModeArgument.NewPartialCommand(partialCommand));
+            Assert.Equal(partialCommand, _modeRaw.Command);
         }
 
         [WpfFact]

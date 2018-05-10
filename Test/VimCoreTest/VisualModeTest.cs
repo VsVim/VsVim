@@ -425,7 +425,7 @@ namespace Vim.UnitTest
         public void Bind_SwitchMode_Command()
         {
             Create("");
-            _commandUtil.SetupCommandNormal(NormalCommand.NewSwitchMode(ModeKind.Command, ModeArgument.FromVisual));
+            _commandUtil.SetupCommandNormal(NormalCommand.NewSwitchMode(ModeKind.Command, ModeArgument.NewPartialCommand("'<,'>")));
             _mode.Process(":");
             _commandUtil.Verify();
         }
