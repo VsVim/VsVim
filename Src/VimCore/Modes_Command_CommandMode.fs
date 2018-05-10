@@ -27,6 +27,7 @@ type internal CommandMode
     let mutable _historySession: IHistorySession<int, int> option = None
     let mutable _bindData = BindDataError
     let mutable _keepSelection = false
+    let mutable _isPartialCommand = false
 
     /// Currently queued up command string
     member x.Command 
@@ -78,7 +79,10 @@ type internal CommandMode
 
             // It is possible for the execution of the command to change the mode (say :s.../c) 
             if _buffer.ModeKind = ModeKind.Command then
-                ProcessResult.Handled ModeSwitch.SwitchPreviousMode
+                if _isPartialCommand then
+                    ProcessResult.OfModeKind ModeKind.Normal
+                else
+                    ProcessResult.Handled ModeSwitch.SwitchPreviousMode
             else 
                 ProcessResult.Handled ModeSwitch.NoSwitch
         | BindResult.Cancelled ->
@@ -131,11 +135,12 @@ type internal CommandMode
         _historySession <- Some historySession
         _bindData <- historySession.CreateBindDataStorage().CreateBindData()
         _keepSelection <- false
+        _isPartialCommand <- false
 
         arg.CompleteAnyTransaction
         let commandText = 
             match arg with
-            | ModeArgument.PartialCommand command -> command
+            | ModeArgument.PartialCommand command -> _isPartialCommand <- true; command
             | _ -> StringUtil.Empty
 
         if not (StringUtil.IsNullOrEmpty commandText) then

@@ -1617,6 +1617,9 @@ namespace Vim.UnitTest
                     };
             }
 
+            /// <summary>
+            /// Use filter combined with a motion
+            /// </summary>
             [WpfFact]
             public void Motion()
             {
@@ -1626,6 +1629,9 @@ namespace Vim.UnitTest
                 Assert.Equal(new[] { "DOG", "CAT", "BEAR", "FISH" }, _textBuffer.GetLines());
             }
 
+            /// <summary>
+            /// Use filter combined with a reverse motion (inverted line range)
+            /// </summary>
             [WpfFact]
             public void ReverseMotion()
             {
@@ -1635,6 +1641,9 @@ namespace Vim.UnitTest
                 Assert.Equal(new[] { "dog", "CAT", "BEAR", "fish" }, _textBuffer.GetLines());
             }
 
+            /// <summary>
+            /// Use filter operating on the current line
+            /// </summary>
             [WpfFact]
             public void Line()
             {
@@ -1644,6 +1653,9 @@ namespace Vim.UnitTest
                 Assert.Equal(new[] { "dog", "CAT", "bear", "fish" }, _textBuffer.GetLines());
             }
 
+            /// <summary>
+            /// Use filter operating on multiple lines
+            /// </summary>
             [WpfFact]
             public void Lines()
             {
@@ -1653,6 +1665,9 @@ namespace Vim.UnitTest
                 Assert.Equal(new[] { "dog", "CAT", "BEAR", "fish" }, _textBuffer.GetLines());
             }
 
+            /// <summary>
+            /// Use filter from visual line mode, returning to normal mode
+            /// </summary>
             [WpfFact]
             public void VisualLines()
             {
@@ -1660,6 +1675,7 @@ namespace Vim.UnitTest
                 _vimBuffer.ProcessNotation("2GV<Return>!upper<Return>");
                 Assert.Equal("/c upper", _arguments);
                 Assert.Equal(new[] { "dog", "CAT", "BEAR", "fish" }, _textBuffer.GetLines());
+                Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
             }
         }
 
