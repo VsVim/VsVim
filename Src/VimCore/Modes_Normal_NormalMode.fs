@@ -353,7 +353,7 @@ type internal NormalMode
             x.Reset()
             ProcessResult.Handled ModeSwitch.NoSwitch
 
-    member x.OnEnter arg =
+    member x.OnEnter (arg: ModeArgument) =
         x.EnsureCommands()
         x.Reset()
 
@@ -362,15 +362,7 @@ type internal NormalMode
             _operations.EnsureAtCaret ViewFlags.VirtualEdit
 
         // Process the argument if it's applicable
-        match arg with 
-        | ModeArgument.None -> ()
-        | ModeArgument.FromVisual -> ()
-        | ModeArgument.Substitute(_) -> ()
-        | ModeArgument.InitialVisualSelection _ -> ()
-        | ModeArgument.InsertBlock (_, transaction) -> transaction.Complete()
-        | ModeArgument.InsertWithCount _ -> ()
-        | ModeArgument.InsertWithCountAndNewLine _ -> ()
-        | ModeArgument.InsertWithTransaction transaction -> transaction.Complete()
+        arg.CloseAnyTransaction
 
     interface INormalMode with 
         member x.KeyRemapMode = x.KeyRemapMode

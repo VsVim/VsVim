@@ -885,7 +885,7 @@ type internal CommandUtil
 
     /// Used for the several commands which make an edit here and need the edit to be linked
     /// with the next insert mode change.
-    member x.EditWithLinkedChange name action =
+    member x.OpenTransactionForLinkedChange name action =
         let transaction = _undoRedoOperations.CreateLinkedUndoTransaction name
 
         try
@@ -898,24 +898,23 @@ type internal CommandUtil
                 transaction.Dispose()
                 reraise()
 
+        transaction
+
+    /// Create a undo transaction, perform an action, and switch to normal insert mode
+    member x.EditWithLinkedChange name action =
+        let transaction = x.OpenTransactionForLinkedChange name action
         let arg = ModeArgument.InsertWithTransaction transaction
         CommandResult.Completed (ModeSwitch.SwitchModeWithArgument (ModeKind.Insert, arg))
 
-    /// Used for the several commands which make an edit here and need the edit to be linked
-    /// with the next insert mode change.
+    /// Create a undo transaction, perform an action, and switch to insert mode with a count
+    member x.EditCountWithLinkedChange name count action =
+        let transaction = x.OpenTransactionForLinkedChange name action
+        let arg = ModeArgument.InsertWithCountAndNewLine (count, transaction)
+        CommandResult.Completed (ModeSwitch.SwitchModeWithArgument (ModeKind.Insert, arg))
+
+    /// Create a undo transaction, perform an action, and switch to block insert mode
     member x.EditBlockWithLinkedChange name blockSpan action =
-        let transaction = _undoRedoOperations.CreateLinkedUndoTransaction name
-
-        try
-            x.EditWithUndoTransaction name action
-        with
-            | _ ->
-                // If the above throws we can't leave the transaction open else it will
-                // break undo / redo in the ITextBuffer.  Close it here and
-                // re-raise the exception
-                transaction.Dispose()
-                reraise()
-
+        let transaction = x.OpenTransactionForLinkedChange name action
         let arg = ModeArgument.InsertBlock (blockSpan, transaction)
         CommandResult.Completed (ModeSwitch.SwitchModeWithArgument (ModeKind.Insert, arg))
 
@@ -1275,18 +1274,16 @@ type internal CommandUtil
     member x.InsertLineAbove count =
         let savedCaretLine = x.CaretLine
 
-        // REPEAT TODO: Need to file a bug to get the caret position correct here for redo
-        _undoRedoOperations.EditWithUndoTransaction "InsertLineAbove" _textView (fun() ->
+        x.EditCountWithLinkedChange "InsertLineAbove" count (fun () ->
+
+            // REPEAT TODO: Need to file a bug to get the caret position correct here for redo
             let line = x.CaretLine
             let newLineText = _commonOperations.GetNewLineText x.CaretPoint
-            _textBuffer.Replace(new Span(line.Start.Position,0), newLineText) |> ignore)
+            _textBuffer.Replace(new Span(line.Start.Position,0), newLineText) |> ignore
 
-        // Position the caret for the edit
-        let line = SnapshotUtil.GetLine x.CurrentSnapshot savedCaretLine.LineNumber
-        x.MoveCaretToNewLineIndent savedCaretLine line
-
-        let switch = ModeSwitch.SwitchModeWithArgument (ModeKind.Insert, ModeArgument.InsertWithCountAndNewLine count)
-        CommandResult.Completed switch
+            // Position the caret for the edit
+            let line = SnapshotUtil.GetLine x.CurrentSnapshot savedCaretLine.LineNumber
+            x.MoveCaretToNewLineIndent savedCaretLine line)
 
     /// Insert a line below the current caret line and begin insert mode at the start of that
     /// line
@@ -1310,30 +1307,28 @@ type internal CommandUtil
             let isLastLine = SnapshotLineUtil.IsLastLine visualSnapshotData.CaretLine
             visualSnapshotData.CaretLine.EndIncludingLineBreak, newLineText, isLastLine
 
-        match BufferGraphUtil.MapPointDownToSnapshotStandard _bufferGraph visualLineEndIncludingLineBreak x.CurrentSnapshot with
-        | None -> ()
-        | Some point ->
+        x.EditCountWithLinkedChange "InsertLineBelow" count (fun () ->
 
-            _undoRedoOperations.EditWithUndoTransaction  "InsertLineBelow" _textView (fun () ->
+            match BufferGraphUtil.MapPointDownToSnapshotStandard _bufferGraph visualLineEndIncludingLineBreak x.CurrentSnapshot with
+            | None -> ()
+            | Some point ->
+
                 let span = SnapshotSpan(point, 0)
                 _textBuffer.Replace(span.Span, newLineText) |> ignore
 
-                TextViewUtil.MoveCaretToPosition _textView savedCaretPoint.Position)
+                TextViewUtil.MoveCaretToPosition _textView savedCaretPoint.Position
 
-            let newLine =
-                let newPoint =
-                    // When this command is run on the last line of the file then point will still
-                    // refer to the original line.  In that case we need to move to the end of the
-                    // ITextSnapshot
-                    if isLastLine then
-                        SnapshotUtil.GetEndPoint x.CurrentSnapshot
-                    else
-                        SnapshotPoint(x.CurrentSnapshot, point.Position)
-                SnapshotPointUtil.GetContainingLine newPoint
-            x.MoveCaretToNewLineIndent savedCaretLine newLine
-
-        let switch = ModeSwitch.SwitchModeWithArgument (ModeKind.Insert, ModeArgument.InsertWithCountAndNewLine count)
-        CommandResult.Completed switch
+                let newLine =
+                    let newPoint =
+                        // When this command is run on the last line of the file then point will still
+                        // refer to the original line.  In that case we need to move to the end of the
+                        // ITextSnapshot
+                        if isLastLine then
+                            SnapshotUtil.GetEndPoint x.CurrentSnapshot
+                        else
+                            SnapshotPoint(x.CurrentSnapshot, point.Position)
+                    SnapshotPointUtil.GetContainingLine newPoint
+                x.MoveCaretToNewLineIndent savedCaretLine newLine)
 
     /// Jump to the next tag in the tag list
     member x.JumpToNewerPosition count =
@@ -2000,29 +1995,14 @@ type internal CommandUtil
         // Chain the running of the next command on the basis of the success of
         // the previous command
         let chainCommand commandResult runNextCommand =
-
-            // Running linked commands will throw away the ModeSwitch value.  This can contain
-            // an open IUndoTransaction.  This must be completed here or it will break undo in the
-            // ITextBuffer
-            let maybeCloseTransaction modeSwitch =
-                match modeSwitch with
-                | ModeSwitch.SwitchModeWithArgument (_, argument) ->
-                    match argument with
-                    | ModeArgument.None -> ()
-                    | ModeArgument.FromVisual -> ()
-                    | ModeArgument.InitialVisualSelection _ -> ()
-                    | ModeArgument.InsertBlock (_, transaction) -> transaction.Complete()
-                    | ModeArgument.InsertWithCount _ -> ()
-                    | ModeArgument.InsertWithCountAndNewLine _ -> ()
-                    | ModeArgument.InsertWithTransaction transaction -> transaction.Complete()
-                    | ModeArgument.Substitute _ -> ()
-                | _ -> ()
-
             match commandResult with
             | CommandResult.Error ->
                 commandResult
             | CommandResult.Completed modeSwitch ->
-                maybeCloseTransaction modeSwitch
+                match modeSwitch with
+                | ModeSwitch.SwitchModeWithArgument (_, modeArgument) ->
+                    modeArgument.CloseAnyTransaction
+                | _ -> ()
                 runNextCommand ()
 
         // Repeating an insert command is a bit different than repeating a normal command because

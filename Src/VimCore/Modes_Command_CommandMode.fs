@@ -127,7 +127,7 @@ type internal CommandMode
             }
         HistoryUtil.CreateHistorySession historyClient 0 _command (Some _buffer)
 
-    member x.OnEnter arg = 
+    member x.OnEnter (arg: ModeArgument) = 
         let historySession = x.CreateHistorySession()
 
         _command <- ""
@@ -135,16 +135,11 @@ type internal CommandMode
         _bindData <- historySession.CreateBindDataStorage().CreateBindData()
         _keepSelection <- false
 
+        arg.CloseAnyTransaction
         let commandText = 
             match arg with
-            | ModeArgument.None -> StringUtil.Empty
             | ModeArgument.FromVisual -> FromVisualModeString
-            | ModeArgument.Substitute _ -> StringUtil.Empty
-            | ModeArgument.InitialVisualSelection _ -> StringUtil.Empty
-            | ModeArgument.InsertBlock (_, transaction) -> transaction.Complete(); StringUtil.Empty
-            | ModeArgument.InsertWithCount _ -> StringUtil.Empty
-            | ModeArgument.InsertWithCountAndNewLine _ -> StringUtil.Empty
-            | ModeArgument.InsertWithTransaction transaction -> transaction.Complete(); StringUtil.Empty
+            | _ -> StringUtil.Empty
 
         if not (StringUtil.IsNullOrEmpty commandText) then
             x.ChangeCommand commandText
