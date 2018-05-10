@@ -2296,7 +2296,7 @@ type ModeArgument =
     /// match to process and the range is the full range to consider for a replace
     | Substitute of SnapshotSpan * SnapshotLineRange * SubstituteData
 
-    /// Enter normal mode with a partially entered command
+    /// Enter command mode with a partially entered command and then return to normal mode
     | PartialCommand of string
 
 with
