@@ -68,6 +68,15 @@ module WindowSettingNames =
     let ScrollName = "scroll"
     let WrapName = "wrap"
 
+/// Qualifiers that options can have
+[<RequireQualifiedAccess>]
+type SettingOptions = 
+    | None = 0
+
+    /// A string setting that is used as a filename undergoes limited
+    /// backslash escaping and expands environment variables
+    | FileName = 0x1 
+
 /// Types of number formats supported by CTRL-A CTRL-A
 [<RequireQualifiedAccess>]
 [<NoComparison>]
@@ -223,6 +232,7 @@ type Setting = {
     Abbreviation: string
     LiveSettingValue: LiveSettingValue
     IsGlobal: bool
+    SettingOptions: SettingOptions
 } with 
 
     member x.Value = x.LiveSettingValue.Value
@@ -236,6 +246,9 @@ type Setting = {
 
     /// Is the setting value currently set to the default value
     member x.IsValueDefault = x.LiveSettingValue.IsValueDefault
+
+    /// Whether the setting has the FileName
+    member x.HasFileNameOption = Util.IsFlagSet x.SettingOptions SettingOptions.FileName
 
 type SettingEventArgs(_setting: Setting, _isValueChanged: bool) =
     inherit System.EventArgs()
