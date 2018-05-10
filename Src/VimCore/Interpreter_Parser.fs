@@ -1943,9 +1943,12 @@ type Parser
         let newTabStop = x.ParseNumber()
         LineCommand.Retab (lineRange, hasBang, newTabStop)
 
-    /// Whether the specified variable is a file name variable, e.g. shell
+    /// Whether the specified setting is a file name setting, e.g. shell
+    /// TODO: A local setting might someday be a file name setting
     member x.IsFileNameSetting (name: string) =
-        [| "shell"; "sh" |] |> Seq.contains name
+        match _globalSettings.GetSetting name with
+        | None -> false
+        | Some setting -> setting.HasFileNameOption
 
     /// Parse out the :set command and all of it's variants
     member x.ParseSet () = 
