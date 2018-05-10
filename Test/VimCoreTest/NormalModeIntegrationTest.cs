@@ -4511,6 +4511,35 @@ namespace Vim.UnitTest
                 _vimBuffer.Process('.');
                 Assert.Equal("};", _textView.GetLine(1).GetText());
             }
+
+            /// <summary>
+            /// A simple insert line above should be undone all at once
+            /// </summary>
+            [WpfFact]
+            public void UndoInsertLineAbove()
+            {
+                Create("cat", "dog", "tree");
+                _textView.MoveCaretToLine(2);
+                _vimBuffer.Process("O  fish");
+                _vimBuffer.Process(VimKey.Escape);
+                Assert.Equal(new[] { "cat", "dog", "  fish", "tree" }, _textBuffer.GetLines());
+                _vimBuffer.Process("u");
+                Assert.Equal(new[] { "cat", "dog", "tree" }, _textBuffer.GetLines());
+            }
+
+            /// <summary>
+            /// A simple insert line below should be undone all at once
+            /// </summary>
+            [WpfFact]
+            public void UndoInsertLineBelow()
+            {
+                Create("cat", "dog", "tree");
+                _vimBuffer.Process("o  fish");
+                _vimBuffer.Process(VimKey.Escape);
+                Assert.Equal(new[] { "cat", "  fish", "dog", "tree" }, _textBuffer.GetLines());
+                _vimBuffer.Process("u");
+                Assert.Equal(new[] { "cat", "dog", "tree" }, _textBuffer.GetLines());
+            }
             /// <summary>
             /// The insert line above command should be linked the the following text change
             /// </summary>
