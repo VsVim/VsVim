@@ -1342,7 +1342,16 @@ type Parser
             _tokenizer.MoveNextToken()
             LineRangeSpecifier.EntireBuffer
         else
-            match x.ParseLineSpecifier() with
+            let startLine = x.ParseLineSpecifier()
+            let startLine =
+                match startLine with
+                | None ->
+                    if _tokenizer.CurrentChar = ',' || _tokenizer.CurrentChar = ';' then
+                        Some LineSpecifier.CurrentLine
+                    else
+                        None
+                | Some left -> startLine
+            match startLine with
             | None -> LineRangeSpecifier.None
             | Some left ->
 
@@ -1350,7 +1359,7 @@ type Parser
                     let isSemicolon = _tokenizer.CurrentChar = ';'
                     _tokenizer.MoveNextToken()
                     match x.ParseLineSpecifier() with
-                    | None -> LineRangeSpecifier.SingleLine left
+                    | None -> LineRangeSpecifier.Range (left, LineSpecifier.CurrentLine, isSemicolon)
                     | Some right -> LineRangeSpecifier.Range (left, right, isSemicolon)
                 else
                     LineRangeSpecifier.SingleLine left 

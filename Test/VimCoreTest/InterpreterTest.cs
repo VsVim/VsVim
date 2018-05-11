@@ -1709,9 +1709,37 @@ namespace Vim.UnitTest
             [WpfFact]
             public void LineRange_CurrentLine()
             {
-                Create("foo", "bar");
+                Create("foo", "bar", "baz");
+                _textView.MoveCaretToLine(1);
                 var lineRange = ParseAndGetLineRange(".");
-                Assert.Equal(_textBuffer.GetLineRange(0), lineRange);
+                Assert.Equal(_textBuffer.GetLineRange(1), lineRange);
+            }
+
+            [WpfFact]
+            public void LineRange_OmittedStartLine()
+            {
+                Create("foo", "bar", "baz", "qux");
+                _textView.MoveCaretToLine(1);
+                var lineRange = ParseAndGetLineRange(",3");
+                Assert.Equal(_textBuffer.GetLineRange(1, 2), lineRange);
+            }
+
+            [WpfFact]
+            public void LineRange_OmittedEndLine()
+            {
+                Create("foo", "bar", "baz", "qux");
+                _textView.MoveCaretToLine(2);
+                var lineRange = ParseAndGetLineRange("2,");
+                Assert.Equal(_textBuffer.GetLineRange(1, 2), lineRange);
+            }
+
+            [WpfFact]
+            public void LineRange_OmittedStartAndEndLines()
+            {
+                Create("foo", "bar", "baz", "qux");
+                _textView.MoveCaretToLine(1);
+                var lineRange = ParseAndGetLineRange(",");
+                Assert.Equal(_textBuffer.GetLineRange(1), lineRange);
             }
 
             [WpfFact]
