@@ -2968,7 +2968,7 @@ type internal CommandUtil
 
         // The anchor point is the original anchor point of the visual session
         let anchorPoint =
-            _vimBufferData.VisualCaretStartPoint
+            _vimBufferData.VisualAnchorPoint
             |> OptionUtil.map2 (TrackingPointUtil.GetPoint x.CurrentSnapshot)
         match anchorPoint with
         | None -> badOperation ()
