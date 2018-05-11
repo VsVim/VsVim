@@ -730,6 +730,36 @@ namespace Vim.UnitTest
                 _vimBuffer.Process("v");
                 Assert.Equal(0, _textView.GetSelectionSpan().Length);
             }
+
+            /// <summary>
+            /// The visual 'o' command should not modify what is selected
+            /// </summary>
+            [WpfFact]
+            public void SwapAnchor()
+            {
+                Create("cat dog");
+                _vimBuffer.Process("v   ");
+                Assert.Equal("cat", _textView.GetSelectionSpan().GetText());
+                _vimBuffer.Process("o");
+                Assert.Equal("cat", _textView.GetSelectionSpan().GetText());
+                _vimBuffer.Process("o");
+                Assert.Equal("cat", _textView.GetSelectionSpan().GetText());
+            }
+
+            /// <summary>
+            /// Switch from character to line mode after 'o' should expand the selection
+            /// </summary>
+            [WpfFact]
+            public void Issue1395()
+            {
+                Create("cat", "dog", "bear", "bat");
+                _vimBuffer.Process(" vj");
+                Assert.Equal("at\r\nd", _textView.GetSelectionSpan().GetText());
+                _vimBuffer.Process("o");
+                Assert.Equal("at\r\nd", _textView.GetSelectionSpan().GetText());
+                _vimBuffer.Process("V");
+                Assert.Equal("cat\r\ndog\r\n", _textView.GetSelectionSpan().GetText());
+            }
         }
 
         public abstract class BlockInsertTest : VisualModeIntegrationTest
