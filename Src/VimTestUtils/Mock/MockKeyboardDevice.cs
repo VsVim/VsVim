@@ -136,6 +136,10 @@ namespace Vim.UnitTest.Mock
                 case VimKey.End:
                     key = Key.End;
                     return true;
+                case VimKey.LineFeed:
+                    key = Key.J;
+                    modKeys = ModifierKeys.Control;
+                    return true;
             }
 
             if (char.IsLetter(keyInput.Char))
