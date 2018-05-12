@@ -1247,10 +1247,10 @@ type Parser
                 _tokenizer.MoveNextToken()
                 match _tokenizer.CurrentTokenKind with
                 | TokenKind.Number _ ->
-                    x.ParseNumber() |> Option.map (LineSpecifier.CurrentLineWithEndCount)
-                | TokenKind.Character '+' ->
-                    _tokenizer.MoveNextToken()
-                    x.ParseNumber() |> Option.map (LineSpecifier.CurrentLineWithEndCount)
+                    x.ParseNumber()
+                    |> OptionUtil.getOrDefault 1
+                    |> (fun number -> LineSpecifier.LineSpecifierWithAdjustment (LineSpecifier.CurrentLine, number))
+                    |> Some
                 | _ ->
                     Some LineSpecifier.CurrentLine
             elif _tokenizer.CurrentChar = '\'' then
@@ -1299,12 +1299,8 @@ type Parser
                     _tokenizer.MoveToMark mark
                     None
 
-            elif _tokenizer.CurrentChar = '+' then
-                _tokenizer.MoveNextToken()
-                x.ParseNumber() |> Option.map LineSpecifier.AdjustmentOnCurrent
-            elif _tokenizer.CurrentChar = '-' then
-                _tokenizer.MoveNextToken()
-                x.ParseNumber() |> Option.map (fun number -> LineSpecifier.AdjustmentOnCurrent -number)
+            elif _tokenizer.CurrentChar = '+' || _tokenizer.CurrentChar = '-' then
+                Some LineSpecifier.CurrentLine
             else 
                 match x.ParseNumber() with
                 | None -> None

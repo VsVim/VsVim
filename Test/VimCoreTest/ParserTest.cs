@@ -692,6 +692,7 @@ let x = 42
                 Assert.True(range.AsSingleLine().Item.IsCurrentLine);
             }
 
+#if false
             [Fact]
             public void CurrentLineWithEndCount()
             {
@@ -723,6 +724,7 @@ let x = 42
                 Assert.True(range.Item1.IsCurrentLineWithEndCount(2));
                 Assert.True(range.Item2.IsCurrentLineWithEndCount(3));
             }
+#endif
 
             [Fact]
             public void CurrentLineAndCurrentLine()

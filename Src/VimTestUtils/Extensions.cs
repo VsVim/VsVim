@@ -359,6 +359,7 @@ namespace Vim.UnitTest
             return (LineSpecifier.PreviousLineWithPattern)lineSpecifier;
         }
 
+#if false
         public static LineSpecifier.CurrentLineWithEndCount AsCurrentLineWithEndCount(this LineSpecifier lineSpecifier)
         {
             return (LineSpecifier.CurrentLineWithEndCount)lineSpecifier;
@@ -368,6 +369,7 @@ namespace Vim.UnitTest
         {
             return lineSpecifier.IsCurrentLineWithEndCount && lineSpecifier.AsCurrentLineWithEndCount().Item == count;
         }
+#endif
 
         #endregion
 

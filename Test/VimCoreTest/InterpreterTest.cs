@@ -1686,17 +1686,6 @@ namespace Vim.UnitTest
                 Assert.Equal("bar" + Environment.NewLine, UnnamedRegister.StringValue);
             }
 
-            /// <summary>
-            /// Handle the case where the adjustment simply occurs on the current line 
-            /// </summary>
-            [WpfFact]
-            public void GetLine_AdjustmentOnCurrent()
-            {
-                Create("cat", "dog", "bear");
-                var range = _interpreter.GetLine(LineSpecifier.NewAdjustmentOnCurrent(1));
-                Assert.Equal(_textBuffer.GetLine(1).LineNumber, range.Value.LineNumber);
-            }
-
             [WpfFact]
             public void LineRange_FullFile()
             {
@@ -1788,6 +1777,24 @@ namespace Vim.UnitTest
             }
 
             [WpfFact]
+            public void LineRange_DotPlus()
+            {
+                Create("foo", "bar", "baz", "qux");
+                _textView.MoveCaretToLine(1);
+                var lineRange = ParseAndGetLineRange(".+");
+                Assert.Equal(_textBuffer.GetLineRange(2), lineRange);
+            }
+
+            [WpfFact]
+            public void LineRange_DotMinus()
+            {
+                Create("foo", "bar", "baz", "qux");
+                _textView.MoveCaretToLine(2);
+                var lineRange = ParseAndGetLineRange(".-");
+                Assert.Equal(_textBuffer.GetLineRange(1), lineRange);
+            }
+
+            [WpfFact]
             public void LineRange_LonePlus()
             {
                 Create("foo", "bar", "baz", "qux");
@@ -1800,9 +1807,9 @@ namespace Vim.UnitTest
             public void LineRange_LoneMinus()
             {
                 Create("foo", "bar", "baz", "qux");
-                _textView.MoveCaretToLine(1);
+                _textView.MoveCaretToLine(2);
                 var lineRange = ParseAndGetLineRange("-");
-                Assert.Equal(_textBuffer.GetLineRange(2), lineRange);
+                Assert.Equal(_textBuffer.GetLineRange(1), lineRange);
             }
 
             [WpfFact]

@@ -315,11 +315,6 @@ type VimInterpreter
         | LineSpecifier.CurrentLine -> 
             x.CaretLine |> getLineAndNumber |> Some
 
-        | LineSpecifier.CurrentLineWithEndCount count ->
-            let lineNumber = x.CaretLineNumber + count
-            let line = SnapshotUtil.GetLineOrLast x.CurrentSnapshot lineNumber
-            line |> getLineAndNumber |> Some
-
         | LineSpecifier.LastLine ->
             let line = SnapshotUtil.GetLastLine x.CurrentSnapshot
             if x.CurrentSnapshot.LineCount >= 2 && line.Start.Position = line.EndIncludingLineBreak.Position then
@@ -347,9 +342,6 @@ type VimInterpreter
 
         | LineSpecifier.LineSpecifierWithAdjustment (lineSpecifier, adjustment) ->
             x.GetLine lineSpecifier |> OptionUtil.map2 (getAdjustment adjustment)
-
-        | LineSpecifier.AdjustmentOnCurrent adjustment -> 
-            getAdjustment adjustment currentLine
 
         | LineSpecifier.NextLineWithPattern pattern ->
             // TODO: Implement
