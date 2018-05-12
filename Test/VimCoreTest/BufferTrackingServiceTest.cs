@@ -132,6 +132,31 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
+            /// Deleting lines containing a tracking span and then undoing it
+            /// should not affect its postion
+            /// </summary>
+            [WpfFact]
+            public void Edit_DeleteVisualLinesAndUndo()
+            {
+                Create("foo", "bar", "baz", "qux");
+                var snapshot = _textBuffer.CurrentSnapshot;
+                var visualSpan = VisualSpan.NewLine(new SnapshotLineRange(snapshot, 1, 2));
+                var trackingVisualSpan = _bufferTrackingService.CreateVisualSpan(visualSpan);
+                using (var undoTransaction = _undoHistory.CreateTransaction("delete"))
+                {
+                    _textBuffer.Delete(_textBuffer.GetLineRange(1, 2).ExtentIncludingLineBreak.Span);
+                    undoTransaction.Complete();
+                }
+                Assert.Equal(new[] { "foo", "qux" }, _textBuffer.GetLines());
+                _undoHistory.Undo(1);
+                Assert.Equal(new[] { "foo", "bar", "baz", "qux" }, _textBuffer.GetLines());
+                var newSnapshot = _textBuffer.CurrentSnapshot;
+                var newVisualSpan = VisualSpan.NewLine(new SnapshotLineRange(newSnapshot, 1, 2));
+                Assert.True(trackingVisualSpan.VisualSpan.IsSome());
+                Assert.Equal(newVisualSpan, trackingVisualSpan.VisualSpan.Value);
+            }
+
+            /// <summary>
             /// Deleting the line below shouldn't affect it
             /// </summary>
             [WpfFact]
