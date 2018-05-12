@@ -1047,12 +1047,10 @@ type internal InsertMode
                 else
                     let transaction = _undoRedoOperations.CreateLinkedUndoTransactionWithFlags "Insert" LinkedUndoTransactionFlags.CanBeEmpty
                     Some transaction, InsertKind.Normal
-            | ModeArgument.InsertWithCountAndNewLine count ->
+            | ModeArgument.InsertWithCountAndNewLine (count, transaction) ->
                 if count > 1 then
-                    let transaction = _undoRedoOperations.CreateLinkedUndoTransactionWithFlags "Insert with count and new line" LinkedUndoTransactionFlags.CanBeEmpty
                     Some transaction, InsertKind.Repeat (count, true, TextChange.Insert StringUtil.Empty)
                 else
-                    let transaction = _undoRedoOperations.CreateLinkedUndoTransactionWithFlags "Insert with new line" LinkedUndoTransactionFlags.CanBeEmpty
                     Some transaction, InsertKind.Normal
             | ModeArgument.InsertWithTransaction transaction ->
                 Some transaction, InsertKind.Normal

@@ -2289,7 +2289,7 @@ type ModeArgument =
     /// Begins insert mode with a specified count.  This means the text inserted should
     /// be repeated a total of 'count - 1' times when insert mode exits.  Each extra time
     /// should be on a new line
-    | InsertWithCountAndNewLine of int
+    | InsertWithCountAndNewLine of int * ILinkedUndoTransaction
 
     /// Begins insert mode with an existing UndoTransaction.  This is used to link 
     /// change commands with text changes.  For example C, c, etc ...
@@ -2298,6 +2298,22 @@ type ModeArgument =
     /// Passing the substitute to confirm to Confirm mode.  The SnapshotSpan is the first
     /// match to process and the range is the full range to consider for a replace
     | Substitute of SnapshotSpan * SnapshotLineRange * SubstituteData
+
+with
+
+    // Running linked commands will throw away the ModeSwitch value.  This can contain
+    // an open IUndoTransaction.  This must be completed here or it will break undo in the
+    // ITextBuffer
+    member x.CompleteAnyTransaction =
+        match x with
+        | ModeArgument.None -> ()
+        | ModeArgument.FromVisual -> ()
+        | ModeArgument.InitialVisualSelection _ -> ()
+        | ModeArgument.InsertBlock (_, transaction) -> transaction.Complete()
+        | ModeArgument.InsertWithCount _ -> ()
+        | ModeArgument.InsertWithCountAndNewLine (_, transaction) -> transaction.Complete()
+        | ModeArgument.InsertWithTransaction transaction -> transaction.Complete()
+        | ModeArgument.Substitute _ -> ()
 
 [<RequireQualifiedAccess>]
 [<NoComparison>]

@@ -206,15 +206,9 @@ type internal SubstituteConfirmMode
 
         member x.OnClose() = ()
         member x.OnEnter arg =
+            arg.CompleteAnyTransaction
             x.ConfirmData <- 
                 match arg with
-                | ModeArgument.None -> None
-                | ModeArgument.FromVisual -> None
-                | ModeArgument.InitialVisualSelection _ -> None
-                | ModeArgument.InsertBlock (_, transaction) -> transaction.Complete(); None
-                | ModeArgument.InsertWithCount _ -> None
-                | ModeArgument.InsertWithCountAndNewLine _ -> None
-                | ModeArgument.InsertWithTransaction transaction -> transaction.Complete(); None
                 | ModeArgument.Substitute(span, range, data) ->
                     match VimRegexFactory.CreateForSubstituteFlags data.SearchPattern _globalSettings data.Flags with
                     | None -> None
@@ -222,6 +216,7 @@ type internal SubstituteConfirmMode
                         let isReplaceAll = Util.IsFlagSet data.Flags SubstituteFlags.ReplaceAll
                         let data = { Regex=regex; SubstituteText=data.Substitute; CurrentMatch = span; LastLineNumber = range.LastLineNumber; IsReplaceAll=isReplaceAll}
                         Some data
+                | _ -> None
 
         member x.OnLeave () = 
             x.ConfirmData <- None
