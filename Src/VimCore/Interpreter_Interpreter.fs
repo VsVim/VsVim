@@ -410,7 +410,7 @@ type VimInterpreter
                     TextViewUtil.MoveCaretToPoint _textView leftLine.Start
 
                 // Get the right line and combine the results
-                match x.GetLineCore rightLineSpecifier leftLine with
+                match x.GetLine rightLineSpecifier with
                 | None -> None
                 | Some rightLine -> SnapshotLineRangeUtil.CreateForLineRange leftLine rightLine |> Some
         | LineRangeSpecifier.WithEndCount (lineRange, count) ->
