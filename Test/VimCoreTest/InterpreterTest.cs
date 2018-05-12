@@ -1725,6 +1725,96 @@ namespace Vim.UnitTest
             }
 
             [WpfFact]
+            public void LineRange_MinusRelativeToDot()
+            {
+                Create("foo", "bar", "baz", "qux");
+                _textView.MoveCaretToLine(2);
+                var lineRange = ParseAndGetLineRange(".-1");
+                Assert.Equal(_textBuffer.GetLineRange(1), lineRange);
+            }
+
+            [WpfFact]
+            public void LineRange_PlusRelativeToDot()
+            {
+                Create("foo", "bar", "baz", "qux");
+                _textView.MoveCaretToLine(1);
+                var lineRange = ParseAndGetLineRange(".+1");
+                Assert.Equal(_textBuffer.GetLineRange(2), lineRange);
+            }
+
+            [WpfFact]
+            public void LineRange_MinusRelativeToDollar()
+            {
+                Create("foo", "bar", "baz", "qux");
+                _textView.MoveCaretToLine(0);
+                var lineRange = ParseAndGetLineRange("$-1");
+                Assert.Equal(_textBuffer.GetLineRange(2), lineRange);
+            }
+
+            [WpfFact]
+            public void LineRange_MinusImplicitDot()
+            {
+                Create("foo", "bar", "baz", "qux");
+                _textView.MoveCaretToLine(2);
+                var lineRange = ParseAndGetLineRange("-1");
+                Assert.Equal(_textBuffer.GetLineRange(1), lineRange);
+            }
+
+            [WpfFact]
+            public void LineRange_MinusImplicitDotRange()
+            {
+                Create("foo", "bar", "baz", "qux");
+                _textView.MoveCaretToLine(2);
+                var lineRange = ParseAndGetLineRange("-2,-1");
+                Assert.Equal(_textBuffer.GetLineRange(0, 1), lineRange);
+            }
+
+            [WpfFact]
+            public void LineRange_PlusImplicitDot()
+            {
+                Create("foo", "bar", "baz", "qux");
+                _textView.MoveCaretToLine(1);
+                var lineRange = ParseAndGetLineRange("+1");
+                Assert.Equal(_textBuffer.GetLineRange(2), lineRange);
+            }
+
+            [WpfFact]
+            public void LineRange_PlusImplicitDotRange()
+            {
+                Create("foo", "bar", "baz", "qux");
+                _textView.MoveCaretToLine(1);
+                var lineRange = ParseAndGetLineRange("+1,+2");
+                Assert.Equal(_textBuffer.GetLineRange(2, 3), lineRange);
+            }
+
+            [WpfFact]
+            public void LineRange_LonePlus()
+            {
+                Create("foo", "bar", "baz", "qux");
+                _textView.MoveCaretToLine(1);
+                var lineRange = ParseAndGetLineRange("+");
+                Assert.Equal(_textBuffer.GetLineRange(2), lineRange);
+            }
+
+            [WpfFact]
+            public void LineRange_LoneMinus()
+            {
+                Create("foo", "bar", "baz", "qux");
+                _textView.MoveCaretToLine(1);
+                var lineRange = ParseAndGetLineRange("-");
+                Assert.Equal(_textBuffer.GetLineRange(2), lineRange);
+            }
+
+            [WpfFact]
+            public void LineRange_MinusPlusRange()
+            {
+                Create("foo", "bar", "baz", "qux");
+                _textView.MoveCaretToLine(1);
+                var lineRange = ParseAndGetLineRange("-,+");
+                Assert.Equal(_textBuffer.GetLineRange(0, 2), lineRange);
+            }
+
+            [WpfFact]
             public void LineRange_OmittedEndLine()
             {
                 Create("foo", "bar", "baz", "qux");
