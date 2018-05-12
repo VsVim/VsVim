@@ -1,6 +1,7 @@
 ﻿using System;
 using Vim.EditorHost;
 using Microsoft.VisualStudio.Text;
+using Microsoft.VisualStudio.Text.Operations;
 using Vim.Extensions;
 using Xunit;
 
@@ -19,6 +20,17 @@ namespace Vim.UnitTest
 
         public sealed class EditTrackingTest : BufferTrackingServiceTest
         {
+            private ITextBuffer _textBuffer;
+            private ITextUndoHistory _undoHistory;
+
+            private void Create(params string[] lines)
+            {
+                _textBuffer = CreateTextBuffer(lines);
+                var undoManagerProvider = TextBufferUndoManagerProvider;
+                var undoManager = undoManagerProvider.GetTextBufferUndoManager(_textBuffer);
+                _undoHistory = undoManager.TextBufferUndoHistory;
+            }
+
             private ITrackingLineColumn Create(ITextBuffer buffer, int line, int column)
             {
                 return _bufferTrackingServiceRaw.Create(buffer, line, column, LineColumnTrackingMode.Default);
@@ -94,6 +106,29 @@ namespace Vim.UnitTest
                 buffer.Delete(buffer.GetLine(0).ExtentIncludingLineBreak.Span);
                 Assert.True(tlc.Point.IsNone());
                 Assert.True(tlc.VirtualPoint.IsNone());
+            }
+
+            /// <summary>
+            /// Deleting lines containing the tracking item and then undoing it
+            /// should not affect its postion
+            /// </summary>
+            [WpfFact]
+            public void Edit_DeleteLinesAndUndo()
+            {
+                Create("foo", "bar", "baz", "qux");
+                var tlc = Create(_textBuffer, 1, 0);
+                AssertPoint(tlc, 1, 0);
+                using (var undoTransaction = _undoHistory.CreateTransaction("delete"))
+                {
+                    _textBuffer.Delete(_textBuffer.GetLineRange(1, 2).ExtentIncludingLineBreak.Span);
+                    undoTransaction.Complete();
+                }
+                Assert.Equal(new[] { "foo", "qux" }, _textBuffer.GetLines());
+                Assert.True(tlc.Point.IsNone());
+                Assert.True(tlc.VirtualPoint.IsNone());
+                _undoHistory.Undo(1);
+                Assert.Equal(new[] { "foo", "bar", "baz", "qux" }, _textBuffer.GetLines());
+                AssertPoint(tlc, 1, 0);
             }
 
             /// <summary>
