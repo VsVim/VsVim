@@ -2926,7 +2926,7 @@ namespace Vim.UnitTest
                 }
 
                 /// <summary>
-                /// After undo, we should be able to restoring the visual selection
+                /// After deletion and undo, we should be able to restore the visual selection
                 /// </summary>
                 [WpfFact]
                 public void RestoreVisualSelectionAfterUndo()

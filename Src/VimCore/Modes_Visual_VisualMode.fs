@@ -188,8 +188,8 @@ type internal VisualMode
         let lastVisualSelection = VisualSelection.CreateForSelection _textView _visualKind _globalSettings.SelectionKind _vimBufferData.LocalSettings.TabStop
 
         // We can't wait until after the command to record the last visual selection
-        // because if the command modified the text buffer, the snapshot will be newer
-        // than the one that was active when we created it, which would interfere
+        // because if the command modifies the text buffer, the snapshot will be newer
+        // than the one that was active when we created it which would interfere
         // with the tracking service.
         _vimTextBuffer.LastVisualSelection <- Some lastVisualSelection
 
