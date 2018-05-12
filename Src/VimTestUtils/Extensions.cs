@@ -971,6 +971,12 @@ namespace Vim.UnitTest
             }
         }
 
+        public static string GetLineText(this ITextBuffer textBuffer, int lineNumber, bool includeLineBreak = false)
+        {
+            var line = textBuffer.GetLine(lineNumber);
+            return includeLineBreak ? line.GetTextIncludingLineBreak() : line.GetText();
+        }
+
         public static SnapshotSpan GetLineSpan(this ITextBuffer buffer, int lineNumber, int column, int length)
         {
             var line = buffer.GetLine(lineNumber);

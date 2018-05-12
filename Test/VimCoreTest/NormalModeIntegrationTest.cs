@@ -2761,22 +2761,24 @@ namespace Vim.UnitTest
             {
                 Create("aaa bbb ccc");
                 _vimBuffer.ProcessNotation("1Gwiddd <Esc>");
-                Assert.Equal("aaa ddd bbb ccc", _textView.GetLine(0).GetText());
+                Assert.Equal("aaa ddd bbb ccc", _textBuffer.GetLineText(0));
                 _vimBuffer.ProcessNotation("u");
-                Assert.Equal("aaa bbb ccc", _textView.GetLine(0).GetText());
+                Assert.Equal("aaa bbb ccc", _textBuffer.GetLineText(0));
             }
 
             /// <summary>
             /// Undo of insert with backspaces
             /// </summary>
-            [WpfFact]
-            public void Undo_InsertWithBackspaces()
+            [WpfTheory]
+            [InlineData("<BS>")]
+            [InlineData("<C-h>")]
+            public void Undo_InsertWithBackspaces(string backCommand)
             {
                 Create("aaa bbb ccc");
-                _vimBuffer.ProcessNotation("1Gwiddd<BS><BS>ef <Esc>");
-                Assert.Equal("aaa def bbb ccc", _textView.GetLine(0).GetText());
+                _vimBuffer.ProcessNotation($"1Gwiddd{backCommand}{backCommand}ef <Esc>");
+                Assert.Equal("aaa def bbb ccc", _textBuffer.GetLineText(0));
                 _vimBuffer.ProcessNotation("u");
-                Assert.Equal("aaa bbb ccc", _textView.GetLine(0).GetText());
+                Assert.Equal("aaa bbb ccc", _textBuffer.GetLineText(0));
             }
 
             /// <summary>
@@ -2787,11 +2789,11 @@ namespace Vim.UnitTest
             {
                 Create("aaa bbb ccc");
                 _vimBuffer.ProcessNotation("1Gwieee <Left><Left><Left><Left>ddd <Esc>");
-                Assert.Equal("aaa ddd eee bbb ccc", _textView.GetLine(0).GetText());
+                Assert.Equal("aaa ddd eee bbb ccc", _textBuffer.GetLineText(0));
                 _vimBuffer.ProcessNotation("u");
-                Assert.Equal("aaa eee bbb ccc", _textView.GetLine(0).GetText());
+                Assert.Equal("aaa eee bbb ccc", _textBuffer.GetLineText(0));
                 _vimBuffer.ProcessNotation("u");
-                Assert.Equal("aaa bbb ccc", _textView.GetLine(0).GetText());
+                Assert.Equal("aaa bbb ccc", _textBuffer.GetLineText(0));
             }
 
             /// <summary>
@@ -2802,11 +2804,11 @@ namespace Vim.UnitTest
             {
                 Create("aaa bbb ccc");
                 _vimBuffer.ProcessNotation("1Gwieee <C-Left>ddd <Esc>");
-                Assert.Equal("aaa ddd eee bbb ccc", _textView.GetLine(0).GetText());
+                Assert.Equal("aaa ddd eee bbb ccc", _textBuffer.GetLineText(0));
                 _vimBuffer.ProcessNotation("u");
-                Assert.Equal("aaa eee bbb ccc", _textView.GetLine(0).GetText());
+                Assert.Equal("aaa eee bbb ccc", _textBuffer.GetLineText(0));
                 _vimBuffer.ProcessNotation("u");
-                Assert.Equal("aaa bbb ccc", _textView.GetLine(0).GetText());
+                Assert.Equal("aaa bbb ccc", _textBuffer.GetLineText(0));
             }
 
             /// <summary>
@@ -2832,11 +2834,115 @@ namespace Vim.UnitTest
             {
                 Create("aaa bbb ccc");
                 _vimBuffer.ProcessNotation("1Gwiddd <C-g>ueee <Esc>");
-                Assert.Equal("aaa ddd eee bbb ccc", _textView.GetLine(0).GetText());
+                Assert.Equal("aaa ddd eee bbb ccc", _textBuffer.GetLineText(0));
                 _vimBuffer.ProcessNotation("u");
-                Assert.Equal("aaa ddd bbb ccc", _textView.GetLine(0).GetText());
+                Assert.Equal("aaa ddd bbb ccc", _textBuffer.GetLineText(0));
                 _vimBuffer.ProcessNotation("u");
-                Assert.Equal("aaa bbb ccc", _textView.GetLine(0).GetText());
+                Assert.Equal("aaa bbb ccc", _textBuffer.GetLineText(0));
+            }
+
+            [WpfFact]
+            public void Undo_InsertAndPaste()
+            {
+                Create("dog");
+                UnnamedRegister.UpdateValue("tree");
+                _vimBuffer.ProcessNotation(@"A <c-r>""<Esc>");
+                Assert.Equal("dog tree", _textBuffer.GetLineText(0));
+                _vimBuffer.ProcessNotation("u");
+                Assert.Equal("dog", _textBuffer.GetLineText(0));
+            }
+
+            [WpfFact]
+            public void Undo_InsertEndKeyBreaksUndoSequence()
+            {
+                Create("cat");
+                _vimBuffer.ProcessNotation(@"idog <End> tree<Esc>");
+                Assert.Equal("dog cat tree", _textBuffer.GetLineText(0));
+                _vimBuffer.Process("u");
+                Assert.Equal("dog cat", _textBuffer.GetLineText(0));
+                _vimBuffer.Process("u");
+                Assert.Equal("cat", _textBuffer.GetLineText(0));
+            }
+
+            [WpfTheory]
+            [InlineData("<Tab>")]
+            [InlineData("<C-i>")]
+            public void Undo_InsertTab(string tabCommand)
+            {
+                Create("dog");
+                _vimBuffer.LocalSettings.TabStop = 4;
+                _vimBuffer.LocalSettings.ExpandTab = false;
+                _vimBuffer.ProcessNotation($@"A{tabCommand}tree<Esc>");
+                Assert.Equal("dog\ttree", _textBuffer.GetLineText(0));
+                _vimBuffer.ProcessNotation("u");
+                Assert.Equal("dog", _textBuffer.GetLineText(0));
+            }
+
+            [WpfFact]
+            public void Undo_InsertShiftLineLeft()
+            {
+                Create("    dog");
+                _vimBuffer.LocalSettings.ShiftWidth = 2;
+                _vimBuffer.ProcessNotation("A<C-d><C-d><Esc>");
+                Assert.Equal("dog", _textBuffer.GetLineText(0));
+                _vimBuffer.ProcessNotation("u");
+                Assert.Equal("    dog", _textBuffer.GetLineText(0));
+            }
+
+            [WpfFact]
+            public void Undo_InsertShiftLineLeftAndType()
+            {
+                Create("    dog");
+                _vimBuffer.LocalSettings.ShiftWidth = 2;
+                _vimBuffer.ProcessNotation("A<C-d><C-d> tree<Esc>");
+                Assert.Equal("dog tree", _textBuffer.GetLineText(0));
+                _vimBuffer.ProcessNotation("u");
+                Assert.Equal("    dog", _textBuffer.GetLineText(0));
+            }
+
+            [WpfFact]
+            public void Undo_InsertShiftLineRight()
+            {
+                Create("dog");
+                _vimBuffer.LocalSettings.ShiftWidth = 2;
+                _vimBuffer.ProcessNotation("A<C-t><C-t><Esc>");
+                Assert.Equal("    dog", _textBuffer.GetLineText(0));
+                _vimBuffer.ProcessNotation("u");
+                Assert.Equal("dog", _textBuffer.GetLineText(0));
+            }
+
+            [WpfTheory]
+            [InlineData("<C-j>")]
+            [InlineData("<C-m>")]
+            public void Undo_InsertNewLineAndType(string newLineCommand)
+            {
+                Create("other ");
+                _vimBuffer.ProcessNotation($"Adog{newLineCommand}tree<Esc>");
+                Assert.Equal(new[] { "other dog", "tree" }, _textBuffer.GetLines());
+                _vimBuffer.ProcessNotation("u");
+                Assert.Equal(new[] { "other " }, _textBuffer.GetLines());
+            }
+
+            [WpfFact]
+            public void Undo_InsertCharacterBelowCaret()
+            {
+                Create("", "dog");
+                _textView.MoveCaretTo(0);
+                _vimBuffer.ProcessNotation("il<C-e><C-e><Esc>");
+                Assert.Equal(new[] { "log", "dog" }, _textBuffer.GetLines());
+                _vimBuffer.ProcessNotation("u");
+                Assert.Equal(new[] { "", "dog" }, _textBuffer.GetLines());
+            }
+
+            [WpfFact]
+            public void Undo_InsertCharacterAboveCaret()
+            {
+                Create("dog", "");
+                _textView.MoveCaretToLine(1);
+                _vimBuffer.ProcessNotation("il<C-y><C-y><Esc>");
+                Assert.Equal(new[] { "dog", "log" }, _textBuffer.GetLines());
+                _vimBuffer.ProcessNotation("u");
+                Assert.Equal(new[] { "dog", "" }, _textBuffer.GetLines());
             }
 
             /// <summary>
