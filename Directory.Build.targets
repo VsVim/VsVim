@@ -8,6 +8,11 @@
        https://github.com/NuGet/Home/issues/6367
    -->
 
+  <PropertyGroup>
+    <!-- Disable the preview warning when building -->
+    <_NETCoreSdkIsPreview>false</_NETCoreSdkIsPreview>
+  </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="FSharp.Core" Version="4.2.3" ExcludeAssets="all" Condition="'$(MSBuildProjectExtension)' != '.fsproj'"/>
   </ItemGroup>  

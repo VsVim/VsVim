@@ -1,5 +1,6 @@
 param (
     [switch]$fast = $false, 
+    [switch]$skipTelemetry = $true,
     [string]$vsDir = "C:\Program Files (x86)\Microsoft Visual Studio\2017\Enterprise")
 
 Set-StrictMode -version 2.0
@@ -25,7 +26,6 @@ function Test-VsixContents() {
         "extension.vsixmanifest",
         "License.txt",
         "Microsoft.ApplicationInsights.dll",
-        "telemetry.txt",
         "Vim.Core.dll",
         "Vim.UI.Wpf.dll",
         "Vim.VisualStudio.Interfaces.dll",
@@ -41,6 +41,10 @@ function Test-VsixContents() {
         "catalog.json",
         "manifest.json",
         "[Content_Types].xml")
+
+    if (-not $skipTelemetry) {
+        $expectedFiles += "telemetry"
+    }
 
     # Make a folder to hold the foundFiles
     $target = Join-Path ([IO.Path]::GetTempPath()) ([IO.Path]::GetRandomFileName())
