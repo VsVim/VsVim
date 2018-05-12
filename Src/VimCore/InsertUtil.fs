@@ -298,12 +298,12 @@ type internal InsertUtil
         if _editorOperations.InsertText(text) then
             if _localSettings.EndOfLine then
 
-                // Ensure that the caret line has a linebreak.
-                let caretPoint = x.CaretPoint
-                let caretLine = x.CaretLine
-                if not (SnapshotLineUtil.HasLineBreak caretLine) then
+                // Ensure that the line containing the insertion point has a linebreak.
+                let insertionPoint = x.CaretPoint
+                let insertionLine = x.CaretLine
+                if not (SnapshotLineUtil.HasLineBreak insertionLine) then
                     TextViewUtil.InsertFinalNewLine _textView
-                    let point = SnapshotUtil.GetPoint _textBuffer.CurrentSnapshot caretPoint.Position
+                    let point = SnapshotUtil.GetPoint _textBuffer.CurrentSnapshot insertionPoint.Position
                     TextViewUtil.MoveCaretToPoint _textView point
 
             CommandResult.Completed ModeSwitch.NoSwitch

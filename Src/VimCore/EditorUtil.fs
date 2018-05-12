@@ -43,13 +43,30 @@ module internal EditorCoreUtil =
     let IsInsideLineBreak (point: SnapshotPoint) (line: ITextSnapshotLine) = 
         point.Position >= line.End.Position && not (IsEndPoint point)
 
+    /// The snapshot ends with a linebreak if there is more more than one
+    /// line and the last line of the snapshot (which doesn't have a linebreak)
+    /// is empty.
     let EndsWithLineBreak (snapshot: ITextSnapshot) = 
         let lineNumber = snapshot.LineCount - 1 
         lineNumber > 0 && snapshot.GetLineFromLineNumber(lineNumber).Length = 0
 
+    /// THe normalized line count is one fewer than the snapshot line count
+    /// when the snapshot ends in a linebreak
+    ///
+    /// Example:
+    /// Buffer Contents    Snapshot Line Count     Normalized LineCount
+    /// ''                 1                       1
+    /// 'foo'              1                       1
+    /// 'foo\r\n'          2                       1 <- ends with a linebreak
+    /// 'foo\r\nbar'       2                       2
+    /// 'foo\r\nbar\r\n'   3                       2 <- ends with a linebreak
     let GetNormalizedLineCount (snapshot: ITextSnapshot) =
         if EndsWithLineBreak snapshot then snapshot.LineCount - 1 else snapshot.LineCount
 
+    /// The last normalized line is either:
+    /// - The first line of a completely empty snapshot
+    /// - The last non-empty line without a linebreak
+    /// - The line containing the linebreak at the end of a snapshot
     let GetLastNormalizedLineNumber snapshot =
         (GetNormalizedLineCount snapshot) - 1
 
