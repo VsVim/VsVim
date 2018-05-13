@@ -333,14 +333,13 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
         /// <param name="text"></param>
         private void InsertIntoCommandLine(string text, bool putCaretAfter)
         {
-            var commandText = _margin.CommandLineTextBox.Text;
             var textBox = _margin.CommandLineTextBox;
             var builder = new StringBuilder();
             var offset = textBox.SelectionStart;
-            var commandLine = textBox.Text;
-            builder.Append(commandLine, 0, offset);
+            var commandText = textBox.Text;
+            builder.Append(commandText, 0, offset);
             builder.Append(text);
-            builder.Append(commandLine, offset, commandLine.Length - offset);
+            builder.Append(commandText, offset, commandText.Length - offset);
             UpdateCommandLine(builder.ToString());
             if (putCaretAfter)
             {
