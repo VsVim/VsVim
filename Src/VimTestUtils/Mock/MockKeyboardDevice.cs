@@ -106,6 +106,9 @@ namespace Vim.UnitTest.Mock
             modKeys = ModifierKeys.None;
             switch (keyInput.Key)
             {
+                case VimKey.Tab:
+                    key = Key.Tab;
+                    return true;
                 case VimKey.Left:
                     key = Key.Left;
                     return true;
