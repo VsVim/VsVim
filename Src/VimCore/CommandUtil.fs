@@ -2605,15 +2605,45 @@ type internal CommandUtil
         // The editor PageUp and PageDown don't actually move the caret.  Manually move it
         // here.  Need to take into account that TextViewLines can throw
         try
-            let line =
-                match direction with
-                | ScrollDirection.Up -> _textView.TextViewLines.FirstVisibleLine
-                | ScrollDirection.Down -> _textView.TextViewLines.LastVisibleLine
-                | _ -> _textView.TextViewLines.FirstVisibleLine
-            _textView.Caret.MoveTo(line) |> ignore
-        with
-            | _ -> ()
 
+            // Find the snapshot line that will contain the caret.
+            let line =
+                if direction = ScrollDirection.Up then
+
+                    // If line wrapping is in effect, the last visible text view
+                    // line could be the wrapped part of some long snapshot line.
+                    // Furthermore, even if line wrapping is not in effect, the
+                    // last line might only be partially visible if the view height
+                    // is not an even multiple of the height of a text view line.
+                    //
+                    // Find the first fully visible text view line preceding the
+                    // the start of any partially visible snapshot line that
+                    // contains the start of a snapshot line. In other words,
+                    // we want the first of possibly several text view lines
+                    // associated with a snapshot line and we want that whole
+                    // line to be visible.
+                    let lastLine = _textView.TextViewLines.LastVisibleLine
+                    let textViewLine = _textView.GetTextViewLineContainingBufferPosition lastLine.Start
+                    let bottomLine = SnapshotPointUtil.GetContainingLine lastLine.Start
+                    if textViewLine.VisibilityState = Formatting.VisibilityState.FullyVisible then
+                        bottomLine
+                    else
+                        let partialLineNumber = SnapshotLineUtil.GetLineNumber bottomLine
+                        let previousLineNumber = max 0 (partialLineNumber - 1)
+                        SnapshotUtil.GetLine lastLine.Snapshot previousLineNumber
+
+                else
+                    let firstLine = _textView.TextViewLines.FirstVisibleLine
+                    SnapshotPointUtil.GetContainingLine firstLine.Start
+
+            // Move the caret to the beginning of that line.
+            _textView.Caret.MoveTo(line.Start) |> ignore
+
+            with
+                | _ -> ()
+
+        // Move past any whitespace on the caret line.
+        _editorOperations.MoveToStartOfLineAfterWhiteSpace(false)
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Scroll the window in the specified direction by the specified number of lines.  The
