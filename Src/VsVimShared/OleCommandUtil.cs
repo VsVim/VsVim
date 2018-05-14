@@ -416,7 +416,7 @@ namespace Vim.VisualStudio
             switch (editCommand.EditCommandKind)
             {
                 case EditCommandKind.GoToDefinition:
-                    oleCommandData = new OleCommandData(VSConstants.VSStd97CmdID.GotoDecl);
+                    oleCommandData = new OleCommandData(VSConstants.VSStd97CmdID.GotoDefn);
                     return true;
                 case EditCommandKind.Paste:
                     oleCommandData = new OleCommandData(VSConstants.VSStd2KCmdID.PASTE);
