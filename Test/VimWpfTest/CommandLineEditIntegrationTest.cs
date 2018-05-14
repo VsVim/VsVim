@@ -261,6 +261,17 @@ namespace Vim.UI.Wpf.UnitTest
                 }
 
                 /// <summary>
+                /// Enter and search for literal tab character
+                /// </summary>
+                [WpfFact]
+                public void FindTab()
+                {
+                    Create("cat", "dog\tfish", "bat");
+                    ProcessNotation("/dog\tfish<Enter>");
+                    Assert.Equal(_textBuffer.GetLine(1).Start, _textView.GetCaretPoint());
+                }
+
+                /// <summary>
                 /// When the Enter key is run it should complete the search and cause the cursor
                 /// to be placed at the start of the successful find
                 /// </summary>
@@ -269,17 +280,6 @@ namespace Vim.UI.Wpf.UnitTest
                 {
                     Create("cat", "dog", "fish");
                     ProcessNotation(@"/og<Home>d<Enter>");
-                    Assert.Equal(_textBuffer.GetLine(1).Start, _textView.GetCaretPoint());
-                }
-
-                /// <summary>
-                /// Enter and search for literal tab character
-                /// </summary>
-                [WpfFact]
-                public void FindTab()
-                {
-                    Create("cat", "dog\tfish", "bat");
-                    ProcessNotation("/dog\tfish<Enter>");
                     Assert.Equal(_textBuffer.GetLine(1).Start, _textView.GetCaretPoint());
                 }
             }
