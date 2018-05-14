@@ -2591,45 +2591,63 @@ type internal CommandUtil
 
         CommandResult.Completed ModeSwitch.NoSwitch
 
-    /// Scroll a page in the specified direction
+    /// Scroll pages in the specified direction
     member x.ScrollPages direction count =
 
-        // Get whether this scroll up or down.
+        // Get whether this scroll is up or down.
         let getIsUp direction =
             match direction with
             | ScrollDirection.Up -> Some true
             | ScrollDirection.Down -> Some false
             | _ -> None
 
+        // Get the page scroll amount in pixels, allowing for
+        /// some overlapping context lines (vim overlaps two).
+        let getScrollAmount (textViewLines: ITextViewLineCollection) =
+            let lineHeight = _textView.LineHeight
+            let viewportHeight = _textView.ViewportHeight
+            let fullLines = floor(viewportHeight / lineHeight)
+            let scrollLines = max 1.0 (fullLines - 2.0)
+            scrollLines * lineHeight
+
+        // Scroll up by one full page unless we are at the top.
+        let doScrollUp () =
+            match TextViewUtil.GetTextViewLines _textView with
+            | None ->
+                _editorOperations.PageUp(false)
+            | Some textViewLines ->
+                let scrollAmount = getScrollAmount textViewLines
+                _textView.ViewScroller.ScrollViewportVerticallyByPixels(scrollAmount)
+
+        // Scroll down by one full page or as much as possible.
+        let doScrollDown () =
+            match TextViewUtil.GetTextViewLines _textView with
+            | None ->
+                _editorOperations.PageDown(false)
+            | Some textViewLines ->
+
+                // Check whether the last line is visible.
+                let lastVisiblePoint = textViewLines.LastVisibleLine.EndIncludingLineBreak
+                let lastVisibleLine = SnapshotPointUtil.GetContainingLine lastVisiblePoint
+                let lastVisibleLineNumber = lastVisibleLine.LineNumber
+                // TODO: Use GetLastNormalizedLine
+                let lastLine = SnapshotUtil.GetLastLine _textView.TextSnapshot
+                let lastLineNumber = SnapshotLineUtil.GetLineNumber lastLine
+                if lastVisibleLineNumber >= lastLineNumber then
+
+                    // The last line is already visible. Move the caret
+                    // to the last line and scroll it to the top of the view.
+                    _textView.Caret.MoveTo(lastLine.Start) |> ignore
+                    _editorOperations.ScrollLineTop()
+                else
+                    let scrollAmount = getScrollAmount textViewLines
+                    _textView.ViewScroller.ScrollViewportVerticallyByPixels(-1.0 * scrollAmount)
+
         match getIsUp direction with
         | None ->
             _commonOperations.Beep()
 
         | Some isUp ->
-
-            let doScrollUp () =
-                _editorOperations.PageUp(false)
-
-            let doScrollDown () =
-                match TextViewUtil.GetTextViewLines _textView with
-                | None ->
-                    _editorOperations.PageDown(false)
-                | Some textViewLines ->
-
-                    // Check whether the last line is visible.
-                    let lastVisibleLine = SnapshotPointUtil.GetContainingLine textViewLines.LastVisibleLine.Start
-                    let lastVisibleLineNumber = lastVisibleLine.LineNumber
-                    // TODO: Use GetLastNormalizedLine
-                    let lastLine = SnapshotUtil.GetLastLine _textView.TextSnapshot
-                    let lastLineNumber = SnapshotLineUtil.GetLineNumber lastLine
-                    if lastVisibleLineNumber >= lastLineNumber then
-
-                        // The last line is already visible. Move the caret
-                        // to the last line and scroll it to the top of the view.
-                        _textView.Caret.MoveTo(lastLine.Start) |> ignore
-                        _editorOperations.ScrollLineTop()
-                    else
-                        _editorOperations.PageDown(false)
 
             // Do the scrolling.
             for i = 1 to count do
