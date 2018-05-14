@@ -344,23 +344,23 @@ namespace Vim.VisualStudio
                 result = SafeExecuteCommand(textView, CommandNameGoToDefinition);
             }
 
-            if (!result)
+            // If the action succeeded, clear any new selections.
+            if (result)
             {
-                return false;
+                _textManager
+                    .GetDocumentTextViews(DocumentLoad.RespectLazy)
+                    .Where(x => !x.Selection.IsEmpty && !selected.Contains(x))
+                    .ForEach(x =>
+                    {
+                        // Move the caret to the beginning of the selection.
+                        var startPoint = x.Selection.Start;
+                        x.Selection.Clear();
+                        x.Caret.MoveTo(startPoint);
+                    });
             }
 
-            // Clear any new selections.
-            _textManager
-                .GetDocumentTextViews(DocumentLoad.RespectLazy)
-                .Where(x => !x.Selection.IsEmpty && !selected.Contains(x))
-                .ForEach(x =>
-                {
-                    var startPoint = x.Selection.Start;
-                    x.Selection.Clear();
-                    x.Caret.MoveTo(startPoint);
-                });
-
-            return true;
+            // Return the action's result.
+            return result;
         }
 
         /// <summary>

@@ -243,10 +243,10 @@ namespace Vim.VisualStudio
             return true;
         }
 
-        internal bool Exec(EditCommand editCommand, out Action action)
+        internal bool Exec(EditCommand editCommand, out Func<Func<int>, int> wrapper)
         {
             VimTrace.TraceInfo("VsCommandTarget::Exec {0}", editCommand);
-            action = null;
+            wrapper = null;
 
             // If the KeyInput was already handled then pretend we handled it here 
             if (editCommand.HasKeyInput && _vimBufferCoordinator.IsDiscarded(editCommand.KeyInput))
@@ -257,7 +257,7 @@ namespace Vim.VisualStudio
             var result = false;
             foreach (var commandTarget in _commandTargets)
             {
-                if (commandTarget.Exec(editCommand, out action))
+                if (commandTarget.Exec(editCommand, out wrapper))
                 {
                     result = true;
                     break;
@@ -333,22 +333,29 @@ namespace Vim.VisualStudio
         int IOleCommandTarget.Exec(ref Guid commandGroup, uint commandId, uint commandExecOpt, IntPtr variantIn, IntPtr variantOut)
         {
             EditCommand editCommand = null;
-            Action action = null;
-            try
+            Func<Func<int>, int> wrapper = null;
+            if (TryConvert(commandGroup, commandId, variantIn, out editCommand) &&
+                Exec(editCommand, out wrapper))
             {
-                if (TryConvert(commandGroup, commandId, variantIn, out editCommand) &&
-                    Exec(editCommand, out action))
-                {
-                    return NativeMethods.S_OK;
-                }
+                return NativeMethods.S_OK;
+            }
 
-                return _nextCommandTarget.Exec(commandGroup, commandId, commandExecOpt, variantIn, variantOut);
-            }
-            finally
+            var commandGroupCopy = commandGroup;
+            Func<int> action = () =>
+                _nextCommandTarget.Exec(commandGroupCopy, commandId, commandExecOpt, variantIn, variantOut);
+
+            // Perform action with supplied wrapper, if any.
+            int result;
+            if (wrapper != null)
             {
-                // Run any cleanup actions specified by ExecCore 
-                action?.Invoke();
+                result = wrapper(action);
             }
+            else
+            {
+                result = action();
+            }
+
+            return result;
         }
 
         int IOleCommandTarget.QueryStatus(ref Guid pguidCmdGroup, uint cCmds, OLECMD[] prgCmds, IntPtr pCmdText)

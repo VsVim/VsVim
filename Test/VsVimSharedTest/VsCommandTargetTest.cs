@@ -523,7 +523,7 @@ namespace Vim.VisualStudio.UnitTest
             public void GoToDefinition()
             {
                 var editCommand = CreateEditCommand(EditCommandKind.GoToDefinition);
-                Assert.False(_targetRaw.Exec(editCommand, out Action action));
+                Assert.False(_targetRaw.Exec(editCommand, out Func<Func<int>, int> wrapper));
             }
         }
 
