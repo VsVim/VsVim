@@ -2607,14 +2607,34 @@ type internal CommandUtil
 
         | Some isUp ->
 
-            for i = 1 to count do
-                if isUp then
-                    _editorOperations.PageUp(false)
-                else
-                    _editorOperations.PageDown(false)
+            let doScrollUp () =
+                _editorOperations.PageUp(false)
 
-            // The editor PageUp and PageDown don't actually move the caret.
-            // Manually move it here.
+            let doScrollDown () =
+                match TextViewUtil.GetTextViewLines _textView with
+                | None ->
+                    _editorOperations.PageDown(false)
+                | Some textViewLines ->
+
+                    // Check whether the last line is visible.
+                    let lastVisibleLine = SnapshotPointUtil.GetContainingLine textViewLines.LastVisibleLine.Start
+                    let lastVisibleLineNumber = lastVisibleLine.LineNumber
+                    // TODO: Use GetLastNormalizedLine
+                    let lastLine = SnapshotUtil.GetLastLine _textView.TextSnapshot
+                    let lastLineNumber = SnapshotLineUtil.GetLineNumber lastLine
+                    if lastVisibleLineNumber >= lastLineNumber then
+
+                        // The last line is already visible. Move the caret
+                        // to the last line and scroll it to the top of the view.
+                        _textView.Caret.MoveTo(lastLine.Start) |> ignore
+                        _editorOperations.ScrollLineTop()
+                    else
+                        _editorOperations.PageDown(false)
+
+            // Do the scrolling.
+            for i = 1 to count do
+                if isUp then doScrollUp() else doScrollDown()
+
             match TextViewUtil.GetTextViewLines _textView with
             | None ->
                 ()
