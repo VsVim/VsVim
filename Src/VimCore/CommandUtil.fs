@@ -2597,28 +2597,123 @@ type internal CommandUtil
 
         CommandResult.Completed ModeSwitch.NoSwitch
 
-    /// Scroll a page in the specified direction
+    /// Scroll pages in the specified direction
     member x.ScrollPages direction count =
-        let doScroll () =
+
+        // Get whether this scroll is up or down.
+        let getIsUp direction =
             match direction with
-            | ScrollDirection.Up -> _editorOperations.PageUp(false)
-            | ScrollDirection.Down -> _editorOperations.PageDown(false)
-            | _ -> _commonOperations.Beep()
+            | ScrollDirection.Up -> Some true
+            | ScrollDirection.Down -> Some false
+            | _ -> None
 
-        for i = 1 to count do
-            doScroll()
+        // Get the page scroll amount in pixels, allowing for
+        /// some overlapping context lines (vim overlaps two).
+        let getScrollAmount (textViewLines: ITextViewLineCollection) =
+            let lineHeight = _textView.LineHeight
+            let viewportHeight = _textView.ViewportHeight
+            let fullLines = floor(viewportHeight / lineHeight)
+            let scrollLines = max 1.0 (fullLines - 2.0)
+            scrollLines * lineHeight
 
-        // The editor PageUp and PageDown don't actually move the caret.  Manually move it
-        // here.  Need to take into account that TextViewLines can throw
-        try
-            let line =
-                match direction with
-                | ScrollDirection.Up -> _textView.TextViewLines.FirstVisibleLine
-                | ScrollDirection.Down -> _textView.TextViewLines.LastVisibleLine
-                | _ -> _textView.TextViewLines.FirstVisibleLine
-            _textView.Caret.MoveTo(line) |> ignore
-        with
-            | _ -> ()
+        // Scroll up by one full page unless we are at the top.
+        let doScrollUp () =
+            match TextViewUtil.GetTextViewLines _textView with
+            | None ->
+                _editorOperations.PageUp(false)
+            | Some textViewLines ->
+                let scrollAmount = getScrollAmount textViewLines
+                _textView.ViewScroller.ScrollViewportVerticallyByPixels(scrollAmount)
+
+        // Scroll down by one full page or as much as possible.
+        let doScrollDown () =
+            match TextViewUtil.GetTextViewLines _textView with
+            | None ->
+                _editorOperations.PageDown(false)
+            | Some textViewLines ->
+
+                // Check whether the last line is visible.
+                let lastVisiblePoint = textViewLines.LastVisibleLine.EndIncludingLineBreak
+                let lastVisibleLine = SnapshotPointUtil.GetContainingLine lastVisiblePoint
+                let lastVisibleLineNumber = lastVisibleLine.LineNumber
+                // TODO: Use GetLastNormalizedLine
+                let lastLine = SnapshotUtil.GetLastLine _textView.TextSnapshot
+                let lastLineNumber = SnapshotLineUtil.GetLineNumber lastLine
+                if lastVisibleLineNumber >= lastLineNumber then
+
+                    // The last line is already visible. Move the caret
+                    // to the last line and scroll it to the top of the view.
+                    _textView.Caret.MoveTo(lastLine.Start) |> ignore
+                    _editorOperations.ScrollLineTop()
+                else
+                    let scrollAmount = getScrollAmount textViewLines
+                    _textView.ViewScroller.ScrollViewportVerticallyByPixels(-1.0 * scrollAmount)
+
+        // Get the last (and if possible, fully visible) line in the text view.
+        let getLastFullyVisibleLine (textViewLines: ITextViewLineCollection) =
+            let lastLine = textViewLines.LastVisibleLine
+            if lastLine.VisibilityState = Formatting.VisibilityState.FullyVisible then
+                lastLine
+            else
+
+                // The last line is only partially visible. This could be either because
+                // the view is scrolled so that the bottom of the text row is clipped,
+                // or because line wrapping is in effect and there are off-screen
+                // wrapped text view lines. In either case, try to move to the text
+                // view line corresponding to the previous snapshot line.
+                let partialLine = SnapshotPointUtil.GetContainingLine lastLine.Start
+                let previousLineNumber = partialLine.LineNumber - 1
+                let previousLine = SnapshotUtil.GetLineOrFirst _textView.TextSnapshot previousLineNumber
+                let textViewLine = textViewLines.GetTextViewLineContainingBufferPosition previousLine.Start
+                if textViewLine.VisibilityState = Formatting.VisibilityState.FullyVisible then
+                    textViewLine
+                else
+                    lastLine
+
+        match getIsUp direction with
+        | None ->
+            _commonOperations.Beep()
+
+        | Some isUp ->
+
+            // Do the scrolling.
+            for i = 1 to count do
+                if isUp then doScrollUp() else doScrollDown()
+
+            // Adjust the caret by, roughly, putting the cursor on the
+            // first non-blank character of the last visible line
+            // when scrolling up, and on the first non-blank character
+            // of the first visible line when scrolling down.
+            match TextViewUtil.GetTextViewLines _textView with
+            | None ->
+                ()
+
+            | Some textViewLines ->
+
+                // Find a text view line belonging to the snapshot line that
+                // should contain the caret.
+                let textViewLine =
+                    if isUp then
+
+                        // As a special case when scrolling up, if the caret
+                        // line is already visible on the screen, use that line.
+                        let caretLine = _textView.Caret.ContainingTextViewLine
+                        if caretLine.VisibilityState = VisibilityState.FullyVisible then
+                            caretLine
+                        else
+                            getLastFullyVisibleLine textViewLines
+
+                    else
+                        textViewLines.FirstVisibleLine
+
+                // Find the snapshot line corresponding to the text view line.
+                let line = SnapshotPointUtil.GetContainingLine textViewLine.Start
+
+                // Move the caret to the beginning of that line.
+                _textView.Caret.MoveTo(line.Start) |> ignore
+
+                // Move past any whitespace on the caret line.
+                _editorOperations.MoveToStartOfLineAfterWhiteSpace(false)
 
         CommandResult.Completed ModeSwitch.NoSwitch
 
