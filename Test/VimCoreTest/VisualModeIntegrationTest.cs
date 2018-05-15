@@ -2954,6 +2954,30 @@ namespace Vim.UnitTest
                     Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
                     Assert.True(_textView.Selection.IsEmpty);
                 }
+
+                /// <summary>
+                /// After deletion and undo, we should be able to restore the visual selection
+                /// </summary>
+                [WpfFact]
+                public void RestoreVisualSelectionAfterUndo()
+                {
+                    // Reported in issue #2079.
+                    Create("foo", "bar", "baz", "qux");
+                    Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
+                    _vimBuffer.ProcessNotation("2GV+");
+                    Assert.Equal(ModeKind.VisualLine, _vimBuffer.ModeKind);
+                    Assert.Equal("bar\r\nbaz\r\n", _textView.GetSelectionSpan().GetText());
+                    _vimBuffer.ProcessNotation("d");
+                    Assert.True(_textView.Selection.IsEmpty);
+                    Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
+                    Assert.Equal(new[] { "foo", "qux" }, _textBuffer.GetLines());
+                    _vimBuffer.ProcessNotation("u");
+                    Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
+                    Assert.Equal(new[] { "foo", "bar", "baz", "qux" }, _textBuffer.GetLines());
+                    _vimBuffer.ProcessNotation("gv");
+                    Assert.Equal(ModeKind.VisualLine, _vimBuffer.ModeKind);
+                    Assert.Equal("bar\r\nbaz\r\n", _textView.GetSelectionSpan().GetText());
+                }
             }
         }
     }

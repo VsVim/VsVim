@@ -187,6 +187,21 @@ type internal VisualMode
         // to the selection before the command executed so save it now
         let lastVisualSelection = VisualSelection.CreateForSelection _textView _visualKind _globalSettings.SelectionKind _vimBufferData.LocalSettings.TabStop
 
+        // We can't wait until after the command to record the last visual selection
+        // because if the command modifies the text buffer, the snapshot will be newer
+        // than the one that was active when we created it which would interfere
+        // with the tracking service.
+        _vimTextBuffer.LastVisualSelection <- Some lastVisualSelection
+
+        // Save the last visual selection at the global level for use with [count]V|v except
+        // in the case of <Esc>. This <Esc> exception is not a documented behavior but exists
+        // experimentally. 
+        if ki <> KeyInputUtil.EscapeKey then
+            let vimData = _vimBufferData.Vim.VimData
+            match StoredVisualSelection.CreateFromVisualSpan lastVisualSelection.VisualSpan with
+            | None -> ()
+            | Some v -> vimData.LastVisualSelection <- Some v
+
         let result = 
             if ki = KeyInputUtil.EscapeKey && x.ShouldHandleEscape then
                 ProcessResult.Handled ModeSwitch.SwitchPreviousMode
@@ -238,19 +253,6 @@ type internal VisualMode
             // On teardown we will get calls to Stop when the view is closed.  It's invalid to access 
             // the selection at that point
             if not _textView.IsClosed then
-
-                // Before resetting the selection save it
-                _vimTextBuffer.LastVisualSelection <- Some lastVisualSelection
-
-                // Save the last visual selection at the global level for use with [count]V|v except
-                // in the case of <Esc>. This <Esc> exception is not a documented behavior but exists
-                // experimentally. 
-                if ki <> KeyInputUtil.EscapeKey then
-                    let vimData = _vimBufferData.Vim.VimData
-                    match StoredVisualSelection.CreateFromVisualSpan lastVisualSelection.VisualSpan with
-                    | None -> ()
-                    | Some v -> vimData.LastVisualSelection <- Some v
-
                 if result.IsAnySwitchToVisual then
                     _selectionTracker.UpdateSelection()
                 elif not result.IsAnySwitchToCommand then
