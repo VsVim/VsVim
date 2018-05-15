@@ -296,6 +296,16 @@ type internal InsertUtil
 
     member x.Insert text =
         if _editorOperations.InsertText(text) then
+            if _localSettings.EndOfLine then
+
+                // Ensure that the line containing the insertion point has a linebreak.
+                let insertionPoint = x.CaretPoint
+                let insertionLine = x.CaretLine
+                if not (SnapshotLineUtil.HasLineBreak insertionLine) then
+                    TextViewUtil.InsertFinalNewLine _textView
+                    let point = SnapshotUtil.GetPoint _textBuffer.CurrentSnapshot insertionPoint.Position
+                    TextViewUtil.MoveCaretToPoint _textView point
+
             CommandResult.Completed ModeSwitch.NoSwitch
         else
             CommandResult.Error
@@ -463,11 +473,12 @@ type internal InsertUtil
         // ICommonOperations.MoveCaretToMotionResult but then the final
         // caret position would depend on the current mode and we would
         // rather InsertUtil not be affected by the current mode.
-        let doMotion wordMotion spanPoint =
+        let doMotion wordMotion (spanToPoint: SnapshotSpan -> SnapshotPoint) =
             let argument = { MotionContext = MotionContext.Movement; OperatorCount = None; MotionCount = None }
             match _motionUtil.GetMotion (wordMotion WordKind.NormalWord) argument with
             | Some motionResult ->
-                let point = spanPoint motionResult.Span
+                let point = spanToPoint motionResult.Span
+                let point = SnapshotPointUtil.GetPointOrEndPointOfLastLine point
                 let viewFlags = ViewFlags.All &&& ~~~ViewFlags.VirtualEdit
                 _operations.MoveCaretToPoint point viewFlags
                 true

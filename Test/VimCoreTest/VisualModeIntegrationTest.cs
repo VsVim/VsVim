@@ -1986,7 +1986,7 @@ namespace Vim.UnitTest
             [WpfFact]
             public void Move_Line_FromBottom()
             {
-                Create("cat", "dog", "");
+                Create("cat", "dog", "", "");
                 _textView.MoveCaretToLine(2);
                 _vimBuffer.Process("Vk");
                 Assert.Equal(_textBuffer.GetLineRange(1, 2).ExtentIncludingLineBreak, _textView.GetSelectionSpan());

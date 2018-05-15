@@ -318,6 +318,28 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
+            /// Word reaches the end of the buffer
+            /// </summary>
+            [WpfFact]
+            public void WordToEnd()
+            {
+                Create("cat", "dog");
+                _vimBuffer.Process("www");
+                Assert.Equal(_textBuffer.GetLine(1).Start.Add(2), _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// Word reaches the end of the buffer with a final newline
+            /// </summary>
+            [WpfFact]
+            public void WordToEndWithFinalNewLine()
+            {
+                Create("cat", "dog", "");
+                _vimBuffer.Process("www");
+                Assert.Equal(_textBuffer.GetLine(1).Start.Add(2), _textView.GetCaretPoint());
+            }
+
+            /// <summary>
             /// When the last line in the buffer is empty make sure that we can move down to the 
             /// second to last line. 
             /// </summary>
@@ -331,14 +353,25 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
-            /// Make sure we can move to the empty last line with the 'j' command
+            /// Make sure we can move to the last line with the 'j' command
             /// </summary>
             [WpfFact]
-            public void DownToEmptyLastLine()
+            public void DownToLastLine()
+            {
+                Create("a", "b", "c");
+                _vimBuffer.Process("jj");
+                Assert.Equal(2, _textView.GetCaretLine().LineNumber);
+            }
+
+            /// <summary>
+            /// Make sure we can't move to the empty last line with the 'j' command
+            /// </summary>
+            [WpfFact]
+            public void DownTowardsEmptyLastLine()
             {
                 Create("a", "b", "");
                 _vimBuffer.Process("jj");
-                Assert.Equal(2, _textView.GetCaretLine().LineNumber);
+                Assert.Equal(1, _textView.GetCaretLine().LineNumber);
             }
 
             [WpfFact]
@@ -1557,7 +1590,7 @@ namespace Vim.UnitTest
             [WpfFact]
             public void EmptyLastLineShouldAppendNewLineInRegister()
             {
-                Create("cat", "");
+                Create("cat", "", "");
                 _textView.MoveCaretToLine(1);
                 _vimBuffer.Process("yy");
                 Assert.Equal(Environment.NewLine, UnnamedRegister.StringValue);
@@ -2093,7 +2126,7 @@ namespace Vim.UnitTest
                     RegisterMap.GetRegister('q').UpdateValue(keyInputSet.KeyInputs.ToArray());
                     _vimBuffer.Process(":nmap <space> @q", enter: true);
                     _vimBuffer.ProcessNotation("2<Space>");
-                    Assert.Equal("ll", _textBuffer.CurrentSnapshot.GetText());
+                    Assert.Equal("ll", _textBuffer.GetLine(0).GetText());
                     Assert.Equal(0, _textView.GetCaretPoint().Position);
                 }
 
@@ -3377,8 +3410,93 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class InsertIntoNewBufferTest : NormalModeIntegrationTest
+        {
+            /// <summary>
+            /// Enter insert mode but don't insert anything
+            /// </summary>
+            [WpfFact]
+            public void NothingInserted()
+            {
+                Create("");
+                _vimBuffer.ProcessNotation("i<Esc>");
+                Assert.Equal(new[] { "", }, _textBuffer.GetLines());
+            }
+
+            /// <summary>
+            /// Insert one character into a blank buffer
+            /// </summary>
+            [WpfFact]
+            public void InsertOneCharacter()
+            {
+                Create("");
+                _vimBuffer.ProcessNotation("ix<Esc>");
+                Assert.Equal(new[] { "x", "", }, _textBuffer.GetLines());
+            }
+
+            /// <summary>
+            /// Insert one character, then backspace overe it
+            /// </summary>
+            [WpfFact]
+            public void InsertThenEraseOneCharacter()
+            {
+                Create("");
+                _vimBuffer.ProcessNotation("ix<BS><Esc>");
+                Assert.Equal(new[] { "", "", }, _textBuffer.GetLines());
+            }
+
+            /// <summary>
+            /// Insert with the cursor positioned on the phantom line
+            /// </summary>
+            [WpfFact]
+            public void InsertFromPhantomLine()
+            {
+                Create("cat", "");
+                _textView.MoveCaretTo(_textView.GetEndPoint().Position);
+                _vimBuffer.ProcessNotation("ix<Esc>");
+                Assert.Equal(new[] { "cat", "x", "", }, _textBuffer.GetLines());
+            }
+
+            /// <summary>
+            /// Enter text and turn 'endofline' off and on.
+            /// </summary>
+            [WpfFact]
+            public void InsertThenToggleSetting()
+            {
+                Create("");
+                _vimBuffer.ProcessNotation("icat<Esc>");
+                Assert.Equal(new[] { "cat", "", }, _textBuffer.GetLines());
+                _vimBuffer.LocalSettings.EndOfLine = false;
+                Assert.Equal(new[] { "cat", }, _textBuffer.GetLines());
+                _vimBuffer.LocalSettings.EndOfLine = true;
+                Assert.Equal(new[] { "cat", "", }, _textBuffer.GetLines());
+            }
+        }
+
         public sealed class InsertLineBelowCaretTest : NormalModeIntegrationTest
         {
+            /// <summary>
+            /// Open with a final newline
+            /// </summary>
+            [WpfFact]
+            public void WithFinalNewLine()
+            {
+                Create("cat", "");
+                _vimBuffer.ProcessNotation("1Godog<Esc>");
+                Assert.Equal(new[] { "cat", "dog", "" }, _textBuffer.GetLines());
+            }
+
+            /// <summary>
+            /// Open without a final newline
+            /// </summary>
+            [WpfFact]
+            public void WithoutFinalNewLine()
+            {
+                Create("cat");
+                _vimBuffer.ProcessNotation("1Godog<Esc>");
+                Assert.Equal(new[] { "cat", "dog" }, _textBuffer.GetLines());
+            }
+
             /// <summary>
             /// Ensure the text inserted is repeated after the Escape
             /// </summary>
@@ -5807,6 +5925,32 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
+            /// The ']]' motion should stop on on the last line
+            /// </summary>
+            [WpfFact]
+            public void SectionForwardEndOfFile()
+            {
+                Create("cat", "{", "bear", "sheep");
+                _vimBuffer.Process("]]");
+                Assert.Equal(_textView.GetLine(1).Start, _textView.GetCaretPoint());
+                _vimBuffer.Process("]]");
+                Assert.Equal(_textView.GetLine(3).Start, _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// The ']]' motion should stop on on the last line with a final newline
+            /// </summary>
+            [WpfFact]
+            public void SectionForwardEndOfFileWithFinalNewLine()
+            {
+                Create("cat", "{", "bear", "sheep", "");
+                _vimBuffer.Process("]]");
+                Assert.Equal(_textView.GetLine(1).Start, _textView.GetCaretPoint());
+                _vimBuffer.Process("]]");
+                Assert.Equal(_textView.GetLine(3).Start, _textView.GetCaretPoint());
+            }
+
+            /// <summary>
             /// Move the caret using the end of word motion repeatedly
             /// </summary>
             [WpfFact]
@@ -6896,6 +7040,15 @@ namespace Vim.UnitTest
                 Assert.Equal(1, _textView.TextSnapshot.LineCount);
             }
 
+            [WpfFact]
+            public void DeleteLines_OnLastNonEmptyLine()
+            {
+                Create("foo", "bar", "");
+                _textView.MoveCaretTo(_textView.GetLine(1).Start);
+                _vimBuffer.Process("dd");
+                Assert.Equal(new[] { "foo", "" }, _textBuffer.GetLines());
+            }
+
             /// <summary>
             /// Delete lines with the special d#d count syntax
             /// </summary>
@@ -7114,6 +7267,37 @@ namespace Vim.UnitTest
                 _vimBuffer.Process("dd");
                 Assert.Equal("cat", RegisterMap.GetRegister(0).StringValue);
                 Assert.Equal("penny" + Environment.NewLine, RegisterMap.GetRegister(1).StringValue);
+            }
+        }
+
+        public sealed class MotionWrapTest : NormalModeIntegrationTest
+        {
+            /// <summary>
+            /// Right arrow wrapping 
+            /// </summary>
+            [WpfFact]
+            public void RightArrow()
+            {
+                Create("cat", "bat");
+                _globalSettings.WhichWrap = "<,>";
+                _vimBuffer.ProcessNotation("<Right><Right><Right>");
+                Assert.Equal(_textView.GetLine(1).Start, _textView.GetCaretPoint());
+                _vimBuffer.ProcessNotation("<Right><Right><Right>");
+                Assert.Equal(_textView.GetLine(1).Start.Add(2), _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// Right arrow wrapping with final newline
+            /// </summary>
+            [WpfFact]
+            public void RightArrowWithFinalNewLine()
+            {
+                Create("cat", "bat", "");
+                _globalSettings.WhichWrap = "<,>";
+                _vimBuffer.ProcessNotation("<Right><Right><Right>");
+                Assert.Equal(_textView.GetLine(1).Start, _textView.GetCaretPoint());
+                _vimBuffer.ProcessNotation("<Right><Right><Right>");
+                Assert.Equal(_textView.GetLine(1).Start.Add(2), _textView.GetCaretPoint());
             }
         }
     }

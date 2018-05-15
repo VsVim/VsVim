@@ -1741,7 +1741,8 @@ type internal MotionUtil
 
         let endPoint = 
             match motionContext with
-            | MotionContext.Movement -> endPoint
+            | MotionContext.Movement ->
+                SnapshotPointUtil.GetPointOrEndPointOfLastLine endPoint
             | MotionContext.AfterOperator -> 
                 // If the word motion comes after an operator and ends on the first word 
                 // of a different line, then the motion is moved back to the last line containing
@@ -2257,14 +2258,7 @@ type internal MotionUtil
                 let lineCount = snapshot.LineCount 
                 let lineNumber = x.CaretLine.LineNumber + count
                 let lastLine = SnapshotUtil.GetLineOrLast snapshot lineNumber
-                let flags = 
-                    let flags = MotionResultFlags.MaintainCaretColumn
-                    if lastLine.LineNumber + 1 = lineCount then
-                        // Make sure to note we wanted to include the last line if it's 
-                        // empty
-                        MotionResultFlags.IncludeEmptyLastLine ||| flags
-                    else
-                        flags
+                let flags = MotionResultFlags.MaintainCaretColumn
                 let span = SnapshotSpan(x.CaretLine.Start, lastLine.EndIncludingLineBreak)
                 let column = x.CaretPoint |> SnapshotPointUtil.GetColumn |> CaretColumn.InLastLine
                 MotionResult.CreateExEx span true MotionKind.LineWise flags column |> Some)
@@ -2292,7 +2286,7 @@ type internal MotionUtil
         let endLine = 
             match numberOpt with
             | Some number ->  SnapshotUtil.GetLineOrLast x.CurrentSnapshot (Util.VimLineToTssLine number)
-            | None -> SnapshotUtil.GetLastLine x.CurrentSnapshot 
+            | None -> SnapshotUtil.GetLastNormalizedLine x.CurrentSnapshot 
         x.LineToLineFirstNonBlankMotion MotionResultFlags.MaintainCaretColumn x.CaretLine endLine
 
     /// Go to the last non-blank character on the 'count - 1' line
@@ -2429,8 +2423,8 @@ type internal MotionUtil
             | MotionContext.AfterOperator ->
                 endPoint
             | MotionContext.Movement -> 
-                let line = SnapshotPointUtil.GetContainingLine endPoint
-                if SnapshotLineUtil.IsLastLine line then 
+                let line = SnapshotPointUtil.GetContainingLineOrLast endPoint
+                if SnapshotLineUtil.IsLastNormalizedLine line then 
                     match SnapshotLineUtil.GetFirstNonBlank line with
                     | Some point -> point
                     | None -> line.End

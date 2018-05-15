@@ -59,6 +59,8 @@ module LocalSettingNames =
     let ShiftWidthName = "shiftwidth"
     let TabStopName = "tabstop"
     let QuoteEscapeName = "quoteescape"
+    let EndOfLineName = "endofline"
+    let FixEndOfLineName = "fixendofline"
 
 module WindowSettingNames =
 
@@ -474,6 +476,7 @@ and IVimGlobalSettings =
 /// global settings with non-global ones
 and IVimLocalSettings =
 
+    /// Whether or not to auto-indent
     abstract AutoIndent: bool with get, set
 
     /// Whether or not to expand tabs into spaces
@@ -499,6 +502,12 @@ and IVimLocalSettings =
 
     /// Which characters escape quotes for certain motion types
     abstract QuoteEscape: string with get, set
+
+    /// Whether or not the buffer ends with a newline
+    abstract EndOfLine: bool with get, set
+
+    /// Whether or not to fix any missing final newline
+    abstract FixEndOfLine: bool with get, set
 
     /// Is the provided NumberFormat supported by the current options
     abstract IsNumberFormatSupported: NumberFormat -> bool

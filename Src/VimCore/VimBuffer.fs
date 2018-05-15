@@ -195,6 +195,9 @@ type internal VimBuffer
     let bufferName = _vim.VimHost.GetName _vimBufferData.TextBuffer
 
     do 
+        // Adjust local settings.
+        this.AdjustLocalSettings()
+
         // Listen for mode switches on the IVimTextBuffer instance.  We need to keep our 
         // Mode in sync with this value
         _vimTextBuffer.SwitchedMode
@@ -202,6 +205,19 @@ type internal VimBuffer
         |> _bag.Add
 
         _vim.MarkMap.SetMark Mark.LastJump _vimBufferData 0 0 |> ignore
+
+        // Subscribe to local settings changed events.
+        _vimTextBuffer.LocalSettings.SettingChanged
+        |> Observable.subscribe (fun args -> this.OnLocalSettingsChanged args.Setting)
+        |> _bag.Add
+
+        // Subscribe to text buffer before save events.
+        _vim.VimHost.BeforeSave
+        |> Observable.subscribe (fun args -> this.OnBeforeSave args.TextBuffer)
+        |> _bag.Add
+
+    member x.IsReadOnly
+        with get() = _vim.VimHost.IsReadOnly _vimBufferData.TextBuffer
 
     member x.BufferedKeyInputs =
         match _bufferedKeyInput with
@@ -386,6 +402,49 @@ type internal VimBuffer
     member x.OnVimTextBufferSwitchedMode modeKind modeArgument =
         if x.Mode.ModeKind <> modeKind then
             _modeMap.SwitchMode modeKind modeArgument |> ignore
+
+    /// Adjust any local settings for the buffer
+    member x.AdjustLocalSettings () =
+        x.AdjustEndOfLineSetting()
+
+    /// Raised when a local setting is changed
+    member x.OnLocalSettingsChanged (setting: Setting) = 
+        if setting.Name = LocalSettingNames.EndOfLineName then
+            x.ApplyEndOfLineSetting()
+
+    /// Raised before a text buffer is saved
+    member x.OnBeforeSave (textBuffer: ITextBuffer) = 
+        if textBuffer = _vimBufferData.TextBuffer then
+           x.ApplyFixEndOfLineSetting() 
+
+    /// Adjust the 'endofline' setting for the buffer
+    member x.AdjustEndOfLineSetting () =
+        let textView = _vimBufferData.TextView
+        let textBuffer = textView.TextBuffer
+        let snapshot = textBuffer.CurrentSnapshot
+        let localSettings = _vimBufferData.LocalSettings
+        let endOfLineSetting = SnapshotUtil.AllLinesHaveLineBreaks snapshot
+        localSettings.EndOfLine <- endOfLineSetting
+
+    /// Apply the 'endofline' setting to the buffer
+    member x.ApplyEndOfLineSetting () =
+        if not x.IsReadOnly then
+            let localSettings = _vimBufferData.LocalSettings
+            let textView = _vimBufferData.TextView
+            let endOfLineSetting = localSettings.EndOfLine
+            if endOfLineSetting then
+                TextViewUtil.InsertFinalNewLine textView
+            else
+                TextViewUtil.RemoveFinalNewLine textView
+
+    /// Apply the 'fixeondofline' setting to the buffer
+    member x.ApplyFixEndOfLineSetting () =
+        if not x.IsReadOnly then
+            let localSettings = _vimBufferData.LocalSettings
+            let textView = _vimBufferData.TextView
+            let fixEndOfLineSetting = localSettings.FixEndOfLine
+            if fixEndOfLineSetting then
+                TextViewUtil.InsertFinalNewLine textView
 
     /// Process the single KeyInput value.  No mappings are considered here.  The KeyInput is 
     /// simply processed directly
@@ -688,6 +747,9 @@ type internal VimBuffer
         member x.SwitchMode kind arg = x.SwitchMode kind arg
         member x.SwitchPreviousMode() = x.SwitchPreviousMode()
         member x.SimulateProcessed keyInput = x.SimulateProcessed keyInput
+
+        member x.IsReadOnly
+            with get () =  x.IsReadOnly
 
         [<CLIEvent>]
         member x.SwitchedMode = _modeMap.SwitchedEvent.Publish

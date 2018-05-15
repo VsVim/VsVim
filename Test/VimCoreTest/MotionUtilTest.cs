@@ -2473,9 +2473,20 @@ more";
             [WpfFact]
             public void LastNonBlankOnLine3()
             {
-                Create("foo", "bar ", "jaz", "");
+                Create("foo", "bar ", "jaz");
                 var data = _motionUtil.LastNonBlankOnLine(300);
                 Assert.Equal(new SnapshotSpan(_textBuffer.CurrentSnapshot, 0, _textBuffer.CurrentSnapshot.Length), data.Span);
+                Assert.True(data.IsForward);
+                Assert.Equal(OperationKind.CharacterWise, data.OperationKind);
+                Assert.Equal(MotionKind.CharacterWiseInclusive, data.MotionKind);
+            }
+
+            [WpfFact]
+            public void LastNonBlankOnLine3_WithFinalNewLine()
+            {
+                Create("foo", "bar ", "jaz", "");
+                var data = _motionUtil.LastNonBlankOnLine(300);
+                Assert.Equal(new SnapshotSpan(_textBuffer.GetPoint(0), _textBuffer.GetLine(2).Start.Add(3)), data.Span);
                 Assert.True(data.IsForward);
                 Assert.Equal(OperationKind.CharacterWise, data.OperationKind);
                 Assert.Equal(MotionKind.CharacterWiseInclusive, data.MotionKind);
