@@ -328,6 +328,27 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
         }
 
         /// <summary>
+        /// Insert text directly into the command line at the insertion point.
+        /// </summary>
+        /// <param name="text"></param>
+        private void InsertIntoCommandLine(string text, bool putCaretAfter)
+        {
+            var textBox = _margin.CommandLineTextBox;
+            var builder = new StringBuilder();
+            var offset = textBox.SelectionStart;
+            var commandText = textBox.Text;
+            builder.Append(commandText, 0, offset);
+            builder.Append(text);
+            builder.Append(commandText, offset, commandText.Length - offset);
+            UpdateCommandLine(builder.ToString());
+            if (putCaretAfter)
+            {
+                offset += text.Length;
+            }
+            textBox.Select(offset, 0);
+        }
+
+        /// <summary>
         /// This method handles keeping the history buffer in sync with the commandline display text 
         /// which do not happen otherwise for EditKind.None.
         /// </summary>
@@ -412,20 +433,18 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
                         e.Handled = true;
                     }
                     break;
+                case Key.Tab:
+                    InsertIntoCommandLine("\t", putCaretAfter: true);
+                    var commandText = _margin.CommandLineTextBox.Text;
+                    UpdateVimBufferStateWithCommandText(commandText);
+                    e.Handled = true;
+                    break;
                 case Key.R:
                     if (e.KeyboardDevice.Modifiers == ModifierKeys.Control)
                     {
                         // During edits we are responsible for handling the command line.  Need to 
                         // put a " into the box at the edit position
-                        var textBox = _margin.CommandLineTextBox;
-                        var text = textBox.Text;
-                        var builder = new StringBuilder();
-                        var offset = textBox.SelectionStart;
-                        builder.Append(text, 0, offset);
-                        builder.Append('"');
-                        builder.Append(text, offset, text.Length - offset);
-                        UpdateCommandLine(builder.ToString());
-                        textBox.Select(offset, 0);
+                        InsertIntoCommandLine("\"", putCaretAfter: false);
 
                         // Now move the buffer into paste wait 
                         _vimBuffer.Process(KeyInputUtil.ApplyKeyModifiersToChar('r', VimKeyModifiers.Control));
