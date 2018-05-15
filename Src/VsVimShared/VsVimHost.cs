@@ -320,47 +320,16 @@ namespace Vim.VisualStudio
             return SafeExecuteCommand(textView, CommandNameGoToDefinition);
         }
 
-        // Certain language services, VB.Net for example, will select the word after
-        // the go to definition is implemented.  Need to clear that out to prevent the
-        // go to definition from switching us to Visual Mode
-        // 
-        // This selection often occurs in another document but that document won't be 
-        // active when we get back here.  Instead just clear all of the new selections
         private bool GoToDefinitionCore(ITextView textView, string target)
         {
-            // Record which text views have pre-existing selections.
-            var selected = _textManager
-                .GetDocumentTextViews(DocumentLoad.RespectLazy)
-                .Where(x => !x.Selection.IsEmpty).ToList();
-
-            // Go to the definition.
-            bool result;
             if (textView.TextBuffer.ContentType.IsCPlusPlus())
             {
-                result = GoToDefinitionCPlusPlus(textView, target);
+                return GoToDefinitionCPlusPlus(textView, target);
             }
             else
             {
-                result = SafeExecuteCommand(textView, CommandNameGoToDefinition);
+                return SafeExecuteCommand(textView, CommandNameGoToDefinition);
             }
-
-            // If the action succeeded, clear any new selections.
-            if (result)
-            {
-                _textManager
-                    .GetDocumentTextViews(DocumentLoad.RespectLazy)
-                    .Where(x => !x.Selection.IsEmpty && !selected.Contains(x))
-                    .ForEach(x =>
-                    {
-                        // Move the caret to the beginning of the selection.
-                        var startPoint = x.Selection.Start;
-                        x.Selection.Clear();
-                        x.Caret.MoveTo(startPoint);
-                    });
-            }
-
-            // Return the action's result.
-            return result;
         }
 
         /// <summary>
