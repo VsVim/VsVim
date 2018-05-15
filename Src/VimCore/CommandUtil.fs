@@ -1200,10 +1200,15 @@ type internal CommandUtil
             match visualSpan with
             | VisualSpan.Character characterSpan ->
                 if characterSpan.Length > 1 then
-                    let last = Option.get characterSpan.Last
                     if x.CaretPoint.Position > characterSpan.Start.Position then
                         changeSelection x.CaretPoint characterSpan.Start
                     else
+                        let last =
+                            match _globalSettings.SelectionKind with
+                            | SelectionKind.Inclusive ->
+                                Option.get characterSpan.Last
+                            | SelectionKind.Exclusive ->
+                                characterSpan.End
                         changeSelection characterSpan.Start last
             | VisualSpan.Line _ ->
                 changeSelection x.CaretPoint anchorPoint
@@ -2944,7 +2949,7 @@ type internal CommandUtil
 
         // The anchor point is the original anchor point of the visual session
         let anchorPoint =
-            _vimBufferData.VisualCaretStartPoint
+            _vimBufferData.VisualAnchorPoint
             |> OptionUtil.map2 (TrackingPointUtil.GetPoint x.CurrentSnapshot)
         match anchorPoint with
         | None -> badOperation ()
