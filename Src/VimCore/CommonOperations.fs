@@ -712,19 +712,9 @@ type internal CommonOperations
             Magic = _globalSettings.Magic
             Count = VimRegexReplaceCount.One }
 
-    /// Adjust caret position for target by moving to the beginning
-    /// of the word behind the caret
-    member x.AdjustCaretForTarget () =
-        let startPoint = x.CaretLine.Start
-        let mutable point = x.CaretPoint
-        while point.Position > startPoint.Position && CharUtil.IsWordChar (point.Subtract(1).GetChar()) do
-            point <- point.Subtract(1)
-        x.MoveCaretToPoint point ViewFlags.Standard
-
     member x.GoToDefinition() =
         let before = TextViewUtil.GetCaretPoint _textView
         if _vimHost.GoToDefinition() then
-            x.AdjustCaretForTarget()
             _jumpList.Add before
             Result.Succeeded
         else
@@ -737,7 +727,6 @@ type internal CommonOperations
     member x.GoToLocalDeclaration() = 
         let caretPoint = x.CaretPoint
         if _vimHost.GoToLocalDeclaration _textView x.WordUnderCursorOrEmpty then
-            x.AdjustCaretForTarget()
             _jumpList.Add caretPoint
         else
             _vimHost.Beep()
@@ -745,7 +734,6 @@ type internal CommonOperations
     member x.GoToGlobalDeclaration () = 
         let caretPoint = x.CaretPoint
         if _vimHost.GoToGlobalDeclaration _textView x.WordUnderCursorOrEmpty then 
-            x.AdjustCaretForTarget()
             _jumpList.Add caretPoint
         else
             _vimHost.Beep()
