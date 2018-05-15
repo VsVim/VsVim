@@ -131,7 +131,6 @@ type WordCompletionUtil
         |> Seq.distinct
         |> List.ofSeq
 
-
 [<RequireQualifiedAccess>]
 type InsertKind =
 
@@ -713,8 +712,14 @@ type internal InsertMode
             let args = CommandRunDataEventArgs(data)
             _commandRanEvent.Trigger x args
 
-            // If there is an existing undo transaction, close it out and start a new one.
-            x.BreakUndoSequence "Insert after motion" 
+            match command with
+            | InsertCommand.ShiftLineLeft -> ()
+            | InsertCommand.ShiftLineRight -> ()
+            | InsertCommand.InsertCharacterAboveCaret -> ()
+            | InsertCommand.InsertCharacterBelowCaret -> ()
+            | _ -> 
+                // All other commands break the undo sequence
+                x.BreakUndoSequence "Insert after motion" 
 
         ProcessResult.OfCommandResult result
 

@@ -607,12 +607,14 @@ type internal InsertUtil
         let newColumn = max (column + offset) 0
         let spaces = StringUtil.RepeatChar newColumn ' '
         let indent = _operations.NormalizeBlanks spaces
-        _textBuffer.Replace(indentSpan.Span, indent) |> ignore
 
-        // If the line is all spaces, move it to the end and
-        // the caret will no longer be in virtual space
-        if isBlankLine then
-            TextViewUtil.MoveCaretToPoint _textView x.CaretLine.End
+        x.EditWithUndoTransaction "Shift line" (fun () ->
+            _textBuffer.Replace(indentSpan.Span, indent) |> ignore
+
+            // If the line is all spaces, move it to the end and
+            // the caret will no longer be in virtual space
+            if isBlankLine then
+                TextViewUtil.MoveCaretToPoint _textView x.CaretLine.End)
 
         CommandResult.Completed ModeSwitch.NoSwitch
 
