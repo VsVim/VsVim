@@ -359,14 +359,16 @@ namespace Vim.UnitTest
             return (LineSpecifier.PreviousLineWithPattern)lineSpecifier;
         }
 
-        public static LineSpecifier.CurrentLineWithEndCount AsCurrentLineWithEndCount(this LineSpecifier lineSpecifier)
+        public static LineSpecifier.LineSpecifierWithAdjustment AsLineSpecifierWithAdjustment(this LineSpecifier lineSpecifier)
         {
-            return (LineSpecifier.CurrentLineWithEndCount)lineSpecifier;
+            return (LineSpecifier.LineSpecifierWithAdjustment)lineSpecifier;
         }
 
-        public static bool IsCurrentLineWithEndCount(this LineSpecifier lineSpecifier, int count)
+        public static bool IsCurrentLineWithAdjustment(this LineSpecifier lineSpecifier, int count)
         {
-            return lineSpecifier.IsCurrentLineWithEndCount && lineSpecifier.AsCurrentLineWithEndCount().Item == count;
+            return lineSpecifier.IsLineSpecifierWithAdjustment &&
+                lineSpecifier.AsLineSpecifierWithAdjustment().Item1.IsCurrentLine &&
+                lineSpecifier.AsLineSpecifierWithAdjustment().Item2 == count;
         }
 
         #endregion

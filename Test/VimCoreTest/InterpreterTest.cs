@@ -1686,17 +1686,6 @@ namespace Vim.UnitTest
                 Assert.Equal("bar" + Environment.NewLine, UnnamedRegister.StringValue);
             }
 
-            /// <summary>
-            /// Handle the case where the adjustment simply occurs on the current line 
-            /// </summary>
-            [WpfFact]
-            public void GetLine_AdjustmentOnCurrent()
-            {
-                Create("cat", "dog", "bear");
-                var range = _interpreter.GetLine(LineSpecifier.NewAdjustmentOnCurrent(1));
-                Assert.Equal(_textBuffer.GetLine(1).LineNumber, range.Value.LineNumber);
-            }
-
             [WpfFact]
             public void LineRange_FullFile()
             {
@@ -1709,9 +1698,145 @@ namespace Vim.UnitTest
             [WpfFact]
             public void LineRange_CurrentLine()
             {
-                Create("foo", "bar");
+                Create("foo", "bar", "baz");
+                _textView.MoveCaretToLine(1);
                 var lineRange = ParseAndGetLineRange(".");
-                Assert.Equal(_textBuffer.GetLineRange(0), lineRange);
+                Assert.Equal(_textBuffer.GetLineRange(1), lineRange);
+            }
+
+            [WpfFact]
+            public void LineRange_OmittedStartLine()
+            {
+                Create("foo", "bar", "baz", "qux");
+                _textView.MoveCaretToLine(1);
+                var lineRange = ParseAndGetLineRange(",3");
+                Assert.Equal(_textBuffer.GetLineRange(1, 2), lineRange);
+            }
+
+            [WpfFact]
+            public void LineRange_MinusRelativeToDot()
+            {
+                Create("foo", "bar", "baz", "qux");
+                _textView.MoveCaretToLine(2);
+                var lineRange = ParseAndGetLineRange(".-1");
+                Assert.Equal(_textBuffer.GetLineRange(1), lineRange);
+            }
+
+            [WpfFact]
+            public void LineRange_PlusRelativeToDot()
+            {
+                Create("foo", "bar", "baz", "qux");
+                _textView.MoveCaretToLine(1);
+                var lineRange = ParseAndGetLineRange(".+1");
+                Assert.Equal(_textBuffer.GetLineRange(2), lineRange);
+            }
+
+            [WpfFact]
+            public void LineRange_MinusRelativeToDollar()
+            {
+                Create("foo", "bar", "baz", "qux");
+                _textView.MoveCaretToLine(0);
+                var lineRange = ParseAndGetLineRange("$-1");
+                Assert.Equal(_textBuffer.GetLineRange(2), lineRange);
+            }
+
+            [WpfFact]
+            public void LineRange_MinusImplicitDot()
+            {
+                Create("foo", "bar", "baz", "qux");
+                _textView.MoveCaretToLine(2);
+                var lineRange = ParseAndGetLineRange("-1");
+                Assert.Equal(_textBuffer.GetLineRange(1), lineRange);
+            }
+
+            [WpfFact]
+            public void LineRange_MinusImplicitDotRange()
+            {
+                Create("foo", "bar", "baz", "qux");
+                _textView.MoveCaretToLine(2);
+                var lineRange = ParseAndGetLineRange("-2,-1");
+                Assert.Equal(_textBuffer.GetLineRange(0, 1), lineRange);
+            }
+
+            [WpfFact]
+            public void LineRange_PlusImplicitDot()
+            {
+                Create("foo", "bar", "baz", "qux");
+                _textView.MoveCaretToLine(1);
+                var lineRange = ParseAndGetLineRange("+1");
+                Assert.Equal(_textBuffer.GetLineRange(2), lineRange);
+            }
+
+            [WpfFact]
+            public void LineRange_PlusImplicitDotRange()
+            {
+                Create("foo", "bar", "baz", "qux");
+                _textView.MoveCaretToLine(1);
+                var lineRange = ParseAndGetLineRange("+1,+2");
+                Assert.Equal(_textBuffer.GetLineRange(2, 3), lineRange);
+            }
+
+            [WpfFact]
+            public void LineRange_DotPlus()
+            {
+                Create("foo", "bar", "baz", "qux");
+                _textView.MoveCaretToLine(1);
+                var lineRange = ParseAndGetLineRange(".+");
+                Assert.Equal(_textBuffer.GetLineRange(2), lineRange);
+            }
+
+            [WpfFact]
+            public void LineRange_DotMinus()
+            {
+                Create("foo", "bar", "baz", "qux");
+                _textView.MoveCaretToLine(2);
+                var lineRange = ParseAndGetLineRange(".-");
+                Assert.Equal(_textBuffer.GetLineRange(1), lineRange);
+            }
+
+            [WpfFact]
+            public void LineRange_LonePlus()
+            {
+                Create("foo", "bar", "baz", "qux");
+                _textView.MoveCaretToLine(1);
+                var lineRange = ParseAndGetLineRange("+");
+                Assert.Equal(_textBuffer.GetLineRange(2), lineRange);
+            }
+
+            [WpfFact]
+            public void LineRange_LoneMinus()
+            {
+                Create("foo", "bar", "baz", "qux");
+                _textView.MoveCaretToLine(2);
+                var lineRange = ParseAndGetLineRange("-");
+                Assert.Equal(_textBuffer.GetLineRange(1), lineRange);
+            }
+
+            [WpfFact]
+            public void LineRange_MinusPlusRange()
+            {
+                Create("foo", "bar", "baz", "qux");
+                _textView.MoveCaretToLine(1);
+                var lineRange = ParseAndGetLineRange("-,+");
+                Assert.Equal(_textBuffer.GetLineRange(0, 2), lineRange);
+            }
+
+            [WpfFact]
+            public void LineRange_OmittedEndLine()
+            {
+                Create("foo", "bar", "baz", "qux");
+                _textView.MoveCaretToLine(2);
+                var lineRange = ParseAndGetLineRange("2,");
+                Assert.Equal(_textBuffer.GetLineRange(1, 2), lineRange);
+            }
+
+            [WpfFact]
+            public void LineRange_OmittedStartAndEndLines()
+            {
+                Create("foo", "bar", "baz", "qux");
+                _textView.MoveCaretToLine(1);
+                var lineRange = ParseAndGetLineRange(",");
+                Assert.Equal(_textBuffer.GetLineRange(1), lineRange);
             }
 
             [WpfFact]

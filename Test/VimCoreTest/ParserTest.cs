@@ -693,35 +693,35 @@ let x = 42
             }
 
             [Fact]
-            public void CurrentLineWithEndCount()
+            public void CurrentLineWithAdjustment()
             {
                 var range = ParseLineRange(".2");
                 Assert.True(range.IsSingleLine);
-                Assert.True(range.AsSingleLine().Item.IsCurrentLineWithEndCount(2));
+                Assert.True(range.AsSingleLine().Item.IsCurrentLineWithAdjustment(2));
             }
 
             [Fact]
-            public void CurrentLineWithEndCountUsingPlus()
+            public void CurrentLineWithAdjustmentUsingPlus()
             {
                 var range = ParseLineRange(".+3");
                 Assert.True(range.IsSingleLine);
-                Assert.True(range.AsSingleLine().Item.IsCurrentLineWithEndCount(3));
+                Assert.True(range.AsSingleLine().Item.IsCurrentLineWithAdjustment(3));
             }
 
             [Fact]
-            public void CurrentLineWithEndCountRange()
+            public void CurrentLineWithAdjustmentRange()
             {
                 var range = ParseLineRange(".2,.3").AsRange();
-                Assert.True(range.Item1.IsCurrentLineWithEndCount(2));
-                Assert.True(range.Item2.IsCurrentLineWithEndCount(3));
+                Assert.True(range.Item1.IsCurrentLineWithAdjustment(2));
+                Assert.True(range.Item2.IsCurrentLineWithAdjustment(3));
             }
 
             [Fact]
-            public void CurrentLineWithEndCountRangeUsingPlus()
+            public void CurrentLineWithAdjustmentRangeUsingPlus()
             {
                 var range = ParseLineRange(".+2,.+3").AsRange();
-                Assert.True(range.Item1.IsCurrentLineWithEndCount(2));
-                Assert.True(range.Item2.IsCurrentLineWithEndCount(3));
+                Assert.True(range.Item1.IsCurrentLineWithAdjustment(2));
+                Assert.True(range.Item2.IsCurrentLineWithAdjustment(3));
             }
 
             [Fact]

@@ -1364,7 +1364,7 @@ namespace Vim.UnitTest
         public sealed class RangeTest : CommandModeIntegrationTest
         {
             [WpfFact]
-            public void CurrentLineWithEndCount()
+            public void CurrentLineWithAdjustment()
             {
                 Create("dog", "cat");
                 _vimBuffer.LocalSettings.ShiftWidth = 2;
@@ -1373,7 +1373,7 @@ namespace Vim.UnitTest
             }
 
             [WpfFact]
-            public void CurrentLineWithEndCountRange()
+            public void CurrentLineWithAdjustmentRange()
             {
                 Create("dog", "cat", "tree");
                 _vimBuffer.LocalSettings.ShiftWidth = 2;
