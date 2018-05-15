@@ -371,6 +371,14 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
                     ExecuteCommand(_margin.CommandLineTextBox.Text);
                     e.Handled = true;
                     break;
+                case Key.J:
+                case Key.M:
+                    if (e.KeyboardDevice.Modifiers == ModifierKeys.Control)
+                    {
+                        ExecuteCommand(_margin.CommandLineTextBox.Text);
+                        e.Handled = true;
+                    }
+                    break;
                 case Key.Up:
                     e.Handled = HandleHistoryNavigation(KeyInputUtil.VimKeyToKeyInput(VimKey.Up));
                     break;
