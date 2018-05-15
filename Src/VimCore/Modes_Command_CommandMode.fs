@@ -152,6 +152,7 @@ type internal CommandMode
         _historySession <- None
         _bindData <- BindDataError
         _keepSelection <- false
+        _isPartialCommand <- false
 
     /// Called externally to update the command.  Do this by modifying the history 
     /// session.  If we aren't in command mode currently then this is a no-op 
