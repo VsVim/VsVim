@@ -2688,8 +2688,7 @@ type internal CommandUtil
                 let lastVisiblePoint = textViewLines.LastVisibleLine.EndIncludingLineBreak
                 let lastVisibleLine = SnapshotPointUtil.GetContainingLine lastVisiblePoint
                 let lastVisibleLineNumber = lastVisibleLine.LineNumber
-                // TODO: Use GetLastNormalizedLine
-                let lastLine = SnapshotUtil.GetLastLine _textView.TextSnapshot
+                let lastLine = SnapshotUtil.GetLastNormalizedLine _textView.TextSnapshot
                 let lastLineNumber = SnapshotLineUtil.GetLineNumber lastLine
                 if lastVisibleLineNumber >= lastLineNumber then
 
