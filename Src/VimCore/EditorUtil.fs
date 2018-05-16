@@ -1888,7 +1888,7 @@ module TextViewUtil =
             let firstLineNumber = firstVisibleLine.LineNumber
             let lastVisibleLine = SnapshotPointUtil.GetContainingLine textViewLines.LastVisibleLine.Start
             let lastLineNumber = lastVisibleLine.LineNumber
-            let endLine = SnapshotUtil.GetLastLine textView.TextSnapshot
+            let endLine = SnapshotUtil.GetLastNormalizedLine textView.TextSnapshot
             let endLineNumber = endLine.LineNumber
             let scrollLimit = int(ceil(textView.ViewportHeight / textView.LineHeight / 2.0))
             if pointLineNumber >= firstLineNumber - scrollLimit && pointLineNumber <= firstLineNumber then
@@ -1909,7 +1909,7 @@ module TextViewUtil =
                 // bottom of the file. Scroll the bottom of the
                 // file to the bottom of the screen.
                 let relativeTo = Editor.ViewRelativePosition.Bottom
-                textView.DisplayTextLineContainingBufferPosition(endLine.EndIncludingLineBreak, 0.0, relativeTo) |> ignore
+                textView.DisplayTextLineContainingBufferPosition(endLine.End, 0.0, relativeTo) |> ignore
             else
 
                 // Otherwise, position point in the middle of the screen.
