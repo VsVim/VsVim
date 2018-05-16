@@ -609,8 +609,8 @@ namespace Vim.UnitTest
                 var count = Enum.GetValues(typeof(VimKey)).Length;
                 Assert.Equal(count - 2, KeyInputUtil.VimKeyRawData.Length);
 
-                // 26 alpha letters plus the 6 special cases we consider
-                Assert.Equal(32, KeyInputUtil.ControlCharToKeyInputMap.Count);
+                // 26 alpha letters plus the 7 special cases we consider
+                Assert.Equal(33, KeyInputUtil.ControlCharToKeyInputMap.Count);
             }
 
             /// <summary>
