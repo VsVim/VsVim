@@ -93,6 +93,21 @@ namespace Vim.UI.Wpf.UnitTest
             }
 
             /// <summary>
+            /// Verify that lazy control keys map, e.g.  C-6 is the same as C-^
+            /// </summary>
+            /// <param name="modifiers">which modifiers to test</param>
+            [Theory]
+            [InlineData(ModifierKeys.Control)]
+            [InlineData(ModifierKeys.Control | ModifierKeys.Shift)]
+            public void Control(ModifierKeys modifiers)
+            {
+                AssertMap(Key.D2, modifiers, KeyInputUtil.VimKeyToKeyInput(VimKey.Null));
+                AssertMap(Key.D6, modifiers, KeyInputUtil.CharToKeyInput((char)('^' - '@')));
+                AssertMap(Key.OemMinus, modifiers, KeyInputUtil.CharToKeyInput((char)('_' - '@')));
+                AssertMap(Key.OemQuestion, modifiers, KeyInputUtil.CharToKeyInput((char)(0x7f)));
+            }
+
+            /// <summary>
             /// Make sure that we special case the space key.  It's one of the virtual keys
             /// that we handle here
             /// </summary>
