@@ -8,6 +8,7 @@ namespace Vim.UI.Wpf.Implementation.Misc
     internal sealed class AlternateKeyUtil : IKeyUtil
     {
         private static readonly Dictionary<Key, KeyInput> s_wpfKeyToKeyInputMap;
+        private static readonly Dictionary<Key, KeyInput> s_wpfControlKeyToKeyInputMap;
         private static readonly Dictionary<VimKey, Key> s_vimKeyToWpfKeyMap;
         private static readonly Dictionary<KeyInput, Key> s_keyInputToWpfKeyMap;
 
@@ -20,6 +21,20 @@ namespace Vim.UI.Wpf.Implementation.Misc
             {
                 s_wpfKeyToKeyInputMap[pair.Value] = pair.Key;
             }
+            s_wpfControlKeyToKeyInputMap = BuildWpfControlKeyToKeyInputMap();
+        }
+
+        private static Dictionary<Key, KeyInput> BuildWpfControlKeyToKeyInputMap()
+        {
+            var map = new Dictionary<Key, KeyInput>
+            {
+                [Key.D2] = KeyInputUtil.VimKeyToKeyInput(VimKey.Null), // <C-@>
+                [Key.D6] = KeyInputUtil.CharToKeyInput((char)0x1E), // <C-^>
+                [Key.OemMinus] = KeyInputUtil.CharToKeyInput((char)0x1F), // <C-_>
+                [Key.OemQuestion] = KeyInputUtil.CharToKeyInput((char)0x7F), // <C-?>
+            };
+
+            return map;
         }
 
         internal static Dictionary<VimKey, Key> BuildVimKeyToWpfKeyMap()
@@ -148,6 +163,12 @@ namespace Vim.UI.Wpf.Implementation.Misc
             {
                 var keyModifiers = ConvertToKeyModifiers(modifierKeys);
                 keyInput = KeyInputUtil.ApplyKeyModifiers(keyInput, keyModifiers);
+                return true;
+            }
+
+            if ((modifierKeys & ModifierKeys.Control) != 0 &&
+                s_wpfControlKeyToKeyInputMap.TryGetValue(key, out keyInput))
+            {
                 return true;
             }
 
