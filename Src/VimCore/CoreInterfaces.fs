@@ -2624,6 +2624,9 @@ type NormalCommand =
     /// Go to the window of the specified kind
     | GoToWindow of WindowKind
 
+    /// Go to the nth most recent view
+    | GoToRecentView
+
     /// Switch to insert after the caret position
     | InsertAfterCaret
 
@@ -2853,6 +2856,7 @@ type NormalCommand =
         | NormalCommand.GoToLocalDeclaration -> None
         | NormalCommand.GoToNextTab _ -> None
         | NormalCommand.GoToWindow _ -> None
+        | NormalCommand.GoToRecentView _ -> None
         | NormalCommand.InsertAfterCaret -> None
         | NormalCommand.InsertBeforeCaret -> None
         | NormalCommand.InsertAtEndOfLine -> None

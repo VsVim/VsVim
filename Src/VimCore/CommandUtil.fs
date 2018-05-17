@@ -1179,6 +1179,16 @@ type internal CommandUtil
         _vimHost.GoToWindow _textView count direction
         CommandResult.Completed ModeSwitch.NoSwitch
 
+    /// GoTo the ITextView in the specified direction
+    member x.GoToRecentView count =
+        let vim = _vimBufferData.Vim
+        match vim.TryGetRecentBuffer 1 with
+        | None -> ()
+        | Some vimBuffer ->
+            let textView = vimBuffer.VimBufferData.TextView
+            _vimHost.NavigateTo(textView.Caret.Position.VirtualBufferPosition) |> ignore
+        CommandResult.Completed ModeSwitch.NoSwitch
+
     /// Join 'count' lines in the buffer
     member x.JoinLines kind count =
 
@@ -2481,6 +2491,7 @@ type internal CommandUtil
         | NormalCommand.GoToLocalDeclaration -> x.GoToLocalDeclaration()
         | NormalCommand.GoToNextTab path -> x.GoToNextTab path data.Count
         | NormalCommand.GoToWindow direction -> x.GoToWindow direction count
+        | NormalCommand.GoToRecentView -> x.GoToRecentView count
         | NormalCommand.InsertAfterCaret -> x.InsertAfterCaret count
         | NormalCommand.InsertBeforeCaret -> x.InsertBeforeCaret count
         | NormalCommand.InsertAtEndOfLine -> x.InsertAtEndOfLine count
