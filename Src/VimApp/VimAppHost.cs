@@ -223,6 +223,28 @@ namespace VimApp
 
         public override bool NavigateTo(VirtualSnapshotPoint point)
         {
+            var textBuffer = point.Position.Snapshot.TextBuffer;
+            foreach (var vimWindow in _vimWindowManager.VimWindowList)
+            {
+                foreach (var vimViewInfo in vimWindow.VimViewInfoList)
+                {
+                    if (vimViewInfo.TextView.TextBuffer == textBuffer)
+                    {
+                        Dispatcher.CurrentDispatcher.BeginInvoke((Action)(() =>
+                            {
+                                vimWindow.TabItem.IsSelected = true;
+                            }),
+                            DispatcherPriority.ApplicationIdle);
+                        Dispatcher.CurrentDispatcher.BeginInvoke((Action)(() =>
+                            {
+                                var textView = vimViewInfo.TextViewHost.TextView;
+                                Keyboard.Focus(textView.VisualElement);
+                            }),
+                            DispatcherPriority.ApplicationIdle);
+                        return true;
+                    }
+                }
+            }
             return false;
         }
 
