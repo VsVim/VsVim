@@ -5,25 +5,6 @@
     <_NETCoreSdkIsPreview>false</_NETCoreSdkIsPreview>
   </PropertyGroup>
 
-  <ItemGroup>
-    <!-- 
-         Need to work around a NuGet bug where IDE restore doesn't respect the PrivateAssets 
-         atrtibute on the FSharp.Core reference that exists in VimCore.fsproj. This works fine 
-         from the command line.
-
-         https://github.com/NuGet/Home/issues/6367
-     -->
-    <PackageReference Include="FSharp.Core" Version="4.2.3" ExcludeAssets="all" Condition="'$(MSBuildProjectExtension)' != '.fsproj'"/>
-
-    <!-- 
-         Need to work around a bug (NuGet or FSharp) where System.ValueTuple is incorrectly
-         being added to our graph during restore. This behavior started in 15.7.
-
-         https://github.com/NuGet/Home/issues/6936
-     -->
-    <PackageReference Include="System.ValueTuple" Version="4.3.1" ExcludeAssets="all" />
-  </ItemGroup>  
-
   <Import Project="$(VsRunnablePropsFilePath)" Condition="'$(VsVimIsRunnable)' == 'true'" />
 
   <Import Project="$(VsSDKInstall)\Microsoft.VsSDK.targets" Condition="Exists('$(VsSDKInstall)\Microsoft.VsSDK.targets') and '$(IsVsixProject)' == 'true'" />
