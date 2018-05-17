@@ -4023,6 +4023,9 @@ type IVimData =
     /// The history of the: command list
     abstract CommandHistory: HistoryList with get, set
 
+    /// The file history list
+    abstract FileHistory: HistoryList with get, set
+
     /// This is the pattern for which all occurences should be highlighted in the visible
     /// IVimBuffer instances.  When this value is empty then no pattern should be highlighted
     abstract DisplayPattern: string

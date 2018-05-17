@@ -78,6 +78,7 @@ type internal VimData(_globalSettings: IVimGlobalSettings) as this =
     let mutable _previousCurrentDirecotry = _currentDirectory
     let mutable _lastLineCommand: LineCommand option = None
     let mutable _commandHistory = HistoryList()
+    let mutable _fileHistory = HistoryList()
     let mutable _searchHistory = HistoryList()
     let mutable _lastSubstituteData: SubstituteData option = None
     let mutable _lastSearchData = SearchData("", SearchPath.Forward)
@@ -151,6 +152,9 @@ type internal VimData(_globalSettings: IVimGlobalSettings) as this =
         member x.CommandHistory
             with get() = _commandHistory
             and set value = _commandHistory <- value
+        member x.FileHistory
+            with get() = _fileHistory
+            and set value = _fileHistory <- value
         member x.DisplayPattern = _displayPattern
         member x.SearchHistory 
             with get() = _searchHistory
@@ -921,7 +925,7 @@ type internal Vim
         if n >= _recentBufferStack.Length then
             None
         else
-            _recentBufferStack |> Seq.skip n |> Seq.head |> Option.Some
+            _recentBufferStack |> Seq.skip n |> Seq.head |> Some
 
     member x.DisableVimBuffer (vimBuffer: IVimBuffer) =
         vimBuffer.SwitchMode ModeKind.Disabled ModeArgument.None |> ignore
