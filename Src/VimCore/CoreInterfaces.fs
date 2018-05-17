@@ -4449,6 +4449,9 @@ and IVim =
     /// creation in the IVimHost
     abstract TryGetOrCreateVimBufferForHost: textView: ITextView * [<Out>] vimBuffer: IVimBuffer byref -> bool
 
+    /// Get the nth most recent IVimBuffer
+    abstract TryGetRecentBuffer: n: int -> IVimBuffer option
+
 and BeforeSaveEventArgs
     (
         _textBuffer: ITextBuffer

@@ -390,6 +390,9 @@ type internal Vim
     /// Holds the active stack of IVimBuffer instances
     let mutable _activeBufferStack: IVimBuffer list = List.empty
 
+    /// Holds the recent stack of IVimBuffer instances
+    let mutable _recentBufferStack: IVimBuffer list = List.empty
+
     /// Whether or not the vimrc file should be automatically loaded before creating the 
     /// first IVimBuffer instance
     let mutable _autoLoadVimRc = true
@@ -604,6 +607,11 @@ type internal Vim
                 | [] -> [] )
         |> eventBag.Add
 
+        // Subscribe to text view focus events.
+        vimBuffer.TextView.GotAggregateFocus
+        |> Observable.subscribe (fun _ -> x.OnFocus vimBuffer)
+        |> eventBag.Add
+
         let vimInterpreter = _interpreterFactory.CreateVimInterpreter vimBuffer _fileSystem
         _vimBufferMap.Add(textView, (vimBuffer, vimInterpreter, eventBag))
 
@@ -611,6 +619,16 @@ type internal Vim
             _editorToSettingSynchronizer.StartSynchronizing vimBuffer SettingSyncSource.Vim
 
         vimBuffer
+
+    member x.RemoveRecentBuffer vimBuffer =
+        _recentBufferStack <-
+            _recentBufferStack
+            |> Seq.filter (fun item -> item <> vimBuffer)
+            |> List.ofSeq
+
+    member x.OnFocus vimBuffer =
+        x.RemoveRecentBuffer vimBuffer
+        _recentBufferStack <- vimBuffer :: _recentBufferStack
 
     /// Create an IVimBuffer for the given ITextView and associated IVimTextBuffer and notify
     /// the IVimBufferCreationListener collection about it
@@ -848,7 +866,8 @@ type internal Vim
     member x.RemoveVimBuffer textView = 
         let found, tuple = _vimBufferMap.TryGetValue(textView)
         if found then 
-            let _, _, bag = tuple
+            let vimBuffer,  _ , bag = tuple
+            x.RemoveRecentBuffer vimBuffer
             bag.DisposeAll()
         _vimBufferMap.Remove textView
 
@@ -896,6 +915,13 @@ type internal Vim
             true
         | None ->
             false
+
+    /// Get the nth most recent vim buffer
+    member x.TryGetRecentBuffer (n: int) =
+        if n >= _recentBufferStack.Length then
+            None
+        else
+            _recentBufferStack |> Seq.skip n |> Seq.head |> Option.Some
 
     member x.DisableVimBuffer (vimBuffer: IVimBuffer) =
         vimBuffer.SwitchMode ModeKind.Disabled ModeArgument.None |> ignore
@@ -962,5 +988,4 @@ type internal Vim
         member x.TryGetOrCreateVimBufferForHost(textView, vimBuffer) = x.TryGetOrCreateVimBufferForHost(textView, &vimBuffer)
         member x.TryGetVimBuffer(textView, vimBuffer) = x.TryGetVimBuffer(textView, &vimBuffer)
         member x.TryGetVimTextBuffer(textBuffer, vimBuffer) = x.TryGetVimTextBuffer(textBuffer, &vimBuffer)
-
-
+        member x.TryGetRecentBuffer n = x.TryGetRecentBuffer n
