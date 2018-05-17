@@ -14,6 +14,7 @@ install:
 before_build: 
   # Updates the version number in the .vsixmanifest and updates the AppVeyor build number to match
   - nuget restore VsVim.sln
+  - nuget help
   - ps: Vsix-IncrementVsixVersion | Vsix-UpdateBuildVersion
 
 build:
