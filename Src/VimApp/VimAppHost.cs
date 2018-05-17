@@ -25,7 +25,7 @@ namespace VimApp
         private readonly IFileSystem _fileSystem;
         private readonly IDirectoryUtil _directoryUtil;
         private readonly IContentTypeRegistryService _contentTypeRegistryService;
-        private readonly Dictionary<ITextBuffer, string> _bufferMap;
+        private readonly Dictionary<IWpfTextView, string> _viewMap;
         private IVimWindowManager _vimWindowManager;
         private IVim _vim;
 
@@ -63,7 +63,7 @@ namespace VimApp
             _contentTypeRegistryService = contentTypeRegistryService;
             _fileSystem = fileSystem;
             _directoryUtil = directoryUtil;
-            _bufferMap = new Dictionary<ITextBuffer, string>();
+            _viewMap = new Dictionary<IWpfTextView, string>();
         }
 
         public override void VimCreated(IVim vim)
@@ -89,7 +89,14 @@ namespace VimApp
 
         public override string GetName(ITextBuffer textBuffer)
         {
-            return _bufferMap.TryGetValue(textBuffer, out string name) ? name : "";
+            foreach (var pair in _viewMap)
+            {
+                if (pair.Key.TextBuffer == textBuffer)
+                {
+                    return pair.Value;
+                }
+            }
+            return "";
         }
 
         public override int GetTabIndex(ITextView textView)
@@ -126,6 +133,16 @@ namespace VimApp
         // the active window, not existing
         public override bool LoadFileIntoExistingWindow(string filePath, ITextView textView)
         {
+            foreach (var pair in _viewMap)
+            {
+                if (pair.Value == filePath)
+                {
+                    var point = pair.Key.Caret.Position.VirtualBufferPosition;
+                    NavigateTo(point);
+                    return true;
+                }
+            }
+
             var vimWindow = MainWindow.ActiveVimWindowOpt;
             if (vimWindow == null)
             {
@@ -148,7 +165,7 @@ namespace VimApp
                     }),
                     DispatcherPriority.ApplicationIdle);
 
-                _bufferMap.Add(createdTextView.TextBuffer, filePath);
+                _viewMap.Add(createdTextView, filePath);
 
                 return true;
             }
@@ -161,11 +178,24 @@ namespace VimApp
 
         public override bool LoadFileIntoNewWindow(string filePath)
         {
+            foreach (var pair in _viewMap)
+            {
+                if (pair.Value == filePath)
+                {
+                    var point = pair.Key.Caret.Position.VirtualBufferPosition;
+                    NavigateTo(point);
+                    return true;
+                }
+            }
+
             try
             {
                 var textDocument = TextDocumentFactoryService.CreateAndLoadTextDocument(filePath, TextBufferFactoryService.TextContentType);
                 var wpfTextView = MainWindow.CreateTextView(textDocument.TextBuffer);
                 MainWindow.AddNewTab(System.IO.Path.GetFileName(filePath), wpfTextView);
+
+                _viewMap.Add(wpfTextView, filePath);
+
                 return true;
             }
             catch (Exception ex)
