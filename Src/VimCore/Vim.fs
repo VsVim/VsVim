@@ -629,10 +629,14 @@ type internal Vim
             _recentBufferStack
             |> Seq.filter (fun item -> item <> vimBuffer)
             |> List.ofSeq
+        let name = _vimHost.GetName vimBuffer.TextBuffer
+        _vimData.FileHistory.Remove name
 
     member x.OnFocus vimBuffer =
         x.RemoveRecentBuffer vimBuffer
         _recentBufferStack <- vimBuffer :: _recentBufferStack
+        let name = _vimHost.GetName vimBuffer.TextBuffer
+        _vimData.FileHistory.Add name
 
     /// Create an IVimBuffer for the given ITextView and associated IVimTextBuffer and notify
     /// the IVimBufferCreationListener collection about it

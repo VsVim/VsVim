@@ -3934,6 +3934,14 @@ type HistoryList () =
             _list <- value :: list
             _totalCount <- _totalCount + 1
 
+    /// Remove an item from the history list
+    member x.Remove value = 
+        if not (StringUtil.IsNullOrEmpty value) then
+            _list <-
+                _list
+                |> Seq.filter (fun x -> not (StringUtil.IsEqual x value))
+                |> List.ofSeq
+
     /// Reset the list back to it's original state
     member x.Reset () = 
         _list <- List.empty
