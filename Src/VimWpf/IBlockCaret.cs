@@ -29,6 +29,11 @@ namespace Vim.UI.Wpf
         /// </summary>
         NormalCaret,
 
+
+
+
+
+
         /// <summary>
         /// Used for inclusize selections.  Different from NormalCaret because
         /// we want to hide the real caret.  Several extensions, namely VAX, key
