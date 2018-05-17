@@ -10,6 +10,7 @@ using System.Windows.Input;
 using Microsoft.VisualStudio.Utilities;
 using Vim.UI.Wpf;
 using System.Windows.Threading;
+using System.Collections.Generic;
 
 namespace VimApp
 {
@@ -24,6 +25,7 @@ namespace VimApp
         private readonly IFileSystem _fileSystem;
         private readonly IDirectoryUtil _directoryUtil;
         private readonly IContentTypeRegistryService _contentTypeRegistryService;
+        private readonly Dictionary<ITextBuffer, string> _bufferMap;
         private IVimWindowManager _vimWindowManager;
         private IVim _vim;
 
@@ -61,6 +63,7 @@ namespace VimApp
             _contentTypeRegistryService = contentTypeRegistryService;
             _fileSystem = fileSystem;
             _directoryUtil = directoryUtil;
+            _bufferMap = new Dictionary<ITextBuffer, string>();
         }
 
         public override void VimCreated(IVim vim)
@@ -84,9 +87,9 @@ namespace VimApp
 
         }
 
-        public override string GetName(ITextBuffer value)
+        public override string GetName(ITextBuffer textBuffer)
         {
-            return "";
+            return _bufferMap.TryGetValue(textBuffer, out string name) ? name : "";
         }
 
         public override int GetTabIndex(ITextView textView)
@@ -144,6 +147,8 @@ namespace VimApp
                         control.Focus();
                     }),
                     DispatcherPriority.ApplicationIdle);
+
+                _bufferMap.Add(createdTextView.TextBuffer, filePath);
 
                 return true;
             }
