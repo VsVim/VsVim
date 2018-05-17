@@ -1141,7 +1141,10 @@ type Parser
         let commandOption = x.ParseCommandOption()
 
         x.SkipBlanks()
-        let fileName = x.ParseRestOfLine()
+        let fileName =
+            match x.ParseRestOfLineAsFilePath() with
+            | None -> ""
+            | Some fileName -> fileName
 
         LineCommand.Edit (hasBang, fileOptionList, commandOption, fileName)
 
