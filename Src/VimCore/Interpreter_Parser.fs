@@ -386,7 +386,21 @@ type Parser
         if _tokenizer.IsAtEndOfLine then
             None
         else
-            x.ParseRestOfLine() |> Some
+            if _tokenizer.CurrentChar = '#' then
+                _tokenizer.MoveNextChar()
+                let n =
+                    match _tokenizer.CurrentTokenKind with
+                    | TokenKind.Number n ->
+                        _tokenizer.MoveNextToken()
+                        n
+                    | _ -> 1
+                let fileHistory = _vimData.FileHistory
+                if n >= fileHistory.Count then
+                    None
+                else
+                    Some fileHistory.Items.[n]
+            else
+                x.ParseRestOfLine() |> Some
 
     /// Move to the next line of the input.  This will move past blank lines and return true if 
     /// the result is a non-blank line which can be processed
