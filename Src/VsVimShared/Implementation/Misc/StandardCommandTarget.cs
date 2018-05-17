@@ -251,7 +251,8 @@ namespace Vim.VisualStudio.Implementation.Misc
                             // Record which buffers have pre-existing selections.
                             var selected = _textManager
                                 .GetDocumentTextViews(DocumentLoad.RespectLazy)
-                                .Where(x => !x.Selection.IsEmpty).ToList();
+                                .Where(x => !x.Selection.IsEmpty)
+                                .ToList();
 
                             // Perform the action.
                             var result = action();
