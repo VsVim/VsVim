@@ -3957,10 +3957,13 @@ type IVimData =
     /// is the backwards version
     abstract LastCharSearch: (CharSearchKind * SearchPath * char) option with get, set
 
-    /// The last command which was ran 
+    /// The last line command which was run 
+    abstract LastLineCommand: LineCommand option with get, set
+
+    /// The last command which was run 
     abstract LastCommand: StoredCommand option with get, set
 
-    /// The last command line which was ran
+    /// The last command line which was run
     abstract LastCommandLine: string with get, set
 
     /// The last shell command that was run

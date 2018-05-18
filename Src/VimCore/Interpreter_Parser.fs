@@ -1474,6 +1474,52 @@ type Parser
         let command = x.ParseRestOfLine()
         LineCommand.ShellCommand (lineRange, command)
 
+    /// Parse out an '@' command
+    member x.ParseAtCommand lineRange =
+        x.SkipBlanks()
+        if _tokenizer.CurrentChar = ':' then
+            _tokenizer.MoveNextChar()
+            match _vimData.LastLineCommand with
+            | None -> LineCommand.ParseError "Error"
+            | Some lineCommand -> x.MergeLineRangeWithCommand lineRange lineCommand
+        else
+            LineCommand.ParseError "Error"
+
+    /// Merge new line range with previous line command
+    member x.MergeLineRangeWithCommand lineRange lineCommand =
+        match lineRange with
+        | LineRangeSpecifier.None -> lineCommand
+        | _ ->
+            match lineCommand with
+            | LineCommand.CopyTo (_, destLineRange, count) -> LineCommand.CopyTo (lineRange, destLineRange, count)
+            | LineCommand.Delete (_, registerName) -> LineCommand.Delete (lineRange, registerName)
+            | LineCommand.Fold lineRange -> LineCommand.Fold lineRange
+            | LineCommand.Global (_, pattern, matchPattern, lineCommand) -> LineCommand.Global (lineRange, pattern, matchPattern, lineCommand)
+            | LineCommand.HorizontalSplit (_, fileOptions, commandOptions) -> LineCommand.HorizontalSplit (lineRange, fileOptions, commandOptions)
+            | LineCommand.MoveTo (_, destLineRange, count) -> LineCommand.MoveTo (lineRange, destLineRange, count)
+            | LineCommand.Normal (_, command) -> LineCommand.Normal (lineRange, command)
+
+            | LineCommand.Print (_, lineCommandFlags)-> LineCommand.Print (lineRange, lineCommandFlags)
+            | LineCommand.PutAfter (_, registerName) -> LineCommand.PutAfter (lineRange, registerName)
+            | LineCommand.PutBefore (_, registerName) -> LineCommand.PutBefore (lineRange, registerName)
+            | LineCommand.QuitWithWrite (_, hasBang, fileOptions, filePath) -> LineCommand.QuitWithWrite (lineRange, hasBang, fileOptions, filePath)
+            | LineCommand.ReadCommand (_, command) -> LineCommand.ReadCommand (lineRange, command)
+            | LineCommand.ReadFile (_, fileOptionList, filePath) -> LineCommand.ReadFile (lineRange, fileOptionList, filePath)
+            | LineCommand.Retab (_, hasBang, tabStop) -> LineCommand.Retab (lineRange, hasBang, tabStop)
+            | LineCommand.Search (_, path, pattern) -> LineCommand.Search (lineRange, path, pattern)
+            | LineCommand.ShiftLeft _ -> LineCommand.ShiftLeft lineRange
+            | LineCommand.ShiftRight _ -> LineCommand.ShiftRight lineRange
+            | LineCommand.Sort (_, hasBang, flags, pattern) -> LineCommand.Sort (lineRange, hasBang, flags, pattern)
+            | LineCommand.Substitute (_, pattern, replace, flags) -> LineCommand.Substitute (lineRange, pattern, replace, flags)
+            | LineCommand.SubstituteRepeat (_, substituteFlags) -> LineCommand.SubstituteRepeat (lineRange, substituteFlags)
+            | LineCommand.VerticalSplit (_, fileOptions, commandOptions) -> LineCommand.VerticalSplit (lineRange, fileOptions, commandOptions)
+            | LineCommand.Write (_, hasBang, fileOptionList, filePath) -> LineCommand.Write (lineRange, hasBang, fileOptionList, filePath)
+            | LineCommand.Yank (_, registerName, count) -> LineCommand.Yank (lineRange, registerName, count)
+            | _ ->
+                match lineRange with
+                | LineRangeSpecifier.None -> lineCommand
+                | _ -> LineCommand.ParseError "Error"
+
     /// Parse out a string constant from the token stream.  Loads of special characters are
     /// possible here.  A complete list is available at :help expr-string
     member x.ParseStringConstant() = 
@@ -2301,6 +2347,7 @@ type Parser
                 | "&" -> x.ParseSubstituteRepeat lineRange SubstituteFlags.None
                 | "~" -> x.ParseSubstituteRepeat lineRange SubstituteFlags.UsePreviousSearchPattern
                 | "!" -> x.ParseShellCommand lineRange
+                | "@" -> x.ParseAtCommand lineRange
                 | _ -> LineCommand.ParseError Resources.Parser_Error
 
             handleParseResult parseResult

@@ -50,6 +50,7 @@ type internal CommandMode
                 command
 
         let lineCommand = _parser.ParseLineCommand command 
+        _vimData.LastLineCommand <- Some lineCommand
         match lineCommand with
         | LineCommand.HostCommand (command, argument) -> _keepSelection <- _vimHost.ShouldKeepSelectionAfterHostCommand command argument
         | _ -> ()
