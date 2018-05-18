@@ -166,7 +166,8 @@ namespace Vim.UI.Wpf.Implementation.Misc
                 return true;
             }
 
-            if ((modifierKeys & ModifierKeys.Control) != 0 &&
+            if ((modifierKeys == ModifierKeys.Control ||
+                modifierKeys == (ModifierKeys.Control | ModifierKeys.Shift)) &&
                 s_wpfControlKeyToKeyInputMap.TryGetValue(key, out keyInput))
             {
                 return true;
