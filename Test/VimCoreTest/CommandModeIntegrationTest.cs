@@ -1361,6 +1361,37 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class RepeatTest : CommandModeIntegrationTest
+        {
+            [WpfFact]
+            public void NoRange()
+            {
+                Create("dog", "cat", "bear");
+                _textView.MoveCaretToLine(0);
+                RunCommand("s/^/xxx /");
+                Assert.Equal(new[] { "xxx dog", "cat", "bear" }, _textBuffer.GetLines());
+                _textView.MoveCaretToLine(2);
+                RunCommand("@:");
+                Assert.Equal(new[] { "xxx dog", "cat", "xxx bear" }, _textBuffer.GetLines());
+                _textView.MoveCaretToLine(1);
+                RunCommand("@:");
+                Assert.Equal(new[] { "xxx dog", "xxx cat", "xxx bear" }, _textBuffer.GetLines());
+            }
+
+            [WpfFact]
+            public void NewRange()
+            {
+                Create("dog", "cat", "bear");
+                RunCommand("1s/^/xxx /");
+                Assert.Equal(new[] { "xxx dog", "cat", "bear" }, _textBuffer.GetLines());
+                RunCommand("3@:");
+                Assert.Equal(new[] { "xxx dog", "cat", "xxx bear" }, _textBuffer.GetLines());
+                _textView.MoveCaretToLine(1);
+                RunCommand("2@:");
+                Assert.Equal(new[] { "xxx dog", "xxx cat", "xxx bear" }, _textBuffer.GetLines());
+            }
+        }
+
         public sealed class RangeTest : CommandModeIntegrationTest
         {
             [WpfFact]
