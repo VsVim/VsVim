@@ -153,6 +153,10 @@ namespace VimApp
             if (TryLoadPath(filePath, out IWpfTextView createdTextView))
             {
                 var wpfTextViewHost = MainWindow.CreateTextViewHost(createdTextView);
+                foreach (var viewInfo in vimWindow.VimViewInfoList)
+                {
+                    _viewMap.Remove(viewInfo.TextView);
+                }
                 vimWindow.Clear();
                 vimWindow.AddVimViewInfo(wpfTextViewHost);
                 Dispatcher.CurrentDispatcher.BeginInvoke(
