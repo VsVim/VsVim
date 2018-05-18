@@ -1876,6 +1876,10 @@ type Parser
 
         LineCommand.Yank (lineRange, registerName, count)
 
+    /// Parse out the files command
+    member x.ParseFiles() =
+        LineCommand.Files
+
     /// Parse out the fold command
     member x.ParseFold lineRange =
         LineCommand.Fold lineRange
@@ -2328,6 +2332,7 @@ type Parser
                 match name with
                 | "autocmd" -> noRange x.ParseAutoCommand
                 | "behave" -> noRange x.ParseBehave
+                | "buffers" -> noRange x.ParseFiles
                 | "call" -> x.ParseCall lineRange
                 | "cd" -> noRange x.ParseChangeDirectory
                 | "chdir" -> noRange x.ParseChangeDirectory
@@ -2351,6 +2356,7 @@ type Parser
                 | "endfunction" -> noRange x.ParseFunctionEnd
                 | "endif" -> noRange x.ParseIfEnd
                 | "exit" -> x.ParseQuitAndWrite lineRange
+                | "files" -> noRange x.ParseFiles
                 | "fold" -> x.ParseFold lineRange
                 | "function" -> noRange x.ParseFunctionStart
                 | "global" -> x.ParseGlobal lineRange
@@ -2367,6 +2373,7 @@ type Parser
                 | "lchdir" -> noRange x.ParseChangeLocalDirectory
                 | "let" -> noRange x.ParseLet
                 | "lmap"-> noRange (fun () -> x.ParseMapKeys false [KeyRemapMode.Language])
+                | "ls" -> noRange x.ParseFiles
                 | "lunmap" -> noRange (fun () -> x.ParseMapUnmap false [KeyRemapMode.Language])
                 | "lnoremap"-> noRange (fun () -> x.ParseMapKeysNoRemap false [KeyRemapMode.Language])
                 | "make" -> noRange x.ParseMake 

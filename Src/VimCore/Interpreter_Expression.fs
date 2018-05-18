@@ -485,6 +485,9 @@ and [<RequireQualifiedAccess>] LineCommand =
     ///  - The provided file to edit 
     | Edit of bool * FileOption list * CommandOption option * string
 
+    /// List recent files
+    | Files
+
     /// Fold the selected LineRange
     | Fold of LineRangeSpecifier
 

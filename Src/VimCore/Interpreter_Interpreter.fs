@@ -826,6 +826,19 @@ type VimInterpreter
     member x.RunExpression expr =
         _exprInterpreter.RunExpression expr
 
+    /// Print out the applicable file history information
+    member x.RunFiles () = 
+        let output = List<string>()
+        output.Add("      # file history")
+
+        let historyList = _vimData.FileHistory
+        for i = 0 to historyList.Count - 1 do
+            let item = historyList.Items.[i]
+            let msg = sprintf "%7d %s" i item
+            output.Add(msg)
+
+        _statusUtil.OnStatusLong(output)
+
     /// Fold the specified line range
     member x.RunFold lineRange = 
 
@@ -1753,6 +1766,7 @@ type VimInterpreter
         | LineCommand.DisplayRegisters nameList -> x.RunDisplayRegisters nameList
         | LineCommand.DisplayLet variables -> x.RunDisplayLets variables
         | LineCommand.DisplayMarks marks -> x.RunDisplayMarks marks
+        | LineCommand.Files -> x.RunFiles()
         | LineCommand.Fold lineRange -> x.RunFold lineRange
         | LineCommand.Global (lineRange, pattern, matchPattern, lineCommand) -> x.RunGlobal lineRange pattern matchPattern lineCommand
         | LineCommand.Help -> x.RunHelp()
