@@ -275,16 +275,15 @@ namespace Vim.UI.Wpf
                 var stdout = process.StandardOutput;
                 var stderr = process.StandardError;
                 var stdinTask = Task.Run(() => { stdin.Write(input); stdin.Close(); });
-                var stdoutTask = Task<string>.Run(() => stdout.ReadToEnd());
-                var stderrTask = Task<string>.Run(() => stderr.ReadToEnd());
+                var stdoutTask = Task.Run(() => stdout.ReadToEnd());
+                var stderrTask = Task.Run(() => stderr.ReadToEnd());
                 if (process.WaitForExit(timeout))
                 {
                     return new RunCommandResults(process.ExitCode, stdoutTask.Result, stderrTask.Result);
                 }
                 else
                 {
-                    var message = new TimeoutException().Message;
-                    return new RunCommandResults(-1, "", message);
+                    throw new TimeoutException();
                 }
             }
             catch (Exception ex)
