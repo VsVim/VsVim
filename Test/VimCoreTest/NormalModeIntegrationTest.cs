@@ -2973,7 +2973,7 @@ namespace Vim.UnitTest
                 Create("dog", "");
                 _textView.MoveCaretToLine(1);
                 _vimBuffer.ProcessNotation("il<C-y><C-y><Esc>");
-                Assert.Equal(new[] { "dog", "log" }, _textBuffer.GetLines());
+                Assert.Equal(new[] { "dog", "log", "" }, _textBuffer.GetLines());
                 _vimBuffer.ProcessNotation("u");
                 Assert.Equal(new[] { "dog", "" }, _textBuffer.GetLines());
             }

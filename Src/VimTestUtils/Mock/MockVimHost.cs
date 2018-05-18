@@ -15,8 +15,8 @@ namespace Vim.UnitTest.Mock
         private event EventHandler<TextViewEventArgs> _isVisibleChanged;
 #pragma warning disable 67
         private event EventHandler<TextViewChangedEventArgs> _activeTextViewChanged;
-#pragma warning restore 67
         private event EventHandler<BeforeSaveEventArgs> _beforeSave;
+#pragma warning restore 67
 
         public bool AutoSynchronizeSettings { get; set; }
         public bool IsAutoCommandEnabled { get; set; }
