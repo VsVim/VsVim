@@ -31,7 +31,7 @@ namespace Vim.VisualStudio
 
         /// <summary>
         /// This text view role was added in VS 2013.  Adding the constant here so we can refer to 
-        /// it within our code as we compile against the VS 2010 binaries
+        /// it within our code as we compile against the VS 2012 binaries
         /// </summary>
         public const string TextViewRoleEmbeddedPeekTextView = "EMBEDDED_PEEK_TEXT_VIEW";
 

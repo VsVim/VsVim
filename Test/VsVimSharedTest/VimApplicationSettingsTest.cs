@@ -222,7 +222,7 @@ namespace Vim.VisualStudio.UnitTest
         private readonly VimApplicationSettings _vimApplicationSettingsRaw;
         private readonly WritableSettingsStore _writableSettingsStore;
 
-        protected VimApplicationSettingsTest(VisualStudioVersion visualStudioVersion = VisualStudioVersion.Vs2010, WritableSettingsStore settingsStore = null)
+        protected VimApplicationSettingsTest(VisualStudioVersion visualStudioVersion = VisualStudioVersion.Vs2012, WritableSettingsStore settingsStore = null)
         {
             settingsStore = settingsStore ?? new SimpleWritableSettingsStore();
             _factory = new MockRepository(MockBehavior.Strict);

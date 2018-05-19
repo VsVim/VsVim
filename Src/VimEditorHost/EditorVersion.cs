@@ -11,7 +11,6 @@ namespace Vim.EditorHost
     /// <remarks>These must be listed in ascending version order</remarks>
     public enum EditorVersion
     {
-        Vs2010,
         Vs2012,
         Vs2013,
         Vs2015,

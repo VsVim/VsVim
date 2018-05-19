@@ -20,8 +20,6 @@ namespace Vim.VisualStudio
 
             switch (parts[0])
             {
-                case "10":
-                    return VisualStudioVersion.Vs2010;
                 case "11":
                     return VisualStudioVersion.Vs2012;
                 case "12":
