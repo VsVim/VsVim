@@ -18,9 +18,6 @@ type internal CommandMode
     let _parser = Parser(_buffer.Vim.GlobalSettings, _vimData)
     let _vimHost = _buffer.Vim.VimHost
 
-    // Command to show when entering command from Visual Mode
-    static let FromVisualModeString = "'<,'>"
-
     static let BindDataError: BindData<int> = {
         KeyRemapMode = KeyRemapMode.None;
         BindFunction = fun _ -> BindResult.Error
@@ -30,6 +27,7 @@ type internal CommandMode
     let mutable _historySession: IHistorySession<int, int> option = None
     let mutable _bindData = BindDataError
     let mutable _keepSelection = false
+    let mutable _isPartialCommand = false
 
     /// Currently queued up command string
     member x.Command 
@@ -81,7 +79,10 @@ type internal CommandMode
 
             // It is possible for the execution of the command to change the mode (say :s.../c) 
             if _buffer.ModeKind = ModeKind.Command then
-                ProcessResult.Handled ModeSwitch.SwitchPreviousMode
+                if _isPartialCommand then
+                    ProcessResult.OfModeKind ModeKind.Normal
+                else
+                    ProcessResult.Handled ModeSwitch.SwitchPreviousMode
             else 
                 ProcessResult.Handled ModeSwitch.NoSwitch
         | BindResult.Cancelled ->
@@ -134,11 +135,12 @@ type internal CommandMode
         _historySession <- Some historySession
         _bindData <- historySession.CreateBindDataStorage().CreateBindData()
         _keepSelection <- false
+        _isPartialCommand <- false
 
         arg.CompleteAnyTransaction
         let commandText = 
             match arg with
-            | ModeArgument.FromVisual -> FromVisualModeString
+            | ModeArgument.PartialCommand command -> _isPartialCommand <- true; command
             | _ -> StringUtil.Empty
 
         if not (StringUtil.IsNullOrEmpty commandText) then
@@ -150,6 +152,7 @@ type internal CommandMode
         _historySession <- None
         _bindData <- BindDataError
         _keepSelection <- false
+        _isPartialCommand <- false
 
     /// Called externally to update the command.  Do this by modifying the history 
     /// session.  If we aren't in command mode currently then this is a no-op 

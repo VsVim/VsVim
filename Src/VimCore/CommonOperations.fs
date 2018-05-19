@@ -160,6 +160,58 @@ type internal CommonOperations
             _textBuffer.Insert(x.CaretPoint.Position, blanks) |> ignore
             TextViewUtil.MoveCaretToPosition _textView position
 
+    /// Filter the specified line range through the specified program
+    member x.FilterLines (range: SnapshotLineRange) program =
+
+        // Extract the lines to be filtered.
+        let newLine = EditUtil.NewLine _editorOptions
+        let input =
+            range.Lines
+            |> Seq.map SnapshotLineUtil.GetText
+            |> Seq.map (fun line -> line + newLine)
+            |> String.concat StringUtil.Empty
+
+        // Filter the input to the output.
+        let results = _vimHost.RunCommand _globalSettings.Shell program input _vimData
+
+        // Display error output and error code, if any.
+        let error = results.Error
+        let error =
+            if results.ExitCode <> 0 then
+                let message = Resources.Filter_CommandReturned results.ExitCode
+                message + newLine + error
+            else
+                error
+        let error = EditUtil.RemoveEndingNewLine error
+        _statusUtil.OnStatus error
+
+        // Prepare the replacement.
+        let replacement = results.Output
+
+        if replacement.Length = 0 then
+
+            // Forward to delete lines to handle special cases.
+            let startLine = range.StartLine
+            let count = range.Count
+            let registerName = None
+            x.DeleteLines startLine count registerName
+
+        else
+
+            // Remove final linebreak.
+            let replacement = EditUtil.RemoveEndingNewLine replacement
+
+            // Normalize linebreaks.
+            let replacement = Regex.Replace(replacement, @"\r?\n", newLine)
+
+            // Replace the old lines with the filtered lines.
+            _textBuffer.Replace(range.Extent.Span, replacement) |> ignore
+
+            // Place the cursor on the first non-blank character of the first line filtered.
+            let firstLine = SnapshotUtil.GetLine _textView.TextSnapshot range.StartLineNumber
+            TextViewUtil.MoveCaretToPoint _textView firstLine.Start
+            _editorOperations.MoveToStartOfLineAfterWhiteSpace(false)
+
     /// Format the specified line range
     member x.FormatLines range =
         _vimHost.FormatLines _textView range
@@ -1577,6 +1629,7 @@ type internal CommonOperations
         member x.EnsureAtCaret viewFlags = x.EnsureAtPoint x.CaretPoint viewFlags
         member x.EnsureAtPoint point viewFlags = x.EnsureAtPoint point viewFlags
         member x.FillInVirtualSpace() = x.FillInVirtualSpace()
+        member x.FilterLines range command = x.FilterLines range command
         member x.FormatLines range = x.FormatLines range
         member x.GetRegister registerName = x.GetRegister registerName
         member x.GetNewLineText point = x.GetNewLineText point

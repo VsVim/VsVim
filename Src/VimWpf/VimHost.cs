@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Media;
 using System.Windows;
+using System.Threading.Tasks;
 using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
@@ -246,27 +247,49 @@ namespace Vim.UI.Wpf
         }
 
         /// <summary>
-        /// Run the specified command, capture it's output and return it to the caller
+        /// Run the specified command on the supplied input, capture it's output and
+        /// return it to the caller
         /// </summary>
-        public virtual string RunCommand(string command, string arguments, IVimData vimdata)
+        public virtual RunCommandResults RunCommand(string command, string arguments, string input, IVimData vimdata)
         {
+            // Use a (generous) timeout since we have no way to interrupt it.
+            var timeout = 30 * 1000;
+
+            // Populate the start info.
             var startInfo = new ProcessStartInfo
             {
                 FileName = command,
                 Arguments = arguments,
-                RedirectStandardOutput = true,
                 UseShellExecute = false,
+                RedirectStandardInput = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                CreateNoWindow = true,
                 WorkingDirectory = vimdata.CurrentDirectory
             };
+
+            // Start the process and tasks to manage the I/O.
             try
             {
                 var process = Process.Start(startInfo);
-                process.WaitForExit();
-                return process.StandardOutput.ReadToEnd();
+                var stdin = process.StandardInput;
+                var stdout = process.StandardOutput;
+                var stderr = process.StandardError;
+                var stdinTask = Task.Run(() => { stdin.Write(input); stdin.Close(); });
+                var stdoutTask = Task.Run(() => stdout.ReadToEnd());
+                var stderrTask = Task.Run(() => stderr.ReadToEnd());
+                if (process.WaitForExit(timeout))
+                {
+                    return new RunCommandResults(process.ExitCode, stdoutTask.Result, stderrTask.Result);
+                }
+                else
+                {
+                    throw new TimeoutException();
+                }
             }
             catch (Exception ex)
             {
-                return ex.Message;
+                return new RunCommandResults(-1, "", ex.Message);
             }
         }
 
@@ -635,9 +658,9 @@ namespace Vim.UI.Wpf
             return Reload(textView);
         }
 
-        string IVimHost.RunCommand(string command, string arguments, IVimData vimData)
+        RunCommandResults IVimHost.RunCommand(string command, string arguments, string input, IVimData vimData)
         {
-            return RunCommand(command, arguments, vimData);
+            return RunCommand(command, arguments, input, vimData);
         }
 
         void IVimHost.RunHostCommand(ITextView textView, string command, string argument)

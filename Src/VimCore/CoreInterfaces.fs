@@ -2270,9 +2270,6 @@ type TextObjectKind =
 type ModeArgument =
     | None
 
-    /// Used for transitions from Visual Mode directly to Command mode
-    | FromVisual 
-
     /// Passed to visual mode to indicate what the initial selection should be.  The SnapshotPoint
     /// option provided is meant to be the initial caret point.  If not provided the actual 
     /// caret point is used
@@ -2299,6 +2296,9 @@ type ModeArgument =
     /// match to process and the range is the full range to consider for a replace
     | Substitute of SnapshotSpan * SnapshotLineRange * SubstituteData
 
+    /// Enter command mode with a partially entered command and then return to normal mode
+    | PartialCommand of string
+
 with
 
     // Running linked commands will throw away the ModeSwitch value.  This can contain
@@ -2307,13 +2307,13 @@ with
     member x.CompleteAnyTransaction =
         match x with
         | ModeArgument.None -> ()
-        | ModeArgument.FromVisual -> ()
         | ModeArgument.InitialVisualSelection _ -> ()
         | ModeArgument.InsertBlock (_, transaction) -> transaction.Complete()
         | ModeArgument.InsertWithCount _ -> ()
         | ModeArgument.InsertWithCountAndNewLine (_, transaction) -> transaction.Complete()
         | ModeArgument.InsertWithTransaction transaction -> transaction.Complete()
         | ModeArgument.Substitute _ -> ()
+        | ModeArgument.PartialCommand _ -> ()
 
 [<RequireQualifiedAccess>]
 [<NoComparison>]
@@ -2525,6 +2525,12 @@ type NormalCommand =
 
     /// Fold 'count' lines in the ITextBuffer
     | FoldLines
+
+    /// Filter the specified lines
+    | FilterLines
+
+    /// Filter the specified motion
+    | FilterMotion of MotionData
 
     /// Create a fold over the specified motion 
     | FoldMotion of MotionData
@@ -2747,6 +2753,7 @@ type NormalCommand =
         match x with
         | NormalCommand.ChangeMotion motion -> Some (NormalCommand.ChangeMotion, motion)
         | NormalCommand.DeleteMotion motion -> Some (NormalCommand.DeleteMotion, motion)
+        | NormalCommand.FilterMotion motion -> Some (NormalCommand.FilterMotion, motion)
         | NormalCommand.FoldMotion motion -> Some (NormalCommand.FoldMotion, motion)
         | NormalCommand.FormatMotion motion -> Some (NormalCommand.FormatMotion, motion)
         | NormalCommand.ShiftMotionLinesLeft motion -> Some (NormalCommand.ShiftMotionLinesLeft, motion)
@@ -2773,6 +2780,7 @@ type NormalCommand =
         | NormalCommand.DeleteLines -> None
         | NormalCommand.DeleteTillEndOfLine -> None
         | NormalCommand.DisplayCharacterBytes
+        | NormalCommand.FilterLines -> None
         | NormalCommand.FoldLines -> None
         | NormalCommand.FormatLines -> None
         | NormalCommand.GoToDefinition -> None
@@ -2875,6 +2883,9 @@ type VisualCommand =
 
     /// Delete the selected text and put it into a register
     | DeleteSelection
+
+    /// Filter the selected text
+    | FilterLines
 
     /// Fold the current selected lines
     | FoldSelection
@@ -4011,6 +4022,19 @@ type DefaultSettings =
     | GVim73 = 0
     | GVim74 = 1
 
+type RunCommandResults
+    (
+        _exitCode: int,
+        _output: string,
+        _error: string
+    ) =
+
+    member x.ExitCode = _exitCode
+
+    member x.Output = _output
+
+    member x.Error = _error
+
 type IVimHost =
 
     /// Should vim automatically start synchronization of IVimBuffer instances when they are 
@@ -4132,7 +4156,7 @@ type IVimHost =
 
     /// Run the specified command with the given arguments and return the textual
     /// output
-    abstract RunCommand: file: string -> arguments: string -> vimHost: IVimData -> string
+    abstract RunCommand: file: string -> arguments: string -> input: string -> vimHost: IVimData -> RunCommandResults
 
     /// Run the Visual studio command in the context of the given ITextView
     abstract RunHostCommand: textView: ITextView -> commandName: string -> argument: string -> unit

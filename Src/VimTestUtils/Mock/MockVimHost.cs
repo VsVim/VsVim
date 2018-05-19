@@ -41,7 +41,7 @@ namespace Vim.UnitTest.Mock
         public Func<ITextView, InsertCommand, bool> TryCustomProcessFunc { get; set; }
         public Func<ITextView> CreateHiddenTextViewFunc { get; set; }
         public Func<ITextBuffer, bool> IsDirtyFunc { get; set; }
-        public Func<string, string, IVimData, string> RunCommandFunc { get; set; }
+        public Func<string, string, string, IVimData, RunCommandResults> RunCommandFunc { get; set; }
         public Action<ITextView, string, string> RunHostCommandFunc { get; set; }
         public Action<QuickFix, int, bool> RunQuickFixFunc { get; set; }
         public Action OpenQuickFixWindowFunc { get; set; }
@@ -237,9 +237,9 @@ namespace Vim.UnitTest.Mock
             GoToTabData = index;
         }
 
-        string IVimHost.RunCommand(string command, string arguments, IVimData vimData)
+        RunCommandResults IVimHost.RunCommand(string command, string arguments, string input, IVimData vimData)
         {
-            return RunCommandFunc(command, arguments, vimData);
+            return RunCommandFunc(command, arguments, input, vimData);
         }
 
         void IVimHost.RunHostCommand(ITextView textView, string command, string argument)

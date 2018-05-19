@@ -1454,23 +1454,34 @@ type VimInterpreter
                 | SetArgument.UseSetting name -> useSetting name)
 
     /// Run the specified shell command
-    member x.RunShellCommand (command: string) =
+    member x.RunShellCommand (lineRange: LineRangeSpecifier) (command: string) =
 
-        // Actuall run the command
-        let doRun command = 
+        // Actually run the command.
+        let doRun (command: string) = 
 
-            let file = _globalSettings.Shell
-            let output = _vimHost.RunCommand _globalSettings.Shell command _vimData
-            _statusUtil.OnStatus output
+            // Save the last shell command for repeats.
+            _vimData.LastShellCommand <- Some command
+
+            // Prepend the shell flag before the other arguments
+            let command =
+                if _globalSettings.ShellFlag.Length > 0 then
+                    sprintf "%s %s" _globalSettings.ShellFlag command
+                else
+                    command
+
+            if lineRange = LineRangeSpecifier.None then
+                let file = _globalSettings.Shell
+                let results = _vimHost.RunCommand _globalSettings.Shell command StringUtil.Empty _vimData
+                let status = results.Output + results.Error
+                let status = EditUtil.RemoveEndingNewLine status
+                _statusUtil.OnStatus status
+            else
+                x.RunWithLineRangeOrDefault lineRange DefaultLineRange.None (fun lineRange ->
+                    _commonOperations.FilterLines lineRange command)
 
         // Build up the actual command replacing any non-escaped ! with the previous
         // shell command
         let builder = System.Text.StringBuilder()
-
-        // Append the shell flag before the other arguments
-        if _globalSettings.ShellFlag.Length > 0 then
-            builder.AppendString _globalSettings.ShellFlag
-            builder.AppendChar ' '
 
         let rec inner index afterBackslash = 
             if index >= command.Length then
@@ -1485,7 +1496,7 @@ type VimInterpreter
                     // specifically called out in the documentation for :shell
                     let afterBackslash = next = '\\'
                     inner (index + 2) afterBackslash
-                elif current = '!' then
+                elif current = '!' && not afterBackslash then
                     match _vimData.LastShellCommand with
                     | None -> 
                         _statusUtil.OnError Resources.Common_NoPreviousShellCommand
@@ -1758,7 +1769,7 @@ type VimInterpreter
         | LineCommand.Retab (lineRange, hasBang, tabStop) -> x.RunRetab lineRange hasBang tabStop
         | LineCommand.Search (lineRange, path, pattern) -> x.RunSearch lineRange path pattern
         | LineCommand.Set argumentList -> x.RunSet argumentList
-        | LineCommand.ShellCommand command -> x.RunShellCommand command
+        | LineCommand.ShellCommand (lineRange, command) -> x.RunShellCommand lineRange command
         | LineCommand.ShiftLeft lineRange -> x.RunShiftLeft lineRange
         | LineCommand.ShiftRight lineRange -> x.RunShiftRight lineRange
         | LineCommand.Sort (lineRange, hasBang, flags, pattern) -> x.RunSort lineRange hasBang flags pattern

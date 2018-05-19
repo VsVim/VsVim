@@ -448,15 +448,17 @@ namespace Vim.UnitTest
         {
             private string _command;
             private string _arguments;
+            private string _input;
 
             public RunCommandTest()
             {
-                VimHost.RunCommandFunc = (command, arguments, vimData) =>
+                VimHost.RunCommandFunc = (command, arguments, input, vimData) =>
                     {
                         _command = command;
                         _arguments = arguments;
+                        _input = input;
 
-                        return string.Empty;
+                        return new RunCommandResults(0, string.Empty, string.Empty);
                     };
                 Create();
             }
@@ -477,6 +479,134 @@ namespace Vim.UnitTest
             {
                 ParseAndRun(@":!echo ""test""");
                 Assert.Equal(@"/c echo ""test""", _arguments);
+            }
+        }
+
+        public sealed class RunFilterTest : InterpreterTest
+        {
+            private string _command;
+            private string _arguments;
+            private string _input;
+
+            private string reverseLines(string input)
+            {
+                var newLine = Environment.NewLine;
+                var reversedLines = input
+                    .Split(new[] { newLine }, StringSplitOptions.None)
+                    .Reverse()
+                    .Skip(1);
+                var output = String.Join(newLine, reversedLines) + newLine;
+                return output;
+            }
+
+            public RunFilterTest()
+            {
+                VimHost.RunCommandFunc = (command, arguments, input, vimData) =>
+                    {
+                        _command = command;
+                        _arguments = arguments;
+                        _input = input;
+
+                        if (arguments == "/c delete")
+                        {
+                            // Delete all lines.
+                            return new RunCommandResults(0, "", "");
+                        }
+                        else if (arguments == "/c reverse")
+                        {
+                            // Reverse the order of the lines.
+                            return new RunCommandResults(0, reverseLines(input), "");
+                        }
+                        else
+                        {
+                            Assert.True(false, "invalid arguments");
+                            return null;
+                        }
+                    };
+            }
+
+            /// <summary>
+            /// Delete all lines with no final newline
+            /// </summary>
+            [WpfFact]
+            public void DeleteAllNoFinalNewLine()
+            {
+                Create("cat", "dog", "bat");
+                ParseAndRun(":%!delete");
+                Assert.Equal("/c delete", _arguments);
+                Assert.Equal(new[] { "", }, _textBuffer.GetLines());
+            }
+
+            /// <summary>
+            /// Delete some lines with no final newline
+            /// </summary>
+            [WpfFact]
+            public void DeleteSomeNoFinalNewLine()
+            {
+                Create("cat", "dog", "bat");
+                ParseAndRun(":2,$!delete");
+                Assert.Equal("/c delete", _arguments);
+                Assert.Equal(new[] { "cat", }, _textBuffer.GetLines());
+            }
+
+            /// <summary>
+            /// Delete all lines with final newline
+            /// </summary>
+            [WpfFact]
+            public void DeleteAllWithFinalNewLine()
+            {
+                Create("cat", "dog", "bat", "");
+                ParseAndRun(":%!delete");
+                Assert.Equal("/c delete", _arguments);
+                Assert.Equal(new[] { "", }, _textBuffer.GetLines());
+            }
+
+            /// <summary>
+            /// Delete some lines with final newline
+            /// </summary>
+            [WpfFact]
+            public void DeleteSomeWithFinalNewLine()
+            {
+                Create("cat", "dog", "bat", "");
+                ParseAndRun(":2,$!delete");
+                Assert.Equal("/c delete", _arguments);
+                Assert.Equal(new[] { "cat", "", }, _textBuffer.GetLines());
+            }
+
+            /// <summary>
+            /// Reverse all lines with no final newline
+            /// </summary>
+            [WpfFact]
+            public void ReverseNoFinalNewLine()
+            {
+                Create("cat", "dog", "bat");
+                ParseAndRun(":%!reverse");
+                Assert.Equal("/c reverse", _arguments);
+                Assert.Equal(new[] { "bat", "dog", "cat", }, _textBuffer.GetLines());
+            }
+
+            /// <summary>
+            /// Reverse all lines with final newline
+            /// </summary>
+            [WpfFact]
+            public void ReverseWithFinalNewLine()
+            {
+                Create("cat", "dog", "bat", "");
+                ParseAndRun(":%!reverse");
+                Assert.Equal("/c reverse", _arguments);
+                Assert.Equal(new[] { "bat", "dog", "cat", "", }, _textBuffer.GetLines());
+            }
+
+            /// <summary>
+            /// Reverse line range
+            /// </summary>
+            [WpfFact]
+            public void ReverseLineRange()
+            {
+                Create("xxx", "cat", "dog", "bat", "yyy", "");
+                ParseAndRun(":2,4!reverse");
+                Assert.Equal("/c reverse", _arguments);
+                Assert.Equal(new[] { "xxx", "bat", "dog", "cat", "yyy", "", }, _textBuffer.GetLines());
             }
         }
 
@@ -2304,11 +2434,11 @@ namespace Vim.UnitTest
                 Create("");
                 var didRun = false;
                 VimHost.RunCommandFunc =
-                    (command, args, _) =>
+                    (command, args, input, _) =>
                     {
                         Assert.Equal("/c git status", args);
                         didRun = true;
-                        return "";
+                        return new RunCommandResults(0, "", "");
                     };
                 ParseAndRun(@"!git status");
                 Assert.True(didRun);
@@ -2324,13 +2454,14 @@ namespace Vim.UnitTest
                 Vim.VimData.LastShellCommand = FSharpOption.Create("cat");
                 var didRun = false;
                 VimHost.RunCommandFunc =
-                    (command, args, _) =>
+                    (command, args, input, _) =>
                     {
                         Assert.Equal("/c git status cat", args);
                         didRun = true;
-                        return "";
+                        return new RunCommandResults(0, "", "");
                     };
                 ParseAndRun(@"!git status !");
+                Assert.Equal(Vim.VimData.LastShellCommand, FSharpOption.Create("git status cat"));
                 Assert.True(didRun);
             }
 
@@ -2343,13 +2474,32 @@ namespace Vim.UnitTest
                 Create("");
                 var didRun = false;
                 VimHost.RunCommandFunc =
-                    (command, args, _) =>
+                    (command, args, input, _) =>
                     {
                         Assert.Equal("/c git status !", args);
                         didRun = true;
-                        return "";
+                        return new RunCommandResults(0, "", "");
                     };
                 ParseAndRun(@"!git status \!");
+                Assert.True(didRun);
+            }
+
+            /// <summary>
+            /// Don't replace a ! which occurs after an \\
+            /// </summary>
+            [WpfFact]
+            public void ShellCommand_BangNoReplace_DoubleEscape()
+            {
+                Create("");
+                var didRun = false;
+                VimHost.RunCommandFunc =
+                    (command, args, input, _) =>
+                    {
+                        Assert.Equal(@"/c git status \!", args);
+                        didRun = true;
+                        return new RunCommandResults(0, "", "");
+                    };
+                ParseAndRun(@"!git status \\!");
                 Assert.True(didRun);
             }
 
@@ -2362,7 +2512,7 @@ namespace Vim.UnitTest
             {
                 Create("");
                 var didRun = false;
-                VimHost.RunCommandFunc = delegate { didRun = true; return ""; };
+                VimHost.RunCommandFunc = delegate { didRun = true; return new RunCommandResults(0, "", ""); };
                 ParseAndRun(@"!git status !");
                 Assert.False(didRun);
                 Assert.Equal(Resources.Common_NoPreviousShellCommand, _statusUtil.LastError);

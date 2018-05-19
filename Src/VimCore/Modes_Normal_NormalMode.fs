@@ -147,6 +147,7 @@ type internal NormalMode
                 yield ("<lt><lt>", CommandFlags.Repeatable, NormalCommand.ShiftLinesLeft)
                 yield (">>", CommandFlags.Repeatable, NormalCommand.ShiftLinesRight)
                 yield ("==", CommandFlags.Repeatable, NormalCommand.FormatLines)
+                yield ("!!", CommandFlags.Repeatable, NormalCommand.FilterLines)
                 yield (":", CommandFlags.Special, NormalCommand.SwitchMode (ModeKind.Command, ModeArgument.None))
             } |> Seq.map (fun (str, flags, command) -> 
                 let keyInputSet = KeyNotationUtil.StringToKeyInputSet str
@@ -164,6 +165,7 @@ type internal NormalMode
                 yield ("zf", CommandFlags.None, NormalCommand.FoldMotion)
                 yield ("<lt>", CommandFlags.Repeatable ||| CommandFlags.ShiftLeft, NormalCommand.ShiftMotionLinesLeft)
                 yield (">", CommandFlags.Repeatable ||| CommandFlags.ShiftRight, NormalCommand.ShiftMotionLinesRight)
+                yield ("!", CommandFlags.Repeatable, NormalCommand.FilterMotion)
                 yield ("=", CommandFlags.Repeatable, NormalCommand.FormatMotion)
             } |> Seq.map (fun (str, flags, command) -> 
                 let keyInputSet = KeyNotationUtil.StringToKeyInputSet str

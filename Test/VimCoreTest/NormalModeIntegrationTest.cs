@@ -1630,6 +1630,88 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class FilterTest : NormalModeIntegrationTest
+        {
+            private string _command;
+            private string _arguments;
+            private string _input;
+
+            protected override void Create(params string[] lines)
+            {
+                base.Create(lines);
+                _vimHost.RunCommandFunc = (command, arguments, input, vimData) =>
+                    {
+                        _command = command;
+                        _arguments = arguments;
+                        _input = input;
+
+                        var output = input.ToUpperInvariant();
+                        return new RunCommandResults(0, output, "");
+                    };
+            }
+
+            /// <summary>
+            /// Use filter combined with a motion
+            /// </summary>
+            [WpfFact]
+            public void Motion()
+            {
+                Create("dog", "cat", "bear", "fish");
+                _vimBuffer.ProcessNotation("1G!Gupper<Return>");
+                Assert.Equal("/c upper", _arguments);
+                Assert.Equal(new[] { "DOG", "CAT", "BEAR", "FISH" }, _textBuffer.GetLines());
+            }
+
+            /// <summary>
+            /// Use filter combined with a reverse motion (inverted line range)
+            /// </summary>
+            [WpfFact]
+            public void ReverseMotion()
+            {
+                Create("dog", "cat", "bear", "fish");
+                _vimBuffer.ProcessNotation("3G!2Gupper<Return>");
+                Assert.Equal("/c upper", _arguments);
+                Assert.Equal(new[] { "dog", "CAT", "BEAR", "fish" }, _textBuffer.GetLines());
+            }
+
+            /// <summary>
+            /// Use filter operating on the current line
+            /// </summary>
+            [WpfFact]
+            public void Line()
+            {
+                Create("dog", "cat", "bear", "fish");
+                _vimBuffer.ProcessNotation("2G!!upper<Return>");
+                Assert.Equal("/c upper", _arguments);
+                Assert.Equal(new[] { "dog", "CAT", "bear", "fish" }, _textBuffer.GetLines());
+            }
+
+            /// <summary>
+            /// Use filter operating on multiple lines
+            /// </summary>
+            [WpfFact]
+            public void Lines()
+            {
+                Create("dog", "cat", "bear", "fish");
+                _vimBuffer.ProcessNotation("2G2!!upper<Return>");
+                Assert.Equal("/c upper", _arguments);
+                Assert.Equal(new[] { "dog", "CAT", "BEAR", "fish" }, _textBuffer.GetLines());
+            }
+
+            /// <summary>
+            /// Use filter from visual line mode, returning to normal mode
+            /// </summary>
+            [WpfFact]
+            public void VisualLines()
+            {
+                Create("dog", "cat", "bear", "fish");
+                _vimBuffer.ProcessNotation("2GV<Return>!upper<Return>");
+                Assert.Equal("/c upper", _arguments);
+                Assert.Equal(new[] { "dog", "CAT", "BEAR", "fish" }, _textBuffer.GetLines());
+                Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
+            }
+        }
+
         public abstract class KeyMappingTest : NormalModeIntegrationTest
         {
             public sealed class AmbiguousTest : KeyMappingTest

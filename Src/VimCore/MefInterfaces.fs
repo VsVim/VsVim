@@ -345,6 +345,9 @@ type ICommonOperations =
     /// Ensure the view properties are met at the point
     abstract EnsureAtPoint: point: SnapshotPoint -> viewFlags: ViewFlags -> unit
 
+    /// Filter the specified line range through the specified command
+    abstract FilterLines: SnapshotLineRange -> command: string -> unit
+
     /// Format the specified line range
     abstract FormatLines: SnapshotLineRange -> unit
 

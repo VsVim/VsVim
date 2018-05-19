@@ -29,6 +29,9 @@ type internal VisualMode
         | VisualKind.Line -> (OperationKind.LineWise, ModeKind.VisualLine)
         | VisualKind.Block -> (OperationKind.CharacterWise, ModeKind.VisualBlock)
 
+    // Command to show when entering command from Visual Mode
+    static let CommandFromVisualModeString = "'<,'>"
+
     /// Get a mark and use the provided 'func' to create a Motion value
     static let BindMark func = 
         let bindFunc (keyInput: KeyInput) =
@@ -89,6 +92,7 @@ type internal VisualMode
                 yield (">", CommandFlags.Repeatable, VisualCommand.ShiftLinesRight)
                 yield ("~", CommandFlags.Repeatable, VisualCommand.ChangeCase ChangeCharacterKind.ToggleCase)
                 yield ("=", CommandFlags.Repeatable, VisualCommand.FormatLines)
+                yield ("!", CommandFlags.Repeatable, VisualCommand.FilterLines)
             } |> Seq.map (fun (str, flags, command) -> 
                 let keyInputSet = KeyNotationUtil.StringToKeyInputSet str
                 CommandBinding.VisualBinding (keyInputSet, flags, command))
@@ -111,7 +115,7 @@ type internal VisualMode
                 yield ("[P", CommandFlags.Repeatable, NormalCommand.PutBeforeCaretWithIndent)
                 yield ("]p", CommandFlags.Repeatable, NormalCommand.PutAfterCaretWithIndent)
                 yield ("]P", CommandFlags.Repeatable, NormalCommand.PutBeforeCaretWithIndent)
-                yield (":", CommandFlags.Special, NormalCommand.SwitchMode (ModeKind.Command, ModeArgument.FromVisual))
+                yield (":", CommandFlags.Special, NormalCommand.SwitchMode (ModeKind.Command, (ModeArgument.PartialCommand CommandFromVisualModeString)))
             } |> Seq.map (fun (str, flags, command) -> 
                 let keyInputSet = KeyNotationUtil.StringToKeyInputSet str
                 CommandBinding.NormalBinding (keyInputSet, flags, command))

@@ -1469,10 +1469,10 @@ type Parser
         LineCommand.ShiftRight (lineRange)
 
     /// Parse out the shell command
-    member x.ParseShellCommand () =
+    member x.ParseShellCommand lineRange =
         use resetFlags = _tokenizer.SetTokenizerFlagsScoped TokenizerFlags.AllowDoubleQuote
         let command = x.ParseRestOfLine()
-        LineCommand.ShellCommand command
+        LineCommand.ShellCommand (lineRange, command)
 
     /// Parse out a string constant from the token stream.  Loads of special characters are
     /// possible here.  A complete list is available at :help expr-string
@@ -2300,7 +2300,7 @@ type Parser
                 | ">" -> x.ParseShiftRight lineRange
                 | "&" -> x.ParseSubstituteRepeat lineRange SubstituteFlags.None
                 | "~" -> x.ParseSubstituteRepeat lineRange SubstituteFlags.UsePreviousSearchPattern
-                | "!" -> noRange (fun () -> x.ParseShellCommand())
+                | "!" -> x.ParseShellCommand lineRange
                 | _ -> LineCommand.ParseError Resources.Parser_Error
 
             handleParseResult parseResult
