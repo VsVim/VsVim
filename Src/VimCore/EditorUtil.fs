@@ -1826,8 +1826,10 @@ module TextViewUtil =
         else 
             try
                 let textViewLines = textView.TextViewLines
-                if textViewLines <> null then Some textViewLines
-                else None
+                if textViewLines <> null && textViewLines.IsValid then
+                    Some textViewLines
+                else
+                    None
             with 
             | _ -> None
 

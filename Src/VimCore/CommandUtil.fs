@@ -2580,16 +2580,19 @@ type internal CommandUtil
             | MaintainCaretColumn.Spaces spaces -> max spaces spacesToCaret
             | MaintainCaretColumn.EndOfLine -> spacesToCaret
 
-        match TextViewUtil.GetTextViewLines _textView with
-        | None -> ()
-        | Some textViewLines ->
-
-            // Update the caret to the specified offset from the first visible line
-            let updateCaretToOffset lineOffset =
+        // Update the caret to the specified offset from the first visible line
+        let updateCaretToOffset lineOffset =
+            match TextViewUtil.GetTextViewLines _textView with
+            | None -> ()
+            | Some textViewLines ->
                 let firstIndex = textViewLines.GetIndexOfTextLine(textViewLines.FirstVisibleLine)
                 let textViewLine = textViewLines.[firstIndex + lineOffset]
                 let snapshotLine = SnapshotPointUtil.GetContainingLine textViewLine.Start
                 _commonOperations.MoveCaretToPoint snapshotLine.Start ViewFlags.Standard
+
+        match TextViewUtil.GetTextViewLines _textView with
+        | None -> ()
+        | Some textViewLines ->
 
             let firstIndex = textViewLines.GetIndexOfTextLine(textViewLines.FirstVisibleLine)
             let caretIndex = textViewLines.GetIndexOfTextLine(_textView.Caret.ContainingTextViewLine)
@@ -2766,6 +2769,9 @@ type internal CommandUtil
     /// Scroll the window in the specified direction by the specified number of lines.  The
     /// caret only moves if it leaves the view port
     member x.ScrollWindow direction count =
+
+        _textView.ViewScroller.ScrollViewportVerticallyByLines(direction, count)
+
         match TextViewUtil.GetTextViewLines _textView with
         | None -> ()
         | Some textViewLines ->
@@ -2790,8 +2796,6 @@ type internal CommandUtil
                 // The MaintainCaretColumn value is reset on every caret position change.  Don't cache
                 // the value until after the caret is moved
                 _commonOperations.MaintainCaretColumn <- MaintainCaretColumn.Spaces columnSpaces
-
-            _textView.ViewScroller.ScrollViewportVerticallyByLines(direction, count)
 
             match direction with
             | ScrollDirection.Up ->

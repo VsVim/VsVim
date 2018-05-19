@@ -914,6 +914,7 @@ namespace Vim.UnitTest
                 Create(lines);
                 _asyncTaggerSource.SetBackgroundFunc(span => TestUtils.GetDogTags(span));
                 _mockTextView = _mockFactory.CreateTextView(_textBuffer);
+                _mockTextView.SetupGet(x => x.IsClosed).Returns(false);
                 _asyncTaggerSource.TextView = _mockTextView.Object;
             }
 

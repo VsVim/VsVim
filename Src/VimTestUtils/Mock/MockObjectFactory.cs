@@ -382,6 +382,7 @@ namespace Vim.UnitTest.Mock
             textView.SetupGet(x => x.TextBuffer).Returns(textBuffer);
             textView.SetupGet(x => x.TextViewLines).Returns(lines.Object);
             textView.SetupGet(x => x.Caret).Returns(caret.Object);
+            textView.SetupGet(x => x.IsClosed).Returns(false);
             textView.SetupGet(x => x.InLayout).Returns(false);
             textView.SetupGet(x => x.TextSnapshot).Returns(() => textBuffer.CurrentSnapshot);
             textView.SetupGet(x => x.Properties).Returns(properties);
