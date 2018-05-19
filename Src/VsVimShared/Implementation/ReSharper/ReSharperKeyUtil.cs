@@ -49,9 +49,10 @@ namespace Vim.VisualStudio.Implementation.ReSharper
             base.PreviewKeyUp(args);
         }
 
-        private bool Exec(EditCommand editCommand, out Func<Func<int>, int> wrapper)
+        private bool Exec(EditCommand editCommand, out Action preAction, out Action postAction)
         {
-            wrapper = null;
+            preAction = null;
+            postAction = null;
             return false;
         }
 
@@ -145,9 +146,9 @@ namespace Vim.VisualStudio.Implementation.ReSharper
             return QueryStatus(editCommand);
         }
 
-        bool ICommandTarget.Exec(EditCommand editCommand, out Func<Func<int>, int> wrapper)
+        bool ICommandTarget.Exec(EditCommand editCommand, out Action preAction, out Action postAction)
         {
-            return Exec(editCommand, out wrapper);
+            return Exec(editCommand, out preAction, out postAction);
         }
 
         #endregion

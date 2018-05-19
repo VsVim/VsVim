@@ -29,7 +29,7 @@ namespace Vim.VisualStudio
     {
         CommandStatus QueryStatus(EditCommand editCommand);
 
-        bool Exec(EditCommand editCommand, out Func<Func<int>, int> wrapper);
+        bool Exec(EditCommand editCommand, out Action preAction, out Action postAction);
     }
 
     internal interface ICommandTargetFactory
