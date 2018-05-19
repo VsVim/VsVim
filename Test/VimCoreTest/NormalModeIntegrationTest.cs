@@ -5327,6 +5327,46 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class ScrollWithFinalNewLineTest : NormalModeIntegrationTest
+        {
+            private static readonly string[] s_lines = KeyInputUtilTest.CharLettersLower.Select(x => x.ToString()).ToArray();
+            private readonly int _lastLineNumber = 0;
+            private readonly int _visibleLines = 10;
+
+            public ScrollWithFinalNewLineTest()
+            {
+                Create(s_lines.Concat(new[] { "" }).ToArray());
+                _lastLineNumber = _textBuffer.CurrentSnapshot.LineCount - 2;
+                _textView.SetVisibleLineCount(_visibleLines);
+            }
+
+            /// <summary>
+            /// When using Ctrl-F on a buffer with a final newline, we can't reach the phantom line
+            /// </summary>
+            [WpfFact]
+            public void ScrollPageCantReachPhantomLine()
+            {
+                var topLine = _lastLineNumber - 1;
+                _textView.MoveCaretToLine(topLine);
+                _textView.DisplayTextLineContainingBufferPosition(_textBuffer.GetLine(topLine).Start, 0.0, ViewRelativePosition.Top);
+                _vimBuffer.ProcessNotation("<C-f>");
+                Assert.Equal(_lastLineNumber, _textView.GetCaretLine().LineNumber);
+            }
+
+            /// <summary>
+            /// When using Ctrl-D on a buffer with a final newline, we can't reach the phantom line
+            /// </summary>
+            [WpfFact]
+            public void ScrollLinesCantReachPhantomLine()
+            {
+                var topLine = _lastLineNumber - 1;
+                _textView.MoveCaretToLine(topLine);
+                _textView.DisplayTextLineContainingBufferPosition(_textBuffer.GetLine(topLine).Start, 0.0, ViewRelativePosition.Top);
+                _vimBuffer.ProcessNotation("<C-d>");
+                Assert.Equal(_lastLineNumber, _textView.GetCaretLine().LineNumber);
+            }
+        }
+
         public sealed class ScrollOffsetTest : NormalModeIntegrationTest
         {
             private static readonly string[] s_lines = KeyInputUtilTest.CharLettersLower.Select(x => x.ToString()).ToArray();
