@@ -7488,5 +7488,41 @@ namespace Vim.UnitTest
                 Assert.Equal(_textView.GetLine(1).Start.Add(2), _textView.GetCaretPoint());
             }
         }
+
+        public sealed class RepeatLineCommand : NormalModeIntegrationTest
+        {
+            /// <summary>
+            /// Simple repeat of the last line command
+            /// </summary>
+            [WpfFact]
+            public void Basic()
+            {
+                Create("cat", "bat", "dog", "");
+                _textView.MoveCaretToLine(1);
+                _vimBuffer.ProcessNotation(":s/^/xxx /<Enter>");
+                Assert.Equal(new[] { "cat", "xxx bat", "dog", "" }, _textBuffer.GetLines());
+                _textView.MoveCaretToLine(0);
+                _vimBuffer.ProcessNotation("@:");
+                Assert.Equal(new[] { "xxx cat", "xxx bat", "dog", "" }, _textBuffer.GetLines());
+                _textView.MoveCaretToLine(2);
+                _vimBuffer.ProcessNotation("@:");
+                Assert.Equal(new[] { "xxx cat", "xxx bat", "xxx dog", "" }, _textBuffer.GetLines());
+            }
+
+            /// <summary>
+            /// Repeat of the last line command with a count
+            /// </summary>
+            [WpfFact]
+            public void WithCount()
+            {
+                Create("cat", "bat", "dog", "bear", "rat", "");
+                _textView.MoveCaretToLine(2);
+                _vimBuffer.ProcessNotation(":delete<Enter>");
+                Assert.Equal(new[] { "cat", "bat", "bear", "rat", "" }, _textBuffer.GetLines());
+                _textView.MoveCaretToLine(1);
+                _vimBuffer.ProcessNotation("2@:");
+                Assert.Equal(new[] { "cat", "rat", "" }, _textBuffer.GetLines());
+            }
+        }
     }
 }
