@@ -16,7 +16,6 @@ namespace Vim.EditorHost
         {
             switch (majorVersion)
             {
-                case 10: return EditorVersion.Vs2010;
                 case 11: return EditorVersion.Vs2012;
                 case 12: return EditorVersion.Vs2013;
                 case 14: return EditorVersion.Vs2015;
@@ -29,7 +28,6 @@ namespace Vim.EditorHost
         {
             switch (version)
             {
-                case EditorVersion.Vs2010: return 10;
                 case EditorVersion.Vs2012: return 11;
                 case EditorVersion.Vs2013: return 12;
                 case EditorVersion.Vs2015: return 14;

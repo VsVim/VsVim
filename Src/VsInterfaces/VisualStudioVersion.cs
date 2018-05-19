@@ -6,7 +6,6 @@ namespace Vim.VisualStudio
     /// </summary>
     public enum VisualStudioVersion
     {
-        Vs2010,
         Vs2012,
         Vs2013,
         Vs2015,

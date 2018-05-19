@@ -31,7 +31,7 @@ module TaggerUtilCore =
     ///    is acted on directly by many editor components.  Providing a large range 
     ///    unnecessarily increases their work load.
     /// 2. It can cause a ripple effect in Visual Studio 2010 RTM.  The SnapshotSpan 
-    ///    returned will be immediately be the vale passed to GetTags for every other
+    ///    returned will be immediately be the value passed to GetTags for every other
     ///    ITagger in the system (TextMarkerVisualManager issue). 
     ///
     /// In order to provide the minimum possible valid SnapshotSpan the simple taggers

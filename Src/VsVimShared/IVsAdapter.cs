@@ -10,7 +10,7 @@ using Microsoft.VisualStudio.TextManager.Interop;
 namespace Vim.VisualStudio
 {
     /// <summary>
-    /// Adapter layer to convert between 2010 and pre-2010 equivalent types 
+    /// Adapter layer to convert between WPF editor and pre-editor APIs.
     /// and hierarchies
     /// </summary>
     public interface IVsAdapter

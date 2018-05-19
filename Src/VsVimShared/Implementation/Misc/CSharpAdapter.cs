@@ -14,7 +14,7 @@ namespace Vim.VisualStudio.Implementation.Misc
     {
         /// <summary>
         /// This regex is intended to match the C# generated event handler pattern.  This is the pattern which is 
-        /// used in Visual Studio 2010
+        /// used in Visual Studio 2010+
         /// </summary>
         private static readonly Regex s_fullEventSyntaxRegex = new Regex(@"\+=\s*new\s+[a-z0-9.]+\s*\([a-z0-9_]*\)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 

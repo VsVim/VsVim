@@ -108,7 +108,7 @@ namespace Vim.VisualStudio.Implementation.Misc
                 {
                     using (var keyBindingsKey = rootKey.OpenSubKey("KeyBindingTables"))
                     {
-                        // For "Global".  The id in the registry here is incorrect for Vs 2010
+                        // For "Global".  The id in the registry here is incorrect for Vs 2010+
                         // so hard code the known value
                         if (!TryGetKeyBindingScopeName(vsShell, keyBindingsKey, "{5efc7975-14bc-11cf-9b2b-00aa00573819}", 13018, out globalScopeName))
                         {
