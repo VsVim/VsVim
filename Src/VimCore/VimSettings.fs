@@ -149,50 +149,50 @@ type internal GlobalSettings() =
 
     static let GlobalSettingInfoList = 
         [|
-            (AtomicInsertName, AtomicInsertName, SettingValue.Toggle false)
-            (BackspaceName, "bs", SettingValue.String "")
-            (CaretOpacityName, CaretOpacityName, SettingValue.Number 65)
-            (ClipboardName, "cb", SettingValue.String "")
-            (CurrentDirectoryPathName, "cd", SettingValue.String ",,")
-            (GlobalDefaultName, "gd", SettingValue.Toggle false)
-            (HighlightSearchName, "hls", SettingValue.Toggle false)
-            (HistoryName, "hi", SettingValue.Number(VimConstants.DefaultHistoryLength))
-            (IncrementalSearchName, "is", SettingValue.Toggle false)
-            (IgnoreCaseName,"ic", SettingValue.Toggle false)
-            (JoinSpacesName, "js", SettingValue.Toggle true)
-            (KeyModelName, "km", SettingValue.String "")
-            (LastStatusName, "ls", SettingValue.Number 0)
-            (MagicName, MagicName, SettingValue.Toggle true)
-            (MaxMapDepth, "mmd", SettingValue.Number 1000)
-            (MouseModelName, "mousem", SettingValue.String "popup")
-            (PathName,"pa", SettingValue.String ".,,")
-            (ParagraphsName, "para", SettingValue.String "IPLPPPQPP TPHPLIPpLpItpplpipbp")
-            (SectionsName, "sect", SettingValue.String "SHNHH HUnhsh")
-            (SelectionName, "sel", SettingValue.String "inclusive")
-            (SelectModeName, "slm", SettingValue.String "")
-            (ScrollOffsetName, "so", SettingValue.Number 0)
-            (ShellName, "sh", "ComSpec" |> SystemUtil.GetEnvironmentVariable |> SettingValue.String)
-            (ShellFlagName, "shcf", SettingValue.String "/c")
-            (SmartCaseName, "scs", SettingValue.Toggle false)
-            (StartOfLineName, "sol", SettingValue.Toggle true)
-            (StatusLineName, "stl", SettingValue.String "")
-            (TabStopName, "ts", SettingValue.Number 8)
-            (TildeOpName, "top", SettingValue.Toggle false)
-            (TimeoutName, "to", SettingValue.Toggle true)
-            (TimeoutExName, TimeoutExName, SettingValue.Toggle false)
-            (TimeoutLengthName, "tm", SettingValue.Number 1000)
-            (TimeoutLengthExName, "ttm", SettingValue.Number -1)
-            (VimRcName, VimRcName, SettingValue.String(StringUtil.Empty))
-            (VimRcPathsName, VimRcPathsName, SettingValue.String(StringUtil.Empty))
-            (VirtualEditName, "ve", SettingValue.String(StringUtil.Empty))
-            (VisualBellName, "vb", SettingValue.Toggle false)
-            (WhichWrapName, "ww", SettingValue.String "b,s")
-            (WrapScanName, "ws", SettingValue.Toggle true)
+            (AtomicInsertName, AtomicInsertName, SettingValue.Toggle false, SettingOptions.None)
+            (BackspaceName, "bs", SettingValue.String "", SettingOptions.None)
+            (CaretOpacityName, CaretOpacityName, SettingValue.Number 65, SettingOptions.None)
+            (ClipboardName, "cb", SettingValue.String "", SettingOptions.None)
+            (CurrentDirectoryPathName, "cd", SettingValue.String ",,", SettingOptions.FileName)
+            (GlobalDefaultName, "gd", SettingValue.Toggle false, SettingOptions.None)
+            (HighlightSearchName, "hls", SettingValue.Toggle false, SettingOptions.None)
+            (HistoryName, "hi", SettingValue.Number(VimConstants.DefaultHistoryLength), SettingOptions.None)
+            (IncrementalSearchName, "is", SettingValue.Toggle false, SettingOptions.None)
+            (IgnoreCaseName,"ic", SettingValue.Toggle false, SettingOptions.None)
+            (JoinSpacesName, "js", SettingValue.Toggle true, SettingOptions.None)
+            (KeyModelName, "km", SettingValue.String "", SettingOptions.None)
+            (LastStatusName, "ls", SettingValue.Number 0, SettingOptions.None)
+            (MagicName, MagicName, SettingValue.Toggle true, SettingOptions.None)
+            (MaxMapDepth, "mmd", SettingValue.Number 1000, SettingOptions.None)
+            (MouseModelName, "mousem", SettingValue.String "popup", SettingOptions.None)
+            (PathName,"pa", SettingValue.String ".,,", SettingOptions.FileName)
+            (ParagraphsName, "para", SettingValue.String "IPLPPPQPP TPHPLIPpLpItpplpipbp", SettingOptions.None)
+            (SectionsName, "sect", SettingValue.String "SHNHH HUnhsh", SettingOptions.None)
+            (SelectionName, "sel", SettingValue.String "inclusive", SettingOptions.None)
+            (SelectModeName, "slm", SettingValue.String "", SettingOptions.None)
+            (ScrollOffsetName, "so", SettingValue.Number 0, SettingOptions.None)
+            (ShellName, "sh", "ComSpec" |> SystemUtil.GetEnvironmentVariable |> SettingValue.String, SettingOptions.FileName)
+            (ShellFlagName, "shcf", SettingValue.String "/c", SettingOptions.None)
+            (SmartCaseName, "scs", SettingValue.Toggle false, SettingOptions.None)
+            (StartOfLineName, "sol", SettingValue.Toggle true, SettingOptions.None)
+            (StatusLineName, "stl", SettingValue.String "", SettingOptions.None)
+            (TabStopName, "ts", SettingValue.Number 8, SettingOptions.None)
+            (TildeOpName, "top", SettingValue.Toggle false, SettingOptions.None)
+            (TimeoutName, "to", SettingValue.Toggle true, SettingOptions.None)
+            (TimeoutExName, TimeoutExName, SettingValue.Toggle false, SettingOptions.None)
+            (TimeoutLengthName, "tm", SettingValue.Number 1000, SettingOptions.None)
+            (TimeoutLengthExName, "ttm", SettingValue.Number -1, SettingOptions.None)
+            (VimRcName, VimRcName, SettingValue.String(StringUtil.Empty), SettingOptions.FileName)
+            (VimRcPathsName, VimRcPathsName, SettingValue.String(StringUtil.Empty), SettingOptions.FileName)
+            (VirtualEditName, "ve", SettingValue.String(StringUtil.Empty), SettingOptions.None)
+            (VisualBellName, "vb", SettingValue.Toggle false, SettingOptions.None)
+            (WhichWrapName, "ww", SettingValue.String "b,s", SettingOptions.None)
+            (WrapScanName, "ws", SettingValue.Toggle true, SettingOptions.None)
         |]
 
     static let GlobalSettingList = 
         GlobalSettingInfoList
-        |> Seq.map (fun (name, abbrev, defaultValue) -> { Name = name; Abbreviation = abbrev; LiveSettingValue = LiveSettingValue.Create defaultValue; IsGlobal = true })
+        |> Seq.map (fun (name, abbrev, defaultValue, options) -> { Name = name; Abbreviation = abbrev; LiveSettingValue = LiveSettingValue.Create defaultValue; IsGlobal = true; SettingOptions = options })
 
     let _map = 
         let settingsMap = SettingsMap(GlobalSettingList)
@@ -226,7 +226,7 @@ type internal GlobalSettings() =
 
     member x.AddCustomSetting name abbrevation customSettingSource = 
         let liveSettingValue = LiveSettingValue.Custom (name, customSettingSource)
-        let setting = { Name = name; Abbreviation = abbrevation; LiveSettingValue = liveSettingValue; IsGlobal = true }
+        let setting = { Name = name; Abbreviation = abbrevation; LiveSettingValue = liveSettingValue; IsGlobal = true; SettingOptions = SettingOptions.None }
         _map.AddSetting setting
 
     member x.IsCommaSubOptionPresent optionName suboptionName =
@@ -473,21 +473,21 @@ type internal LocalSettings
 
     static let LocalSettingInfoList =
         [|
-            (AutoIndentName, "ai", SettingValue.Toggle false)
-            (ExpandTabName, "et", SettingValue.Toggle false)
-            (NumberName, "nu", SettingValue.Toggle false)
-            (NumberFormatsName, "nf", SettingValue.String "octal,hex")
-            (SoftTabStopName, "sts", SettingValue.Number 0)
-            (ShiftWidthName, "sw", SettingValue.Number 8)
-            (TabStopName, "ts", SettingValue.Number 8)
-            (QuoteEscapeName, "qe", SettingValue.String @"\")
-            (EndOfLineName, "eol", SettingValue.Toggle true)
-            (FixEndOfLineName, "fixeol", SettingValue.Toggle false)
+            (AutoIndentName, "ai", SettingValue.Toggle false, SettingOptions.None)
+            (ExpandTabName, "et", SettingValue.Toggle false, SettingOptions.None)
+            (NumberName, "nu", SettingValue.Toggle false, SettingOptions.None)
+            (NumberFormatsName, "nf", SettingValue.String "octal,hex", SettingOptions.None)
+            (SoftTabStopName, "sts", SettingValue.Number 0, SettingOptions.None)
+            (ShiftWidthName, "sw", SettingValue.Number 8, SettingOptions.None)
+            (TabStopName, "ts", SettingValue.Number 8, SettingOptions.None)
+            (QuoteEscapeName, "qe", SettingValue.String @"\", SettingOptions.None)
+            (EndOfLineName, "eol", SettingValue.Toggle true, SettingOptions.None)
+            (FixEndOfLineName, "fixeol", SettingValue.Toggle false, SettingOptions.None)
         |]
 
     static let LocalSettingList = 
         LocalSettingInfoList
-        |> Seq.map (fun (name, abbrev, defaultValue) -> { Name = name; Abbreviation = abbrev; LiveSettingValue = LiveSettingValue.Create defaultValue; IsGlobal = false })
+        |> Seq.map (fun (name, abbrev, defaultValue, options) -> { Name = name; Abbreviation = abbrev; LiveSettingValue = LiveSettingValue.Create defaultValue; IsGlobal = false; SettingOptions = options })
 
     let _map = SettingsMap(LocalSettingList)
 
@@ -578,14 +578,14 @@ type internal WindowSettings
 
     static let WindowSettingInfoList =
         [|
-            (CursorLineName, "cul", SettingValue.Toggle false)
-            (ScrollName, "scr", SettingValue.Number 25)
-            (WrapName, WrapName, SettingValue.Toggle false)
+            (CursorLineName, "cul", SettingValue.Toggle false, SettingOptions.None)
+            (ScrollName, "scr", SettingValue.Number 25, SettingOptions.None)
+            (WrapName, WrapName, SettingValue.Toggle false, SettingOptions.None)
         |]
 
     static let WindowSettingList =
         WindowSettingInfoList
-        |> Seq.map (fun (name, abbrev, defaultValue) -> { Name = name; Abbreviation = abbrev; LiveSettingValue = LiveSettingValue.Create defaultValue; IsGlobal = false })
+        |> Seq.map (fun (name, abbrev, defaultValue, options) -> { Name = name; Abbreviation = abbrev; LiveSettingValue = LiveSettingValue.Create defaultValue; IsGlobal = false; SettingOptions = options })
 
     let _map = SettingsMap(WindowSettingList)
 

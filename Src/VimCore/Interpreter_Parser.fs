@@ -1548,6 +1548,49 @@ type Parser
 
         result
 
+    /// Parse out a string option value from the token stream.  The string ends
+    /// on whitespace or vertical bar. If the option is a filename, backslash
+    // escapes only non-filename characters.  Otherwise, it escapes all characters.
+    ///
+    /// help option-backslash
+    member x.ParseOptionBackslash isFileName = 
+        use reset = _tokenizer.SetTokenizerFlagsScoped TokenizerFlags.AllowDoubleQuote
+
+        let builder = System.Text.StringBuilder()
+        let mutable isDone = false
+        while not isDone && not _tokenizer.IsAtEndOfLine do
+            match _tokenizer.CurrentChar with
+            | '\\' ->
+
+                // Escape the next character.
+                _tokenizer.MoveNextChar()
+                if _tokenizer.IsAtEndOfLine then
+                    builder.AppendChar '\\'
+                    isDone <- true
+                else
+                    let char = _tokenizer.CurrentChar
+                    if isFileName && CharUtil.IsFileNameChar char then
+                        builder.AppendChar '\\'
+                        builder.AppendChar char
+                    else
+                        builder.AppendChar char
+                    _tokenizer.MoveNextChar()
+
+            | char ->
+                if CharUtil.IsBlank char || "|".Contains(char.ToString()) then
+                    _tokenizer.MoveNextChar()
+                    isDone <- true
+                else
+                    builder.AppendChar char
+                    _tokenizer.MoveNextChar()
+
+        // Expand environment variables for filenames.
+        let value = builder.ToString()
+        if isFileName then
+            SystemUtil.ResolvePath value
+        else
+            value
+
     /// Parse out the 'tabnew' / 'tabedit' commands.  They have the same set of arguments
     member x.ParseTabNew() = 
         let filePath = x.ParseRestOfLineAsFilePath()
@@ -1900,6 +1943,13 @@ type Parser
         let newTabStop = x.ParseNumber()
         LineCommand.Retab (lineRange, hasBang, newTabStop)
 
+    /// Whether the specified setting is a file name setting, e.g. shell
+    /// TODO: A local setting might someday be a file name setting
+    member x.IsFileNameSetting (name: string) =
+        match _globalSettings.GetSetting name with
+        | None -> false
+        | Some setting -> setting.HasFileNameOption
+
     /// Parse out the :set command and all of it's variants
     member x.ParseSet () = 
 
@@ -1918,16 +1968,9 @@ type Parser
                     _tokenizer.MoveNextToken()
                     parseNext (SetArgument.AssignSetting (name, ""))
                 else
-                    let value = x.ParseWhile (fun token -> 
-                        match token.TokenKind with
-                        | TokenKind.Word _ -> true
-                        | TokenKind.Character c ->
-                            CharUtil.IsLetterOrDigit c || @"-:\.,<>~[]".Contains(c.ToString())
-                        | TokenKind.Number number -> true
-                        | _ -> false)
-                    match value with 
-                    | None -> LineCommand.ParseError Resources.Parser_Error
-                    | Some value -> parseNext (argumentFunc (name, value))
+                    let isFileName = x.IsFileNameSetting name
+                    let value = x.ParseOptionBackslash isFileName
+                    parseNext (argumentFunc (name, value))
 
             // Parse out a simple assignment.  Move past the assignment char and get the value
             let parseAssign name = 
