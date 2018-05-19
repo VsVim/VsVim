@@ -88,6 +88,24 @@ namespace Vim.UnitTest
             Assert.Equal(toMatch, match.Value);
         }
 
+        private void VerifyMatchesAt(VimRegexOptions options, string pattern, string input, params Tuple<int, int>[] spans)
+        {
+            var opt = VimRegexFactory.Create(pattern, options);
+            Assert.True(opt.IsSome());
+            var regex = opt.Value;
+            var matches = regex.Regex.Matches(input);
+            var count = matches.Cast<object>().Count();
+            Assert.Equal(count, spans.Length);
+            for (int i = 0; i < count; i++)
+            {
+                var position = spans[i].Item1;
+                var length = spans[i].Item2;
+                var match = matches[i];
+                Assert.Equal(position, match.Index);
+                Assert.Equal(length, match.Length);
+            }
+        }
+
         public sealed class BracketTest : VimRegexTest
         {
             /// <summary>
@@ -427,7 +445,14 @@ namespace Vim.UnitTest
                 VerifyRegex(@"\n", VimRegexFactory.NewLineRegex);
                 VerifyReplace(@"\n", "hello\nworld", " ", "hello world");
                 VerifyReplace(@"\n", "hello\r\nworld", " ", "hello world");
-                VerifyReplace(@"\n", "hello\rworld", " ", "hello world");
+            }
+
+            [Fact]
+            public void Multiline()
+            {
+                VerifyRegex(@"abc\ndef", "abc" + VimRegexFactory.NewLineRegex + "def");
+                VerifyReplace(@"abc\ndef", "abc\ndef", "xyzzy", "xyzzy");
+                VerifyReplace(@"abc\ndef", "abc\r\ndef", "xyzzy", "xyzzy");
             }
 
             [Fact]
@@ -1267,7 +1292,7 @@ namespace Vim.UnitTest
             [Fact]
             public void NewLine_Match()
             {
-                VerifyMatches(@"\n", "hello\r\n", "hello\n", "hello\r");
+                VerifyMatches(@"\n", "hello\r\n", "hello\n");
             }
 
             [Fact]
@@ -1298,8 +1323,28 @@ namespace Vim.UnitTest
             [Fact]
             public void NewLineOrBrace()
             {
-                VerifyRegex(@"^$\|{", @"^\r?$|\{");
+                VerifyRegex(@"^$\|{", @"^" + VimRegexFactory.DollarRegex + @"|\{");
                 VerifyMatches(@"^$\|{", "", "blah {");
+            }
+
+            /// <summary>
+            /// Hat is a zero-width beginning-of-line match
+            /// </summary>
+            [Fact]
+            public void HatFoward()
+            {
+                VerifyMatchesAt(VimRegexOptions.Default, "^", "abc\r\ndef\r\n",
+                    Tuple.Create(0, 0), Tuple.Create(5, 0), Tuple.Create(10, 0));
+            }
+
+            /// <summary>
+            /// Dollar is a zero-width end-of-line match
+            /// </summary>
+            [Fact]
+            public void DollarFoward()
+            {
+                VerifyMatchesAt(VimRegexOptions.Default, "$", "abc\r\ndef\r\n",
+                    Tuple.Create(3, 0), Tuple.Create(8, 0), Tuple.Create(10, 0));
             }
         }
 

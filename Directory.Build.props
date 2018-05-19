@@ -3,7 +3,7 @@
   <Import Project="$(MSBuildThisFileDirectory)\Binaries\User.props" Condition="Exists('$(MSBuildThisFileDirectory)\Binaries\User.props')" />
 
   <PropertyGroup>
-    <VsVimEmptyAppConfig>$(MSBuildThisFileDirectory)References\Vs2010\App.config</VsVimEmptyAppConfig>
+    <VsVimEmptyAppConfig>$(MSBuildThisFileDirectory)References\Vs2012\App.config</VsVimEmptyAppConfig>
     <RepoPath>$(MSBuildThisFileDirectory)</RepoPath>
     <DebugType>full</DebugType>
     <BinariesPath>$(RepoPath)Binaries\</BinariesPath>

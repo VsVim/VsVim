@@ -390,7 +390,8 @@ type VimRegexBuilder
 
 module VimRegexFactory =
 
-    let NewLineRegex = "(?:\r?\n|\r)"
+    let DollarRegex = @"(?<!\r)(?=\r?$)"
+    let NewLineRegex = @"(?<!\r)\r?\n"
 
     /// Generates strings based on a char filter func.  Easier than hand writing out
     /// the values
@@ -560,7 +561,7 @@ module VimRegexFactory =
                     | MagicKind.VeryMagic, Some '|', _ -> true
                     | _, Some '\\', Some '|' -> true
                     | _ -> false
-            if isEndOfPattern then data.AppendString @"\r?$" 
+            if isEndOfPattern then data.AppendString DollarRegex
             else data.AppendEscapedChar '$'
         | '<' -> data.AppendString @"\b"
         | '>' -> data.AppendString @"\b"

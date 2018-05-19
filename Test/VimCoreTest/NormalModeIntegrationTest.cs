@@ -3407,6 +3407,91 @@ namespace Vim.UnitTest
                     _vimBuffer.ProcessNotation(@"/\w\+Data", enter: true);
                     Assert.Equal(21, _textView.GetCaretPoint().Position);
                 }
+
+                /// <summary>
+                /// Searching successively for '^' should advance through the buffer
+                /// but not match the phantom line
+                /// </summary>
+                [WpfFact]
+                public void SearchForwardJustHat()
+                {
+                    // Reported in issue 2108.
+                    _assertOnWarningMessage = false;
+                    Create("cat", "", "dog", "");
+                    _vimBuffer.ProcessNotation("1G/^", enter: true);
+                    Assert.Equal(_textBuffer.GetLine(1).Start, _textView.GetCaretPoint());
+                    _vimBuffer.ProcessNotation("n");
+                    Assert.Equal(_textBuffer.GetLine(2).Start, _textView.GetCaretPoint());
+                    _vimBuffer.ProcessNotation("n");
+                    Assert.Equal(_textBuffer.GetLine(0).Start, _textView.GetCaretPoint());
+                }
+
+                /// <summary>
+                /// Searching backwards successively for '^' should advance through the buffer
+                /// but not match the phantom line
+                /// </summary>
+                [WpfFact]
+                public void SearchBackwardJustHat()
+                {
+                    // Reported in issue 2108.
+                    _assertOnWarningMessage = false;
+                    Create("cat", "", "dog", "");
+                    _vimBuffer.ProcessNotation("3G?^", enter: true);
+                    Assert.Equal(_textBuffer.GetLine(1).Start, _textView.GetCaretPoint());
+                    _vimBuffer.ProcessNotation("n");
+                    Assert.Equal(_textBuffer.GetLine(0).Start, _textView.GetCaretPoint());
+                    _vimBuffer.ProcessNotation("n");
+                    Assert.Equal(_textBuffer.GetLine(2).Start, _textView.GetCaretPoint());
+                }
+
+                /// <summary>
+                /// Searching successively for '$' should advance through the buffer
+                /// but not match the phantom line
+                /// </summary>
+                [WpfFact]
+                public void SearchForwardJustDollar()
+                {
+                    // Reported in issue 2108.
+                    _assertOnWarningMessage = false;
+                    Create("cat", "", "dog", "");
+                    _vimBuffer.ProcessNotation("1G/$", enter: true);
+                    Assert.Equal(_textBuffer.GetLine(0).Start.Add(2), _textView.GetCaretPoint());
+                    _vimBuffer.ProcessNotation("n");
+                    Assert.Equal(_textBuffer.GetLine(1).Start, _textView.GetCaretPoint());
+                    _vimBuffer.ProcessNotation("n");
+                    Assert.Equal(_textBuffer.GetLine(2).Start.Add(2), _textView.GetCaretPoint());
+                    _vimBuffer.ProcessNotation("n");
+                    Assert.Equal(_textBuffer.GetLine(0).Start.Add(2), _textView.GetCaretPoint());
+                }
+
+                /// <summary>
+                /// Searching backwards successively for '$' should advance through the buffer
+                /// but not match the phantom line
+                /// </summary>
+                [WpfFact]
+                public void SearchBackwardJustDollar()
+                {
+                    // Reported in issue 2108.
+                    _assertOnWarningMessage = false;
+                    Create("cat", "", "dog", "");
+                    _vimBuffer.ProcessNotation("3G?$", enter: true);
+                    Assert.Equal(_textBuffer.GetLine(1).Start, _textView.GetCaretPoint());
+                    _vimBuffer.ProcessNotation("n");
+                    Assert.Equal(_textBuffer.GetLine(0).Start.Add(2), _textView.GetCaretPoint());
+                    _vimBuffer.ProcessNotation("n");
+                    Assert.Equal(_textBuffer.GetLine(2).Start.Add(2), _textView.GetCaretPoint());
+                }
+
+                /// <summary>
+                /// Search for a multiline pattern
+                /// </summary>
+                [WpfFact]
+                public void MultilineSearch()
+                {
+                    Create("cat", "bat", "dog", "");
+                    _vimBuffer.ProcessNotation(@"1G/bat\ndog", enter: true);
+                    Assert.Equal(_textBuffer.GetLine(1).Start, _textView.GetCaretPoint());
+                }
             }
 
             public sealed class OffsetTest : IncrementalSearchTest
