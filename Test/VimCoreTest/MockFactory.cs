@@ -26,6 +26,7 @@ namespace Vim.UnitTest
         internal Mock<ITextViewLineCollection> CreateTextViewLineCollection(SnapshotLineRange lineRange)
         {
             var mock = _factory.Create<ITextViewLineCollection>();
+            mock.SetupGet(x => x.IsValid).Returns(true);
             var firstLineRange = new SnapshotLineRange(lineRange.Snapshot, lineRange.StartLineNumber, 1);
             var firstLine = CreateTextViewLine(firstLineRange);
             mock.SetupGet(x => x.FirstVisibleLine).Returns(firstLine.Object);

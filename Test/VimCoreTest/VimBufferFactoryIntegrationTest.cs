@@ -85,7 +85,9 @@ namespace Vim.UnitTest
                 var vimBuffer = _vimBufferFactory.CreateVimBuffer(textView.Object, vimTextBuffer);
                 Assert.Equal(ModeKind.Uninitialized, vimBuffer.ModeKind);
 
-                textView.SetupGet(x => x.TextViewLines).Returns(new Mock<ITextViewLineCollection>().Object);
+                var lines = _factory.Create<ITextViewLineCollection>();
+                lines.SetupGet(x => x.IsValid).Returns(true);
+                textView.SetupGet(x => x.TextViewLines).Returns(lines.Object);
                 textView.Raise(x => x.LayoutChanged += null, (TextViewLayoutChangedEventArgs)null);
                 TestableSynchronizationContext.RunAll();
                 Dispatcher.CurrentDispatcher.DoEvents();
@@ -121,7 +123,9 @@ namespace Vim.UnitTest
                 Assert.Equal(ModeKind.Uninitialized, vimBuffer.ModeKind);
 
                 textView.SetupGet(x => x.Caret.Position).Returns(new CaretPosition());
-                textView.SetupGet(x => x.TextViewLines).Returns(_factory.Create<ITextViewLineCollection>().Object);
+                var lines = _factory.Create<ITextViewLineCollection>();
+                lines.SetupGet(x => x.IsValid).Returns(true);
+                textView.SetupGet(x => x.TextViewLines).Returns(lines.Object);
                 textView.SetupGet(x => x.InLayout).Returns(false);
                 textView.Raise(x => x.LayoutChanged += null, (TextViewLayoutChangedEventArgs)null);
                 TestableSynchronizationContext.RunAll();

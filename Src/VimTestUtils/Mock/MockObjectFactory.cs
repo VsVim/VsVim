@@ -360,6 +360,7 @@ namespace Vim.UnitTest.Mock
             lastLine.SetupGet(x => x.End).Returns(textBuffer.GetLine(endLineValue).End);
 
             var lines = factory.Create<ITextViewLineCollection>();
+            lines.SetupGet(x => x.IsValid).Returns(true);
             lines.SetupGet(x => x.FirstVisibleLine).Returns(firstLine.Object);
             lines.SetupGet(x => x.LastVisibleLine).Returns(lastLine.Object);
 
@@ -522,6 +523,7 @@ namespace Vim.UnitTest.Mock
         {
             factory = factory ?? new MockRepository(MockBehavior.Strict);
             var mock = factory.Create<ITextViewLineCollection>();
+            mock.SetupGet(x => x.IsValid).Returns(true);
             for (var i = 0; i < range.Count; i++)
             {
                 var number = range.StartLineNumber + i;
