@@ -2540,7 +2540,7 @@ namespace Vim.UnitTest
             public void RunMacro_BadRegisterName()
             {
                 Create("");
-                _commandUtil.RunMacro('!', 1);
+                _commandUtil.RunAtCommand('!', 1);
                 Assert.Equal(1, _vimHost.BeepCount);
             }
 

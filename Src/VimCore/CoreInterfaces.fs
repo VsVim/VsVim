@@ -2669,8 +2669,8 @@ type NormalCommand =
     /// Replace the char under the cursor with the given char
     | ReplaceChar of KeyInput
 
-    /// Run the macro contained in the register specified by the char value
-    | RunMacro of char
+    /// Run an 'at' command for the specified character
+    | RunAtCommand of char
 
     /// Set the specified mark to the current value of the caret
     | SetMarkToCaret of char
@@ -2823,7 +2823,7 @@ type NormalCommand =
         | NormalCommand.RepeatLastSubstitute _ -> None 
         | NormalCommand.ReplaceAtCaret -> None
         | NormalCommand.ReplaceChar _ -> None
-        | NormalCommand.RunMacro _ -> None
+        | NormalCommand.RunAtCommand _ -> None
         | NormalCommand.SetMarkToCaret _ -> None
         | NormalCommand.ScrollLines _ -> None
         | NormalCommand.ScrollPages _ -> None
