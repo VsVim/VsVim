@@ -1818,13 +1818,17 @@ module TextViewUtil =
     /// Be aware when using GetTextViewLineContainingYCoordinate, may need to add the
     /// _textView.ViewportTop to the y coordinate
     let GetTextViewLines (textView: ITextView) =
-        try
-            let textViewLines = textView.TextViewLines
-            if textViewLines <> null then Some textViewLines
-            else None
-        with 
+        if textView.IsClosed || textView.InLayout then
+
             // TextViewLines can throw if the view is being laid out.  Highly unlikely we'd hit
             // that inside of Vim but need to be careful
+            None
+        else 
+            try
+                let textViewLines = textView.TextViewLines
+                if textViewLines <> null then Some textViewLines
+                else None
+            with 
             | _ -> None
 
     /// Get the count of Visible lines in the ITextView
@@ -1835,13 +1839,11 @@ module TextViewUtil =
 
     /// Return the overarching SnapshotLineRange for the visible lines in the ITextView
     let GetVisibleSnapshotLineRange (textView: ITextView) =
-        if textView.InLayout then
-            None
-        else 
-            let snapshot = textView.TextSnapshot
-            let lines = textView.TextViewLines
-            let startLine = lines.FirstVisibleLine.Start.GetContainingLine().LineNumber
-            let lastLine = lines.LastVisibleLine.End.GetContainingLine().LineNumber
+        match GetTextViewLines textView with
+        | None -> None
+        | Some textViewLines ->
+            let startLine = textViewLines.FirstVisibleLine.Start.GetContainingLine().LineNumber
+            let lastLine = textViewLines.LastVisibleLine.End.GetContainingLine().LineNumber
             SnapshotLineRange.CreateForLineNumberRange textView.TextSnapshot startLine lastLine |> NullableUtil.ToOption
 
     /// Returns a sequence of ITextSnapshotLine values representing the visible lines in the buffer

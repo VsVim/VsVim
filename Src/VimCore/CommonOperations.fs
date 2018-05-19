@@ -270,14 +270,16 @@ type internal CommonOperations
     member x.AdjustTextViewForScrollOffsetAtPointCore contextPoint offset = 
         Contract.Requires(offset >= 0)
 
-        try
+        match TextViewUtil.GetTextViewLines _textView with
+        | None -> ()
+        | Some textViewLines ->
+
             // First calculate the actual offset.  The actual offset can't be more than half of the lines which
             // are visible on the screen.  It's tempting to use the ITextViewLinesCollection.Count to see how
             // many possible lines are displayed.  This value will be wrong though when the view is scrolled 
             // to the bottom because it will be displaying the last few lines and several blanks which don't
             // count.  Instead we average out the height of the lines and divide that into the height of 
             // the view port 
-            let textViewLines = _textView.TextViewLines
             let calcOffset () = 
                 if textViewLines.Count = 0 then
                     0
@@ -324,17 +326,14 @@ type internal CommonOperations
                 | Some p1, Some p2 -> doScroll p1 p2
                 | _ -> ()
 
-        with
-            // As always when using ITextViewLines an exception can be thrown due to layout.  Simply catch
-            // this exception and move on
-            | _ -> ()
-
     /// This is the same function as AdjustTextViewForScrollOffsetAtPoint except that it moves the caret 
     /// not the view port.  Make the caret consistent with the setting not the display 
     ///
     /// Once again we are dealing with visual lines, not buffer lines
     member x.AdjustCaretForScrollOffset () =
-        try
+        match TextViewUtil.GetTextViewLines _textView with
+        | None -> ()
+        | Some textViewLines ->
 
             // This function will do the actual caret positioning based on the top visual and bottom
             // visual line.  The return will be the position within the visual buffer, not the edit
@@ -350,7 +349,6 @@ type internal CommonOperations
                 else
                     None
 
-            let textViewLines = _textView.TextViewLines
             let visualSnapshot = _textView.VisualSnapshot
             let editSnapshot = _textView.TextSnapshot
             let bufferGraph = _textView.BufferGraph
@@ -370,11 +368,6 @@ type internal CommonOperations
                     | Some editPoint -> x.MoveCaretToLine (editPoint.GetContainingLine())
                     | None -> ()
                 | None -> ()
-            | _ -> ()
-
-        with 
-            // As always when using ITextViewLines an exception can be thrown due to layout.  Simply catch
-            // this exception and move on
             | _ -> ()
 
     /// This method is used to essentially find a line in the edit buffer which represents 

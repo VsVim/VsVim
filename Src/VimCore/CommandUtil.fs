@@ -1779,23 +1779,20 @@ type internal CommandUtil
     /// Happens when the middle mouse button is clicked.  Need to paste the contents of the default
     /// register at the current position
     member x.PutAfterCaretMouse() =
-        try
+        match TextViewUtil.GetTextViewLines _textView with
+        | None -> ()
+        | Some textViewLines ->
             match _mouseDevice.GetPosition _textView with
             | None -> ()
             | Some position ->
 
                 // First move the caret to the current mouse position
-                let textViewLine = _textView.TextViewLines.GetTextViewLineContainingYCoordinate(position.Y + _textView.ViewportTop)
+                let textViewLine = textViewLines.GetTextViewLineContainingYCoordinate(position.Y + _textView.ViewportTop)
                 _textView.Caret.MoveTo(textViewLine, position.X + _textView.ViewportLeft) |> ignore
 
                 // Now run the put after command
                 let register = x.GetRegister (Some RegisterName.Unnamed)
                 x.PutAfterCaretCore register.RegisterValue 1 false
-        with
-        // Dealing with ITextViewLines can lead to an exception (particularly during layout).  Need
-        // to be safe here and handle the exception.  If we can't access the ITextViewLines there
-        // isn't much that can be done for scrolling
-        | _ -> ()
 
         CommandResult.Completed ModeSwitch.NoSwitch
 
@@ -2583,16 +2580,17 @@ type internal CommandUtil
             | MaintainCaretColumn.Spaces spaces -> max spaces spacesToCaret
             | MaintainCaretColumn.EndOfLine -> spacesToCaret
 
-        try
+        match TextViewUtil.GetTextViewLines _textView with
+        | None -> ()
+        | Some textViewLines ->
+
             // Update the caret to the specified offset from the first visible line
             let updateCaretToOffset lineOffset =
-                let textViewLines = _textView.TextViewLines
                 let firstIndex = textViewLines.GetIndexOfTextLine(textViewLines.FirstVisibleLine)
                 let textViewLine = textViewLines.[firstIndex + lineOffset]
                 let snapshotLine = SnapshotPointUtil.GetContainingLine textViewLine.Start
                 _commonOperations.MoveCaretToPoint snapshotLine.Start ViewFlags.Standard
 
-            let textViewLines = _textView.TextViewLines
             let firstIndex = textViewLines.GetIndexOfTextLine(textViewLines.FirstVisibleLine)
             let caretIndex = textViewLines.GetIndexOfTextLine(_textView.Caret.ContainingTextViewLine)
 
@@ -2643,12 +2641,6 @@ type internal CommandUtil
                 let point = SnapshotLineUtil.GetSpaceOrEnd x.CaretLine maintainSpacesToCaret _localSettings.TabStop
                 TextViewUtil.MoveCaretToPoint _textView point
                 _commonOperations.MaintainCaretColumn <- MaintainCaretColumn.Spaces maintainSpacesToCaret
-
-        with
-        // Dealing with ITextViewLines can lead to an exception (particularly during layout).  Need
-        // to be safe here and handle the exception.  If we can't access the ITextViewLines there
-        // isn't much that can be done for scrolling
-        | _ -> ()
 
         CommandResult.Completed ModeSwitch.NoSwitch
 
@@ -2774,7 +2766,9 @@ type internal CommandUtil
     /// Scroll the window in the specified direction by the specified number of lines.  The
     /// caret only moves if it leaves the view port
     member x.ScrollWindow direction count =
-        try
+        match TextViewUtil.GetTextViewLines _textView with
+        | None -> ()
+        | Some textViewLines ->
 
             // If the scroll of the window has taken the caret off of the visible portion of the ITextView
             // then we need to move it back at the same column
@@ -2799,7 +2793,6 @@ type internal CommandUtil
 
             _textView.ViewScroller.ScrollViewportVerticallyByLines(direction, count)
 
-            let textViewLines = _textView.TextViewLines
             match direction with
             | ScrollDirection.Up ->
                 if x.CaretPoint.Position >= textViewLines.LastVisibleLine.End.Position then
@@ -2810,12 +2803,6 @@ type internal CommandUtil
             | _ -> ()
 
             _commonOperations.AdjustCaretForScrollOffset()
-
-        with
-        // Dealing with ITextViewLines can lead to an exception (particularly during layout).  Need
-        // to be safe here and handle the exception.  If we can't access the ITextViewLines there
-        // isn't much that can be done for scrolling
-        | _ -> ()
 
         CommandResult.Completed ModeSwitch.NoSwitch
 
