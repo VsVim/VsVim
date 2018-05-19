@@ -2616,7 +2616,9 @@ type internal CommandUtil
                     _textView.ViewScroller.ScrollViewportVerticallyByLines(scrollDirection, count)
                     updateCaretToOffset lineOffset
             | ScrollDirection.Down ->
-                if x.CurrentSnapshot.Length = textViewLines.LastVisibleLine.EndIncludingLineBreak.Position then
+                let lastLine = SnapshotUtil.GetLastNormalizedLine _textView.TextSnapshot
+                let visualEndPoint = lastLine.End
+                if visualEndPoint.Position <= textViewLines.LastVisibleLine.End.Position then
                     // Currently scrolled to the end of the buffer.  Move the caret by the count or
                     // beep if truly at the end
                     let lastIndex = textViewLines.GetIndexOfTextLine(textViewLines.LastVisibleLine)
@@ -2625,7 +2627,8 @@ type internal CommandUtil
                     else
                         let index = min (textViewLines.Count - 1) (caretIndex + count)
                         let line = textViewLines.[index]
-                        TextViewUtil.MoveCaretToPoint _textView line.Start
+                        let caretPoint, _ = SnapshotPointUtil.OrderAscending visualEndPoint line.End
+                        TextViewUtil.MoveCaretToPoint _textView caretPoint
                 else
                     _textView.ViewScroller.ScrollViewportVerticallyByLines(scrollDirection, count)
                     updateCaretToOffset lineOffset
