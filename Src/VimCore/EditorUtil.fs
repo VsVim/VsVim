@@ -1338,7 +1338,7 @@ module SnapshotPointUtil =
 
     /// Get the column number 
     let GetColumn point = 
-        let _,column = GetLineColumn point 
+        let _, column = GetLineColumn point 
         column
 
     /// Get the line number
@@ -1717,7 +1717,9 @@ type SnapshotData = {
 
     /// The current ITextSnapshot on which this data is based
     CurrentSnapshot: ITextSnapshot
-}
+} with
+
+    member x.CaretColumn = SnapshotColumn(x.CaretPoint)
 
 [<System.Flags>]
 type MoveCaretFlags =

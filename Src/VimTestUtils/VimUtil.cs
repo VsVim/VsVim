@@ -260,7 +260,7 @@ namespace Vim.UnitTest
         {
             motionKind = motionKind ?? MotionKind.CharacterWiseInclusive;
             desiredColumn = desiredColumn ?? CaretColumn.None;
-            return new MotionResult(span, span, isForward, motionKind, flags, desiredColumn);
+            return new MotionResult(span, span, FSharpOption<SnapshotSpan>.None, isForward, motionKind, flags, desiredColumn);
         }
 
         internal static CommandData CreateCommandData(

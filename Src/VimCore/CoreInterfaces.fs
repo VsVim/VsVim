@@ -763,6 +763,12 @@ type MotionResult = {
     /// hold the original SnapshotSpan
     SpanBeforeExclusivePromotion: SnapshotSpan option
 
+    /// A linewise motion may also have a logical characterwise counter part. Consider for 
+    /// example motions like j and k. The motion can be described by the caret point and 
+    /// column above / below. This is useful when converting between linewise and characterwise
+    /// motions using v or V (:help o_v).
+    SpanBeforeLineWise: SnapshotSpan option
+
     /// Is the motion forward
     IsForward: bool
 
@@ -830,29 +836,47 @@ type MotionResult = {
     /// This will map every Span inside the MotionResult using the provided mapFunc value and 
     /// return the resulting MotionResult.
     member x.MapSpans mapFunc = 
-        match mapFunc x.Span with
-        | None -> None
-        | Some span ->
-            match x.SpanBeforeExclusivePromotion with
-            | None -> Some { x with Span = span } 
-            | Some b -> 
-                match mapFunc b with 
-                | Some b -> Some { x with Span = span; SpanBeforeExclusivePromotion = Some b }
-                | None -> None
+        let map s =
+            match s with
+            | None -> (true, None)
+            | Some s -> 
+                match mapFunc s with
+                | Some s -> (true, Some s)
+                | None -> (false, None)
+
+        match mapFunc x.Span, map x.SpanBeforeExclusivePromotion, map x.SpanBeforeLineWise with
+        | Some s, (true, e), (true, l) -> Some { x with Span = s; SpanBeforeExclusivePromotion = e; SpanBeforeLineWise = l }
+        | _ -> None
 
     static member CreateExEx span isForward motionKind motionResultFlags desiredColumn = 
         {
             Span = span
             SpanBeforeExclusivePromotion = None
+            SpanBeforeLineWise = None
             IsForward = isForward
             MotionKind = motionKind
             MotionResultFlags = motionResultFlags 
-            CaretColumn = desiredColumn }
+            CaretColumn = desiredColumn
+        }
 
     static member CreateEx span isForward motionKind motionResultFlags = 
         MotionResult.CreateExEx span isForward motionKind motionResultFlags CaretColumn.None
 
     static member Create span isForward motionKind = MotionResult.CreateEx span isForward motionKind MotionResultFlags.None
+
+    static member CreateLineWise(span, ?spanBeforeLineWise, ?isForward, ?motionResultFlags, ?caretColumn) =
+        let isForward = defaultArg isForward true
+        let motionResultFlags = defaultArg motionResultFlags MotionResultFlags.None 
+        let caretColumn = defaultArg caretColumn CaretColumn.None
+        {
+            Span = span
+            SpanBeforeExclusivePromotion = None
+            SpanBeforeLineWise = spanBeforeLineWise
+            IsForward = isForward
+            MotionKind = MotionKind.LineWise
+            MotionResultFlags = motionResultFlags
+            CaretColumn = caretColumn
+        }
 
 /// Context on how the motion is being used.  Several motions (]] for example)
 /// change behavior based on how they are being used

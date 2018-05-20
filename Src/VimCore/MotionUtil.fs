@@ -2250,14 +2250,19 @@ type internal MotionUtil
             if x.CaretLine.LineNumber = SnapshotUtil.GetLastLineNumber x.CurrentSnapshot then
                 None
             else
-                let snapshot = x.CurrentSnapshot
-                let lineCount = snapshot.LineCount 
                 let lineNumber = x.CaretLine.LineNumber + count
-                let lastLine = SnapshotUtil.GetLineOrLast snapshot lineNumber
-                let flags = MotionResultFlags.MaintainCaretColumn
+                let lastLine = SnapshotUtil.GetLineOrLast x.CurrentSnapshot lineNumber
+                let characterSpan = 
+                    let e = SnapshotLineUtil.GetColumnOrEnd x.CaretColumn.Column lastLine
+                    let e = SnapshotPointUtil.AddOneOrCurrent e
+                    SnapshotSpan(x.CaretPoint, e)
                 let span = SnapshotSpan(x.CaretLine.Start, lastLine.EndIncludingLineBreak)
-                let column = x.CaretPoint |> SnapshotPointUtil.GetColumn |> CaretColumn.InLastLine
-                MotionResult.CreateExEx span true MotionKind.LineWise flags column |> Some)
+                MotionResult.CreateLineWise(
+                    span, 
+                    spanBeforeLineWise = characterSpan,
+                    isForward = true,
+                    motionResultFlags = MotionResultFlags.MaintainCaretColumn,
+                    caretColumn = CaretColumn.InLastLine x.CaretColumn.Column) |> Some)
 
     /// Implements the 'gg' motion.  
     ///
@@ -2670,26 +2675,45 @@ type internal MotionUtil
 
     /// Force the existing motion to be characterwise under the rules described in :help o_v
     member x.ForceCharacterWise motion motionArgument = 
-        match x.GetMotion motion motionArgument with
-        | None -> None
-        | Some motionResult -> 
+        let convertMotionResult motionResult = 
+            let isInLineBreakOrEnd p = SnapshotPointUtil.IsInsideLineBreak p || SnapshotPointUtil.IsEndPoint p
             match motionResult.MotionKind with
             | MotionKind.CharacterWiseExclusive -> 
                 // Extend the selection one character unless it goes into the line break. 
                 let p = motionResult.End
-                if SnapshotPointUtil.IsInsideLineBreak p || SnapshotPointUtil.IsEndPoint p then None
+                if isInLineBreakOrEnd p then None
                 else 
                     let p = SnapshotPointUtil.AddOne p
                     let span = SnapshotSpanUtil.Create motionResult.Span.Start p
-                    Some { motionResult with Span = span; MotionKind = MotionKind.CharacterWiseInclusive }
+                    Some span
             | MotionKind.CharacterWiseInclusive ->
                 // Shrink the selection a single character.
                 let span = motionResult.Span
                 if span.IsEmpty then None
                 else
                     let span = SnapshotSpan(span.Start, span.Length - 1)
-                    Some { motionResult with Span = span; MotionKind = MotionKind.CharacterWiseExclusive } 
-            | _ -> None  
+                    Some span
+            | MotionKind.LineWise -> 
+                // Need to make this characterwise exclusive
+                let span = OptionUtil.getOrDefault motionResult.Span motionResult.SpanBeforeLineWise
+                let lineRange = SnapshotLineRangeUtil.CreateForSpan span
+                let span = 
+                    match span.Length, SnapshotSpanUtil.GetLastIncludedPoint span with
+                    | 0, _ -> SnapshotSpan(span.Start, 0)
+                    | 1, _ -> SnapshotSpan(span.Start, 0)
+                    | _, None -> SnapshotSpan(span.Start, 0)
+                    | _, Some p ->
+                        if SnapshotLineUtil.IsPhantomLine lineRange.LastLine then SnapshotSpan(span.Start, p)
+                        elif SnapshotPointUtil.IsInsideLineBreak p then SnapshotSpan(span.Start, lineRange.LastLine.End)
+                        else SnapshotSpan(span.Start, p)
+                Some span
+
+        match x.GetMotion motion motionArgument with
+        | None -> None
+        | Some motionResult -> 
+            match convertMotionResult motionResult with
+            | None -> None
+            | Some span -> Some (MotionResult.Create span motionResult.IsForward MotionKind.CharacterWiseExclusive)
 
     /// Adjust the MotionResult value based on the rules detailed in ':help exclusive'.  The
     /// rules in summary are

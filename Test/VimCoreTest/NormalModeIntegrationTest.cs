@@ -1770,8 +1770,8 @@ namespace Vim.UnitTest
             public void ToggleLineWiseSecondColumn()
             {
                 Create("the", "dog");
-                _vimBuffer.ProcessNotation("yvj");
-                Assert.Equal("the" + Environment.NewLine + "d", UnnamedRegister.StringValue);
+                _vimBuffer.ProcessNotation("lyvj");
+                Assert.Equal("he" + Environment.NewLine + "d", UnnamedRegister.StringValue);
             }
 
             [WpfFact]

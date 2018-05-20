@@ -5,7 +5,4 @@ Working on :help o_v
 When v exclusive to inclusive hits an end of line it returns an empty Motion, not a failed on. This can be observed 
 when you combine with yank. It clears the unnamed register. 
 
-The char -> line wise motion is tricky. It doesn't use the actual linewise span. Instead it's the logical motion 
-span that got extended to line wise. Consider `j` which moves down. The logical span is current caret to the 
-column just below. Need to implement this for all line wise in order to get this done. Probably need 
-MotionResult.CreateLineWise API
+Need to convert all of the linewise motions to provide a characterwise span as well. 
