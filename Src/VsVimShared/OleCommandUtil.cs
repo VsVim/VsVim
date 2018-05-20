@@ -75,7 +75,6 @@ namespace Vim.VisualStudio
         /// </summary>
         internal static bool TryConvert(VSConstants.VSStd2KCmdID cmdId, IntPtr variantIn, out KeyInput keyInput, out EditCommandKind kind, out bool isRawText)
         {
-            var category = System.Globalization.CharUnicodeInfo.GetUnicodeCategory(' ');
             isRawText = false;
             switch (cmdId)
             {
