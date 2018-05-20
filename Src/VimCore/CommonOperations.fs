@@ -642,7 +642,7 @@ type internal CommonOperations
                 let column = x.GetPointForSpaces visualLastLine caretColumnSpaces |> SnapshotPointUtil.GetColumn
                 CaretColumn.InLastLine column
             let result = 
-                { result with DesiredColumn = caretColumn }
+                { result with CaretColumn = caretColumn }
 
             // Complete the motion with the updated value then reset the maintain caret.  Need
             // to do the save after the caret move since the move will clear out the saved value

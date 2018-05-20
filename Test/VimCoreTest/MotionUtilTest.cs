@@ -73,7 +73,7 @@ namespace Vim.UnitTest
             }
             if (desiredColumn != null)
             {
-                Assert.Equal(desiredColumn, data.DesiredColumn);
+                Assert.Equal(desiredColumn, data.CaretColumn);
             }
         }
 
@@ -3529,7 +3529,7 @@ more";
                 Assert.True(data.IsForward);
                 Assert.Equal(OperationKind.CharacterWise, data.OperationKind);
                 Assert.Equal(MotionKind.CharacterWiseExclusive, data.MotionKind);
-                Assert.Equal(CaretColumn.NewScreenColumn(3), data.DesiredColumn);
+                Assert.Equal(CaretColumn.NewScreenColumn(3), data.CaretColumn);
             }
 
             /// <summary>
@@ -3545,7 +3545,7 @@ more";
                 Assert.False(data.IsForward);
                 Assert.Equal(OperationKind.CharacterWise, data.OperationKind);
                 Assert.Equal(MotionKind.CharacterWiseExclusive, data.MotionKind);
-                Assert.Equal(CaretColumn.NewScreenColumn(0), data.DesiredColumn);
+                Assert.Equal(CaretColumn.NewScreenColumn(0), data.CaretColumn);
             }
 
             /// <summary>
@@ -3560,7 +3560,7 @@ more";
                 Assert.Equal(0, data.Span.Length);
                 Assert.Equal(OperationKind.CharacterWise, data.OperationKind);
                 Assert.Equal(MotionKind.CharacterWiseExclusive, data.MotionKind);
-                Assert.Equal(CaretColumn.NewScreenColumn(2), data.DesiredColumn);
+                Assert.Equal(CaretColumn.NewScreenColumn(2), data.CaretColumn);
             }
 
             /// <summary>
@@ -3579,7 +3579,7 @@ more";
                 Assert.Equal("\t\t\t", data.Span.GetText());
                 Assert.Equal(OperationKind.CharacterWise, data.OperationKind);
                 Assert.Equal(MotionKind.CharacterWiseExclusive, data.MotionKind);
-                Assert.Equal(CaretColumn.NewScreenColumn(1), data.DesiredColumn);
+                Assert.Equal(CaretColumn.NewScreenColumn(1), data.CaretColumn);
             }
 
             /// <summary>
@@ -3595,7 +3595,7 @@ more";
                 Assert.Equal(data.Span.End, _textView.GetLine(0).End);
                 Assert.Equal(OperationKind.CharacterWise, data.OperationKind);
                 Assert.Equal(MotionKind.CharacterWiseExclusive, data.MotionKind);
-                Assert.Equal(CaretColumn.NewScreenColumn(99), data.DesiredColumn);
+                Assert.Equal(CaretColumn.NewScreenColumn(99), data.CaretColumn);
             }
         }
     }

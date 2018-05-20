@@ -1737,6 +1737,42 @@ namespace Vim.UnitTest
                 _vimBuffer.ProcessNotation("lyvl");
                 Assert.Equal("", UnnamedRegister.StringValue);
             }
+
+            [WpfFact]
+            public void ToggleInclusiveToExclusive()
+            {
+                Create("the dog");
+                _textView.MoveCaretTo(4);
+                _vimBuffer.ProcessNotation("dvfo");
+                Assert.Equal("the og", _textBuffer.GetLineText(0));
+                Assert.Equal(4, _textView.GetCaretPoint().Position);
+            }
+
+            [WpfFact]
+            public void ToggleInclusiveToExclusive2()
+            {
+                Create("the dog");
+                _textView.MoveCaretTo(4);
+                _vimBuffer.ProcessNotation("dvfg");
+                Assert.Equal("the g", _textBuffer.GetLineText(0));
+                Assert.Equal(4, _textView.GetCaretPoint().Position);
+            }
+
+            [WpfFact]
+            public void ToggleLineWiseFirstColumn()
+            {
+                Create("the", "dog");
+                _vimBuffer.ProcessNotation("yvj");
+                Assert.Equal("the" + Environment.NewLine, UnnamedRegister.StringValue);
+            }
+
+            [WpfFact]
+            public void ToggleLineWiseSecondColumn()
+            {
+                Create("the", "dog");
+                _vimBuffer.ProcessNotation("yvj");
+                Assert.Equal("the" + Environment.NewLine + "d", UnnamedRegister.StringValue);
+            }
         }
 
         public abstract class KeyMappingTest : NormalModeIntegrationTest

@@ -775,12 +775,9 @@ type MotionResult = {
     /// In addition to recording the Span, certain motions like j, k, and | also
     /// record data about the desired column within the span.  This value may or may not
     /// be a valid point within the line
-    DesiredColumn: CaretColumn
+    CaretColumn: CaretColumn
 
 } with
-
-    /// The possible column of the MotionResult
-    member x.CaretColumn = x.DesiredColumn
 
     /// The Span as an EditSpan value
     member x.EditSpan = EditSpan.Single x.Span
@@ -808,7 +805,7 @@ type MotionResult = {
     /// The Span as a SnapshotLineRange value 
     member x.LineRange = SnapshotLineRangeUtil.CreateForSpan x.Span
 
-    /// The Start or Last line depending on whether tho motion is forward or not.  The returned
+    /// The Start or Last line depending on whether the motion is forward or not.  The returned
     /// line will be in the document <see cref="ITextSnapshot">.  
     member x.DirectionLastLine = 
         if x.IsForward then
@@ -837,7 +834,7 @@ type MotionResult = {
             IsForward = isForward
             MotionKind = motionKind
             MotionResultFlags = motionResultFlags 
-            DesiredColumn = desiredColumn }
+            CaretColumn = desiredColumn }
 
     static member CreateEx span isForward motionKind motionResultFlags = 
         MotionResult.CreateExEx span isForward motionKind motionResultFlags CaretColumn.None

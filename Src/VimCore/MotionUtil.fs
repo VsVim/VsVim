@@ -858,7 +858,7 @@ type internal MotionUtil
             let column = SnapshotPointUtil.GetColumn point |> CaretColumn.InLastLine
             { motionData with 
                 MotionKind = MotionKind.LineWise 
-                DesiredColumn = column }
+                CaretColumn = column }
 
     member x.ApplyBigDelete (result: MotionResult) =
         let flags = result.MotionResultFlags ||| MotionResultFlags.BigDelete
@@ -2686,6 +2686,13 @@ type internal MotionUtil
                     let p = SnapshotPointUtil.AddOne p
                     let span = SnapshotSpanUtil.Create motionResult.Span.Start p
                     Some { motionResult with Span = span; MotionKind = MotionKind.CharacterWiseInclusive }
+            | MotionKind.CharacterWiseInclusive ->
+                // Shrink the selection a single character.
+                let span = motionResult.Span
+                if span.IsEmpty then None
+                else
+                    let span = SnapshotSpan(span.Start, span.Length - 1)
+                    Some { motionResult with Span = span; MotionKind = MotionKind.CharacterWiseExclusive } 
             | _ -> None  
 
     /// Adjust the MotionResult value based on the rules detailed in ':help exclusive'.  The
@@ -2734,7 +2741,7 @@ type internal MotionUtil
                     OriginalSpan = originalSpan
                     MotionKind = kind
                     MotionResultFlags = flags 
-                    DesiredColumn = CaretColumn.AfterLastLine }
+                    CaretColumn = CaretColumn.AfterLastLine }
             else 
                 // Rule #1. Move this back a line.
                 let line = SnapshotUtil.GetLine originalSpan.Snapshot (endLine.LineNumber - 1)
