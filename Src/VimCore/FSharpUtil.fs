@@ -4,6 +4,7 @@
 // VimCorePort assemblies.
 namespace Vim
 open System
+open System.Globalization
 open System.Collections.ObjectModel
 open System.IO
 open System.Text
@@ -504,6 +505,48 @@ type internal CharSpan
 
 module internal CharUtil =
 
+    let PrintableCategories =
+        seq {
+            // Letters
+            yield UnicodeCategory.UppercaseLetter
+            yield UnicodeCategory.LowercaseLetter
+            yield UnicodeCategory.TitlecaseLetter
+            yield UnicodeCategory.ModifierLetter
+            yield UnicodeCategory.OtherLetter
+            // Marks
+            yield UnicodeCategory.NonSpacingMark
+            yield UnicodeCategory.SpacingCombiningMark
+            yield UnicodeCategory.EnclosingMark
+            // Digits
+            yield UnicodeCategory.DecimalDigitNumber
+            yield UnicodeCategory.LetterNumber
+            yield UnicodeCategory.OtherNumber
+            // Not separators
+            //yield UnicodeCategory.SpaceSeparator
+            //yield UnicodeCategory.LineSeparator
+            //yield UnicodeCategory.ParagraphSeparator
+            // Not control, etc.
+            //yield UnicodeCategory.Control
+            //yield UnicodeCategory.Format
+            //yield UnicodeCategory.Surrogate
+            //yield UnicodeCategory.PrivateUse
+            // Punctuation
+            yield UnicodeCategory.ConnectorPunctuation
+            yield UnicodeCategory.DashPunctuation
+            yield UnicodeCategory.OpenPunctuation
+            yield UnicodeCategory.ClosePunctuation
+            yield UnicodeCategory.InitialQuotePunctuation
+            yield UnicodeCategory.FinalQuotePunctuation
+            yield UnicodeCategory.OtherPunctuation
+            // Symbols
+            yield UnicodeCategory.MathSymbol
+            yield UnicodeCategory.CurrencySymbol
+            yield UnicodeCategory.ModifierSymbol
+            yield UnicodeCategory.OtherSymbol
+            // Not unassigned
+            //yield UnicodeCategory.OtherNotAssigned
+        } |> set
+
     let MinValue = System.Char.MinValue
     let IsDigit x = System.Char.IsDigit(x)
     let IsWhiteSpace x = System.Char.IsWhiteSpace(x)
@@ -526,6 +569,9 @@ module internal CharUtil =
     let IsLetterOrDigit x = System.Char.IsLetterOrDigit(x)
     let IsTagNameChar x = System.Char.IsLetterOrDigit(x) || x = ':' || x = '.' || x = '_' || x = '-'
     let IsFileNameChar x = IsTagNameChar x
+    let IsPrintable x =
+        let category = CharUnicodeInfo.GetUnicodeCategory(x)
+        PrintableCategories.Contains category
     let ToLower x = System.Char.ToLower(x)
     let ToUpper x = System.Char.ToUpper(x)
     let ChangeCase x = if IsUpper x then ToLower x else ToUpper x
