@@ -1712,6 +1712,33 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class ForceCharacterWiseMotionTest : NormalModeIntegrationTest
+        {
+            [WpfFact]
+            public void ToggleExclusiveToInclusive()
+            {
+                Create("dog");
+                _vimBuffer.ProcessNotation("dvl");
+                Assert.Equal("g", _textBuffer.GetLineText(0));
+            }
+
+            [WpfFact]
+            public void ToggleExclusiveToInclusiveFailsAtEndOfLine()
+            {
+                Create("hi", "dog");
+                _vimBuffer.ProcessNotation("ldvl");
+                Assert.Equal(new[] { "hi", "dog" }, _textBuffer.GetLines());
+            }
+
+            [WpfFact]
+            public void ToggleExclusiveToInclusiveFailsAtEndOfLine2()
+            {
+                Create("hi", "dog");
+                _vimBuffer.ProcessNotation("lyvl");
+                Assert.Equal("", UnnamedRegister.StringValue);
+            }
+        }
+
         public abstract class KeyMappingTest : NormalModeIntegrationTest
         {
             public sealed class AmbiguousTest : KeyMappingTest

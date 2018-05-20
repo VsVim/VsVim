@@ -2672,6 +2672,22 @@ type internal MotionUtil
             // won't make an initial match at the provided point
             x.SearchCore searchData span.Start count
 
+    /// Force the existing motion to be characterwise under the rules described in :help o_v
+    member x.ForceCharacterWise motion motionArgument = 
+        match x.GetMotion motion motionArgument with
+        | None -> None
+        | Some motionResult -> 
+            match motionResult.MotionKind with
+            | MotionKind.CharacterWiseExclusive -> 
+                // Extend the selection one character unless it goes into the line break. 
+                let p = motionResult.End
+                if SnapshotPointUtil.IsInsideLineBreak p || SnapshotPointUtil.IsEndPoint p then None
+                else 
+                    let p = SnapshotPointUtil.AddOne p
+                    let span = SnapshotSpanUtil.Create motionResult.Span.Start p
+                    Some { motionResult with Span = span; MotionKind = MotionKind.CharacterWiseInclusive }
+            | _ -> None  
+
     /// Adjust the MotionResult value based on the rules detailed in ':help exclusive'.  The
     /// rules in summary are
     ///
@@ -2732,7 +2748,7 @@ type internal MotionUtil
         | MotionKind.LineWise _ -> motionResult
 
     /// Run the specified motion and return it's result
-    member x.GetMotion motion (motionArgument: MotionArgument) = 
+    member x.GetMotion motion (motionArgument: MotionArgument): MotionResult option = 
 
         let motionResult = 
             match motion with 
@@ -2760,7 +2776,7 @@ type internal MotionUtil
             | Motion.EndOfWord wordKind -> x.EndOfWord wordKind motionArgument.CountOrDefault |> Some
             | Motion.FirstNonBlankOnCurrentLine -> x.FirstNonBlankOnCurrentLine() |> Some
             | Motion.FirstNonBlankOnLine -> x.FirstNonBlankOnLine motionArgument.CountOrDefault |> Some
-            | Motion.ForceCharacterWise subMotion -> None
+            | Motion.ForceCharacterWise subMotion -> x.ForceCharacterWise subMotion motionArgument
             | Motion.ForceLineWise subMotion -> None
             | Motion.InnerBlock blockKind -> x.InnerBlock x.CaretPoint blockKind motionArgument.CountOrDefault
             | Motion.InnerWord wordKind -> x.InnerWord wordKind motionArgument.CountOrDefault x.CaretPoint
