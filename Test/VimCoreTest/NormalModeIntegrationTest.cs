@@ -1773,6 +1773,15 @@ namespace Vim.UnitTest
                 _vimBuffer.ProcessNotation("yvj");
                 Assert.Equal("the" + Environment.NewLine + "d", UnnamedRegister.StringValue);
             }
+
+            [WpfFact]
+            public void ToggleLineWiseCaretInMiddleOfFirstLine()
+            {
+                Create("the big", "dog");
+                _textView.MoveCaretTo(4);
+                _vimBuffer.ProcessNotation("yvj");
+                Assert.Equal("big" + Environment.NewLine + "do", UnnamedRegister.StringValue);
+            }
         }
 
         public abstract class KeyMappingTest : NormalModeIntegrationTest
