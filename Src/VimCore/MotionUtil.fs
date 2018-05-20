@@ -2760,6 +2760,8 @@ type internal MotionUtil
             | Motion.EndOfWord wordKind -> x.EndOfWord wordKind motionArgument.CountOrDefault |> Some
             | Motion.FirstNonBlankOnCurrentLine -> x.FirstNonBlankOnCurrentLine() |> Some
             | Motion.FirstNonBlankOnLine -> x.FirstNonBlankOnLine motionArgument.CountOrDefault |> Some
+            | Motion.ForceCharacterWise subMotion -> None
+            | Motion.ForceLineWise subMotion -> None
             | Motion.InnerBlock blockKind -> x.InnerBlock x.CaretPoint blockKind motionArgument.CountOrDefault
             | Motion.InnerWord wordKind -> x.InnerWord wordKind motionArgument.CountOrDefault x.CaretPoint
             | Motion.InnerParagraph -> x.InnerParagraph motionArgument.CountOrDefault

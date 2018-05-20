@@ -515,5 +515,19 @@ namespace Vim.UnitTest
             result.AsNeedMoreInput().Item.BindFunction.Invoke(KeyInputUtil.VimKeyToKeyInput(VimKey.Escape));
             Assert.False(_incrementalSearch.InSearch);
         }
+
+        [WpfFact]
+        public void ForceLineWise()
+        {
+            AssertMotion("Vl", Motion.NewForceLineWise(Motion.CharRight));
+            AssertMotion("Vh", Motion.NewForceLineWise(Motion.CharLeft));
+        }
+
+        [WpfFact]
+        public void ForceCharacterWise()
+        {
+            AssertMotion("vl", Motion.NewForceCharacterWise(Motion.CharRight));
+            AssertMotion("vh", Motion.NewForceCharacterWise(Motion.CharLeft));
+        }
     }
 }

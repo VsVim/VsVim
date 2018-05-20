@@ -1017,6 +1017,12 @@ type Motion =
     /// Find the first non-blank character on the (count - 1) line below this line
     | FirstNonBlankOnLine
 
+    /// Forces a line wise version of the specified motion 
+    | ForceLineWise of Motion
+
+    /// Forces a characterwise version of the specified motion
+    | ForceCharacterWise of Motion
+
     /// Inner word motion
     | InnerWord of WordKind
 
@@ -3421,22 +3427,17 @@ type MotionBinding =
     /// used as a cursor movement operation  
     | Dynamic of KeyInputSet * MotionFlags * BindDataStorage<Motion>
 
-    /// Motion which combines with any other motion to produce a value
-    | Recursive of KeyInputSet * MotionFlags * (Motion -> Motion) 
-
     with
 
     member x.KeyInputSet = 
         match x with
         | Static (keyInputSet, _, _) -> keyInputSet
         | Dynamic (keyInputSet, _, _) -> keyInputSet
-        | Recursive (keyInputSet, _, _) -> keyInputSet
 
     member x.MotionFlags =
         match x with 
         | Static (_, flags, _) -> flags
         | Dynamic (_, flags, _) -> flags
-        | Recursive (_, flags, _) -> flags
 
 /// The information about the particular run of a Command
 type CommandRunData = {

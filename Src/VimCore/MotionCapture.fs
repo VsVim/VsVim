@@ -210,28 +210,18 @@ type internal MotionCapture
         |> Seq.map (fun (str, flags, bindDataStorage) -> 
                 let name = KeyNotationUtil.StringToKeyInputSet str 
                 MotionBinding.Dynamic (name, flags, bindDataStorage))
-    
-    let AllMotionsCore =
-        let complex = ComplexMotions 
-        SharedMotions 
-        |> Seq.append complex
-        |> List.ofSeq
-
-    let MotionBindings = AllMotionsCore
-
-    let MotionBindingsMap = AllMotionsCore |> Seq.map (fun command ->  (command.KeyInputSet, command)) |> Map.ofSeq
 
     /// Get the Motion value for the given KeyInput.  Will return a BindResult<Motion> which 
     /// digs through the values until a valid Motion result is detected 
-    member x.GetMotion keyInput = 
+    let rec GetMotionCore motionBindingsMap keyInput = 
         let rec inner (previousName: KeyInputSet) keyInput =
             if keyInput = KeyInputUtil.EscapeKey then 
                 // User hit escape so abandon the motion
                 BindResult.Cancelled 
             else
                 let name = previousName.Add keyInput
-                match Map.tryFind name MotionBindingsMap with
-                | Some(command) -> 
+                match Map.tryFind name motionBindingsMap with
+                | Some command ->
                     match command with 
                     | MotionBinding.Static (_, _ , motion) -> 
                         // Simple motions don't need any extra information so we can 
@@ -241,19 +231,50 @@ type internal MotionCapture
                         // Complex motions need further input so delegate off
                         let bindData = bindDataStorage.CreateBindData()
                         BindResult.NeedMoreInput bindData
-                    | MotionBinding.Recursive (_, _, mapMotionFunc) -> 
-                        // Need to recursively dig into the new motion 
-                        let bindData = { KeyRemapMode = KeyRemapMode.None; BindFunction = x.GetMotion } 
-                        let bindData = bindData.Convert mapMotionFunc
-                        BindResult.NeedMoreInput bindData
                 | None -> 
-                    let res = MotionBindingsMap |> Seq.filter (fun pair -> pair.Key.StartsWith name) 
+                    let res = motionBindingsMap |> Seq.filter (fun pair -> pair.Key.StartsWith name) 
                     if Seq.isEmpty res then 
                         BindResult.Error
                     else 
                         let bindData = { KeyRemapMode = KeyRemapMode.None; BindFunction = inner name }
                         BindResult.NeedMoreInput bindData
         inner KeyInputSet.Empty keyInput
+
+    /// The set of motions which are defined in terms of other motions. Motions like V or v which simply 
+    /// modify other motions
+    let RecursiveMotions = 
+        let coreMotionBindingsMap = 
+            Seq.append ComplexMotions SharedMotions
+            |> Seq.map (fun binding -> (binding.KeyInputSet, binding))
+            |> Map.ofSeq
+
+        let getStorage (mapFunc: Motion -> Motion) = 
+            let bindData = { KeyRemapMode = KeyRemapMode.None; BindFunction = GetMotionCore coreMotionBindingsMap }
+            let bindData = bindData.Map (fun motion -> BindResult.Complete (mapFunc motion))
+            BindDataStorage.Simple bindData
+
+        seq {
+            yield ("v", MotionFlags.None, Motion.ForceCharacterWise)
+            yield ("V", MotionFlags.None, Motion.ForceLineWise)
+        }
+        |> Seq.map (fun (str, flags, mapFunc) -> 
+            let name = KeyNotationUtil.StringToKeyInputSet str
+            let storage = getStorage mapFunc
+            MotionBinding.Dynamic (name, flags, storage))
+    
+    let MotionBindings = 
+        Seq.append SharedMotions (Seq.append ComplexMotions RecursiveMotions)
+        |> List.ofSeq
+
+    let MotionBindingsMap = 
+        MotionBindings
+        |> Seq.ofList
+        |> Seq.map (fun binding ->  (binding.KeyInputSet, binding))
+        |> Map.ofSeq
+
+    /// Get the Motion value for the given KeyInput.  Will return a BindResult<Motion> which 
+    /// digs through the values until a valid Motion result is detected 
+    member x.GetMotion keyInput = GetMotionCore MotionBindingsMap keyInput
 
     /// Get the Motion value and associated count beginning with the specified KeyInput value
     member x.GetMotionAndCount keyInput =

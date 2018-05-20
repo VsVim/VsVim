@@ -82,7 +82,7 @@ type internal CommandFactory
     /// Build up a set of NormalCommandBinding values from applicable Motion values.  These will 
     /// move the cursor to the result of the motion
     member x.CreateMovementsFromMotions() =
-        let processMotionBinding (binding: MotionBinding) =
+        let processMotionBinding binding =
 
             match binding with
             | MotionBinding.Static (name, _, motion) -> 
@@ -115,7 +115,6 @@ type internal CommandFactory
     /// section.  All text-object motions will contain the TextObjectSelection flag
     member x.CreateMovementTextObjectCommands() =
         let processMotionBinding (binding: MotionBinding) =
-
             // Determine what kind of text object we are dealing with here
             let textObjectKind = 
                 if Util.IsFlagSet binding.MotionFlags MotionFlags.TextObjectWithLineToCharacter then
@@ -129,12 +128,9 @@ type internal CommandFactory
 
             match binding with
             | MotionBinding.Static (name, _, motion) -> 
-
                 let command = VisualCommand.MoveCaretToTextObject (motion, textObjectKind)
                 CommandBinding.VisualBinding(name, CommandFlags.Movement, command) 
-
             | MotionBinding.Dynamic (name, motionFlags, bindDataStorage) ->
-
                 // We're starting with a BindData<Motion> and need to instead produce a BindData<VisualCommand>
                 // where the command will move the motion 
                 let bindDataStorage = bindDataStorage.Convert (fun motion -> VisualCommand.MoveCaretToTextObject (motion, textObjectKind))
