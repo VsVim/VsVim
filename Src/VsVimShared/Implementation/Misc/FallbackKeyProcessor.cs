@@ -248,7 +248,8 @@ namespace Vim.VisualStudio.Implementation.Misc
             else if (_firstChord != null)
             {
                 var secondChord = cmds
-                    .Where(fallbackCommand => fallbackCommand.KeyBindings[1].KeyModifiers == keyInput.KeyModifiers &&
+                    .Where(fallbackCommand => fallbackCommand.KeyBindings.Count >= 2 &&
+                        fallbackCommand.KeyBindings[1].KeyModifiers == keyInput.KeyModifiers &&
                         fallbackCommand.KeyBindings[1].Char == keyInput.Char)
                     .OrderBy(fallbackCommand => GetScopeOrder(fallbackCommand.ScopeKind))
                     .ToList();
