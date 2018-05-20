@@ -2722,6 +2722,20 @@ type internal MotionUtil
             | None -> None
             | Some span -> Some (MotionResult.Create span motionResult.IsForward MotionKind.CharacterWiseExclusive)
 
+    member x.ForceLineWise motion motionArgument =
+        let convertCharacter (motionResult: MotionResult) = 
+            let lineRange = SnapshotLineRangeUtil.CreateForSpan motionResult.Span
+            let motionResult = MotionResult.Create lineRange.ExtentIncludingLineBreak motionResult.IsForward MotionKind.LineWise
+            Some motionResult
+
+        match x.GetMotion motion motionArgument with
+        | None -> None
+        | Some motionResult -> 
+            match motionResult.MotionKind with
+            | MotionKind.LineWise -> Some motionResult
+            | MotionKind.CharacterWiseExclusive -> convertCharacter motionResult
+            | MotionKind.CharacterWiseInclusive -> convertCharacter motionResult
+
     /// Adjust the MotionResult value based on the rules detailed in ':help exclusive'.  The
     /// rules in summary are
     ///
@@ -2811,7 +2825,7 @@ type internal MotionUtil
             | Motion.FirstNonBlankOnCurrentLine -> x.FirstNonBlankOnCurrentLine() |> Some
             | Motion.FirstNonBlankOnLine -> x.FirstNonBlankOnLine motionArgument.CountOrDefault |> Some
             | Motion.ForceCharacterWise subMotion -> x.ForceCharacterWise subMotion motionArgument
-            | Motion.ForceLineWise subMotion -> None
+            | Motion.ForceLineWise subMotion -> x.ForceLineWise subMotion motionArgument
             | Motion.InnerBlock blockKind -> x.InnerBlock x.CaretPoint blockKind motionArgument.CountOrDefault
             | Motion.InnerWord wordKind -> x.InnerWord wordKind motionArgument.CountOrDefault x.CaretPoint
             | Motion.InnerParagraph -> x.InnerParagraph motionArgument.CountOrDefault

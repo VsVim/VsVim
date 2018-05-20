@@ -6,3 +6,5 @@ When v exclusive to inclusive hits an end of line it returns an empty Motion, no
 when you combine with yank. It clears the unnamed register. 
 
 Need to convert all of the linewise motions to provide a characterwise span as well. 
+
+Need to test direction as well.
