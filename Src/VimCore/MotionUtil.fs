@@ -886,19 +886,15 @@ type internal MotionUtil
 
             // Calculate the motion information based on this SnapshotData value
             let value = action snapshotData
-
             match getMotionResult value with
             | None ->
                 VisualMotionResult.FailedNoMotionResult
             | Some motionResult ->  
                 // Now migrate the SnapshotSpan values down to the edit buffer.  If this mapping can't 
                 // be done then the motion fails.
-                let span = BufferGraphUtil.MapSpanDownToSingle _bufferGraph motionResult.Span x.CurrentSnapshot
-                let originalSpan = BufferGraphUtil.MapSpanDownToSingle _bufferGraph motionResult.OriginalSpan x.CurrentSnapshot
-                match span, originalSpan with
-                | Some span, Some originalSpan ->
-                    { motionResult with Span = span; OriginalSpan = span } |> VisualMotionResult.Succeeded
-                | _ ->
+                match motionResult.MapSpans (fun s -> BufferGraphUtil.MapSpanDownToSingle _bufferGraph s x.CurrentSnapshot) with
+                | Some motionResult -> VisualMotionResult.Succeeded motionResult
+                | None ->
                     _statusUtil.OnError Resources.Internal_ErrorMappingBackToEdit
                     VisualMotionResult.FailedNoMapToEditSnapshot
 
@@ -2738,7 +2734,7 @@ type internal MotionUtil
                 let flags = motionResult.MotionResultFlags ||| MotionResultFlags.ExclusiveLineWise
                 { motionResult with 
                     Span = span
-                    OriginalSpan = originalSpan
+                    SpanBeforeExclusivePromotion = Some originalSpan
                     MotionKind = kind
                     MotionResultFlags = flags 
                     CaretColumn = CaretColumn.AfterLastLine }
@@ -2747,7 +2743,7 @@ type internal MotionUtil
                 let line = SnapshotUtil.GetLine originalSpan.Snapshot (endLine.LineNumber - 1)
                 let span = SnapshotSpan(originalSpan.Start, line.End)
                 let kind = MotionKind.CharacterWiseInclusive
-                { motionResult with Span = span; OriginalSpan = originalSpan; MotionKind = kind }
+                { motionResult with Span = span; SpanBeforeExclusivePromotion = Some originalSpan; MotionKind = kind }
 
         match motionResult.MotionKind with
         | MotionKind.CharacterWiseExclusive -> adjust()

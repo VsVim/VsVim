@@ -103,7 +103,7 @@ namespace Vim.UnitTest
                 var result2 = _motionUtil.AdjustMotionResult(Motion.CharLeft, result1);
                 Assert.Equal(OperationKind.LineWise, result2.OperationKind);
                 Assert.Equal(_textView.GetLine(0).ExtentIncludingLineBreak, result2.Span);
-                Assert.Equal(span, result2.OriginalSpan);
+                Assert.Equal(span, result2.SpanBeforeExclusivePromotion.Value);
                 Assert.True(result2.MotionKind.IsLineWise);
             }
 

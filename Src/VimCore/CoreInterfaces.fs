@@ -761,7 +761,7 @@ type MotionResult = {
 
     /// In the case this MotionResult is the result of an exclusive promotion, this will 
     /// hold the original SnapshotSpan
-    OriginalSpan: SnapshotSpan
+    SpanBeforeExclusivePromotion: SnapshotSpan option
 
     /// Is the motion forward
     IsForward: bool
@@ -827,10 +827,23 @@ type MotionResult = {
 
     member x.LastOrStart = x.Last |> OptionUtil.getOrDefault x.Start
 
+    /// This will map every Span inside the MotionResult using the provided mapFunc value and 
+    /// return the resulting MotionResult.
+    member x.MapSpans mapFunc = 
+        match mapFunc x.Span with
+        | None -> None
+        | Some span ->
+            match x.SpanBeforeExclusivePromotion with
+            | None -> Some { x with Span = span } 
+            | Some b -> 
+                match mapFunc b with 
+                | Some b -> Some { x with Span = span; SpanBeforeExclusivePromotion = Some b }
+                | None -> None
+
     static member CreateExEx span isForward motionKind motionResultFlags desiredColumn = 
         {
             Span = span
-            OriginalSpan = span
+            SpanBeforeExclusivePromotion = None
             IsForward = isForward
             MotionKind = motionKind
             MotionResultFlags = motionResultFlags 
