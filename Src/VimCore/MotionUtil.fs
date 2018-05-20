@@ -2235,20 +2235,27 @@ type internal MotionUtil
     /// on the first line of the ITextBuffer
     member x.LineUp count =
         x.MotionOptionWithVisualSnapshot (fun x ->
-            if x.CaretLine.LineNumber = 0 then
-                None
+            if x.CaretLine.LineNumber = 0 then None
             else
                 let startLine = SnapshotUtil.GetLineOrFirst x.CurrentSnapshot (x.CaretLine.LineNumber - count)
+                let column = x.CaretColumn.Column
+                let characterSpan =
+                    let s = SnapshotLineUtil.GetColumnOrEnd column startLine
+                    let e = SnapshotPointUtil.AddOneOrCurrent x.CaretPoint
+                    SnapshotSpan(s, e)
                 let span = SnapshotSpan(startLine.Start, x.CaretLine.EndIncludingLineBreak)
-                let column = x.CaretPoint |> SnapshotPointUtil.GetColumn |> CaretColumn.InLastLine
-                MotionResult.CreateExEx span false MotionKind.LineWise  MotionResultFlags.MaintainCaretColumn column |> Some)
+                MotionResult.CreateLineWise(
+                    span,
+                    spanBeforeLineWise = characterSpan,
+                    isForward = false,
+                    motionResultFlags = MotionResultFlags.MaintainCaretColumn,
+                    caretColumn = CaretColumn.InLastLine column) |> Some)
 
     /// Move a single line down from the current line.  Should fail if we are currenly 
     /// on the last line of the ITextBuffer
     member x.LineDown count = 
         x.MotionOptionWithVisualSnapshot (fun x -> 
-            if x.CaretLine.LineNumber = SnapshotUtil.GetLastLineNumber x.CurrentSnapshot then
-                None
+            if x.CaretLine.LineNumber = SnapshotUtil.GetLastLineNumber x.CurrentSnapshot then None
             else
                 let lineNumber = x.CaretLine.LineNumber + count
                 let lastLine = SnapshotUtil.GetLineOrLast x.CurrentSnapshot lineNumber

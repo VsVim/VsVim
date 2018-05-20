@@ -1782,6 +1782,15 @@ namespace Vim.UnitTest
                 _vimBuffer.ProcessNotation("yvj");
                 Assert.Equal("big" + Environment.NewLine + "do", UnnamedRegister.StringValue);
             }
+
+            [WpfFact]
+            public void ToggleLineWiseBackwards()
+            {
+                Create("the", "dog");
+                _textView.MoveCaretToLine(lineNumber: 1, column: 1);
+                _vimBuffer.ProcessNotation("yvk");
+                Assert.Equal("he" + Environment.NewLine + "d", UnnamedRegister.StringValue);
+            }
         }
 
         public abstract class KeyMappingTest : NormalModeIntegrationTest
