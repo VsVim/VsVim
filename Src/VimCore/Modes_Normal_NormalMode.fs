@@ -330,9 +330,9 @@ type internal NormalMode
             true
         elif Option.isSome keyInput.RawChar && VimKeyModifiers.None = keyInput.KeyModifiers then
 
-            // We can process any printable character.  If we don't process it,
-            // Visual Studio will insert it into the buffer.
-            CharUtil.IsPrintable keyInput.Char
+            // We can process any printable character (think international input)
+            // or any character which is part of the standard Vim input set.
+            CharUtil.IsPrintable keyInput.Char || Set.contains keyInput.Char _coreCharSet
         else 
             false
     
