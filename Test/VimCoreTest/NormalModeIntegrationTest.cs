@@ -6584,6 +6584,21 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
+            /// Ensure that substitute confirm saves the pattern
+            /// </summary>
+            [WpfFact]
+            public void SubstituteConfirmSavesPattern()
+            {
+                // Reported in issue #954.
+                Create("cat", "dog", "cat", "dog");
+                _vimBuffer.ProcessNotation(":%s/dog/DOG/c<Enter>yq");
+                Assert.Equal(new[] { "cat", "DOG", "cat", "dog" }, _textBuffer.GetLines());
+                Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
+                Assert.Equal("dog", _vimData.LastSubstituteData.Value.SearchPattern);
+                Assert.Equal("dog", _vimData.LastSearchData.Pattern);
+            }
+
+            /// <summary>
             /// A d with Enter should delete the line break
             /// </summary>
             [WpfFact]

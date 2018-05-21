@@ -1595,6 +1595,10 @@ type VimInterpreter
             if Util.IsFlagSet flags SubstituteFlags.Confirm then
                 let data = { SearchPattern = pattern; Substitute = replace; Flags = flags}
                 setupConfirmSubstitute lineRange data
+
+                // If confirming, record the last patterns now.
+                _vimData.LastSubstituteData <- Some data
+                _vimData.LastSearchData <- SearchData(pattern, SearchPath.Forward)
             else
                 _commonOperations.Substitute pattern replace lineRange flags)
 
