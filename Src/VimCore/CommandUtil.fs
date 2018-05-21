@@ -2770,7 +2770,51 @@ type internal CommandUtil
     /// caret only moves if it leaves the view port
     member x.ScrollWindow direction count =
 
-        _textView.ViewScroller.ScrollViewportVerticallyByLines(direction, count)
+        // Count the number of rows we need to scroll to move count
+        // lines off the screen in the specified direction.
+        let rowCount =
+            if not _windowSettings.Wrap then
+                count
+            else
+
+                // If line wrapping is in effect, there can be multiple screen rows
+                // corrsponding to a single text buffer line.
+                match TextViewUtil.GetTextViewLines _textView with
+                | None -> count
+                | Some textViewLines ->
+
+                    // Build an array of the text view lines that correspond to the
+                    // first segment of a fully visible text buffer line.
+                    // These are the rows that have a line number next to them
+                    // if line numbering is turned on.
+                    let numberedTextViewLines =
+                        textViewLines
+                        |> Seq.where (fun textViewLine ->
+                            textViewLine.VisibilityState = Formatting.VisibilityState.FullyVisible &&
+                                textViewLine.Start = textViewLine.Start.GetContainingLine().Start)
+                        |> Seq.toArray
+                    let lastNumberedLineIndex = numberedTextViewLines.Length - 1
+                    if count > lastNumberedLineIndex then
+                        count
+                    else
+
+                        // Get the text view line index corresponding to an offset
+                        // in the numbered text view lines array.
+                        let getIndex (offset: int) =
+                            textViewLines.GetIndexOfTextLine(numberedTextViewLines.[offset])
+                            
+                        match direction with
+                        | ScrollDirection.Up ->
+                            let firstIndex = getIndex 0
+                            let targetIndex = getIndex count
+                            targetIndex - firstIndex
+                        | ScrollDirection.Down ->
+                            let lastIndex = getIndex lastNumberedLineIndex
+                            let targetIndex = getIndex (lastNumberedLineIndex - count)
+                            lastIndex - targetIndex
+                        | _ -> count
+
+        _textView.ViewScroller.ScrollViewportVerticallyByLines(direction, rowCount)
 
         match TextViewUtil.GetTextViewLines _textView with
         | None -> ()
