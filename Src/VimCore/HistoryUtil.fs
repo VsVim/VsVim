@@ -112,7 +112,7 @@ type internal HistorySession<'TData, 'TResult>
             BindResult<_>.Error
         | true, Some buffer ->
             let motion = Motion.InnerWord wordKind
-            let arg = { MotionContext = MotionContext.AfterOperator; OperatorCount = None; MotionCount = None }
+            let arg = MotionArgument(MotionContext.AfterOperator)
             let currentWord = buffer.MotionUtil.GetMotion motion arg
             match currentWord with
             | None -> x.ResetCommand _command

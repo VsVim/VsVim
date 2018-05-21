@@ -897,23 +897,26 @@ type MotionContext =
     | AfterOperator
 
 /// Arguments necessary to building a Motion
-type MotionArgument = {
+type MotionArgument
+    (
+        motionContext: MotionContext,
+        operatorCount: int option,
+        motionCount: int option
+    ) =
 
     /// Context of the Motion
-    MotionContext: MotionContext
+    member x.MotionContext = motionContext
 
     /// Count passed to the operator
-    OperatorCount: int option
+    member x.OperatorCount = operatorCount
 
     /// Count passed to the motion 
-    MotionCount: int option 
-
-} with
+    member x.MotionCount = motionCount
 
     /// Provides the raw count which is a combination of the OperatorCount
     /// and MotionCount values.  
     member x.Count = 
-        match x.MotionCount,x.OperatorCount with
+        match x.MotionCount, x.OperatorCount with
         | None, None -> None
         | Some c, None -> Some c
         | None, Some c  -> Some c
@@ -925,6 +928,8 @@ type MotionArgument = {
         match x.Count with
         | Some c -> c
         | None -> 1
+
+    new(motionContext) = MotionArgument(motionContext, None, None)
 
 /// Char searches are interesting because they are defined in one IVimBuffer
 /// and can be repeated in any IVimBuffer.  Use a discriminated union here 

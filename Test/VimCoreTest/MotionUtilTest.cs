@@ -61,20 +61,30 @@ namespace Vim.UnitTest
             _motionUtil = new MotionUtil(vimBufferData, operations);
         }
 
-        public void AssertData(MotionResult data, SnapshotSpan? span, MotionKind motionKind = null, CaretColumn desiredColumn = null)
+        public void AssertData(MotionResult data, SnapshotSpan? span, MotionKind motionKind = null, bool? isForward = null, CaretColumn caretColumn = null)
         {
-            if (span.HasValue)
+            if (span != null)
             {
                 Assert.Equal(span.Value, data.Span);
+            }
+            if (isForward != null)
+            {
+                Assert.Equal(isForward.Value, data.IsForward);
             }
             if (motionKind != null)
             {
                 Assert.Equal(motionKind, data.MotionKind);
             }
-            if (desiredColumn != null)
+            if (caretColumn != null)
             {
-                Assert.Equal(desiredColumn, data.CaretColumn);
+                Assert.Equal(caretColumn, data.CaretColumn);
             }
+        }
+
+        public void AssertData(FSharpOption<MotionResult> data, SnapshotSpan? span = null, MotionKind motionKind = null, bool? isForward = null, CaretColumn caretColumn = null)
+        {
+            Assert.True(data.IsSome());
+            AssertData(data.value, span, motionKind, isForward, caretColumn);
         }
 
         public sealed class AdjustMotionResult : MotionUtilTest
@@ -231,6 +241,39 @@ namespace Vim.UnitTest
                 // Make sure it's adjusted properly for the exclusive exception
                 data = _motionUtil.GetMotion(Motion.AllSentence).Value;
                 Assert.Equal("  " + Environment.NewLine, data.Span.GetText());
+            }
+        }
+
+        public sealed class ForcedCharacterWiseTest : MotionUtilTest
+        {
+            [WpfFact]
+            public void LineDown()
+            {
+                Create("the", "dog");
+                AssertData(
+                    _motionUtil.ForceCharacterWise(Motion.LineDown, new MotionArgument(MotionContext.AfterOperator)),
+                    span: _textBuffer.GetLine(0).ExtentIncludingLineBreak,
+                    motionKind: MotionKind.CharacterWiseExclusive);
+            }
+
+            [WpfFact]
+            public void FlipExclusiveToInclusive()
+            {
+                Create("dog");
+                AssertData(
+                    _motionUtil.ForceCharacterWise(Motion.CharRight, new MotionArgument(MotionContext.AfterOperator)),
+                    span: _textBuffer.GetLineSpan(lineNumber: 0, length: 2),
+                    motionKind: MotionKind.CharacterWiseInclusive);
+            }
+
+            [WpfFact]
+            public void FlipInclusiveToExclusive()
+            {
+                Create("dog");
+                AssertData(
+                    _motionUtil.ForceCharacterWise(Motion.NewCharSearch(CharSearchKind.ToChar, SearchPath.Forward, 'o'), new MotionArgument(MotionContext.AfterOperator)),
+                    span: _textBuffer.GetLineSpan(lineNumber: 0, length: 1),
+                    motionKind: MotionKind.CharacterWiseExclusive);
             }
         }
 
@@ -2576,8 +2619,8 @@ more";
                 AssertData(
                     data,
                     _textBuffer.GetLineRange(0, 1).ExtentIncludingLineBreak,
-                    MotionKind.LineWise,
-                    CaretColumn.NewInLastLine(0));
+                    motionKind: MotionKind.LineWise,
+                    caretColumn: CaretColumn.NewInLastLine(0));
             }
 
             [WpfFact]
@@ -2588,8 +2631,8 @@ more";
                 AssertData(
                     data,
                     _textBuffer.GetLineRange(0, 2).ExtentIncludingLineBreak,
-                    MotionKind.LineWise,
-                    CaretColumn.NewInLastLine(0));
+                    motionKind: MotionKind.LineWise,
+                    caretColumn: CaretColumn.NewInLastLine(0));
             }
 
             [WpfFact]
@@ -2601,8 +2644,8 @@ more";
                 AssertData(
                     data,
                     _textBuffer.GetLineRange(1, 2).ExtentIncludingLineBreak,
-                    MotionKind.LineWise,
-                    CaretColumn.NewInLastLine(0));
+                    motionKind: MotionKind.LineWise,
+                    caretColumn: CaretColumn.NewInLastLine(0));
             }
 
             [WpfFact]
@@ -2614,8 +2657,8 @@ more";
                 AssertData(
                     data,
                     _textBuffer.GetLineRange(0, 2).ExtentIncludingLineBreak,
-                    MotionKind.LineWise,
-                    CaretColumn.NewInLastLine(0));
+                    motionKind: MotionKind.LineWise,
+                    caretColumn: CaretColumn.NewInLastLine(0));
             }
 
             [WpfFact]

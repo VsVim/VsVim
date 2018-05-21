@@ -474,7 +474,7 @@ type internal InsertUtil
         // caret position would depend on the current mode and we would
         // rather InsertUtil not be affected by the current mode.
         let doMotion wordMotion (spanToPoint: SnapshotSpan -> SnapshotPoint) =
-            let argument = { MotionContext = MotionContext.Movement; OperatorCount = None; MotionCount = None }
+            let argument = MotionArgument(MotionContext.Movement)
             match _motionUtil.GetMotion (wordMotion WordKind.NormalWord) argument with
             | Some motionResult ->
                 let point = spanToPoint motionResult.Span

@@ -1791,6 +1791,16 @@ namespace Vim.UnitTest
                 _vimBuffer.ProcessNotation("yvk");
                 Assert.Equal("he" + Environment.NewLine + "d", UnnamedRegister.StringValue);
             }
+
+            [WpfFact]
+            public void FailedConversionHasZeroSpan()
+            {
+                Create("the", "dog");
+                UnnamedRegister.UpdateValue("test");
+                _textView.MoveCaretTo(2);
+                _vimBuffer.ProcessNotation("yvl");
+                Assert.Empty(UnnamedRegister.StringValue);
+            }
         }
 
         public sealed class ForceLineWiseMotionTest : NormalModeIntegrationTest

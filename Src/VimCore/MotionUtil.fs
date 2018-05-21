@@ -2685,22 +2685,22 @@ type internal MotionUtil
         let convertMotionResult motionResult = 
             let isInLineBreakOrEnd p = SnapshotPointUtil.IsInsideLineBreak p || SnapshotPointUtil.IsEndPoint p
             match motionResult.MotionKind with
-            | MotionKind.CharacterWiseExclusive -> 
+            | MotionKind.CharacterWiseExclusive ->
                 // Extend the selection one character unless it goes into the line break. 
+                let s = motionResult.Span.Start
                 let p = motionResult.End
-                if isInLineBreakOrEnd p then None
-                else 
-                    let p = SnapshotPointUtil.AddOne p
-                    let span = SnapshotSpanUtil.Create motionResult.Span.Start p
-                    Some span
+                let span = 
+                    if isInLineBreakOrEnd p then SnapshotSpan(s, 0)
+                    else SnapshotSpan(s, SnapshotPointUtil.AddOne p)
+                MotionResult.Create(span, MotionKind.CharacterWiseInclusive, motionResult.IsForward)
             | MotionKind.CharacterWiseInclusive ->
                 // Shrink the selection a single character.
                 let span = motionResult.Span
-                if span.IsEmpty then None
-                else
-                    let span = SnapshotSpan(span.Start, span.Length - 1)
-                    Some span
-            | MotionKind.LineWise -> 
+                let span = 
+                    if span.IsEmpty then span
+                    else SnapshotSpan(span.Start, span.Length - 1)
+                MotionResult.Create(span, MotionKind.CharacterWiseExclusive, motionResult.IsForward)
+            | MotionKind.LineWise ->
                 // Need to make this characterwise exclusive
                 let span = OptionUtil.getOrDefault motionResult.Span motionResult.SpanBeforeLineWise
                 let lineRange = SnapshotLineRangeUtil.CreateForSpan span
@@ -2713,14 +2713,11 @@ type internal MotionUtil
                         if SnapshotLineUtil.IsPhantomLine lineRange.LastLine then SnapshotSpan(span.Start, p)
                         elif SnapshotPointUtil.IsInsideLineBreak p then SnapshotSpan(span.Start, lineRange.LastLine.End)
                         else SnapshotSpan(span.Start, p)
-                Some span
+                MotionResult.Create(span, MotionKind.CharacterWiseExclusive, motionResult.IsForward)
 
         match x.GetMotion motion motionArgument with
         | None -> None
-        | Some motionResult -> 
-            match convertMotionResult motionResult with
-            | None -> None
-            | Some span -> Some (MotionResult.Create(span, MotionKind.CharacterWiseExclusive, motionResult.IsForward))
+        | Some motionResult -> Some (convertMotionResult motionResult)
 
     member x.ForceLineWise motion motionArgument =
         let convertCharacter (motionResult: MotionResult) = 
@@ -2888,4 +2885,3 @@ type internal MotionUtil
         member x.GetMotion motion motionArgument = x.GetMotion motion motionArgument
         member x.GetTextObject motion point = x.GetTextObject motion point
         member x.GetExpandedTagBlock point kind = x.GetExpandedTagBlock point kind
-
