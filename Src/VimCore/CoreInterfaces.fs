@@ -848,21 +848,31 @@ type MotionResult = {
         | Some s, (true, e), (true, l) -> Some { x with Span = s; SpanBeforeExclusivePromotion = e; SpanBeforeLineWise = l }
         | _ -> None
 
-    static member CreateExEx span isForward motionKind motionResultFlags desiredColumn = 
+    static member Create(span: SnapshotSpan, motionKind: MotionKind, ?isForward, ?motionResultFlags, ?caretColumn): MotionResult =
+        let isForward = defaultArg isForward true
+        let motionResultFlags = defaultArg motionResultFlags MotionResultFlags.None
+        let caretColumn = defaultArg caretColumn CaretColumn.None
         {
             Span = span
             SpanBeforeExclusivePromotion = None
             SpanBeforeLineWise = None
             IsForward = isForward
             MotionKind = motionKind
-            MotionResultFlags = motionResultFlags 
-            CaretColumn = desiredColumn
+            MotionResultFlags = motionResultFlags
+            CaretColumn = caretColumn
         }
 
-    static member CreateEx span isForward motionKind motionResultFlags = 
-        MotionResult.CreateExEx span isForward motionKind motionResultFlags CaretColumn.None
+    static member Create(span: SnapshotSpan, motionKind: MotionKind, isForward: bool) = MotionResult.Create(span, motionKind, isForward, MotionResultFlags.None, CaretColumn.None)
 
-    static member Create span isForward motionKind = MotionResult.CreateEx span isForward motionKind MotionResultFlags.None
+    static member CreateCharacterWise(span, ?isForward, ?isExclusive, ?motionResultFlags, ?caretColumn) = 
+        let isForward = defaultArg isForward true
+        let isExclusive = defaultArg isExclusive true
+        let motionResultFlags = defaultArg motionResultFlags MotionResultFlags.None
+        let caretColumn = defaultArg caretColumn CaretColumn.None
+        let kind = 
+            if isExclusive then MotionKind.CharacterWiseExclusive
+            else MotionKind.CharacterWiseInclusive
+        MotionResult.Create(span, kind, isForward, motionResultFlags, caretColumn)
 
     static member CreateLineWise(span, ?spanBeforeLineWise, ?isForward, ?motionResultFlags, ?caretColumn) =
         let isForward = defaultArg isForward true

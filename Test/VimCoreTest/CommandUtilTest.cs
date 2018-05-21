@@ -302,7 +302,7 @@ namespace Vim.UnitTest
             {
                 Create("cat", "dog", "tree");
                 var range = _textBuffer.GetLineRange(0, 1);
-                var motionResult = MotionResult.Create(range.Extent, true, MotionKind.CharacterWiseExclusive);
+                var motionResult = MotionResult.Create(range.Extent, MotionKind.CharacterWiseExclusive, isForward: true);
                 _foldManager.Setup(x => x.CreateFold(range)).Verifiable();
                 _commandUtil.FoldMotion(motionResult);
                 _foldManager.Verify();
@@ -362,7 +362,7 @@ namespace Vim.UnitTest
             {
                 Create("cat", "dog", "tree");
                 var range = _textBuffer.GetLineRange(0, 1);
-                var motionResult = MotionResult.Create(range.Extent, true, MotionKind.CharacterWiseExclusive);
+                var motionResult = MotionResult.Create(range.Extent, MotionKind.CharacterWiseExclusive, isForward: true);
                 _commonOperations.Setup(x => x.FormatLines(range)).Verifiable();
                 _commandUtil.FormatMotion(motionResult);
                 _commonOperations.Verify();
