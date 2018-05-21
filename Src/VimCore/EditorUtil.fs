@@ -1841,11 +1841,37 @@ module TextViewUtil =
 
     /// Return the overarching SnapshotLineRange for the visible lines in the ITextView
     let GetVisibleSnapshotLineRange (textView: ITextView) =
+
+        // Get the first line not clipped or wrapped from above.
+        let getFirstFullyVisibleLine (textViewLines: ITextViewLineCollection) =
+            let line =
+                textViewLines
+                |> Seq.where (fun textViewLine ->
+                    textViewLine.VisibilityState = Formatting.VisibilityState.FullyVisible &&
+                        textViewLine.Start = textViewLine.Start.GetContainingLine().Start)
+                |> Seq.tryHead
+            match line with
+            | None -> textViewLines.FirstVisibleLine
+            | Some line -> line
+
+        // Get the last line not clipped or wrapped to below.
+        let getLastFullyVisibleLine (textViewLines: ITextViewLineCollection) =
+            let line =
+                textViewLines
+                |> Seq.rev
+                |> Seq.where (fun textViewLine ->
+                    textViewLine.VisibilityState = Formatting.VisibilityState.FullyVisible &&
+                        textViewLine.End = textViewLine.End.GetContainingLine().End)
+                |> Seq.tryHead
+            match line with
+            | None -> textViewLines.LastVisibleLine
+            | Some line -> line
+
         match GetTextViewLines textView with
         | None -> None
         | Some textViewLines ->
-            let startLine = textViewLines.FirstVisibleLine.Start.GetContainingLine().LineNumber
-            let lastLine = textViewLines.LastVisibleLine.End.GetContainingLine().LineNumber
+            let startLine = (getFirstFullyVisibleLine textViewLines).Start.GetContainingLine().LineNumber
+            let lastLine = (getLastFullyVisibleLine textViewLines).End.GetContainingLine().LineNumber
             SnapshotLineRange.CreateForLineNumberRange textView.TextSnapshot startLine lastLine |> NullableUtil.ToOption
 
     /// Returns a sequence of ITextSnapshotLine values representing the visible lines in the buffer
