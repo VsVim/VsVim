@@ -760,6 +760,20 @@ namespace Vim.UnitTest
                 _vimBuffer.Process("V");
                 Assert.Equal("cat\r\ndog\r\n", _textView.GetSelectionSpan().GetText());
             }
+
+            /// <summary>
+            /// If the entire block is linewise empty, the selection is unchanged
+            /// </summary>
+            [WpfFact]
+            public void LinewiseEmpty()
+            {
+                // Reported in issue #1969.
+                Create("    Main(", "    );", "");
+                _textView.MoveCaretToLine(1);
+                var caretPoint = _textView.Caret.Position.BufferPosition;
+                _vimBuffer.Process("vi(");
+                Assert.Equal(new SnapshotSpan(caretPoint, 0), _textView.GetSelectionSpan());
+            }
         }
 
         public abstract class BlockInsertTest : VisualModeIntegrationTest
