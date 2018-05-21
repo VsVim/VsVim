@@ -827,6 +827,16 @@ let x = 42
             {
                 Assert.Equal("\t", ParseStringConstant(@"""\t"""));
             }
+
+            /// <summary>
+            /// Key notation is allowed in string expression constants
+            /// </summary>
+            [Fact]
+            public void KeyNotation()
+            {
+                // Reported in issue #1845.
+                Assert.Equal("aaa\rbbb", ParseStringConstant(@"""aaa\<CR>bbb"""));
+            }
         }
 
         public sealed class SubstituteTest : ParserTest
