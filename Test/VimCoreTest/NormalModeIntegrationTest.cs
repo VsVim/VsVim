@@ -5333,6 +5333,56 @@ namespace Vim.UnitTest
                     _globalSettings.ScrollOffset = 0;
                 }
 
+                private void PutLineAtTop(int line)
+                {
+                    _textView.DisplayTextLineContainingBufferPosition(_textBuffer.GetLine(line).Start, 0.0, ViewRelativePosition.Top);
+                }
+
+                /// <summary>
+                /// Move to home should position on the first visible line
+                /// </summary>
+                [WpfFact]
+                public void MoveToHome()
+                {
+                    var caretLine = 8;
+                    _textView.MoveCaretToLine(caretLine);
+                    var topLine = 5;
+                    PutLineAtTop(topLine);
+                    _vimBuffer.ProcessNotation("H");
+                    Assert.Equal(topLine, _textView.GetCaretLine().LineNumber);
+                }
+
+                /// <summary>
+                /// Move to home should position on the first visible line adjusted for scrolloff
+                /// </summary>
+                [WpfFact]
+                public void MoveToHomeScrollOffset()
+                {
+                    var caretLine = 8;
+                    _textView.MoveCaretToLine(caretLine);
+                    var topLine = 5;
+                    _globalSettings.ScrollOffset = 2;
+                    PutLineAtTop(topLine);
+                    _vimBuffer.ProcessNotation("H");
+                    var expected = topLine + _globalSettings.ScrollOffset;
+                    Assert.Equal(expected, _textView.GetCaretLine().LineNumber);
+                }
+
+                /// <summary>
+                /// Move to home should position on the first visible line adjusted for scrolloff
+                /// </summary>
+                [WpfFact]
+                public void MoveToHomeScrollOffsetAtTop()
+                {
+                    _globalSettings.ScrollOffset = 2;
+                    var caretLine = 4;
+                    _textView.MoveCaretToLine(caretLine);
+                    var topLine = 0;
+                    PutLineAtTop(topLine);
+                    _vimBuffer.ProcessNotation("H");
+                    Assert.Equal(0, _textView.GetCaretLine().LineNumber);
+                }
+
                 /// <summary>
                 /// Delete to home should delete from home to the current line
                 /// </summary>
@@ -5341,10 +5391,10 @@ namespace Vim.UnitTest
                 {
                     // Reported in issue #1093.
                     var lineCount = _textBuffer.CurrentSnapshot.LineCount;
-                    var topLine = 5;
-                    _textView.DisplayTextLineContainingBufferPosition(_textBuffer.GetLine(topLine).Start, 0.0, ViewRelativePosition.Top);
-                    var caretLine = 7;
+                    var caretLine = 8;
                     _textView.MoveCaretToLine(caretLine);
+                    var topLine = 5;
+                    PutLineAtTop(topLine);
                     _vimBuffer.ProcessNotation("dH");
                     var expected = lineCount - (caretLine - topLine + 1);
                     Assert.Equal(expected, _textBuffer.CurrentSnapshot.LineCount);
@@ -5357,11 +5407,11 @@ namespace Vim.UnitTest
                 public void DeleteToLast()
                 {
                     var lineCount = _textBuffer.CurrentSnapshot.LineCount;
-                    var topLine = 5;
-                    _textView.DisplayTextLineContainingBufferPosition(_textBuffer.GetLine(topLine).Start, 0.0, ViewRelativePosition.Top);
-                    var bottomLine = _textView.GetLastVisibleLineNumber();
-                    var caretLine = 7;
+                    var caretLine = 6;
                     _textView.MoveCaretToLine(caretLine);
+                    var topLine = 5;
+                    PutLineAtTop(topLine);
+                    var bottomLine = _textView.GetLastVisibleLineNumber();
                     _vimBuffer.ProcessNotation("dL");
                     var expected = lineCount - (bottomLine - caretLine + 1);
                     Assert.Equal(expected, _textBuffer.CurrentSnapshot.LineCount);
