@@ -354,15 +354,23 @@ namespace Vim.UnitTest.Mock
                     PositionAffinity.Predecessor));
 
             var firstLine = factory.Create<ITextViewLine>();
+            firstLine.SetupGet(x => x.VisibilityState).Returns(VisibilityState.FullyVisible);
             firstLine.SetupGet(x => x.Start).Returns(textBuffer.GetLine(startLine).Start);
 
             var lastLine = factory.Create<ITextViewLine>();
+            lastLine.SetupGet(x => x.VisibilityState).Returns(VisibilityState.FullyVisible);
             lastLine.SetupGet(x => x.End).Returns(textBuffer.GetLine(endLineValue).End);
+
+            var lineList = new List<ITextViewLine>() { firstLine.Object, lastLine.Object };
 
             var lines = factory.Create<ITextViewLineCollection>();
             lines.SetupGet(x => x.IsValid).Returns(true);
             lines.SetupGet(x => x.FirstVisibleLine).Returns(firstLine.Object);
             lines.SetupGet(x => x.LastVisibleLine).Returns(lastLine.Object);
+            lines.SetupGet(x => x.Count).Returns(lineList.Count);
+            lines.Setup(x => x.GetEnumerator()).Returns(lineList.GetEnumerator());
+            lines.Setup(x => x.CopyTo(It.IsAny<ITextViewLine[]>(), It.IsAny<int>()))
+                .Callback((ITextViewLine[] array, int index) => lineList.CopyTo(array, index));
 
             var visualBuffer = CreateTextBuffer(factory: factory);
             var textViewModel = factory.Create<ITextViewModel>();
