@@ -5325,6 +5325,98 @@ namespace Vim.UnitTest
                     Assert.Equal(1, _textView.GetFirstVisibleLineNumber());
                 }
             }
+
+            public sealed class WindowMotionTest : ScrollWindowTest
+            {
+                public WindowMotionTest()
+                {
+                    _globalSettings.ScrollOffset = 0;
+                }
+
+                private void PutLineAtTop(int line)
+                {
+                    _textView.DisplayTextLineContainingBufferPosition(_textBuffer.GetLine(line).Start, 0.0, ViewRelativePosition.Top);
+                }
+
+                /// <summary>
+                /// Move to home should position on the first visible line
+                /// </summary>
+                [WpfFact]
+                public void MoveToHome()
+                {
+                    var caretLine = 8;
+                    _textView.MoveCaretToLine(caretLine);
+                    var topLine = 5;
+                    PutLineAtTop(topLine);
+                    _vimBuffer.ProcessNotation("H");
+                    Assert.Equal(topLine, _textView.GetCaretLine().LineNumber);
+                }
+
+                /// <summary>
+                /// Move to home should position on the first visible line adjusted for scrolloff
+                /// </summary>
+                [WpfFact]
+                public void MoveToHomeScrollOffset()
+                {
+                    var caretLine = 8;
+                    _textView.MoveCaretToLine(caretLine);
+                    var topLine = 5;
+                    _globalSettings.ScrollOffset = 2;
+                    PutLineAtTop(topLine);
+                    _vimBuffer.ProcessNotation("H");
+                    var expected = topLine + _globalSettings.ScrollOffset;
+                    Assert.Equal(expected, _textView.GetCaretLine().LineNumber);
+                }
+
+                /// <summary>
+                /// Move to home should position on the first visible line adjusted for scrolloff
+                /// </summary>
+                [WpfFact]
+                public void MoveToHomeScrollOffsetAtTop()
+                {
+                    _globalSettings.ScrollOffset = 2;
+                    var caretLine = 4;
+                    _textView.MoveCaretToLine(caretLine);
+                    var topLine = 0;
+                    PutLineAtTop(topLine);
+                    _vimBuffer.ProcessNotation("H");
+                    Assert.Equal(0, _textView.GetCaretLine().LineNumber);
+                }
+
+                /// <summary>
+                /// Delete to home should delete from home to the current line
+                /// </summary>
+                [WpfFact]
+                public void DeleteToHome()
+                {
+                    // Reported in issue #1093.
+                    var lineCount = _textBuffer.CurrentSnapshot.LineCount;
+                    var caretLine = 8;
+                    _textView.MoveCaretToLine(caretLine);
+                    var topLine = 5;
+                    PutLineAtTop(topLine);
+                    _vimBuffer.ProcessNotation("dH");
+                    var expected = lineCount - (caretLine - topLine + 1);
+                    Assert.Equal(expected, _textBuffer.CurrentSnapshot.LineCount);
+                }
+
+                /// <summary>
+                /// Delete to last should delete from the current line to the last window line
+                /// </summary>
+                [WpfFact]
+                public void DeleteToLast()
+                {
+                    var lineCount = _textBuffer.CurrentSnapshot.LineCount;
+                    var caretLine = 6;
+                    _textView.MoveCaretToLine(caretLine);
+                    var topLine = 5;
+                    PutLineAtTop(topLine);
+                    var bottomLine = _textView.GetLastVisibleLineNumber();
+                    _vimBuffer.ProcessNotation("dL");
+                    var expected = lineCount - (bottomLine - caretLine + 1);
+                    Assert.Equal(expected, _textBuffer.CurrentSnapshot.LineCount);
+                }
+            }
         }
 
         public sealed class ScrollOffsetTest : NormalModeIntegrationTest
