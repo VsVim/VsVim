@@ -438,7 +438,20 @@ type internal InsertMode
     /// Get the RawInsertCommand for the given KeyInput
     member x.GetRawInsertCommand keyInput = 
         match Map.tryFind keyInput _commandMap with
-        | Some rawInsertCommand -> Some rawInsertCommand
+        | Some rawInsertCommand ->
+            if _isReplace then
+
+                // Map any insert commands to their replacement counterparts.
+                match rawInsertCommand with
+                | RawInsertCommand.InsertCommand (keyInput, InsertCommand.InsertCharacterAboveCaret, flags) ->
+                    RawInsertCommand.InsertCommand (keyInput, InsertCommand.ReplaceCharacterAboveCaret, flags)
+                    |> Some
+                | RawInsertCommand.InsertCommand (keyInput, InsertCommand.InsertCharacterBelowCaret, flags) ->
+                    RawInsertCommand.InsertCommand (keyInput, InsertCommand.ReplaceCharacterBelowCaret, flags)
+                    |> Some
+                | _ -> Some rawInsertCommand
+            else
+                Some rawInsertCommand
         | None ->
             match keyInput.RawChar with
             | None -> None
@@ -717,6 +730,8 @@ type internal InsertMode
             | InsertCommand.ShiftLineRight -> ()
             | InsertCommand.InsertCharacterAboveCaret -> ()
             | InsertCommand.InsertCharacterBelowCaret -> ()
+            | InsertCommand.ReplaceCharacterAboveCaret -> ()
+            | InsertCommand.ReplaceCharacterBelowCaret -> ()
             | _ -> 
                 // All other commands break the undo sequence
                 x.BreakUndoSequence "Insert after motion" 
