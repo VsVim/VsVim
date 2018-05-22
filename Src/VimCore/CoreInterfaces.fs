@@ -3088,6 +3088,12 @@ type InsertCommand  =
     /// Replace the character under the caret with the specified value
     | Replace of char
 
+    /// Replace the character which is immediately above the caret
+    | ReplaceCharacterAboveCaret
+
+    /// Replace the character which is immediately below the caret
+    | ReplaceCharacterBelowCaret
+
     /// Overwrite the characters under the caret with the specified string
     | Overwrite of string
 
@@ -3146,6 +3152,8 @@ type InsertCommand  =
         | InsertCommand.MoveCaretByWord _ -> None
         | InsertCommand.MoveCaretToEndOfLine -> None
         | InsertCommand.Replace c -> Some (TextChange.Combination ((TextChange.DeleteRight 1), (TextChange.Insert (c.ToString()))))
+        | InsertCommand.ReplaceCharacterAboveCaret -> None
+        | InsertCommand.ReplaceCharacterBelowCaret -> None
         | InsertCommand.Overwrite s -> Some (TextChange.Replace s)
         | InsertCommand.ShiftLineLeft -> None
         | InsertCommand.ShiftLineRight -> None
