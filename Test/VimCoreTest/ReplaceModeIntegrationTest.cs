@@ -96,6 +96,94 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class ReplaceCharacterAboveTest : ReplaceModeIntegrationTest
+        {
+            [WpfFact]
+            public void Simple()
+            {
+                Create("cat", "dog");
+                _textView.MoveCaretToLine(1);
+                _vimBuffer.ProcessNotation("<S-R>");
+                _vimBuffer.ProcessNotation("<C-y>");
+                Assert.Equal("cog", _textBuffer.GetLine(1).GetText());
+            }
+
+            [WpfFact]
+            public void Multiple()
+            {
+                Create("cat", "dog");
+                _textView.MoveCaretToLine(1);
+                _vimBuffer.ProcessNotation("<S-R>");
+                for (var i = 0; i < 3; i++)
+                {
+                    _vimBuffer.ProcessNotation("<C-y>");
+                }
+                Assert.Equal("cat", _textBuffer.GetLine(1).GetText());
+            }
+
+            [WpfFact]
+            public void NothingAbove()
+            {
+                Create("", "dog");
+                _textView.MoveCaretToLine(1);
+                _vimBuffer.ProcessNotation("<S-R>");
+                _vimBuffer.ProcessNotation("<C-y>");
+                Assert.Equal(1, VimHost.BeepCount);
+            }
+
+            [WpfFact]
+            public void FirstLine()
+            {
+                Create("", "dog");
+                _vimBuffer.ProcessNotation("<S-R>");
+                _vimBuffer.ProcessNotation("<C-y>");
+                Assert.Equal(1, VimHost.BeepCount);
+            }
+        }
+
+        public sealed class ReplaceCharacterBelowTest : ReplaceModeIntegrationTest
+        {
+            [WpfFact]
+            public void Simple()
+            {
+                Create("cat", "dog");
+                _vimBuffer.ProcessNotation("<S-R>");
+                _vimBuffer.ProcessNotation("<C-e>");
+                Assert.Equal("dat", _textBuffer.GetLine(0).GetText());
+            }
+
+            [WpfFact]
+            public void Multiple()
+            {
+                Create("cat", "dog");
+                _vimBuffer.ProcessNotation("<S-R>");
+                for (var i = 0; i < 3; i++)
+                {
+                    _vimBuffer.ProcessNotation("<C-e>");
+                }
+                Assert.Equal("dog", _textBuffer.GetLine(0).GetText());
+            }
+
+            [WpfFact]
+            public void NothingBelow()
+            {
+                Create("cat", "");
+                _vimBuffer.ProcessNotation("<S-R>");
+                _vimBuffer.ProcessNotation("<C-e>");
+                Assert.Equal(1, VimHost.BeepCount);
+            }
+
+            [WpfFact]
+            public void LastLine()
+            {
+                Create("cat", "");
+                _textView.MoveCaretToLine(1);
+                _vimBuffer.ProcessNotation("<S-R>");
+                _vimBuffer.ProcessNotation("<C-e>");
+                Assert.Equal(1, VimHost.BeepCount);
+            }
+        }
+
         public sealed class Misc : ReplaceModeIntegrationTest
         {
             /// <summary>
