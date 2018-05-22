@@ -698,6 +698,20 @@ more";
                 var motion = _motionUtil.InnerBlock(_textBuffer.GetPoint(22), BlockKind.Paren, 1);
                 Assert.Equal(@"DuplicateBackslash(L""^OutlineFileName:(.*\\.*\\\\).* $"")", motion.Value.Span.GetText());
             }
+
+            /// <summary>
+            /// If the entire block is linewise empty, perform no motion
+            /// </summary>
+            [WpfFact]
+            public void LinewiseEmpty()
+            {
+                // Reported in issue #1969.
+                Create("    Main(", "    );", "");
+                _textView.MoveCaretToLine(1);
+                var caretPoint = _textView.Caret.Position.BufferPosition;
+                var motion = _motionUtil.InnerBlock(caretPoint, BlockKind.Paren, 1);
+                Assert.Equal(new SnapshotSpan(caretPoint, 0), motion.Value.Span);
+            }
         }
 
         public sealed class QuotedStringTest : MotionUtilTest

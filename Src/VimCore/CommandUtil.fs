@@ -1653,7 +1653,7 @@ type internal CommandUtil
             | None -> onError ()
             | Some motionResult ->
                 let blockVisualSpan = VisualSpan.CreateForSpan motionResult.Span desiredVisualKind _localSettings.TabStop
-                if visualSpan <> blockVisualSpan then
+                if motionResult.Span.Length = 0 || visualSpan <> blockVisualSpan then
                     // Selection is not yet the entire block so just expand to the block
                     setSelection motionResult.Span
                 else

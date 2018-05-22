@@ -1919,21 +1919,25 @@ type internal MotionUtil
                 |> SnapshotSpanUtil.GetPoints SearchPath.Forward
                 |> Seq.forall SnapshotPointUtil.IsBlank
 
-            let (span, motionKind) =
+            let span, motionKind =
                 if isOpenLineWise && isCloseLineWise then
-                    let range = SnapshotLineRangeUtil.CreateForLineNumberRange snapshot (openLine.LineNumber + 1) (closeLine.LineNumber - 1)
-                    (range.ExtentIncludingLineBreak, MotionKind.LineWise)
+                    if openLine.LineNumber + 1 > closeLine.LineNumber - 1 then
+                        let span = new SnapshotSpan(contextPoint, 0)
+                        span, MotionKind.CharacterWiseInclusive
+                    else
+                        let range = SnapshotLineRangeUtil.CreateForLineNumberRange snapshot (openLine.LineNumber + 1) (closeLine.LineNumber - 1)
+                        range.ExtentIncludingLineBreak, MotionKind.LineWise
                 elif isOpenLineWise then
                     let line = SnapshotUtil.GetLine snapshot (openLine.LineNumber + 1)
                     let span = SnapshotSpan(line.Start, closePoint)
-                    (span, MotionKind.CharacterWiseInclusive)
+                    span, MotionKind.CharacterWiseInclusive
                 elif isCloseLineWise then
                     let line = SnapshotUtil.GetLine snapshot (closeLine.LineNumber - 1)
                     let span = SnapshotSpan(openPoint.Add(1), line.End)
-                    (span, MotionKind.CharacterWiseInclusive)
+                    span, MotionKind.CharacterWiseInclusive
                 else
                     let span = SnapshotSpan(openPoint.Add(1), closePoint)
-                    (span, MotionKind.CharacterWiseInclusive)
+                    span, MotionKind.CharacterWiseInclusive
 
             MotionResult.Create(span, motionKind, isForward = true) |> Some
         | None -> None
