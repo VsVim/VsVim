@@ -829,6 +829,15 @@ let x = 42
             }
 
             /// <summary>
+            /// Backslash escapes itself
+            /// </summary>
+            [Fact]
+            public void Backslash()
+            {
+                Assert.Equal(@"f\o", ParseStringConstant(@"""f\\o"""));
+            }
+
+            /// <summary>
             /// Key notation is allowed in string expression constants
             /// </summary>
             [Fact]
