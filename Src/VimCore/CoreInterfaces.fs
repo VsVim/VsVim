@@ -3114,6 +3114,9 @@ type InsertCommand  =
     /// Shift the current line one indent width to the right
     | ShiftLineRight
 
+    /// Undo replace
+    | UndoReplace
+
     /// Delete non-blank characters before cursor on current line
     | DeleteLineBeforeCursor
 
@@ -3168,6 +3171,7 @@ type InsertCommand  =
         | InsertCommand.Overwrite s -> Some (TextChange.Replace s)
         | InsertCommand.ShiftLineLeft -> None
         | InsertCommand.ShiftLineRight -> None
+        | InsertCommand.UndoReplace -> None
         | InsertCommand.DeleteLineBeforeCursor -> None
         | InsertCommand.Paste -> None
 

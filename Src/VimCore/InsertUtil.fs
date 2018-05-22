@@ -604,6 +604,7 @@ type internal InsertUtil
             | InsertCommand.Overwrite s -> x.Replace s
             | InsertCommand.ShiftLineLeft -> x.ShiftLineLeft ()
             | InsertCommand.ShiftLineRight -> x.ShiftLineRight ()
+            | InsertCommand.UndoReplace -> x.UndoReplace ()
             | InsertCommand.DeleteLineBeforeCursor -> x.DeleteLineBeforeCursor()
             | InsertCommand.Paste -> x.Paste()
 
@@ -660,6 +661,21 @@ type internal InsertUtil
     member x.ShiftLineRight () =
         x.ShiftLine 1
 
+    /// Undo replace, or equivalently, backspace in replace mode
+    member x.UndoReplace () =
+        if x.CaretColumn.Column > 0 then
+            let point = x.CaretPoint.Subtract(1)
+            TextViewUtil.MoveCaretToPosition _textView point.Position
+        else
+            if _globalSettings.IsBackspaceEol && x.CaretLineNumber > 0 then
+                let previousLineNumber = x.CaretLineNumber - 1
+                let previousLine = SnapshotUtil.GetLine x.CurrentSnapshot previousLineNumber
+                TextViewUtil.MoveCaretToPosition _textView previousLine.End.Position
+            else
+                _operations.Beep()
+        CommandResult.Completed ModeSwitch.NoSwitch
+        
+
     /// Delete the line before the cursor
     member x.DeleteLineBeforeCursor () =
         x.RunBackspacingCommand InsertCommand.DeleteLineBeforeCursor
@@ -682,15 +698,13 @@ type internal InsertUtil
         | BackspaceCommand.Characters count ->
             let startPoint = x.CaretPoint.Subtract(count)
             let span = SnapshotSpan(startPoint, x.CaretPoint)
-            x.EditWithUndoTransaction "Insert Backspace Command" (fun () ->
-                _textBuffer.Delete(span.Span) |> ignore
-                TextViewUtil.MoveCaretToPosition _textView span.Start.Position)
+            _textBuffer.Delete(span.Span) |> ignore
+            TextViewUtil.MoveCaretToPosition _textView span.Start.Position
         | BackspaceCommand.Replace (count, text) ->
             let startPoint = x.CaretPoint.Subtract(count)
             let span = SnapshotSpan(startPoint, x.CaretPoint)
-            x.EditWithUndoTransaction "Insert Backspace Command" (fun () ->
-                _textBuffer.Replace(span.Span, text) |> ignore
-                TextViewUtil.MoveCaretToPosition _textView (span.Start.Position + text.Length))
+            _textBuffer.Replace(span.Span, text) |> ignore
+            TextViewUtil.MoveCaretToPosition _textView (span.Start.Position + text.Length)
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Get the BackspaceCommand for the given InsertCommand at the caret point
@@ -698,7 +712,7 @@ type internal InsertUtil
         if x.CaretVirtualPoint.IsInVirtualSpace && SnapshotLineUtil.IsBlankOrEmpty x.CaretLine then
             // The 'backspace=indent' setting covers backspacing over autoindent which 
             // doesn't have a direct 1-1 mapping in VsVim because the host controls indent
-            // not VsVim.  The closest equivaletn is when the caret is in virtual space 
+            // not VsVim.  The closest equivalent is when the caret is in virtual space 
             // on a blank line.  
             if _globalSettings.IsBackspaceIndent then
                 _operations.FillInVirtualSpace()
