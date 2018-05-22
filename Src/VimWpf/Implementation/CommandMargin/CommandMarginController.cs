@@ -847,7 +847,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
                     // Now we need to update the command line.  During edits the controller is responsible
                     // for manually updating the command line state.  Also we have to keep the caret postion
                     // correct
-                    var name = RegisterName.OfChar('c');
+                    var name = RegisterName.OfChar(c);
                     if (name.IsSome())
                     {
                         var toPaste = _vimBuffer.GetRegister(name.Value).StringValue;
