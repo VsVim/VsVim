@@ -2332,8 +2332,15 @@ type internal MotionUtil
             if range.Count = 0 then
                 None
             else
+
+                // The minimum distance from the top of the window is zero if
+                // the top of the buffer is visible and scrolloff otherwise.
+                let minCount =
+                    if range.StartLineNumber = 0 then 0
+                    else _globalSettings.ScrollOffset
                 let count = (Util.CountOrDefault countOpt) - 1
-                let count = min count range.Count
+                let count = max count minCount
+                let count = min count (range.Count - 1)
                 let visualLine = SnapshotUtil.GetLine range.Snapshot (count + range.StartLineNumber)
                 match BufferGraphUtil.MapPointDownToSnapshotStandard _textView.BufferGraph visualLine.Start x.CurrentSnapshot with
                 | None -> None
@@ -2354,7 +2361,16 @@ type internal MotionUtil
             if range.Count = 0 then 
                 None
             else
+
+                // The minimum distance from the bottom of the window is zero if
+                // the bottom of the buffer is visible and scrolloff otherwise.
+                let minCount =
+                    let snapshot = _textView.TextSnapshot
+                    let lastLineNumber = SnapshotUtil.GetLastNormalizedLineNumber snapshot
+                    if range.LastLineNumber >= lastLineNumber then 0
+                    else _globalSettings.ScrollOffset
                 let count = (Util.CountOrDefault countOpt) - 1
+                let count = max count minCount
                 let count = min count (range.Count - 1)
                 let number = range.LastLineNumber - count
                 let visualLine = SnapshotUtil.GetLine range.Snapshot number

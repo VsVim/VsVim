@@ -1779,23 +1779,20 @@ type internal CommandUtil
     /// Happens when the middle mouse button is clicked.  Need to paste the contents of the default
     /// register at the current position
     member x.PutAfterCaretMouse() =
-        try
+        match TextViewUtil.GetTextViewLines _textView with
+        | None -> ()
+        | Some textViewLines ->
             match _mouseDevice.GetPosition _textView with
             | None -> ()
             | Some position ->
 
                 // First move the caret to the current mouse position
-                let textViewLine = _textView.TextViewLines.GetTextViewLineContainingYCoordinate(position.Y + _textView.ViewportTop)
+                let textViewLine = textViewLines.GetTextViewLineContainingYCoordinate(position.Y + _textView.ViewportTop)
                 _textView.Caret.MoveTo(textViewLine, position.X + _textView.ViewportLeft) |> ignore
 
                 // Now run the put after command
                 let register = x.GetRegister (Some RegisterName.Unnamed)
                 x.PutAfterCaretCore register.RegisterValue 1 false
-        with
-        // Dealing with ITextViewLines can lead to an exception (particularly during layout).  Need
-        // to be safe here and handle the exception.  If we can't access the ITextViewLines there
-        // isn't much that can be done for scrolling
-        | _ -> ()
 
         CommandResult.Completed ModeSwitch.NoSwitch
 
@@ -2610,16 +2607,20 @@ type internal CommandUtil
             | MaintainCaretColumn.Spaces spaces -> max spaces spacesToCaret
             | MaintainCaretColumn.EndOfLine -> spacesToCaret
 
-        try
-            // Update the caret to the specified offset from the first visible line
-            let updateCaretToOffset lineOffset =
-                let textViewLines = _textView.TextViewLines
+        // Update the caret to the specified offset from the first visible line
+        let updateCaretToOffset lineOffset =
+            match TextViewUtil.GetTextViewLines _textView with
+            | None -> ()
+            | Some textViewLines ->
                 let firstIndex = textViewLines.GetIndexOfTextLine(textViewLines.FirstVisibleLine)
                 let textViewLine = textViewLines.[firstIndex + lineOffset]
                 let snapshotLine = SnapshotPointUtil.GetContainingLine textViewLine.Start
                 _commonOperations.MoveCaretToPoint snapshotLine.Start ViewFlags.Standard
 
-            let textViewLines = _textView.TextViewLines
+        match TextViewUtil.GetTextViewLines _textView with
+        | None -> ()
+        | Some textViewLines ->
+
             let firstIndex = textViewLines.GetIndexOfTextLine(textViewLines.FirstVisibleLine)
             let caretIndex = textViewLines.GetIndexOfTextLine(_textView.Caret.ContainingTextViewLine)
 
@@ -2643,7 +2644,9 @@ type internal CommandUtil
                     _textView.ViewScroller.ScrollViewportVerticallyByLines(scrollDirection, count)
                     updateCaretToOffset lineOffset
             | ScrollDirection.Down ->
-                if x.CurrentSnapshot.Length = textViewLines.LastVisibleLine.EndIncludingLineBreak.Position then
+                let lastLine = SnapshotUtil.GetLastNormalizedLine _textView.TextSnapshot
+                let visualEndPoint = lastLine.End
+                if visualEndPoint.Position <= textViewLines.LastVisibleLine.End.Position then
                     // Currently scrolled to the end of the buffer.  Move the caret by the count or
                     // beep if truly at the end
                     let lastIndex = textViewLines.GetIndexOfTextLine(textViewLines.LastVisibleLine)
@@ -2652,7 +2655,8 @@ type internal CommandUtil
                     else
                         let index = min (textViewLines.Count - 1) (caretIndex + count)
                         let line = textViewLines.[index]
-                        TextViewUtil.MoveCaretToPoint _textView line.Start
+                        let caretPoint, _ = SnapshotPointUtil.OrderAscending visualEndPoint line.End
+                        TextViewUtil.MoveCaretToPoint _textView caretPoint
                 else
                     _textView.ViewScroller.ScrollViewportVerticallyByLines(scrollDirection, count)
                     updateCaretToOffset lineOffset
@@ -2667,12 +2671,6 @@ type internal CommandUtil
                 let point = SnapshotLineUtil.GetSpaceOrEnd x.CaretLine maintainSpacesToCaret _localSettings.TabStop
                 TextViewUtil.MoveCaretToPoint _textView point
                 _commonOperations.MaintainCaretColumn <- MaintainCaretColumn.Spaces maintainSpacesToCaret
-
-        with
-        // Dealing with ITextViewLines can lead to an exception (particularly during layout).  Need
-        // to be safe here and handle the exception.  If we can't access the ITextViewLines there
-        // isn't much that can be done for scrolling
-        | _ -> ()
 
         CommandResult.Completed ModeSwitch.NoSwitch
 
@@ -2715,8 +2713,7 @@ type internal CommandUtil
                 let lastVisiblePoint = textViewLines.LastVisibleLine.EndIncludingLineBreak
                 let lastVisibleLine = SnapshotPointUtil.GetContainingLine lastVisiblePoint
                 let lastVisibleLineNumber = lastVisibleLine.LineNumber
-                // TODO: Use GetLastNormalizedLine
-                let lastLine = SnapshotUtil.GetLastLine _textView.TextSnapshot
+                let lastLine = SnapshotUtil.GetLastNormalizedLine _textView.TextSnapshot
                 let lastLineNumber = SnapshotLineUtil.GetLineNumber lastLine
                 if lastVisibleLineNumber >= lastLineNumber then
 
@@ -2799,11 +2796,81 @@ type internal CommandUtil
     /// Scroll the window in the specified direction by the specified number of lines.  The
     /// caret only moves if it leaves the view port
     member x.ScrollWindow direction count =
-        try
+
+        // Count the number of rows we need to scroll to move count
+        // lines off the screen in the specified direction.
+        let rowCount =
+            if not _windowSettings.Wrap then
+                count
+            else
+
+                // If line wrapping is in effect, there can be multiple screen rows
+                // corrsponding to a single text buffer line.
+                match TextViewUtil.GetTextViewLines _textView with
+                | None -> count
+                | Some textViewLines ->
+
+                    // Build an array of the text view line indexes that correspond
+                    // to the first segment of a fully visible text buffer line.
+                    // These are the rows that have a line number next to them
+                    // when line numbering is turned on.
+                    let numberedLineIndexes =
+                        textViewLines
+                        |> Seq.where (fun textViewLine ->
+                            textViewLine.VisibilityState = Formatting.VisibilityState.FullyVisible &&
+                                textViewLine.Start = textViewLine.Start.GetContainingLine().Start)
+                        |> Seq.map (fun textViewLine ->
+                            textViewLines.GetIndexOfTextLine(textViewLine))
+                        |> Seq.toArray
+                    let lastNumberedLineIndex = numberedLineIndexes.Length - 1
+
+                    // Use the numbered line indexes to count screen rows used by
+                    // lines visible in the text view.
+                    if count <= lastNumberedLineIndex then
+                        match direction with
+                        | ScrollDirection.Up ->
+
+                            // Calculate how many rows the last fully visible line uses.
+                            let rec getWrapCount (index: int) =
+                                if index <= textViewLines.Count - 2 then
+
+                                    // Does the current text view line belong to the same
+                                    // text buffer line as the next text view line?
+                                    let currentLine = textViewLines.[index].Start.GetContainingLine()
+                                    let nextLine = textViewLines.[index + 1].Start.GetContainingLine()
+                                    if currentLine.LineNumber = nextLine.LineNumber then
+                                        let wrapCount = getWrapCount (index + 1)
+                                        wrapCount + 1
+                                    else
+                                        1
+                                else
+                                    1
+
+                            let lastIndex = numberedLineIndexes.[lastNumberedLineIndex]
+                            let targetIndex = numberedLineIndexes.[lastNumberedLineIndex - (count - 1)]
+                            let lastWrapCount = getWrapCount lastIndex
+                            lastIndex - targetIndex + lastWrapCount
+                        | ScrollDirection.Down ->
+                            let firstIndex = numberedLineIndexes.[0]
+                            let targetIndex = numberedLineIndexes.[count]
+                            targetIndex - firstIndex
+                        | _ -> count
+                    else
+                        count
+
+        // In case something went wrong when calculating the row count,
+        // it should always be at least at big as count.
+        let rowCount = max rowCount count
+
+        _textView.ViewScroller.ScrollViewportVerticallyByLines(direction, rowCount)
+
+        match TextViewUtil.GetVisibleSnapshotLineRange _textView with
+        | None -> ()
+        | Some lineRange ->
 
             // If the scroll of the window has taken the caret off of the visible portion of the ITextView
             // then we need to move it back at the same column
-            let updateCaret (textViewLine: ITextViewLine) =
+            let updateCaret (line: ITextSnapshotLine) =
 
                 // This is one operation which does maintain the column spacing as we go up and down the
                 // lines.  Make sure to use spaces here not column
@@ -2814,7 +2881,6 @@ type internal CommandUtil
                     | MaintainCaretColumn.Spaces spaces -> max caretSpaces spaces
                     | MaintainCaretColumn.EndOfLine -> caretSpaces
 
-                let line = textViewLine.Start.GetContainingLine()
                 let point = _commonOperations.GetPointForSpaces line columnSpaces
                 TextViewUtil.MoveCaretToPoint _textView point
 
@@ -2822,25 +2888,16 @@ type internal CommandUtil
                 // the value until after the caret is moved
                 _commonOperations.MaintainCaretColumn <- MaintainCaretColumn.Spaces columnSpaces
 
-            _textView.ViewScroller.ScrollViewportVerticallyByLines(direction, count)
-
-            let textViewLines = _textView.TextViewLines
             match direction with
             | ScrollDirection.Up ->
-                if x.CaretPoint.Position >= textViewLines.LastVisibleLine.End.Position then
-                    updateCaret textViewLines.LastVisibleLine
+                if x.CaretPoint.Position > lineRange.End.Position then
+                    updateCaret <| lineRange.End.GetContainingLine()
             | ScrollDirection.Down ->
-                if x.CaretPoint.Position < textViewLines.FirstVisibleLine.Start.Position then
-                    updateCaret textViewLines.FirstVisibleLine
+                if x.CaretPoint.Position < lineRange.Start.Position then
+                    updateCaret <| lineRange.Start.GetContainingLine()
             | _ -> ()
 
             _commonOperations.AdjustCaretForScrollOffset()
-
-        with
-        // Dealing with ITextViewLines can lead to an exception (particularly during layout).  Need
-        // to be safe here and handle the exception.  If we can't access the ITextViewLines there
-        // isn't much that can be done for scrolling
-        | _ -> ()
 
         CommandResult.Completed ModeSwitch.NoSwitch
 

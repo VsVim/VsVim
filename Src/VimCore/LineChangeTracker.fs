@@ -73,11 +73,8 @@ type internal LineChangeTracker
         |> Event.add (fun _ -> x.Disposables.DisposeAll())
 
         // Safely attempt to record caret position on entry
-        try
-            if x.TextView.TextViewLines <> null then
-                x.OnCaretPositionChanged()
-        with
-        | _ -> ()
+        if TextViewUtil.GetTextViewLines _textView |> Option.isSome then
+            x.OnCaretPositionChanged()
 
     /// Handler for caret position changes
     member x.OnCaretPositionChanged () = 

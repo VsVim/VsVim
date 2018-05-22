@@ -1820,13 +1820,19 @@ module TextViewUtil =
     /// Be aware when using GetTextViewLineContainingYCoordinate, may need to add the
     /// _textView.ViewportTop to the y coordinate
     let GetTextViewLines (textView: ITextView) =
-        try
-            let textViewLines = textView.TextViewLines
-            if textViewLines <> null then Some textViewLines
-            else None
-        with 
+        if textView.IsClosed || textView.InLayout then
+
             // TextViewLines can throw if the view is being laid out.  Highly unlikely we'd hit
             // that inside of Vim but need to be careful
+            None
+        else 
+            try
+                let textViewLines = textView.TextViewLines
+                if textViewLines <> null && textViewLines.IsValid then
+                    Some textViewLines
+                else
+                    None
+            with 
             | _ -> None
 
     /// Get the count of Visible lines in the ITextView
@@ -1837,13 +1843,37 @@ module TextViewUtil =
 
     /// Return the overarching SnapshotLineRange for the visible lines in the ITextView
     let GetVisibleSnapshotLineRange (textView: ITextView) =
-        if textView.InLayout then
-            None
-        else 
-            let snapshot = textView.TextSnapshot
-            let lines = textView.TextViewLines
-            let startLine = lines.FirstVisibleLine.Start.GetContainingLine().LineNumber
-            let lastLine = lines.LastVisibleLine.End.GetContainingLine().LineNumber
+
+        // Get the first line not clipped or wrapped from above.
+        let getFirstFullyVisibleLine (textViewLines: ITextViewLineCollection) =
+            let line =
+                textViewLines
+                |> Seq.where (fun textViewLine ->
+                    textViewLine.VisibilityState = Formatting.VisibilityState.FullyVisible &&
+                        textViewLine.Start = textViewLine.Start.GetContainingLine().Start)
+                |> Seq.tryHead
+            match line with
+            | None -> textViewLines.FirstVisibleLine
+            | Some line -> line
+
+        // Get the last line not clipped or wrapped to below.
+        let getLastFullyVisibleLine (textViewLines: ITextViewLineCollection) =
+            let line =
+                textViewLines
+                |> Seq.rev
+                |> Seq.where (fun textViewLine ->
+                    textViewLine.VisibilityState = Formatting.VisibilityState.FullyVisible &&
+                        textViewLine.End = textViewLine.End.GetContainingLine().End)
+                |> Seq.tryHead
+            match line with
+            | None -> textViewLines.LastVisibleLine
+            | Some line -> line
+
+        match GetTextViewLines textView with
+        | None -> None
+        | Some textViewLines ->
+            let startLine = (getFirstFullyVisibleLine textViewLines).Start.GetContainingLine().LineNumber
+            let lastLine = (getLastFullyVisibleLine textViewLines).End.GetContainingLine().LineNumber
             SnapshotLineRange.CreateForLineNumberRange textView.TextSnapshot startLine lastLine |> NullableUtil.ToOption
 
     /// Returns a sequence of ITextSnapshotLine values representing the visible lines in the buffer
@@ -1890,7 +1920,7 @@ module TextViewUtil =
             let firstLineNumber = firstVisibleLine.LineNumber
             let lastVisibleLine = SnapshotPointUtil.GetContainingLine textViewLines.LastVisibleLine.Start
             let lastLineNumber = lastVisibleLine.LineNumber
-            let endLine = SnapshotUtil.GetLastLine textView.TextSnapshot
+            let endLine = SnapshotUtil.GetLastNormalizedLine textView.TextSnapshot
             let endLineNumber = endLine.LineNumber
             let scrollLimit = int(ceil(textView.ViewportHeight / textView.LineHeight / 2.0))
             if pointLineNumber >= firstLineNumber - scrollLimit && pointLineNumber <= firstLineNumber then
@@ -1911,7 +1941,7 @@ module TextViewUtil =
                 // bottom of the file. Scroll the bottom of the
                 // file to the bottom of the screen.
                 let relativeTo = Editor.ViewRelativePosition.Bottom
-                textView.DisplayTextLineContainingBufferPosition(endLine.EndIncludingLineBreak, 0.0, relativeTo) |> ignore
+                textView.DisplayTextLineContainingBufferPosition(endLine.End, 0.0, relativeTo) |> ignore
             else
 
                 // Otherwise, position point in the middle of the screen.

@@ -317,7 +317,7 @@ type internal VimBufferFactory
         // run many times and it is possible that the ITextView is actually closed
         // before we are ever able to switch to the initial mode.  Must take that into
         // account
-        let isReady () = textView.IsClosed || (not textView.InLayout && textView.TextViewLines <> null) 
+        let isReady () = TextViewUtil.GetTextViewLines textView |> Option.isSome
 
         // The ITextView is initialized and no one has forced the IVimBuffer out of
         // the uninitialized state.  Do the switch now to the correct mode

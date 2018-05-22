@@ -354,14 +354,23 @@ namespace Vim.UnitTest.Mock
                     PositionAffinity.Predecessor));
 
             var firstLine = factory.Create<ITextViewLine>();
+            firstLine.SetupGet(x => x.VisibilityState).Returns(VisibilityState.FullyVisible);
             firstLine.SetupGet(x => x.Start).Returns(textBuffer.GetLine(startLine).Start);
 
             var lastLine = factory.Create<ITextViewLine>();
+            lastLine.SetupGet(x => x.VisibilityState).Returns(VisibilityState.FullyVisible);
             lastLine.SetupGet(x => x.End).Returns(textBuffer.GetLine(endLineValue).End);
 
+            var lineList = new List<ITextViewLine>() { firstLine.Object, lastLine.Object };
+
             var lines = factory.Create<ITextViewLineCollection>();
+            lines.SetupGet(x => x.IsValid).Returns(true);
             lines.SetupGet(x => x.FirstVisibleLine).Returns(firstLine.Object);
             lines.SetupGet(x => x.LastVisibleLine).Returns(lastLine.Object);
+            lines.SetupGet(x => x.Count).Returns(lineList.Count);
+            lines.Setup(x => x.GetEnumerator()).Returns(lineList.GetEnumerator());
+            lines.Setup(x => x.CopyTo(It.IsAny<ITextViewLine[]>(), It.IsAny<int>()))
+                .Callback((ITextViewLine[] array, int index) => lineList.CopyTo(array, index));
 
             var visualBuffer = CreateTextBuffer(factory: factory);
             var textViewModel = factory.Create<ITextViewModel>();
@@ -382,6 +391,7 @@ namespace Vim.UnitTest.Mock
             textView.SetupGet(x => x.TextBuffer).Returns(textBuffer);
             textView.SetupGet(x => x.TextViewLines).Returns(lines.Object);
             textView.SetupGet(x => x.Caret).Returns(caret.Object);
+            textView.SetupGet(x => x.IsClosed).Returns(false);
             textView.SetupGet(x => x.InLayout).Returns(false);
             textView.SetupGet(x => x.TextSnapshot).Returns(() => textBuffer.CurrentSnapshot);
             textView.SetupGet(x => x.Properties).Returns(properties);
@@ -521,6 +531,7 @@ namespace Vim.UnitTest.Mock
         {
             factory = factory ?? new MockRepository(MockBehavior.Strict);
             var mock = factory.Create<ITextViewLineCollection>();
+            mock.SetupGet(x => x.IsValid).Returns(true);
             for (var i = 0; i < range.Count; i++)
             {
                 var number = range.StartLineNumber + i;
