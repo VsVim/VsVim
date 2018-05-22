@@ -73,6 +73,7 @@ type internal VimData(_globalSettings: IVimGlobalSettings) as this =
     let mutable _autoCommands: AutoCommand list = List.Empty
     let mutable _currentDirectory = System.Environment.CurrentDirectory
     let mutable _previousCurrentDirecotry = _currentDirectory
+    let mutable _lastLineCommand: LineCommand option = None
     let mutable _commandHistory = HistoryList()
     let mutable _searchHistory = HistoryList()
     let mutable _lastSubstituteData: SubstituteData option = None
@@ -154,6 +155,9 @@ type internal VimData(_globalSettings: IVimGlobalSettings) as this =
         member x.LastSubstituteData 
             with get() = _lastSubstituteData
             and set value = _lastSubstituteData <- value
+        member x.LastLineCommand 
+            with get() = _lastLineCommand
+            and set value = _lastLineCommand <- value
         member x.LastCommand 
             with get() = _lastCommand
             and set value = _lastCommand <- value

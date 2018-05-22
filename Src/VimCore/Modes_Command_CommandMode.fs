@@ -57,6 +57,7 @@ type internal CommandMode
         let vimInterpreter = _buffer.Vim.GetVimInterpreter _buffer
         let result = vimInterpreter.RunLineCommand lineCommand
         _vimData.LastCommandLine <- command
+        _vimData.LastLineCommand <- Some lineCommand
         result
 
     // Command mode can be validly entered with the selection active.  Consider

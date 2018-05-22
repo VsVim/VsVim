@@ -2724,8 +2724,8 @@ type NormalCommand =
     /// Replace the char under the cursor with the given char
     | ReplaceChar of KeyInput
 
-    /// Run the macro contained in the register specified by the char value
-    | RunMacro of char
+    /// Run an 'at' command for the specified character
+    | RunAtCommand of char
 
     /// Set the specified mark to the current value of the caret
     | SetMarkToCaret of char
@@ -2878,7 +2878,7 @@ type NormalCommand =
         | NormalCommand.RepeatLastSubstitute _ -> None 
         | NormalCommand.ReplaceAtCaret -> None
         | NormalCommand.ReplaceChar _ -> None
-        | NormalCommand.RunMacro _ -> None
+        | NormalCommand.RunAtCommand _ -> None
         | NormalCommand.SetMarkToCaret _ -> None
         | NormalCommand.ScrollLines _ -> None
         | NormalCommand.ScrollPages _ -> None
@@ -4009,10 +4009,13 @@ type IVimData =
     /// is the backwards version
     abstract LastCharSearch: (CharSearchKind * SearchPath * char) option with get, set
 
-    /// The last command which was ran 
+    /// The last line command which was run 
+    abstract LastLineCommand: LineCommand option with get, set
+
+    /// The last command which was run 
     abstract LastCommand: StoredCommand option with get, set
 
-    /// The last command line which was ran
+    /// The last command line which was run
     abstract LastCommandLine: string with get, set
 
     /// The last shell command that was run

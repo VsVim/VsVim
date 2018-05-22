@@ -2276,13 +2276,42 @@ type internal CommandUtil
         | Command.VisualCommand (command, data, visualSpan) -> x.RunVisualCommand command data visualSpan
         | Command.InsertCommand command -> x.RunInsertCommand command
 
-    /// Run the Macro which is present in the specified char
-    member x.RunMacro registerName count =
+    /// Run an 'at' command for the specified character
+    member x.RunAtCommand char count =
+        match char with
+        | ':' ->
 
-        // If the '@' is used then we are doing a run last macro run
-        let registerName =
-            if registerName = '@' then _vimData.LastMacroRun |> OptionUtil.getOrDefault registerName
-            else registerName
+            // Repeat the last line command.
+            let vim = _vimBufferData.Vim
+            match vim.VimData.LastLineCommand with
+            | None ->
+                _commonOperations.Beep()
+            | Some lastLineCommand ->
+                match vim.GetVimBuffer _textView with
+                | None -> _commonOperations.Beep()
+                | Some vimBuffer ->
+                    let vimInterpreter = vim.GetVimInterpreter vimBuffer
+                    for i = 1 to count do
+                        vimInterpreter.RunLineCommand lastLineCommand
+
+        | '@' ->
+
+            // Repeat the last macro.
+            match _vimData.LastMacroRun with
+            | None ->
+                _commonOperations.Beep()
+            | Some registerName ->
+                x.RunMacro registerName count
+
+        | registerName ->
+
+            // Run the macro with the specified register name.
+            x.RunMacro registerName count
+
+        CommandResult.Completed ModeSwitch.NoSwitch
+
+    /// Run a macro using the contents of the specified register
+    member x.RunMacro registerName count =
 
         let name =
             // TODO:  Need to handle, = and .
@@ -2370,8 +2399,6 @@ type internal CommandUtil
 
             _vimData.LastMacroRun <- Some registerName
 
-        CommandResult.Completed ModeSwitch.NoSwitch
-
     /// Run a InsertCommand against the buffer
     member x.RunInsertCommand command =
         _insertUtil.RunInsertCommand command
@@ -2444,7 +2471,7 @@ type internal CommandUtil
         | NormalCommand.RepeatLastSubstitute useSameFlags -> x.RepeatLastSubstitute useSameFlags
         | NormalCommand.ReplaceAtCaret -> x.ReplaceAtCaret count
         | NormalCommand.ReplaceChar keyInput -> x.ReplaceChar keyInput data.CountOrDefault
-        | NormalCommand.RunMacro registerName -> x.RunMacro registerName data.CountOrDefault
+        | NormalCommand.RunAtCommand char -> x.RunAtCommand char data.CountOrDefault
         | NormalCommand.SetMarkToCaret c -> x.SetMarkToCaret c
         | NormalCommand.ScrollLines (direction, useScrollOption) -> x.ScrollLines direction useScrollOption data.Count
         | NormalCommand.ScrollPages direction -> x.ScrollPages direction data.CountOrDefault

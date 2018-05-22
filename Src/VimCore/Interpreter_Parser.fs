@@ -751,6 +751,111 @@ type Parser
         | None -> ParseResult.Succeeded flags
         | Some p -> p
 
+    /// Parse out an '@' command
+    member x.ParseAtCommand lineRange =
+        x.SkipBlanks()
+        if _tokenizer.CurrentChar = ':' then
+            _tokenizer.MoveNextChar()
+            match _vimData.LastLineCommand with
+            | None -> LineCommand.ParseError "Error"
+            | Some lineCommand -> x.MergeLineRangeWithCommand lineRange lineCommand
+        else
+            LineCommand.ParseError "Error"
+
+    /// Merge new line range with previous line command
+    member x.MergeLineRangeWithCommand lineRange lineCommand =
+        let noRangeCommand =
+            match lineRange with
+            | LineRangeSpecifier.None -> lineCommand
+            | _ -> LineCommand.ParseError "Error"
+        match lineRange with
+        | LineRangeSpecifier.None -> lineCommand
+        | _ ->
+            match lineCommand with
+            | LineCommand.AddAutoCommand _ -> noRangeCommand
+            | LineCommand.Behave _ -> noRangeCommand
+            | LineCommand.Call _ -> noRangeCommand
+            | LineCommand.ChangeDirectory _ -> noRangeCommand
+            | LineCommand.ChangeLocalDirectory _ -> noRangeCommand
+            | LineCommand.ClearKeyMap _ -> noRangeCommand
+            | LineCommand.Close _ -> noRangeCommand
+            | LineCommand.CopyTo (_, destLineRange, count) -> LineCommand.CopyTo (lineRange, destLineRange, count)
+            | LineCommand.Delete (_, registerName) -> LineCommand.Delete (lineRange, registerName)
+            | LineCommand.DeleteAllMarks -> noRangeCommand
+            | LineCommand.DeleteMarks _ -> noRangeCommand
+            | LineCommand.DisplayKeyMap _ -> noRangeCommand
+            | LineCommand.DisplayLet _ -> noRangeCommand
+            | LineCommand.DisplayMarks _ -> noRangeCommand
+            | LineCommand.DisplayRegisters _ -> noRangeCommand
+            | LineCommand.Echo _ -> noRangeCommand
+            | LineCommand.Edit _ -> noRangeCommand
+            | LineCommand.Else -> noRangeCommand
+            | LineCommand.ElseIf _ -> noRangeCommand
+            | LineCommand.Execute _ -> noRangeCommand
+            | LineCommand.Fold lineRange -> LineCommand.Fold lineRange
+            | LineCommand.Function _ -> noRangeCommand
+            | LineCommand.FunctionEnd _ -> noRangeCommand
+            | LineCommand.FunctionStart _ -> noRangeCommand
+            | LineCommand.Global (_, pattern, matchPattern, lineCommand) -> LineCommand.Global (lineRange, pattern, matchPattern, lineCommand)
+            | LineCommand.GoToFirstTab -> noRangeCommand
+            | LineCommand.GoToLastTab -> noRangeCommand
+            | LineCommand.GoToNextTab _ -> noRangeCommand
+            | LineCommand.GoToPreviousTab _ -> noRangeCommand
+            | LineCommand.Help -> noRangeCommand
+            | LineCommand.History -> noRangeCommand
+            | LineCommand.HorizontalSplit (_, fileOptions, commandOptions) -> LineCommand.HorizontalSplit (lineRange, fileOptions, commandOptions)
+            | LineCommand.HostCommand _ -> noRangeCommand
+            | LineCommand.If _ -> noRangeCommand
+            | LineCommand.IfEnd -> noRangeCommand
+            | LineCommand.IfStart _ -> noRangeCommand
+            | LineCommand.Join (_, joinKind) -> LineCommand.Join (lineRange, joinKind)
+            | LineCommand.JumpToLastLine -> noRangeCommand
+            | LineCommand.JumpToLine _ -> noRangeCommand
+            | LineCommand.Let _ -> noRangeCommand
+            | LineCommand.LetRegister _ -> noRangeCommand
+            | LineCommand.Make _ -> noRangeCommand
+            | LineCommand.MapKeys _ -> noRangeCommand
+            | LineCommand.MoveTo (_, destLineRange, count) -> LineCommand.MoveTo (lineRange, destLineRange, count)
+            | LineCommand.NoHighlightSearch -> noRangeCommand
+            | LineCommand.Nop -> noRangeCommand
+            | LineCommand.Normal (_, command) -> LineCommand.Normal (lineRange, command)
+            | LineCommand.Only -> noRangeCommand
+            | LineCommand.ParseError _ -> noRangeCommand
+            | LineCommand.Print (_, lineCommandFlags)-> LineCommand.Print (lineRange, lineCommandFlags)
+            | LineCommand.PrintCurrentDirectory -> noRangeCommand
+            | LineCommand.PutAfter (_, registerName) -> LineCommand.PutAfter (lineRange, registerName)
+            | LineCommand.PutBefore (_, registerName) -> LineCommand.PutBefore (lineRange, registerName)
+            | LineCommand.QuickFixNext _ -> noRangeCommand
+            | LineCommand.QuickFixPrevious _ -> noRangeCommand
+            | LineCommand.QuickFixWindow -> noRangeCommand
+            | LineCommand.Quit _ -> noRangeCommand
+            | LineCommand.QuitAll _ -> noRangeCommand
+            | LineCommand.QuitWithWrite (_, hasBang, fileOptions, filePath) -> LineCommand.QuitWithWrite (lineRange, hasBang, fileOptions, filePath)
+            | LineCommand.ReadCommand (_, command) -> LineCommand.ReadCommand (lineRange, command)
+            | LineCommand.ReadFile (_, fileOptionList, filePath) -> LineCommand.ReadFile (lineRange, fileOptionList, filePath)
+            | LineCommand.Redo -> noRangeCommand
+            | LineCommand.RemoveAutoCommands _ -> noRangeCommand
+            | LineCommand.Retab (_, hasBang, tabStop) -> LineCommand.Retab (lineRange, hasBang, tabStop)
+            | LineCommand.Search (_, path, pattern) -> LineCommand.Search (lineRange, path, pattern)
+            | LineCommand.Set _ -> noRangeCommand
+            | LineCommand.ShellCommand _ -> noRangeCommand
+            | LineCommand.ShiftLeft _ -> LineCommand.ShiftLeft lineRange
+            | LineCommand.ShiftRight _ -> LineCommand.ShiftRight lineRange
+            | LineCommand.Sort (_, hasBang, flags, pattern) -> LineCommand.Sort (lineRange, hasBang, flags, pattern)
+            | LineCommand.Source _ -> noRangeCommand
+            | LineCommand.Substitute (_, pattern, replace, flags) -> LineCommand.Substitute (lineRange, pattern, replace, flags)
+            | LineCommand.SubstituteRepeat (_, substituteFlags) -> LineCommand.SubstituteRepeat (lineRange, substituteFlags)
+            | LineCommand.TabNew _ -> noRangeCommand
+            | LineCommand.TabOnly -> noRangeCommand
+            | LineCommand.Undo -> noRangeCommand
+            | LineCommand.Unlet _ -> noRangeCommand
+            | LineCommand.UnmapKeys _ -> noRangeCommand
+            | LineCommand.Version -> noRangeCommand
+            | LineCommand.VerticalSplit (_, fileOptions, commandOptions) -> LineCommand.VerticalSplit (lineRange, fileOptions, commandOptions)
+            | LineCommand.Write (_, hasBang, fileOptionList, filePath) -> LineCommand.Write (lineRange, hasBang, fileOptionList, filePath)
+            | LineCommand.WriteAll _ -> noRangeCommand
+            | LineCommand.Yank (_, registerName, count) -> LineCommand.Yank (lineRange, registerName, count)
+
     /// Parse out :autocommand
     member x.ParseAutoCommand() = 
 
@@ -2301,6 +2406,7 @@ type Parser
                 | "&" -> x.ParseSubstituteRepeat lineRange SubstituteFlags.None
                 | "~" -> x.ParseSubstituteRepeat lineRange SubstituteFlags.UsePreviousSearchPattern
                 | "!" -> x.ParseShellCommand lineRange
+                | "@" -> x.ParseAtCommand lineRange
                 | _ -> LineCommand.ParseError Resources.Parser_Error
 
             handleParseResult parseResult

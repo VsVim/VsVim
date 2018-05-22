@@ -229,7 +229,7 @@ type internal NormalMode
                     yield ("'", CommandFlags.Movement, bindMark NormalCommand.JumpToMarkLine)
                     yield ("`", CommandFlags.Movement, bindMark NormalCommand.JumpToMark)
                     yield ("m", CommandFlags.Special, bindDataToStorage (BindData<_>.CreateForChar KeyRemapMode.None NormalCommand.SetMarkToCaret))
-                    yield ("@", CommandFlags.Special, bindDataToStorage (BindData<_>.CreateForChar KeyRemapMode.None NormalCommand.RunMacro))
+                    yield ("@", CommandFlags.Special, bindDataToStorage (BindData<_>.CreateForChar KeyRemapMode.None NormalCommand.RunAtCommand))
                 } |> Seq.map (fun (str, flags, storage) -> 
                     let keyInputSet = KeyNotationUtil.StringToKeyInputSet str
                     CommandBinding.ComplexNormalBinding (keyInputSet, flags, storage))
