@@ -2783,46 +2783,67 @@ type internal CommandUtil
                 | None -> count
                 | Some textViewLines ->
 
-                    // Build an array of the text view lines that correspond to the
-                    // first segment of a fully visible text buffer line.
+                    // Build an array of the text view line indexes that correspond
+                    // to the first segment of a fully visible text buffer line.
                     // These are the rows that have a line number next to them
-                    // if line numbering is turned on.
-                    let numberedTextViewLines =
+                    // when line numbering is turned on.
+                    let numberedLineIndexes =
                         textViewLines
                         |> Seq.where (fun textViewLine ->
                             textViewLine.VisibilityState = Formatting.VisibilityState.FullyVisible &&
                                 textViewLine.Start = textViewLine.Start.GetContainingLine().Start)
+                        |> Seq.map (fun textViewLine ->
+                            textViewLines.GetIndexOfTextLine(textViewLine))
                         |> Seq.toArray
-                    let lastNumberedLineIndex = numberedTextViewLines.Length - 1
-                    if count > lastNumberedLineIndex then
-                        count
-                    else
+                    let lastNumberedLineIndex = numberedLineIndexes.Length - 1
 
-                        // Get the text view line index corresponding to an offset
-                        // in the numbered text view lines array.
-                        let getIndex (offset: int) =
-                            textViewLines.GetIndexOfTextLine(numberedTextViewLines.[offset])
-                            
+                    // Use the numbered line indexes to count screen rows used by
+                    // lines visible in the text view.
+                    if count <= lastNumberedLineIndex then
                         match direction with
                         | ScrollDirection.Up ->
-                            let firstIndex = getIndex 0
-                            let targetIndex = getIndex count
-                            targetIndex - firstIndex
+
+                            // Calculate how many rows the last fully visible line uses.
+                            let rec getWrapCount (index: int) =
+                                if index <= textViewLines.Count - 2 then
+
+                                    // Does the current text view line belong to the same
+                                    // text buffer line as the next text view line?
+                                    let currentLine = textViewLines.[index].Start.GetContainingLine()
+                                    let nextLine = textViewLines.[index + 1].Start.GetContainingLine()
+                                    if currentLine.LineNumber = nextLine.LineNumber then
+                                        let wrapCount = getWrapCount (index + 1)
+                                        wrapCount + 1
+                                    else
+                                        1
+                                else
+                                    1
+
+                            let lastIndex = numberedLineIndexes.[lastNumberedLineIndex]
+                            let targetIndex = numberedLineIndexes.[lastNumberedLineIndex - (count - 1)]
+                            let lastWrapCount = getWrapCount lastIndex
+                            lastIndex - targetIndex + lastWrapCount
                         | ScrollDirection.Down ->
-                            let lastIndex = getIndex lastNumberedLineIndex
-                            let targetIndex = getIndex (lastNumberedLineIndex - count)
-                            lastIndex - targetIndex
+                            let firstIndex = numberedLineIndexes.[0]
+                            let targetIndex = numberedLineIndexes.[count]
+                            targetIndex - firstIndex
                         | _ -> count
+                    else
+                        count
+
+        // In case something went wrong when calculating the row count,
+        // it should always be at least at big as count.
+        let rowCount = min rowCount count
 
         _textView.ViewScroller.ScrollViewportVerticallyByLines(direction, rowCount)
 
-        match TextViewUtil.GetTextViewLines _textView with
+        match TextViewUtil.GetVisibleSnapshotLineRange _textView with
         | None -> ()
-        | Some textViewLines ->
+        | Some lineRange ->
 
             // If the scroll of the window has taken the caret off of the visible portion of the ITextView
             // then we need to move it back at the same column
-            let updateCaret (textViewLine: ITextViewLine) =
+            let updateCaret (line: ITextSnapshotLine) =
 
                 // This is one operation which does maintain the column spacing as we go up and down the
                 // lines.  Make sure to use spaces here not column
@@ -2833,7 +2854,6 @@ type internal CommandUtil
                     | MaintainCaretColumn.Spaces spaces -> max caretSpaces spaces
                     | MaintainCaretColumn.EndOfLine -> caretSpaces
 
-                let line = textViewLine.Start.GetContainingLine()
                 let point = _commonOperations.GetPointForSpaces line columnSpaces
                 TextViewUtil.MoveCaretToPoint _textView point
 
@@ -2843,11 +2863,11 @@ type internal CommandUtil
 
             match direction with
             | ScrollDirection.Up ->
-                if x.CaretPoint.Position >= textViewLines.LastVisibleLine.End.Position then
-                    updateCaret textViewLines.LastVisibleLine
+                if x.CaretPoint.Position > lineRange.End.Position then
+                    updateCaret <| lineRange.End.GetContainingLine()
             | ScrollDirection.Down ->
-                if x.CaretPoint.Position < textViewLines.FirstVisibleLine.Start.Position then
-                    updateCaret textViewLines.FirstVisibleLine
+                if x.CaretPoint.Position < lineRange.Start.Position then
+                    updateCaret <| lineRange.Start.GetContainingLine()
             | _ -> ()
 
             _commonOperations.AdjustCaretForScrollOffset()
