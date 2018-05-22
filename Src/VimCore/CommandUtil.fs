@@ -2833,7 +2833,7 @@ type internal CommandUtil
 
         // In case something went wrong when calculating the row count,
         // it should always be at least at big as count.
-        let rowCount = min rowCount count
+        let rowCount = max rowCount count
 
         _textView.ViewScroller.ScrollViewportVerticallyByLines(direction, rowCount)
 
