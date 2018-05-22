@@ -189,12 +189,13 @@ module KeyInputUtil =
 
         let other = 
             [
-                ('@', VimKey.Null, 0x00)    // <Null>
-                ('[', VimKey.Escape, 0x1B)  // <Escape>
-                (']', VimKey.RawCharacter, 0x1D)
-                ('^', VimKey.RawCharacter, 0x1E)
-                ('_', VimKey.RawCharacter, 0x1F)
-                ('?', VimKey.RawCharacter, 0x7F)
+                ('@', VimKey.Null, 0x00) // <Null>
+                ('[', VimKey.Escape, 0x1B) // <Escape>
+                ('\\', VimKey.RawCharacter, 0x1C) // <C-\>
+                (']', VimKey.RawCharacter, 0x1D) // <C-]>
+                ('^', VimKey.RawCharacter, 0x1E) // <C-^>
+                ('_', VimKey.RawCharacter, 0x1F) // <C-_>
+                ('?', VimKey.RawCharacter, 0x7F) // <C-?>
             ]
             |> Seq.map (fun (c, key, code) -> 
                 let controlChar = CharUtil.OfAsciiValue (byte code)
