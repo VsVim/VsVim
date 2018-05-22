@@ -3380,7 +3380,7 @@ type internal IInsertUtil =
     /// Repeat the given edit series. 
     abstract RepeatBlock: command: InsertCommand -> atEndOfLine: bool -> blockSpan: BlockSpan -> string option
 
-    /// Notify that an new undo sequence is in effect
+    /// Signal that a new undo sequence is in effect
     abstract NewUndoSequence: unit -> unit
 
 /// Contains the stored information about a Visual Span.  This instance *will* be 
